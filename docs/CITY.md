@@ -1684,7 +1684,8 @@ across a street a route needs — the decree that a region edge may never affect
 stronger rule, and what is refused instead is whatever would have made the far side lethal. Four
 facts compose into the guarantee: she arrives at `Tuning.CHAT_EXCITEMENT` and nothing else was
 charged while she was inside; no catalogue field reaches inside the gap; the boundary's own
-structures charge as one source, so the ceiling out there is a single `roadblock`'s peak; and
+structures charge as one source, so the ceiling out there is a single structure's peak (the wall's
+`roadblock` bands cost nothing, so it is a door's own); and
 walking pays back `EXCITEMENT_DECAY_WALKING` times the ground. `tests/test_checkpoints.gd` walks
 every door on sampled days, both sides and across the pavement band, from the toll and on the
 worst ground in the city, and holds the meter under `METER_MAX` — with the same days planned

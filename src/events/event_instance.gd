@@ -1579,7 +1579,7 @@ var _body_left_at := Vector2.INF
 ## and which of them set off: `0` while both hold their posts, then the side of the one on her side
 ## — the only one who gives chase, "since the other one will be blocked" by his own barrier. This
 ## node is the chaser from then on; the other stays drawn standing at his post, beside the band
-## left at `body_position()` — on a day for good, and on a band that is silent once unmanned until
+## left at `body_position()` — on a day for good, and on a band whose far guard leaves too until
 ## his partner starts to walk away, when he leaves too (`_send_the_far_guard_off()`). See
 ## `_draw_roadblock()`.
 var _chaser_side := 0
@@ -3656,9 +3656,9 @@ func flock_velocities() -> Array[Vector2]:
 ## True once it has stopped being an event and is only getting out of shot. It emits nothing, it
 ## cannot end the day, and it carries no cue: whatever it was, it is over. **The one exception is a
 ## guard walking away from his barrier** (`EventDef.body_stays_behind`): the walk ends with the
-## instance still there as the barrier (`_stand_as_the_barrier()`), `is_leaving` cleared, and the
-## barrier keeps charging what a waiting roadblock charges while he goes (`current_intensity()`
-## answers `def.intensity` for it, `_field_at()` centres it on the band).
+## instance still there as the barrier (`_stand_as_the_barrier()`), `is_leaving` cleared. The
+## barrier costs nothing while he goes, as a roadblock's band never costs anything
+## (`EventCatalogue._roadblock()`'s `intensity` 0).
 var is_leaving := false
 
 ## True once a row that `EventDef.stops_where_it_arrives` has reached the end of its route and
@@ -3792,7 +3792,7 @@ func _be_done(may_park := true) -> void:
 		_walks_a_way = true
 		_way = PackedVector2Array()
 		_way_on = PackedVector2Array()
-		# And on a band that is silent once unmanned, his partner at the far post goes with him.
+		# And on a band whose far guard leaves too, his partner at the far post goes with him.
 		_send_the_far_guard_off()
 	if not _trail.is_empty():
 		# **A man a vehicle let out walks back to it** (`_walk_back()`) rather than away from her,
@@ -4017,12 +4017,12 @@ func _leaving_speed() -> float:
 	return def.departure_speed()
 
 ## True once the guard who set off from a barrier is gone for good, and this instance is only the
-## barrier: solid and costing what a barrier costs, for as long as the roadblock would have stood
+## barrier: solid and silent, for as long as the roadblock would have stood
 ## had he never set off. He does not come back for her, and **the guard who stayed at the other
 ## post stays a drawing for the rest of the day**: nothing notices or chases from this instance
 ## again. (A choice open to overturn; the alternative is that the one who chased walks back to his
-## post and the barrier is armed again.) On a band that is silent once unmanned
-## (`EventDef.silent_once_unmanned`, the escape's) he walks off with his partner instead
+## post and the barrier is armed again.) On a band whose far guard leaves too
+## (`EventDef.far_guard_leaves`, the escape's) he walks off with his partner instead
 ## (`_send_the_far_guard_off()`), and the band stands unmanned.
 var _guard_spent := false
 
@@ -4064,8 +4064,8 @@ func _stand_as_the_barrier() -> void:
 func come_back_as_the_barrier(side: int) -> void:
 	_guard_spent = true
 	_chaser_side = side
-	# A band that is silent once unmanned comes back unmanned: its far guard left with his partner.
-	if def.silent_once_unmanned:
+	# A band whose far guard leaves too comes back unmanned: he left with his partner.
+	if def.far_guard_leaves:
 		_far_guard_gone = true
 	_body_left_at = global_position
 	_noticed_at = INF
@@ -4207,6 +4207,11 @@ func warns_by_radius() -> bool:
 	return (def.pursues or def.charges_within > 0.0) and def.pursues_within > 0.0 \
 			and not def.sets_off_beside_her and not _paths_to_her
 
+## The distance from him at which a pursuer charges once he is warning her: his stand-off,
+## `Tuning.pursuit_standoff()` over `EventDef.standoff_reach()`.
+func charge_radius() -> float:
+	return Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+
 ## **It stops warning and waits again, where it stands**: she has gone back out of its warning
 ## radius. Its notice is forgotten, so the next time she comes inside the radius it notices her and
 ## warns again from the start. The robber stops where his warning walk had got him and waits there
@@ -4295,15 +4300,6 @@ func _pause_a_held_notice(delta: float) -> void:
 ## `_caret_intensity_over_horizon()`, asking for the pulse's own mean over
 ## `Tuning.EXPECTED_IMPACT_HORIZON` instead of the beat this instant happens to be on.
 func current_intensity(pulse_multiplier_override := -1.0) -> float:
-	if def.silent_once_unmanned and is_a_spent_guard():
-		# **Nobody mans it, so it is only a barrier** (`EventDef.silent_once_unmanned`, the
-		# escape's roadblock): solid and drawn, with no field, once its guard has left his post
-		# for good. *(Inbox #771: "it should be in a way that luring away the guard is enough")*
-		return 0.0
-	if is_leaving and _is_a_guard_leaving_his_barrier():
-		# **The barrier's own peak, not the man's.** He walks away but the band keeps charging what
-		# a waiting roadblock charges (`_field_at()` centres it on the band).
-		return def.intensity
 	if is_finished or is_leaving:
 		# On the way out it is scenery. Emitting while it goes would mean the excitement of an
 		# event trailing after her for as long as it took the thing to get off screen.
@@ -6327,9 +6323,9 @@ var _band: RoadblockBand
 ## **Once the guard on her side has left his post for good, the guard at the far post walks off
 ## too**, so the band stands unmanned and reads as the barrier it now is. *(Inbox #771, 2026-10-18,
 ## asked whether the far guard should leave as well once his partner has been lured off: "He leaves
-## too")* Only a row that is silent once unmanned (`EventDef.silent_once_unmanned`, the escape's
-## roadblock) sends him: on a day the band keeps costing what a barrier costs after its guard has
-## gone, and the guard at the far post stays a drawing at it.
+## too")* Only a row whose far guard leaves too (`EventDef.far_guard_leaves`, the escape's
+## roadblock) sends him: on a day the guard at the far post stays a drawing at it (a choice open to
+## overturn: the question was asked of the escape).
 ##
 ## **His partner's departure, from his own post.** He sets off the frame his partner starts walking
 ## away (`_be_done()`), at the pace his partner leaves at (`EventDef.pursue_speed`,
@@ -6378,9 +6374,9 @@ func _far_guard_has_left() -> bool:
 	return _far_guard_at != Vector2.INF or _far_guard_gone
 
 ## Sends the far guard off from his post, the frame his partner starts to walk away. Nothing for a
-## row that keeps him (`EventDef.silent_once_unmanned` false) or a band with no far post.
+## row that keeps him (`EventDef.far_guard_leaves` false) or a band with no far post.
 func _send_the_far_guard_off() -> void:
-	if not def.silent_once_unmanned or def.look != EventDef.Look.ROADBLOCK \
+	if not def.far_guard_leaves or def.look != EventDef.Look.ROADBLOCK \
 			or _far_guard_has_left():
 		return
 	var far := 0

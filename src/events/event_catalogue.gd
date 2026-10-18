@@ -88,11 +88,11 @@ static func heated(def: EventDef, level: int) -> EventDef:
 	return _hot[key]
 
 ## **The roadblock the escape stands on its streets**: the row at full heat, its guards hunting,
-## with one difference — once the guard who set off from it has left his post for good, the band
-## is only a barrier and costs nothing (`EventDef.silent_once_unmanned`). *(Inbox #771: "it should
-## be in a way that luring away the guard is enough. Right now there are for guards and the player
-## adds excitement by just being close.")* While he stands at his post, warns and charges, the band
-## charges what the hunting row charges. And he notices her only once he would stand in her view
+## with one difference — once the guard who set off from it has left his post for good, the guard
+## at the far post walks off too, so the band stands unmanned (`EventDef.far_guard_leaves`).
+## *(Inbox #771: "it should be in a way that luring away the guard is enough"; asked whether the far
+## guard should leave as well: "He leaves too".)* Its band costs nothing, as every roadblock's does
+## (`_roadblock()`). And he notices her only once he would stand in her view
 ## (`EventDef.notices_in_her_view`), so his warning never starts off the screen. A derived copy, never a mutation, kept for the run, for the
 ## reason `heated()` caches its own; `shape` and `solid_parts` are carried across by hand, as
 ## `EventDef.at_heat()` carries them, since `Resource.duplicate()` does not copy them.
@@ -102,7 +102,7 @@ static func escape_roadblock() -> EventDef:
 		var escape: EventDef = hunting.duplicate()
 		escape.shape = hunting.shape
 		escape.solid_parts = hunting.solid_parts
-		escape.silent_once_unmanned = true
+		escape.far_guard_leaves = true
 		escape.notices_in_her_view = true
 		_escape_roadblock = escape
 	return _escape_roadblock
@@ -1881,24 +1881,22 @@ static func _curfew_announce() -> EventDef:
 ## ends and the falloff begins, and it is what the cost table is stated against; there is no longer
 ## any reachability arithmetic pulling on it.
 ##
-## **Intensity 9, down from 13, because a door is several bodies and she has to stand in one.**
-## *(2026-09-20: "guard posts should emit less excitement by themselves, too"; "since there can be
-## other obstacles around".)* `barrier_structure` below already stopped a corner's worth of them
-## summing — the strongest at her position is the whole answer — so what was left to move is that
-## one source's own rate. It is the strongest of the door's parts and the one that decides what
-## standing in a door costs: a hold earns no decay (`Tuning.EXCITEMENT_DECAY_IDLE` is zero), so
-## every second of it is paid in full on top of the flat `Tuning.CHAT_EXCITEMENT` the detention
-## charges. The row stays `FRICTION` — its `walk_through_cost()` was never near
-## `Tuning.WALL_WORTH_OF_COST` and is further from it now — and what actually shuts the street is
-## its 60px body, which is untouched. The **resistance**'s own checkpoint task, *"Don't go around
-## it this time. Go through"*, is priced by that body and by the guard rather than by this number.
+## **Intensity 0: the band costs nothing, manned or not, on a day and in the escape alike; the guard
+## is the danger.** *(Inbox #788, the player: "No cost at all, ever", of the escape's band; then
+## "band costing nothing should also apply to a normal day" and "the challenge is the guard not the
+## concrete".)* The band is concrete: it shuts the street with its 60px body and costs nothing to
+## walk beside, while the guard posted at it warns her with his raised hand and catches her if she
+## walks on into his charge. A region wall stands as hard seals of this row
+## (`RegionPlanner._WALL_DEF_ID`), so a wall's bands cost nothing either; a door's own structures
+## (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`) keep their rates. The row keeps its radii:
+## `outer_radius` is still what the hunting guard's notice may not reach past and what the `SOON`
+## mark over her is drawn out to. The **resistance**'s own checkpoint task, *"Don't go around it this
+## time. Go through"*, is priced by the body and by the guard.
 ##
 ## **`barrier_structure`, because one street being held is one source however many bodies hold
-## it.** A region wall stands three of these a tile apart across a single street and the region
-## door on the cross street stands three more, so ground inside five at once exists at a corner —
-## summed, that is 39/s of one barrier read three times over before the door beside it is counted.
-## The flag makes the strongest of them at her position the whole answer; see
-## `EventDef.barrier_structure`.
+## it.** A region wall stands three of these a tile apart across a single street beside a region
+## door's structures. The band adds nothing to that sum, costing nothing, and keeps the flag so the
+## boundary kit stays one source by one rule; see `EventDef.barrier_structure`.
 ##
 ## **The 179px cold field sits under the shared 180px trigger, which the 24px `abduction` and
 ## `night_raid` never had to notice because their own fields (250/330) already cleared it.**
@@ -1916,7 +1914,7 @@ static func _roadblock() -> EventDef:
 	def.first_day = 7
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
-	def.intensity = 9.0
+	def.intensity = 0.0
 	def.inner_radius = 86.0
 	def.outer_radius = 179.0
 	def.telegraph_time = 1.8

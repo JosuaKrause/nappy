@@ -179,6 +179,8 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	var made: Array = built if not built.is_empty() else build(t, map, group)
 	var instances: Array[EventInstance] = made[1]
 	var start := meter.value
+	# The peak is this walk's own, not what an earlier lure ran the meter up to.
+	meter.peak = meter.value
 	var her := from
 	var heading := (to - from).normalized()
 	var length := from.distance_to(to)

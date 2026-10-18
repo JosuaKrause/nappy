@@ -17,7 +17,7 @@ func run(t) -> void:
 	_test_a_shaken_off_guard_leaves_the_barrier_standing(t)
 	_test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t)
 	_test_a_guard_who_is_gone_does_not_come_back(t)
-	_test_the_barrier_keeps_its_field_while_he_walks_away(t)
+	_test_the_barrier_costs_nothing_while_he_walks_away(t)
 	_test_he_is_never_removed_in_view_while_she_stays_near(t)
 	_test_the_barrier_rim_survives_the_departure(t)
 	_test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t)
@@ -104,7 +104,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	t.check(guard.is_solid() and guard.body_position().is_equal_approx(post),
 			"solid, where it was built")
 	t.check(guard.global_position.is_equal_approx(post), "the node is back on the barrier")
-	t.check(guard.current_intensity() > 0.0, "and it costs what a barrier costs")
+	t.check(guard.current_intensity() == 0.0, "and it costs nothing, as a roadblock's band never does")
 	# The day carries on: it still stands a long time later.
 	for i in int(120.0 / STEP):
 		guard.player_at = post + Vector2(0.0, 90.0)
@@ -157,7 +157,7 @@ func _test_a_guard_who_is_gone_does_not_come_back(t) -> void:
 			"and a second give-up does not send the barrier away")
 	guard.free()
 
-func _test_the_barrier_keeps_its_field_while_he_walks_away(t) -> void:
+func _test_the_barrier_costs_nothing_while_he_walks_away(t) -> void:
 	var post := Vector2(400.0, 0.0)
 	var made := _chasing(t, post)
 	var guard: EventInstance = made[0]
@@ -165,18 +165,18 @@ func _test_the_barrier_keeps_its_field_while_he_walks_away(t) -> void:
 	t.check(guard.is_leaving, "he is walking away")
 	var beside := post + Vector2(0.0, 40.0)
 	var leaving_frames := 0
-	var dark_frames := 0
+	var lit_frames := 0
 	# She stands beside the barrier, inside the 420px he must clear, so the departure lasts.
 	while guard.is_leaving and leaving_frames < int(30.0 / STEP):
 		guard.player_at = beside
-		if guard.contribution_at(beside) <= 0.0:
-			dark_frames += 1
+		if guard.contribution_at(beside) > 0.0:
+			lit_frames += 1
 		leaving_frames += 1
 		guard._process(STEP)
 	t.check(leaving_frames > 60, "the departure lasts (%d frames)" % leaving_frames)
-	t.check(dark_frames == 0, "the barrier costs what it costs beside it on every leaving frame (%d dark)"
-			% dark_frames)
-	t.check(guard.contribution_at(beside) > 0.0, "and after it")
+	t.check(lit_frames == 0, "the barrier costs nothing beside it on any leaving frame (%d lit)"
+			% lit_frames)
+	t.check(guard.contribution_at(beside) == 0.0, "nor after it, as a roadblock's band never does")
 	t.check(guard.global_position.distance_to(beside) > Tuning.OUT_OF_SIGHT or guard.is_waiting(),
 			"he does not vanish beside her: he is out of sight before the barrier stands alone")
 	guard.free()

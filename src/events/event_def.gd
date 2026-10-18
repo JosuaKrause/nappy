@@ -1101,19 +1101,16 @@ func lunge_is_inside_the_catch() -> bool:
 ## chases has nothing to leave its body behind *from*.
 @export var body_stays_behind := false
 
-## Whether the barrier a `body_stays_behind` guard leaves **costs nothing once he has left his post
-## for good** — walking away after a chase, or gone — so that it is only a barrier: solid, drawn,
-## and no field of its own. While he stands at his post, warns and charges, the field is there as
-## ever. The escape's roadblock is the one row that sets it (`EventCatalogue.escape_roadblock()`):
-## there the guards are the danger and luring the one on her side off is the answer *(inbox #771:
-## "it should be in a way that luring away the guard is enough")*. **And the guard at the far post
-## walks off too**, from the frame his partner starts to walk away, so the band stands unmanned
+## Whether **the guard at a roadblock's far post walks off too** once the guard on her side has left
+## his post for good, from the frame his partner starts to walk away, so the band stands unmanned
 ## *(inbox #771, asked whether he should: "He leaves too")* — `EventInstance._send_the_far_guard_off()`.
-## A day's roadblock keeps costing what a barrier costs after its guard has gone, and keeps its far
-## guard standing at it.
+## The escape's roadblock is the one row that sets it (`EventCatalogue.escape_roadblock()`): there
+## luring the guard on her side off is the answer *(inbox #771: "it should be in a way that luring
+## away the guard is enough")*. A day's roadblock keeps its far guard standing at it. (The band itself
+## costs nothing on either, manned or not: `EventCatalogue._roadblock()`'s `intensity` 0.)
 ##
 ## Read only where `body_stays_behind` is set; nothing else has a guard to leave.
-@export var silent_once_unmanned := false
+@export var far_guard_leaves := false
 
 ## Whether a roadblock's guard who waits for her (`pursues_within`) notices her **only once he would
 ## stand in her view**: inside `pursues_within` along a clear line as ever, and with the whole of his

@@ -35,7 +35,7 @@ func run(t) -> void:
 	_test_both_exits_are_reachable_through_the_open_cells_alone(t)
 	_test_both_exits_are_reachable_past_every_body_the_escape_stands(t)
 	_test_no_street_of_the_walk_stands_two_roadblocks(t)
-	_test_a_lured_off_roadblock_is_only_a_barrier(t)
+	_test_a_roadblock_band_costs_nothing(t)
 	_test_the_far_guard_leaves_with_his_partner(t)
 	_test_neither_guard_walks_off_over_a_building(t)
 	_test_a_lured_off_roadblock_raises_no_mark_over_her(t)
@@ -364,22 +364,25 @@ func _test_no_street_of_the_walk_stands_two_roadblocks(t) -> void:
 					% [seed_value, segment.key(), street[1].size()])
 	t.check(streets > 0, "there were streets with a roadblock to ask about (%d)" % streets)
 
-## **Once its guard has left his post for good, the escape's band is only a barrier**: solid, and
-## no field of its own (`EventDef.silent_once_unmanned`). *(Inbox #771: "it should be in a way
-## that luring away the guard is enough")* While he is posted it charges what the hunting row
-## charges; once he has chased and been shaken off it charges nothing while he walks away, nothing
-## once he is gone, and nothing when it is streamed back in as only the barrier. A day's hunting
-## roadblock, the same row without the flag, still charges once its guard is gone, so the flag is
-## what makes the difference and the day is unchanged.
-func _test_a_lured_off_roadblock_is_only_a_barrier(t) -> void:
+## **A roadblock's band costs nothing, ever, on a day and in the escape alike; the guard is the
+## danger.** *(Inbox #788: "No cost at all, ever", of the escape's band; "band costing nothing
+## should also apply to a normal day"; "the challenge is the guard not the concrete".)* Walked on
+## both the escape's copy and a day's hunting row: the band charges nothing beside it while its
+## guards are posted, while the guard on her side warns, while he charges, while he walks away,
+## once he is gone, and when it is streamed back in as only the barrier; it stays solid throughout,
+## and he still catches her if she walks on into his charge (`_test_luring_its_guard_off_is_the_way_past_a_roadblock`).
+func _test_a_roadblock_band_costs_nothing(t) -> void:
 	var escape := EventCatalogue.escape_roadblock()
 	var day := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
-	t.check(escape.silent_once_unmanned and not day.silent_once_unmanned,
-			"only the escape's copy of the roadblock is silent once unmanned")
+	t.check(escape.far_guard_leaves and not day.far_guard_leaves,
+			"only the escape's copy of the roadblock sends its far guard off")
 	t.check(escape.pursues and escape.body_stays_behind and escape.hard_fail,
 			"the escape's roadblock is still the hunting row: its guard chases and catches")
+	t.check(EventCatalogue.by_id("roadblock").intensity == 0.0 and day.intensity == 0.0
+			and escape.intensity == 0.0, "the roadblock row, cold and hunting, has no field strength")
 	var step := 1.0 / 60.0
 	for def: EventDef in [escape, day]:
+		var name := "the escape's" if def == escape else "a day's"
 		var post := Vector2(400.0, 0.0)
 		var beside := post + Vector2(0.0, 70.0)
 		var guard := EventInstance.new()
@@ -387,14 +390,16 @@ func _test_a_lured_off_roadblock_is_only_a_barrier(t) -> void:
 		t.add_child(guard)
 		guard.set_process(false)
 		guard._attach_the_band()
-		var posted := guard.contribution_at(beside)
-		# In inside his radius, then inside his stand-off: he charges.
+		var strongest := guard.contribution_at(beside)
+		# In inside his radius: he warns.
 		guard.player_at = post + Vector2(0.0, def.pursues_within - 10.0)
 		guard._process(step)
-		guard.player_at = guard.global_position + Vector2(0.0,
-				Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()) - 2.0)
+		var warned := guard.is_standing_for_its_notice()
+		strongest = maxf(strongest, maxf(guard.contribution_at(beside),
+				guard.contribution_at(guard.player_at)))
+		# Inside his charge: he charges. She runs; he gives up and walks away.
+		guard.player_at = guard.global_position + Vector2(0.0, guard.charge_radius() - 2.0)
 		guard._process(step)
-		# She runs; he gives up and walks away.
 		var charged := false
 		var frames := 0
 		while not guard.gave_up and frames < int(10.0 / step):
@@ -402,40 +407,36 @@ func _test_a_lured_off_roadblock_is_only_a_barrier(t) -> void:
 			guard.player_running = true
 			guard._process(step)
 			charged = charged or guard.is_chasing()
+			if guard.is_chasing():
+				strongest = maxf(strongest, maxf(guard.contribution_at(beside),
+						guard.contribution_at(guard.global_position + Vector2(0.0, 40.0))))
 			frames += 1
 		var her := guard.player_at
 		guard.player_running = false
 		var leaving := guard.is_leaving and guard.is_a_spent_guard()
-		var while_leaving := guard.contribution_at(beside)
+		strongest = maxf(strongest, guard.contribution_at(beside))
 		frames = 0
 		while guard.is_leaving and frames < int(30.0 / step):
 			guard.player_at = her
 			guard._process(step)
+			strongest = maxf(strongest, guard.contribution_at(beside))
 			frames += 1
 		var gone := guard.is_a_spent_guard() and not guard.is_leaving and guard.is_solid()
-		var once_gone := guard.contribution_at(beside)
-		var name := "the escape's" if def == escape else "a day's"
-		t.check(posted > 0.0, "%s band charges while its guards are posted (%.1f/s)"
-				% [name, posted])
-		t.check(charged and leaving and gone,
-				"%s guard charges, is shaken off and leaves the band standing solid" % name)
-		if def == escape:
-			t.check(while_leaving == 0.0 and once_gone == 0.0,
-					"the escape's band costs nothing once its guard has left (%.1f, %.1f/s)"
-					% [while_leaving, once_gone])
-		else:
-			t.check(while_leaving > 0.0 and once_gone > 0.0,
-					"a day's band still costs what a barrier costs once its guard has left (%.1f, %.1f/s)"
-					% [while_leaving, once_gone])
+		strongest = maxf(strongest, guard.contribution_at(beside))
+		t.check(warned and charged and leaving and gone,
+				"%s guard warns, charges, is shaken off and leaves the band standing solid" % name)
+		t.check(strongest == 0.0,
+				"%s band costs nothing posted, warning, charging, left or gone (%.1f/s at most)"
+				% [name, strongest])
 		guard.free()
-	var streamed := EventInstance.new()
-	streamed.setup(escape, Vector2(400.0, 0.0))
-	t.add_child(streamed)
-	streamed.set_process(false)
-	streamed.come_back_as_the_barrier(1)
-	t.check(streamed.is_solid() and streamed.contribution_at(Vector2(400.0, 70.0)) == 0.0,
-			"the escape's band streamed back in after its guard was spent is solid and silent")
-	streamed.free()
+		var streamed := EventInstance.new()
+		streamed.setup(def, Vector2(400.0, 0.0))
+		t.add_child(streamed)
+		streamed.set_process(false)
+		streamed.come_back_as_the_barrier(1)
+		t.check(streamed.is_solid() and streamed.contribution_at(Vector2(400.0, 70.0)) == 0.0,
+				"%s band streamed back in after its guard was spent is solid and silent" % name)
+		streamed.free()
 
 ## **The far guard leaves too, so the band stands unmanned.** *(Inbox #771, asked whether the
 ## guard at the far post should leave as well once his partner has been lured off: "He leaves too")*

@@ -675,16 +675,16 @@ class _DoorWorld extends WorldContext:
 ## **The hold charges its toll and nothing else.** She is inside the hut for those two seconds, not
 ## on the pavement, so a door standing beside a loud field has to cost exactly what a door standing
 ## on a quiet street costs — *"it works in both directions with the same cost each time"*. A
-## `roadblock` is parked across the corner at its full rate to make the rig mean something.
+## `loudspeaker` stands across the corner at its full rate to make the rig mean something (a
+## `roadblock`'s band costs nothing, so it cannot).
 ##
 ## **What makes it mean something is stated over what this rig could see**, not over the toll. With
-## the fields left running through the hold, the roadblock alone would land its rate times the two
+## the fields left running through the hold, the loudspeaker alone would land its rate times the two
 ## seconds of the hold on top of the toll — and the assertion below reads the toll to within
 ## `TOLL_TOLERANCE`, so the leak has to be several times that or a rig that measured nothing would
-## look identical to one that measured the rule. Said against the toll instead, the guard was
-## really asking the roadblock to be louder than a door, which is a balance decision it has no
-## business holding: it went red when `roadblock` dropped to 9/s on a leak it would still have
-## caught twelve times over.
+## look identical to one that measured the rule. Said against the toll instead, the guard would be
+## asking the neighbour to be louder than a door, which is a balance decision it has no business
+## holding.
 func _test_the_hold_charges_only_its_toll(t) -> void:
 	var world := _DoorWorld.new()
 	t.add_child(world)
@@ -701,7 +701,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	var centre := Vector2(5200.0, 5200.0)
 	var hut := _door_instance(t, "checkpoint_hut", centre, axis)
 	manager._instances.append(hut)
-	var loud := _door_instance(t, "roadblock", centre + Vector2(0.0, 72.0), axis)
+	var loud := _door_instance(t, "loudspeaker", centre + Vector2(0.0, 72.0), axis)
 	# Past its own telegraph, so the field it is standing there with is the field it declares.
 	loud.age = loud.def.telegraph_time + 1.0
 	manager._instances.append(loud)
@@ -712,7 +712,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	var beside_it := loud.contribution_at(entry)
 	var would_leak := beside_it * Tuning.CHECKPOINT_DETAIN_SECONDS
 	t.check(would_leak > TOLL_TOLERANCE * 4.0,
-			("a leak would be worth %.1f points of the roadblock beside the door over the hold, " +
+			("a leak would be worth %.1f points of the loudspeaker beside the door over the hold, " +
 			"well past the %.1f this rig reads the toll to — otherwise it checks nothing")
 			% [would_leak, TOLL_TOLERANCE])
 
@@ -733,7 +733,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 			"the whole crossing costs the toll and nothing else (%.1f against %.0f)"
 			% [baby.excitement - before, Tuning.CHAT_EXCITEMENT], TOLL_TOLERANCE)
 	t.close_to(loud.landed(), 0.0,
-			"and nothing of it is attributed to the roadblock beside the door (%.1f)"
+			"and nothing of it is attributed to the loudspeaker beside the door (%.1f)"
 			% loud.landed(), 0.01)
 
 	# And the moment she is out, the street is back: the silence is a fact about being inside a
@@ -749,11 +749,12 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	world.free()
 	manager.free()
 
-## **A wall and the door beside it are one barrier, not five.** *(2026-09-20, the player: "since
-## two gates can be adjacent to each other their influence shouldn't add up".)* The rig is the
-## corner day 7 of the run died at: a region wall's three `roadblock` bodies a tile apart across
-## one street, and a door's hut and gate across the cross street, with her standing where the
-## release sets her down.
+## **A boundary's structures are one barrier, not five.** *(2026-09-20, the player: "since two
+## gates can be adjacent to each other their influence shouldn't add up".)* The rig is the corner
+## day 7 of the run died at, with the region wall's three `roadblock` bodies a tile apart across
+## one street stood in for by three alley-door `checkpoint_post`s (a roadblock's band costs
+## nothing, so the wall's own bodies would overlap nothing), and a door's hut and gate across the
+## cross street, with her standing where the release sets her down.
 ##
 ## Three things have to agree, and the point of holding them together is that they are three
 ## different code paths reading one answer: the meter's own sum, what each body's `landed()` says
@@ -767,7 +768,8 @@ func _test_a_boundarys_structures_charge_as_one(t) -> void:
 	var here := Vector2(6400.0, 6400.0)
 	var kit: Array[EventInstance] = []
 	for i in 3:
-		var block := _door_instance(t, "roadblock", here + Vector2(-56.0, -32.0 + i * 32.0), axis)
+		var block := _door_instance(t, "checkpoint_post", here + Vector2(-56.0, -32.0 + i * 32.0),
+				axis)
 		block.age = block.def.telegraph_time + 1.0
 		kit.append(block)
 	kit.append(_door_instance(t, "checkpoint_hut", here + Vector2(0.0, 54.0), axis))
@@ -1236,7 +1238,8 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t) -> void:
 ##   check is asked of the rule itself, at the distance the run actually put it at.
 ## - **The barriers are not**, and cannot be: they are the region wall, they stand where the
 ##   boundary is, and dropping one opens a street the partition means to hold. What makes them
-##   survivable is that all four bodies are one source.
+##   survivable is that a roadblock's band costs nothing, so the wall's three add nothing to the
+##   hut's own rate.
 func _test_the_run_that_killed_her_five_times(t) -> void:
 	var axis := Vector2.RIGHT
 	var hut_at := Vector2(8000.0, 8000.0)
@@ -1262,17 +1265,15 @@ func _test_the_run_that_killed_her_five_times(t) -> void:
 			"hut against a gap of %.0f plus its own %.0fpx of field")
 			% [patrol_at.distance_to(hut_at), Tuning.CHECKPOINT_EVENT_GAP, patrol.field_reach()])
 
-	var summed := 0.0
+	var walls := 0.0
 	for plan in plans:
-		if plan.def.barrier_structure:
-			summed += plan.def.emission_at_distance(maxf(0.0,
+		if plan.def == wall:
+			walls += plan.def.emission_at_distance(maxf(0.0,
 					plan.position.distance_to(released)
 					- (plan.def.shape.half_length if plan.def.shape.kind
 					== GroundShape.Kind.SEGMENT else 0.0)))
-	var one_source := _planned_field_at(plans, released)
-	t.check(summed > one_source * 1.8,
-			("the four barriers summed are %.1f/s where the strongest alone is %.1f/s — the run " +
-			"took the first number") % [summed, one_source])
+	t.check(walls == 0.0,
+			"the wall's three roadblocks beside the release cost nothing (%.1f/s)" % walls)
 
 	var peak := _peak_walking_out(plans, released, Vector2.UP)
 	t.check(peak < Tuning.METER_MAX,
