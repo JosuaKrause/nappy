@@ -498,14 +498,6 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	t.get_tree().paused = false
 	pause.queue_free()
 
-## **The hint has to name the thing that actually works.** *(2026-09-07, on review: "a bare tap no
-## longer begins anything ... the screen instructs the player to do the one thing that will not
-## work".)* `tap to begin` was true when a bare press anywhere began a run; once only the two
-## buttons do, `press a button` is what replaces it — still no key named, the same way `tap` never
-## named one *(Playtest 29 finding 4: "in fact I said to remove the keyboard inputs altogether but
-## I'm willing to compromise on letting them stay silently".)* Each caption says what its own
-## button does rather than naming the mode — see `Texts.WALKING_LESSON_PAUSE`'s doc for why the teaching line itself does
-## not change here at all (2026-09-07's M88 asked for the buttons back, not a new lesson).
 ## A title whose mode is already decided (a save brought back) names it, "Normal" or "Hard Mode",
 ## in place of the checkbox; a new game shows the checkbox and no name.
 func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
@@ -528,6 +520,14 @@ func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 	GameState.hard_mode = was_hard
 	title.queue_free()
 
+## **The hint has to name the thing that actually works.** *(2026-09-07, on review: "a bare tap no
+## longer begins anything ... the screen instructs the player to do the one thing that will not
+## work".)* `tap to begin` was true when a bare press anywhere began a run; once only the two
+## buttons do, `press a button` is what replaces it — still no key named, the same way `tap` never
+## named one *(Playtest 29 finding 4: "in fact I said to remove the keyboard inputs altogether but
+## I'm willing to compromise on letting them stay silently".)* Each caption says what its own
+## button does rather than naming the mode — see `Texts.WALKING_LESSON_PAUSE`'s doc for why the teaching line itself does
+## not change here at all (2026-09-07's M88 asked for the buttons back, not a new lesson).
 func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	t.add_child(title)

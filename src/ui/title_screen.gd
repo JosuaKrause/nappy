@@ -104,8 +104,8 @@ const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 @onready var _hard_mode_frame: Panel = $Root/HardMode/Frame
 ## The name of the run's mode, "Normal" or "Hard Mode", shown where the checkbox would stand when
 ## the mode is already decided (a save brought back): the checkbox and this label are never on
-## screen together. Made in `_ready()` in the checkbox's colour, so it reads as the same line.
-var _mode_name: Label
+## screen together. A scene node beside the checkbox, in its colour, so it reads as the same line.
+@onready var _mode_name: Label = $Root/ModeName
 
 ## Whether `Q` does anything on this platform. Read once from `QuitOption` rather than asked at
 ## each use site, so a test — never itself a web export — can set this and drive both shapes.
@@ -134,16 +134,6 @@ func _ready() -> void:
 	_right_caption.text = Texts.TITLE_CAPTION_JOYSTICK
 	_hint.text = Texts.TITLE_HINT_BEGIN
 	_hard_mode.text = Texts.TITLE_HARD_MODE
-	_mode_name = Label.new()
-	_mode_name.name = "ModeName"
-	_mode_name.anchor_right = 1.0
-	_mode_name.offset_top = 643.0
-	_mode_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_mode_name.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_mode_name.add_theme_color_override("font_color", Color(0.72, 0.69, 0.64, 1))
-	_mode_name.add_theme_font_size_override("font_size", 22)
-	_mode_name.visible = false
-	$Root.add_child(_mode_name)
 	_refresh_body()
 	_version.text = version_text()
 	# Above the pause screen: this is the outermost frame the game runs inside, and nothing should
