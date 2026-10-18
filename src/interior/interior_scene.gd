@@ -473,7 +473,9 @@ func _wall_texture(kind: InteriorTile.Kind) -> StringName:
 			return &""
 
 ## Doors, the chandeliers and every ground decal — everything that stands above the floor rather
-## than being the floor, all in the y-sorted layer the player joins through `add_entity()`.
+## than being the floor. The doors go in their own `Doors` layer under her, from here and from
+## `_add_standing()` and `_add_threshold()`; only the chandeliers and the decals are in the
+## y-sorted layer the player joins through `add_entity()`.
 func _rebuild_overlays() -> void:
 	for id: String in _plan.doors:
 		var door: InteriorMapPlan.Door = _plan.doors[id]

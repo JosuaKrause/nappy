@@ -3046,12 +3046,17 @@ static func _masked_pursuer() -> EventDef:
 	# to the door")* rather than walk down to it and out to the other shaft without meeting him
 	# *(inbox #782: the player wants the radius bigger to achieve that, and him not moved)*. No
 	# clock, so his `telegraph_time` above is read only by the telegraph contract. 426px is
-	# measured on the escape as built (`tests/probes/escape_stairwell_guard_trigger.gd`, three
-	# seeds): coming down from the second floor's door she meets it at the head of the second flight,
-	# and making for the first floor's door from there a walker is caught on every way onto the
-	# flight while a runner gets through, at 30px from him at the closest on the tightest. The window
-	# is narrow: at 420px a walker taking the flight from the landing tile between the two flights
-	# gets through, and at 432px a runner taking it from the row below its head is caught.
+	# measured on the escape as built (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as
+	# the game steps, a 30Hz physics tick with the catch on it and him moving on drawn frames):
+	# coming down from the second floor's door she meets it at the head of the second flight, and
+	# making for the first floor's door from there a runner gets through on every line onto the
+	# flight, while a walker is caught holding plain left from the row level with the flight's head
+	# tread or the row below it, or down-left from the landing tile between the two flights. **A
+	# walker holding plain left from that landing tile gets through**, the margins are thin (a
+	# runner comes within about 33px of him against his 28px catch, and at 440px that runner is
+	# caught), and in the stairwell his warning is off screen, since the view reaches 180px from her
+	# and he starts about 400px below; only the edge badge shows his charge once he runs. The player
+	# accepted both (inbox #782).
 	def.charges_within = 426.0
 	def.hard_fail = true
 	return def

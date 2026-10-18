@@ -9,7 +9,9 @@ extends RefCounted
 ##
 ## The second tries another charge distance for his row on that run alone. Her real carrying body
 ## walks with the real stair steering and collision, and the real man is driven by
-## `InteriorEvents._physics_process()`, which tells him where she is, and his own `_process()`. A
+## `InteriorEvents._physics_process()`, which tells him where she is, and his own `_process()`. It
+## is stepped at the game's rhythm: a 30Hz physics tick moves her, tells him where she is and checks
+## the catch, and he moves in `_process()` on two 60fps frames between ticks. A
 ## line is `TRIGGER seed <s> <route> <pace> charged at (<local tile units>) <d>px from him,
 ## <outcome> at <t>s, <a>s after he ran, closest <c>px`. The routes all start on the second floor's
 ## door of his shaft, the way in from the second floor's hallway:
@@ -17,25 +19,28 @@ extends RefCounted
 ## - `turn-10`, `turn-11`: down the landing, then left onto the second flight from that row of it
 ##   (10 is level with the flight's head tread, 11 below it);
 ## - `turn-9`: down the landing, then down-left from the landing tile between the two flights;
+## - `turn-9-left`: the same tile, holding plain left;
 ## - `door`: in from the first floor's hallway instead, stepping down the landing from its door.
 ##
 ## Paces: `walk` the whole way, `run` the whole way, and `walk-run`, walking until he runs and
 ## running from then on. Once he runs she makes for the first floor's door: on along the flight to
 ## the landing, then up into the door.
 
-const STEP := 1.0 / 60.0
-## Three, since every run steps hundreds of frames with no frame between them to flush the redraws
-## they queue, and about sixty runs fill the engine's message queue.
-const SEEDS := [4242, 4216201080, 2026]
+const TICK := 1.0 / 30.0
+const FRAME := 1.0 / 60.0
+## The seed events are set up with; the building itself is not seeded, so other seeds print the
+## same lines.
+const SEEDS := [4242]
 const ROUTES := {
 	"turn-10": [10, ["move_left"]],
 	"turn-11": [11, ["move_left"]],
 	"turn-9": [9, ["move_left", "move_down"]],
+	"turn-9-left": [9, ["move_left"]],
 }
 
 func run(t) -> void:
 	for s: int in SEEDS:
-		for route in ["turn-10", "turn-11", "turn-9", "door"]:
+		for route in ["turn-10", "turn-11", "turn-9", "turn-9-left", "door"]:
 			for pace in ["walk", "run", "walk-run"]:
 				_once(t, s, route, pace)
 
@@ -77,14 +82,18 @@ func _once(t, s: int, route: String, pace: String) -> void:
 	var charged_for := 0.0
 	var left_the_door := false
 	while elapsed < 20.0:
-		player._physics_process(STEP)
-		_move(player, player.velocity * STEP)
+		player._physics_process(TICK)
+		_move(player, player.velocity * TICK)
 		var her := player.global_position
 		var tile := scene.world_to_tile(her)
-		events._physics_process(STEP)
+		events._physics_process(TICK)
 		man.player_running = running
-		man._process(STEP)
-		elapsed += STEP
+		var caught := man.is_lethal_at(her)
+		var near := man.global_position.distance_to(her)
+		man._process(FRAME)
+		near = minf(near, man.global_position.distance_to(her))
+		man._process(FRAME)
+		elapsed += TICK
 		if not turned and tile.y - origin.y >= int(ROUTES[route][0]) \
 				and her.y >= scene.tile_to_world(tile).y:
 			turned = true
@@ -98,9 +107,9 @@ func _once(t, s: int, route: String, pace: String) -> void:
 			elif route == "door":
 				_hold(["move_up"], running)
 		if charged_at != Vector2.INF:
-			closest = minf(closest, man.global_position.distance_to(her))
-			charged_for += STEP
-		if man.is_lethal_at(her):
+			closest = minf(closest, minf(near, man.global_position.distance_to(her)))
+			charged_for += TICK
+		if caught:
 			outcome = "caught"
 			break
 		if tile != door_tile:

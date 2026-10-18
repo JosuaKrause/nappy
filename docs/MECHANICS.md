@@ -1578,8 +1578,12 @@ of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` la
 as she is in the building. The answer is the one the row is built around — step through the
 nearest corridor door and let him pass. **He starts his run once she is within 426px of him**
 *(inbox #764, inbox #782)*, which coming down from the second floor is at the head of the second
-flight: from there a walker making for the first floor's door is caught and a runner gets through,
-so she cannot walk down to that door and out to the left shaft without meeting him. So the side she
+flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
+walker is caught when she takes the flight holding plain left from the row level with its head tread
+or the row below, or down-left from the landing tile between the two flights. A walker who holds
+plain left from that landing tile gets through, and the margins are thin (a runner comes within
+about 33px of him against his 28px catch). In the stairwell his warning is off screen, and only the
+edge badge shows his charge once he runs; the player accepted both *(inbox #782)*. So the side she
 switched to is not a side she can settle on, which is the whole point of him: the
 way down is a sequence of crossings rather than one.
 

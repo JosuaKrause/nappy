@@ -40,17 +40,26 @@ is left as it is.
 
 **The claim.** The masked man at the foot of the right shaft runs once she is within 426px of him.
 Coming down from the second floor, she meets that at the head of the second flight. From there, a
-walker making for the first floor's door is caught and a runner gets through, whichever row of
-the landing she takes the flight from.
+walker making for the first floor's door is caught when she takes the flight holding plain left
+from the row level with its head tread or the row below, or down-left from the landing tile between
+the two flights; a walker who holds plain left from that landing tile gets through. A runner gets
+through on every line. The margins are thin: on the tightest runner's line he is drawn within about
+33px of her centre, against the 28px catch. In the stairwell his warning is off screen, and only the
+edge badge shows his charge once he runs.
 
 - `stairwell-guard-trigger-candidates.png`: the readings of "the end of the second stair" that were
   put to the player as a question.
-- `guard-trigger-2.txt`: what `tests/probes/escape_stairwell_guard_trigger.gd` prints on three
-  seeds. Each line gives the way she came, her pace, where she stood when he ran (in local tile
-  units), how far she was from him, whether she got through the first floor's door, and how near
-  he came. The first block is this branch's 426px. The next three are `CHARGES_WITHIN=420`, `432`
-  and `440`, the edges of the window. Rerun: `tools/test.sh probes/escape_stairwell_guard_trigger.gd`,
-  and again with `CHARGES_WITHIN=<px>` in the environment. The seeds agree line for line.
+- `guard-trigger-3.txt`: what `tests/probes/escape_stairwell_guard_trigger.gd` prints at the
+  game's rhythm (a 30Hz physics tick for her, the catch and where he is told she is, and him moving
+  on two 60fps frames between ticks), for the claim above, plain left from the landing tile between
+  the two flights (`turn-9-left`) included. Line format as `guard-trigger-2.txt`'s. The building is
+  not seeded, so one seed is printed. Rerun: `tools/test.sh probes/escape_stairwell_guard_trigger.gd`.
+- `guard-trigger-2.txt`: what the probe printed with her and him stepped together at 60Hz, on three
+  seeds, before it was changed to the game's rhythm; the window it gives (420 to 432px) is that
+  stepping's, and `guard-trigger-2.png` draws it. Each line gives the way she came, her pace,
+  where she stood when he ran (in local tile units), how far she was from him, whether she got
+  through the first floor's door, and how near he came. The first block is 426px; the next three are
+  `CHARGES_WITHIN=420`, `432` and `440`. The seeds agree line for line.
 - `guard-trigger-2.png`: the walkers' charge points over the right shaft's lower cells, with the
   426px circle round where he waits. Made by
   `python3 guard-trigger-2.py guard-trigger-2.txt out.png` (Pillow).

@@ -1219,30 +1219,42 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## **She has to run to the door** *(inbox #764, the player: "player should have to run to the
 ## door"; inbox #782, the player: the radius bigger, not him moved)*. He warns while she is in the
 ## stairwell and runs his line once she is within `masked_pursuer.charges_within` of him
-## (`EventInstance._warn_on_its_line()`). Driven as the running game drives them: her real carrying
-## body with the real stair steering and collision, `InteriorEvents._physics_process()` telling him
-## where she is, and his own `_process()`. She comes in at his shaft's second-floor door and down
-## the landing, and takes the second flight from each of the three rows a player turns onto it from:
-## the row level with its head tread, the row below, and the landing tile between the two flights,
-## down-left. Once he runs she makes for the first floor's door, on along the flight and up the
-## landing into it. **A walker is caught on every one; a runner gets through on every one**, whether
-## she was running all along or starts running the moment he does.
+## (`EventInstance._warn_on_its_line()`). Stepped at the game's own rhythm: the game's physics
+## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
+## carrying body moves with the real stair steering and collision, `InteriorEvents._physics_process()`
+## tells him where she is, and the catch is checked; he moves in his own `_process()` on every drawn
+## frame, two to a tick here (60fps). She comes in at his shaft's second-floor door and down the
+## landing, and takes the second flight from each line a player turns onto it by. Once he runs she
+## makes for the first floor's door, on along the flight and up the landing into it.
+##
+## **Which lines catch a walker is what is pinned, and not every line does:** a walker is caught
+## from the rows level with and below the flight's head tread, and from the landing tile between
+## the two flights holding down-left; **a walker who holds plain left from the landing tile between
+## the two flights gets through**. A runner gets through on every line, whether she was running all
+## along or starts running the moment he does. **The margins are thin:** on the tightest runner's line
+## his drawn position comes within about 33px of her centre at 60fps, against the catch's 28px.
 func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 	for walk: Array in _SECOND_FLIGHT_TURNS:
 		for pace: String in ["walk", "run", "walk-run"]:
 			var met := _meet_the_masked_man(t, walk, pace)
-			var expected := "caught" if pace == "walk" else "through"
-			t.check(met["ran"], "turning onto the flight from row %d at a %s: he runs" % [walk[0], pace])
+			var expected := "through" if pace != "walk" or not walk[2] else "caught"
+			t.check(met["ran"], "%s at a %s: he runs" % [walk[3], pace])
 			t.check(met["outcome"] == expected,
-					"turning onto the flight from row %d at a %s: %s (%s, %.0fpx from him at the closest)"
-					% [walk[0], pace, expected, met["outcome"], met["closest"]])
+					"%s at a %s: %s (%s, %.0fpx from him at the closest)"
+					% [walk[3], pace, expected, met["outcome"], met["closest"]])
+			if expected == "through":
+				t.check(met["closest"] > 28.0, "%s at a %s: his drawn position stays outside the 28px catch"
+						% [walk[3], pace])
+			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
+					% [walk[3], pace, met["outcome"], met["closest"]])
 
-## The rows of his shaft's second-floor landing she turns onto the second flight from, local to
-## the grammar, and what she holds there.
+## The lines onto the second flight, local to the grammar: the row of her turn, what she holds
+## there, whether a walker is caught, and what to call it.
 const _SECOND_FLIGHT_TURNS := [
-	[10, ["move_left"]],
-	[11, ["move_left"]],
-	[9, ["move_left", "move_down"]],
+	[10, ["move_left"], true, "plain left from row 10 (level with the flight's head tread)"],
+	[11, ["move_left"], true, "plain left from row 11 (the row below it)"],
+	[9, ["move_left", "move_down"], true, "down-left from row 9 (the landing tile between the two flights)"],
+	[9, ["move_left"], false, "plain left from row 9 (the landing tile between the two flights)"],
 ]
 
 ## One meeting with the right shaft's masked man: her real body from the shaft's second-floor door
@@ -1251,7 +1263,8 @@ const _SECOND_FLIGHT_TURNS := [
 ## makes for the first floor's door. Answers whether he ran, the outcome ("through", "caught" or
 ## "neither") and how near he came.
 func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
-	const STEP := 1.0 / 60.0
+	const TICK := 1.0 / 30.0
+	const FRAME := 1.0 / 60.0
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -1281,14 +1294,21 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
 	var turned := false
 	var elapsed := 0.0
 	while man != null and elapsed < 20.0:
-		player._physics_process(STEP)
-		_move_real_body_one_step(player, player.velocity * STEP)
+		player._physics_process(TICK)
+		_move_real_body_one_step(player, player.velocity * TICK)
 		var her := player.global_position
 		var tile := scene.world_to_tile(her)
-		events._physics_process(STEP)
+		events._physics_process(TICK)
 		man.player_running = running
-		man._process(STEP)
-		elapsed += STEP
+		# The catch is the tick's: where he was drawn when the tick ran.
+		var caught := man.is_lethal_at(her)
+		if met["ran"]:
+			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
+		man._process(FRAME)
+		if met["ran"]:
+			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
+		man._process(FRAME)
+		elapsed += TICK
 		if not turned and tile.y - origin.y >= int(walk[0]) and her.y >= scene.tile_to_world(tile).y:
 			turned = true
 			_hold_keys(walk[1], running)
@@ -1299,7 +1319,7 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
 				_hold_keys(walk[1], true)
 		if met["ran"]:
 			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
-		if man.is_lethal_at(her):
+		if caught:
 			met["outcome"] = "caught"
 			break
 		if tile == door:
