@@ -13,7 +13,9 @@ extends RefCounted
 ## is stepped at the game's rhythm: a 30Hz physics tick moves her, tells him where she is and checks
 ## the catch, and he moves in `_process()` on two 60fps frames between ticks. A
 ## line is `TRIGGER seed <s> <route> <pace> charged at (<local tile units>) <d>px from him,
-## <outcome> at <t>s, <a>s after he ran, closest <c>px`. The routes all start on the second floor's
+## <outcome> at <t>s, <a>s after he ran, closest <c>px drawn, <k>px on a tick (the catch is 28px)`,
+## where <c> is the nearest he is drawn to her centre and <k> the nearest on a physics tick, the only
+## moment the catch is checked. The routes all start on the second floor's
 ## door of his shaft, the way in from the second floor's hallway:
 ##
 ## - `turn-10`, `turn-11`: down the landing, then left onto the second flight from that row of it

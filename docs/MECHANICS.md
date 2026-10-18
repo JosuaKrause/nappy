@@ -1581,11 +1581,13 @@ nearest corridor door and let him pass. **He starts his run once she is within 4
 flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
 walker is caught when she takes the flight holding plain left from the row level with its head tread
 or the row below, or down-left from the landing tile between the two flights. A walker who holds
-plain left from that landing tile gets through, and the margins are thin (on the tightest runner's line, walking until he runs, then running, and turning plain left at row 11's centre, he is drawn about 25px
-from her centre (24.6px), inside his 28px catch, and she clears it on the tick at 28.6px, by 0.6px; she is caught if she starts running 0.3s late). In the stairwell his warning is off screen, and only the
-edge badge shows his charge once he runs; the player accepted both *(inbox #782)*. So the side she
-switched to is not a side she can settle on, which is the whole point of him: the
-way down is a sequence of crossings rather than one.
+plain left from that landing tile gets through, and the margins are thin (on the tightest runner's
+line, walking until he runs, then running, and turning plain left at row 11's centre, he is drawn
+about 25px from her centre (24.6px), inside his 28px catch, and she clears it on the tick at 28.6px,
+by 0.6px; she is caught if she starts running 0.3s late). In the stairwell his warning is off screen,
+and only the edge badge shows his charge once he runs; the player accepted both *(inbox #782)*. So
+the side she switched to is not a side she can settle on, which is the whole point of him: the way
+down is a sequence of crossings rather than one.
 
 **On a stair she walks the stair's own 45 degrees** *(inbox #783)*, **and off a stair the way
 she presses** *(inbox #782)*. On a flight tile any press with a leftward part walks 45 degrees to

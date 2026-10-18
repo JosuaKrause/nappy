@@ -55,7 +55,9 @@ edge badge shows his charge once he runs.
 - `guard-trigger-3.txt`: what `tests/probes/escape_stairwell_guard_trigger.gd` prints at the
   game's rhythm (a 30Hz physics tick for her, the catch and where he is told she is, and him moving
   on two 60fps frames between ticks), for the claim above, plain left from the landing tile between
-  the two flights (`turn-9-left`) included. Line format as `guard-trigger-2.txt`'s. The building is
+  the two flights (`turn-9-left`) included. Each line ends `closest <c>px drawn, <k>px on a tick (the catch is 28px)`: the nearest he is
+  drawn to her centre, then the nearest on a physics tick, the only moment the catch is checked
+  (`guard-trigger-2.txt`'s lines end `closest <c>px`). The building is
   not seeded, so one seed is printed. Rerun: `tools/test.sh probes/escape_stairwell_guard_trigger.gd`.
 - `guard-trigger-2.txt`: what the probe printed with her and him stepped together at 60Hz, on three
   seeds, before it was changed to the game's rhythm; the window it gives (420 to 432px) is that
