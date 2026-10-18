@@ -243,7 +243,9 @@ const CLOSE_FLASHES_PER_SECOND := 7.0
 ## cues in one column collide**: the mark means *this will end your day*, and a cue about the meter
 ## that can be read as part of it takes that meaning away from it.
 ##
-## The lift clears the pram's own art, `PRAM_ART_HEIGHT` tall from its ground point. The lift and
+## The lift clears the pram's own art, `PRAM_ART_HEIGHT` tall from its ground point; the
+## clearance it leaves over that art (`BABY_CUE_LIFT - PRAM_ART_HEIGHT`, 6px) is the clearance every
+## facing keeps over whatever the cue sits on, her head included (`baby_cue_lift()`). The lift and
 ## the step aside are set by looking: any less and the cue is inside the hood and reads as clutter
 ## on the pram, and with no lateral step it is over her chest walking south and over her head
 ## walking north.
@@ -822,8 +824,8 @@ func _pram_shares_her_column() -> bool:
 ## How far above the pram's ground point the cue floats, which differs on exactly one of the eight
 ## facings.
 ##
-## `BABY_CUE_LIFT` clears the pram's own art, which is all it has to do when the pram is the
-## topmost thing under the cue. Walking **due south** it is not: the pram is in front of her and
+## `BABY_CUE_LIFT` is measured from the pram's ground point and clears the pram's own art, which is
+## all it has to do when the pram is the topmost thing under the cue. Walking **due south** it is not: the pram is in front of her and
 ## therefore *lower* on the screen, so a cue lifted off the pram alone lands over her chest. There
 ## the cue is measured from her instead: `FIGURE_HEIGHT` plus the same clearance
 ## (`BABY_CUE_LIFT` less the pram art's height) that the other facings keep over the pram, so it
@@ -834,13 +836,15 @@ func _pram_shares_her_column() -> bool:
 ## pram already has enough horizontal separation to sit outside her column, and the extra height
 ## would lift the cue off a pram it is supposed to be sitting on.
 ##
-## Carrying has no pram at all and keeps the full `BABY_CUE_LIFT + FIGURE_HEIGHT` above her feet
-## on every facing.
+## Carrying has no pram at all, so the cue is measured from her on every facing: `FIGURE_HEIGHT`
+## plus that same clearance above her feet, just over her head. Every carrying sprite is at most
+## `FIGURE_HEIGHT` tall (45px for the mother, 46px for the father), so it never overlaps the art.
 func baby_cue_lift() -> float:
-	# Carrying, the cue is over her head on every facing. Lifted only walking south, it dropped to
-	# her chest the moment a turn crossed the horizontal and jumped back on the way out.
+	# Carrying, the cue is just over her head on every facing. Lifted only walking south, it dropped
+	# to her chest the moment a turn crossed the horizontal and jumped back on the way out; lifted
+	# a whole `BABY_CUE_LIFT` over her head, it floated a pram's height above it.
 	if carrying:
-		return BABY_CUE_LIFT + FIGURE_HEIGHT
+		return FIGURE_HEIGHT + (BABY_CUE_LIFT - PRAM_ART_HEIGHT)
 	if _pram_shares_her_column() and facing.y > 0.0:
 		return FIGURE_HEIGHT + (BABY_CUE_LIFT - PRAM_ART_HEIGHT) + pram_draw_offset().y
 	return BABY_CUE_LIFT
