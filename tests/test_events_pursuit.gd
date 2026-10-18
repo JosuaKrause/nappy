@@ -988,6 +988,11 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 				"running inside %s's radius as it warns does not call it off: she stands after, " % name
 				+ "and it charges once its warning has run and catches her (ran %.1fs, %.0fpx at most)"
 				% [ran_inside["ran_for"], ran_inside["farthest"]])
+		var again := _back_inside_rig(t, def)
+		t.check(again["waited"] and absf(float(again["second_warning"]) - def.warns_for) <= 2.0 * STEP,
+				"leaving %s's radius %.2fs into its warning and coming back, its clock starts " % [name,
+				again["first_warning"]] + "again from zero: charged %.2fs after she is back inside"
+				% again["second_warning"])
 		var charged_then_walked := _standing_rig(t, def, 0.0, 0.0, 10.0, 40.0,
 				INF, Tuning.WALK_SPEED)
 		t.check(charged_then_walked["caught"] and not charged_then_walked["gave_up"],
@@ -1033,6 +1038,41 @@ func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
 			"it begins one at its charge, once its warning has run (%s)" % str(began))
 	EventBus.pursuit_began.disconnect(listen)
 	dog.free()
+
+## **She leaves while he warns and comes back** (review 4 of PR #781): she stands 10px inside his
+## radius until three quarters of his warning has run, steps 20px outside it (measured from where he
+## notices from, `body_position()`, which a robber's warning walk moves) until he waits again, then
+## steps back 10px inside and stands. Reports how long the first warning ran, whether he waited
+## again, and how long after she was back inside he charged (`INF` if never).
+func _back_inside_rig(t, def: EventDef) -> Dictionary:
+	var instance := _instance(t, def, Vector2.ZERO)
+	instance._attach_the_band()
+	var result := {"first_warning": 0.0, "waited": false, "second_warning": INF}
+	var stand_at := func(off: float) -> void:
+		instance.player_at = instance.body_position() + Vector2(0.0, def.pursues_within + off)
+	stand_at.call(-10.0)
+	var elapsed := 0.0
+	while elapsed < def.warns_for * 0.75 and not instance.is_finished:
+		instance._process(STEP)
+		if instance.is_telegraphing():
+			elapsed += STEP
+	result["first_warning"] = elapsed
+	stand_at.call(20.0)
+	for i in 30:
+		instance._process(STEP)
+		if instance.is_waiting():
+			result["waited"] = true
+			break
+	stand_at.call(-10.0)
+	var back := 0.0
+	while back < def.warns_for * 3.0 and not instance.is_finished:
+		instance._process(STEP)
+		back += STEP
+		if not instance.is_waiting() and not instance.is_telegraphing():
+			result["second_warning"] = back
+			break
+	instance.free()
+	return result
 
 ## **She runs inside his radius while he warns, then stands** (review 4 of PR #781): she stands
 ## half his radius out and to one side, he notices her, she runs across in front of him for half a
