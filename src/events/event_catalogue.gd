@@ -3053,14 +3053,25 @@ static func _masked_pursuer() -> EventDef:
 	# And the warning is spent standing, not approaching: a man already running when he first
 	# becomes visible has given no notice at all.
 	def.still_while_telegraphing = true
-	# **He warns while she is in the stairwell, and runs once she is within this of him** *(inbox
-	# #764, the player: "player should have to run to the door")*: no clock, so his `telegraph_time`
-	# above is read only by the telegraph contract. 150px is measured on the escape as built
-	# (`tests/test_interior.gd`): she meets it walking down the last flight to the lobby, past the
-	# first floor's door, which is then 199px back up his line — a walker turning for it is caught,
-	# a runner reaches it with about 1.7s to spare at 49px from him at the closest when she turns
-	# within 0.3s; at 155px a walker gets there too.
-	def.charges_within = 150.0
+	# **He warns while she is in the stairwell, and runs once she is within this of him**, so that
+	# she has to run to the first floor's door *(inbox #764, the player: "player should have to run
+	# to the door")* rather than walk down to it and out to the other shaft without meeting him
+	# *(inbox #782: the player wants the radius bigger to achieve that, and him not moved)*. No
+	# clock, so his `telegraph_time` above is read only by the telegraph contract. 426px is
+	# measured on the escape as built (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as
+	# the game steps, a 30Hz physics tick with the catch on it and him moving on drawn frames):
+	# coming down from the second floor's door she meets it at the head of the second flight, and
+	# making for the first floor's door from there a runner gets through on every line onto the
+	# flight, while a walker is caught holding plain left from the row level with the flight's head
+	# tread or the row below it, or down-left from the landing tile between the two flights. **A
+	# walker holding plain left from that landing tile gets through**, the margins are thin (a
+	# runner who walks until he runs, then runs, turning plain left at row 11's centre, is drawn
+	# about 25px from him (24.6px at 60, 120 and 150fps) inside his 28px catch and clears it on the
+	# tick at 28.6px, by 0.6px; she is caught if she starts running 0.3s late, and a runner who
+	# runs the whole way is caught at 440px), and in the stairwell his warning is off screen, since the view reaches 180px from her
+	# and he starts about 400px below; only the edge badge shows his charge once he runs. The player
+	# accepted both (inbox #782).
+	def.charges_within = 426.0
 	def.hard_fail = true
 	return def
 

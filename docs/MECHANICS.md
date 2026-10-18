@@ -1579,10 +1579,38 @@ where the masked man is.
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
 of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
 as she is in the building. The answer is the one the row is built around — step through the
-nearest corridor door and let him pass — and it stays available because from every cell of his
-line a door is well under the three and a half seconds he spends standing still before he moves.
-So the side she switched to is not a side she can settle on, which is the whole point of him: the
-way down is a sequence of crossings rather than one.
+nearest corridor door and let him pass. **He starts his run once she is within 426px of him**
+*(inbox #764, inbox #782)*, which coming down from the second floor is at the head of the second
+flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
+walker is caught when she takes the flight holding plain left from the row level with its head tread
+or the row below, or down-left from the landing tile between the two flights. A walker who holds
+plain left from that landing tile gets through, and the margins are thin (on the tightest runner's
+line, walking until he runs, then running, and turning plain left at row 11's centre, he is drawn
+about 25px from her centre (24.6px), inside his 28px catch, and she clears it on the tick at 28.6px,
+by 0.6px; she is caught if she starts running 0.3s late). In the stairwell his warning is off screen,
+and only the edge badge shows his charge once he runs; the player accepted both *(inbox #782)*. So
+the side she switched to is not a side she can settle on, which is the whole point of him: the way
+down is a sequence of crossings rather than one.
+
+**On a stair she walks the stair's own 45 degrees** *(inbox #783)*, **and off a stair the way
+she presses** *(inbox #782)*. On a flight tile any press with a leftward part walks 45 degrees to
+the left, down if the flight descends to the left and up if it climbs, and a rightward one
+likewise; a pure up or down press on a flight moves nowhere, as there is no floor beside the tread
+to step onto. On a landing, as in a hallway, a press is not turned, so stepping off a landing onto
+a flight is a level step until she is on its first tread (`InteriorScene.slope_dir_at()`, read by
+`Stroller._redirect_along_a_flight()`).
+
+**And her body goes where she is steered, because a flight's edges are straight.** The solid
+cells either side of a flight meet it at square corners only 22.6px apart across the slope, against
+her 28px body, so with whole-cell walls she could pass each pair of corners only nearly flat or
+nearly straight down, and a held press would walk a zigzag. Each of those cells has the part inside the
+flight's band cut off along the slope (`InteriorScene._blocker_outline()`), leaving straight edges
+51px apart across it (`InteriorScene.FLIGHT_HALF_WIDTH`). From the landing tile level with a
+flight's first or last tread she walks the whole flight within two degrees of 45 and touches neither
+edge; from the landing tile one row below that, she slides along the stair side for about a tile
+before she is on the line. `tests/test_interior.gd` pins the steering of every tile of both
+shafts for eight directions and an analog diagonal, and her body's heading on every flight, down and
+up; `tests/probes/escape_stairs_heading.gd` prints both.
 
 **The building is dark, because it is the night of the blackout.** *(The player, 2026-09-20: "it
 can be gloomy in the hallways and basement and maybe emergency (red?) lighting in the stairs".)*
