@@ -1581,6 +1581,18 @@ line a door is well under the three and a half seconds he spends standing still 
 So the side she switched to is not a side she can settle on, which is the whole point of him: the
 way down is a sequence of crossings rather than one.
 
+**On a stair she walks the stair's own 45 degrees** *(inbox #783, the player: walking on the stairs
+should snap to the 45 degree angle up or down as the flight runs)*. Any press with a leftward
+component walks up-left or down-left, whichever way that flight runs, and a rightward one up-right
+or down-right; a pure up or down press on a flight moves nowhere, as there is no floor beside the
+tread to step onto. It holds on the landing tiles too, so the first step off a landing and the last
+onto one are 45 degrees: a landing tile steers by the flight its pressed side steps onto
+(`InteriorScene.slope_dir_at()`, read by `Stroller._redirect_along_a_flight()`), which for the
+second row of a landing is the flight beside it. The middle of a two-row landing has a flight above
+and one below on the same side and keeps the press as it was. `tests/test_interior.gd` pins the
+heading of every tile of both shafts, and `tests/probes/escape_stairs_heading.gd` prints it for
+eight directions and an analog diagonal.
+
 **The building is dark, because it is the night of the blackout.** *(The player, 2026-09-20: "it
 can be gloomy in the hallways and basement and maybe emergency (red?) lighting in the stairs".)*
 Nothing in it has power: the wall lamps and the chandeliers are drawn unlit, and the part she is in

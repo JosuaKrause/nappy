@@ -1,0 +1,1062 @@
+atlases: baking (png mode) -- no bake manifest: nothing has been baked yet
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+bake_atlases: buildings          73 members  570x394  extrude padding  88% fill
+bake_atlases: crowd              35 members  194x250  transparent padding  92% fill
+bake_atlases: decoration         15 members  144x196  transparent padding  69% fill
+bake_atlases: events            426 members  701x1250  transparent padding  92% fill
+bake_atlases: father             30 members  168x242  transparent padding  96% fill
+bake_atlases: ground             43 members  172x308  extrude padding  94% fill
+bake_atlases: interior           41 members  466x326  extrude padding  94% fill
+bake_atlases: mother             30 members  168x242  transparent padding  96% fill
+bake_atlases: street_kit         24 members  394x454  transparent padding  88% fill
+bake_atlases: stroller            5 members  104x66  transparent padding  83% fill
+bake_atlases: ui                 13 members  392x392  transparent padding  91% fill
+bake_atlases: 735 regions over 11 pages in png mode, 4038 ms
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:731)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:734)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:735)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:736)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:739)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:740)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:741)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:742)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:747)
+SCRIPT ERROR: Parse Error: Assigned value for constant "ALLEY_CHANCE" isn't a constant expression.
+          at: GDScript::reload (res://src/autoload/tuning.gd:730)
+SCRIPT ERROR: Parse Error: Identifier "CrowdLanes" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2304)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "lane_gap" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2304)
+SCRIPT ERROR: Parse Error: Identifier "CrowdAgent" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2305)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "crossing_run" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/tuning.gd:2305)
+ERROR: Failed to load script "res://src/autoload/tuning.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/tuning.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/event_bus.gd:11)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/event_bus.gd:30)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/event_bus.gd:35)
+ERROR: Failed to load script "res://src/autoload/event_bus.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/event_bus.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "TelemetryLog" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:37)
+SCRIPT ERROR: Parse Error: Could not find type "TelemetryLog" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:296)
+SCRIPT ERROR: Parse Error: Could not find type "CityMap" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:578)
+SCRIPT ERROR: Parse Error: Could not find type "RoadClosure" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:578)
+SCRIPT ERROR: Parse Error: Could not find type "RouteTree" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:579)
+SCRIPT ERROR: Parse Error: Could not find type "EventScheduler" in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:579)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:103)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryLog" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:157)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryLog" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:179)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:208)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:236)
+SCRIPT ERROR: Parse Error: Identifier "AutoScreenshot" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:462)
+SCRIPT ERROR: Parse Error: Identifier "RouteTree" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:585)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "drawn" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:585)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryMap" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:586)
+SCRIPT ERROR: Parse Error: Identifier "AutoScreenshot" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/telemetry.gd:596)
+ERROR: Failed to load script "res://src/autoload/telemetry.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/telemetry.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:13)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:13)
+SCRIPT ERROR: Parse Error: Identifier "CityState" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:108)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "city_state" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/game_state.gd:108)
+SCRIPT ERROR: Parse Error: Identifier "PosterState" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:114)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "posters" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/game_state.gd:114)
+SCRIPT ERROR: Parse Error: Identifier "PelicanState" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:119)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "pelican" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/game_state.gd:119)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:366)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:471)
+SCRIPT ERROR: Parse Error: Identifier "TelemetryLog" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:237)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:248)
+SCRIPT ERROR: Parse Error: Identifier "GameSave" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:325)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:367)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:385)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:403)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:403)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:441)
+SCRIPT ERROR: Parse Error: Identifier "GameSave" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:462)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:481)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "run_ended".
+          at: GDScript::reload (res://src/autoload/game_state.gd:484)
+SCRIPT ERROR: Parse Error: Identifier "GameSave" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:491)
+SCRIPT ERROR: Parse Error: Identifier "ResistanceHappenings" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:521)
+SCRIPT ERROR: Parse Error: Identifier "ResistanceSteps" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:523)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "warning" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/game_state.gd:523)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/game_state.gd:754)
+ERROR: Failed to load script "res://src/autoload/game_state.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/game_state.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:226)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:237)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:480)
+SCRIPT ERROR: Parse Error: Could not find type "GameEnums" in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:483)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "day_ended".
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:85)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "run_ended".
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:87)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:124)
+SCRIPT ERROR: Parse Error: Identifier "DevFlags" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:173)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:227)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:241)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:241)
+SCRIPT ERROR: Parse Error: Identifier "ControlsMode" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:275)
+SCRIPT ERROR: Parse Error: Identifier "ResistanceSteps" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:291)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "data" variable because the value doesn't have a set type.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:291)
+SCRIPT ERROR: Parse Error: Identifier "GameEnums" not declared in the current scope.
+          at: GDScript::reload (res://src/autoload/visit_counter.gd:481)
+ERROR: Failed to load script "res://src/autoload/visit_counter.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: Failed to instantiate an autoload, script 'res://src/autoload/visit_counter.gd' does not inherit from 'Node'.
+   at: start (main/main.cpp:4539)
+
+The pages above were baked correctly. The errors above them are the engine loading the game's
+own scripts -- this wrapper starts Godot with --script, which loads every autoload first -- on a
+checkout with no .godot/ to resolve their class_names against, which is every fresh clone and
+every new worktree. The bake reads its sources directly and builds nothing out of those classes,
+so its pages are unaffected.
+
+Run tools/check.sh: it bakes (nothing to redo, the pages above are current) and then runs the
+import pass the engine's own errors above are missing.
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+STAIRS left STAIRWELL_FLOOR (65, 2) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (65, 2) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (65, 2) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (65, 2) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (65, 2) up-right steer -45.0 moved -45.0
+STAIRS left STAIRWELL_FLOOR (65, 2) down-right steer 45.0 moved 45.0
+STAIRS left STAIRWELL_FLOOR (65, 2) up-left steer -135.0 moved -125.0
+STAIRS left STAIRWELL_FLOOR (65, 2) down-left steer 135.0 moved 125.0
+STAIRS left STAIRWELL_FLOOR (65, 2) analog right-up steer -18.0 moved -18.0
+STAIRS left STAIR_TOP_E (66, 2) right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (66, 2) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (66, 2) up steer none moved none
+STAIRS left STAIR_TOP_E (66, 2) down steer none moved none
+STAIRS left STAIR_TOP_E (66, 2) up-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (66, 2) down-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (66, 2) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (66, 2) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (66, 2) analog right-up steer 45.0 moved 55.0
+STAIRS left STAIRWELL_FLOOR (65, 3) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (65, 3) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (65, 3) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (65, 3) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (65, 3) up-right steer -45.0 moved -45.0
+STAIRS left STAIRWELL_FLOOR (65, 3) down-right steer 45.0 moved 35.0
+STAIRS left STAIRWELL_FLOOR (65, 3) up-left steer -135.0 moved -125.0
+STAIRS left STAIRWELL_FLOOR (65, 3) down-left steer 135.0 moved 135.0
+STAIRS left STAIRWELL_FLOOR (65, 3) analog right-up steer -18.0 moved -18.0
+STAIRS left STAIR_MIDDLE_E (66, 3) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (66, 3) left steer -135.0 moved -135.0
+STAIRS left STAIR_MIDDLE_E (66, 3) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (66, 3) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (66, 3) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (66, 3) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (66, 3) up-left steer -135.0 moved -135.0
+STAIRS left STAIR_MIDDLE_E (66, 3) down-left steer -135.0 moved -135.0
+STAIRS left STAIR_MIDDLE_E (66, 3) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIR_TOP_E (67, 3) right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (67, 3) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (67, 3) up steer none moved none
+STAIRS left STAIR_TOP_E (67, 3) down steer none moved none
+STAIRS left STAIR_TOP_E (67, 3) up-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (67, 3) down-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (67, 3) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (67, 3) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (67, 3) analog right-up steer 45.0 moved 55.0
+STAIRS left STAIR_MIDDLE_E (67, 4) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (67, 4) left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (67, 4) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (67, 4) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (67, 4) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (67, 4) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (67, 4) up-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (67, 4) down-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (67, 4) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIR_TOP_E (68, 4) right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (68, 4) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (68, 4) up steer none moved none
+STAIRS left STAIR_TOP_E (68, 4) down steer none moved none
+STAIRS left STAIR_TOP_E (68, 4) up-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (68, 4) down-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (68, 4) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (68, 4) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (68, 4) analog right-up steer 45.0 moved 55.0
+STAIRS left STAIR_MIDDLE_E (68, 5) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (68, 5) left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (68, 5) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (68, 5) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (68, 5) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (68, 5) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (68, 5) up-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (68, 5) down-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (68, 5) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIR_TOP_E (69, 5) right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (69, 5) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (69, 5) up steer none moved none
+STAIRS left STAIR_TOP_E (69, 5) down steer none moved none
+STAIRS left STAIR_TOP_E (69, 5) up-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (69, 5) down-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (69, 5) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (69, 5) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (69, 5) analog right-up steer 45.0 moved 55.0
+STAIRS left STAIR_MIDDLE_E (69, 6) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (69, 6) left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (69, 6) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (69, 6) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (69, 6) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (69, 6) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (69, 6) up-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (69, 6) down-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (69, 6) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIR_TOP_E (70, 6) right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (70, 6) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (70, 6) up steer none moved none
+STAIRS left STAIR_TOP_E (70, 6) down steer none moved none
+STAIRS left STAIR_TOP_E (70, 6) up-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (70, 6) down-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (70, 6) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (70, 6) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (70, 6) analog right-up steer 45.0 moved 55.0
+STAIRS left STAIR_MIDDLE_E (70, 7) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (70, 7) left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (70, 7) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (70, 7) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (70, 7) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (70, 7) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (70, 7) up-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (70, 7) down-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (70, 7) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIR_TOP_E (71, 7) right steer 45.0 moved 45.0
+STAIRS left STAIR_TOP_E (71, 7) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (71, 7) up steer none moved none
+STAIRS left STAIR_TOP_E (71, 7) down steer none moved none
+STAIRS left STAIR_TOP_E (71, 7) up-right steer 45.0 moved 45.0
+STAIRS left STAIR_TOP_E (71, 7) down-right steer 45.0 moved 45.0
+STAIRS left STAIR_TOP_E (71, 7) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (71, 7) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (71, 7) analog right-up steer 45.0 moved 45.0
+STAIRS left STAIR_MIDDLE_E (71, 8) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (71, 8) left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (71, 8) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (71, 8) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (71, 8) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (71, 8) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (71, 8) up-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (71, 8) down-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (71, 8) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIRWELL_FLOOR (72, 8) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (72, 8) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (72, 8) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (72, 8) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (72, 8) up-right steer -45.0 moved -55.0
+STAIRS left STAIRWELL_FLOOR (72, 8) down-right steer 45.0 moved 55.0
+STAIRS left STAIRWELL_FLOOR (72, 8) up-left steer -135.0 moved -135.0
+STAIRS left STAIRWELL_FLOOR (72, 8) down-left steer 135.0 moved 135.0
+STAIRS left STAIRWELL_FLOOR (72, 8) analog right-up steer -18.0 moved -33.0
+STAIRS left STAIRWELL_FLOOR (72, 9) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (72, 9) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (72, 9) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (72, 9) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (72, 9) up-right steer -45.0 moved -55.0
+STAIRS left STAIRWELL_FLOOR (72, 9) down-right steer 45.0 moved 55.0
+STAIRS left STAIRWELL_FLOOR (72, 9) up-left steer -135.0 moved -125.0
+STAIRS left STAIRWELL_FLOOR (72, 9) down-left steer 135.0 moved 125.0
+STAIRS left STAIRWELL_FLOOR (72, 9) analog right-up steer -18.0 moved -33.0
+STAIRS left STAIR_TOP_W (71, 10) right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (71, 10) left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (71, 10) up steer none moved none
+STAIRS left STAIR_TOP_W (71, 10) down steer none moved none
+STAIRS left STAIR_TOP_W (71, 10) up-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (71, 10) down-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (71, 10) up-left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (71, 10) down-left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (71, 10) analog right-up steer -45.0 moved -35.0
+STAIRS left STAIRWELL_FLOOR (72, 10) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (72, 10) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (72, 10) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (72, 10) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (72, 10) up-right steer -45.0 moved -55.0
+STAIRS left STAIRWELL_FLOOR (72, 10) down-right steer 45.0 moved 55.0
+STAIRS left STAIRWELL_FLOOR (72, 10) up-left steer -135.0 moved -135.0
+STAIRS left STAIRWELL_FLOOR (72, 10) down-left steer 135.0 moved 135.0
+STAIRS left STAIRWELL_FLOOR (72, 10) analog right-up steer -18.0 moved -33.0
+STAIRS left STAIR_TOP_W (70, 11) right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (70, 11) left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (70, 11) up steer none moved none
+STAIRS left STAIR_TOP_W (70, 11) down steer none moved none
+STAIRS left STAIR_TOP_W (70, 11) up-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (70, 11) down-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (70, 11) up-left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (70, 11) down-left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (70, 11) analog right-up steer -45.0 moved -35.0
+STAIRS left STAIR_MIDDLE_W (71, 11) right steer -45.0 moved -45.0
+STAIRS left STAIR_MIDDLE_W (71, 11) left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (71, 11) up steer none moved none
+STAIRS left STAIR_MIDDLE_W (71, 11) down steer none moved none
+STAIRS left STAIR_MIDDLE_W (71, 11) up-right steer -45.0 moved -45.0
+STAIRS left STAIR_MIDDLE_W (71, 11) down-right steer -45.0 moved -45.0
+STAIRS left STAIR_MIDDLE_W (71, 11) up-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (71, 11) down-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (71, 11) analog right-up steer -45.0 moved -45.0
+STAIRS left STAIRWELL_FLOOR (72, 11) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (72, 11) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (72, 11) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (72, 11) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (72, 11) up-right steer -45.0 moved -55.0
+STAIRS left STAIRWELL_FLOOR (72, 11) down-right steer 45.0 moved 45.0
+STAIRS left STAIRWELL_FLOOR (72, 11) up-left steer -135.0 moved -135.0
+STAIRS left STAIRWELL_FLOOR (72, 11) down-left steer 135.0 moved 145.0
+STAIRS left STAIRWELL_FLOOR (72, 11) analog right-up steer -18.0 moved -33.0
+STAIRS left STAIR_TOP_W (69, 12) right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (69, 12) left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (69, 12) up steer none moved none
+STAIRS left STAIR_TOP_W (69, 12) down steer none moved none
+STAIRS left STAIR_TOP_W (69, 12) up-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (69, 12) down-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (69, 12) up-left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (69, 12) down-left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (69, 12) analog right-up steer -45.0 moved -35.0
+STAIRS left STAIR_MIDDLE_W (70, 12) right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (70, 12) left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (70, 12) up steer none moved none
+STAIRS left STAIR_MIDDLE_W (70, 12) down steer none moved none
+STAIRS left STAIR_MIDDLE_W (70, 12) up-right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (70, 12) down-right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (70, 12) up-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (70, 12) down-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (70, 12) analog right-up steer -45.0 moved -55.0
+STAIRS left STAIR_TOP_W (68, 13) right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (68, 13) left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (68, 13) up steer none moved none
+STAIRS left STAIR_TOP_W (68, 13) down steer none moved none
+STAIRS left STAIR_TOP_W (68, 13) up-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (68, 13) down-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (68, 13) up-left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (68, 13) down-left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (68, 13) analog right-up steer -45.0 moved -35.0
+STAIRS left STAIR_MIDDLE_W (69, 13) right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (69, 13) left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (69, 13) up steer none moved none
+STAIRS left STAIR_MIDDLE_W (69, 13) down steer none moved none
+STAIRS left STAIR_MIDDLE_W (69, 13) up-right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (69, 13) down-right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (69, 13) up-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (69, 13) down-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (69, 13) analog right-up steer -45.0 moved -55.0
+STAIRS left STAIR_TOP_W (67, 14) right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (67, 14) left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (67, 14) up steer none moved none
+STAIRS left STAIR_TOP_W (67, 14) down steer none moved none
+STAIRS left STAIR_TOP_W (67, 14) up-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (67, 14) down-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (67, 14) up-left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (67, 14) down-left steer 135.0 moved 125.0
+STAIRS left STAIR_TOP_W (67, 14) analog right-up steer -45.0 moved -35.0
+STAIRS left STAIR_MIDDLE_W (68, 14) right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (68, 14) left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (68, 14) up steer none moved none
+STAIRS left STAIR_MIDDLE_W (68, 14) down steer none moved none
+STAIRS left STAIR_MIDDLE_W (68, 14) up-right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (68, 14) down-right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (68, 14) up-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (68, 14) down-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (68, 14) analog right-up steer -45.0 moved -55.0
+STAIRS left STAIR_TOP_W (66, 15) right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (66, 15) left steer 135.0 moved 135.0
+STAIRS left STAIR_TOP_W (66, 15) up steer none moved none
+STAIRS left STAIR_TOP_W (66, 15) down steer none moved none
+STAIRS left STAIR_TOP_W (66, 15) up-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (66, 15) down-right steer -45.0 moved -35.0
+STAIRS left STAIR_TOP_W (66, 15) up-left steer 135.0 moved 135.0
+STAIRS left STAIR_TOP_W (66, 15) down-left steer 135.0 moved 135.0
+STAIRS left STAIR_TOP_W (66, 15) analog right-up steer -45.0 moved -35.0
+STAIRS left STAIR_MIDDLE_W (67, 15) right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (67, 15) left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (67, 15) up steer none moved none
+STAIRS left STAIR_MIDDLE_W (67, 15) down steer none moved none
+STAIRS left STAIR_MIDDLE_W (67, 15) up-right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (67, 15) down-right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (67, 15) up-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (67, 15) down-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (67, 15) analog right-up steer -45.0 moved -55.0
+STAIRS left STAIRWELL_FLOOR (65, 16) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (65, 16) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (65, 16) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (65, 16) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (65, 16) up-right steer -45.0 moved -45.0
+STAIRS left STAIRWELL_FLOOR (65, 16) down-right steer 45.0 moved 45.0
+STAIRS left STAIRWELL_FLOOR (65, 16) up-left steer -135.0 moved -125.0
+STAIRS left STAIRWELL_FLOOR (65, 16) down-left steer 135.0 moved 125.0
+STAIRS left STAIRWELL_FLOOR (65, 16) analog right-up steer -18.0 moved -18.0
+STAIRS left STAIR_MIDDLE_W (66, 16) right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (66, 16) left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (66, 16) up steer none moved none
+STAIRS left STAIR_MIDDLE_W (66, 16) down steer none moved none
+STAIRS left STAIR_MIDDLE_W (66, 16) up-right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (66, 16) down-right steer -45.0 moved -55.0
+STAIRS left STAIR_MIDDLE_W (66, 16) up-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (66, 16) down-left steer 135.0 moved 145.0
+STAIRS left STAIR_MIDDLE_W (66, 16) analog right-up steer -45.0 moved -55.0
+STAIRS left STAIRWELL_FLOOR (65, 17) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (65, 17) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (65, 17) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (65, 17) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (65, 17) up-right steer -45.0 moved -55.0
+STAIRS left STAIRWELL_FLOOR (65, 17) down-right steer 45.0 moved 55.0
+STAIRS left STAIRWELL_FLOOR (65, 17) up-left steer -135.0 moved -125.0
+STAIRS left STAIRWELL_FLOOR (65, 17) down-left steer 135.0 moved 125.0
+STAIRS left STAIRWELL_FLOOR (65, 17) analog right-up steer -18.0 moved -33.0
+STAIRS left STAIRWELL_FLOOR (65, 18) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (65, 18) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (65, 18) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (65, 18) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (65, 18) up-right steer -45.0 moved -45.0
+STAIRS left STAIRWELL_FLOOR (65, 18) down-right steer 45.0 moved 45.0
+STAIRS left STAIRWELL_FLOOR (65, 18) up-left steer -135.0 moved -125.0
+STAIRS left STAIRWELL_FLOOR (65, 18) down-left steer 135.0 moved 125.0
+STAIRS left STAIRWELL_FLOOR (65, 18) analog right-up steer -18.0 moved -18.0
+STAIRS left STAIR_TOP_E (66, 18) right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (66, 18) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (66, 18) up steer none moved none
+STAIRS left STAIR_TOP_E (66, 18) down steer none moved none
+STAIRS left STAIR_TOP_E (66, 18) up-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (66, 18) down-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (66, 18) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (66, 18) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (66, 18) analog right-up steer 45.0 moved 55.0
+STAIRS left STAIRWELL_FLOOR (65, 19) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (65, 19) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (65, 19) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (65, 19) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (65, 19) up-right steer -45.0 moved -45.0
+STAIRS left STAIRWELL_FLOOR (65, 19) down-right steer 45.0 moved 35.0
+STAIRS left STAIRWELL_FLOOR (65, 19) up-left steer -135.0 moved -125.0
+STAIRS left STAIRWELL_FLOOR (65, 19) down-left steer 135.0 moved 135.0
+STAIRS left STAIRWELL_FLOOR (65, 19) analog right-up steer -18.0 moved -18.0
+STAIRS left STAIR_MIDDLE_E (66, 19) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (66, 19) left steer -135.0 moved -135.0
+STAIRS left STAIR_MIDDLE_E (66, 19) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (66, 19) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (66, 19) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (66, 19) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (66, 19) up-left steer -135.0 moved -135.0
+STAIRS left STAIR_MIDDLE_E (66, 19) down-left steer -135.0 moved -135.0
+STAIRS left STAIR_MIDDLE_E (66, 19) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIR_TOP_E (67, 19) right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (67, 19) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (67, 19) up steer none moved none
+STAIRS left STAIR_TOP_E (67, 19) down steer none moved none
+STAIRS left STAIR_TOP_E (67, 19) up-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (67, 19) down-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (67, 19) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (67, 19) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (67, 19) analog right-up steer 45.0 moved 55.0
+STAIRS left STAIR_MIDDLE_E (67, 20) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (67, 20) left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (67, 20) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (67, 20) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (67, 20) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (67, 20) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (67, 20) up-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (67, 20) down-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (67, 20) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIR_TOP_E (68, 20) right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (68, 20) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (68, 20) up steer none moved none
+STAIRS left STAIR_TOP_E (68, 20) down steer none moved none
+STAIRS left STAIR_TOP_E (68, 20) up-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (68, 20) down-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (68, 20) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (68, 20) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (68, 20) analog right-up steer 45.0 moved 55.0
+STAIRS left STAIR_MIDDLE_E (68, 21) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (68, 21) left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (68, 21) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (68, 21) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (68, 21) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (68, 21) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (68, 21) up-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (68, 21) down-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (68, 21) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIR_TOP_E (69, 21) right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (69, 21) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (69, 21) up steer none moved none
+STAIRS left STAIR_TOP_E (69, 21) down steer none moved none
+STAIRS left STAIR_TOP_E (69, 21) up-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (69, 21) down-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (69, 21) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (69, 21) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (69, 21) analog right-up steer 45.0 moved 55.0
+STAIRS left STAIR_MIDDLE_E (69, 22) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (69, 22) left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (69, 22) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (69, 22) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (69, 22) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (69, 22) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (69, 22) up-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (69, 22) down-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (69, 22) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIR_TOP_E (70, 22) right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (70, 22) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (70, 22) up steer none moved none
+STAIRS left STAIR_TOP_E (70, 22) down steer none moved none
+STAIRS left STAIR_TOP_E (70, 22) up-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (70, 22) down-right steer 45.0 moved 55.0
+STAIRS left STAIR_TOP_E (70, 22) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (70, 22) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (70, 22) analog right-up steer 45.0 moved 55.0
+STAIRS left STAIR_MIDDLE_E (70, 23) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (70, 23) left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (70, 23) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (70, 23) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (70, 23) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (70, 23) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (70, 23) up-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (70, 23) down-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (70, 23) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIR_TOP_E (71, 23) right steer 45.0 moved 45.0
+STAIRS left STAIR_TOP_E (71, 23) left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (71, 23) up steer none moved none
+STAIRS left STAIR_TOP_E (71, 23) down steer none moved none
+STAIRS left STAIR_TOP_E (71, 23) up-right steer 45.0 moved 45.0
+STAIRS left STAIR_TOP_E (71, 23) down-right steer 45.0 moved 45.0
+STAIRS left STAIR_TOP_E (71, 23) up-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (71, 23) down-left steer -135.0 moved -145.0
+STAIRS left STAIR_TOP_E (71, 23) analog right-up steer 45.0 moved 45.0
+STAIRS left STAIR_MIDDLE_E (71, 24) right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (71, 24) left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (71, 24) up steer none moved none
+STAIRS left STAIR_MIDDLE_E (71, 24) down steer none moved none
+STAIRS left STAIR_MIDDLE_E (71, 24) up-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (71, 24) down-right steer 45.0 moved 35.0
+STAIRS left STAIR_MIDDLE_E (71, 24) up-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (71, 24) down-left steer -135.0 moved -125.0
+STAIRS left STAIR_MIDDLE_E (71, 24) analog right-up steer 45.0 moved 35.0
+STAIRS left STAIRWELL_FLOOR (72, 24) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (72, 24) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (72, 24) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (72, 24) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (72, 24) up-right steer -45.0 moved -55.0
+STAIRS left STAIRWELL_FLOOR (72, 24) down-right steer 45.0 moved 55.0
+STAIRS left STAIRWELL_FLOOR (72, 24) up-left steer -135.0 moved -135.0
+STAIRS left STAIRWELL_FLOOR (72, 24) down-left steer 135.0 moved 135.0
+STAIRS left STAIRWELL_FLOOR (72, 24) analog right-up steer -18.0 moved -33.0
+STAIRS left STAIRWELL_FLOOR (72, 25) right steer 0.0 moved 0.0
+STAIRS left STAIRWELL_FLOOR (72, 25) left steer 180.0 moved 180.0
+STAIRS left STAIRWELL_FLOOR (72, 25) up steer -90.0 moved -90.0
+STAIRS left STAIRWELL_FLOOR (72, 25) down steer 90.0 moved 90.0
+STAIRS left STAIRWELL_FLOOR (72, 25) up-right steer -45.0 moved -55.0
+STAIRS left STAIRWELL_FLOOR (72, 25) down-right steer 45.0 moved 45.0
+STAIRS left STAIRWELL_FLOOR (72, 25) up-left steer -135.0 moved -125.0
+STAIRS left STAIRWELL_FLOOR (72, 25) down-left steer 135.0 moved 135.0
+STAIRS left STAIRWELL_FLOOR (72, 25) analog right-up steer -18.0 moved -33.0
+STAIRS right STAIRWELL_FLOOR (129, 2) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (129, 2) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (129, 2) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (129, 2) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (129, 2) up-right steer -45.0 moved -45.0
+STAIRS right STAIRWELL_FLOOR (129, 2) down-right steer 45.0 moved 45.0
+STAIRS right STAIRWELL_FLOOR (129, 2) up-left steer -135.0 moved -125.0
+STAIRS right STAIRWELL_FLOOR (129, 2) down-left steer 135.0 moved 125.0
+STAIRS right STAIRWELL_FLOOR (129, 2) analog right-up steer -18.0 moved -18.0
+STAIRS right STAIR_TOP_E (130, 2) right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (130, 2) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (130, 2) up steer none moved none
+STAIRS right STAIR_TOP_E (130, 2) down steer none moved none
+STAIRS right STAIR_TOP_E (130, 2) up-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (130, 2) down-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (130, 2) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (130, 2) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (130, 2) analog right-up steer 45.0 moved 55.0
+STAIRS right STAIRWELL_FLOOR (129, 3) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (129, 3) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (129, 3) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (129, 3) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (129, 3) up-right steer -45.0 moved -45.0
+STAIRS right STAIRWELL_FLOOR (129, 3) down-right steer 45.0 moved 35.0
+STAIRS right STAIRWELL_FLOOR (129, 3) up-left steer -135.0 moved -125.0
+STAIRS right STAIRWELL_FLOOR (129, 3) down-left steer 135.0 moved 135.0
+STAIRS right STAIRWELL_FLOOR (129, 3) analog right-up steer -18.0 moved -18.0
+STAIRS right STAIR_MIDDLE_E (130, 3) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (130, 3) left steer -135.0 moved -135.0
+STAIRS right STAIR_MIDDLE_E (130, 3) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (130, 3) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (130, 3) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (130, 3) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (130, 3) up-left steer -135.0 moved -135.0
+STAIRS right STAIR_MIDDLE_E (130, 3) down-left steer -135.0 moved -135.0
+STAIRS right STAIR_MIDDLE_E (130, 3) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIR_TOP_E (131, 3) right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (131, 3) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (131, 3) up steer none moved none
+STAIRS right STAIR_TOP_E (131, 3) down steer none moved none
+STAIRS right STAIR_TOP_E (131, 3) up-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (131, 3) down-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (131, 3) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (131, 3) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (131, 3) analog right-up steer 45.0 moved 55.0
+STAIRS right STAIR_MIDDLE_E (131, 4) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (131, 4) left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (131, 4) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (131, 4) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (131, 4) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (131, 4) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (131, 4) up-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (131, 4) down-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (131, 4) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIR_TOP_E (132, 4) right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (132, 4) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (132, 4) up steer none moved none
+STAIRS right STAIR_TOP_E (132, 4) down steer none moved none
+STAIRS right STAIR_TOP_E (132, 4) up-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (132, 4) down-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (132, 4) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (132, 4) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (132, 4) analog right-up steer 45.0 moved 55.0
+STAIRS right STAIR_MIDDLE_E (132, 5) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (132, 5) left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (132, 5) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (132, 5) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (132, 5) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (132, 5) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (132, 5) up-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (132, 5) down-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (132, 5) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIR_TOP_E (133, 5) right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (133, 5) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (133, 5) up steer none moved none
+STAIRS right STAIR_TOP_E (133, 5) down steer none moved none
+STAIRS right STAIR_TOP_E (133, 5) up-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (133, 5) down-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (133, 5) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (133, 5) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (133, 5) analog right-up steer 45.0 moved 55.0
+STAIRS right STAIR_MIDDLE_E (133, 6) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (133, 6) left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (133, 6) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (133, 6) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (133, 6) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (133, 6) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (133, 6) up-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (133, 6) down-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (133, 6) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIR_TOP_E (134, 6) right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (134, 6) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (134, 6) up steer none moved none
+STAIRS right STAIR_TOP_E (134, 6) down steer none moved none
+STAIRS right STAIR_TOP_E (134, 6) up-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (134, 6) down-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (134, 6) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (134, 6) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (134, 6) analog right-up steer 45.0 moved 55.0
+STAIRS right STAIR_MIDDLE_E (134, 7) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (134, 7) left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (134, 7) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (134, 7) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (134, 7) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (134, 7) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (134, 7) up-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (134, 7) down-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (134, 7) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIR_TOP_E (135, 7) right steer 45.0 moved 45.0
+STAIRS right STAIR_TOP_E (135, 7) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (135, 7) up steer none moved none
+STAIRS right STAIR_TOP_E (135, 7) down steer none moved none
+STAIRS right STAIR_TOP_E (135, 7) up-right steer 45.0 moved 45.0
+STAIRS right STAIR_TOP_E (135, 7) down-right steer 45.0 moved 45.0
+STAIRS right STAIR_TOP_E (135, 7) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (135, 7) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (135, 7) analog right-up steer 45.0 moved 45.0
+STAIRS right STAIR_MIDDLE_E (135, 8) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (135, 8) left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (135, 8) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (135, 8) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (135, 8) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (135, 8) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (135, 8) up-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (135, 8) down-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (135, 8) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIRWELL_FLOOR (136, 8) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (136, 8) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (136, 8) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (136, 8) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (136, 8) up-right steer -45.0 moved -55.0
+STAIRS right STAIRWELL_FLOOR (136, 8) down-right steer 45.0 moved 55.0
+STAIRS right STAIRWELL_FLOOR (136, 8) up-left steer -135.0 moved -135.0
+STAIRS right STAIRWELL_FLOOR (136, 8) down-left steer 135.0 moved 135.0
+STAIRS right STAIRWELL_FLOOR (136, 8) analog right-up steer -18.0 moved -33.0
+STAIRS right STAIRWELL_FLOOR (136, 9) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (136, 9) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (136, 9) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (136, 9) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (136, 9) up-right steer -45.0 moved -55.0
+STAIRS right STAIRWELL_FLOOR (136, 9) down-right steer 45.0 moved 55.0
+STAIRS right STAIRWELL_FLOOR (136, 9) up-left steer -135.0 moved -125.0
+STAIRS right STAIRWELL_FLOOR (136, 9) down-left steer 135.0 moved 125.0
+STAIRS right STAIRWELL_FLOOR (136, 9) analog right-up steer -18.0 moved -33.0
+STAIRS right STAIR_TOP_W (135, 10) right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (135, 10) left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (135, 10) up steer none moved none
+STAIRS right STAIR_TOP_W (135, 10) down steer none moved none
+STAIRS right STAIR_TOP_W (135, 10) up-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (135, 10) down-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (135, 10) up-left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (135, 10) down-left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (135, 10) analog right-up steer -45.0 moved -35.0
+STAIRS right STAIRWELL_FLOOR (136, 10) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (136, 10) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (136, 10) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (136, 10) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (136, 10) up-right steer -45.0 moved -55.0
+STAIRS right STAIRWELL_FLOOR (136, 10) down-right steer 45.0 moved 55.0
+STAIRS right STAIRWELL_FLOOR (136, 10) up-left steer -135.0 moved -135.0
+STAIRS right STAIRWELL_FLOOR (136, 10) down-left steer 135.0 moved 135.0
+STAIRS right STAIRWELL_FLOOR (136, 10) analog right-up steer -18.0 moved -33.0
+STAIRS right STAIR_TOP_W (134, 11) right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (134, 11) left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (134, 11) up steer none moved none
+STAIRS right STAIR_TOP_W (134, 11) down steer none moved none
+STAIRS right STAIR_TOP_W (134, 11) up-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (134, 11) down-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (134, 11) up-left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (134, 11) down-left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (134, 11) analog right-up steer -45.0 moved -35.0
+STAIRS right STAIR_MIDDLE_W (135, 11) right steer -45.0 moved -45.0
+STAIRS right STAIR_MIDDLE_W (135, 11) left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (135, 11) up steer none moved none
+STAIRS right STAIR_MIDDLE_W (135, 11) down steer none moved none
+STAIRS right STAIR_MIDDLE_W (135, 11) up-right steer -45.0 moved -45.0
+STAIRS right STAIR_MIDDLE_W (135, 11) down-right steer -45.0 moved -45.0
+STAIRS right STAIR_MIDDLE_W (135, 11) up-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (135, 11) down-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (135, 11) analog right-up steer -45.0 moved -45.0
+STAIRS right STAIRWELL_FLOOR (136, 11) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (136, 11) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (136, 11) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (136, 11) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (136, 11) up-right steer -45.0 moved -55.0
+STAIRS right STAIRWELL_FLOOR (136, 11) down-right steer 45.0 moved 45.0
+STAIRS right STAIRWELL_FLOOR (136, 11) up-left steer -135.0 moved -135.0
+STAIRS right STAIRWELL_FLOOR (136, 11) down-left steer 135.0 moved 145.0
+STAIRS right STAIRWELL_FLOOR (136, 11) analog right-up steer -18.0 moved -33.0
+STAIRS right STAIR_TOP_W (133, 12) right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (133, 12) left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (133, 12) up steer none moved none
+STAIRS right STAIR_TOP_W (133, 12) down steer none moved none
+STAIRS right STAIR_TOP_W (133, 12) up-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (133, 12) down-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (133, 12) up-left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (133, 12) down-left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (133, 12) analog right-up steer -45.0 moved -35.0
+STAIRS right STAIR_MIDDLE_W (134, 12) right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (134, 12) left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (134, 12) up steer none moved none
+STAIRS right STAIR_MIDDLE_W (134, 12) down steer none moved none
+STAIRS right STAIR_MIDDLE_W (134, 12) up-right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (134, 12) down-right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (134, 12) up-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (134, 12) down-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (134, 12) analog right-up steer -45.0 moved -55.0
+STAIRS right STAIR_TOP_W (132, 13) right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (132, 13) left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (132, 13) up steer none moved none
+STAIRS right STAIR_TOP_W (132, 13) down steer none moved none
+STAIRS right STAIR_TOP_W (132, 13) up-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (132, 13) down-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (132, 13) up-left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (132, 13) down-left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (132, 13) analog right-up steer -45.0 moved -35.0
+STAIRS right STAIR_MIDDLE_W (133, 13) right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (133, 13) left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (133, 13) up steer none moved none
+STAIRS right STAIR_MIDDLE_W (133, 13) down steer none moved none
+STAIRS right STAIR_MIDDLE_W (133, 13) up-right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (133, 13) down-right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (133, 13) up-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (133, 13) down-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (133, 13) analog right-up steer -45.0 moved -55.0
+STAIRS right STAIR_TOP_W (131, 14) right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (131, 14) left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (131, 14) up steer none moved none
+STAIRS right STAIR_TOP_W (131, 14) down steer none moved none
+STAIRS right STAIR_TOP_W (131, 14) up-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (131, 14) down-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (131, 14) up-left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (131, 14) down-left steer 135.0 moved 125.0
+STAIRS right STAIR_TOP_W (131, 14) analog right-up steer -45.0 moved -35.0
+STAIRS right STAIR_MIDDLE_W (132, 14) right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (132, 14) left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (132, 14) up steer none moved none
+STAIRS right STAIR_MIDDLE_W (132, 14) down steer none moved none
+STAIRS right STAIR_MIDDLE_W (132, 14) up-right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (132, 14) down-right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (132, 14) up-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (132, 14) down-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (132, 14) analog right-up steer -45.0 moved -55.0
+STAIRS right STAIR_TOP_W (130, 15) right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (130, 15) left steer 135.0 moved 135.0
+STAIRS right STAIR_TOP_W (130, 15) up steer none moved none
+STAIRS right STAIR_TOP_W (130, 15) down steer none moved none
+STAIRS right STAIR_TOP_W (130, 15) up-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (130, 15) down-right steer -45.0 moved -35.0
+STAIRS right STAIR_TOP_W (130, 15) up-left steer 135.0 moved 135.0
+STAIRS right STAIR_TOP_W (130, 15) down-left steer 135.0 moved 135.0
+STAIRS right STAIR_TOP_W (130, 15) analog right-up steer -45.0 moved -35.0
+STAIRS right STAIR_MIDDLE_W (131, 15) right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (131, 15) left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (131, 15) up steer none moved none
+STAIRS right STAIR_MIDDLE_W (131, 15) down steer none moved none
+STAIRS right STAIR_MIDDLE_W (131, 15) up-right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (131, 15) down-right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (131, 15) up-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (131, 15) down-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (131, 15) analog right-up steer -45.0 moved -55.0
+STAIRS right STAIRWELL_FLOOR (129, 16) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (129, 16) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (129, 16) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (129, 16) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (129, 16) up-right steer -45.0 moved -45.0
+STAIRS right STAIRWELL_FLOOR (129, 16) down-right steer 45.0 moved 45.0
+STAIRS right STAIRWELL_FLOOR (129, 16) up-left steer -135.0 moved -125.0
+STAIRS right STAIRWELL_FLOOR (129, 16) down-left steer 135.0 moved 125.0
+STAIRS right STAIRWELL_FLOOR (129, 16) analog right-up steer -18.0 moved -18.0
+STAIRS right STAIR_MIDDLE_W (130, 16) right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (130, 16) left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (130, 16) up steer none moved none
+STAIRS right STAIR_MIDDLE_W (130, 16) down steer none moved none
+STAIRS right STAIR_MIDDLE_W (130, 16) up-right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (130, 16) down-right steer -45.0 moved -55.0
+STAIRS right STAIR_MIDDLE_W (130, 16) up-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (130, 16) down-left steer 135.0 moved 145.0
+STAIRS right STAIR_MIDDLE_W (130, 16) analog right-up steer -45.0 moved -55.0
+STAIRS right STAIRWELL_FLOOR (129, 17) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (129, 17) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (129, 17) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (129, 17) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (129, 17) up-right steer -45.0 moved -55.0
+STAIRS right STAIRWELL_FLOOR (129, 17) down-right steer 45.0 moved 55.0
+STAIRS right STAIRWELL_FLOOR (129, 17) up-left steer -135.0 moved -125.0
+STAIRS right STAIRWELL_FLOOR (129, 17) down-left steer 135.0 moved 125.0
+STAIRS right STAIRWELL_FLOOR (129, 17) analog right-up steer -18.0 moved -33.0
+STAIRS right STAIRWELL_FLOOR (129, 18) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (129, 18) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (129, 18) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (129, 18) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (129, 18) up-right steer -45.0 moved -45.0
+STAIRS right STAIRWELL_FLOOR (129, 18) down-right steer 45.0 moved 45.0
+STAIRS right STAIRWELL_FLOOR (129, 18) up-left steer -135.0 moved -125.0
+STAIRS right STAIRWELL_FLOOR (129, 18) down-left steer 135.0 moved 125.0
+STAIRS right STAIRWELL_FLOOR (129, 18) analog right-up steer -18.0 moved -18.0
+STAIRS right STAIR_TOP_E (130, 18) right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (130, 18) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (130, 18) up steer none moved none
+STAIRS right STAIR_TOP_E (130, 18) down steer none moved none
+STAIRS right STAIR_TOP_E (130, 18) up-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (130, 18) down-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (130, 18) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (130, 18) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (130, 18) analog right-up steer 45.0 moved 55.0
+STAIRS right STAIRWELL_FLOOR (129, 19) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (129, 19) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (129, 19) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (129, 19) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (129, 19) up-right steer -45.0 moved -45.0
+STAIRS right STAIRWELL_FLOOR (129, 19) down-right steer 45.0 moved 35.0
+STAIRS right STAIRWELL_FLOOR (129, 19) up-left steer -135.0 moved -125.0
+STAIRS right STAIRWELL_FLOOR (129, 19) down-left steer 135.0 moved 135.0
+STAIRS right STAIRWELL_FLOOR (129, 19) analog right-up steer -18.0 moved -18.0
+STAIRS right STAIR_MIDDLE_E (130, 19) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (130, 19) left steer -135.0 moved -135.0
+STAIRS right STAIR_MIDDLE_E (130, 19) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (130, 19) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (130, 19) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (130, 19) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (130, 19) up-left steer -135.0 moved -135.0
+STAIRS right STAIR_MIDDLE_E (130, 19) down-left steer -135.0 moved -135.0
+STAIRS right STAIR_MIDDLE_E (130, 19) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIR_TOP_E (131, 19) right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (131, 19) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (131, 19) up steer none moved none
+STAIRS right STAIR_TOP_E (131, 19) down steer none moved none
+STAIRS right STAIR_TOP_E (131, 19) up-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (131, 19) down-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (131, 19) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (131, 19) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (131, 19) analog right-up steer 45.0 moved 55.0
+STAIRS right STAIR_MIDDLE_E (131, 20) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (131, 20) left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (131, 20) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (131, 20) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (131, 20) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (131, 20) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (131, 20) up-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (131, 20) down-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (131, 20) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIR_TOP_E (132, 20) right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (132, 20) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (132, 20) up steer none moved none
+STAIRS right STAIR_TOP_E (132, 20) down steer none moved none
+STAIRS right STAIR_TOP_E (132, 20) up-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (132, 20) down-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (132, 20) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (132, 20) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (132, 20) analog right-up steer 45.0 moved 55.0
+STAIRS right STAIR_MIDDLE_E (132, 21) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (132, 21) left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (132, 21) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (132, 21) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (132, 21) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (132, 21) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (132, 21) up-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (132, 21) down-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (132, 21) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIR_TOP_E (133, 21) right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (133, 21) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (133, 21) up steer none moved none
+STAIRS right STAIR_TOP_E (133, 21) down steer none moved none
+STAIRS right STAIR_TOP_E (133, 21) up-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (133, 21) down-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (133, 21) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (133, 21) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (133, 21) analog right-up steer 45.0 moved 55.0
+STAIRS right STAIR_MIDDLE_E (133, 22) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (133, 22) left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (133, 22) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (133, 22) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (133, 22) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (133, 22) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (133, 22) up-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (133, 22) down-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (133, 22) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIR_TOP_E (134, 22) right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (134, 22) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (134, 22) up steer none moved none
+STAIRS right STAIR_TOP_E (134, 22) down steer none moved none
+STAIRS right STAIR_TOP_E (134, 22) up-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (134, 22) down-right steer 45.0 moved 55.0
+STAIRS right STAIR_TOP_E (134, 22) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (134, 22) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (134, 22) analog right-up steer 45.0 moved 55.0
+STAIRS right STAIR_MIDDLE_E (134, 23) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (134, 23) left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (134, 23) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (134, 23) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (134, 23) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (134, 23) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (134, 23) up-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (134, 23) down-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (134, 23) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIR_TOP_E (135, 23) right steer 45.0 moved 45.0
+STAIRS right STAIR_TOP_E (135, 23) left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (135, 23) up steer none moved none
+STAIRS right STAIR_TOP_E (135, 23) down steer none moved none
+STAIRS right STAIR_TOP_E (135, 23) up-right steer 45.0 moved 45.0
+STAIRS right STAIR_TOP_E (135, 23) down-right steer 45.0 moved 45.0
+STAIRS right STAIR_TOP_E (135, 23) up-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (135, 23) down-left steer -135.0 moved -145.0
+STAIRS right STAIR_TOP_E (135, 23) analog right-up steer 45.0 moved 45.0
+STAIRS right STAIR_MIDDLE_E (135, 24) right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (135, 24) left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (135, 24) up steer none moved none
+STAIRS right STAIR_MIDDLE_E (135, 24) down steer none moved none
+STAIRS right STAIR_MIDDLE_E (135, 24) up-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (135, 24) down-right steer 45.0 moved 35.0
+STAIRS right STAIR_MIDDLE_E (135, 24) up-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (135, 24) down-left steer -135.0 moved -125.0
+STAIRS right STAIR_MIDDLE_E (135, 24) analog right-up steer 45.0 moved 35.0
+STAIRS right STAIRWELL_FLOOR (136, 24) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (136, 24) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (136, 24) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (136, 24) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (136, 24) up-right steer -45.0 moved -55.0
+STAIRS right STAIRWELL_FLOOR (136, 24) down-right steer 45.0 moved 55.0
+STAIRS right STAIRWELL_FLOOR (136, 24) up-left steer -135.0 moved -135.0
+STAIRS right STAIRWELL_FLOOR (136, 24) down-left steer 135.0 moved 135.0
+STAIRS right STAIRWELL_FLOOR (136, 24) analog right-up steer -18.0 moved -33.0
+STAIRS right STAIRWELL_FLOOR (136, 25) right steer 0.0 moved 0.0
+STAIRS right STAIRWELL_FLOOR (136, 25) left steer 180.0 moved 180.0
+STAIRS right STAIRWELL_FLOOR (136, 25) up steer -90.0 moved -90.0
+STAIRS right STAIRWELL_FLOOR (136, 25) down steer 90.0 moved 90.0
+STAIRS right STAIRWELL_FLOOR (136, 25) up-right steer -45.0 moved -55.0
+STAIRS right STAIRWELL_FLOOR (136, 25) down-right steer 45.0 moved 45.0
+STAIRS right STAIRWELL_FLOOR (136, 25) up-left steer -135.0 moved -125.0
+STAIRS right STAIRWELL_FLOOR (136, 25) down-left steer 135.0 moved 135.0
+STAIRS right STAIRWELL_FLOOR (136, 25) analog right-up steer -18.0 moved -33.0
+-- escape_stairs_heading.gd       265 ms
+
+0 checks, 0 failures
+PARTIAL RUN — only suites matching probes/escape_stairs_heading.gd. Not a green build.

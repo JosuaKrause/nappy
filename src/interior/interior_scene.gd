@@ -481,11 +481,40 @@ func wall_grid() -> CityMap:
 			_wall_grid.set_tile(tile, GameEnums.TileType.SIDEWALK)
 	return _wall_grid
 
-## `+1`/`-1` if `world_position`'s tile is a diagonal flight tile, `0` otherwise — the one question
-## `Stroller._physics_process()` asks every frame to redirect a sideways press along a flight's own
-## slope. See `InteriorTile.flight_direction()`.
-func slope_dir_at(world_position: Vector2) -> int:
-	return InteriorTile.flight_direction(_plan.tiles.get(world_to_tile(world_position), InteriorTile.Kind.NONE))
+## `+1`/`-1` if a press toward `press_x`'s side from `world_position` walks a descending-east or
+## descending-west slope, `0` if it walks none — the one question `Stroller._physics_process()`
+## asks every frame to turn a sideways press into a flight's own 45 degrees. See
+## `InteriorTile.flight_direction()`.
+##
+## **On a flight tile the slope is the tile's own**, whichever way she presses. **On a level `F`
+## tile it is the flight she would step onto**, read off the two diagonal neighbours on the pressed
+## side: a flight tile there whose slope runs along that diagonal (a descending-east flight runs
+## down-right and up-left, a descending-west one down-left and up-right). That is what makes the
+## first step off a landing and the last step onto one 45 degrees as well, rather than a
+## horizontal step the flight then turns. **Exactly one such neighbour, or it answers `0`**: the
+## middle of a two-row landing has a flight above it and one below it on the same side and no
+## heading of its own, and a landing that touches no flight on that side has nothing to walk.
+## `press_x` of `0.0`, the default, asks only about the tile she stands on.
+func slope_dir_at(world_position: Vector2, press_x := 0.0) -> int:
+	var tile := world_to_tile(world_position)
+	var here := InteriorTile.flight_direction(_plan.tiles.get(tile, InteriorTile.Kind.NONE))
+	if here != 0 or press_x == 0.0:
+		return here
+	if _plan.tiles.get(tile, InteriorTile.Kind.NONE) != InteriorTile.Kind.STAIRWELL_FLOOR:
+		return 0
+	var side := 1 if press_x > 0.0 else -1
+	var found := 0
+	var count := 0
+	for dy in [-1, 1]:
+		var slope := InteriorTile.flight_direction(
+				_plan.tiles.get(tile + Vector2i(side, dy), InteriorTile.Kind.NONE))
+		if slope != 0 and slope == side * dy:
+			found = slope
+			count += 1
+	if count == 0:
+		return InteriorTile.flight_direction(
+				_plan.tiles.get(tile + Vector2i(side, 0), InteriorTile.Kind.NONE))
+	return found if count == 1 else 0
 
 ## Where a fresh run starts — the third floor's own door, mid-hallway on its south edge.
 func start_world_position() -> Vector2:

@@ -19,6 +19,7 @@ func run(t) -> void:
 	_test_the_grammar_tiles_are_the_whole_staircase(t)
 	_test_a_sideways_press_on_a_flight_walks_its_slope(t)
 	_test_a_real_stroller_physically_crosses_both_flight_directions(t)
+	_test_every_tile_of_a_stairwell_steers_a_sideways_press_at_45_degrees(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
 	_test_the_basement_entry_is_a_straight_level_stair(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
@@ -448,13 +449,83 @@ func _test_a_sideways_press_on_a_flight_walks_its_slope(t: Node) -> void:
 		var vertical := player._redirect_along_a_flight(Vector2(0, -1))
 		t.check(vertical == Vector2.ZERO, "flight role %d ignores pure vertical input" % kind)
 
-	var landing_tile: Vector2i = f.waypoints["stairwell_left:landing_third"]
-	player.global_position = scene.tile_to_world(landing_tile)
+	var hall_tile: Vector2i = f.waypoints["hallway_third"]
+	player.global_position = scene.tile_to_world(hall_tile)
 	var off_flight := player._redirect_along_a_flight(Vector2(1, 0))
-	t.check(off_flight == Vector2(1, 0), "off a flight, a sideways press is unchanged")
+	t.check(off_flight == Vector2(1, 0), "off the stairs, a sideways press is unchanged")
 
 	player.free()
 	scene.free()
+
+## *(2026-10-18, inbox #783: "walking on the stairs should snap to 45 up or down angles".)* Every
+## walkable tile of both shafts, a press toward each side, as an exact steering: a flight tile
+## walks its own slope, and a level `F` tile walks the flight a press from it steps onto — the
+## first step off a landing and the last onto one included. The `F` tiles are listed by their place
+## in the ten-column grammar, since which of them have a 45 degree step to take is a fact about the
+## grammar: the middle of a two-row landing has a flight above it and one below it on the same
+## side, and one beside a wall has none. A tile with nothing to walk on the pressed side keeps the
+## press as it was, and a pure up or down press moves nowhere on a flight tile and is untouched on
+## a level one.
+func _test_every_tile_of_a_stairwell_steers_a_sideways_press_at_45_degrees(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var f := InteriorMap.build()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	var player := Stroller.new()
+	player.add_child(camera)
+	t.add_child(player)
+	player.slope_dir_at = scene.slope_dir_at
+	var diagonal := Vector2(1, 1).normalized()
+	# Local `F` tile -> [heading of a right press, heading of a left press], or null for "as pressed".
+	var level := {
+		Vector2i(1, 2): [diagonal, null], Vector2i(1, 3): [diagonal, null],
+		Vector2i(8, 8): [null, -diagonal], Vector2i(8, 9): [null, null],
+		Vector2i(8, 10): [null, Vector2(-1, 1).normalized()],
+		Vector2i(8, 11): [null, Vector2(-1, 1).normalized()],
+		Vector2i(1, 16): [Vector2(1, -1).normalized(), null], Vector2i(1, 17): [null, null],
+		Vector2i(1, 18): [diagonal, null], Vector2i(1, 19): [diagonal, null],
+		Vector2i(8, 24): [null, -diagonal], Vector2i(8, 25): [null, -diagonal],
+	}
+	var checked_level := 0
+	for side in ["left", "right"]:
+		var origin: Vector2i = f.waypoints["stairwell_%s" % side] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		for tile: Vector2i in scene.stairwell_tiles("stairwell_%s" % side):
+			var kind: InteriorTile.Kind = f.tiles[tile]
+			if not InteriorTile.is_walkable(kind) or kind == InteriorTile.Kind.DOOR:
+				continue
+			player.global_position = scene.tile_to_world(tile)
+			var slope := InteriorTile.flight_direction(kind)
+			var right := player._redirect_along_a_flight(Vector2(1, 0))
+			var left := player._redirect_along_a_flight(Vector2(-1, 0))
+			var analog := player._redirect_along_a_flight(Vector2(0.9, -0.3))
+			var up := player._redirect_along_a_flight(Vector2(0, -1))
+			if slope != 0:
+				var run := Vector2(slope, 1).normalized()
+				t.check(right.is_equal_approx(run * signf(slope)) and left.is_equal_approx(-run * signf(slope)),
+						"%s shaft %s: a sideways press walks the slope at 45 degrees" % [side, tile])
+				t.check(analog.is_equal_approx(run * signf(slope) * Vector2(0.9, -0.3).length()),
+						"%s shaft %s: an analog diagonal press snaps to the slope" % [side, tile])
+				t.check(up == Vector2.ZERO, "%s shaft %s: a pure up press moves nowhere" % [side, tile])
+				continue
+			t.check(up == Vector2(0, -1), "%s shaft %s: level ground keeps a pure up press" % [side, tile])
+			var expected: Array = level.get(tile - origin, [])
+			t.check(expected.size() == 2, "%s shaft %s: a level tile is in the table" % [side, tile])
+			if expected.size() != 2:
+				continue
+			checked_level += 1
+			t.check(_steers_as(right, expected[0], Vector2(1, 0)),
+					"%s shaft %s: a right press steers %s (got %s)" % [side, tile, expected[0], right])
+			t.check(_steers_as(left, expected[1], Vector2(-1, 0)),
+					"%s shaft %s: a left press steers %s (got %s)" % [side, tile, expected[1], left])
+	t.check(checked_level == level.size() * 2, "every listed level tile of both shafts was checked")
+	player.free()
+	scene.free()
+
+func _steers_as(steering: Vector2, wanted: Variant, as_pressed: Vector2) -> bool:
+	return steering.is_equal_approx(as_pressed if wanted == null else wanted)
 
 ## A real carrying rig starts on the level `F` approach and holds the same horizontal action the
 ## running game reads. The synchronous runner cannot advance `move_and_slide()`'s engine-owned
@@ -469,6 +540,9 @@ func _test_a_real_stroller_physically_crosses_both_flight_directions(t: Node) ->
 	var origin: Vector2i = f.waypoints["stairwell_left"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	_test_physical_flight(t, origin + Vector2i(1, 2), origin + Vector2i(8, 8), "move_right", "east")
 	_test_physical_flight(t, origin + Vector2i(8, 10), origin + Vector2i(1, 16), "move_left", "west")
+	# From the second row of each landing, where the first step is the one that used to be horizontal.
+	_test_physical_flight(t, origin + Vector2i(1, 3), origin + Vector2i(8, 8), "move_right", "east")
+	_test_physical_flight(t, origin + Vector2i(8, 11), origin + Vector2i(1, 16), "move_left", "west")
 
 func _test_physical_flight(
 		t: Node, start: Vector2i, target: Vector2i, action: StringName, label: String) -> void:
@@ -518,7 +592,7 @@ func _test_physical_flight(
 	t.check(signf(displacement.x) == expected_sign and displacement.y > 0.0,
 			"the real %s flight makes forward and downward progress (%s)" % [label, displacement])
 	t.check(absf(displacement.x) > InteriorScene.TILE * 6.0
-			and displacement.y > InteriorScene.TILE * 5.0,
+			and displacement.y > InteriorScene.TILE * float(target.y - start.y - 1),
 			"the real %s traversal crosses the complete flight (%s)" % [label, displacement])
 	t.check(collision_contacts > 0,
 			"the real %s circle contacts the flight's full-cell blockers while still crossing" % label)

@@ -506,7 +506,7 @@ func _physics_process(delta: float) -> void:
 func _redirect_along_a_flight(raw: Vector2) -> Vector2:
 	if not slope_dir_at.is_valid():
 		return raw
-	var slope: int = slope_dir_at.call(global_position)
+	var slope: int = slope_dir_at.call(global_position, raw.x)
 	if slope == 0:
 		return raw
 	if raw.x == 0.0:
