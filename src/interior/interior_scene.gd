@@ -9,9 +9,14 @@ extends WorldContext
 ## Ground is a `TileMapLayer` built from `InteriorTileSet`; walls, doors, the barricade and the
 ## brick stand in elevation in a plain layer under everything, the same reasoning `Building` and
 ## `City`'s own `Buildings` layer use — nothing can ever legitimately stand *behind* a wall, so
-## nothing needs to sort against one. The chandelier, ground decals and every door threshold's own
-## standing sprite live in a y-sorted layer above the ground, the same layer the player joins
-## through `add_entity()`. The stair-side roles are ground cells now: the TileMap paints exactly
+## nothing needs to sort against one. **Every door is drawn under her**, in its own layer between
+## the walls and her *(the player, 2026-10-18: the escape's door graphics should always be under
+## her)*: the stairwell doors, the open and the apartments' thresholds and the emergency exit, as the
+## lift door and the entrance in the wall layer already are. A door in her y-sorted layer, sorted by
+## its foot against hers, was drawn over her whenever its foot was lower than hers, which a
+## threshold's, at its tile's south edge, always is while she stands on it. The chandelier and the
+## ground decals live in a y-sorted layer above the ground, the same layer the player joins through
+## `add_entity()`. The stair-side roles are ground cells now: the TileMap paints exactly
 ## the grammar the collision pass reads instead of placing a second visual assembly over another
 ## walkable map.
 ##
@@ -70,6 +75,9 @@ var _tile_set: TileSet
 var _ground: TileMapLayer
 var _backdrops: Node2D
 var _walls: Node2D
+## Every door picture but the lift's and the entrance's, which are wall sprites: under her always —
+## see this class's own doc.
+var _doors: Node2D
 var _entities: Node2D
 ## Plain `StaticBody2D` blockers, one per non-walkable cell in a margin around the building's own
 ## footprint — the physical half of `InteriorMapPlan.is_walkable()`. A `TileMapLayer` only gives
@@ -123,6 +131,10 @@ func build() -> void:
 	_walls.name = "Walls"
 	_walls.z_index = 1
 	add_child(_walls)
+	_doors = Node2D.new()
+	_doors.name = "Doors"
+	_doors.z_index = 1
+	add_child(_doors)
 	_entities = Node2D.new()
 	_entities.name = "Entities"
 	_entities.z_index = 2
@@ -176,6 +188,7 @@ func _rebuild_collision() -> void:
 	for child in _collision.get_children():
 		child.queue_free()
 	var box := _footprint().grow(_MARGIN)
+	var bands := _flight_bands()
 	for y in range(box.position.y, box.position.y + box.size.y):
 		for x in range(box.position.x, box.position.x + box.size.x):
 			var tile := Vector2i(x, y)
@@ -187,12 +200,122 @@ func _rebuild_collision() -> void:
 				continue
 			var body := StaticBody2D.new()
 			var shape := CollisionShape2D.new()
-			var rectangle := RectangleShape2D.new()
-			rectangle.size = Vector2.ONE * TILE
-			shape.shape = rectangle
+			var outline := _blocker_outline(tile, bands)
+			if outline.is_empty():
+				var rectangle := RectangleShape2D.new()
+				rectangle.size = Vector2.ONE * TILE
+				shape.shape = rectangle
+			else:
+				var polygon := ConvexPolygonShape2D.new()
+				polygon.points = outline
+				shape.shape = polygon
 			body.position = tile_to_world(tile)
 			body.add_child(shape)
 			_collision.add_child(body)
+
+## **A flight's two edges are straight lines along its slope, not the stair sides' square corners.**
+## A flight's walkable `t/m` band is two cells wide on every row, but the solid cells either side of
+## it meet it at convex corners that lie on two lines only 22.6px apart across the slope, and her
+## body is 28px across (`Tuning.PLAYER_BODY_RADIUS`, 14px): with full-cell blockers she can only
+## pass each pair of corners moving nearly flat or nearly straight down, and a held sideways press
+## walks a zigzag of flat steps and steep drops however the press is steered (inbox #783). So each
+## solid cell beside a flight has the part of it inside the flight's band cut off, and the band's
+## two edges are straight, `FLIGHT_HALF_WIDTH` either side of the flight's centre line (the line
+## half-way between the centres of its `t` and its `m` cells).
+##
+## **1.125, so a landing's line is inside the band.** The landing tile level with a flight's first
+## or last tread has its centre half a unit off the flight's centre line, and her centre stays
+## `FLIGHT_HALF_WIDTH` less her radius (0.62 units) from it at most: at 1.125 a press from that
+## tile's centre walks onto the flight and down the whole of it at 45 degrees without touching an
+## edge, where at 1.0 she would touch the lower edge on the first tread and slide flat for a
+## moment. Her centre has 11.5px of play either side of the centre line, so one that arrives off
+## the line, from the landing's next row down, is slid onto it by the cut faces, and her centre is
+## always over the drawn treads. Along a row, the lower edge lies 4px beyond the drawn side face
+## (the hypotenuse of the `c`/`C` triangle) and the upper one 12px beyond the treads' tips.
+##
+## **Only solid cells are cut; the walkable flight cells keep no blocker of their own.** The corners
+## of a `t` or `m` cell outside the band are pockets too small to hold her (the circle they hold
+## is under 4px in radius), and a blocker in them would face the landing beside the flight's first
+## and last row with a wall she could not step past.
+##
+## In tile units, measured along `(slope, -1)`: a descending-east flight's `t` cells are at one
+## value of `x - y` and its `m` cells one lower, so the centre line is half-way between; a
+## descending-west flight is the mirror, `-x - y`. One unit is 22.6px across the slope.
+const FLIGHT_HALF_WIDTH := 1.125
+
+## Every flight in the building as `{normal, centre, cells}`: `normal` is `(slope, -1)`, `centre`
+## the mean of `normal · cell centre` over the flight's cells, and `cells` the solid cells beside it
+## (its eight-neighbours that are not walkable), which are the ones `_blocker_outline()` cuts. A
+## flight is one eight-connected run of flight cells of one slope.
+func _flight_bands() -> Array[Dictionary]:
+	var bands: Array[Dictionary] = []
+	var seen := {}
+	for start: Vector2i in _plan.tiles:
+		var slope := InteriorTile.flight_direction(_plan.tiles[start])
+		if slope == 0 or seen.has(start):
+			continue
+		var normal := Vector2(slope, -1)
+		var total := 0.0
+		var count := 0
+		var beside := {}
+		var queue: Array[Vector2i] = [start]
+		seen[start] = true
+		while not queue.is_empty():
+			var cell: Vector2i = queue.pop_back()
+			total += normal.dot(Vector2(cell) + Vector2(0.5, 0.5))
+			count += 1
+			for dy in [-1, 0, 1]:
+				for dx in [-1, 0, 1]:
+					var next := cell + Vector2i(dx, dy)
+					if next == cell:
+						continue
+					if InteriorTile.flight_direction(_plan.tiles.get(next, InteriorTile.Kind.NONE)) == slope:
+						if not seen.has(next):
+							seen[next] = true
+							queue.append(next)
+					elif not _plan.is_walkable(next):
+						beside[next] = true
+		bands.append({"normal": normal, "centre": total / count, "cells": beside})
+	return bands
+
+## The blocker for a solid `tile` as a convex outline in pixels about the tile's centre, or empty
+## for the plain full cell. Each flight it stands beside cuts away the part of it inside that
+## flight's band, keeping the side of the band its own centre is on.
+func _blocker_outline(tile: Vector2i, bands: Array[Dictionary]) -> PackedVector2Array:
+	var corners := PackedVector2Array([Vector2(tile), Vector2(tile) + Vector2(1, 0),
+			Vector2(tile) + Vector2(1, 1), Vector2(tile) + Vector2(0, 1)])
+	var outline := corners
+	var cut := false
+	for band: Dictionary in bands:
+		if not (band["cells"] as Dictionary).has(tile):
+			continue
+		var normal: Vector2 = band["normal"]
+		var centre: float = band["centre"]
+		var side := signf(normal.dot(Vector2(tile) + Vector2(0.5, 0.5)) - centre)
+		# Kept: `side * (normal · p) >= side * centre + FLIGHT_HALF_WIDTH`.
+		outline = _clip_to_half_plane(outline, normal * side, side * centre + FLIGHT_HALF_WIDTH)
+		cut = true
+	if not cut or outline == corners:
+		return PackedVector2Array()
+	var local := PackedVector2Array()
+	for point in outline:
+		local.append((point - Vector2(tile) - Vector2(0.5, 0.5)) * TILE)
+	return local
+
+## The part of convex `polygon` where `normal · p >= limit` (Sutherland–Hodgman against one line).
+static func _clip_to_half_plane(polygon: PackedVector2Array, normal: Vector2, limit: float
+		) -> PackedVector2Array:
+	var kept := PackedVector2Array()
+	for i in polygon.size():
+		var a := polygon[i]
+		var b := polygon[(i + 1) % polygon.size()]
+		var da := normal.dot(a) - limit
+		var db := normal.dot(b) - limit
+		if da >= 0.0:
+			kept.append(a)
+		if (da >= 0.0) != (db >= 0.0):
+			kept.append(a.lerp(b, da / (da - db)))
+	return kept
 
 func _rebuild_walls() -> void:
 	# Wide doors are drawn after the repeating 32px wall strips. Their own centre registration keeps
@@ -350,7 +473,9 @@ func _wall_texture(kind: InteriorTile.Kind) -> StringName:
 			return &""
 
 ## Doors, the chandeliers and every ground decal — everything that stands above the floor rather
-## than being the floor, all in the y-sorted layer the player joins through `add_entity()`.
+## than being the floor. The doors go in their own `Doors` layer under her, from here and from
+## `_add_standing()` and `_add_threshold()`; only the chandeliers and the decals are in the
+## y-sorted layer the player joins through `add_entity()`.
 func _rebuild_overlays() -> void:
 	for id: String in _plan.doors:
 		var door: InteriorMapPlan.Door = _plan.doors[id]
@@ -398,8 +523,9 @@ func _decal_texture(kind: InteriorTile.Kind) -> StringName:
 		_:
 			return PUDDLE_TEXTURE
 
-## A bottom-centre-anchored standing sprite at a tile's own centre — a door threshold, drawn the
-## same way `Sprites.draw_standing()` draws every other feet-anchored actor.
+## A bottom-centre-anchored standing sprite at a tile's own centre — a stairwell door or the
+## emergency exit, drawn the same way `Sprites.draw_standing()` draws every other feet-anchored
+## actor, in the door layer under her.
 func _add_standing(tile: Vector2i, name: StringName) -> void:
 	var sprite := Sprite2D.new()
 	var texture := AtlasLibrary.region(name)
@@ -407,7 +533,7 @@ func _add_standing(tile: Vector2i, name: StringName) -> void:
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = tile_to_world(tile)
-	_entities.add_child(sprite)
+	_doors.add_child(sprite)
 
 ## A threshold sits at a floor tile's south boundary. Its origin is intentionally lower than an
 ## upright stairwell door's: the opening belongs to the wall beyond the corridor, not the floor.
@@ -418,7 +544,7 @@ func _add_threshold(tile: Vector2i, name: StringName) -> void:
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = Vector2((tile.x + 0.5) * TILE, (tile.y + 1) * TILE)
-	_entities.add_child(sprite)
+	_doors.add_child(sprite)
 
 ## Repeats the shaft wall behind the ten-column grammar. The four eight-row panels cover the
 ## complete 26-row stairwell, including the final two-cell lobby approach, but add no floor:
@@ -483,7 +609,8 @@ func wall_grid() -> CityMap:
 
 ## `+1`/`-1` if `world_position`'s tile is a diagonal flight tile, `0` otherwise — the one question
 ## `Stroller._physics_process()` asks every frame to redirect a sideways press along a flight's own
-## slope. See `InteriorTile.flight_direction()`.
+## slope. See `InteriorTile.flight_direction()`. Off a flight, a landing tile included, she walks
+## the way she presses *(inbox #782, the player: outside of a stair she goes into the direction)*.
 func slope_dir_at(world_position: Vector2) -> int:
 	return InteriorTile.flight_direction(_plan.tiles.get(world_to_tile(world_position), InteriorTile.Kind.NONE))
 

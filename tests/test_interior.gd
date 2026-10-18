@@ -18,8 +18,10 @@ func run(t) -> void:
 	_test_collision_blocks_exactly_the_non_walkable_ground(t)
 	_test_the_grammar_tiles_are_the_whole_staircase(t)
 	_test_a_sideways_press_on_a_flight_walks_its_slope(t)
-	_test_a_real_stroller_physically_crosses_both_flight_directions(t)
+	_test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t)
+	_test_her_body_walks_every_flight_at_45_degrees(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
+	_test_every_door_is_drawn_under_her(t)
 	_test_the_basement_entry_is_a_straight_level_stair(t)
 	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 	_test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
@@ -27,7 +29,7 @@ func run(t) -> void:
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
 	_test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
-	_test_she_has_to_run_to_the_door_once_he_charges(t)
+	_test_she_has_to_run_to_the_first_floor_door(t)
 	_test_another_masked_man_comes_up_the_same_shaft(t)
 	_test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t)
 	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
@@ -272,11 +274,12 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 				t.check(blocked.has(at) == should_block,
 						"%s '%s' collision matches its grammar role at row %d column %d"
 						% [part, symbol, y, x])
-	# The two-row diagonal is wider at its narrowest cross-section than the player's circular body,
-	# and each diagonal same-role step has the other role in one orthogonal corner. One outside
-	# blocker therefore cannot recreate the two-blocker pinch the old one-row flight needed repaired.
-	t.check(Tuning.PLAYER_BODY_RADIUS * 2.0 < InteriorScene.TILE * sqrt(2.0),
-			"the player fits inside the two-row diagonal surface")
+	# A flight's two straight edges (`InteriorScene._blocker_outline()`) are further apart across the
+	# slope than her circular body is wide, and each diagonal same-role step has the other role in
+	# one orthogonal corner, so no blocker pinches a flight shut.
+	t.check(Tuning.PLAYER_BODY_RADIUS * 2.0
+			< InteriorScene.FLIGHT_HALF_WIDTH * 2.0 * InteriorScene.TILE / sqrt(2.0),
+			"the player fits between a flight's two edges")
 	var paired_steps := 0
 	for tile: Vector2i in f.tiles:
 		var kind: InteriorTile.Kind = f.tiles[tile]
@@ -448,37 +451,101 @@ func _test_a_sideways_press_on_a_flight_walks_its_slope(t: Node) -> void:
 		var vertical := player._redirect_along_a_flight(Vector2(0, -1))
 		t.check(vertical == Vector2.ZERO, "flight role %d ignores pure vertical input" % kind)
 
-	var landing_tile: Vector2i = f.waypoints["stairwell_left:landing_third"]
-	player.global_position = scene.tile_to_world(landing_tile)
+	var hall_tile: Vector2i = f.waypoints["hallway_third"]
+	player.global_position = scene.tile_to_world(hall_tile)
 	var off_flight := player._redirect_along_a_flight(Vector2(1, 0))
-	t.check(off_flight == Vector2(1, 0), "off a flight, a sideways press is unchanged")
+	t.check(off_flight == Vector2(1, 0), "off the stairs, a sideways press is unchanged")
 
 	player.free()
 	scene.free()
 
-## A real carrying rig starts on the level `F` approach and holds the same horizontal action the
-## running game reads. The synchronous runner cannot advance `move_and_slide()`'s engine-owned
-## delta, so each call to the real `_physics_process()` supplies its redirected, accelerated
-## velocity and this test applies that frame's displacement through `move_and_collide()` against
-## the scene's registered full-cell blockers, sliding the collision remainder along the reported
-## normal. Reaching the next `F` approach therefore proves the 14px circle crossed every blocker
-## corner in a complete flight; a graph path, assigned position or bare `Stroller.new()` cannot
-## make this pass.
-func _test_a_real_stroller_physically_crosses_both_flight_directions(t: Node) -> void:
-	var f := InteriorMap.build()
-	var origin: Vector2i = f.waypoints["stairwell_left"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
-	_test_physical_flight(t, origin + Vector2i(1, 2), origin + Vector2i(8, 8), "move_right", "east")
-	_test_physical_flight(t, origin + Vector2i(8, 10), origin + Vector2i(1, 16), "move_left", "west")
+## *(2026-10-18, inbox #783; inbox #782, the player: on a stair she goes diagonally up or down
+## depending on which stair, outside of a stair she goes into the direction.)* Every walkable tile
+## of both shafts, each of the eight directions and an analog diagonal, as an exact steering. **On a
+## flight tile** any press with a sideways part walks the flight's 45 degrees toward the side
+## pressed, down if that is the side the flight descends to and up otherwise, and a pure up or down
+## press moves nowhere. **On a level `F` tile**, a landing, every press is left as it was pressed.
+## The eight directions a key or a tap gives, as unit presses, and one analog diagonal.
+const _PRESSES := {
+	"right": Vector2(1, 0), "left": Vector2(-1, 0), "up": Vector2(0, -1), "down": Vector2(0, 1),
+	"up-right": Vector2(1, -1), "down-right": Vector2(1, 1), "up-left": Vector2(-1, -1),
+	"down-left": Vector2(-1, 1), "analog right-up": Vector2(0.9, -0.3),
+}
 
-func _test_physical_flight(
-		t: Node, start: Vector2i, target: Vector2i, action: StringName, label: String) -> void:
+func _press(name: String) -> Vector2:
+	var press: Vector2 = _PRESSES[name]
+	return press if name.begins_with("analog") else press.normalized()
+
+func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var f := InteriorMap.build()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	var player := Stroller.new()
+	player.add_child(camera)
+	t.add_child(player)
+	player.slope_dir_at = scene.slope_dir_at
+	var landing_tiles := 0
+	for side in ["left", "right"]:
+		var origin: Vector2i = f.waypoints["stairwell_%s" % side] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		for tile: Vector2i in scene.stairwell_tiles("stairwell_%s" % side):
+			var kind: InteriorTile.Kind = f.tiles[tile]
+			if not InteriorTile.is_walkable(kind) or kind == InteriorTile.Kind.DOOR:
+				continue
+			player.global_position = scene.tile_to_world(tile)
+			var slope := InteriorTile.flight_direction(kind)
+			if slope == 0:
+				landing_tiles += 1
+			for name: String in _PRESSES:
+				var press := _press(name)
+				var expected := press
+				if slope != 0:
+					var toward := signf(press.x)
+					expected = Vector2.ZERO if toward == 0.0 \
+							else Vector2(toward, slope * toward).normalized() * press.length()
+				var got := player._redirect_along_a_flight(press)
+				t.check(got.is_equal_approx(expected), "%s shaft %s, %s press: steers %s (got %s)"
+						% [side, tile - origin, name, expected, got])
+	# Twelve level tiles in each shaft's grammar: two at the top, four on each of the two middle
+	# landings, two at the foot.
+	t.check(landing_tiles == 24, "every level tile of both shafts was asked (%d)" % landing_tiles)
+	player.free()
+	scene.free()
+
+## **Her body walks the flight's 45 degrees, not only her steering** *(inbox #783)*. A real carrying
+## rig holds one sideways action from a landing tile's centre until she stands on the next landing,
+## on every flight of both shafts, down and up. The synchronous runner cannot advance
+## `move_and_slide()`'s engine-owned delta, so each call to the real `_physics_process()` supplies
+## its redirected, accelerated velocity and this test applies that frame's displacement through
+## `move_and_collide()` against the scene's registered blockers, sliding the collision remainder
+## along the reported normal.
+##
+## Sampled every tenth of a second, her displacement while she is on flight tiles heads within
+## `_STAIR_HEADING_TOLERANCE` of the flight's own 45 degrees. A landing leaves her press as it is,
+## so her first step is level until she stands on the flight. From a landing tile level with the
+## flight's end tread that step puts her on the flight's line, and she never touches a wall on it.
+## From the row below the flight's end tread (`second_row`) she is a tile under the flight's line,
+## and slides along the stair side onto it, so there the samples are pinned once she is two tiles
+## along. With full-cell blockers beside the flight the same walks zigzag between flat and 80
+## degrees, since the blockers' corners are closer together across the slope than her body is wide.
+const _STAIR_HEADING_TOLERANCE := 2.0
+const _STAIR_WALKS := [
+	# [local start, the next landing's column, action, second_row]
+	[Vector2i(1, 2), 8, "move_right", false], [Vector2i(1, 3), 8, "move_right", true],
+	[Vector2i(8, 8), 1, "move_left", false],
+	[Vector2i(8, 10), 1, "move_left", false], [Vector2i(8, 11), 1, "move_left", true],
+	[Vector2i(1, 16), 8, "move_right", false],
+	[Vector2i(1, 18), 8, "move_right", false], [Vector2i(1, 19), 8, "move_right", true],
+	[Vector2i(8, 24), 1, "move_left", false], [Vector2i(8, 25), 1, "move_left", true],
+]
+
+func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
 	const STEP := 1.0 / 60.0
 	const MAX_STEPS := 360
 	var f := InteriorMap.build()
-	t.check(f.tiles.get(start) == InteriorTile.Kind.STAIRWELL_FLOOR,
-			"the %s physical traversal starts on its level F approach" % label)
-	t.check(f.tiles.get(target) == InteriorTile.Kind.STAIRWELL_FLOOR,
-			"the %s physical traversal targets the next level F approach" % label)
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
@@ -492,39 +559,143 @@ func _test_physical_flight(
 	var body_circle := body_collision.shape as CircleShape2D
 	t.check(not body_collision.disabled and body_circle != null
 			and is_equal_approx(body_circle.radius, Tuning.PLAYER_BODY_RADIUS),
-			"the %s traversal uses the enabled real 14px player circle" % label)
-	var pram_collision := player.get_node("PramCollisionShape2D") as CollisionShape2D
-	t.check(pram_collision.disabled,
-			"the %s escape traversal disables the pram body while she carries the baby" % label)
-	player.global_position = scene.tile_to_world(start)
-	player.velocity = Vector2.ZERO
-
-	Input.action_release("move_left")
-	Input.action_release("move_right")
-	Input.action_press(action)
-	var steps := 0
-	var collision_contacts := 0
-	while steps < MAX_STEPS and scene.world_to_tile(player.global_position) != target:
-		player._physics_process(STEP)
-		collision_contacts += _move_real_body_one_step(player, player.velocity * STEP)
-		steps += 1
-	Input.action_release(action)
-	var displacement := player.global_position - scene.tile_to_world(start)
-	var expected_sign := 1.0 if label == "east" else -1.0
-	t.check(scene.world_to_tile(player.global_position) == target,
-			("the real %s-moving circle reaches the next F approach after %d physics steps; "
-			+ "ended at %s, displacement %s")
-			% [label, steps, player.global_position, displacement])
-	t.check(signf(displacement.x) == expected_sign and displacement.y > 0.0,
-			"the real %s flight makes forward and downward progress (%s)" % [label, displacement])
-	t.check(absf(displacement.x) > InteriorScene.TILE * 6.0
-			and displacement.y > InteriorScene.TILE * 5.0,
-			"the real %s traversal crosses the complete flight (%s)" % [label, displacement])
-	t.check(collision_contacts > 0,
-			"the real %s circle contacts the flight's full-cell blockers while still crossing" % label)
-	print("M158 physical %s flight: %d steps, displacement %s, %d blocker contacts" \
-			% [label, steps, displacement, collision_contacts])
+			"the walks use the enabled real 14px player circle")
+	t.check((player.get_node("PramCollisionShape2D") as CollisionShape2D).disabled,
+			"and the pram body is off while she carries the baby")
+	for side in ["left", "right"]:
+		var origin: Vector2i = f.waypoints["stairwell_%s" % side] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		for walk: Array in _STAIR_WALKS:
+			var start: Vector2i = origin + (walk[0] as Vector2i)
+			var column: int = origin.x + int(walk[1])
+			var action: String = walk[2]
+			var second_row: bool = walk[3]
+			var label := "%s shaft from %s, %s" % [side, walk[0], action]
+			t.check(f.tiles.get(start) == InteriorTile.Kind.STAIRWELL_FLOOR,
+					"%s: starts on a landing tile" % label)
+			for a in ["move_left", "move_right", "move_up", "move_down"]:
+				Input.action_release(a)
+			Input.action_press(action)
+			player.global_position = scene.tile_to_world(start)
+			player.velocity = Vector2.ZERO
+			var steps := 0
+			var sampled := 0
+			var worst := 0.0
+			var flight_contacts := 0
+			var last := player.global_position
+			while steps < MAX_STEPS and not (scene.world_to_tile(player.global_position).x == column
+					and scene.slope_dir_at(player.global_position) == 0):
+				player._physics_process(STEP)
+				var on_flight := scene.slope_dir_at(player.global_position) != 0
+				var contacts := _move_real_body_one_step(player, player.velocity * STEP)
+				if on_flight:
+					flight_contacts += contacts
+				steps += 1
+				if steps % 6 != 0:
+					continue
+				var moved := player.global_position - last
+				var along := absf(last.x - scene.tile_to_world(start).x)
+				if scene.slope_dir_at(last) != 0 and scene.slope_dir_at(player.global_position) != 0 \
+						and moved.length() > 1.0 and (not second_row or along >= InteriorScene.TILE * 2.0):
+					sampled += 1
+					# 45 degrees off the vertical, whichever of the four diagonals.
+					var off_vertical := absf(absf(rad_to_deg(moved.angle())) - 90.0)
+					worst = maxf(worst, absf(off_vertical - 45.0))
+				last = player.global_position
+			Input.action_release(action)
+			t.check(scene.world_to_tile(player.global_position).x == column,
+					"%s: she reaches the next landing (%d steps, ended on %s)"
+					% [label, steps, scene.world_to_tile(player.global_position) - origin])
+			t.check(sampled >= 10, "%s: the walk had samples on the flight to read (%d)" % [label, sampled])
+			t.check(worst <= _STAIR_HEADING_TOLERANCE,
+					"%s: her body heads within %.0f degrees of 45 on the flight (worst %.1f)"
+					% [label, _STAIR_HEADING_TOLERANCE, worst])
+			if not second_row:
+				t.check(flight_contacts == 0,
+						"%s: and touches no wall on it (%d contacts)" % [label, flight_contacts])
+	player.free()
 	scene.free()
+
+## **Every door in the building is drawn under her** *(the player, 2026-10-18: the escape's door
+## graphics should always be under her)*: the stairwell doors, the open and the apartments'
+## thresholds, the emergency exit, the lift door and the entrance. Asked of the canvas the way the
+## engine orders it, by her absolute z against each door picture's, and for one in her own z and
+## y-sorted with her, by its foot against hers, with her standing on every walkable tile within a
+## tile of each door, at the tile's centre and at its four edges as near as her body lets her.
+func _test_every_door_is_drawn_under_her(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var f := InteriorMap.build()
+	var player := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	player.add_child(camera)
+	scene.add_entity(player)
+	var door_textures := [InteriorScene.DOOR_TEXTURE, InteriorScene.OPEN_THRESHOLD_TEXTURE,
+			InteriorScene.APARTMENT_THRESHOLD_TEXTURE, InteriorScene.EMERGENCY_EXIT_TEXTURE,
+			InteriorScene.LIFT_DOOR_TEXTURE, InteriorScene.ENTRANCE_DOOR_TEXTURE]
+	var pictures := {}
+	for name: StringName in door_textures:
+		pictures[AtlasLibrary.region(name)] = name
+	var doors: Array[Sprite2D] = []
+	var stack: Array[Node] = [scene]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		stack.append_array(node.get_children())
+		if node is Sprite2D and pictures.has((node as Sprite2D).texture):
+			doors.append(node)
+	var expected := f.doors.size() + f.locked_thresholds.size() + (1 if f.exit_tile.x >= 0 else 0)
+	for at: Vector2i in f.walls:
+		if f.walls[at] in [InteriorTile.Kind.LIFT_DOOR, InteriorTile.Kind.ENTRANCE_DOOR]:
+			expected += 1
+	t.check(doors.size() == expected, "every door picture is found (%d of %d)" % [doors.size(), expected])
+	var reach := Tuning.PLAYER_BODY_RADIUS
+	var offsets: Array[Vector2] = [Vector2.ZERO, Vector2(0, -0.5 * InteriorScene.TILE + reach),
+			Vector2(0, 0.5 * InteriorScene.TILE - reach), Vector2(-0.5 * InteriorScene.TILE + reach, 0),
+			Vector2(0.5 * InteriorScene.TILE - reach, 0)]
+	var asked := 0
+	var over := 0
+	for door: Sprite2D in doors:
+		var foot := scene.world_to_tile(door.global_position - Vector2(0, 1))
+		for dy in range(-2, 3):
+			for dx in range(-2, 3):
+				var tile := foot + Vector2i(dx, dy)
+				if not f.is_walkable(tile):
+					continue
+				for offset: Vector2 in offsets:
+					player.global_position = scene.tile_to_world(tile) + offset
+					asked += 1
+					if not _drawn_over(player, door):
+						over += 1
+						t.check(false, "%s at %s is drawn over her at %s"
+								% [pictures[door.texture], door.global_position, player.global_position])
+	t.check(over == 0 and asked > doors.size(),
+			"every door is under her wherever she stands beside one (%d positions asked)" % asked)
+	player.free()
+	scene.free()
+
+## Whether `top` draws over `under`: a higher absolute z, or the same z in the same y-sorted parent
+## with its foot no higher.
+static func _drawn_over(top: CanvasItem, under: CanvasItem) -> bool:
+	var a := _absolute_z(top)
+	var b := _absolute_z(under)
+	if a != b:
+		return a > b
+	var parent := top.get_parent() as Node2D
+	if parent and parent == under.get_parent() and parent.y_sort_enabled:
+		return (top as Node2D).global_position.y >= (under as Node2D).global_position.y
+	return false
+
+static func _absolute_z(item: CanvasItem) -> int:
+	var z := 0
+	var node: Node = item
+	while node is CanvasItem:
+		z += (node as CanvasItem).z_index
+		if not (node as CanvasItem).z_as_relative:
+			break
+		node = node.get_parent()
+	return z
 
 ## The explicit-displacement half `move_and_slide()` normally derives from the physics delta that
 ## the synchronous test runner cannot advance. The real body's sweep supplies every collision
@@ -614,7 +785,7 @@ func _test_the_basement_entry_is_a_straight_level_stair(t: Node) -> void:
 ## calls every frame in the running game — the only thing skipped is the fade `Tween`'s own timing,
 ## which is presentation rather than logic (see `_start_door_transition()`'s own doc). The real
 ## input, slope redirection and collision sweep are separately covered on complete east and west
-## flights by `_test_a_real_stroller_physically_crosses_both_flight_directions()`; repeating those
+## flights by `_test_her_body_walks_every_flight_at_45_degrees()`; repeating those
 ## here would double the work rather than test anything new. **Not vacuous**: every
 ## assertion below reads the player's own `global_position` back after the call, not from a value
 ## this test computed itself, so a `teleport_to_door()` that silently failed to move the player
@@ -1046,92 +1217,152 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 	scene.free()
 
 ## **She has to run to the door** *(inbox #764, the player: "player should have to run to the
-## door")*. He warns while she is in the stairwell and runs his line once she is within
-## `masked_pursuer.charges_within` of him (`EventInstance._warn_on_its_line()`), so where she meets
-## that distance is a fact of the escape as built: walking down the shaft toward the lobby, past the
-## first floor's door. Driven with the real man on the real shaft: she walks down his line from the
-## first floor's landing, and the frame he runs she turns for that door — the nearest off his line —
-## accelerating as she really does, at a walk or at a run. A walker is caught on the stairs; a runner
-## reaches the door and steps through it, clear of his reach.
-func _test_she_has_to_run_to_the_door_once_he_charges(t: Node) -> void:
-	const STEP := 1.0 / 60.0
-	var f := InteriorMap.build()
-	for speed: float in [Tuning.WALK_SPEED, Tuning.RUN_SPEED]:
-		var scene := InteriorScene.new()
-		t.add_child(scene)
-		var events := InteriorEvents.new()
-		t.add_child(events)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 4242
-		events.setup(scene, rng)
-		var man: EventInstance = null
-		for instance in events.instances():
-			if instance.def.id == "masked_pursuer":
-				man = instance
-		t.check(man != null, "a masked man is on the stairs")
-		if not man:
-			events.free()
-			scene.free()
-			return
-		var part := "stairwell_%s" % ("right" if events.burning_side() == "left" else "left")
-		var landing := scene.tile_to_world(f.waypoints["%s:landing_first" % part])
-		var door := scene.tile_to_world((f.doors["%s:landing_first" % part] as InteriorMapPlan.Door).tile)
-		var line := man.path
-		var cum: Array[float] = [0.0]
-		for i in range(1, line.size()):
-			cum.append(cum[i - 1] + line[i].distance_to(line[i - 1]))
-		var landing_at := 0.0
-		var nearest := INF
-		for i in line.size():
-			if line[i].distance_to(landing) < nearest:
-				nearest = line[i].distance_to(landing)
-				landing_at = cum[i]
-		var along := landing_at
-		var velocity := -Tuning.WALK_SPEED
-		var charged_at := INF
-		var caught := false
-		var through := false
-		var off := 0.0
-		var elapsed := 0.0
-		while elapsed < 20.0 and not caught and not through:
-			var her: Vector2
-			if off > 0.0:
-				off += speed * STEP
-				her = landing.lerp(door, minf(off / landing.distance_to(door), 1.0))
-				through = off >= landing.distance_to(door)
-			else:
-				if charged_at != INF:
-					velocity = move_toward(velocity, speed, Tuning.ACCELERATION * STEP)
-				var next := clampf(along + velocity * STEP, 0.0, cum[cum.size() - 1])
-				if charged_at != INF and next >= landing_at:
-					next = landing_at
-					off = 0.0001
-				along = next
-				her = _point_along(line, cum, along)
-			man.player_at = her
-			man._process(STEP)
-			elapsed += STEP
-			if charged_at == INF and not man.is_waiting() and not man.is_telegraphing():
-				charged_at = man.global_position.distance_to(her)
-			caught = man.is_lethal_at(her)
-		t.check(charged_at != INF and absf(charged_at - man.def.charges_within) < 4.0,
-				"he runs once she is within %.0fpx of him (%.0fpx)" % [man.def.charges_within, charged_at])
-		if speed == Tuning.WALK_SPEED:
-			t.check(caught and not through, "turning for the first floor's door at a walk, she is caught")
-		else:
-			t.check(through and not caught, "at a run she reaches it and steps through")
-		print("The masked man, at %.0fpx/s: charged at %.0fpx, %s at %.2fs" % [speed, charged_at,
-				"caught" if caught else ("through the door" if through else "neither"), elapsed])
-		events.free()
-		scene.free()
+## door"; inbox #782, the player: the radius bigger, not him moved)*. He warns while she is in the
+## stairwell and runs his line once she is within `masked_pursuer.charges_within` of him
+## (`EventInstance._warn_on_its_line()`). Stepped at the game's own rhythm: the game's physics
+## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
+## carrying body moves with the real stair steering and collision, `InteriorEvents._physics_process()`
+## tells him where she is, and the catch is checked; he moves in his own `_process()` on every drawn
+## frame, two to a tick here (60fps). She comes in at his shaft's second-floor door and down the
+## landing, and takes the second flight from each line a player turns onto it by. Once he runs she
+## makes for the first floor's door, on along the flight and up the landing into it.
+##
+## **Which lines catch a walker is what is pinned, and not every line does:** a walker is caught
+## from the rows level with and below the flight's head tread, and from the landing tile between
+## the two flights holding down-left; **a walker who holds plain left from the landing tile between
+## the two flights gets through**. A runner gets through on every line, whether she was running all
+## along or starts running the moment he does, with the keys she already holds. **The margins are
+## thin:** on the tightest runner's line (walking until he runs, then running, turning plain left at
+## row 11's centre) he is drawn about 25px from her centre (24.6px, at 60, 120 and 150fps), inside his
+## 28px catch, and she clears it on the tick at 28.6px, by 0.6px; **she is caught if she starts running
+## 0.3s after he does.**
+func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
+	for walk: Array in _SECOND_FLIGHT_TURNS:
+		for pace: String in ["walk", "run", "walk-run", "run-late"]:
+			if pace == "run-late" and walk[0] != 11:
+				continue
+			var met := _meet_the_masked_man(t, walk, pace)
+			var expected := "through" if pace != "walk" or not walk[2] else "caught"
+			if pace == "run-late":
+				expected = "caught"
+			t.check(met["ran"], "%s at a %s: he runs" % [walk[3], pace])
+			t.check(met["outcome"] == expected,
+					"%s at a %s: %s (%s, %.0fpx from him at the closest)"
+					% [walk[3], pace, expected, met["outcome"], met["closest"]])
+			if walk[0] == 11 and pace == "walk-run":
+				# The tightest line: on a drawn frame he is inside his 28px catch, and she lives
+				# only because the catch is checked on the tick.
+				t.check(met["closest"] > 20.0 and met["closest"] < 28.0,
+						"%s at a %s: he is drawn inside the catch for a frame (%.1fpx)"
+						% [walk[3], pace, met["closest"]])
+				t.check(met["on_tick"] > 28.0 and met["on_tick"] < 29.5,
+						"%s at a %s: and she clears it on the tick by under 1.5px (%.1fpx)"
+						% [walk[3], pace, met["on_tick"]])
+			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
+					% [walk[3], pace, met["outcome"], met["closest"]])
 
-## The point `along` px down `line` from its start, `cum` its running lengths.
-static func _point_along(line: PackedVector2Array, cum: Array[float], along: float) -> Vector2:
-	for i in range(1, line.size()):
-		if along <= cum[i]:
-			var span := cum[i] - cum[i - 1]
-			return line[i - 1].lerp(line[i], 0.0 if span <= 0.0 else (along - cum[i - 1]) / span)
-	return line[line.size() - 1]
+## The lines onto the second flight, local to the grammar: the row of her turn, what she holds
+## there, whether a walker is caught, and what to call it.
+const _SECOND_FLIGHT_TURNS := [
+	[10, ["move_left"], true, "plain left from row 10 (level with the flight's head tread)"],
+	[11, ["move_left"], true, "plain left from row 11 (the row below it)"],
+	[9, ["move_left", "move_down"], true, "down-left from row 9 (the landing tile between the two flights)"],
+	[9, ["move_left"], false, "plain left from row 9 (the landing tile between the two flights)"],
+]
+
+## One meeting with the right shaft's masked man: her real body from the shaft's second-floor door
+## down the landing to `walk`'s row, then holding its keys, walking (`pace` "walk"), running all the
+## way ("run"), walking until he runs and running from then on with the keys she already holds, the
+## turn coming at its row ("walk-run"), or starting to run 0.3s after he does ("run-late"); once he runs she
+## makes for the first floor's door. Answers whether he ran, the outcome ("through", "caught" or
+## "neither") and how near he came.
+func _meet_the_masked_man(t: Node, walk: Array, pace: String) -> Dictionary:
+	const TICK := 1.0 / 30.0
+	const FRAME := 1.0 / 60.0
+	var f := InteriorMap.build()
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var events := InteriorEvents.new()
+	t.add_child(events)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	events.setup(scene, rng)
+	var man: EventInstance = null
+	for instance in events.instances():
+		if instance.def.id == "masked_pursuer":
+			man = instance
+	var origin: Vector2i = f.waypoints["stairwell_right"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+	var door: Vector2i = (f.doors["stairwell_right:landing_first"] as InteriorMapPlan.Door).tile
+	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
+	var player: Stroller = packed.instantiate()
+	player.carrying = true
+	player.slope_dir_at = scene.slope_dir_at
+	scene.add_entity(player)
+	player.set_physics_process(false)
+	player.global_position = scene.tile_to_world(
+			(f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile)
+	player.velocity = Vector2.ZERO
+	var running := pace == "run"
+	_hold_keys(["move_down"], running)
+	var met := {"ran": false, "outcome": "neither", "closest": INF, "on_tick": INF}
+	var turned := false
+	var elapsed := 0.0
+	var ran_at := 0.0
+	while man != null and elapsed < 20.0:
+		player._physics_process(TICK)
+		_move_real_body_one_step(player, player.velocity * TICK)
+		var her := player.global_position
+		var tile := scene.world_to_tile(her)
+		events._physics_process(TICK)
+		man.player_running = running
+		# The catch is the tick's: where he was drawn when the tick ran.
+		var caught := man.is_lethal_at(her)
+		if met["ran"]:
+			met["on_tick"] = minf(met["on_tick"], man.global_position.distance_to(her))
+		if met["ran"]:
+			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
+		man._process(FRAME)
+		if met["ran"]:
+			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
+		man._process(FRAME)
+		elapsed += TICK
+		if not turned and tile.y - origin.y >= int(walk[0]) and her.y >= scene.tile_to_world(tile).y:
+			turned = true
+			_hold_keys(walk[1], running)
+		if not met["ran"] and not man.is_waiting() and not man.is_telegraphing():
+			met["ran"] = true
+			ran_at = elapsed
+			if pace == "walk-run":
+				# Runs with the keys she already holds; the turn comes at its row.
+				running = true
+				_hold_keys(walk[1] if turned else ["move_down"], true)
+		if pace == "run-late" and met["ran"] and not running and elapsed - ran_at >= 0.3:
+			running = true
+			_hold_keys(walk[1] if turned else ["move_down"], true)
+		if met["ran"]:
+			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
+		if caught:
+			met["outcome"] = "caught"
+			break
+		if tile == door:
+			met["outcome"] = "through"
+			break
+		# On the first floor's landing, up into its door.
+		if met["ran"] and tile.x == origin.x + 1 and tile.y - origin.y >= 16:
+			_hold_keys(["move_up"], running)
+	_hold_keys([], false)
+	player.free()
+	events.free()
+	scene.free()
+	return met
+
+func _hold_keys(actions: Array, running: bool) -> void:
+	for a in ["move_left", "move_right", "move_up", "move_down", "run"]:
+		Input.action_release(a)
+	for a: String in actions:
+		Input.action_press(a)
+	if running:
+		Input.action_press("run")
 
 ## *"Then the pursuing guy should respawn forcing to switch the side again."*
 ##
@@ -1235,8 +1466,8 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 ## Asked as a flood from her own door across the whole building, doors included, with **both of the
 ## things that actually close ground taken out of the walkable set**: the collapse, and every cell
 ## within the fire's own blocking reach. The masked man closes nothing — he is mobile and carries
-## no body — so what he owes is the run to the door
-## `_test_she_has_to_run_to_the_door_once_he_charges` measures, and it is named here rather than
+## no body — so what he owes is the run to the first floor's door
+## `_test_she_has_to_run_to_the_first_floor_door` measures, and it is named here rather than
 ## repeated.
 ##
 ## Non-vacuous on purpose: both closures are counted, so a build where the fire stood somewhere
