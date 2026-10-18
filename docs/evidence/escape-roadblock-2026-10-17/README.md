@@ -222,8 +222,57 @@ placement:
 
 Not measured on a phone.
 
+## Baiting a waiting charger, and the band that costs nothing (inbox #788)
+
+The sections above record this branch at the commits they name. From `efcea293` a roadblock's band
+costs nothing on a day and in the escape (the roadblock row's `intensity` is 0), so the cost
+figures above that come from the band's field no longer hold; and from `0befef53` a charger that
+waits for her charges from `Tuning.bait_radius()` and warns from `Tuning.bait_notice()`, only with
+its warning in the camera's view.
+
+**The bait window.** `tests/probes/bait_radius.gd`, its `BAIT` lines in `bait-before.txt` (at
+`1441214d`) and `bait-after.txt` (at `0befef53`): every waiting charger, a real `EventInstance` on
+open ground at 60Hz; she walks in, keeps walking for the reaction after his charge, then turns and
+runs at `Tuning.ACCELERATION`. The widest reaction she survives:
+
+| Charger | Catch | Before: warning, charge, widest turn | After: warning, charge, widest turn |
+|---|---|---|---|
+| the waiting dog | 26px | 130px, 104px, 0.16s | 189px, 142px, 0.33s |
+| the roadblock's guard (day and escape) | 28px | 180px from the band, 106px, 0.16s | 237px from the band, 144px, 0.33s |
+| the alley robber | 26px | 180px, 116px, 0.21s | unchanged: his lunge is the player's (tall-osprey) |
+
+Turning at 0.3s, the dog gets away with its closest at 34.6px and the guard at 36.6px on this rig;
+`tests/test_events_pursuit.gd`'s rig, which starts her a little further in, reports 39px and 41px.
+
+**The escape, on its own plans.** `probe-bait.txt.gz`, `tests/probes/escape_roadblock_cost.gd` at
+`0befef53`, whose lure now walks on for `Tuning.BAIT_REACTION` after the charge and accelerates
+back: over eight seeds, 82 crossings, walking straight past a posted guard is caught 164 of 164
+times, the lure is caught 0 of 164, and walking on past after it meets no guard and costs
+nothing. Asleep, the lure costs 2.5 points, the run alone.
+
+**Spacing and density.** Two bands stand at least twice the guard's warning radius apart, now
+475px: `spacing-bait.txt.gz` (`tests/probes/escape_roadblock_spacing.gd`, seeds 1 to 40) has 437
+roadblocks (508 at 360px), no pair nearer than their two notices, nearest pair 476px apart.
+`density-bait.txt.gz` (`tests/probes/escape_density.gd`, ten seeds): trucks 124, vans 299,
+roadblocks 103 (131 before), bursts 138.
+
+**The bait, played.** `baited.png`, four frames of one burst, cropped to the street by `bursts.py`
+(`--crop 560,0,1040,560`, frames 5, 7, 11 and 17), on this branch at `0befef53`:
+
+```sh
+tools/shot.sh OUT.png 7 --seed 7 --start-escape city --invincible --player-view \
+    --press ui_accept 0.3 --press snapshot_burst 2.9 --walk 0.1e3.45n2S4p
+```
+
+She walks north up the street toward its band. A: the guard on her side has his hand up, as he
+comes into view at the top of the screen. B: she walks on under his warning. C: he charges, and she
+has turned and runs. D: he has given up and walks off up the street; she got away. The run log
+gives his charge at 145px from her (his charge radius is 144px) and his closest at 105px.
+`--invincible` stages the walk only; the probes are the measurement.
+
 Footprint: four stills, the first strip and its script, the far-guard strip, the barricade pair
 and its script, two compressed overhang-probe outputs, two compressed replan-probe outputs, three compressed cost-probe outputs, the
 player's run folder (`run.log` and two stills), two burst strips and their script, two
-compressed spacing-probe outputs, the alley-wall pair, three compressed density-probe outputs and
-this README.
+compressed spacing-probe outputs, the alley-wall pair, three compressed density-probe outputs, the
+bait strip, two bait-probe outputs, and one compressed output each of the cost, spacing and density
+probes after the bait change, and this README.
