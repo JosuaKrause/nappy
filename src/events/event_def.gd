@@ -1230,11 +1230,7 @@ func at_heat(level: int) -> EventDef:
 				# refuses. Widening only the hunting copy holds the contract for every `HUNTS` row
 				# without asking a row's author to pad its cold field past a constant that belongs
 				# to the ladder rather than to the row; the cold shape, and everything measured
-				# from it (`required_telegraph_time()`, the cost table), is untouched. Widened to the
-				# shared trigger, not to the roadblock guard's own wider warning: his band has no
-				# field strength, and the 180px it reaches still carries his notice in the 243px it
-				# reaches ahead of him at his speed, which is what the contract reads; so the
-				# ground a day spaces its rows by is what it was.
+				# from it (`required_telegraph_time()`, the cost table), is untouched.
 				hot.outer_radius = maxf(outer_radius, Tuning.HEAT_HUNTS_WITHIN)
 				# For a pursuer `duration` is the length of the chase, not the length of the idle
 				# — see `pursues_within` above. Cold, this row simply sits for `duration` seconds

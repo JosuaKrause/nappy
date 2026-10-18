@@ -398,10 +398,8 @@ sets what the warning is:
    **It warns only once its warning would stand in her view** (`EventInstance._would_stand_in_her_view()`):
    it notices her inside its radius along a clear line and only with the whole of its warning
    picture inside the camera's view that frame (`VisibleView.view`, which `EventManager` hands it as
-   `player_view`), on a day as in the escape. Walking up the screen at a 44px-tall man the view
-   reaches about 198px ahead of her (the look-ahead less the camera's trailing), so the roadblock's
-   guard posted 46px nearer her than his band is noticed about 154px off, inside his radius, and the
-   warning's clock starts from there. An instance stepped with no view handed to it (a rig that
+   `player_view`), on a day as in the escape, and the warning's clock starts from the frame its
+   whole warning picture is in view. An instance stepped with no view handed to it (a rig that
    steps an `EventInstance` directly) notices her by its radius alone. **So does the masked man**,
    who runs a line rather than pursuing her (`EventInstance._check_for_notice()`,
    `_warn_on_its_line()`): neither his notice nor his run asks a clear line, his notice asks no
