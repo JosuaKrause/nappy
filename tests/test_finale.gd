@@ -543,7 +543,9 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 ## crossed the roofs beside it in her view. Walked on the escape's real plan for seed 4242: at every
 ## band, from 16 bearings, she walks in until his charge, runs straight back until he gives up and
 ## stands; every frame either guard walks, he stands on a walkable tile. The band at tile (73,50)
-## approached from the west is the case PR #781's review found the far guard on the roof at (76,48).
+## with her standing at (70,50), west of it on the open sidewalk, is the case PR #781's review found
+## the far guard on the roof at (76,48) in: it is stood there even where the plan no longer puts a
+## band on that tile, lured from the south down its street, and walked off with her at (70,50).
 func _test_neither_guard_walks_off_over_a_building(t) -> void:
 	var step := RoadblockRig.STEP
 	var built := RoadblockRig.plan_for(4242)
@@ -552,7 +554,13 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 	var walks := 0
 	var far_walks := 0
 	var the_reviewed_case := false
-	for band_plan in _escape_roadblocks(plan):
+	var bands := _escape_roadblocks(plan)
+	var reviewed := Vector2i(73, 50)
+	if not bands.any(func(b: EventScheduler.Planned) -> bool:
+			return map.world_to_tile(b.position) == reviewed):
+		bands.append(EventScheduler.Planned.new(EventCatalogue.escape_roadblock(),
+				map.tile_to_world(reviewed)))
+	for band_plan in bands:
 		var group: Array[EventScheduler.Planned] = [band_plan]
 		for bearing in 16:
 			var made := RoadblockRig.build(t, map, group)
@@ -579,6 +587,14 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 				made[0].free()
 				continue
 			walks += 1
+			# The reviewed case: she stands at (70,50), west of the band on the open sidewalk, while
+			# both guards walk off, so their ways are planned from there.
+			var the_reviewed_walk := map.world_to_tile(band_plan.position) == reviewed \
+					and bearing == 4
+			if the_reviewed_walk:
+				her = map.tile_to_world(Vector2i(70, 50))
+				guard._way_on = PackedVector2Array()
+				guard._far_guard_way = PackedVector2Array()
 			var far_walked := false
 			var on_ground := true
 			frames = 0
@@ -603,14 +619,13 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 					break
 			if far_walked:
 				far_walks += 1
-			if map.world_to_tile(band_plan.position) == Vector2i(73, 50) and bearing == 8 \
-					and far_walked:
+			if the_reviewed_walk and far_walked:
 				the_reviewed_case = true
 			made[0].free()
 	t.check(walks > 0 and far_walks > 0,
 			"there were guards walking off to watch (%d, %d with the far guard)" % [walks, far_walks])
 	t.check(the_reviewed_case,
-			"and the band at (73,50) lured from the west sent its far guard off")
+			"and the band at (73,50), with her at (70,50), sent its far guard off")
 
 ## **And nothing over her head says otherwise.** A posted band's guard has not noticed her yet, so
 ## inside its outer radius it raises the `SOON` mark (`EventManager._warn_about_the_ground_she_is_on()`),
@@ -716,21 +731,23 @@ func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
 						map.world_to_tile(bands[j].position), gap, apart])
 	t.check(pairs > 0, "there were pairs of roadblocks to measure (%d)" % pairs)
 
-## **An escape guard warns on the screen and in front of everything round him**, from the first frame
-## of his warning until he charges. *(Inbox #771, 2026-10-18: "the second guard is invisible
-## (hidden) until it already charges".)* Walked: she comes at each of the plan's roadblocks in a
-## straight line from all round it, and on the frame his hand goes up, the whole of his raised-hand
-## picture at his post (`EventInstance.warning_guard_rect()`) is inside the view round her
-## (`Tuning.VIEW_HALF_EXTENT` either way, no credit for her look-ahead) and he is drawn above the
-## street's other figures (`EventInstance.WARNING_GUARD_Z`); on every approach that ends in his
-## charge, his hand went up first, so the view's hold on his notice never turns a warning into a
-## charge with none (it rests on his raised-hand picture's height against his stand-off, which a
-## taller picture or a faster guard would close); once he charges, he sorts with them
-## again. The approaches on which the radius alone would have warned her with him off the view are
-## counted, so the view's part in the notice is shown to be doing something.
+## **An escape guard warns on the screen, in front of everything round him, and outside his charge
+## radius.** *(Inbox #771, 2026-10-18: "the second guard is invisible (hidden) until it already
+## charges"; inbox #788: the charging radius of waiting chargers is tuned so that baiting is possible
+## and the warning is visible on screen.)* Walked: she comes at each of the plan's roadblocks in a
+## straight line from all round it, with the camera's view led by her walk as `Stroller` leads it
+## (`RoadblockRig.view_round()`), and on the frame his hand goes up the whole of his raised-hand
+## picture at his post (`EventInstance.warning_guard_rect()`) is inside that view, he is drawn above
+## the street's other figures (`EventInstance.WARNING_GUARD_Z`), and, on an approach she walked on
+## open ground with a clear line to the band throughout his warning radius, she is still outside his
+## charge radius (`EventInstance.charge_radius()`), so the warning comes first with ground to answer
+## it; on every approach that ends in his charge, his hand went up first; once he charges, he sorts
+## with the street again. The approaches on which the radius alone would have warned her with him
+## off the view are counted, so the view's part in the notice is shown to be doing something.
 func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 	var step := RoadblockRig.STEP
 	var warned := 0
+	var outside := 0
 	var charges := 0
 	var off_by_the_radius := 0
 	for seed_value: int in [4242, 77]:
@@ -743,37 +760,45 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 				var made := RoadblockRig.build(t, map, group)
 				var guard: EventInstance = made[1][0]
 				var band := guard.body_position()
-				var view_half := Tuning.VIEW_HALF_EXTENT
 				var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
 				var her := band + toward * (guard.def.pursues_within + 80.0)
 				var radius_alone_seen := false
 				var charged := false
 				var warned_here := false
+				var open_walk := true
 				var where := "seed %d band %s from %d°" % [seed_value,
 						map.world_to_tile(band_plan.position), bearing * 360 / 16]
 				while her.distance_to(band) > 40.0 and not charged:
 					her -= toward * Tuning.WALK_SPEED * step
 					var tile := map.world_to_tile(her)
+					var inside := her.distance_to(band) <= guard.def.pursues_within
 					if not map.in_bounds(tile) or not map.is_walkable(tile):
+						open_walk = open_walk and not inside
 						continue
+					open_walk = open_walk and not (inside and not map.clear_line(band, her))
+					var view := RoadblockRig.view_round(her, -toward)
 					var was_waiting := guard.is_waiting()
-					if was_waiting and not radius_alone_seen \
-							and her.distance_to(band) <= guard.def.pursues_within \
+					if was_waiting and not radius_alone_seen and inside \
 							and map.clear_line(band, her):
 						radius_alone_seen = true
-						if not Rect2(her - view_half, view_half * 2.0).encloses(
-								EventInstance.warning_guard_rect(guard._spread_vertical, band, her)):
+						if not view.encloses(EventInstance.warning_guard_rect(
+								guard._spread_vertical, band, her)):
 							off_by_the_radius += 1
-					RoadblockRig._tick(made[1], her, false)
+					RoadblockRig._tick(made[1], her, false, -toward)
 					if was_waiting and guard.is_standing_for_its_notice():
 						warned += 1
 						warned_here = true
-						var view := Rect2(her - view_half, view_half * 2.0)
 						t.check(view.encloses(EventInstance.warning_guard_rect(
 								guard._spread_vertical, band, her)),
 								"%s: his raised hand goes up in her view" % where)
 						t.check(guard.z_index == EventInstance.WARNING_GUARD_Z,
 								"%s: and he is drawn above the street round him" % where)
+						if open_walk:
+							outside += 1
+							t.check(guard.global_position.distance_to(her) > guard.charge_radius(),
+									"%s: and she is outside his %.0fpx charge radius (%.0fpx)"
+									% [where, guard.charge_radius(),
+									guard.global_position.distance_to(her)])
 					if guard.is_chasing():
 						charged = true
 						charges += 1
@@ -782,7 +807,8 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 						t.check(guard.z_index == 0,
 								"%s: once he charges he sorts with the street again" % where)
 				made[0].free()
-	t.check(warned > 0, "there were warnings to watch (%d)" % warned)
+	t.check(warned > 0 and outside > 0,
+			"there were warnings to watch (%d, %d on open ground)" % [warned, outside])
 	t.check(charges > 0, "and charges to ask about (%d)" % charges)
 	t.check(off_by_the_radius > 0,
 			"and approaches the radius alone would have warned from off the view (%d)"

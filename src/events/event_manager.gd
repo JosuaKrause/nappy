@@ -2051,6 +2051,7 @@ func _tell_them_where_she_is() -> void:
 		pram = stroller.global_position + stroller.facing * Tuning.PLAYER_BODY_RADIUS
 	for instance in _instances:
 		instance.player_at = _player.global_position
+		instance.player_view = _visible.view
 		instance.pram_at = pram
 		instance.player_running = running
 		instance.baby_awake = awake

@@ -1248,6 +1248,11 @@ func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: fl
 func set_expected_total_gross(total: float) -> void:
 	player_expected_total_gross = total
 
+## The camera's whole view this frame (`VisibleView.view`), written beside `player_at` by
+## `EventManager._tell_them_where_she_is()`: what a waiting charger's notice is held to
+## (`_would_stand_in_her_view()`). Empty where nothing has looked through a camera.
+var player_view := Rect2()
+
 ## Whether she is running right now. Written beside `player_at` and by the same pass, because the
 ## one thing that reads it asks both together: a pursuer gives up because **she ran**, which is a
 ## fact about her and not about the gap. See `_chase`.
@@ -1650,17 +1655,47 @@ func _leave_the_body_behind() -> void:
 			_set_off_from_the_near_post()
 	_keep_the_body_where_it_was_left()
 
-## **Whether the guard who would step out at her stands in her view**: the whole of his raised-hand
-## picture at the post on her side of the band (`warning_guard_rect()`) inside the world the camera
-## shows round her, `Tuning.VIEW_HALF_EXTENT` either way. No credit is taken for her look-ahead,
-## which points wherever she happens to be walking, and she can come into his notice walking across
-## it as well as towards him. Always true for a row that does not ask
-## (`EventDef.notices_in_her_view`, the escape's roadblock, which notices her only then).
+## **Whether a waiting charger would raise his warning in her view**: the whole of his warning
+## picture (`warning_rect()`) inside the camera's view this frame (`player_view`). *(Inbox #788, the
+## player: the charging radius of waiting chargers is tuned so that baiting is possible and so that
+## the warning is visible on screen.)* Every charger that waits, warns by radius and charges by
+## proximity notices her only then, on a day as in the escape, so his warning never starts off the
+## screen. The view is the camera's own, look-ahead included: walking at him, the camera leads her by
+## `Stroller.CAMERA_LOOK_AHEAD`, which is what puts a warning outside his charge radius in view when
+## she comes at him up the screen. Always true for any other row, and in a rig with no camera
+## (`player_view` empty), where the notice is the radius alone.
 func _would_stand_in_her_view() -> bool:
-	if not def.notices_in_her_view or def.look != EventDef.Look.ROADBLOCK:
+	if not def.pursues or not warns_by_radius() or not player_view.has_area():
 		return true
-	return Rect2(player_at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0).encloses(
-			warning_guard_rect(_spread_vertical, body_position(), player_at))
+	return player_view.encloses(warning_rect())
+
+## The world rect his warning picture fills, at the widest and tallest of its views, standing on his
+## feet: a roadblock's guard at the post on her side of the band (`warning_guard_rect()`), anyone
+## else where he stands.
+func warning_rect() -> Rect2:
+	if def.look == EventDef.Look.ROADBLOCK:
+		return warning_guard_rect(_spread_vertical, body_position(), player_at)
+	var size := _warning_picture_size(def.look)
+	return Rect2(global_position - Vector2(size.x * 0.5, size.y), size)
+
+## The largest of a look's warning pictures: the dog's alert, the robber's two alert frames, and the
+## guard's raised hand for anyone else drawn standing in a warning.
+static func _warning_picture_size(look: EventDef.Look) -> Vector2:
+	if _warning_sizes.has(look):
+		return _warning_sizes[look]
+	var families: Array[Dictionary] = [GUARD_ALERT_BY_VIEW]
+	if look == EventDef.Look.CHARGING_DOG:
+		families = [CHARGING_DOG_ALERT_BY_VIEW]
+	elif look == EventDef.Look.ROBBER:
+		families = [ROBBER_ALERT_BY_VIEW, ROBBER_ALERT_BY_VIEW_B]
+	var size := Vector2.ZERO
+	for family in families:
+		for view: String in family:
+			size = size.max(_native_size(family[view]))
+	_warning_sizes[look] = size
+	return size
+
+static var _warning_sizes := {}
 
 ## The world rect a roadblock's guard fills with his hand raised, standing at the post on `her` side
 ## of a band at `band_at` laid along `vertical` — what his warning draws (`chaser_pictures()`), at
@@ -2599,12 +2634,12 @@ func _chase(delta: float) -> void:
 	#
 	# `standoff_reach()` is that same reach unless the row keeps its lunge further out than its catch
 	# (`EventDef.lunge_reach`, the alley robber's): his catch and his lunge are set separately.
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	var standoff := charge_radius()
 	if is_waiting():
 		# **It notices her only along a clear line** (`_clear_line_to()`, the catch's own test):
 		# within `pursues_within` round a building's corner, he has not seen her. *(leafy-puffin,
-		# inbox #648: "yes noticing needs a clear line".)* And the escape's roadblock guard notices
-		# her only once he would stand in her view (`_would_stand_in_her_view()`).
+		# inbox #648: "yes noticing needs a clear line".)* And a charger that waits for her notices
+		# her only once his warning would stand in her view (`_would_stand_in_her_view()`).
 		if range_to_her <= def.pursues_within and _clear_line_to(player_at) \
 				and _would_stand_in_her_view():
 			_noticed_at = age
@@ -3013,7 +3048,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	var toward := her - global_position
 	if toward.length() >= 1.0:
 		_heading = toward.normalized()
-	if toward.length() <= Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()):
+	if toward.length() <= charge_radius():
 		_lunge_held = true
 
 ## `_chase()`'s own notice check, folded out for anything that waits on `pursues_within` without
@@ -4207,10 +4242,20 @@ func warns_by_radius() -> bool:
 	return (def.pursues or def.charges_within > 0.0) and def.pursues_within > 0.0 \
 			and not def.sets_off_beside_her and not _paths_to_her
 
-## The distance from him at which a pursuer charges once he is warning her: his stand-off,
-## `Tuning.pursuit_standoff()` over `EventDef.standoff_reach()`.
+## **The distance from him at which a pursuer lunges**: for one that waits for her, warns by radius
+## and charges by proximity, his charge radius, `Tuning.bait_radius()` over his catch, wide enough
+## that a walker coming in who turns and runs a prompt `Tuning.BAIT_REACTION` after he charges gets
+## away *(inbox #788, the player: a charger that warns and starts charging by proximity needs a
+## bigger radius for starting to charge, otherwise it is impossible to bait him out)*; for any other
+## pursuer, the stand-off it closes to and holds, `Tuning.pursuit_standoff()` over
+## `EventDef.standoff_reach()`, which the day-3 dog's gold timing is spent at. **The alley robber
+## keeps his stand-off**: a row with a `lunge_reach` of its own has its lunge set by the player
+## (tall-osprey's record, "116px, keep every rule"), so it is not widened here.
 func charge_radius() -> float:
-	return Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	if def.pursues and warns_by_radius() and def.lunge_reach <= 0.0:
+		return maxf(standoff, Tuning.bait_radius(def.pursue_speed, def.lethal_reach()))
+	return standoff
 
 ## **It stops warning and waits again, where it stands**: she has gone back out of its warning
 ## radius. Its notice is forgotten, so the next time she comes inside the radius it notices her and
@@ -4289,8 +4334,7 @@ func _pause_a_held_notice(delta: float) -> void:
 		return
 	if chase_age() - delta >= notice_time():
 		return
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
-	if global_position.distance_to(player_at) < standoff:
+	if global_position.distance_to(player_at) < charge_radius():
 		_notice_paused_for += delta
 
 ## Current peak intensity at the centre, after the telegraph damping and the pulse envelope.

@@ -929,11 +929,17 @@ func _test_a_pursuer_can_wait(t) -> void:
 ## walking slowly stops if she gets out of the radius.)* The dog that waited (any day past
 ## `RUN_TAUGHT_DAY`), the hunting roadblock's guard and the alley robber notice her inside
 ## `pursues_within` and warn for as long as she stays there, with no clock
-## (`EventInstance.warns_by_radius()`); they charge only when she crosses the stand-off. Each is
-## walked here from the catalogue (`_waiting_pursuers()`), so a row that starts waiting for her is
-## walked without anybody listing it:
+## (`EventInstance.warns_by_radius()`); they charge only when she crosses its charge radius
+## (`EventInstance.charge_radius()`: `Tuning.bait_radius()` over its catch, or the robber's own 116px
+## stand-off). Each is walked here from the catalogue (`_waiting_pursuers()`), so a row that starts
+## waiting for her is walked without anybody listing it:
 ##
-## - **Walking in** meets the charge at the full stand-off, and nothing is lethal during the warning.
+## - **Walking in** meets the charge at the full charge radius, and nothing is lethal during the
+##   warning.
+## - **Baiting works** *(inbox #788, the player: a charger that warns and charges by proximity needs
+##   a charge radius big enough to bait him out)*: walking in, she turns `Tuning.BAIT_REACTION` after
+##   it charges, runs, and gets away, and it gives up. The robber, whose lunge is the player's own
+##   116px (tall-osprey's record), is reported rather than held to it.
 ##   The rows that stand do not move while they warn; the robber walks at her no faster than his
 ##   notice walk.
 ## - **Running the moment it charges** shakes it off; **walking away once it charges** is caught.
@@ -955,12 +961,12 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 			"the waiting dog, the hunting roadblock's guard and the alley robber are walked (%s)"
 			% ", ".join(ids.keys()))
 	for def in rows:
-		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+		var standoff := _charge_radius_of(t, def)
 		var walks := def.notice_walk_speed > 0.0
 		var name := "'%s' (%s)" % [def.id, "walks" if walks else "stands"]
 		var walked_in := _standing_rig(t, def, -Tuning.WALK_SPEED)
 		t.close_to(walked_in["at_the_lunge"], standoff,
-				"walking into %s it charges at its full stand-off" % name, 8.0)
+				"walking into %s it charges at its full charge radius" % name, 8.0)
 		t.check(not walked_in["lethal_while_telegraphing"],
 				"and nothing %s does during its warning can end the day" % name)
 		if walks:
@@ -971,6 +977,12 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 		else:
 			t.check(walked_in["stood"], "%s holds its ground while she walks in (moved %.1fpx)"
 					% [name, walked_in["moved_in_notice"]])
+		var baited := _standing_rig(t, def, -Tuning.WALK_SPEED, Tuning.BAIT_REACTION)
+		if def.lunge_reach <= 0.0:
+			t.check(not baited["caught"] and baited["gave_up"],
+					"baiting %s works: turning %.1fs after its charge and running gets away "
+					% [name, Tuning.BAIT_REACTION] + "(closest %.0fpx, its catch %.0fpx)"
+					% [baited["closest"], def.lethal_reach()])
 		var answered := _standing_rig(t, def, -Tuning.WALK_SPEED, 0.0)
 		t.check(not answered["caught"] and answered["gave_up"],
 				"running from %s the moment it charges shakes it off (closest %.0fpx)"
@@ -1003,17 +1015,26 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 					% [name, speed] + "is %.0fpx away" % left["waited_again_at"])
 			t.check(left["moved_after_waiting"] < 0.5,
 					"and it stays where it stopped (moved %.1fpx after)" % left["moved_after_waiting"])
-		print(("[test_events_pursuit] %s, warning from %.0fpx, stand-off %.0fpx: walked in, warned "
-				+ "%.2fs and charged at %.0fpx; answered at the charge, closest %.0fpx; walked away "
+		print(("[test_events_pursuit] %s, warning from %.0fpx, charge radius %.0fpx: walked in, warned "
+				+ "%.2fs and charged at %.0fpx; baited, closest %.0fpx%s; answered at the charge, "
+				+ "closest %.0fpx; walked away "
 				+ "from the charge, caught %.2fs after it; stood at the edge, %s; stood %.0fpx off, "
 				+ "%s") % [name, def.pursues_within, standoff, walked_in["notice_lasted"],
-				walked_in["at_the_lunge"], answered["closest"],
+				walked_in["at_the_lunge"], baited["closest"],
+				", caught" if baited["caught"] else ", got away", answered["closest"],
 				charged_then_walked["after_the_lunge"],
 				("walked up to and charged at %.0fpx, caught at %.2fs" % [stood["at_the_lunge"],
 						stood["ended_at"]]) if stood["caught"] else "never charged in 20s",
 				near["from"],
 				("charged at %.0fpx" % near["at_the_lunge"]) if near["at_the_lunge"] != INF
 						else "never charged in 20s"])
+
+## Where `def` charges once it is warning her: `EventInstance.charge_radius()` on an instance of it.
+func _charge_radius_of(t, def: EventDef) -> float:
+	var instance := _instance(t, def, Vector2.ZERO)
+	var radius := instance.charge_radius()
+	instance.free()
+	return radius
 
 ## **A warning she walks out of is not a chase**, so the page's `dog-chased` (`EventBus.pursuit_began`,
 ## docs/TELEMETRY.md, "The page counts visits") is sent at the charge and never for a warning alone.

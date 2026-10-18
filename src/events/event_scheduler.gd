@@ -314,11 +314,12 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## it ordinarily leaves stripped — on an ordinary day that aftermath is the point of the row, and
 ## here a convoy is traffic rather than the thing that closed a street. `abduction` is the masked
 ## men in a van. `roadblock` at full heat is the masked men on foot: at `Tuning.RESISTANCE_GOAL` its
-## guards leave the post, so it stands as a band across the road until she comes within
-## `Tuning.HEAT_HUNTS_WITHIN` and then the guard on her side comes at her on foot as
-## `guard_standing.svg` and `guard_lunging.svg` — see `EventInstance._draw_roadblock()`. Its one
-## change is `EventCatalogue.escape_roadblock()`'s: once that guard has left his post for good, the
-## band is only a barrier and costs nothing, so luring him off and running him off is the way past,
+## guards leave the post, so it stands as a band across the road until she comes within his warning
+## radius (`EventDef.pursues_within`, 237px from the band) and then the guard on her side warns and,
+## inside his charge radius, comes at her on foot as `guard_standing.svg` and `guard_lunging.svg` —
+## see `EventInstance._draw_roadblock()`. Its one change is `EventCatalogue.escape_roadblock()`'s:
+## once that guard has left his post for good, the far guard walks off too and the band, which
+## costs nothing as every roadblock's does, stands unmanned, so luring him off is the way past,
 ## and one roadblock a street (`Tuning.FINALE_GUARDS_PER_STREET`) leaves one guard to lure. Only the
 ## explosion is new.
 ##
@@ -458,15 +459,16 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 			ground.stand(best)
 
 ## **One waiting guard at a time.** A candidate that waits to notice her (`EventDef.pursues_within`:
-## the escape's roadblock, whose guard notices her within `Tuning.HEAT_HUNTS_WITHIN`) is refused
-## when the ground it notices her from meets the ground another placed one notices her from: the
-## two notice discs, each centred where its band stands, may not overlap, so two of the escape's
-## roadblocks stand at least twice `Tuning.HEAT_HUNTS_WITHIN` apart, on one street or on two.
+## the escape's roadblock, whose guard notices her within 237px of his band, `Tuning.bait_notice()`
+## and `Tuning.ROADBLOCK_POST_REACH`) is refused when the ground it notices her from meets the ground
+## another placed one notices her from: the two notice discs, each centred where its band stands, may
+## not overlap, so two of the escape's roadblocks stand at least twice that, 475px, apart, on one
+## street or on two.
 ## *(Inbox #771, 2026-10-18: "two roadblocks are right next to each other and the second guard is
 ## invisible (hidden) until it already charges".)*
 ##
 ## **Why the notice is the distance that matters.** Dealing with one roadblock happens inside its
-## guard's notice: he warns while she is inside it, charges only once she crosses his stand-off,
+## guard's notice: he warns while she is inside it, charges only once she crosses his charge radius,
 ## and the run that shakes him off goes back out of it. Another guard can come for her only once
 ## she is inside *his* notice too, so with no ground inside both she deals with one band and its
 ## guard at a time — wherever the two stand, either side of a junction or round a corner as much
@@ -477,10 +479,8 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 ## wherever she runs. Running back the way she came, the answer the lure asks for, takes her out of
 ## every notice but his; running on past his band towards the next one can bring her into that
 ## band's notice with the first guard still behind her, and then she has both. That is the wrong
-## answer to a charge, so the spacing is not widened for it: 360px (twice `HEAT_HUNTS_WITHIN`)
-## keeps the notices apart, which is what one guard at a time needs of the right answer. The band's
-## own field reaches no further than its notice (`outer_radius` 179), so two fields never overlap
-## at this spacing either. It is also what keeps one guard from standing behind another's drawing: the
+## answer to a charge, so the spacing is not widened for it: twice his warning radius keeps the
+## notices apart, which is what one guard at a time needs of the right answer. It is also what keeps one guard from standing behind another's drawing: the
 ## near guard of a band two tiles up the street stands between the two bands, where the nearer
 ## band and the guard posted on its far side are drawn over him.
 static func _keeps_its_notice_to_itself(map: CityMap, candidate: Planned,

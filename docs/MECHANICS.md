@@ -1156,8 +1156,11 @@ and price and route around, and that becomes a chase if you do not. Three states
 Two things are deliberately not the same as an ordinary telegraph. **The warning is a radius, not a
 clock** *(inbox #764: a warning happens when she comes close; she can turn around; if she keeps
 getting closer the charge starts)*: it starts when she comes inside `pursues_within` along a clear
-line, not when the day put it there, it lasts for as long as she stays inside, and it ends in a
-charge only when she crosses the stand-off (`EventInstance.warns_by_radius()`). A guard a task sets
+line and with its warning picture in the camera's view, not when the day put it there, it lasts
+for as long as she stays inside, and it ends in a charge only when she crosses its charge radius
+(`EventInstance.warns_by_radius()`, `EventInstance.charge_radius()`), which is wide enough to bait
+it out: turning and running 0.3s after the charge gets away (`docs/EVENTS.md`, "Every charger that
+does not arrive charging warns first"). A guard a task sets
 on her from wherever he stands (`EventInstance.notice_her_at()`) is not on this rule: in her view
 he stands with his warning up for `Tuning.WARNING_ALONE_MAX` and then charges, and out of it he is
 sent at her under a badge of the same second. And its warning does **not** damp what it is emitting:

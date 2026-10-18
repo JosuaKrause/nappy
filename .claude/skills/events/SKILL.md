@@ -284,6 +284,16 @@ it was written from. The traps:
   stands for its notice — and lunges once she is back at the
   full stand-off; a timed notice does not run out while she is inside it (`_pause_a_held_notice()`)
   — a notice ending there is the same trap, reached by her standing still.
+- **A waiting charger does not charge from its stand-off.** `PURSUIT_REACTION` of its own approach
+  is worth about a fifth of a second once she is walking into it, too short to turn and run, so
+  one that waits for her, warns by radius and charges by proximity charges from
+  `Tuning.bait_radius()` over its catch instead (`EventInstance.charge_radius()`), and warns from
+  `Tuning.bait_notice()`, outside it by the ground a walker needs to stop: baiting it is an answer
+  (inbox #788). It notices her only with its warning picture in the camera's view
+  (`EventInstance._would_stand_in_her_view()`, the view `EventManager` hands it as `player_view`);
+  a rig hands it none and gets the radius alone, so a test of the view hands it one
+  (`tests/escape_roadblock_rig.gd`, `view_round()`). The alley robber keeps the stand-off the
+  player chose for his lunge (tall-osprey).
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
   (inbox #764). His warning comes before he exists — a hut's guard raising his hand while she is
   near a raised boom — and he charges the moment she goes under it, from the hut across the road,

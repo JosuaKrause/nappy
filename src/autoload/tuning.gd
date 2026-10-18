@@ -2109,6 +2109,59 @@ const PURSUIT_SHAKEN_OFF := 0.35
 func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 	return inner + pursue_speed * PURSUIT_REACTION
 
+## **How long she takes to turn and run once a waiting charger charges**, the reaction his charge
+## radius is stated over (`bait_radius()`). *(Inbox #788, the player: a charger that warns and starts
+## charging by proximity needs a bigger radius for starting to charge, or it is impossible to bait
+## him out.)* Baiting is the answer the warning asks for: she steps in, he charges, she turns and
+## runs at once and gets away, and he gives up and leaves his post. 0.3s is a prompt human answer
+## to a figure that starts running at her, spent still walking in, and it is the turn the stairs'
+## masked man and the checkpoint's guard are already walked at (`tests/test_interior.gd`,
+## `tests/test_checkpoints.gd`).
+const BAIT_REACTION := 0.3
+## How far short of his catch a waiting charger still is at his closest when she turns at
+## `BAIT_REACTION`: her own body's radius, so the answer is a clear escape rather than a graze.
+const BAIT_MARGIN := PLAYER_BODY_RADIUS
+
+## **A waiting charger's charge radius**: how far from him she is when he charges, for one that waits
+## for her, warns by radius and charges once she is that close (`EventInstance.charge_radius()`).
+## Derived so that a walker coming in who turns and runs `BAIT_REACTION` after he charges gets away
+## with `BAIT_MARGIN` to spare, from his speed, her walk, her run's acceleration and his catch:
+##
+## - **Her reaction**: she is still walking in, so the gap closes at `pursue_speed + WALK_SPEED`
+##   for `BAIT_REACTION`.
+## - **Her about-turn**: her speed toward him falls from `WALK_SPEED` at `ACCELERATION` until she is
+##   running away as fast as he comes, which closes it by `(pursue_speed + WALK_SPEED)² / (2 ·
+##   ACCELERATION)` more. From then on she gains `RUN_SPEED - pursue_speed` on him, which
+##   `validate_pursuit()` keeps positive, and he gives up once she has run `PURSUIT_SHAKEN_OFF`.
+## - **His catch** (`reach`, `EventDef.lethal_reach()`) and `BAIT_MARGIN` are what is left.
+##
+## Wider than `pursuit_standoff()`, whose `PURSUIT_REACTION` of his own approach is worth about a
+## fifth of a second once she is walking into him (see its doc). That stand-off stays what a
+## pursuer that comes for her holds; this is only where one that waits for her starts.
+func bait_radius(pursue_speed: float, reach: float) -> float:
+	var closing := pursue_speed + WALK_SPEED
+	return reach + closing * BAIT_REACTION + closing * closing / (2.0 * ACCELERATION) \
+			+ BAIT_MARGIN
+
+## **How far outside his charge radius a waiting charger's warning starts**, in px: the ground a walker
+## who sees his warning needs to stop short of his charge — `BAIT_REACTION` still walking, then her
+## stop at `ACCELERATION` — and `BAIT_MARGIN`. So his warning comes first and turning round from it
+## is an answer *(inbox #764, the player: a warning happens when she comes close; she can turn around;
+## if she keeps getting closer the charge starts)*.
+func bait_warning_lead() -> float:
+	return WALK_SPEED * BAIT_REACTION + WALK_SPEED * WALK_SPEED / (2.0 * ACCELERATION) + BAIT_MARGIN
+
+## How much nearer her a roadblock's guard posted on her side stands than the band's centre his
+## notice is measured from, at most, in px: his post below a band laid across a north-south street,
+## his own 44px height clear of the band (`EventInstance._guard_post_offset()`, held by
+## `tests/test_events_pursuit.gd`).
+const ROADBLOCK_POST_REACH := 46.0
+
+## A waiting charger's warning radius over his own catch: `bait_radius()` and `bait_warning_lead()`,
+## measured from him.
+func bait_notice(pursue_speed: float, reach: float) -> float:
+	return bait_radius(pursue_speed, reach) + bait_warning_lead()
+
 ## The pursuit fairness contract, and the one place it is stated.
 ##
 ## `validate_event`'s escape-distance rule is about walking out of a *field*, and a pursuer has no

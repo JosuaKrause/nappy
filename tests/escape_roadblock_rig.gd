@@ -150,11 +150,22 @@ class Meter extends RefCounted:
 		if asleep and value >= Tuning.EXCITEMENT_WAKE_THRESHOLD:
 			asleep = false
 
+## The camera's view round her once it has settled on her walking `heading`: `Tuning.VIEW_HALF_EXTENT`
+## either way of her, led by `Stroller.CAMERA_LOOK_AHEAD` the way `Stroller` leads it (its
+## `OBLIQUE_Y` squash on the vertical). What `EventManager` hands a waiting charger as
+## `EventInstance.player_view`; the view round her alone for no heading.
+static func view_round(her: Vector2, heading: Vector2) -> Rect2:
+	var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	return Rect2(her + lead - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+
 ## One frame of the world round her: every instance told where she is and stepped, then asked
-## whether it catches her. True on a catch.
-static func _tick(instances: Array[EventInstance], her: Vector2, running: bool) -> bool:
+## whether it catches her. True on a catch. With a `heading` (the way she faces), each is handed the
+## camera's view round her too (`view_round()`).
+static func _tick(instances: Array[EventInstance], her: Vector2, running: bool,
+		heading := Vector2.ZERO) -> bool:
 	for instance in instances:
 		instance.player_at = her
+		instance.player_view = view_round(her, heading) if heading != Vector2.ZERO else Rect2()
 		instance.player_running = running
 		instance.baby_awake = false
 		instance._process(STEP)
@@ -190,7 +201,7 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	var strongest := 0.0
 	while walked < length:
 		her = from + heading * walked
-		if _tick(instances, her, false):
+		if _tick(instances, her, false, heading):
 			caught = true
 			break
 		for instance in instances:
@@ -203,9 +214,10 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	return {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value, "caught": caught,
 			"charged": charged.size(), "strongest": strongest, "at": her}
 
-## The lure: in from `from` at a walk until a guard charges, straight back at a run until every
-## charge has given up, then standing until each guard who charged has left his post for good (at
-## most 30s); then `walk()` from there to `to`. Answers `{"lure": …, "after": …}`, each in
+## The lure, as baiting is played: in from `from` at a walk until a guard charges, on at the walk
+## for `Tuning.BAIT_REACTION`, then turned and run straight back, her speed changing at
+## `Tuning.ACCELERATION` as hers does, until every charge has given up; then standing until each
+## guard who charged has left his post for good (at most 30s); then `walk()` from there to `to`. Answers `{"lure": …, "after": …}`, each in
 ## `walk()`'s shape; `after` is empty when the lure itself was caught.
 static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], from: Vector2,
 		to: Vector2, meter: Meter) -> Dictionary:
@@ -218,20 +230,27 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	var lured := {}
 	var frames := 0
 	while _charging(instances) == 0 and her.distance_to(from) < from.distance_to(to):
-		if _tick(instances, her, false):
+		if _tick(instances, her, false, heading):
 			caught = true
 			break
 		meter.feed(instances, her, false, false)
 		her += heading * Tuning.WALK_SPEED * STEP
+	# Positive is on along `heading`, toward the band.
+	var speed := Tuning.WALK_SPEED
+	var since := 0.0
 	while not caught and _charging(instances) > 0 and frames < int(20.0 / STEP):
 		for instance in instances:
 			if instance.is_chasing():
 				lured[instance] = true
-		her -= heading * Tuning.RUN_SPEED * STEP
-		if _tick(instances, her, true):
+		var wanted := Tuning.WALK_SPEED if since < Tuning.BAIT_REACTION else -Tuning.RUN_SPEED
+		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
+		her += heading * speed * STEP
+		var running := speed < -Tuning.WALK_SPEED
+		if _tick(instances, her, running, heading if speed >= 0.0 else -heading):
 			caught = true
 			break
-		meter.feed(instances, her, true, false)
+		meter.feed(instances, her, running, false)
+		since += STEP
 		frames += 1
 	frames = 0
 	while not caught and frames < int(30.0 / STEP):
@@ -240,7 +259,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 			gone = gone and instance.is_a_spent_guard() and not instance.is_leaving
 		if gone:
 			break
-		if _tick(instances, her, false):
+		if _tick(instances, her, false, -heading):
 			caught = true
 			break
 		meter.feed(instances, her, false, true)

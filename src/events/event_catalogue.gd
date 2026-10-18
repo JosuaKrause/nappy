@@ -92,8 +92,7 @@ static func heated(def: EventDef, level: int) -> EventDef:
 ## at the far post walks off too, so the band stands unmanned (`EventDef.far_guard_leaves`).
 ## *(Inbox #771: "it should be in a way that luring away the guard is enough"; asked whether the far
 ## guard should leave as well: "He leaves too".)* Its band costs nothing, as every roadblock's does
-## (`_roadblock()`). And he notices her only once he would stand in her view
-## (`EventDef.notices_in_her_view`), so his warning never starts off the screen. A derived copy, never a mutation, kept for the run, for the
+## (`_roadblock()`). A derived copy, never a mutation, kept for the run, for the
 ## reason `heated()` caches its own; `shape` and `solid_parts` are carried across by hand, as
 ## `EventDef.at_heat()` carries them, since `Resource.duplicate()` does not copy them.
 static func escape_roadblock() -> EventDef:
@@ -103,7 +102,6 @@ static func escape_roadblock() -> EventDef:
 		escape.shape = hunting.shape
 		escape.solid_parts = hunting.solid_parts
 		escape.far_guard_leaves = true
-		escape.notices_in_her_view = true
 		_escape_roadblock = escape
 	return _escape_roadblock
 
@@ -1586,17 +1584,9 @@ static func _charging_dog() -> EventDef:
 	# would never go up, and the trace would attribute the mark it eventually raises to "nothing in
 	# reach". `validate_pursuit` refuses the arrangement.
 	def.outer_radius = 150.0
-	# From day 4 it waits inside this field rather than announcing itself the moment it streams in
-	# from `Tuning.EVENT_STREAM_RADIUS` away — a dog she can see is a dog she can route around,
-	# `alley_robbery`'s shape: an "on sight" band before the trigger, the same two sentences in the
-	# same order, not the same distances. 130, inside this row's 150 outer radius (20px she can
-	# feel it before it decides, the row's own first sentence, on the teaching day's own field
-	# rather than a wider one built for this) and outside its 104px stand-off
-	# (`Tuning.pursuit_standoff(130.0, 26.0)`) with 26px to spare — both bounds
-	# `Tuning.validate_pursuit` checks, held with room rather than pinned to either.
-	# `EventScheduler._for_day()` is where a `MAP` placement past the switch gets a copy carrying
-	# this instead of the authored 0.0 — see `EventDef.pursues_within_on()`.
-	def.pursues_within_after_first_day = 130.0
+	# From day 4 it waits for her rather than announcing itself the moment it streams in from
+	# `Tuning.EVENT_STREAM_RADIUS` away — a dog she can see is a dog she can route around. Its
+	# warning radius is set below, from its charge radius, once its speed is.
 	# The chase proper, once it can end the day: `Tuning.PURSUIT_TIME`, a long cap rather than an end
 	# a walk can outlast (amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if
 	# she walks"). Running is what ends it, at `Tuning.PURSUIT_SHAKEN_OFF`'s rate.
@@ -1611,11 +1601,21 @@ static func _charging_dog() -> EventDef:
 	def.telegraph_time = 4.5
 	def.pursues = true
 	def.pursue_speed = 130.0
+	# **Its warning radius, from day 4: its charge radius and the ground to stop short of it**
+	# (`Tuning.bait_notice()`, 189px over its 26px catch; its charge radius is
+	# `Tuning.bait_radius()`, 142px). *(Inbox #788, the player: the charging radius of waiting
+	# chargers is tuned so that baiting is possible and the warning is visible on screen.)* It lies
+	# past the 150px disc of its standing field and inside the 203px its field reaches ahead of it
+	# at its speed, which is what `Tuning.validate_pursuit` holds a notice to; its alert pose, not
+	# the meter, is what says it has seen her. `EventScheduler._for_day()` is where a `MAP` placement
+	# past the switch gets a copy carrying this instead of the authored 0.0 — see
+	# `EventDef.pursues_within_on()`.
+	def.pursues_within_after_first_day = Tuning.bait_notice(def.pursue_speed, def.inner_radius)
 	# **The dog that waited stands for its notice** *(inbox #748: "dog also doesn't walk -- only
 	# one is the robber")*: from day 4, once it notices her, it holds its ground in its alert pose
-	# rather than closing, for as long as she stays inside its 130px radius *(inbox #764: a warning
-	# happens when she comes close; she can turn around)*, sits again once she is outside it, and
-	# lunges the moment she comes inside its 104px stand-off.
+	# rather than closing, for as long as she stays inside its warning radius *(inbox #764: a
+	# warning happens when she comes close; she can turn around)*, sits again once she is outside
+	# it, and lunges the moment she comes inside its charge radius.
 	# The day-3 dog sent down her heading has no wait to notice her from, so its approach is still
 	# this telegraph (`EventInstance.is_standing_for_its_notice()`).
 	def.stands_for_its_notice = true
@@ -1901,7 +1901,7 @@ static func _curfew_announce() -> EventDef:
 ## **The 179px cold field sits under the shared 180px trigger, which the 24px `abduction` and
 ## `night_raid` never had to notice because their own fields (250/330) already cleared it.**
 ## `EventDef.at_heat()` widens only the hunting copy's `outer_radius` to `maxf(outer_radius,
-## pursues_within)` — the smallest fix that holds for every `HUNTS` row rather than one that asks
+## Tuning.HEAT_HUNTS_WITHIN)` — the smallest fix that holds for every `HUNTS` row rather than one that asks
 ## a row's cold field to carry a number that belongs to the ladder — so the roadblock's own 179px
 ## field is exactly what it was cold, and only the moment its guard starts hunting reaches 180px.
 ## `tests/test_heat.gd`'s generic loop (`_test_a_hunts_row_wakes_up_at_its_own_threshold`) is what
@@ -2056,8 +2056,11 @@ static func _alley_robbery() -> EventDef:
 	# he decides anything about her. *(Inbox #761, the player: "we can increase the noticing if the
 	# robber starts walking slowly".)* 64px past his stand-off at the slow walk below is about half a
 	# second of him walking for a walker coming in (64 / (40 + 92)) and 1.6s for one who stops at the
-	# edge, and 180px is the hunting roadblock guard's own trigger (`Tuning.HEAT_HUNTS_WITHIN`) and
-	# half the view's height, so he notices her on screen.
+	# edge, and 180px is half the view's height; he notices her only once his warning would stand in
+	# her view (`EventInstance._would_stand_in_her_view()`). **His lunge stays at his 116px stand-off
+	# rather than the waiting chargers' wider charge radius** (`EventInstance.charge_radius()`, which
+	# passes over a row with its own `lunge_reach`): 116px is the player's own choice for him
+	# (tall-osprey's record), so it is not changed without the player.
 	#
 	# The trap, and the reason this is worth a comment rather than a number: with a chase that ends
 	# at a *distance*, a trigger at or past that distance is a pursuit that loses interest the

@@ -1112,19 +1112,6 @@ func lunge_is_inside_the_catch() -> bool:
 ## Read only where `body_stays_behind` is set; nothing else has a guard to leave.
 @export var far_guard_leaves := false
 
-## Whether a roadblock's guard who waits for her (`pursues_within`) notices her **only once he would
-## stand in her view**: inside `pursues_within` along a clear line as ever, and with the whole of his
-## raised-hand picture, at the post on her side he steps out to, inside the world the camera shows
-## round her (`Tuning.VIEW_HALF_EXTENT` either way of her). *(Inbox #771, 2026-10-18: "the second
-## guard is invisible (hidden) until it already charges".)* The view reaches 180px above and below
-## her, the same as his notice, and a band across an east-west street posts its guards level with
-## its own line, so from the cross street below the junction the radius alone noticed her with his
-## head off the top of the screen. The escape's roadblock is the one row that sets it
-## (`EventCatalogue.escape_roadblock()`).
-##
-## Read only where `look` is `Look.ROADBLOCK`; nothing else steps out to a post.
-@export var notices_in_her_view := false
-
 ## Which side or sides of a `Look.ROADBLOCK` band `_draw_roadblock()` posts a standing guard on —
 ## `-1`/`+1` in `_guard_post_offset()`'s own reading of `side`, the same sign `_guard_side_toward()`
 ## and `_chaser_side` use. `[-1, 1]` (both) is every row's own default: the catalogue `roadblock`
@@ -1237,14 +1224,27 @@ func at_heat(level: int) -> EventDef:
 				hot.pursues = true
 				hot.pursue_speed = Tuning.HEAT_HUNTS_SPEED
 				hot.pursues_within = Tuning.HEAT_HUNTS_WITHIN
+				if look == Look.ROADBLOCK:
+					# **The roadblock's guard warns from his charge radius and the ground to stop
+					# short of it, measured from his post** (`Tuning.bait_notice()`), and his notice
+					# is measured from the band's centre, which his post on her side stands up to
+					# `Tuning.ROADBLOCK_POST_REACH` nearer her than. *(Inbox #788, the player: the
+					# charging radius of waiting chargers is tuned so that baiting is possible and the
+					# warning is visible on screen.)*
+					hot.pursues_within = Tuning.bait_notice(hot.pursue_speed, lethal_reach()) \
+							+ Tuning.ROADBLOCK_POST_REACH
 				# The shared trigger is authored once, against the widest cold field in the
 				# catalogue (`abduction`'s 250px) — a row whose own `outer_radius` sits under it
 				# would notice her from outside its own field, which `Tuning.validate_pursuit()`
 				# refuses. Widening only the hunting copy holds the contract for every `HUNTS` row
 				# without asking a row's author to pad its cold field past a constant that belongs
 				# to the ladder rather than to the row; the cold shape, and everything measured
-				# from it (`required_telegraph_time()`, the cost table), is untouched.
-				hot.outer_radius = maxf(outer_radius, hot.pursues_within)
+				# from it (`required_telegraph_time()`, the cost table), is untouched. Widened to the
+				# shared trigger, not to the roadblock guard's own wider warning: his band has no
+				# field strength, and the 180px it reaches still carries his notice in the 243px it
+				# reaches ahead of him at his speed, which is what the contract reads; so the
+				# ground a day spaces its rows by is what it was.
+				hot.outer_radius = maxf(outer_radius, Tuning.HEAT_HUNTS_WITHIN)
 				# For a pursuer `duration` is the length of the chase, not the length of the idle
 				# — see `pursues_within` above. Cold, this row simply sits for `duration` seconds
 				# and is done.
@@ -1582,6 +1582,21 @@ func validate() -> bool:
 			and not Tuning.validate_pursuit(id, pursue_speed, duration, lethal_reach(), telegraph_time,
 					pursues_within_after_first_day, outer_radius, standoff_reach()):
 		return false
+	# **A charger that waits for her warns outside his charge radius by the ground to stop short of
+	# it** (`Tuning.bait_notice()`), measured from him: a roadblock's notice is measured from its
+	# band, which his post stands up to `Tuning.ROADBLOCK_POST_REACH` nearer her than. *(Inbox #788,
+	# the player: the charging radius of waiting chargers is tuned so that baiting is possible and
+	# the warning is visible on screen.)* A row with a lunge of its own (`lunge_reach`, the robber's,
+	# the player's choice) charges from its stand-off instead (`EventInstance.charge_radius()`).
+	if pursues and not sets_off_beside_her and not arrives_chasing and lunge_reach <= 0.0:
+		var allowance := Tuning.ROADBLOCK_POST_REACH if look == Look.ROADBLOCK else 0.0
+		for notice: float in [pursues_within, pursues_within_after_first_day]:
+			if notice > 0.0 and notice - allowance \
+					< Tuning.bait_notice(pursue_speed, lethal_reach()) - 0.01:
+				push_error("event '%s' warns from %.0fpx, inside its %.0fpx charge radius and the "
+						% [id, notice - allowance, Tuning.bait_radius(pursue_speed, lethal_reach())]
+						+ "%.0fpx a walker needs to stop short of it" % Tuning.bait_warning_lead())
+				return false
 	if pursues:
 		# A pursuer has no line to be walked out of — it follows — so the ordinary escape-distance
 		# rule says nothing about it and `validate_pursuit` is the contract instead. What its
