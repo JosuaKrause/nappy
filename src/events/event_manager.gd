@@ -108,8 +108,9 @@ var _crossing_for := 0.0
 ## **Crossings held behind the one still warning her**: `[position, facing]` of each other door's
 ## line she walked across while `_crossing` was warning her, which starts no warning of its own. Each
 ## is announced (`door_crossed`) the frame that warning runs out and its guard is set on her, and
-## dropped if it is called off, so no walk under a boom counts without a guard coming for it (review 5
-## of PR #781: two doors meeting at a corner).
+## dropped if it is called off or she walks back across that door's line first. **The rule, once: a
+## walked crossing counts only if she is still across that door's line when a guard is set on her
+## for it** (reviews 5 and 6 of PR #781: two doors meeting at a corner).
 var _held_crossings: Array = []
 
 ## One `ReleaseLatch` per redetaining instance she has been let out of — `instance -> latch`. Armed
@@ -2356,11 +2357,16 @@ func _watch_the_door_lines(delta := 0.0) -> void:
 	# run with her still across (`_run_the_crossing_warning()`), so a crossing she takes back counts
 	# for nothing. **One made while another door's crossing is warning her is held with it**
 	# (`_held_crossings`): counted when that warning runs out and its guard comes, dropped if it is
-	# called off. One that starts no warning of its own otherwise — a guard already after her, a
+	# called off or she walks back across that door first. One that starts no warning of its own otherwise — a guard already after her, a
 	# door with no hut today — has no clock to wait for and counts as it happens: the guard after
 	# her is its price.
 	if _crossing != null:
-		_held_crossings.append([crossed.global_position, crossed.facing_now()])
+		# Back across a door whose crossing is held: taken back, so it is dropped, not held twice.
+		var held := _held_crossing_on(crossed)
+		if held >= 0:
+			_held_crossings.remove_at(held)
+		else:
+			_held_crossings.append([crossed.global_position, crossed.facing_now()])
 		return
 	if not _start_the_crossing_warning(crossed, here):
 		door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
@@ -2388,6 +2394,18 @@ func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
 		hut.def.id, TelemetryLog.tile(_map.world_to_tile(hut.global_position)),
 		Tuning.CROSSING_WARNING])
 	return true
+
+## The index in `_held_crossings` of the held crossing on `door`'s line (the same test as
+## `_crossing_is_on()`), or -1.
+func _held_crossing_on(door: EventInstance) -> int:
+	var axis := door.facing_now()
+	for i in _held_crossings.size():
+		var at: Vector2 = _held_crossings[i][0]
+		var facing: Vector2 = _held_crossings[i][1]
+		if absf(facing.dot(axis)) >= 0.99 and absf((door.global_position - at).dot(axis)) <= 1.0 \
+				and door.global_position.distance_to(at) <= Tuning.STREET_WIDTH * Tuning.TILE_SIZE:
+			return i
+	return -1
 
 ## Whether `door` stands on the line of the crossing still warning her: the same cross-street line,
 ## within a street's width of the body she crossed.

@@ -923,7 +923,9 @@ her still across and he is set on her; a crossing she takes back within the warn
 nothing (`EventManager.door_crossed`), so the task is never done without its price. A crossing of
 the named door made while another door's crossing is still warning her (two doors meeting at a
 corner) is held with that one: it counts when that warning runs out and its guard comes, and not at
-all if she goes back across and calls it off. Only with a guard already after her, which is its
+all if she goes back across and calls it off, or walks back across the named door first. **The rule,
+once: a walked crossing counts only if she is still across that door's line when a guard is set on
+her for it.** Only with a guard already after her, which is its
 price, does a walk under count as it happens. He is the whole
 of that price: the robber the
 task sends (`robber_giving_chase`, "The resistance's trap" below) comes only after a crossing
