@@ -217,6 +217,15 @@ run_one_process() {
 	if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" "$scratch"; then
 		status=1
 	fi
+	# The runner's closing line is the only proof every suite ran: a suite that quits the tree ends
+	# the process with exit 0 and no such line, and the suites after it never run. Name the last
+	# suite that printed its timing line, the one that quit or the one that ran before it.
+	if ! grep -qE "^[0-9]+ checks, [0-9]+ failures" "$scratch"; then
+		local last
+		last="$(grep -E "^-- test_" "$scratch" | tail -n 1 | awk '{print $2}')"
+		echo "tools/test.sh: the runner never printed its closing \"N checks, M failures\" line -- the process ended early (a suite quit the tree, or the engine died); last suite to print its timing line: ${last:-none}" >&2
+		status=1
+	fi
 	rm -f "$scratch"
 	return "$status"
 }
