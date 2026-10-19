@@ -400,7 +400,7 @@ const POLICEMAN_LUNGING_BY_VIEW := {
 ## guard's alert is drawn (`GUARD_ALERT_BY_VIEW`): the man an investigating patrol car or a hunting
 ## van lets out, through day 8, for the second he stands beside her before he charges
 ## (`policeman_pictures()`). On the policeman's own canvases and bottom-centre anchor, sharing his
-## waiting picture's body. *(Inbox #764, the player: van guardsmen about to charge hold up their
+## waiting picture's body. *(Inbox #764 in minty-lemur, the player: van guardsmen about to charge hold up their
 ## hands; an event that does not spawn already charging always needs a warning.)*
 const POLICEMAN_ALERT_BY_VIEW := {
 	"front": "events/policeman_alert_front",
@@ -1664,7 +1664,7 @@ func _leave_the_body_behind() -> void:
 	_keep_the_body_where_it_was_left()
 
 ## **Whether a waiting charger would raise his warning in her view**: the whole of his warning
-## picture (`warning_rect()`) inside the camera's view this frame (`player_view`). *(Inbox #788, the
+## picture (`warning_rect()`) inside the camera's view this frame (`player_view`). *(Inbox #788 in minty-lemur, the
 ## player: the warning should be visible on screen.)* Every charger that waits for her and pursues
 ## notices her only then, on a day as in the escape, so his warning never starts off the screen, and
 ## his warning's clock starts from there. The view is the camera's own, look-ahead and trailing
@@ -2334,7 +2334,7 @@ func _process(delta: float) -> void:
 
 ## **A roadblock's guard warning her is drawn over everything round him**, for the whole of his
 ## warning: from the frame he steps out to his post with his hand raised until he charges. *(Inbox
-## #771, 2026-10-18: "the second guard is invisible (hidden) until it already charges".)* He sorts
+## #771 in minty-lemur, 2026-10-18: "the second guard is invisible (hidden) until it already charges".)* He sorts
 ## at his own feet like any other figure, so anything standing between him and her with its feet
 ## nearer her than his — a van parked in front of his post, another band and the guard posted on
 ## its far side — is drawn over him, and a man who is hidden while he warns has not warned. Above
@@ -2497,7 +2497,7 @@ func charger_name() -> String:
 ## (`_stop_her_if_he_has_reached_her()`), whose catch does not. Telemetry only: it sends
 ## `EventBus.pursuit_caught` and keeps `_be_done()` from also sending `pursuit_ended`, so a charge
 ## ends in exactly one of caught, shaken off, outlasted and cut short, whatever the day does
-## *(inbox #764, the player: "Charging is independent of an ended day")*. Also asked by
+## *(inbox #764 in minty-lemur, the player: "Charging is independent of an ended day")*. Also asked by
 ## `InteriorEvents` when the masked man catches her. Nothing for a row with no charging counter
 ## (`counts_a_charge()`) or a charge that has not begun.
 func report_the_catch() -> void:
@@ -2624,7 +2624,7 @@ var _notice_paused_for := 0.0
 ## where that stops.
 ##
 ## **And a pursuer that waited for her warns inside its one radius, on a clock** (`warns_by_radius()`;
-## inbox #788, the player: "We should do one radius and warn inside it for 2s. If the player leaves
+## inbox #788 in minty-lemur, the player: "We should do one radius and warn inside it for 2s. If the player leaves
 ## the radius nothing happens and the warning stops. If they stay within the charge starts"). From
 ## the frame it notices her inside `pursues_within` it shows its warning for its row's `warns_for`
 ## (`notice_time()`); once she is back outside `pursues_within` it stops warning and waits again,
@@ -2700,7 +2700,7 @@ func _chase(delta: float) -> void:
 	# `_last_range` is still tracked because the leaving phase reads it; nothing decides on it.
 	#
 	# **A charger that waits for her is shaken off only once he has charged**: while he warns, a
-	# run inside his radius counts for nothing (inbox #788: "If they stay within the charge
+	# run inside his radius counts for nothing (inbox #788 in minty-lemur: "If they stay within the charge
 	# starts"), so she answers his warning by leaving the radius, not by running on the spot, and
 	# running beside a roadblock's band does not send its guards off without a lure.
 	if player_running and not (warns_by_radius() and is_telegraphing()):
@@ -2737,7 +2737,7 @@ func _chase(delta: float) -> void:
 		# the line clear, which is where a walker leaving him puts her, and his notice does not
 		# run out while she is inside it (`_pause_a_held_notice()`).
 		# **A pursuer with a notice walk of its own closes to its stand-off at it**
-		# (`EventDef.notice_walk_speed`, the alley robber's: inbox #761, "we can increase the
+		# (`EventDef.notice_walk_speed`, the alley robber's: inbox #761 in minty-lemur, "we can increase the
 		# noticing if the robber starts walking slowly"), so his alert walk is seen; every lunge
 		# below is decided exactly as it is for a pursuer that closes at its chase speed. **A held
 		# one keeps its stand-off at its chase speed** rather than at the walk: it is already at its
@@ -3044,7 +3044,7 @@ func give_up_the_chase() -> void:
 ##
 ## `notice` replaces the row's `telegraph_time` for this notice when it is not negative, and `stand`
 ## has him stand still in his warning for it (`is_standing_for_its_notice()`): day 13's guard, in her
-## view, raises his warning for a second and then charges *(inbox #764, the player: "yes, we can do
+## view, raises his warning for a second and then charges *(inbox #764 in minty-lemur, the player: "yes, we can do
 ## a 1s on screen and 1s off-screen warning if they were not visible")*.
 ##
 ## **From here he walks round buildings toward her** (`_paths_to_her`): set on her from wherever he
@@ -4270,9 +4270,9 @@ func chase_age() -> float:
 
 ## **Whether this pursuer warns by radius rather than by a clock**: one that waited for her and
 ## noticed her by sight (`pursues_within` on the def it was handed) — the dog that waited, the alley
-## robber and every guard drawn from his row, the hunting roadblock's guard. *(Inbox #764, the
+## robber and every guard drawn from his row, the hunting roadblock's guard. *(Inbox #764 in minty-lemur, the
 ## player: a warning happens when she comes close; she can turn around; if she keeps getting closer
-## the charge starts; inbox #788: "We should do one radius and warn inside it for 2s. If the player
+## the charge starts; inbox #788 in minty-lemur: "We should do one radius and warn inside it for 2s. If the player
 ## leaves the radius nothing happens and the warning stops. If they stay within the charge
 ## starts.")* **One radius, and a warning on a clock inside it**: from the frame it notices her
 ## inside `pursues_within` it warns for its row's `warns_for` (`notice_time()`); back outside the
@@ -4299,7 +4299,7 @@ func charge_radius() -> float:
 ## **It stops warning and waits again, where it stands**: she has gone back out of its warning
 ## radius. Its notice is forgotten, so the next time she comes inside the radius it notices her and
 ## warns again from the start. The robber stops where his warning walk had got him and waits there
-## *(inbox #764, the player: the robber walking slowly stops if she gets out of the radius)*; the
+## *(inbox #764 in minty-lemur, the player: the robber walking slowly stops if she gets out of the radius)*; the
 ## dog and the guards never moved. A roadblock's guard, who stepped out to his post on her side when
 ## he noticed her, is back at the band he was standing at, with the band's body under him again.
 func _stop_warning() -> void:
@@ -4317,7 +4317,7 @@ func _stop_warning() -> void:
 
 ## **A row that waits and runs its own line runs on a distance, with no warning clock**
 ## (`EventDef.charges_within`, the masked man): the one exception to the one-radius rule every
-## waiting charger keeps *(inbox #788, the player, of the stairwell's man: "No delay, as on main")*,
+## waiting charger keeps *(inbox #788 in minty-lemur, the player, of the stairwell's man: "No delay, as on main")*,
 ## since in the stairwell his warning is off screen, so a delay before he runs buys her nothing she
 ## can see to answer. While it warns, she back outside `pursues_within` has it wait again, and she
 ## inside `charges_within` starts its run — at once if she came in from outside it, after
@@ -6407,7 +6407,7 @@ var _band: RoadblockBand
 # ------------------------------------------------------- the far guard leaves ---
 
 ## **Once the guard on her side has left his post for good, the guard at the far post walks off
-## too**, so the band stands unmanned and reads as the barrier it now is. *(Inbox #771, 2026-10-18,
+## too**, so the band stands unmanned and reads as the barrier it now is. *(Inbox #771 in minty-lemur, 2026-10-18,
 ## asked whether the far guard should leave as well once his partner has been lured off: "He leaves
 ## too"; then, asked whether that holds on a day as well: "Days too")* Every roadblock sends him,
 ## on a day as in the escape.
@@ -6920,7 +6920,7 @@ func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
 ## (`is_standing_for_its_notice()`, read off `EventDef.stands_for_its_notice`),
 ## and the masked man standing at the foot of the shaft through his notice (`is_telegraphing()`
 ## after his wait, which his row's `pursues_within` gives him and no other guard-drawn row has).
-## *(Inbox #764, the player: an event that does not spawn already charging always needs a
+## *(Inbox #764 in minty-lemur, the player: an event that does not spawn already charging always needs a
 ## warning.)* The van's guard a task sends and the guardsman a torn poster sends arrive charging and
 ## never give one, nor does the door guard, whose warning was the hut's or the post's guard's from
 ## her crossing (`EventDef.charges_at_once`). Otherwise `guard_standing_*` while `_stands_still_now()` — the masked man's wait,

@@ -86,7 +86,7 @@ static func heated(def: EventDef, level: int) -> EventDef:
 	return _hot[key]
 
 ## **The roadblock the escape stands on its streets**: the row at full heat, its guards hunting,
-## exactly as a day's at full resistance progress. *(Inbox #771: "it should be in a way that luring
+## exactly as a day's at full resistance progress. *(Inbox #771 in minty-lemur: "it should be in a way that luring
 ## away the guard is enough".)* Its band costs nothing and, once the guard on her side has left his
 ## post for good, the guard at the far post walks off too, as on every day (`_roadblock()`,
 ## `EventInstance._send_the_far_guard_off()`).
@@ -1591,17 +1591,17 @@ static func _charging_dog() -> EventDef:
 	def.pursue_speed = 130.0
 	# **Its one radius, from day 4: 130px**, inside its 150px field, so she can feel it before it
 	# decides, and the bigger of the two radii it had before a charge radius was split off from its
-	# warning *(inbox #788, the player: one radius, "the bigger of the two")*. `EventScheduler._for_day()`
+	# warning *(inbox #788 in minty-lemur, the player: one radius, "the bigger of the two")*. `EventScheduler._for_day()`
 	# is where a `MAP` placement past the switch gets a copy carrying this instead of the authored
 	# 0.0 — see `EventDef.pursues_within_on()`.
 	def.pursues_within_after_first_day = 130.0
 	# Its warning, from day 4, on the clock every charger that waits for her keeps (`EventDef.warns_for`;
-	# inbox #788: "warn inside it for 2s. If the player leaves the radius nothing happens"). The day-3
+	# inbox #788 in minty-lemur: "warn inside it for 2s. If the player leaves the radius nothing happens"). The day-3
 	# dog has no wait, so it does not read this.
 	def.warns_for = Tuning.CHARGER_WARNING
 	# **The dog that waited stands for its notice** *(inbox #748: "dog also doesn't walk -- only
 	# one is the robber")*: from day 4, once it notices her, it holds its ground in its alert pose
-	# rather than closing, for as long as she stays inside its radius *(inbox #764: a warning
+	# rather than closing, for as long as she stays inside its radius *(inbox #764 in minty-lemur: a warning
 	# happens when she comes close; she can turn around)*, sits again once she is outside it, and
 	# charges if she is still inside when its warning runs out.
 	# The day-3 dog sent down her heading has no wait to notice her from, so its approach is still
@@ -1870,7 +1870,7 @@ static func _curfew_announce() -> EventDef:
 ## any reachability arithmetic pulling on it.
 ##
 ## **Intensity 0: the band costs nothing, manned or not, on a day and in the escape alike; the guard
-## is the danger.** *(Inbox #788, the player: "No cost at all, ever", of the escape's band; then
+## is the danger.** *(Inbox #788 in minty-lemur, the player: "No cost at all, ever", of the escape's band; then
 ## "band costing nothing should also apply to a normal day" and "the challenge is the guard not the
 ## concrete".)* The band is concrete: it shuts the street with its 60px body and costs nothing to
 ## walk beside, while the guard posted at it warns her with his raised hand and catches her if she
@@ -1915,7 +1915,7 @@ static func _roadblock() -> EventDef:
 	# than walking at her *(inbox #748: "guards should lift their hand in warning")*, for his
 	# `warns_for` while she stays inside his radius (`EventInstance.warns_by_radius()`).
 	def.stands_for_its_notice = true
-	# On the clock every charger that waits for her keeps (`EventDef.warns_for`; inbox #788): read
+	# On the clock every charger that waits for her keeps (`EventDef.warns_for`; inbox #788 in minty-lemur): read
 	# only once the hunting copy waits for her.
 	def.warns_for = Tuning.CHARGER_WARNING
 	def.barrier_structure = true
@@ -1996,11 +1996,11 @@ static func _abduction() -> EventDef:
 ##   the inner radius means the kill can never fire.
 ## - **Get close and he comes at you.** `pursues_within` 180, his one radius: inside that he stands
 ##   up, turns to face her and walks at her slowly, at 40px/s (`EventDef.notice_walk_speed`),
-##   holding at his 116px stand-off, for his 2.0s warning (`warns_for`; inbox #788), and if she is
+##   holding at his 116px stand-off, for his 2.0s warning (`warns_for`; inbox #788 in minty-lemur), and if she is
 ##   still inside his radius once it has run he lunges, and chases at 130px/s
 ##   until she has shaken him off. **Turning round from his warning is an answer**: she outwalks his
 ##   slow walk, and once she is outside his radius he stops where he is and waits there *(inbox
-##   #764, the player: the robber walking slowly stops if she gets out of the radius)*. Once he has
+##   #764 in minty-lemur, the player: the robber walking slowly stops if she gets out of the radius)*. Once he has
 ##   lunged, walking away does not work and running away does, which is exactly `charging_dog`'s
 ##   contract arriving in act III as a *place* rather than a moment.
 ##
@@ -2043,12 +2043,12 @@ static func _alley_robbery() -> EventDef:
 	def.pursue_speed = 130.0
 	# Outside his stand-off (116px) and inside his field, which is what leaves room for both halves of
 	# the row: far enough out that his notice walk is seen, near enough that she has felt him before
-	# he decides anything about her. *(Inbox #761, the player: "we can increase the noticing if the
+	# he decides anything about her. *(Inbox #761 in minty-lemur, the player: "we can increase the noticing if the
 	# robber starts walking slowly".)* 64px past his stand-off at the slow walk below is about half a
 	# second of him walking for a walker coming in (64 / (40 + 92)) and 1.6s for one who stops at the
 	# edge, and 180px is half the view's height; he notices her only once his warning would stand in
 	# her view (`EventInstance._would_stand_in_her_view()`). 180px is his one radius, the bigger of
-	# the two he had before a charge radius was split off from his warning *(inbox #788)*: he charges
+	# the two he had before a charge radius was split off from his warning *(inbox #788 in minty-lemur)*: he charges
 	# if she is still inside it once his warning has run (`warns_for`, below).
 	#
 	# The trap, and the reason this is worth a comment rather than a number: with a chase that ends
@@ -2064,7 +2064,7 @@ static func _alley_robbery() -> EventDef:
 	# walkers' two-frame pictures were reviewed at.
 	def.notice_walk_speed = 40.0
 	# **He charges once his warning has run with her still inside his radius**, on the clock every
-	# charger that waits for her keeps (`EventDef.warns_for`; inbox #788: one radius, a warning
+	# charger that waits for her keeps (`EventDef.warns_for`; inbox #788 in minty-lemur: one radius, a warning
 	# inside it, and leaving it calls him off), walking at her and holding at his stand-off while
 	# he warns.
 	def.warns_for = Tuning.CHARGER_WARNING
@@ -2285,7 +2285,7 @@ static var _out_of_the_car: Dictionary[String, EventDef] = {}
 ## about to: he stands where he got out in his alert pose (`stands_for_its_notice`) for
 ## `Tuning.WARNING_ALONE_MAX`, the second an off-screen charger's badge is up alone, his lunge never
 ## firing early, and then he chases under the pursuit contract (`Tuning.validate_pursuit()`, which
-## `all()` holds this copy to on load). *(Inbox #764, the player: van guardsmen about to charge hold
+## `all()` holds this copy to on load). *(Inbox #764 in minty-lemur, the player: van guardsmen about to charge hold
 ## up their hands; events that spawn with the sole purpose of charging show an indicator that they
 ## are about to, with the same heads-up as off-screen chargers, a second.)* Every other number is
 ## his own row's.
@@ -2315,7 +2315,7 @@ static func out_of_the_car(day: int, stops := true) -> EventDef:
 ## _set_the_task_guard_on_her()`): the robber a task sends (`_robber_giving_chase()`), the same man
 ## the waiting guard is drawn as, warned of by the screen-edge badge alone for
 ## `Tuning.WARNING_ALONE_MAX` rather than the day-3 dog's half second, then arriving charging. *(Inbox
-## #764, the player: "yes, we can do a 1s on screen and 1s off-screen warning if they were not
+## #764 in minty-lemur, the player: "yes, we can do a 1s on screen and 1s off-screen warning if they were not
 ## visible".)* A derived copy, built once.
 static func task_guard_sent() -> EventDef:
 	if _task_guard_sent == null:
@@ -2883,7 +2883,7 @@ static func _checkpoint_post() -> EventDef:
 ## frame she crosses the door's line, the guard at the hut across the road from her raises his hand
 ## (`EventInstance.guard_warns_her`), or an alley post's guard; back across before
 ## `Tuning.CROSSING_WARNING` has run, nobody comes, and still across once it has, this man steps out
-## of that hut or post and charges from his first frame. *(Inbox #788, the player: "The actual
+## of that hut or post and charges from his first frame. *(Inbox #788 in minty-lemur, the player: "The actual
 ## crossing will start the timer and if the player goes back no charge happens but if they stay
 ## crossed the charge will start. Warning starts when the player is crossing".)* The answer is the
 ## warning — go back, or go on running — which `tests/test_checkpoints.gd` walks.
@@ -3038,12 +3038,12 @@ static func _masked_pursuer() -> EventDef:
 	# becomes visible has given no notice at all.
 	def.still_while_telegraphing = true
 	# **He warns while she is in the stairwell, and runs the moment she is within this of him, with
-	# no warning clock**: the one waiting charger outside the one-radius rule *(inbox #788, the
+	# no warning clock**: the one waiting charger outside the one-radius rule *(inbox #788 in minty-lemur, the
 	# player, asked whether he should warn for a second or run as on main: "No delay, as on main")*,
 	# since his warning is off screen and a delay only lets a walker reach the door (below). So that
-	# she has to run to the first floor's door *(inbox #764, the player: "player should have to run
+	# she has to run to the first floor's door *(inbox #764 in minty-lemur, the player: "player should have to run
 	# to the door")* rather than walk down to it and out to the other shaft without meeting him
-	# *(inbox #782: the player wants the radius bigger to achieve that, and him not moved)*. No
+	# *(inbox #782 in minty-lemur: the player wants the radius bigger to achieve that, and him not moved)*. No
 	# clock, so his `telegraph_time` above is read only by the telegraph contract. 426px is
 	# measured on the escape as built (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as
 	# the game steps, a 30Hz physics tick with the catch on it and him moving on drawn frames):
@@ -3057,7 +3057,7 @@ static func _masked_pursuer() -> EventDef:
 	# tick at 28.6px, by 0.6px; she is caught if she starts running 0.3s late, and a runner who
 	# runs the whole way is caught at 440px), and in the stairwell his warning is off screen, since the view reaches 180px from her
 	# and he starts about 400px below; only the edge badge shows his charge, from the frame he runs (`DangerEdge`). The player
-	# accepted both (inbox #782).
+	# accepted both (inbox #782 in minty-lemur).
 	def.charges_within = 426.0
 	def.hard_fail = true
 	return def

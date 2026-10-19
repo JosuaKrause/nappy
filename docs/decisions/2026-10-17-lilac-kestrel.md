@@ -1,6 +1,6 @@
 # lilac-kestrel — CLAUDE.md and the skills cite the player's words by name and never quote them · 2026-10-17
 
-The player (woolly-penguin #759, then inbox #762 and #763): the player's words live in a playtest,
+The player (woolly-penguin #759, then inbox #762 and #763 in minty-lemur): the player's words live in a playtest,
 and `CLAUDE.md` and the skills cite them rather than quote them; a citation adds no words and is no
 link or path, only the file's name; the reading is established once, by the review of the change
 that writes the rule; and a change's consequences are fixed in the PR that makes them.

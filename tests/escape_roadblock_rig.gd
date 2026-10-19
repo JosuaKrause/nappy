@@ -217,7 +217,7 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 ## Her reaction to a charge, in seconds, in `lure()`.
 const REACTION := 0.3
 
-## The lure, as baiting is played under the one-radius rule (inbox #788): in from `from` at a walk
+## The lure, as baiting is played under the one-radius rule (inbox #788 in minty-lemur): in from `from` at a walk
 ## until a guard's hand goes up, then standing where she is, her speed changing at
 ## `Tuning.ACCELERATION` as hers does, until he charges; `REACTION` later turned and run straight
 ## back, until every charge has given up; then standing until each guard who charged has left his

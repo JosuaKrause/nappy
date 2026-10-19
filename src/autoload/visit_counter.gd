@@ -389,7 +389,7 @@ func _on_event_lit_unmet(id: String) -> void:
 func _on_city_gone_dark() -> void:
 	_send_event(_day_event_name(GameState.day, "blackout"))
 
-## **Every charger's own charging counter** *(inbox #764, the player: "Ending a day and a charging
+## **Every charger's own charging counter** *(inbox #764 in minty-lemur, the player: "Ending a day and a charging
 ## counter are not the same thing"; "Charging is independent of an ended day")*: `<charger>-warned`
 ## when it starts warning her, `-chased` at its charge, and its charge's end in exactly one of
 ## `-caught`, `-shaken`, `-outlasted` and `-ended` (the day ended some other way under it), whatever

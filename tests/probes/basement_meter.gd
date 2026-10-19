@@ -1,5 +1,5 @@
 extends RefCounted
-## Measurement probe for the basement's cost (inbox #765): from an empty meter, awake and asleep,
+## Measurement probe for the basement's cost (inbox #765 in minty-lemur): from an empty meter, awake and asleep,
 ## what walking the corridor past its three vents does to the meter, over many arrival phases.
 ## Not a suite: it prints rather than asserts. Run by name:
 ##

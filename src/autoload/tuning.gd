@@ -222,7 +222,7 @@ const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
 const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
 const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
 const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
-## **The meter does not fall in the escape's basement** *(inbox #765: "let's not replenish the meter
+## **The meter does not fall in the escape's basement** *(inbox #765 in minty-lemur: "let's not replenish the meter
 ## in the basement it's a tense situation")*: walking there earns no decay, awake or asleep, so a
 ## blow's 40 to 50 points stay on the meter and the blows add up. It is the ground's
 ## multiplier like the others, `InteriorScene.decay_multiplier()`, and it is the only ground inside
@@ -2032,7 +2032,7 @@ const WARNING_ALONE_MAX := 1.0
 ## its badge is the notice, and an offscreen run can shake it off. A pursuer that sets off beside her
 ## (the man a vehicle lets out) is the badge's kind too: it exists only to charge her, and what she
 ## is owed is the indicator that it is about to, for at least the off-screen charger's
-## `OFFSCREEN_WARNING_MIN` (inbox #764). A checkpoint's guard owes none of his own: his warning came
+## `OFFSCREEN_WARNING_MIN` (inbox #764 in minty-lemur). A checkpoint's guard owes none of his own: his warning came
 ## before he was set on her, a hut's guard's raised hand from her crossing for `CROSSING_WARNING`
 ## (`EventDef.charges_at_once`). A pursuer that waited for her warns on its own clock inside its one
 ## radius (`EventDef.warns_for`), so this floor bounds nothing it does.
@@ -2110,7 +2110,7 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 	return inner + pursue_speed * PURSUIT_REACTION
 
 ## **How long a charger that waits for her warns before he charges**, in seconds, while she stays
-## inside his one radius (`EventDef.warns_for`, `EventInstance.warns_by_radius()`). *(Inbox #788, the
+## inside his one radius (`EventDef.warns_for`, `EventInstance.warns_by_radius()`). *(Inbox #788 in minty-lemur, the
 ## player: "We should do one radius and warn inside it for 2s. If the player leaves the radius
 ## nothing happens and the warning stops. If they stay within the charge starts.")* The row reads it
 ## as its own `warns_for`, and the measurement that keeps it fair is per row
@@ -2119,7 +2119,7 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 const CHARGER_WARNING := 2.0
 
 ## **How long a door's guard warns once she has crossed its line**, in seconds (`door_guard` and its
-## alley copy, `EventManager._watch_the_door_lines()`). *(Inbox #788, the player: "The actual crossing
+## alley copy, `EventManager._watch_the_door_lines()`). *(Inbox #788 in minty-lemur, the player: "The actual crossing
 ## will start the timer and if the player goes back no charge happens but if they stay crossed the
 ## charge will start. Warning starts when the player is crossing".)* Measured the same way as
 ## `CHARGER_WARNING` (`tests/test_checkpoints.gd`).
@@ -2148,7 +2148,7 @@ const CROSSING_WARNING := 2.0
 ##   (`sets_off_beside_her`) stands with its warning up for its notice and is owed the badge's
 ##   heads-up, `OFFSCREEN_WARNING_MIN`, rather than an approach she never sees.
 ## - **A pursuer that waited for her warns inside its one radius for its `warns_for` and charges if
-##   she is still inside once that has run** (`EventInstance.warns_by_radius()`; inbox #788). Leaving
+##   she is still inside once that has run** (`EventInstance.warns_by_radius()`; inbox #788 in minty-lemur). Leaving
 ##   the radius first is never charged, and once charged walking loses and running wins by the speed
 ##   clauses above. `tests/test_events_pursuit.gd` walks it.
 ## - **It stands off inside its own field.** A pursuer holding a stand-off outside `outer_radius`
@@ -2716,7 +2716,7 @@ const FINALE_STEAM_BLOWS_FOR := 2.0
 const FINALE_TRUCKS_PER_STREET := 1
 const FINALE_VANS_PER_STREET := 1
 ## **One roadblock a street, so a crossing is one band and the one guard on her side of it.**
-## *(Inbox #771: "it should be in a way that luring away the guard is enough. Right now there are
+## *(Inbox #771 in minty-lemur: "it should be in a way that luring away the guard is enough. Right now there are
 ## for guards and the player adds excitement by just being close. Luring away one guard (the
 ## challenge) is not enough to make the obstacle survivable")* Two bands on one street would stand
 ## a couple of tiles apart, and luring the first one's guard off would leave the second one's posted

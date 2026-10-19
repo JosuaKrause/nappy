@@ -291,7 +291,7 @@ func _test_his_catch_ends_the_day_with_its_own_line(t) -> void:
 ## The man an investigating patrol car lets out is the day's pursuer on foot, met in her view:
 ## not warned of from off screen and not arriving chasing, but standing where he got out with his
 ## hand raised for the badge's heads-up — `Tuning.WARNING_ALONE_MAX`, at least
-## `Tuning.OFFSCREEN_WARNING_MIN` (inbox #764) — and then chasing under the pursuit contract, which
+## `Tuning.OFFSCREEN_WARNING_MIN` (inbox #764 in minty-lemur) — and then chasing under the pursuit contract, which
 ## `validate()` holds him to. **His catch is a stop, never the end of the
 ## day** *(inbox #669 in coral-lark: "it needs to give a substantial cost but not lethal directly")*: standing
 ## beside him she is reached only after his notice, and stopped rather than struck.

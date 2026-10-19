@@ -346,7 +346,7 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## (`_keeps_its_notice_to_itself()`).
 ##
 ## **Three of a day's placement rules are not the escape's, each by the player's word** *(inbox
-## #785, asked which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules"
+## #785 in minty-lemur, asked which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules"
 ## for the home's streets and the caps)*. Nothing here asks `_calm_to_leave_alone()`: the escape is
 ## the climax and its chains pass a calm area at every stop, so a field kept off every calm area
 ## she has not used would clear the streets round every stop of most of what this stands. Nothing
@@ -464,7 +464,7 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 ## ground it notices her from meets the ground another placed one notices her from: the two notice
 ## discs, each centred where its band stands, may not overlap, so two of the escape's roadblocks stand
 ## at least twice that, 360px, apart, on one street or on two.
-## *(Inbox #771, 2026-10-18: "two roadblocks are right next to each other and the second guard is
+## *(Inbox #771 in minty-lemur, 2026-10-18: "two roadblocks are right next to each other and the second guard is
 ## invisible (hidden) until it already charges".)*
 ##
 ## **Why the notice is the distance that matters.** Dealing with one roadblock happens inside its
@@ -927,7 +927,7 @@ class EscapeGround extends RefCounted:
 ## (`_open_ground_for()`, every refusal a day makes of a tile — a closed tile, a held street, the
 ## home block, a standing street tree's footprint, the side of the sidewalk the row wants, a corner
 ## for a row with a spread, the power station's front — and its precinct weight), on the street's
-## own rect. All but the front door's street: she never sets off from that door in the escape. *(Inbox #785, 2026-10-18:
+## own rect. All but the front door's street: she never sets off from that door in the escape. *(Inbox #785 in minty-lemur, 2026-10-18:
 ## "does the escape use the same placement rules as the regular game? it doesn't seem like it does.
 ## it should, though.")* The finale knows which streets exist for it, so the rect takes the place
 ## of a day's corridor weighting, and it plans no closures.

@@ -1,5 +1,5 @@
 extends RefCounted
-## Measurement probe for the seals' reach over buildings (inbox #785, "I saw wood on the roof"):
+## Measurement probe for the seals' reach over buildings (inbox #785 in minty-lemur, "I saw wood on the roof"):
 ## per row, how many pieces a day's seals (days 1 to 14) and the escape's plan stand, how many of
 ## them reach into a building tile with their body or with the ground their picture is drawn over,
 ## and the deepest, over the seeds below. Not a suite: it prints rather than asserts. Run by name:

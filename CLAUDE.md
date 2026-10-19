@@ -204,7 +204,7 @@ follow; it is a claim with the evidence withheld.
 - Quote the code comment or doc sentence that carries the reasoning rather than paraphrasing it as
   settled fact.
 - If a name was invented for the conversation rather than found in the repo, say so and say what
-  it names; it never stands alone (inbox #772). Half the confusion is a label that sounds official
+  it names; it never stands alone (inbox #772 in minty-lemur). Half the confusion is a label that sounds official
   and is not.
 - **A queue entry is named by its two words, or an entry from before names by its number, *and* a
   short title**, every time: "busy-badger, stars for nerves" or "M98, pressure in the empty acts",
@@ -215,7 +215,7 @@ follow; it is a claim with the evidence withheld.
   earlier one (woolly-finch 10). The player answers from the message in front of them, and a
   question that leans on something said three turns ago is a question with its evidence withheld.
 - **A thing in the game is named the way the player knows it, and said what it is in each
-  message that mentions it** (inbox #772): what it is and what it does in play, in a clause — "the
+  message that mentions it** (inbox #772 in minty-lemur): what it is and what it does in play, in a clause — "the
   checkpoint guard, who steps out of the hut when she walks under the raised boom" — never only
   the code's name for it ("the door guard", from `_door_guard()`). Even the player's own name for
   a thing needs its clause, since they may not recall which one is meant. A code name may follow in

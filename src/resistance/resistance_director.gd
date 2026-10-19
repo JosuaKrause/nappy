@@ -2929,7 +2929,7 @@ func _move_the_task_guard_to_her_target() -> void:
 ## every pursuit rule — his notice before any lunge, his stand-off while it runs, a lunge only along
 ## a clear line. A guard already after her, or whose chase is over, is left as he is.
 ##
-## **His warning is a second, seen or not** *(inbox #764, the player: "yes, we can do a 1s on screen
+## **His warning is a second, seen or not** *(inbox #764 in minty-lemur, the player: "yes, we can do a 1s on screen
 ## and 1s off-screen warning if they were not visible")*. In her view (`_guard_shows()`) he stands
 ## where he is with his warning up for `Tuning.WARNING_ALONE_MAX` and then charges. Out of it he is
 ## taken out of the world unseen and sent at her as a task's robber is

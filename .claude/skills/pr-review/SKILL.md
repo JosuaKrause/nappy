@@ -198,10 +198,10 @@ statements it cites, in the playtest file itself, and asks:
 - **Does every sentence about what the player asked say whether it is their words or a reading?**
   Their words go in quotation marks with their citation, and the filer's reading of them under
   `Read as:` (**playtest-feedback**); a reading written as though the player had said it is a
-  finding (inbox #767).
+  finding (inbox #767 in minty-lemur).
 
 The first five are the reviewer's reading of faithfulness (bouncy-heron 4), proposed at filing
-(leafy-finch), and the sixth came from the player's note (inbox #767); all are open to the player's
+(leafy-finch), and the sixth came from the player's note (inbox #767 in minty-lemur); all are open to the player's
 correction. A "yes" to the first, second, third or fifth, and a "no" to the fourth or sixth, is a
 finding. **A reviewer flags; it does not resolve**: it says what does not match and where, and the
 filer takes it back to the player or to the words.

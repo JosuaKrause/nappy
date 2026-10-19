@@ -218,7 +218,7 @@ func _rebuild_collision() -> void:
 ## it meet it at convex corners that lie on two lines only 22.6px apart across the slope, and her
 ## body is 28px across (`Tuning.PLAYER_BODY_RADIUS`, 14px): with full-cell blockers she can only
 ## pass each pair of corners moving nearly flat or nearly straight down, and a held sideways press
-## walks a zigzag of flat steps and steep drops however the press is steered (inbox #783). So each
+## walks a zigzag of flat steps and steep drops however the press is steered (inbox #783 in minty-lemur). So each
 ## solid cell beside a flight has the part of it inside the flight's band cut off, and the band's
 ## two edges are straight, `FLIGHT_HALF_WIDTH` either side of the flight's centre line (the line
 ## half-way between the centres of its `t` and its `m` cells).
@@ -610,7 +610,7 @@ func wall_grid() -> CityMap:
 ## `+1`/`-1` if `world_position`'s tile is a diagonal flight tile, `0` otherwise — the one question
 ## `Stroller._physics_process()` asks every frame to redirect a sideways press along a flight's own
 ## slope. See `InteriorTile.flight_direction()`. Off a flight, a landing tile included, she walks
-## the way she presses *(inbox #782, the player: outside of a stair she goes into the direction)*.
+## the way she presses *(inbox #782 in minty-lemur, the player: outside of a stair she goes into the direction)*.
 func slope_dir_at(world_position: Vector2) -> int:
 	return InteriorTile.flight_direction(_plan.tiles.get(world_to_tile(world_position), InteriorTile.Kind.NONE))
 
@@ -853,7 +853,7 @@ func clear_fade() -> void:
 ## into the city. **The building shares the city's space and its coordinates:** both are laid out
 ## from the world origin, and the footprint's blockers reach city row 26, with the margin row
 ## solid along the city's whole width, so left in place they are a wall across the city that
-## nothing draws (inbox #777). Only the blockers go: the building's pictures stay, under the city's
+## nothing draws (inbox #777 in minty-lemur). Only the blockers go: the building's pictures stay, under the city's
 ## own, and so does its fade, which `clear_fade()` still lifts over the street. Freed at once
 ## rather than queued, so nothing else in this same call, the city's build and its first streaming
 ## pass included, finds them in the space; the caller is the exit's own tween callback, never a

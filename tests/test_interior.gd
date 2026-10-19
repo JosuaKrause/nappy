@@ -460,7 +460,7 @@ func _test_a_sideways_press_on_a_flight_walks_its_slope(t: Node) -> void:
 	player.free()
 	scene.free()
 
-## *(2026-10-18, inbox #783; inbox #782, the player: on a stair she goes diagonally up or down
+## *(2026-10-18, inbox #783 in minty-lemur; inbox #782 in minty-lemur, the player: on a stair she goes diagonally up or down
 ## depending on which stair, outside of a stair she goes into the direction.)* Every walkable tile
 ## of both shafts, each of the eight directions and an analog diagonal, as an exact steering. **On a
 ## flight tile** any press with a sideways part walks the flight's 45 degrees toward the side
@@ -516,7 +516,7 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node
 	player.free()
 	scene.free()
 
-## **Her body walks the flight's 45 degrees, not only her steering** *(inbox #783)*. A real carrying
+## **Her body walks the flight's 45 degrees, not only her steering** *(inbox #783 in minty-lemur)*. A real carrying
 ## rig holds one sideways action from a landing tile's centre until she stands on the next landing,
 ## on every flight of both shafts, down and up. The synchronous runner cannot advance
 ## `move_and_slide()`'s engine-owned delta, so each call to the real `_physics_process()` supplies
@@ -1217,8 +1217,8 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 	events.free()
 	scene.free()
 
-## **She has to run to the door** *(inbox #764, the player: "player should have to run to the
-## door"; inbox #782, the player: the radius bigger, not him moved)*. He warns while she is in the
+## **She has to run to the door** *(inbox #764 in minty-lemur, the player: "player should have to run to the
+## door"; inbox #782 in minty-lemur, the player: the radius bigger, not him moved)*. He warns while she is in the
 ## stairwell and runs his line once she is within `masked_pursuer.charges_within` of him
 ## (`EventInstance._warn_on_its_line()`). Stepped at the game's own rhythm: the game's physics
 ## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
@@ -1263,7 +1263,7 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 					% [walk[3], pace, met["outcome"], met["closest"]])
 
 ## **The screen-edge badge points at the masked man from the frame he starts running** *(inbox
-## #788, the player, told that his only heads-up is the badge once he runs: "Let's show that at
+## #788 in minty-lemur, the player, told that his only heads-up is the badge once he runs: "Let's show that at
 ## least")*. On every way down onto the second flight and at each pace, with her real camera and a
 ## real `DangerEdge` (`_meet_the_masked_man()` with `badge`): on every drawn frame from his run until
 ## he comes into her view, or she is through the door or caught, the badge for him is up. The badge
@@ -1944,7 +1944,7 @@ func _is_shut(vent: InteriorEvents.Vent, at: float, steam: EventDef) -> bool:
 	return phase >= steam.telegraph_time \
 			and phase < steam.telegraph_time + Tuning.FINALE_STEAM_BLOWS_FOR
 
-## *"Let's not replenish the meter in the basement it's a tense situation."* (inbox #765) The
+## *"Let's not replenish the meter in the basement it's a tense situation."* (inbox #765 in minty-lemur) The
 ## scene answers the baby's `decay_multiplier()` with `Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`
 ## (nothing) at every tile of the basement's corridor and with an ordinary 1.0 in every other part
 ## of the building, so a blow's points stay on the meter until she is out.

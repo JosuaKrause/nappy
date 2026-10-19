@@ -1,5 +1,5 @@
 extends RefCounted
-## Measurement probe for the stairwell guard's charge distance (inbox #782, inbox #764): where in
+## Measurement probe for the stairwell guard's charge distance (inbox #782 in minty-lemur, inbox #764 in minty-lemur): where in
 ## the right shaft the masked man starts his run, by the way she comes down to the first floor, and
 ## whether she then gets out through the first floor's door. Not a suite: it prints rather than
 ## asserts. Run by name:

@@ -920,8 +920,8 @@ func _test_a_pursuer_can_wait(t) -> void:
 	instance.free()
 
 ## **Every pursuer that waited for her warns by its one radius, on a clock, and the contract is
-## walked.** *(Inbox #764, the player: a warning happens when she comes close; she can turn around;
-## inbox #748: guards lift a hand, only the robber walks; inbox #788: "We should do one radius and
+## walked.** *(Inbox #764 in minty-lemur, the player: a warning happens when she comes close; she can turn around;
+## inbox #748: guards lift a hand, only the robber walks; inbox #788 in minty-lemur: "We should do one radius and
 ## warn inside it for 2s. If the player leaves the radius nothing happens and the warning stops. If
 ## they stay within the charge starts.")* The dog that waited (any day past `RUN_TAUGHT_DAY`), the
 ## hunting roadblock's guard and the alley robber notice her inside `pursues_within` and warn for

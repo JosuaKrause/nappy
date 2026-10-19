@@ -2371,7 +2371,7 @@ func _watch_the_door_lines(delta := 0.0) -> void:
 	if not _start_the_crossing_warning(crossed, here):
 		door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 
-## **A crossing warns first, on a clock** *(inbox #788, the player: "The actual crossing will start
+## **A crossing warns first, on a clock** *(inbox #788 in minty-lemur, the player: "The actual crossing will start
 ## the timer and if the player goes back no charge happens but if they stay crossed the charge will
 ## start. Warning starts when the player is crossing")*: the guard at the hut across the road from
 ## her (or an alley door's post) raises his hand at her (`EventInstance.guard_warns_her`, drawn by

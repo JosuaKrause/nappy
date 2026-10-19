@@ -101,7 +101,7 @@ signal event_sighted(id: String)
 ## row's own `def.id`. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts
 ## visits".
 signal event_lit_unmet(id: String)
-# **A charge, counted on its own whatever the day does** *(inbox #764, the player: "Ending a day and
+# **A charge, counted on its own whatever the day does** *(inbox #764 in minty-lemur, the player: "Ending a day and
 # a charging counter are not the same thing"; "Charging is independent of an ended day")*. Each
 # signal below carries the charger's name, `EventInstance.charger_name()`: its row's own `def.id`,
 # or `charging_dog_tutorial` for the day-3 lesson's dog. `VisitCounter` sends a counter of its own

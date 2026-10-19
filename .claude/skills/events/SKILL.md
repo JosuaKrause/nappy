@@ -82,7 +82,7 @@ counts toward `PURSUIT_SHAKEN_OFF`, so it can be shaken off before it becomes vi
 `EventDef.validate()` requires that badge and validates its chase without inventing an approach.
 The day-3 dog's approach keeps its separate notice floor (`Tuning.PURSUIT_MIN_NOTICE`); a pursuer
 that waited for her, a robber included, warns inside its one radius on its own clock (`warns_for`),
-so that floor bounds nothing it does (inbox #788). Verify escape with
+so that floor bounds nothing it does (inbox #788 in minty-lemur). Verify escape with
 the actual Baby meter: reaching the pursuit cap after the baby cries is a lost day.
 
 ## What telegraphs
@@ -288,7 +288,7 @@ it was written from. The traps:
   alley robber, the hunting roadblock's guard) warns for its row's `warns_for` from
   the frame it notices her inside its one radius, and charges only if she is still inside once
   that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
-  `notice_time()`; inbox #788). **Running while it warns counts for nothing**: `_chase()` adds to
+  `notice_time()`; inbox #788 in minty-lemur). **Running while it warns counts for nothing**: `_chase()` adds to
   `PURSUIT_SHAKEN_OFF`'s count only once it has charged, or a half-second run beside a roadblock's
   band would send its guards off with no lure. Behind a wall at that moment it goes on warning until the line
   clears. A late notice, at an alley mouth, is answered by the warning: she has its whole length to
@@ -299,10 +299,10 @@ it was written from. The traps:
   exception**: he runs a line rather than pursuing, so neither his notice nor his run asks the
   clear line, his notice asks no view, and he runs the moment she comes within his
   `charges_within`, with no `warns_for` (`EventInstance._check_for_notice()`,
-  `_warn_on_its_line()`; inbox #788): in the stairwell his warning is off screen, which the player
-  accepted (inbox #782), so a clock before he runs is no heads-up she can see.
+  `_warn_on_its_line()`; inbox #788 in minty-lemur): in the stairwell his warning is off screen, which the player
+  accepted (inbox #782 in minty-lemur), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
-  (inbox #764, inbox #788). His warning comes before he exists — from the frame she crosses a
+  (inbox #764 in minty-lemur, inbox #788 in minty-lemur). His warning comes before he exists — from the frame she crosses a
   door's line, the hut's guard across the road (or the post's) raises his hand for
   `Tuning.CROSSING_WARNING`; back across first, it is called off — and once it has run with her
   still across he charges from that hut or post, inside his own stand-off

@@ -1,5 +1,5 @@
 extends RefCounted
-## Inbox #777: once she has walked out of the escape building, nothing of the building stands in
+## Inbox #777 in minty-lemur: once she has walked out of the escape building, nothing of the building stands in
 ## the city's street.
 ##
 ## **What would.** The escape building (`InteriorScene`) puts one `StaticBody2D` on every cell of

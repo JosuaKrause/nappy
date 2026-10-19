@@ -515,7 +515,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 ## centre. That post is nearer her than the centre where his notice is measured: she comes straight
 ## across the band, the approach that puts his post nearest her, and stands still once he has
 ## noticed her. He warns for his row's `warns_for` with nothing lethal in it and charges when it has
-## run, she still inside his radius *(inbox #788: one radius, a warning inside it)*, not on the
+## run, she still inside his radius *(inbox #788 in minty-lemur: one radius, a warning inside it)*, not on the
 ## frame he notices her. Both street axes, both sides.
 func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 	var hot := EventCatalogue.heated(_cold_roadblock(), Tuning.RESISTANCE_GOAL)
