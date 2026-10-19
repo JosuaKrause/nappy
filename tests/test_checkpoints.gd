@@ -694,6 +694,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	manager._player = stroller
 	var baby := stroller.get_node_or_null("Baby") as Baby
 	t.check(baby != null, "the real stroller carries the Baby whose meter this reads")
+	baby.set_world(world)
 	stroller.set_physics_process(false)
 	baby.set_physics_process(false)
 

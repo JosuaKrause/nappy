@@ -76,8 +76,21 @@ func _ready() -> void:
 	add_to_group("baby")
 	_stroller = get_parent() as Stroller
 	assert(_stroller != null, "Baby must be a child of the Stroller rig")
-	_world = get_tree().get_first_node_in_group("world") as WorldContext
 	sleepiness = starting_sleepiness
+
+## The world she is in, told rather than discovered: whoever places her (`main`, for the escape's
+## building and then its city; a test, for a stand-in) hands her the `WorldContext` she asks
+## about excitement, calm ground, alleys and decay, and hands her the next one when the world
+## changes. The rig is reparented from the building to the city without `_ready()` running
+## again, and a lookup done once at `_ready()` would go on asking the building -- which is also
+## still in the tree and in the `world` group -- about a street. `null` is no world: neutral
+## answers, as for a data-level `Baby.new()`.
+func set_world(world: WorldContext) -> void:
+	_world = world
+
+## The world she was last handed, or null.
+func world() -> WorldContext:
+	return _world
 
 ## Back to the start of a day. The baby does not carry yesterday's mood.
 func reset() -> void:

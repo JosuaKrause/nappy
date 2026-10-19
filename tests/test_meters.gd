@@ -107,6 +107,7 @@ func _build(t) -> void:
 	_stroller.set_physics_process(false)
 	_baby = Baby.new()
 	_stroller.add_child(_baby)
+	_baby.set_world(_world)
 	_baby.set_physics_process(false)
 
 func _teardown() -> void:
