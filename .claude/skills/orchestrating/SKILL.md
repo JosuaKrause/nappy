@@ -1,6 +1,6 @@
 ---
 name: orchestrating
-description: How implementation work is delegated to sub-agents — delegating is the default, isolated worktrees, one work item per agent, and what a task description must contain for the result to be mergeable. Loaded at session start because who does the work is decided before the first tool call.
+description: How implementation work is delegated to sub-agents — delegating is the default, isolated worktrees, one work item per agent, what a task description must contain for the result to be mergeable, and the design principles every brief and change keeps. Loaded at session start because who does the work is decided before the first tool call.
 ---
 
 # Orchestrating sub-agents
@@ -67,6 +67,25 @@ an agent can take it is not overhead on top of the work — it **is** the orches
 **A milestone with an open design question is not ready for one.** The question goes to the player
 first, and "draft and put back" items never go to an agent at all.
 
+## Code is designed by layer
+
+**Every design, brief and change keeps to the player's principles** (minty-lemur #785, #796):
+separation of concerns, composability, cohesion, low coupling and a layered architecture, with
+**dependency injection** for modular, testable code (minty-lemur #794). A layer depends only on the
+layers below it, through their interfaces, and tells a higher one what happened by an event or a
+callback it was handed, never by calling it; a component is handed what it depends on rather than
+fetching it from an autoload, a group or a static, so a test hands it fakes. A mode, the escape
+included, is a configuration of the shared code, never a parallel copy of it (minty-lemur #785).
+
+*Proposed by the filer, open to overturn (plush-kestrel):* the target layers are minty-quail's (data
+and configuration; the domain model; the world; simulation; run flow; observers); a fix lands in the
+shared mechanism rather than a branch keyed on one row's id or picture; new code follows the target
+shape and adds nothing to the divergence the open refactor entry lists; a brief names the layer its
+work belongs to. **The one exception to this whole section** is a minimal fix the queue orders
+before the refactor, which names itself as the exception in its entry, and **it holds only until the
+refactor**: the refactor replaces the code the fix touched, and the PR that closes the refactor entry
+removes the exception from this section, so it never outlives that PR (minty-lemur #799).
+
 ## The task description is the contract
 
 A vague prompt returns work that cannot be merged.
@@ -87,7 +106,8 @@ Then a blank line, then the brief. **The shared half of a brief is a file, not a
 `references/agent-contract.md` holds the read-first order, git and commit cadence, the identity by
 PR kind and its fallback, the scope fence over the queue and the archive, verify's gate, headless
 first, `--no-save` and the dev flags, the visual-attempts rule, disk, forks, no merge and the
-report. A brief carries its task, its task-specific read-first items, **the GitHub role the agent
+report. A brief carries its task, its task-specific read-first items, the layer its work belongs to
+(proposed in "Code is designed by layer"), **the GitHub role the agent
 acts as**, its fence, whether the evidence is a still or a burst, whether the capture may be
 invincible, whether this is a local-full-run case, and a paragraph on the other live agents and the
 files they own (written by hand from the briefs' fences; they are prose, so nothing generates it).

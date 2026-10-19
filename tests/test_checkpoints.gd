@@ -1988,7 +1988,7 @@ func _stand_for(rig: Dictionary, seconds: float) -> void:
 
 ## **A walk under the boom warns first, on a clock: going back calls it off, staying across sets
 ## the guard on her.** *(2026-09-24: "Or guards that pursue her should spawn at the huts" · "One
-## guard is enough"; inbox #788, the player: "The actual crossing will start the timer and if the
+## guard is enough"; inbox #788 in minty-lemur, the player: "The actual crossing will start the timer and if the
 ## player goes back no charge happens but if they stay crossed the charge will start. Warning
 ## starts when the player is crossing".)* Walking up to the raised boom, nobody raises his hand. The
 ## frame she crosses, the guard at the hut across the road from her raises his (`guard_warns_her`),

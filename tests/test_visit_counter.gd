@@ -488,7 +488,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 	warned.free()
 	EventBus.pursuit_began.disconnect(on_began)
 
-## **A waiting dog's warning is its own level below its charge** *(inbox #764, the player: dog-chased
+## **A waiting dog's warning is its own level below its charge** *(inbox #764 in minty-lemur, the player: dog-chased
 ## implies the charge; a warning level of its own)*. Walked with the real `EventInstance` and the
 ## real signals, read off `RecordingCounter`: the dog that waits past `Tuning.RUN_TAUGHT_DAY` sends
 ## `dog-warned` once when it starts warning her, nothing for a warning she walks out of or a second
@@ -522,7 +522,7 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t) -> void:
 	_unlisten(listening)
 	counter.free()
 
-## **Every charger has a counter of its own, named by its row** *(inbox #764, the player: "Ending a
+## **Every charger has a counter of its own, named by its row** *(inbox #764 in minty-lemur, the player: "Ending a
 ## day and a charging counter are not the same thing")*, the dog keeping its `dog-*` names and the
 ## day-3 lesson's dog its own `dog-tutorial-*`.
 func _test_every_charger_has_its_own_counter(t) -> void:
@@ -549,7 +549,7 @@ func _test_every_charger_has_its_own_counter(t) -> void:
 	counter.free()
 
 ## **A charge ends in exactly one of caught, shaken off and outlasted, whatever the day does**
-## *(inbox #764, the player: "Charging is independent of an ended day")*. The real instance and
+## *(inbox #764 in minty-lemur, the player: "Charging is independent of an ended day")*. The real instance and
 ## signals, for a sent robber, who charges from his first frame: caught (`report_the_catch()`, what
 ## `EventManager._check_hard_fails()` and a patrol car's man stopping her call) and then finished
 ## anyway, as a day that goes on under `--invincible` would; run off; and walked away from until his
@@ -625,7 +625,7 @@ func _test_the_lesson_dog_has_its_own_set(t) -> void:
 	_unlisten(listening)
 	counter.free()
 
-## **A raised hand is a warning, and the charge comes after it** *(inbox #764, the player: "Dog-chased
+## **A raised hand is a warning, and the charge comes after it** *(inbox #764 in minty-lemur, the player: "Dog-chased
 ## implies charge")*. The man a vehicle lets out stands with his hand raised for a second: the
 ## counter sends his `-warned` as the hand goes up, nothing more for that second, and `-chased` only
 ## when he charges. Day 13's guard set on her in her view counts the same way, as `task-guard`.
@@ -703,7 +703,7 @@ func _test_the_masked_man_has_his_counter(t) -> void:
 	counter.free()
 
 ## **A charge the day ends under is counted ended**, so every charge still ends in exactly one way
-## *(inbox #764, the player: "Charging is independent of an ended day")*: the day's end asks every
+## *(inbox #764 in minty-lemur, the player: "Charging is independent of an ended day")*: the day's end asks every
 ## charge still running (`EventManager.end_the_charges_still_running()`), and one that ends this way
 ## is not also counted shaken or outlasted when it is finished after.
 func _test_a_charge_cut_short_by_the_day_is_counted_ended(t) -> void:

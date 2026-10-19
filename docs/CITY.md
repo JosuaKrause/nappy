@@ -1554,7 +1554,7 @@ the rest of it open would join them at the one street that touches both exits; a
 mouth off the chains** is walled rather than a fraction of the qualifying ones — by the day's own
 pick of what stands in a mouth, the widest row that still fits it (`SealPlanner.
 _widest_that_fits_a_mouth()`), made of the escape's own list, so the wall is a crater in the mouth
-rather than a street seal reaching past the alley over the buildings either side *(inbox #785: "I
+rather than a street seal reaching past the alley over the buildings either side *(inbox #785 in minty-lemur: "I
 saw wood on the roof for example")*. And **the exempt
 street is the one she is standing in rather than the doorstep's**: a day's exemption is the front
 door, because the home is a notch with one exit; the escape comes out of the service exit on the

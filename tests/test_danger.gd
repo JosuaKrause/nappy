@@ -914,7 +914,7 @@ func _test_the_babys_cue_only_steps_aside_for_something(t) -> void:
 	rig.free()
 
 ## Carrying, the cue sits over her head on all eight facings and steps aside to one fixed shoulder,
-## so a run that turns does not move it (inbox #778: the zzz "moves around wildly").
+## so a run that turns does not move it (inbox #778 in minty-lemur: the zzz "moves around wildly").
 func _test_the_carried_babys_cue_stays_over_her_head(t) -> void:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var rig: Stroller = scene.instantiate()

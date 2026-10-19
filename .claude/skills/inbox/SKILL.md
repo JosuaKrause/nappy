@@ -81,7 +81,7 @@ the capture, while a `cat > FILE <<'NOTE'` that is the whole command is one of t
 as text (**using-tools**). The title is the agent's (the first quote's first line when `--title` is
 not given). `--band` goes on only when the player named a band.
 
-**A note holds blocks, and every block carries a visible mark saying whose it is** (inbox #767), so
+**A note holds blocks, and every block carries a visible mark saying whose it is** (inbox #767 in minty-lemur), so
 nobody filing it later takes an interpretation for something the player said. The tool writes the
 marks itself from the options, so their format never varies, and each option is repeatable and kept
 in the order given:
@@ -129,7 +129,7 @@ failed post leaves nothing alone on the issue and a retry duplicates nothing. `a
 not captured, since a note the player wrote gets the player's own comments, and a closed one.
 
 **A line the player did not say that reached a quote anyway is corrected in a comment on that note,
-never by a new note** (inbox #767):
+never by a new note** (inbox #767 in minty-lemur):
 
 ```sh
 uv run python tools/inbox.py --role claude-orchestrator correct N --line-file /tmp/line.md --note-file /tmp/why.md
@@ -171,7 +171,7 @@ request carries the whole batch:
   playtest file made with `tools/new-name.sh playtest "<title>"`. The draft is the filed layout,
   every block labelled: the player's quote blocks in `> ` lines, the only lines that are the
   player's; context, a note and a correction as the assistant's sentences; a reading under
-  `Read as:` (inbox #767); a corrected line flagged in a sentence right after its quoted block,
+  `Read as:` (inbox #767 in minty-lemur); a corrected line flagged in a sentence right after its quoted block,
   never inside it, since a quote must stay one unbroken run of words. The comments the player wrote
   and the quotes appended to the note follow in the order they were said, each after what it
   answers. Wrapping and the `> ` markers are free; every word, letter case and punctuation mark of

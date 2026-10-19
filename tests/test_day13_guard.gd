@@ -461,7 +461,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	t.check(not guard.is_finished and not guard.is_waiting(),
 			"(%s) the moment she has done the task, he is after her" % what)
 	if parked:
-		# In her view his warning is a second, standing with it up *(inbox #764, the player: "yes,
+		# In her view his warning is a second, standing with it up *(inbox #764 in minty-lemur, the player: "yes,
 		# we can do a 1s on screen and 1s off-screen warning if they were not visible")*.
 		t.check(guard.is_standing_for_its_notice()
 				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX),
@@ -501,7 +501,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	_tear_down(player, director, city)
 	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 
-## **Out of her view, the done task sends him at her under a badge** *(inbox #764, the player: "yes,
+## **Out of her view, the done task sends him at her under a badge** *(inbox #764 in minty-lemur, the player: "yes,
 ## we can do a 1s on screen and 1s off-screen warning if they were not visible")*: the waiting guard
 ## is taken out of the world unseen and sent as a task's robber is
 ## (`ResistanceDirector._send_at_her()`): the screen-edge badge alone for `Tuning.WARNING_ALONE_MAX`,

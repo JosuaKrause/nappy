@@ -567,7 +567,7 @@ func departure_speed() -> float:
 ## Three states rather than two, and the middle one is the load-bearing one: **waiting** (standing
 ## there, emitting at full strength, not lethal and not moving), **warning** (it has noticed her and
 ## shows it, for its `warns_for` while she stays inside this radius, not lethal), then the charge,
-## if she is still inside once that has run. **A pursuer has one radius** *(inbox #788, the player:
+## if she is still inside once that has run. **A pursuer has one radius** *(inbox #788 in minty-lemur, the player:
 ## "We should do one radius and warn inside it for 2s. If the player leaves the radius nothing
 ## happens and the warning stops. If they stay within the charge starts")*: out of it again before
 ## then, it waits again (`EventInstance.warns_by_radius()`). A row that runs its own line once she is
@@ -635,18 +635,18 @@ func departure_speed() -> float:
 ## her**: `door_guard`, whose warning is the raised hand of the hut's guard across the road (or the
 ## alley post's) from the frame she crosses the door's line, for `Tuning.CROSSING_WARNING`; he is
 ## set on her only once that has run with her still across (`EventManager._watch_the_door_lines()`).
-## *(Inbox #788, the player: "The actual crossing will start the timer and if the player goes back
+## *(Inbox #788 in minty-lemur, the player: "The actual crossing will start the timer and if the player goes back
 ## no charge happens but if they stay crossed the charge will start".)* It owes no notice of its own
 ## (`Tuning.validate_pursuit()`): its `telegraph_time` is 0. Running counts toward shaking it off
 ## from its first frame.
 @export var charges_at_once := false
 ## **How close she has to come before a row that waits for her and runs its own line starts its run**
 ## — the masked man on the escape's stairs — in px, or 0 for a row whose run starts when its
-## telegraph ends. *(Inbox #764, the player: "player should have to run to the door".)* It warns
+## telegraph ends. *(Inbox #764 in minty-lemur, the player: "player should have to run to the door".)* It warns
 ## while she is inside `pursues_within`, with no clock, starts its run when she comes inside this,
 ## and waits again once she is back outside `pursues_within` (`EventInstance._warn_on_its_line()`).
 ## One that notices her already inside this warns for `Tuning.WARNING_ALONE_MAX` first. **The one
-## waiting charger with no `warns_for`** *(inbox #788, the player, of the stairwell's man: "No delay,
+## waiting charger with no `warns_for`** *(inbox #788 in minty-lemur, the player, of the stairwell's man: "No delay,
 ## as on main")*: his warning is off screen in the stairwell, so a clock before he runs is no
 ## heads-up she can see, only time for a walker to reach the door. Read only on a mobile row that
 ## waits for her and does not pursue (`validate()`).
@@ -655,7 +655,7 @@ func departure_speed() -> float:
 ## notices her inside his one radius (`pursues_within`, along a clear line, his warning in her
 ## view), he warns for this; back outside the radius before it runs out, he stops warning and waits
 ## again; still inside when it runs out, he charges (`EventInstance.notice_time()`,
-## `EventInstance.warns_by_radius()`). *(Inbox #788, the player: "We should do one radius and warn
+## `EventInstance.warns_by_radius()`). *(Inbox #788 in minty-lemur, the player: "We should do one radius and warn
 ## inside it for 2s".)* `Tuning.CHARGER_WARNING` unless the row's own measurement says otherwise;
 ## `validate()` refuses a pursuer that waits for her with less than `Tuning.OFFSCREEN_WARNING_MIN`.
 ## Read only on a pursuer that waits for her; a row with no wait keeps its `telegraph_time`, and the
@@ -663,7 +663,7 @@ func departure_speed() -> float:
 @export var warns_for := 0.0
 ## How fast this pursuer **walks at her through its notice**, in px/s, when that is slower than its
 ## chase; 0 means it closes at `pursue_speed`, as every pursuer but the alley robber does. *(Inbox
-## #761, the player: "we can increase the noticing if the robber starts walking slowly".)* Closing
+## #761 in minty-lemur, the player: "we can increase the noticing if the robber starts walking slowly".)* Closing
 ## at his full chase speed, the robber's alert walk would be over in about a tenth of a second; a
 ## slow walk from a wider trigger is what lets it be seen.
 ##
@@ -673,7 +673,7 @@ func departure_speed() -> float:
 ## same numbers. What the slow walk changes is that a player who stands inside his radius is walked
 ## up to his stand-off and charged from there once his warning has run, while one who walks away
 ## (her 92px/s against his walk) leaves his radius and he stops where he is and waits again *(inbox
-## #764, the player: the robber walking slowly stops if she gets out of the radius)*;
+## #764 in minty-lemur, the player: the robber walking slowly stops if she gets out of the radius)*;
 ## `tests/test_events_pursuit.gd` walks both.
 ##
 ## Read only on a row that waits for her (`pursues_within`) and does not stand for its notice: a
@@ -1572,7 +1572,7 @@ func validate() -> bool:
 	# **A charger that waits for her warns on a clock** (`warns_for`): one that waits, warns by its one
 	# radius and charges once its warning runs out with her still inside needs a warning to run.
 	# **Except a row that runs its own line** (`charges_within`, the masked man): it runs on a
-	# distance with no clock, the player's choice (inbox #788, "No delay, as on main"), because its
+	# distance with no clock, the player's choice (inbox #788 in minty-lemur, "No delay, as on main"), because its
 	# warning is off screen in the stairwell, where a delay is no heads-up she can see.
 	var waits_for_her := pursues and not sets_off_beside_her \
 			and not arrives_chasing \

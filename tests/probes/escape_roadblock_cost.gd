@@ -1,5 +1,5 @@
 extends RefCounted
-## Measurement probe for the escape's roadblocks (inbox #771): what walking past the roadblocks on
+## Measurement probe for the escape's roadblocks (inbox #771 in minty-lemur): what walking past the roadblocks on
 ## one of the escape's streets costs the meter with their guards at their post, what luring the
 ## guard on her side off costs, and what walking on past costs once he has gone. Not a suite: it
 ## prints rather than asserts. Run by name:

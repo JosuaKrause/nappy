@@ -17,7 +17,7 @@ const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
-## The seed the player played the escape on and could not win (inbox #771), from the building, and
+## The seed the player played the escape on and could not win (inbox #771 in minty-lemur), from the building, and
 ## the tile on the tunnel chain's street where the second band's guard caught her.
 const PLAYERS_SEED := 4216201080
 const WHERE_THE_PLAYER_WAS_CAUGHT := Vector2i(74, 22)
@@ -347,7 +347,7 @@ static func _she_fits(map: CityMap, point: Vector2i, cache: Dictionary) -> bool:
 # ------------------------------------------------------------- the roadblocks ---
 
 ## **One roadblock a street**, so a crossing is one band and one guard on her side of it to lure.
-## *(Inbox #771: "Right now there are for guards and the player adds excitement by just being
+## *(Inbox #771 in minty-lemur: "Right now there are for guards and the player adds excitement by just being
 ## close. Luring away one guard (the challenge) is not enough to make the obstacle survivable")*
 ## Two bands on a street stand a couple of tiles apart on the same sidewalk, and the second one's
 ## guard is still posted when she walks past after luring the first one's off.
@@ -365,7 +365,7 @@ func _test_no_street_of_the_walk_stands_two_roadblocks(t) -> void:
 	t.check(streets > 0, "there were streets with a roadblock to ask about (%d)" % streets)
 
 ## **A roadblock's band costs nothing, ever, on a day and in the escape alike; the guard is the
-## danger.** *(Inbox #788: "No cost at all, ever", of the escape's band; "band costing nothing
+## danger.** *(Inbox #788 in minty-lemur: "No cost at all, ever", of the escape's band; "band costing nothing
 ## should also apply to a normal day"; "the challenge is the guard not the concrete".)* Walked on
 ## both the escape's copy and a day's hunting row: the band charges nothing beside it while its
 ## guards are posted, while the guard on her side warns, while he charges, while he walks away,
@@ -440,9 +440,9 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 				"%s band streamed back in after its guard was spent is solid and silent" % name)
 		streamed.free()
 
-## **The far guard leaves too, so the band stands unmanned, on every day.** *(Inbox #771, asked
+## **The far guard leaves too, so the band stands unmanned, on every day.** *(Inbox #771 in minty-lemur, asked
 ## whether the guard at the far post should leave as well once his partner has been lured off: "He
-## leaves too"; inbox #788, asked whether on a day as well: "Days too".)* The frame the guard on her
+## leaves too"; inbox #788 in minty-lemur, asked whether on a day as well: "Days too".)* The frame the guard on her
 ## side starts to walk away, the one at the far post sets off from it the same way: away from her,
 ## at his partner's pace, gone once he is past `Tuning.OUT_OF_SIGHT` from her, his own node freed
 ## with him (the way he walks is over walkable ground, which
@@ -702,7 +702,7 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t) -> void:
 ## **One guard at a time, wherever the two bands stand.** No two of the escape's roadblocks stand
 ## where one's guard notices her while she deals with the other: their notices, each
 ## `pursues_within` round its band, never overlap (`EventScheduler._keeps_its_notice_to_itself()`).
-## *(Inbox #771, 2026-10-18: "two roadblocks are right next to each other and the second guard is
+## *(Inbox #771 in minty-lemur, 2026-10-18: "two roadblocks are right next to each other and the second guard is
 ## invisible (hidden) until it already charges".)* One a street keeps two off one street; this keeps
 ## two apart across a junction or a corner as well.
 func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
@@ -723,8 +723,8 @@ func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
 						map.world_to_tile(bands[j].position), gap, apart])
 	t.check(pairs > 0, "there were pairs of roadblocks to measure (%d)" % pairs)
 
-## **An escape guard warns on the screen and in front of everything round him.** *(Inbox #771,
-## 2026-10-18: "the second guard is invisible (hidden) until it already charges"; inbox #788: the
+## **An escape guard warns on the screen and in front of everything round him.** *(Inbox #771 in minty-lemur,
+## 2026-10-18: "the second guard is invisible (hidden) until it already charges"; inbox #788 in minty-lemur: the
 ## warning is visible on screen.)* Walked: she comes at each of the plan's roadblocks in a
 ## straight line from all round it, with the camera's view led by her walk as `Stroller` leads it
 ## (`RoadblockRig.view_round()`), and on the frame his hand goes up the whole of his raised-hand
@@ -811,7 +811,7 @@ static func _escape_roadblocks(plan: FinalePlanner.Plan) -> Array[EventScheduler
 			found.append(placement)
 	return found
 
-## **The seed the player could not win, booted the way the player booted it.** *(Inbox #771,
+## **The seed the player could not win, booted the way the player booted it.** *(Inbox #771 in minty-lemur,
 ## 2026-10-18: "the seed you gave me for testing the escape is still unwinnable. two roadblocks are
 ## right next to each other and the second guard is invisible (hidden) until it already charges")*
 ## Seed 4216201080 from the building, walked out of the service door through the real `main.tscn`
@@ -909,7 +909,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 ## asks `_open_ground_for()`): every truck, van, roadblock and burst on a tile a day would offer that
 ## row — none on the home block, none in a street tree, none on the wrong side of a sidewalk, no
 ## spread on a corner — all but the front door's street, a door the escape never sets off from.
-## *(Inbox #785, 2026-10-18: "does the escape use the same placement rules as the regular game? it
+## *(Inbox #785 in minty-lemur, 2026-10-18: "does the escape use the same placement rules as the regular game? it
 ## doesn't seem like it does. it should, though.")*
 func _test_the_escape_stands_its_rows_on_the_days_own_ground(t) -> void:
 	var asked := 0
@@ -940,7 +940,7 @@ const ESCAPE_ROWS := ["military_convoy", "abduction", "roadblock", "finale_explo
 ## is no wider than the alley (`SealPlanner._widest_that_fits_a_mouth()`). A day's soft rows always
 ## fitted; the escape's own list is street seals sized for a 192px street, and the widest of them
 ## stood across a 64px alley and two tiles into the buildings either side, over their roofs.
-## *(Inbox #785, 2026-10-18: "I saw wood on the roof for example")* Asked of every alley-mouth wall
+## *(Inbox #785 in minty-lemur, 2026-10-18: "I saw wood on the roof for example")* Asked of every alley-mouth wall
 ## the escape's plans stand, by its body: nothing of it reaches a building tile.
 func _test_an_alley_mouth_wall_fits_the_mouth(t) -> void:
 	var mouth := float(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE)
@@ -975,7 +975,7 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t) -> void:
 	t.check(walls > 0, "there were alley-mouth walls to ask about (%d)" % walls)
 
 ## **Nothing the escape stands reaches over a building**, seals and events alike, with its body or
-## with the ground its picture is drawn over (`tests/seal_reach_rig.gd`'s measure). *(Inbox #785,
+## with the ground its picture is drawn over (`tests/seal_reach_rig.gd`'s measure). *(Inbox #785 in minty-lemur,
 ## 2026-10-18: "I saw wood on the roof for example")* The barricade's carts across a street off the
 ## chains are the pieces that reached over the buildings either side.
 func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:

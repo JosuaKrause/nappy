@@ -671,7 +671,7 @@ func _test_no_seal_body_stands_in_a_street_tree(t) -> void:
 	t.check(checked > 0, "there were seal bodies to check (%d)" % checked)
 
 ## **No seal stands over a building**, with its body or with the ground its picture is drawn over
-## (`tests/seal_reach_rig.gd`'s measure). *(Inbox #785, 2026-10-18: "I saw wood on the roof for
+## (`tests/seal_reach_rig.gd`'s measure). *(Inbox #785 in minty-lemur, 2026-10-18: "I saw wood on the roof for
 ## example")* A street's cross-section ends at the buildings either side, so a hard seal's outer
 ## pieces stand flush with its edges (`SealPlanner.positions_across()`); the barricade, wider than
 ## half a share of the street, is the row that reached over them. Every seal of every day, on every

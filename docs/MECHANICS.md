@@ -1155,8 +1155,8 @@ and price and route around, and that becomes a chase if you do not. Three states
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
 Two things are deliberately not the same as an ordinary telegraph. **The warning is one radius
-and a clock inside it** *(inbox #764: a warning happens when she comes close; she can turn around;
-inbox #788: "We should do one radius and warn inside it for 2s. If the player leaves the radius
+and a clock inside it** *(inbox #764 in minty-lemur: a warning happens when she comes close; she can turn around;
+inbox #788 in minty-lemur: "We should do one radius and warn inside it for 2s. If the player leaves the radius
 nothing happens and the warning stops. If they stay within the charge starts")*: it starts when she
 comes inside `pursues_within` along a clear line and with its warning picture in the camera's view,
 not when the day put it there; leaving the radius before its `warns_for` has run stops it, and it
@@ -1586,8 +1586,8 @@ where the masked man is.
 of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
 as she is in the building. The answer is the one the row is built around — step through the
 nearest corridor door and let him pass. **He starts his run the moment she is within 426px of him**
-*(inbox #764, inbox #782)*, with no warning clock, the one waiting charger without one *(inbox
-#788, the player: "No delay, as on main")*, which coming down from the second floor is at the head of the second
+*(inbox #764 in minty-lemur, inbox #782 in minty-lemur)*, with no warning clock, the one waiting charger without one *(inbox
+#788 in minty-lemur, the player: "No delay, as on main")*, which coming down from the second floor is at the head of the second
 flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
 walker is caught when she takes the flight holding plain left from the row level with its head tread
 or the row below, or down-left from the landing tile between the two flights. A walker who holds
@@ -1595,12 +1595,12 @@ plain left from that landing tile gets through, and the margins are thin (on the
 line, walking until he runs, then running, and turning plain left at row 11's centre, he is drawn
 about 25px from her centre (24.6px), inside his 28px catch, and she clears it on the tick at 28.6px,
 by 0.6px; she is caught if she starts running 0.3s late). In the stairwell his warning is off screen,
-and only the screen-edge badge shows his charge once he runs, up from the frame he starts running *(inbox #788: "Let's show that at least")*; the player accepted both *(inbox #782)*. So
+and only the screen-edge badge shows his charge once he runs, up from the frame he starts running *(inbox #788 in minty-lemur: "Let's show that at least")*; the player accepted both *(inbox #782 in minty-lemur)*. So
 the side she switched to is not a side she can settle on, which is the whole point of him: the way
 down is a sequence of crossings rather than one.
 
-**On a stair she walks the stair's own 45 degrees** *(inbox #783)*, **and off a stair the way
-she presses** *(inbox #782)*. On a flight tile any press with a leftward part walks 45 degrees to
+**On a stair she walks the stair's own 45 degrees** *(inbox #783 in minty-lemur)*, **and off a stair the way
+she presses** *(inbox #782 in minty-lemur)*. On a flight tile any press with a leftward part walks 45 degrees to
 the left, down if the flight descends to the left and up if it climbs, and a rightward one
 likewise; a pure up or down press on a flight moves nowhere, as there is no floor beside the tread
 to step onto. On a landing, as in a hallway, a press is not turned, so stepping off a landing onto
@@ -1673,7 +1673,7 @@ leaves stays drawn and stays shut across the road behind him. What takes the bab
 (`EventCatalogue.MASKED_MAN_REACH`, 28px, the same as the man on the stairs) — nothing about the
 barricade catches her. See `docs/EVENTS.md`, "The heat".
 
-**A roadblock is passed by luring its guard off.** *(Inbox #771: "it should be in a way that
+**A roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way that
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
 charge. Walking in until he charges and running back until he gives up takes him off for good, and
 once he has left his post the guard at its far post walks off with him, as on every day

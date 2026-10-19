@@ -1,5 +1,5 @@
 extends RefCounted
-## Measurement probe for the escape's stairs (inbox #783): every walkable tile of both stairwells,
+## Measurement probe for the escape's stairs (inbox #783 in minty-lemur): every walkable tile of both stairwells,
 ## each of eight directions and an analog diagonal pressed through the real `Stroller` physics step,
 ## and the heading she steers and the way she actually moves in a tenth of a second. Not a suite: it
 ## prints rather than asserts. Run by name:

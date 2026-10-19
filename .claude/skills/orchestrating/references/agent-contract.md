@@ -12,6 +12,12 @@ these win over the entry's paraphrase); the records the brief names under `docs/
 injects the skills that govern each file you edit; read **verify**, **committing** and
 **using-tools** yourself before your first commit.
 
+## Design
+
+Code follows **orchestrating**'s "Code is designed by layer": the five principles, the layering,
+dependency injection, and a mode as configuration. Report any place the work had to depend the wrong
+way, as a fork; and, as that section proposes (plush-kestrel), which layer the work belongs to.
+
 ## Git
 
 You work in the worktree the brief names, already on your branch from `origin/main` with no

@@ -540,7 +540,7 @@ func _test_chatting_mother_state_predicate_selects_the_conversation_posture(t) -
 	instance.free()
 
 ## The masked man on the escape's stairs stands while he waits for her, stands with his hand raised
-## through his notice *(inbox #764, the player: an event that does not spawn already charging always
+## through his notice *(inbox #764 in minty-lemur, the player: an event that does not spawn already charging always
 ## needs a warning)*, and is drawn lunging (`masked_pursuer_pictures()`) only once the notice is over
 ## and he runs his line.
 func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
@@ -681,7 +681,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 			"once his slow walk has brought her inside his stand-off he lunges")
 	instance.free()
 	# **She steps back out of his radius while he walks: he stops where he is and waits** *(inbox
-	# #764, the player: the robber walking slowly stops if she gets out of the radius)*, drawn
+	# #764 in minty-lemur, the player: the robber walking slowly stops if she gets out of the radius)*, drawn
 	# waiting, and warns again when she comes back in.
 	var walker := EventInstance.new()
 	walker.setup(def, Vector2.ZERO)
@@ -762,7 +762,7 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> v
 			"and the hut's guard has his raised hand to warn her with")
 	hut.free()
 
-## **The man a vehicle lets out raises his hand and stands still, then charges.** *(Inbox #764, the
+## **The man a vehicle lets out raises his hand and stands still, then charges.** *(Inbox #764 in minty-lemur, the
 ## player: van guardsmen about to charge hold up their hands; events that spawn with the sole purpose
 ## of charging show an indicator that they are about to, with the same heads-up as off-screen
 ## chargers.)* Every copy `EventCatalogue.out_of_the_car()` makes — out of a patrol car or a hunting

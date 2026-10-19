@@ -1,5 +1,5 @@
 extends RefCounted
-## Measurement probe for the one-radius charger (inbox #788): every charger that waits for her, warns
+## Measurement probe for the one-radius charger (inbox #788 in minty-lemur): every charger that waits for her, warns
 ## while she is inside its one radius and charges once its warning has run with her still inside.
 ## For each, at several warning times, four walks on the real `EventInstance` at 60Hz on open
 ## ground, her speed changing at `Tuning.ACCELERATION` as hers does. Not a suite: it prints rather

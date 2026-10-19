@@ -1046,7 +1046,7 @@ func _watch_what_is_near(here: Vector2) -> void:
 ##
 ## **A warning is not a chase.** A pursuer that waited for her warns inside its one radius for its
 ## `warns_for` and charges only if she is still inside once that has run
-## (`EventInstance.warns_by_radius()`; inbox #788: leave the radius and nothing happens). So its warning is its own span (`_watch_the_warning()`): one line when
+## (`EventInstance.warns_by_radius()`; inbox #788 in minty-lemur: leave the radius and nothing happens). So its warning is its own span (`_watch_the_warning()`): one line when
 ## it starts and one when it ends, saying whether she walked out of it or it charged, and the chase
 ## span starts at the charge.
 func _watch_the_chase(here: Vector2, delta: float) -> void:

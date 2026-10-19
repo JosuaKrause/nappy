@@ -998,7 +998,7 @@ static func escape_part_for(raw: String) -> String:
 ##
 ## **The building's wall blockers go, though; its pictures and its fade stay.** The building and
 ## the city share one physics space and both are laid out from the world origin, so its blockers
-## would stand across the city's top rows as a wall nobody draws (inbox #777) —
+## would stand across the city's top rows as a wall nobody draws (inbox #777 in minty-lemur) —
 ## `InteriorScene.take_the_walls_out()`.
 ##
 ## The fade is not reversed here. `InteriorScene` holds the black at full opacity from the moment

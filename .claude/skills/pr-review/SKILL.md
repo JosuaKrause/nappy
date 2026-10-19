@@ -83,6 +83,11 @@ touches (the path table in `CLAUDE.md`). Look for:
   before the fix, check that claim, by reading or by running that one suite on the pre-fix code;
 - a contract from the skills broken (fairness, telegraph, "checked before accepted", present-tense
   docs, names are content);
+- a design that breaks **orchestrating**'s "Code is designed by layer": a dependency pointing up a
+  layer, a mode copied instead of configured, or a component fetching what it should be handed (the
+  player's); and, from that section's proposal (plush-kestrel), a fix keyed on one row's id or
+  picture instead of landing in the shared mechanism, raised as a proposal-backed finding, not as
+  the player's rule;
 - a doc the change made false and left as it was;
 - anything the description claims that the diff does not do.
 
@@ -198,10 +203,10 @@ statements it cites, in the playtest file itself, and asks:
 - **Does every sentence about what the player asked say whether it is their words or a reading?**
   Their words go in quotation marks with their citation, and the filer's reading of them under
   `Read as:` (**playtest-feedback**); a reading written as though the player had said it is a
-  finding (inbox #767).
+  finding (inbox #767 in minty-lemur).
 
 The first five are the reviewer's reading of faithfulness (bouncy-heron 4), proposed at filing
-(leafy-finch), and the sixth came from the player's note (inbox #767); all are open to the player's
+(leafy-finch), and the sixth came from the player's note (inbox #767 in minty-lemur); all are open to the player's
 correction. A "yes" to the first, second, third or fifth, and a "no" to the fourth or sixth, is a
 finding. **A reviewer flags; it does not resolve**: it says what does not match and where, and the
 filer takes it back to the player or to the words.

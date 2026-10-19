@@ -389,7 +389,7 @@ static func _finale_candidate(rng: RandomNumberGenerator) -> Candidate:
 ## day's alley-mouth rows are its soft seals, every one of them sidewalk-sized, so a day's pick has
 ## always fitted. The finale's rows are street seals, sized for a 192px street: the widest, the
 ## collapsed frontage, stood its six tiles of timber across a two-tile alley and two tiles into the
-## buildings either side, over their roofs. *(Inbox #785, 2026-10-18: "does the escape use the same
+## buildings either side, over their roofs. *(Inbox #785 in minty-lemur, 2026-10-18: "does the escape use the same
 ## placement rules as the regular game? it doesn't seem like it does. it should, though. I saw wood
 ## on the roof for example")*
 static func _finale_alley_def() -> String:
@@ -745,7 +745,7 @@ static func _hard_positions(map: CityMap, segment: StreetNetwork.Segment,
 ## **The outer two stand flush with the edges, never past them.** A street's cross-section ends at
 ## the buildings either side, so a body centred half a share from the edge reaches past it by
 ## however much its radius is more than half a share: the barricade, at 62px, two to the 192px
-## street, stood 14px into the buildings, and the carts were drawn over the roofs. *(Inbox #785,
+## street, stood 14px into the buildings, and the carts were drawn over the roofs. *(Inbox #785 in minty-lemur,
 ## 2026-10-18: "I saw wood on the roof for example")* So the first and last stand one radius in from
 ## their edges and the rest are spread evenly between them. The copy count is unchanged, so the
 ## neighbours stand closer rather than further apart and still touch; and where the width is a whole
