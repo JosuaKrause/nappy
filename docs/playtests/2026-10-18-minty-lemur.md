@@ -882,17 +882,26 @@ lines are the player's.
 
    > file the findings as a refactor ticket. be precise about it. for immediate next step: check the bug and also make escape winnable with minimal changes (fixing event distribution in some cheap way) then patch release then full refactor. all of that next session though. stop after filing everything
 
-2. **The player's words.**
+2. **Context** (the assistant's):
 
-   > oh, almost forgot -- use dependency injection to allow for more modular and testable code
+   "Check the bug" refers to the one the codebase review had just flagged as possibly live in v0.29.0: the baby reading the building's world in the escape city after a building start, found by reading and not yet run.
 
 3. **The player's words.**
 
-   > what does "layered architecture" mean to you?
+   > oh, almost forgot -- use dependency injection to allow for more modular and testable code
 
 4. **The player's words.**
 
+   > what does "layered architecture" mean to you?
+
+5. **Context** (the assistant's):
+
+   The assistant answered: code split into layers, each at one level of abstraction with one kind of responsibility; dependencies point down only, through interfaces; a lower layer tells a higher one what happened by an event or a callback it was handed (dependency inversion); each layer hides how it works, so it can be replaced or faked in tests (dependency injection); for this game, data and configuration, the world model, the world, simulation, run flow, then observers (UI, GoatCounter, the run log, the save).
+
+6. **The player's words.**
+
    > okay, I was just checking. since I saw some things written about graphic layers. just wanted to make sure you didn't take layered architecture as graphics guideline
+
 ## #796
 
 1. **Context** (the assistant's):

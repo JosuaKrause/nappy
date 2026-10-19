@@ -21,8 +21,9 @@ for his screen-edge badge.
 
 **Built (PR #781, merged for v0.29.0):**
 - **The escape's roadblocks:** one a street (`Tuning.FINALE_GUARDS_PER_STREET` 2 to 1); no two
-  escape roadblocks closer than twice the one radius (360px), refused at placement; a warning guard is
-  drawn above the street's other figures and starts warning only with his whole picture in her view.
+  escape roadblocks closer than twice the one radius (360px), refused at placement; a warning roadblock
+  guard is drawn above the street's other figures, and every waiting charger, on every day, starts
+  warning only with his whole picture in her view.
   The hidden guard was draw order: the second band's guard stood behind the first band and was drawn
   under it.
 - **The day's ground rules in the escape:** the escape's placement asks the day's own

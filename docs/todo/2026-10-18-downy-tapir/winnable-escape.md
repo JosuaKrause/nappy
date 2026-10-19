@@ -16,10 +16,13 @@ for "lots of lethal and dangerous events" (`docs/decisions/2026-09-09-M102-the-f
 *Proposed, not asked for (the cheap version):* inside `build_finale`, each open street gets a small
 number of slots (start from one) and each slot's row is drawn from one escape-wide `MarbleBag` (its
 own seeded stream) holding the four rows and empty marbles, counts in the player's order trucks >
-explosions > vans > roadblocks > empty. A drawn marble that cannot be placed is spent unmet. Choose
+explosions > vans > barriers > empty (the barriers are the roadblocks). A drawn marble that cannot be placed is spent unmet. Choose
 the slot count and the marble counts by measuring over at least 20 seeds and both exits: dangers per
 street, streets with nothing, dangers on the shortest walk to each exit, the meter's cost of that
 walk walking and running from the city section's start, and whether each exit is reachable and
 survivable at a sensible pace. Keep it the climax and make it fair to get through; the PR carries
 the table. Change nothing else: the escape's placement moving onto the day's scheduler is
-minty-quail's, and the explosions' look and timing are snowy-goose's.
+minty-quail's, and the explosions' look and timing are snowy-goose's. This builds inside `build_finale`, which
+minty-quail replaces: the player ordered this minimal step before the refactor (minty-lemur #794),
+so it is the stated exception to **orchestrating**'s "Code is designed by layer", and its marble bag
+is written so minty-quail's `escape-placement.md` can move it onto the day's scheduler unchanged.

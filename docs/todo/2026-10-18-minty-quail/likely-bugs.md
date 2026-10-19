@@ -3,7 +3,7 @@
 Not run; each is confirmed with a test before it is fixed, and closed with what the test showed if
 it does not hold.
 - **The chatting mother can detain twice.** `_has_chatted` is not carried through streaming
-  (`Planned` in `event_scheduler.gd` near 13-75; `resume()` in `event_instance.gd` near 3416), and
+  (`Planned` in `event_scheduler.gd` near 13-87; `resume()` in `event_instance.gd` near 3416), and
   `chatting_mother` is map-placed and paces, so walking past the stream radius and back may let her
   stop her again.
 - **The summary's note line can leak** into `show_finale` (`day_summary.gd` near 274 never hides it).

@@ -6,7 +6,8 @@ priority: later
 The player asked for a way to read and post on Reddit for sharing the game, then settled it: "actually,
 no. all you need is read access -- I can post things manually", and "copy over the credentials that
 you had from earlier here (gitignored) and write tooling for it", and set the band: "It's fine later it
-is" (minty-lemur #769).
+is", and "yes, keep improving the reader where you see gaps -- same with above where you had to write
+a custom script" (minty-lemur #769).
 
 Built: the read-only reader `tools/reddit.py` (PRs #774 and #775). Open: the sharing itself, which
 starts from the draft of the first r/ClaudeGameDev post on draft PR #776. **Read as:** the agent reads

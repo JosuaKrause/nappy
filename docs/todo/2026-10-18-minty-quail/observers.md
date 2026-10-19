@@ -8,7 +8,8 @@ Three channels are fed side by side at each call site:
   1143, `escaped` near 1197, `start_day` near 2032) plus 7 bus subscriptions.
 - **`VisitCounter` (GoatCounter)** listening to about 35 bus signals, about 20 of which exist only for
   it, emitted by `main` at hand-placed points (near 422, 1146, 1200, 2287, 2295) in a required order
-  (`day_lost_to` just before `day_ended`); `main` calls its private `_loss_event_suffix`.
+  (`day_lost_to` just before `day_ended`); `main`'s loss-cause helpers are documented as partners of
+  `VisitCounter`'s private `_loss_event_suffix`, a cross-file contract kept in comments.
 
 So any new path that ends a day or a section has to remember every channel, and one that forgets
 loses its counts without an error, which is what the escape does (`escape-as-day-spec.md`). The rule

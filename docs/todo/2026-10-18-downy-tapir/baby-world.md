@@ -8,7 +8,7 @@ not run again. `InteriorScene` also stays in the tree and in the `world` group (
 freed, `take_the_walls_out()`), so even a fresh lookup would return it first.
 
 If so, in the city section after a building start the baby asks the building for:
-- her excitement (`total_excitement_at`, answered by `InteriorEvents`, emptied by `stand_down()`):
+- her excitement (`excitement_sources_at`, answered by `InteriorEvents`, emptied by `stand_down()`):
   the city's trucks, vans, explosions and guards would cost her meter nothing;
 - `is_alley` and `sleepiness_multiplier`;
 - `decay_multiplier`, where city tiles that share the building's origin can land on the basement's
