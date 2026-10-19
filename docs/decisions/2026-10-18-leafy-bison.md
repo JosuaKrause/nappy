@@ -12,6 +12,8 @@ brackets, never stand alone; relayed agent reports included. The invented-names 
 what an invented name names.
 
 The player then asked "773 -- how about making a rule to add context for a question?" (minty-lemur
-#772). **Answered by the rule already there:** `CLAUDE.md`'s "A question carries all the context
+#772). The assistant answered that `CLAUDE.md` already holds "A question carries all the context
 needed to answer it — what was asked, what it collides with, what each answer costs, and which you
-would pick — in the message that asks it" (woolly-finch 10); nothing further was written.
+would pick — in the message that asks it" (woolly-finch 10), and offered to merge that rule with the
+new naming bullet, its pick being yes. **The player has not answered**, so nothing further was
+written; the question waits in `docs/review/2026-10-18-calm-otter.md`.

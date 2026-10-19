@@ -61,3 +61,6 @@ Each step leaves the game working and is its own PR, reviewed on its own:
 5. `events-composed.md` and `shared-components.md`.
 6. `main-and-state.md`, `tuning.md` and `tests-public-seams.md`, alongside the extractions they serve.
 7. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
+
+The PR that closes this entry rewrites **orchestrating**'s "Code is designed by layer", whose
+proposal paragraph refers to this entry.

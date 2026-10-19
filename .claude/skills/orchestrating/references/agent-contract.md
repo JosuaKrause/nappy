@@ -15,8 +15,8 @@ injects the skills that govern each file you edit; read **verify**, **committing
 ## Design
 
 Code follows **orchestrating**'s "Code is designed by layer": the five principles, the layering,
-dependency injection, and a mode as configuration. Say in the report which layer the work belongs
-to and any place it had to depend the wrong way, as a fork.
+dependency injection, and a mode as configuration. Report any place the work had to depend the wrong
+way, as a fork; and, as that section proposes (plush-kestrel), which layer the work belongs to.
 
 ## Git
 

@@ -490,6 +490,10 @@ lines are the player's.
 
    > 773 -- how about making a rule to add context for a question?
 
+5. **The assistant's reply** (the assistant's):
+
+   The assistant answered that the rule exists in CLAUDE.md, woolly-finch 10's "A question carries all the context needed to answer it", and offered to merge it with PR #773's naming bullet, its pick being yes. The player has not answered that offer. (The context block above was appended to the note at capture time and already names the rule.)
+
 ## #777
 
 1. **The note.**
