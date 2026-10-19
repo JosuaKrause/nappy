@@ -178,10 +178,9 @@ run_one_process() {
 	scratch="$(mktemp)"
 	if [[ -n "${RUN_TIMEOUT_S:-}" ]]; then
 		# Everything after `--` reaches the runner as OS.get_cmdline_user_args().
-		# Straight to the scratch file, then `cat` once the process has ended: a `>(tee ...)` here
-		# would be a process substitution that bash 3.2's bare `wait` does not wait for, and a late
-		# `tee` would leave the file the checks below read incomplete. This path's output goes to a
-		# shard log anyway, so nothing is lost by printing it at the end.
+		# Straight to the scratch file, then `cat` once the process has ended, so there is no `tee`
+		# still flushing when the checks below read the file. This path's output goes to a shard
+		# log anyway, so nothing is lost by printing it at the end.
 		"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@" \
 				> "$scratch" 2>&1 &
 		local godot_pid=$!
@@ -227,17 +226,21 @@ run_one_process() {
 	local closing_at timing_at
 	closing_at="$(grep -nE '^[0-9]+ checks, [0-9]+ failures$' "$scratch" | tail -n 1 | cut -d: -f1)"
 	timing_at="$(grep -nE '^-- ' "$scratch" | tail -n 1 | cut -d: -f1)"
-	if [[ -z "$closing_at" || ( -n "$timing_at" && "$closing_at" -lt "$timing_at" ) ]]; then
-		local why last
+	if grep -qE '^QUIT  ' "$scratch" || [[ -z "$closing_at" ]] \
+			|| [[ -n "$timing_at" && "$closing_at" -lt "$timing_at" ]]; then
+		local why quit_line last_suite
 		# The runner names the suite that was running when the tree went away (its QUIT line); the
 		# last timing line is the fallback and names the suite before it.
-		last="$(grep -E '^QUIT  ' "$scratch" | tail -n 1)"
+		quit_line="$(grep -E '^QUIT  ' "$scratch" | tail -n 1)"
+		last_suite="$(grep -E '^-- test_' "$scratch" | tail -n 1 | awk '{print $2}')"
 		if [[ -n "$killed_marker" && -f "$killed_marker" ]]; then
 			why="the process was killed at the shard timeout (${RUN_TIMEOUT_S}s)"
+		elif [[ -n "$quit_line" ]]; then
+			why="the tree was quit before the run finished"
 		else
 			why="the process ended early (a suite quit the tree, or the engine died)"
 		fi
-		echo "tools/test.sh: the runner never printed its closing \"N checks, M failures\" line -- $why; ${last:-last suite to print its timing line: $(grep -E '^-- test_' "$scratch" | tail -n 1 | awk '{print $2}')}" >&2
+		echo "tools/test.sh: the run did not finish cleanly (no closing \"N checks, M failures\" line after the last timing line, or a QUIT line) -- $why; ${quit_line:-last suite to print its timing line: ${last_suite:-none}}" >&2
 		status=1
 	fi
 	[[ -n "$killed_marker" ]] && rm -f "$killed_marker"

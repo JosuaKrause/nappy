@@ -321,7 +321,7 @@ jobs:
             echo "FAILED: runner_fixtures/quits_the_tree.gd exited 0 -- a silent quit passed the gate" >&2
             exit 1
           fi
-          if ! grep -qF "never printed its closing" quits_fixture.log; then
+          if ! grep -qF "did not finish cleanly" quits_fixture.log; then
             echo "FAILED: the missing-summary message never printed" >&2
             exit 1
           fi

@@ -3,11 +3,10 @@ extends RefCounted
 ## stood, for the suites that make the displacement themselves (`move_and_collide()`, or the
 ## velocity added by hand).
 ##
-## `_physics_process` ends in `move_and_slide()`, which moves her by the engine's physics delta:
-## 1/30 s once a physics frame has run, which the runner lets pass before the first suite, so the
-## call would move her once and the suite's own displacement a second time. Putting the body back
-## after the whole step also drops the crowd's shove (`move_and_collide(_shove * delta)` at the
-## end of `Stroller._physics_process`); no caller steps a crowd, so it is zero today.
+## `_physics_process` ends in `move_and_slide()`, which moves her itself; the caller's own
+## displacement is then the only one. Putting the body back after the whole step also drops the
+## crowd's shove (`move_and_collide(_shove * delta)` at the end of `Stroller._physics_process`)
+## if a suite steps a crowd.
 
 static func velocity_step(player: CharacterBody2D, tick: float) -> void:
 	var before := player.global_position

@@ -520,10 +520,9 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node
 
 ## **Her body walks the flight's 45 degrees, not only her steering** *(inbox #783 in minty-lemur)*. A real carrying
 ## rig holds one sideways action from a landing tile's centre until she stands on the next landing,
-## on every flight of both shafts, down and up. `move_and_slide()` moves her by
-## the engine-owned delta, which `StrollerSteer.velocity_step` takes back, so each call to the real
-## `_physics_process()` supplies its redirected, accelerated velocity and this test applies that
-## frame's displacement through
+## on every flight of both shafts, down and up. Each call to the real `_physics_process()` supplies
+## her redirected, accelerated velocity, `StrollerSteer.velocity_step` takes back the displacement
+## `move_and_slide()` would add, and this test applies that frame's displacement itself through
 ## `move_and_collide()` against the scene's registered blockers, sliding the collision remainder
 ## along the reported normal.
 ##
@@ -701,8 +700,8 @@ static func _absolute_z(item: CanvasItem) -> int:
 		node = node.get_parent()
 	return z
 
-## The explicit-displacement half `move_and_slide()` normally derives from the physics delta,
-## which `StrollerSteer.velocity_step` keeps out of these walks. The real body's sweep supplies
+## The explicit displacement these walks make themselves, in place of `move_and_slide()`'s, which
+## `StrollerSteer.velocity_step` keeps out of them. The real body's sweep supplies
 ## every collision normal and remainder; up to `max_slides` applies the same bounded sliding shape
 ## as the runtime.
 func _move_real_body_one_step(player: CharacterBody2D, motion: Vector2) -> int:

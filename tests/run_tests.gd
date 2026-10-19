@@ -49,8 +49,8 @@ var _finished := false
 
 func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
-	# The physics delta is 0 until a physics frame has run, so without this the first suite of a
-	# process would step her differently from every later one.
+	# A physics frame passes before the first suite as after each one, so every suite starts after
+	# the same number of them, whatever its place in a shard.
 	await get_tree().physics_frame
 	for path in _discover(filters):
 		var started := Time.get_ticks_msec()
