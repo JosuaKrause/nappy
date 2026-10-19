@@ -174,13 +174,17 @@ fi
 ## kill the engine, not the thing copying its output to a file, and a bare `| tee` in the
 ## foreground gives no PID to kill at all.
 run_one_process() {
-	local scratch status
+	local scratch status killed_marker=""
 	scratch="$(mktemp)"
 	if [[ -n "${RUN_TIMEOUT_S:-}" ]]; then
 		# Everything after `--` reaches the runner as OS.get_cmdline_user_args().
+		# Straight to the scratch file, then `cat` once the process has ended, so there is no `tee`
+		# still flushing when the checks below read the file. This path's output goes to a shard
+		# log anyway, so nothing is lost by printing it at the end.
 		"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@" \
-				> >(tee "$scratch") 2>&1 &
+				> "$scratch" 2>&1 &
 		local godot_pid=$!
+		killed_marker="$scratch.killed"
 		# TERM first, then KILL after a short grace period for a process that is not merely slow
 		# but genuinely will not respond -- SIGTERM's default disposition ends a hung process too
 		# in every case that matters here, but the escalation costs nothing when it is not needed.
@@ -195,6 +199,7 @@ run_one_process() {
 		{
 			(
 				if ! read -r -t "$RUN_TIMEOUT_S" <&9; then
+					: > "$killed_marker"
 					kill -TERM "$godot_pid" 2>/dev/null
 					read -r -t 5 <&9 || kill -KILL "$godot_pid" 2>/dev/null
 				fi
@@ -206,10 +211,7 @@ run_one_process() {
 			wait "$watchdog_pid" 2>/dev/null
 		} 9<>"$fifo"
 		rm -f "$fifo"
-		# Godot's own exit closes the pipe the process substitution reads, so the `tee` on the
-		# other end of it is already finishing -- this just lets it actually finish flushing
-		# before the grep below reads the file it was writing.
-		wait
+		cat "$scratch"
 	else
 		"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@" 2>&1 | tee "$scratch"
 		status="${PIPESTATUS[0]}"
@@ -217,6 +219,31 @@ run_one_process() {
 	if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" "$scratch"; then
 		status=1
 	fi
+	# The runner's closing line is the only proof every suite ran: a suite that quits the tree ends
+	# the process with exit 0 and no such line, and the suites after it never run. The line is
+	# anchored, and must come after the last "-- " timing line, so a line a suite or a child process
+	# happened to print earlier is not taken for it.
+	local closing_at timing_at
+	closing_at="$(grep -nE '^[0-9]+ checks, [0-9]+ failures$' "$scratch" | tail -n 1 | cut -d: -f1)"
+	timing_at="$(grep -nE '^-- ' "$scratch" | tail -n 1 | cut -d: -f1)"
+	if grep -qE '^QUIT  ' "$scratch" || [[ -z "$closing_at" ]] \
+			|| [[ -n "$timing_at" && "$closing_at" -lt "$timing_at" ]]; then
+		local why quit_line last_suite
+		# The runner names the suite that was running when the tree went away (its QUIT line); the
+		# last timing line is the fallback and names the suite before it.
+		quit_line="$(grep -E '^QUIT  ' "$scratch" | tail -n 1)"
+		last_suite="$(grep -E '^-- test_' "$scratch" | tail -n 1 | awk '{print $2}')"
+		if [[ -n "$killed_marker" && -f "$killed_marker" ]]; then
+			why="the process was killed at the shard timeout (${RUN_TIMEOUT_S}s)"
+		elif [[ -n "$quit_line" ]]; then
+			why="the tree was quit before the run finished"
+		else
+			why="the process ended early (a suite quit the tree, or the engine died)"
+		fi
+		echo "tools/test.sh: the run did not finish cleanly (no closing \"N checks, M failures\" line after the last timing line, or a QUIT line) -- $why; ${quit_line:-last suite to print its timing line: ${last_suite:-none}}" >&2
+		status=1
+	fi
+	[[ -n "$killed_marker" ]] && rm -f "$killed_marker"
 	rm -f "$scratch"
 	return "$status"
 }
@@ -444,9 +471,10 @@ for ((i = 0; i < SHARDS; i++)); do
 	if [[ -z "$counted" ]]; then
 		# A shard that printed no count did not finish. A suite that fails to load is a named
 		# `FAIL` line and a normal exit now (`run_tests.gd`'s loader guard), so a missing count
-		# here means the process crashed outright or is hung on something the guard does not
-		# cover -- which is why this is a hard failure rather than a shard contributing zero.
-		echo "shard $i produced no count — it crashed or hung. Its output:" >&2
+		# here means the process crashed outright, was killed at the shard timeout, or a suite
+		# quit the tree (the runner prints a `QUIT` line naming it) -- which is why this is a
+		# hard failure rather than a shard contributing zero.
+		echo "shard $i produced no count — it crashed, hung, was killed at the timeout or had a suite quit the tree. Its output:" >&2
 		sed 's/^/    /' "$log" >&2
 		status=1
 		continue

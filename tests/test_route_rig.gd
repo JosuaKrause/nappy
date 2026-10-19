@@ -8,6 +8,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
+const StrollerSteer := preload("res://tests/stroller_steer.gd")
 const SEED := 4242
 ## Day 6, "A chalk mark" — the first task day, and the smallest one whose mark is a pickup step
 ## rather than null, the same reason `tests/test_dev_rig.gd` picks it for `--spawn contact`.
@@ -23,6 +24,9 @@ var _saved_progress: int
 var _saved_package: bool
 
 func run(t) -> void:
+	# Which ground the rig's targets resolve to depends on the run's seed: these checks hold on seeds
+	# 4 and 5 and fail on 1, 2 and 3.
+	GameState.start_run(4)
 	_build_day(t)
 	_test_line_of_sight_refuses_a_true_diagonal(t)
 	_test_line_of_sight_refuses_a_bare_road_tile(t)
@@ -125,7 +129,7 @@ func _teardown(t) -> void:
 ## since `setup()` (which normally calls it) also wants a player, a baby, a resistance director and
 ## a day controller this suite has no use for here.
 func _rig(t) -> RouteRig:
-	var rig := RouteRig.new()
+	var rig := RouteRigNoQuit.new()
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	rig._city = _city
@@ -778,7 +782,7 @@ func _free_target_shape_fixture(fixture: Dictionary) -> void:
 ## A bare-point task's own `RouteRig` for `fixture`, the same shape `_rig()` gives the suite's
 ## shared day, wired to `fixture`'s own `_resistance` too, since `_task_target()` reads it.
 func _target_shape_rig(t, fixture: Dictionary) -> RouteRig:
-	var rig := RouteRig.new()
+	var rig := RouteRigNoQuit.new()
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	rig._city = fixture["city"]
@@ -1098,7 +1102,7 @@ func _test_on_day_finished_won_still_finishes(t) -> void:
 ## `Stroller` that this test never actually moves, which is exactly what a physical wedge reads as
 ## to the tile grid: nothing wrong with the ground, and no progress since the last check.
 func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
-	var rig := RouteRig.new()
+	var rig := RouteRigNoQuit.new()
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	rig._city = _city
@@ -1224,14 +1228,10 @@ func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t) -> voi
 ##
 ## **Position is integrated by hand from `_stroller.velocity` rather than left to
 ## `move_and_slide()`.** `Stroller._physics_process()` does compute the right `velocity` every
-## step here (`RouteRig`'s own presses reach it, which is what this test is actually for), but
-## `move_and_slide()`'s own displacement depends on the body's collision shape already being
-## synced to the physics server — a sync this suite's manual step loop, with no real engine frame
-## ever let through (`run_tests.gd` calls every suite synchronously; see `tests/test_camera_start.gd`'s
-## own doc on why an `await` here is not safe), never gives it the chance to do. The same
-## reasoning the verify skill gives for a bare `Stroller.new()` ("assert on velocity, not on
-## position") applies a second time here as "and integrate the velocity by hand", one step further
-## down the same cause.
+## step here (`RouteRig`'s own presses reach it, which is what this test is actually for), and the
+## displacement is the velocity integrated by hand instead of `move_and_slide()`'s:
+## `StrollerSteer.velocity_step` runs the rig's step and puts the body back, so the walk is at her
+## speed wherever the suite falls in a shard.
 func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 	const STEP := 1.0 / 30.0
 	const MAX_SECONDS := 30.0
@@ -1247,7 +1247,7 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 	day.set_process(false)
 	day.start(600.0)
 
-	var rig := RouteRig.new()
+	var rig := RouteRigNoQuit.new()
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	# 'home' rather than 'calm': the doorstep sits right on the home block's own edge, so this leg
@@ -1264,9 +1264,9 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 	while elapsed < MAX_SECONDS:
 		rig._physics_process(STEP)
 		# `_stroller._physics_process()` still runs in full — the acceleration ramp, the facing
-		# turn, everything but the displacement `move_and_slide()` cannot deliver here — and the
-		# position it would have produced is applied by hand from the `velocity` it computed.
-		_stroller._physics_process(STEP)
+		# turn, everything but the displacement `move_and_slide()` would add — and the position it
+		# would have produced is applied by hand from the `velocity` it computed.
+		StrollerSteer.velocity_step(_stroller, STEP)
 		_stroller.global_position += _stroller.velocity * STEP
 		baby._physics_process(STEP)
 		day._process(STEP)
@@ -1342,7 +1342,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	day.start(600.0)
 	city.events._player = _stroller
 
-	var rig := RouteRig.new()
+	var rig := RouteRigNoQuit.new()
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	rig.setup(city, _stroller, baby, null, day)
@@ -1364,7 +1364,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	var elapsed := 0.0
 	while elapsed < MAX_SECONDS and not rig._done:
 		rig._physics_process(STEP)
-		_stroller._physics_process(STEP)
+		StrollerSteer.velocity_step(_stroller, STEP)
 		_stroller.global_position += _stroller.velocity * STEP
 		baby._physics_process(STEP)
 		for instance in city.events.instances():

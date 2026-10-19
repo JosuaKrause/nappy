@@ -4,6 +4,8 @@ extends RefCounted
 ## parts, all headless: nothing here needs a scene tree except the suites that build
 ## `InteriorScene` itself.
 
+const StrollerSteer := preload("res://tests/stroller_steer.gd")
+
 func run(t) -> void:
 	_test_the_map_builds(t)
 	_test_the_stairwell_grammar_is_exact_in_both_shafts(t)
@@ -518,9 +520,9 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node
 
 ## **Her body walks the flight's 45 degrees, not only her steering** *(inbox #783 in minty-lemur)*. A real carrying
 ## rig holds one sideways action from a landing tile's centre until she stands on the next landing,
-## on every flight of both shafts, down and up. The synchronous runner cannot advance
-## `move_and_slide()`'s engine-owned delta, so each call to the real `_physics_process()` supplies
-## its redirected, accelerated velocity and this test applies that frame's displacement through
+## on every flight of both shafts, down and up. Each call to the real `_physics_process()` supplies
+## her redirected, accelerated velocity, `StrollerSteer.velocity_step` takes back the displacement
+## `move_and_slide()` would add, and this test applies that frame's displacement itself through
 ## `move_and_collide()` against the scene's registered blockers, sliding the collision remainder
 ## along the reported normal.
 ##
@@ -585,7 +587,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
 			var last := player.global_position
 			while steps < MAX_STEPS and not (scene.world_to_tile(player.global_position).x == column
 					and scene.slope_dir_at(player.global_position) == 0):
-				player._physics_process(STEP)
+				StrollerSteer.velocity_step(player, STEP)
 				var on_flight := scene.slope_dir_at(player.global_position) != 0
 				var contacts := _move_real_body_one_step(player, player.velocity * STEP)
 				if on_flight:
@@ -698,9 +700,10 @@ static func _absolute_z(item: CanvasItem) -> int:
 		node = node.get_parent()
 	return z
 
-## The explicit-displacement half `move_and_slide()` normally derives from the physics delta that
-## the synchronous test runner cannot advance. The real body's sweep supplies every collision
-## normal and remainder; up to `max_slides` applies the same bounded sliding shape as the runtime.
+## The explicit displacement these walks make themselves, in place of `move_and_slide()`'s, which
+## `StrollerSteer.velocity_step` keeps out of them. The real body's sweep supplies
+## every collision normal and remainder; up to `max_slides` applies the same bounded sliding shape
+## as the runtime.
 func _move_real_body_one_step(player: CharacterBody2D, motion: Vector2) -> int:
 	var collision := player.move_and_collide(motion)
 	var slides := 0
@@ -1342,7 +1345,7 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false) ->
 	var elapsed := 0.0
 	var ran_at := 0.0
 	while man != null and elapsed < 20.0:
-		player._physics_process(TICK)
+		StrollerSteer.velocity_step(player, TICK)
 		_move_real_body_one_step(player, player.velocity * TICK)
 		var her := player.global_position
 		var tile := scene.world_to_tile(her)
@@ -1718,7 +1721,7 @@ func _basement_reaches_the_exit_without(without: Vector2i) -> bool:
 
 ## The corridor as a timing puzzle: *"have them turn off an on in different intervals"*. Driven
 ## through `InteriorEvents._physics_process()` and each instance's own `_process()`, the two calls
-## the running game makes every frame, since a synchronous suite advances no clock of its own.
+## the running game makes every frame, since a suite advances no clock of its own.
 ##
 ## Three contracts, and none of them is a number this test chose:
 ##

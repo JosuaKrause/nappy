@@ -5,8 +5,8 @@ extends RefCounted
 ## middle of the road impassable when going from street to pedestrian road. that's okay. this is
 ## intended")*. Her real `CharacterBody2D` rig is swept through real `Prop` posts at the positions
 ## `City.bollard_positions()` gives for a generated map, with the same synchronous
-## `move_and_collide()` sweep `tests/test_interior.gd` uses (the runner cannot advance
-## `move_and_slide()`'s own delta).
+## `move_and_collide()` sweep `tests/test_interior.gd` uses (one displacement per step, not
+## `move_and_slide()`'s own).
 
 const STEP := 8.0
 const RUN_UP := 120.0

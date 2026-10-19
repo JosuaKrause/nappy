@@ -1210,9 +1210,8 @@ const SPAWN_SEEDS := [4242, 1, 77, 9001, 5, 1234, 31337, 808, 6, 27]
 ## is left — both arrive as `EventScheduler.Planned`, and a burst's crater arrives as one of those
 ## spawning its successor where it stood, which is asked about too.
 ##
-## Asked of the plan rather than of the physics server on purpose: a `StaticBody2D` is not
-## registered with the server until a physics frame has run, and a suite's `run()` is synchronous,
-## so a shape query here would answer "nothing is anywhere" whatever the plan said.
+## Asked of the plan rather than of the physics server, by choice: the plan is what the finale
+## decides, and the question is where it put things.
 func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 	var checked := 0
 	var on_her := 0
@@ -1305,9 +1304,8 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	t.check(city.crowd.agent_count() == 0, "and the escape's city has nobody in it")
 	t.check(city.route_tree() == null and city.closures().is_empty(),
 			"the escape grows no corridor and closes no street")
-	# `.free()`, not `queue_free()`: a suite's `run()` is synchronous and the runner quits without
-	# ever reaching an idle frame, so a queued deletion never happens at all, and a city left
-	# standing here would carry its nodes and signals into every later suite.
+	# `.free()`, not `queue_free()`, so the city is gone before the next check rather than at a
+	# frame that passes after this suite.
 	city.free()
 
 ## *"Yes, of course the yellow tint. We spent the whole game establishing that why would it be

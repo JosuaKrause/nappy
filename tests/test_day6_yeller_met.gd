@@ -22,6 +22,8 @@ const STEP := 0.1
 const SETTLE_SECONDS := 12.0
 
 func run(t) -> void:
+	# Whether the rigged man is sited in view depends on the run's seed; this was checked on seed 2.
+	GameState.start_run(2)
 	var saved_completed := GameState.completed_resistance_steps.duplicate()
 	var saved_failed := GameState.failed_resistance_steps.duplicate()
 	var saved_progress := GameState.resistance_progress

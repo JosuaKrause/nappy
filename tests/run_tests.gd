@@ -9,8 +9,14 @@ extends Node
 ## GameState) actually exist — `--script` replaces the main loop and skips them.
 ##
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
-## runner. Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
-## negative fixtures under `tests/runner_fixtures/` (`engine_error.gd`, and `unparseable_suite.gd`
+## runner. `run` may be a plain function or a coroutine: the runner awaits it, so a suite may
+## `await` real frames, and lets a frame and a physics frame pass after each suite.
+## Before each suite `_reset_globals` puts back the run state and the static test seams, and a
+## physics frame has passed before the first, so every suite meets the same engine state.
+##
+## Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
+## negative fixtures under `tests/runner_fixtures/` (`engine_error.gd`, which proves the engine-error
+## scan; `quits_the_tree.gd`, which proves the missing-closing-line check; and `unparseable_suite.gd`
 ## once `tools/test.sh` has staged it from its committed `.gd.src` — see that file's own header),
 ## run only when named by path — see `_discover`.
 ##
@@ -35,9 +41,18 @@ extends Node
 
 var checks := 0
 var failures: Array[String] = []
+## The file name of the suite being run, from its start until the frames after it have passed, and
+## whether the closing line has been printed: what `_exit_tree` needs to say which suite was running
+## when something else quit the tree.
+var _running := ""
+var _finished := false
 
 func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
+	# In a process where no physics frame has run, `move_and_slide()` moves a body 0 px, and after
+	# one it moves the full step. A frame passes before the first suite so that no suite, the first
+	# included, runs before the engine has stepped physics once.
+	await get_tree().physics_frame
 	for path in _discover(filters):
 		var started := Time.get_ticks_msec()
 		# `load()` on a suite with a parse error returns a non-null GDScript that this guard
@@ -51,7 +66,18 @@ func _ready() -> void:
 			print("-- %-26s %7s" % [path.get_file(), "LOAD FAIL"])
 			continue
 		var suite: Object = script.new()
-		suite.run(self)
+		_running = path.get_file()
+		_reset_globals()
+		# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
+		# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
+		# coroutine waits for it.
+		await suite.run(self)
+		# One frame and one physics frame between suites let the message queue (deferred calls,
+		# `queue_redraw`, Control layout) and the delete queue (`queue_free`) drain, which a
+		# synchronous run never lets happen.
+		await get_tree().process_frame
+		await get_tree().physics_frame
+		_running = ""
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the
 		# spread runs from `test_quit_option.gd` at 3ms to `test_resistance.gd` at about 192_000.
@@ -66,10 +92,41 @@ func _ready() -> void:
 	print("")
 	for failure in failures:
 		print("FAIL  %s" % failure)
+	_finished = true
 	print("%d checks, %d failures" % [checks, failures.size()])
 	if not filters.is_empty():
 		print("PARTIAL RUN — only suites matching %s. Not a green build." % ", ".join(filters))
 	get_tree().quit(1 if not failures.is_empty() else 0)
+
+## A suite that quits the tree takes effect at the frame the runner lets pass after it, ending the
+## process with exit 0 before the closing line prints. The runner cannot cancel that, but it can say
+## which suite was running; `tools/test.sh` fails the run for the missing closing line.
+func _exit_tree() -> void:
+	if not _finished and _running != "":
+		print("QUIT  the tree went away while %s was running; the run did not finish" % _running)
+
+## A fixed seed rather than a random one, so a suite that reads `GameState.run_rng` meets the same
+## run on every machine and in every order. For determinism only: no suite may rely on it, and one
+## that depends on the run's seed calls `GameState.start_run(<seed>)` itself.
+const RESET_SEED := 2
+
+## The one place the globals a suite may leave behind are put back, called before each suite so
+## that no suite starts on another's state: the run state and the static seams a suite sets by hand
+## (the override hooks, the test arguments, the frame recorder, the remembered controls and the
+## title's restart stamp). Telemetry, `VisitCounter` and `EventBus` connections are left alone.
+func _reset_globals() -> void:
+	GameState.start_run(RESET_SEED)
+	DevFlags._invincible_override = null
+	GameSave._path_override = ""
+	GameSave._uses_save_override = null
+	SaveIndicator._home_override = null
+	DevFlags.args_for_tests = PackedStringArray()
+	FrameRecord.on = false
+	FrameRecord.ledger = null
+	ControlsMode._remembered = false
+	ControlsMode._remembered_mode = ControlsMode.Mode.TAP
+	ControlsMode._remembered_side = ControlsMode.Side.LEFT
+	TitleScreen._restarted_at_msec = -INF
 
 ## Every suite, or the ones whose file name contains one of `filters`.
 ##
@@ -82,8 +139,9 @@ func _ready() -> void:
 ## finds them by walking the directory, so the full run and CI never pay for them. A probe runs
 ## only by being named as a path under `tests/`: `tools/test.sh probes/m64_density.gd`.
 ## `tests/runner_fixtures/` holds the same kind of exception the other way round: a script whose
-## job is to fail a real check on the runner itself (a Godot engine diagnostic, not a bad
-## assertion), named the same way: `tools/test.sh runner_fixtures/engine_error.gd`.
+## job is to fail a real check on the runner itself, named the same way:
+## `tools/test.sh runner_fixtures/engine_error.gd` (a Godot engine diagnostic, not a bad assertion)
+## or `runner_fixtures/quits_the_tree.gd` (the process ends before the closing line prints).
 func _discover(filters: PackedStringArray) -> Array[String]:
 	var paths: Array[String] = []
 	var dir := DirAccess.open("res://tests")

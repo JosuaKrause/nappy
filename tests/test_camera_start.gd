@@ -12,9 +12,8 @@ extends RefCounted
 ## `await get_tree().process_frame` inside `_warm_the_canvas_shaders()` — and hands control back
 ## here exactly at that point, which is the state a real first frame would draw from. Resuming by
 ## hand with `t.get_tree().process_frame.emit()`, the same way `tests/test_pause.gd` resumes a
-## coroutine waiting on the same signal, finishes the boot without a real frame ever elapsing:
-## `run_tests.gd` calls every suite synchronously, so an actual `await` here would return control
-## before the rest of this test ran.
+## coroutine waiting on the same signal, finishes the boot without a real frame ever elapsing,
+## which keeps this test a plain function; the runner lets frames pass only between suites.
 
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 

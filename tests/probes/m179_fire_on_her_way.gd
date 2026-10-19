@@ -189,9 +189,9 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planne
 	rig.velocity = Vector2.ZERO
 	for i in int(round(SETTLE_SECONDS / STEP)):
 		city.events._physics_process(STEP)
-		# **The instances have to be ticked by hand.** `EventInstance` moves in `_process`, a drawn
-		# frame, and the test runner runs synchronously without drawing any — so an engine left to
-		# the tree never leaves the top of its street and a fire never finishes its telegraph.
+		# **The instances have to be ticked by hand.** `EventInstance` moves in `_process`, which this
+		# probe does not wait for — so an engine left to the tree never leaves the top of its
+		# street and a fire never finishes its telegraph.
 		for instance in city.events.instances().duplicate():
 			if is_instance_valid(instance):
 				instance._process(STEP)

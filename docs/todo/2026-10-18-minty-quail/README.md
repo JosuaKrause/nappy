@@ -51,7 +51,7 @@ patching statics or reaching into private fields. Every item below applies it to
 
 Each step leaves the game working and is its own PR, reviewed on its own:
 
-1. `test-runner.md` and `run-config.md`: cheap, and they unblock testing the rest.
+1. `run-config.md`: cheap, and it unblocks testing the rest.
 2. `observers.md`, then `escape-as-day-spec.md`: the escape's loss reason and GoatCounter fixed by
    the day's own finish path.
 3. `world-passability.md`, `draw-layers.md`, then `world-map.md`: the world layer, which the building
