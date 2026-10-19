@@ -63,10 +63,17 @@ const REACTION := 0.3
 const GRID := 8.0
 ## The mixes measured: `slots` a street and the bag's marbles, trucks, explosions, vans, roadblocks
 ## and empty, in the player's order. `as built` is `Tuning`'s own, through `FinalePlanner.plan()`
-## exactly as the game plans it. `ESCAPE_WINNABLE_MIX` replaces the list, as
-## `<slots>:<trucks>,<explosions>,<vans>,<roadblocks>,<empty>` mixes separated by `;`.
+## exactly as the game plans it; the others are the candidates it was chosen against, and the last
+## stands nothing at all, to show what the walk itself costs. `ESCAPE_WINNABLE_MIX` replaces the
+## list, as `as built` or `<slots>:<trucks>,<explosions>,<vans>,<roadblocks>,<empty>` mixes
+## separated by `;`.
 const MIXES: Array[Dictionary] = [
 	{"name": "as built"},
+	{"name": "1:5,4,3,2,1", "slots": 1, "counts": [5, 4, 3, 2, 1]},
+	{"name": "1:6,5,4,3,2", "slots": 1, "counts": [6, 5, 4, 3, 2]},
+	{"name": "2:10,8,3,2,1", "slots": 2, "counts": [10, 8, 3, 2, 1]},
+	{"name": "2:12,10,3,2,1", "slots": 2, "counts": [12, 10, 3, 2, 1]},
+	{"name": "1:0,0,0,0,1", "slots": 1, "counts": [0, 0, 0, 0, 1]},
 ]
 
 func run(t) -> void:
@@ -104,6 +111,9 @@ func _mixes() -> Array[Dictionary]:
 		return MIXES
 	var found: Array[Dictionary] = []
 	for text in given.split(";", false):
+		if text == "as built":
+			found.append({"name": text})
+			continue
 		var halves := text.split(":")
 		var counts: Array[int] = []
 		for word in halves[1].split(","):
@@ -454,6 +464,8 @@ func _walk_it(city: City, her: Stroller, plan: FinalePlanner.Plan, line: PackedV
 			outcome = "caught"
 			break
 		meter.feed(city, her, at, STEP)
+		if _tracing and fmod(clock, 1.0) < STEP:
+			_trace(city, clock, s, at, meter, speed * direction)
 		if meter.cried:
 			outcome = "cried"
 			break
@@ -466,6 +478,22 @@ func _walk_it(city: City, her: Stroller, plan: FinalePlanner.Plan, line: PackedV
 			"landed": meter.landed}
 	city.events.clear()
 	return result
+
+## Set from `ESCAPE_WINNABLE_TRACE`: every walk prints where she is and what reaches her once a
+## second, for reading one walk through.
+var _tracing := OS.get_environment("ESCAPE_WINNABLE_TRACE") != ""
+
+func _trace(city: City, clock: float, s: float, at: Vector2, meter: Meter, speed: float) -> void:
+	var parts: Array[String] = []
+	for pair in city.excitement_sources_at(at):
+		var source: Object = pair[0]
+		if source is EventInstance:
+			var instance: EventInstance = source
+			parts.append("%s %.1f at %.0fpx" % [SHORT.get(instance.def.id, instance.def.id),
+					pair[1], instance.global_position.distance_to(at)])
+	print("  t %5.1f s %5.0f tile %s speed %4.0f meter %5.1f %s | %s" % [clock, s,
+			city.map.world_to_tile(at), speed, meter.excitement,
+			"asleep" if meter.asleep else "awake", ", ".join(parts)])
 
 ## The meter, fed the way `Baby` feeds it. See the class note for what is stood in for.
 class Meter extends RefCounted:

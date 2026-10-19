@@ -2715,8 +2715,8 @@ const FINALE_SLOTS_PER_STREET := 1
 ## order is trucks > explosions > vans > barriers > empty")*: army trucks, off-screen explosions,
 ## unmarked vans, roadblocks (the barriers) and empty marbles, where the slot that draws one stands
 ## nothing. MEASUREMENT PENDING.
-const FINALE_BAG_TRUCKS := 5
-const FINALE_BAG_EXPLOSIONS := 4
+const FINALE_BAG_TRUCKS := 10
+const FINALE_BAG_EXPLOSIONS := 8
 const FINALE_BAG_VANS := 3
 const FINALE_BAG_ROADBLOCKS := 2
 const FINALE_BAG_EMPTY := 1
