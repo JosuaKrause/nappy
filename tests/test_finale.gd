@@ -1165,10 +1165,8 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	t.check(city.route_tree() == null and city.closures().is_empty(),
 			"the escape grows no corridor and closes no street")
 	# `.free()`, not `queue_free()`: a suite's `run()` is synchronous and the runner quits without
-	# ever reaching an idle frame, so a queued deletion never happens at all. `City` is a
-	# `WorldContext`, and `WorldContext._ready()` adds it to the "world" group — the group
-	# `Baby._ready()` takes its world from, first node wins. A city left standing here is therefore
-	# the world every later suite's hand-built baby asks about the ground, instead of its own fake.
+	# ever reaching an idle frame, so a queued deletion never happens at all, and a city left
+	# standing here would carry its nodes and signals into every later suite.
 	city.free()
 
 ## *"Yes, of course the yellow tint. We spent the whole game establishing that why would it be
