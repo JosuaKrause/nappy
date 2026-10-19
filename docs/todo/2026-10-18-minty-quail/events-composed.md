@@ -41,7 +41,17 @@ the `ResistanceDirector` from a draw path, uses the red arrow's `ArrowField` as 
 copies crowd traffic's give-way (`_room_to_its_line`). **Streaming** carries hand-picked fields
 (`Planned`: age, travelled, noticed_at, guard_spent, chaser_side; `resume()` restores three).
 
-**Build:** an explicit `Phase` (waiting, warning, charging, caught, given up, leaving, parked, spent,
+**How behaviour is captured in classes is the implementer's call.** Asked whether the design
+encapsulates event types into classes, the player: "well leave that part vague -- the agent that will
+implement it should make the call on how to best capture things -- the one class per event is not
+necessarily the best option (some events have components that could best be represented as separate
+classes) think about what the role of a class here is meant to be and whether composition is possible
+(composition as in composing behavior)" (minty-lemur #797). **Read as:** the builder decides what a
+class is for here, prefers composing behaviour, and may give a component of an event (a roadblock's
+band, its far guard, a van's scene) a class of its own rather than one class per event type; the
+design below is a direction, not a prescription, and the PR says which shape was chosen and why.
+
+**A direction for the build:** an explicit `Phase` (waiting, warning, charging, caught, given up, leaving, parked, spent,
 done) with one `transition()`, the pursuit settings grouped in a `PursuitSpec` with one trigger and
 its radii; one `Warning` object (start, cancel-if, expire into an action) shared by events and doors,
 with the door crossing in a `CheckpointController`; behaviour components (wait, warn, charge, follow a

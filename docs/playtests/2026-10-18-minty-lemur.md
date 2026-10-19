@@ -2,7 +2,7 @@
 
 2026-10-18.
 Said over two sessions (2026-10-17 and 2026-10-18) as notes the assistant captured into the inbox
-on GitHub Issues, #761 to #796, with the player's further words appended to them. Each note is
+on GitHub Issues, #761 to #798, with the player's further words appended to them. Each note is
 recorded as it holds: first what its words answered, then the words themselves, whole, and each
 later word after what it answers. The questions and context are the assistant's; only the quoted
 lines are the player's.
@@ -915,3 +915,31 @@ lines are the player's.
 2. **The note.**
 
    > also make it so the software principles are going to be mentioned in a code writing / designing rule(?) whereever it makes most sense
+
+## #797
+
+1. **Context** (the assistant's):
+
+   Asked while the refactor ticket minty-quail was in review on PR #795; its events-composed.md proposes an explicit phase machine and behaviour components (wait, warn, charge, follow a route, pace, drive, flock, let out, hold, leave) composed per catalogue row, looks only drawing in a separate view.
+
+2. **The note.**
+
+   > does your design encapsulate event types into classes?
+
+3. **Context** (the assistant's):
+
+   The assistant answered no: the ticket composes events from shared behaviour parts chosen by each catalogue row's data, with no class per event type, which it called a gap; it proposed a small base Event class plus one class per event type, each built from the shared behaviour parts, the catalogue keeping only data and a separate view per type, and asked whether to put that into the ticket's events item before the filing PR merged.
+
+4. **The player's words.**
+
+   > well leave that part vague -- the agent that will implement it should make the call on how to best capture things -- the one class per event is not necessarily the best option (some events have components that could best be represented as separate classes) think about what the role of a class here is meant to be and whether composition is possible (composition as in composing behavior)
+
+## #798
+
+1. **Context** (the assistant's):
+
+   Said in reply to the orchestrator's report on PR #795's first filing review, which had found that the new "Code is designed by layer" rule contradicted downy-tapir's winnable-escape.md (a cheap marble bag built inside the escape's own placement code); the orchestrator quoted is its own line.
+
+2. **The note.**
+
+   > > The cheap escape fix is now named as the one exception, since you ordered it before the refactor. -- that's the whole point -- otherwise it wouldn't be cheap
