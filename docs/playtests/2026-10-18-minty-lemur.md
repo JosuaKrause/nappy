@@ -938,7 +938,7 @@ lines are the player's.
 
 1. **Context** (the assistant's):
 
-   Said in reply to the orchestrator's report on PR #795's first filing review, which had found that the new "Code is designed by layer" rule contradicted downy-tapir's winnable-escape.md (a cheap marble bag built inside the escape's own placement code); the orchestrator quoted is its own line.
+   Said in reply to the orchestrator's report on PR #795's first filing review, which had found that the new "Code is designed by layer" rule contradicted downy-tapir's winnable-escape.md (a cheap marble bag built inside the escape's own placement code); the quoted line is the orchestrator's own.
 
 2. **The note.**
 

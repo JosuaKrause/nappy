@@ -18,6 +18,8 @@ checklist lists the layer.
 **What is the player's and what is the filer's.** The five principles, dependency injection, the
 direction of dependencies and a mode as configuration rest on the player's words. The six target
 layers (minty-quail's), the fix landing in the shared mechanism, new code following the target shape
-until minty-quail lands, and the brief naming its layer are the filer's proposal, marked so in the
+while the refactor entry is open, and the brief naming its layer are the filer's proposal, marked so in the
 skill and open to overturn. The one stated exception is a minimal fix the queue orders before the
-refactor, as downy-tapir's `winnable-escape.md` is.
+refactor, as downy-tapir's `winnable-escape.md` is. The exception is the player's ("that's the whole
+point -- otherwise it wouldn't be cheap", minty-lemur #798) and ends with the refactor: the PR closing
+minty-quail removes it ("the exception only holds until the refactor", minty-lemur #799).
