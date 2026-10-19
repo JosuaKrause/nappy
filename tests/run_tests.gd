@@ -15,7 +15,8 @@ extends Node
 ## physics frame has passed before the first, so every suite meets the same engine state.
 ##
 ## Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
-## negative fixtures under `tests/runner_fixtures/` (`engine_error.gd`, and `unparseable_suite.gd`
+## negative fixtures under `tests/runner_fixtures/` (`engine_error.gd`, which proves the engine-error
+## scan; `quits_the_tree.gd`, which proves the missing-closing-line check; and `unparseable_suite.gd`
 ## once `tools/test.sh` has staged it from its committed `.gd.src` — see that file's own header),
 ## run only when named by path — see `_discover`.
 ##
@@ -40,6 +41,11 @@ extends Node
 
 var checks := 0
 var failures: Array[String] = []
+## The file name of the suite being run, from its start until the frames after it have passed, and
+## whether the closing line has been printed: what `_exit_tree` needs to say which suite was running
+## when something else quit the tree.
+var _running := ""
+var _finished := false
 
 func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
@@ -59,6 +65,7 @@ func _ready() -> void:
 			print("-- %-26s %7s" % [path.get_file(), "LOAD FAIL"])
 			continue
 		var suite: Object = script.new()
+		_running = path.get_file()
 		_reset_globals()
 		# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
 		# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
@@ -69,6 +76,7 @@ func _ready() -> void:
 		# synchronous run never lets happen.
 		await get_tree().process_frame
 		await get_tree().physics_frame
+		_running = ""
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the
 		# spread runs from `test_quit_option.gd` at 3ms to `test_resistance.gd` at about 192_000.
@@ -83,10 +91,18 @@ func _ready() -> void:
 	print("")
 	for failure in failures:
 		print("FAIL  %s" % failure)
+	_finished = true
 	print("%d checks, %d failures" % [checks, failures.size()])
 	if not filters.is_empty():
 		print("PARTIAL RUN — only suites matching %s. Not a green build." % ", ".join(filters))
 	get_tree().quit(1 if not failures.is_empty() else 0)
+
+## A suite that quits the tree takes effect at the frame the runner lets pass after it, ending the
+## process with exit 0 before the closing line prints. The runner cannot cancel that, but it can say
+## which suite was running; `tools/test.sh` fails the run for the missing closing line.
+func _exit_tree() -> void:
+	if not _finished and _running != "":
+		print("QUIT  the tree went away while %s was running; the run did not finish" % _running)
 
 ## A fixed seed rather than a random one, so a suite that reads `GameState.run_rng` meets the same
 ## run on every machine and in every order. For determinism only: no suite may rely on it, and one
@@ -122,8 +138,9 @@ func _reset_globals() -> void:
 ## finds them by walking the directory, so the full run and CI never pay for them. A probe runs
 ## only by being named as a path under `tests/`: `tools/test.sh probes/m64_density.gd`.
 ## `tests/runner_fixtures/` holds the same kind of exception the other way round: a script whose
-## job is to fail a real check on the runner itself (a Godot engine diagnostic, not a bad
-## assertion), named the same way: `tools/test.sh runner_fixtures/engine_error.gd`.
+## job is to fail a real check on the runner itself, named the same way:
+## `tools/test.sh runner_fixtures/engine_error.gd` (a Godot engine diagnostic, not a bad assertion)
+## or `runner_fixtures/quits_the_tree.gd` (the process ends before the closing line prints).
 func _discover(filters: PackedStringArray) -> Array[String]:
 	var paths: Array[String] = []
 	var dir := DirAccess.open("res://tests")

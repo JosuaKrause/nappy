@@ -308,9 +308,9 @@ func _test_the_clock_resolution(t) -> void:
 ## The recorder in a real boot of `main`: its markers run first and last because no other node in
 ## the tree is prioritised past them, a paused frame is timed but not kept, a played one is kept
 ## with its world counters, the readout carries its line, and leaving the tree switches the timing
-## off — which is what keeps the escape, which builds no recorder, from paying for it. Real frames
-## cannot elapse inside a suite (`run_tests.gd` calls every suite synchronously), so the phases
-## are driven by hand on the real tree's recorder, as `tests/test_camera_start.gd` drives its boot.
+## off — which is what keeps the escape, which builds no recorder, from paying for it. The
+## runner lets frames pass only between suites, and this suite is a plain function that lets none
+## elapse, so the phases are driven by hand on the real tree's recorder, as `tests/test_camera_start.gd` drives its boot.
 ##
 ## The record is running before `main` is built, as it is in the game, where `main._ready()` sets
 ## the recorder up before `_start_day()` makes the day's agents: so the day's agents copy the switch

@@ -325,6 +325,19 @@ jobs:
             echo "FAILED: the missing-summary message never printed" >&2
             exit 1
           fi
+          if ! grep -qF "M-quit sentinel" quits_fixture.log; then
+            echo "FAILED: the sentinel never printed -- the fixture did not actually run" >&2
+            exit 1
+          fi
+          if ! grep -qF "QUIT  the tree went away while quits_the_tree.gd was running" quits_fixture.log; then
+            echo "FAILED: the runner did not name the suite that quit the tree" >&2
+            exit 1
+          fi
+          if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" quits_fixture.log; then
+            echo "FAILED: an engine error is in the log -- the gate failed for the wrong reason" >&2
+            exit 1
+          fi
+          echo "OK: the quitting fixture failed the gate as required"
 
       # tests/runner_fixtures/unparseable_suite.gd.src holds a fixture whose GDScript text does
       # not parse -- kept off its real .gd name because an unparseable .gd anywhere in the tree

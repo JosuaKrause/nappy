@@ -399,9 +399,10 @@ covers a suite that fails to load, not this path.
 
 **A suite that quits the tree ends the whole process at the runner's next frame.** The exit is 0
 and the runner's closing "N checks, M failures" line never prints, so every later suite of the
-shard is dropped. `tools/test.sh` fails any run without that line and names the last suite that
-printed its timing; `tests/runner_fixtures/quits_the_tree.gd` proves it, and a suite that drives
-code which quits (as `RouteRig` does) uses a stand-in that does not (`tests/route_rig_no_quit.gd`).
+shard is dropped. The runner prints a `QUIT` line naming the suite that was running, and
+`tools/test.sh` fails any run without the closing line (or with a look-alike before the last
+timing line). `tests/runner_fixtures/quits_the_tree.gd` proves it, and a suite that drives code
+which quits (as `RouteRig` does) uses a stand-in that does not (`tests/route_rig_no_quit.gd`).
 
 **A suite that fails to parse is a named `FAIL` line and a normal exit, not a hang.** `_discover`
 loads every suite before running any, but `load()` on a broken suite returns a `GDScript`

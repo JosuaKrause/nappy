@@ -260,9 +260,10 @@ func _test_north_diagonal_contact_adjustment(t) -> void:
 
 ## The pram's physical body and visible position are separate contracts. The body stays on the
 ## circumference of her own circle, unsquashed in the ground plane, while its art, shadow, cue and
-## field follow the authored presentation offset. Checked at the wiring level because no physics
-## frame elapses during this suite's synchronous `run()`, so `move_and_slide()` cannot demonstrate a
-## wall collision here.
+## field follow the authored presentation offset. Checked at the wiring level because this
+## suite steps no physics frame of its own (the runner lets them pass only between suites), so a
+## body made here is not yet in the physics server and `move_and_slide()` cannot demonstrate a wall
+## collision.
 func _test_the_pram_has_its_own_trailing_body(t) -> void:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var rig: Stroller = scene.instantiate()

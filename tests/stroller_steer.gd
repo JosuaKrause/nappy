@@ -5,7 +5,9 @@ extends RefCounted
 ##
 ## `_physics_process` ends in `move_and_slide()`, which moves her by the engine's physics delta:
 ## 1/30 s once a physics frame has run, which the runner lets pass before the first suite, so the
-## call would move her once and the suite's own displacement a second time.
+## call would move her once and the suite's own displacement a second time. Putting the body back
+## after the whole step also drops the crowd's shove (`move_and_collide(_shove * delta)` at the
+## end of `Stroller._physics_process`); no caller steps a crowd, so it is zero today.
 
 static func velocity_step(player: CharacterBody2D, tick: float) -> void:
 	var before := player.global_position

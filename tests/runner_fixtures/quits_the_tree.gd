@@ -9,6 +9,9 @@ extends RefCounted
 ## of a shard would be dropped silently. `tools/test.sh` fails a run that lacks that line, which is
 ## what this fixture proves.
 
+const SENTINEL := "M-quit sentinel: quits_the_tree.gd is running and is about to quit the tree"
+
 func run(t) -> void:
+	print(SENTINEL)
 	t.check(true, "the fixture's own assertion passes before it quits the tree")
 	t.get_tree().quit()

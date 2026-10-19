@@ -1414,8 +1414,7 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	# A touch resume is acknowledged two frames before it fires too — see
 	# `PauseScreen._acknowledge_and_resume()` for why, and `DaySummary._acknowledge_and_continue()`
 	# for why it is two `process_frame`s rather than one. Emitted manually rather than awaited:
-	# `run_tests.gd` calls every suite synchronously, so an `await` in a test would return control
-	# before the rest of the test ran.
+	# the suite's `run()` is a plain function, and the runner lets frames pass only between suites.
 	t.check(resumed[0] == 0, "the press is acknowledged before it is acted on")
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()

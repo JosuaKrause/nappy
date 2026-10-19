@@ -1211,8 +1211,8 @@ const SPAWN_SEEDS := [4242, 1, 77, 9001, 5, 1234, 31337, 808, 6, 27]
 ## spawning its successor where it stood, which is asked about too.
 ##
 ## Asked of the plan rather than of the physics server on purpose: a `StaticBody2D` is not
-## registered with the server until a physics frame has run, and a suite's `run()` is synchronous,
-## so a shape query here would answer "nothing is anywhere" whatever the plan said.
+## registered with the server until a physics frame has run, and none passes while a suite's
+## `run()` executes, so a shape query here would answer "nothing is anywhere" whatever the plan said.
 func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 	var checked := 0
 	var on_her := 0
