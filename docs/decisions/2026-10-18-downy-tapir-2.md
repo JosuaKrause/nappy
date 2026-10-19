@@ -17,7 +17,10 @@ to each exit over 24 seeds got out on 0 of 48 walks (47 cried, 1 caught).
 **Built.** Each open street has `Tuning.FINALE_SLOTS_PER_STREET` (1) slot, and each slot draws one
 marble from one bag for the whole escape (`EventScheduler.escape_bag()`): 10 trucks, 8 explosions, 3
 vans, 2 roadblocks and 1 empty marble (`FINALE_BAG_TRUCKS`, `_EXPLOSIONS`, `_VANS`, `_ROADBLOCKS`,
-`_EMPTY`), the player's order kept strictly. A drawn danger the placement rules refuse is spent
+`_EMPTY`), the player's order kept strictly. The order is the bag's: asked at review whether it
+meant the marbles or what stands on the streets (where refusals leave about a third of streets empty
+and explosions standing more often than trucks), the player answered "The bag", adding "Nobody ever
+claimed that the bag order would match the street order" (2026-10-19, in session). A drawn danger the placement rules refuse is spent
 unmet, and every placement rule the escape kept before still applies. The bag has its own stream
 seeded from the plan's seed, so a restart after a loss draws the same city, as before. `build_finale`
 takes the bag and the slot count as arguments, so the bag moves onto the day's scheduler unchanged
