@@ -67,6 +67,23 @@ an agent can take it is not overhead on top of the work — it **is** the orches
 **A milestone with an open design question is not ready for one.** The question goes to the player
 first, and "draft and put back" items never go to an agent at all.
 
+## Code is designed by layer
+
+**Every design, brief and change keeps to five principles** (minty-lemur #785, #796): separation of
+concerns, composability, cohesion, low coupling and a layered architecture, with **dependency
+injection** so components are modular and testable (minty-lemur #794). A layer depends only on the
+layers below it, through their interfaces, and tells a higher one what happened by an event or a
+callback it was handed, never by calling it: data and configuration; the domain model; the world
+(map, passability, navigation, draw order); simulation (actors and events, composed from shared
+parts); run flow (a run is a sequence of day specs); observers (UI, GoatCounter, the run log, the
+save). A mode, the escape included, is a configuration of the layers, never a parallel copy of one
+(minty-lemur #785). A component is handed its map, navigator, configuration, clock and event sink
+rather than fetching them from an autoload, a group or a static, so a test hands it fakes. A fix
+lands in the shared mechanism, not in a branch keyed on one row's id or picture. The refactor that
+moves the code there is queued as minty-quail; until it lands, new code follows the target shape and
+never adds to the divergence it lists. A brief names the layer its work belongs to, and a review
+checks it (**pr-review**, "Then the code").
+
 ## The task description is the contract
 
 A vague prompt returns work that cannot be merged.

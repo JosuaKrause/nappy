@@ -83,6 +83,9 @@ touches (the path table in `CLAUDE.md`). Look for:
   before the fix, check that claim, by reading or by running that one suite on the pre-fix code;
 - a contract from the skills broken (fairness, telegraph, "checked before accepted", present-tense
   docs, names are content);
+- a design that breaks **orchestrating**'s "Code is designed by layer": a dependency pointing up a
+  layer, a mode copied instead of configured, a component fetching what it should be handed, or a
+  fix keyed on one row's id or picture instead of landing in the shared mechanism;
 - a doc the change made false and left as it was;
 - anything the description claims that the diff does not do.
 

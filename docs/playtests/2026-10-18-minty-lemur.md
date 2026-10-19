@@ -2,7 +2,7 @@
 
 2026-10-18.
 Said over two sessions (2026-10-17 and 2026-10-18) as notes the assistant captured into the inbox
-on GitHub Issues, #761 to #794, with the player's further words appended to them. Each note is
+on GitHub Issues, #761 to #796, with the player's further words appended to them. Each note is
 recorded as it holds: first what its words answered, then the words themselves, whole, and each
 later word after what it answers. The questions and context are the assistant's; only the quoted
 lines are the player's.
@@ -893,3 +893,12 @@ lines are the player's.
 4. **The player's words.**
 
    > okay, I was just checking. since I saw some things written about graphic layers. just wanted to make sure you didn't take layered architecture as graphics guideline
+## #796
+
+1. **Context** (the assistant's):
+
+   Said after the codebase review was filed as the refactor ticket minty-quail (PR #795), whose lens was the player's "separation of concerns, composability, cohesion, coupling, architecture layering" and "use dependency injection to allow for more modular and testable code" (inbox #785 and #794, filed in minty-lemur).
+
+2. **The note.**
+
+   > also make it so the software principles are going to be mentioned in a code writing / designing rule(?) whereever it makes most sense
