@@ -2725,15 +2725,15 @@ const FINALE_SLOTS_PER_STREET := 1
 ## The escape's marble bag, in the player's order of how many *(inbox #785 in minty-lemur:
 ## "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks, off-screen
 ## explosions, unmarked vans, roadblocks (the barriers) and empty marbles, where the slot that draws
-## one stands nothing. **The two rows that take her stand at the least the order allows**, vans 3
-## and roadblocks 2 over the one empty marble, and the trucks and explosions, which only wake the
+## one stands nothing. **The two rows that take her have the fewest marbles the order allows**, vans
+## 3 and roadblocks 2 over the one empty marble, and the trucks and explosions, which only wake the
 ## baby, make up the rest: a van's catch and a guard's end the section, and a van's field is most of
 ## what the probe's walks that cried had landed. With these a walk to an exit meets about three
 ## trucks, three explosions, one van and one roadblock; the order's smallest bag, 5, 4, 3, 2 and 1,
 ## meets a van and a roadblock more often and gets out on 44 walks of 48. A fill is 24 marbles and
 ## a plan has about 31 open streets, so an escape draws one whole fill and about seven marbles of
-## the next. What stands is not the bag's mix all the same: a danger the placement rules refuse is
-## spent unmet, so about a third of the streets stand nothing.
+## the next. About a third of the streets stand nothing all the same, since a danger the placement
+## rules refuse is spent unmet.
 const FINALE_BAG_TRUCKS := 10
 const FINALE_BAG_EXPLOSIONS := 8
 const FINALE_BAG_VANS := 3

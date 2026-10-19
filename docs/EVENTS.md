@@ -1874,7 +1874,7 @@ roadblocks (2) and `FINALE_BAG_EMPTY` empty marbles (1). A row's marble puts one
 street through every placement rule below; an empty marble leaves the slot with nothing; a row's
 marble that finds no ground the rules accept is spent unmet, so a refused danger never moves on to
 the next street. The bag has its own stream off the plan's seed, so a lost section replans the same
-streets. The two rows that take her, the van and the roadblock's guard, stand at the least the
+streets. The two rows that take her, the van and the roadblock's guard, have the fewest marbles the
 player's order allows, and the counts were chosen by walking the shortest walk from the service
 exit to each exit through the plan's own events on two sets of 24 seeds
 (`tests/probes/escape_winnable.gd`): a walk meets about three trucks, three explosions, one van and
