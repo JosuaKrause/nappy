@@ -659,8 +659,7 @@ func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
 			manager.free()
 
 ## A `WorldContext` answering out of one `EventManager`, so a real `Baby` can be driven against the
-## same sum the game's own `City` builds — `Baby._ready()` finds it by the `world` group, which
-## `WorldContext._ready()` puts it in.
+## same sum the game's own `City` builds — the test hands it to the baby with `Baby.set_world()`.
 ##
 ## **It forwards `excitement_sources_at()` rather than reimplementing it**, which is the whole
 ## point: the rule under test (a hold silences everything else) lives in that function, and a rig

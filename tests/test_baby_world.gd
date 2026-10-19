@@ -23,6 +23,8 @@ func run(t) -> void:
 	_test_a_baby_with_no_world_is_neutral(t)
 	_test_a_baby_answers_for_the_world_she_is_handed(t)
 	_test_the_escape_hands_her_the_building_then_the_city(t)
+	_test_a_boot_straight_onto_the_street_hands_her_the_city(t)
+	_test_an_ordinary_boot_hands_her_the_city(t)
 
 func _test_a_baby_with_no_world_is_neutral(t) -> void:
 	var baby := Baby.new()
@@ -112,3 +114,27 @@ func _test_the_city_ground_gains_sleepiness(t, main: Node2D) -> void:
 	t.check(baby.world().sleepiness_multiplier(found) == city.sleepiness_multiplier(found)
 			and baby.world().sleepiness_multiplier(found) > 1.0,
 			"and she gains sleepiness on it at the city's %.2fx" % city.sleepiness_multiplier(found))
+
+## A boot straight into the escape's city (`--start-escape city`) never builds the building.
+func _test_a_boot_straight_onto_the_street_hands_her_the_city(t) -> void:
+	_boot_and_check(t, FinaleController.Section.CITY, "a boot straight onto the escape's street")
+
+## An ordinary run's boot: the day's city, no escape.
+func _test_an_ordinary_boot_hands_her_the_city(t) -> void:
+	_boot_and_check(t, FinaleController.Section.NONE, "an ordinary day's boot")
+
+func _boot_and_check(t, section: int, what: String) -> void:
+	var saved_section := GameState.escape_section
+	GameState.start_run(SEED)
+	GameState.day = DAY
+	GameState.escape_section = section
+	var main: Node2D = MAIN_SCENE.instantiate()
+	t.add_child(main)
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	t.check(main._city != null and main._baby != null and main._baby.world() == main._city,
+			"%s hands the baby the city" % what)
+	t.get_tree().paused = false
+	Telemetry.end_run()
+	main.free()
+	GameState.escape_section = saved_section
