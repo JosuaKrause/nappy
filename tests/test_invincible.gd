@@ -110,6 +110,7 @@ func _build_meter_rig(t) -> _MeterRig:
 	rig.stroller.velocity = Vector2.ZERO
 	rig.baby = Baby.new()
 	rig.stroller.add_child(rig.baby)
+	rig.baby.set_world(rig.world)
 	rig.baby.set_physics_process(false)
 	return rig
 

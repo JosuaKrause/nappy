@@ -56,8 +56,8 @@ func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d:%s" % [SEED, day, stream])
 	return rng
 
-## A rig standing at `at`, walking on the spot. The baby finds the City through the "world"
-## group, so it is asking the real map and the real crowd.
+## A rig standing at `at`, walking on the spot. The City is the world the baby is
+## handed, so it is asking the real map and the real crowd.
 func _build_rig(t, at: Vector2) -> void:
 	_teardown_rig()
 	_stroller = Stroller.new()
@@ -74,6 +74,7 @@ func _build_rig(t, at: Vector2) -> void:
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	_baby = Baby.new()
 	_stroller.add_child(_baby)
+	_baby.set_world(_city)
 	_baby.set_physics_process(false)
 
 func _teardown_rig() -> void:

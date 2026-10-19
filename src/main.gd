@@ -478,6 +478,7 @@ func _ready() -> void:
 	_city.add_entity(_player)
 	_player.clear_camera_limits()
 	_baby = _player.get_node("Baby")
+	_baby.set_world(_city)
 
 	_hud = HUD.instantiate()
 	_release_shaped_hud()
@@ -866,6 +867,7 @@ func _build_the_escape_building() -> void:
 	_interior.add_entity(_player)
 	_player.set_camera_limits(_interior.camera_bounds())
 	_baby = _player.get_node("Baby")
+	_baby.set_world(_interior)
 
 	_interior_events = InteriorEvents.new()
 	_interior_events.name = "InteriorEvents"
@@ -914,6 +916,8 @@ func _build_the_finale_city() -> void:
 		_player.slope_dir_at = Callable()
 		_player.get_parent().remove_child(_player)
 		_city.add_entity(_player)
+	# Told, not discovered: the same baby now asks the street, not the building behind her.
+	_baby.set_world(_city)
 	_player.clear_camera_limits()
 	# The **tiles** the chains end on rather than the points `CityEdge` draws its pictures at: the
 	# portal's own face is anchored on the map edge, past the last ground she can stand on, so a

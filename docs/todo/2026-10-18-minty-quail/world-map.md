@@ -14,8 +14,9 @@ code what should be data: the fire as an `EventDef` mutated in code (`_indoor_fi
 `Tuning.FINALE_STEAM_PERIODS` timers, the masked man's respawn timer, the explosion beat at her own
 position; `_without_its_aftermath` exists twice (here and `event_scheduler.gd` near 1023).
 `EventManager` keeps escape branches (`_walking_the_finale`, `start_finale`, `start_recipe(finale)`).
-The baby caches her world (downy-tapir's `baby-world.md` fixes the bug; this item makes the world an
-injected dependency everywhere). `CityMap.index_posts()` calls `City.bollard_positions()`, the data
+The baby is handed her world by `main` (`Baby.set_world()`, downy-tapir's fix), and `WorldContext`
+still joins a `world` group nothing reads any more; this item makes the world an
+injected dependency everywhere. `CityMap.index_posts()` calls `City.bollard_positions()`, the data
 layer reaching into the scene; `CrowdAgent` reads `City.OUTSIDE_DEPTH_TILES`; `world_to_tile` is
 written four times.
 
