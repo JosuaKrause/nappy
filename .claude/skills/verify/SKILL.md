@@ -389,7 +389,7 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
 ## When the suite prints nothing
 
 **A test run with no output at all still means an error, but not from a suite that fails to
-load.** `run_tests.gd` calls each suite's `run()` synchronously and then `get_tree().quit()`; an
+load.** `run_tests.gd` awaits each suite's `run()` (a plain function or a coroutine) and then `get_tree().quit()`; an
 error *inside* a suite's own `run()` — a runtime bug in the suite's own test logic, not a parse
 error — aborts `_ready()` before the quit, so the headless process sits there forever printing
 nothing. The loader guard below does not cover this path.

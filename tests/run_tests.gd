@@ -9,7 +9,9 @@ extends Node
 ## GameState) actually exist — `--script` replaces the main loop and skips them.
 ##
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
-## runner. Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
+## runner. `run` may be a plain function or a coroutine: the runner awaits it, so a suite may
+## `await` real frames, and lets a frame and a physics frame pass after each suite.
+## Before each suite `_reset_globals` puts back the run state and the static test seams. Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
 ## negative fixtures under `tests/runner_fixtures/` (`engine_error.gd`, and `unparseable_suite.gd`
 ## once `tools/test.sh` has staged it from its committed `.gd.src` — see that file's own header),
 ## run only when named by path — see `_discover`.
@@ -51,7 +53,16 @@ func _ready() -> void:
 			print("-- %-26s %7s" % [path.get_file(), "LOAD FAIL"])
 			continue
 		var suite: Object = script.new()
-		suite.run(self)
+		_reset_globals()
+		# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
+		# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
+		# coroutine waits for it.
+		await suite.run(self)
+		# One frame and one physics frame between suites let the message queue (deferred calls,
+		# `queue_redraw`, Control layout) and the delete queue (`queue_free`) drain, which a
+		# synchronous run never lets happen.
+		await get_tree().process_frame
+		await get_tree().physics_frame
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the
 		# spread runs from `test_quit_option.gd` at 3ms to `test_resistance.gd` at about 192_000.
@@ -70,6 +81,15 @@ func _ready() -> void:
 	if not filters.is_empty():
 		print("PARTIAL RUN — only suites matching %s. Not a green build." % ", ".join(filters))
 	get_tree().quit(1 if not failures.is_empty() else 0)
+
+## The one place the globals a suite may leave behind are put back, called before each suite so
+## that no suite starts on another's state: the run state, and every static test seam.
+func _reset_globals() -> void:
+	GameState.start_run()
+	DevFlags._invincible_override = null
+	GameSave._path_override = ""
+	GameSave._uses_save_override = null
+	SaveIndicator._home_override = null
 
 ## Every suite, or the ones whose file name contains one of `filters`.
 ##
