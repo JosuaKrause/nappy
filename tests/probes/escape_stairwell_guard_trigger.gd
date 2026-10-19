@@ -42,6 +42,8 @@ const ROUTES := {
 	"turn-9-left": [9, ["move_left"]],
 }
 
+const StrollerSteer := preload("res://tests/stroller_steer.gd")
+
 func run(t) -> void:
 	for s: int in SEEDS:
 		for route in ["turn-10", "turn-11", "turn-9", "turn-9-left", "door"]:
@@ -87,9 +89,7 @@ func _once(t, s: int, route: String, pace: String) -> void:
 	var charged_for := 0.0
 	var left_the_door := false
 	while elapsed < 20.0:
-		var before := player.global_position
-		player._physics_process(TICK)
-		player.global_position = before  # move_and_slide() moves her once a physics frame has run
+		StrollerSteer.velocity_step(player, TICK)
 		_move(player, player.velocity * TICK)
 		var her := player.global_position
 		var tile := scene.world_to_tile(her)

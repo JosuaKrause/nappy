@@ -11,7 +11,10 @@ extends Node
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
 ## runner. `run` may be a plain function or a coroutine: the runner awaits it, so a suite may
 ## `await` real frames, and lets a frame and a physics frame pass after each suite.
-## Before each suite `_reset_globals` puts back the run state and the static test seams. Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
+## Before each suite `_reset_globals` puts back the run state and the static test seams, and a
+## physics frame has passed before the first, so every suite meets the same engine state.
+##
+## Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
 ## negative fixtures under `tests/runner_fixtures/` (`engine_error.gd`, and `unparseable_suite.gd`
 ## once `tools/test.sh` has staged it from its committed `.gd.src` — see that file's own header),
 ## run only when named by path — see `_discover`.
@@ -40,6 +43,9 @@ var failures: Array[String] = []
 
 func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
+	# The physics delta is 0 until a physics frame has run, so without this the first suite of a
+	# process would step her differently from every later one.
+	await get_tree().physics_frame
 	for path in _discover(filters):
 		var started := Time.get_ticks_msec()
 		# `load()` on a suite with a parse error returns a non-null GDScript that this guard
@@ -58,11 +64,11 @@ func _ready() -> void:
 		# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
 		# coroutine waits for it.
 		await suite.run(self)
-		await get_tree().process_frame
-		await get_tree().physics_frame
 		# One frame and one physics frame between suites let the message queue (deferred calls,
 		# `queue_redraw`, Control layout) and the delete queue (`queue_free`) drain, which a
 		# synchronous run never lets happen.
+		await get_tree().process_frame
+		await get_tree().physics_frame
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the
 		# spread runs from `test_quit_option.gd` at 3ms to `test_resistance.gd` at about 192_000.
@@ -88,13 +94,22 @@ func _ready() -> void:
 const RESET_SEED := 2
 
 ## The one place the globals a suite may leave behind are put back, called before each suite so
-## that no suite starts on another's state: the run state, and every static test seam.
+## that no suite starts on another's state: the run state and the static seams a suite sets by hand
+## (the override hooks, the test arguments, the frame recorder, the remembered controls and the
+## title's restart stamp). Telemetry, `VisitCounter` and `EventBus` connections are left alone.
 func _reset_globals() -> void:
 	GameState.start_run(RESET_SEED)
 	DevFlags._invincible_override = null
 	GameSave._path_override = ""
 	GameSave._uses_save_override = null
 	SaveIndicator._home_override = null
+	DevFlags.args_for_tests = PackedStringArray()
+	FrameRecord.on = false
+	FrameRecord.ledger = null
+	ControlsMode._remembered = false
+	ControlsMode._remembered_mode = ControlsMode.Mode.TAP
+	ControlsMode._remembered_side = ControlsMode.Side.LEFT
+	TitleScreen._restarted_at_msec = -INF
 
 ## Every suite, or the ones whose file name contains one of `filters`.
 ##

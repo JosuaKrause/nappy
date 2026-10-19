@@ -1926,11 +1926,16 @@ func _advance_target() -> void:
 		return
 	_begin_resolving(_targets[_target_index])
 
+## Ends the process. A test substitutes a rig that does not, because the runner lets frames pass
+## after a suite and a pending quit would end the whole run there (`tests/route_rig_no_quit.gd`).
+func _quit() -> void:
+	get_tree().quit()
+
 func _finish() -> void:
 	_done = true
 	_release()
 	Telemetry.note("route", "day %d: route done, %.1fs (day time)" % [_day_number, _elapsed()])
-	get_tree().quit()
+	_quit()
 
 ## The day's own length gone by on this rig's clock under `--invincible`, which stands the day's
 ## clock still (see `_elapsed()`), so nothing else ever ends a route that does not fit its day: a
@@ -1943,7 +1948,7 @@ func _out_of_day() -> void:
 	_release()
 	Telemetry.note("route", "day %d: the day's %.0fs ran out before reaching '%s', %.1fs (day time)"
 			% [_day_number, _day.time_total, _current_word, _elapsed()])
-	get_tree().quit()
+	_quit()
 
 ## Any day ending — a loss, or a win — is logged and quit rather than left to sit at a day summary
 ## nobody headless is going to dismiss.
@@ -1973,7 +1978,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	else:
 		Telemetry.note("route", "day %d: day ended (%s) before reaching '%s', %.1fs (day time)"
 				% [_day_number, GameEnums.DayResult.keys()[result], _current_word, _elapsed()])
-	get_tree().quit()
+	_quit()
 
 func _release() -> void:
 	TouchControls._set_axis(&"move_left", &"move_right", 0.0)

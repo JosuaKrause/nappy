@@ -22,7 +22,7 @@ var _saved_progress: int
 var _saved_package: bool
 
 func run(t) -> void:
-	# The siting reads the run's seed; these checks were written against seed 2.
+	# The siting reads the run's seed: these checks hold on seed 2 and fail on seed 1.
 	GameState.start_run(2)
 	_build_day(t)
 	_test_named_tile_targets_land_on_a_walkable_tile(t)

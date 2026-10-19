@@ -1305,9 +1305,8 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	t.check(city.crowd.agent_count() == 0, "and the escape's city has nobody in it")
 	t.check(city.route_tree() == null and city.closures().is_empty(),
 			"the escape grows no corridor and closes no street")
-	# `.free()`, not `queue_free()`: a suite's `run()` is synchronous and the runner quits without
-	# ever reaching an idle frame, so a queued deletion never happens at all, and a city left
-	# standing here would carry its nodes and signals into every later suite.
+	# `.free()`, not `queue_free()`: a queued deletion waits for the runner's next frame, so a city
+	# left standing here would carry its nodes and signals through the rest of this suite.
 	city.free()
 
 ## *"Yes, of course the yellow tint. We spent the whole game establishing that why would it be

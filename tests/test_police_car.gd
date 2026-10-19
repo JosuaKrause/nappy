@@ -5,8 +5,8 @@ extends RefCounted
 ## The player's words *(2026-10-07, azure-koala: "police cars don't have a hitbox"; 2026-10-10,
 ## leafy-puffin, offered "solid in every state, lethal only in front while driving": "yes to the
 ## police car hitbox")*. Her real `CharacterBody2D` rig is swept against a real `police_patrol`
-## instance's body with the synchronous `move_and_collide()` sweep `tests/test_bollards.gd` uses (the
-## runner cannot advance `move_and_slide()`'s own delta), and the car is stepped by hand, a frame
+## instance's body with the explicit `move_and_collide()` sweep `tests/test_bollards.gd` uses (one
+## displacement per step, not `move_and_slide()`'s own), and the car is stepped by hand, a frame
 ## at a time, told where she and her pram are the way `EventManager` tells it.
 
 const STEP := 1.0 / 60.0

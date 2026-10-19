@@ -219,8 +219,9 @@ afterwards* then means running the same thing rather than reinventing it. Never 
 branch: a branch is invisible from the tree, and `git branch` should only ever answer *is there
 work that is not on `main`*.
 
-**A hand-built rig object can pass vacuously, three known ways.** A bare `Stroller.new()` has no
-`CollisionShape2D`, so `move_and_slide()` never moves it — assert on `velocity`, not on position.
+**A hand-built rig object can pass vacuously, three known ways.** A bare `Stroller.new()`'s
+`move_and_slide()` moves it by the physics delta, which is 0 until a physics frame has run and one
+tick after — assert on `velocity`, not on position.
 Its baby lookup is by child name, so a test's `Baby.new()` needs `name = "Baby"` set explicitly or
 the awake query silently answers its no-baby default. And hand-built nodes want explicit `.free()`
 calls, or the suite reports leaked instances under a green check count.
@@ -386,13 +387,15 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
   condition the sentence beside it claims pins nothing.
 - The suite must exit clean. **Leak warnings at shutdown mean a real retain bug.**
 
-## When the suite prints nothing
+## When a suite errors
 
-**A test run with no output at all still means an error, but not from a suite that fails to
-load.** `run_tests.gd` awaits each suite's `run()` (a plain function or a coroutine) and then `get_tree().quit()`; an
-error *inside* a suite's own `run()` — a runtime bug in the suite's own test logic, not a parse
-error — aborts `_ready()` before the quit, so the headless process sits there forever printing
-nothing. The loader guard below does not cover this path.
+**An error inside a suite's own `run()` ends that suite and nothing else.** A runtime bug in the
+suite's own test logic (a null call, say) prints `SCRIPT ERROR`, in a plain `run()` or in a
+coroutine one after an `await`. The suite stops at the error and its remaining checks are skipped;
+the runner goes on to the next suite and reports no failure for it. Only
+`tools/test.sh`'s scan for `SCRIPT ERROR`, `Parse Error` and `ERROR:` makes the exit non-zero, so
+a run read without that script's verdict can look green. Nothing hangs. The loader guard below
+covers a suite that fails to load, not this path.
 
 **A suite that fails to parse is a named `FAIL` line and a normal exit, not a hang.** `_discover`
 loads every suite before running any, but `load()` on a broken suite returns a `GDScript`

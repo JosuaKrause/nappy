@@ -4,6 +4,8 @@ extends RefCounted
 ## parts, all headless: nothing here needs a scene tree except the suites that build
 ## `InteriorScene` itself.
 
+const StrollerSteer := preload("res://tests/stroller_steer.gd")
+
 func run(t) -> void:
 	_test_the_map_builds(t)
 	_test_the_stairwell_grammar_is_exact_in_both_shafts(t)
@@ -585,7 +587,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
 			var last := player.global_position
 			while steps < MAX_STEPS and not (scene.world_to_tile(player.global_position).x == column
 					and scene.slope_dir_at(player.global_position) == 0):
-				_steer(player, STEP)
+				StrollerSteer.velocity_step(player, STEP)
 				var on_flight := scene.slope_dir_at(player.global_position) != 0
 				var contacts := _move_real_body_one_step(player, player.velocity * STEP)
 				if on_flight:
@@ -698,17 +700,8 @@ static func _absolute_z(item: CanvasItem) -> int:
 		node = node.get_parent()
 	return z
 
-## Runs the rig's own `_physics_process` for its velocity and nothing else. It ends in
-## `move_and_slide()`, which moves her by the engine's physics delta: zero while no physics frame
-## has run, one tick once the runner has let one pass. The caller makes the one displacement, so
-## the body goes back to where it stood.
-func _steer(player: Stroller, tick: float) -> void:
-	var before := player.global_position
-	player._physics_process(tick)
-	player.global_position = before
-
-## The explicit-displacement half `move_and_slide()` normally derives from the physics delta that
-## the synchronous test runner cannot advance. The real body's sweep supplies every collision
+## The explicit-displacement half `move_and_slide()` normally derives from the physics delta,
+## which `StrollerSteer.velocity_step` keeps out of these walks. The real body's sweep supplies every collision
 ## normal and remainder; up to `max_slides` applies the same bounded sliding shape as the runtime.
 func _move_real_body_one_step(player: CharacterBody2D, motion: Vector2) -> int:
 	var collision := player.move_and_collide(motion)
@@ -1351,7 +1344,7 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false) ->
 	var elapsed := 0.0
 	var ran_at := 0.0
 	while man != null and elapsed < 20.0:
-		_steer(player, TICK)
+		StrollerSteer.velocity_step(player, TICK)
 		_move_real_body_one_step(player, player.velocity * TICK)
 		var her := player.global_position
 		var tile := scene.world_to_tile(her)
