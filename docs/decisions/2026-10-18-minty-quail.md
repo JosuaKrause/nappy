@@ -40,9 +40,10 @@ quit waited until the runner's own; with frames passing it took effect after `te
 the shard ended with exit 0 and the rest of its suites unrun — a full run first reported 1021087
 checks, and 1295254 once the shard ran to its end. `RouteRig`'s quit is now one overridable method
 (the PR's one change in `src/`), which a test stand-in, `RouteRigNoQuit`, turns off. `tools/test.sh`
-fails any run whose output does not end on the runner's closing "N checks, M failures" line, and
-says whether the shard timed out or the tree went away; the runner's `_exit_tree` names the suite
-that was running when the tree went away before that line. The fixture
+fails any run whose output holds a `QUIT` line, or has no closing "N checks, M failures" line after
+its last suite's timing line, and says whether the shard timed out or the tree was quit; the
+runner's `_exit_tree` prints that `QUIT` line, naming the suite that was running when the tree went
+away before the runner's own quit. The fixture
 `tests/runner_fixtures/quits_the_tree.gd` proves it, run by CI the way `engine_error.gd` proves the
 error scan. The runner cannot refuse a quit, since `SceneTree` offers no way to cancel one.
 
