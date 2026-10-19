@@ -58,11 +58,11 @@ func _ready() -> void:
 		# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
 		# coroutine waits for it.
 		await suite.run(self)
+		await get_tree().process_frame
+		await get_tree().physics_frame
 		# One frame and one physics frame between suites let the message queue (deferred calls,
 		# `queue_redraw`, Control layout) and the delete queue (`queue_free`) drain, which a
 		# synchronous run never lets happen.
-		await get_tree().process_frame
-		await get_tree().physics_frame
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the
 		# spread runs from `test_quit_option.gd` at 3ms to `test_resistance.gd` at about 192_000.
@@ -82,10 +82,14 @@ func _ready() -> void:
 		print("PARTIAL RUN — only suites matching %s. Not a green build." % ", ".join(filters))
 	get_tree().quit(1 if not failures.is_empty() else 0)
 
+## A fixed seed rather than a random one, so a suite that reads `GameState.run_rng` meets the same
+## run on every machine and in every order.
+const RESET_SEED := 1
+
 ## The one place the globals a suite may leave behind are put back, called before each suite so
 ## that no suite starts on another's state: the run state, and every static test seam.
 func _reset_globals() -> void:
-	GameState.start_run()
+	GameState.start_run(RESET_SEED)
 	DevFlags._invincible_override = null
 	GameSave._path_override = ""
 	GameSave._uses_save_override = null
