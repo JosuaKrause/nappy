@@ -136,6 +136,7 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		# bare `Baby.new()` cannot be relied on to default to it.
 		baby.name = "Baby"
 		stroller.add_child(baby)
+		baby.set_world(world)
 		t.add_child(stroller)
 		stroller.set_physics_process(false)
 		baby.set_physics_process(false)
