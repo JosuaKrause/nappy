@@ -27,4 +27,4 @@ slides toward a gap, and head-on she stops.
 quoting M110 and keeping its wedge out
 (or, if that cannot be done without walkers clipping bodies, have M219's reachability walk call such
 a shift shut so the walker turns round instead), with a test of the three shapes above. The band
-`next`, and waiting on M219, whose walk it would change, are the filer's.
+`next` is the filer's.
