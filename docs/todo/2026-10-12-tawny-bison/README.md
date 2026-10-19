@@ -1,5 +1,4 @@
 priority: next
-after: 2026-09-26-M219
 
 # tawny-bison — A walker slides along a body's edge to a gap across one clear row · filed 2026-10-12
 
