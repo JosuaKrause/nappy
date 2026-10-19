@@ -2708,24 +2708,18 @@ const FINALE_STEAM_PERIODS: Array[float] = [4.0, 4.5, 5.5]
 ## the two overlaps, which is bounded by this.
 const FINALE_STEAM_BLOWS_FOR := 2.0
 
-## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of
-## lethal and dangerous events"*: a street is `BLOCK_SIZE` (8) tiles long, so one truck, one van
-## and one roadblock on a street is roughly one lethal thing every three tiles of walking
-## — several times an ordinary day's own one-event-per-block, which is what the climax asks for,
-## while `EventScheduler._room_around()` still refuses anything it cannot give room to.
-const FINALE_TRUCKS_PER_STREET := 1
-const FINALE_VANS_PER_STREET := 1
-## **One roadblock a street, so a crossing is one band and the one guard on her side of it.**
-## *(Inbox #771 in minty-lemur: "it should be in a way that luring away the guard is enough. Right now there are
-## for guards and the player adds excitement by just being close. Luring away one guard (the
-## challenge) is not enough to make the obstacle survivable")* Two bands on one street would stand
-## a couple of tiles apart, and luring the first one's guard off would leave the second one's posted
-## on the same sidewalk, so walking past would still meet his charge: the lure is the answer only
-## when there is one guard to lure.
-const FINALE_GUARDS_PER_STREET := 1
-## And how many explosions are sited off the chain per open street. Off screen by definition, so
-## these are placed *beside* the corridor rather than on it — see `FinalePlanner`.
-const FINALE_EXPLOSIONS_PER_STREET := 1
+## How many slots each open street of the escape's walk has, each filled by one draw from the
+## escape's marble bag (`EventScheduler.build_finale()`, `escape_bag()`). MEASUREMENT PENDING.
+const FINALE_SLOTS_PER_STREET := 1
+## The escape's marble bag, in the player's order of how many *(inbox #785 in minty-lemur: "frequency
+## order is trucks > explosions > vans > barriers > empty")*: army trucks, off-screen explosions,
+## unmarked vans, roadblocks (the barriers) and empty marbles, where the slot that draws one stands
+## nothing. MEASUREMENT PENDING.
+const FINALE_BAG_TRUCKS := 5
+const FINALE_BAG_EXPLOSIONS := 4
+const FINALE_BAG_VANS := 3
+const FINALE_BAG_ROADBLOCKS := 2
+const FINALE_BAG_EMPTY := 1
 
 # --------------------------------------------------------------------- masts ---
 # M180, posters she notices, and loudspeakers that are somewhere: a loudspeaker is a mast on a

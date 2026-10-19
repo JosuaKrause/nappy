@@ -303,12 +303,30 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 
 ## The escape's own event set: what stands on the streets the two chains run through.
 ##
-## **A budget is the wrong shape for this and that is why it is a separate entry.** `build_day`
-## spends a per-block allowance over the whole city on a weighted roll, because a day is about
-## variety and about not knowing which street she will take. The finale knows exactly which
-## streets she can take — everything else is sealed — and it is the climax, so what it wants is a
-## fixed count of a fixed handful of rows *per open street*: army trucks on the carriageways,
-## masked men on foot and in vans, and the bursts that leave craters.
+## **Each open street has slots, and what fills each slot is drawn from one marble bag.** The
+## finale knows exactly which streets she can take — everything else is sealed — so it fills them
+## before she sets off rather than siting things round her as a day does; and which danger a slot
+## gets, or whether it gets one at all, is a draw. *(Inbox #785 in minty-lemur: "so you prefill the
+## events for escape but that doesn't justify not using a marble bag. those concepts are
+## orthogonal"; "nobody ever asked for all four events on *every* street. that doesn't make any
+## sense and cannot feasibly work at all. that is why the density is so high that it's impossible
+## to get anywhere. yes, a marble bag is absolutely needed with empty events (nothing happening) as
+## well. we need a fair mix"; "frequency order is trucks > explosions > vans > barriers >
+## empty".)* Every open street gets `Tuning.FINALE_SLOTS_PER_STREET` slots, and each slot draws one
+## marble from **one bag for the whole escape** (`escape_bag()`), holding army trucks, explosions,
+## vans and roadblocks — the barriers — and empty marbles, in that order of how many
+## (`Tuning.FINALE_BAG_TRUCKS` and the four after it). A row's marble puts one of that row on the
+## street through `_fill_a_finale_street()` and every rule it keeps; an empty marble leaves the
+## slot with nothing; **a row's marble that finds no ground the rules accept is spent unmet**, so
+## a refused placement never moves its danger onto the next street. The bag is drawn street by
+## street in `streets`' own order on its own stream (`escape_bag_seed()`, off `rng`'s seed), so a
+## restart of the city section, which replans from the same seed, draws the same city again.
+##
+## **This is the escape's own placement only until the refactor**: the marble bag is the shape the
+## day's scheduler takes it in when the escape is planned by `build_day` (minty-quail,
+## escape-placement), so `escape_bag()` and its counts move there as they are. *(Minty-lemur #798,
+## #799: the cheap fix before the refactor is the one exception to code designed by layer, and only
+## until the refactor.)*
 ##
 ## **Four rows, three of which already exist.** `military_convoy` is the truck, with the barricade
 ## it ordinarily leaves stripped — on an ordinary day that aftermath is the point of the row, and
@@ -321,8 +339,8 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## see `EventInstance._draw_roadblock()`. Once that guard has left his post for good, the far guard
 ## walks off too and the band, which costs nothing, stands unmanned, as on every day, so luring him
 ## off is the way past (`EventCatalogue.escape_roadblock()`),
-## and one roadblock a street (`Tuning.FINALE_GUARDS_PER_STREET`) leaves one guard to lure. Only the
-## explosion is new.
+## and one roadblock a street leaves one guard to lure: a street of one slot stands one row at
+## most, and no two bands stand where both guards can notice her (below). Only the explosion is new.
 ##
 ## **Every density rule a day keeps is kept here.** `_build_placement` sites each one, `_room_around`
 ## refuses anything drawn inside something else, and the telegraph contract is the def's own and
@@ -353,15 +371,27 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ## here holds the streets round the home block or keeps off the front door's street
 ## (`_open_ground_for()`'s `from_the_door`, false here): she sets off from the service exit, which
 ## opens onto one of those streets, so holding them would empty the street she starts on. And no
-## budget or `max_per_day` cap applies: the counts are per street, above.
+## budget or `max_per_day` cap applies: what stands is the slots and the bag's draws, above.
+##
+## `bag` and `slots` are the bag and the slots a street the plan draws from, handed in by a caller
+## that measures another mix (`tests/probes/escape_winnable.gd`); left out, they are
+## `escape_bag()` off `Tuning`'s counts on `escape_bag_seed(rng)` and
+## `Tuning.FINALE_SLOTS_PER_STREET`.
 static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 		streets: Array[StreetNetwork.Segment], standing_at: Vector2,
-		seals: Array[Planned] = [], ends: Array[Vector2] = []) -> Array[Planned]:
+		seals: Array[Planned] = [], ends: Array[Vector2] = [], bag: MarbleBag = null,
+		slots := -1) -> Array[Planned]:
 	var planned: Array[Planned] = []
-	var trucks := _without_its_aftermath(EventCatalogue.by_id("military_convoy"))
-	var vans := EventCatalogue.by_id("abduction")
-	var masked := EventCatalogue.escape_roadblock()
-	var bursts := EventCatalogue.by_id("finale_explosion")
+	if bag == null:
+		bag = escape_bag(escape_bag_counts(), escape_bag_seed(rng))
+	if slots < 0:
+		slots = Tuning.FINALE_SLOTS_PER_STREET
+	var rows := {
+		"military_convoy": _without_its_aftermath(EventCatalogue.by_id("military_convoy")),
+		"finale_explosion": EventCatalogue.by_id("finale_explosion"),
+		"abduction": EventCatalogue.by_id("abduction"),
+		"roadblock": EventCatalogue.escape_roadblock(),
+	}
 	# **A tree and an event never share ground**, the finale's streets included — `docs/CITY.md`,
 	# "Street trees". Scanned once for the whole plan rather than once per street per row: a city
 	# plants its trees in `City.build()` and nothing in a walk moves them. Kept where the day keeps
@@ -373,15 +403,44 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 	terminals.append_array(ends)
 	var ground := EscapeGround.new(map, seals, terminals)
 	for segment in streets:
-		_fill_a_finale_street(map, rng, segment, trucks, Tuning.FINALE_TRUCKS_PER_STREET, trees,
-				standing_at, planned, streets, ground, open)
-		_fill_a_finale_street(map, rng, segment, vans, Tuning.FINALE_VANS_PER_STREET, trees,
-				standing_at, planned, streets, ground, open)
-		_fill_a_finale_street(map, rng, segment, masked, Tuning.FINALE_GUARDS_PER_STREET, trees,
-				standing_at, planned, streets, ground, open)
-		_fill_a_finale_street(map, rng, segment, bursts, Tuning.FINALE_EXPLOSIONS_PER_STREET,
-				trees, standing_at, planned, streets, ground, open)
+		for _slot in slots:
+			var marble: String = bag.draw()
+			if marble == ESCAPE_EMPTY_MARBLE:
+				continue
+			_fill_a_finale_street(map, rng, segment, rows[marble], 1, trees, standing_at, planned,
+					streets, ground, open)
 	return planned
+
+## The marble an empty slot draws: nothing stands there.
+const ESCAPE_EMPTY_MARBLE := ""
+
+## **The escape's marble bag**: `counts` marbles of each key, a row id (`military_convoy`,
+## `finale_explosion`, `abduction`, `roadblock`) or `ESCAPE_EMPTY_MARBLE`, on its own stream off
+## `seed_value`, filled again whenever it runs empty — one bag for the whole escape, so the mix is
+## exact over each fill of it rather than over each street. See `build_finale()`.
+static func escape_bag(counts: Dictionary, seed_value: int) -> MarbleBag:
+	var marbles: Array = []
+	for marble: String in counts:
+		for _i in int(counts[marble]):
+			marbles.append(marble)
+	return MarbleBag.new([], marbles, seed_value)
+
+## `Tuning`'s counts for `escape_bag()`, in the player's order *(inbox #785 in minty-lemur:
+## "frequency order is trucks > explosions > vans > barriers > empty")*.
+static func escape_bag_counts() -> Dictionary:
+	return {
+		"military_convoy": Tuning.FINALE_BAG_TRUCKS,
+		"finale_explosion": Tuning.FINALE_BAG_EXPLOSIONS,
+		"abduction": Tuning.FINALE_BAG_VANS,
+		"roadblock": Tuning.FINALE_BAG_ROADBLOCKS,
+		ESCAPE_EMPTY_MARBLE: Tuning.FINALE_BAG_EMPTY,
+	}
+
+## The escape bag's own stream, off the seed the plan's `rng` was made with rather than off a draw
+## from it, so drawing the bag takes nothing from the stream the placements roll on — the shape
+## `EventDirector` seeds its route bag in.
+static func escape_bag_seed(rng: RandomNumberGenerator) -> int:
+	return hash("%d:escape-bag" % rng.seed)
 
 ## **The day's ground for the escape's rows, kept across restarts of the city section.** A loss in
 ## the city replans it on the same city (`main._plan_the_finale_city()`), and every answer

@@ -61,14 +61,27 @@ const VAN_MARGIN := 6.0
 const REACTION := 0.3
 ## The grid her walk is planned on, px, the step `tests/test_finale.gd` floods past bodies on.
 const GRID := 8.0
+## The mixes measured: `slots` a street and the bag's marbles, trucks, explosions, vans, roadblocks
+## and empty, in the player's order. `as built` is `Tuning`'s own, through `FinalePlanner.plan()`
+## exactly as the game plans it. `ESCAPE_WINNABLE_MIX` replaces the list, as
+## `<slots>:<trucks>,<explosions>,<vans>,<roadblocks>,<empty>` mixes separated by `;`.
+const MIXES: Array[Dictionary] = [
+	{"name": "as built"},
+]
 
 func run(t) -> void:
 	var saved_seed := GameState.run_seed
 	var saved_day := GameState.day
 	var rows: Array[Dictionary] = []
+	var mixes := _mixes()
 	for seed_value in _seeds():
-		rows.append_array(_measure_seed(t, seed_value))
-	_print_summary(rows)
+		rows.append_array(_measure_seed(t, seed_value, mixes))
+	for mix in mixes:
+		var own: Array[Dictionary] = []
+		for row in rows:
+			if row["mix"] == mix["name"]:
+				own.append(row)
+		_print_summary(mix["name"], own)
 	GameState.run_seed = saved_seed
 	GameState.day = saved_day
 	t.check(true, "a probe asserts nothing")
@@ -84,8 +97,22 @@ func _seeds() -> Array[int]:
 		found.append(int(word))
 	return found
 
-## Every candidate's rows for one seed: one per exit.
-func _measure_seed(t, seed_value: int) -> Array[Dictionary]:
+## `MIXES`, or the ones `ESCAPE_WINNABLE_MIX` names.
+func _mixes() -> Array[Dictionary]:
+	var given := OS.get_environment("ESCAPE_WINNABLE_MIX")
+	if given == "":
+		return MIXES
+	var found: Array[Dictionary] = []
+	for text in given.split(";", false):
+		var halves := text.split(":")
+		var counts: Array[int] = []
+		for word in halves[1].split(","):
+			counts.append(int(word))
+		found.append({"name": text, "slots": int(halves[0]), "counts": counts})
+	return found
+
+## Every mix's rows for one seed: one per exit.
+func _measure_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionary]:
 	GameState.start_run(seed_value)
 	var day := GameState.day
 	var city: City = CITY_SCENE.instantiate()
@@ -107,30 +134,50 @@ func _measure_seed(t, seed_value: int) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
 	var map := city.map
 	var start := FinalePlanner.service_exit_world_position(map)
-	var plan := _plan(map, day)
-	var streets := _street_counts(map, plan)
-	for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
-		var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
-		var walk := _plan_the_walk(t, map, plan, start, exit)
-		var row := {"seed": seed_value, "exit": "tunnel" if kind == CityEdge.Kind.TUNNEL \
-				else "bridge", "streets": streets["streets"], "empty": streets["empty"],
-				"dangers": streets["dangers"], "length": _length(walk["line"]),
-				"van_kept": walk["van_kept"], "reached": walk["reached"]}
-		row["on_walk"] = _on_the_walk(map, plan, walk["line"])
-		for pace: float in [Tuning.WALK_SPEED, Tuning.RUN_SPEED]:
-			# A fresh plan for each walk: a plan's placements carry what their instances did.
-			var fresh := _plan(map, day)
-			var result := _walk_it(city, her, fresh, walk["line"], exit, pace)
-			row["walk" if pace == Tuning.WALK_SPEED else "run"] = result
-		print(_line(row))
-		found.append(row)
+	for mix in mixes:
+		var plan := _plan(map, day, mix)
+		var streets := _street_counts(map, plan)
+		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
+			var walk := _plan_the_walk(t, map, plan, start, exit)
+			var row := {"mix": mix["name"], "seed": seed_value,
+					"exit": "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge",
+					"streets": streets["streets"], "empty": streets["empty"],
+					"dangers": streets["dangers"], "length": _length(walk["line"]),
+					"van_kept": walk["van_kept"], "reached": walk["reached"]}
+			row["on_walk"] = _on_the_walk(map, plan, walk["line"])
+			for pace: float in [Tuning.WALK_SPEED, Tuning.RUN_SPEED]:
+				# A fresh plan for each walk: a plan's placements carry what their instances did.
+				var fresh := _plan(map, day, mix)
+				var result := _walk_it(city, her, fresh, walk["line"], exit, pace)
+				row["walk" if pace == Tuning.WALK_SPEED else "run"] = result
+			print(_line(row))
+			found.append(row)
 	her.free()
 	city.free()
 	return found
 
-## The section's plan, drawn the way a straight city boot draws it.
-func _plan(map: CityMap, day: int) -> FinalePlanner.Plan:
-	return FinalePlanner.plan(map, GameState.day_rng(day, "finale"))
+## The section's plan, drawn the way a straight city boot draws it; for a mix other than `as built`,
+## the same plan with the escape's events drawn from that mix's bag on the stream the game's own
+## bag is drawn on (`EventScheduler.escape_bag_seed()`), handed to `build_finale()` in place of
+## `Tuning`'s.
+func _plan(map: CityMap, day: int, mix: Dictionary) -> FinalePlanner.Plan:
+	var rng := GameState.day_rng(day, "finale")
+	if not mix.has("slots"):
+		return FinalePlanner.plan(map, rng)
+	var plan := FinalePlanner.plan(map, rng, false)
+	var seals: Array[EventScheduler.Planned] = []
+	seals.assign(plan.placements)
+	var counts: Array = mix["counts"]
+	var bag := EventScheduler.escape_bag({"military_convoy": counts[0],
+			"finale_explosion": counts[1], "abduction": counts[2], "roadblock": counts[3],
+			EventScheduler.ESCAPE_EMPTY_MARBLE: counts[4]}, EventScheduler.escape_bag_seed(rng))
+	var ends: Array[Vector2] = [
+			map.tile_to_world(FinalePlanner.exit_tile(map, CityEdge.Kind.TUNNEL)),
+			map.tile_to_world(FinalePlanner.exit_tile(map, CityEdge.Kind.BRIDGE))]
+	plan.placements.append_array(EventScheduler.build_finale(map, rng, plan.open_streets,
+			FinalePlanner.service_exit_world_position(map), seals, ends, bag, int(mix["slots"])))
+	return plan
 
 ## `{streets, empty, dangers}`: the open streets, those standing none of the four rows, and how many
 ## of the four rows stand on them in all.
@@ -198,7 +245,8 @@ func _plan_the_walk(t, map: CityMap, plan: FinalePlanner.Plan, start: Vector2,
 		instance.setup(placement.def, placement.position, placement.path, placement.facing, map)
 		var at := instance.position
 		instance.free()
-		var reach := placement.def.lethal_reach() + VAN_MARGIN + Tuning.PLAYER_BODY_RADIUS * 0.0
+		# Her centre is what a van takes her by (`EventInstance.is_lethal_at()`).
+		var reach := placement.def.lethal_reach() + VAN_MARGIN
 		for gy in range(floori((at.y - reach) / GRID), ceili((at.y + reach) / GRID) + 1):
 			for gx in range(floori((at.x - reach) / GRID), ceili((at.x + reach) / GRID) + 1):
 				if (Vector2(gx, gy) * GRID).distance_to(at) <= reach:
@@ -510,14 +558,14 @@ func _result(result: Dictionary) -> String:
 	return text
 
 func _line(row: Dictionary) -> String:
-	return ("ESCAPE_WINNABLE seed %d %s | %d streets, %d with none, %d dangers | walk %.0fpx%s%s"
-			+ " | on it: %s | walking: %s | running: %s") % [row["seed"], row["exit"],
+	return ("ESCAPE_WINNABLE [%s] seed %d %s | %d streets, %d with none, %d dangers | walk %.0fpx%s%s"
+			+ " | on it: %s | walking: %s | running: %s") % [row["mix"], row["seed"], row["exit"],
 			row["streets"], row["empty"], row["dangers"], row["length"],
 			"" if row["reached"] else " (no walk)",
 			"" if row["van_kept"] else " (through a van's reach)", _counts(row["on_walk"]),
 			_result(row["walk"]), _result(row["run"])]
 
-func _print_summary(rows: Array[Dictionary]) -> void:
+func _print_summary(mix: String, rows: Array[Dictionary]) -> void:
 	var streets := 0
 	var empty := 0
 	var dangers := 0
@@ -547,14 +595,14 @@ func _print_summary(rows: Array[Dictionary]) -> void:
 	var averaged := {}
 	for id in ROWS:
 		averaged[id] = float(on_walk.get(id, 0)) / maxf(1.0, walks)
-	print("ESCAPE_WINNABLE | %d seeds, %d walks | %.2f dangers a street, %.0f%% of streets with none"
-			% [seen.size(), walks, float(dangers) / maxf(1.0, streets),
+	print("ESCAPE_WINNABLE [%s] | %d seeds, %d walks | %.2f dangers a street, %.0f%% of streets with none"
+			% [mix, seen.size(), walks, float(dangers) / maxf(1.0, streets),
 			100.0 * empty / maxf(1.0, streets)])
 	var parts: Array[String] = []
 	for id in ROWS:
 		parts.append("%s %.1f" % [SHORT[id], averaged[id]])
-	print("ESCAPE_WINNABLE | on a walk, on average: %s" % " ".join(parts))
+	print("ESCAPE_WINNABLE [%s] | on a walk, on average: %s" % [mix, " ".join(parts)])
 	for pace: String in ["walk", "run"]:
-		print("ESCAPE_WINNABLE | %s: %s | mean peak %.0f | out in %.1fs on average" % [
-				"walking" if pace == "walk" else "running", outcomes[pace], peaks[pace] / walks,
+		print("ESCAPE_WINNABLE [%s] | %s: %s | mean peak %.0f | out in %.1fs on average" % [
+				mix, "walking" if pace == "walk" else "running", outcomes[pace], peaks[pace] / walks,
 				times[pace] / maxf(1.0, outs[pace])])
