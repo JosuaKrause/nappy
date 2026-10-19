@@ -1,5 +1,4 @@
 priority: now
-after: 2026-10-18-downy-tapir
 
 # minty-quail — One engine: the codebase refactored by layer, the escape a day spec · filed 2026-10-18
 
