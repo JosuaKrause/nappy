@@ -736,8 +736,8 @@ func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
 
 ## **An escape guard warns on the screen and in front of everything round him.** *(Inbox #771 in minty-lemur,
 ## 2026-10-18: "the second guard is invisible (hidden) until it already charges"; inbox #788 in minty-lemur: the
-## warning is visible on screen.)* Walked: she comes at every roadblock the escape can stand on two
-## seeds' cities in a straight line from all round it, with the camera's view led by her walk as `Stroller` leads it
+## warning is visible on screen.)* Walked: she comes at each of the game's roadblocks on two seeds'
+## cities, and at every roadblock the escape can stand there, in a straight line from all round it, with the camera's view led by her walk as `Stroller` leads it
 ## (`RoadblockRig.view_round()`), and on the frame his hand goes up the whole of his raised-hand
 ## picture at his post (`EventInstance.warning_guard_rect()`) is inside that view, he is drawn above
 ## the street's other figures (`EventInstance.WARNING_GUARD_Z`); on every approach that ends in his
@@ -753,10 +753,14 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 	for seed_value: int in [4242, 77]:
 		var built := RoadblockRig.plan_for(seed_value)
 		var map: CityMap = built["map"]
-		# Every band the escape can stand, a roadblock drawn for every street's slot, rather than the
-		# few the game's bag draws: a band on a street running either way, and the approaches the
-		# radius alone would have warned from off the view, which only a north-south street has.
-		for band_plan in _roadblocks_everywhere(map, seed_value, 1):
+		var plan: FinalePlanner.Plan = built["plan"]
+		# The game's own bands, and every band the escape can stand, a roadblock drawn for every
+		# street's slot: the bag draws few, and only the second set is sure to hold a band on a
+		# street running either way, and the approaches the radius alone would have warned from off
+		# the view, which only a north-south street has.
+		var bands := _escape_roadblocks(plan)
+		bands.append_array(_roadblocks_everywhere(map, seed_value, 1))
+		for band_plan in bands:
 			var group: Array[EventScheduler.Planned] = [band_plan]
 			for bearing in 16:
 				var made := RoadblockRig.build(t, map, group)
@@ -1110,9 +1114,8 @@ func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
 				"seed %d: a bag of empty marbles stands nothing" % seed_value)
 		var bands := EventScheduler.escape_bag({"roadblock": 1}, seed_value)
 		var stood := _escape_rows_on(map, bare, bands, 1)
-		t.check(bands.drawn == streets.size() and stood.size() <= streets.size(),
-				"seed %d: a bag of roadblocks draws once a street (%d) and stands at most that (%d)"
-				% [seed_value, bands.drawn, stood.size()])
+		t.check(bands.drawn == streets.size(), "seed %d: a bag of roadblocks draws once a street (%d)"
+				% [seed_value, bands.drawn])
 		unmet += streets.size() - stood.size()
 	t.check(unmet > 0, "and some roadblock marbles were spent unmet (%d)" % unmet)
 

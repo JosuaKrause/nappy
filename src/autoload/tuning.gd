@@ -2730,9 +2730,10 @@ const FINALE_SLOTS_PER_STREET := 1
 ## baby, make up the rest: a van's catch and a guard's end the section, and a van's field is most of
 ## what the probe's walks that cried had landed. With these a walk to an exit meets about three
 ## trucks, three explosions, one van and one roadblock; the order's smallest bag, 5, 4, 3, 2 and 1,
-## meets a van and a roadblock more often and gets out on 44 walks of 48. A fill is 24 marbles,
-## about as many as a plan has open streets, so the mix holds over each escape. About a third of
-## the streets stand nothing all the same, since a danger the placement rules refuse is spent unmet.
+## meets a van and a roadblock more often and gets out on 44 walks of 48. A fill is 24 marbles and
+## a plan has about 31 open streets, so an escape draws one whole fill and about seven marbles of
+## the next. What stands is not the bag's mix all the same: a danger the placement rules refuse is
+## spent unmet, so about a third of the streets stand nothing.
 const FINALE_BAG_TRUCKS := 10
 const FINALE_BAG_EXPLOSIONS := 8
 const FINALE_BAG_VANS := 3
