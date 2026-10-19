@@ -1228,10 +1228,10 @@ func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t) -> voi
 ##
 ## **Position is integrated by hand from `_stroller.velocity` rather than left to
 ## `move_and_slide()`.** `Stroller._physics_process()` does compute the right `velocity` every
-## step here (`RouteRig`'s own presses reach it, which is what this test is actually for), but
-## `move_and_slide()`'s own displacement, by choice: `StrollerSteer.velocity_step` runs the rig's
-## step and puts the body back, and the displacement is the velocity integrated by hand, so the
-## walk is at her speed wherever the suite falls in a shard.
+## step here (`RouteRig`'s own presses reach it, which is what this test is actually for), and the
+## displacement is the velocity integrated by hand instead of `move_and_slide()`'s:
+## `StrollerSteer.velocity_step` runs the rig's step and puts the body back, so the walk is at her
+## speed wherever the suite falls in a shard.
 func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 	const STEP := 1.0 / 30.0
 	const MAX_SECONDS := 30.0

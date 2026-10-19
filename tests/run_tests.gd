@@ -49,8 +49,9 @@ var _finished := false
 
 func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
-	# A physics frame passes before the first suite as after each one, so every suite starts after
-	# the same number of them, whatever its place in a shard.
+	# In a process where no physics frame has run, `move_and_slide()` moves a body 0 px, and after
+	# one it moves the full step. A frame passes before the first suite so that no suite, the first
+	# included, runs before the engine has stepped physics once.
 	await get_tree().physics_frame
 	for path in _discover(filters):
 		var started := Time.get_ticks_msec()

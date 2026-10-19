@@ -1022,7 +1022,7 @@ func _test_focus_lost_does_nothing_under_the_override(t) -> void:
 ## nothing (`_arm_the_return_window()` calls `set_disable_input(true)`), so the press that brings
 ## the page back cannot resume the pause screen or start the day brief. Real events are pushed
 ## through the suite's own viewport; the window's end is moved into the past rather than waited out
-## (waiting out the real 500ms is not what this suite does).
+## (by choice: a real wait would cost the suite half a second for nothing it checks).
 func _press_accept(t) -> void:
 	var press := InputEventAction.new()
 	press.action = &"ui_accept"
