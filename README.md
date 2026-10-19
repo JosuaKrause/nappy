@@ -16,7 +16,7 @@ it is not.
 
 [Watch the gameplay trailer on YouTube.](https://youtu.be/cTB_woqjSMg)
 
-https://github.com/user-attachments/assets/a8033ef2-cabf-4a4f-b323-3d1bf0dfc0d3
+https://github.com/user-attachments/assets/778c4d35-5c7c-4d10-92aa-fccd4c434c10
 
 > **Spoilers:** everything under `docs/` describes the game's full arc, including things a
 > player should meet for the first time in play. This README deliberately does not.
