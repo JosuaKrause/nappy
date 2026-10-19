@@ -14,9 +14,17 @@ for escape but that doesn't justify not using a marble bag. those concepts are o
 **Build:** `build_day(spec)`, with the spec supplying the route source (an interface both `RouteTree`
 and `FinalePlanner`'s plan satisfy: the streets on the walk, whether a tile carries a route), the rows
 and how they are drawn (the escape's marble bag, in the player's order "trucks > explosions > vans >
-barriers > empty", minty-lemur #785, with the counts downy-tapir's `winnable-escape.md` measured), and
+barriers > empty", minty-lemur #785, with the counts downy-tapir measured, `Tuning.FINALE_SLOTS_PER_STREET` and `FINALE_BAG_*`; `build_finale`
+already takes the bag and the slot count as arguments), and
 which rules apply. The player kept, for the escape, no calm-park rule, the escape's own rules for the
 home's streets, and no per-day caps (minty-lemur #785, the PR #781 forks); those become spec settings.
 `EscapeGround`'s guarantees (each street keeps a sidewalk open, the walk stays joined) become a rule
 both paths share. `plan_finale` folds into the seal planner's day path, `City.start_finale` into
 `start_day(spec)`.
+
+**Also, found measuring downy-tapir's bag:** a van at a narrow point can leave no safe walk, since
+`EscapeGround` keeps a sidewalk open past its body but not past its 54px lethal reach — the shared rule
+should keep the walk clear of a lethal reach, not only a body; `build_finale` reads its defaults from
+`Tuning` instead of being handed them by the planner; and `RouteRig` (`--route`) is not built on the
+escape boot, so `tests/probes/escape_winnable.gd` stands in for the baby and collisions — a real walker
+on the escape boot replaces that stand-in.

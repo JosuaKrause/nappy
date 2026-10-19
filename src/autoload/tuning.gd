@@ -2708,24 +2708,37 @@ const FINALE_STEAM_PERIODS: Array[float] = [4.0, 4.5, 5.5]
 ## the two overlaps, which is bounded by this.
 const FINALE_STEAM_BLOWS_FOR := 2.0
 
-## How many of each kind of danger the finale's own plan puts on one open chain street. *"Lots of
-## lethal and dangerous events"*: a street is `BLOCK_SIZE` (8) tiles long, so one truck, one van
-## and one roadblock on a street is roughly one lethal thing every three tiles of walking
-## — several times an ordinary day's own one-event-per-block, which is what the climax asks for,
-## while `EventScheduler._room_around()` still refuses anything it cannot give room to.
-const FINALE_TRUCKS_PER_STREET := 1
-const FINALE_VANS_PER_STREET := 1
-## **One roadblock a street, so a crossing is one band and the one guard on her side of it.**
-## *(Inbox #771 in minty-lemur: "it should be in a way that luring away the guard is enough. Right now there are
-## for guards and the player adds excitement by just being close. Luring away one guard (the
-## challenge) is not enough to make the obstacle survivable")* Two bands on one street would stand
-## a couple of tiles apart, and luring the first one's guard off would leave the second one's posted
-## on the same sidewalk, so walking past would still meet his charge: the lure is the answer only
-## when there is one guard to lure.
-const FINALE_GUARDS_PER_STREET := 1
-## And how many explosions are sited off the chain per open street. Off screen by definition, so
-## these are placed *beside* the corridor rather than on it — see `FinalePlanner`.
-const FINALE_EXPLOSIONS_PER_STREET := 1
+## How many slots each open street of the escape's walk has, each filled by one draw from the
+## escape's marble bag below (`EventScheduler.build_finale()`, `escape_bag()`). **One keeps the
+## section the climax and every walk out of it walkable**, measured by walking the shortest walk
+## from the service exit to each exit through the plan's own events, on two sets of 24 seeds
+## (`tests/probes/escape_winnable.gd`; its output under `docs/evidence/winnable-escape-2026-10-19/`):
+## at one slot a walk to an exit meets about eight dangers, one every eight seconds of walking, and
+## a plain walk gets out on 95 of 96 with the baby woken on 4; at two slots it meets about twelve,
+## the baby wakes on about one walk in five, and one walk in sixteen to one in nine ends in crying.
+## One slot also stands one roadblock a street at most, so a crossing is one band and one guard on
+## her side of it to lure *(inbox #771 in minty-lemur: "Luring away one guard (the challenge) is not
+## enough to make the obstacle survivable")*, which the notice spacing
+## (`EventScheduler._keeps_its_notice_to_itself()`) would hold at any slot count, since no street is
+## long enough for two bands' notices.
+const FINALE_SLOTS_PER_STREET := 1
+## The escape's marble bag, in the player's order of how many *(inbox #785 in minty-lemur:
+## "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks, off-screen
+## explosions, unmarked vans, roadblocks (the barriers) and empty marbles, where the slot that draws
+## one stands nothing. **The two rows that take her have the fewest marbles the order allows**, vans
+## 3 and roadblocks 2 over the one empty marble, and the trucks and explosions, which only wake the
+## baby, make up the rest: a van's catch and a guard's end the section, and a van's field is most of
+## what the probe's walks that cried had landed. With these a walk to an exit meets about three
+## trucks, three explosions, one van and one roadblock; the order's smallest bag, 5, 4, 3, 2 and 1,
+## meets a van and a roadblock more often and gets out on 44 walks of 48. A fill is 24 marbles and
+## a plan has about 31 open streets, so an escape draws one whole fill and about seven marbles of
+## the next. About a third of the streets stand nothing all the same, since a danger the placement
+## rules refuse is spent unmet.
+const FINALE_BAG_TRUCKS := 10
+const FINALE_BAG_EXPLOSIONS := 8
+const FINALE_BAG_VANS := 3
+const FINALE_BAG_ROADBLOCKS := 2
+const FINALE_BAG_EMPTY := 1
 
 # --------------------------------------------------------------------- masts ---
 # M180, posters she notices, and loudspeakers that are somewhere: a loudspeaker is a mast on a

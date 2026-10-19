@@ -47,6 +47,9 @@ func run(t) -> void:
 	_test_an_alley_mouth_wall_fits_the_mouth(t)
 	_test_nothing_the_escape_stands_reaches_over_a_building(t)
 	_test_a_restart_plans_the_same_escape_on_the_kept_ground(t)
+	_test_the_escape_bag_keeps_the_players_order(t)
+	_test_every_slot_of_every_street_draws_one_marble(t)
+	_test_the_game_draws_the_escape_from_tunings_bag(t)
 	_test_the_service_exit_is_beside_the_home_block(t)
 	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
 	_test_no_lethal_field_covers_the_ground_she_comes_out_on(t)
@@ -350,18 +353,24 @@ static func _she_fits(map: CityMap, point: Vector2i, cache: Dictionary) -> bool:
 ## *(Inbox #771 in minty-lemur: "Right now there are for guards and the player adds excitement by just being
 ## close. Luring away one guard (the challenge) is not enough to make the obstacle survivable")*
 ## Two bands on a street stand a couple of tiles apart on the same sidewalk, and the second one's
-## guard is still posted when she walks past after luring the first one's off.
+## guard is still posted when she walks past after luring the first one's off. Asked of the game's
+## plans, and of plans whose every street draws two roadblock marbles, since the notice spacing is
+## what holds it at any slot count.
 func _test_no_street_of_the_walk_stands_two_roadblocks(t) -> void:
 	var streets := 0
 	for seed_value in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		for street: Array in RoadblockRig.roadblock_streets(map, plan):
-			streets += 1
-			var segment: StreetNetwork.Segment = street[0]
-			t.check(street[1].size() == 1, "seed %d: street %s stands one roadblock, not %d"
-					% [seed_value, segment.key(), street[1].size()])
+		var everywhere := FinalePlanner.Plan.new()
+		everywhere.open_streets = plan.open_streets
+		everywhere.placements = _roadblocks_everywhere(map, seed_value, 2)
+		for planned: FinalePlanner.Plan in [plan, everywhere]:
+			for street: Array in RoadblockRig.roadblock_streets(map, planned):
+				streets += 1
+				var segment: StreetNetwork.Segment = street[0]
+				t.check(street[1].size() == 1, "seed %d: street %s stands one roadblock, not %d"
+						% [seed_value, segment.key(), street[1].size()])
 	t.check(streets > 0, "there were streets with a roadblock to ask about (%d)" % streets)
 
 ## **A roadblock's band costs nothing, ever, on a day and in the escape alike; the guard is the
@@ -711,22 +720,24 @@ func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var bands := _escape_roadblocks(plan)
-		for i in bands.size():
-			for j in range(i + 1, bands.size()):
-				pairs += 1
-				var gap := EventScheduler._stands_at(map, bands[i]).distance_to(
-						EventScheduler._stands_at(map, bands[j]))
-				var apart := bands[i].def.pursues_within + bands[j].def.pursues_within
-				t.check(gap >= apart, "seed %d: the roadblocks at %s and %s stand %.0fpx apart, at least the %.0fpx their two notices take"
-						% [seed_value, map.world_to_tile(bands[i].position),
-						map.world_to_tile(bands[j].position), gap, apart])
+		# The game's plan, and the most bands the escape can stand: a roadblock drawn for every slot.
+		for bands: Array[EventScheduler.Planned] in [_escape_roadblocks(plan),
+				_roadblocks_everywhere(map, seed_value, 1)]:
+			for i in bands.size():
+				for j in range(i + 1, bands.size()):
+					pairs += 1
+					var gap := EventScheduler._stands_at(map, bands[i]).distance_to(
+							EventScheduler._stands_at(map, bands[j]))
+					var apart := bands[i].def.pursues_within + bands[j].def.pursues_within
+					t.check(gap >= apart, "seed %d: the roadblocks at %s and %s stand %.0fpx apart, at least the %.0fpx their two notices take"
+							% [seed_value, map.world_to_tile(bands[i].position),
+							map.world_to_tile(bands[j].position), gap, apart])
 	t.check(pairs > 0, "there were pairs of roadblocks to measure (%d)" % pairs)
 
 ## **An escape guard warns on the screen and in front of everything round him.** *(Inbox #771 in minty-lemur,
 ## 2026-10-18: "the second guard is invisible (hidden) until it already charges"; inbox #788 in minty-lemur: the
-## warning is visible on screen.)* Walked: she comes at each of the plan's roadblocks in a
-## straight line from all round it, with the camera's view led by her walk as `Stroller` leads it
+## warning is visible on screen.)* Walked: she comes at each of the game's roadblocks on two seeds'
+## cities, and at every roadblock the escape can stand there, in a straight line from all round it, with the camera's view led by her walk as `Stroller` leads it
 ## (`RoadblockRig.view_round()`), and on the frame his hand goes up the whole of his raised-hand
 ## picture at his post (`EventInstance.warning_guard_rect()`) is inside that view, he is drawn above
 ## the street's other figures (`EventInstance.WARNING_GUARD_Z`); on every approach that ends in his
@@ -743,7 +754,13 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 		var built := RoadblockRig.plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		for band_plan in _escape_roadblocks(plan):
+		# The game's own bands, and every band the escape can stand, a roadblock drawn for every
+		# street's slot: the bag draws few, and only the second set is sure to hold a band on a
+		# street running either way, and the approaches the radius alone would have warned from off
+		# the view, which only a north-south street has.
+		var bands := _escape_roadblocks(plan)
+		bands.append_array(_roadblocks_everywhere(map, seed_value, 1))
+		for band_plan in bands:
 			var group: Array[EventScheduler.Planned] = [band_plan]
 			for bearing in 16:
 				var made := RoadblockRig.build(t, map, group)
@@ -803,6 +820,13 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 			"and approaches the radius alone would have warned from off the view (%d)"
 			% off_by_the_radius)
 
+## The escape's roadblocks a plan of `seed_value` on `map` stands when every one of its `slots` a
+## street draws a roadblock marble: every band the placement rules let the escape stand there.
+static func _roadblocks_everywhere(map: CityMap, seed_value: int,
+		slots: int) -> Array[EventScheduler.Planned]:
+	return _escape_rows_on(map, _bare_plan(map, seed_value),
+			EventScheduler.escape_bag({"roadblock": 1}, seed_value), slots)
+
 ## The plan's own roadblocks, the escape's copy of the row.
 static func _escape_roadblocks(plan: FinalePlanner.Plan) -> Array[EventScheduler.Planned]:
 	var found: Array[EventScheduler.Planned] = []
@@ -816,11 +840,11 @@ static func _escape_roadblocks(plan: FinalePlanner.Plan) -> Array[EventScheduler
 ## right next to each other and the second guard is invisible (hidden) until it already charges")*
 ## Seed 4216201080 from the building, walked out of the service door through the real `main.tscn`
 ## (as `tests/test_escape_invisible_wall.gd` does), and the city section's own plan read off the
-## city it built: the street the player was caught on stands one band; no two bands notice her from
-## the same ground; from the door both exits are reached past every body standing for the walk; and
-## on every roadblock street, both ways, from the asleep baby every attempt at the city starts with,
-## walking straight past a posted guard is caught while luring him off and walking on is not, and
-## costs nothing.
+## city it built: the street the player was caught on stands one band at most; no two bands
+## notice her from the same ground; from the door both exits are reached past every body standing
+## for the walk; and on every roadblock street, both ways, from the asleep baby every attempt at
+## the city starts with, walking straight past a posted guard is caught while luring him off and
+## walking on is not, and costs nothing.
 func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 	var saved_section := GameState.escape_section
 	GameState.start_run(PLAYERS_SEED)
@@ -845,8 +869,8 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 			var street := StreetNetwork.segment_containing(map.world_to_tile(band_plan.position))
 			if hers and street and street.key() == hers.key():
 				on_her_street += 1
-		t.check(hers != null and on_her_street == 1,
-				"seed %d: the street she was caught on stands one band (%d)"
+		t.check(hers != null and on_her_street <= 1,
+				"seed %d: the street she was caught on stands one band at most (%d)"
 				% [PLAYERS_SEED, on_her_street])
 		for i in bands.size():
 			for j in range(i + 1, bands.size()):
@@ -1028,6 +1052,123 @@ func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 	FinalePlanner.plan(map, rng)
 	t.check(not is_same(EventScheduler._finale_ground_kept, kept[1]),
 			"a city with a tile closed since is read again (%s)" % tile)
+
+# ------------------------------------------------------------ the marble bag ---
+
+## **The escape's bag holds its marbles in the player's order of how many, empty ones included.**
+## *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
+## happening) as well"; "frequency order is trucks > explosions > vans > barriers > empty".)*
+func _test_the_escape_bag_keeps_the_players_order(t) -> void:
+	t.check(Tuning.FINALE_BAG_TRUCKS > Tuning.FINALE_BAG_EXPLOSIONS
+			and Tuning.FINALE_BAG_EXPLOSIONS > Tuning.FINALE_BAG_VANS
+			and Tuning.FINALE_BAG_VANS > Tuning.FINALE_BAG_ROADBLOCKS
+			and Tuning.FINALE_BAG_ROADBLOCKS > Tuning.FINALE_BAG_EMPTY,
+			"the bag holds more trucks than explosions, than vans, than roadblocks, than empty marbles")
+	t.check(Tuning.FINALE_BAG_EMPTY > 0, "and it holds empty marbles")
+	t.check(Tuning.FINALE_SLOTS_PER_STREET > 0, "and every open street has a slot to draw for")
+	var counts := EventScheduler.escape_bag_counts()
+	var bag := EventScheduler.escape_bag(counts, 7)
+	var total := 0
+	for marble: String in counts:
+		total += int(counts[marble])
+	var drawn := {}
+	for _i in total:
+		var marble: String = bag.draw()
+		drawn[marble] = int(drawn.get(marble, 0)) + 1
+	var exact := true
+	for marble: String in counts:
+		exact = exact and int(drawn.get(marble, 0)) == int(counts[marble])
+	t.check(exact, "one fill of the bag hands out exactly its counts (%s)" % drawn)
+
+## **Every slot of every open street draws one marble, and a marble that finds no ground is spent
+## unmet.** A street stands at most its slots' worth of the escape's rows; the bag is drawn once a
+## slot whatever the draw finds, so a refused danger never moves on to the next street; a bag of
+## empty marbles stands nothing; and a bag of roadblocks alone stands fewer than it drew, since no
+## two bands may stand where both guards can notice her.
+func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
+	var unmet := 0
+	for seed_value in SEEDS:
+		var map := CityGenerator.generate(seed_value)
+		GameState.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.city_state)
+		var bare := _bare_plan(map, seed_value)
+		var streets: Array[StreetNetwork.Segment] = bare["streets"]
+		for slots in [1, 2]:
+			var bag := EventScheduler.escape_bag(EventScheduler.escape_bag_counts(), seed_value)
+			var placed := _escape_rows_on(map, bare, bag, slots)
+			t.check(bag.drawn == streets.size() * slots,
+					"seed %d, %d a street: every slot drew one marble (%d of %d)"
+					% [seed_value, slots, bag.drawn, streets.size() * slots])
+			var most := 0
+			for segment in streets:
+				var rect := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
+				var here := 0
+				for placement in placed:
+					if rect.has_point(placement.position):
+						here += 1
+				most = maxi(most, here)
+			t.check(most <= slots, "seed %d: no street stands more than its %d slots (%d)"
+					% [seed_value, slots, most])
+		var empty := EventScheduler.escape_bag({EventScheduler.ESCAPE_EMPTY_MARBLE: 1}, seed_value)
+		t.check(_escape_rows_on(map, bare, empty, 1).is_empty(),
+				"seed %d: a bag of empty marbles stands nothing" % seed_value)
+		var bands := EventScheduler.escape_bag({"roadblock": 1}, seed_value)
+		var stood := _escape_rows_on(map, bare, bands, 1)
+		t.check(bands.drawn == streets.size(), "seed %d: a bag of roadblocks draws once a street (%d)"
+				% [seed_value, bands.drawn])
+		unmet += streets.size() - stood.size()
+	t.check(unmet > 0, "and some roadblock marbles were spent unmet (%d)" % unmet)
+
+## **The game's plan is `Tuning`'s bag, drawn on the escape bag's own stream**: what
+## `FinalePlanner.plan()` stands is what `build_finale()` stands from `escape_bag()` off
+## `escape_bag_counts()` and `escape_bag_seed()` at `Tuning.FINALE_SLOTS_PER_STREET`, placement for
+## placement — the plan `tests/probes/escape_winnable.gd` measures other mixes against.
+func _test_the_game_draws_the_escape_from_tunings_bag(t) -> void:
+	for seed_value in SEEDS:
+		var built := _plan_for(seed_value)
+		var map: CityMap = built["map"]
+		var plan: FinalePlanner.Plan = built["plan"]
+		var bare := _bare_plan(map, seed_value)
+		var rng: RandomNumberGenerator = bare["rng"]
+		var bag := EventScheduler.escape_bag(EventScheduler.escape_bag_counts(),
+				EventScheduler.escape_bag_seed(rng))
+		var placed := _escape_rows_on(map, bare, bag, Tuning.FINALE_SLOTS_PER_STREET)
+		var played: Array[EventScheduler.Planned] = []
+		for placement in plan.placements:
+			if ESCAPE_ROWS.has(placement.def.id):
+				played.append(placement)
+		var same := played.size() == placed.size()
+		for i in mini(played.size(), placed.size()):
+			same = same and played[i].def.id == placed[i].def.id \
+					and played[i].position.is_equal_approx(placed[i].position)
+		t.check(same and played.size() > 0, "seed %d: the game's plan is Tuning's bag (%d and %d)"
+				% [seed_value, played.size(), placed.size()])
+
+## The plan `_plan_for()` builds with no events of the escape's own yet: its streets, its seals,
+## both ends and the rng where `FinalePlanner.plan()` hands it to `build_finale()`.
+static func _bare_plan(map: CityMap, seed_value: int) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var plan := FinalePlanner.plan(map, rng, false)
+	var seals: Array[EventScheduler.Planned] = []
+	seals.assign(plan.placements)
+	var ends: Array[Vector2] = [
+			map.tile_to_world(FinalePlanner.exit_tile(map, CityEdge.Kind.TUNNEL)),
+			map.tile_to_world(FinalePlanner.exit_tile(map, CityEdge.Kind.BRIDGE))]
+	return {"streets": plan.open_streets, "seals": seals, "ends": ends, "rng": rng,
+			"state": rng.state}
+
+## The escape's rows `build_finale()` stands on the bare plan from `bag` at `slots` a street, the
+## rng put back where `FinalePlanner.plan()` would hand it over each time.
+static func _escape_rows_on(map: CityMap, bare: Dictionary, bag: MarbleBag,
+		slots: int) -> Array[EventScheduler.Planned]:
+	var rng: RandomNumberGenerator = bare["rng"]
+	rng.state = bare["state"]
+	var streets: Array[StreetNetwork.Segment] = bare["streets"]
+	var seals: Array[EventScheduler.Planned] = bare["seals"]
+	var ends: Array[Vector2] = bare["ends"]
+	return EventScheduler.build_finale(map, rng, streets,
+			FinalePlanner.service_exit_world_position(map), seals, ends, bag, slots)
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.

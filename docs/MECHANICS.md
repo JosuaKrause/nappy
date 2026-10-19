@@ -1665,9 +1665,16 @@ is paid for at the next one; the rest of the escape recovers as it always did.
 *"Escape the building"* and *"Escape the city"* — the same words that head each section's brief,
 so the line on the screen and the line in the HUD are one instruction rather than two.
 
-**Section two is the city she knows with the men in it.** Army trucks, unmarked vans and
-roadblocks at full resistance progress stand on every street either chain walks, at most one of
-each a street (`Tuning.FINALE_*_PER_STREET`). A roadblock is a barrier with a guard standing at it from
+**Section two is the city she knows with the men in it.** Army trucks, off-screen explosions,
+unmarked vans and roadblocks at full resistance progress stand on the streets either chain walks,
+drawn from one marble bag for the whole escape: each street has one slot
+(`Tuning.FINALE_SLOTS_PER_STREET`), and the bag holds the most trucks, then explosions, then vans,
+then roadblocks, and fewest of all the empty marbles that leave a slot with nothing
+(`Tuning.FINALE_BAG_TRUCKS` and the four after it), so most streets stand one danger and some stand
+none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
+happening) as well. we need a fair mix"; "frequency order is trucks > explosions > vans >
+barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk that is not a day". A roadblock
+is a barrier with a guard standing at it from
 the moment it is placed; when he notices her **he** comes for her, on foot, and the barrier he
 leaves stays drawn and stays shut across the road behind him. What takes the baby is his own reach
 (`EventCatalogue.MASKED_MAN_REACH`, 28px, the same as the man on the stairs) — nothing about the
