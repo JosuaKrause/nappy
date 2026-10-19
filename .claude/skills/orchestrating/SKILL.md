@@ -82,8 +82,9 @@ and configuration; the domain model; the world; simulation; run flow; observers)
 shared mechanism rather than a branch keyed on one row's id or picture; new code follows the target
 shape and adds nothing to the divergence the open refactor entry lists; a brief names the layer its
 work belongs to. **The one exception to this whole section** is a minimal fix the queue orders
-before the refactor, which names itself as the exception in its entry. The PR that closes the
-refactor entry rewrites this paragraph to drop its references to it.
+before the refactor, which names itself as the exception in its entry, and **it holds only until the
+refactor**: the refactor replaces the code the fix touched, and the PR that closes the refactor entry
+removes the exception from this section, so it never outlives that PR (minty-lemur #799).
 
 ## The task description is the contract
 

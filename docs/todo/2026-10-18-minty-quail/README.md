@@ -63,4 +63,7 @@ Each step leaves the game working and is its own PR, reviewed on its own:
 7. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
 
 The PR that closes this entry rewrites **orchestrating**'s "Code is designed by layer", whose
-proposal paragraph refers to this entry.
+proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal
+escape fix**: "the exception only holds until the refactor -- I don't want a month from now hear that
+the exception still stands" (minty-lemur #799). `escape-placement.md` replaces the code that fix
+put in `build_finale`, so nothing of the exception is left.

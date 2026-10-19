@@ -2,7 +2,7 @@
 
 2026-10-18.
 Said over two sessions (2026-10-17 and 2026-10-18) as notes the assistant captured into the inbox
-on GitHub Issues, #761 to #798, with the player's further words appended to them. Each note is
+on GitHub Issues, #761 to #799, with the player's further words appended to them. Each note is
 recorded as it holds: first what its words answered, then the words themselves, whole, and each
 later word after what it answers. The questions and context are the assistant's; only the quoted
 lines are the player's.
@@ -943,3 +943,13 @@ lines are the player's.
 2. **The note.**
 
    > > The cheap escape fix is now named as the one exception, since you ordered it before the refactor. -- that's the whole point -- otherwise it wouldn't be cheap
+
+## #799
+
+1. **Context** (the assistant's):
+
+   Said after the cheap escape fix (downy-tapir's winnable-escape.md, a marble bag inside the escape's own placement code) was named the one exception to the design rule "Code is designed by layer" in PR #795.
+
+2. **The note.**
+
+   > and the exception only holds until the refactor -- I don't want a month from now hear that the exception still stands

@@ -25,5 +25,6 @@ the table. Change nothing else: the escape's placement moving onto the day's sch
 minty-quail's, and the explosions' look and timing are snowy-goose's. This builds inside `build_finale`, which
 minty-quail replaces: the player ordered this minimal step before the refactor (minty-lemur #794),
 so it is the stated exception to **orchestrating**'s "Code is designed by layer" ("that's the
-whole point -- otherwise it wouldn't be cheap", minty-lemur #798), and its marble bag
+whole point -- otherwise it wouldn't be cheap", minty-lemur #798), and only until the refactor (minty-lemur #799), whose
+`escape-placement.md` replaces this code, and its marble bag
 is written so minty-quail's `escape-placement.md` can move it onto the day's scheduler unchanged.
