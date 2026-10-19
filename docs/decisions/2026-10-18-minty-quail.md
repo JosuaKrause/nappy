@@ -16,24 +16,40 @@ the mechanism the reviewer of PR #781 suspected, but nothing measured shows it w
 cause.
 
 **Built.** The runner awaits each suite's `run(t)` — a plain function or a coroutine, so a suite may
-now `await` real frames — and lets a process frame and a physics frame pass after each suite. Before
-each suite, one runner function puts the globals back: `GameState.start_run` on a fixed seed, and
-the static test seams (`DevFlags._invincible_override`, `GameSave._path_override`,
-`GameSave._uses_save_override`, `SaveIndicator._home_override`) cleared. Nothing in `src/` changed.
+now `await` real frames — lets a physics frame pass before the first suite, and a process frame and
+a physics frame after each one. Before each suite, one runner function puts the globals back:
+`GameState.start_run` on a fixed seed, and the static test seams the suites set by hand
+(`DevFlags._invincible_override` and `args_for_tests`, `GameSave._path_override` and
+`_uses_save_override`, `SaveIndicator._home_override`, `FrameRecord.on` and `ledger`,
+`ControlsMode._remembered`, `_remembered_mode` and `_remembered_side`,
+`TitleScreen._restarted_at_msec`) cleared; `Telemetry`, `VisitCounter` and the `EventBus`
+connections are left alone, and its comment says so.
 
-**What the reset exposed.** `test_interior` and the stairwell-guard probe stepped a rig's
-`_physics_process` by hand and moved her themselves, which counted on `move_and_slide()` seeing a
-zero delta because no physics frame had ever run; once frames pass she moved twice, and both now put
-her body back after the step. `test_dev_rig` and `test_route_bag` passed only on some run seeds (they
-fail on seed 1) and `test_day6_yeller_met` failed on a random one; each now starts its own run on the
-seed it needs. The runner's fixed seed is for determinism only, and its comment says no suite may
-rely on it. The three pass with it at 1, 2 and 7.
+**What the reset exposed.** Suites that stepped a stroller's `_physics_process` by hand and then
+moved her themselves (`test_interior`, both end-to-end walks in `test_route_rig`, the stairwell-guard
+probe) counted on `move_and_slide()` seeing a zero delta because no physics frame had ever run; once
+frames pass she moved twice. They share one helper now, `StrollerSteer.velocity_step` in
+`tests/stroller_steer.gd`, which puts her body back after the step. `test_dev_rig`, `test_route_bag`,
+`test_route_rig` and `test_day6_yeller_met` passed only on some run seeds; each starts its own run on
+the seed it needs, and the runner's fixed seed is for determinism only, its comment saying no suite
+may rely on it.
 
-**Left open to overturn.** The runner's reset seed is 2. The suites' own hand resets of the static
-seams stay (49 assignments), and 69 `process_frame.emit()` calls still fake frames; the
-`tests-public-seams` item takes both out as each owner is extracted.
+**A suite that quits the tree ended its shard silently.** `RouteRig` quits the tree when its route
+finishes, and `test_route_rig` drives a real one. While every suite ran inside one `_ready()` that
+quit waited until the runner's own; with frames passing it took effect after `test_route_rig`, and
+the shard ended with exit 0 and the rest of its suites unrun — a full run first reported 1021087
+checks, and 1295254 once the shard ran to its end. `RouteRig`'s quit is now one overridable method
+(the PR's one change in `src/`), which a test stand-in, `RouteRigNoQuit`, turns off. `tools/test.sh`
+fails any run whose output lacks the runner's closing "N checks, M failures" line, naming the last
+suite that printed; the fixture `tests/runner_fixtures/quits_the_tree.gd` proves it, run by CI the
+way `engine_error.gd` proves the error scan. The runner cannot refuse a quit itself, since
+`SceneTree` offers no way to cancel or detect one.
 
-**Measured beside it.** The unfiltered `./tools/test.sh` passed (1021087 checks) only with
-`TEST_SHARD_TIMEOUT_S=1500`: at the default 600 s all four shards were killed on a machine at a load
-average of about 6, where a shard ran 500-600 s. That is the margin M125, "the test suite is slow
-again", is about.
+**Left open to overturn.** The runner's reset seed is 2. The overridable `RouteRig._quit()`. The
+suites' own hand resets stay (45 assignments of an override seam, 19 of the other statics), and 69
+`process_frame.emit()` calls still fake frames; the `tests-public-seams` item takes them out as each
+owner is extracted.
+
+**Measured beside it.** On a machine at a load average of about 6, a shard ran 500-600 s, and at the
+default 600 s shard timeout all four were killed; the green runs used `TEST_SHARD_TIMEOUT_S=1500`.
+That is the margin M125, "the test suite is slow again", is about.
