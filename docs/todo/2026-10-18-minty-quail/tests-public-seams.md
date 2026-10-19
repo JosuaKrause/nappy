@@ -11,6 +11,6 @@ rebuilds placement from other classes' private functions (`SealPlanner._eligible
 
 **Build:** as each owner is extracted (the items above), it gets public seams and injected
 dependencies, and the tests that reached into it move to the seams, with fakes injected instead of
-statics patched; once `test-runner.md` lets frames pass, scene-level tests step real frames. Planners
+statics patched; since the test runner lets frames pass, scene-level tests step real frames. Planners
 get public "place this at this site" entry points that the scheduler and recipes both call. Do this
 with each extraction, not as one sweep.
