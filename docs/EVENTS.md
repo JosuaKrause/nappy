@@ -1862,14 +1862,36 @@ convoy in the escape is traffic rather than the aftermath of something), `abduct
 men in a van, and `roadblock` at full heat is the masked man on foot who leaves the post — the
 barrier he was standing at stays where it is and stays shut.
 
+**What stands on the city's streets is drawn from one marble bag.** *(Inbox #785 in minty-lemur:
+"nobody ever asked for all four events on *every* street. that doesn't make any sense and cannot
+feasibly work at all. that is why the density is so high that it's impossible to get anywhere. yes,
+a marble bag is absolutely needed with empty events (nothing happening) as well. we need a fair
+mix"; "frequency order is trucks > explosions > vans > barriers > empty".)* Every open street of
+the walk has `Tuning.FINALE_SLOTS_PER_STREET` slots (1), and each slot draws one marble from a bag
+for the whole escape (`EventScheduler.escape_bag()`): `Tuning.FINALE_BAG_TRUCKS` army trucks (10),
+`FINALE_BAG_EXPLOSIONS` explosions (8), `FINALE_BAG_VANS` vans (3), `FINALE_BAG_ROADBLOCKS`
+roadblocks (2) and `FINALE_BAG_EMPTY` empty marbles (1). A row's marble puts one of that row on
+the street through every placement rule below; an empty marble leaves the slot with nothing; a
+row's marble that finds no ground the rules accept is spent unmet, so a refused danger never moves on to
+the next street. The bag has its own stream off the plan's seed, so a lost section replans the
+same streets. The two rows that take her, the van and the roadblock's guard, stand at the least
+the player's order allows, and the counts were chosen by walking the shortest walk from the service
+exit to each exit through the plan's own events on two sets of 24 seeds
+(`tests/probes/escape_winnable.gd`): a walk meets about three trucks, three explosions, one van and
+one roadblock, and a plain walk gets out on 95 of 96. The bag is the escape's own until
+the escape is planned by the day's scheduler, which takes it as it is (minty-quail,
+escape-placement).
+
 **The escape's roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way
 that luring away the guard is enough. Right now there are for guards and the player adds
 excitement by just being close. Luring away one guard (the challenge) is not enough to make the
 obstacle survivable")* Four things make that true:
 
-- **One roadblock a street** (`Tuning.FINALE_GUARDS_PER_STREET`, 1), so a crossing is one band
-  and the one guard on her side of it. Two bands on a street stand a couple of tiles apart on the
-  same sidewalk, and luring the first one's guard off leaves the second one's posted in her way.
+- **One roadblock a street**, so a crossing is one band and the one guard on her side of it: a
+  street has one slot (`Tuning.FINALE_SLOTS_PER_STREET`), and the notice spacing below keeps two
+  bands off one street at any slot count, since a street is one block, 256px, and two notices need
+  360px. Two bands on a street would stand a couple of tiles apart on the same sidewalk, and luring
+  the first one's guard off would leave the second one's posted in her way.
 - **The band costs nothing, ever** *(inbox #788 in minty-lemur, asked whether the band should cost nothing in
   the escape manned or not: "No cost at all, ever"; then "band costing nothing should also apply
   to a normal day", "the challenge is the guard not the concrete")*: every roadblock's band, a
@@ -1929,15 +1951,15 @@ which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's r
 streets and the caps)*:
 
 - **The calm a day leaves alone** (`_calm_to_leave_alone()`: nothing's field may reach a calm area
-  she has not used yet). The escape is the climax, its streets stand a fixed count of lethal rows
-  each, and the chains pass a calm area at every stop, so the rule would clear the streets round
-  every stop: about a third of the trucks, a sixth of the vans and over half the bursts would go.
+  she has not used yet). The escape is the climax and the chains pass a calm area at every stop,
+  so the rule would clear the streets round every stop: about a third of the trucks, a sixth of
+  the vans and over half the bursts would go.
 - **The home's streets.** A day places nothing on the street the front door opens onto and holds
   the streets round the home block, because she sets off from that door. The escape sets off from
   the service exit on the side of the block (`docs/CITY.md`, "The escape"), and that exit opens onto
   one of the streets round the home block, so holding them would empty the street she starts on.
 - **The budget and `max_per_day` caps**: a day spends a per-block allowance on a weighted roll; the
-  escape stands a fixed count of its own rows a street (above).
+  escape stands what its slots draw from its bag (above).
 
 **And the ground she is put down on is refused to everything that could already be reaching her**
 (`EventScheduler._clearance_around_her`), because *"the spawning shouldn't be a check. the pathing
