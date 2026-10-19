@@ -324,9 +324,11 @@ static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 ##
 ## **This is the escape's own placement only until the refactor**: the marble bag is the shape the
 ## day's scheduler takes it in when the escape is planned by `build_day` (minty-quail,
-## escape-placement), so `escape_bag()` and its counts move there as they are. *(Minty-lemur #798,
-## #799: the cheap fix before the refactor is the one exception to code designed by layer, and only
-## until the refactor.)*
+## escape-placement), so `escape_bag()` and its counts move there as they are. A cheap fix inside
+## the escape's own placement is the one exception to code designed by layer *(inbox #798 in
+## minty-lemur: "that's the whole point -- otherwise it wouldn't be cheap")*, and only until then
+## *(inbox #799 in minty-lemur: "the exception only holds until the refactor -- I don't want a month
+## from now hear that the exception still stands")*.
 ##
 ## **Four rows, three of which already exist.** `military_convoy` is the truck, with the barricade
 ## it ordinarily leaves stripped — on an ordinary day that aftermath is the point of the row, and

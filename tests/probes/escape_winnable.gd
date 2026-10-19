@@ -1,9 +1,14 @@
 extends RefCounted
-## Measurement probe for whether the escape's city section can be got through (downy-tapir,
-## winnable-escape; minty-lemur #794, #785). Not a suite: it prints a table rather than asserting,
-## so it lives under `tests/probes/` and runs only by name:
+## Measurement probe for whether the escape's city section can be got through, and what its
+## marble bag (`EventScheduler.escape_bag()`) should hold *(inbox #794 in minty-lemur: "make escape
+## winnable with minimal changes (fixing event distribution in some cheap way)")*. Not a suite: it
+## prints a table rather than asserting, so it lives under `tests/probes/` and runs only by name:
 ##
 ##     tools/test.sh probes/escape_winnable.gd          (prints ESCAPE_WINNABLE lines)
+##
+## `ESCAPE_WINNABLE_SEEDS` (comma-separated run seeds) and `ESCAPE_WINNABLE_MIX` (see `MIXES`)
+## replace the seeds and the mixes; `ESCAPE_WINNABLE_TRACE` set to anything prints, once a second
+## of every walk, where she is, the meter, and every event reaching her.
 ##
 ## **What it measures, per seed and per exit.** The section's plan as a straight city boot builds
 ## it (`--start-escape city`: `GameState.start_run(seed)`, the city built from the run seed, the
@@ -33,8 +38,11 @@ extends RefCounted
 ## when a roadblock's guard raises his hand she stands, `REACTION` after he charges she runs back
 ## along the walk until no charge is running, then stands until every guard she drew off has left
 ## his post for good, then walks on — the lure `tests/escape_roadblock_rig.gd` walks, played on the
-## real plan. She does nothing else clever: she never stops to settle the baby, and she never waits
-## for a burst to finish.
+## real plan. She does nothing else a player would: she never stops on calm ground to settle the
+## baby, never steps off the walk for a truck coming up behind her, never waits for a van to drive
+## off, and stands wherever she happens to be while a guard she drew off leaves, inside a van's
+## field or not. So what it measures leans against her: a walk it cries on may still be one a
+## player gets through.
 ##
 ## **Why not the real game.** `RouteRig` (`--route`) is the game's own walker and it is not built on
 ## the `--start-escape` boot, which returns before the rig is made; wiring it there is `src/main.gd`

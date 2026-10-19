@@ -1870,17 +1870,16 @@ mix"; "frequency order is trucks > explosions > vans > barriers > empty".)* Ever
 the walk has `Tuning.FINALE_SLOTS_PER_STREET` slots (1), and each slot draws one marble from a bag
 for the whole escape (`EventScheduler.escape_bag()`): `Tuning.FINALE_BAG_TRUCKS` army trucks (10),
 `FINALE_BAG_EXPLOSIONS` explosions (8), `FINALE_BAG_VANS` vans (3), `FINALE_BAG_ROADBLOCKS`
-roadblocks (2) and `FINALE_BAG_EMPTY` empty marbles (1). A row's marble puts one of that row on
-the street through every placement rule below; an empty marble leaves the slot with nothing; a
-row's marble that finds no ground the rules accept is spent unmet, so a refused danger never moves on to
-the next street. The bag has its own stream off the plan's seed, so a lost section replans the
-same streets. The two rows that take her, the van and the roadblock's guard, stand at the least
-the player's order allows, and the counts were chosen by walking the shortest walk from the service
+roadblocks (2) and `FINALE_BAG_EMPTY` empty marbles (1). A row's marble puts one of that row on the
+street through every placement rule below; an empty marble leaves the slot with nothing; a row's
+marble that finds no ground the rules accept is spent unmet, so a refused danger never moves on to
+the next street. The bag has its own stream off the plan's seed, so a lost section replans the same
+streets. The two rows that take her, the van and the roadblock's guard, stand at the least the
+player's order allows, and the counts were chosen by walking the shortest walk from the service
 exit to each exit through the plan's own events on two sets of 24 seeds
 (`tests/probes/escape_winnable.gd`): a walk meets about three trucks, three explosions, one van and
-one roadblock, and a plain walk gets out on 95 of 96. The bag is the escape's own until
-the escape is planned by the day's scheduler, which takes it as it is (minty-quail,
-escape-placement).
+one roadblock, and a plain walk gets out on 95 of 96. The bag is the escape's own until the escape
+is planned by the day's scheduler, which takes it as it is (minty-quail, escape-placement).
 
 **The escape's roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way
 that luring away the guard is enough. Right now there are for guards and the player adds
