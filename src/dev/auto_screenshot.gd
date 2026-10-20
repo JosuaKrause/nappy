@@ -295,7 +295,7 @@ static func _parse_script(word: String) -> Array[Dictionary]:
 const _STAND := "p"
 
 ## The unit vector `degrees` clockwise from north (-y) points along — the inverse of what
-## `TelemetryLog.compass()` reads back off a vector, and the same convention: +y is south, so 0°
+## `RunTrace.compass()` reads back off a vector, and the same convention: +y is south, so 0°
 ## is north, 90° is east, 180° is south and 270° is west. `.normalized()` on the way out is what
 ## makes "a step must never press a vector shorter than one" true by construction rather than by
 ## trusting `sin`/`cos` to land on exactly 1.0.

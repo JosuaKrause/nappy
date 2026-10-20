@@ -38,7 +38,7 @@ const ROBBER_WAITING := "events/robber_waiting"
 const ROBBER_LUNGING := "events/robber_lunging"
 const PROTESTER := "events/protester"
 ## The eight pointing poses, one per 45° bearing sector — see `_protester_texture()`. Ordered
-## clockwise from north to match `TelemetryLog.compass()`'s own bearing convention.
+## clockwise from north to match `RunTrace.compass()`'s own bearing convention.
 const PROTESTER_POINT_N := "events/protester_point_n"
 const PROTESTER_POINT_NE := "events/protester_point_ne"
 const PROTESTER_POINT_E := "events/protester_point_e"
@@ -3453,6 +3453,9 @@ var _victim_taken_at := INF
 ## Whether the one telemetry entry for this take has already been written, so a frame that finds
 ## the walk finished twice in a row cannot log it twice.
 var _victim_logged := false
+## Where the instance writes its own account for the run log — the take above — handed in by the
+## manager that creates it; silent otherwise.
+var trace := RunTrace.new()
 
 ## How long this instance has left before it is simply gone, or `INF` where the question does not
 ## yet apply. A pursuer that is still only waiting has no expiry of its own — `_has_expired()`
@@ -3490,7 +3493,7 @@ func _update_the_take() -> void:
 	if _victim_logged or age - _victim_taken_at < VICTIM_TAKEN_OVER:
 		return
 	_victim_logged = true
-	Telemetry.note("taken", "'%s' takes a bystander" % def.id)
+	trace.note("taken", "'%s' takes a bystander" % def.id)
 
 ## Whether the scene is running right now, for `_draw_abduction` and for a test to drive by hand
 ## without reaching into a private field.
@@ -7033,7 +7036,7 @@ const _POINTING_POSES: Array[String] = [
 ## "the mark is findable now -- I don't think we need pointing for that. but the other tasks are
 ## not as easy and need pointing.")*
 ##
-## The bearing is `TelemetryLog.compass()`'s own arithmetic — clockwise from north (`-y`), through
+## The bearing is `RunTrace.compass()`'s own arithmetic — clockwise from north (`-y`), through
 ## east (`+x`) at 90° — rounded to the nearest of the eight 45° sectors the poses were drawn for.
 static func _protester_texture(from: Vector2, objective: Vector2) -> String:
 	if objective == Vector2.INF:

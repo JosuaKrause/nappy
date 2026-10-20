@@ -186,6 +186,8 @@ var _day: DayController
 var _resistance: ResistanceDirector
 ## Null unless the run is being traced. See src/autoload/telemetry.gd.
 var _observer: TelemetryObserver
+## Where the game's own account of its decisions goes, handed to everything this boot builds.
+var _trace := RunTrace.new(Telemetry.note)
 var _hud: CanvasLayer
 ## Kept because the telemetry observer asks it what she is being warned about; the layer around it
 ## is kept only so the title screen can take it off the street.
@@ -358,6 +360,7 @@ func _ready() -> void:
 	Telemetry.configure(config)
 	GameSave.configure(config)
 	VisitCounter.configure(config)
+	GameState.use_trace(_trace)
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
 	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits
@@ -541,6 +544,7 @@ func _ready() -> void:
 	_resistance.name = "Resistance"
 	add_child(_resistance)
 	_pauses_with_the_game(_resistance)
+	_resistance.trace = _trace
 	_resistance.setup(_city, _city.map)
 	# The director's two questions about her view — no camera of its own, so it asks the day's one
 	# view (`VisibleView`) rather than growing a second one: "has she seen this" for a mark's notice,
@@ -888,6 +892,7 @@ func _make_player() -> Stroller:
 ## before `build()` reads them — either boot builds its city through here.
 func _new_city() -> City:
 	var city: City = CITY.instantiate()
+	city.trace = _trace
 	city.ground_mode = config.ground_mode as SceneryGround.Mode
 	city.scenery_frame_locked = config.recipe_scripted
 	city.skip_shadows = config.skip_shadows
@@ -1009,7 +1014,7 @@ func _plan_the_finale_city() -> void:
 	# anything, and a run with telemetry off still has a console.
 	print("[Main] finale planned in %d ms (seed %d): %s"
 			% [Time.get_ticks_msec() - elapsed, _city.map.seed_used, plan.summary()])
-	Telemetry.note("plan", "finale: %s" % plan.summary())
+	_trace.note("plan", "finale: %s" % plan.summary())
 
 ## `--start-escape`'s raw word (`config.start_escape_at`), mapped onto the `InteriorMap.PARTS` waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
@@ -2184,7 +2189,7 @@ func _closure_summary() -> String:
 		parts.append("%s %s%s" % [
 			RoadClosure.display_name(closure.kind).to_lower(),
 			"h" if closure.segment.horizontal else "v",
-			TelemetryLog.tile(closure.segment.a)])
+			RunTrace.tile(closure.segment.a)])
 	return ", ".join(parts) if not parts.is_empty() else "none"
 
 ## Today's events by id. Counted rather than listed one per line: which of the catalogue's kinds

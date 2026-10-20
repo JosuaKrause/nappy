@@ -98,11 +98,11 @@ func _test_an_angled_step_parses_its_own_bearing(t) -> void:
 	if steps.size() != 2:
 		return
 	t.check(is_equal_approx(steps[0]["seconds"], 3.0), "three seconds at the angle (got %s)" % steps[0])
-	# The convention `TelemetryLog.compass()` reads a bearing back with: +y is south, so 0° is
+	# The convention `RunTrace.compass()` reads a bearing back with: +y is south, so 0° is
 	# north, 90° is east and a bearing runs clockwise between them.
 	var expected := Vector2(sin(deg_to_rad(45.0)), -cos(deg_to_rad(45.0)))
 	t.check(steps[0]["direction"].is_equal_approx(expected),
-			"45° parses to the same vector TelemetryLog.compass() would read 45° back off (got %s)"
+			"45° parses to the same vector RunTrace.compass() would read 45° back off (got %s)"
 			% steps[0]["direction"])
 	t.check(is_equal_approx(steps[0]["direction"].length(), 1.0),
 			"and the parsed direction is unit length (got %.6f)" % steps[0]["direction"].length())

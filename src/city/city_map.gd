@@ -1127,7 +1127,7 @@ func block_at(world_position: Vector2) -> Vector2i:
 ## against the ground just painted, so the route tree, the region plan and the closures that follow
 ## all plan around it. A shut area's ground is left exactly as its purpose paints it — it stays
 ## calm, walkable ground; only `fenced_park`, if one is chosen today, is actually closed.
-func repaint(state: CityState) -> void:
+func repaint(state: CityState, trace: RunTrace = null) -> void:
 	if not recipe_dawn_tiles.is_empty():
 		tiles = recipe_dawn_tiles.duplicate()
 		_tiles_by_type.clear()
@@ -1138,7 +1138,7 @@ func repaint(state: CityState) -> void:
 		fenced_park = Vector2i(-1, -1)
 		fenced_park_act = 0
 		_recompute_calm(state)
-		_shut_the_spent_calm(state)
+		_shut_the_spent_calm(state, trace)
 		return
 	# Two passes, and the split is what makes a four-block calm zone possible: one lot's ground
 	# now covers blocks that are not its own, so a single pass that cleared each lot immediately
@@ -1162,7 +1162,7 @@ func repaint(state: CityState) -> void:
 	fenced_park = Vector2i(-1, -1)
 	fenced_park_act = 0
 	_recompute_calm(state)
-	_shut_the_spent_calm(state)
+	_shut_the_spent_calm(state, trace)
 
 ## Decides today's `shut_calm` — and, at most once a run, `fenced_park` — from what
 ## `set_spent_calm()` and `set_fenced_park_state()` handed over, and forgets both handovers. The
@@ -1176,7 +1176,7 @@ func repaint(state: CityState) -> void:
 ## it is still in `spent`. **A new fence needs act III or later and nothing chosen yet**: the first
 ## area `calm_to_shut()` accepts is the one the run ever fences, and every other used area — today's
 ## and every later day's — is left to `EventScheduler._spoil_the_parks_she_used` instead.
-func _shut_the_spent_calm(state: CityState) -> void:
+func _shut_the_spent_calm(state: CityState, trace: RunTrace = null) -> void:
 	var spent := _spent_for_the_next_repaint
 	_spent_for_the_next_repaint = []
 	var has_fenced_this_run := _fenced_park_state.x >= 0
@@ -1193,7 +1193,7 @@ func _shut_the_spent_calm(state: CityState) -> void:
 			protected.append(block)
 	if already_fenced:
 		protected.append(fenced_park)
-	shut_calm = ClosurePlanner.calm_to_shut(self, spent, protected)
+	shut_calm = ClosurePlanner.calm_to_shut(self, spent, protected, trace)
 	if already_fenced:
 		shut_calm.append(fenced_park)
 	elif not has_fenced_this_run and _act_for_the_next_repaint >= 3 and not shut_calm.is_empty():

@@ -113,6 +113,9 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 
 var map: CityMap
 var events: EventManager
+## Where the city, its posters, its events and the day's closures write their own account for the
+## run log — set before `build()`, which hands it on; silent until then.
+var trace := RunTrace.new()
 var crowd: Crowd
 
 # ------------------------------------------------- handed in before build() reads them ---
@@ -247,6 +250,7 @@ func build(city_map: CityMap) -> void:
 	# Right after the buildings, whose blank ground-floor cells are what it reads. See `PosterWalls`.
 	_posters = PosterWalls.new()
 	_posters.name = "Posters"
+	_posters.trace = trace
 	add_child(_posters)
 	_posters.setup(self, map)
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
@@ -270,6 +274,7 @@ func build(city_map: CityMap) -> void:
 	_spawn_signal_heads()
 	events = EventManager.new()
 	events.name = "Events"
+	events.trace = trace
 	events.skip_drawing = skip_event_drawing
 	if all_cyclists_pelicans:
 		events.pelican_rig = EventManager.PelicanRig.ALWAYS
@@ -506,7 +511,7 @@ func board_neighbor_window() -> void:
 			best_distance = distance
 			best_col = col
 	building.neighbor_window_col = best_col
-	Telemetry.note("contact",
+	trace.note("contact",
 			"the neighbor's window is boarded at column %d, row %d (the third floor)"
 			% [best_col, building.neighbor_window_row()])
 
@@ -970,7 +975,7 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## only way a requisitioned park can stop having swings in it.
 func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	scenery.view = _home_scenery_view()
-	map.repaint(state)
+	map.repaint(state, trace)
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
@@ -1031,7 +1036,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 ## cell its plain source first, so a twin from yesterday's tree cannot survive into the escape.
 func start_finale(state: CityState, day: int) -> void:
 	scenery.view = _home_scenery_view()
-	map.repaint(state)
+	map.repaint(state, trace)
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
 	_paint_ground()
@@ -1052,10 +1057,10 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
 	_region_plan = RegionPlanner.plan_day(map, day, _tree)
-	Telemetry.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
+	trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
 			% [_region_plan.walls.size() + _region_plan.doors.size(), _region_plan.walls.size(),
 			_region_plan.doors.size(), RegionPlanner.regions_with_calm(map)])
-	_closures = ClosurePlanner.plan_day(map, day, rng, _tree, _region_plan)
+	_closures = ClosurePlanner.plan_day(map, day, rng, _tree, _region_plan, trace)
 	map.close_streets(_closures)
 	for closure in _closures:
 		_spawn_closure(closure)

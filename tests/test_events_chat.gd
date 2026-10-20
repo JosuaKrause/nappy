@@ -281,30 +281,28 @@ func _test_the_take_begins_only_once_she_is_close(t) -> void:
 
 ## One telemetry entry, written once — not per frame, and not before the walk actually finishes.
 func _test_a_completed_take_is_logged_exactly_once(t) -> void:
-	Telemetry.begin_memory_log()
+	var lines: Array[String] = []
 	var def := EventCatalogue.by_id("abduction")
 	var instance := _instance(t, def, Vector2.ZERO)
+	instance.trace = RunTrace.recording(lines)
 	instance.player_at = Vector2(def.outer_radius - 20.0, 0.0)
 	_advance(instance, EventInstance.VICTIM_TAKEN_OVER * 0.5)
-	var mid_way := 0
-	for line in Telemetry.current_log().lines:
-		mid_way += 1 if line.contains("taken") else 0
-	t.check(mid_way == 0, "nothing is logged while the walk is still happening")
+	t.check(_takes(lines) == 0, "nothing is logged while the walk is still happening")
 
 	_advance(instance, EventInstance.VICTIM_TAKEN_OVER)
-	var finished := 0
-	for line in Telemetry.current_log().lines:
-		finished += 1 if line.contains("taken") else 0
-	t.check(finished == 1, "exactly one entry once it completes (%d)" % finished)
+	t.check(_takes(lines) == 1, "exactly one entry once it completes (%d)" % _takes(lines))
 
 	# Long past the completion, the count must not grow — the flag latches rather than re-firing.
 	_advance(instance, 5.0)
-	var later := 0
-	for line in Telemetry.current_log().lines:
-		later += 1 if line.contains("taken") else 0
-	t.check(later == 1, "and it never logs a second time (%d)" % later)
+	t.check(_takes(lines) == 1, "and it never logs a second time (%d)" % _takes(lines))
 	instance.free()
-	Telemetry.end_run()
+
+## How many of the instance's own lines are a take.
+static func _takes(lines: Array[String]) -> int:
+	var takes := 0
+	for line in lines:
+		takes += 1 if line.begins_with("taken ") else 0
+	return takes
 
 # `heat_response = HUNTS` turns the same row into a hunter on foot past `Tuning.HEAT_HUNTS_LEVEL` — see
 # docs/EVENTS.md, "The heat". Stated against the fully heated copy, the way `tests/test_heat.gd`'s
@@ -317,9 +315,10 @@ func _hunting_abduction() -> EventDef:
 ## abandoned rather than finished — no victim drawn again, taken or not, and nothing logged for a
 ## take that never completed.
 func _test_a_hunting_van_draws_no_victim(t) -> void:
-	Telemetry.begin_memory_log()
+	var lines: Array[String] = []
 	var hot := _hunting_abduction()
 	var instance := _instance(t, hot, Vector2.ZERO)
+	instance.trace = RunTrace.recording(lines)
 	# Inside the field but outside the trigger, so it is only waiting — the take may begin exactly
 	# as it would for a cold van.
 	instance.player_at = Vector2(hot.pursues_within + 20.0, 0.0)
@@ -333,12 +332,8 @@ func _test_a_hunting_van_draws_no_victim(t) -> void:
 	t.check(not instance.is_taking_a_victim(), "and the take it was running is abandoned")
 
 	_advance(instance, 5.0)
-	var entries := 0
-	for line in Telemetry.current_log().lines:
-		entries += 1 if line.contains("taken") else 0
-	t.check(entries == 0, "nothing is ever logged for a take that never finished")
+	t.check(_takes(lines) == 0, "nothing is ever logged for a take that never finished")
 	instance.free()
-	Telemetry.end_run()
 
 ## Anything that stands still is solid at the width it is drawn, and a hunting van stands still:
 ## it hunts on foot (`EventDef.hunts_on_foot`, inbox #669 in coral-lark: "Same as the police"), letting its men

@@ -111,14 +111,15 @@ func _exit_tree() -> void:
 const RESET_SEED := 2
 
 ## The one place the globals a suite may leave behind are put back, called before each suite so
-## that no suite starts on another's state: the run state, the run configuration a booted `main`
-## handed the observers (none, as before any boot), and the static seams a suite sets by hand (the
-## save's override hooks, the frame recorder, the remembered controls and the title's restart
-## stamp). The run log and `VisitCounter`'s own state and the `EventBus` connections are left
-## alone.
+## that no suite starts on another's state: the run state and the trace it writes to (a silent
+## one), the run configuration a booted `main` handed the observers (none, as before any boot),
+## and the static seams a suite sets by hand (the save's override hooks, the frame recorder, the
+## remembered controls and the title's restart stamp). The run log and `VisitCounter`'s own state
+## and the `EventBus` connections are left alone.
 func _reset_globals() -> void:
 	GameState.start_run(RESET_SEED)
 	Telemetry.configure(null)
+	GameState.use_trace(RunTrace.new())
 	VisitCounter.configure(null)
 	GameSave.configure(null)
 	GameSave._path_override = ""

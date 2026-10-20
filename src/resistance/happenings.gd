@@ -70,6 +70,10 @@ var market_block := Vector2i(-1, -1)
 ## Day 12's park closing: the police cordon round it, from the touch of its swing for the rest of
 ## the day, or null. Kept for the tests.
 var cordon: ParkCordon = null
+
+## Where these happenings write their own account for the run log, handed on to the park's cordon;
+## the director's, set before `setup()`.
+var trace := RunTrace.new()
 ## Whether today still owes the column, and its trucks once it has come. Kept for the tests.
 var _column_owed := false
 var column: Array[EventInstance] = []
@@ -198,7 +202,7 @@ func _maybe_raid(her: Vector2, shows: Callable) -> void:
 	# what every later day and a reloaded save read it from (`City._sync_home_door()`).
 	_city.seal_home_door()
 	GameState.add_scar(City.SEALED_DOOR_SCAR, door)
-	Telemetry.note("contact", "the raid is at her building: %d vans and a patrol" % _raid_vans.size())
+	trace.note("contact", "the raid is at her building: %d vans and a patrol" % _raid_vans.size())
 
 # ---------------------------------------------------------- day 11: the market ---
 
@@ -230,7 +234,7 @@ func _maybe_the_market(delta: float, her: Vector2) -> void:
 	var candidates := market_candidates(_map, GameState.city_state)
 	if candidates.is_empty():
 		_market_owed = false
-		Telemetry.note("contact", "no block is waiting to board up, so there is no market to lose")
+		trace.note("contact", "no block is waiting to board up, so there is no market to lose")
 		return
 	var block := _market_ahead_of(her, candidates)
 	if block.x < 0 and _elapsed >= Tuning.MARKET_GONE_BY:
@@ -300,7 +304,7 @@ func board_up(block: Vector2i) -> bool:
 	var stalls := 0
 	if _city and _city.events:
 		stalls = _city.events.take_away_within(_frontage_of(block), ["market_stall"] as Array[String])
-	Telemetry.note("contact", "the market at block %s is gone: boarded up, %d stall(s) taken away"
+	trace.note("contact", "the market at block %s is gone: boarded up, %d stall(s) taken away"
 			% [block, stalls])
 	return true
 
@@ -339,7 +343,8 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	if cordon:
 		cordon.clear()
 	cordon = ParkCordon.new(_map, _city, park, blocked)
-	Telemetry.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
+	cordon.trace = trace
+	trace.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
 			% park)
 	return true
 
@@ -419,7 +424,7 @@ func send_the_column(her: Vector2) -> PendingWarning:
 		return true
 	var warning := _city.events.warn_first(def, her, where, arrive)
 	if warning:
-		Telemetry.note("contact", "a column of %d trucks is coming down the main road %s" % [
+		trace.note("contact", "a column of %d trucks is coming down the main road %s" % [
 			Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
 	return warning
 
@@ -445,9 +450,9 @@ func _bring_the_column(def: EventDef, place: Vector2, her: Vector2, lane_x: floa
 		var to := Vector2(lane_x, stop.y if rear and stop != Vector2.INF else far_y)
 		var truck := def if rear and stop != Vector2.INF else trailing
 		column.append(_city.events.spawn_warned(truck, PackedVector2Array([from, to])))
-	Telemetry.note("contact", "a column of %d trucks comes down the main road %s%s" % [
+	trace.note("contact", "a column of %d trucks comes down the main road %s%s" % [
 		Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north",
-		", and stops at %s" % TelemetryLog.tile(_map.world_to_tile(stop)) if stop != Vector2.INF
+		", and stops at %s" % RunTrace.tile(_map.world_to_tile(stop)) if stop != Vector2.INF
 				else ", with nowhere to stop"])
 
 ## Where the rear truck stops and leaves its barricade: from `wanted_y` on along the road in the
@@ -515,6 +520,6 @@ func _send_the_neighbor_to_work() -> EventInstance:
 	var finish := _map.tile_to_world(tile + along * length)
 	finish.y = start.y
 	var path := PackedVector2Array([start, finish])
-	Telemetry.note("contact", "the neighbor leaves for work, %s along her street"
+	trace.note("contact", "the neighbor leaves for work, %s along her street"
 			% ("east" if along.x > 0 else "west"))
 	return _city.events.spawn_extra(def, start, path)

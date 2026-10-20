@@ -985,8 +985,8 @@ window is exactly the run worth reading and a buffered log of it would be empty.
 1. Find the question it answers. If there is not one, stop — see the constraint above.
 2. `Telemetry.note("kind", "sentence")` at the point where the thing happens. Reuse a kind
    from the table above rather than inventing a synonym for one.
-3. Format positions with `TelemetryLog.tile()`, directions with `TelemetryLog.compass()` and
-   block purposes with `TelemetryLog.purpose()`. Two spellings of a position in one log is
+3. Format positions with `RunTrace.tile()`, directions with `RunTrace.compass()` and
+   block purposes with `RunTrace.purpose()`. Two spellings of a position in one log is
    two things to grep for. `compass()` writes the exact bearing in whole degrees rather than a
    word — a press sets an arbitrary unit vector, so most headings are diagonal and a four- or
    eight-word vocabulary would lose the difference between two headings a player can tell

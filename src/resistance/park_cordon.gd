@@ -179,6 +179,9 @@ var _exit := PackedVector2Array()
 ## The park's people sent off down `_exit`, still walking out.
 var _leaving: Array[EventInstance] = []
 var _started := false
+## Where the cordon writes its own account for the run log; the happenings' trace, handed on as it is
+## built.
+var trace := RunTrace.new()
 
 ## Starts closing `block`'s park: the line, its stretches and which of them need tape. Nothing is
 ## placed until the first `tick()`, which knows where she is and what the camera sees. `blocked` is
@@ -356,11 +359,11 @@ func _choose_the_gap(her: Vector2) -> int:
 			other_calm_reached = true
 			break
 	if best_rank > 0:
-		Telemetry.note("contact", "no stretch of the park's edge opens onto ground that reaches "
+		trace.note("contact", "no stretch of the park's edge opens onto ground that reaches "
 				+ "home clear of the day's events: the last gap is the best of them (reaches home: "
 				+ "%s, clear of bodies and fields: %s)" % [gap_reaches_home, gap_clear])
 	if not other_calm_reached:
-		Telemetry.note("contact", "with the park cordoned off, no other calm ground is reached "
+		trace.note("contact", "with the park cordoned off, no other calm ground is reached "
 				+ "from home")
 	return best
 
@@ -466,7 +469,7 @@ func _set_out(her: Vector2, shows: Callable) -> void:
 	_exit = _way_out_through_the_gap(her, shows)
 	_send_escorts()
 	_time_the_close(her, shows)
-	Telemetry.note("contact", "the police set out to cordon the park at block %s: %d stretches, "
+	trace.note("contact", "the police set out to cordon the park at block %s: %d stretches, "
 			% [park, _needed_count()] + "the last gap at %s, closing %.1fs after the swing"
 			% [last_gap, deadline])
 
@@ -565,7 +568,7 @@ func _time_the_close(her: Vector2, shows: Callable) -> void:
 	first_in_view = INF
 	if soonest == INF:
 		if her != Vector2.INF:
-			Telemetry.note("contact", "no officer of the park's cordon comes into her view from "
+			trace.note("contact", "no officer of the park's cordon comes into her view from "
 					+ "where she stood: it closes on the plain clock")
 		return
 	deadline = maxf(deadline, soonest)
@@ -736,7 +739,7 @@ func _send_escorts() -> void:
 		_make_figure(escort)
 		sent += 1
 	if sent > 0 or not _leaving.is_empty():
-		Telemetry.note("contact", "%d officers come to walk the park's people out, %d more sent off "
+		trace.note("contact", "%d officers come to walk the park's people out, %d more sent off "
 				% [sent, _leaving.size()] + "on their own, through the last gap")
 
 ## Whether a live event is one of the park's people, to be walked out.
@@ -995,11 +998,11 @@ func _close(her: Vector2, shows: Callable) -> void:
 			officer.path = _route_away(from, her, shows) if not _rect.has_point(from) \
 					else PackedVector2Array()
 	if trapped:
-		Telemetry.note("contact", "the last gap of the park's cordon is taped %.1fs after the "
+		trace.note("contact", "the last gap of the park's cordon is taped %.1fs after the "
 				% elapsed + "swing, with her inside: she is shut in")
 		EventBus.hard_fail_triggered.emit(TRAPPED)
 	else:
-		Telemetry.note("contact", "the park at block %s is cordoned off %.1fs after the swing, "
+		trace.note("contact", "the park at block %s is cordoned off %.1fs after the swing, "
 				% [park, elapsed] + "with her outside")
 
 ## Sends an escort whose person has gone before he reached them back down the way out, past

@@ -126,7 +126,7 @@ func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 		lit = city.events.light_what_she_never_met(rig.global_position)
 		if lit:
 			print("      lit at dusk at %s, %.0fpx from where she finished"
-					% [TelemetryLog.tile(city.map.world_to_tile(plan.position)),
+					% [RunTrace.tile(city.map.world_to_tile(plan.position)),
 					plan.position.distance_to(rig.global_position)])
 	rig.free()
 	GameState.scars = scars

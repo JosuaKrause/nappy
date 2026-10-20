@@ -42,6 +42,12 @@ class CalmArea extends RefCounted:
 	var rect: Rect2i
 	var access: Array[StreetNetwork.Segment] = []
 
+## A line of the day's closure planning for the run log, written when the caller handed a trace
+## in: the city hands its own, and a test that plans by hand may hand none.
+static func _note(trace: RunTrace, kind: String, text: String) -> void:
+	if trace:
+		trace.note(kind, text)
+
 ## Plans a day's closures. `map` must already be repainted for the day, because which blocks
 ## are calm is the thing the invariant is stated over and a requisitioned park is not one.
 ##
@@ -61,15 +67,17 @@ class CalmArea extends RefCounted:
 ## here draws anything for it. The fenced ground itself was decided at the repaint and is already
 ## closed on the map, so every candidate below is judged with it closed.
 static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
-		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null) -> Array[RoadClosure]:
-	var chosen := _close_streets(map, day, rng, tree, region_plan)
+		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null,
+		trace: RunTrace = null) -> Array[RoadClosure]:
+	var chosen := _close_streets(map, day, rng, tree, region_plan, trace)
 	if map.fenced_park.x >= 0:
 		for fence in ParkClosure.fence(map, map.fenced_park):
 			chosen.append(fence)
 	return chosen
 
 static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
-		tree: RouteTree, region_plan: RegionPlanner.RegionPlan) -> Array[RoadClosure]:
+		tree: RouteTree, region_plan: RegionPlanner.RegionPlan,
+		trace: RunTrace = null) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
 	# Whatever this day does or does not close, it owns the answer to which pits are empty — so a
 	# day that closes nothing says so, rather than leaving yesterday's fallen tree missing from the
@@ -121,8 +129,8 @@ static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
 			# `tests/test_routes.gd` asserts it never happens over a run's worth of days; the note
 			# is what would say so in a real run.
 			today_closed.erase(segment.key())
-			Telemetry.note("plan", "day %d: closing %s off the corridor would have cut the calm"
-					% [day, TelemetryLog.tile(segment.a)])
+			_note(trace, "plan", "day %d: closing %s off the corridor would have cut the calm"
+					% [day, RunTrace.tile(segment.a)])
 	map.set_closure_tree_pits(emptied)
 	return chosen
 
@@ -252,7 +260,7 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 ## — which every accepted area not chosen as `CityMap.fenced_park` also gets, since exclusion from
 ## the tree is the only thing accepting an area here actually does.
 static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
-		protected: Array[Vector2i] = []) -> Array[Vector2i]:
+		protected: Array[Vector2i] = [], trace: RunTrace = null) -> Array[Vector2i]:
 	var shut: Array[Vector2i] = []
 	var candidates: Array[Vector2i] = []
 	for block in spent:
@@ -265,8 +273,8 @@ static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
 	var blocked := {}
 	for block in candidates:
 		if map.calm_blocks.size() - shut.size() - 1 < Tuning.MIN_CALM_AREAS_REACHABLE:
-			Telemetry.note("plan", "the calm area she used at %s stays open: shutting it would "
-					% TelemetryLog.tile(block) + "leave fewer than %d open"
+			_note(trace, "plan", "the calm area she used at %s stays open: shutting it would "
+					% RunTrace.tile(block) + "leave fewer than %d open"
 					% Tuning.MIN_CALM_AREAS_REACHABLE)
 			continue
 		var trial := blocked.duplicate()
@@ -276,18 +284,18 @@ static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
 		var after := map.walk_field(home, trial)
 		var cut := _tiles_cut_off(map, before, after, trial)
 		if cut > 0:
-			Telemetry.note("plan", "the calm area she used at %s stays open: shutting it would cut "
-					% TelemetryLog.tile(block) + "%d tiles off from the doorstep" % cut)
+			_note(trace, "plan", "the calm area she used at %s stays open: shutting it would cut "
+					% RunTrace.tile(block) + "%d tiles off from the doorstep" % cut)
 			continue
 		if _open_calm_reached(map, after, shut, block) < Tuning.MIN_CALM_AREAS_REACHABLE:
-			Telemetry.note("plan", "the calm area she used at %s stays open: shutting it would "
-					% TelemetryLog.tile(block) + "leave fewer than %d reachable"
+			_note(trace, "plan", "the calm area she used at %s stays open: shutting it would "
+					% RunTrace.tile(block) + "leave fewer than %d reachable"
 					% Tuning.MIN_CALM_AREAS_REACHABLE)
 			continue
 		shut.append(block)
 		blocked = trial
-		Telemetry.note("plan", "the calm area she used at %s is shut today"
-				% TelemetryLog.tile(block))
+		_note(trace, "plan", "the calm area she used at %s is shut today"
+				% RunTrace.tile(block))
 	return shut
 
 ## How many tiles `before` reached that `after` does not, leaving out the shut ground itself

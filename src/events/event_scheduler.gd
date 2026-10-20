@@ -147,6 +147,12 @@ static func budget_for(day: int) -> int:
 const BUDGET_PER_BLOCK := 76.0 / 49.0
 const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 
+## A line of the day's planning for the run log, written when the caller handed a trace in: the
+## manager hands its own, and a test or a probe that plans a day by hand may hand none.
+static func _note(trace: RunTrace, kind: String, text: String) -> void:
+	if trace:
+		trace.note(kind, text)
+
 ## Plans a day. `consumed_one_shots` is read and appended to, so a one-shot fires once
 ## per run.
 ##
@@ -172,19 +178,22 @@ const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 ## the region wall's own bodies, both planned before this runs. Both empty on every other day, and
 ## then the day is planned exactly as it would be without them. See
 ## `_ensure_the_city_is_still_walkable()`.
+##
+## `trace` is where the planning writes its own account for the run log — a one-shot's roll, a
+## lesson added, a park spoiled — and no trace writes nowhere. It changes nothing the plan holds.
 static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
 		used_calm: Array[Vector2i] = [], tree: RouteTree = null,
 		heat: int = 0, doors := PackedVector2Array(), target: Array[Vector2i] = [],
-		standing: Array[Planned] = []) -> Array[Planned]:
+		standing: Array[Planned] = [], trace: RunTrace = null) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
 	var filled_from := _plan_through_the_fill(day, base, map, consumed_one_shots, scars, used_calm,
-			tree, heat, doors, standing, planned)
+			tree, heat, doors, standing, planned, trace)
 	_thin_the_walls(day, _stream(base, WALL_THINNING_SALT), planned, filled_from)
-	_ensure_the_run_is_taught(day, planned, heat)
+	_ensure_the_run_is_taught(day, planned, heat, trace)
 
 	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
 	# park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second open
@@ -192,7 +201,7 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 	# the target's: one of those areas is left clean, and a route to it is kept.
 	var target_calm := _calm_block_holding(map, target)
 	_ensure_one_usable_park(map, planned, used_calm, target_calm)
-	_ensure_the_city_is_still_walkable(map, planned, target, standing, target_calm)
+	_ensure_the_city_is_still_walkable(map, planned, target, standing, target_calm, trace)
 	_hand_to_her_walk(planned)
 	return planned
 
@@ -204,7 +213,7 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], used_calm: Array[Vector2i],
 		tree: RouteTree, heat: int, doors: PackedVector2Array, standing: Array[Planned],
-		planned: Array[Planned]) -> int:
+		planned: Array[Planned], trace: RunTrace = null) -> int:
 	# Which tiles each kind of event may stand on, worked out at most once per day. See
 	# `_ground_for`; it is threaded through rather than kept on the map because its lifetime is
 	# exactly one day and a cache with a shorter life than its invalidation rule is a bug waiting.
@@ -222,8 +231,8 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat, doors,
 			standing)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
-			leave_alone, corridor, heat, doors, standing)
-	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm, heat)
+			leave_alone, corridor, heat, doors, standing, trace)
+	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm, heat, trace)
 	var filled_from := planned.size()
 	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat, doors, standing)
 	return filled_from
@@ -1210,7 +1219,8 @@ static func _stream(base: int, salt: int) -> RandomNumberGenerator:
 ## It is added **outside** the budget rather than competing for it, and that is the exception being
 ## made honestly: everywhere else in this file the density is the budget, and a lesson that only
 ## happens when the dice agree is not a lesson. One event on one day of fourteen.
-static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: int = 0) -> void:
+static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: int = 0,
+		trace: RunTrace = null) -> void:
 	if day != Tuning.RUN_TAUGHT_DAY:
 		return
 	for plan in planned:
@@ -1220,7 +1230,7 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 		if not def.pursues or def.spawn_mode != EventDef.SpawnMode.AHEAD_OF_PLAYER:
 			continue
 		planned.append(Planned.new(def, Vector2.INF))
-		Telemetry.note("plan", "day %d bought no pursuit, so the run lesson is added: %s"
+		_note(trace, "plan", "day %d bought no pursuit, so the run lesson is added: %s"
 				% [day, def.id])
 		return
 
@@ -1288,17 +1298,18 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ## is next to the loop. A merely-`shut_calm` area is not skipped: it is still calm ground, and this
 ## is exactly what stands in it.
 static func _spoil_the_parks_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
-		planned: Array[Planned], used: Array[Vector2i], heat: int = 0) -> void:
+		planned: Array[Planned], used: Array[Vector2i], heat: int = 0,
+		trace: RunTrace = null) -> void:
 	var spoilable := map.calm_blocks.size() - 1
 	for block in used:
 		if spoilable <= 0:
 			return
 		if block.x >= 0 and block in map.calm_blocks:
 			spoilable -= 1
-			_spoil_one_park(day, rng, map, planned, block, heat)
+			_spoil_one_park(day, rng, map, planned, block, heat, trace)
 
 static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
-		planned: Array[Planned], block: Vector2i, heat: int = 0) -> void:
+		planned: Array[Planned], block: Vector2i, heat: int = 0, trace: RunTrace = null) -> void:
 
 	var lot := _calm_rect(map, block)
 	var open: Array[Vector2i] = []
@@ -1323,8 +1334,8 @@ static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
 		placed.append(def.id)
 	if placed.is_empty():
 		return
-	Telemetry.note("roll", "%s in the park she used yesterday, %s"
-			% [", ".join(placed), TelemetryLog.tile(block)])
+	_note(trace, "roll", "%s in the park she used yesterday, %s"
+			% [", ".join(placed), RunTrace.tile(block)])
 
 ## Rolls one of the pool, weighted by how much ground it can actually take.
 ##
@@ -1579,7 +1590,8 @@ static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed: Array[String], planned: Array[Planned], ground := {},
 		leave_alone: Array[Rect2] = [], corridor: Corridor = null, heat: int = 0,
-		doors := PackedVector2Array(), standing: Array[Planned] = []) -> void:
+		doors := PackedVector2Array(), standing: Array[Planned] = [],
+		trace: RunTrace = null) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
@@ -1604,7 +1616,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			# `EventManager._stream_in()`. What that buys is the retry: *"what the run has spent stays
 			# spent ... a fire that burnt a block down did happen"* (`GameState.finish_day`), and a
 			# fire that was never lit did not, so a lost day 3 is offered it again.
-			Telemetry.note("roll", "one-shot %s: owed to her walk, sited when her heading is clear"
+			_note(trace, "roll", "one-shot %s: owed to her walk, sited when her heading is clear"
 					% def.id)
 			continue
 		# Spread a one-shot over the days it is eligible for rather than always firing it
@@ -1616,7 +1628,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		var roll := rng.randf()
 		var threshold := 1.0 / float(remaining)
 		if roll > threshold:
-			Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today"
+			_note(trace, "roll", "one-shot %s: %.2f > %.2f — not today"
 					% [def.id, roll, threshold])
 			continue
 		var sited := _place_a_set_piece(day, def, rng, map, planned, ground, leave_alone, corridor,
@@ -1625,15 +1637,15 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
 			# the outside this looks identical to a roll that failed.
-			Telemetry.note("roll", "one-shot %s: %.2f <= %.2f but nowhere to place it"
+			_note(trace, "roll", "one-shot %s: %.2f <= %.2f but nowhere to place it"
 					% [def.id, roll, threshold])
 			continue
 		planned.append_array(sited)
 		consumed.append(def.id)
 		var where: Array[String] = []
 		for placement in sited:
-			where.append(TelemetryLog.tile(map.world_to_tile(placement.position)))
-		Telemetry.note("roll", "one-shot %s: %.2f <= %.2f — waiting at %s"
+			where.append(RunTrace.tile(map.world_to_tile(placement.position)))
+		_note(trace, "roll", "one-shot %s: %.2f <= %.2f — waiting at %s"
 				% [def.id, roll, threshold, ", ".join(where)])
 
 ## A set piece, planned at **every** site of a covering set.
@@ -4215,7 +4227,7 @@ static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
 ## the swing is kept reachable from home by the target half, and walking is the same both ways.
 static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Planned],
 		target: Array[Vector2i] = [], standing: Array[Planned] = [],
-		besides := NO_CALM) -> void:
+		besides := NO_CALM, trace: RunTrace = null) -> void:
 	var blockers: Array[Planned] = []
 	for plan in planned:
 		if not plan.is_placed():
@@ -4237,7 +4249,7 @@ static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Plan
 			fixed.append(plan)
 	var kept_target: Array[Vector2i] = target
 	if not target.is_empty() and not _target_is_reachable(map, grid, target, fixed):
-		Telemetry.note("plan", "the day's own seals and wall cut the resistance's target off")
+		_note(trace, "plan", "the day's own seals and wall cut the resistance's target off")
 		kept_target = []
 	var calm := _calm_to_keep_reachable(map, planned, besides, grid)
 	while not blockers.is_empty() and not (_park_is_reachable(map, grid, blockers, calm)

@@ -252,7 +252,7 @@ func _trigger() -> void:
 	_done = true
 	set_process(false)
 	Telemetry.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
-		_seconds, TelemetryLog.tile(_city.map.world_to_tile(_player.global_position)), _nearest()])
+		_seconds, RunTrace.tile(_city.map.world_to_tile(_player.global_position)), _nearest()])
 	add_child(AutoScreenshot.immediate(_picture_path(), _recording))
 
 ## Where the picture goes: a `still/` folder beside the run's other picture kinds (`auto/`,
