@@ -11,7 +11,9 @@ from __future__ import annotations
 import importlib.util
 import io
 import itertools
+import json
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -1202,6 +1204,341 @@ class ByReleaseCountTests(unittest.TestCase):
             code = goatcounter.main(["--by-release"])
         self.assertEqual(code, 1)
         self.assertIn("no v* tags", stderr.getvalue())
+
+
+TELEMETRY_DOC = Path(__file__).resolve().parent.parent / "docs" / "TELEMETRY.md"
+
+
+def documented_event_names() -> list[str]:
+    """Every `nappy-...` name in backticks in docs/TELEMETRY.md's event list (the bullets between
+    "The events:" and the paragraph after it), with the doc's placeholders filled in: N/M a number,
+    <thing> a word. Parsed from the doc's own bullets; fragments such as `-chased` start with a dash
+    and are not names, so they are skipped."""
+    text = TELEMETRY_DOC.read_text(encoding="utf-8")
+    start = text.index("The events:")
+    end = text.index("Every signal named above", start)
+    names: list[str] = []
+    for token in re.findall(r"`(nappy-[A-Za-z0-9<>-]+)`", text[start:end]):
+        name = token[len("nappy-") :]
+        if not name:
+            continue
+        name = re.sub(r"<[^>]+>", "x", name)
+        name = re.sub(r"(?<=-)[NM](?=-|$)", "3", name)
+        names.append(name)
+    return names
+
+
+class TelemetryDocTests(unittest.TestCase):
+    def test_the_doc_lists_events_for_the_test_to_read(self) -> None:
+        names = documented_event_names()
+        self.assertGreater(len(names), 25)
+        self.assertIn("mode-hard", names)
+        self.assertIn("checkpoint-3-from-day-3", names)
+
+    def test_every_event_the_doc_lists_classifies_to_a_known_shape(self) -> None:
+        for name in documented_event_names():
+            with self.subTest(name=name):
+                self.assertNotEqual(goatcounter.classify(name).kind, "other")
+
+    def test_modes_and_checkpoints_are_run_level(self) -> None:
+        for name in ("mode-hard", "mode-normal", "checkpoint-4-from-day-7"):
+            self.assertEqual(goatcounter.classify(name).kind, "run")
+
+
+class NormalizeSiteTests(unittest.TestCase):
+    def test_every_spelling_of_a_site_reaches_the_api(self) -> None:
+        want = "https://josuakrause.goatcounter.com/api/v0/"
+        for spelling in (
+            "https://josuakrause.goatcounter.com",
+            "https://josuakrause.goatcounter.com/",
+            "https://josuakrause.goatcounter.com/api/v0",
+            "https://josuakrause.goatcounter.com/api/v0/",
+        ):
+            with self.subTest(spelling=spelling):
+                self.assertEqual(goatcounter.normalize_site(spelling), want)
+
+    def test_main_reads_a_bare_site_through_its_api_path(self) -> None:
+        seen: list[str] = []
+
+        def make(site: str, _token: str) -> Any:
+            seen.append(site)
+            return lambda _p: {"hits": [], "more": False}
+
+        with (
+            mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
+            mock.patch.object(goatcounter, "make_fetcher", side_effect=make),
+            redirect_stdout(io.StringIO()),
+        ):
+            self.assertEqual(goatcounter.main(["--raw", "--site", "https://josuakrause.goatcounter.com"]), 0)
+        self.assertEqual(seen, ["https://josuakrause.goatcounter.com/api/v0/"])
+
+    def test_a_401_says_the_key_may_belong_to_another_site(self) -> None:
+        error = urllib.error.HTTPError("https://a.goatcounter.com/api/v0/x", 401, "no", mock.Mock(), io.BytesIO(b""))
+        self.addCleanup(error.close)
+        opener = mock.Mock(open=mock.Mock(side_effect=error))
+        with self.assertRaises(goatcounter.GoatCounterHTTPError) as ctx:
+            goatcounter._get(opener, "https://a.goatcounter.com/api/v0/x?q=1", "k")
+        self.assertIn("another site", str(ctx.exception))
+        self.assertIn("a.goatcounter.com", str(ctx.exception))
+        self.assertNotIn("q=1", str(ctx.exception))
+
+
+class ErrorSentenceTests(unittest.TestCase):
+    def test_an_html_error_page_is_reduced_to_its_own_sentence(self) -> None:
+        page = "<html><head><title>404 page not found</title><style>p{}</style></head><body><h1>Oops</h1></body></html>"
+        self.assertEqual(goatcounter._error_sentence(page), "404 page not found")
+        bare = "<html><body><script>x()</script><h1>Not   Found</h1><p>No such page.</p></body></html>"
+        self.assertEqual(goatcounter._error_sentence(bare), "Not Found No such page.")
+
+    def test_a_plain_body_is_kept(self) -> None:
+        self.assertEqual(goatcounter._error_sentence('{"error": "bad start"}'), '{"error": "bad start"}')
+
+
+class HitsNotFoundRetryTests(unittest.TestCase):
+    def opener(self, script: list[Any]) -> Any:
+        steps = iter(script)
+
+        def open_(_request: Any, timeout: float = 0) -> Any:
+            step = next(steps)
+            if isinstance(step, BaseException):
+                raise step
+            response = mock.MagicMock()
+            response.__enter__.return_value.read.return_value = step
+            return response
+
+        return mock.Mock(open=open_)
+
+    def not_found(self) -> urllib.error.HTTPError:
+        error = urllib.error.HTTPError(
+            "https://x/y?start=1",
+            404,
+            "Not Found",
+            mock.Mock(),
+            io.BytesIO(b"<html><title>404 page not found</title></html>"),
+        )
+        self.addCleanup(error.close)
+        return error
+
+    def test_get_does_not_retry_a_404_by_default(self) -> None:
+        with self.assertRaises(goatcounter.GoatCounterHTTPError) as ctx:
+            goatcounter._get(self.opener([self.not_found(), b"{}"]), "https://x/y", "k")
+        self.assertEqual(ctx.exception.status, 404)
+        self.assertIn("404 page not found", str(ctx.exception))
+        self.assertNotIn("<html>", str(ctx.exception))
+
+    def test_a_404_on_the_hits_read_is_retried_and_says_so(self) -> None:
+        notes: list[str] = []
+        opener = self.opener([self.not_found(), b'{"hits": []}'])
+        with (
+            mock.patch.object(goatcounter.time, "sleep"),
+            mock.patch.object(goatcounter, "_build_opener", return_value=opener),
+        ):
+            fetch = goatcounter.make_fetcher("https://x/api/v0/", "k", notify=notes.append)
+            self.assertEqual(fetch({"start": "a"}), {"hits": []})
+        self.assertEqual(len(notes), 1)
+        self.assertIn("HTTP 404", notes[0])
+        self.assertIn("404 page not found", notes[0])
+        self.assertNotIn("start=", notes[0])
+
+    def test_a_404_that_never_clears_fails_with_the_status_and_the_pages_sentence(self) -> None:
+        opener = self.opener([self.not_found() for _ in range(goatcounter.MAX_RETRIES + 1)])
+        with (
+            mock.patch.object(goatcounter.time, "sleep"),
+            mock.patch.object(goatcounter, "_build_opener", return_value=opener),
+        ):
+            fetch = goatcounter.make_fetcher("https://x/api/v0/", "k", notify=None)
+            with self.assertRaises(goatcounter.GoatCounterHTTPError) as ctx:
+                fetch({"start": "a"})
+        self.assertEqual(ctx.exception.status, 404)
+        self.assertIn("404 page not found", str(ctx.exception))
+        self.assertIn("wrong site URL", str(ctx.exception))
+        self.assertNotIn("<html>", str(ctx.exception))
+
+
+def report_hits(
+    days: dict[int, dict[str, int]], run: dict[str, int] | None = None, visitors: int = 0
+) -> list[dict[str, Any]]:
+    hits: list[dict[str, Any]] = []
+    ids = itertools.count(1)
+    for name, count in (run or {}).items():
+        hits.append(hit(f"nappy-{name}", count, next(ids)))
+    for day, bucket in days.items():
+        for name, count in bucket.items():
+            hits.append(hit(f"nappy-day-{day}-{name}", count, next(ids)))
+    if visitors:
+        hits.append(hit("/nappy.josuakrause.com", visitors, next(ids), event=False))
+    return hits
+
+
+class ReportTests(unittest.TestCase):
+    RUN: ClassVar[dict[str, int]] = {
+        "run-fresh": 50,
+        "run-resumed-day-3": 4,
+        "run-resumed-day-5": 2,
+        "controls-joystick": 20,
+        "controls-keys": 25,
+        "controls-tap": 5,
+        "mode-hard": 10,
+        "mode-normal": 40,
+        "ending-good": 1,
+        "escape-begun": 3,
+        "escape-lost": 1,
+        "escape-out": 1,
+        "checkpoint-4-from-day-5": 3,
+        "checkpoint-4-from-day-6": 2,
+        "checkpoint-8-from-day-5": 1,
+    }
+    DAYS: ClassVar[dict[int, dict[str, int]]] = {
+        1: {"began": 50, "won": 45, "lost-crying-crowd": 3, "lost-hard-fail-car": 2},
+        2: {"began": 40, "won": 32, "lost-crying-crowd": 5, "lost-timeout": 3},
+        3: {"began": 40, "won": 30, "lost-hard-fail-car": 6, "lost-crying-traffic": 4},
+        4: {"began": 30, "won": 12, "lost-crying-traffic": 9, "lost-hard-fail-charging-dog": 6, "lost-timeout": 3},
+        5: {"began": 5, "won": 0, "lost-hard-fail-car": 5},
+    }
+
+    def report(self) -> dict[str, Any]:
+        report: dict[str, Any] = goatcounter.build_report(report_hits(self.DAYS, self.RUN, visitors=70), "nappy-")
+        return report
+
+    def test_the_players_section(self) -> None:
+        report = self.report()
+        self.assertEqual(report["visitors"], 70)
+        self.assertEqual(report["runs"], {"fresh": 50, "resumed": 6})
+        self.assertEqual(report["controls"], {"joystick": 20, "keys": 25, "tap": 5})
+        self.assertEqual(report["modes"], {"hard": 10, "normal": 40})
+        self.assertEqual(report["endings"], {"good": 1})
+        self.assertEqual(report["escape"], {"begun": 3, "lost": 1, "out": 1})
+        self.assertEqual(report["checkpoints"], {"total": 6, "from_day": {"5": 4, "6": 2}})
+
+    def test_a_day_row_has_its_split_win_rate_and_top_two_causes_with_their_share(self) -> None:
+        row = self.report()["days"][2]
+        self.assertEqual((row["began"], row["won"], row["lost"]), (40, 30, 10))
+        self.assertEqual((row["crying"], row["hard_fail"], row["timeout"]), (4, 6, 0))
+        self.assertAlmostEqual(row["win_rate"], 0.75)
+        self.assertEqual([t["cause"] for t in row["top_causes"]], ["hard-fail-car", "crying-traffic"])
+        self.assertAlmostEqual(row["top_causes"][0]["share"], 0.15)
+
+    def test_a_timeout_is_a_cause_of_its_own(self) -> None:
+        self.assertEqual(self.report()["days"][1]["top_causes"][1]["cause"], "timeout")
+
+    def test_a_small_day_is_marked_low_sample(self) -> None:
+        days = self.report()["days"]
+        self.assertTrue(days[4]["low_sample"])
+        self.assertFalse(days[3]["low_sample"])
+
+    def test_cause_totals_split_crying_from_hard_fail_and_sort(self) -> None:
+        totals = self.report()["cause_totals"]
+        self.assertEqual(list(totals["crying"].items()), [("traffic", 13), ("crowd", 8)])
+        self.assertEqual(list(totals["hard_fail"].items()), [("car", 13), ("charging-dog", 6)])
+        self.assertEqual(totals["timeout"], 6)
+
+    def test_walls_are_judged_on_sampled_days_only(self) -> None:
+        walls = self.report()["walls"]
+        # Sampled days: 1..4 -> 0.9, 0.8, 0.75, 0.4 (day 5 has 5 attempts and is left out); median 0.775.
+        self.assertAlmostEqual(walls["median_win_rate"], 0.775)
+        self.assertEqual([w["day"] for w in walls["low_win_rate_days"]], [4])
+        causes = {(w["day"], w["cause"]) for w in walls["single_cause_days"]}
+        self.assertIn((4, "crying-traffic"), causes)  # 9 of 30 = 30%
+        self.assertNotIn((5, "hard-fail-car"), causes)  # low-sample, left out
+        self.assertNotIn((3, "hard-fail-car"), causes)  # 15%
+
+    def test_the_text_states_the_thresholds_and_caveats_and_marks_low_sample(self) -> None:
+        text = goatcounter.format_report(self.report(), title="T")
+        self.assertIn("attempts, not visitors", text)
+        self.assertIn(f"fewer than {goatcounter.MIN_ATTEMPTS} attempts", text)
+        self.assertIn("10 points", text)
+        self.assertIn("25%", text)
+        self.assertIn("Visitors (page visit): 70", text)
+        self.assertIn("day 4: crying-traffic ends 9 attempts (30%", text)
+        self.assertIn("(low-sample)", next(row for row in text.splitlines() if row.startswith("    5  ")))
+        self.assertIn("day 5: 4", text)  # checkpoints by the day they came from
+
+    def test_an_empty_range_reports_without_dividing_by_nothing(self) -> None:
+        report = goatcounter.build_report([], "nappy-")
+        self.assertEqual(report["days"], [])
+        self.assertIsNone(report["walls"]["median_win_rate"])
+        self.assertIn("(no walls)", goatcounter.format_report(report, title="T"))
+
+    def test_markdown_has_headings_and_the_per_day_markdown_table(self) -> None:
+        text = goatcounter.format_report_markdown(self.report(), title="T")
+        self.assertTrue(text.startswith("# T"))
+        for heading in ("## Players", "## Per day", "## Cause totals", "## Walls"):
+            self.assertIn(heading, text)
+        self.assertIn("| Day | Attempts | Won |", text)
+        self.assertIn("| 3 | 40 | 30 | 75% | 10 | 4 | 6 | 0 | hard-fail-car 6 (15%), crying-traffic 4 (10%) |", text)
+        self.assertIn("| 5 (low-sample) |", text)
+        self.assertIn("- day 4: crying-traffic ends 9 attempts (30%", text)
+
+    def test_markdown_is_refused_without_report_or_with_json(self) -> None:
+        for flags in (["--markdown"], ["--report", "--markdown", "--json"]):
+            stderr = io.StringIO()
+            with redirect_stderr(stderr):
+                self.assertEqual(goatcounter.main(flags), 2)
+            self.assertIn("--markdown", stderr.getvalue())
+
+    def test_the_real_rates_make_days_6_and_7_rate_walls_and_not_day_3(self) -> None:
+        real = {1: (108, 33), 2: (70, 28), 3: (79, 18), 4: (31, 21), 5: (30, 19), 6: (54, 10), 7: (25, 5)}
+        days = [
+            {"day": d, "began": b, "won": w, "win_rate": w / b, "low_sample": b < 20, "causes": {}}
+            for d, (b, w) in real.items()
+        ]
+        walls = goatcounter.find_walls(days)
+        self.assertEqual([w["day"] for w in walls["low_win_rate_days"]], [6, 7])
+        self.assertAlmostEqual(walls["median_win_rate"], 33 / 108)
+
+    def test_main_prints_markdown_and_by_release_markdown(self) -> None:
+        hits = report_hits(self.DAYS, self.RUN)
+        for flags in (["--report", "--markdown"], ["--report", "--markdown", "--by-release"]):
+            stdout = io.StringIO()
+            with (
+                mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
+                mock.patch.object(goatcounter, "read_release_tags", return_value=[("v1", utc(10, 5, 12))]),
+                mock.patch.object(goatcounter, "make_fetcher", return_value=lambda _p: {"hits": hits, "more": False}),
+                redirect_stdout(stdout),
+            ):
+                self.assertEqual(goatcounter.main([*flags, "--start", "2026-10-01", "--end", "2026-10-20"]), 0)
+            out = stdout.getvalue()
+            self.assertIn("| 3 | 40 | 30 | 75% |", out)
+            self.assertIn("| 5 (low-sample) |", out)
+            self.assertIn("- day 4: crying-traffic ends 9 attempts", out)
+            self.assertIn("## v1" if "--by-release" in flags else "## Walls", out)
+
+    def test_main_prints_the_report_and_its_json(self) -> None:
+        hits = report_hits(self.DAYS, self.RUN, visitors=70)
+        for flags, check in ((["--report"], "Per day"), (["--report", "--json"], '"walls"')):
+            stdout = io.StringIO()
+            with (
+                mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
+                mock.patch.object(goatcounter, "make_fetcher", return_value=lambda _p: {"hits": hits, "more": False}),
+                redirect_stdout(stdout),
+            ):
+                self.assertEqual(goatcounter.main(flags), 0)
+            self.assertIn(check, stdout.getvalue())
+
+    def test_by_release_prints_per_window_win_rates_and_walls_and_json_carries_the_windows(self) -> None:
+        tags = [("v1", utc(10, 5, 12)), ("v2", utc(10, 12, 12))]
+        hits = report_hits(self.DAYS, self.RUN)
+        for flags in (["--report", "--by-release"], ["--report", "--by-release", "--json"]):
+            stdout = io.StringIO()
+            with (
+                mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
+                mock.patch.object(goatcounter, "read_release_tags", return_value=tags),
+                mock.patch.object(goatcounter, "make_fetcher", return_value=lambda _p: {"hits": hits, "more": False}),
+                mock.patch.object(
+                    goatcounter, "round_to_hour", side_effect=lambda m: m.replace(minute=0, second=0, microsecond=0)
+                ),
+                redirect_stdout(stdout),
+            ):
+                self.assertEqual(goatcounter.main([*flags, "--start", "2026-10-01", "--end", "2026-10-20"]), 0)
+            out = stdout.getvalue()
+            if "--json" in flags:
+                data = json.loads(out)
+                self.assertEqual([w["label"] for w in data["windows"]], ["before the first release", "v1", "v2"])
+                self.assertIn("walls", data["windows"][1]["result"])
+            else:
+                self.assertEqual(out.count("==="), 6)
+                self.assertIn("day  4: 12/30 won (40%)", out)
+                self.assertIn("v2", out)
 
 
 if __name__ == "__main__":
