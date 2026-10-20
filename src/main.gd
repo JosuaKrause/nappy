@@ -2582,8 +2582,8 @@ func _frame_record_lines() -> Array[String]:
 ## `EventManager` streams itself around her (`EventManager._physics_process`), so section two needs
 ## nothing here to keep its own events stocked.
 ##
-## The run log's clock is not pushed here: the escape has the observer a day has
-## (`_observe_the_section()`), which mirrors the section's own clock the way it mirrors a day's.
+## The run log's clock is not pushed here: the escape has the observer a day has (`RunSession`
+## points it at each section), which mirrors the section's own clock the way it mirrors a day's.
 func _process_the_finale(delta: float) -> void:
 	# Nothing of the walk is asked while its brief is up. This node runs through a pause (it has to,
 	# or Esc would not answer), so without this the door under her feet and the exit she is standing

@@ -26,7 +26,7 @@ never adds one. `EventScheduler`'s one-shot roll is the model:
 var roll := rng.randf()
 var threshold := 1.0 / float(remaining)
 if roll > threshold:
-    Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today" % [def.id, roll, threshold])
+    _note(trace, "roll", "one-shot %s: %.2f > %.2f — not today" % [def.id, roll, threshold])
     continue
 ```
 
@@ -34,8 +34,8 @@ That hoist is a one-line edit with a way to be **catastrophically wrong**: consu
 from a day's RNG and every event placed after it moves, and the determinism invariant takes every
 other guarantee in the game down with it.
 
-`tests/test_telemetry.gd` plans every day of the run (`Tuning.RUN_LENGTH_DAYS`) with the log off and
-again with it on and requires the plans to be **identical event for event**.
+`tests/test_telemetry.gd` plans every day of the run (`Tuning.RUN_LENGTH_DAYS`) handed no trace and
+again handed one that keeps every line, and requires the plans to be **identical event for event**.
 
 ## Per-frame checks go in the observer
 
@@ -107,9 +107,17 @@ beyond the scenery queue's own jobs and the `_draw()` counter, no deferred marke
 scenery queue's, no branch that changes what the body does — and a new timed system takes one of
 the first two shapes, with its bucket added to `FrameRecord` and the table in docs/TELEMETRY.md.
 
+## Game logic never names the run log
+
+A system that decides things writes its own account through the `RunTrace` it was handed
+(`src/run_trace.gd`), never `Telemetry` itself: `RunSession` makes the one that writes into the
+log, `main` hands it on, and a component handed none writes nowhere. A day's or a section's start
+and end reach the log as `EventBus` events `RunSession` listens to (docs/TELEMETRY.md, "Who writes
+it"); nothing in the run flow calls the log or the observer inline.
+
 ## Adding an entry
 
-1. `Telemetry.note("kind", "sentence")` where the thing happens.
+1. `trace.note("kind", "sentence")` where the thing happens, on the component's own trace.
 2. A row in the table in `docs/TELEMETRY.md`.
 3. **A kind reused from that table**, not a synonym for one.
 
