@@ -32,11 +32,11 @@ log opens a section header per attempt (`Telemetry.begin_section`). From `likely
 
 **Verified at test parity** (inbox #813): `check.sh`, `lint.sh` and `ci_telemetry_kinds.py`, and 42
 suites, 0 failures; the full suite is CI's. Tests that pinned the escape-only behaviour now pin the
-new one: `test_finale`'s lost section is one real-boot test (the outcome screen with its reason, then
-the retry's brief, the clock standing still behind it), a resumed escape is booted from a save on
-disk and opens on the title, a handover on the brief,, `test_observers`' escape half
-of the run-log baseline was re-recorded (the day half unchanged), and `test_run_checkpoints`' hard
-run shows the outcome screen before GAME OVER.
+new one: `test_finale`'s lost section is one real-boot test (the outcome screen with its reason,
+then the retry's brief, the clock standing still behind it); `test_finale` boots a resumed escape
+from a save on disk and checks it opens on the title, and a handover on the brief; `test_observers`'
+escape half of the run-log baseline was re-recorded (the day half unchanged); and
+`test_run_checkpoints`' hard run shows the outcome screen before GAME OVER.
 
 **A retry goes from the outcome screen to the section's brief, then the walk**, as a lost day goes
 from its outcome screen to the day's brief: that keeps both the player's "restarting should still
