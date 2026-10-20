@@ -17,6 +17,8 @@ const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+## Where the resumed-escape test writes the save it boots from — never the player's own.
+const _SCRATCH_SAVE := "user://test_finale_scratch.json"
 ## The seed the player played the escape on and could not win (inbox #771 in minty-lemur), from the building, and
 ## the tile on the tunnel chain's street where the second band's guard caught her.
 const PLAYERS_SEED := 4216201080
@@ -1496,8 +1498,10 @@ func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 ## their own 'days' with brief and restart checkpoint"*: a section opens on its brief, a loss comes
 ## up on the day's own outcome screen with its reason *(minty-lemur #785: "losing an escape should
 ## still state the reason like the rest of the game. nothing should be different")*, and its
-## continue is the same section again on a whole clock, whichever section it is and whatever the
-## last attempt spent.
+## continue is the same section again on a whole clock, behind its brief *(PLAYTEST-94 10:
+## "restarting should still have the day brief for both the apartment escape and the city escape
+## even if the nerves don't go down")*, whichever section it is and whatever the last attempt
+## spent.
 ##
 ## **Driven through the real `main.tscn`**, booted on each section the way a run's own escape is
 ## (the building as a won day 14 hands over, the city as a game closed in it opens again), and lost
@@ -1546,10 +1550,18 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 
 		teach.text = ""
 		main._on_summary_continued()
-		t.check(not main._summary.is_showing() and main._spec.section == section,
-				"section %d: its continue is the same section again" % section)
-		t.check(is_equal_approx(main._day.time_remaining, length) and main._day.is_running(),
-				"section %d: on a full clock" % section)
+		t.check(main._spec.section == section and main._summary.is_showing()
+				and main._resume_gate_open,
+				"section %d: its continue is the same section again, behind its brief" % section)
+		t.check(title.text == words and body.text.contains(NerveDisplay.stars(nerves)),
+				"section %d: titled with its words and the nerves unchanged ('%s', '%s')"
+				% [section, title.text, body.text])
+		t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
+				"section %d: with a full clock standing still behind it" % section)
+		main._on_summary_continued()
+		t.check(not main._summary.is_showing() and not t.get_tree().paused
+				and main._day.is_running(),
+				"section %d: the brief's continue is the walk" % section)
 		t.check(teach.line == words,
 				"section %d: and its words said again on the retry, not only the first entry"
 				% section)
@@ -1905,50 +1917,50 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	main.free()
 	t.get_tree().paused = saved_paused
 
-## The escape's own screens — a section's brief, its outcome screen and the epilogue — are the one
-## exception to an ordinary day's own "Esc opens over the summary too": each stands between her and
-## a walk not yet begun, so a second screen stacked over it would answer a question nobody asked,
-## the same reason focus loss never opens over any `_summary` at all. Both entry points are checked
-## against all three screens, asked of the section's `DaySpec`.
+## A section's brief and the epilogue are the one exception to an ordinary day's own "Esc opens over
+## the summary too": each stands between her and a walk not yet begun, so a second screen stacked
+## over it would answer a question nobody asked, the same reason focus loss never opens over any
+## `_summary` at all. A lost section's outcome screen is the day's own screen, and Esc opens over it
+## as over a lost day's *(minty-lemur #785: "nothing should be different")*; focus loss does not,
+## as on a day. **Booted for real** on the city section and walked through each screen the way the
+## game reaches it — the brief, the outcome screen of a loss, the retry's brief, the epilogue —
+## since Esc's own open needs `main` in the tree (`get_viewport().set_input_as_handled()`).
 func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
-	var saved_paused: bool = t.get_tree().paused
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._summary = SUMMARY_SCENE.instantiate()
-	t.add_child(main._summary)
-	main._pause = PAUSE_SCREEN_SCENE.instantiate()
-	t.add_child(main._pause)
-	main._title = TITLE_SCREEN_SCENE.instantiate()
-	t.add_child(main._title)
-	main._use_the_day(_section(DaySpec.Section.BUILDING))
+	var main := _boot_the_escape(t, DaySpec.Section.CITY)
 	main._no_focus_pause = false
 
-	main._summary.show_day_brief(GameState.day, GameState.nerves, "", main._spec.title)
-	t.check(main._summary.is_showing(), "the section's brief is up")
+	t.check(main._summary.is_showing() and main._resume_gate_open, "the section's brief is up")
 	main._unhandled_input(_action("pause"))
 	t.check(not main._pause.is_open(), "Esc does not open the pause over a section's brief")
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "and neither does losing focus")
 
-	main._summary.show_day(GameEnums.DayResult.LOST_HARD_FAIL, Texts.HARD_FAIL_TEXT["abduction"],
-			GameState.nerves, 42.0, false, main._spec.title)
-	t.check(main._summary.is_showing(), "a lost section's outcome screen is up")
+	main._on_summary_continued()
+	EventBus.hard_fail_triggered.emit("abduction")
+	t.check(main._summary.is_showing() and not main._resume_gate_open,
+			"a lost section's outcome screen is up")
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not main._pause.is_open(), "losing focus does not open the pause over it")
+	main._unhandled_input(_action("pause"))
+	t.check(main._pause.is_open(), "Esc does, as over a lost day's outcome screen")
+	main._pause.close()
+	t.check(t.get_tree().paused and main._summary.is_showing(),
+			"and closing it leaves the outcome screen up and the tree paused")
+
+	main._on_summary_continued()
+	t.check(main._summary.is_showing() and main._resume_gate_open, "the retry's brief is up")
 	main._unhandled_input(_action("pause"))
 	t.check(not main._pause.is_open(), "Esc does not open the pause over it")
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	t.check(not main._pause.is_open(), "and neither does losing focus")
 
-	main._summary.show_finale(CityEdge.Kind.TUNNEL, 42.0)
-	t.check(main._summary.is_showing(), "the epilogue is up")
+	main._on_summary_continued()
+	main._player.global_position = main._spec.exits[CityEdge.Kind.TUNNEL]
+	main._day._process(0.0)
+	t.check(main._summary.is_showing_the_epilogue(), "out of the city, the epilogue is up")
 	main._unhandled_input(_action("pause"))
-	t.check(not main._pause.is_open(), "Esc does not open the pause over the epilogue either")
+	t.check(not main._pause.is_open(), "Esc does not open the pause over the epilogue")
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "and neither does losing focus")
-
-	main._summary.free()
-	main._pause.free()
-	main._title.free()
-	main.free()
-	t.get_tree().paused = saved_paused
+	_free_the_escape(t, main)
 
 # ------------------------------------------------------ a resumed escape, and a handover ---
 
@@ -1966,32 +1978,41 @@ func _test_escape_section_came_from_the_file(t) -> void:
 			"NONE both times — an ordinary run, nothing to do with the escape at all")
 
 ## *(2026-09-20, the player, on a save closed inside a section: "if I load into the game and I'm at
-## escape I see the title screen, then the brief".)* What the boot opens a genuinely resumed escape
-## on (`main._ready()`'s `escape_resumed_from_disk`, which `_escape_section_came_from_the_file()`
-## decides above) is the title, through the day's own `_open_the_title()`, and the title's start is
-## the day's own `_on_title_start()`, whose resume gate raises the section's brief. Driven through
-## those two the way the boot reaches them, without a save on disk, which nothing in this suite can
-## write (see `tests/test_main.gd`'s own class doc for why `main` is never added to the tree here).
+## escape I see the title screen, then the brief".)* A genuinely resumed escape — a page with nothing
+## on the autoload, opening a save closed inside a section — opens on the title, through the day's
+## own `_open_the_title()`, with the section's clock standing still behind it, and the title's start
+## is the day's own `_on_title_start()`, whose resume gate raises the section's brief. **Booted for
+## real from a save on disk** (a scratch file, `GameSave._uses_save_override`), so what is checked is
+## `_ready()`'s own decision — `_escape_section_came_from_the_file()` read at the boot and handed to
+## `_open_the_first_screen_of_the_escape()` — not a screen this test opened by hand.
 func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._summary = SUMMARY_SCENE.instantiate()
-	t.add_child(main._summary)
-	main._hud = HUD_SCENE.instantiate()
-	t.add_child(main._hud)
-	main._title = TITLE_SCREEN_SCENE.instantiate()
-	t.add_child(main._title)
-	main._status = Label.new()
-	main._edge_layer = CanvasLayer.new()
-	main._add_touch_controls()
-	main._title.start_requested.connect(main._on_title_start)
-	main._resume = {"day_under_way": false}
-	main._use_the_day(_section(DaySpec.Section.BUILDING))
+	_saved_section = GameState.escape_section
+	GameSave.set_path_override(_SCRATCH_SAVE)
+	GameSave._uses_save_override = true
+	GameState.start_run(SEEDS[0])
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.escape_section = DaySpec.Section.BUILDING
+	t.check(GameSave.write(false) == GameSave.Result.CONFIRMED,
+			"a save closed inside the building is on disk")
+	# A fresh page: nothing of the escape on the autoload, only in the file.
+	GameState.escape_section = DaySpec.Section.NONE
+	var main: Node2D = MAIN_SCENE.instantiate()
+	main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry"]), "", true))
+	t.add_child(main)
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	var length: float = main._spec.length
 
-	main._open_the_title()
+	t.check(main._spec.section == DaySpec.Section.BUILDING,
+			"the boot read the section off the save")
 	t.check(main._title.is_open() and not main._summary.is_showing(),
 			"a genuinely resumed escape opens on the title first, the section's brief not yet up")
 	t.check(main._title.mode_name_shown() != "", "and names the mode, which the save already fixed")
 	t.check(main._in_the_title, "and the boot is behind its title")
+	t.check(t.get_tree().paused and not main._day.can_process()
+			and is_equal_approx(main._day.time_remaining, length),
+			"with the section's whole clock standing still behind the title (%.2f of %.2f)"
+			% [main._day.time_remaining, length])
 
 	main._title.start_requested.emit(ControlsMode.Mode.TAP, false, ControlsMode.Side.LEFT)
 	t.check(not main._title.is_open(), "pressing start closes the title")
@@ -2001,25 +2022,28 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.check(title_label.text == "Escape the building",
 			"titled with the section's own words ('%s')" % title_label.text)
 	t.check(not main._in_the_title, "the title is behind her")
+	t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
+			"the clock still standing still behind the brief")
 
-	main._summary.free()
-	main._hud.free()
-	main._title.free()
-	main._status.free()
-	main._edge_layer.free()
-	main.free()
-	t.get_tree().paused = false
+	GameSave._clear_now()
+	GameSave._uses_save_override = null
+	GameSave.set_path_override("")
 	AtlasLibrary.close_loading_window()
+	_free_the_escape(t, main)
 
 ## The handover reload from a won day 14 reaches the boot with `escape_resumed_from_disk` false —
 ## true only when `GameState.escape_section` was `NONE` before `try_resume()` ran, which a
 ## handover's own value already isn't, since it was written to the autoload before the reload — so
-## it opens straight on the building's own brief, with no title in front of it. Booted for real.
+## it opens straight on the building's own brief, with no title in front of it and the section's
+## clock standing still behind the brief. Booted for real.
 func _test_a_handover_does_not_open_on_the_title(t) -> void:
 	var main := _boot_the_escape(t, DaySpec.Section.BUILDING)
 	t.check(not main._title.is_open(), "a handover does not raise the title")
 	t.check(main._summary.is_showing() and main._resume_gate_open,
 			"it opens straight on the section's own brief")
+	t.check(t.get_tree().paused and not main._day.can_process()
+			and is_equal_approx(main._day.time_remaining, main._spec.length),
+			"with the section's whole clock standing still behind it")
 	_free_the_escape(t, main)
 
 ## *"the held restart from the escape ends in a fresh run with escape_section cleared"* —

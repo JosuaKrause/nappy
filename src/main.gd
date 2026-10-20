@@ -579,17 +579,12 @@ func _ready() -> void:
 		add_child(still_watch)
 		still_watch.setup(_city, _player, _day, config.quit_when_still_seconds, config.recording)
 
-	# **The escape opens on its section's brief**, the screen a day's continue would otherwise
-	# lead to — **unless it is a genuinely resumed escape**, which opens on the title first,
-	# exactly as a resumed day does, and the title's start then shows the brief
-	# (`_show_the_resume_gate()`). A recipe has already started playing above.
+	# The escape's first screen — see `_open_the_first_screen_of_the_escape()`. A recipe has
+	# already started playing above.
 	if not walks_a_day:
 		if _recipe:
 			return
-		if escape_resumed_from_disk:
-			_open_the_title()
-		else:
-			_show_the_section_brief()
+		_open_the_first_screen_of_the_escape(escape_resumed_from_disk)
 		return
 	# **Except under a rig.** A screenshot tool that opened onto the title screen would photograph
 	# the title screen, which is every `tools/shot.sh` recipe quietly answering the wrong
@@ -615,6 +610,18 @@ func _ready() -> void:
 	if config.skips_the_title():
 		return
 	_open_the_title()
+
+## **The escape opens on its section's brief**, the screen a day's continue would otherwise lead to
+## — **unless it is a genuinely resumed escape** (`resumed_from_disk`, which `_ready()` reads off
+## `_escape_section_came_from_the_file()`), which opens on the title first, exactly as a resumed day
+## does, and the title's start then shows the brief (`_show_the_resume_gate()`). Either screen
+## pauses the tree, so the section's clock, started by `_start_section()`, stands still behind it.
+## Its own function so a test booting the real scene can drive both answers.
+func _open_the_first_screen_of_the_escape(resumed_from_disk: bool) -> void:
+	if resumed_from_disk:
+		_open_the_title()
+	else:
+		_show_the_section_brief()
 
 ## The run this boot plays, when it plays a day or a run's own escape: carried on from a
 ## checkpoint, picked back up from the save, or begun fresh.
@@ -1008,8 +1015,8 @@ static func escape_part_for(raw: String) -> String:
 ## begins a day: announced (`day_started`, under the section's own day number), its world built if
 ## it is not standing yet, her put at its start, the baby asleep in her arms, its clock started, and
 ## its shape announced (`day_planned`). Whatever screen comes next is the caller's: a section's
-## brief on its first walk (`_show_the_section_brief()`), or nothing after a loss, whose outcome
-## screen was the screen before the retry, as a lost day's is.
+## brief (`_show_the_section_brief()`), on its first walk and on every retry after the lost
+## section's outcome screen alike.
 ##
 ## Where she goes is this file's answer because only this file holds both worlds. **The clock runs
 ## from here**, as a day's does from `_start_day()`: every screen that can stand in front of the
@@ -1274,7 +1281,7 @@ func _resume_gate_note() -> String:
 ## Called from `_on_title_start()` directly (no resume) and from `_on_summary_continued()`'s own
 ## `_resume_gate_open` branch (the day brief's continue, a section's brief included) — the two, and
 ## the only two, places a gate she has not yet dismissed stands between a built day and the day she
-## is actually walking — and after a lost section's outcome screen, whose continue is its retry.
+## is actually walking.
 ##
 ## **A section of the escape is said by name every time it is engaged**, a first entry, a retry and
 ## a resumed entry alike — the line its brief carries where "Day N" stands (`DaySpec.title`), said
@@ -2119,8 +2126,9 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 ## - **Lost:** the run spends what the section's rules say (`GameState.finish_day()`: nothing in a
 ##   normal run, a Nerve in a hard one, whose last is the bad ending), the save is written, and the
 ##   day's outcome screen comes up with its reason and the section's own words where "Day N" stands.
-##   Its continue is the retry, the same section from its own start (`_on_summary_continued()`),
-##   and a hard run's last nerve shows the ending after it, as a lost day's does.
+##   Its continue is the retry, the same section from its own start behind its brief
+##   (`_on_summary_continued()`), and a hard run's last nerve shows the ending after it, as a lost
+##   day's does.
 ## - **Won, into the next section** — out of the building's service exit: the city is built behind
 ##   the black the exit left, and its brief comes up over it.
 ## - **Won, out of the city** — the tunnel mouth or the bridge deck: for a run, the run itself ends
@@ -2165,9 +2173,9 @@ func _finish_the_section(result: GameEnums.DayResult, elapsed_seconds: float) ->
 		_hud.visible = false
 		_summary.show_finale(_day.exit_reached, elapsed_seconds)
 		return
-	# The end-of-section write, as a lost day's is: the brief the retry would have raised is this
-	# screen, so closing the game on it cannot take a hard run's spent nerve back. Skipped when the
-	# run just ended, whose save `GameState._end_run()` has already cleared.
+	# The end-of-section write, as a lost day's is, so closing the game on this screen cannot take a
+	# hard run's spent nerve back. Skipped when the run just ended, whose save `GameState._end_run()`
+	# has already cleared.
 	if not _run_over:
 		_save_now(false)
 	_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds, false,
@@ -2193,7 +2201,8 @@ func _hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 ## told apart by `_resume_gate_open`, by the run's own escape section and by what the run has
 ## come to: a day brief in front of a day already built (a resumed run's, or the brief an escape
 ## section opens on), day 14's own summary on a run that has just earned the escape, the ordinary
-## end-of-day message — a lost section's included, whose continue is its retry — or an ending.
+## end-of-day message — a lost section's included, whose continue raises the retry's brief — or an
+## ending.
 ## Only the first of those is *engaging* an already-built day rather than starting a new one.
 func _on_summary_continued() -> void:
 	if _recipe:
@@ -2228,11 +2237,13 @@ func _on_summary_continued() -> void:
 			_went_back = false
 			_carry_the_run_into_the_next_boot()
 			return
-		# A lost section is tried again from its own start, and its outcome screen was the screen
-		# before the retry, so she is walking it from here.
+		# A lost section is tried again from its own start, behind its brief, as a lost day's
+		# continue leads to the day's morning: the outcome screen states why it was lost
+		# (minty-lemur #785), and the brief comes up before the retry for the building and the
+		# city alike, nerves unchanged or not (PLAYTEST-94 10). The brief's continue is the walk.
 		if _spec.section != DaySpec.Section.NONE:
 			_start_section(_spec, true)
-			_engage_the_day()
+			_show_the_section_brief()
 			return
 		_start_day()
 		# No gate stands between one day's own end-of-day message and the next day's dawn, unlike
@@ -2579,12 +2590,13 @@ func _somebody_is_playing() -> bool:
 ## pause: the game has not started, `Esc` would stop a stopped tree, and the way out of the title is
 ## the two keys it already offers. See `TitleScreen`.
 ##
-## **The escape's own `_summary` screens are the one exception to "opens over the summary too".**
-## A section's brief, its outcome screen and the epilogue all stand between her and something that
-## has not started yet — a section's walk, or the title behind the epilogue's own continue — so a
-## second screen stacked over any of them reads as answering a question nobody asked, the same
-## reason focus loss never opens over any `_summary` at all. Asked of the day being walked
-## (`_spec`), so the guard never reaches a day's own summary.
+## **The escape's brief and its epilogue are the one exception to "opens over the summary too".**
+## Each stands between her and something that has not started yet — a section's walk, or the title
+## behind the epilogue's own continue — so a second screen stacked over either reads as answering a
+## question nobody asked, the same reason focus loss never opens over any `_summary` at all. A lost
+## section's outcome screen is not among them: it is the day's own screen, and Esc opens over it as
+## it does over a lost day's (minty-lemur #785, nothing should be different). Asked of the day being
+## walked (`_spec`), so the guard never reaches a day's own summary.
 ##
 ## **Runs in the `_input` phase, ahead of this one.** Godot finishes calling every node's `_input()`
 ## before it starts the `_unhandled_input` phase at all, so marking a real event handled here keeps
@@ -2778,9 +2790,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if _pause.is_open() or _title.is_open():
 		return
-	# The escape's own guard — see this function's own doc, "The escape's own `_summary` screens
-	# are the one exception".
-	if _spec.section != DaySpec.Section.NONE and _summary and _summary.is_showing():
+	# The escape's own guard — see this function's own doc, "The escape's brief and its epilogue
+	# are the one exception". `_resume_gate_open` is a section's brief up, whichever way it came.
+	if _spec.section != DaySpec.Section.NONE and _summary and _summary.is_showing() \
+			and (_resume_gate_open or _summary.is_showing_the_epilogue()):
 		return
 	get_viewport().set_input_as_handled()
 	_pause.open()
@@ -2812,9 +2825,9 @@ func _pause_on_focus_lost() -> void:
 	# handler for why a real boot never leaves this null.
 	if not _pause:
 		return
-	# `_summary.is_showing()` already excludes the escape's own two screens (a section's brief and
-	# the epilogue) on exactly the same terms it excludes a day's own summary and ending — nothing
-	# escape-specific to add here, unlike Esc.
+	# `_summary.is_showing()` already excludes every screen the escape raises (a section's brief,
+	# a lost section's outcome screen and the epilogue) on exactly the same terms it excludes a
+	# day's own summary and ending — nothing escape-specific to add here, unlike Esc.
 	if _pause.is_open() or _title.is_open() or (_summary and _summary.is_showing()):
 		return
 	_pause.open()

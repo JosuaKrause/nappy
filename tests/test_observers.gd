@@ -150,6 +150,9 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	t.check(main._summary.is_showing() and not main._resume_gate_open,
 			"a lost section comes up on the day's outcome screen")
 	main._on_summary_continued()
+	t.check(main._summary.is_showing() and main._resume_gate_open,
+			"and its continue on the section's brief")
+	main._on_summary_continued()
 	t.get_tree().paused = true
 	main._interior.exit_requested.emit()
 	t.check(main._spec.section == DaySpec.Section.CITY and main._summary.is_showing(),

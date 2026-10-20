@@ -79,6 +79,11 @@ func _ready() -> void:
 ## share and neither of those needs to know which screen raised it.
 var _showing_ending := false
 
+## Whether the screen currently up is the escape's epilogue (`show_finale()`), set beside
+## `_showing_ending` by every screen this raises. Read through `is_showing_the_epilogue()` by
+## `main`'s Esc guard, which refuses the pause over the epilogue and a section's brief alone.
+var _showing_epilogue := false
+
 ## Shown on every device — see `PauseScreen._refresh_buttons()`, the same split on the same
 ## question, now answered the same way here: one control scheme means the same buttons everywhere.
 ## Its own function still, for the same reason: a test can call this again after changing what it
@@ -115,6 +120,7 @@ func _refresh_buttons() -> void:
 func show_day_brief(day: int, nerves: int, lost_note: String = "", title := "") -> void:
 	_heading.hide()
 	_showing_ending = false
+	_showing_epilogue = false
 	_note.text = SentenceLines.break_for_label(lost_note, _note)
 	_note.visible = lost_note != ""
 	_title.text = Texts.SUMMARY_DAY % [day, Tuning.RUN_LENGTH_DAYS] if title == "" \
@@ -153,12 +159,13 @@ func show_day_brief(day: int, nerves: int, lost_note: String = "", title := "") 
 ## **`title` is a lost section of the escape's own words** (`DaySpec.title`), standing where "Day N
 ## of 14" stands: a lost section reports its outcome with its reason like any lost day *(minty-lemur
 ## #785: "losing an escape should still state the reason like the rest of the game")*, and the
-## continue under it is the section again, so its words say which is tried again in place of the
-## day's try-again line. A section has no morning line and no tally of its own.
+## continue under it is the section again, behind its brief, so its words say which is tried again
+## in place of the day's try-again line. A section has no morning line and no tally of its own.
 func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 		elapsed_seconds: float = 0.0, back_to_checkpoint := false, title := "") -> void:
 	_heading.hide()
 	_showing_ending = false
+	_showing_epilogue = false
 	# Never carried from a day brief this same day might have opened on — this is a real day's own
 	# result, not the load-time note a brief shows instead of one.
 	_note.visible = false
@@ -272,6 +279,7 @@ func show_ending(ending: GameEnums.Ending, day: int) -> void:
 	# see `main._show_the_resume_gate()`.
 	_note.visible = false
 	_showing_ending = true
+	_showing_epilogue = false
 	_present()
 
 ## The escape's own last screen: the tunnel or the bridge behind her, and **nothing triumphant**
@@ -291,6 +299,7 @@ func show_finale(exit_kind: int, seconds: float) -> void:
 	_heading.show()
 	_title.text = Texts.FINALE_TITLE
 	_showing_ending = false
+	_showing_epilogue = true
 	var finale_body := SentenceLines.break_for_label(
 			Texts.FINALE_BODY.get(exit_kind, Texts.FINALE_BODY[CityEdge.Kind.BRIDGE]), _body)
 	_body.text = Texts.FINALE_OUT_IN % [finale_body, GameState.format_clock(seconds)]
@@ -321,6 +330,10 @@ func dismiss() -> void:
 
 func is_showing() -> bool:
 	return _root.visible
+
+## Whether the screen up is the escape's epilogue — see `_showing_epilogue`.
+func is_showing_the_epilogue() -> bool:
+	return is_showing() and _showing_epilogue
 
 ## Whether the screen's own layer is presenting rotated — computed fresh rather than pushed in
 ## from `main`, for the same reason `PauseScreen._wants_rotation()` is: `TouchControls` is the only

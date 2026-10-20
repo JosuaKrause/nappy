@@ -468,10 +468,11 @@ run's own ending — is actually running: a real `InputEventAction` for `pause` 
 event and would hear nothing from `Input.action_press()` alone. It fires on release rather than on
 press, and only when the release is still over the button, so a thumb that lands wrong can slide off
 without stopping the day. **Esc** pauses too, on every device, silently. Losing the window's focus
-opens the same screen, unless `--no-focus-pause` says otherwise. Neither ever opens over the
-escape's own screens — a section's brief, a lost section's outcome screen or the epilogue — the
-same reason Esc opens over an ordinary day's own end-of-day message and focus loss does not: each
-stands between her and a walk that has not begun yet, not between her and a day already decided.
+opens the same screen, unless `--no-focus-pause` says otherwise. Neither ever opens over a
+section's brief or the escape's epilogue, the same reason Esc opens over an ordinary day's own
+end-of-day message and focus loss does not: each stands between her and a walk that has not begun
+yet, not between her and a day already decided. A lost section's outcome screen is the day's own,
+and Esc opens over it as over a lost day's.
 
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.
@@ -1542,8 +1543,10 @@ have the wrong turn in the last minutes count.
 (`DaySummary.show_day_brief()`), titled *"Escape the building"* or *"Escape the city"* where a day's
 number stands (`DaySpec.title`), and carrying the Nerve count as the run holds it — unchanged in a
 normal run, whose escape spends none, and in a hard run whatever its lost sections spent. A retry
-opens on the lost section's outcome screen instead, which is the screen before it, as a lost day's
-is. Continuing from either is the moment she starts walking, and the section's own words are said
+opens on it too, after the lost section's outcome screen: the outcome screen says why the section
+was lost (minty-lemur #785), and its continue brings up the section's brief before she walks it
+again, for the building and the city alike and whether or not a nerve went (PLAYTEST-94 10).
+Continuing from the brief is the moment she starts walking, and the section's own words are said
 by the HUD every time she does — a first walk, a retry and a resumed one alike.
 
 **And the brief is the checkpoint a closed game comes back to.** A save is written as each brief
@@ -1552,7 +1555,7 @@ way flag rather than inside the run snapshot, so a save from before the escape e
 loads), and opening the game again puts that section's brief back up with a whole clock behind it
 — the same way closing a game mid-day comes back to that day's brief. Nothing about the escape is
 ever a day under way, so no nerve is charged for leaving one, in either mode; a hard run's spent
-nerve is already on disk, written by the brief its lost section comes back to.
+nerve is already on disk, written as its lost section's outcome screen comes up.
 
 **Everything around a day exists around a section too, built the same way.** `Esc`, the pause
 button and losing the window's focus open the same pause screen a day opens, with the same continue,
