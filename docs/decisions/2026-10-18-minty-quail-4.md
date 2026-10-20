@@ -32,16 +32,22 @@ log opens a section header per attempt (`Telemetry.begin_section`). From `likely
 
 **Verified at test parity** (inbox #813): `check.sh`, `lint.sh` and `ci_telemetry_kinds.py`, and 42
 suites, 0 failures; the full suite is CI's. Tests that pinned the escape-only behaviour now pin the
-new one: `test_finale`'s lost section is one real-boot test (the outcome screen with its reason, the
-retry from its continue, the clock standing still behind the brief), `test_observers`' escape half
+new one: `test_finale`'s lost section is one real-boot test (the outcome screen with its reason, then
+the retry's brief, the clock standing still behind it), a resumed escape is booted from a save on
+disk and opens on the title, a handover on the brief,, `test_observers`' escape half
 of the run-log baseline was re-recorded (the day half unchanged), and `test_run_checkpoints`' hard
 run shows the outcome screen before GAME OVER.
 
+**A retry goes from the outcome screen to the section's brief, then the walk**, as a lost day goes
+from its outcome screen to the day's brief: that keeps both the player's "restarting should still
+have the day brief for both the apartment escape and the city escape even if the nerves don't go
+down" (PLAYTEST-94 10) and "nothing should be different" (minty-lemur #785).
+
 **Choices made where the design was silent, open to overturn:** the building's win goes straight to
-the city's brief, with no won-day screen, but sends `nappy-day-15-won`; a retry starts from the
-outcome screen's continue, with no second brief; a hard run's last nerve shows the outcome screen,
+the city's brief, with no won-day screen, but sends `nappy-day-15-won`; a hard run's last nerve shows the outcome screen,
 then GAME OVER; on `--start-escape` the epilogue's continue reloads into the escape with no title;
-Esc and focus loss do not open over the escape's screens, the outcome screen included; a scene
+Esc does not open over a section's brief or the epilogue and does open over a lost section's outcome
+screen, as on a day, and focus loss opens over no summary screen; a scene
 recipe's lost section still fails or reloads at once; the building draws no map and the city's maps
 have no corridor; a resumed escape's title sends `nappy-controls-*`; the debug readout shows `day 15
 escape the building`.
