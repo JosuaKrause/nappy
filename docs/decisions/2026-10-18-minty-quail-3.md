@@ -58,5 +58,7 @@ pursuit phases are `events-composed.md`'s and attach to `ChargeRecord`; `main` s
 summary and the HUD directly, which `main-and-state.md`'s `RunFlow` and `SummaryModel` take over.
 
 **For the remeasuring step:** GoatCounter's names per fact before and after the release, and a
-played run's log against one from before the refactor for the same seed, the recipe-day header the
-one expected difference.
+played run's log, timestamps included, against one from before the refactor for the same seed, with
+no difference expected; and a recorded recipe's log (`tools/record.sh`) against one from before,
+where the day header, the attempt count and the attempt suffix on its picture filenames are the
+expected differences.
