@@ -51,15 +51,14 @@ patching statics or reaching into private fields. Every item below applies it to
 
 Each step leaves the game working and is its own PR, reviewed on its own:
 
-1. `run-config.md`: cheap, and it unblocks testing the rest.
-2. `observers.md`, then `escape-as-day-spec.md`: the escape's loss reason and GoatCounter fixed by
+1. `observers.md`, then `escape-as-day-spec.md`: the escape's loss reason and GoatCounter fixed by
    the day's own finish path.
-3. `world-passability.md`, `draw-layers.md`, then `world-map.md`: the world layer, which the building
+2. `world-passability.md`, `draw-layers.md`, then `world-map.md`: the world layer, which the building
    needs before it can run on the day's event manager.
-4. `escape-placement.md`: the escape folded into the day's code.
-5. `events-composed.md` and `shared-components.md`.
-6. `main-and-state.md`, `tuning.md` and `tests-public-seams.md`, alongside the extractions they serve.
-7. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
+3. `escape-placement.md`: the escape folded into the day's code.
+4. `events-composed.md` and `shared-components.md`.
+5. `main-and-state.md`, `tuning.md` and `tests-public-seams.md`, alongside the extractions they serve.
+6. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
 
 The PR that closes this entry rewrites **orchestrating**'s "Code is designed by layer", whose
 proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal
