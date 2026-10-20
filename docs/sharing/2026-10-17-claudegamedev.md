@@ -37,12 +37,9 @@ structure it, to see how far vibe coding goes.
   trace each leg from hip to knee to foot; in a two-frame walk the front leg has to swap.
 - Lag on phones. Draw calls were not it; a debug overlay in the live build that turns systems off
   one at a time showed what each part actually costs.
-- Undertale-level code quality, the price of staying out of the code. Agents add code where similar
-  code already lives, so a few files grew huge (the main script past 3,000 lines, one event class
-  past 7,000) and the escape sequence got its own parallel copy of the game's engine. What's
-  helping: the first time I stepped in, asking for a critical review against explicit principles
-  (separation of concerns, layering, dependency injection), filed as a refactor that is being
-  worked through now.
+- Undertale-level code quality. Agents add code where similar code already lives, so a few files
+  grew huge (the main script past 3,000 lines, one event class past 7,000) and the escape sequence
+  got its own parallel copy of the game's engine.
 
 **What keeps it fair**
 
