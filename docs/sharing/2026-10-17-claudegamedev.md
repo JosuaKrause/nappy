@@ -27,7 +27,8 @@ pull requests in seven weeks. The project's rules live in the repo as skills tha
 before an edit touches their area. Codex painted the PNG art.
 
 I did the design and playtested after nearly every change; my notes are saved word for word and
-turned into work.
+turned into work. I deliberately stayed out of the code itself, no reviews and no advice on how to
+structure it, to see how far vibe coding goes.
 
 **What went wrong**
 
@@ -36,11 +37,12 @@ turned into work.
   trace each leg from hip to knee to foot; in a two-frame walk the front leg has to swap.
 - Lag on phones. Draw calls were not it; a debug overlay in the live build that turns systems off
   one at a time showed what each part actually costs.
-- Undertale-level code quality. Agents add code where similar code already lives, so a few files
-  grew huge (the main script past 3,000 lines, one event class past 7,000) and the escape sequence
-  got its own parallel copy of the game's engine. What's helping: a critical review against explicit
-  principles (separation of concerns, layering, dependency injection), filed as a refactor that is
-  being worked through now.
+- Undertale-level code quality, the price of staying out of the code. Agents add code where similar
+  code already lives, so a few files grew huge (the main script past 3,000 lines, one event class
+  past 7,000) and the escape sequence got its own parallel copy of the game's engine. What's
+  helping: the first time I stepped in, asking for a critical review against explicit principles
+  (separation of concerns, layering, dependency injection), filed as a refactor that is being
+  worked through now.
 
 **What keeps it fair**
 
