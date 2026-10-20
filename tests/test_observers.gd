@@ -60,6 +60,8 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 		await t.get_tree().process_frame
 		frames += 1
 	t.check(main._day != null and main._day.is_running(), "the boot reached day 1")
+	_check_the_observer_runs_after(t, main, [main._city, main._resistance, main._edge, main._day],
+			"a day")
 
 	main._on_title_start(ControlsMode.Mode.JOYSTICK, false)
 	main._on_title_start(ControlsMode.Mode.TAP, true)
@@ -97,6 +99,18 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 	t.get_tree().paused = saved_paused
 	return lines
 
+## The observer stamps its lines with the clock and reads the resistance and the badges, so it has
+## to process after them each frame, as it did when `main` added it straight after the day's
+## clock: tree order is process order, and the session that holds it is `main`'s first child.
+func _check_the_observer_runs_after(t, main: Node, world: Array, boot: String) -> void:
+	var observer: TelemetryObserver = main._session.observer()
+	t.check(observer != null, "%s's boot builds the observer with a log open" % boot)
+	if not observer:
+		return
+	for node: Node in world:
+		t.check(node != null and observer.is_greater_than(node),
+				"in %s the observer processes after %s" % [boot, node.name if node else "null"])
+
 # --------------------------------------------------------------- the escape ---
 
 ## A won day 14 handing over: the building's brief, the section lost to the masked man and begun
@@ -123,6 +137,8 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	t.check(main._finale != null and main._summary.is_showing(), "the escape opened on its brief")
 
 	main._on_finale_summary_continued()
+	_check_the_observer_runs_after(t, main, [main._finale, main._finale.clock(), main._edge,
+			main._interior, main._interior_events], "the escape")
 	t.get_tree().paused = true
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
 	main._on_finale_summary_continued()

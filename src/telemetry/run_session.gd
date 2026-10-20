@@ -110,7 +110,17 @@ func watch_day(city: City, player: Stroller, baby: Baby, day: DayController,
 func watch_escape(player: Stroller, baby: Baby, clock: DayController, edge: DangerEdge) -> void:
 	_escape_world = {"player": player, "baby": baby, "clock": clock, "edge": edge}
 
+## **Built after the world it watches, and processed after it too.** Siblings process in tree order,
+## and the observer stamps each line with the day's clock and reads the resistance and the
+## screen-edge badges, so it has to run after `DayController`, `ResistanceDirector`, `DangerEdge`
+## and the finale's clock have moved this frame — or every line carries the frame before's time and
+## it watches one frame past a day's end. The session is built first, because its trace is handed to
+## everything built after it; so the moment it starts watching it moves itself to the end of its
+## parent, where the world it watches already stands and whatever is added later (the dev rigs, the
+## escape's city) still comes after it.
 func _new_observer() -> TelemetryObserver:
+	if get_parent():
+		get_parent().move_child(self, -1)
 	var watcher := TelemetryObserver.new()
 	watcher.name = "Telemetry"
 	# Part of the game, not the frame around it: it stops with the pause like the day it watches.
