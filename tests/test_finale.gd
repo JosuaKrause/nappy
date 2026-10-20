@@ -1379,8 +1379,7 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	baby.set_physics_process(false)
 	main._player = stroller
 	main._baby = baby
-	main._start_section(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS),
-			true)
+	main._start_section(_section(DaySpec.Section.CITY), true)
 	t.check(_escape_tint(city, day, on_the_walk, corridor).z == 0,
 			"and a restart tints them again, and no other")
 
@@ -1507,7 +1506,7 @@ func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 	for section: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
 		var main := _boot_the_escape(t, section)
-		var words := DaySpec.for_section(section, Tuning.FINALE_LENGTH_SECONDS).title
+		var words := _section(section).title
 		var nerves := GameState.nerves
 		var length: float = main._spec.length
 		var title: Label = main._summary.get_node("Root/Center/Lines/Title")
@@ -1604,6 +1603,10 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 	EventBus.day_ended.disconnect(on_ended)
 	_free_the_escape(t, main)
 
+## One of the escape's sections, a whole clock long, titled the way the run titles it.
+static func _section(section: int) -> DaySpec:
+	return MAIN_SCRIPT.escape_section_spec(section, Tuning.FINALE_LENGTH_SECONDS)
+
 ## Boots the real `main.tscn` on `section` of a normal run's own escape, on seed `SEEDS[0]` and its
 ## last day — the way a won day 14's handover and a game closed in a section both reach the boot —
 ## and returns it with its first screen up. `_free_the_escape()` puts the run back.
@@ -1629,11 +1632,12 @@ func _free_the_escape(t, main: Node2D) -> void:
 
 ## The two names the briefs carry — *"something along 'Escape the building' and ... 'Escape the
 ## city'"*. Pinned as literals because they are the player's own words for the two screens, and a
-## screen that renamed itself would be the one thing nothing else in this suite could see. They are
-## each section's `DaySpec.title`, and each is counted as a day of its own after the last.
+## screen that renamed itself would be the one thing nothing else in this suite could see. `main`
+## hands them to each section's `DaySpec` (`escape_section_spec()`), and each section is counted
+## as a day of its own after the last.
 func _test_the_two_sections_are_named_for_the_player(t) -> void:
-	var building := DaySpec.for_section(DaySpec.Section.BUILDING, Tuning.FINALE_LENGTH_SECONDS)
-	var city := DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	var building := _section(DaySpec.Section.BUILDING)
+	var city := _section(DaySpec.Section.CITY)
 	t.check(building.title == "Escape the building",
 			"the building's brief is titled 'Escape the building'")
 	t.check(city.title == "Escape the city", "the city's brief is titled 'Escape the city'")
@@ -1867,7 +1871,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	t.add_child(clock)
 	clock.set_process(false)
 	main._day = clock
-	main._use_the_day(DaySpec.for_section(DaySpec.Section.BUILDING, Tuning.FINALE_LENGTH_SECONDS))
+	main._use_the_day(_section(DaySpec.Section.BUILDING))
 	clock.start(main._spec.length)
 	t.check(clock.is_running(), "the section's clock is running")
 	t.check(not main._pause.is_open(), "and nothing is paused yet")
@@ -1915,7 +1919,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	t.add_child(main._pause)
 	main._title = TITLE_SCREEN_SCENE.instantiate()
 	t.add_child(main._title)
-	main._use_the_day(DaySpec.for_section(DaySpec.Section.BUILDING, Tuning.FINALE_LENGTH_SECONDS))
+	main._use_the_day(_section(DaySpec.Section.BUILDING))
 	main._no_focus_pause = false
 
 	main._summary.show_day_brief(GameState.day, GameState.nerves, "", main._spec.title)
@@ -1981,7 +1985,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	main._add_touch_controls()
 	main._title.start_requested.connect(main._on_title_start)
 	main._resume = {"day_under_way": false}
-	main._use_the_day(DaySpec.for_section(DaySpec.Section.BUILDING, Tuning.FINALE_LENGTH_SECONDS))
+	main._use_the_day(_section(DaySpec.Section.BUILDING))
 
 	main._open_the_title()
 	t.check(main._title.is_open() and not main._summary.is_showing(),

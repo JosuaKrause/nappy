@@ -349,7 +349,7 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	day.set_process(false)
 	main._day = day
 	main._escape_from_a_run = true
-	main._use_the_day(DaySpec.for_section(DaySpec.Section.BUILDING, 180.0))
+	main._use_the_day(MAIN_SCRIPT.escape_section_spec(DaySpec.Section.BUILDING, 180.0))
 	day.start(180.0)
 	EventBus.hard_fail_triggered.emit("abduction")
 	main._on_day_finished(GameEnums.DayResult.LOST_HARD_FAIL)

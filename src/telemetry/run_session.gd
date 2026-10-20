@@ -29,6 +29,9 @@ var _observer: TelemetryObserver
 ## The day's city, once `watch_day()` has been handed it: what a day's section names its seed by
 ## and its plan lines, dawn map and dusk map are drawn from. Null in the escape.
 var _city: City
+## The day's clock, handed in by `watch_the_clock()` (and `watch_day()`): the day being walked is
+## its `spec`, which is what a section's header is written from — its own words and length.
+var _clock: DayController
 ## What the escape's observer is built from at its first section, once `watch_escape()` has been
 ## handed them; empty on a day.
 var _escape_world: Dictionary = {}
@@ -92,11 +95,22 @@ func burst(context: String) -> void:
 ## badges. Builds the observer only when a log is open.
 func watch_day(city: City, player: Stroller, baby: Baby, day: DayController,
 		resistance: ResistanceDirector, edge: DangerEdge) -> void:
+	_clock = day
 	_city = city
 	if not _log.is_active():
 		return
 	_observer = _new_observer()
 	_observer.setup(city, player, baby, day, resistance, _config.spikes_requested, edge)
+
+## The day's clock, whose `spec` says what each day is, before the first one starts — the escape's
+## boot hands it in ahead of `watch_escape()`, whose world is built only as its first section
+## begins.
+func watch_the_clock(clock: DayController) -> void:
+	_clock = clock
+
+## Whether the day being walked is one of the escape's sections, by its spec.
+func _walking_a_section() -> bool:
+	return _clock != null and _clock.spec.section != DaySpec.Section.NONE
 
 ## The escape's walk: her, the baby, the day's clock and the badges. The observer is built at the
 ## first section, because that is when the log is known to be open for it; each section names its
@@ -128,11 +142,9 @@ func _new_observer() -> TelemetryObserver:
 ## `roll` and `contact` lines, and they belong under today's header rather than yesterday's. One of
 ## the escape's sections heads its own day, under its own day number and its own words.
 func _on_day_started(day: int) -> void:
-	var section := DaySpec.section_for_day(day)
-	if section != DaySpec.Section.NONE:
+	if _walking_a_section():
 		_escape_city = null
-		var spec := DaySpec.for_section(section, _config.escape_section_length())
-		_log.begin_section(day, spec.title, GameState.run_seed, spec.length)
+		_log.begin_section(day, _clock.spec.title, GameState.run_seed, _clock.spec.length)
 		return
 	if not _city:
 		return
@@ -168,7 +180,7 @@ func _on_day_planned(day: int) -> void:
 ## An escape section ends the same way: its outcome line, and its dusk picture when it was walked in
 ## the city — the building has no city map to draw one on.
 func _on_day_ended(day: int, result: GameEnums.DayResult, cause: String, _elapsed: float) -> void:
-	if not _city and DaySpec.section_for_day(day) == DaySpec.Section.NONE:
+	if not _city and not _walking_a_section():
 		return
 	if _observer:
 		_observer.day_finished(result, cause)

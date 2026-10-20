@@ -503,6 +503,7 @@ func _ready() -> void:
 	_pauses_with_the_game(_day)
 	_day.setup(_city.map if _city else null, _player)
 	_day.day_finished.connect(_on_day_finished)
+	_session.watch_the_clock(_day)
 
 	if walks_a_day:
 		_session.watch_day(_city, _player, _baby, _day, _resistance, _edge)
@@ -679,9 +680,17 @@ func _the_first_day() -> DaySpec:
 	if _escape_scene_requested or _escape_from_a_run:
 		var start_at_the_city := _escape_start_part() == "city" \
 				or (_escape_from_a_run and GameState.escape_section == DaySpec.Section.CITY)
-		return DaySpec.for_section(DaySpec.Section.CITY if start_at_the_city
+		return escape_section_spec(DaySpec.Section.CITY if start_at_the_city
 				else DaySpec.Section.BUILDING, config.escape_section_length())
 	return DaySpec.for_day(GameState.day, config.day_length_for(GameState.day))
+
+## One of the escape's two sections, `length` seconds long, with its own words — *"Escape the
+## building"* and *"Escape the city"*, the player's names for the two screens — handed to the spec
+## here, since the spec is data and names nothing of the UI's. `section` is a `DaySpec.Section` as
+## an `int`. Static so a test builds the same spec the run walks.
+static func escape_section_spec(section: int, length: float) -> DaySpec:
+	return DaySpec.for_section(section, length, Texts.ESCAPE_BUILDING
+			if section == DaySpec.Section.BUILDING else Texts.ESCAPE_CITY)
 
 ## The screens every boot stands around the walk, built the same way whichever day it opens on:
 ## the HUD; the screen-edge badge, the halo and the debug view when a world already stands (the
@@ -2144,7 +2153,7 @@ func _finish_the_section(result: GameEnums.DayResult, elapsed_seconds: float) ->
 			_reload_the_scene()
 		return
 	if won and spec.a_win_leads_into != DaySpec.Section.NONE:
-		_start_section(DaySpec.for_section(spec.a_win_leads_into, config.escape_section_length()),
+		_start_section(escape_section_spec(spec.a_win_leads_into, config.escape_section_length()),
 				false)
 		_show_the_section_brief()
 		return

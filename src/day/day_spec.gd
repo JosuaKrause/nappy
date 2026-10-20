@@ -9,8 +9,9 @@ extends RefCounted
 ## all sixteen. What differs between a day and a section of the escape is written here, as values,
 ## and read where it matters, rather than asked of a global "are we in the escape" anywhere else.
 ##
-## Data only: no node, no autoload, nothing that runs. `for_day()` and `for_section()` are the two
-## shapes the run uses; a test builds one either way, or by hand.
+## Data only: no node, no autoload, nothing that runs, and no words of its own — whoever builds one
+## hands it its title, so this layer names nothing of the UI's. `for_day()` and `for_section()` are
+## the two shapes the run uses; a test builds one either way, or by hand.
 
 ## Where the walk is: the city, or the building the escape starts in.
 enum World { CITY, BUILDING }
@@ -95,12 +96,14 @@ static func for_day(day: int, day_length: float) -> DaySpec:
 	spec.length = day_length
 	return spec
 
-## One of the escape's two sections, `section_length` seconds long. `which` is a `Section` passed
-## as an `int`, the way `GameState.escape_section` holds it.
-static func for_section(which: int, section_length: float) -> DaySpec:
+## One of the escape's two sections, `section_length` seconds long, titled `section_title` — its own
+## words, handed in by whoever builds it (`main.escape_section_spec()`). `which` is a `Section`
+## passed as an `int`, the way `GameState.escape_section` holds it.
+static func for_section(which: int, section_length: float, section_title := "") -> DaySpec:
 	var spec := DaySpec.new()
 	spec.section = which
 	spec.length = section_length
+	spec.title = section_title
 	spec.clock_hundredths = true
 	spec.daylight_runs_down = false
 	spec.dark_from_the_start = true
@@ -110,25 +113,14 @@ static func for_section(which: int, section_length: float) -> DaySpec:
 	spec.saved_as_under_way = false
 	if which == Section.BUILDING:
 		spec.number = BUILDING_DAY
-		spec.title = Texts.ESCAPE_BUILDING
 		spec.world = World.BUILDING
 		spec.goal = Goal.SERVICE_EXIT
 		spec.a_win_leads_into = Section.CITY
 	else:
 		spec.number = CITY_DAY
-		spec.title = Texts.ESCAPE_CITY
 		spec.world = World.CITY
 		spec.goal = Goal.CITY_EDGE
 	return spec
-
-## Which section of the escape day `day` is — `Section.NONE` for every one of the fourteen — for
-## what hears only a day's number, such as the run log opening its header.
-static func section_for_day(day: int) -> int:
-	if day == BUILDING_DAY:
-		return Section.BUILDING
-	if day == CITY_DAY:
-		return Section.CITY
-	return Section.NONE
 
 ## Whether losing it spends a Nerve, in this run's mode.
 func a_loss_costs_a_nerve(hard_mode: bool) -> bool:
