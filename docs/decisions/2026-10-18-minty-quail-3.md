@@ -44,7 +44,13 @@ its lines carry the day's clock rather than `0.0`, and a recorded recipe's pictu
 an attempt count (`tools/record.sh`, `tools/trailer.sh` and `tools/lib_movie_evidence.sh` keep the
 run log on);
 `ChargeRecord` is handed `EventBus` by its instance; `GameState._trace` is private and exempt from
-the save-field guard, and the test runner hands `GameState` a silent trace between suites.
+the save-field guard, and the test runner hands `GameState` a silent trace between suites. The session moves itself to the end of
+`main`'s children when it builds the observer, so the observer processes each frame after the day's
+clock, the resistance, the badges and the escape's clock, as it did before (a `process_priority`
+would also have pushed it after the dev nodes that ran after it); `tests/test_observers.gd` checks
+that order in both boots. The calm, closure and event summaries that `main`'s console line and the
+session's `plan` lines share are `City`'s own methods, so the run flow names no observer.
+`InteriorEvents` carries a trace and hands it to every event it spawns.
 
 **Left:** `Telemetry` is still called directly by the texture lines in `ground_layers.gd` and the
 atlas library, `GameSave`'s save lines and the dev rigs (`RouteRig`, `StillWatch`, `DevRig`);
