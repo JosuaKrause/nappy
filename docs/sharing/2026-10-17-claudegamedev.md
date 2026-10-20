@@ -21,8 +21,9 @@ https://nappy.josuakrause.com/
 **How it was made**
 
 Claude Code wrote all of it (Godot 4.7, GDScript, the tooling, the SVG art, the trailer); no
-hand-written code. One session plans and briefs agents that each build one item in their own git
-worktree, and a separate agent reviews every pull request adversarially before it merges: about 600
+hand-written code, no downloaded assets. An orchestrator session plans and briefs agents that each
+build one item in their own git worktree, and a separate agent reviews every pull request
+adversarially before it merges: about 600
 pull requests in seven weeks. The project's rules live in the repo as skills that hooks load right
 before an edit touches their area. Codex painted the PNG art.
 
