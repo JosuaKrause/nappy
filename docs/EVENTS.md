@@ -691,8 +691,12 @@ departure that meets a solid straight ahead leaves by a way out of her sight
 (`Navigator.way_out()`); a man walking back to his vehicle goes round what was put across his trail
 (`Navigator.path()`); and a pursuer's notice, lunge and catch are along a line a figure on foot
 could walk (`CityMap.clear_line()`), which sees out of a band he stands in and never hides her behind
-the tile she stands on. The flock's birds are the one exception, since they fly; their flock's own
-ground point leaves as everything does.
+the tile she stands on. Two exceptions: the flock's birds, since they fly (their flock's own ground
+point leaves as everything does); and day 12's cordon officers and escorts (`ParkCordon`), whose
+walk in and round the park's edge are laid straight at a fixed offset outside it and timed over
+those straight walks, so a body the day stands beside the park stops them or makes the close late
+until the cordon plans its walks round the bodies. Their way out of her sight is searched over
+ground they may stand on.
 
 **The catalogue is not the only thing carrying this datum.** A building's collision is a rectangle
 built from `shape.collision_shape()` on `GroundShape.rect(footprint * 0.5)` — `src/city/building.gd`

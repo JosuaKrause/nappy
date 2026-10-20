@@ -102,9 +102,8 @@ const NOTE_HANDOVER_LINGER_SECONDS := 2.5
 
 var _city: City
 var _map: CityMap
-## The city's navigator (`City.navigator`), or one over `_map` for a rig with no city: how the
-## director walks a chase it has not started yet the way the chase will walk it
-## (`_his_walk_reaches_her()`), and asks whether she could stand where it places something.
+## The navigator handed in by `setup()`: how the director walks a chase it has not started yet the
+## way the chase will walk it (`_his_walk_reaches_her()`), and the line a sent pursuer's run takes.
 var _navigator: Navigator
 var _contact: ContactPoint
 ## The mark's own touched `ContactPoint`, once she has read it — kept alive rather than freed the
@@ -235,7 +234,9 @@ var _mouths_of: CityMap
 ## order and built with them.
 var _mark_tiles_of_mouths: Array[Vector2i] = []
 
-func setup(city: City, map: CityMap) -> void:
+## Hands the director its city, the map it places on and the navigator a chase it predicts walks
+## by — the city's own (`City.navigator`), or one over `map` for a rig that hands none.
+func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	# The same self-registration `WorldContext` and `Stroller` use, so anything that needs to ask
 	# this director a read-only question — `pointable_objective()`, for a protester — finds it
 	# with `get_tree().get_first_node_in_group("resistance")` rather than being handed a reference
@@ -243,7 +244,7 @@ func setup(city: City, map: CityMap) -> void:
 	add_to_group("resistance")
 	_city = city
 	_map = map
-	_navigator = city.navigator if city and city.navigator else Navigator.new(map)
+	_navigator = navigator if navigator else Navigator.new(map)
 	if city and city.events and not city.events.door_crossed.is_connected(_on_door_crossed):
 		city.events.door_crossed.connect(_on_door_crossed)
 	_happenings.trace = trace

@@ -25,6 +25,8 @@ func run(t) -> void:
 	_test_a_mover_on_blocked_ground_may_walk_off_it(t)
 	_test_a_route_is_cut_where_a_solid_stands(t)
 	_test_a_walk_goes_round_what_was_put_down(t)
+	_test_a_car_sees_her_off_street_ground(t)
+	_test_a_cut_crossing_still_meets_her_line_on_time(t)
 	var city := _a_day(t)
 	_test_a_body_and_its_record_are_one_footprint(t, city)
 	_test_a_closure_barrier_stands_on_closed_ground(t, city)
@@ -195,6 +197,52 @@ func _test_a_walk_goes_round_what_was_put_down(t) -> void:
 	for point in round:
 		entered = entered or not map.passable(map.world_to_tile(point), on_foot)
 	t.check(not entered, "and never steps onto the body")
+
+## A car drives on street ground only, and sees her wherever she stands: an investigating patrol
+## notices her one tile into an alley, a square or a park as it does on the sidewalk, along a line
+## its own driving would never take.
+func _test_a_car_sees_her_off_street_ground(t) -> void:
+	var patrol := EventCatalogue.by_id("police_patrol")
+	t.check(patrol.drives, "the patrol is a car that drives")
+	for ground in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE, GameEnums.TileType.PARK,
+			GameEnums.TileType.SIDEWALK]:
+		var map := _yard(Vector2i(8, 8))
+		map.fill_rect(Rect2i(0, 1, 8, 1), GameEnums.TileType.ROAD)
+		map.fill_rect(Rect2i(3, 3, 2, 2), ground)
+		var car := EventInstance.new()
+		car.skip_draw = true
+		car.setup(patrol, _centre(Vector2i(3, 1)), PackedVector2Array(), Vector2.RIGHT, map)
+		t.add_child(car)
+		var her := _centre(Vector2i(3, 3))
+		t.check(car._clear_line_to(her), "a car sees her standing on %s" % ground)
+		t.check(map.passable(map.world_to_tile(her), car._mover)
+				== (ground == GameEnums.TileType.SIDEWALK),
+				"and drives only where street ground is (%s)" % ground)
+		car.free()
+
+## A cat whose run a solid cut short crouches longer by the run it lost, so it reaches the middle of
+## its crossing when a whole run would have: when she, walked up by its lead, gets there.
+func _test_a_cut_crossing_still_meets_her_line_on_time(t) -> void:
+	var cat := EventCatalogue.by_id("cat_dash")
+	var whole := float(Tuning.STREET_WIDTH) * TILE
+	var on_time := cat.telegraph_time + whole / cat.speed
+	for run in [whole, whole * 0.5, TILE]:
+		var instance := EventInstance.new()
+		instance.skip_draw = true
+		var path := PackedVector2Array([Vector2(-run, 0.0), Vector2(run, 0.0)])
+		instance.setup(cat, path[0], path)
+		t.add_child(instance)
+		instance.set_process(false)
+		instance.hold_still_longer(cat.crouch_for_a_run(run))
+		var clock := 0.0
+		while instance.global_position.x < 0.0 and clock < 10.0:
+			instance._process(0.01)
+			clock += 0.01
+		t.close_to(clock, on_time, "a run of %.0fpx reaches the middle when a whole one does" % run,
+				0.03)
+		instance.free()
+	t.check(cat.ahead_of_player_lead() >= on_time * Tuning.WALK_SPEED - 0.01,
+			"which is when she, walking, reaches it")
 
 # ---------------------------------------------------------------- a real city ---
 

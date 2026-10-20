@@ -1761,7 +1761,11 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	if def.pursues:
 		_warn_down_her_heading(def, body.global_position, path[0])
 		return
-	_spawn_unplanned(def, path[0], path)
+	var crossing := _spawn_unplanned(def, path[0], path)
+	if path.size() == 2:
+		# A run cut short by a solid crouches longer by the run it lost
+		# (`EventDef.crouch_for_a_run()`).
+		crossing.hold_still_longer(def.crouch_for_a_run(path[0].distance_to(path[1]) * 0.5))
 	# The distance it was actually sited at rather than the constant. A pursuer is sited beyond its
 	# own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant makes every
 	# `ahead` line for the one row a chase is about say the wrong number.

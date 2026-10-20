@@ -1336,6 +1336,10 @@ var _map: CityMap
 var _navigator: Navigator
 ## What this figure walks as (`mover_for()`): a figure on foot or a car, at its body's radius.
 var _mover: Mover
+## What this figure sees along: the layers `_mover` names, less street ground, which is where a car
+## may drive and not what it can see. A car that investigates notices her in an alley mouth or on
+## a square as a figure would.
+var _sight: Mover
 ## The building's own wall grid indoors (`InteriorScene.wall_grid()`), handed over by
 ## `set_walls()` for `_walled_off()` alone, with none of the city's other questions behind it: a
 ## stairwell has no pavement band to centre on and no alley for a mouse to cross, but its walls stop
@@ -1394,6 +1398,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	path = route
 	_navigator = navigator if navigator else Navigator.new(map)
 	_mover = mover_for(definition)
+	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	var start := route[0] if route.size() > 0 else at
 	if map and not definition.mobile and definition.obstructs_radius > 0.0 \
 			and definition.pavement_side == EventDef.Pavement.ANY:
@@ -3830,12 +3835,11 @@ func _be_done(may_park := true) -> void:
 		_walks_a_way = true
 		_way = PackedVector2Array()
 		_way_on = PackedVector2Array()
-		# **And never through his own band**: a road tile under the barrier is walkable to the
-		# search, since the band is a body and not a tile, and she usually stands on the side she
-		# lured him from, so the nearest ground out of her sight lies straight through the concrete
-		# she cannot pass. The search refuses the tiles under the band (`_way_avoids`, what
-		# `leave_along()` refuses for a cordon's park), so he goes round by the open ground, and so
-		# does his partner at the far post (PR #781's review 3).
+		# **And never through his own band**: she usually stands on the side she lured him from, so
+		# the nearest ground out of her sight lies straight through the concrete she cannot pass.
+		# The band's tiles are on the day's record as a body, which his walk and its search already
+		# refuse, and `_way_avoids` names them as well (what `leave_along()` refuses for a cordon's
+		# park), so he goes round by the open ground, and so does his partner at the far post.
 		_way_avoids = _tiles_under_the_band()
 		# And on a band whose far guard leaves too, his partner at the far post goes with him.
 		_send_the_far_guard_off()
@@ -3881,7 +3885,7 @@ func leave_for_a_completed_task() -> void:
 ## has. Steering straight away from her instead runs into walls and the city's edge, and sliding
 ## along one at the size of whatever part of the step is left square to it is, beside the city's
 ## edge, next to nothing: a person standing at the edge of her screen. Only where the search finds
-## nothing does it step away from her over walkable ground (`_walkable_step()`). **It never ends at
+## nothing does it step away from her over ground it may walk (`_step()`). **It never ends at
 ## the way's last point**: that point was chosen out of her sight from where she was when the way
 ## was planned, and she may since have walked there herself, so ending there would be a vanishing in
 ## front of her (see "going away" above: the end of an event is a departure, not a deletion).
@@ -4232,6 +4236,13 @@ func is_standing_for_its_notice() -> bool:
 ## How long this instance's notice runs once it has noticed her: a charger that warns by radius
 ## warns for its row's `warns_for` (`warns_by_radius()`); anything else for its row's
 ## `telegraph_time`, or the notice a task gave it when it set it on her (`notice_her_at()`).
+## **Holds a row that crouches before its run `seconds` longer** — a crossing whose run a solid cut
+## short (`EventDef.crouch_for_a_run()`), so it still reaches the middle when she does. Its telegraph
+## only grows, so the fairness contract it was validated under still holds.
+func hold_still_longer(seconds: float) -> void:
+	if seconds > 0.0 and def.still_while_telegraphing:
+		_notice_time = notice_time() + seconds
+
 func notice_time() -> float:
 	if _notice_time >= 0.0:
 		return _notice_time
@@ -4743,7 +4754,7 @@ func is_lethal_at(world_position: Vector2) -> bool:
 	return not def.pursues or _clear_line_to(world_position)
 
 ## Whether the straight line from this node to `world_position` crosses only ground this figure
-## may enter (`Navigator.clear_line()`, as `_mover`) — the question a pursuer's catch asks, since a
+## may enter, street ground or not (`Navigator.clear_line()`, as `_sight`) — the question a pursuer's catch asks, since a
 ## catch across a wall, a barrier or a café is a man reaching through it, and the one its notice
 ## and its lunge ask in `_chase()`, since he can neither see nor go for her through one.
 ## `CityMap.clear_line()` walks it, the one walk every caller asks, so a line that clips a
@@ -4751,7 +4762,7 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## stands in, and her own tile never hides her. True on open ground, which is every data-level rig
 ## built without a map, exactly as `_step()` is.
 func _clear_line_to(world_position: Vector2) -> bool:
-	return _navigator.clear_line(global_position, world_position, _mover)
+	return _navigator.clear_line(global_position, world_position, _sight)
 
 ## One bounded integral cache per source, with a by-value key rather than a clock or identity.
 var _expected_landed_key: Array = []
