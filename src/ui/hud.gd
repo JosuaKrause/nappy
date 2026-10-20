@@ -28,11 +28,18 @@ extends CanvasLayer
 @onready var _task_arrow: HomeArrow = $Root/TaskArrow
 @onready var _teach: HelpText = $Root/Teach
 
-## Read once per instance rather than at each use site, so a test can flip it and drive both HUD
-## shapes without needing an actual debug build — the test process itself always is one, so asking
-## `OS.is_debug_build()` from inside `_refresh_header()` et al. would leave the release shape
-## covered by nothing.
-var _debug := DevFlags.enabled()
+## Whether the debug header and the developer's furniture show — the build's own answer until
+## `configure()` hands the run's. A member rather than a read at each use site, so a test can flip
+## it and drive both HUD shapes without needing an actual debug build.
+var _debug := OS.is_debug_build()
+## `--invincible`, named in the debug header so no capture from such a run reads as a real one.
+var _invincible := false
+
+## What the run's configuration decides about this HUD: the debug shape (`false` for a release
+## build and for `--player-view`) and whether the run is invincible. Called before `_ready()`.
+func configure(debug: bool, invincible: bool) -> void:
+	_debug = debug
+	_invincible = invincible
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `DaySummary` and `PauseScreen` use. No longer chosen between two wordings for the walking,
@@ -486,6 +493,6 @@ func _refresh_header() -> void:
 	# So no capture from an --invincible run reads as a real one — appended to the same debug
 	# label rather than a mark of its own, since the cues vocabulary is for the world she is
 	# walking through, not for developer furniture.
-	if DevFlags.invincible():
+	if _invincible:
 		text += "      INVINCIBLE"
 	_header.text = text

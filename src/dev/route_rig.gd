@@ -11,10 +11,10 @@ extends Node
 ##
 ## **Never a player control.** See docs/DECISIONS.md, M88, "the player chooses the controls" —
 ## *"a tap that pathfinds hands the route decision to the game and the route decision is the
-## design"* — for why a pathfinding walk answers only to `DevFlags`, the same gate `--walk` and
-## `--flee` already answer to on a debug build; nothing outside a dev flag ever reaches it.
+## design"* — for why a pathfinding walk answers only to a dev flag, behind the same debug-build
+## gate `--walk` and `--flee` answer to; nothing outside a dev flag ever reaches it.
 ##
-## **Targets**, split on commas by `DevFlags.route_targets()`:
+## **Targets**, `--route`'s comma-separated words, handed to `setup()` in order:
 ## - `mark` — today's chalk mark, while it is still the step on offer (`ResistanceDirector`'s own
 ##   pickup). Unavailable once it has been touched, or on a day with no mark at all.
 ## - `task` — the red arrow's own point for a one-place task, or the nearest **live** instance of
@@ -228,13 +228,13 @@ var _road_tiles: Dictionary = {}
 var _done := false
 
 func setup(city: City, player: Stroller, baby: Baby, resistance: ResistanceDirector,
-		day: DayController) -> void:
+		day: DayController, targets: Array[String]) -> void:
 	_city = city
 	_player = player
 	_baby = baby
 	_resistance = resistance
 	_day = day
-	_targets = DevFlags.route_targets()
+	_targets = targets
 	_cache_road_tiles()
 	_day.day_finished.connect(_on_day_finished)
 
@@ -291,7 +291,7 @@ func _physics_process(delta: float) -> void:
 	if _done or not _day or not _day.is_running():
 		return
 	_elapsed_seconds += delta
-	if DevFlags.invincible() and _elapsed_seconds > _day.time_total:
+	if _day.invincible and _elapsed_seconds > _day.time_total:
 		_out_of_day()
 		return
 	var here := _player.global_position

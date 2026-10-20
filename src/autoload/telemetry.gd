@@ -52,6 +52,18 @@ var _day_attempts := {}
 ## file has to be handed the day number back in just to look the count up again.
 var _attempt := 1
 
+## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then —
+## read for `--invincible`'s header note and for the page's `?telemetry=1`.
+var _config: RunConfig
+
+## Hands this log the run's configuration. `null` puts it back to none, which reads as a run with
+## no flag at all.
+func configure(config: RunConfig) -> void:
+	_config = config
+
+func _invincible() -> bool:
+	return _config != null and _config.invincible
+
 ## Whether anything is being recorded. Everything else here is a no-op when this is false.
 func is_active() -> bool:
 	return _log != null
@@ -86,26 +98,21 @@ func is_active() -> bool:
 ## something guessed here.** A pile of runs that does not say which of them a person played reads as
 ## a great many plays that never happened, and every inference drawn from it is skewed.
 ##
-## Whether the deployed page has asked, this run, to be logged anyway. Read through
-## `JavaScriptBridge.eval("window.location.search")` — the one channel that reaches a Web export at
-## all, since the page it runs on has no command line for `DevFlags` to parse.
+## Whether the deployed page has asked, this run, to be logged anyway: the page's own query, as the
+## run read it at boot (`RunConfig.page_query`), since the page has no command line.
 ##
-## **Gated behind `DevFlags.enabled()` (`OS.is_debug_build()`), the same as every other developer
-## flag now.** *(2026-09-06, the player: "I never asked for telemetry on web. you added that to
-## debug in a browser. that browser build should be dev only the CI build is release.")* A release
-## build must answer nothing here — the published page collecting from a stranger's browser because
-## of a query string nobody documented is exactly what a release build carrying no modifiers rules
-## out. A debug build answers immediately, with nothing else to unlock: the browser used to debug a
-## web build is its own debug export (`tools/export-web.sh debug`), and the published build is the
-## release export. `_reads_the_url()` below is the gate itself, pulled out to a pure function so the
-## promise is a truth table a test can check rather than a build type nothing can fake.
-static func _web_override_requested() -> bool:
-	if not _reads_the_url(DevFlags.enabled(), OS.get_name() == "Web"):
+## **A debug build's alone, like every other developer flag** (2026-09-06, the player: "I never
+## asked for telemetry on web. you added that to debug in a browser. that browser build should be
+## dev only the CI build is release"). A release build answers nothing here — the published page
+## collecting from a stranger's browser because of a query string nobody documented is exactly what
+## a release build carrying no modifiers rules out. A debug build answers immediately: the browser
+## used to debug a web build is its own debug export (`tools/export-web.sh debug`).
+## `_reads_the_url()` below is the gate itself, pure so the promise is a truth table a test can
+## check.
+func _web_override_requested() -> bool:
+	if _config == null or not _reads_the_url(_config.debug_build, OS.get_name() == "Web"):
 		return false
-	var search: Variant = JavaScriptBridge.eval("window.location.search")
-	if typeof(search) != TYPE_STRING:
-		return false
-	return _telemetry_flag_from_query(search)
+	return _telemetry_flag_from_query(_config.page_query)
 
 ## The decision behind `_web_override_requested()`'s own gate, pulled out to a pure function of its
 ## two inputs so the promise is a truth table a test can check rather than a build type nothing can
@@ -205,7 +212,7 @@ func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float)
 			% [day, act, run_seed, city_seed, length]
 	# Noted the same way the seed is, once per day rather than as a per-frame entry, so a log
 	# from an --invincible day cannot be mistaken for one where a loss actually meant anything.
-	if DevFlags.invincible():
+	if _invincible():
 		line += "  invincible"
 	_log.header(line)
 
@@ -233,7 +240,7 @@ func begin_finale(run_seed: int, length: float) -> void:
 	var line := "escape  run seed %d  length %.1fs" % [run_seed, length]
 	# For the reason `begin_day()` gives: a log from an --invincible walk must not be mistaken for
 	# one where a loss meant anything.
-	if DevFlags.invincible():
+	if _invincible():
 		line += "  invincible"
 	_log.header(line)
 

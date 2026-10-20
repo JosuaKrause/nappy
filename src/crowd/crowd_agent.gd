@@ -157,18 +157,14 @@ const MARK_WIDTH := 15.0
 var kind := Kind.WALKER
 var colour := Color.WHITE
 
-## `DevFlags.skip_crowd()`, read once at spawn — the same "read once" shape `main._debug` and
-## `main._readout_requested` are: re-parsing `--skip`'s comma list (and, on the Web, re-asking the
-## address bar) on every `_draw()` would be silly work repeated a couple of hundred times a frame
-## for an answer that cannot change once the page is loaded, and a test can set this directly to
-## check the skip without a real `--skip` flag behind it.
-var _skip_draw := DevFlags.skip_crowd()
+## `--skip crowd`, handed in by the `Crowd` that makes this agent: `_draw()` returns before
+## drawing anything.
+var skip_draw := false
 
-## `DevFlags.skip_motion()`, read once at spawn the same way `_skip_draw` is — a test sets this
-## directly to check the skip without a real `--skip` flag behind it. `_process` returns before
-## its first line while it is set, so this agent's clocks, steering, lookahead, turning, gait and
-## recycling all stand still; it is still drawn wherever the day placed it.
-var _skip_motion := DevFlags.skip_motion()
+## `--skip motion`, handed in the same way. `_process` returns before its first line while it is
+## set, so this agent's clocks, steering, lookahead, turning, gait and recycling all stand still;
+## it is still drawn wherever the day placed it.
+var skip_motion := false
 
 ## This agent's own ground shape, set once in `setup()`: a point for a walker, a capsule along the
 ## travel axis for a car (`_car_shadow_shape()`). Read by `_draw_body()` for the shadow; there is
@@ -965,8 +961,8 @@ func _process(delta: float) -> void:
 		return
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
 	# before anything below runs, so this agent stands exactly where the day placed it — no clock,
-	# steering, lookahead, turn, gait or recycle. It is still drawn; see `_draw()`'s own `_skip_draw`.
-	if _skip_motion:
+	# steering, lookahead, turn, gait or recycle. It is still drawn; see `_draw()`'s own `skip_draw`.
+	if skip_motion:
 		return
 	_clock += delta
 	var before_position := position
@@ -3834,7 +3830,7 @@ func _draw() -> void:
 	# alone — the crowd's own motion, lanes and traffic negotiation keep running. `_draw_body()` is
 	# left alone rather than gated itself, since `EntityHalo` calls it too for a picked agent's own
 	# ring, which is a different drawing than the ordinary frame this flag measures.
-	if _skip_draw:
+	if skip_draw:
 		return
 	# Told to `Sprites` as well as to the canvas, for the reason `EventInstance._draw()` gives: the
 	# mirror inside `draw_standing()` sets an absolute matrix, so a west-facing car not handed the

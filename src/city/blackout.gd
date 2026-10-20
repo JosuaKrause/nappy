@@ -33,15 +33,14 @@ var _buildings: Array[Building] = []
 ## city with no station — where "far enough from it" is true everywhere.
 var _station := Rect2()
 var _player: Node2D
-## `--blackout`, read once rather than off the command line every frame.
-var _forced := false
+## `--blackout`, handed in by the city before `setup()`: the city counts as sabotaged.
+var forced := false
 
 ## Called once by `City.build()`, after the buildings, the signals and the events exist. A city
 ## built for the escape goes dark here, before its first frame is drawn.
 func setup(city: City, buildings: Array[Building]) -> void:
 	_city = city
 	_buildings = buildings
-	_forced = DevFlags.blackout_requested()
 	if city.map.has_power_station():
 		_station = city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
 	if _in_the_escape():
@@ -101,7 +100,7 @@ func restore() -> void:
 		_city.signals.powered = true
 
 func _sabotaged() -> bool:
-	return GameState.sabotage_done or _forced
+	return GameState.sabotage_done or forced
 
 func _in_the_escape() -> bool:
 	return GameState.escape_section != FinaleController.Section.NONE

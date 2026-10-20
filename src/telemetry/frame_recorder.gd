@@ -4,8 +4,7 @@ extends Node
 ## the device. *(2026-10-03, inbox #510, asked which frames to break down and how the record
 ## should get off the phone: "Every frame, slow ones marked" and "Download plus readout line".)*
 ##
-## Built by `main` under `--frame-record` or the page's `?framerecord=1` (`DevFlags.
-## frame_record_requested()`). It marks the engine's phases for `FrameLedger`: its own physics and
+## Built by `main` under `--frame-record` or the page's `?framerecord=1`. It marks the engine's phases for `FrameLedger`: its own physics and
 ## process callbacks run first in their step (`PRIORITY_FIRST`), a child's process callback runs
 ## last (`PRIORITY_LAST`), the renderer's pre-draw callback ends `draw` and its post-draw callback
 ## ends `render`. The named
@@ -229,7 +228,7 @@ func report_text() -> String:
 	var metadata := _metadata.duplicate()
 	metadata["build"] = TitleScreen.build_text()
 	metadata["run_seed"] = GameState.run_seed
-	metadata["ground_mode"] = DevFlags.ground_mode()
+	metadata["ground_mode"] = int(_city.ground_mode)
 	metadata["scenery_budget_usec"] = SceneryResidency.BUDGET_USEC
 	metadata["engine"] = Engine.get_version_info()
 	metadata["renderer"] = RenderingServer.get_current_rendering_method()

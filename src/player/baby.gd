@@ -41,6 +41,9 @@ enum Cue {
 var sleepiness := 0.0
 var excitement := 0.0
 var state := GameEnums.BabyState.AWAKE
+## Nothing adds to `excitement` while this holds; decay still runs. Handed in by whoever places
+## her, from `--invincible` — see `_update_excitement()`.
+var excitement_frozen := false
 
 ## Last frame's breakdown, for the debug overlay.
 var last_incoming := 0.0
@@ -144,20 +147,19 @@ func _feel_the_frame(delta: float) -> void:
 ## included, so `ExcitementHalo`'s colour can never disagree with what the bar actually did.
 ## Running and the alley trickle have no source and are never attributed to anybody.
 ##
-## **`--invincible` freezes this meter too, never only the clock.** *(2026-09-11, overturning the
-## flag's own first build the same evening: "when invincible the timer should never go down and
-## excitement should never go up. this is just noisy flashing of alarms and the day gets dark.")*
-## Nothing may add to `excitement` while the flag is on — decay still runs, since that is what
-## keeps the meter honest as a rate rather than turning it off. `sources` is emptied rather than
-## merely left unsummed, so `accumulate_landed()` below is never called either: a source that
+## **`excitement_frozen` (`--invincible`) freezes this meter too, never only the clock**
+## (2026-09-11, the player: "when invincible the timer should never go down and excitement should
+## never go up"). Nothing may add to `excitement` while it holds — decay still runs, since that is
+## what keeps the meter honest as a rate rather than turning it off. `sources` is emptied rather
+## than merely left unsummed, so `accumulate_landed()` below is never called either: a source that
 ## charges the halo but never reaches the meter is the exact drift this guards against.
 func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	_clock += delta
-	var invincible := DevFlags.invincible()
-	var sources := [] if invincible else (_world.excitement_sources_at(here) if _world else [])
+	var frozen := excitement_frozen
+	var sources := [] if frozen else (_world.excitement_sources_at(here) if _world else [])
 	var incoming := 0.0
 	var self_incoming := 0.0
-	if not invincible:
+	if not frozen:
 		for pair in sources:
 			incoming += pair[1]
 		# Added to `incoming` one term at a time, exactly as before `self_incoming` existed:

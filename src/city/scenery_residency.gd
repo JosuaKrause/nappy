@@ -22,6 +22,10 @@ const BUDGET_USEC := 2000
 ## BUDGET_USEC, lowered by a test to make the per-frame spill-over countable.
 var budget_usec := BUDGET_USEC
 var city: City
+## A scripted recipe's frame-locked playback: every update prepares its whole load view in that
+## frame, with no budget and no deferral, so a recorded frame never shows unprepared ground. Handed
+## in by the city that builds this. Free play keeps ordinary streaming.
+var frame_locked := false
 var view := Rect2()
 var _items: Array[Node2D] = []
 var worst_update_usec := 0
@@ -74,7 +78,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 	if recording:
 		outer = FrameRecord.enter(FrameRecord.SCENERY)
 		_record_deferred_scenery.call_deferred(true)
-	immediate = immediate or city.map.recipe_frame_locked
+	immediate = immediate or frame_locked
 	var started := Time.get_ticks_usec()
 	var relocated := not view.has_area() or view.size != next_view.size \
 			or view.get_center().distance_to(next_view.get_center()) > GUARD_MARGIN
@@ -153,12 +157,12 @@ func update(next_view: Rect2, immediate := false) -> void:
 	# (or this update's own bookkeeping) has already spent it in: the heaviest frames.
 	var ran := 0
 	for job in pending:
-		if not city.map.recipe_frame_locked and ran > 0 \
+		if not frame_locked and ran > 0 \
 				and Time.get_ticks_usec() - started >= budget_usec:
 			_pending = true
 			break
 		if job.has("ground_key"):
-			if city.map.recipe_frame_locked or ground.mode == SceneryGround.Mode.ALL:
+			if frame_locked or ground.mode == SceneryGround.Mode.ALL:
 				ground.prepare(job.ground_key)
 				ran += 1
 				if recording:

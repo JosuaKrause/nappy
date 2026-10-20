@@ -117,15 +117,23 @@ func _ready() -> void:
 
 # ------------------------------------------------------------------- the gate ---
 
+## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then —
+## and nothing is sent before then, since the gate cannot yet say whether the page asked
+## `?debug=1`.
+var _config: RunConfig
+
+## Hands the counter the run's configuration; `null` puts it back to none, which sends nothing.
+func configure(config: RunConfig) -> void:
+	_config = config
+
 ## Whether an event may be sent at all, right now. `_should_send()` below is the pure truth table;
-## this is the one place its four live inputs are actually read, the same split
-## `DevFlags.live_debug_requested()`/`_live_debug_requested()` already uses.
-static func should_send() -> bool:
-	return _should_send(OS.get_name() == "Web", OS.is_debug_build(), DevFlags.readout_requested(),
-			_goatcounter_present())
+## this is the one place its four live inputs are actually read.
+func should_send() -> bool:
+	return _config != null and _should_send(OS.get_name() == "Web", _config.debug_build,
+			_config.readout_requested, _goatcounter_present())
 
 ## The gate, as a pure function of its four inputs: on the web, not a debug build, not
-## `?debug=1` (`DevFlags.readout_requested()`, the same flag that keeps `count.js` itself off the
+## `?debug=1` (`RunConfig.readout_requested`, the same flag that keeps `count.js` itself off the
 ## page — see `export_presets.cfg`'s `html/head_include`), and `window.goatcounter.count` actually
 ## present, since the script can fail to load or be blocked by the visitor's own browser.
 static func _should_send(on_web: bool, is_debug_build: bool, debug_requested: bool,
@@ -143,7 +151,7 @@ static func _may_ever_send(on_web: bool, is_debug_build: bool, debug_requested: 
 	return on_web and not is_debug_build and not debug_requested
 
 ## Whether the page actually has a callable `window.goatcounter.count` — `false` off the web
-## without ever asking `JavaScriptBridge`, the same guard `DevFlags._web_query()` makes before its
+## without ever asking `JavaScriptBridge`, the same guard `DevFlags.page_query()` makes before its
 ## own `JavaScriptBridge.eval()`. **`bool(...)`, never `present is bool`**: a JS boolean crosses
 ## `JavaScriptBridge.eval()` as a GDScript `int` (`1`/`0`), not a `bool` — confirmed against a real
 ## export, where `present is bool` silently refused every event, gate closed, no error anywhere to
@@ -170,7 +178,8 @@ static func _goatcounter_present() -> bool:
 var _pending: Array[String] = []
 
 func _send_event(name: String) -> void:
-	if not _may_ever_send(OS.get_name() == "Web", OS.is_debug_build(), DevFlags.readout_requested()):
+	if _config == null \
+			or not _may_ever_send(OS.get_name() == "Web", _config.debug_build, _config.readout_requested):
 		return
 	var present := _goatcounter_present()
 	_flush_pending(present)

@@ -231,14 +231,14 @@ var _contact_seen := false
 var _frame_since := 0.0
 var _frame_worst := 0.0
 
-## Whether `--spikes` was given, read once in `setup()` rather than asked of `DevFlags` every
-## frame — `_watch_the_frame` must cost nothing but this one check while the flag is off.
-var _spikes_on := false
+## Whether `--spikes` was given, handed in by whoever builds this before `setup()` —
+## `_watch_the_frame` must cost nothing but this one check while the flag is off.
+var spikes_on := false
 
 # This second's running mean, kept the same way `_frame_worst` is: the sum and count of every
 # frame's delta since the last report, so `_frame_sum / _frame_count` is the mean of the frames
 # already seen this second, and the worst candidate found so far — its own delta, the mean it
-# beat, and what the game did in it. Only touched while `_spikes_on` holds; see `_watch_for_a_spike`.
+# beat, and what the game did in it. Only touched while `spikes_on` holds; see `_watch_for_a_spike`.
 var _frame_sum := 0.0
 var _frame_count := 0
 var _spike_delta := 0.0
@@ -246,7 +246,7 @@ var _spike_mean := 0.0
 var _spike_what := ""
 
 # The previous frame's tile and live event count, so a spike's own context can say what changed
-# *that* frame rather than merely what the world looked like. Updated every frame `_spikes_on`
+# *that* frame rather than merely what the world looked like. Updated every frame `spikes_on`
 # holds, spike or not — see `_watch_for_a_spike`.
 var _spike_tile := Vector2i.ZERO
 var _spike_events := 0
@@ -268,7 +268,6 @@ func setup(city: City, player: Stroller, baby: Baby, day: DayController,
 	_day = day
 	_resistance = resistance
 	_edge = edge
-	_spikes_on = DevFlags.spikes_requested()
 	_listen()
 
 ## The escape's own `setup()`: her, the baby, the badges, and the section's clock — the
@@ -282,7 +281,6 @@ func setup_escape(player: Stroller, baby: Baby, clock: DayController,
 	_baby = baby
 	_day = clock
 	_edge = edge
-	_spikes_on = DevFlags.spikes_requested()
 	_listen()
 
 func _listen() -> void:
@@ -499,7 +497,7 @@ func _watch_the_frame(delta: float) -> void:
 	_frame_worst = maxf(_frame_worst, delta)
 	# The one extra cost of `--spikes`, and the only one: with the flag off this is a boolean
 	# check and nothing else, same as the rest of this file with telemetry off.
-	if _spikes_on:
+	if spikes_on:
 		_watch_for_a_spike(delta)
 	_frame_since += delta
 	if _frame_since < FRAME_REPORT_INTERVAL:

@@ -4,28 +4,26 @@ extends RefCounted
 ##
 ## **`?dpr=<x>`** caps the device pixel ratio the page reports, so the canvas — the window times
 ## the ratio — draws fewer pixels. For testing only: there is no default cap, the value is the
-## player's after two phone frame records. Same gate. The page's own `window.devicePixelRatio` is
+## player's after two phone frame records. Read in the release-safe bundle `?debug=1` opens
+## (`RunConfig.live_debug`), from the query the run read at boot. The page's own `window.devicePixelRatio` is
 ## what is capped, so the frame record and the readout report the capped ratio and the drawn size
 ## that results.
 
 ## The smallest cap taken: below it the canvas is a few pixels wide, and the value is a typo.
 const MIN_DPR := 0.25
 
-## Applies the page's `?dpr=` cap. Called once at boot.
-static func apply() -> void:
-	var cap := dpr_cap()
+## Applies the page's `?dpr=` cap. Called once at boot, with the run's configuration.
+static func apply(config: RunConfig) -> void:
+	var cap := dpr_cap(config)
 	if cap > 0.0:
 		_cap_the_ratio(cap)
 
 ## The page's `?dpr=` cap, or 0.0 for none: not on a page, not asked for, or not asked of this
 ## page (see the gate above).
-static func dpr_cap() -> float:
-	if not _reads_the_url(DevFlags.live_debug_requested(), OS.get_name() == "Web"):
+static func dpr_cap(config: RunConfig) -> float:
+	if not _reads_the_url(config.live_debug, OS.get_name() == "Web"):
 		return 0.0
-	var search: Variant = JavaScriptBridge.eval("window.location.search")
-	if typeof(search) != TYPE_STRING:
-		return 0.0
-	return _cap_from_query(search)
+	return _cap_from_query(config.page_query)
 
 ## The decision behind the gate, a pure function of its two inputs so a test can drive the table
 ## (the same shape as `ControlsMode._reads_the_url()`).

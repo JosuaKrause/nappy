@@ -127,6 +127,20 @@ var _door_release_latches: Dictionary = {}
 var stream_radius := Tuning.EVENT_STREAM_RADIUS
 ## Authored scenes install a complete event plan; ambient directors cannot replace its actors.
 var _recipe_plan := false
+## `--skip events`, handed in by the city before `setup()`: every instance this makes skips its
+## own drawing.
+var skip_drawing := false
+## `--force <id> [seconds]`, kept here so a director made again by `setup()` is handed it too.
+var _forced_row := ""
+var _forced_interval := 0.0
+
+## `--force <id> [seconds]`: the one row the director hands out from the next day on, every
+## `interval` seconds, or "" for the ordinary day. See `EventDirector.force()`.
+func force(row: String, interval: float) -> void:
+	_forced_row = row
+	_forced_interval = interval
+	if _director:
+		_director.force(row, interval)
 
 ## Takes the one reference on the baked page every `EventInstance` draws from — the whole
 ## catalogue, the checkpoint kit and the crater on one page (`EventInstance.ATLAS_GROUP`).
@@ -152,6 +166,7 @@ func setup(city: City, map: CityMap) -> void:
 	_city = city
 	_map = map
 	_director = EventDirector.new(map)
+	_director.force(_forced_row, _forced_interval)
 	# **Connected once however often this is called.** `City.build()` calls `setup()` and a rig
 	# that wants its own map calls it again on the same manager, which Godot answers with an
 	# `ERROR: Signal ... is already connected` — an error line in a headless run is a failed
@@ -892,8 +907,8 @@ var _pelican_bag_seed := 0
 ## order it sends its cyclists in decide which of them is the pelican, the same way they decide
 ## everything else the director sends. Nothing but a cyclist draws from it. The count drawn is kept
 ## in `GameState.pelican` (saved, and set back to the day's dawn by a lost day), and the bag is
-## rebuilt from it. `--pelican` (`DevFlags.pelican()`) answers yes for every one without changing
-## what is drawn.
+## rebuilt from it. `--pelican` (`PelicanRig.ALWAYS`, set by the city) answers yes for every one
+## without changing what is drawn.
 func rolls_a_pelican(def: EventDef) -> bool:
 	if def.look != EventDef.Look.CYCLIST:
 		return false
@@ -904,7 +919,7 @@ func rolls_a_pelican(def: EventDef) -> bool:
 			return true
 		PelicanRig.NEVER:
 			return false
-	return drew or DevFlags.pelican()
+	return drew
 
 ## The run's pelican bag with `GameState.pelican.draws` marbles already drawn, from the bag's own
 ## stream off the run's seed, so a save, a lost day's give-back and a retry all draw the cyclists the
@@ -1036,6 +1051,7 @@ var _lesson_dog_made := false
 func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_scar := true,
 		facing := Vector2.RIGHT) -> EventInstance:
 	var instance := EventInstance.new()
+	instance.skip_draw = skip_drawing
 	instance.setup(def, at, path, facing, _map)
 	# The day-3 lesson's dog, for its own charging counter: the first dog today on the day the run
 	# is taught (`EventInstance.is_the_lesson`). Telemetry only.

@@ -157,10 +157,10 @@ const _FOCUS_KNOB_OFFSET := 36.0
 var _touch := TouchInput.available()
 
 ## The player's own choice of aiming origin — see the class doc and `ControlsMode`. Defaults to
-## `TAP`, the same default `ControlsMode.resolve()` falls back to, so a test or a rig that never
+## `TAP`, the same default `ControlsMode.from_word()` falls back to, so a test or a rig that never
 ## calls `set_mode()` gets the mode every existing screenshot and `--walk` script was taken under.
 ## In the running game this default is never actually observed: `main._add_touch_controls()` calls
-## `set_mode()` with `ControlsMode.resolve()` immediately after building this node, and
+## `set_mode()` with the configured `--controls` word immediately after building this node, and
 ## `main._on_title_start()` calls it again the moment a player actually presses one of the title
 ## screen's buttons — see those functions' own docs for why this cannot be read once at
 ## `_ready()` the way `_touch` is: the title screen answers the question at runtime, well after
