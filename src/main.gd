@@ -919,6 +919,7 @@ func _build_the_escape_building() -> void:
 	_interior_events = InteriorEvents.new()
 	_interior_events.name = "InteriorEvents"
 	_interior_events.skip_drawing = config.skip_events
+	_interior_events.trace = _the_trace()
 	add_child(_interior_events)
 	_pauses_with_the_game(_interior_events)
 	_interior_events.setup(_interior, GameState.day_rng(GameState.day, "finale-interior"))
