@@ -29,13 +29,18 @@ before an edit touches their area. Codex painted the PNG art.
 I did the design and playtested after nearly every change; my notes are saved word for word and
 turned into work.
 
-**What was hard**
+**What went wrong**
 
-- Turning vector art into painted sprites with an image model: fake transparency checkerboards,
-  retextures instead of redraws, characters changing size between facing directions. Checking every
-  output by script before looking at it by eye helped most.
+- Walk cycles. Generated frames kept putting the same leg in front, and "fixed" frames often only
+  recolored the other leg. What helped: compare the legs' outlines with the colors removed, and
+  trace each leg from hip to knee to foot; in a two-frame walk the front leg has to swap.
 - Lag on phones. Draw calls were not it; a debug overlay in the live build that turns systems off
   one at a time showed what each part actually costs.
+- Undertale-level code quality. Agents add code where similar code already lives, so a few files
+  grew huge (the main script past 3,000 lines, one event class past 7,000) and the escape sequence
+  got its own parallel copy of the game's engine. What's helping: a critical review against explicit
+  principles (separation of concerns, layering, dependency injection), filed as a refactor that is
+  being worked through now.
 
 **What keeps it fair**
 
