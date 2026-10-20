@@ -3055,9 +3055,9 @@ func _unhandled_input(event: InputEvent) -> void:
 ## the street, and a day that restarts the instant the window is clicked spends their first second
 ## for them.
 ##
-## `_no_focus_pause` is the override — see `DevFlags.no_focus_pause()`'s doc — so a rig's window, which
-## usually opens with no focus to lose in the first place, is never handed a picture of this screen
-## instead of the day it was sent to look at.
+## `_no_focus_pause` (`--no-focus-pause`, which `--screenshot` implies) is the override, so a rig's
+## window, which usually opens with no focus to lose in the first place, is never handed a picture
+## of this screen instead of the day it was sent to look at.
 func _pause_on_focus_lost() -> void:
 	if _no_focus_pause:
 		return

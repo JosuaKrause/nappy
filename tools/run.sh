@@ -185,7 +185,7 @@ fi
 
 # `--` separates Godot's own arguments from the game's.
 #
-# M195: a rig flag (the same set `DevFlags.is_rig()` reads, see `rig_flag_present()` in
+# M195: a rig flag (the same set `RunConfig.is_rig` reads, see `rig_flag_present()` in
 # lib_dev_flags.sh) gets the same lockdown tools/shot.sh always carries -- `--disable-vsync`, since
 # an unfocused or covered window otherwise throttles the whole main loop to about once a second on
 # this Mac (docs/DECISIONS.md, M195), and the external kill that backstops the in-game wall-clock
