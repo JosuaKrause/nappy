@@ -3151,11 +3151,6 @@ func _flush_the_flock_if_she_is_among_them() -> void:
 func _step(delta_pos: Vector2) -> Vector2:
 	return _navigator.step(global_position, delta_pos, _mover)
 
-## The navigator this figure moves by, for a placement that walks a chase it has not started yet
-## the way the chase will walk it (`ResistanceDirector._his_walk_reaches_her()`).
-func navigator() -> Navigator:
-	return _navigator
-
 # ------------------------------------------------------ the task guard's way to her ---
 # *(curly-gecko, the player: "as long as he starts pursuing when you hit the task it's fine".)*
 
