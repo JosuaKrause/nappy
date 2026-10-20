@@ -404,8 +404,14 @@ def _get(
                     )
                 time.sleep(RETRY_BACKOFF_SECONDS * attempt)
                 continue
+            hint = (
+                "; a 404 on every try usually means a wrong site URL (check --site / GOATCOUNTER_SITE)"
+                if exc.code == 404
+                else ""
+            )
             raise GoatCounterHTTPError(
-                exc.code, f"GoatCounter returned HTTP {exc.code} for {url.partition('?')[0]}: {_server_answer(exc)}"
+                exc.code,
+                f"GoatCounter returned HTTP {exc.code} for {url.partition('?')[0]}: {_server_answer(exc)}{hint}",
             ) from exc
         except urllib.error.URLError as exc:
             if _is_transient(exc.reason) and attempt <= MAX_RETRIES:
@@ -924,7 +930,7 @@ def to_raw_jsonable(hits: list[dict[str, Any]]) -> list[dict[str, Any]]:
 # The thresholds `--report` judges by, named here and printed in its output so a reader sees what
 # "a wall" and "low-sample" meant.
 MIN_ATTEMPTS = 20  # a day with fewer began is printed, marked low-sample, and left out of the walls
-WALL_RATE_MARGIN = 0.15  # a wall: a win rate this far (0.15 = 15 points) below the median of the days
+WALL_RATE_MARGIN = 0.10  # a wall: a win rate this far (0.10 = 10 points) below the median of the days
 WALL_CAUSE_SHARE = 0.25  # a wall: one cause that ends at least this share of a day's attempts
 # The page visit's stored path: sent as `nappy.josuakrause.com/`, GoatCounter lists it with a leading slash.
 PAGE_VISIT_PATHS = frozenset({"/nappy.josuakrause.com", "nappy.josuakrause.com/", "nappy.josuakrause.com"})
@@ -1073,7 +1079,7 @@ def _day_table(days: list[dict[str, Any]], *, full: bool) -> list[str]:
     if not full:
         return [
             f"  day {d['day']:>2}: {d['won']}/{d['began']} won ({_pct(d['win_rate'])})"
-            + (" *low-sample" if d["low_sample"] else "")
+            + (" (low-sample)" if d["low_sample"] else "")
             for d in days
         ]
     lines = [
@@ -1082,7 +1088,7 @@ def _day_table(days: list[dict[str, Any]], *, full: bool) -> list[str]:
     ]
     for d in days:
         top = ", ".join(f"{t['cause']} {t['count']} ({_pct(t['share'])})" for t in d["top_causes"])
-        mark = "  *low-sample" if d["low_sample"] else ""
+        mark = "  (low-sample)" if d["low_sample"] else ""
         lines.append(
             f"  {d['day']:>3}  {d['began']:>5}  {d['won']:>4}  {_pct(d['win_rate']):>5}  {d['lost']:>4}  "
             f"{d['crying']:>4}  {d['hard_fail']:>4}  {d['timeout']:>4}  {top}{mark}"
@@ -1094,7 +1100,7 @@ def _caveats() -> list[str]:
     return [
         "Caveats: counts are attempts, not visitors -- events opt out of sessions, and a nerve-bought retry "
         "begins its day again, so began is inflated by retries and a win rate is wins per attempt.",
-        f"A day with fewer than {MIN_ATTEMPTS} attempts (MIN_ATTEMPTS) is printed and marked *low-sample, and "
+        f"A day with fewer than {MIN_ATTEMPTS} attempts (MIN_ATTEMPTS) is printed and marked (low-sample), and "
         "left out of the median and the walls. Only the page visit counts visitors.",
     ]
 
@@ -1113,7 +1119,7 @@ def format_report(report: dict[str, Any], *, title: str) -> str:
         f"  Checkpoints (a normal run out of nerves, by the day it came from): {ck['total']}"
         + (f" -- {from_days}" if from_days else "")
     )
-    lines += ["", "Per day (cry = lost crying, hard = lost hard fail, time = lost timeout; * = low-sample):"]
+    lines += ["", "Per day (cry = lost crying, hard = lost hard fail, time = lost timeout):"]
     lines += _day_table(report["days"], full=True)
     totals = report["cause_totals"]
     lines += ["", "Cause totals across all days:", f"  Crying: {_counts_line(totals['crying'])}"]
@@ -1134,7 +1140,7 @@ def format_report_by_release(windows: list[ReleaseWindow], reports: list[dict[st
     return "\n".join(lines)
 
 
-def _md_days(days: list[dict[str, Any]], *, full: bool) -> list[str]:
+def _md_days(days: list[dict[str, Any]]) -> list[str]:
     if not days:
         return ["(no days)"]
     head = "| Day | Attempts | Won | Win rate | Lost | Crying | Hard fail | Timeout | Top causes |"
@@ -1168,7 +1174,7 @@ def format_report_markdown(report: dict[str, Any], *, title: str) -> str:
         "",
         "## Per day",
         "",
-        *_md_days(report["days"], full=True),
+        *_md_days(report["days"]),
         "",
         "## Cause totals",
         "",
@@ -1189,7 +1195,7 @@ def format_report_by_release_markdown(
     lines = [f"# {title}", "", *_caveats()]
     for window, report in zip(windows, reports, strict=True):
         lines += ["", f"## {window.label} ({rfc3339(window.start)} to {rfc3339(window.end)})", ""]
-        lines += [*_md_days(report["days"], full=True), "", *_md_walls(report["walls"])]
+        lines += [*_md_days(report["days"]), "", *_md_walls(report["walls"])]
     if not windows:
         lines += ["", "(no time in range)"]
     return "\n".join(lines)

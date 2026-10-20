@@ -10,7 +10,7 @@ hand analysis itself is `docs/stats/2026-10-19-goatcounter.md`.
 checkpoints (grouped by the day they came from); a per-day table of attempts, wins, win rate, the
 crying, hard-fail and timeout split and the two largest causes with their share; cause totals,
 crying and hard fails apart; and the walls, with the caveats and thresholds printed. The thresholds
-are named constants: `MIN_ATTEMPTS` (20), `WALL_RATE_MARGIN` (0.15) and `WALL_CAUSE_SHARE` (0.25).
+are named constants: `MIN_ATTEMPTS` (20), `WALL_RATE_MARGIN` (0.10) and `WALL_CAUSE_SHARE` (0.25).
 `--report --by-release` gives the per-day win rates and walls per release window, `--json` the same
 data, and `--markdown` the report as Markdown, which is how a read worth keeping becomes a file under
 `docs/stats/` (the **using-tools** row says when: before changing a balance number or a danger, after
@@ -28,5 +28,5 @@ or without a trailing slash and `/api/v0`, and a 401 says a key belongs to one s
 
 **Choices made where the design was silent, open to overturn:** a day under 20 attempts is printed
 and marked low-sample but left out of the median and the walls; a timeout counts as a cause; "well
-below the median" is 15 points absolute; the old causeless `lost-crying` and `lost-hard-fail` count in
+below the median" is 10 points absolute; the old causeless `lost-crying` and `lost-hard-fail` count in
 the loss split with no cause.

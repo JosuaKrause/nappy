@@ -1351,6 +1351,7 @@ class HitsNotFoundRetryTests(unittest.TestCase):
                 fetch({"start": "a"})
         self.assertEqual(ctx.exception.status, 404)
         self.assertIn("404 page not found", str(ctx.exception))
+        self.assertIn("wrong site URL", str(ctx.exception))
         self.assertNotIn("<html>", str(ctx.exception))
 
 
@@ -1445,11 +1446,11 @@ class ReportTests(unittest.TestCase):
         text = goatcounter.format_report(self.report(), title="T")
         self.assertIn("attempts, not visitors", text)
         self.assertIn(f"fewer than {goatcounter.MIN_ATTEMPTS} attempts", text)
-        self.assertIn("15 points", text)
+        self.assertIn("10 points", text)
         self.assertIn("25%", text)
         self.assertIn("Visitors (page visit): 70", text)
         self.assertIn("day 4: crying-traffic ends 9 attempts (30%", text)
-        self.assertIn("*low-sample", next(row for row in text.splitlines() if row.startswith("    5  ")))
+        self.assertIn("(low-sample)", next(row for row in text.splitlines() if row.startswith("    5  ")))
         self.assertIn("day 5: 4", text)  # checkpoints by the day they came from
 
     def test_an_empty_range_reports_without_dividing_by_nothing(self) -> None:
@@ -1475,6 +1476,16 @@ class ReportTests(unittest.TestCase):
                 self.assertEqual(goatcounter.main(flags), 2)
             self.assertIn("--markdown", stderr.getvalue())
 
+    def test_the_real_rates_make_days_6_and_7_rate_walls_and_not_day_3(self) -> None:
+        real = {1: (108, 33), 2: (70, 28), 3: (79, 18), 4: (31, 21), 5: (30, 19), 6: (54, 10), 7: (25, 5)}
+        days = [
+            {"day": d, "began": b, "won": w, "win_rate": w / b, "low_sample": b < 20, "causes": {}}
+            for d, (b, w) in real.items()
+        ]
+        walls = goatcounter.find_walls(days)
+        self.assertEqual([w["day"] for w in walls["low_win_rate_days"]], [6, 7])
+        self.assertAlmostEqual(walls["median_win_rate"], 33 / 108)
+
     def test_main_prints_markdown_and_by_release_markdown(self) -> None:
         hits = report_hits(self.DAYS, self.RUN)
         for flags in (["--report", "--markdown"], ["--report", "--markdown", "--by-release"]):
@@ -1486,7 +1497,11 @@ class ReportTests(unittest.TestCase):
                 redirect_stdout(stdout),
             ):
                 self.assertEqual(goatcounter.main([*flags, "--start", "2026-10-01", "--end", "2026-10-20"]), 0)
-            self.assertIn("| Day |", stdout.getvalue())
+            out = stdout.getvalue()
+            self.assertIn("| 3 | 40 | 30 | 75% |", out)
+            self.assertIn("| 5 (low-sample) |", out)
+            self.assertIn("- day 4: crying-traffic ends 9 attempts", out)
+            self.assertIn("## v1" if "--by-release" in flags else "## Walls", out)
 
     def test_main_prints_the_report_and_its_json(self) -> None:
         hits = report_hits(self.DAYS, self.RUN, visitors=70)

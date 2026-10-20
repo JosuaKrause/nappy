@@ -48,7 +48,7 @@ release's day, and a day with several releases is one mixed window naming them a
 the first release form a window of their own. It cannot combine with --raw or --check. --report prints
 one page on where players struggle: the visitors, runs, controls, mode, endings, escape and checkpoints; a per-day
 table of attempts, wins, win rate, losses (crying / hard fail / timeout) and the top two causes; the cause totals; and
-the walls (a win rate 15 points under the median, or one cause ending 25% of a day's attempts; a day under 20
+the walls (a win rate 10 points under the median, or one cause ending 25% of a day's attempts; a day under 20
 attempts is marked low-sample and left out). With --by-release it prints each release's per-day win rates and
 walls; with --json the same data; --markdown (with --report, not --json) prints it as Markdown to save as a stats file. A 404 from the hits endpoint is retried like a 429, and says so on stderr.
 --check proves the key works with
