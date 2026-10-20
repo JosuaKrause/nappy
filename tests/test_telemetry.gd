@@ -136,7 +136,7 @@ func _test_the_formatting_helpers(t) -> void:
 ## `source_version()` always returns the tag form here, but a shallow checkout with no tags
 ## reachable is `git describe --always`'s bare-hash fallback, and neither is wrong.
 func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
-	var version := Telemetry.source_version()
+	var version := BuildInfo.source_version()
 	t.check(version != "", "a run always records something about where it came from")
 	if version == "unknown":
 		# An exported build with no repository to ask. Nothing more to check.

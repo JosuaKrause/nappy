@@ -621,10 +621,10 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
 	# The title chooses the scheme after day 1 began, and `main` emits the choice before it sets
 	# the scheme on `TouchControls`, which still answers TAP here.
 	GameState.day = 1
-	EventBus.controls_chosen.emit(ControlsMode.Mode.JOYSTICK, false)
+	EventBus.controls_chosen.emit(true, false)
 	t.check(hud._teach.line == "Tap to walk, hold {run} or double tap to run",
 			"choosing joystick on the title says day 1's line in the joystick wording")
-	EventBus.controls_chosen.emit(ControlsMode.Mode.TAP, false)
+	EventBus.controls_chosen.emit(false, false)
 	t.check(hud._teach.line == "Tap to walk, double tap to run", "and choosing tap says the tap one")
 
 	hud._teach.show_line("a [b]bracket[/b] line")

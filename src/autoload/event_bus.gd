@@ -60,13 +60,14 @@ signal save_written(operation: int, result: int)
 signal save_write_settled(operation: int, kept: bool)
 ## `GameSave.clear()`'s own moment a save file was actually deleted — never a refused deletion (a
 ## dev or headless run, or no file left to delete), which changes nothing. `result` is a
-## `GameSave.Result` passed as `int`, the same cross-script-enum reason `controls_chosen` below
-## passes its own: `PENDING` on the web while IndexedDB has not yet said whether it dropped the
-## file (`save_deletion_settled` follows), `CONFIRMED` or `FAILED` otherwise. Emitted by `GameSave`
-## itself, so the deletion `GameState._end_run()` makes — an autoload with no way to reach `main`'s
-## indicator — shows the save symbol exactly as the held restart's does. Heard by `SaveIndicator`,
-## which outlives the `main` that raised it when the held restart reloads the scene. `operation` is
-## the deletion's own id, drawn from the same sequence a write's is — see `save_written`.
+## `GameSave.Result` passed as `int`, since a cross-script enum is not the same type as itself as
+## a parameter (the **godot** skill): `PENDING` on the web while IndexedDB has not yet said whether
+## it dropped the file (`save_deletion_settled` follows), `CONFIRMED` or `FAILED` otherwise.
+## Emitted by `GameSave` itself, so the deletion `GameState._end_run()` makes — an autoload with no
+## way to reach `main`'s indicator — shows the save symbol exactly as the held restart's does.
+## Heard by `SaveIndicator`, which outlives the `main` that raised it when the held restart reloads
+## the scene. `operation` is the deletion's own id, drawn from the same sequence a write's is — see
+## `save_written`.
 signal save_deleted(operation: int, result: int)
 ## The browser's answer to a deletion `save_deleted` announced as `PENDING`, with that deletion's
 ## `operation`: `kept` is whether IndexedDB dropped the file. Emitted once per pending deletion, and
@@ -234,9 +235,9 @@ signal escape_out()
 
 # --------------------------------------------------------------- presentation ---
 
-## The player's own answer to the controls question, pressed on the title screen — a
-## `ControlsMode.Mode` passed as `int`, the same cross-script-enum reason `FinaleController`
-## passes its own enums as `int` (see the **godot** skill). `by_key` is true when a key began the
-## run rather than a button, which the title answers with `Mode.TAP`; `VisitCounter` reports it as
-## `controls-keys` rather than as that fallback.
-signal controls_chosen(mode: int, by_key: bool)
+## The player's own answer to the controls question, pressed on the title screen: `joystick` is
+## whether it was one of the two joystick buttons, rather than the tap one. `by_key` is true when a
+## key began the run rather than a button, which the title answers with the tap scheme;
+## `VisitCounter` reports it as `controls-keys` rather than as that fallback. A plain fact rather
+## than `ControlsMode`'s own enum, so what hears it needs nothing of the UI's.
+signal controls_chosen(joystick: bool, by_key: bool)

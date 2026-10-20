@@ -164,7 +164,7 @@ var _readout_requested := false
 ## The validated `--skip` words, for the readout's own `skip` line; empty whenever
 ## `_readout_requested` is false.
 var _skip_words: Array[String] = []
-## The readout's first line, `TitleScreen.build_text()` — `git describe`'s form and the commit —
+## The readout's first line, `BuildInfo.build_text()` — `git describe`'s form and the commit —
 ## read on the first frame that assembles the readout and kept, since a working tree pays two
 ## `git` spawns for the answer and a release page with neither flag never pays them at all.
 var _build_text := ""
@@ -274,6 +274,11 @@ var _run_over := false
 var _ending_shown := false
 ## Whether the title screen is up, with the city running behind it and nobody in it.
 var _in_the_title := false
+
+## The same, asked: what the frame trace and the frame record are handed, so they stop sampling
+## behind the title without reading this node's fields.
+func in_the_title() -> bool:
+	return _in_the_title
 ## `GameSave.try_resume()`'s own return: `{}` on a fresh run, or `{"day_under_way": bool}` once
 ## `GameState` already carries a resumed run's fields — set once in `_ready()` and read by
 ## `_on_title_start()`, which is the only place the title's own dismissal is not simply "start
@@ -563,12 +568,14 @@ func _ready() -> void:
 		var trace := FrameTrace.new()
 		trace.name = "FrameTrace"
 		add_child(trace)
-		trace.setup(self, _city, _player, _day, Array(config.active_args))
+		trace.setup(in_the_title, func() -> bool: return _layer_readout_on,
+				func() -> bool: return _layer_graph_on, _city, _player, _day,
+				Array(config.active_args))
 
 	if config.frame_record_requested:
 		_frame_recorder = FrameRecorder.new()
 		add_child(_frame_recorder)
-		_frame_recorder.setup(self, _city, _player, _day)
+		_frame_recorder.setup(in_the_title, _city, _player, _day)
 
 	# Built before `_start_day()`, which calls `_route_rig.start_day()` once the day it is meant
 	# to walk actually exists — see `src/dev/route_rig.gd`.
@@ -1431,11 +1438,9 @@ func _open_the_title() -> void:
 ## different places depending on which screen raised it.
 func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 		side := ControlsMode.Side.LEFT) -> void:
-	# `VisitCounter`'s own cheap "etc." — which control scheme was picked, or that a key began the
-	# run. `mode` as `int`: a cross-script enum is not the same type as itself as a signal
-	# parameter (see the **godot** skill), the same reason `FinaleController`'s own signals pass
-	# theirs that way.
-	EventBus.controls_chosen.emit(mode, by_key)
+	# Which control scheme was picked, or that a key began the run: the HUD rewords its walking
+	# lesson by it and the page counts it.
+	EventBus.controls_chosen.emit(mode == ControlsMode.Mode.JOYSTICK, by_key)
 	_touch_controls.set_mode(mode, side)
 	ControlsMode.remember(mode, side)
 	_in_the_title = false
@@ -2640,7 +2645,7 @@ func _process(delta: float) -> void:
 		return
 	var tile := _city.map.world_to_tile(_player.global_position)
 	if _build_text == "":
-		_build_text = TitleScreen.build_text()
+		_build_text = BuildInfo.build_text()
 	# The `skip` line names what `_skip_words` is off, directly beneath the seed line, so a
 	# screenshot taken under `--skip` says what it measured — absent when nothing is skipped, the
 	# ordinary case, so an unflagged readout carries no empty line where this one would go.
@@ -2728,7 +2733,7 @@ func _write_the_escape_readout(delta: float) -> void:
 	if not _readout_due(delta):
 		return
 	if _build_text == "":
-		_build_text = TitleScreen.build_text()
+		_build_text = BuildInfo.build_text()
 	var here := _player.global_position
 	var lines: Array = [
 		"build %s" % _build_text,

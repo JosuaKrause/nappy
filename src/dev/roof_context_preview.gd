@@ -62,7 +62,7 @@ func _ready() -> void:
 			object.add_rotor(false)
 
 	queue_redraw()
-	await AutoScreenshot.drawn_frame(get_tree())
+	await DrawnFrame.wait(get_tree())
 	var image := get_viewport().get_texture().get_image()
 	var error := image.save_png(OUTPUT)
 	if error != OK:

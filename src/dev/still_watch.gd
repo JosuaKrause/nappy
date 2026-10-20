@@ -56,7 +56,7 @@ extends Node
 ## rather than being caught the instant she can move — see `_feed()`'s own note.
 ##
 ## **Reuses `AutoScreenshot`'s own `_capture()`** — the headless guard, the wait for a drawn
-## frame (`AutoScreenshot.drawn_frame()`), the save, the stdout line and the quit — through
+## frame (`DrawnFrame.wait()`), the save, the stdout line and the quit — through
 ## `AutoScreenshot.immediate()`, rather than a second writer of the same picture. This file owns
 ## only the stillness heuristic and where the picture goes.
 ##

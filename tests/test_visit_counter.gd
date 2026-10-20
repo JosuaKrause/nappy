@@ -159,14 +159,14 @@ func _test_a_hard_run_counts_its_days_twice_and_a_normal_run_once(t) -> void:
 	GameState.hard_mode = saved
 	counter.free()
 
-## A key begins the run in `Mode.TAP`, and is still reported as keys: the name comes from the
-## input that began the run, not the mode it fell back to.
+## A key begins the run in the tap scheme, and is still reported as keys: the name comes from the
+## input that began the run, not the scheme it fell back to.
 func _test_controls_event_name(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.JOYSTICK, false)
+	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(true, false)
 			== "nappy-controls-joystick", "the joystick button")
-	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.TAP, false)
+	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(false, false)
 			== "nappy-controls-tap", "the tap button")
-	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(ControlsMode.Mode.TAP, true)
+	t.check(VISIT_COUNTER_SCRIPT._controls_event_name(false, true)
 			== "nappy-controls-keys", "a key, whose run begins in tap mode, is reported as keys")
 
 ## `chatting_mother` is a `chat`; every other id that can reach `EventBus.player_detained` — the
@@ -239,7 +239,7 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	counter._on_escape_city_entered()
 	counter._on_escape_lost()
 	counter._on_escape_out()
-	counter._on_controls_chosen(ControlsMode.Mode.TAP, true)
+	counter._on_controls_chosen(false, true)
 	counter._on_run_mode_chosen(true, 1)
 	counter._on_went_back_to_a_checkpoint(4, 6)
 	var after := _gamestate_snapshot()
@@ -856,7 +856,7 @@ func _test_every_event_opts_out_of_sessions(t) -> void:
 	counter._on_escape_city_entered()
 	counter._on_escape_lost()
 	counter._on_escape_out()
-	counter._on_controls_chosen(ControlsMode.Mode.JOYSTICK, false)
+	counter._on_controls_chosen(true, false)
 	t.check(counter.sent.size() >= 20,
 		"there were events to check (%d)" % counter.sent.size())
 	var prefix := "try { window.goatcounter.count("

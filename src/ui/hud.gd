@@ -264,11 +264,11 @@ func _say_the_walking_lesson(joystick: bool) -> void:
 ## The title opens after day 1 has started, so the lesson said at dawn was worded for whatever
 ## scheme was in force before the player chose one, and counted down hidden behind the title. Said
 ## again when the choice is made, in the chosen scheme, for its full length. Uses the signal's own
-## `mode`: `main` emits this one line *before* it sets the scheme on `TouchControls`, so the tree
-## still answers with the old one at this moment.
-func _on_controls_chosen(mode: int, _by_key: bool) -> void:
+## `joystick`: `main` emits this one line *before* it sets the scheme on `TouchControls`, so the
+## tree still answers with the old one at this moment.
+func _on_controls_chosen(joystick: bool, _by_key: bool) -> void:
 	if GameState.day == 1:
-		_say_the_walking_lesson(mode == ControlsMode.Mode.JOYSTICK)
+		_say_the_walking_lesson(joystick)
 
 ## How the run lessons put it. *(2026-10-04, the player, inbox #533: "joystick run should now say
 ## hold <run button> or double tap to run where it makes sense".)* The joystick scheme draws a run

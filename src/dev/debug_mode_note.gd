@@ -20,7 +20,7 @@ const _MARGIN := Vector2(14.0, 14.0)
 ## Terse on purpose — a claim to keep reading, not a phrase to parse. "Debug" names what the
 ## flag is; "on" says the state rather than repeating the readout's own word for it.
 ##
-## **The build stamp follows the words** — `TitleScreen.build_text()`, `git describe`'s form and
+## **The build stamp follows the words** — `BuildInfo.build_text()`, `git describe`'s form and
 ## the commit, `v0.10.3 (875609a5)` — *(2026-09-13, playtest 70: "Debug mode should contain the
 ## commit + describe.")*, because a screenshot of a debug page is evidence of some build, and
 ## nothing else on it says which: the title screen's version line is off screen the moment a run
@@ -36,7 +36,7 @@ func _init() -> void:
 func _ready() -> void:
 	var label := Label.new()
 	label.name = "Note"
-	label.text = "%s   %s" % [_TEXT, TitleScreen.build_text()]
+	label.text = "%s   %s" % [_TEXT, BuildInfo.build_text()]
 	label.position = _MARGIN
 	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.85))
 	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))

@@ -39,7 +39,7 @@ covers it depends on the window in front: an ordinary opaque window over it does
 shows through may not. A capture that only waited for the render loop's next frame would wait for
 ever there, and the run would end on `[Main] a rig's own wall-clock limit ... passed` however
 often it was retried.
-`AutoScreenshot.drawn_frame()` (`src/dev/auto_screenshot.gd`) is what every still and burst under
+`DrawnFrame.wait()` (`src/drawn_frame.gd`) is what every still and burst under
 `src/` waits on — `shot.sh`'s still, `--quit-when-still`, and the telemetry's stills and `snapshot_burst`
 bursts, which `tests/test_auto_screenshot.gd` holds by failing on a bare wait for the render loop's
 frame anywhere under `src/` — and when the window cannot be drawn it draws that frame on demand

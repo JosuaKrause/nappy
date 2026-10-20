@@ -365,7 +365,7 @@ func _test_a_pursuit_reverses_an_angled_step_too(t) -> void:
 
 ## The line a capture must not wait on by itself: on macOS a window nobody can see is not drawn, so
 ## this signal never comes and the rig ends on its wall-clock limit with no picture.
-## `AutoScreenshot.drawn_frame()` is the wait that draws the frame on demand instead.
+## `DrawnFrame.wait()` is the wait that draws the frame on demand instead.
 const _BARE_RENDER_LOOP_WAIT := "await RenderingServer.frame_post_draw"
 
 ## The lines of `source` that wait on `_BARE_RENDER_LOOP_WAIT`, comments aside. Pure over a string
@@ -409,15 +409,15 @@ func _test_only_a_covered_recording_needs_an_on_demand_frame(t) -> void:
 	t.check(not AutoScreenshot.recording_frame_needs_force(false, false),
 		"covering an ordinary game does not install the movie-writer workaround")
 
-## Every capture under `src/` waits through `drawn_frame()`, so a hidden rig still photographs.
+## Every capture under `src/` waits through `DrawnFrame.wait()`, so a hidden rig still photographs.
 func _test_no_capture_under_src_waits_on_the_render_loop_alone(t) -> void:
 	var scripts := _scripts_under("res://src")
 	t.check(scripts.has("res://src/dev/auto_screenshot.gd"),
 		"there were scripts to scan (%d), the capture's own among them" % scripts.size())
-	t.check(FileAccess.get_file_as_string("res://src/dev/auto_screenshot.gd")
-			.contains("static func drawn_frame("), "the wait a capture uses instead exists")
+	t.check(FileAccess.get_file_as_string("res://src/drawn_frame.gd")
+			.contains("static func wait("), "the wait a capture uses instead exists")
 	for path in scripts:
 		var waits := _bare_render_loop_waits(FileAccess.get_file_as_string(path))
 		t.check(waits.is_empty(),
 			"%s waits on RenderingServer.frame_post_draw alone, which never comes while the " % path
-			+ "window is hidden -- await AutoScreenshot.drawn_frame(get_tree()) instead")
+			+ "window is hidden -- await DrawnFrame.wait(get_tree()) instead")

@@ -331,7 +331,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	var recorder := FrameRecorder.new()
 	recorder.save_on_exit = false
 	main.add_child(recorder)
-	recorder.setup(main, main._city, main._player, main._day)
+	recorder.setup(main.in_the_title, main._city, main._player, main._day)
 	main._frame_recorder = recorder
 	t.check(FrameRecord.on and FrameRecord.ledger == recorder.ledger
 			and recorder.ledger == restarted,

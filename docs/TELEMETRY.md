@@ -1130,7 +1130,7 @@ build has nothing in `project.godot` to reach:
   the whole session and answers to nothing that would take it off again — not the `4` key, not a
   press, not the title screen hiding `_status` around it — so a page reached with the flag on is
   never mistaken for the ordinary release page everyone else gets. The note carries the build
-  stamp after its words and the readout's first line repeats it — `TitleScreen.build_text()`,
+  stamp after its words and the readout's first line repeats it — `BuildInfo.build_text()`,
   `git describe`'s form and the commit, `v0.10.3 (875609a5)` on a release — read from `git` on a
   working tree and from the two settings `tools/export-web.sh` bakes into an export,
   `application/config/version` and `application/config/source_commit`, so a screenshot of either

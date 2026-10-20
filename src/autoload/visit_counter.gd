@@ -276,12 +276,12 @@ static func _day_began_names(day: int, hard: bool) -> Array[String]:
 static func _checkpoint_event_name(checkpoint_day: int, lost_day: int) -> String:
 	return "nappy-checkpoint-%d-from-day-%d" % [checkpoint_day, lost_day]
 
-## `keys` when a key began the run, whatever mode that gave it — the title begins a key's run in
-## `Mode.TAP`, and a key player is not a tap player — otherwise the button pressed.
-static func _controls_event_name(mode: int, by_key: bool) -> String:
+## `keys` when a key began the run, whatever scheme that gave it — the title begins a key's run in
+## the tap scheme, and a key player is not a tap player — otherwise the button pressed.
+static func _controls_event_name(joystick: bool, by_key: bool) -> String:
 	if by_key:
 		return "nappy-controls-keys"
-	return "nappy-controls-joystick" if mode == ControlsMode.Mode.JOYSTICK else "nappy-controls-tap"
+	return "nappy-controls-joystick" if joystick else "nappy-controls-tap"
 
 ## `EventBus.player_detained`'s own `id` (`nearest.def.id` in `EventManager._check_detentions()`),
 ## named the way the day brief already tells the two kinds of stop apart: `chatting_mother` is a
@@ -513,5 +513,5 @@ func _on_escape_lost() -> void:
 func _on_escape_out() -> void:
 	_send_event("nappy-escape-out")
 
-func _on_controls_chosen(mode: int, by_key: bool) -> void:
-	_send_event(_controls_event_name(mode, by_key))
+func _on_controls_chosen(joystick: bool, by_key: bool) -> void:
+	_send_event(_controls_event_name(joystick, by_key))
