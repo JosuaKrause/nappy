@@ -50,8 +50,9 @@ patching statics or reaching into private fields. Every item below applies it to
 ## Order
 
 Each step leaves the game working and is its own PR, reviewed on its own. **A step is done at test
-parity**: the existing tests pass, changed only as far as the code they reach moved; nothing is
-remeasured per step. The player: "let's do remeasuring at the very end and not get blocked by it
+parity**: the existing tests pass where the code they reach moved, and a step may convert the tests
+it touches to injected fakes and public APIs early (`tests-public-seams.md`); nothing is remeasured
+per step. The player: "let's do remeasuring at the very end and not get blocked by it
 during the refactor", "for the refactor test parity is enough" (inbox #813).
 
 1. `escape-as-day-spec.md`: the escape's loss reason and GoatCounter fixed by the day's own finish

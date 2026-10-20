@@ -40,13 +40,16 @@ rather than a domain event per line, since each line is the deciding system's ow
 from values only in scope where it decides, and the facts other observers need already have bus
 signals; the build stamp moved down a layer rather than being handed in, which would cost two `git`
 spawns per boot; `day_started` keeps its payload; an authored recipe day now gets a day header, so
-its lines carry the day's clock rather than `0.0` (every recipe tool runs with `--no-telemetry`);
+its lines carry the day's clock rather than `0.0`, and a recorded recipe's picture filenames carry
+an attempt count (`tools/record.sh`, `tools/trailer.sh` and `tools/lib_movie_evidence.sh` keep the
+run log on);
 `ChargeRecord` is handed `EventBus` by its instance; `GameState._trace` is private and exempt from
 the save-field guard, and the test runner hands `GameState` a silent trace between suites.
 
 **Left:** `Telemetry` is still called directly by the texture lines in `ground_layers.gd` and the
 atlas library, `GameSave`'s save lines and the dev rigs (`RouteRig`, `StillWatch`, `DevRig`);
-pursuit phases are `events-composed.md`'s and attach to `ChargeRecord`.
+pursuit phases are `events-composed.md`'s and attach to `ChargeRecord`; `main` still drives the day
+summary and the HUD directly, which `main-and-state.md`'s `RunFlow` and `SummaryModel` take over.
 
 **For the remeasuring step:** GoatCounter's names per fact before and after the release, and a
 played run's log against one from before the refactor for the same seed, the recipe-day header the
