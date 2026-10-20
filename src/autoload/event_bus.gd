@@ -110,7 +110,9 @@ signal event_lit_unmet(id: String)
 # a charging counter are not the same thing"; "Charging is independent of an ended day")*. Each
 # signal below carries the charger's name, `EventInstance.charger_name()`: its row's own `def.id`,
 # or `charging_dog_tutorial` for the day-3 lesson's dog. `VisitCounter` sends a counter of its own
-# for every charger. Listen-only — see docs/TELEMETRY.md, "The page counts visits".
+# for every charger. Listen-only — see docs/TELEMETRY.md, "The page counts visits". Every charger's
+# own sends go through its `ChargeRecord`, the one owner of "said once" and of a charge that began
+# ending in exactly one of caught, cut short and ended.
 
 ## A charger's warning going up, the level below its charge, which `pursuit_began` is sent for: a
 ## waiting charger noticing her (`EventInstance.warns_by_radius()`), the masked man's raised hand,

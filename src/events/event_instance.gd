@@ -1169,7 +1169,7 @@ var _drawn_box_known := false
 ## own moment) and it has neither given up nor left. Telemetry only — `EncounterWatch` counts a
 ## chase as an influence.
 func is_chasing() -> bool:
-	return def.pursues and _pursuit_began_reported and not is_finished and not is_leaving \
+	return def.pursues and _charge.began and not is_finished and not is_leaving \
 			and not is_waiting()
 
 ## Whether this charger's charge has begun and is still running: `EventBus.pursuit_began` sent for
@@ -1177,7 +1177,7 @@ func is_chasing() -> bool:
 ## had its charge end. Asked by `DangerEdge`, which meets the frame a charge starts at its true
 ## approach rather than its smoothed one, so the badge is up from the frame he runs.
 func has_charged() -> bool:
-	return _pursuit_began_reported and not _charge_ended and not is_finished and not is_leaving \
+	return _charge.began and not _charge.ended and not is_finished and not is_leaving \
 			and not is_waiting()
 
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
@@ -2442,12 +2442,12 @@ var _last_range := INF
 ## `resume()`'s own `from_noticed_at`, so a notice made before an instance left the world is not
 ## made twice.
 var _noticed_at := INF
-## Whether `EventBus.pursuit_began` has already been sent for this instance's own chase — a row
-## with no `pursues_within` at all (`is_waiting()` never true) starts chasing on its very first
-## `_chase()` call rather than on a `_noticed_at` transition, so this is stated over "have I told
-## `VisitCounter` yet" rather than re-derived from `_noticed_at`. See `EventBus.pursuit_began`'s own
-## doc.
-var _pursuit_began_reported := false
+## Its charge as it is counted — its warning, its start and the one way it ended — and the one
+## owner of the rule that a charge that began ends in exactly one way (`ChargeRecord`). A row with
+## no `pursues_within` at all (`is_waiting()` never true) starts chasing on its very first `_chase()`
+## call rather than on a `_noticed_at` transition, so whether it has begun is the record's
+## `began` rather than re-derived from `_noticed_at`.
+var _charge := ChargeRecord.new(Callable(self, &"charger_name"), EventBus)
 ## **A checkpoint hut's guard raising his hand**: true while a crossing of this hut's door is
 ## warning her and this hut is the one across the road from her, or this alley post's
 ## (`EventManager._warn_at_the_doors()`, which sets it every frame); once the crossing's warning has
@@ -2455,12 +2455,6 @@ var _pursuit_began_reported := false
 ## (`EventDef.charges_at_once`). Drawn
 ## with `guard_alert_front` beside the hut instead of `guard_standing` (`_draw_checkpoint_hut()`).
 var guard_warns_her := false
-## Whether `EventBus.pursuit_warned` has already been sent for this instance's first warning.
-var _warning_reported := false
-## Whether this instance's charge has ended for its counter: caught (`report_the_catch()`), over
-## (`_be_done()`), or cut short by the day ending some other way (`report_the_charge_cut_short()`).
-## Exactly one of the three is sent.
-var _charge_ended := false
 
 ## **Whether this instance has a charging counter**: every pursuer, and a row that waits for her
 ## and runs its own line at her once she is near (`EventDef.charges_within`, the masked man in the
@@ -2497,10 +2491,8 @@ func charger_name() -> String:
 ## `InteriorEvents` when the masked man catches her. Nothing for a row with no charging counter
 ## (`counts_a_charge()`) or a charge that has not begun.
 func report_the_catch() -> void:
-	if not counts_a_charge() or not _pursuit_began_reported or _charge_ended:
-		return
-	_charge_ended = true
-	EventBus.pursuit_caught.emit(charger_name())
+	if counts_a_charge():
+		_charge.catch()
 
 ## **Its charge was cut short**: the day, or the escape's section, ended some other way while it
 ## was still charging — the meter reached its cap, another thing caught her, she reached home.
@@ -2508,20 +2500,16 @@ func report_the_catch() -> void:
 ## Asked by `EventManager.end_the_charges_still_running()` and `InteriorEvents` as they end.
 ## Telemetry only.
 func report_the_charge_cut_short() -> void:
-	if not counts_a_charge() or not _pursuit_began_reported or _charge_ended or is_finished:
-		return
-	_charge_ended = true
-	EventBus.pursuit_cut_short.emit(charger_name())
+	if counts_a_charge() and not is_finished:
+		_charge.cut_short()
 
 ## Sends `EventBus.pursuit_warned` once for this instance: its warning has gone up. Never for one
 ## that charges at once (`EventDef.charges_at_once`, the checkpoint guard): his warning was the hut's
 ## or the post's guard's raised hand, counted where it went up (`EventManager._warn_at_the_doors()`),
 ## so a crossing counts one warning at an alley's door as at a boom.
 func _report_the_warning() -> void:
-	if _warning_reported or not counts_a_charge() or def.charges_at_once:
-		return
-	_warning_reported = true
-	EventBus.pursuit_warned.emit(charger_name())
+	if counts_a_charge() and not def.charges_at_once:
+		_charge.warn()
 
 ## **Whether its notice is a warning she is shown, standing**, rather than its approach: one that
 ## warns by radius, the man a vehicle lets out (`EventDef.sets_off_beside_her`), day 13's guard
@@ -2678,13 +2666,12 @@ func _chase(delta: float) -> void:
 	# lets out, day 13's guard in her view.
 	if is_telegraphing() and _its_notice_is_a_warning():
 		_report_the_warning()
-	if not _pursuit_began_reported and not (_its_notice_is_a_warning() and is_telegraphing()):
-		_pursuit_began_reported = true
+	if not _charge.began and not (_its_notice_is_a_warning() and is_telegraphing()):
 		# `VisitCounter`'s own "dog-chased" — actually coming for her, whether that is a transition
 		# out of `is_waiting()`, the charge of one that warns by radius (its warning is not a chase:
 		# she can walk out of it, `warns_by_radius()`), or (a row with no `pursues_within` at all)
 		# this chase's first frame. See docs/TELEMETRY.md, "The page counts visits".
-		EventBus.pursuit_began.emit(charger_name())
+		_charge.begin()
 	_heading = toward.normalized()
 	# **She ran, so it backs off.** Counting seconds of the *gap actually opening* is the same
 	# sentence said about the geometry instead of about the player, and in play it is a different
@@ -3054,7 +3041,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	_lunge_held = false
 	_notice_paused_for = 0.0
 	if stand:
-		_warning_reported = false
+		_charge.warned = false
 	player_at = her
 	_noticed_at = age
 	_paths_to_her = true
@@ -3423,10 +3410,10 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 	# **A row created where its warning pointed is not streamed back in**: `EventManager.
 	# spawn_warned()` sets `came_under_a_warning` before calling this only to spend a telegraph
 	# the warning already ran, and it has chased nothing yet.
-	_pursuit_began_reported = not came_under_a_warning \
+	_charge.began = not came_under_a_warning \
 			and not (def.pursues_within > 0.0 and from_noticed_at == INF)
 	# A warning it had already given before it streamed out is not reported again.
-	_warning_reported = from_noticed_at != INF
+	_charge.warned = from_noticed_at != INF
 	# A stride never starts mid-cycle, the same reason `setup()` resets it — a resumed instance is
 	# a fresh object (see this function's own doc), so this is normally already true, but the rule
 	# is stated at both entry points rather than left to rely on that.
@@ -3799,13 +3786,11 @@ func _give_up_what_cannot_reach_her(delta: float) -> void:
 func _be_done(may_park := true) -> void:
 	if is_finished or is_leaving or is_parked or _guard_spent:
 		return
-	if counts_a_charge() and _pursuit_began_reported and not _charge_ended:
-		_charge_ended = true
+	if counts_a_charge():
 		# `VisitCounter`'s own "-shaken"/"-outlasted" — a charge that had begun is over without
-		# catching her, `gave_up` telling which of the two ways. A charge that caught her reported
-		# its catch instead (`report_the_catch()`), so it ends in exactly one of the three. See
-		# `EventBus.pursuit_ended`'s own doc.
-		EventBus.pursuit_ended.emit(charger_name(), gave_up)
+		# catching her, `gave_up` telling which of the two ways. A charge that caught or was cut
+		# short already ended, so the record says nothing (`ChargeRecord`).
+		_charge.end(gave_up)
 	if def.stops_where_it_arrives and may_park:
 		is_parked = true
 		# The gait is driven by distance covered, so the distance has to stop here or a parked
@@ -4143,9 +4128,9 @@ func come_back_as_the_barrier(side: int) -> void:
 	is_leaving = false
 	# Its charge, and the warning before it, were counted before it streamed out and are over:
 	# nothing about them is counted again, its end at the day's end included.
-	_pursuit_began_reported = true
-	_warning_reported = true
-	_charge_ended = true
+	_charge.began = true
+	_charge.warned = true
+	_charge.ended = true
 	_keep_the_body_where_it_was_left()
 	_invalidate_contribution_cache()
 	_move_the_band()
@@ -4341,9 +4326,7 @@ func _warn_on_its_line(delta: float) -> void:
 	if not _noticed_inside_its_charge or _warned_on_its_line_for >= Tuning.WARNING_ALONE_MAX:
 		_lunged = true
 		# His run is his charge, for his counter (`EventBus.pursuit_began`).
-		if not _pursuit_began_reported:
-			_pursuit_began_reported = true
-			EventBus.pursuit_began.emit(charger_name())
+		_charge.begin()
 
 ## How long a row that runs its own line has been warning her, and whether it noticed her already
 ## inside its charge distance. See `_warn_on_its_line()`.
