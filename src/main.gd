@@ -555,16 +555,15 @@ func _ready() -> void:
 	if Telemetry.is_active():
 		_observer = TelemetryObserver.new()
 		_observer.name = "Telemetry"
-		_observer.spikes_on = config.spikes_requested
 		add_child(_observer)
 		_pauses_with_the_game(_observer)
-		_observer.setup(_city, _player, _baby, _day, _resistance, _edge)
+		_observer.setup(_city, _player, _baby, _day, _resistance, config.spikes_requested, _edge)
 
 	if config.frame_trace_requested:
 		var trace := FrameTrace.new()
 		trace.name = "FrameTrace"
 		add_child(trace)
-		trace.setup(self, _city, _player, _day)
+		trace.setup(self, _city, _player, _day, Array(config.active_args))
 
 	if config.frame_record_requested:
 		_frame_recorder = FrameRecorder.new()
@@ -676,7 +675,7 @@ func _ready_escape() -> void:
 		GameState.start_run(config.seed_override)
 		_apply_the_parent_flag()
 		# `--day` does not move the flag's escape off day 1; a recipe's own day does.
-		if not config.recipe.is_empty():
+		if config.has_recipe:
 			GameState.day = config.day_override
 		_apply_the_mode_flags()
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
@@ -1215,7 +1214,7 @@ func _observe_the_section(section: int, restarted: bool) -> void:
 		_observer.name = "Telemetry"
 		add_child(_observer)
 		_pauses_with_the_game(_observer)
-		_observer.setup_escape(_player, _baby, _finale.clock(), _edge)
+		_observer.setup_escape(_player, _baby, _finale.clock(), config.spikes_requested, _edge)
 	if section == FinaleController.Section.BUILDING:
 		_observer.watch_building(_interior, _interior_events)
 	else:

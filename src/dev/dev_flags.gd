@@ -132,7 +132,7 @@ func _init(args: PackedStringArray, query: String, debug_build: bool, movie := f
 	_query = query
 	_debug_build = debug_build
 	_movie = movie
-	_recipe = recipe
+	_recipe = recipe if debug_build else {}
 
 ## The page's own query string, read through `JavaScriptBridge` — the one read of the address bar
 ## the game makes, at boot, by `RunConfig.at_boot()`. "" outside a Web export.
@@ -141,6 +141,11 @@ static func page_query() -> String:
 		return ""
 	var search: Variant = JavaScriptBridge.eval("window.location.search")
 	return search as String if search is String else ""
+
+## Whether a scene recipe stands in for the flags: one was handed in and this is a debug build,
+## since a release build keeps no recipe.
+func has_recipe() -> bool:
+	return not _recipe.is_empty()
 
 ## Whether the command-line half is readable at all: a debug build. A release build answers no
 ## flag of that half from anywhere, so the entry point to it stays what it is: run a debug build

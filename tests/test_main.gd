@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_graph_starts_on_under_spikes_or_layers_six(t)
 	_test_key_six_resolves_to_the_frame_graph_layer(t)
 	_test_key_six_toggles_the_graph_independent_of_four(t)
+	_test_the_run_configuration_starts_the_graph(t)
 	_test_key_six_twice_empties_the_ring(t)
 	_test_add_touch_controls_builds_the_one_control_reader(t)
 	_test_on_title_start_sets_the_controls_mode(t)
@@ -306,13 +307,9 @@ func _test_graph_starts_on_under_spikes_or_layers_six(t) -> void:
 	t.check(not MAIN_SCRIPT._graph_starts_on(false, others),
 			"--layers naming other layers does not turn this one on")
 
-## `DevFlags.spikes_requested()` is a live read of `OS.get_cmdline_user_args()`, which this suite's
-## own process does not carry, so `_add_frame_graph()` cannot be asked to start the graph on that
-## path here — the case above already covers "neither flag was given". What this suite *can* drive
-## is `--layers` naming `6`, through the same seam `tests/test_route_lines.gd` uses for `5`:
-## `DevFlags.layers_override()` reads the real command line too, so this exercises
-## `_toggle_debug_layer()` and the key directly instead, which is the surface a rig or a player
-## actually reaches.
+## What starts the graph on is `_graph_starts_on()` above, driven through a configured `main` in
+## `_test_the_run_configuration_starts_the_graph()`. This test drives the surface a player reaches,
+## `_toggle_debug_layer()` and the key.
 func _test_key_six_resolves_to_the_frame_graph_layer(t) -> void:
 	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6)) == 6, "6 is the spike view")
 	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6, false)) == 0, "a release, not a press, does nothing")
@@ -356,6 +353,22 @@ func _test_key_six_toggles_the_graph_independent_of_four(t) -> void:
 	main._status.free()
 	main._status_layer.free()
 	main.free()
+
+## A `main` handed `--spikes` or `--layers 6` through `configure()` builds the graph already on;
+## one handed neither builds it off.
+func _test_the_run_configuration_starts_the_graph(t) -> void:
+	for case in [[["--spikes"], true], [["--layers", "6"], true], [[], false]]:
+		var main: Node2D = MAIN_SCRIPT.new()
+		main.configure(RunConfig.parse(PackedStringArray(case[0]), "", true))
+		main._status = Label.new()
+		main._status_layer = CanvasLayer.new()
+		main._add_frame_graph()
+		t.check(main._frame_graph.visible == case[1],
+				"the graph starts %s for %s" % ["on" if case[1] else "off", str(case[0])])
+		main._frame_graph.free()
+		main._status.free()
+		main._status_layer.free()
+		main.free()
 
 ## The player's own follow-on, said a minute after the first ask: pressing `6` twice must leave the
 ## ring empty rather than merely hidden, so a graph turned back on fills from that moment instead of
@@ -892,8 +905,8 @@ func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 
 # ------------------------------------------------------------- focus pause ---
 
-## `DevFlags.no_focus_pause()` reads the real command line, so a test drives the two private
-## parsing helpers directly instead — the same seam `tests/test_invincible.gd` uses for
+## `RunConfig.no_focus_pause` is parsed from the command line by `DevFlags`; a test drives the two
+## private parsing helpers directly, the same seam `tests/test_invincible.gd` uses for
 ## `_invincible_from_args()`/`_invincible_from_query()`.
 func _test_no_focus_pause_from_args(t) -> void:
 	t.check(not DevFlags._no_focus_pause_from_args(PackedStringArray()),

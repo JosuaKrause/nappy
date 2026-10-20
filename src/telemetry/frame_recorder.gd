@@ -4,11 +4,11 @@ extends Node
 ## the device. *(2026-10-03, inbox #510, asked which frames to break down and how the record
 ## should get off the phone: "Every frame, slow ones marked" and "Download plus readout line".)*
 ##
-## Built by `main` under `--frame-record` or the page's `?framerecord=1`. It marks the engine's phases for `FrameLedger`: its own physics and
-## process callbacks run first in their step (`PRIORITY_FIRST`), a child's process callback runs
-## last (`PRIORITY_LAST`), the renderer's pre-draw callback ends `draw` and its post-draw callback
-## ends `render`. The named
-## systems mark themselves through `FrameRecord`.
+## Built by `main` under `--frame-record` or the page's `?framerecord=1`. It marks the engine's
+## phases for `FrameLedger`: its own physics and process callbacks run first in their step
+## (`PRIORITY_FIRST`), a child's process callback runs last (`PRIORITY_LAST`), the renderer's
+## pre-draw callback ends `draw` and its post-draw callback ends `render`. The named systems mark
+## themselves through `FrameRecord`.
 ##
 ## **On the web, a button the page itself draws saves the record** through the browser's own
 ## download: a DOM element over the canvas rather than a game control, so a tap on it never also

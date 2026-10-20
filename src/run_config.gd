@@ -8,20 +8,31 @@ extends RefCounted
 ## command line or the address bar.
 ##
 ## **Immutable.** Every field is written once by `parse()` and then frozen: a later write is
-## refused with an error and leaves the value as it was, and the arrays are read-only. A test hands
+## refused with a warning and leaves the value as it was, and the arrays are read-only. A test hands
 ## a component a config of its own by parsing the words it wants
 ## (`RunConfig.parse(PackedStringArray(["--invincible"]), "", true)`), never by changing one.
 ##
 ## `DevFlags` is the parser and the flag manifest the shell tools read; what each flag means is
 ## its getter's doc there.
 
+## What a refused write says. A warning rather than an error: a test can watch for it through a
+## `Logger` without the engine's error line failing the run it is in.
+const REFUSED := "RunConfig is resolved once at boot and never changes; a write was refused"
+
 ## Whether the fields may still be written. Declared first, so every setter below can read it.
-var _open := true
+var _open := true:
+	set(value):
+		if _open:
+			_open = value
+		elif value:
+			push_warning(REFUSED)
 
 ## The words and the query this was parsed from, kept so `with_recipe()` can parse the same run
 ## again with a recipe on top, without asking the process or the page a second time.
-var _given := PackedStringArray()
-var _movie := false
+var _given := PackedStringArray():
+	set(value): _given = _write(_given, value)
+var _movie := false:
+	set(value): _movie = _write(_movie, value)
 
 # ------------------------------------------------------------------ the gates ---
 
@@ -175,9 +186,10 @@ var recipe_manifest_path := "":
 	set(value): recipe_manifest_path = _write(recipe_manifest_path, value)
 var recipe_draft_path := "":
 	set(value): recipe_draft_path = _write(recipe_draft_path, value)
-## A loaded recipe's data, `{}` until `with_recipe()` puts one on top. Read-only.
-var recipe: Dictionary = {}:
-	set(value): recipe = _write(recipe, value)
+## A scene recipe is loaded and this is a debug build, the only build that reads one. Only the
+## fact is kept; the recipe's values already stand in the fields above.
+var has_recipe := false:
+	set(value): has_recipe = _write(has_recipe, value)
 
 # ------------------------------------------------------------------- resolving ---
 
@@ -266,7 +278,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 	config.recipe_validate = flags.recipe_validate()
 	config.recipe_manifest_path = flags.recipe_manifest_path()
 	config.recipe_draft_path = flags.recipe_draft_path()
-	config.recipe = recipe_data.duplicate(true)
+	config.has_recipe = flags.has_recipe()
 	config._freeze()
 	return config
 
@@ -318,12 +330,11 @@ func warms_the_canvas_shaders() -> bool:
 func _write(current: Variant, value: Variant) -> Variant:
 	if _open:
 		return value
-	push_error("RunConfig is resolved once at boot and never changes; a write was refused")
+	push_warning(REFUSED)
 	return current
 
 func _freeze() -> void:
 	skip_words.make_read_only()
 	layers_override.make_read_only()
 	route_targets.make_read_only()
-	recipe.make_read_only()
 	_open = false

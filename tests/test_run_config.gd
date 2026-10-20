@@ -22,6 +22,15 @@ func run(t) -> void:
 	_test_the_city_hands_each_value_to_its_part(t)
 	_test_the_escape_clock_takes_its_length_and_invincible(t)
 
+## The errors raised while it is attached (`OS.add_logger()`).
+class RefusedWrites extends Logger:
+	var count := 0
+
+	func _log_error(_function: String, _file: String, _line: int, _code: String,
+			_rationale: String, _editor_notify: bool, _error_type: int,
+			_script_backtraces: Array) -> void:
+		count += 1
+
 static func _words(words: Array) -> PackedStringArray:
 	return PackedStringArray(words)
 
@@ -65,15 +74,30 @@ func _test_a_release_page_opens_the_bundle_only_with_debug(t) -> void:
 	t.check(readout_only.live_debug and not readout_only.web_debug_flag_used,
 			"?debug=1 alone opens the bundle without using any of it")
 
-## A write to a resolved config is refused (loudly, so not exercised here: the refusal is an
-## error line, which fails a run); what a test can see is that its arrays are read-only, so no
+## A write to a resolved config is refused with a warning and leaves the value as it was, whichever
+## field it names, including the ones that hold the gate itself; the arrays are read-only, so no
 ## reader's edit of one can reach another reader.
 func _test_a_resolved_config_cannot_change(t) -> void:
 	var config := RunConfig.parse(_words(["--layers", "1", "--route", "home", "--skip", "events",
 			"--debug"]), "", true)
 	t.check(config.layers_override.is_read_only() and config.route_targets.is_read_only()
-			and config.skip_words.is_read_only() and config.recipe.is_read_only(),
-			"every array and the recipe a resolved config holds is read-only")
+			and config.skip_words.is_read_only(),
+			"every array a resolved config holds is read-only")
+	var refused := RefusedWrites.new()
+	OS.add_logger(refused)
+	config.invincible = true
+	config.has_recipe = true
+	config._open = true
+	config._given = PackedStringArray(["--invincible"])
+	config._movie = true
+	config.debug_build = false
+	OS.remove_logger(refused)
+	t.check(not config.invincible and not config.has_recipe and config.debug_build
+			and not config._movie and not "--invincible" in config._given,
+			"a write after the build changes nothing, the fields that hold the gate included")
+	config.invincible = true
+	t.check(not config.invincible, "and reopening it did not work")
+	t.check(refused.count == 6, "each refused write is reported, not swallowed: %d" % refused.count)
 	var args := config.active_args
 	args.append("--invincible")
 	t.check(not "--invincible" in config.active_args,
@@ -90,9 +114,12 @@ func _test_a_recipe_stands_in_for_the_run_flags(t) -> void:
 	t.check(overlaid.seed_override == 9 and overlaid.day_override == 7 and overlaid.start_escape
 			and overlaid.start_escape_at == "lobby" and overlaid.parent_override == "father",
 			"the recipe's seed, day, escape part and parent are the run's")
-	t.check(overlaid.recipe_path == "scene.json" and overlaid.recipe.get("seed") == 9,
-			"the rest of the run is parsed from the same words, the recipe kept beside it")
-	t.check(base.seed_override == 3 and base.day_override == 2 and base.recipe.is_empty(),
+	t.check(overlaid.recipe_path == "scene.json" and overlaid.has_recipe,
+			"the rest of the run is parsed from the same words, a recipe noted beside it")
+	t.check(RunConfig.parse(_words(["--seed", "3"]), "", false, false, recipe).seed_override == 0
+			and not RunConfig.parse(_words([]), "", false, false, recipe).has_recipe,
+			"a release build keeps no recipe, whatever it is handed")
+	t.check(base.seed_override == 3 and base.day_override == 2 and not base.has_recipe,
 			"and the config it was put on is unchanged")
 
 ## A day's length is decided in one place and handed on as a number: `--day-length` for every day

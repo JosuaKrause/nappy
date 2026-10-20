@@ -5,9 +5,9 @@ extends RefCounted
 ## **`?dpr=<x>`** caps the device pixel ratio the page reports, so the canvas — the window times
 ## the ratio — draws fewer pixels. For testing only: there is no default cap, the value is the
 ## player's after two phone frame records. Read in the release-safe bundle `?debug=1` opens
-## (`RunConfig.live_debug`), from the query the run read at boot. The page's own `window.devicePixelRatio` is
-## what is capped, so the frame record and the readout report the capped ratio and the drawn size
-## that results.
+## (`RunConfig.live_debug`), from the query the run read at boot. The page's own
+## `window.devicePixelRatio` is what is capped, so the frame record and the readout report the
+## capped ratio and the drawn size that results.
 
 ## The smallest cap taken: below it the canvas is a few pixels wide, and the value is a typo.
 const MIN_DPR := 0.25
@@ -26,7 +26,7 @@ static func dpr_cap(config: RunConfig) -> float:
 	return _cap_from_query(config.page_query)
 
 ## The decision behind the gate, a pure function of its two inputs so a test can drive the table
-## (the same shape as `ControlsMode._reads_the_url()`).
+## (the same shape as `Telemetry._reads_the_url()`).
 static func _reads_the_url(flags_open: bool, on_web: bool) -> bool:
 	return flags_open and on_web
 

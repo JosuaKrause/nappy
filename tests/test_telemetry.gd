@@ -26,6 +26,7 @@ func run(t) -> void:
 	_test_a_day_header_opens_a_day(t)
 	_test_the_escape_opens_a_section_so_its_lines_carry_a_time(t)
 	_test_the_escape_is_in_the_run_log_as_a_day_is(t)
+	_test_the_escape_observer_is_handed_the_spikes_flag(t)
 	_test_a_retried_section_restarts_its_snapshot_schedule(t)
 	_test_a_stuck_player_is_logged_once(t)
 	_test_a_free_walk_is_never_logged_as_blocked(t)
@@ -292,7 +293,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	var baby := Baby.new()
 	var clock := DayController.new()
 	var observer := TelemetryObserver.new()
-	observer.setup_escape(player, baby, clock)
+	observer.setup_escape(player, baby, clock, false)
 
 	Telemetry.begin_memory_log()
 	Telemetry.begin_finale(4242, 180.0)
@@ -391,7 +392,7 @@ func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
 	var baby := Baby.new()
 	var clock := DayController.new()
 	var observer := TelemetryObserver.new()
-	observer.setup_escape(player, baby, clock)
+	observer.setup_escape(player, baby, clock, false)
 	observer.start_section(true)
 
 	t.check(Telemetry.clock() == 0.0, "a retry's clock starts over at zero, as it always did")
@@ -1263,6 +1264,23 @@ func _test_reads_the_url_only_when_debug_and_web(t) -> void:
 # frames and names the one frame that ran past twice it, plus what changed since the previous
 # frame — no new per-frame hook on a gameplay class, the **telemetry** rule's own "the observer
 # reads state".)*
+
+## `--spikes` reaches the escape's observer as it reaches a day's: the flag is a parameter of both
+## setups, so a builder cannot leave it out.
+func _test_the_escape_observer_is_handed_the_spikes_flag(t) -> void:
+	var player := Stroller.new()
+	var baby := Baby.new()
+	var clock := DayController.new()
+	var on := TelemetryObserver.new()
+	on.setup_escape(player, baby, clock, RunConfig.parse(PackedStringArray(["--spikes"]), "", true)
+			.spikes_requested)
+	var off := TelemetryObserver.new()
+	off.setup_escape(player, baby, clock, RunConfig.parse(PackedStringArray(), "", true)
+			.spikes_requested)
+	t.check(on.spikes_on and not off.spikes_on,
+			"the escape's observer watches for spikes exactly when --spikes was given")
+	for node in [on, off, player, baby, clock]:
+		node.free()
 
 ## A real, empty `City` and a bare `Stroller` standing still — the least `_watch_for_a_spike`
 ## needs to read (`_city.events.instances()`, `_map.world_to_tile(_player.global_position)`)

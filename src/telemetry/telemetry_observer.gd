@@ -231,8 +231,9 @@ var _contact_seen := false
 var _frame_since := 0.0
 var _frame_worst := 0.0
 
-## Whether `--spikes` was given, handed in by whoever builds this before `setup()` —
-## `_watch_the_frame` must cost nothing but this one check while the flag is off.
+## Whether `--spikes` was given, handed in through `setup()` or `setup_escape()` so a builder
+## cannot leave it out — `_watch_the_frame` must cost nothing but this one check while the flag is
+## off.
 var spikes_on := false
 
 # This second's running mean, kept the same way `_frame_worst` is: the sum and count of every
@@ -260,7 +261,8 @@ var _mark_why := ""
 var _badges := {}
 
 func setup(city: City, player: Stroller, baby: Baby, day: DayController,
-		resistance: ResistanceDirector, edge: DangerEdge = null) -> void:
+		resistance: ResistanceDirector, spikes: bool, edge: DangerEdge = null) -> void:
+	spikes_on = spikes
 	_city = city
 	_map = city.map
 	_player = player
@@ -275,8 +277,9 @@ func setup(city: City, player: Stroller, baby: Baby, day: DayController,
 ## so `_process()` and every duration below read a section the way they read a day. No city yet,
 ## no map and no `ResistanceDirector`: the world is told per section, by `watch_building()` or
 ## `watch_city()`, and the escape has no subquest to watch.
-func setup_escape(player: Stroller, baby: Baby, clock: DayController,
+func setup_escape(player: Stroller, baby: Baby, clock: DayController, spikes: bool,
 		edge: DangerEdge = null) -> void:
+	spikes_on = spikes
 	_player = player
 	_baby = baby
 	_day = clock
