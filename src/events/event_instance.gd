@@ -1322,14 +1322,20 @@ var _gait_moving := false
 ## the same day do not lean or strum in lockstep.
 var _idle_phase_offset := 0.0
 
-## The city, for the questions only the ground can answer: whether the ground a step would land on
-## is somewhere anybody can stand (`_walkable_step`), whether a notice, a lunge or a catch has a
-## clear line (`_clear_line_to`), and whether a building keeps this field from her (`_walled_off`,
-## which asks `_walls` instead where the building's own walls were handed over). `null` in
-## every data-level test that builds an instance without one — a rig that walks a straight line on
-## purpose gets exactly the unclamped movement and the open-ground field it always has — and in the
-## building's interior, and always set by `EventManager._create`, the only real caller in the city.
+## The city, for the questions about its ground that are not about moving over it: where a body
+## stands on a pavement, which way a spread lies, and whether a building keeps this field from her
+## (`_walled_off`, which asks `_walls` instead where the building's own walls were handed over).
+## `null` in every data-level test that builds an instance without one, and in the building's
+## interior; always set by `EventManager._create`, the only real caller in the city.
 var _map: CityMap
+## **How this figure moves, and what it sees along**: every step, walk, way round and way out, and
+## every notice, lunge and catch line, go through it (`Navigator`), asked as `_mover`. Handed in by
+## `setup()` — `EventManager` hands every figure the city's own — or, for a rig that hands none, one
+## over `_map`, which is open ground where there is no map: a rig that walks a straight line on
+## purpose gets exactly the unclamped movement it always had.
+var _navigator: Navigator
+## What this figure walks as (`mover_for()`): a figure on foot or a car, at its body's radius.
+var _mover: Mover
 ## The building's own wall grid indoors (`InteriorScene.wall_grid()`), handed over by
 ## `set_walls()` for `_walled_off()` alone, with none of the city's other questions behind it: a
 ## stairwell has no pavement band to centre on and no alley for a mouse to cross, but its walls stop
@@ -1383,9 +1389,11 @@ var _scenery: EventScenery
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
-		face := Vector2.RIGHT, map: CityMap = null) -> void:
+		face := Vector2.RIGHT, map: CityMap = null, navigator: Navigator = null) -> void:
 	def = definition
 	path = route
+	_navigator = navigator if navigator else Navigator.new(map)
+	_mover = mover_for(definition)
 	var start := route[0] if route.size() > 0 else at
 	if map and not definition.mobile and definition.obstructs_radius > 0.0 \
 			and definition.pavement_side == EventDef.Pavement.ANY:
@@ -1408,8 +1416,9 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	if definition.look == EventDef.Look.MOUSE:
 		# `alley_mouse` is `MAP`-placed rather than director-sited, so it arrives here with no
 		# route at all (`EventScheduler._build_placement`'s default case) — this is the one place
-		# its own dash gets built, from the alley it actually landed in rather than a flat offset.
-		path = _alley_crossing_path(map, position)
+		# its own dash gets built, from the alley it actually landed in rather than a flat offset,
+		# and cut to the ground the mouse fits on.
+		path = _navigator.trim(_alley_crossing_path(map, position), _mover)
 
 ## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
 ## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
@@ -1714,7 +1723,9 @@ static var _warning_guard := Vector2.ZERO
 func _set_off_from_the_near_post() -> void:
 	var toward := player_at - global_position if player_at != Vector2.INF else Vector2.ZERO
 	_chaser_side = _guard_side_toward(_spread_vertical, toward)
-	global_position += _guard_post_offset(_spread_vertical, _chaser_side)
+	# Not a step: he already stands at this post, drawn there while he waits, and the instance's
+	# own origin moves from the band he guards to his feet so his chase sets off from them.
+	global_position = global_position + _guard_post_offset(_spread_vertical, _chaser_side)
 	if player_at != Vector2.INF and not player_at.is_equal_approx(global_position):
 		_heading = (player_at - global_position).normalized()
 
@@ -1726,28 +1737,43 @@ func _keep_the_body_where_it_was_left() -> void:
 ## Some events are physically in the way. The body is a child so it travels with a mobile
 ## event and disappears with the instance.
 ##
-## Built from `def.parts()` — one `CollisionShape2D` per piece, a `CircleShape2D` for a point and a
-## `CapsuleShape2D` for a segment — so the collision resources agree with whatever `_draw_body()`
-## actually drew: the same datum, read twice. A capsule stands along local Y by default;
-## `_solid_axis()` says which of this instance's own axes the spine actually lies along, and each
-## `CollisionShape2D` is rotated to match.
-##
-## **One body, several shapes.** A row that declares no parts gets exactly one piece at the origin
-## (see `EventDef.parts()`), which is the single shape this always built; the crash gets one per
-## car, offset along the spread axis by the piece's own reading of whichever picture is in use. One
-## `StaticBody2D` holds them all, so nothing downstream — the debug view's bounding-box layer, which
-## walks the physics tree, or `is_solid()` — has to learn that a row may have more than one.
+## **Built from the row's solid footprint** (`solid_footprint_of()`), the one the day's blocked
+## record is written from too (`EventManager.obstructed_footprint()`), so the body that stops her and
+## the tiles that stop every other mover are one solid read twice. One `StaticBody2D` holds every
+## piece, so nothing downstream — the debug view's bounding-box layer, which walks the physics
+## tree, or `is_solid()` — has to learn that a row may have more than one.
 func _build_obstruction() -> void:
-	var body := StaticBody2D.new()
-	for piece in def.parts():
-		var collision := CollisionShape2D.new()
-		collision.shape = piece.shape.collision_shape()
-		collision.position = _spread_at(piece.offset_for(_spread_vertical))
-		if piece.shape.half_length > 0.0:
-			collision.rotation = _solid_axis().angle() - PI * 0.5
-		body.add_child(collision)
+	var body := solid_footprint_of(def, _solid_axis(), _spread_vertical).body()
 	add_child(body)
 	_obstruction = body
+
+## **A row's solid footprint**, its origin at the row's own: one piece per `EventDef.parts()`
+## entry — one at the origin carrying `shape` for every row that declares none, a car per piece
+## for the crash — each offset along the spread axis (`spread_vertical`, `_spread_at()`) by the
+## piece's own reading of whichever picture is in use, its spine along `axis` (`_solid_axis()`).
+## The physics body (`_build_obstruction()`) and the blocked record
+## (`EventManager.obstructed_footprint()`) both come from here.
+static func solid_footprint_of(row: EventDef, axis: Vector2, spread_vertical: bool) -> Footprint:
+	var footprint := Footprint.new()
+	for piece in row.parts():
+		var offset := piece.offset_for(spread_vertical)
+		footprint.add(piece.shape,
+				Vector2(0.0, offset) if spread_vertical else Vector2(offset, 0.0), axis)
+	return footprint
+
+## How far a figure's body reaches round its feet when the row's own shape is the solid it stands
+## at rather than the figure — a guard at his band — in px: the alley robber's own, a man on foot.
+const FIGURE_RADIUS := 9.0
+
+## **What a row walks as** (`Mover`): a car that drives as a vehicle, kept to the street and passing
+## a soft seal's pavement; anything else as a figure on foot, stopped by everything that stops her.
+## Its radius is the row's own shape where that shape is the thing that moves — a dog, a bike, a
+## car — and a man's (`FIGURE_RADIUS`) where the shape is a solid he stands at.
+static func mover_for(row: EventDef) -> Mover:
+	var radius := FIGURE_RADIUS
+	if row.shape != null and (row.obstructs_radius <= 0.0 or row.drives):
+		radius = row.shape.reach()
+	return Mover.vehicle(radius) if row.drives else Mover.on_foot(radius)
 
 ## Where each of this instance's solid pieces stands, in world space — paired index for index with
 ## `solid_part_shapes()` below, the same two-parallel-arrays shape `flock_offsets()` and
@@ -2294,7 +2320,7 @@ func _process(delta: float) -> void:
 	# only bodies that move, and `_drive()` is what keeps them off her.
 	if _obstruction and def.pursues and not def.drives and not is_waiting():
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
-		# `_walkable_step`'s own note says why a moving pursuer may not keep a body: "giving a
+		# `_step`'s own note says why a moving pursuer may not keep a body: "giving a
 		# pursuer one would let a moving wall pin her against a building on a two-tile pavement."
 		# A hunting `abduction` or raid never gets here: it hunts on foot (`EventDef.hunts_on_foot`)
 		# and stays parked, solid, while its men come after her.
@@ -2761,7 +2787,7 @@ func _chase(delta: float) -> void:
 		_keep_the_way_to_her_fresh()
 		if step > 0.0:
 			_heading = _way_toward_her(_heading)
-	var moved := _walkable_step(_heading * step)
+	var moved := _step(_heading * step)
 	position += moved
 	# Ground covered, not ground gained: sliding along a wall is still moving, and the bob is driven
 	# by distance so that a thing holding its ground reads as standing still.
@@ -2978,22 +3004,29 @@ func _lay_the_trail() -> void:
 		_trail.append(global_position)
 
 ## **He walks back the way he came, and gets in**: toward the last point of his trail, dropping each
-## point as he reaches it, and gone once he is at the door (`_finish()`). Back along his own trail
-## rather than straight at the vehicle, since a chase can take him round a corner the straight line
-## would cut through a building. True while he is still walking back.
+## point as he reaches it (`Navigator.walk()`), and gone once he is at the door (`_finish()`). Back
+## along his own trail rather than straight at the vehicle, since a chase can take him round a
+## corner the straight line would cut through a building; where something solid now stands across
+## it, round it to the next point of the trail (`Navigator.path()`), and where nothing goes round,
+## he gets in from there. True while he is still walking back.
 func _walk_back(step: float) -> bool:
-	while not _trail.is_empty():
-		var target := _trail[_trail.size() - 1]
-		var toward := target - global_position
-		if toward.length() > step:
-			_heading = toward.normalized()
-			position += _heading * step
-			_path_travelled += step
+	if not _trail.is_empty():
+		var back := _trail.duplicate()
+		back.reverse()
+		var walked := _navigator.walk(global_position, back, step, _mover)
+		_take_the_walk(walked)
+		_trail = walked.points
+		_trail.reverse()
+		if walked.stopped:
+			var round := _navigator.path(global_position, _trail[_trail.size() - 1], _mover)
+			if round.is_empty():
+				_trail.clear()
+			# The way round ends at the trail point itself; the rest goes on the trail's end,
+			# nearest last, since the trail is walked from its end.
+			for i in range(round.size() - 2, -1, -1):
+				_trail.append(round[i])
+		if not _trail.is_empty():
 			return true
-		position = target
-		step -= toward.length()
-		_path_travelled += toward.length()
-		_trail.remove_at(_trail.size() - 1)
 	_finish()
 	return false
 
@@ -3099,46 +3132,29 @@ func _flush_the_flock_if_she_is_among_them() -> void:
 		return
 	_lunged = true
 
-## Clamps a chase's own step so it can never end standing on ground the city says nobody can. A
-## pursuing instance moves by setting its own position, and nothing above this function has ever
-## asked the map anything — harmless while every mobile row travelled a route the scheduler had
-## already checked, and not harmless the moment something steers freely at the player. Everything
-## above this function decides *how far and which way* to move; this is the one place that gets to
-## say no.
+## **The part of the step `delta_pos` this figure takes** (`Navigator.step()`): the whole of it where
+## the swept step is open to it, else a slide along whichever single axis is, else none. Everything
+## that moves this figure decides *how far and which way*; this is the one place that gets to say
+## no, so a chase, a walk back and a departure all stop where she would.
 ##
-## **Not a body.** `obstructs_radius` is for something that stands still — see "Solid things are
-## solid" in docs/EVENTS.md — and giving a pursuer one would let a moving wall pin her against a
-## building on a two-tile pavement, exactly what `dog_walker`'s own exemption exists to avoid. What
-## was missing here is smaller than a body: the position `_chase` sets every frame never asked the
-## map anything at all, so a straight line toward her cut through whatever stood between the two of
-## them.
+## **Swept, and with its body's reach**: the tiles the whole step crosses are asked, so a long frame
+## cannot carry a chaser through a wall a tile thick, and the ground its radius reaches past the
+## landing point in the way it is going has to be open too. **Not a body**: `obstructs_radius` is
+## for something that stands still — see "Solid things are solid" in docs/EVENTS.md — and giving a
+## pursuer one would let a moving wall pin her against a building on a two-tile pavement, exactly
+## what `dog_walker`'s own exemption exists to avoid.
 ##
 ## **Slides along whichever single axis is still open** rather than stopping dead the instant it
 ## grazes a corner, because a chase that gives up meters before the wall does is not one that was
 ## ever really following her round it. Tried larger component first, so a pursuer coming at a wall
 ## nearly square-on slides along it rather than snagging on whichever axis happens to be smaller.
-func _walkable_step(delta_pos: Vector2) -> Vector2:
-	if not _map:
-		return delta_pos
-	return walkable_step_on(_map, global_position, delta_pos)
+func _step(delta_pos: Vector2) -> Vector2:
+	return _navigator.step(global_position, delta_pos, _mover)
 
-## `_walkable_step()`'s own rule asked of any point on `map`: the part of the step `delta_pos` from
-## `from` a chaser actually takes. Static so that a placement can walk a chase it has not started
-## yet the way the chase will walk it (`ResistanceDirector._his_walk_reaches_her()`).
-static func walkable_step_on(map: CityMap, from: Vector2, delta_pos: Vector2) -> Vector2:
-	if delta_pos.is_zero_approx():
-		return delta_pos
-	if map.is_walkable(map.world_to_tile(from + delta_pos)):
-		return delta_pos
-	var along_x := Vector2(delta_pos.x, 0.0)
-	var along_y := Vector2(0.0, delta_pos.y)
-	var first := along_x if absf(delta_pos.x) >= absf(delta_pos.y) else along_y
-	var second := along_y if first == along_x else along_x
-	for candidate in [first, second]:
-		if not candidate.is_zero_approx() \
-				and map.is_walkable(map.world_to_tile(from + candidate)):
-			return candidate
-	return Vector2.ZERO
+## The navigator this figure moves by, for a placement that walks a chase it has not started yet
+## the way the chase will walk it (`ResistanceDirector._his_walk_reaches_her()`).
+func navigator() -> Navigator:
+	return _navigator
 
 # ------------------------------------------------------ the task guard's way to her ---
 # *(curly-gecko, the player: "as long as he starts pursuing when you hit the task it's fine".)*
@@ -3147,7 +3163,7 @@ static func walkable_step_on(map: CityMap, from: Vector2, delta_pos: Vector2) ->
 ## `notice_her_at()`, which only day 13's done task calls, for the waiting guard it sets on her
 ## from wherever he stands — at another roadblock, a city away, with blocks between them. Every
 ## other pursuer starts within sight of her or just off screen with a straight run at her, so it
-## keeps the straight line `_walkable_step()` slides along walls. *Proposed, not asked for:* the way
+## keeps the straight line `_step()` slides along walls. *Proposed, not asked for:* the way
 ## round is for this guard alone.
 ##
 ## **Where he has a clear line to her he goes straight at her**, exactly as before; only where a
@@ -3201,8 +3217,6 @@ const WAY_REFRESH_SHARE := 4
 ## How many tiles down the sweep he looks for the farthest he can see to aim at, so his walk
 ## cuts the corners the four-way tile walk takes rather than zig-zagging along it.
 const WAY_LOOKAHEAD_TILES := 6
-## How far apart, in px, `_way_is_open()` asks the ground along a line to an aim.
-const WAY_LINE_SAMPLE := 8.0
 
 ## Begins a fresh sweep out from her when she has walked on from where the last began or what
 ## blocks her has changed, runs a slice of the one under way, and adopts it the moment it has
@@ -3237,15 +3251,16 @@ func _keep_the_way_to_her_fresh() -> void:
 		_her_way_next = null
 		_her_way_next_ground = PackedInt32Array()
 
-## The ground his sweeps run over, the red arrow's own (`ArrowField.ground_for()`): what she cannot
-## walk right now is blocked — today's closures, the soft seals, the tile under every stationary
-## body standing and a precinct's posts. So where no clear line runs to her he walks round what she
-## has to walk round; with a clear line he goes straight at her, through a barrier as any chase does
-## (`_walkable_step()` asks only the tiles). Laid out once for each state of what blocks her.
+## The ground his sweeps run over, his own as a figure on foot and the red arrow's
+## (`Navigator.ground()`, `ArrowField.ground_for()`): what she cannot walk right now is blocked —
+## today's closures, the soft seals, the tile under every stationary body standing and a precinct's
+## posts. So where no clear line runs to her he walks round what she has to walk round, and a line
+## through any of it is no clear line (`_clear_line_to()`). Laid out once for each state of what
+## blocks her.
 func _ground_for_the_way(versions: Vector2i) -> PackedInt32Array:
 	if versions == _her_way_ground_versions and not _her_way_ground_laid.is_empty():
 		return _her_way_ground_laid
-	_her_way_ground_laid = ArrowField.ground_for(_map)
+	_her_way_ground_laid = _navigator.ground(_mover)
 	_her_way_ground_versions = versions
 	return _her_way_ground_laid
 
@@ -3305,20 +3320,10 @@ func _open_for_the_way(tile: Vector2i) -> bool:
 		return false
 	return _her_way_ground[tile.y * _map.size.x + tile.x] != ArrowField.BLOCKED
 
-## Whether he can walk straight from `from` to `to`: a clear line (`CityMap.clear_line()`) that
-## also crosses nothing blocked in his sweep's ground, asked every `WAY_LINE_SAMPLE` px.
+## Whether he can walk straight from `from` to `to`: a clear line for him (`Navigator.clear_line()`),
+## which crosses nothing his sweep's ground blocks either, since both read the one record.
 func _way_is_open(from: Vector2, to: Vector2) -> bool:
-	if not _map.clear_line(from, to):
-		return false
-	var length := from.distance_to(to)
-	var along := WAY_LINE_SAMPLE
-	while along < length:
-		var tile := _map.world_to_tile(from.move_toward(to, along))
-		if not _map.in_bounds(tile) \
-				or _her_way_ground[tile.y * _map.size.x + tile.x] == ArrowField.BLOCKED:
-			return false
-		along += WAY_LINE_SAMPLE
-	return true
+	return _navigator.clear_line(from, to, _mover)
 
 ## How far along its route this instance has got, so streaming it out and back in can resume it
 ## instead of rewinding it. See `EventManager._stream_in`.
@@ -3926,19 +3931,15 @@ var _way_avoids := Rect2i()
 var _walks_a_way := false
 var _way_speed := 0.0
 
-## How many tiles `_way_on_out_of_sight()` looks at before it gives up: several times the tiles
-## within `Tuning.OUT_OF_SIGHT` of her, so it gives up only where walls leave no way out at all.
-const WAY_ON_SEARCH_LIMIT := 4096
-
 ## Walks `step` pixels of `leave_along()`'s way; past its end, of a way planned on from where it
 ## stands (`_way_on_out_of_sight()`, again each time one runs out while she could still be
 ## watching); and only where none is found, or one is walked to its end inside this step, away from
-## her over walkable ground.
+## her over ground it may walk.
 func _walk_the_way(step: float) -> void:
 	var left := _walk_points(false, step)
 	if left <= 0.0:
 		return
-	if _way_on.is_empty() and _map and player_at != Vector2.INF:
+	if _way_on.is_empty() and player_at != Vector2.INF:
 		_way_on = _way_on_out_of_sight()
 	left = _walk_points(true, left)
 	if left <= 0.0:
@@ -3961,70 +3962,56 @@ func _walk_the_way(step: float) -> void:
 	position += moved
 	_path_travelled += moved.length()
 
-## `_walkable_step()`'s part of `delta_pos`, or none where that would end on `_way_avoids`.
+## `_step()`'s part of `delta_pos`, or none where that would end on `_way_avoids`.
 func _step_clear_of_the_avoided(delta_pos: Vector2) -> Vector2:
-	var moved := _walkable_step(delta_pos)
+	var moved := _step(delta_pos)
 	if _map and _way_avoids.has_point(_map.world_to_tile(global_position + moved)):
 		return Vector2.ZERO
 	return moved
 
 ## Walks up to `step` pixels down `_way`, or `_way_on` when `planned`, dropping each point as it is
-## reached; answers how much of the step is left once that way is walked, 0 while it is not.
+## reached (`Navigator.walk()`); answers how much of the step is left once that way is walked, 0
+## while it is not. **A way a solid now stands across is given up** where it stops, and what is left
+## of the step goes to the way planned on from here, so a body put down after the way was chosen
+## turns the walker rather than holding it in front of her.
 func _walk_points(planned: bool, step: float) -> float:
 	var points := _way_on if planned else _way
-	var left := step
-	while left > 0.0 and not points.is_empty():
-		var toward := points[0] - global_position
-		if toward.length() > left:
-			_heading = toward.normalized()
-			position += _heading * left
-			_path_travelled += left
-			left = 0.0
-			break
-		position = points[0]
-		left -= toward.length()
-		_path_travelled += toward.length()
-		points.remove_at(0)
+	var walked := _navigator.walk(global_position, points, step, _mover)
+	_take_the_walk(walked)
+	if walked.stopped:
+		walked.points = PackedVector2Array()
 	if planned:
-		_way_on = points
+		_way_on = walked.points
 	else:
-		_way = points
-	return left
+		_way = walked.points
+	return walked.left
 
-## **The rest of a way out, planned from where she is now**: the tile centres from the tile it
-## stands on to the nearest walkable tile more than `Tuning.OUT_OF_SIGHT` and a tile from her, by a
-## breadth-first search over the tiles `CityMap.is_walkable()` admits outside `_way_avoids`
-## (`leave_along()`'s `avoid`), square steps only, so that each leg stays on the two tiles it joins.
-## Empty when no such tile is found within `WAY_ON_SEARCH_LIMIT` tiles, and the step falls back to
-## walking away from her.
+## Puts this figure where a walk (`Navigator.walk()`) ended, facing the way it last walked toward a
+## point it did not reach, and counts the ground it covered.
+func _take_the_walk(walked: Navigator.Walked) -> void:
+	if walked.heading != Vector2.ZERO:
+		_heading = walked.heading
+	global_position = walked.at
+	_path_travelled += walked.travelled
+
+## **The rest of a way out, planned from where she is now** (`Navigator.way_out()`): the tile centres
+## from the tile it stands on to the nearest tile it may stand on more than `Tuning.OUT_OF_SIGHT`
+## and a tile from her, outside `_way_avoids` (`leave_along()`'s `avoid`), square steps only, so
+## that each leg stays on the two tiles it joins. Empty when no such tile is found, and the step
+## falls back to walking away from her.
 func _way_on_out_of_sight() -> PackedVector2Array:
 	return _way_on_out_of_sight_from(global_position)
 
 ## `_way_on_out_of_sight()` from any point, not only this instance's own: the far guard at a band
 ## walks off from his post by the same search (`_walk_the_far_guard_off()`).
 func _way_on_out_of_sight_from(at: Vector2) -> PackedVector2Array:
-	var start := _map.world_to_tile(at)
-	var came_from: Dictionary[Vector2i, Vector2i] = {start: start}
-	var queue: Array[Vector2i] = [start]
-	var head := 0
-	while head < queue.size() and head < WAY_ON_SEARCH_LIMIT:
-		var tile := queue[head]
-		head += 1
-		if _map.tile_to_world(tile).distance_to(player_at) \
-				> Tuning.OUT_OF_SIGHT + Tuning.TILE_SIZE:
-			var way := PackedVector2Array()
-			while tile != start:
-				way.insert(0, _map.tile_to_world(tile))
-				tile = came_from[tile]
-			return way
-		for step: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
-			var next := tile + step
-			if not came_from.has(next) and _map.is_walkable(next) \
-					and not _way_avoids.has_point(next):
-				came_from[next] = tile
-				queue.append(next)
-	return PackedVector2Array()
+	return _navigator.way_out(at, player_at, Tuning.OUT_OF_SIGHT, _mover, _way_avoids)
 
+## One frame of a departure: down the way it was given, back along a man's trail to his vehicle, or
+## on the way it was going. **Something solid straight ahead turns it onto a way out**
+## (`_way_on_out_of_sight()`) rather than holding it against the solid in her view, so a dog that
+## loses interest, a pursuer who gives up, a flock and the neighbor all leave over ground she could
+## walk.
 func _leave(delta: float) -> void:
 	_leaving_for += delta
 	var step := _leaving_speed() * delta
@@ -4034,8 +4021,16 @@ func _leave(delta: float) -> void:
 		if not _walk_back(step):
 			return
 	else:
-		position += _heading * step
-		_path_travelled += step
+		var wanted := _heading * step
+		var moved := _step(wanted)
+		if moved.is_zero_approx() and not wanted.is_zero_approx() and player_at != Vector2.INF:
+			_walks_a_way = true
+			_way = PackedVector2Array()
+			_way_on = PackedVector2Array()
+			_walk_the_way(step)
+		else:
+			position += moved
+			_path_travelled += step if moved == wanted else moved.length()
 	var gone := player_at != Vector2.INF \
 			and global_position.distance_to(player_at) > Tuning.OUT_OF_SIGHT
 	# `LEAVING_GIVES_UP` is a backstop for a departure nobody could be watching (a headless rig, a
@@ -4162,16 +4157,32 @@ func _advance_along_path(delta: float) -> void:
 			# along it backwards for half of every beat, which is worse than not moving at all.
 			if back:
 				_heading = -_heading
-			position = path[i - 1] + segment.normalized() * remaining
+			_keep_to_the_route(path[i - 1] + segment.normalized() * remaining)
 			return
 		remaining -= length
-	position = path[path.size() - 1]
+	if not _keep_to_the_route(path[path.size() - 1]):
+		return
 	if def.paces:
 		return
 	# A mobile event that has driven off the end of its route is done, whatever its
 	# nominal duration says — and it keeps going until it is out of sight, rather than stopping
 	# dead on the pavement she is walking down. See "going away" above.
 	_be_done()
+
+## **Moves this figure to `on_the_route`, the point its route has reached, through the navigator**:
+## the whole way where nothing solid stands between (`Navigator.move_to()`), which is every frame of
+## a route checked before it was accepted. Where a solid put down since stands in the way, a figure
+## that paces a beat holds where it is until the beat brings the point back to its side, and any
+## other has come to the end of its route there (`_be_done()`), leaving from it the way every route
+## that runs out leaves. Answers whether it reached the point.
+func _keep_to_the_route(on_the_route: Vector2) -> bool:
+	var reached := _navigator.move_to(global_position, on_the_route, _mover)
+	global_position = reached
+	if reached == on_the_route:
+		return true
+	if not def.paces:
+		_be_done()
+	return false
 
 ## The length of the whole route, in px.
 func _path_length() -> float:
@@ -4736,15 +4747,16 @@ func is_lethal_at(world_position: Vector2) -> bool:
 		return false
 	return not def.pursues or _clear_line_to(world_position)
 
-## Whether the straight line from this node to `world_position` crosses only ground
-## `CityMap.is_walkable()` agrees with — the question a pursuer's catch asks, since a catch across a
-## wall is a man reaching through a building, and the one its notice and its lunge ask in
-## `_chase()`, since he can neither see nor go for her through one. `CityMap.clear_line()` walks it,
-## the one walk every caller asks, so a line that clips a building's corner by a pixel is blocked
-## however short it is. True with no map, which is every data-level rig built without one, exactly
-## as `_walkable_step()` is.
+## Whether the straight line from this node to `world_position` crosses only ground this figure
+## may enter (`Navigator.clear_line()`, as `_mover`) — the question a pursuer's catch asks, since a
+## catch across a wall, a barrier or a café is a man reaching through it, and the one its notice
+## and its lunge ask in `_chase()`, since he can neither see nor go for her through one.
+## `CityMap.clear_line()` walks it, the one walk every caller asks, so a line that clips a
+## building's corner by a pixel is blocked however short it is; a guard sees out of the band he
+## stands in, and her own tile never hides her. True on open ground, which is every data-level rig
+## built without a map, exactly as `_step()` is.
 func _clear_line_to(world_position: Vector2) -> bool:
-	return not _map or _map.clear_line(global_position, world_position)
+	return _navigator.clear_line(global_position, world_position, _mover)
 
 ## One bounded integral cache per source, with a by-value key rather than a clock or identity.
 var _expected_landed_key: Array = []
@@ -6398,7 +6410,7 @@ var _band: RoadblockBand
 ## away (`_be_done()`), at the pace his partner leaves at (`EventDef.pursue_speed`,
 ## `_leaving_speed()`'s for a guard leaving his barrier), standing as he walks, over walkable ground
 ## by the way his partner walks (`_way_on_out_of_sight_from()`, planned again from where he is each
-## time it runs out while she could still be watching; away from her by `walkable_step_on()` only
+## time it runs out while she could still be watching; away from her by `Navigator.step()` only
 ## where it finds none), and he is gone once she could not be watching: past `Tuning.OUT_OF_SIGHT` from her, or
 ## after `LEAVING_GIVES_UP` with no player to be out of sight of — the sight rule his partner's
 ## departure keeps (`_leaving_must_clear_sight`). He notices nothing, chases nothing and costs
@@ -6477,21 +6489,17 @@ func _walk_the_far_guard_off(delta: float) -> void:
 	if _map and player_at != Vector2.INF:
 		if _far_guard_way.is_empty():
 			_far_guard_way = _way_on_out_of_sight_from(_far_guard_at)
-		while left > 0.0 and not _far_guard_way.is_empty():
-			var toward := _far_guard_way[0] - _far_guard_at
-			if toward.length() > left:
-				_far_guard_heading = toward.normalized()
-				_far_guard_at += _far_guard_heading * left
-				left = 0.0
-				break
-			_far_guard_at = _far_guard_way[0]
-			left -= toward.length()
-			_far_guard_way.remove_at(0)
+		var walked := _navigator.walk(_far_guard_at, _far_guard_way, left, _mover)
+		if walked.heading != Vector2.ZERO:
+			_far_guard_heading = walked.heading
+		_far_guard_at = walked.at
+		_far_guard_way = PackedVector2Array() if walked.stopped else walked.points
+		left = walked.left
 	if left > 0.0:
 		var away := _far_guard_heading
 		if player_at != Vector2.INF and not player_at.is_equal_approx(_far_guard_at):
 			away = (_far_guard_at - player_at).normalized()
-		var moved := walkable_step_on(_map, _far_guard_at, away * left) if _map else away * left
+		var moved := _navigator.step(_far_guard_at, away * left, _mover)
 		if _map and _way_avoids.has_point(_map.world_to_tile(_far_guard_at + moved)):
 			moved = Vector2.ZERO
 		if not moved.is_zero_approx():

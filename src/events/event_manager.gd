@@ -33,6 +33,9 @@ var _plans: Array[EventScheduler.Planned] = []
 var _director: EventDirector
 var _city: City
 var _map: CityMap
+## How every figure this manager makes moves over `_map` (`Navigator`): handed to each in
+## `_create()`, so a figure never finds its own way over the city.
+var _navigator: Navigator
 ## Where the manager, the day's planning and every instance it creates write their own account for
 ## the run log — the city's, set before `setup()`; silent until then.
 var trace := RunTrace.new()
@@ -165,10 +168,13 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	AtlasLibrary.release(EventInstance.ATLAS_GROUP)
 
-func setup(city: City, map: CityMap) -> void:
+## Hands the manager its city, the map it places on and the navigator its figures move by — the
+## city's own (`City.navigator`), or one over `map` for a rig that hands none.
+func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	_city = city
 	_map = map
-	_director = EventDirector.new(map)
+	_navigator = navigator if navigator else Navigator.new(map)
+	_director = EventDirector.new(map, _navigator)
 	_director.force(_forced_row, _forced_interval)
 	# **Connected once however often this is called.** `City.build()` calls `setup()` and a rig
 	# that wants its own map calls it again on the same manager, which Godot answers with an
@@ -845,16 +851,9 @@ static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 	# it is asked of the placed position for the same reason the axis is: a piece offset the wrong
 	# way is a body recorded across the street from the car it belongs to.
 	var spread_vertical := EventInstance._spread_is_vertical(map, placed)
-	var covered: Array[Vector2i] = []
-	for piece in def.parts():
-		var offset := piece.offset_for(spread_vertical)
-		var centre := placed + (Vector2(0.0, offset) if spread_vertical else Vector2(offset, 0.0))
-		for tile in piece.shape.tiles_under(centre, axis):
-			# Two pieces may overhang one tile, and the record counts **bodies** rather than
-			# pieces: a body that recorded one tile twice would need two releases to give it back.
-			if not covered.has(tile):
-				covered.append(tile)
-	return covered
+	# The footprint the instance builds its physics body from
+	# (`EventInstance.solid_footprint_of()`), so the record and the body are one solid.
+	return EventInstance.solid_footprint_of(def, axis, spread_vertical).tiles(placed)
 
 ## The ground-plane direction a sited body's spine lies along — `EventInstance._solid_axis()` for a
 ## body that does not exist yet, off the same two statics that instance would read.
@@ -1060,7 +1059,7 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 	var instance := EventInstance.new()
 	instance.skip_draw = skip_drawing
 	instance.trace = trace
-	instance.setup(def, at, path, facing, _map)
+	instance.setup(def, at, path, facing, _map, _navigator)
 	# The day-3 lesson's dog, for its own charging counter: the first dog today on the day the run
 	# is taught (`EventInstance.is_the_lesson`). Telemetry only.
 	if def.id == "charging_dog" and _day == Tuning.RUN_TAUGHT_DAY and not _lesson_dog_made:
@@ -1824,8 +1823,8 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.down_her_line(_map, def, at, direction, _visible)
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
-		var path := PendingWarning.route_down_her_line(_map, place, at, direction)
-		if not _director.clear_of_the_doors(path, def):
+		var path := _route_down_her_line(def, place, at, direction)
+		if path.size() < 2 or not _director.clear_of_the_doors(path, def):
 			return false
 		var instance := spawn_warned(def, path, pelican)
 		trace.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
@@ -1835,6 +1834,14 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var warning := warn_first(def, her, where, arrive)
 	if warning:
 		warning.is_pelican = pelican
+
+## The route a row coming down her line is created on (`PendingWarning.route_down_her_line()`), cut
+## to the ground the row can run on (`Navigator.trim()`), so a bike or a dog never comes through a
+## building, a barrier or a body; fewer than two points where it cannot set off at all.
+func _route_down_her_line(def: EventDef, place: Vector2, her: Vector2,
+		direction: Vector2) -> PackedVector2Array:
+	return _navigator.trim(PendingWarning.route_down_her_line(_map, place, her, direction),
+			EventInstance.mover_for(def))
 
 ## A row the director sends down her own line that does not telegraph its coming (`loose_dog`,
 ## `EventDef.telegraphs`): no badge and no warning, so it is created at once just out of sight down
@@ -1846,8 +1853,8 @@ func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var place := PendingWarning.down_her_line(_map, def, her, direction, _visible)
 	if place == Vector2.INF:
 		return
-	var path := PendingWarning.route_down_her_line(_map, place, her, direction)
-	if not _director.clear_of_the_doors(path, def):
+	var path := _route_down_her_line(def, place, her, direction)
+	if path.size() < 2 or not _director.clear_of_the_doors(path, def):
 		return
 	var instance := _spawn_unplanned(def, path[0], path)
 	instance.resume(age_when_warned(def), 0.0)

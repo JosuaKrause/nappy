@@ -625,17 +625,14 @@ func _settle_junction() -> void:
 ## and go nowhere, which is worse than the retry `_recycle` already has to make anyway.
 func _stands_on_a_street() -> bool:
 	var tile := _map.world_to_tile(position)
-	if _map.is_closed(tile):
-		return false
 	if _segment_is_shut(tile):
 		return false
-	if kind == Kind.WALKER and _map.is_soft_sealed(tile):
-		return false
-	# Nobody starts the day inside a solid body, whichever kind they are and whichever lane of a
+	# Nothing today has put down here, for this kind: no closure, no soft seal for a walker, and
+	# nobody starts the day inside a solid body, whichever kind they are and whichever lane of a
 	# footway it happens to be on: an agent placed inside one is a body standing in a café, and the
 	# sidestep that carries a walker round a body it is *approaching* has nothing to open a gap it
 	# is already in — separation between bodies is positional and never a force.
-	if _map.is_obstructed(tile):
+	if not _map.passable(tile, _walker_today if kind == Kind.WALKER else _car_today):
 		return false
 	if not _map.in_bounds(tile):
 		return kind == Kind.CAR and _map.is_main_road(_vertical, _corridor) \
@@ -2119,7 +2116,7 @@ func _tile_ahead(vertical: bool, direction: float, distance: float, from: Vector
 func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _never_a_street_here(vertical, tile):
 		return true
-	if _map.is_closed(tile):
+	if not _map.passable(tile, _closed_today):
 		return true
 	# A street held for today has a hard seal, a region wall or a closure's barriers standing across
 	# the whole of it somewhere along its length. **That is a car's warning and not a walker's** —
@@ -2131,7 +2128,7 @@ func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _segment_is_shut(tile):
 		return true
 	# A soft seal takes both pavements and leaves the carriageway to the cars — walkers only.
-	if kind == Kind.WALKER and _map.is_soft_sealed(tile):
+	if kind == Kind.WALKER and not _map.passable(tile, _soft_sealed_today):
 		return true
 	# A stationary solid body standing in the street — a café, a construction band, a kerbed van.
 	# **A car has nowhere to step**: one lane per direction and the oncoming one is not an option,
@@ -2143,7 +2140,7 @@ func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	# carriageway stay open. A precinct is one footway six lanes wide, shut when no lane runs
 	# through the rows ahead (`_precinct_way_is_shut`).
 	if kind == Kind.CAR:
-		return _map.is_obstructed(tile)
+		return not _map.passable(tile, _car_today)
 	return _footway_is_shut(vertical, tile)
 
 ## Whether a tile is ground this kind of agent could never travel, whatever today has or has not
@@ -2193,7 +2190,7 @@ func _never_a_street_here(vertical: bool, tile: Vector2i) -> bool:
 ## instead of slowing to a stop at the body with the walkers behind it queueing.
 func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 	# The cheap half first: a walker's own tile is nearly always clear, and this runs per probe.
-	if not _map.is_obstructed(tile):
+	if _map.passable(tile, _bodies_today):
 		return false
 	var across := tile.x if vertical else tile.y
 	var offset := CityMap.corridor_offset(across)
@@ -2305,13 +2302,24 @@ static func _footway_of(offsets: Array[int], offset: int) -> Array[int]:
 		return [offsets[0], offsets[1]]
 	return [offsets[2], offsets[3]]
 
-## Whether one lane tile is somewhere a walker may actually be: open ground, in the city, with no
-## body standing on it. Deliberately **not** `_cannot_go_on`, which asks this one's own caller and
+## Whether one lane tile is somewhere a walker may actually be: street ground in the city that
+## nothing today has put down on — no closure, soft seal or body (`CityMap.passable()`, as
+## `_walker_today`). Deliberately **not** `_cannot_go_on`, which asks this one's own caller and
 ## would come back round; the segment's own state is already decided by the time anything here runs.
 func _walker_lane_is_open(tile: Vector2i) -> bool:
-	if _map.is_obstructed(tile) or _map.is_closed(tile) or _map.is_soft_sealed(tile):
-		return false
-	return _map.in_bounds(tile) and _map.is_street(tile)
+	return _map.passable(tile, _walker_today) and _map.in_bounds(tile) and _map.is_street(tile)
+
+## **What today puts down in a walker's way**, the map's blocked record as a walker of the crowd
+## reads it: closures, soft seals and bodies (`Mover.TODAY`). The ground itself is the lane's own
+## question (`_never_a_street_here()`), and a precinct's posts are not in it, since the crowd has no
+## body and walks between them (`CityMap.post_tiles()`).
+static var _walker_today := Mover.of(Mover.TODAY)
+## The same for a car, which a soft seal leaves the carriageway to.
+static var _car_today := Mover.of(Mover.CLOSED | Mover.BODIES)
+## The layers `_cannot_go_on()` asks one at a time, each before the next question it stands for.
+static var _closed_today := Mover.of(Mover.CLOSED)
+static var _soft_sealed_today := Mover.of(Mover.SOFT_SEALS)
+static var _bodies_today := Mover.of(Mover.BODIES)
 
 ## How far a lane scan looks, in tiles: far enough past the distance a sidestep begins at that the
 ## lane chosen is the one with more road in it rather than the one that happens to be clear for a

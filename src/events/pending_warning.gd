@@ -192,17 +192,21 @@ static func route_down_her_line(map: CityMap, place: Vector2, her: Vector2,
 			behind += direction * Tuning.TILE_SIZE
 	return PackedVector2Array([place, behind])
 
+## Whether `at` is ground the row is placed on (`EventDef.placement`) and may stand on today
+## (`CityMap.passable()`, as it walks): not closed, not under a body or a soft seal.
 static func _is_its_ground(map: CityMap, row: EventDef, at: Vector2) -> bool:
 	var tile := map.world_to_tile(at)
-	return map.in_bounds(tile) and row.placement.has(map.tile_at(tile)) and not map.is_closed(tile)
+	return map.in_bounds(tile) and row.placement.has(map.tile_at(tile)) \
+			and map.passable(tile, EventInstance.mover_for(row))
 
 # ---------------------------------------------------------- along her heading ---
 
 ## Where a pursuer the director sends at her down her heading (`charging_dog`, on the day it teaches
 ## the run) is created: just out of sight along `direction` from her, or further out along it up to
-## `FURTHER_TILES` to the first walkable point still out of sight. It comes at her in a straight line
-## from there, so nothing about its ground is asked but that it can stand on it. `Vector2.INF` where
-## there is none; `map` null is open ground.
+## `FURTHER_TILES` to the first point it may stand on (`CityMap.passable()`, as the row walks) still
+## out of sight. It comes at her in a straight line from there, stopped by what stops her, so nothing
+## about its ground is asked but that it can stand on it. `Vector2.INF` where there is none; `map`
+## null is open ground.
 static func along_her_heading(map: CityMap, row: EventDef, her: Vector2, direction: Vector2,
 		in_view: VisibleView = null) -> Vector2:
 	var view := seen_from(in_view, her)
@@ -210,9 +214,10 @@ static func along_her_heading(map: CityMap, row: EventDef, her: Vector2, directi
 	if not map:
 		return ahead
 	var step := direction * (Tuning.TILE_SIZE * 0.5)
+	var mover := EventInstance.mover_for(row)
 	for further in FURTHER_TILES * 2 + 1:
 		var at := ahead + step * float(further)
-		if map.is_walkable(map.world_to_tile(at)) and is_out_of_sight(view, row, her, at):
+		if map.passable(map.world_to_tile(at), mover) and is_out_of_sight(view, row, her, at):
 			return at
 	return Vector2.INF
 

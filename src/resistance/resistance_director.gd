@@ -102,6 +102,10 @@ const NOTE_HANDOVER_LINGER_SECONDS := 2.5
 
 var _city: City
 var _map: CityMap
+## The city's navigator (`City.navigator`), or one over `_map` for a rig with no city: how the
+## director walks a chase it has not started yet the way the chase will walk it
+## (`_his_walk_reaches_her()`), and asks whether she could stand where it places something.
+var _navigator: Navigator
 var _contact: ContactPoint
 ## The mark's own touched `ContactPoint`, once she has read it — kept alive rather than freed the
 ## instant `_begin_step()` activates the perform it unlocks, so `chalk_mark_touched.svg` keeps
@@ -239,6 +243,7 @@ func setup(city: City, map: CityMap) -> void:
 	add_to_group("resistance")
 	_city = city
 	_map = map
+	_navigator = city.navigator if city and city.navigator else Navigator.new(map)
 	if city and city.events and not city.events.door_crossed.is_connected(_on_door_crossed):
 		city.events.door_crossed.connect(_on_door_crossed)
 	_happenings.trace = trace
@@ -362,7 +367,7 @@ func _the_pinned_mark() -> Vector2:
 		refusal = "is not a tile centre"
 	elif not is_mark_tile(_map, tile):
 		refusal = "is not one tile in from an alley mouth"
-	elif not is_legal_ground(_map, tile, _walled_alleys()) or _map.is_obstructed(tile) \
+	elif not is_legal_ground(_map, tile, _walled_alleys()) or not _open_to_her(tile) \
 			or not _reachable_from_home(tile):
 		refusal = "is not open ground reachable from home today"
 	if refusal != "":
@@ -665,7 +670,7 @@ func _door_can_be_touched(door: Vector2) -> bool:
 	for across in [0, -1, 1]:
 		var tile: Vector2i = frontage + Vector2i(across, 0)
 		if door.distance_to(_map.tile_to_world(tile)) <= DOOR_REACH \
-				and is_legal_ground(_map, tile, walled, true) and not _map.is_obstructed(tile) \
+				and is_legal_ground(_map, tile, walled, true) and _open_to_her(tile) \
 				and _reachable_from_home(tile):
 			return true
 	return false
@@ -835,15 +840,15 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 			var distance := spot.distance_to(body)
 			if distance < nearest or distance > TASK_GUARD_FARTHEST:
 				continue
-			if not _map.in_bounds(tile) or not _map.is_walkable(tile) or _map.is_closed(tile) \
+			if not _map.in_bounds(tile) or not _map.passable(tile, Mover.on_foot()) \
 					or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
-					or _map.is_obstructed(tile) or _map.is_in_walled_alley(tile, walled_alleys):
+					or _map.is_in_walled_alley(tile, walled_alleys):
 				continue
 			if her != Vector2.INF and spot.distance_to(her) <= robbery.pursues_within:
 				continue
 			if on_screen_matters and _guard_shows(spot):
 				continue
-			if not _map.clear_line(spot, body):
+			if not _guards_along_a_clear_line(spot, body):
 				continue
 			var near_side := 2 if her != Vector2.INF and (spot - body).dot(her - body) > 0.0 else 0
 			if distance <= band_edge:
@@ -970,10 +975,7 @@ func _on_her_side(side: HerSide, tile: Vector2i) -> bool:
 			return false
 		_ensure_reachability()
 		side.blocked = _reach_blocked.duplicate()
-		for sealed: Vector2i in _map.soft_sealed_tiles:
-			side.blocked[sealed] = true
-		for body_tile: Vector2i in _map.obstructed_tiles:
-			side.blocked[body_tile] = true
+		side.blocked.merge(_map.blocked.tiles_of(Mover.SOFT_SEALS | Mover.BODIES))
 		var centre := _map.world_to_tile(side.body)
 		var span := ceili(reach / Tuning.TILE_SIZE)
 		for dy in range(-span, span + 1):
@@ -990,16 +992,16 @@ static func _guard_notice_reach() -> float:
 	return TASK_GUARD_FARTHEST + EventCatalogue.by_id("alley_robbery").pursues_within \
 			+ Tuning.TILE_SIZE
 
-## Whether she can walk onto `tile` today: walkable, open, not sealed to walkers, no body on it.
+## Whether she can walk onto `tile` today (`CityMap.passable()`, `Mover.on_foot()`): walkable,
+## open, not sealed to walkers, no body on it.
 func _open_to_her(tile: Vector2i) -> bool:
-	return _map.in_bounds(tile) and _map.is_walkable(tile) and not _map.is_closed(tile) \
-			and not _map.soft_sealed_tiles.has(tile) and not _map.is_obstructed(tile)
+	return _map.in_bounds(tile) and _map.passable(tile, Mover.on_foot())
 
 ## Whether a guard at `spot` notices her standing on `tile`'s centre: within `notice` of him, along
 ## a clear line.
 func _noticed_from(spot: Vector2, tile: Vector2i, notice: float) -> bool:
 	var at := _map.tile_to_world(tile)
-	return at.distance_to(spot) <= notice and _map.clear_line(spot, at)
+	return at.distance_to(spot) <= notice and _map.clear_line(spot, at, Mover.on_foot())
 
 ## How far from a roadblock's body its guard may stand when its band is all refused
 ## (`_roadblock_guard_spot()`): past the camera's half-width and its lead along the street from a
@@ -1013,7 +1015,14 @@ func _guards_the_roadblock(feet: Vector2, roadblock: EventInstance) -> bool:
 	var reach := _body_touch_reach(roadblock)
 	var distance := feet.distance_to(roadblock.body_position())
 	return distance >= robbery.inner_radius + reach and distance <= robbery.pursues_within + reach \
-			and _map.clear_line(feet, roadblock.body_position())
+			and _guards_along_a_clear_line(feet, roadblock.body_position())
+
+## **Whether a guard standing at `feet` has a clear line to the roadblock body at `body`**: the line
+## his notice takes (`CityMap.clear_line()`, a figure on foot), walked out from the middle of the
+## band, which it sees out of, to his feet, so the band's own concrete is not what hides him from it
+## and anything else standing between is.
+func _guards_along_a_clear_line(feet: Vector2, body: Vector2) -> bool:
+	return _map.clear_line(body, feet, Mover.on_foot())
 
 ## Whether `step` is guarded where it waits rather than sending its trap after her: a chalk mark,
 ## whose robber stands in its alley (`_maybe_set_a_trap()`), and day 13's roadblock, a guarded place
@@ -1262,7 +1271,7 @@ static func is_at_a_front_door(step: ResistanceSteps.Step) -> bool:
 ##   replaces, and never through the region's wall or a door.
 ##
 ## The walk is his chase's, not a path: straight at her, sliding along whatever wall is in the way
-## (`EventInstance.walkable_step_on()`), so a start in an alley or a courtyard of the block opposite
+## (`Navigator.step()`), so a start in an alley or a courtyard of the block opposite
 ## counts when sliding up it brings him out onto her street. Nearest first, ties broken by being
 ## nearer straight below her, so nothing is drawn from the day's RNG. `Vector2.INF` when no tile
 ## qualifies.
@@ -1301,11 +1310,11 @@ func _across_the_street(her: Vector2, def: EventDef, walled_alleys: Array[Rect2i
 const WALK_PROBE_STEP := Tuning.TILE_SIZE / 8.0
 
 ## Whether a chase started at `from` reaches her at `her` — walked the way `EventInstance._chase()`
-## walks it, straight at her and sliding along walls (`EventInstance.walkable_step_on()`) — within
-## `limit` px of ground, never stuck against a wall and never through a body of `boundary`. **Stuck
-## includes creeping**: a slide along a wall he meets nearly square-on keeps only the sliver of the
-## step that runs along it, so a step that keeps under a quarter of its length is a man standing at
-## the wall, not one coming round it.
+## walks it, straight at her and sliding along walls, stopped by what stops her (`Navigator.step()`,
+## a man on foot) — within `limit` px of ground, never stuck against a wall and never through a body
+## of `boundary`. **Stuck includes creeping**: a slide along a wall he meets nearly square-on keeps
+## only the sliver of the step that runs along it, so a step that keeps under a quarter of its
+## length is a man standing at the wall, not one coming round it.
 func _his_walk_reaches_her(from: Vector2, her: Vector2, limit: float,
 		boundary: Array[EventScheduler.Planned]) -> bool:
 	var at := from
@@ -1314,7 +1323,7 @@ func _his_walk_reaches_her(from: Vector2, her: Vector2, limit: float,
 		var toward := her - at
 		if toward.length() <= WALK_PROBE_STEP:
 			return true
-		var moved := EventInstance.walkable_step_on(_map, at, toward.normalized() * WALK_PROBE_STEP)
+		var moved := _navigator.step(at, toward.normalized() * WALK_PROBE_STEP, _chaser)
 		if moved.length() < WALK_PROBE_STEP * 0.25 \
 				or _runs_through_the_boundary(at, at + moved, boundary):
 			return false
@@ -1359,15 +1368,13 @@ static func beside_distance(view: VisibleView, def: EventDef, her: Vector2) -> f
 	var left := PendingWarning.just_out_of_sight(view, def, her, Vector2.LEFT).distance_to(her)
 	return ceilf(maxf(right, left))
 
-## Whether every point on the straight line from `from` to `to` is walkable, sampled at a quarter
-## tile — the question `EventInstance._walkable_step()` asks of each step a chaser takes.
+## Whether the straight line from `from` to `to` crosses only ground a man on foot may enter
+## (`Navigator.clear_line()`) — the ground each step a chaser takes is asked of.
 func _a_clear_run(from: Vector2, to: Vector2) -> bool:
-	var steps := ceili(from.distance_to(to) / (Tuning.TILE_SIZE * 0.25))
-	for i in steps + 1:
-		var point := from.lerp(to, float(i) / float(maxi(steps, 1)))
-		if not _map.is_walkable(_map.world_to_tile(point)):
-			return false
-	return true
+	return _navigator.clear_line(from, to, _chaser)
+
+## What a pursuer the director sends at her walks as: a man on foot (`EventInstance.mover_for()`).
+var _chaser := Mover.on_foot(EventInstance.FIGURE_RADIUS)
 
 ## A bearing and a distance from `at`, redrawn until the point is walkable ground the day's
 ## catalogue and the home-block exemption both leave alone — rejected rather than repaired, the
@@ -1420,7 +1427,7 @@ func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vecto
 		if on_screen_matters and _guard_shows(candidate):
 			continue
 		var tile := _map.world_to_tile(candidate)
-		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
+		if not _map.passable(tile, Mover.on_foot()) or _map.is_held_at(tile) \
 				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
 			continue
 		if _map.tile_at(tile) == GameEnums.TileType.ALLEY:
@@ -1514,7 +1521,7 @@ func _guard_two_thirds_through(at: Vector2, span: Array[Vector2], min_distance: 
 		if on_screen_matters and _guard_shows(candidate):
 			continue
 		var tile := _map.world_to_tile(candidate)
-		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
+		if not _map.passable(tile, Mover.on_foot()) or _map.is_held_at(tile) \
 				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
 			continue
 		return candidate
@@ -1570,7 +1577,7 @@ func _draw_guard_position_near_far_mouth(rng: RandomNumberGenerator, at: Vector2
 		if on_screen_matters and _guard_shows(candidate):
 			continue
 		var tile := _map.world_to_tile(candidate)
-		if not _map.is_walkable(tile) or _map.is_closed(tile) or _map.is_held_at(tile) \
+		if not _map.passable(tile, Mover.on_foot()) or _map.is_held_at(tile) \
 				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
 			continue
 		return candidate
@@ -1955,7 +1962,7 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 		var distance := world.distance_to(mark)
 		if distance >= nearest_distance:
 			continue
-		if not is_legal_ground(_map, tile, walled_alleys) or _map.is_obstructed(tile) \
+		if not is_legal_ground(_map, tile, walled_alleys) or not _open_to_her(tile) \
 				or not _reachable_from_home(tile) or _box_shows(world, TASK_HALF_EXTENT):
 			continue
 		nearest_distance = distance
@@ -2019,7 +2026,7 @@ func _roadblock_ground(def: EventDef, tiles: Dictionary) -> Array[Vector2i]:
 		for tile in _map.tiles_of_type(type as GameEnums.TileType):
 			if not tiles.has(tile) or _box_shows(_map.tile_to_world(tile), TASK_HALF_EXTENT):
 				continue
-			if not is_legal_ground(_map, tile, walled_alleys) or _map.is_obstructed(tile) \
+			if not is_legal_ground(_map, tile, walled_alleys) or not _open_to_her(tile) \
 					or not _reachable_from_home(tile):
 				continue
 			offered.append(tile)
@@ -2228,7 +2235,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 			continue
 		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var tile := foot + side
-			if is_legal_ground(_map, tile, walled_alleys) and not _map.is_obstructed(tile) \
+			if is_legal_ground(_map, tile, walled_alleys) and _open_to_her(tile) \
 					and _reachable_from_home(tile):
 				offered.append(plan)
 				beside.append(tile)
@@ -2292,12 +2299,12 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 			var world := _map.tile_to_world(tile)
 			if not _circle_edge.has(tile) or _box_shows(world, TASK_HALF_EXTENT):
 				continue
-			if not is_legal_ground(_map, tile, walled_alleys) or _map.is_obstructed(tile) \
+			if not is_legal_ground(_map, tile, walled_alleys) or not _open_to_her(tile) \
 					or not _reachable_from_home(tile) or not MastSites._is_eligible(world, _map):
 				continue
 			for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 				var next := tile + side
-				if is_legal_ground(_map, next, walled_alleys) and not _map.is_obstructed(next) \
+				if is_legal_ground(_map, next, walled_alleys) and _open_to_her(next) \
 						and _reachable_from_home(next) \
 						and (_circle_edge.has(next) or _circle_inside.has(next)):
 					feet.append(tile)
@@ -2421,7 +2428,7 @@ func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
 			continue
 		if her != Vector2.INF and _map.tile_to_world(tile).distance_to(her) < NEIGHBOR_CLEAR_OF_HER:
 			continue
-		if not is_legal_ground(_map, tile, walled_alleys) or _map.is_obstructed(tile):
+		if not is_legal_ground(_map, tile, walled_alleys) or not _open_to_her(tile):
 			continue
 		offered.append(tile)
 	if _pinned_neighbor != Vector2.INF:
@@ -2513,13 +2520,14 @@ static func target_ground(map: CityMap, day: int,
 	return found
 
 ## The refusals `_pick_reachable()` makes of a candidate tile before it draws — walkable, not
-## behind a closure, not on held ground unless `allow_held`, not on the home block's own lot, not in
-## a walled-off crossing alley. Each is its own paragraph in `_pick_reachable()`'s doc. Static and
-## shared with `target_ground()`, so the tiles the day's planning protects are exactly the ones the
-## draw may land on.
+## behind a closure (`CityMap.passable()` for the city as built and today's closures; the bodies
+## and the soft seals are asked after the draw, `_open_to_her()`), not on held ground unless
+## `allow_held`, not on the home block's own lot, not in a walled-off crossing alley. Each is its
+## own paragraph in `_pick_reachable()`'s doc. Static and shared with `target_ground()`, so the tiles
+## the day's planning protects are exactly the ones the draw may land on.
 static func is_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[Rect2i],
 		allow_held := false) -> bool:
-	return map.is_walkable(tile) and not map.is_closed(tile) \
+	return map.passable(tile, Mover.of(Mover.GROUND | Mover.POSTS | Mover.CLOSED)) \
 			and (allow_held or not map.is_held_at(tile)) \
 			and not map.is_on_home_block(tile) and not map.is_in_walled_alley(tile, walled_alleys)
 
@@ -2615,11 +2623,11 @@ func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 	# times, the nearest still-legal tile in the pool standing in if every redraw lands on another
 	# one (`_nearest_legal_in_pool()`'s own doc).
 	var drawn := pool[rng.randi_range(0, pool.size() - 1)]
-	if not _map.is_obstructed(drawn) and _reachable_from_home(drawn):
+	if _open_to_her(drawn) and _reachable_from_home(drawn):
 		return _map.tile_to_world(drawn)
 	for _attempt in PICK_REACHABLE_REDRAW_LIMIT:
 		drawn = pool[rng.randi_range(0, pool.size() - 1)]
-		if not _map.is_obstructed(drawn) and _reachable_from_home(drawn):
+		if _open_to_her(drawn) and _reachable_from_home(drawn):
 			return _map.tile_to_world(drawn)
 	var nearest := _nearest_legal_in_pool(pool, drawn)
 	return _map.tile_to_world(nearest) if nearest != _NO_TILE else Vector2.INF
@@ -2634,7 +2642,7 @@ func _nearest_legal_in_pool(pool: Array[Vector2i], from: Vector2i) -> Vector2i:
 	var nearest := _NO_TILE
 	var nearest_distance := INF
 	for tile in pool:
-		if _map.is_obstructed(tile) or not _reachable_from_home(tile):
+		if not _open_to_her(tile) or not _reachable_from_home(tile):
 			continue
 		var distance: float = (tile - from).length_squared()
 		if distance < nearest_distance:
@@ -2707,7 +2715,7 @@ func _ensure_reachability() -> void:
 				blockers.append(plan)
 	_reach_blocked = EventScheduler.blocked_by(_map, blockers)
 	# The arrow's own reading of a soft seal; see the doc above.
-	_reach_blocked.merge(_map.soft_sealed_tiles)
+	_reach_blocked.merge(_map.blocked.tiles_of(Mover.SOFT_SEALS))
 	_reach_reached = _reach_grid.flood([_map.home_rect.position], _reach_blocked)
 
 ## Whether `tile` is reachable from home under the day's full obstruction, as it stands right now:
@@ -3089,9 +3097,9 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 		# than the nearest unused one (`nearest_any_distance` is never above `nearest_distance`).
 		if distance >= nearest_any_distance and (not unused or distance >= nearest_distance):
 			continue
-		if _map.is_closed(tile) or not _map.is_walkable(tile) \
+		if not _map.passable(tile, Mover.on_foot()) \
 				or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
-				or _map.is_in_walled_alley(tile, walled_alleys) or _map.is_obstructed(tile) \
+				or _map.is_in_walled_alley(tile, walled_alleys) \
 				or not _reachable_from_home(tile):
 			continue
 		if _mark_shows(world) or _guard_shows(_guard_spot(world)):
@@ -3432,7 +3440,7 @@ func _mast_answers(plan: EventScheduler.Planned, walled_alleys: Array[Rect2i]) -
 		return false
 	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 		var tile := foot + side
-		if is_legal_ground(_map, tile, walled_alleys) and not _map.is_obstructed(tile) \
+		if is_legal_ground(_map, tile, walled_alleys) and _open_to_her(tile) \
 				and _reachable_from_home(tile):
 			return true
 	return false

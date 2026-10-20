@@ -138,6 +138,11 @@ class Officer extends RefCounted:
 
 var _map: CityMap
 var _city: City
+## How the officers walk (`Navigator`): the city's own, or one over `_map` without a city, so an
+## officer's walk is stopped by what stops her like every other figure's.
+var _navigator: Navigator
+## What an officer walks as: a figure on foot (`Mover.on_foot()`).
+var _officer_walks := Mover.on_foot()
 ## The day's obstruction as the director's reachability answer has it (`EventScheduler.
 ## blocked_by()`: today's closures plus every body's disc), which the last gap is checked under.
 var _blocked: Dictionary
@@ -189,6 +194,7 @@ var trace := RunTrace.new()
 func _init(map: CityMap, city: City, block: Vector2i, blocked: Dictionary = {}) -> void:
 	_map = map
 	_city = city
+	_navigator = city.navigator if city and city.navigator else Navigator.new(map)
 	_blocked = blocked
 	park = block
 	_rect = ClosurePlanner.calm_area_rect(map, block)
@@ -648,8 +654,9 @@ func _route_away(start: Vector2i, her: Vector2, shows: Callable) -> PackedVector
 			points.append(_map.tile_to_world(found[i]))
 	return points
 
-## A breadth-first search from `start` over walkable ground outside the park and clear of the day's
-## obstruction, roads only when `roads`, to the first tile out of her sight. The tiles of the way
+## A breadth-first search from `start` over ground an officer may stand on (`CityMap.passable()`)
+## outside the park and clear of the day's obstruction, roads only when `roads`, to the first tile
+## out of her sight. The tiles of the way
 ## there, or empty when none is found within `ROUTE_SEARCH_LIMIT`.
 func _search_away(start: Vector2i, her: Vector2, shows: Callable,
 		roads: bool) -> Array[Vector2i]:
@@ -675,8 +682,8 @@ func _search_away(start: Vector2i, her: Vector2, shows: Callable,
 	return []
 
 func _may_walk(tile: Vector2i, roads: bool) -> bool:
-	if not _map.in_bounds(tile) or not _map.is_walkable(tile) or _rect.has_point(tile) \
-			or _blocked.has(tile):
+	if not _map.in_bounds(tile) or not _map.passable(tile, _officer_walks) \
+			or _rect.has_point(tile) or _blocked.has(tile):
 		return false
 	return roads or _map.tile_at(tile) != GameEnums.TileType.ROAD
 
@@ -797,22 +804,24 @@ func _walk_path(officer: Officer, step: float) -> bool:
 
 ## `_walk_path()`, answering what is left of `step` once the path is walked, or -1 while it is not,
 ## so a taper goes on into his next stretch in the same frame rather than losing the rest of it at
-## every stretch's end, which over a large park's forty-odd stretches makes the close late.
+## every stretch's end, which over a large park's forty-odd stretches makes the close late. Walked
+## through the navigator (`Navigator.walk()`); where something solid now stands across his path, he
+## goes round it to his next point (`Navigator.path()`), and stands where nothing goes round.
 func _walk_path_for(officer: Officer, step: float) -> float:
-	var left := step
-	while left > 0.0 and not officer.path.is_empty():
-		var to := officer.path[0]
-		var gap_left := officer.at.distance_to(to)
-		if gap_left > 0.001:
-			officer.heading = (to - officer.at) / gap_left
-		if gap_left <= left:
-			officer.at = to
-			left -= gap_left
-			officer.path.remove_at(0)
-		else:
-			officer.at += officer.heading * left
-			left = 0.0
-	return left if officer.path.is_empty() else -1.0
+	var walked := _navigator.walk(officer.at, officer.path, step, _officer_walks)
+	officer.at = walked.at
+	if walked.toward != Vector2.ZERO:
+		officer.heading = walked.toward
+	officer.path = walked.points
+	if walked.stopped:
+		var round := _navigator.path(officer.at, officer.path[0], _officer_walks)
+		if round.size() > 1:
+			# The way round ends at the point itself, which is still the path's first.
+			round.remove_at(round.size() - 1)
+			round.append_array(officer.path)
+			officer.path = round
+		return -1.0
+	return walked.left if officer.path.is_empty() else -1.0
 
 ## A taper at the edge: his pace round it is set so his last stretch is taped at `deadline`,
 ## counting the corners he walks round — so the two finish together and the last gap closes then —

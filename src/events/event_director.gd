@@ -39,11 +39,15 @@ extends RefCounted
 ## interval or a spawn — a crossing is created on the spot and forgotten, and a place is written
 ## into the day's own plan for `EventManager` to stream like any other.
 
-## How far to either side of the crossing point the run reaches. A street's width, so the cat
-## comes out of one kerb and is gone into the other.
+## How far to either side of the crossing point the run reaches at most. A street's width, so the
+## cat comes out of one kerb and is gone into the other; a run is cut where something solid stands
+## sooner (`_crossing_ahead_of()`).
 const CROSSING_REACH_TILES := Tuning.STREET_WIDTH
 
 var _map: CityMap
+## What every run this director sites is cut to (`Navigator.trim()`), so a cat, a bike or a car sent
+## at her never runs through a building, a barrier or a body.
+var _navigator: Navigator
 var _rng := RandomNumberGenerator.new()
 ## The events the day has budgeted and not yet spent, in the order they are handed out. A `null`
 ## entry is **a marble from the route's bag**: one of the events the day bought for her route,
@@ -118,8 +122,9 @@ var _walk_rng := RandomNumberGenerator.new()
 ## stream of their own and never move the fire's.
 var _crew_rng := RandomNumberGenerator.new()
 
-func _init(map: CityMap) -> void:
+func _init(map: CityMap, navigator: Navigator = null) -> void:
 	_map = map
+	_navigator = navigator if navigator else Navigator.new(map)
 
 ## Takes over the day's `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` plans — everything the scheduler
 ## budgeted but left for the director to site while she walks. Called with the same plan list the
@@ -916,8 +921,13 @@ func _roll_interval() -> float:
 ## cat that crosses the road and a cat that crosses her path. On a pavement those are the same
 ## thing; walking across a square they are not, and the second one is what was asked for.
 ##
-## Empty when the crossing point is not somewhere anybody could walk — the lead lands inside a
-## building, or outside the map. The caller waits and asks again.
+## Empty when the crossing point is not somewhere the row could stand — the lead lands inside a
+## building, on a closure or under a body, or outside the map. The caller waits and asks again.
+##
+## **The run is cut to the ground the row can run on** (`Navigator.trim()`): out from the crossing
+## point each way, as far as the reach or the first solid, so a cat comes out of a kerb, a gap or a
+## doorway's edge and never out of a building, and never ends inside a lot. A run left shorter than
+## a tile is no crossing, and the caller asks again.
 ##
 ## **A pursuer is sited at the lead point itself and given no route.** It does not cross her line,
 ## it comes down it, so a path is the wrong shape for it entirely — and building one anyway puts
@@ -968,7 +978,8 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 			if def and def.pursues \
 			else (def.ahead_of_player_lead() if def else Tuning.AHEAD_LEAD_DISTANCE)
 	var centre := at + heading * lead
-	if not _map.is_walkable(_map.world_to_tile(centre)):
+	var mover := EventInstance.mover_for(def) if def else Mover.on_foot()
+	if not _navigator.passable_at(centre, mover):
 		return PackedVector2Array()
 	if def and def.pursues:
 		return PackedVector2Array([centre])
@@ -979,6 +990,12 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 	var from := centre - across
 	var to := centre + across
 	if not _map.in_bounds(_map.world_to_tile(from)) or not _map.in_bounds(_map.world_to_tile(to)):
+		return PackedVector2Array()
+	var back := _navigator.trim(PackedVector2Array([centre, from]), mover)
+	var on := _navigator.trim(PackedVector2Array([centre, to]), mover)
+	from = back[back.size() - 1]
+	to = on[on.size() - 1]
+	if from.distance_to(to) < Tuning.TILE_SIZE:
 		return PackedVector2Array()
 	return PackedVector2Array([from, to])
 
@@ -1014,8 +1031,9 @@ func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2A
 	var place := PendingWarning.down_her_line(_map, def, at, site_heading)
 	if place == Vector2.INF:
 		return PackedVector2Array()
-	var path := PendingWarning.route_down_her_line(_map, place, at, site_heading)
-	if path[0].distance_to(path[1]) < Tuning.TILE_SIZE:
+	var path := _navigator.trim(PendingWarning.route_down_her_line(_map, place, at, site_heading),
+			EventInstance.mover_for(def))
+	if path.size() < 2 or path[0].distance_to(path[1]) < Tuning.TILE_SIZE:
 		return PackedVector2Array()
 	return path
 
@@ -1084,7 +1102,10 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> Pa
 	if not _map.is_driveable_at(vertical, _map.world_to_tile(far)) \
 			or not _map.is_driveable_at(vertical, _map.world_to_tile(behind)):
 		return PackedVector2Array()
-	return PackedVector2Array([far, behind])
+	var path := _navigator.trim(PackedVector2Array([far, behind]), EventInstance.mover_for(def))
+	if path.size() < 2 or path[0].distance_to(path[1]) < Tuning.TILE_SIZE:
+		return PackedVector2Array()
+	return path
 
 ## Swaps a heading with a lateral drift for the corridor's own axis, when she is standing on a plain
 ## pavement edge — `CityMap.pavement_inward()` names which side of a corridor a sidewalk tile is on,
