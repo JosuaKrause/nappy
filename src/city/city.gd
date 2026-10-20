@@ -1164,6 +1164,51 @@ func route_tree() -> RouteTree:
 func region_plan() -> RegionPlanner.RegionPlan:
 	return _region_plan
 
+# ------------------------------------------------------- the day's shape in words ---
+# For whoever reports it: the run log's `plan` lines and the console's day line read the same
+# three. Here, on the city they describe, because both the run flow and the run log call them
+# and neither may reach into the other.
+
+## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day now
+## that a day can only be won on calm ground.
+func calm_summary() -> String:
+	var counts := {}
+	for block in map.calm_blocks:
+		var name: String = GameEnums.BlockPurpose.keys()[
+			GameState.city_state.purpose_of(map.block_plans, block)].to_lower()
+		counts[name] = counts.get(name, 0) + 1
+	var parts: Array[String] = []
+	for name: String in counts:
+		parts.append("%d %s" % [counts[name], name])
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
+## Which streets are shut today and what shut them. Worth printing rather than counting, because
+## "the route was awful today" and "the closure landed on the one street that mattered" look
+## identical from a count.
+func closure_summary() -> String:
+	var parts: Array[String] = []
+	for closure in closures():
+		parts.append("%s %s%s" % [
+			RoadClosure.display_name(closure.kind).to_lower(),
+			"h" if closure.segment.horizontal else "v",
+			RunTrace.tile(closure.segment.a)])
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
+## Today's events by id. Counted rather than listed one per line: which of the catalogue's kinds
+## are out is what makes a day, and where each instance stands is only interesting for the ones
+## she actually walked into — which the `near` lines cover, at the moment it matters. The *plan*,
+## not what is live: what is live is a fact about where she is standing this frame.
+func event_summary() -> String:
+	var counts := {}
+	for plan in events.plans():
+		counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
+	var parts: Array[String] = []
+	for id: String in counts:
+		parts.append("%s x%d" % [id, counts[id]] if counts[id] > 1 else id)
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
 func _spawn_closure(closure: RoadClosure) -> void:
 	# Supports precede the rails mounted on them. The sign's panel draws its composite
 	# after the rail, at the run midpoint rather than at a panel endpoint.

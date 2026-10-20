@@ -2026,8 +2026,7 @@ func _start_day() -> void:
 			% [GameState.day, Time.get_ticks_msec() - elapsed, GameState.current_act(),
 			_city.events.planned_count(), _city.events.active_count(), _city.events.owed_ahead(),
 			_city.crowd.agent_count(), _day.time_total]
-			+ "| calm: %s | closed: %s" % [RunSession.calm_summary(_city),
-			RunSession.closure_summary(_city)])
+			+ "| calm: %s | closed: %s" % [_city.calm_summary(), _city.closure_summary()])
 
 	# Last, because the day's shape is only true once everything has been placed: the run log
 	# writes its plan lines, its dawn picture and her `start` line here.
