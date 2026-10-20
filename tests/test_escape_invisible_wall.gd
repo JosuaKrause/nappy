@@ -9,7 +9,7 @@ extends RefCounted
 ## blocked along the city's whole width: the strip from y 832 to 864. The city is built beside the
 ## building in the same viewport and the same physics space, and none of the blockers has a
 ## picture, so left in place they are a wall across the city that nobody can see — the player met
-## it at tile 74,27. `main._on_escape_exit_requested()` takes them out
+## it at tile 74,27. `main._build_the_world_for()` takes them out
 ## (`InteriorScene.take_the_walls_out()`) before it builds the city.
 ##
 ## **Driven through the real `main.tscn`**, booted on the building the way a run's own ending is
@@ -31,21 +31,21 @@ func run(t) -> void:
 	var saved_section := GameState.escape_section
 	GameState.start_run(SEED)
 	GameState.day = DAY
-	GameState.escape_section = FinaleController.Section.BUILDING
+	GameState.escape_section = DaySpec.Section.BUILDING
 	var main: Node2D = MAIN_SCENE.instantiate()
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	t.check(main._interior != null, "the boot stands in the building")
-	main._on_finale_summary_continued()
+	main._on_summary_continued()
 	var before := _her_page_counts(main._player)
 	main._interior.exit_requested.emit()
-	main._on_finale_summary_continued()
+	main._on_summary_continued()
 	var after := _her_page_counts(main._player)
 	t.check(after == before,
 			"walking her out into the city leaves her pages' counts as they were (%s, then %s)"
 			% [before, after])
-	t.check(main._city != null and main._finale.section == FinaleController.Section.CITY,
+	t.check(main._city != null and main._spec.section == DaySpec.Section.CITY,
 			"and the service door has put her in the city")
 	if main._city != null:
 		_test_she_can_walk_north_from_where_the_player_stood(t, main)

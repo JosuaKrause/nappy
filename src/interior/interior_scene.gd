@@ -1,8 +1,9 @@
 class_name InteriorScene
 extends WorldContext
 ## The escape scene's building, as one persistent map — `art/interior`'s floor plan and stair
-## kit made walkable. Built once by `main._ready_escape()`, for the escape a won day 14 hands the run
-## over to and for `--start-escape` alike; absent from the fourteen days, and it needs no events and
+## kit made walkable. Built once by `main` as the escape's building section first begins, for the
+## escape a won day 14 hands the run over to and for `--start-escape` alike; absent from the
+## fourteen days, and it needs no events and
 ## no crowd of its own — `WorldContext`'s own defaults (1.0 recovery, no excitement sources) are
 ## exactly "meters idle" already.
 ##

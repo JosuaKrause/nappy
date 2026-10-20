@@ -52,7 +52,7 @@ extends CanvasLayer
 ## all the same.
 ##
 ## Built by `main._ready()` — before a resumed run's own charge can end the run and delete the
-## save — and by `main._ready_escape()` for a run's own escape. The finale is reached in ordinary
+## save — the boot into a run's own escape included. The finale is reached in ordinary
 ## play (a won day 14 with every task complete hands the run over to it, see
 ## `main._hands_over_to_the_escape()`) and each of its section briefs writes the save, so that
 ## escape draws the symbol too. Not built under the `--start-escape` dev flag, where

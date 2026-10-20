@@ -4,13 +4,13 @@ extends Node
 ## left, opens each day's and the escape's section, writes the run flow's own lines and pictures,
 ## and holds the `TelemetryObserver` that watches the walk.
 ##
-## **It listens; the run flow does not call it.** What happens to a day or a section reaches it as a
-## domain event on the bus it is handed — `day_started`, `day_planned`, `day_ended`,
-## `escape_section_started`, `escape_lost`, `escape_out` — and the page's counter (`VisitCounter`)
-## hears the same events, so a path that ends a day or a section through the day's own finish path
-## is counted and logged without remembering either channel. `main` only builds it and hands it
-## what it is to watch (`watch_day()`, `watch_escape()`), opens it once per boot (`open()`) and
-## closes it when the run is left (`close()`).
+## **It listens; the run flow does not call it.** What happens to a day reaches it as a domain
+## event on the bus it is handed — `day_started`, `day_planned`, `day_ended`, and
+## `escape_section_started` for the world an escape section is walked in — and the page's counter
+## (`VisitCounter`) hears the same events, so a day ended through the day's own finish path, an
+## escape section included, is counted and logged without remembering either channel. `main` only
+## builds it and hands it what it is to watch (`watch_day()`, `watch_escape()`), opens it once per
+## boot (`open()`) and closes it when the run is left (`close()`).
 ##
 ## **And it is where game logic's trace comes from.** `trace` writes into the run log; `main`
 ## hands it to everything it builds, so nothing that decides anything names the log itself.
@@ -32,6 +32,9 @@ var _city: City
 ## What the escape's observer is built from at its first section, once `watch_escape()` has been
 ## handed them; empty on a day.
 var _escape_world: Dictionary = {}
+## The escape's city while its section is walked — what the section's dawn and dusk maps are drawn
+## from, with no corridor, since its walk is two chains and not a day's tree. Null in the building.
+var _escape_city: City
 
 ## Hands the session the run log, the run's configuration and the bus whose events it writes down.
 func setup(run_log: Node, config: RunConfig, bus: Node) -> void:
@@ -42,8 +45,6 @@ func setup(run_log: Node, config: RunConfig, bus: Node) -> void:
 	bus.day_planned.connect(_on_day_planned)
 	bus.day_ended.connect(_on_day_ended)
 	bus.escape_section_started.connect(_on_escape_section_started)
-	bus.escape_lost.connect(_on_escape_lost)
-	bus.escape_out.connect(_on_escape_out)
 
 ## The observer watching this boot's walk, or null while nothing is traced.
 func observer() -> TelemetryObserver:
@@ -67,13 +68,6 @@ func open(run_seed: int, played: bool, keep_an_open_log: bool) -> void:
 	if keep_an_open_log and _log.is_active():
 		return
 	_log.begin_run(run_seed, played)
-
-## The escape's own timestamped section, opened as its boot begins and before its plan is written,
-## so every line of the escape carries an elapsed time. `length` is a section's length.
-func open_the_escape(length: float) -> void:
-	if _config.no_telemetry:
-		return
-	_log.begin_finale(GameState.run_seed, length)
 
 ## Closes the run log: the run is left, by the held restart, a quit or the window closing. Every
 ## line is already on disk; this closes the handle tidily.
@@ -104,16 +98,16 @@ func watch_day(city: City, player: Stroller, baby: Baby, day: DayController,
 	_observer = _new_observer()
 	_observer.setup(city, player, baby, day, resistance, _config.spikes_requested, edge)
 
-## The escape's walk: her, the baby, the sections' clock and the badges. The observer is built at
-## the first section, because that is when the log is known to be open for it; each section names
-## its own world on `escape_section_started`.
+## The escape's walk: her, the baby, the day's clock and the badges. The observer is built at the
+## first section, because that is when the log is known to be open for it; each section names its
+## own world on `escape_section_started`.
 func watch_escape(player: Stroller, baby: Baby, clock: DayController, edge: DangerEdge) -> void:
 	_escape_world = {"player": player, "baby": baby, "clock": clock, "edge": edge}
 
 ## **Built after the world it watches, and processed after it too.** Siblings process in tree order,
 ## and the observer stamps each line with the day's clock and reads the resistance and the
-## screen-edge badges, so it has to run after `DayController`, `ResistanceDirector`, `DangerEdge`
-## and the finale's clock have moved this frame — or every line carries the frame before's time and
+## screen-edge badges, so it has to run after `DayController`, `ResistanceDirector` and
+## `DangerEdge` have moved this frame — or every line carries the frame before's time and
 ## it watches one frame past a day's end. The session is built first, because its trace is handed to
 ## everything built after it; so the moment it starts watching it moves itself to the end of its
 ## parent, where the world it watches already stands and whatever is added later (the dev rigs, the
@@ -131,8 +125,15 @@ func _new_observer() -> TelemetryObserver:
 # ----------------------------------------------------------------------- a day ---
 
 ## The day's header, before anything is placed in it: placing it is what writes the day's `arc`,
-## `roll` and `contact` lines, and they belong under today's header rather than yesterday's.
+## `roll` and `contact` lines, and they belong under today's header rather than yesterday's. One of
+## the escape's sections heads its own day, under its own day number and its own words.
 func _on_day_started(day: int) -> void:
+	var section := DaySpec.section_for_day(day)
+	if section != DaySpec.Section.NONE:
+		_escape_city = null
+		var spec := DaySpec.for_section(section, _config.escape_section_length())
+		_log.begin_section(day, spec.title, GameState.run_seed, spec.length)
+		return
 	if not _city:
 		return
 	_log.begin_day(day, Tuning.act_for_day(day), GameState.run_seed, _city.map.seed_used,
@@ -142,6 +143,14 @@ func _on_day_started(day: int) -> void:
 ## and what is out — the three things a reader needs before any line below them means anything —
 ## and then the same three as a picture, then the `start` line.
 func _on_day_planned(day: int) -> void:
+	if _escape_city:
+		# Typed, for `Telemetry.write_map()`: an untyped `[]` handed to a typed parameter fails at
+		# the call. The escape's walls are events, not closures, and at dawn there is no trail.
+		var no_closures: Array[RoadClosure] = []
+		var no_trail: Array[Vector3] = []
+		_log.write_map(_escape_city.map, day, no_closures, null, _escape_city.events.plans(), false,
+				no_trail, {}, false)
+		return
 	if not _city:
 		return
 	_log.note("plan", "closed: %s" % _city.closure_summary())
@@ -155,8 +164,11 @@ func _on_day_planned(day: int) -> void:
 ## picture — the trail she left and the marks she reached against the corridor the day planned,
 ## the one thing the dawn map cannot say — before the section closes, so it belongs to the day it
 ## is of.
+##
+## An escape section ends the same way: its outcome line, and its dusk picture when it was walked in
+## the city — the building has no city map to draw one on.
 func _on_day_ended(day: int, result: GameEnums.DayResult, cause: String, _elapsed: float) -> void:
-	if not _city:
+	if not _city and DaySpec.section_for_day(day) == DaySpec.Section.NONE:
 		return
 	if _observer:
 		_observer.day_finished(result, cause)
@@ -168,34 +180,32 @@ func _on_day_ended(day: int, result: GameEnums.DayResult, cause: String, _elapse
 	if _observer:
 		trail = _observer.trail()
 		met = _observer.met_events()
-	_log.write_map(_city.map, day, _city.closures(), _city.route_tree(), _city.events.plans(),
-			true, trail, met)
+	if _city:
+		_log.write_map(_city.map, day, _city.closures(), _city.route_tree(), _city.events.plans(),
+				true, trail, met)
+	elif _escape_city:
+		var no_closures: Array[RoadClosure] = []
+		_log.write_map(_escape_city.map, day, no_closures, null, _escape_city.events.plans(), true,
+				trail, met, false)
 	_log.end_day()
 
 # ------------------------------------------------------------------ the escape ---
 
-## A section about to be walked, the first time or again after a loss: the observer is pointed at
-## the world it is walked in — `world` is the building or the city, `events` the events walked
-## among — and writes the `start` line, which on a retry says so.
+## A section about to be walked, the first time or again after a loss, under the header its
+## `day_started` opened: the observer is pointed at the world it is walked in — `world` is the
+## building or the city, `events` the events walked among — and writes the `start` line, which on a
+## retry says so.
 func _on_escape_section_started(section: int, restarted: bool, world: Node, events: Node) -> void:
+	if section == DaySpec.Section.CITY:
+		_escape_city = world as City
 	if _escape_world.is_empty() or not _log.is_active():
 		return
 	if not _observer:
 		_observer = _new_observer()
 		_observer.setup_escape(_escape_world["player"], _escape_world["baby"],
 				_escape_world["clock"], _config.spikes_requested, _escape_world["edge"])
-	if section == FinaleController.Section.BUILDING:
+	if section == DaySpec.Section.BUILDING:
 		_observer.watch_building(world as InteriorScene, events as InteriorEvents)
 	else:
 		_observer.watch_city(world as City)
 	_observer.start_section(restarted)
-
-## A section lost, written at the second it happened, above the retry's `start` line.
-func _on_escape_lost(_section: int, result: int) -> void:
-	if _observer:
-		_observer.section_lost(result)
-
-## Out of the city, above the `ending` line the run's own end writes.
-func _on_escape_out(exit_kind: int) -> void:
-	if _observer:
-		_observer.escaped(exit_kind)

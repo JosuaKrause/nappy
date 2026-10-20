@@ -119,7 +119,7 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	var saved_paused: bool = t.get_tree().paused
 	GameState.start_run(SEED)
 	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.escape_section = FinaleController.Section.BUILDING
+	GameState.escape_section = DaySpec.Section.BUILDING
 	var counter := RecordingCounter.new()
 	t.add_child(counter)
 	t.get_tree().paused = true
@@ -136,15 +136,15 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 		frames += 1
 	t.check(main._finale != null and main._summary.is_showing(), "the escape opened on its brief")
 
-	main._on_finale_summary_continued()
+	main._on_summary_continued()
 	_check_the_observer_runs_after(t, main, [main._finale, main._finale.clock(), main._edge,
 			main._interior, main._interior_events], "the escape")
 	t.get_tree().paused = true
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
-	main._on_finale_summary_continued()
+	main._on_summary_continued()
 	t.get_tree().paused = true
 	main._on_escape_exit_requested()
-	main._on_finale_summary_continued()
+	main._on_summary_continued()
 	t.get_tree().paused = true
 	main._on_finale_escaped(CityEdge.Kind.TUNNEL)
 
@@ -158,7 +158,7 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	t.remove_child(main)
 	main.free()
 	counter.free()
-	GameState.escape_section = FinaleController.Section.NONE
+	GameState.escape_section = DaySpec.Section.NONE
 	t.get_tree().paused = saved_paused
 	return lines
 

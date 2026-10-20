@@ -154,6 +154,16 @@ func stand_down() -> void:
 	_instances.clear()
 	_pursuer = null
 
+## **Every charge still running ends for its counter as cut short**, as `EventManager`'s does:
+## asked by `main._on_day_finished()` as the section ends, before its end is counted, so a masked
+## man's charge running when she walks out of the service door, or when the section is lost to
+## something else, is counted ended rather than left open. A charge that caught her, or is over,
+## has already ended and is not counted twice.
+func end_the_charges_still_running() -> void:
+	for instance in _instances:
+		if is_instance_valid(instance):
+			instance.report_the_charge_cut_short()
+
 ## Which stairwell is shut. Read by `tests/test_interior.gd`, which asserts the other one is still
 ## walkable — *"there might be a fire on one staircase forcing us to use the other staircase (all
 ## buildings have two egresses)"* is a statement about both of them, not only the burning one.
@@ -526,8 +536,8 @@ func _tell_them_where_she_is() -> void:
 		instance.baby_awake = awake
 
 ## Being caught on the stairs ends the section. `EventBus.hard_fail_triggered` is the same signal a
-## day's own lethal rows fire, so `FinaleController`'s clock hears it through `DayController`
-## exactly as it hears an abduction outdoors — nothing here has to know what a section is.
+## day's own lethal rows fire, so the section's `DayController` hears it exactly as a day's hears an
+## abduction outdoors — nothing here has to know what a section is.
 func _check_hard_fails() -> void:
 	if _hard_failed:
 		return

@@ -199,6 +199,20 @@ func begin_memory_log() -> void:
 ## `_day_attempts[day]` counts how many times that has happened. `_attempt` is a first attempt
 ## (`1`) until it is not, and `_attempt_suffix()` is what turns that into a filename fragment.
 func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float) -> void:
+	_open_a_day(day, "day %-2d act %d  run seed %d  city seed %d  length %.1fs"
+			% [day, act, run_seed, city_seed, length])
+
+## Starts one of the **escape's** sections, each a day of its own with its own day number — the
+## building's and the city's, after the last day — and an attempt counted the way a day's is, so a
+## retried section's lines are timed from its own start and its pictures carry its attempt. What
+## heads it is the section's own words where a day has its act and its city seed: the city is the
+## run's, already named by the run seed.
+func begin_section(day: int, title: String, run_seed: int, length: float) -> void:
+	_open_a_day(day, "day %-2d %s  run seed %d  length %.1fs" % [day, title, run_seed, length])
+
+## The section either of the two above opens: the attempt counted, the clock at zero, the shot
+## schedule cleared and the header written.
+func _open_a_day(day: int, line: String) -> void:
 	if not _log:
 		return
 	_day_attempts[day] = int(_day_attempts.get(day, 0)) + 1
@@ -208,38 +222,8 @@ func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float)
 	_shots_today = 0
 	_last_shot = -INF
 	_log.header("")
-	var line := "day %-2d act %d  run seed %d  city seed %d  length %.1fs" \
-			% [day, act, run_seed, city_seed, length]
 	# Noted the same way the seed is, once per day rather than as a per-frame entry, so a log
 	# from an --invincible day cannot be mistaken for one where a loss actually meant anything.
-	if _invincible():
-		line += "  invincible"
-	_log.header(line)
-
-## Starts the **escape's** timestamped section — the fifteenth walk, which is not a day, so it has
-## no day number, no act and no city seed of its own to head a section with.
-##
-## **Without it every line of an escape run is stamped `0.0`.** `set_clock()` below only moves the
-## clock while a section is open, and a section was only ever opened by `begin_day()`, which the
-## escape's own boot (`main._ready_escape()`) never reaches — so an escape run wrote a log that
-## could not say when anything in it happened. This is the same two lines `begin_day()` writes,
-## with the fields that mean something here: the run seed and the length of the sequence.
-##
-## `_day_attempts` is deliberately untouched, so `_attempt_suffix()` keeps naming the escape's
-## pictures as a first attempt. A lost section is not a retry the calendar knows about — nothing
-## is spent on it and the sequence is one walk — so counting them would put an attempt number on
-## filenames that no day number distinguishes anyway.
-func begin_finale(run_seed: int, length: float) -> void:
-	if not _log:
-		return
-	_clock = 0.0
-	_day_open = true
-	_shots_today = 0
-	_last_shot = -INF
-	_log.header("")
-	var line := "escape  run seed %d  length %.1fs" % [run_seed, length]
-	# For the reason `begin_day()` gives: a log from an --invincible walk must not be mistaken for
-	# one where a loss meant anything.
 	if _invincible():
 		line += "  invincible"
 	_log.header(line)
@@ -280,15 +264,13 @@ func set_clock(seconds: float) -> void:
 ## The section's clock, put back to zero for a fresh walk — a retried section, or the second
 ## section beginning after the first — with the automatic-snapshot schedule reset alongside it.
 ##
-## **`set_clock(0.0)` alone is not this.** A day's own retry reopens the whole section through
-## `begin_day()`, which resets `_shots_today` and `_last_shot` as well as `_clock`; a finale
-## section has no second `begin_finale()` to call, so `TelemetryObserver.start_section()` used to
-## push the clock back with `set_clock()` and leave `_last_shot` sitting wherever the previous
-## attempt's last automatic shot fell. `snapshot()`'s spacing gate
-## (`_clock - _last_shot < SHOT_SPACING`) then stayed true — the new clock read as still inside the
-## old attempt's three-second window — until the retried walk's own clock climbed back past
-## whatever the old one had reached, holding every automatic snapshot back for exactly that long.
-## This gives a section restart the same clean slate `begin_day()` gives a day's.
+## **`set_clock(0.0)` alone is not this.** It leaves `_last_shot` wherever the previous walk's
+## last automatic shot fell, so `snapshot()`'s spacing gate (`_clock - _last_shot < SHOT_SPACING`)
+## would stay true — the new clock read as still inside the old walk's three-second window — until
+## the new walk's own clock climbed back past whatever the old one had reached, holding every
+## automatic snapshot back for exactly that long. This gives a walk the same clean slate
+## `begin_day()` gives a day's; `TelemetryObserver.start_section()` asks it as each section of the
+## escape begins, after its own `begin_section()`.
 func restart_section_clock() -> void:
 	if not _day_open:
 		return
@@ -558,8 +540,9 @@ func _write_burst_metadata() -> bool:
 ## It takes the day rather than reading `GameState`, for the reason everything in this file takes
 ## what it needs: the telemetry asks the world no questions, so it can never be the thing that
 ## changed one.
-## It also draws the day's **corridor**. The tree is grown here when the caller has none
-## to hand, and that is safe rather than convenient: `RouteTree.for_day` is a pure function of the
+## It also draws the day's **corridor**, unless `corridor` says the walk has none (the escape's
+## city). The tree is grown here when the caller has none to hand, and that is safe rather than
+## convenient: `RouteTree.for_day` is a pure function of the
 ## city's seed, the day and what is shut, so the tree drawn is the same tree anything else that
 ## asks for today's would get. Growing one touches no gameplay stream and cannot move a placement,
 ## which is the invariant this whole file is built on.
@@ -584,12 +567,17 @@ func _write_burst_metadata() -> bool:
 ## never ambiguous about which attempt it came from and there is only one shape to read.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
-		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
+		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {},
+		corridor := true) -> void:
 	if not _log or _log.path == "":
 		return
 	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, _attempt_suffix(),
 			"-dusk" if at_dusk else ""]
-	var drawn := tree if tree else RouteTree.for_day(map, day)
+	# The escape's city has no corridor — its walk is two chains, not a tree — so its map draws none
+	# (`corridor` false) rather than one grown for a day that is not being walked.
+	var drawn: RouteTree = null
+	if corridor:
+		drawn = tree if tree else RouteTree.for_day(map, day)
 	if TelemetryMap.render(map, closures, drawn, plans, trail, met).save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
 

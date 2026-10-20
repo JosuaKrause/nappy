@@ -294,8 +294,8 @@ var is_male := false
 var _parent_atlas: StringName = &""
 
 ## The escape scene's carrying rig: the baby in the parent's arms instead of ahead in the pram.
-## Set once by `main._ready_escape()` before she is ever drawn; nothing else in the game ever
-## flips it, so there is no case of switching mid-walk to account for. Her collision circle is
+## Set once by `main` as the escape's first world is built, before she is ever drawn; nothing ever
+## flips it back, so there is no case of switching mid-walk to account for. Her collision circle is
 ## unchanged either way — see `shape`'s own doc.
 var carrying := false
 
@@ -303,8 +303,9 @@ var carrying := false
 ## diagonal stairs need from this otherwise interior-agnostic rig. Asked every physics frame for
 ## whether her *current* position sits on a diagonal flight tile (`+1` descending toward east,
 ## `-1` toward west, `0` off any flight), so a sideways press can be redirected along the slope —
-## see `_physics_process()`. Set once by `main._ready_escape()`, the same shape `carrying` is set
-## in; unset (`Callable()`) leaves every outdoor run and every other test untouched.
+## see `_physics_process()`. Set by `main` as the escape's building is built, the same shape
+## `carrying` is set in; unset (`Callable()`) leaves every outdoor run and every other test
+## untouched.
 var slope_dir_at := Callable()
 
 ## Her own ground shape and the pram's, read by `_draw()` for their shadows — 9px and 12px, the

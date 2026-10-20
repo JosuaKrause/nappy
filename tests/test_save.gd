@@ -116,7 +116,7 @@ func run(t) -> void:
 	# the resistance's used alley tiles and the one fenced park are deliberately not among them —
 	# see `_SAVED_OUTSIDE_THE_SNAPSHOT` — so this suite has to put all three back by hand or the next
 	# one starts in the middle of an escape with somebody else's used alleys and fenced park still on.
-	GameState.escape_section = FinaleController.Section.NONE
+	GameState.escape_section = DaySpec.Section.NONE
 	GameState.completed_resistance_alley_tiles.clear()
 	GameState.fenced_park = Vector2i(-1, -1)
 	GameState.fenced_park_act = 0
@@ -394,14 +394,14 @@ func _test_write_refuses_once_the_run_has_ended(t) -> void:
 func _test_the_escape_section_survives_a_round_trip(t) -> void:
 	GameState.start_run(313131)
 	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.escape_section = FinaleController.Section.CITY
+	GameState.escape_section = DaySpec.Section.CITY
 	t.check(GameSave._write_now(false), "a section of the escape writes a save")
 	# Wiped the way a fresh process would find it, so what is read back has to come off the file.
 	GameState.start_run(1)
-	t.check(GameState.escape_section == FinaleController.Section.NONE,
+	t.check(GameState.escape_section == DaySpec.Section.NONE,
 			"a fresh run is in no section (the check below would pass vacuously otherwise)")
 	t.check(not GameSave._read_now().is_empty(), "and the file resumes")
-	t.check(GameState.escape_section == FinaleController.Section.CITY,
+	t.check(GameState.escape_section == DaySpec.Section.CITY,
 			"onto the section it was closed in, not the start of the escape")
 	t.check(GameState.run_seed == 313131, "with the run it belonged to")
 	GameSave._clear_now()
@@ -427,7 +427,7 @@ func _test_a_save_from_before_the_escape_still_loads(t) -> void:
 	t.check(not old_shape.contains("escape_section"),
 			"the payload really is one with no escape section in it")
 	GameState.start_run(1)
-	GameState.escape_section = FinaleController.Section.BUILDING
+	GameState.escape_section = DaySpec.Section.BUILDING
 	_write_raw(old_shape)
 	var resumed := GameSave._read_now()
 	t.check(not resumed.is_empty(), "a save with no escape section still resumes")
@@ -435,7 +435,7 @@ func _test_a_save_from_before_the_escape_still_loads(t) -> void:
 			"with every field it does carry")
 	t.check(bool(resumed.get("day_under_way", false)),
 			"and the day-under-way flag beside it, unchanged")
-	t.check(GameState.escape_section == FinaleController.Section.NONE,
+	t.check(GameState.escape_section == DaySpec.Section.NONE,
 			"and the run is in no section, rather than keeping whatever was in memory")
 	GameSave._clear_now()
 
@@ -1634,7 +1634,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	t.add_child(home)
 	SaveIndicator._home_override = home
 	var section := GameState.escape_section
-	GameState.escape_section = FinaleController.Section.BUILDING
+	GameState.escape_section = DaySpec.Section.BUILDING
 	var old_main_scene := Node.new()
 	t.add_child(old_main_scene)
 	var indicator := SaveIndicator.new()

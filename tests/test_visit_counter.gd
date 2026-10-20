@@ -55,6 +55,7 @@ func run(t) -> void:
 	_test_the_pelican_is_its_own_entry(t)
 	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
 	_test_encounters_and_runs_are_named_by_their_day_and_row(t)
+	_test_an_escape_section_is_counted_as_a_day_of_its_own(t)
 	_test_every_event_opts_out_of_sessions(t)
 
 ## `_should_send()` — on the web, released, unasked-for and with a live
@@ -236,7 +237,7 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	counter._on_run_ended(GameEnums.Ending.NEUTRAL)
 	counter._on_escape_begun()
 	counter._on_escape_city_entered()
-	counter._on_escape_lost(FinaleController.Section.BUILDING, GameEnums.DayResult.LOST_CRYING)
+	counter._on_escape_lost(DaySpec.Section.BUILDING, GameEnums.DayResult.LOST_CRYING)
 	counter._on_escape_out(CityEdge.Kind.TUNNEL)
 	counter._on_controls_chosen(false, true)
 	counter._on_run_mode_chosen(true, 1)
@@ -845,7 +846,7 @@ func _test_every_event_opts_out_of_sessions(t) -> void:
 	counter._on_run_ended(GameEnums.Ending.GOOD)
 	counter._on_escape_begun()
 	counter._on_escape_city_entered()
-	counter._on_escape_lost(FinaleController.Section.CITY, GameEnums.DayResult.LOST_TIMEOUT)
+	counter._on_escape_lost(DaySpec.Section.CITY, GameEnums.DayResult.LOST_TIMEOUT)
 	counter._on_escape_out(CityEdge.Kind.BRIDGE)
 	counter._on_controls_chosen(true, false)
 	t.check(counter.sent.size() >= 20,
@@ -865,3 +866,39 @@ func _test_every_event_opts_out_of_sessions(t) -> void:
 		t.check(parsed is Dictionary and parsed == options,
 			"%s: the script line hands count() exactly those options" % name)
 	counter.free()
+
+## **Each of the escape's sections is counted as a day of its own, under its own number** *(minty-
+## lemur #785: "telemetry should work the same also in escape both apartment and city")*: what is
+## counted while it is walked is named by the day `day_started` announced — the building's
+## `DaySpec.BUILDING_DAY`, the city's `DaySpec.CITY_DAY` — never by the calendar, which stays on
+## the last day for the whole escape. The escape's own names go out beside the day's, as before.
+func _test_an_escape_section_is_counted_as_a_day_of_its_own(t) -> void:
+	var saved_day := GameState.day
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	var counter := RecordingCounter.new()
+	var building := DaySpec.BUILDING_DAY
+	counter._on_day_started(building)
+	counter._on_pursuit_warned("masked_pursuer")
+	counter._on_pursuit_began("masked_pursuer")
+	counter._on_pursuit_caught("masked_pursuer")
+	counter._on_day_ended(building, GameEnums.DayResult.LOST_HARD_FAIL, "masked-pursuer", 12.0)
+	counter._on_escape_lost(DaySpec.Section.BUILDING, GameEnums.DayResult.LOST_HARD_FAIL)
+	counter._on_day_started(building)
+	counter._on_day_ended(building, GameEnums.DayResult.WON, "", 40.0)
+	counter._on_escape_city_entered()
+	var city := DaySpec.CITY_DAY
+	counter._on_day_started(city)
+	counter._on_city_gone_dark()
+	counter._on_player_detained("checkpoint_post")
+	counter._on_day_ended(city, GameEnums.DayResult.WON, "", 90.0)
+	counter._on_escape_out(CityEdge.Kind.BRIDGE)
+	var b := "nappy-day-%d-" % building
+	var c := "nappy-day-%d-" % city
+	t.check(counter.sent == [b + "began", b + "masked-pursuer-warned", b + "masked-pursuer-chased",
+			b + "masked-pursuer-caught", b + "lost-hard-fail-masked-pursuer", "nappy-escape-lost",
+			b + "began", b + "won", "nappy-escape-city", c + "began", c + "blackout",
+			c + "checkpoint", c + "won", "nappy-escape-out"],
+			"the building and the city are counted as days %d and %d (%s)"
+			% [building, city, counter.sent])
+	counter.free()
+	GameState.day = saved_day

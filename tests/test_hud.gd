@@ -327,8 +327,8 @@ func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t) -> v
 	stroller.free()
 
 ## *"The readout said 'awake' while the baby was drawn asleep,"* found once under
-## `--start-escape stairwell:right --invincible`. `main._ready_escape()` builds this HUD before the
-## building or the city — and so before the `Baby` it goes looking for even exists — so `_ready()`'s
+## `--start-escape stairwell:right --invincible`. `main` builds this HUD before the escape's
+## building or city — and so before the `Baby` it goes looking for even exists — so `_ready()`'s
 ## one-time `get_first_node_in_group("baby")` came back empty and `hud._baby` stayed unset for the
 ## whole section, leaving `hud.tscn`'s own placeholder text, "awake", on screen no matter what she
 ## actually was. `_refresh_state()` now re-asks the group whenever it has no `_baby` yet, so the

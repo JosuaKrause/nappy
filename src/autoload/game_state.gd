@@ -12,7 +12,7 @@ var nerves: int = Tuning.STARTING_NERVES
 var resistance_progress: int = 0
 var ending: GameEnums.Ending = GameEnums.Ending.NONE
 
-## Which section of the escape this run is in, as a `FinaleController.Section` — `0` (`NONE`) for
+## Which section of the escape this run is in, as a `DaySpec.Section` — `0` (`NONE`) for
 ## every one of the fourteen days, `BUILDING` or `CITY` once a won day 14 with every task complete
 ## has handed over to it. An `int` rather than the enum because a cross-script enum is not the same
 ## type as itself across a script boundary (see the **godot** skill), and a field on the *run*
@@ -29,8 +29,8 @@ var escape_section: int = 0
 ## begins and fixed for the rest of the run. *(gentle-osprey, the player: "a "Hard Mode" checkbox on
 ## the title screen (if new game) that decides whether checkpoints are available".)* **Hard mode is
 ## the run with no checkpoints**: the last nerve ends it with the bad ending, and the escape spends
-## nerves as well (`spend_a_nerve_in_the_escape()`), and nothing, a won day or a won section, gives
-## one back (`regain_a_nerve_for_a_won_day()`). **Normal mode never reaches the
+## nerves as well (`finish_day()` on a section's `DaySpec`), and nothing, a won day or a won
+## section, gives one back (`regain_a_nerve_for_a_won_day()`). **Normal mode never reaches the
 ## bad ending**: the last nerve sends the run back to its latest checkpoint (`checkpoint`). Nothing
 ## else differs — *"hard mode doesn't affect gameplay -- only restart pacing"*.
 ##
@@ -329,14 +329,22 @@ func a_loss_goes_back_to_the_checkpoint() -> bool:
 ## two photographs above, so the dawn fields it carries are this dawn's, and before anything of the
 ## day can have happened. A retry of the same day, or a run sent back to it, finds the checkpoint
 ## already on this day and keeps it as it is; only the next checkpoint day replaces it. **Not in
-## hard mode**, which has none, and not inside the escape, which is never a day.
+## hard mode**, which has none. The escape's sections never reach this: they begin no calendar day
+## (`begin_day()`), since the run is still on its last one.
 func _keep_a_checkpoint_if_one_is_due() -> void:
-	if hard_mode or escape_section != 0 or not is_checkpoint_day(day) or day <= checkpoint_day():
+	if hard_mode or not is_checkpoint_day(day) or day <= checkpoint_day():
 		return
 	checkpoint = GameSave.run_data()
 	_trace.note("nerve", "day %d's dawn is the checkpoint a run out of nerves goes back to" % day)
 
 ## Record the outcome of the day. Returns true if the run continues.
+##
+## **`spec` says what this day costs and settles**, and an ordinary day is what no `spec` means. The
+## escape's sections are days of their own with their own rules (`DaySpec.for_section()`): a normal
+## run's lost section costs nothing, a hard run's costs a Nerve and its last one ends the run, a
+## lost section gives nothing back, since it touched none of what a day gives back, a won section
+## gives no Nerve back, and the building's win settles nothing — the run goes on into the city,
+## and only getting out of that ends it.
 ##
 ## **A lost day is retried, not skipped.** A nerve buys another attempt at the same day, and the
 ## calendar moves only when a day is won.
@@ -374,41 +382,51 @@ func _keep_a_checkpoint_if_one_is_due() -> void:
 ## *"that way you can recover from a bad single day without being in a tight spot towards the end
 ## of the game"*. See `regain_a_nerve()` below for where this is granted and where it deliberately
 ## is not.
-func finish_day(result: GameEnums.DayResult) -> bool:
+func finish_day(result: GameEnums.DayResult, spec: DaySpec = null) -> bool:
+	var rules := spec if spec else DaySpec.new()
 	if result != GameEnums.DayResult.WON:
+		if not rules.a_loss_costs_a_nerve(hard_mode):
+			return true
 		nerves -= 1
 		EventBus.nerves_changed.emit(nerves)
-		# Given back before the entry below rather than after it, so the one line about the nerve
-		# also says whether the day took any resistance work down with it. Given back before the
-		# `nerves <= 0` branch too: an attempt that failed did not count, and a run that ends on it
-		# has no reason to be the exception — the `ending` entry then reports what actually stood.
-		var also_undone := _give_the_resistance_back()
-		_give_back_what_the_attempt_spent()
-		# Which nerve went, and on which day. The nerve economy has never been tested against
-		# a game that bites early, and this is the entry that will say whether it survives it —
-		# a question a retry sharpens rather than settles, since five nerves now buy five
-		# attempts wherever they are needed instead of five days off the calendar.
-		_trace.note("nerve", "spent a nerve on day %d (act %d); %d left%s%s"
-				% [day, current_act(), nerves,
-				"" if nerves <= 0 else " — day %d again" % day, also_undone])
+		if rules.a_loss_gives_back_the_attempt:
+			# Given back before the entry below rather than after it, so the one line about the
+			# nerve also says whether the day took any resistance work down with it. Given back
+			# before the `nerves <= 0` branch too: an attempt that failed did not count, and a run
+			# that ends on it has no reason to be the exception — the `ending` entry then reports
+			# what actually stood.
+			var also_undone := _give_the_resistance_back()
+			_give_back_what_the_attempt_spent()
+			# Which nerve went, and on which day. The nerve economy has never been tested against
+			# a game that bites early, and this is the entry that will say whether it survives it
+			# — a question a retry sharpens rather than settles, since five nerves now buy five
+			# attempts wherever they are needed instead of five days off the calendar.
+			_trace.note("nerve", "spent a nerve on day %d (act %d); %d left%s%s"
+					% [day, current_act(), nerves,
+					"" if nerves <= 0 else " — day %d again" % day, also_undone])
+		else:
+			_trace.note("nerve", "spent a nerve in the escape; %d left" % nerves)
 		if nerves <= 0:
 			if hard_mode:
 				_end_run(GameEnums.Ending.BAD)
 				return false
 			_go_back_to_the_checkpoint()
 			return true
-		settled_in.erase(day)
+		if rules.a_loss_gives_back_the_attempt:
+			settled_in.erase(day)
+		return true
+	# A section won that leads into the next settles nothing: the run goes on, and only the walk's
+	# own end does.
+	if rules.a_win_leads_into != DaySpec.Section.NONE:
 		return true
 	# A won day commits what it did: the attempt that stood is the one the next photograph starts
 	# from, whether or not anything calls `begin_day()` before the next `finish_day()`.
 	_snapshot_the_resistance()
 	_snapshot_what_the_attempt_can_spend()
-	# Excluded for the escape: `main._on_finale_escaped()` reaches this same call once she is out,
-	# and walking out of the city gives no nerve in either mode — a normal run's escape has none to
-	# give ("the escape doesn't have nerves", the player), and a hard run gets none back at all. So
-	# the section she just walked out of, still on `escape_section` here (the `_end_run()` branch
-	# below is what clears it), says whether this call is one of theirs.
-	if escape_section == 0:
+	# Not for the escape: walking out of the city gives no nerve in either mode — a normal run's
+	# escape has none to give ("the escape doesn't have nerves", the player), and a hard run gets
+	# none back at all.
+	if rules.a_win_gives_a_nerve_back:
 		regain_a_nerve_for_a_won_day()
 	if is_final_day():
 		_end_run(GameEnums.Ending.GOOD if earned_good_ending() else GameEnums.Ending.NEUTRAL)
@@ -420,10 +438,10 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 ## stretch of wins can never bank more than a single bad day ever costs. `finish_day()` reaches this
 ## for an ordinary won day through `regain_a_nerve_for_a_won_day()`, and `main._on_day_finished()`'s
 ## hand-over to the escape reaches it the same way for day 14's own win, since a day that hands
-## over never reaches `finish_day()` at all (that call is deferred to `main._on_finale_escaped()`,
-## once she is out, so day 14's calendar slot and ending stay open for the escape to decide) — day
-## 14 is still an ordinary day, and its win does not become the escape's just because what follows
-## it is.
+## over never reaches `finish_day()` at all (that call waits for the city section's win, once she
+## is out, so day 14's calendar slot and ending stay open for the escape to decide) — day 14 is
+## still an ordinary day, and its win does not become the escape's just because what follows it
+## is.
 func regain_a_nerve() -> void:
 	if nerves < Tuning.STARTING_NERVES:
 		nerves += 1
@@ -435,23 +453,6 @@ func regain_a_nerve() -> void:
 func regain_a_nerve_for_a_won_day() -> void:
 	if not hard_mode:
 		regain_a_nerve()
-
-## A lost section of the escape, in hard mode: one nerve, and the run ends with the bad ending at 0.
-## Returns whether the run goes on. *(gentle-osprey, the player: "with hard mode the escape also has
-## normal nerve counts and ends if nerves go to zero (instead of restarting indefinitely; this is
-## only for normal mode)".)* `main._on_finale_section_lost()` is the one caller, and only in hard
-## mode: a normal run's escape spends nothing.
-##
-## Nothing is given back with it, unlike a lost day: the escape never touches the resistance, the
-## city's arcs or the scars, so a lost section has nothing of its own to undo.
-func spend_a_nerve_in_the_escape() -> bool:
-	nerves -= 1
-	EventBus.nerves_changed.emit(nerves)
-	_trace.note("nerve", "spent a nerve in the escape; %d left" % nerves)
-	if nerves <= 0:
-		_end_run(GameEnums.Ending.BAD)
-		return false
-	return true
 
 ## A normal run's last nerve, spent: the run as it stood at its latest checkpoint's dawn, every
 ## field the save carries, with `Tuning.STARTING_NERVES`. *(gentle-osprey, the player: "store the

@@ -45,7 +45,7 @@ func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 	var saved_section := GameState.escape_section
 	GameState.start_run(SEED)
 	GameState.day = DAY
-	GameState.escape_section = FinaleController.Section.BUILDING
+	GameState.escape_section = DaySpec.Section.BUILDING
 	var main: Node2D = MAIN_SCENE.instantiate()
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
@@ -53,9 +53,9 @@ func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 	t.check(main._interior != null, "the boot stands in the building")
 	var baby: Baby = main._baby
 	t.check(baby.world() == main._interior, "in the building she reads the building")
-	main._on_finale_summary_continued()
+	main._on_summary_continued()
 	main._interior.exit_requested.emit()
-	main._on_finale_summary_continued()
+	main._on_summary_continued()
 	t.check(main._city != null, "the service door has put her in the city")
 	if main._city != null:
 		t.check(main._baby == baby, "and it is the same baby")
@@ -117,11 +117,11 @@ func _test_the_city_ground_gains_sleepiness(t, main: Node2D) -> void:
 
 ## A boot straight into the escape's city (`--start-escape city`) never builds the building.
 func _test_a_boot_straight_onto_the_street_hands_her_the_city(t) -> void:
-	_boot_and_check(t, FinaleController.Section.CITY, "a boot straight onto the escape's street")
+	_boot_and_check(t, DaySpec.Section.CITY, "a boot straight onto the escape's street")
 
 ## An ordinary run's boot: the day's city, no escape.
 func _test_an_ordinary_boot_hands_her_the_city(t) -> void:
-	_boot_and_check(t, FinaleController.Section.NONE, "an ordinary day's boot")
+	_boot_and_check(t, DaySpec.Section.NONE, "an ordinary day's boot")
 
 func _boot_and_check(t, section: int, what: String) -> void:
 	var saved_section := GameState.escape_section

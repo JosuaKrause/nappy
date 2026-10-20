@@ -688,17 +688,20 @@ func _test_the_summary_and_pause_restart_signals_are_both_connected(t) -> void:
 
 ## `--start-escape` is a debug-only entry, gated the same shape `_add_debug_layers()` gates
 ## `DebugLayers` on `_debug` — `main._escape_scene_requested` is read once from
-## `DevFlags.start_escape()` into a member (this file's own class doc explains why: `main.gd` is
+## `RunConfig.start_escape` into a member (this file's own class doc explains why: `main.gd` is
 ## never instantiated as a scene anywhere in the suite), so a test can set it directly and check
-## the release shape without a real command line. `_ready_escape()` re-checks the same member at
-## its own top, not only at the call site in `_ready()`, so calling it directly here exercises the
-## same guard a release build would hit.
+## the release shape without a real command line. The day the boot opens on is asked of the same
+## member (`_the_first_day()`), so asking it directly here asks the question a release build would:
+## with no flag and no run in the escape, the boot opens on a day in the city, and builds no
+## building.
 func _test_no_interior_exists_outside_a_debug_build(t: Node) -> void:
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._escape_scene_requested = false
-	main._ready_escape()
+	var first: DaySpec = main._the_first_day()
+	t.check(first.section == DaySpec.Section.NONE and first.world == DaySpec.World.CITY,
+			"a release build opens on a day in the city, never on the escape's building")
 	t.check(main._interior == null,
-			"a release build never builds the interior scene at all, not even off to one side")
+			"and never builds the interior scene at all, not even off to one side")
 	main.free()
 
 ## `GameState.play_seconds` has exactly one owner: the branch of this `_process()` reached only
@@ -1207,7 +1210,7 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	main._on_day_finished(GameEnums.DayResult.WON)
 	t.check(GameState.ending == GameEnums.Ending.NONE,
 			"a won day 14 with every task complete does not end the run")
-	t.check(GameState.escape_section == FinaleController.Section.BUILDING,
+	t.check(GameState.escape_section == DaySpec.Section.BUILDING,
 			"it puts the run in the building, which is where the escape starts")
 	t.check(GameState.day == Tuning.RUN_LENGTH_DAYS, "and leaves the calendar alone")
 	t.check(not main._run_over, "so nothing downstream thinks the run is over")
@@ -1223,7 +1226,7 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	GameState.sabotage_done = true
 	GameState.nerves = 3
 	main._on_day_finished(GameEnums.DayResult.WON)
-	t.check(GameState.escape_section == FinaleController.Section.BUILDING,
+	t.check(GameState.escape_section == DaySpec.Section.BUILDING,
 			"a hard run's day 14 also hands over to the escape")
 	t.check(GameState.nerves == 3, "and its win gives a hard run no nerve back")
 
@@ -1237,7 +1240,7 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	main._on_day_finished(GameEnums.DayResult.WON)
 	t.check(GameState.ending == GameEnums.Ending.NEUTRAL,
 			"a won day 14 without the last night still ends the run on the neutral ending")
-	t.check(GameState.escape_section == FinaleController.Section.NONE,
+	t.check(GameState.escape_section == DaySpec.Section.NONE,
 			"and never reaches the escape")
 	t.check(GameState.nerves == 4,
 			"and this path's win gains a nerve too, through the ordinary GameState.finish_day()")
@@ -1248,7 +1251,7 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	city.free()
 	main.free()
 	GameState.restore_snapshot(baseline)
-	GameState.escape_section = FinaleController.Section.NONE
+	GameState.escape_section = DaySpec.Section.NONE
 	t.get_tree().paused = saved_paused
 
 # ------------------------------------------------------------------ a rig's own lockdown ---

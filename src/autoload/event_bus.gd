@@ -19,11 +19,14 @@ signal baby_state_changed(state: GameEnums.BabyState)
 ## visits".
 signal run_begun(day: int, resumed: bool)
 ## A day begins — its first attempt or a retry — before anything is placed in it, so a listener
-## clears yesterday's state first. `main._start_day()` and its recipe's are the emitters.
+## clears yesterday's state first. `main._start_day()` and its recipe's are the emitters, and
+## `main._start_section()` for each of the escape's two sections, a day of its own under its own
+## number after the last (`DaySpec.number`).
 signal day_started(day: int)
 ## Everything the day holds is placed: its closures, its calm, its plan, the resistance's contact and
-## her on the doorstep. `main._start_day()` is the one emitter; the run log writes the day's plan
-## lines, its dawn map and her `start` line here (`RunSession`).
+## her on the doorstep — or an escape section's world and her at its start. `main._start_day()` and
+## `main._start_section()` are the emitters; the run log writes the day's plan lines, its dawn map
+## and her `start` line here (`RunSession`).
 signal day_planned(day: int)
 signal day_time_changed(remaining: float, total: float)
 signal return_phase_started() ## Baby is asleep; walk home.
@@ -40,7 +43,8 @@ signal nerves_changed(nerves: int)
 ## Emitted by `main._on_day_finished()` once the charges still running are closed and above the
 ## calendar move `GameState.finish_day()` makes a moment later, so a lost day's retry and a won
 ## day's next dawn are both still "day N" here. Fires once per attempt, as `day_started` does: a
-## nerve-bought retry begins and ends this pair again for the day it repeats.
+## retry begins and ends this pair again for the day it repeats — an escape section's included,
+## under its own number.
 signal day_ended(day: int, result: GameEnums.DayResult, cause: String, elapsed: float)
 ## The held restart — the pause screen's or the day summary's own button — with the day it
 ## abandoned. `run_ended` below is the run finishing on its own terms; this is the player leaving
@@ -219,26 +223,27 @@ signal city_went_quiet()
 signal city_gone_dark()
 
 # ------------------------------------------------------------------- escape ---
-# The escape's own moments, emitted by `main` from `FinaleController`'s: what the page counts of
-# "how far people get" past day 14 (`VisitCounter`, docs/TELEMETRY.md, "The page counts visits")
-# and what the run log writes of each section (`RunSession`) read the same events.
+# The escape's own moments, emitted by `main` as its sections begin and end, beside the day's own
+# `day_started` and `day_ended` each section sends as a day: what the page counts of "how far
+# people get" past day 14 under the escape's own names (`VisitCounter`, docs/TELEMETRY.md, "The
+# page counts visits"), and the world the run log watches each section in (`RunSession`).
 
 ## The escape sequence has just begun — the fresh handover from a won day 14, never a resume of one
-## already under way (`main._ready_escape()`'s own `_escape_resumed_from_disk` tells the two apart).
+## already under way (`main._ready()`'s `escape_resumed_from_disk` tells the two apart).
 signal escape_begun()
 ## A section is about to be walked, the first time or again after a loss (`restarted`). `section`
-## is a `FinaleController.Section` passed as `int` (a cross-script enum is not the same type as
-## itself as a parameter, the **godot** skill); `world` is where it is walked — the building's
+## is a `DaySpec.Section` passed as `int` (a cross-script enum is not the same type as itself as a
+## parameter, the **godot** skill); `world` is where it is walked — the building's
 ## `InteriorScene` or the `City` — and `events` the events walked among there, `InteriorEvents`
 ## or the city's `EventManager`.
 signal escape_section_started(section: int, restarted: bool, world: Node, events: Node)
-## `main._on_escape_exit_requested()`'s own moment the building is behind her and the city section
-## begins — once per attempt at the *building* section, never repeated by a retry of the city
-## section alone (`FinaleController.restart_section()`, not `enter_city()`).
+## The building section won — she is out of its service exit — and the city section is about to
+## begin: once per won attempt at the *building* section, never repeated by a retry of the city
+## section alone.
 signal escape_city_entered()
 ## A section was lost — taken, the meter at 100, or the clock at zero — and is about to be offered
-## again from its own brief. `section` is a `FinaleController.Section` and `result` a
-## `GameEnums.DayResult`, both as `int`. The page counts every one alike, as one sequence.
+## again from its own start. `section` is a `DaySpec.Section` and `result` a `GameEnums.DayResult`,
+## both as `int`. The page counts every one alike, as one sequence.
 signal escape_lost(section: int, result: int)
 ## The tunnel or the bridge was reached, by `exit_kind` (a `CityEdge.Kind` as `int`). The run's
 ## own `run_ended` fires beside this, a moment later.

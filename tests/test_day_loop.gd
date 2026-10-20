@@ -298,9 +298,8 @@ func _test_nerves_and_endings(t) -> void:
 ## Player, 2026-09-27: *"one thing to do quickly: a won day recovers a nerve up to the max"* — "that
 ## way you can recover from a bad single day without being in a tight spot towards the end of the
 ## game". `GameState.regain_a_nerve()` is what `finish_day()` calls for an ordinary won day; the
-## escape's own win reaches the same `finish_day()` call (`main._on_finale_escaped()`) but is
-## excluded, since "the escape doesn't have nerves" (the player) — simulated here by setting
-## `escape_section` the way that call finds it, without building the whole finale.
+## escape's own win reaches the same `finish_day()` call with the city section's `DaySpec`, whose
+## rules exclude it, since "the escape doesn't have nerves" (the player).
 func _test_a_won_day_gives_a_nerve_back(t) -> void:
 	var saved_seed := GameState.run_seed
 	var saved_day := GameState.day
@@ -320,13 +319,14 @@ func _test_a_won_day_gives_a_nerve_back(t) -> void:
 	t.check(GameState.nerves == Tuning.STARTING_NERVES,
 			"and a won day at the max stays at the max")
 
-	# The escape's own completion reaches `finish_day(WON)` too (`main._on_finale_escaped()`), with
-	# `escape_section` still naming the section she just walked out of — that is what excludes it.
+	# The escape's own completion reaches `finish_day(WON)` too (`main._finish_the_section()`),
+	# with the city section's spec — that is what excludes it.
 	GameState.start_run(SEED)
 	GameState.day = Tuning.RUN_LENGTH_DAYS
 	GameState.nerves = 3
-	GameState.escape_section = FinaleController.Section.CITY
-	GameState.finish_day(GameEnums.DayResult.WON)
+	GameState.escape_section = DaySpec.Section.CITY
+	GameState.finish_day(GameEnums.DayResult.WON,
+			DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS))
 	t.check(GameState.nerves == 3, "the escape's own win gives no nerve back")
 
 	# Hard Mode: a won day gives nothing back through `finish_day()`, and the wrapper day 14's
@@ -588,9 +588,9 @@ func _test_nerves_are_stars_never_numbers(t) -> void:
 	t.check("Nerves left: ****" in summary._body.text,
 			"and the day brief draws nerves as stars ('%s')" % summary._body.text)
 
-	summary.show_finale_brief("Escape the building", 2)
+	summary.show_day_brief(Tuning.RUN_LENGTH_DAYS, 2, "", "Escape the building")
 	t.check("Nerves left: **" in summary._body.text,
-			"and so does the finale's own brief ('%s')" % summary._body.text)
+			"and so does an escape section's own brief ('%s')" % summary._body.text)
 
 	summary.free()
 	t.get_tree().paused = saved_paused

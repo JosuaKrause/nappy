@@ -169,7 +169,7 @@ func _change_everything() -> void:
 	GameState._dawn_consumed_one_shots.append("photographed_after_the_checkpoint")
 	GameState._dawn_scars.append({"id": "dawn_after", "position": Vector2(9.0, 9.0), "since_day": 9})
 	GameState._dawn_city_state = {"stage": [{"x": 41, "y": 41, "v": 1}]}
-	GameState.escape_section = FinaleController.Section.CITY
+	GameState.escape_section = DaySpec.Section.CITY
 	GameState.completed_resistance_alley_tiles.append(Vector2i(77, 77))
 	GameState.fenced_park = Vector2i(3, 3)
 	GameState.fenced_park_act = 3
@@ -329,10 +329,11 @@ func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t) -> void:
 
 # ------------------------------------------------------------------- the escape ---
 
-## Hard mode's escape, driven through `main`'s own handlers against a real `FinaleController`, a real
-## `DaySummary` and a real HUD, the rig `tests/test_finale.gd` uses for the briefs: a lost section
-## costs a nerve and comes back on its brief with one fewer star, and the last one is the bad
-## ending, with no continue, rather than the section again.
+## Hard mode's escape, driven through `main`'s own finish path (`_on_day_finished()`, the one every
+## day ends through) against a real `DayController`, a real `DaySummary` and a real HUD: a lost
+## section costs a nerve and comes up on the day's outcome screen with one fewer star and the
+## section's own words, and the last one is the bad ending, with no continue, rather than the
+## section again — shown after the outcome screen, as a lost day's is.
 func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	GameState.start_run(_SEED)
 	GameState.choose_mode(true)
@@ -343,28 +344,27 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
 	t.add_child(main._hud)
-	var finale := FinaleController.new()
-	t.add_child(finale)
-	main._finale = finale
-	finale.section_lost.connect(main._on_finale_section_lost)
-	main._summary.continued.connect(main._on_finale_summary_continued)
-	var briefs := [0]
-	finale.section_started.connect(func(which: int, _restarted: bool) -> void:
-		briefs[0] += 1
-		main._show_the_finale_brief(which))
-
-	finale.begin(FinaleController.Section.BUILDING)
-	main._summary.continued.emit()
+	var day := DayController.new()
+	t.add_child(day)
+	day.set_process(false)
+	main._day = day
+	main._escape_from_a_run = true
+	main._use_the_day(DaySpec.for_section(DaySpec.Section.BUILDING, 180.0))
+	day.start(180.0)
 	EventBus.hard_fail_triggered.emit("abduction")
-	t.check(GameState.nerves == 1 and briefs[0] == 2,
-			"a lost section costs a hard run a nerve, and comes back on its brief")
+	main._on_day_finished(GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(GameState.nerves == 1 and main._summary.is_showing() and not main._run_over,
+			"a lost section costs a hard run a nerve, and comes up on the day's outcome screen")
 	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
-	t.check(body.text.contains("Nerves left: %s" % NerveDisplay.stars(1)),
-			"which shows the one star left ('%s')" % body.text)
+	t.check(body.text.contains("Nerves left: %s" % NerveDisplay.stars(1))
+			and body.text.contains("Escape the building"),
+			"which shows the one star left under the section's own words ('%s')" % body.text)
 
-	main._summary.continued.emit()
+	day.start(180.0)
 	EventBus.hard_fail_triggered.emit("abduction")
-	t.check(GameState.nerves == 0 and briefs[0] == 2, "the last nerve does not start it again")
+	main._on_day_finished(GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(GameState.nerves == 0 and main._run_over, "the last nerve does not start it again")
+	main._on_summary_continued()
 	t.check(GameState.ending == GameEnums.Ending.BAD and main._ending_shown,
 			"it is the bad ending")
 	var heading: Label = main._summary.get_node("Root/Center/Lines/Heading")
@@ -373,10 +373,11 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 
 	main._summary.free()
 	main._hud.free()
-	finale.free()
+	day.free()
 	main.free()
 	t.get_tree().paused = false
 	GameState.ending = GameEnums.Ending.NONE
+	GameState.escape_section = DaySpec.Section.NONE
 
 ## *(dotted-hawk, the player, #718: "No regain in escape either.")* A hard run handed over to the
 ## escape boots the real `main.tscn` on the building, and the service door's own `exit_requested`
@@ -387,16 +388,16 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 	GameState.choose_mode(true)
 	GameState.day = Tuning.RUN_LENGTH_DAYS
 	GameState.nerves = 3
-	GameState.escape_section = FinaleController.Section.BUILDING
+	GameState.escape_section = DaySpec.Section.BUILDING
 	var main: Node2D = MAIN_SCENE.instantiate()
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	t.check(main._interior != null and main._summary.is_showing(),
 			"the boot stands in the building on its brief")
-	t.check(main._interior.exit_requested.is_connected(main._on_escape_exit_requested),
-			"the service door is wired to the handler that leaves the building")
-	main._on_finale_summary_continued()
+	t.check(main._interior.exit_requested.is_connected(main._day.reach_the_exit),
+			"the service door is wired to the day's own goal")
+	main._on_summary_continued()
 	main._interior.exit_requested.emit()
 	t.check(GameState.nerves == 3, "leaving the building gives the hard run no nerve back")
 	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
@@ -405,7 +406,7 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
-	GameState.escape_section = FinaleController.Section.NONE
+	GameState.escape_section = DaySpec.Section.NONE
 	GameState.hard_mode = false
 
 ## `--nerves N`'s own parsing: a whole number from 1 to five, anything else refused as not given.
