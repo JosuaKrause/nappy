@@ -1192,7 +1192,7 @@ func _watch_the_contact(here: Vector2) -> void:
 ## own — the same reasoning `_watch_running` uses for the `run` entry, one attribute richer.
 func _watch_the_trail(here: Vector2) -> void:
 	# The escape's building has no city map to draw a dusk map on, so it keeps no trail for one.
-	if not _city:
+	if _interior:
 		return
 	if not _trail.is_empty() and here.distance_to(_trail_last) < TRAIL_SAMPLE_DISTANCE:
 		return

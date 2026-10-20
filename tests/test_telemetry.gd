@@ -228,19 +228,18 @@ func _test_a_day_header_opens_a_day(t) -> void:
 
 ## *"Every line in it is stamped `0.0`, so it cannot say when anything happened."*
 ##
-## The escape is not a day and never reaches `begin_day()`, which was the only thing that opened a
-## timestamped section — so `set_clock()` had nothing to move and an entire escape run wrote a
-## column of zeroes. `begin_finale()` is the escape's own header, and this asks both halves: that
-## a clock pushed after it actually reaches the line, and that a clock pushed **before** any
-## section is open still does not, which is the guarantee that was being relied on and is what
-## made the defect invisible.
+## A line is timed only inside an open section, and each of the escape's sections opens one of its
+## own as a day does — `begin_section()`, under its own day number and its own words. This asks
+## both halves: that a clock pushed after it actually reaches the line, and that a clock pushed
+## **before** any section is open still does not, which is the guarantee relied on and is what
+## would hide a section that never opened.
 func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
 	Telemetry.begin_memory_log()
 	# No section open yet: a run that never opens one writes zeroes, which is the behaviour the
 	# escape was getting for the whole of its walk.
 	Telemetry.set_clock(12.0)
 	Telemetry.note("plan", "before any section")
-	Telemetry.begin_finale(4242, 180.0)
+	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
 	Telemetry.set_clock(42.5)
 	Telemetry.note("plan", "finale: two chains")
 	Telemetry.set_clock(96.25)
@@ -253,19 +252,22 @@ func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
 	t.check(lines[1].begins_with("   0.0  plan"),
 			"a line written before any section is open carries no time (got '%s')" % lines[1])
 	t.check(lines[2] == "", "the escape's section is separated from what is above it")
-	t.check(lines[3] == "escape  run seed 4242  length 180.0s",
-			"its header names the run seed and the length of the sequence (got '%s')" % lines[3])
+	t.check(lines[3] == "day %d Escape the building  run seed 4242  length 180.0s"
+			% DaySpec.BUILDING_DAY,
+			"its header names its day, its own words, the run seed and its length (got '%s')"
+			% lines[3])
 	t.check(lines[4].begins_with("  42.5  plan"),
 			"and an entry after it carries the elapsed time (got '%s')" % lines[4])
 	t.check(lines[5].begins_with("  96.2  lost"),
 			"as does the line a lost section writes (got '%s')" % lines[5])
 
 ## *"The escape shouldn't behave any different than the rest of the game."* Both sections are
-## watched by the day's own observer, handed the section's clock and told which world she is in —
-## so this drives the calls `main` makes, in its order, against the real building and a real city:
-## a section entered, a frame of every watcher, the masked man met, the section lost, the same
-## section again, then the city entered and left by the tunnel. What a day writes that a section
-## has nothing to say about — the corridor, the chalk mark — must stay silent rather than crash.
+## watched by the day's own observer, handed the day's clock and told which world she is in — so
+## this drives the calls the run session makes, in its order, against the real building and a real
+## city: a section entered, a frame of every watcher, the masked man met, the section lost through
+## the day's own `day_finished()`, the same section again, then the city entered and left by the
+## tunnel. What a day writes that a section has nothing to say about — the corridor, the chalk
+## mark — must stay silent rather than crash.
 func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	const STEP := 1.0 / 60.0
 	var scene := InteriorScene.new()
@@ -293,7 +295,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	observer.setup_escape(player, baby, clock, false)
 
 	Telemetry.begin_memory_log()
-	Telemetry.begin_finale(4242, 180.0)
+	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
 	observer.watch_building(scene, events)
 	observer.start_section(false)
 	clock.start(180.0)
@@ -305,7 +307,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	observer._watch_what_is_near(player.global_position)
 	clock.time_remaining = 180.0 - 12.5
 	clock.failure_reason = "They were on the stairs."
-	observer.section_lost(GameEnums.DayResult.LOST_HARD_FAIL)
+	observer.day_finished(GameEnums.DayResult.LOST_HARD_FAIL, "masked-pursuer")
 	player.global_position = scene.start_world_position()
 	observer.start_section(true)
 
@@ -319,7 +321,8 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	observer._process(STEP)
 	Telemetry.set_clock(40.0)
 	clock.time_remaining = 140.0
-	observer.escaped(CityEdge.Kind.TUNNEL)
+	clock.exit_reached = CityEdge.Kind.TUNNEL
+	observer.day_finished(GameEnums.DayResult.WON)
 
 	var lines: Array = Telemetry.current_log().lines
 	Telemetry.end_run()
@@ -347,10 +350,11 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 				"and the city is entered the same way (got '%s')" % starts[2])
 	t.check(near.contains("masked_pursuer"),
 			"meeting the masked man is a near line, as meeting a dog is (got '%s')" % near)
-	t.check(lost.begins_with("  12.5") and lost.contains("lost_hard_fail in the building after 12.5s")
+	t.check(lost.begins_with("  12.5")
+			and lost.contains("lost_hard_fail in the building after 12.5s to masked-pursuer")
 			and lost.contains("They were on the stairs.") and lost.contains("near: masked_pursuer"),
-			"losing the section names the result, the section, the reason and what was near (got '%s')"
-			% lost)
+			"losing the section names the result, the section, the cause, the reason and what was "
+			+ "near (got '%s')" % lost)
 	t.check(lost.contains("exc ") and lost.contains("events "),
 			"with the meter breakdown a day's losing line carries (got '%s')" % lost)
 	t.check(home.contains("escaped by the tunnel, 140.0s to spare"),
@@ -367,18 +371,15 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	scene.free()
 
 ## *"A retried escape section holds its automatic snapshots back until the new clock passes the
-## time of the last shot, because a section's clock restarts at zero."* A day's own retry reopens
-## through `begin_day()`, which resets `_shots_today` and `_last_shot` along with the clock; a
-## finale section has no second `begin_finale()` to call, so before the fix
-## `TelemetryObserver.start_section()` pushed the clock back with `Telemetry.set_clock(0.0)` alone
-## and left `_last_shot` sitting at the previous attempt's own reading — here, 45s in, well past
-## the retried walk's fresh `0.0`, which is exactly the state `snapshot()`'s spacing gate
-## (`_clock - _last_shot < SHOT_SPACING`) reads as "a shot just happened". `start_section()` now
-## goes through `Telemetry.restart_section_clock()`, which clears the schedule the way `begin_day()`
-## does.
+## time of the last shot, because a section's clock restarts at zero."* A clock pushed back with
+## `Telemetry.set_clock(0.0)` alone leaves `_last_shot` sitting at the previous attempt's own
+## reading — here, 45s in, well past the retried walk's fresh `0.0`, which is exactly the state
+## `snapshot()`'s spacing gate (`_clock - _last_shot < SHOT_SPACING`) reads as "a shot just
+## happened". `start_section()` goes through `Telemetry.restart_section_clock()`, which clears the
+## schedule the way `begin_section()` and `begin_day()` do.
 func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
 	Telemetry.begin_memory_log()
-	Telemetry.begin_finale(4242, 180.0)
+	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
 	Telemetry.set_clock(45.0)
 	# The state a real run is in right before a loss: a shot already taken this attempt, with the
 	# day's whole allowance not yet spent.

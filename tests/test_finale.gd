@@ -57,8 +57,7 @@ func run(t) -> void:
 	_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t)
 	_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
 	_test_the_clock_reads_hundredths_only_in_the_finale(t)
-	_test_a_lost_section_starts_again_and_costs_no_nerve(t)
-	_test_each_section_opens_on_its_own_brief(t)
+	_test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t)
 	_test_the_two_sections_are_named_for_the_player(t)
 	_test_only_a_won_last_day_with_every_task_done_hands_over(t)
 	_test_the_city_word_boots_the_second_section(t)
@@ -1316,9 +1315,9 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 ## **Driven through `main`, because the wiring is what the player saw missing.** The city walks a
 ## day first, so a day's own route kerbs are tinted when the escape starts and a tint left over
 ## from them would show. Then the first plan, through `main._plan_the_finale_city()` — what
-## `_build_the_finale_city()` ends on — and a restart, through `main._on_finale_section_started()`
-## with `restarted` set, which is what a lost section's brief reaches. The tint is wiped between
-## the two, so the restart is checked painting it rather than inheriting it.
+## `_build_the_finale_city()` ends on — and a restart, through `main._start_section()` with
+## `restarted` set, which is what a lost section's outcome screen continues into. The tint is wiped
+## between the two, so the restart is checked painting it rather than inheriting it.
 func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -> void:
 	var saved_section := GameState.escape_section
 	var day := GameState.day
@@ -1362,9 +1361,10 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
 	t.add_child(main._hud)
-	var finale := FinaleController.new()
-	t.add_child(finale)
-	main._finale = finale
+	var clock := DayController.new()
+	t.add_child(clock)
+	clock.set_process(false)
+	main._day = clock
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -1378,13 +1378,14 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	baby.set_physics_process(false)
 	main._player = stroller
 	main._baby = baby
-	main._on_finale_section_started(DaySpec.Section.CITY, true)
+	main._start_section(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS),
+			true)
 	t.check(_escape_tint(city, day, on_the_walk, corridor).z == 0,
 			"and a restart tints them again, and no other")
 
 	main._summary.free()
 	main._hud.free()
-	finale.free()
+	clock.free()
 	city.free()
 	main.free()
 	t.get_tree().paused = false
@@ -1480,7 +1481,7 @@ func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 	var clock: Label = hud.get_node("Root/Clock")
 	EventBus.day_time_changed.emit(65.5, 180.0)
 	t.check(clock.text == "1:05", "a day's clock reads to the second (got '%s')" % clock.text)
-	hud.set_finale(true)
+	hud.set_clock_hundredths(true)
 	EventBus.day_time_changed.emit(65.5, 180.0)
 	t.check(clock.text == "1:05.50",
 			"the escape's clock reads to the hundredth (got '%s')" % clock.text)
@@ -1491,166 +1492,115 @@ func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 # ------------------------------------------------------------- the sections ---
 
 ## *"Losing the finale restarts the section, at no Nerve cost"* — *"sounds good at that point you
-## earned it."* — and *"180s per section"*, which is the other half of the same walk through the
-## controller: nothing runs until a section's brief has been dismissed, and what it then starts is
-## a whole clock every time, whichever section it is and whatever the last one spent. Driven
-## through the signal a real capture fires, so what is checked is the path the game takes rather
-## than a call this test invented.
-func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
-	var finale := FinaleController.new()
-	t.add_child(finale)
-	var started: Array = []
-	var lost: Array = []
-	finale.section_started.connect(func(section: int, restarted: bool) -> void:
-		started.append([section, restarted]))
-	finale.section_lost.connect(func(section: int, _result: int) -> void:
-		lost.append(section))
-
-	finale.begin(DaySpec.Section.BUILDING)
-	t.check(started.size() == 1 and not started[0][1], "the first section starts fresh")
-	t.check(not finale.is_running(),
-			"and nothing is counting down behind the brief it opens on")
-	var nerves := GameState.nerves
-	finale.start_section()
-	t.check(is_equal_approx(finale.time_remaining(), finale.section_length),
-			"the brief's own continue is what starts the clock, at full length")
-	# Half a minute off the clock, so a restart putting it back is visible.
-	finale._clock.time_remaining -= 30.0
-	var spent := finale.time_remaining()
-
-	EventBus.hard_fail_triggered.emit("abduction")
-	# **The loss is not the restart.** A lost section comes up on the brief screen first, and the
-	# clock stays where the loss left it until the continue on that screen reaches the controller —
-	# so a section that restarted itself here would give the retry away before she had read
-	# anything.
-	t.check(lost.size() == 1 and lost[0] == DaySpec.Section.BUILDING,
-			"being taken loses the section she was in")
-	t.check(started.size() == 1, "and nothing has started again by itself")
-	t.check(is_equal_approx(finale.time_remaining(), spent),
-			"with the clock still where the loss left it")
-
-	finale.restart_section()
-	t.check(started.size() == 2, "the loss leads to the same section again")
-	t.check(started[1][0] == DaySpec.Section.BUILDING and started[1][1],
-			"and it is the same section, marked as a retry")
-	t.check(is_equal_approx(finale.time_remaining(), spent),
-			"still stopped, since a retry begins on its own brief like anything else")
-	finale.start_section()
-	t.check(is_equal_approx(finale.time_remaining(), finale.section_length),
-			"and that brief's continue puts the clock back to full")
-	t.check(GameState.nerves == nerves, "and no Nerve spent")
-
-	# **Each section is a day, so each gets a day's clock** — what the building spent is not the
-	# city's to make up. Twenty seconds are taken off the building's clock first, so a city that
-	# carried it across would be visibly short here.
-	finale._clock.time_remaining -= 20.0
-	finale.enter_city()
-	t.check(started.size() == 3 and started[2][0] == DaySpec.Section.CITY,
-			"the service exit begins the second section")
-	finale.start_section()
-	t.check(is_equal_approx(finale.time_remaining(), finale.section_length),
-			"on a full clock of its own, whatever the walk down the stairs cost")
-	# And the controller, whose `DayController` child listens on `EventBus` for the hard fail this
-	# test emits: one left in the tree restarts a section on the next suite's fail as well.
-	finale.free()
-
-## *"Each the apartment and escape city are treated as their own 'days' with brief and restart
-## checkpoint. We keep the no nerve costs for now."* — so a section opens on its brief the first
-## time it is walked as much as after a loss, and the brief is what starts it.
+## earned it."* — *"180s per section"*, and *"each the apartment and escape city are treated as
+## their own 'days' with brief and restart checkpoint"*: a section opens on its brief, a loss comes
+## up on the day's own outcome screen with its reason *(minty-lemur #785: "losing an escape should
+## still state the reason like the rest of the game. nothing should be different")*, and its
+## continue is the same section again on a whole clock, whichever section it is and whatever the
+## last attempt spent.
 ##
-## Driven through `main`'s own handlers against a real `DaySummary` and a real `FinaleController`,
-## so what is checked is the wiring a capture would go through rather than a call this test
-## invented: entering the section raises the screen, the screen is titled with the section's own
-## name, the Nerve count on it is the one she still has, **continuing from it is what starts the
-## clock**, and a loss brings the same screen back with the Nerves untouched.
-##
-## `section_started` is wired to `_show_the_finale_brief()` rather than to
-## `_on_finale_section_started()` whole, because the half this test is not about — putting her down
-## at the hallway door or the service exit — needs a built building and a built city, which is what
-## a headless `--start-escape` boot exercises instead.
-##
-## Both sections, because the player asked for both by name.
-func _test_each_section_opens_on_its_own_brief(t) -> void:
+## **Driven through the real `main.tscn`**, booted on each section the way a run's own escape is
+## (the building as a won day 14 hands over, the city as a game closed in it opens again), and lost
+## through the signal a real capture fires, so what is checked is the path the game takes: the
+## day's own clock and finish path, not a call this test invented.
+func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 	for section: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
-		var main: Node2D = MAIN_SCRIPT.new()
-		main._summary = SUMMARY_SCENE.instantiate()
-		t.add_child(main._summary)
-		main._hud = HUD_SCENE.instantiate()
-		t.add_child(main._hud)
-		var finale := FinaleController.new()
-		t.add_child(finale)
-		main._finale = finale
-		finale.section_lost.connect(main._on_finale_section_lost)
-		main._summary.continued.connect(main._on_finale_summary_continued)
-		var started: Array = []
-		finale.section_started.connect(func(which: int, restarted: bool) -> void:
-			started.append([which, restarted])
-			main._show_the_finale_brief(which))
-
+		var main := _boot_the_escape(t, section)
+		var words := DaySpec.for_section(section, Tuning.FINALE_LENGTH_SECONDS).title
 		var nerves := GameState.nerves
-		finale.begin(section)
-		t.check(started.size() == 1 and not started[0][1],
-				"section %d: it is entered fresh" % section)
-		t.check(main._summary.is_showing(),
-				"section %d: and opens on the brief screen" % section)
+		var length: float = main._spec.length
 		var title: Label = main._summary.get_node("Root/Center/Lines/Title")
 		var body: Label = main._summary.get_node("Root/Center/Lines/Body")
-		t.check(title.text == MAIN_SCRIPT.finale_hint_for(section),
-				"section %d: titled with the section's own name ('%s')" % [section, title.text])
+		t.check(main._spec.section == section and main._summary.is_showing(),
+				"section %d: it opens on its brief" % section)
+		t.check(title.text == words,
+				"section %d: titled with the section's own words ('%s')" % [section, title.text])
 		t.check(body.text.contains("Nerves left: %s" % NerveDisplay.stars(nerves)),
-				"section %d: and carrying the nerve line, as stars ('%s')"
-						% [section, body.text])
-		t.check(not finale.is_running(),
-				"section %d: with nothing counting down behind it" % section)
+				"section %d: and carrying the nerve line, as stars ('%s')" % [section, body.text])
+		t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
+				"section %d: with a full clock standing still behind it" % section)
 
-		main._summary.continued.emit()
-		t.check(not main._summary.is_showing(),
-				"section %d: continuing takes the screen away" % section)
-		t.check(is_equal_approx(finale.time_remaining(), finale.section_length),
-				"section %d: and starts a full clock" % section)
+		main._on_summary_continued()
+		t.check(not main._summary.is_showing() and not t.get_tree().paused,
+				"section %d: continuing takes the screen away and the walk begins" % section)
 		t.check(main._hud.visible, "section %d: with the HUD back" % section)
 		# *(2026-09-20, the player: "the escape shouldn't behave any different than the rest of the
 		# game" — read here as the hint showing every time the section's clock starts, a fast click
 		# through the brief included, not only on a first entry.)*
 		var teach: HelpText = main._hud.get_node("Root/Teach")
-		t.check(teach.line == MAIN_SCRIPT.finale_hint_for(section),
-				"section %d: and the section's own hint line said on the first entry" % section)
+		t.check(teach.line == words,
+				"section %d: and the section's own words said once she is walking it" % section)
 
-		finale._clock.time_remaining -= 30.0
+		main._day.time_remaining -= 30.0
 		EventBus.hard_fail_triggered.emit("abduction")
-		t.check(started.size() == 2 and started[1][0] == section and started[1][1],
-				"section %d: a loss leads to the same section again, as a retry" % section)
-		t.check(main._summary.is_showing(),
-				"section %d: on that section's own brief" % section)
-		t.check(title.text == MAIN_SCRIPT.finale_hint_for(section),
-				"section %d: titled the same as the first time" % section)
+		t.check(main._summary.is_showing() and not main._resume_gate_open,
+				"section %d: being taken comes up on the day's outcome screen" % section)
+		t.check(title.text.replace("\n", " ").contains(Texts.HARD_FAIL_TEXT["abduction"]),
+				"section %d: which states the reason, as a lost day's does ('%s')"
+				% [section, title.text])
+		t.check(body.text.contains(words) and body.text.contains(NerveDisplay.stars(nerves)),
+				"section %d: under the section's own words, the nerves unchanged ('%s')"
+				% [section, body.text])
 		t.check(GameState.nerves == nerves,
-				"section %d: with the nerves unchanged, since a lost section spends none" % section)
-		t.check(not finale.is_running(),
-				"section %d: and the retry not under way until this screen is answered" % section)
+				"section %d: since a normal run's lost section spends none" % section)
 
 		teach.text = ""
-		main._summary.continued.emit()
-		t.check(is_equal_approx(finale.time_remaining(), finale.section_length),
-				"section %d: which then gives the retry a full clock too" % section)
-		t.check(teach.line == MAIN_SCRIPT.finale_hint_for(section),
-				"section %d: and the hint line said again on the retry, not only the first entry"
-						% section)
+		main._on_summary_continued()
+		t.check(not main._summary.is_showing() and main._spec.section == section,
+				"section %d: its continue is the same section again" % section)
+		t.check(is_equal_approx(main._day.time_remaining, length) and main._day.is_running(),
+				"section %d: on a full clock" % section)
+		t.check(teach.line == words,
+				"section %d: and its words said again on the retry, not only the first entry"
+				% section)
 
-		main._summary.free()
-		main._hud.free()
-		finale.free()
-		main.free()
+		if section == DaySpec.Section.BUILDING:
+			# **Each section is a day, so each gets a day's clock** — what the building spent is
+			# not the city's to make up. Twenty seconds are taken off the building's clock first,
+			# so a city that carried it across would be visibly short here.
+			main._day.time_remaining -= 20.0
+			main._interior.exit_requested.emit()
+			t.check(main._spec.section == DaySpec.Section.CITY and main._summary.is_showing(),
+					"the service exit begins the second section, on its own brief")
+			t.check(is_equal_approx(main._day.time_remaining, length),
+					"on a full clock of its own, whatever the walk down the stairs cost")
+		_free_the_escape(t, main)
+
+## Boots the real `main.tscn` on `section` of a normal run's own escape, on seed `SEEDS[0]` and its
+## last day — the way a won day 14's handover and a game closed in a section both reach the boot —
+## and returns it with its first screen up. `_free_the_escape()` puts the run back.
+func _boot_the_escape(t, section: int) -> Node2D:
+	_saved_section = GameState.escape_section
+	GameState.start_run(SEEDS[0])
+	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.escape_section = section
+	var main: Node2D = MAIN_SCENE.instantiate()
+	main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry"]), "", true))
+	t.add_child(main)
+	t.get_tree().process_frame.emit()
+	t.get_tree().process_frame.emit()
+	return main
+
+var _saved_section := 0
+
+func _free_the_escape(t, main: Node2D) -> void:
 	t.get_tree().paused = false
+	main.free()
+	GameState.escape_section = _saved_section
+	GameState.start_run(SEEDS[0])
 
 ## The two names the briefs carry — *"something along 'Escape the building' and ... 'Escape the
 ## city'"*. Pinned as literals because they are the player's own words for the two screens, and a
-## screen that renamed itself would be the one thing nothing else in this suite could see.
+## screen that renamed itself would be the one thing nothing else in this suite could see. They are
+## each section's `DaySpec.title`, and each is counted as a day of its own after the last.
 func _test_the_two_sections_are_named_for_the_player(t) -> void:
-	t.check(MAIN_SCRIPT.finale_hint_for(DaySpec.Section.BUILDING)
-			== "Escape the building", "the building's brief is titled 'Escape the building'")
-	t.check(MAIN_SCRIPT.finale_hint_for(DaySpec.Section.CITY)
-			== "Escape the city", "the city's brief is titled 'Escape the city'")
+	var building := DaySpec.for_section(DaySpec.Section.BUILDING, Tuning.FINALE_LENGTH_SECONDS)
+	var city := DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	t.check(building.title == "Escape the building",
+			"the building's brief is titled 'Escape the building'")
+	t.check(city.title == "Escape the city", "the city's brief is titled 'Escape the city'")
+	t.check(building.number == Tuning.RUN_LENGTH_DAYS + 1 and city.number == building.number + 1,
+			"and they are the two days after the last (%d and %d)" % [building.number, city.number])
 
 ## *"The escape the building starts when the player has completed all tasks by the end of day
 ## 14."* Every other way day 14 can end keeps the ending it already had, which is what the three
@@ -1802,9 +1752,9 @@ func _action(name: StringName) -> InputEventAction:
 	return event
 
 ## *"Pause etc should exist the same way it does in the main game"*
-## ([PLAYTEST-114](playtests/PLAYTEST-114.md)). `FinaleController`, `InteriorScene` and the finale's
-## own `City` all get `PROCESS_MODE_PAUSABLE` from `main._pauses_with_the_game()` in
-## `_ready_escape()`, the same call every one of a day's own entities gets — so the engine itself
+## ([PLAYTEST-114](playtests/PLAYTEST-114.md)). The day's clock, `InteriorScene` and the finale's
+## own `City` all get `PROCESS_MODE_PAUSABLE` from `main._pauses_with_the_game()` as the boot builds
+## them, the same call every one of a day's own entities gets — so the engine itself
 ## refuses their `_process()`/`_physics_process()` the instant the tree pauses, without any of them
 ## having to ask. `Node.can_process()` is the exact question the engine consults before delivering
 ## either callback, which is what a suite with no per-frame engine loop of its own (see the
@@ -1813,9 +1763,9 @@ func _action(name: StringName) -> InputEventAction:
 func _test_finale_entities_stop_when_the_tree_pauses(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 
-	var finale := FinaleController.new()
-	t.add_child(finale)
-	finale.process_mode = Node.PROCESS_MODE_PAUSABLE
+	var clock := DayController.new()
+	t.add_child(clock)
+	clock.process_mode = Node.PROCESS_MODE_PAUSABLE
 
 	var interior := InteriorScene.new()
 	t.add_child(interior)
@@ -1827,27 +1777,26 @@ func _test_finale_entities_stop_when_the_tree_pauses(t) -> void:
 	city.process_mode = Node.PROCESS_MODE_PAUSABLE
 
 	t.get_tree().paused = false
-	t.check(finale._clock.can_process(), "the section's clock processes while the tree is running")
+	t.check(clock.can_process(), "the section's clock processes while the tree is running")
 	t.check(interior.can_process(), "so does the interior scene — its doors, its fire, its pursuer")
 	t.check(city.can_process(), "and the finale city — its trucks, its roadblocks, its bursts")
 
 	t.get_tree().paused = true
-	t.check(not finale._clock.can_process(),
+	t.check(not clock.can_process(),
 			"the section's clock does not advance while the pause screen is open")
 	t.check(not interior.can_process(), "and neither does anything in the building")
 	t.check(not city.can_process(), "nor anything in the finale city")
 
 	t.get_tree().paused = saved_paused
-	finale.free()
+	clock.free()
 	interior.free()
 	city.free()
 
 ## `Esc`, the pause button's own action and a window losing focus all reach the pause screen during
 ## a section exactly as they do during a day: the same continue, the same held restart, the same
 ## quit, and the same stashed heading through `TouchControls`. Driven through `main.notification()`
-## and `main._unhandled_input()`'s own guards, against a `FinaleController` with no world built
-## behind it, the same split `_test_each_section_opens_on_its_own_brief` already makes for the half
-## this is not about.
+## and `main._unhandled_input()`'s own guards, against a section's day with no world built behind
+## it, since putting her down is not what this is about.
 ##
 ## **Esc's own successful open is proven through focus loss, not through `_unhandled_input()`
 ## itself.** Both reach `_pause.open()` behind the same two guards (`_pause`/`_title` not already
@@ -1871,21 +1820,18 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	main._pause = PAUSE_SCREEN_SCENE.instantiate()
 	t.add_child(main._pause)
 	main._add_touch_controls()
-	# The two calls `_ready_escape()` itself makes, in the same order.
+	# The two calls the boot's `_build_the_screens()` makes, in the same order, for every day.
 	main._pause.set_touch_controls(main._touch_controls)
-	main._connect_pause_signals()
+	main._connect_summary_and_pause_signals()
 	main._no_focus_pause = false
 
-	var finale := FinaleController.new()
-	t.add_child(finale)
-	main._finale = finale
-	main._summary.continued.connect(main._on_finale_summary_continued)
-	finale.section_started.connect(func(which: int, _restarted: bool) -> void:
-		main._show_the_finale_brief(which))
-
-	finale.begin(DaySpec.Section.BUILDING)
-	main._summary.continued.emit()
-	t.check(finale.is_running(), "the section's clock is running")
+	var clock := DayController.new()
+	t.add_child(clock)
+	clock.set_process(false)
+	main._day = clock
+	main._use_the_day(DaySpec.for_section(DaySpec.Section.BUILDING, Tuning.FINALE_LENGTH_SECONDS))
+	clock.start(main._spec.length)
+	t.check(clock.is_running(), "the section's clock is running")
 	t.check(not main._pause.is_open(), "and nothing is paused yet")
 
 	t.check(main._pause.quit_requested.is_connected(main._quit),
@@ -1913,15 +1859,15 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	main._hud.free()
 	main._title.free()
 	main._pause.free()
-	finale.free()
+	clock.free()
 	main.free()
 	t.get_tree().paused = saved_paused
 
-## Both of the escape's own screens — a section's brief and the epilogue — are the one exception to
-## an ordinary day's own "Esc opens over the summary too": neither stands between her and a day
-## already decided, so a second screen stacked over either would answer a question nobody asked, the
-## same reason focus loss never opens over any `_summary` at all. Both entry points are checked
-## against both screens.
+## The escape's own screens — a section's brief, its outcome screen and the epilogue — are the one
+## exception to an ordinary day's own "Esc opens over the summary too": each stands between her and
+## a walk not yet begun, so a second screen stacked over it would answer a question nobody asked,
+## the same reason focus loss never opens over any `_summary` at all. Both entry points are checked
+## against all three screens, asked of the section's `DaySpec`.
 func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var main: Node2D = MAIN_SCRIPT.new()
@@ -1931,15 +1877,21 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	t.add_child(main._pause)
 	main._title = TITLE_SCREEN_SCENE.instantiate()
 	t.add_child(main._title)
-	var finale := FinaleController.new()
-	t.add_child(finale)
-	main._finale = finale
+	main._use_the_day(DaySpec.for_section(DaySpec.Section.BUILDING, Tuning.FINALE_LENGTH_SECONDS))
 	main._no_focus_pause = false
 
-	main._summary.show_finale_brief("Escape the building", GameState.nerves)
+	main._summary.show_day_brief(GameState.day, GameState.nerves, "", main._spec.title)
 	t.check(main._summary.is_showing(), "the section's brief is up")
 	main._unhandled_input(_action("pause"))
 	t.check(not main._pause.is_open(), "Esc does not open the pause over a section's brief")
+	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not main._pause.is_open(), "and neither does losing focus")
+
+	main._summary.show_day(GameEnums.DayResult.LOST_HARD_FAIL, Texts.HARD_FAIL_TEXT["abduction"],
+			GameState.nerves, 42.0, false, main._spec.title)
+	t.check(main._summary.is_showing(), "a lost section's outcome screen is up")
+	main._unhandled_input(_action("pause"))
+	t.check(not main._pause.is_open(), "Esc does not open the pause over it")
 	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "and neither does losing focus")
 
@@ -1953,7 +1905,6 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	main._summary.free()
 	main._pause.free()
 	main._title.free()
-	finale.free()
 	main.free()
 	t.get_tree().paused = saved_paused
 
@@ -1973,15 +1924,13 @@ func _test_escape_section_came_from_the_file(t) -> void:
 			"NONE both times — an ordinary run, nothing to do with the escape at all")
 
 ## *(2026-09-20, the player, on a save closed inside a section: "if I load into the game and I'm at
-## escape I see the title screen, then the brief".)* Driven through `_on_finale_section_started()`
-## and `_on_escape_title_start()` the way the real boot reaches them, with
-## `_escape_resumed_from_disk` set the way `main._ready()` sets it for a save read off disk —
-## without paying for the whole async `_ready_escape()`, which nothing in this suite drives (see
-## `tests/test_main.gd`'s own class doc for why `main` is never added to the tree here).
+## escape I see the title screen, then the brief".)* What the boot opens a genuinely resumed escape
+## on (`main._ready()`'s `escape_resumed_from_disk`, which `_escape_section_came_from_the_file()`
+## decides above) is the title, through the day's own `_open_the_title()`, and the title's start is
+## the day's own `_on_title_start()`, whose resume gate raises the section's brief. Driven through
+## those two the way the boot reaches them, without a save on disk, which nothing in this suite can
+## write (see `tests/test_main.gd`'s own class doc for why `main` is never added to the tree here).
 func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void:
-	# `finale.begin()` below reaches `main._on_finale_section_started()`, which writes the section
-	# onto the autoload; put it back at the end so no suite after this one starts mid-escape.
-	var saved_section := GameState.escape_section
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = SUMMARY_SCENE.instantiate()
 	t.add_child(main._summary)
@@ -1989,116 +1938,47 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.add_child(main._hud)
 	main._title = TITLE_SCREEN_SCENE.instantiate()
 	t.add_child(main._title)
+	main._status = Label.new()
+	main._edge_layer = CanvasLayer.new()
 	main._add_touch_controls()
-	main._title.start_requested.connect(main._on_escape_title_start)
+	main._title.start_requested.connect(main._on_title_start)
+	main._resume = {"day_under_way": false}
+	main._use_the_day(DaySpec.for_section(DaySpec.Section.BUILDING, Tuning.FINALE_LENGTH_SECONDS))
 
-	var interior := InteriorScene.new()
-	t.add_child(interior)
-	interior.build()
-	main._interior = interior
-
-	var camera := Camera2D.new()
-	camera.name = "Camera2D"
-	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
-	var stroller := Stroller.new()
-	stroller.add_child(camera)
-	t.add_child(stroller)
-	stroller.set_physics_process(false)
-	var baby := Baby.new()
-	baby.name = "Baby"
-	stroller.add_child(baby)
-	baby.set_physics_process(false)
-	main._player = stroller
-	main._baby = baby
-
-	var finale := FinaleController.new()
-	t.add_child(finale)
-	main._finale = finale
-	finale.section_started.connect(main._on_finale_section_started)
-
-	main._escape_resumed_from_disk = true
-	finale.begin(DaySpec.Section.BUILDING)
-
-	t.check(not main._summary.is_showing(), "the section's brief does not show yet")
-	t.check(main._title.is_open(), "a genuinely resumed escape opens on the title first")
-	t.check(not main._escape_resumed_from_disk, "consumed the instant it is read")
+	main._open_the_title()
+	t.check(main._title.is_open() and not main._summary.is_showing(),
+			"a genuinely resumed escape opens on the title first, the section's brief not yet up")
 	t.check(main._title.mode_name_shown() != "", "and names the mode, which the save already fixed")
-	t.check(not finale.is_running(), "with nothing counting down behind either screen")
+	t.check(main._in_the_title, "and the boot is behind its title")
 
 	main._title.start_requested.emit(ControlsMode.Mode.TAP, false, ControlsMode.Side.LEFT)
 	t.check(not main._title.is_open(), "pressing start closes the title")
-	t.check(main._summary.is_showing(), "and raises the section's own brief")
+	t.check(main._summary.is_showing() and main._resume_gate_open,
+			"and raises the section's own brief, in front of the section already built")
 	var title_label: Label = main._summary.get_node("Root/Center/Lines/Title")
-	t.check(title_label.text == MAIN_SCRIPT.finale_hint_for(DaySpec.Section.BUILDING),
-			"titled with the section's own name")
-	t.check(not finale.is_running(), "the clock still not running until that brief is answered")
+	t.check(title_label.text == "Escape the building",
+			"titled with the section's own words ('%s')" % title_label.text)
+	t.check(not main._in_the_title, "the title is behind her")
 
 	main._summary.free()
 	main._hud.free()
 	main._title.free()
-	interior.free()
-	stroller.free()
-	finale.free()
+	main._status.free()
+	main._edge_layer.free()
 	main.free()
 	t.get_tree().paused = false
-	GameState.escape_section = saved_section
+	AtlasLibrary.close_loading_window()
 
-## The handover reload from a won day 14 reaches `_on_finale_section_started()` with
-## `_escape_resumed_from_disk` still `false` — set only when `GameState.escape_section` was `NONE`
-## before `try_resume()` ran, which a handover's own value already isn't, since it was written to
-## the autoload before the reload — so it falls straight through to the section's own brief exactly
-## as it always has, with no title in front of it.
+## The handover reload from a won day 14 reaches the boot with `escape_resumed_from_disk` false —
+## true only when `GameState.escape_section` was `NONE` before `try_resume()` ran, which a
+## handover's own value already isn't, since it was written to the autoload before the reload — so
+## it opens straight on the building's own brief, with no title in front of it. Booted for real.
 func _test_a_handover_does_not_open_on_the_title(t) -> void:
-	# `finale.begin()` below reaches `main._on_finale_section_started()`, which writes the section
-	# onto the autoload; put it back at the end so no suite after this one starts mid-escape.
-	var saved_section := GameState.escape_section
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._summary = SUMMARY_SCENE.instantiate()
-	t.add_child(main._summary)
-	main._hud = HUD_SCENE.instantiate()
-	t.add_child(main._hud)
-	main._title = TITLE_SCREEN_SCENE.instantiate()
-	t.add_child(main._title)
-
-	var interior := InteriorScene.new()
-	t.add_child(interior)
-	interior.build()
-	main._interior = interior
-
-	var camera := Camera2D.new()
-	camera.name = "Camera2D"
-	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
-	var stroller := Stroller.new()
-	stroller.add_child(camera)
-	t.add_child(stroller)
-	stroller.set_physics_process(false)
-	var baby := Baby.new()
-	baby.name = "Baby"
-	stroller.add_child(baby)
-	baby.set_physics_process(false)
-	main._player = stroller
-	main._baby = baby
-
-	var finale := FinaleController.new()
-	t.add_child(finale)
-	main._finale = finale
-	finale.section_started.connect(main._on_finale_section_started)
-
-	# `_escape_resumed_from_disk` left at its default `false` — the handover's own shape.
-	finale.begin(DaySpec.Section.BUILDING)
-
+	var main := _boot_the_escape(t, DaySpec.Section.BUILDING)
 	t.check(not main._title.is_open(), "a handover does not raise the title")
-	t.check(main._summary.is_showing(), "it opens straight on the section's own brief")
-
-	main._summary.free()
-	main._hud.free()
-	main._title.free()
-	interior.free()
-	stroller.free()
-	finale.free()
-	main.free()
-	t.get_tree().paused = false
-	GameState.escape_section = saved_section
+	t.check(main._summary.is_showing() and main._resume_gate_open,
+			"it opens straight on the section's own brief")
+	_free_the_escape(t, main)
 
 ## *"the held restart from the escape ends in a fresh run with escape_section cleared"* —
 ## `main._restart_run()` cannot safely run inside this suite: it defers a real
@@ -2115,10 +1995,9 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._pause = PAUSE_SCREEN_SCENE.instantiate()
 	main._summary = SUMMARY_SCENE.instantiate()
-	main._connect_pause_signals()
+	main._connect_summary_and_pause_signals()
 	t.check(main._pause.restart_requested.is_connected(main._restart_run),
 			"the escape's own pause screen reaches main._restart_run(), same as a day's")
-	main._summary.restart_requested.connect(main._restart_run)
 	t.check(main._summary.restart_requested.is_connected(main._restart_run),
 			"and so does the section brief's own restart button — the same DaySummary a day uses")
 
