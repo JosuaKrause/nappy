@@ -25,7 +25,7 @@ Claude Code wrote the game and drew it (Godot 4.7, GDScript, the tooling, the SV
 trailer); Codex painted the PNG art. No hand-written code, no downloaded assets. An orchestrator
 session plans the work and briefs agents that each build one item in their own git worktree, and a
 separate agent reviews every pull request adversarially before it merges: about 600 pull requests in
-seven weeks. The project's rules live in the repo as skills that hooks load right before an edit
+eight weeks. The project's rules live in the repo as skills that hooks load right before an edit
 touches their area.
 
 I did the design, provided reference drawings and photos, and balanced the game through playtests;
