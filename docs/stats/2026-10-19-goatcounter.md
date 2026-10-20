@@ -1,12 +1,10 @@
-# curly-pelican — GoatCounter baseline before the refactor's release: where players struggled, 2026-09-20 to 2026-10-19 · 2026-10-19 · not from an entry
+# GoatCounter, 2026-09-20 to 2026-10-19: where players struggled
 
 
-Not from an entry. The player asked on 2026-10-19 for an analysis of GoatCounter ("can you have a
-look at goatcounter -- can you analyze it?"), then "let's take note of the findings today so we can
-start fresh after the release". This record is that note: the baseline, read on `main` at v0.29.2,
-that the next release's window is compared against. The player's follow-up, "how can we systematize
-analyzing stats? also let's fix the tooling", is `tools/goatcounter.sh --report` (branch
-`feature/goatcounter-report`), which prints this same analysis in one command.
+The player asked on 2026-10-19 for an analysis of GoatCounter ("can you have a look at goatcounter
+-- can you analyze it?"), then "let's take note of the findings today so we can start fresh after
+the release". This file is that note: the baseline, read on `main` at v0.29.2, that the next
+release's window is compared against.
 
 **Read with** `tools/goatcounter.sh --days 30`, `--raw`, `--encounters` and `--by-release`, on
 2026-10-19 at about 21:00 Eastern, covering 2026-09-20 to 2026-10-19 (releases v0.13.1 to v0.29.2).
@@ -54,7 +52,7 @@ over).
 - **Runs thin out fast**: against 64 fresh runs, day 1 was won 33 times, day 3 18 times, day 8 4
   times and day 14 twice (wins counted per day, so a run that resumed is counted where it won).
 
-**Gaps found in the tool while reading**, fixed on `feature/goatcounter-report`: `nappy-mode-*` and
+**Gaps found in the tool while reading:** `nappy-mode-*` and
 `nappy-checkpoint-N-from-day-M` were listed as unrecognised shapes though `docs/TELEMETRY.md` lists
 them, and the first read of `/api/v0/stats/hits` returned an HTTP 404 that the identical call a
 minute later did not.
