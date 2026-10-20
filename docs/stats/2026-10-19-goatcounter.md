@@ -57,5 +57,5 @@ over).
 them, and the first read of `/api/v0/stats/hits` returned an HTTP 404 that the identical call a
 minute later did not.
 
-**After the next release**, the comparison is its own window: `tools/goatcounter.sh --report
---by-release` from the release's day, against the table above.
+**After the next release**, the comparison is its own window: `tools/goatcounter.sh --by-release
+--start <the release's day>`, against the table above.
