@@ -33,10 +33,9 @@ structure it, to see how far vibe coding goes.
 **What went wrong**
 
 - Walk cycles. Generated frames kept putting the same leg in front, and "fixed" frames often only
-  recolored the other leg. What helped: compare the legs' outlines with the colors removed, and
-  trace each leg from hip to knee to foot; in a two-frame walk the front leg has to swap.
-- Lag on phones. Draw calls were not it; a debug overlay in the live build that turns systems off
-  one at a time showed what each part actually costs.
+  recolored the other leg.
+- Lag on phones. The obvious suspect, draw calls, turned out not to matter: cutting them in half
+  left the frame time where it was.
 - Undertale-level code quality. Agents add code where similar code already lives, so a few files
   grew huge (the main script past 3,000 lines, one event class past 7,000) and the escape sequence
   got its own parallel copy of the game's engine.
