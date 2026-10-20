@@ -803,10 +803,13 @@ func _walk_path(officer: Officer, step: float) -> bool:
 ## so a taper goes on into his next stretch in the same frame rather than losing the rest of it at
 ## every stretch's end, which over a large park's forty-odd stretches makes the close late.
 ##
-## **Not through the navigator**: a taper's walk follows the park's whole edge at a fixed offset
-## outside it, whatever stands there, and a walk stopped by what stops her stalls him on it, so the
-## cordon does not close. His way out and an escort's are searched over ground he may stand on
-## (`_may_walk()`).
+## **Not through the navigator**: an officer's walk in and a taper's walk round the park's edge are
+## laid straight, at a fixed offset outside it, through whatever the day stands there — a band on
+## the park's sidewalk, a figure in the park — and the close is timed and its pace set over those
+## straight walks (`_round_path()`, the cordon's own timing). Stopped by what stops her, an officer
+## stalls at such a body, or goes round it and the last gap closes late, so the walks have to be
+## planned round the bodies before they can be walked round them. His way out and an escort's are
+## searched over ground he may stand on (`_may_walk()`).
 func _walk_path_for(officer: Officer, step: float) -> float:
 	var left := step
 	while left > 0.0 and not officer.path.is_empty():
