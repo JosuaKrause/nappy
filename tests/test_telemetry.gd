@@ -1284,7 +1284,7 @@ func _test_the_escape_observer_is_handed_the_spikes_flag(t) -> void:
 
 ## A real, empty `City` and a bare `Stroller` standing still — the least `_watch_for_a_spike`
 ## needs to read (`_city.events.instances()`, `_map.world_to_tile(_player.global_position)`)
-## without crashing. `spikes_on` is handed in the way `main` hands it from the run's configuration.
+## without crashing. `spikes_on` is set directly here; `main` hands it in through `setup()`.
 func _spike_rig(t) -> TelemetryObserver:
 	var map := CityGenerator.generate(9001)
 	var city: City = preload("res://scenes/world/city.tscn").instantiate()

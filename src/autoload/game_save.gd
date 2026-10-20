@@ -1,10 +1,11 @@
 class_name GameSave
 extends RefCounted
 ## Persists a run to disk so the game can be closed and picked up again — see docs/MECHANICS.md,
-## "Saving and resuming". Not an autoload: every member below is `static`, so the class is a namespace for file I/O and
-## format policy rather than an object with a lifetime of its own. Lives beside `GameState`, the one thing it reads and writes,
-## rather than under `src/ui/` with the symbol that announces a write — a save module is data, the
-## symbol is presentation, and the two only meet through `EventBus`.
+## "Saving and resuming". Not an autoload: every member below is `static`, so the class is a
+## namespace for file I/O and format policy rather than an object with a lifetime of its own. Lives
+## beside `GameState`, the one thing it reads and writes, rather than under `src/ui/` with the
+## symbol that announces a write — a save module is data, the symbol is presentation, and the two
+## only meet through `EventBus`.
 ##
 ## **The save is the run, never the moment inside a day.** `GameState.save_snapshot()` says what a
 ## run holds; this file only adds the facts a run does not know about itself — whether a day was
