@@ -21,6 +21,9 @@ var _changed_on := {}
 ## to (`BlockPlan.forced_open_on`) — as `block -> true`, until she takes it. Derived by
 ## `begin_day()` from the plans and the day, never saved: a retried day derives it again.
 var _open_today := {}
+## Where a block's step along its arc is written down for the run log — `GameState`'s trace, handed
+## on by `GameState.use_trace()`; silent for the scratch states a generator or a recipe builds.
+var trace := RunTrace.new()
 
 ## Back to day 1 with every block at the start of its arc.
 func reset() -> void:
@@ -184,7 +187,7 @@ func _advance(plans: Dictionary, block: Vector2i, day: int,
 	var was := purpose_of(plans, block)
 	_stage[block] = _index(block) + 1
 	_changed_on[block] = day
-	Telemetry.note("arc", "block %s %s -> %s (%s)" % [
-		TelemetryLog.tile(block), TelemetryLog.purpose(was),
-		TelemetryLog.purpose(purpose_of(plans, block)),
+	trace.note("arc", "block %s %s -> %s (%s)" % [
+		RunTrace.tile(block), RunTrace.purpose(was),
+		RunTrace.purpose(purpose_of(plans, block)),
 		GameEnums.BlockCause.keys()[cause].to_lower()])

@@ -1545,7 +1545,7 @@ func _count_the_door() -> bool:
 		return false
 	_held = false
 	_caught_tile = _city.map.world_to_tile(here)
-	_caught_by = "the door at %s, holding her %d times" % [TelemetryLog.tile(door), holds]
+	_caught_by = "the door at %s, holding her %d times" % [RunTrace.tile(door), holds]
 	_give_up_stuck()
 	return true
 
@@ -1638,7 +1638,7 @@ func _retarget_if_moved() -> bool:
 	_current_target_world = now
 	_current_target_tile = _city.map.world_to_tile(now)
 	Telemetry.note("route", "day %d: '%s' moved to %s, re-planning"
-			% [_day_number, _current_word, TelemetryLog.tile(_current_target_tile)])
+			% [_day_number, _current_word, RunTrace.tile(_current_target_tile)])
 	_replan()
 	return true
 
@@ -1665,7 +1665,7 @@ func _note_what_caught_her() -> void:
 				# A pixel inside whatever she touched, since the contact point is on its surface.
 				var inside := _city.map.world_to_tile(hit.get_position() - hit.get_normal())
 				_caught_by = "a closure" if _city.map.is_closed(inside) \
-						else TelemetryLog.tile_type(_city.map.tile_at(inside))
+						else RunTrace.tile_type(_city.map.tile_at(inside))
 	_caught_away = away.normalized()
 	if _caught_by == "":
 		_caught_by = "a hold" if _player.is_detained() else "nothing solid (the crowd)"
@@ -1682,7 +1682,7 @@ func _event_owning(collider: Object) -> EventInstance:
 ## A leg given up on after too many stalls, logged with where she was and what held her there.
 func _give_up_stuck() -> void:
 	Telemetry.note("route", "day %d: '%s' stuck fast at %s against %s, skipping"
-			% [_day_number, _current_word, TelemetryLog.tile(_caught_tile), _caught_by])
+			% [_day_number, _current_word, RunTrace.tile(_caught_tile), _caught_by])
 	_release()
 	_advance_target()
 
@@ -1695,7 +1695,7 @@ func _replan() -> void:
 	var path := _plan(here_tile, _current_target_tile, _leg_avoid)
 	if path.is_empty():
 		Telemetry.note("route", "day %d: '%s' no longer reachable from %s, skipping"
-				% [_day_number, _current_word, TelemetryLog.tile(here_tile)])
+				% [_day_number, _current_word, RunTrace.tile(here_tile)])
 		_release()
 		_advance_target()
 		return
@@ -1897,7 +1897,7 @@ func _check_settled() -> void:
 		_settling = false
 		_settle_anchor = Vector2.INF
 		Telemetry.note("route", "day %d: the calm ground at %s is gone, looking again, %.1fs"
-				% [_day_number, TelemetryLog.tile(_current_target_tile), _elapsed()]
+				% [_day_number, RunTrace.tile(_current_target_tile), _elapsed()]
 				+ " (day time)")
 		_begin_resolving(_current_word)
 		return

@@ -103,6 +103,9 @@ const TEAR_BAG: Array[bool] = [true, false, false, false, false, false, false, f
 
 var _city: City
 var _map: CityMap
+## Where the walls write their own account for the run log — a crew pasting, a sheet torn and the
+## marble it draws; the city's, set before `setup()`.
+var trace := RunTrace.new()
 ## One entry per front with a blank cell: `{"building": Building, "cols": Array[int],
 ## "tiles": Array[Vector2i]}`, the cells in column order, west to east.
 var _walls: Array[Dictionary] = []
@@ -332,11 +335,11 @@ func _work_the_crews(delta: float) -> void:
 		# whether it finished depends on how long she stayed in sight of it.
 		var what: String = PosterArt.Kind.keys()[int(job["kind"])].to_lower()
 		if int(job["pasted"]) == 1:
-			Telemetry.note("scar", "a poster crew at %s starts pasting %s sheets on the wall, %d to go"
-					% [TelemetryLog.tile(tile), what, int(job["total"])])
+			trace.note("scar", "a poster crew at %s starts pasting %s sheets on the wall, %d to go"
+					% [RunTrace.tile(tile), what, int(job["total"])])
 		elif queue.is_empty():
-			Telemetry.note("scar", "the poster crew at %s has pasted its wall: %d %s sheets"
-					% [TelemetryLog.tile(tile), int(job["pasted"]), what])
+			trace.note("scar", "the poster crew at %s has pasted its wall: %d %s sheets"
+					% [RunTrace.tile(tile), int(job["pasted"]), what])
 
 ## A crew's work: which kind it carries and which cells, in the order it pastes them.
 func _job_for(tile: Vector2i) -> Dictionary:
@@ -439,9 +442,9 @@ func _tear(tile: Vector2i) -> void:
 	EventBus.poster_torn.emit()
 	var what: String = PosterArt.Kind.keys()[kind].to_lower()
 	# Where and which, because nothing else records it: a tear depends on where she pushed.
-	Telemetry.note("scar", "she tears down the %s sheet at %s, tear %d of the run"
-			% [what, TelemetryLog.tile(tile), state.tears])
-	Telemetry.note("roll", "poster tear %d draws a %s marble, %d left in the bag"
+	trace.note("scar", "she tears down the %s sheet at %s, tear %d of the run"
+			% [what, RunTrace.tile(tile), state.tears])
+	trace.note("roll", "poster tear %d draws a %s marble, %d left in the bag"
 			% [state.tears, "pursuit" if pursuit else "no-pursuit", bag.left()])
 	if pursuit and _city and _city.events:
 		_city.events.send_a_pursuer()

@@ -86,10 +86,11 @@ The events:
 - `nappy-day-N-won` / `nappy-day-N-lost-timeout` — a day's end that names nothing further: a win
   needs no cause and a timeout's own name already says everything about a clock that ran out.
 - `nappy-day-N-lost-crying-<source>` / `nappy-day-N-lost-hard-fail-<what>` — a lost day's own name,
-  one event folding in what actually did it rather than a second event beside it. The cause is
-  emitted by `main._on_day_finished()` as `EventBus.day_lost_to` just before `day_ended`, and
-  `VisitCounter` holds it until `day_ended` fires and folds it onto the loss kind
-  (`VisitCounter._loss_event_suffix()`). A hard fail names the row that struck her — `car` for the
+  one event folding in what actually did it rather than a second event beside it. The cause rides
+  on the day's one end event, `EventBus.day_ended(day, result, cause, elapsed)`, which
+  `main._on_day_finished()` emits, and `VisitCounter` folds it onto the loss kind
+  (`VisitCounter._loss_event_suffix()`); the run log's `lost` line names the same cause off the
+  same event. A hard fail names the row that struck her — `car` for the
   one that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
   `Crowd._strike()`), otherwise the id off whichever row's own `is_lethal_at()` fired
   (`EventManager._check_hard_fails()`), hyphenated the same way every other name here is — a
@@ -102,10 +103,8 @@ The events:
   standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
   own). Ties, and a window with nothing landed in it at all, pick the alphabetically first group
   present, falling back to `self` when there is none (`main._crying_cause_suffix()`). A
-  `LOST_CRYING`/`LOST_HARD_FAIL` day this counter never got a cause for — reachable only where
-  something drives `day_ended` without first driving `day_lost_to` for the same day, which nothing
-  in `main.gd`'s own wiring does — still sends the bare `lost-crying` / `lost-hard-fail` rather than
-  nothing.
+  `LOST_CRYING`/`LOST_HARD_FAIL` day ended with no cause still sends the bare `lost-crying` /
+  `lost-hard-fail` rather than nothing.
 - `nappy-day-3-seen-fire` — the first frame the burning building is in sight, whether or not the
   warning for the fire engine it summons can be put up yet
   (`EventManager._summon_what_has_been_sighted()`): the point it stands at inside what she can see
@@ -143,7 +142,8 @@ The events:
     section ended some other way while it was still charging — the meter at its cap, another
     thing's catch, home (`EventBus.pursuit_cut_short`, `EventManager.end_the_charges_still_running()`,
     which `main._on_day_finished()` asks before the day's own end is sent, and `InteriorEvents` as a
-    section ends).
+    section ends). A charger's own `ChargeRecord` (`src/events/charge_record.gd`) is the one owner
+    of that rule: every ending asks it, and the first to ask is the only one sent.
 
   `<charger>` is the row's own id hyphenated, as the encounter events are (`alley-robbery`,
   `roadblock`, `door-guard`, `masked-pursuer`, `robber-giving-chase`, `van-guard-giving-chase`),
@@ -249,15 +249,20 @@ The events:
   run in tap mode; the name comes from the input that began it, not the mode it falls back to),
   cheap to answer and its own small piece of "how far people get".
 
-Every signal named above that exists purely for this page — `day_lost_to`, `event_sighted`,
+Every signal named above that exists purely for this page — `event_sighted`,
 `event_lit_unmet`, `city_gone_dark`, `escape_city_entered`, `pursuit_warned`, `pursuit_began`,
 `pursuit_caught`, `pursuit_cut_short`, `pursuit_ended`,
 `resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent`, `run_mode_chosen`,
 `went_back_to_a_checkpoint`, `pelican_spawned`,
 `pelican_sighted`, `pelican_excited_her`, `pelican_struck_her`, `encounter_seen`,
 `encounter_influenced`, `run_bout_began` — is listen-only: it rolls no RNG and
-changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so, the style the
-existing `escape_*` signals already use.
+changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so. The day's and
+the escape's own events are the run flow's facts, each emitted where it happens, and no listener is
+called inline. The page hears `run_begun`, `day_started`, `day_ended`, `escape_begun`,
+`escape_city_entered`, `escape_lost` and `escape_out`, and is the only listener of `run_begun`,
+`escape_begun` and `escape_city_entered`. The run log (`RunSession`) hears `day_started`,
+`day_planned`, `day_ended`, `escape_section_started`, `escape_lost` and `escape_out`. The HUD hears
+`day_started` alone.
 
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
 things holds: the build is running on the web (`OS.get_name() == "Web"`), it is not a debug build
@@ -455,9 +460,9 @@ escape  run seed 1674637177  length 180.0s
 ```
 
 `TelemetryObserver.setup_escape()` hands it the section's `DayController`
-(`FinaleController.clock()`) in place of a day's, and `main` says which world she is in as each
-section starts — `watch_building()` or `watch_city()` — before `start_section()`, the escape's
-`start_day()`. The events are read from an event source either way, `InteriorEvents` in the
+(`FinaleController.clock()`) in place of a day's, and `RunSession` says which world she is in as
+each section starts — `watch_building()` or `watch_city()`, off `EventBus.escape_section_started`,
+which carries the section's world — before `start_section()`, the escape's `start_day()`. The events are read from an event source either way, `InteriorEvents` in the
 building and the city's `EventManager` outside it, so these read a section exactly as they read a
 day: `start`, `near`, `chase`, `cue` (the mark over her head and the screen-edge badges), `freeze` /
 `thaw`, `asleep` / `woke`, `run`, `idle`, `blocked`, `turn`, `frame` and `spike`, and in the city
@@ -580,7 +585,7 @@ is made as the warning goes up, so the first line already knows.
 
 | Kind | Written by | Answers |
 | --- | --- | --- |
-| `plan` | `main.gd`, `City`, `ClosurePlanner` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm |
+| `plan` | `RunSession`, `main.gd`, `City`, `ClosurePlanner` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm |
 | `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls`, `EventManager` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag, and, on a pursuit marble, who was sent after her, from where and whether with a clear run at her (or that nobody was, with no ground out of her sight). So is the bag day 6's or day 11's mark rigs her route with: which marbles the next events on it are drawn from |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager`, `PosterWalls` | Where the city stopped being recomputable — a scar an event left, a crew starting and finishing a wall, a poster she tore down |
@@ -615,7 +620,7 @@ is made as the warning goes up, so the first line already knows.
 | `nerve` | `GameState` | Where the nerves went — which day, which act, and in a hard run's escape; the run's mode once it is chosen; the dawn a normal run keeps as its checkpoint; and the checkpoint it went back to when its last nerve was spent, from which day |
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log. Followed by whether the save was kept: on the web, a line when the browser's IndexedDB copy is confirmed ("the browser kept the save") or not ("the browser did not keep the save", with the browser's own error or the timeout); anywhere, a line when the save could not be kept at all ("the save was not kept": the file could not be written, or the page's storage was refused at boot). **Deleting the save file writes the same kind** — "deleted the save" when the file was removed, then on the web "the browser dropped the deleted save" or "the browser did not drop the deleted save" (with the browser's own error or the timeout), and "the deletion was not kept" when the file could not be removed or the page's storage was refused at boot; a deletion with no file to delete writes nothing. A held restart logs its deletion's first line, because it deletes the save before the run log closes; a web deletion's later answer is logged only if a log is open when it arrives, so it may land in the next run's log after the reload |
-| `shot` | `main.gd`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
+| `shot` | `RunSession`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
 | `still` | `StillWatch` | **`--quit-when-still` fired** — she moved once, then held within a few pixels of one spot for the given time. Excludes any frame she is detained (`Stroller.is_detained()`, every `detain_seconds` row), a checkpoint hold that outlives the input lock (`EventManager.door_holding_her_at()`), or the signalled junction nearest her among those visible on screen showing her red on the main road's own light (`StillWatch.facing_a_red_light()`) — wherever on screen she herself is standing, since a mother who is really stuck is still stuck once the light turns green and the watch catches her then. A held frame restarts the count rather than freezing it, so it cannot fire the instant she is released. Her tile and the nearest live event or vehicle, so the picture that follows has a reason attached to it rather than only a place |
 
 ### Reading the meter breakdown
@@ -978,15 +983,42 @@ when they got there. Only the second one explains anything.
 Every line is flushed as it is written, because a run that ends in a crash, an Esc or a closed
 window is exactly the run worth reading and a buffered log of it would be empty.
 
+## Who writes it
+
+**The run log is an observer: nothing that decides anything calls it.** Three hands write into it,
+each through something it was handed:
+
+- **`RunSession`** (`src/telemetry/run_session.gd`) owns the log for a boot: `main` builds it and
+  calls only its `open()` (once per boot, keeping a log a reload carried over), `open_the_escape()`
+  and `close()` (the held restart and a quit; it hears the window's close request itself). It
+  listens on `EventBus` for the run flow's own facts — `day_started` opens a day's section,
+  `day_planned` writes the plan lines, the dawn map and her `start` line, `day_ended(day, result,
+  cause, elapsed)` writes the outcome and the dusk map and closes the section, and
+  `escape_section_started`, `escape_lost` and `escape_out` do the same for the escape's sections —
+  and holds the `TelemetryObserver` it builds when a log is open.
+- **`TelemetryObserver`** watches the walk frame by frame and writes everything that has no single
+  point of decision.
+- **Game logic writes its own account through a `RunTrace`** (`src/run_trace.gd`): the one sink
+  `RunSession` makes, which `main` hands to `GameState` (and its `CityState`), to the `City` (and
+  from there its posters, its `EventManager`, every instance it creates and the day's planners) and
+  to the `ResistanceDirector`. A component handed none writes nowhere, so a test builds the part it
+  wants and hands it a trace that records into a list. These are the lines a decision writes at the
+  point of its roll — why a placement went where it did, which way a roll fell, what a director set
+  in motion — built from what is in scope there; the facts other observers need (a nerve, a
+  checkpoint, a step completed, a detention) are bus events of their own, which the trace's lines
+  sit beside.
+
 ---
 
 ## Adding an entry
 
 1. Find the question it answers. If there is not one, stop — see the constraint above.
-2. `Telemetry.note("kind", "sentence")` at the point where the thing happens. Reuse a kind
-   from the table above rather than inventing a synonym for one.
-3. Format positions with `TelemetryLog.tile()`, directions with `TelemetryLog.compass()` and
-   block purposes with `TelemetryLog.purpose()`. Two spellings of a position in one log is
+2. `trace.note("kind", "sentence")` at the point where the thing happens, on the `RunTrace` the
+   component was handed (a static planner takes one as a parameter); a line about the walk itself
+   goes in `TelemetryObserver`, and one about a day's or a section's start or end in `RunSession`.
+   Reuse a kind from the table above rather than inventing a synonym for one.
+3. Format positions with `RunTrace.tile()`, directions with `RunTrace.compass()` and
+   block purposes with `RunTrace.purpose()`. Two spellings of a position in one log is
    two things to grep for. `compass()` writes the exact bearing in whole degrees rather than a
    word — a press sets an arbitrary unit vector, so most headings are diagonal and a four- or
    eight-word vocabulary would lose the difference between two headings a player can tell
@@ -1130,7 +1162,7 @@ build has nothing in `project.godot` to reach:
   the whole session and answers to nothing that would take it off again — not the `4` key, not a
   press, not the title screen hiding `_status` around it — so a page reached with the flag on is
   never mistaken for the ordinary release page everyone else gets. The note carries the build
-  stamp after its words and the readout's first line repeats it — `TitleScreen.build_text()`,
+  stamp after its words and the readout's first line repeats it — `BuildInfo.build_text()`,
   `git describe`'s form and the commit, `v0.10.3 (875609a5)` on a release — read from `git` on a
   working tree and from the two settings `tools/export-web.sh` bakes into an export,
   `application/config/version` and `application/config/source_commit`, so a screenshot of either

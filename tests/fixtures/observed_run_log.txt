@@ -1,0 +1,84 @@
+nappy run log  (memory)
+
+day 1  act 1  run seed 4242  city seed 4242  length 210.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, east along her street
+   0.0  plan     closed: roadworks v(8,6)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  nerve    normal mode: the last nerve goes back to the latest checkpoint
+   0.0  nerve    normal mode: the last nerve goes back to the latest checkpoint
+   0.0  path     0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
+   0.0  lost     lost_hard_fail after 0.0s to car — It never slowed down. You were in the road. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0 | near: neighbor 48px (out of range)
+   0.0  nerve    spent a nerve on day 1 (act 1); 4 left — day 1 again
+
+day 1  act 1  run seed 4242  city seed 4242  length 210.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, east along her street
+   0.0  plan     closed: roadworks v(8,6)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  path     0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
+   0.0  lost     lost_crying after 0.0s to self — She started crying. There is no settling her now. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0 | near: neighbor 48px (out of range)
+   0.0  nerve    spent a nerve on day 1 (act 1); 3 left — day 1 again
+
+day 1  act 1  run seed 4242  city seed 4242  length 210.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, east along her street
+   0.0  plan     closed: roadworks v(8,6)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  path     0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
+   0.0  lost     lost_hard_fail after 0.0s to homeless-yeller — It went wrong. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0 | near: neighbor 48px (out of range)
+   0.0  nerve    spent a nerve on day 1 (act 1); 2 left — day 1 again
+
+day 1  act 1  run seed 4242  city seed 4242  length 210.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, east along her street
+   0.0  plan     closed: roadworks v(8,6)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  path     0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
+   0.0  lost     lost_timeout after 210.0s — Dusk. You are still out. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0 | near: neighbor 48px (out of range)
+   0.0  nerve    spent a nerve on day 1 (act 1); 1 left — day 1 again
+
+day 1  act 1  run seed 4242  city seed 4242  length 210.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, east along her street
+   0.0  plan     closed: roadworks v(8,6)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
+   0.0  start    doorstep (80,84), facing 180°
+   0.0  path     0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
+   0.0  home     WON, 210.0s to spare
+
+day 2  act 1  run seed 4242  city seed 4242  length 210.0s
+   0.0  plan     regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
+   0.0  contact  the neighbor leaves for work, east along her street
+   0.0  plan     closed: roadworks v(8,6)
+   0.0  plan     calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
+   0.0  plan     events: alley_mouse x4, burst_water_main x21, busker x2, cafe_tables x58, car_accident x20, cat_dash x6, chatting_mother x2, construction x43, cyclist x12, delivery_van x37, dog_walker x18, fallen_tree, homeless_yeller x12, ice_cream_van x5, leaf_blower x7, loose_dog x12, market_stall x45, moving_van x43, pigeon_flock x5, playground x2, scaffolding x21, skip x22
+   0.0  start    doorstep (80,84), facing 180°
+=== the escape
+nappy run log  (memory)
+
+escape  run seed 4242  length 180.0s
+   0.0  start    entered the building at (7,1), facing 0°
+   0.0  lost     lost_hard_fail in the building after 0.0s — He caught you on the stairs. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100 | near: burning_building 2096px (out of range)
+   0.0  start    restarted the building at (7,1), facing 0°
+   0.0  arc      block (7,10) commercial -> boarded_up (scheduled)
+   0.0  arc      block (7,8) commercial -> boarded_up (scheduled)
+   0.0  arc      block (10,3) commercial -> boarded_up (scheduled)
+   0.0  arc      block (2,9) commercial -> boarded_up (scheduled)
+   0.0  arc      block (1,4) courtyard -> requisitioned (scheduled)
+   0.0  arc      block (9,9) courtyard -> requisitioned (scheduled)
+   0.0  plan     finale: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+   0.0  woke     woken in the building, sleep back to 0 | near: nothing live
+   0.0  asleep   asleep after 0.0s, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+   0.0  start    entered the city at (75,80), facing 180°
+   0.0  home     escaped by the tunnel, 180.0s to spare | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+   0.0  ending   neutral on day 14 — resistance 0/5, sabotage not done, played 0:00.000

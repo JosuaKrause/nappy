@@ -46,7 +46,7 @@ func _ready() -> void:
 	heading.position = Vector2(32, 36)
 	add_child(heading)
 	queue_redraw()
-	await AutoScreenshot.drawn_frame(get_tree())
+	await DrawnFrame.wait(get_tree())
 	var error := get_viewport().get_texture().get_image().save_png(OUTPUT)
 	if error != OK:
 		push_error("roof scale preview could not write %s: %s" % [OUTPUT, error_string(error)])

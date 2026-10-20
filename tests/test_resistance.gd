@@ -765,18 +765,18 @@ func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t) -> void:
 		t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
 		var player := _rig_player(t, far_alley)
 
-		Telemetry.begin_memory_log()
+		var lines: Array[String] = []
+		director.trace = RunTrace.recording(lines)
 		director._process(STEP)
 		t.check(director.contact_position().distance_to(far_alley) < 0.5,
 				"an unseen mark moves to the alley she has just come near")
 
 		var moved := false
-		for line in Telemetry.current_log().lines:
-			if line.contains("contact") and line.contains("moved to") \
+		for line in lines:
+			if line.begins_with("contact ") and line.contains("moved to") \
 					and line.contains("never seen"):
 				moved = true
 		t.check(moved, "and a contact telemetry line records the move")
-		Telemetry.end_run()
 
 		player.free()
 		director.free())

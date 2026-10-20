@@ -1,7 +1,7 @@
 extends RefCounted
-## `main.gd`'s own pure halves behind `EventBus.day_lost_to` — the hard-fail cause and the crying
-## cause, both named for `VisitCounter` before the signal ever fires. See M208, "The counter says
-## what ended a day and what she actually met", and `EventBus.day_lost_to`'s own doc.
+## `main.gd`'s own pure halves behind the cause `EventBus.day_ended` carries — the hard-fail cause
+## and the crying cause, named where the day ended for the run log and the page's counter alike.
+## See `EventBus.day_ended`'s own doc.
 ##
 ## `main.gd` is not an autoload, so — unlike `VisitCounter` — it could be reached by its bare
 ## `class_name` if it had one; it does not, so this preloads the file the same way

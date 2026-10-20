@@ -42,7 +42,9 @@ class ProcessEnd extends Node:
 		recorder.at_process_end()
 
 var ledger: FrameLedger
-var _main: Node
+## Whether the title is up, asked of whoever runs the screen and handed in by `setup()`: a frame
+## behind the title is not kept, since nobody is playing it.
+var _in_the_title: Callable
 var _city: City
 var _player: Stroller
 var _day: DayController
@@ -58,9 +60,8 @@ static var _native_path := ""
 ## The page button's callback into the recorder. See `_add_page_button()`.
 static var _save_callback: JavaScriptObject
 
-func setup(main: Node, city: City, player: Stroller, day: DayController) -> void:
-	assert("_in_the_title" in main, "FrameRecorder reads main._in_the_title")
-	_main = main
+func setup(in_the_title: Callable, city: City, player: Stroller, day: DayController) -> void:
+	_in_the_title = in_the_title
 	_city = city
 	_player = player
 	_day = day
@@ -101,7 +102,7 @@ func _process(_delta: float) -> void:
 ## the start of drawing. The counters are read here, before the clock moves to `draw`, so their
 ## own cost is the process step's.
 func at_process_end() -> void:
-	ledger.keep = not get_tree().paused and not _main.get("_in_the_title") and _day.is_running()
+	ledger.keep = not get_tree().paused and not _in_the_title.call() and _day.is_running()
 	if ledger.keep:
 		var here := _player.global_position
 		ledger.set_counter(FrameLedger.CROWD_AGENTS, _city.crowd.agent_count())
@@ -226,7 +227,7 @@ func report_text() -> String:
 			+ "events, halos (EntityHalo rims), scenery, badges (DangerEdge), player, other; " \
 			+ "counts, not times"
 	var metadata := _metadata.duplicate()
-	metadata["build"] = TitleScreen.build_text()
+	metadata["build"] = BuildInfo.build_text()
 	metadata["run_seed"] = GameState.run_seed
 	# The mode the city was handed, or a city's default for a recorder that watches none.
 	metadata["ground_mode"] = int(_city.ground_mode if _city else SceneryGround.Mode.ONE)

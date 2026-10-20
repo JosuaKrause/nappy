@@ -448,7 +448,7 @@ func _test_on_title_start_sets_the_controls_mode(t) -> void:
 	main._title = TitleScreen.new()
 
 	var chosen: Array = []
-	var record := func(mode: int, by_key: bool) -> void: chosen.append([mode, by_key])
+	var record := func(joystick: bool, by_key: bool) -> void: chosen.append([joystick, by_key])
 	EventBus.controls_chosen.connect(record)
 	main._on_title_start(ControlsMode.Mode.JOYSTICK)
 	t.check(main._touch_controls._mode == ControlsMode.Mode.JOYSTICK,
@@ -462,8 +462,7 @@ func _test_on_title_start_sets_the_controls_mode(t) -> void:
 	EventBus.controls_chosen.disconnect(record)
 	t.check(main._touch_controls._mode == ControlsMode.Mode.TAP,
 			"a key begins the run in tap mode")
-	t.check(chosen == [[ControlsMode.Mode.JOYSTICK, false], [ControlsMode.Mode.JOYSTICK, false],
-			[ControlsMode.Mode.TAP, true]],
+	t.check(chosen == [[true, false], [true, false], [false, true]],
 			"and the counter hears which input began each run, a key as a key")
 
 	# The last answer was a key's tap scheme; a joystick-right player's run is the one that matters

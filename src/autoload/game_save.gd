@@ -502,7 +502,7 @@ static func _write_now(day_under_way: bool) -> bool:
 static func file_data(day_under_way: bool) -> Dictionary:
 	var data := run_data()
 	data["format_version"] = FORMAT_VERSION
-	data["build"] = TitleScreen.build_text()
+	data["build"] = BuildInfo.build_text()
 	data["day_under_way"] = day_under_way
 	data["hard_mode"] = GameState.hard_mode
 	data["checkpoint"] = GameState.checkpoint.duplicate(true)

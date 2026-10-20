@@ -201,6 +201,28 @@ class TelemetryKindsTests(unittest.TestCase):
         }
         self.assertEqual(ci_telemetry_kinds.kinds_written(sources), {"calm", "left", "bare"})
 
+    def test_the_shapes_a_call_on_the_run_trace_takes(self) -> None:
+        sources = {
+            "src/c.gd": "\n".join(
+                [
+                    'trace.note("arc", text)',
+                    '\t_trace.note("nerve", "spent a nerve")',
+                    '_the_trace().note("plan", "finale: %s" % plan)',
+                    '_log.note("ending" if over else "nerve", text)',
+                    '_note(trace, "roll", "one-shot %s" % id)',
+                    '_note("texture", "atlas page loaded")',
+                    "static func _note(trace: RunTrace, kind: String, text: String) -> void:",
+                    "\t\ttrace.note(kind, text)",
+                    "_log.note(_clock, kind, text)",
+                    '_add_debug_mode_note("not_a_kind", x)',
+                    '# trace.note("commented", x)',
+                ]
+            )
+        }
+        self.assertEqual(
+            ci_telemetry_kinds.kinds_written(sources), {"arc", "nerve", "plan", "ending", "roll", "texture"}
+        )
+
     def test_a_scan_that_finds_nothing_is_a_failure(self) -> None:
         failures = ci_telemetry_kinds.check({}, "")
         self.assertEqual(len(failures), 2)

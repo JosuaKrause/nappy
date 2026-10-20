@@ -136,7 +136,7 @@ func _reproduce_zero_density_visits() -> void:
 					for plan: EventScheduler.Planned in full_in_lot:
 						ids.append(plan.def.id)
 					low_examples.append("  seed=%d day=%d block=%s: %s in the park she used yesterday, %s — denied %.0f%% of open ground (roll alone: %d placed, denied %.0f%%)"
-							% [i, day, block, ", ".join(ids), TelemetryLog.tile(block), fd * 100.0, rc, rd * 100.0])
+							% [i, day, block, ", ".join(ids), RunTrace.tile(block), fd * 100.0, rc, rd * 100.0])
 
 	print("trials (seed x settle-day x calm block): %d" % trials)
 	print("structurally zero — block no longer calm the next day: %d (%.1f%%)"

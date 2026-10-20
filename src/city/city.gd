@@ -113,6 +113,9 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 
 var map: CityMap
 var events: EventManager
+## Where the city, its posters, its events and the day's closures write their own account for the
+## run log — set before `build()`, which hands it on; silent until then.
+var trace := RunTrace.new()
 var crowd: Crowd
 
 # ------------------------------------------------- handed in before build() reads them ---
@@ -247,6 +250,7 @@ func build(city_map: CityMap) -> void:
 	# Right after the buildings, whose blank ground-floor cells are what it reads. See `PosterWalls`.
 	_posters = PosterWalls.new()
 	_posters.name = "Posters"
+	_posters.trace = trace
 	add_child(_posters)
 	_posters.setup(self, map)
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
@@ -270,6 +274,7 @@ func build(city_map: CityMap) -> void:
 	_spawn_signal_heads()
 	events = EventManager.new()
 	events.name = "Events"
+	events.trace = trace
 	events.skip_drawing = skip_event_drawing
 	if all_cyclists_pelicans:
 		events.pelican_rig = EventManager.PelicanRig.ALWAYS
@@ -506,7 +511,7 @@ func board_neighbor_window() -> void:
 			best_distance = distance
 			best_col = col
 	building.neighbor_window_col = best_col
-	Telemetry.note("contact",
+	trace.note("contact",
 			"the neighbor's window is boarded at column %d, row %d (the third floor)"
 			% [best_col, building.neighbor_window_row()])
 
@@ -970,7 +975,7 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## only way a requisitioned park can stop having swings in it.
 func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	scenery.view = _home_scenery_view()
-	map.repaint(state)
+	map.repaint(state, trace)
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
@@ -1031,7 +1036,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 ## cell its plain source first, so a twin from yesterday's tree cannot survive into the escape.
 func start_finale(state: CityState, day: int) -> void:
 	scenery.view = _home_scenery_view()
-	map.repaint(state)
+	map.repaint(state, trace)
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
 	_paint_ground()
@@ -1052,10 +1057,10 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
 	_region_plan = RegionPlanner.plan_day(map, day, _tree)
-	Telemetry.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
+	trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
 			% [_region_plan.walls.size() + _region_plan.doors.size(), _region_plan.walls.size(),
 			_region_plan.doors.size(), RegionPlanner.regions_with_calm(map)])
-	_closures = ClosurePlanner.plan_day(map, day, rng, _tree, _region_plan)
+	_closures = ClosurePlanner.plan_day(map, day, rng, _tree, _region_plan, trace)
 	map.close_streets(_closures)
 	for closure in _closures:
 		_spawn_closure(closure)
@@ -1158,6 +1163,51 @@ func route_tree() -> RouteTree:
 ## meaningful after `start_day` — the same contract as `route_tree()`.
 func region_plan() -> RegionPlanner.RegionPlan:
 	return _region_plan
+
+# ------------------------------------------------------- the day's shape in words ---
+# For whoever reports it: the run log's `plan` lines and the console's day line read the same
+# three. Here, on the city they describe, because both the run flow and the run log call them
+# and neither may reach into the other.
+
+## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day now
+## that a day can only be won on calm ground.
+func calm_summary() -> String:
+	var counts := {}
+	for block in map.calm_blocks:
+		var name: String = GameEnums.BlockPurpose.keys()[
+			GameState.city_state.purpose_of(map.block_plans, block)].to_lower()
+		counts[name] = counts.get(name, 0) + 1
+	var parts: Array[String] = []
+	for name: String in counts:
+		parts.append("%d %s" % [counts[name], name])
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
+## Which streets are shut today and what shut them. Worth printing rather than counting, because
+## "the route was awful today" and "the closure landed on the one street that mattered" look
+## identical from a count.
+func closure_summary() -> String:
+	var parts: Array[String] = []
+	for closure in closures():
+		parts.append("%s %s%s" % [
+			RoadClosure.display_name(closure.kind).to_lower(),
+			"h" if closure.segment.horizontal else "v",
+			RunTrace.tile(closure.segment.a)])
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
+## Today's events by id. Counted rather than listed one per line: which of the catalogue's kinds
+## are out is what makes a day, and where each instance stands is only interesting for the ones
+## she actually walked into — which the `near` lines cover, at the moment it matters. The *plan*,
+## not what is live: what is live is a fact about where she is standing this frame.
+func event_summary() -> String:
+	var counts := {}
+	for plan in events.plans():
+		counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
+	var parts: Array[String] = []
+	for id: String in counts:
+		parts.append("%s x%d" % [id, counts[id]] if counts[id] > 1 else id)
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
 
 func _spawn_closure(closure: RoadClosure) -> void:
 	# Supports precede the rails mounted on them. The sign's panel draws its composite

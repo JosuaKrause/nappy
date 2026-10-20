@@ -33,6 +33,9 @@ var _plans: Array[EventScheduler.Planned] = []
 var _director: EventDirector
 var _city: City
 var _map: CityMap
+## Where the manager, the day's planning and every instance it creates write their own account for
+## the run log — the city's, set before `setup()`; silent until then.
+var trace := RunTrace.new()
 var _player: Node2D
 var _hard_failed := false
 ## Today's own day number, kept for the RNG stream drawn while the day runs:
@@ -236,8 +239,8 @@ func send_a_pursuer() -> void:
 			GameState.posters.tears]), 2) == 0
 	var first := _where_the_sent_pursuer_starts(def, her, Vector2.ZERO, first_up)
 	if first[0] == Vector2.INF:
-		Telemetry.note("roll", "poster tear sends nobody: no walkable ground out of sight of her at %s"
-				% TelemetryLog.tile(_map.world_to_tile(her)))
+		trace.note("roll", "poster tear sends nobody: no walkable ground out of sight of her at %s"
+				% RunTrace.tile(_map.world_to_tile(her)))
 		return
 	# The bearing the badge points along, fixed now; where he is created is asked again along it
 	# when the badge's time is up, from wherever she is then.
@@ -254,8 +257,8 @@ func send_a_pursuer() -> void:
 		_sent_after_her = spawn_warned(def, PackedVector2Array([place]))
 		var who := "a guardsman" if def.look == EventDef.Look.GUARDSMAN_GIVING_CHASE \
 				else "a policeman"
-		Telemetry.note("roll", "poster tear: %s sent after her from %s, %.0fpx off (%s)"
-				% [who, TelemetryLog.tile(_map.world_to_tile(place)),
+		trace.note("roll", "poster tear: %s sent after her from %s, %.0fpx off (%s)"
+				% [who, RunTrace.tile(_map.world_to_tile(place)),
 				standing.distance_to(place), "a clear run at her" if drawn[0][1]
 						else "no clear run at her"])
 		return true
@@ -300,10 +303,10 @@ func _let_the_officers_out() -> void:
 		var guards := def.look == EventDef.Look.GUARDSMAN_GIVING_CHASE
 		var who := ("a guardsman gets out" if guards else "a policeman gets out") if owed == 1 \
 				else "%d %s get out" % [owed, "guardsmen" if guards else "policemen"]
-		Telemetry.note("ahead", "%s at %s, %.0fpx from her, and %s"
+		trace.note("ahead", "%s at %s, %.0fpx from her, and %s"
 				% ["an investigating patrol stops" if vehicle.def.drives
 						else "%s, standing," % vehicle.def.id,
-				TelemetryLog.tile(_map.world_to_tile(vehicle.global_position)),
+				RunTrace.tile(_map.world_to_tile(vehicle.global_position)),
 				vehicle.global_position.distance_to(_player.global_position), who])
 
 ## How far apart along a vehicle's flank its men get out when it lets out more than one, in px:
@@ -491,7 +494,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	standing.append_array(region_plan.wall_bodies)
 	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
 			GameState.settled_this_act(), tree, GameState.resistance_progress, doors,
-			ResistanceDirector.target_ground(_map, day, region_plan), standing)
+			ResistanceDirector.target_ground(_map, day, region_plan), standing, trace)
 	_plans.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
@@ -1034,7 +1037,7 @@ func _look_through_the_camera() -> void:
 ## What the run log and the page's counter call the event whose lethal reach ended today
 ## (`EventInstance.logged_name()` — `pelican` for a pelican, otherwise its row's id), or "" when no
 ## event's reach has (a car, or nothing yet). Set by `_check_hard_fails()` with the
-## `hard_fail_triggered` it sends, read by `main._on_day_finished()` for `EventBus.day_lost_to`, and
+## `hard_fail_triggered` it sends, read by `main._on_day_finished()` for `EventBus.day_ended`, and
 ## reset with `_hard_failed` when a day starts. Telemetry only.
 func what_struck_her() -> String:
 	return _struck_by
@@ -1052,6 +1055,7 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 		facing := Vector2.RIGHT) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.skip_draw = skip_drawing
+	instance.trace = trace
 	instance.setup(def, at, path, facing, _map)
 	# The day-3 lesson's dog, for its own charging counter: the first dog today on the day the run
 	# is taught (`EventInstance.is_the_lesson`). Telemetry only.
@@ -1068,8 +1072,8 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 	if def.scar_id != "" and record_scar:
 		# A scar is where the city stopped being recomputable: it exists because of what
 		# happened on an earlier day, so from day 4 onwards the map depends on run history.
-		Telemetry.note("scar", "%s left at %s by %s" % [
-			def.scar_id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
+		trace.note("scar", "%s left at %s by %s" % [
+			def.scar_id, RunTrace.tile(_map.world_to_tile(instance.global_position)),
 			def.id])
 		GameState.add_scar(def.scar_id, instance.global_position)
 		_mark_the_block(def.scar_id, instance.global_position)
@@ -1393,9 +1397,9 @@ func _run_the_warnings(delta: float, here: Vector2) -> void:
 		if not warning.tick(delta, here):
 			still_up.append(warning)
 		elif warning.withdrawn:
-			Telemetry.note("ahead", "%s's warning is withdrawn after %.2fs: nowhere out of sight to "
+			trace.note("ahead", "%s's warning is withdrawn after %.2fs: nowhere out of sight to "
 					% [warning.logged_name(), warning.shown] + "put it at %s"
-					% TelemetryLog.tile(_map.world_to_tile(here)))
+					% RunTrace.tile(_map.world_to_tile(here)))
 			if warning.on_withdrawn.is_valid():
 				warning.on_withdrawn.call()
 	_pending = still_up
@@ -1757,9 +1761,9 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	var lead := crossing_point.distance_to(body.global_position)
 	var verb := "comes at her from" \
 			if def.pursues or def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER else "crosses"
-	Telemetry.note("ahead", "%s %s %.0fpx in front of her at %s" % [
+	trace.note("ahead", "%s %s %.0fpx in front of her at %s" % [
 		def.id, verb, lead,
-		TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+		RunTrace.tile(_map.world_to_tile(body.global_position))])
 
 ## A place a marble from her route's bag named — the man shouting or the mast a rigged bag puts on
 ## it — sited for the first time by the director ahead of her on the branch she is walking
@@ -1774,11 +1778,11 @@ func _put_down_on_her_route(plan: EventScheduler.Planned, body: Node2D) -> void:
 	_plans.append(plan)
 	_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 	# Where, because nothing else records it: the siting depends on the walk she took.
-	Telemetry.note("ahead", "%s is put on her route %.0fpx ahead of her at %s, %s of where she is at %s"
+	trace.note("ahead", "%s is put on her route %.0fpx ahead of her at %s, %s of where she is at %s"
 			% [plan.def.id, plan.position.distance_to(body.global_position),
-			TelemetryLog.tile(_map.world_to_tile(plan.position)),
+			RunTrace.tile(_map.world_to_tile(plan.position)),
 			_heading_name((body as CharacterBody2D).velocity.normalized()),
-			TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+			RunTrace.tile(_map.world_to_tile(body.global_position))])
 
 ## **Rigs her route so the marbles of `ids` are among the next `size` events handed out on it** —
 ## see `EventDirector.rig_her_route()` and `MarbleBag.rig()`. A place among them is handed to her walk
@@ -1820,9 +1824,9 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 		if not _director.clear_of_the_doors(path, def):
 			return false
 		var instance := spawn_warned(def, path, pelican)
-		Telemetry.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
+		trace.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
 				% [instance.logged_name(), place.distance_to(at),
-				TelemetryLog.tile(_map.world_to_tile(at))])
+				RunTrace.tile(_map.world_to_tile(at))])
 		return true
 	var warning := warn_first(def, her, where, arrive)
 	if warning:
@@ -1843,8 +1847,8 @@ func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 		return
 	var instance := _spawn_unplanned(def, path[0], path)
 	instance.resume(age_when_warned(def), 0.0)
-	Telemetry.note("ahead", "%s comes at her from %.0fpx in front of her at %s, unannounced"
-			% [def.id, place.distance_to(her), TelemetryLog.tile(_map.world_to_tile(her))])
+	trace.note("ahead", "%s comes at her from %.0fpx in front of her at %s, unannounced"
+			% [def.id, place.distance_to(her), RunTrace.tile(_map.world_to_tile(her))])
 
 ## A pursuer the director sends at her down her heading — `charging_dog`, on the day it teaches the
 ## run and when it is sprinkled into a later one — warned first *(M226, PLAYTEST-145: "the new system
@@ -1861,8 +1865,8 @@ func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void
 		return PendingWarning.along_her_heading(_map, def, at, direction, _visible)
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		spawn_warned(def, PackedVector2Array([place]))
-		Telemetry.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
-				% [def.id, place.distance_to(at), TelemetryLog.tile(_map.world_to_tile(at))])
+		trace.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
+				% [def.id, place.distance_to(at), RunTrace.tile(_map.world_to_tile(at))])
 		return true
 	var warning := warn_first(def, her, where, arrive)
 	if warning:
@@ -1874,8 +1878,8 @@ func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void
 	_owe_pursuer_again(def)
 	if not _pursuer_failure_logged:
 		_pursuer_failure_logged = true
-		Telemetry.note("ahead", "%s has nowhere off screen to stand down her heading at %s; owed again"
-				% [def.id, TelemetryLog.tile(_map.world_to_tile(her))])
+		trace.note("ahead", "%s has nowhere off screen to stand down her heading at %s; owed again"
+				% [def.id, RunTrace.tile(_map.world_to_tile(her))])
 
 ## A pursuer the director sent that found nowhere off screen to stand, or whose warning was
 ## withdrawn: tried again down her current heading after a second of walking, the director's own
@@ -1919,11 +1923,11 @@ func _site_what_is_on_her_way(delta: float) -> void:
 		# Where and why, because nothing else records it: the siting depends on the walk she took
 		# and no seed reproduces it from outside. The same `ahead` entry the director's crossings
 		# write, for the same reason.
-		Telemetry.note("ahead", "%s is sited %.0fpx ahead of her at %s, %s of where she is at %s" % [
+		trace.note("ahead", "%s is sited %.0fpx ahead of her at %s, %s of where she is at %s" % [
 			plan.def.id, plan.position.distance_to(body.global_position),
-			TelemetryLog.tile(_map.world_to_tile(plan.position)),
+			RunTrace.tile(_map.world_to_tile(plan.position)),
 			_heading_name(body.velocity.normalized()),
-			TelemetryLog.tile(_map.world_to_tile(body.global_position))])
+			RunTrace.tile(_map.world_to_tile(body.global_position))])
 
 ## **A day 3 she wins with the fire never met still burns.** *"I agree with the fire fix"*
 ## (PLAYTEST-121). Lights whatever the day owed her walk and never got to put in the world — day 3's
@@ -1974,8 +1978,8 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		EventBus.event_lit_unmet.emit(plan.def.id)
 		# Where and why, because nothing else records it: which site a dusk fire took depends on
 		# where she finished the day, and no seed reproduces that from outside.
-		Telemetry.note("ahead", "%s was never met: lit at dusk at %s, %.0fpx from where she "
-				% [plan.def.id, TelemetryLog.tile(_map.world_to_tile(plan.position)),
+		trace.note("ahead", "%s was never met: lit at dusk at %s, %.0fpx from where she "
+				% [plan.def.id, RunTrace.tile(_map.world_to_tile(plan.position)),
 				plan.position.distance_to(at)] + "finished the day")
 		return true
 	return false
@@ -2148,8 +2152,8 @@ func _check_detentions() -> void:
 	# `VisitCounter`'s own "chat"/"checkpoint" — `nearest.def.id` names which. See
 	# docs/TELEMETRY.md, "The page counts visits".
 	EventBus.player_detained.emit(nearest.def.id)
-	Telemetry.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
-		nearest.def.id, TelemetryLog.tile(_map.world_to_tile(nearest.global_position)),
+	trace.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
+		nearest.def.id, RunTrace.tile(_map.world_to_tile(nearest.global_position)),
 		nearest.def.detain_seconds,
 		"awake" if nearest.baby_awake else "asleep",
 		("+%.0f" % Tuning.CHAT_EXCITEMENT) if nearest.baby_awake else "+0 (asleep)"])
@@ -2264,8 +2268,8 @@ func _release_finished_door_detentions(body: Stroller) -> void:
 		body.release_camera_focus()
 		_latch_everything_she_was_let_out_into(released_at)
 		door_crossed.emit(instance.global_position, axis, true)
-		Telemetry.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
-			instance.def.id, TelemetryLog.tile(_map.world_to_tile(instance.global_position)),
+		trace.note("checkpoint", "%s at %s, %.1fs, released on the %s side" % [
+			instance.def.id, RunTrace.tile(_map.world_to_tile(instance.global_position)),
 			instance.def.detain_seconds, _compass_of(axis, released_along)])
 
 ## Arms a `ReleaseLatch` for **every** redetaining body whose own trigger `at` is inside, not only
@@ -2357,8 +2361,8 @@ func _watch_the_door_lines(delta := 0.0) -> void:
 	if not crossed:
 		return
 	_walked_under += 1
-	Telemetry.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
-		crossed.def.id, TelemetryLog.tile(_map.world_to_tile(crossed.global_position)),
+	trace.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
+		crossed.def.id, RunTrace.tile(_map.world_to_tile(crossed.global_position)),
 		_heading_name(here - was),
 		(", the boom up" if crossed.is_raised() else ", the boom down")
 		if crossed.def.lifts_for_traffic else ""])
@@ -2406,8 +2410,8 @@ func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
 	_crossing_hut = hut
 	_crossed_to = signf((here - crossed.global_position).dot(crossed.facing_now()))
 	_crossing_for = 0.0
-	Telemetry.note("checkpoint", "%s at %s warns her: back across within %.1fs or a guard comes" % [
-		hut.def.id, TelemetryLog.tile(_map.world_to_tile(hut.global_position)),
+	trace.note("checkpoint", "%s at %s warns her: back across within %.1fs or a guard comes" % [
+		hut.def.id, RunTrace.tile(_map.world_to_tile(hut.global_position)),
 		Tuning.CROSSING_WARNING])
 	return true
 
@@ -2468,7 +2472,7 @@ func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
 	return false
 
 func _call_off_the_crossing(why: String) -> void:
-	Telemetry.note("checkpoint", "the crossing's warning is called off after %.1fs: %s"
+	trace.note("checkpoint", "the crossing's warning is called off after %.1fs: %s"
 			% [_crossing_for, why])
 	_crossing = null
 	_crossing_hut = null

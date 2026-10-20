@@ -164,7 +164,7 @@ var _readout_requested := false
 ## The validated `--skip` words, for the readout's own `skip` line; empty whenever
 ## `_readout_requested` is false.
 var _skip_words: Array[String] = []
-## The readout's first line, `TitleScreen.build_text()` — `git describe`'s form and the commit —
+## The readout's first line, `BuildInfo.build_text()` — `git describe`'s form and the commit —
 ## read on the first frame that assembles the readout and kept, since a working tree pays two
 ## `git` spawns for the answer and a release page with neither flag never pays them at all.
 var _build_text := ""
@@ -184,8 +184,13 @@ var _player: Stroller
 var _baby: Baby
 var _day: DayController
 var _resistance: ResistanceDirector
-## Null unless the run is being traced. See src/autoload/telemetry.gd.
-var _observer: TelemetryObserver
+## The run log's owner for this boot — see `RunSession`. Built first in `_ready()`; null for a
+## script-only `main` a test drives with no boot behind it.
+var _session: RunSession
+
+## The trace this boot hands game logic: the session's, or a silent one for a script-only `main`.
+func _the_trace() -> RunTrace:
+	return _session.trace if _session else RunTrace.new()
 var _hud: CanvasLayer
 ## Kept because the telemetry observer asks it what she is being warned about; the layer around it
 ## is kept only so the title screen can take it off the street.
@@ -274,6 +279,11 @@ var _run_over := false
 var _ending_shown := false
 ## Whether the title screen is up, with the city running behind it and nobody in it.
 var _in_the_title := false
+
+## The same, asked: what the frame trace and the frame record are handed, so they stop sampling
+## behind the title without reading this node's fields.
+func in_the_title() -> bool:
+	return _in_the_title
 ## `GameSave.try_resume()`'s own return: `{}` on a fresh run, or `{"day_under_way": bool}` once
 ## `GameState` already carries a resumed run's fields — set once in `_ready()` and read by
 ## `_on_title_start()`, which is the only place the title's own dismissal is not simply "start
@@ -353,6 +363,13 @@ func _ready() -> void:
 	Telemetry.configure(config)
 	GameSave.configure(config)
 	VisitCounter.configure(config)
+	# The run log's owner, listening on the bus from here on, and the trace everything this boot
+	# builds writes its own account into.
+	_session = RunSession.new()
+	_session.name = "RunSession"
+	add_child(_session)
+	_session.setup(Telemetry, config, EventBus)
+	GameState.use_trace(_session.trace)
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
 	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits
@@ -451,14 +468,9 @@ func _ready() -> void:
 		_ready_escape()
 		return
 	# After the run seed is settled and before anything is generated, so the log opens on the
-	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
-	# behind a flag is a trace the person playtesting has to remember to turn on. This is a
-	# player-facing opt-out rather than developer furniture, so it answers on every build.
-	# A run carried on from a checkpoint keeps writing the log it already has, the way the escape's
-	# handover does: `Telemetry` is an autoload and outlives the reload.
-	if not config.no_telemetry \
-			and not (_carried_from_a_checkpoint and Telemetry.is_active()):
-		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
+	# seed it is a trace of. A run carried on from a checkpoint keeps writing the log it already
+	# has — see `RunSession.open()`.
+	_session.open(GameState.run_seed, _somebody_is_playing(), _carried_from_a_checkpoint)
 	# Before the city, before the player, before the title: every page a day can draw is on disk
 	# already and this is the last moment nobody is watching a frame. After the log is open, so
 	# the run log carries a line per page with the moment it loaded in — see `AtlasLibrary`.
@@ -536,6 +548,7 @@ func _ready() -> void:
 	_resistance.name = "Resistance"
 	add_child(_resistance)
 	_pauses_with_the_game(_resistance)
+	_resistance.trace = _the_trace()
 	_resistance.setup(_city, _city.map)
 	# The director's two questions about her view — no camera of its own, so it asks the day's one
 	# view (`VisibleView`) rather than growing a second one: "has she seen this" for a mark's notice,
@@ -550,25 +563,20 @@ func _ready() -> void:
 	_day.setup(_city.map, _player)
 	_day.day_finished.connect(_on_day_finished)
 
-	# Only when a run is actually being traced: with telemetry off there is no observer in the
-	# tree at all, rather than one checking a flag sixty times a second.
-	if Telemetry.is_active():
-		_observer = TelemetryObserver.new()
-		_observer.name = "Telemetry"
-		add_child(_observer)
-		_pauses_with_the_game(_observer)
-		_observer.setup(_city, _player, _baby, _day, _resistance, config.spikes_requested, _edge)
+	_session.watch_day(_city, _player, _baby, _day, _resistance, _edge)
 
 	if config.frame_trace_requested:
 		var trace := FrameTrace.new()
 		trace.name = "FrameTrace"
 		add_child(trace)
-		trace.setup(self, _city, _player, _day, Array(config.active_args))
+		trace.setup(in_the_title, func() -> bool: return _layer_readout_on,
+				func() -> bool: return _layer_graph_on, _city, _player, _day,
+				Array(config.active_args))
 
 	if config.frame_record_requested:
 		_frame_recorder = FrameRecorder.new()
 		add_child(_frame_recorder)
-		_frame_recorder.setup(self, _city, _player, _day)
+		_frame_recorder.setup(in_the_title, _city, _player, _day)
 
 	# Built before `_start_day()`, which calls `_route_rig.start_day()` once the day it is meant
 	# to walk actually exists — see `src/dev/route_rig.gd`.
@@ -678,22 +686,11 @@ func _ready_escape() -> void:
 		if config.has_recipe:
 			GameState.day = config.day_override
 		_apply_the_mode_flags()
-	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
-	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
-	# both need an active log to write anything at all — see `Telemetry.start_burst()`'s own
-	# "no drawable viewport" refusal, which is really "no active log", not a rendering question.
-	if not config.no_telemetry:
-		# `Telemetry` is an autoload and survives the scene reload a handover comes through, so a
-		# run that walked fourteen days and then reached this keeps writing the log it already has
-		# — `begin_run()` would close it and open a second directory for one run. A cold launch
-		# into a section, and the flag's own boot, have no log yet and open one.
-		if not Telemetry.is_active():
-			Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
-		# And the escape's own timestamped section, which is what makes every line below carry an
-		# elapsed time — the day's `Telemetry.begin_day()` is the only other thing that opens one
-		# and nothing on this boot reaches it. Immediately after the run is opened, so the plan
-		# line `_plan_the_finale_city()` writes already falls inside it.
-		Telemetry.begin_finale(GameState.run_seed, config.escape_section_length())
+	# A run that walked fourteen days and handed over keeps writing the log it already has; a cold
+	# launch into a section, and the flag's own boot, open one. Then the escape's own timestamped
+	# section, so the plan line `_plan_the_finale_city()` writes already falls inside it.
+	_session.open(GameState.run_seed, _somebody_is_playing(), true)
+	_session.open_the_escape(config.escape_section_length())
 	# This boot's own startup, and the one place `interior` is ever loaded: the escape is the only
 	# thing that goes inside a building, so no ordinary day pays for those forty-one pictures.
 	#
@@ -783,6 +780,8 @@ func _ready_escape() -> void:
 		_build_the_escape_building()
 
 	_apply_orientation()
+	# What the run log's observer watches of the escape, before the first section starts.
+	_session.watch_escape(_player, _baby, _finale.clock(), _edge)
 	_finale.begin(FinaleController.Section.CITY if start_at_the_city
 			else FinaleController.Section.BUILDING)
 	# `begin()` just emitted `section_started` synchronously, which is what puts her (and her own
@@ -881,6 +880,7 @@ func _make_player() -> Stroller:
 ## before `build()` reads them — either boot builds its city through here.
 func _new_city() -> City:
 	var city: City = CITY.instantiate()
+	city.trace = _the_trace()
 	city.ground_mode = config.ground_mode as SceneryGround.Mode
 	city.scenery_frame_locked = config.recipe_scripted
 	city.skip_shadows = config.skip_shadows
@@ -919,6 +919,7 @@ func _build_the_escape_building() -> void:
 	_interior_events = InteriorEvents.new()
 	_interior_events.name = "InteriorEvents"
 	_interior_events.skip_drawing = config.skip_events
+	_interior_events.trace = _the_trace()
 	add_child(_interior_events)
 	_pauses_with_the_game(_interior_events)
 	_interior_events.setup(_interior, GameState.day_rng(GameState.day, "finale-interior"))
@@ -1002,7 +1003,7 @@ func _plan_the_finale_city() -> void:
 	# anything, and a run with telemetry off still has a console.
 	print("[Main] finale planned in %d ms (seed %d): %s"
 			% [Time.get_ticks_msec() - elapsed, _city.map.seed_used, plan.summary()])
-	Telemetry.note("plan", "finale: %s" % plan.summary())
+	_the_trace().note("plan", "finale: %s" % plan.summary())
 
 ## `--start-escape`'s raw word (`config.start_escape_at`), mapped onto the `InteriorMap.PARTS` waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
@@ -1110,7 +1111,10 @@ func _on_finale_section_started(section: int, restarted: bool) -> void:
 	# that just reached a hundred is what lost the section.
 	_baby.reset()
 	_baby.force_sleep()
-	_observe_the_section(section, restarted)
+	if section == FinaleController.Section.BUILDING:
+		EventBus.escape_section_started.emit(section, restarted, _interior, _interior_events)
+	else:
+		EventBus.escape_section_started.emit(section, restarted, _city, _city.events)
 	if _interior:
 		_interior.clear_fade()
 	# **A genuinely resumed escape opens on the title first, the way a resumed day does** — see
@@ -1178,15 +1182,10 @@ var _finale_brief_open := false
 ## hands over rather than drawing a second kind of screen. A normal run spends nothing: no Nerve,
 ## no calendar, and `GameState`'s day is untouched. A hard run spends a Nerve, and its last one is
 ## the bad ending instead of the section again.
-func _on_finale_section_lost(_section: int, result: int) -> void:
-	# Written before the restart, so the entry carries the second the section was lost at rather
-	# than the second the retry began. Without it the log shows the timestamps marching up and then
-	# starting again with nothing in between to say why.
-	if _observer:
-		_observer.section_lost(result)
-	# `VisitCounter`'s own "the escape: … or lost" — no section named, see `EventBus.escape_lost`'s
-	# own doc for why.
-	EventBus.escape_lost.emit()
+func _on_finale_section_lost(section: int, result: int) -> void:
+	# Before the restart, so the run log's entry carries the second the section was lost at rather
+	# than the second the retry began, and the page counts the loss.
+	EventBus.escape_lost.emit(section, result)
 	# **Hard mode's escape spends a nerve on every lost section**, and the last one is the bad
 	# ending rather than the section again. *(gentle-osprey, the player: "with hard mode the escape
 	# also has normal nerve counts and ends if nerves go to zero (instead of restarting
@@ -1199,27 +1198,6 @@ func _on_finale_section_lost(_section: int, result: int) -> void:
 		_summary.show_ending(GameState.ending, GameState.day)
 		return
 	_finale.restart_section()
-
-## The escape's run log, watched the way a day's is — see `TelemetryObserver`'s class doc. Built
-## the first time a section starts, because that is the first moment everything it reads exists:
-## her, the baby, the badge and the section's clock. Every start after that points it at the world
-## this section is walked in and clears the last attempt, which is also what writes the `start`
-## line a retry opens with. **Only while a run is being traced**, the same rule `_ready()` builds a
-## day's observer by: with telemetry off there is no observer at all.
-func _observe_the_section(section: int, restarted: bool) -> void:
-	if not Telemetry.is_active():
-		return
-	if not _observer:
-		_observer = TelemetryObserver.new()
-		_observer.name = "Telemetry"
-		add_child(_observer)
-		_pauses_with_the_game(_observer)
-		_observer.setup_escape(_player, _baby, _finale.clock(), config.spikes_requested, _edge)
-	if section == FinaleController.Section.BUILDING:
-		_observer.watch_building(_interior, _interior_events)
-	else:
-		_observer.watch_city(_city)
-	_observer.start_section(restarted)
 
 ## Where section two starts and restarts: the service exit, on the street beside the home block.
 func _finale_start_position() -> Vector2:
@@ -1235,12 +1213,9 @@ func _finale_start_position() -> Vector2:
 ## a game closed in a section still has somewhere to come back to.
 func _on_finale_escaped(exit_kind: int) -> void:
 	_hud.visible = false
-	# Before `finish_day()`, whose `ending` line closes the run: the way out is part of how it ended.
-	if _observer:
-		_observer.escaped(exit_kind)
-	# `VisitCounter`'s own "the escape: … got out" — `EventBus.run_ended` fires beside this, a
-	# moment later, from `GameState.finish_day()` below.
-	EventBus.escape_out.emit()
+	# Before `finish_day()`, whose `ending` line closes the run: the way out is part of how it
+	# ended. `EventBus.run_ended` fires a moment later, from `GameState.finish_day()` below.
+	EventBus.escape_out.emit(exit_kind)
 	if _escape_from_a_run:
 		_run_over = not GameState.finish_day(GameEnums.DayResult.WON)
 	_summary.show_finale(exit_kind, _finale.section_length - _finale.time_remaining())
@@ -1431,11 +1406,9 @@ func _open_the_title() -> void:
 ## different places depending on which screen raised it.
 func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 		side := ControlsMode.Side.LEFT) -> void:
-	# `VisitCounter`'s own cheap "etc." — which control scheme was picked, or that a key began the
-	# run. `mode` as `int`: a cross-script enum is not the same type as itself as a signal
-	# parameter (see the **godot** skill), the same reason `FinaleController`'s own signals pass
-	# theirs that way.
-	EventBus.controls_chosen.emit(mode, by_key)
+	# Which control scheme was picked, or that a key began the run: the HUD rewords its walking
+	# lesson by it and the page counts it.
+	EventBus.controls_chosen.emit(mode == ControlsMode.Mode.JOYSTICK, by_key)
 	_touch_controls.set_mode(mode, side)
 	ControlsMode.remember(mode, side)
 	_in_the_title = false
@@ -1988,10 +1961,6 @@ func _start_day() -> void:
 	# reported, and the HUD showed nothing.
 	EventBus.day_started.emit(GameState.day)
 
-	# Before anything is placed, because placing it is what writes the day's `arc`, `roll` and
-	# `contact` entries and they belong under today's header rather than yesterday's.
-	Telemetry.begin_day(GameState.day, GameState.current_act(), GameState.run_seed,
-			_city.map.seed_used, day_length)
 
 	# Events and the contact are placed before the player, so --spawn has something to find
 	# and so nothing spawns on top of her.
@@ -2058,21 +2027,11 @@ func _start_day() -> void:
 			% [GameState.day, Time.get_ticks_msec() - elapsed, GameState.current_act(),
 			_city.events.planned_count(), _city.events.active_count(), _city.events.owed_ahead(),
 			_city.crowd.agent_count(), _day.time_total]
-			+ "| calm: %s | closed: %s" % [_calm_summary(), _closure_summary()])
+			+ "| calm: %s | closed: %s" % [_city.calm_summary(), _city.closure_summary()])
 
-	# The shape of the day, written down last because it is only true once everything has been
-	# placed. Three lines rather than one: what is shut, where the calm is, and what is out —
-	# the three things a reader needs before any of the entries below them mean anything.
-	Telemetry.note("plan", "closed: %s" % _closure_summary())
-	Telemetry.note("plan", "calm: %s" % _calm_summary())
-	Telemetry.note("plan", "events: %s" % _event_summary())
-	# And the same three lines as a picture. After them, because it is the same information and a
-	# reader who has the log open should meet the words first; per day, because the closures and
-	# what each block *is* both moved above. See `TelemetryMap`.
-	Telemetry.write_map(_city.map, GameState.day, _city.closures(), _city.route_tree(),
-			_city.events.plans())
-	if _observer:
-		_observer.start_day()
+	# Last, because the day's shape is only true once everything has been placed: the run log
+	# writes its plan lines, its dawn picture and her `start` line here.
+	EventBus.day_planned.emit(GameState.day)
 	if _route_rig:
 		_route_rig.start_day()
 
@@ -2156,50 +2115,7 @@ func _prepare_city_scenery() -> void:
 	_city.scenery.update(Rect2(camera.get_screen_center_position() - world_size * 0.5,
 			world_size), true)
 
-## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day
-## now that a day can only be won on calm ground.
-func _calm_summary() -> String:
-	var counts := {}
-	for block in _city.map.calm_blocks:
-		var name: String = GameEnums.BlockPurpose.keys()[
-			GameState.city_state.purpose_of(_city.map.block_plans, block)].to_lower()
-		counts[name] = counts.get(name, 0) + 1
-	var parts: Array[String] = []
-	for name: String in counts:
-		parts.append("%d %s" % [counts[name], name])
-	parts.sort()
-	return ", ".join(parts) if not parts.is_empty() else "none"
-
-## Which streets are shut today and what shut them. Worth printing rather than counting,
-## because "the route was awful today" and "the closure landed on the one street that
-## mattered" look identical from a count.
-func _closure_summary() -> String:
-	var parts: Array[String] = []
-	for closure in _city.closures():
-		parts.append("%s %s%s" % [
-			RoadClosure.display_name(closure.kind).to_lower(),
-			"h" if closure.segment.horizontal else "v",
-			TelemetryLog.tile(closure.segment.a)])
-	return ", ".join(parts) if not parts.is_empty() else "none"
-
-## Today's events by id. Counted rather than listed one per line: which of the catalogue's kinds
-## are out is what makes a day, and where each instance stands is only interesting for the ones
-## the player actually walked into — which the `near` entries cover, at the moment it matters.
-##
-## The *plan*, not what is live. What is live is a fact about where the player is standing this
-## frame, and the question this line answers is what the day contains.
-func _event_summary() -> String:
-	var counts := {}
-	for plan in _city.events.plans():
-		counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
-	var parts: Array[String] = []
-	for id: String in counts:
-		parts.append("%s x%d" % [id, counts[id]] if counts[id] > 1 else id)
-	parts.sort()
-	return ", ".join(parts) if not parts.is_empty() else "none"
-
-## `EventBus.day_lost_to`'s own cause for a hard-fail day, named for `VisitCounter`, which folds it
-## into the one event a lost day sends (`VisitCounter._loss_event_suffix()`): `car` for the one
+## What ended a hard-fail day, as `EventBus.day_ended` carries it: `car` for the one
 ## hard fail that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
 ## `Crowd._strike()`), otherwise the id off whatever row actually struck her
 ## (`EventBus.hard_fail_triggered(instance.def.id)`, `EventManager._check_hard_fails()`) —
@@ -2216,8 +2132,8 @@ static func _hard_fail_cause_suffix(reason: String, struck_by := "") -> String:
 		return "car"
 	return (struck_by if struck_by != "" else reason).replace("_", "-")
 
-## `EventBus.day_lost_to`'s own cause for a crying day, folded into the one event a lost day sends
-## (`VisitCounter._loss_event_suffix()`): whichever group in `landed_by_group` (see
+## What ended a crying day, as `EventBus.day_ended` carries it: whichever group in
+## `landed_by_group` (see
 ## `_crying_landed_by_group()` below) landed the most on her over the crying window — a catalogue id
 ## (hyphenated), `crowd` for walkers, `traffic` for cars, or `self` for her own running and standing
 ## in an alley.
@@ -2284,8 +2200,8 @@ static func _group_what_events_landed(instances: Array[EventInstance], by_group:
 			var name := instance.logged_name()
 			by_group[name] = float(by_group.get(name, 0.0)) + points
 
-## What ended a crying or hard-fail day, named the way `EventBus.day_lost_to` carries it, or "" for a
-## win or a timeout, whose own names already say everything. See `_hard_fail_cause_suffix()` and
+## What ended a crying or hard-fail day, as `EventBus.day_ended` carries it, or "" for a win or a
+## timeout, whose results already say everything. See `_hard_fail_cause_suffix()` and
 ## `_crying_cause_suffix()`.
 func _loss_cause(result: GameEnums.DayResult) -> String:
 	match result:
@@ -2308,57 +2224,24 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	# **A day she wins with day 3's fire never met still burns.** The row's only day is day 3 and it
 	# is spent when it enters the world, so a won day on which every siting was refused would leave
 	# the run with no fire, no scar and no shell for day 4 to come out to. Lit here, off her path,
-	# on a site the dawn rules accept — before the observer's own line below, since it happened in
-	# the day rather than after it, and before `GameState.finish_day()`, which is what commits a won
+	# on a site the dawn rules accept — before the day's end below, since it happened in the day
+	# rather than after it, and before `GameState.finish_day()`, which is what commits a won
 	# day's spending. A lost day gives everything back, so it is asked of a win only. See
 	# `EventManager.light_what_she_never_met()`.
 	if result == GameEnums.DayResult.WON and _player:
 		_city.events.light_what_she_never_met(_player.global_position)
-	# What ended the day, read once in the frame it ended (see `_crying_landed_by_group()`), for
-	# the run log's `lost` line and the counter's loss event alike, so the two name it the same way.
+	# What ended the day, read once in the frame it ended (see `_crying_landed_by_group()`).
 	var cause := _loss_cause(result)
-	# Before the calendar moves, so the outcome is written above the nerve it cost — and
-	# before `end_day()` stops the clock, so it is timestamped where it happened.
-	if _observer:
-		_observer.day_finished(result, cause)
-	# `VisitCounter`'s own "what ended a day" — before `day_ended` below, so it can fold this cause
-	# into the one event it sends when `day_ended` fires, and only for the two results whose own
-	# name does not already say what filled the meter or which row struck her; `LOST_TIMEOUT`'s
-	# existing `nappy-day-N-lost-timeout` already says everything about a clock that simply ran
-	# out. See `EventBus.day_lost_to`'s own doc and docs/TELEMETRY.md, "The page counts visits".
-	if cause != "":
-		EventBus.day_lost_to.emit(finished_day, cause)
 	# Every charge still running ends for the page's charging counter, cut short by the day
 	# (`EventManager.end_the_charges_still_running()`), on the day it was charged.
 	if _city and _city.events:
 		_city.events.end_the_charges_still_running()
-	# `VisitCounter`'s own "each day's end, won or lost and to what" — `finished_day` rather
-	# than `GameState.day`, since a won final day hands over to the escape before the calendar
-	# would otherwise move past it. Fires whether or not a run log is being kept.
-	EventBus.day_ended.emit(finished_day, result)
-	# The same picture again, now that the day has been walked: the marks she reached carry a pip
-	# and the rest do not, and the trail she actually left is drawn against the corridor the day
-	# planned for her — which is the one thing the dawn map cannot say. `_observer` is only in the
-	# tree while a run is being traced, so both are empty rather than missing when it is not — see
-	# `Telemetry.write_map`. Before `end_day()`, so it belongs to the day it is of.
-	#
-	# **Not a ternary.** `_observer.trail() if _observer else []` assigned straight into a typed
-	# `Array[Vector3]` throws at runtime — the `else` branch is a bare untyped `Array`, which is not
-	# the declared type, and Godot only catches the mismatch when the line actually runs rather than
-	# at parse time. `_observer` is null on every build with telemetry off (`--no-telemetry`, and
-	# every Web export, since `Telemetry` disables itself there), which is exactly the ordinary
-	# shape nothing in the suite ran this line under — an untraced day ending threw here, before
-	# `_summary.show_day()` below ever ran, which is the whole of "the meter reached 100 and the day
-	# would not end": the day had already ended and silently stopped telling anything downstream.
-	var trail: Array[Vector3] = []
-	if _observer:
-		trail = _observer.trail()
-	# `met` is a plain, untyped `Dictionary` (no `[K, V]`), so `{}` on either side of the ternary is
-	# the same type either way and this one was never the trap the trail line was.
-	var met: Dictionary = _observer.met_events() if _observer else {}
-	Telemetry.write_map(_city.map, finished_day, _city.closures(), _city.route_tree(),
-			_city.events.plans(), true, trail, met)
-	Telemetry.end_day()
+	# The one place a day's attempt ends, with everything about it: the run log writes the outcome
+	# and the dusk picture and closes the day's section, and the page counts it — `finished_day`
+	# rather than `GameState.day`, since a won final day hands over to the escape before the
+	# calendar would otherwise move past it. Before the calendar moves, so the outcome is written
+	# above the nerve it cost.
+	EventBus.day_ended.emit(finished_day, result, cause, elapsed_seconds)
 	# **The last night hands over rather than ending.** *(PLAYTEST-113: "the escape the building
 	# starts when the player has completed all tasks by the end of day 14".)* A won day 14 with
 	# every task complete is the good ending, and the good ending is now a walk rather than a
@@ -2499,12 +2382,13 @@ func _restart_run() -> void:
 	# reach this one function, so no new control is drawn for it. A deletion is a change in the save
 	# state, which the symbol shows (`GameSave.clear()` announces it on `EventBus`); a restart after
 	# `GameState._end_run()` already deleted the save finds none and changes nothing, so it shows
-	# nothing. **Before `Telemetry.end_run()`, which closes the run log**: the "deleted the save"
+	# nothing. **Before the session closes the run log**: the "deleted the save"
 	# line, and the "deletion was not kept" line when a deletion fails at once, belong to this run's
 	# log. A web deletion's later answer is logged only if a log is open when it arrives, so it
 	# may land in the next run's log after the reload.
 	GameSave.clear()
-	Telemetry.end_run()
+	if _session:
+		_session.close()
 	# And with it the run's record of being in the escape, which outlives the scene reload below
 	# because it lives on an autoload. Left set, the fresh boot would skip its own `start_run()` and
 	# open the escape again over a run that was just thrown away. A no-op for a restart from an
@@ -2640,7 +2524,7 @@ func _process(delta: float) -> void:
 		return
 	var tile := _city.map.world_to_tile(_player.global_position)
 	if _build_text == "":
-		_build_text = TitleScreen.build_text()
+		_build_text = BuildInfo.build_text()
 	# The `skip` line names what `_skip_words` is off, directly beneath the seed line, so a
 	# screenshot taken under `--skip` says what it measured — absent when nothing is skipped, the
 	# ordinary case, so an unflagged readout carries no empty line where this one would go.
@@ -2698,8 +2582,8 @@ func _frame_record_lines() -> Array[String]:
 ## `EventManager` streams itself around her (`EventManager._physics_process`), so section two needs
 ## nothing here to keep its own events stocked.
 ##
-## The run log's clock is not pushed here: the escape has the observer a day has
-## (`_observe_the_section()`), which mirrors the section's own clock the way it mirrors a day's.
+## The run log's clock is not pushed here: the escape has the observer a day has (`RunSession`
+## points it at each section), which mirrors the section's own clock the way it mirrors a day's.
 func _process_the_finale(delta: float) -> void:
 	# Nothing of the walk is asked while its brief is up. This node runs through a pause (it has to,
 	# or Esc would not answer), so without this the door under her feet and the exit she is standing
@@ -2728,7 +2612,7 @@ func _write_the_escape_readout(delta: float) -> void:
 	if not _readout_due(delta):
 		return
 	if _build_text == "":
-		_build_text = TitleScreen.build_text()
+		_build_text = BuildInfo.build_text()
 	var here := _player.global_position
 	var lines: Array = [
 		"build %s" % _build_text,
@@ -3206,17 +3090,20 @@ func _capture_context() -> String:
 	return "(%d,%d) | %s | %s" % [where.x, where.y, meters, screen]
 
 func _snapshot_now() -> void:
-	Telemetry.snapshot_now("asked for a picture at %s" % _capture_context())
+	if _session:
+		_session.picture(_capture_context())
 
 func _start_burst() -> void:
-	Telemetry.start_burst("asked for an animation burst at %s" % _capture_context())
+	if _session:
+		_session.burst(_capture_context())
 
 func _quit() -> void:
-	Telemetry.end_run()
+	if _session:
+		_session.close()
 	get_tree().quit()
 
-## Closing the window is the other way a run ends, and an abandoned run is worth reading —
-## every line is already on disk, so this only closes the handle tidily.
+## Closing the window is the other way a run ends, and the run session closes the log for it
+## (`RunSession._notification()`).
 ##
 ## `NOTIFICATION_APPLICATION_FOCUS_OUT` is the one this game has exactly one window to lose: it
 ## fires whenever the OS gives focus to a different application, which is the whole of "Alt-Tabbing
@@ -3230,9 +3117,7 @@ func _quit() -> void:
 ## resume (see `_pause_on_focus_lost()`'s own doc) and starts the 500ms during which the viewport
 ## delivers no input at all (`RETURN_INPUT_IGNORED_MSEC`, `_arm_the_return_window()`).
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		Telemetry.end_run()
-	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
 		_note_leaving_the_game()
 		_pause_on_focus_lost()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:

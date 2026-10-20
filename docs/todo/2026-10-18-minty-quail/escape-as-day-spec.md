@@ -10,7 +10,7 @@ should be different" (minty-lemur #785). Today:
   `_on_finale_section_lost`) and its own `_process` branch and readout (`_process_the_finale`,
   `_write_the_escape_readout`). The `if _interior:` branch in `_process` (near 2540) cannot run.
 - **A lost section skips the day's finish path** (`_on_finale_section_lost` near 1138 against
-  `_on_day_finished` near 2256): no loss cause, no `day_lost_to`, no `day_ended`, no
+  `_on_day_finished` near 2256): no loss cause, no `day_ended` with its cause, no
   `end_the_charges_still_running`, no `Telemetry.write_map`/`end_day`, and the screen is the retry
   brief (`DaySummary.show_finale_brief`), whose doc says "There is no reason line and no lost note".
   The player: "losing an escape should still state the reason like the rest of the game. nothing

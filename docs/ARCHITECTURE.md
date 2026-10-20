@@ -21,6 +21,9 @@ src/
   main.gd                 boot: generate the city, drop the player on the doorstep, then the HUD
   run_config.gd           the run's configuration: every dev flag and the page's query, resolved
                           once at boot and never changed (see "Dev flags and release builds")
+  build_info.gd           which build is running: git's answer, or what an export baked
+  run_trace.gd            the sink game logic writes its account of a decision into, handed in
+  drawn_frame.gd          the wait for a frame the viewport has actually drawn, for any capture
   game_enums.gd           shared enums (see below)
   autoload/
 	tuning.gd             all balance constants           (autoload: Tuning)
@@ -79,6 +82,7 @@ src/
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, lifetime, telegraph, emission; every picture
 	                       it draws is a region of the baked `events` page, by path
+	charge_record.gd      a charger's warning, charge and the one way it ended, as counted
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + day
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
@@ -103,6 +107,8 @@ src/
 	frame_cost.gd         what a frame cost the renderer and the two loops, read off Godot's
 	                      Performance monitors in one place for both the readout and the log
 	telemetry_log.gd      one run's ordered lines, and the file they go to
+	run_session.gd        the run log's owner for a boot: opens and closes it, writes a day's
+	                      and a section's start and end off the bus, holds the observer
 	telemetry_observer.gd watches the player: turns, runs, crossings, encounters, where she
 	                      went and which events she met
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
@@ -453,8 +459,10 @@ since this autoload loads before `EventInstance`'s class does.
 
 ### `Telemetry`
 The run log: one plain-text file per run, written as it happens. **Inert until
-`begin_run()`**, which only `main.gd` calls — so the test suite, which never calls it, writes
-no files and pays nothing. `begin_run()` is also inert on a web export
+`begin_run()`**, which only `RunSession.open()` calls — so the test suite, which never opens one
+unless a test boots the game, writes no files and pays nothing. It is an observer: `RunSession`
+writes the run flow's lines off the bus, `TelemetryObserver` the walk's, and game logic its own
+account through the `RunTrace` it is handed — see docs/TELEMETRY.md, "Who writes it". `begin_run()` is also inert on a web export
 (`OS.has_feature("web")`), since `user://` there is a stranger's browser storage that nothing
 ever prunes — **unless the page's own `?telemetry=1` asks otherwise**, read from the query the run
 read at boot (`RunConfig.page_query`), since the deployed page has no command line, and honoured
@@ -474,8 +482,8 @@ Handles day transitions and ending selection. Serialisable for save/continue.
 ### `VisitCounter`
 Sends anonymous GoatCounter events for how far a run gets, and what a day actually ended on and
 met — see docs/TELEMETRY.md, "The page counts visits" for the full event list. Only listens: every
-method answers an `EventBus` signal — `run_begun`, `day_started`/`day_ended`, `day_lost_to`,
-`run_restarted`, `run_ended`, the resistance's own `resistance_contact_available`/
+method answers an `EventBus` signal — `run_begun`, `day_started`/`day_ended` (which carries what
+ended the day), `run_restarted`, `run_ended`, the resistance's own `resistance_contact_available`/
 `resistance_step_completed`/`_step_failed`/`_mark_seen`, `event_sighted`, `event_lit_unmet`,
 `city_gone_dark`, `pursuit_warned`/`pursuit_began`/`pursuit_caught`/`pursuit_cut_short`/`pursuit_ended`, `poster_torn`, `poster_pursuit_sent`,
 `player_detained`, `escape_begun`/`escape_city_entered`/`escape_lost`/`escape_out`,

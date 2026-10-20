@@ -161,7 +161,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 						+ " crossing in its beat")
 				t.check(not corridor.carries_a_route(tile),
 						"day %d: the wall '%s' at %s stands on no ground a route runs along"
-						% [day, plan.def.id, TelemetryLog.tile(tile)])
+						% [day, plan.def.id, RunTrace.tile(tile)])
 				if away == 0:
 					walls_across_the_street += 1
 				placed[plan.def.hard_fail] += 1
@@ -463,7 +463,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 			unavoidable_on_the_route += 1
 			if first == "":
 				first = "day %d, '%s' at %s" \
-						% [day, plan.def.id, TelemetryLog.tile(map.world_to_tile(plan.position))]
+						% [day, plan.def.id, RunTrace.tile(map.world_to_tile(plan.position))]
 	t.check(on_the_route > 5,
 			"the days sampled pace a row along the route's own sidewalk (%d)" % on_the_route)
 	t.check(walled >= 1,

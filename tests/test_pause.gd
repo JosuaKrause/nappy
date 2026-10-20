@@ -743,14 +743,14 @@ func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
 	pause.queue_free()
 
 ## The version line is the one thing on this screen not addressed to the player — see
-## `TitleScreen.version_text()`, which prefers `Telemetry.source_version()` (the `git describe`
+## `BuildInfo.version_text()`, which prefers `BuildInfo.source_version()` (the `git describe`
 ## form) and falls back to `application/config/version`, the setting `tools/export-web.sh` bakes
 ## into an export before it is built. This repo always has a `.git` to ask, so the git branch is
 ## what is asserted directly; the fallback is checked by asserting the baked setting itself is
 ## present and shaped right, since forcing "no repository" from inside a test would mean stubbing
 ## `OS.execute`, which `source_version()` deliberately does not go through an overridable seam for.
 ##
-## The commit beside it is the same two steps — `commit_text()` over `Telemetry.source_commit()`
+## The commit beside it is the same two steps — `commit_text()` over `BuildInfo.source_commit()`
 ## and `application/config/source_commit` — and `build_text()` is the two joined, which is what
 ## the "DEBUG MODE ON" note carries after its words, so the note is read back here as well.
 func _test_the_title_names_a_version(t) -> void:
@@ -759,23 +759,23 @@ func _test_the_title_names_a_version(t) -> void:
 	title.open()
 
 	t.check(title._version.text != "", "the title screen shows a version")
-	t.check(title._version.text == Telemetry.source_version(),
+	t.check(title._version.text == BuildInfo.source_version(),
 			"and it is git's own answer where git can give one (got '%s')" % title._version.text)
 
 	var baked: String = ProjectSettings.get_setting("application/config/version", "")
 	t.check(baked != "", "and the baked setting TitleScreen falls back to actually exists")
 	t.check(baked.begins_with("v"), "in the same vMAJOR.MINOR.PATCH shape tools/release.sh writes")
 
-	var commit := TitleScreen.commit_text()
-	t.check(commit == Telemetry.source_commit(),
+	var commit := BuildInfo.commit_text()
+	t.check(commit == BuildInfo.source_commit(),
 			"the commit is git's own answer where git can give one (got '%s')" % commit)
 	t.check(commit.length() >= 7 and commit.is_valid_hex_number(),
 			"and it is an abbreviated hash (got '%s')" % commit)
 	var baked_commit: String = ProjectSettings.get_setting("application/config/source_commit", "")
 	t.check(baked_commit != "", "and the baked setting commit_text falls back to actually exists")
 
-	var build := TitleScreen.build_text()
-	t.check(build.contains(TitleScreen.version_text()) and build.contains(commit),
+	var build := BuildInfo.build_text()
+	t.check(build.contains(BuildInfo.version_text()) and build.contains(commit),
 			"the build stamp is the describe form and the commit together (got '%s')" % build)
 	var note := DebugModeNote.new()
 	t.add_child(note)

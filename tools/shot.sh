@@ -151,7 +151,7 @@ fi
 # -- to about once a second on this Mac, which is what let `--after` run for minutes without
 # firing; disabling vsync keeps the loop running at its own pace regardless of focus or occlusion.
 # Running is not drawing: a covered window is still not drawn, so the capture draws its own frame
-# on demand (`AutoScreenshot.drawn_frame()`, src/dev/auto_screenshot.gd).
+# on demand (`DrawnFrame.wait()`, src/drawn_frame.gd).
 # See docs/DECISIONS.md, M195, "a rig's window takes no focus, hears no stray key, and always
 # closes" for the reproduction this fixes.
 #

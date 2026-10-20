@@ -107,6 +107,17 @@ var scars: Array[Dictionary] = []
 ## the run has got. See docs/CITY.md, "Block purposes".
 var city_state := CityState.new()
 
+## Where the run's own facts — a nerve spent, a checkpoint kept, the mode, the ending, where she
+## settled, a block's arc — are written down for the run log. Handed in by `use_trace()`; silent
+## until then.
+var _trace := RunTrace.new()
+
+## Hands the run the trace its facts are written to, and the city's arcs with it. `main` hands the
+## run session's at every boot; the test runner hands a silent one back between suites.
+func use_trace(sink: RunTrace) -> void:
+	_trace = sink
+	city_state.trace = sink
+
 ## What is pasted on the city's walls and how many sheets she has torn — see `PosterState`. A fact
 ## about the run like `scars`, photographed and given back with them, so a lost day's crews and
 ## tears did not happen. Not in `_SAVE_FIELDS`: it rides beside `escape_section` as its own
@@ -233,8 +244,8 @@ func remember_where_she_settled(block: Vector2i) -> void:
 	if settled_in.has(day):
 		return
 	settled_in[day] = block
-	Telemetry.note("calm", "settled in the calm block %s; tomorrow will know"
-			% TelemetryLog.tile(block))
+	_trace.note("calm", "settled in the calm block %s; tomorrow will know"
+			% RunTrace.tile(block))
 
 # ------------------------------------------------------------------ lifecycle ---
 
@@ -290,7 +301,7 @@ func choose_mode(hard: bool) -> void:
 	hard_mode = hard
 	if hard:
 		checkpoint = {}
-	Telemetry.note("nerve", "%s: %s" % ["hard mode" if hard else "normal mode",
+	_trace.note("nerve", "%s: %s" % ["hard mode" if hard else "normal mode",
 			"the last nerve ends the run" if hard
 			else "the last nerve goes back to the latest checkpoint"])
 
@@ -323,7 +334,7 @@ func _keep_a_checkpoint_if_one_is_due() -> void:
 	if hard_mode or escape_section != 0 or not is_checkpoint_day(day) or day <= checkpoint_day():
 		return
 	checkpoint = GameSave.run_data()
-	Telemetry.note("nerve", "day %d's dawn is the checkpoint a run out of nerves goes back to" % day)
+	_trace.note("nerve", "day %d's dawn is the checkpoint a run out of nerves goes back to" % day)
 
 ## Record the outcome of the day. Returns true if the run continues.
 ##
@@ -377,7 +388,7 @@ func finish_day(result: GameEnums.DayResult) -> bool:
 		# a game that bites early, and this is the entry that will say whether it survives it —
 		# a question a retry sharpens rather than settles, since five nerves now buy five
 		# attempts wherever they are needed instead of five days off the calendar.
-		Telemetry.note("nerve", "spent a nerve on day %d (act %d); %d left%s%s"
+		_trace.note("nerve", "spent a nerve on day %d (act %d); %d left%s%s"
 				% [day, current_act(), nerves,
 				"" if nerves <= 0 else " — day %d again" % day, also_undone])
 		if nerves <= 0:
@@ -436,7 +447,7 @@ func regain_a_nerve_for_a_won_day() -> void:
 func spend_a_nerve_in_the_escape() -> bool:
 	nerves -= 1
 	EventBus.nerves_changed.emit(nerves)
-	Telemetry.note("nerve", "spent a nerve in the escape; %d left" % nerves)
+	_trace.note("nerve", "spent a nerve in the escape; %d left" % nerves)
 	if nerves <= 0:
 		_end_run(GameEnums.Ending.BAD)
 		return false
@@ -464,7 +475,7 @@ func _go_back_to_the_checkpoint() -> void:
 	nerves = Tuning.STARTING_NERVES
 	EventBus.nerves_changed.emit(nerves)
 	EventBus.resistance_progress_changed.emit(resistance_progress)
-	Telemetry.note("nerve", "out of nerves on day %d — back to day %d's dawn, with every nerve"
+	_trace.note("nerve", "out of nerves on day %d — back to day %d's dawn, with every nerve"
 			% [lost_on, day])
 	EventBus.went_back_to_a_checkpoint.emit(day, lost_on)
 
@@ -477,7 +488,7 @@ func _end_run(which: GameEnums.Ending) -> void:
 	# `played` reuses the `ending` kind rather than adding a new one — how the run finished is
 	# exactly the question a run's own length answers alongside, and the telemetry skill's own
 	# "a kind reused from that table, not a synonym for one" does not want a second line for it.
-	Telemetry.note("ending", "%s on day %d — resistance %d/%d, sabotage %s, played %s" % [
+	_trace.note("ending", "%s on day %d — resistance %d/%d, sabotage %s, played %s" % [
 		GameEnums.Ending.keys()[which].to_lower(), day,
 		resistance_progress, Tuning.RESISTANCE_GOAL,
 		"done" if sabotage_done else "not done", format_clock(play_seconds)])

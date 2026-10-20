@@ -8,13 +8,16 @@ compare with instead (`TelemetryLog.note()` takes any `String`), so this reads b
 person auditing the drift by hand would, and requires them to be exactly equal: a kind written and
 undocumented, or documented and never written, both fail.
 
-- **Written**: every `Telemetry.note(<kind>, ...)` call under `src/`, and the bare `note(<kind>, ...)`
-  it becomes inside `src/autoload/telemetry.gd` itself. The kind is everything up to the first
-  comma after the open parenthesis, and every double-quoted `[a-z_]+` literal in it counts, so a
-  call that picks its kind at runtime from two literals (`"calm" if calm else "left"`) names both.
-  Scanned one line at a time, since `[^,]*` has no bound on a newline and would run on past a
-  definition with no comma on its line; a `#` comment line is skipped, and so is a bare `note(`
-  whose argument holds a `:`, which is the definition `func note(kind: String, ...)`.
+- **Written**: every `.note(<kind>, ...)` call on a receiver under `src/` — the autoload's
+  `Telemetry.note(` and the injected run trace's `trace.note(`, `_trace.note(`, `_the_trace().note(`
+  or `_log.note(` alike — the bare `note(<kind>, ...)` inside `src/autoload/telemetry.gd` itself, and
+  a file's own `_note(...)` helper, whose kind is its first argument, or its second where the first
+  is a bare name (`_note(trace, "plan", ...)`, the trace it hands on). The kind is everything up to
+  the next comma, and every double-quoted `[a-z_]+` literal in it counts, so a call that picks its
+  kind at runtime from two literals (`"calm" if calm else "left"`) names both. Scanned one line at a
+  time, since `[^,]*` has no bound on a newline and would run on past a definition with no comma on
+  its line; a `#` comment line is skipped, and so is a bare `note(` or `_note(` whose arguments
+  hold a `:`, which is a definition such as `func note(kind: String, ...)`.
 - **Documented**: every backticked `[a-z_]+` in the first cell of a table line that opens with
   ``| `kind` ``, so a backticked word in the "Answers" prose is never taken for a row.
 
@@ -30,8 +33,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-QUALIFIED = re.compile(r"Telemetry\.note\(([^,]*),")
+QUALIFIED = re.compile(r"\.note\(([^,]*),")
 BARE = re.compile(r"(?<![\w.])note\(([^,]*),")
+HELPER = re.compile(r"(?<![\w.])_note\(([^,]*),([^,]*)")
+NAME = re.compile(r"\s*[A-Za-z_]\w*\s*")
 LITERAL = re.compile(r"\"([a-z_]+)\"")
 DOC_WORD = re.compile(r"`([a-z_]+)`")
 
@@ -54,6 +59,11 @@ def kinds_written(sources: dict[str, str]) -> set[str]:
                 if ":" in argument:
                     continue
                 kinds.update(LITERAL.findall(argument))
+            for call in HELPER.finditer(line):
+                first, second = call.group(1), call.group(2)
+                if ":" in first:
+                    continue
+                kinds.update(LITERAL.findall(second if NAME.fullmatch(first) else first))
     return kinds
 
 
@@ -96,7 +106,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tools/ci_telemetry_kinds.py",
         description=(
-            'Fails unless the telemetry kinds written under src/ (Telemetry.note("kind", ...)) and the rows'
+            'Fails unless the telemetry kinds written under src/ (Telemetry.note("kind", ...), trace.note("kind",'
+            ' ...) and a _note(trace, "kind", ...) helper) and the rows'
             " of docs/TELEMETRY.md's entry-kinds table are the same set. Takes no arguments."
         ),
         epilog=EPILOG,

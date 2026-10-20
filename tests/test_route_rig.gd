@@ -1377,7 +1377,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 		elapsed += STEP
 	var crossed := (_stroller.global_position - gate.global_position).dot(axis) > 0.0
 	print("[test_route_rig] through the door at %s: %s after %.1fs, held %s, %d walks under" % [
-		TelemetryLog.tile(city.map.world_to_tile(gate.global_position)),
+		RunTrace.tile(city.map.world_to_tile(gate.global_position)),
 		"arrived" if rig._done else "still walking", elapsed, held,
 		city.events.walks_under_a_boom()])
 	t.check(crossed and held,

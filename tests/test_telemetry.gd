@@ -108,14 +108,14 @@ func _test_order_is_the_record(t) -> void:
 ## Shared so that a tile written by the scheduler and a tile written by the observer read the
 ## same. Two spellings of a position in one log is two things to grep for.
 func _test_the_formatting_helpers(t) -> void:
-	t.check(TelemetryLog.tile(Vector2i(3, 5)) == "(3,5)", "a tile has no space in it")
+	t.check(RunTrace.tile(Vector2i(3, 5)) == "(3,5)", "a tile has no space in it")
 	# The city is drawn from above with +y downward, so south is *down*. Getting this backwards
 	# would put every `turn` entry in the log 180 degrees out and nothing would ever say so.
-	t.check(TelemetryLog.compass(Vector2.DOWN) == "180°", "+y is a bearing of 180°, south")
-	t.check(TelemetryLog.compass(Vector2.UP) == "0°", "-y is a bearing of 0°, north")
-	t.check(TelemetryLog.compass(Vector2.RIGHT) == "90°", "+x is a bearing of 90°, east")
-	t.check(TelemetryLog.compass(Vector2.LEFT) == "270°", "-x is a bearing of 270°, west")
-	t.check(TelemetryLog.compass(Vector2(3.0, -1.0)) == "72°",
+	t.check(RunTrace.compass(Vector2.DOWN) == "180°", "+y is a bearing of 180°, south")
+	t.check(RunTrace.compass(Vector2.UP) == "0°", "-y is a bearing of 0°, north")
+	t.check(RunTrace.compass(Vector2.RIGHT) == "90°", "+x is a bearing of 90°, east")
+	t.check(RunTrace.compass(Vector2.LEFT) == "270°", "-x is a bearing of 270°, west")
+	t.check(RunTrace.compass(Vector2(3.0, -1.0)) == "72°",
 			"a diagonal keeps its own exact bearing rather than rounding to the nearer axis")
 	# Two headings four degrees apart used to both read as "east" under the old
 	# `absf(x) > absf(y)` split — 44° took it, 46° crossed into "north" — which is the
@@ -123,11 +123,11 @@ func _test_the_formatting_helpers(t) -> void:
 	# write the same word.
 	var at_44 := Vector2(sin(deg_to_rad(44.0)), -cos(deg_to_rad(44.0)))
 	var at_46 := Vector2(sin(deg_to_rad(46.0)), -cos(deg_to_rad(46.0)))
-	t.check(TelemetryLog.compass(at_44) == "44°", "44° reads as its own bearing")
-	t.check(TelemetryLog.compass(at_46) == "46°",
+	t.check(RunTrace.compass(at_44) == "44°", "44° reads as its own bearing")
+	t.check(RunTrace.compass(at_46) == "46°",
 			"and a heading two degrees off reads as a different one rather than the same word")
-	t.check(TelemetryLog.compass(Vector2.ZERO) == "nowhere", "and standing still is nowhere")
-	t.check(TelemetryLog.purpose(GameEnums.BlockPurpose.QUIET_SQUARE) == "quiet_square",
+	t.check(RunTrace.compass(Vector2.ZERO) == "nowhere", "and standing still is nowhere")
+	t.check(RunTrace.purpose(GameEnums.BlockPurpose.QUIET_SQUARE) == "quiet_square",
 			"a purpose is its enum name, lower case")
 
 ## Without a version a trace cannot be checked against anything, and a dirty tree has to say so
@@ -136,7 +136,7 @@ func _test_the_formatting_helpers(t) -> void:
 ## `source_version()` always returns the tag form here, but a shallow checkout with no tags
 ## reachable is `git describe --always`'s bare-hash fallback, and neither is wrong.
 func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
-	var version := Telemetry.source_version()
+	var version := BuildInfo.source_version()
 	t.check(version != "", "a run always records something about where it came from")
 	if version == "unknown":
 		# An exported build with no repository to ask. Nothing more to check.
@@ -171,7 +171,8 @@ func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
 ## `_place_one_shots` hoists its roll into a variable so the log can print the number against
 ## the threshold. That is a one-line edit with a way to be catastrophically wrong: consume one
 ## more value from the day's RNG and every event placed after it moves. So: plan every day of
-## a run with the log off, plan them again with it on, and require the two to agree exactly.
+## a run handed no trace, plan them again handed one that keeps every line, and require the two to
+## agree exactly.
 func _test_tracing_a_day_does_not_change_it(t) -> void:
 	var map := CityGenerator.generate(31337)
 
@@ -179,31 +180,27 @@ func _test_tracing_a_day_does_not_change_it(t) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		quiet.append(_plan_signature(map, day))
 
-	Telemetry.begin_memory_log()
+	var lines: Array[String] = []
 	var traced: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		traced.append(_plan_signature(map, day))
-	var log := Telemetry.current_log()
-	var wrote := log.lines.size() if log else 0
-	Telemetry.end_run()
+		traced.append(_plan_signature(map, day, RunTrace.recording(lines)))
 
-	t.check(not Telemetry.is_active(), "the test put telemetry back the way it found it")
 	# Day 3 is the one that matters: `burning_building` is the catalogue's only one-shot, and the
-	# `roll` line saying what became of it is written while the day is being planned. If the log
+	# `roll` line saying what became of it is written while the day is being planned. If the trace
 	# ever stops covering it this test has gone quiet.
-	t.check(wrote > 0, "tracing fourteen days wrote something (%d lines)" % wrote)
+	t.check(lines.size() > 0, "tracing fourteen days wrote something (%d lines)" % lines.size())
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		t.check(quiet[day - 1] == traced[day - 1],
 				"day %d is planned identically whether or not it is being traced" % day)
 
-## The other hoist: `CityState._advance` now names the purpose it is leaving, which means it
-## reads the arc twice instead of once. Reading is free and must stay free.
+## The other hoist: `CityState._advance` names the purpose it is leaving, which means it reads the
+## arc twice instead of once. Reading is free and must stay free.
 func _test_tracing_the_arcs_does_not_change_them(t) -> void:
 	var map := CityGenerator.generate(8812)
 	var quiet := _arc_signature(map)
-	Telemetry.begin_memory_log()
-	var traced := _arc_signature(map)
-	Telemetry.end_run()
+	var lines: Array[String] = []
+	var traced := _arc_signature(map, RunTrace.recording(lines))
+	t.check(lines.size() > 0, "a run's arcs wrote something (%d lines)" % lines.size())
 	t.check(quiet == traced, "the blocks walk their arcs the same way with the log on")
 
 ## A day's entries have to land under that day's header, or a fourteen-day log is one
@@ -1476,12 +1473,13 @@ func _rng(day: int) -> RandomNumberGenerator:
 ## Everything a planned day is, as one comparable string: what was placed, where, and in what
 ## order. Positions to the pixel, because a shifted RNG moves an event without changing the
 ## set of events.
-func _plan_signature(map: CityMap, day: int) -> String:
+func _plan_signature(map: CityMap, day: int, trace: RunTrace = null) -> String:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("telemetry:%d:%d" % [map.seed_used, day])
 	var consumed: Array[String] = []
 	var parts: Array[String] = []
-	for plan in EventScheduler.build_day(day, rng, map, consumed):
+	for plan in EventScheduler.build_day(day, rng, map, consumed, [], [], null, 0,
+			PackedVector2Array(), [], [], trace):
 		parts.append("%s@%.2f,%.2f" % [plan.def.id, plan.position.x, plan.position.y])
 	# The one-shot ledger is part of the answer: a roll that fires on day 3 rather than day 4
 	# is exactly the divergence this is looking for.
@@ -1489,14 +1487,16 @@ func _plan_signature(map: CityMap, day: int) -> String:
 	return "|".join(parts)
 
 ## Where every block ends up after a whole run of scheduled advances.
-func _arc_signature(map: CityMap) -> String:
+func _arc_signature(map: CityMap, trace: RunTrace = null) -> String:
 	var state := CityState.new()
+	if trace:
+		state.trace = trace
 	var parts: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		state.begin_day(map.block_plans, day)
 	var blocks: Array = map.block_plans.keys()
 	blocks.sort()
 	for block: Vector2i in blocks:
-		parts.append("%s=%d:%d" % [TelemetryLog.tile(block),
+		parts.append("%s=%d:%d" % [RunTrace.tile(block),
 				state.purpose_of(map.block_plans, block), state.changed_on(block)])
 	return "|".join(parts)

@@ -259,7 +259,7 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 
 func _draw_frame() -> void:
 	if _rendered:
-		_forced_draws += int(await AutoScreenshot.drawn_frame(get_tree()))
+		_forced_draws += int(await DrawnFrame.wait(get_tree()))
 	else:
 		await get_tree().process_frame
 

@@ -12,7 +12,7 @@ extends CanvasLayer
 ## pauses with the game cannot unpause it.
 ##
 ## Quitting keeps its key, one step further in. A run that is abandoned is still a run worth
-## reading, so `Telemetry.end_run()` happens on the way out exactly as it did before.
+## reading, so the run session closes its log on the way out (`main._quit()`).
 
 signal resumed()
 signal restart_requested()

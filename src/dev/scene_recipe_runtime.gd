@@ -718,6 +718,7 @@ func _install_column(column: Dictionary, player_at: Vector2, errors: Array[Strin
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
 		return
 	var happening := ResistanceHappenings.new()
+	happening.trace = _city.trace
 	happening.setup(_city, map)
 	happening.start_day(GameState.day)
 	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, player_at,

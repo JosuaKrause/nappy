@@ -94,6 +94,11 @@ const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 @onready var _tap_button: ModeButton = $Root/Choice/TapColumn/Tap
 @onready var _right_button: ModeButton = $Root/Choice/RightColumn/Right
 @onready var _hint: Label = $Root/Hint
+## The one line on this screen that is not addressed to the player, so it is small, dim and in the
+## bottom corner rather than anywhere near the three lines that are — see the **cues** rule that a
+## short vocabulary stays short, which this deliberately stays outside of: it is not a danger cue,
+## just a label. It shows the version alone, `BuildInfo.version_text()`; the commit is a
+## developer's number, and the debug note and the readout carry it (`BuildInfo.build_text()`).
 @onready var _version: Label = $Root/Version
 @onready var _hard_mode: CheckBox = $Root/HardMode
 ## The box's own edge, behind Godot's `unchecked` icon — which is a translucent dark square that
@@ -135,7 +140,7 @@ func _ready() -> void:
 	_hint.text = Texts.TITLE_HINT_BEGIN
 	_hard_mode.text = Texts.TITLE_HARD_MODE
 	_refresh_body()
-	_version.text = version_text()
+	_version.text = BuildInfo.version_text()
 	# Above the pause screen: this is the outermost frame the game runs inside, and nothing should
 	# ever be able to cover it.
 	layer = 95
@@ -179,43 +184,6 @@ func _refresh_body() -> void:
 ## than only an action or a bare `TouchInput.is_press()`.
 func _wants_rotation() -> bool:
 	return ScreenOrientation.wants_rotation(get_window().size, _touch)
-
-## The one line on this screen that is not addressed to the player, so it is small, dim and in the
-## bottom corner rather than anywhere near the three lines that are — see the **cues** rule that a
-## short vocabulary stays short, which this deliberately stays outside of: it is not a danger cue,
-## just a label.
-##
-## Prefers `Telemetry.source_version()`, `git describe`'s form (`v0.0.0-49-gab12cd3`), because a
-## developer wants to know exactly what is running; an exported build has no repository to ask,
-## which is when this falls back to `application/config/version` — the setting
-## `tools/export-web.sh` bakes into the export before it is built: the release tag on a deploy,
-## `git describe` with a `-dirty` mark on a local export — so a player sees the release rather
-## than "unknown". A function rather than inline in `_ready()` so a test can call it without
-## instancing the whole scene.
-static func version_text() -> String:
-	var from_git := Telemetry.source_version()
-	if from_git != "unknown":
-		return from_git
-	return ProjectSettings.get_setting("application/config/version", "unknown")
-
-## The commit on its own, by the same two steps: `Telemetry.source_commit()` where there is a
-## repository, else `application/config/source_commit`, which `tools/export-web.sh` bakes beside
-## the version. On a release `version_text()` is the bare tag, and a tag can be moved; the hash
-## cannot.
-static func commit_text() -> String:
-	var from_git := Telemetry.source_commit()
-	if from_git != "unknown":
-		return from_git
-	return ProjectSettings.get_setting("application/config/source_commit", "unknown")
-
-## What the debug furniture says the build is — `v0.10.3 (875609a5)` on a release,
-## `v0.10.3-2-gab12cd3-dirty (ab12cd3)` on a working tree — the `git describe` form and the
-## commit together, since describe alone collapses to the tag on every release. *(2026-09-13,
-## playtest 70: "Debug mode should contain the commit + describe.")* The `DebugModeNote` and the
-## readout's first line carry it; this screen keeps the version alone, because the hash is a
-## developer's number and those two are where a developer looks.
-static func build_text() -> String:
-	return "%s (%s)" % [version_text(), commit_text()]
 
 func is_open() -> bool:
 	return visible

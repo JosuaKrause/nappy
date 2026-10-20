@@ -171,7 +171,7 @@ func begin_run(run_seed: int, played := true) -> void:
 	_attempt = 1
 	_log.header("nappy %s log  %s  version %s"
 			% ["run" if played else "rig", Time.get_datetime_string_from_system(),
-			source_version()])
+			BuildInfo.source_version()])
 	if _log.path != "":
 		print("[Telemetry] %s" % ProjectSettings.globalize_path(_log.path))
 
@@ -312,7 +312,7 @@ func current_log() -> TelemetryLog:
 # Three constraints, and the first is the one the whole file is built on:
 #
 # - **It must not touch gameplay.** A capture reads the viewport after the frame is drawn and writes
-#   a file. It changes no state and it takes no RNG. The `await` is `AutoScreenshot.drawn_frame()`,
+#   a file. It changes no state and it takes no RNG. The `await` is `DrawnFrame.wait()`,
 #   which returns after `RenderingServer.frame_post_draw`, where a drawn frame becomes readable; the
 #   one thing it may draw is that frame, on demand, when the window is hidden and the render loop is
 #   drawing none — a picture of the state as it is, not a change to it.
@@ -466,7 +466,7 @@ func _capture_burst(token: int) -> void:
 		if finish_reason != "":
 			_finish_burst(token, finish_reason)
 			return
-		await AutoScreenshot.drawn_frame(get_tree())
+		await DrawnFrame.wait(get_tree())
 		if not _burst_is_current(token):
 			return
 		elapsed = float(Time.get_ticks_usec() - started_usec) / 1000000.0
@@ -600,7 +600,7 @@ func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 ## consumers — which is the shape of a rule ("telemetry never touches gameplay") quietly becoming
 ## untrue.
 func _capture(path: String) -> void:
-	await AutoScreenshot.drawn_frame(get_tree())
+	await DrawnFrame.wait(get_tree())
 	var viewport := get_viewport()
 	if not viewport:
 		return
@@ -610,68 +610,11 @@ func _capture(path: String) -> void:
 
 # ----------------------------------------------------------------- provenance ---
 
-## The version the run was played on: `git describe`'s own form, `<tag>-<commits-since>-g<hash>`
-## (e.g. `v0.0.0-49-gab12cd3`), or a bare abbreviated hash where no tag is reachable, with
-## `-dirty` appended if the working tree was not clean.
-##
-## Without it a trace cannot be checked against anything: "day one was brutal" is only a finding
-## if the code that produced it can be got back. Naming the tag as well as the hash is what lets a
-## reader tell *which release this is close to* without opening a shell — the same question
-## `tools/release.sh` exists to answer when cutting one.
-##
-## **Dirty is asked separately from `git describe`, not folded into its own `--dirty` flag.**
-## `git describe --dirty` only looks at tracked files (`git diff-index`), so a file that has never
-## been committed leaves it silent — checked empirically, since the difference is easy to miss
-## reading the manual. The `status --porcelain` check below is the one this file always used, and
-## untracked files still count as dirty under it: the mark only ever claims "this is not exactly
-## that commit", and it must never claim otherwise.
-##
-## Asked of `git` at runtime rather than baked in, because the project has no build step to
-## bake it during — `tools/run.sh` starts the engine on the working tree. An exported build
-## has no repository to ask, which is what "unknown" means; `application/config/version`, which
-## `tools/export-web.sh` bakes into an export, is what a deployed build shows instead — see
-## `TitleScreen`.
-static func source_version() -> String:
-	# A browser cannot launch git; TitleScreen uses the export's baked metadata instead.
-	if OS.has_feature("web"):
-		return "unknown"
-	var repository := ProjectSettings.globalize_path("res://")
-	var describe_out: Array = []
-	if OS.execute("git", ["-C", repository, "describe", "--tags", "--always"], describe_out) != 0:
-		return "unknown"
-	var version := ("\n".join(describe_out)).strip_edges()
-	if version == "":
-		return "unknown"
-	var status: Array = []
-	if OS.execute("git", ["-C", repository, "status", "--porcelain"], status) != 0:
-		return version
-	return version + ("-dirty" if ("\n".join(status)).strip_edges() != "" else "")
-
-## The commit on its own — `git rev-parse --short HEAD`, or "unknown" where there is no
-## repository to ask. `source_version()` ends in a hash in `git describe`'s tagged form, but on a
-## commit that *is* a tag — every release — describe says only the tag, and a tag is a name a
-## later `git tag -f` can move; the hash names this code and nothing else. An export carries it as
-## `application/config/source_commit`, baked by `tools/export-web.sh` beside `config/version` —
-## see `TitleScreen.commit_text()`.
-static func source_commit() -> String:
-	if OS.has_feature("web"):
-		return "unknown"
-	var repository := ProjectSettings.globalize_path("res://")
-	var out: Array = []
-	if OS.execute("git", ["-C", repository, "rev-parse", "--short", "HEAD"], out) != 0:
-		return "unknown"
-	var commit := ("\n".join(out)).strip_edges()
-	return commit if commit != "" else "unknown"
-
-## The same thing, kept as its own name because the run folder and `tools/telemetry.sh -p` both
-## call this rather than `source_version()` directly.
-##
-## The two used to differ: `source_version()` wrote a bare `*` for a dirty tree — the log's own
-## first-line mark — and this turned it into the shell-safe word `-dirty` for a folder name and a
-## `sed` match. `git describe` now writes `-dirty` itself, so what this function does changed even
-## though what it produces for a caller did not.
+## The version a run folder's name ends in — `BuildInfo.source_version()`, the `git describe` form
+## with `-dirty` on a working tree that is not clean. `tools/telemetry.sh -p` compares a folder's
+## tail against the same `git describe` to say what is stale.
 static func _file_tag() -> String:
-	return source_version()
+	return BuildInfo.source_version()
 
 # ------------------------------------------------------------------ the files ---
 

@@ -49,16 +49,24 @@ patching statics or reaching into private fields. Every item below applies it to
 
 ## Order
 
-Each step leaves the game working and is its own PR, reviewed on its own:
+Each step leaves the game working and is its own PR, reviewed on its own. **A step is done at test
+parity**: every existing test passes, changed only as far as the code it reaches moved, or converted
+early to injected fakes and public APIs (`tests-public-seams.md`); nothing is remeasured per step. The player: "let's do remeasuring at the very end and not get blocked by it
+during the refactor", "for the refactor test parity is enough" (inbox #813).
 
-1. `observers.md`, then `escape-as-day-spec.md`: the escape's loss reason and GoatCounter fixed by
-   the day's own finish path.
+1. `escape-as-day-spec.md`: the escape's loss reason and GoatCounter fixed by the day's own finish
+   path.
 2. `world-passability.md`, `draw-layers.md`, then `world-map.md`: the world layer, which the building
    needs before it can run on the day's event manager.
 3. `escape-placement.md`: the escape folded into the day's code.
 4. `events-composed.md` and `shared-components.md`.
-5. `main-and-state.md`, `tuning.md` and `tests-public-seams.md`, alongside the extractions they serve.
+5. `main-and-state.md` and `tuning.md`, alongside the extractions they serve.
 6. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
+7. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs.
+8. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
+   table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
+   one from before the refactor, and pictures of every behavior a step changed on purpose. Each
+   step's record lists what its change needs remeasured.
 
 The PR that closes this entry rewrites **orchestrating**'s "Code is designed by layer", whose
 proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal

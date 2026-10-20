@@ -68,6 +68,10 @@ var _instances: Array[EventInstance] = []
 ## `--skip events`, handed in by `main` before `setup()`: every instance this makes skips its own
 ## drawing, as a city's do.
 var skip_drawing := false
+## Where every instance this makes writes its own account for the run log, as a city's
+## `EventManager` hands its own on — the run's, handed in by `main` before `setup()`; silent until
+## then.
+var trace := RunTrace.new()
 var _player: Node2D
 var _hard_failed := false
 var _seed := 0
@@ -367,6 +371,7 @@ func _spawn(def: EventDef, at: Vector2, path := PackedVector2Array(), walled := 
 		return null
 	var instance := EventInstance.new()
 	instance.skip_draw = skip_drawing
+	instance.trace = trace
 	# No `CityMap`: every question `setup()` asks one of it — which pavement band to centre on,
 	# which way a spread lies, which alley a mouse crosses — is about a lattice this building does
 	# not sit on, and `EventInstance` already answers all three for a caller with no map.
