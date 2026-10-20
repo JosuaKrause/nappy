@@ -551,14 +551,18 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 ##
 ## The streaming, the successors, the scars, the detentions and the hard fails are all the day's
 ## own and are untouched: an explosion leaves its crater through exactly the `spawns_on_finish`
-## mechanism a convoy leaves a barricade through.
-func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO) -> void:
+## mechanism a convoy leaves a barricade through. So is the page's count of her encounters
+## (`EncounterWatch`), under `counted_day`, the section's own day number (`DaySpec.number`) —
+## `GameState.day` until one is handed in.
+func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO,
+		counted_day := 0) -> void:
 	_recipe_plan = false
 	clear()
 	_hard_failed = false
 	_struck_by = ""
 	_lesson_dog_made = false
 	_day = GameState.day
+	_encounters.day = counted_day if counted_day > 0 else _day
 	_walking_the_finale = true
 	# Nothing is held: a hold keeps the catalogue's own roll off ground something else has taken,
 	# and nothing rolls here. Cleared rather than left, so a rig that ran a day before the escape
@@ -984,15 +988,15 @@ var _encounters := EncounterWatch.new()
 ## not see: a door's release (`_check_detentions()`) sets her down within reach after the watch has
 ## run, and the day ends on that frame. Watched on the same terms as a tick.
 func _tell_the_watch_of_the_catch(instance: EventInstance) -> void:
-	if _walking_the_finale or not _player.is_in_group("player"):
+	if not _player.is_in_group("player"):
 		return
 	_encounters.caught_by(instance, _visible, _player.global_position)
 
-## Asks `_encounters` about this frame, while a day is being played: not behind the title screen,
-## which runs the city with her stood aside out of the `player` group, and not on the escape, which
-## is not a day and has `nappy-escape-*` of its own.
+## Asks `_encounters` about this frame, while a day is being played — the escape's city included,
+## which is a day of its own — but not behind the title screen, which runs the city with her stood
+## aside out of the `player` group.
 func _watch_the_encounters(delta: float) -> void:
-	if _walking_the_finale or not _player.is_in_group("player"):
+	if not _player.is_in_group("player"):
 		return
 	var stroller := _player as Stroller
 	var running := stroller != null and stroller.run_excess_ratio() > 0.0

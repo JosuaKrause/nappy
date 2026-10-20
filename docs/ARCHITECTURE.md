@@ -95,7 +95,12 @@ src/
 	                       second: where its badge points, fixed against her, and where the
 	                       thing is then placed just out of sight on its own ground
   day/
-	day_controller.gd     the clock, the two phases, the four ways a day ends
+	day_spec.gd           what one day is: its number, its words, its clock, its goal and what
+	                      losing or winning it costs — the fourteen days and the escape's two
+	                      sections, days 15 and 16, are each one of these
+	day_controller.gd     the clock, the two phases, the four ways a day ends, handed the day's
+	                      spec: her front door, the building's service exit or the city's two
+	                      ways out is its goal
   resistance/
 	resistance_director.gd  places the day's contact; the guard and the deadline; activates a
 	                         perform step the moment the mark that unlocks it is touched
@@ -117,8 +122,8 @@ src/
 	release_latch.gd      "she has just come through this, leave her alone until she has left it":
 	                      the flag a door arms on the way out, cleared by her walking out of its
 	                      own reach. The region doors and the building's doors share it
-  interior/               the escape scene's building, built by the escape's boot — the run's
-	                      own ending, or --start-escape
+  interior/               the escape scene's building, built as the escape's first section
+	                      begins — the run's own ending, or --start-escape
 	interior_tile.gd      the tile-kind enum and which kinds are walkable
 	interior_map_plan.gd  the whole building's plan: tiles, walls, doors, decals, waypoints
 	interior_map.gd       lays all seven parts (three hallways, two stairwells, the lobby, the
@@ -131,10 +136,6 @@ src/
 	                      windows that flash for a bang outside and for the far ones between them
   finale/                 the escape: a won day 14 with every task complete goes here, and
 	                      --start-escape reaches the same sequence directly
-	finale_controller.gd  the two sections, each of them a day with its own full clock; every
-	                      section opens on its own brief, and a lost one comes back to that brief
-	                      and starts again where it began (a hard run's lost section costs a
-	                      Nerve, spent by main)
 	finale_planner.gd     the two chains — service exit, three calm areas, tunnel or bridge —
 	                      and the whole plan built off them
 	interior_events.gd    section one's events: the mouse, the masked man who keeps coming back,
@@ -276,8 +277,9 @@ observers — `Telemetry.configure()`, `GameSave.configure()`, `VisitCounter.con
 the dev rigs (`AutoScreenshot.from_config()`, the scene-recipe runtime), and hands the world, the
 day and the baby the plain values they need out of it: a day's length
 (`RunConfig.day_length_for()`, the one place it is decided) to `DayController.start()`, the
-resistance and the run log; `DayController.invincible`, `Baby.excitement_frozen` and the escape's
-`FinaleController.invincible`/`section_length`; and, on `City` before `build()`, the ground mode,
+resistance and the run log, and an escape section's length (`RunConfig.escape_section_length()`)
+to its `DaySpec`; `DayController.invincible` and `Baby.excitement_frozen`; and, on `City` before
+`build()`, the ground mode,
 the frame lock, the four `--skip` words, the forced blackout, `--pelican` and `--force`, which the
 city passes to the part each belongs to. Nothing in the simulation reads a flag, the command line
 or the address bar, and nothing asks for them every frame. A test builds the run it wants with

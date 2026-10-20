@@ -71,7 +71,10 @@ extends Node
 ## - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached (`bad`
 ##   is a hard run's alone).
 ## - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: begun (the fresh
-##   handover only), lost (either section, any attempt), or got out.
+##   handover only), lost (either section, any attempt), or got out. Beside them, each of the
+##   escape's two sections is counted as a day of its own under its own number, after the last day
+##   (`DaySpec.BUILDING_DAY` for the building, `DaySpec.CITY_DAY` for the city): its `began`, its
+##   `won` or `lost-*` with what did it, and everything counted while it is walked.
 ## - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — the "etc.": which
 ##   button began the run on the title screen, or that a key did, cheap to answer and part of "how
 ##   far people get" in its own way.
@@ -328,7 +331,18 @@ func _on_run_begun(day: int, resumed: bool) -> void:
 	_reported_run_begun = true
 	_send_event(_run_begun_name(day, actually_resumed))
 
+## The day the last `day_started` announced — one of the fourteen, or one of the escape's two
+## sections under their own numbers (`DaySpec.number`) — which everything counted while it is walked
+## is named by: a charge, an encounter, a poster, a hold. `0` until one is heard on this page.
+var _day := 0
+
+## The day what happens now is counted under: the one `day_started` announced, or, before any has
+## been heard on this page — a suite driving the counter by hand — the run's own day.
+func _counted_day() -> int:
+	return _day if _day > 0 else GameState.day
+
 func _on_day_started(day: int) -> void:
+	_day = day
 	for name in _day_began_names(day, GameState.hard_mode):
 		_send_event(name)
 
@@ -350,10 +364,10 @@ func _on_went_back_to_a_checkpoint(checkpoint_day: int, lost_day: int) -> void:
 var _open_tasks := {}
 
 func _on_task_offered(step: int) -> void:
-	_open_tasks[step] = GameState.day
+	_open_tasks[step] = _counted_day()
 
 func _on_task_completed(step: int) -> void:
-	var day: int = _open_tasks.get(step, GameState.day)
+	var day: int = _open_tasks.get(step, _counted_day())
 	_open_tasks.erase(step)
 	_send_event(_day_event_name(day, "mark-read" if _is_pickup_step(step) else "task-done"))
 
@@ -361,26 +375,26 @@ func _on_task_completed(step: int) -> void:
 ## as a step a day simply ended without touching (`_on_day_ended()` below): both are "a task day
 ## that ended without it", just found at two different moments.
 func _on_task_failed(step: int) -> void:
-	var day: int = _open_tasks.get(step, GameState.day)
+	var day: int = _open_tasks.get(step, _counted_day())
 	_open_tasks.erase(step)
 	_send_event(_day_event_name(day, "mark-missed" if _is_pickup_step(step) else "task-skipped"))
 
 func _on_mark_seen(step: int) -> void:
-	var day: int = _open_tasks.get(step, GameState.day)
+	var day: int = _open_tasks.get(step, _counted_day())
 	_send_event(_day_event_name(day, "mark-seen"))
 
 func _on_event_sighted(id: String) -> void:
 	if id != "burning_building":
 		return
-	_send_event(_day_event_name(GameState.day, "seen-fire"))
+	_send_event(_day_event_name(_counted_day(), "seen-fire"))
 
 func _on_event_lit_unmet(id: String) -> void:
 	if id != "burning_building":
 		return
-	_send_event(_day_event_name(GameState.day, "fire-unmet"))
+	_send_event(_day_event_name(_counted_day(), "fire-unmet"))
 
 func _on_city_gone_dark() -> void:
-	_send_event(_day_event_name(GameState.day, "blackout"))
+	_send_event(_day_event_name(_counted_day(), "blackout"))
 
 ## **Every charger's own charging counter** *(inbox #764 in minty-lemur, the player: "Ending a day and a charging
 ## counter are not the same thing"; "Charging is independent of an ended day")*: `<charger>-warned`
@@ -389,19 +403,19 @@ func _on_city_gone_dark() -> void:
 ## the day does — a catch that ends the day sends `lost-hard-fail-<row>` as well. `<charger>` is
 ## `charger_counter_name()`.
 func _on_pursuit_warned(id: String) -> void:
-	_send_event(_day_event_name(GameState.day, "%s-warned" % charger_counter_name(id)))
+	_send_event(_day_event_name(_counted_day(), "%s-warned" % charger_counter_name(id)))
 
 func _on_pursuit_began(id: String) -> void:
-	_send_event(_day_event_name(GameState.day, "%s-chased" % charger_counter_name(id)))
+	_send_event(_day_event_name(_counted_day(), "%s-chased" % charger_counter_name(id)))
 
 func _on_pursuit_caught(id: String) -> void:
-	_send_event(_day_event_name(GameState.day, "%s-caught" % charger_counter_name(id)))
+	_send_event(_day_event_name(_counted_day(), "%s-caught" % charger_counter_name(id)))
 
 func _on_pursuit_cut_short(id: String) -> void:
-	_send_event(_day_event_name(GameState.day, "%s-ended" % charger_counter_name(id)))
+	_send_event(_day_event_name(_counted_day(), "%s-ended" % charger_counter_name(id)))
 
 func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
-	_send_event(_day_event_name(GameState.day, "%s-%s" % [charger_counter_name(id),
+	_send_event(_day_event_name(_counted_day(), "%s-%s" % [charger_counter_name(id),
 			"shaken" if shaken_off else "outlasted"]))
 
 ## A charger's name in its counter: `dog` for `charging_dog`, so its `dog-chased`, `dog-shaken` and
@@ -440,32 +454,32 @@ func _on_run_bout_began(day: int) -> void:
 ## once per pelican where it is emitted (`EventBus`'s own doc on each), so each sends once; the
 ## instance it carries is not read.
 func _on_pelican_spawned(_instance: Variant) -> void:
-	_send_event(_day_event_name(GameState.day, "pelican-spawned"))
+	_send_event(_day_event_name(_counted_day(), "pelican-spawned"))
 
 func _on_pelican_sighted(_instance: Variant) -> void:
-	_send_event(_day_event_name(GameState.day, "pelican-seen"))
+	_send_event(_day_event_name(_counted_day(), "pelican-seen"))
 
 func _on_pelican_excited_her(_instance: Variant) -> void:
-	_send_event(_day_event_name(GameState.day, "pelican-excited"))
+	_send_event(_day_event_name(_counted_day(), "pelican-excited"))
 
 func _on_pelican_struck_her(_instance: Variant) -> void:
-	_send_event(_day_event_name(GameState.day, "pelican-hit"))
+	_send_event(_day_event_name(_counted_day(), "pelican-hit"))
 
 ## Every tear, not the first of an attempt: every event opts out of the site's sessions so that
 ## each one is counted (PLAYTEST-143: "we need a telemetry item for ripping posters").
 func _on_poster_torn() -> void:
-	_send_event(_day_event_name(GameState.day, "poster-torn"))
+	_send_event(_day_event_name(_counted_day(), "poster-torn"))
 
 ## A tear whose marble sends a pursuer on foot after her, beside that tear's own `poster-torn`
 ## (PLAYTEST-143: "we need a telemetry item for ripping posters and pursuit triggered by poster
 ## ripping").
 func _on_poster_pursuit_sent() -> void:
-	_send_event(_day_event_name(GameState.day, "poster-pursuit"))
+	_send_event(_day_event_name(_counted_day(), "poster-pursuit"))
 
 ## Every hold: `EventManager._check_detentions()` emits once per catch, a mother only ever chats
 ## once, and a checkpoint that holds her again is a second stop she paid for.
 func _on_player_detained(id: String) -> void:
-	_send_event(_day_event_name(GameState.day, _detention_suffix(id)))
+	_send_event(_day_event_name(_counted_day(), _detention_suffix(id)))
 
 func _on_run_restarted(day: int) -> void:
 	_send_event(_day_event_name(day, "restarted"))

@@ -135,6 +135,9 @@ var skip_crowd_drawing := false
 var skip_crowd_motion := false
 ## `--blackout`: the city counts as sabotaged. See `Blackout.forced`.
 var blackout_forced := false
+## Dark from its first frame, every power off — the escape's city, which is the same night as the
+## blackout (`DaySpec.dark_from_the_start`). Set before `build()`; see `Blackout`.
+var dark_from_the_start := false
 ## `--pelican`: every cyclist is drawn as the pelican. See `EventManager.rolls_a_pelican()`.
 var all_cyclists_pelicans := false
 ## `--force <id> [seconds]`: the one row the director hands out, and how often. See
@@ -290,6 +293,7 @@ func build(city_map: CityMap) -> void:
 	blackout = Blackout.new()
 	blackout.name = "Blackout"
 	blackout.forced = blackout_forced
+	blackout.dark_from_the_start = dark_from_the_start
 	add_child(blackout)
 	blackout.setup(self, _buildings)
 	_daylight = CanvasModulate.new()

@@ -112,10 +112,11 @@ The events:
 - `nappy-day-3-fire-unmet` — a won day 3 on which the fire was never met and was lit off her path
   at dusk (`EventManager.light_what_she_never_met()`).
 - `nappy-day-14-blackout` — the city goes dark, whether or not a mast was silenced
-  (`Blackout.go_dark()`; `city_went_quiet` fires only when there was one to silence).
+  (`Blackout.go_dark()`; `city_went_quiet` fires only when there was one to silence). The escape's
+  city, dark from its first frame, sends `nappy-day-16-blackout` as it is built.
 - `nappy-escape-city` — the building is behind her and the city section begins
-  (`main._on_escape_exit_requested()`). Once per attempt at the *building* section; a retry of the
-  city section alone (`FinaleController.restart_section()`) never repeats it.
+  (`main._finish_the_section()`, as the building's day is won). Once per won attempt at the
+  *building* section; a retry of the city section alone never repeats it.
 - **Every charger's own charging counter**, counted on its own whatever the day does *(inbox #764 in minty-lemur,
   the player: "Dog-chased implies charge"; "Ending a day and a charging counter are not the same
   thing"; "Charging is independent of an ended day")* — `nappy-day-N-<charger>-warned`, `-chased`,
@@ -179,7 +180,9 @@ The events:
   interested in the ratio of interacted/seen")*. `<event>` is a catalogue row's id hyphenated
   (`charging-dog`), or `pelican` for a pelican, never `cyclist`; ordinary walkers and cars send
   none. `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
-  `EventManager` while a day is played (not behind the title, not on the escape), decides each:
+  `EventManager` while a day is played — the escape's city included, as day 16, but not behind
+  the title, and not in the escape's building, whose events are not an `EventManager`'s — decides
+  each:
   - **What she can see** is `VisibleView.visible_share()` (`src/ui/visible_view.gd`): the share of
     a world rectangle inside the camera's view, `Tuning.VIEW_HALF_EXTENT` about its centre, less, in
     the joystick scheme, the two bottom corners its controls cover — each from the screen's side to
@@ -244,6 +247,19 @@ The events:
   hard run's alone: a normal run out of nerves sends `nappy-checkpoint-N-from-day-M` instead.
 - `nappy-escape-begun` / `nappy-escape-lost` / `nappy-escape-out` — the escape: the fresh handover
   from a won day 14, either section lost on any attempt, or the tunnel or the bridge reached.
+- **The escape's two sections are counted as days of their own, day 15 the building and day 16 the
+  city** (`DaySpec.BUILDING_DAY`, `DaySpec.CITY_DAY`), beside the escape's own names above
+  *(minty-lemur #785: "telemetry should work the same also in escape both apartment and city")*:
+  every `nappy-day-N-*` name in this list that can happen in a section is sent for it under its
+  own number — `nappy-day-15-began` for every attempt, a retry included, and `-began-hard` beside
+  it for a hard run; `nappy-day-15-won` as she walks out of the building's service exit and
+  `nappy-day-16-won` as she gets out of the city; a lost section's `lost-timeout`,
+  `lost-crying-<source>` or `lost-hard-fail-<what>` (`nappy-day-15-lost-hard-fail-masked-pursuer`);
+  the charging counters (`nappy-day-15-masked-pursuer-warned`, `-chased`, and `-ended` for a
+  charge still running when the section ends); the escape city's encounters and runs; its holds;
+  and `nappy-day-16-blackout` as the escape's city is built dark. `GameState.day`, the calendar,
+  stays on day 14 for the whole escape, so `VisitCounter` names what it counts by the day the last
+  `day_started` announced rather than by the calendar.
 - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — which button began
   the run on the title screen, or `keys` when a key did (`space` or a walking key, which begins the
   run in tap mode; the name comes from the input that began it, not the mode it falls back to),
@@ -260,8 +276,8 @@ changes nothing gameplay reads, and carries a doc comment on `EventBus` saying s
 the escape's own events are the run flow's facts, each emitted where it happens, and no listener is
 called inline. The page hears `run_begun`, `day_started`, `day_ended`, `escape_begun`,
 `escape_city_entered`, `escape_lost` and `escape_out`, and is the only listener of `run_begun`,
-`escape_begun` and `escape_city_entered`. The run log (`RunSession`) hears `day_started`,
-`day_planned`, `day_ended`, `escape_section_started`, `escape_lost` and `escape_out`. The HUD hears
+`escape_begun`, `escape_city_entered`, `escape_lost` and `escape_out`. The run log (`RunSession`)
+hears `day_started`, `day_planned`, `day_ended` and `escape_section_started`. The HUD hears
 `day_started` alone.
 
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
@@ -429,20 +445,22 @@ run seed alone does **not** reproduce a city and both have to be written down.
 
 ### The escape's header
 
-The escape — the run's own ending, and `--start-escape` — has no day number, act or city seed to
-head a section with, so `Telemetry.begin_finale()` writes `escape  run seed N  length Ns` instead,
-where the length is one section's, appending `invincible` on the same terms the day header does.
-**It has to open a section like a day does or the log cannot say when anything happened**: the
-timestamp column only moves while one is open, and a day is the only other thing that opens one.
+Each of the escape's two sections — the run's own ending, and `--start-escape` — is a day of its
+own and heads its section the way a day does, under its own day number (15 the building, 16 the
+city) with its own words where a day has its act and its city seed:
+`Telemetry.begin_section()` writes `day 15 Escape the building  run seed N  length Ns`, appending
+`invincible` on the same terms the day header does. Every attempt opens its own, a retry included,
+and counts an attempt the way a day's does, so a retried section's lines are timed from its own
+start and its pictures carry its attempt. **It has to open a section or the log cannot say when
+anything happened**: the timestamp column only moves while one is open.
 
 A run that reaches the escape from its own day 14 keeps writing the log it already has, rather
 than opening a second directory for one run: the handover passes through a scene reload and
 `Telemetry` is an autoload, so the log outlives it. A cold launch straight into a section — the
 flag, or a game closed in one and opened again — has no log yet and opens one.
 
-The clock is pushed by the same `TelemetryObserver` a day has, off the section's own clock — the
-one the HUD draws, so a log entry and the screen never disagree — and each section's `start` line
-puts it back to zero, the way a day's header does at dawn.
+The clock is pushed by the same `TelemetryObserver` a day has, off the day's own clock — the one
+the HUD draws, so a log entry and the screen never disagree.
 
 ### The escape's log
 
@@ -450,19 +468,22 @@ puts it back to zero, the way a day's header does at dawn.
 watched by the observer a day has, so what a day writes about the walk the escape writes too:
 
 ```
-escape  run seed 1674637177  length 180.0s
+day 15 Escape the building  run seed 1674637177  length 180.0s
    0.0  start    entered the building at (129,2), facing 0°
    4.2  cue      edge badge: masked_pursuer at 670px, closing 110px/s
    9.6  cue      edge badge gone: masked_pursuer after 5.4s, now 208px away
   10.2  near     masked_pursuer at (132,5), 120px, exc 1, in 5.5/s (crowd 0.0, events 10.2), sleep 100
-  11.0  lost     lost_hard_fail in the building after 11.0s — It went wrong. | exc 7, ... | near: masked_pursuer 25px
+  11.0  lost     lost_hard_fail in the building after 11.0s to masked-pursuer — He caught you on the stairs. | exc 7, ... | near: masked_pursuer 25px
+
+day 15 Escape the building  run seed 1674637177  length 180.0s
    0.0  start    restarted the building at (7,1), facing 0°
 ```
 
-`TelemetryObserver.setup_escape()` hands it the section's `DayController`
-(`FinaleController.clock()`) in place of a day's, and `RunSession` says which world she is in as
-each section starts — `watch_building()` or `watch_city()`, off `EventBus.escape_section_started`,
-which carries the section's world — before `start_section()`, the escape's `start_day()`. The events are read from an event source either way, `InteriorEvents` in the
+`TelemetryObserver.setup_escape()` hands it the day's own `DayController`, and `RunSession` says
+which world she is in as each section starts — `watch_building()` or `watch_city()`, off
+`EventBus.escape_section_started`, which carries the section's world — before `start_section()`,
+the escape's `start_day()`; a section ends on `day_ended`, as a day does. The events are read from
+an event source either way, `InteriorEvents` in the
 building and the city's `EventManager` outside it, so these read a section exactly as they read a
 day: `start`, `near`, `chase`, `cue` (the mark over her head and the screen-edge badges), `freeze` /
 `thaw`, `asleep` / `woke`, `run`, `idle`, `blocked`, `turn`, `frame` and `spike`, and in the city
@@ -470,14 +491,15 @@ section `cross`, `road` and `calm` / `left` as well — the calm ground a chain 
 where she settles the baby again. A place on a line in the building is the building's own tile
 grid, which is not the city's.
 
-**The section restart is two lines**: a `lost` line naming the result, the section, how far into
-its clock, the reason, the meter breakdown and what was nearest — the line a lost day writes,
-with the section in it and without the day's `to <cause>` — and then a `start` line saying
-`restarted`, stamped `0.0` because the retry has a fresh clock. The automatic-snapshot schedule (`Telemetry.SHOTS_PER_DAY`, `SHOT_SPACING`
-— see "Snapshots" below) restarts with that clock, the same clean slate a day's own retry gets from
-`begin_day()`, so a retried section is not left with its whole allowance already spent by the
-attempt that was lost. Getting out is a `home` line, `escaped by the tunnel, 42.1s to spare`,
-written before the run's own `ending` line.
+**A lost section is the line a lost day writes**, with the section in it: the result, the section,
+how far into its clock, `to <cause>`, the reason, the meter breakdown and what was nearest. The
+retry then opens its own section under the same day's header, and its `start` line says
+`restarted`, stamped `0.0` because the retry has a fresh clock. The automatic-snapshot schedule
+(`Telemetry.SHOTS_PER_DAY`, `SHOT_SPACING` — see "Snapshots" below) restarts with that section, the
+same clean slate a day's own retry gets, so a retried section is not left with its whole allowance
+already spent by the attempt that was lost. Walking out of the building is a `home` line, `out of
+the building, 42.1s to spare`, and getting out of the city one with the way out, `escaped by the
+tunnel, 42.1s to spare`, written before the run's own `ending` line.
 
 **What a day writes and the escape does not, and why:**
 
@@ -489,9 +511,11 @@ written before the run's own `ending` line.
   closures, so she meets them as `near` lines instead.
 - `contact` — the escape has no resistance subquest and no chalk mark.
 - `crowd` — neither section has a crowd: *"no regular cars or regular people on the street"*.
-- `quiet` and `nerve` — the sabotage is already done, and nothing in the escape spends a Nerve.
-- The dawn and dusk maps — the escape draws no map, so the observer keeps no trail and no met
-  events for one.
+- `quiet` — the sabotage is already done. `nerve` only in a hard run, whose lost sections spend
+  one.
+- The dawn and dusk maps in the building — it has no city map to draw them on, so the observer
+  keeps no trail and no met events there. The city section writes both, `day16-attempt1.png` and
+  its `-dusk` twin, with no corridor, since its walk is two chains and not a day's tree.
 
 ### `--invincible`
 
@@ -989,13 +1013,14 @@ window is exactly the run worth reading and a buffered log of it would be empty.
 each through something it was handed:
 
 - **`RunSession`** (`src/telemetry/run_session.gd`) owns the log for a boot: `main` builds it and
-  calls only its `open()` (once per boot, keeping a log a reload carried over), `open_the_escape()`
-  and `close()` (the held restart and a quit; it hears the window's close request itself). It
-  listens on `EventBus` for the run flow's own facts — `day_started` opens a day's section,
-  `day_planned` writes the plan lines, the dawn map and her `start` line, `day_ended(day, result,
-  cause, elapsed)` writes the outcome and the dusk map and closes the section, and
-  `escape_section_started`, `escape_lost` and `escape_out` do the same for the escape's sections —
-  and holds the `TelemetryObserver` it builds when a log is open.
+  calls only its `open()` (once per boot, keeping a log a reload carried over) and `close()` (the
+  held restart and a quit; it hears the window's close request itself). It listens on `EventBus`
+  for the run flow's own facts — `day_started` opens a day's section, the escape's sections
+  included, `day_planned` writes the plan lines, the dawn map and her `start` line,
+  `day_ended(day, result, cause, elapsed)` writes the outcome and the dusk map and closes the
+  section, and `escape_section_started` points the observer at the world an escape section is
+  walked in and writes its `start` line — and holds the `TelemetryObserver` it builds when a log is
+  open.
 - **`TelemetryObserver`** watches the walk frame by frame and writes everything that has no single
   point of decision.
 - **Game logic writes its own account through a `RunTrace`** (`src/run_trace.gd`): the one sink

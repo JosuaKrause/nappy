@@ -66,10 +66,15 @@ day 2  act 1  run seed 4242  city seed 4242  length 210.0s
 === the escape
 nappy run log  (memory)
 
-escape  run seed 4242  length 180.0s
+day 15 Escape the building  run seed 4242  length 180.0s
    0.0  start    entered the building at (7,1), facing 0°
-   0.0  lost     lost_hard_fail in the building after 0.0s — He caught you on the stairs. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100 | near: burning_building 2096px (out of range)
+   0.0  lost     lost_hard_fail in the building after 0.0s to masked-pursuer — He caught you on the stairs. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100 | near: burning_building 2096px (out of range)
+
+day 15 Escape the building  run seed 4242  length 180.0s
    0.0  start    restarted the building at (7,1), facing 0°
+   0.0  home     out of the building, 180.0s to spare | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
+
+day 16 Escape the city  run seed 4242  length 180.0s
    0.0  arc      block (7,10) commercial -> boarded_up (scheduled)
    0.0  arc      block (7,8) commercial -> boarded_up (scheduled)
    0.0  arc      block (10,3) commercial -> boarded_up (scheduled)
@@ -77,8 +82,6 @@ escape  run seed 4242  length 180.0s
    0.0  arc      block (1,4) courtyard -> requisitioned (scheduled)
    0.0  arc      block (9,9) courtyard -> requisitioned (scheduled)
    0.0  plan     finale: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
-   0.0  woke     woken in the building, sleep back to 0 | near: nothing live
-   0.0  asleep   asleep after 0.0s, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
    0.0  start    entered the city at (75,80), facing 180°
    0.0  home     escaped by the tunnel, 180.0s to spare | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
    0.0  ending   neutral on day 14 — resistance 0/5, sabotage not done, played 0:00.000

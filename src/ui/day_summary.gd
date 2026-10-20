@@ -1,6 +1,7 @@
 extends CanvasLayer
-## The screen between days, the one at the end of a run, and the two the escape uses — the brief
-## before a lost section starts again, and the last screen of the sequence.
+## The screen between days, the one at the end of a run, and the escape's last screen. The escape's
+## two sections are days, so their briefs and their outcome screens are a day's, with the section's
+## own words where "Day N of 14" stands.
 ##
 ## **A normal run's last nerve comes here as a lost day, not as an ending**: the same screen any
 ## lost day reaches, saying the day she goes back to and drawing the nerves she has again, with the
@@ -78,6 +79,11 @@ func _ready() -> void:
 ## share and neither of those needs to know which screen raised it.
 var _showing_ending := false
 
+## Whether the screen currently up is the escape's epilogue (`show_finale()`), set beside
+## `_showing_ending` by every screen this raises. Read through `is_showing_the_epilogue()` by
+## `main`'s Esc guard, which refuses the pause over the epilogue and a section's brief alone.
+var _showing_epilogue := false
+
 ## Shown on every device — see `PauseScreen._refresh_buttons()`, the same split on the same
 ## question, now answered the same way here: one control scheme means the same buttons everywhere.
 ## Its own function still, for the same reason: a test can call this again after changing what it
@@ -105,16 +111,24 @@ func _refresh_buttons() -> void:
 ## straight from the title into `main._engage_the_day()` instead. Continuing from here reaches
 ## that same function, through `main._on_summary_continued()`'s own `_resume_gate_open` branch —
 ## the moment the day actually starts, and the moment the save says so.
-func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
+##
+## **`title` is a section of the escape's own words** — *"Escape the building"* or *"Escape the
+## city"* (`DaySpec.title`) — standing where "Day N of 14" stands, on the brief each section opens
+## on (*"each the apartment and escape city are treated as their own 'days' with brief and restart
+## checkpoint"*). A section has no morning line of its own, so none shows. No new fiction, and
+## nothing triumphant or melodramatic (`docs/NARRATIVE.md`, "No triumphalism").
+func show_day_brief(day: int, nerves: int, lost_note: String = "", title := "") -> void:
 	_heading.hide()
 	_showing_ending = false
+	_showing_epilogue = false
 	_note.text = SentenceLines.break_for_label(lost_note, _note)
 	_note.visible = lost_note != ""
-	_title.text = Texts.SUMMARY_DAY % [day, Tuning.RUN_LENGTH_DAYS]
+	_title.text = Texts.SUMMARY_DAY % [day, Tuning.RUN_LENGTH_DAYS] if title == "" \
+			else SentenceLines.break_for_label(title, _title)
 	# Stars, through the same `NerveDisplay.stars()` the HUD, the day summary and the pause screen
 	# all read the count through — never a digit.
 	_body.text = Texts.SUMMARY_NERVES % NerveDisplay.stars(nerves)
-	var brief_text: String = Texts.DAY_BRIEF.get(day, "")
+	var brief_text: String = Texts.DAY_BRIEF.get(day, "") if title == "" else ""
 	_brief.text = SentenceLines.break_for_label(brief_text, _brief)
 	_brief.visible = brief_text != ""
 	_hint.text = ""
@@ -141,10 +155,17 @@ func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
 ## back to and `nerves` is five. The line that says she tries the day again says that instead —
 ## *(gentle-osprey, the player's own example: "Back to day 8")* — and the continue under it carries
 ## on into that day.
+##
+## **`title` is a lost section of the escape's own words** (`DaySpec.title`), standing where "Day N
+## of 14" stands: a lost section reports its outcome with its reason like any lost day *(minty-lemur
+## #785: "losing an escape should still state the reason like the rest of the game")*, and the
+## continue under it is the section again, behind its brief, so its words say which is tried again
+## in place of the day's try-again line. A section has no morning line and no tally of its own.
 func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
-		elapsed_seconds: float = 0.0, back_to_checkpoint := false) -> void:
+		elapsed_seconds: float = 0.0, back_to_checkpoint := false, title := "") -> void:
 	_heading.hide()
 	_showing_ending = false
+	_showing_epilogue = false
 	# Never carried from a day brief this same day might have opened on — this is a real day's own
 	# result, not the load-time note a brief shows instead of one.
 	_note.visible = false
@@ -152,8 +173,9 @@ func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 	# here rather than staying a line inside `_body`.
 	_title.text = SentenceLines.break_for_label(
 			_elapsed_line(result, reason, GameState.format_clock_seconds(elapsed_seconds)), _title)
-	var retrying := result != GameEnums.DayResult.WON and nerves > 0
-	var lines: Array[String] = [Texts.SUMMARY_DAY % [GameState.day, Tuning.RUN_LENGTH_DAYS]]
+	var retrying := result != GameEnums.DayResult.WON and nerves > 0 and title == ""
+	var lines: Array[String] = [Texts.SUMMARY_DAY % [GameState.day, Tuning.RUN_LENGTH_DAYS]
+			if title == "" else title]
 	lines.append("")
 	# The state she carries into the coming day, shown on a win as much as a loss, and drawn as
 	# stars — never a digit — the way every other screen that shows the count now does.
@@ -167,11 +189,11 @@ func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 		lines.append(Texts.SUMMARY_TRY_AGAIN % GameState.day)
 	# The tally is the only place the subquest is ever spelled out. In the world it is chalk on
 	# a wall.
-	if GameState.has_joined_resistance():
+	if GameState.has_joined_resistance() and title == "":
 		lines.append("")
 		lines.append(_resistance_tally_line())
 	_body.text = "\n".join(lines)
-	var brief_text: String = Texts.DAY_BRIEF.get(GameState.day, "")
+	var brief_text: String = Texts.DAY_BRIEF.get(GameState.day, "") if title == "" else ""
 	_brief.text = SentenceLines.break_for_label(brief_text, _brief)
 	_brief.visible = brief_text != ""
 	# Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still
@@ -257,6 +279,7 @@ func show_ending(ending: GameEnums.Ending, day: int) -> void:
 	# see `main._show_the_resume_gate()`.
 	_note.visible = false
 	_showing_ending = true
+	_showing_epilogue = false
 	_present()
 
 ## The escape's own last screen: the tunnel or the bridge behind her, and **nothing triumphant**
@@ -276,40 +299,14 @@ func show_finale(exit_kind: int, seconds: float) -> void:
 	_heading.show()
 	_title.text = Texts.FINALE_TITLE
 	_showing_ending = false
+	_showing_epilogue = true
 	var finale_body := SentenceLines.break_for_label(
 			Texts.FINALE_BODY.get(exit_kind, Texts.FINALE_BODY[CityEdge.Kind.BRIDGE]), _body)
 	_body.text = Texts.FINALE_OUT_IN % [finale_body, GameState.format_clock(seconds)]
 	_hint.text = ""
 	_brief.visible = false
-	_present()
-
-## The screen a section of the escape opens on — a first walk through it and a retry alike. *"Each
-## the apartment and escape city are treated as their own 'days' with brief and restart
-## checkpoint."*
-##
-## **The same screen a resumed day opens on** (`show_day_brief()`), with the two lines that are
-## about a day replaced by the two that are true here. The nerve count is whatever the run holds:
-## a normal run's section costs no Nerve however it goes, so the line is unchanged, and a hard run's
-## shows what its lost sections spent and its cleared building gave back; and the escape has no
-## day number, so what stands where "Day N of 14" stands is **the section's own line** — *"Escape
-## the building"* or *"Escape the city"*, the same words `HUD.say_once()` says once she is walking
-## it and the same words `main` passes in. No new fiction, and nothing triumphant or melodramatic
-## (`docs/NARRATIVE.md`, "No triumphalism"): a retry is not a moment, it is the thing she is doing
-## again.
-##
-## There is no reason line and no lost note. The screen before a section is about what she is about
-## to do, not about what just happened — `show_day()` is the screen that reports an outcome, and a
-## section has no outcome worth a sentence: the stars already say what a hard run's loss spent.
-func show_finale_brief(hint: String, nerves: int) -> void:
-	_heading.hide()
-	_showing_ending = false
+	# Never carried from a brief or a lost section's screen before it.
 	_note.visible = false
-	_title.text = SentenceLines.break_for_label(hint, _title)
-	# Stars, through the same `NerveDisplay.stars()` every screen that shows a nerve count now
-	# reads through — never a digit.
-	_body.text = Texts.SUMMARY_NERVES % NerveDisplay.stars(nerves)
-	_brief.visible = false
-	_hint.text = ""
 	_present()
 
 func _present() -> void:
@@ -333,6 +330,10 @@ func dismiss() -> void:
 
 func is_showing() -> bool:
 	return _root.visible
+
+## Whether the screen up is the escape's epilogue — see `_showing_epilogue`.
+func is_showing_the_epilogue() -> bool:
+	return is_showing() and _showing_epilogue
 
 ## Whether the screen's own layer is presenting rotated — computed fresh rather than pushed in
 ## from `main`, for the same reason `PauseScreen._wants_rotation()` is: `TouchControls` is the only

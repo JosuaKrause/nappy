@@ -21,8 +21,8 @@ extends Node
 ## as the flag stands: walking back towards the station does not put the lights on.
 ##
 ## **The escape is in the dark too**, since it is the same night: a city built for the escape
-## (`GameState.escape_section` set) is dark from its first frame. `--blackout` stands in for the
-## flag, for this class alone, so the moment can be photographed on any day.
+## (`dark_from_the_start`, its `DaySpec`'s) is dark from its first frame. `--blackout` stands in for
+## the flag, for this class alone, so the moment can be photographed on any day.
 
 ## True from the frame the city went dark.
 var is_dark := false
@@ -35,6 +35,9 @@ var _station := Rect2()
 var _player: Node2D
 ## `--blackout`, handed in by the city before `setup()`: the city counts as sabotaged.
 var forced := false
+## Handed in by the city before `setup()`: the city is dark from its first frame and stays dark,
+## whatever the sabotage and wherever she is — the escape's.
+var dark_from_the_start := false
 
 ## Called once by `City.build()`, after the buildings, the signals and the events exist. A city
 ## built for the escape goes dark here, before its first frame is drawn.
@@ -43,7 +46,7 @@ func setup(city: City, buildings: Array[Building]) -> void:
 	_buildings = buildings
 	if city.map.has_power_station():
 		_station = city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
-	if _in_the_escape():
+	if dark_from_the_start:
 		go_dark()
 
 func _physics_process(_delta: float) -> void:
@@ -56,7 +59,7 @@ func _physics_process(_delta: float) -> void:
 ## One frame's decision, with her at `at`. Public so a suite can walk her away from the station
 ## without a tree to step.
 func update(at: Vector2) -> void:
-	if _in_the_escape():
+	if dark_from_the_start:
 		if not is_dark:
 			go_dark()
 		return
@@ -101,6 +104,3 @@ func restore() -> void:
 
 func _sabotaged() -> bool:
 	return GameState.sabotage_done or forced
-
-func _in_the_escape() -> bool:
-	return GameState.escape_section != FinaleController.Section.NONE

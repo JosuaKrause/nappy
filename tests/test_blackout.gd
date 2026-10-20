@@ -16,7 +16,7 @@ func run(t) -> void:
 	var saved_sabotage := GameState.sabotage_done
 	var saved_section := GameState.escape_section
 	GameState.sabotage_done = false
-	GameState.escape_section = FinaleController.Section.NONE
+	GameState.escape_section = DaySpec.Section.NONE
 	_city = CITY_SCENE.instantiate()
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
@@ -240,17 +240,17 @@ func _spine_traffic(powered: bool) -> Vector2:
 				stopped += 1
 	return Vector2(speed_sum / maxf(1.0, samples), float(stopped) / maxf(1.0, samples))
 
-## The escape is the same night, so a city built for it is dark before its first frame.
+## The escape is the same night, so a city built for it — its `DaySpec` dark from the start — is
+## dark before its first frame.
 func _test_the_escape_is_dark_from_its_first_frame(t) -> void:
 	GameState.sabotage_done = true
-	GameState.escape_section = FinaleController.Section.CITY
 	var city: City = CITY_SCENE.instantiate()
+	city.dark_from_the_start = DaySpec.for_section(DaySpec.Section.CITY, 180.0).dark_from_the_start
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	t.check(city.blackout.is_dark, "the escape's city is dark from the moment it is built")
 	t.check(not city.signals.powered, "its lights with it")
 	city.free()
-	GameState.escape_section = FinaleController.Section.NONE
 
 ## The building she escapes through is the same night: the hallways and the lobby in the gloom, the
 ## basement darker, the stairwells on the red emergency lighting, and a hallway lit by a blast while

@@ -4,8 +4,21 @@ extends Node
 ##
 ## Owns no rules about *why* the baby is asleep or crying — it listens to EventBus and
 ## decides what that means for the day. See docs/DESIGN.md for the win/lose table.
+##
+## **Every day the run walks is one of these, the escape's two sections included** *(minty-lemur
+## #785: "the escape is just like a normal day with some special settings")*. What a day is — its
+## goal, its clock's precision — is the `DaySpec` it is handed (`spec`), so the building's service
+## exit and the city's two ways out are goals of this clock exactly as her front door is, and a
+## lost section ends here through the same three losing paths a day does.
 
 signal day_finished(result: GameEnums.DayResult)
+
+## What this day is: its goal and its clock. Handed in by whoever starts the day, before `start()`;
+## an ordinary day until then.
+var spec := DaySpec.new()
+## Which way out a `DaySpec.Goal.CITY_EDGE` day was won by, as a `CityEdge.Kind`, or `-1` until one
+## is reached. Reset by every `start()`.
+var exit_reached := -1
 
 var phase := GameEnums.DayPhase.OVER
 var time_remaining := 0.0
@@ -28,12 +41,6 @@ var _connected := false
 ## colour it would draw identically to what it drew last time. `-1` so the day's first frame,
 ## whatever `time_remaining` starts at, always counts as a change.
 var _last_emitted_second := -1
-## Set by `FinaleController` on its own clock only. The escape's label reads to the hundredth
-## (`GameState.format_clock_hundredths()`), which changes on nearly every frame, so this clock
-## tells the HUD on every frame rather than once a second. A day's controller leaves it false and
-## keeps the once-a-second emission above. *(inbox #746 in woolly-penguin, the player: "escape clocke we can try
-## 100s but it's not going to be much better? framerate is too low? all of this was on phone.")*
-var emit_every_frame := false
 ## `--invincible`, handed in by whoever builds the day: nothing but a win ends it and its clock
 ## stands still. See `_process()` and `_ignores_loss()`.
 var invincible := false
@@ -54,6 +61,7 @@ func start(length: float) -> void:
 	phase = GameEnums.DayPhase.WALKING
 	failure_reason = ""
 	hard_fail_reason = ""
+	exit_reached = -1
 	_last_emitted_second = int(time_remaining)
 	EventBus.day_time_changed.emit(time_remaining, time_total)
 
@@ -83,11 +91,13 @@ func _process(delta: float) -> void:
 	# A day's label reads to the whole second and nothing finer, so a frame that has not crossed a
 	# second boundary since the last emit would only hand the HUD the same text and the same
 	# urgency colour it already drew — sixty avoidable emits (and, downstream, sixty format calls
-	# and a `modulate` write) for the one that actually changes anything. The escape's clock
-	# (`emit_every_frame`) reads to the hundredth and emits on every frame the countdown moves; a
-	# frozen `invincible` clock never reaches this line's emit twice.
+	# and a `modulate` write) for the one that actually changes anything. A clock that reads to the
+	# hundredth (`DaySpec.clock_hundredths`, the escape's) emits on every frame the countdown moves,
+	# since its label changes on nearly every one *(inbox #746 in woolly-penguin, the player:
+	# "escape clocke we can try 100s but it's not going to be much better? framerate is too low? all
+	# of this was on phone.")*; a frozen `invincible` clock never reaches this line's emit twice.
 	var second := int(displayed)
-	if emit_every_frame and not invincible:
+	if spec.clock_hundredths and not invincible:
 		_last_emitted_second = second
 		EventBus.day_time_changed.emit(displayed, time_total)
 	elif second != _last_emitted_second:
@@ -105,7 +115,36 @@ func _process(delta: float) -> void:
 			_end(GameEnums.DayResult.LOST_TIMEOUT)
 			return
 
-	if phase == GameEnums.DayPhase.RETURNING and _is_home():
+	if _reached_the_goal():
+		_end(GameEnums.DayResult.WON)
+
+## Whether she is standing on the day's goal this frame — `spec.goal`: her front door with the baby
+## asleep, or one of the city's two ways out however the baby is. The building's service exit is
+## never reached by position here; the building says when she is through it (`reach_the_exit()`).
+func _reached_the_goal() -> bool:
+	match spec.goal:
+		DaySpec.Goal.HOME:
+			return phase == GameEnums.DayPhase.RETURNING and _is_home()
+		DaySpec.Goal.CITY_EDGE:
+			return _reached_an_exit()
+	return false
+
+## Whether she has reached the tunnel mouth or the bridge deck — within `Tuning.FINALE_EXIT_REACH`
+## of the last walkable tile of the spine at either end (`spec.exits`), past her body and under two
+## tiles — and which, kept in `exit_reached`.
+func _reached_an_exit() -> bool:
+	if not _player:
+		return false
+	for kind: int in spec.exits:
+		if _player.global_position.distance_to(spec.exits[kind]) <= Tuning.FINALE_EXIT_REACH:
+			exit_reached = kind
+			return true
+	return false
+
+## The building's service exit, reached: its fade has covered the screen
+## (`InteriorScene.exit_requested`), and on a `DaySpec.Goal.SERVICE_EXIT` day that is the win.
+func reach_the_exit() -> void:
+	if spec.goal == DaySpec.Goal.SERVICE_EXIT and is_running():
 		_end(GameEnums.DayResult.WON)
 
 func _is_home() -> bool:
@@ -120,7 +159,7 @@ func _on_baby_asleep() -> void:
 		_remember_the_calm_she_found()
 		phase = GameEnums.DayPhase.RETURNING
 		# Falling asleep on the doorstep should not need a lap of the block to register.
-		if _is_home():
+		if spec.goal == DaySpec.Goal.HOME and _is_home():
 			_end(GameEnums.DayResult.WON)
 
 ## The one thing the city learns about how the player actually played, recorded at the only moment

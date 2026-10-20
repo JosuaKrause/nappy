@@ -6,14 +6,16 @@ extends RefCounted
 ## name that changes starts a new series and ends the old one's history (docs/TELEMETRY.md, "The page
 ## counts visits"); the run log is read back across builds, so a line that moves or changes wording
 ## is a log a reader cannot compare with last week's. The expected names are literals here, and the
-## expected log is `BASELINE`, the lines this same script produced on the build before the run log,
-## the counter and the UI became observers of domain events — so a refactor of who calls whom shows
-## up here as a difference, line by line, and not as a count that quietly drifted.
+## expected log is `BASELINE`, the lines this same script produces — recorded before the run log,
+## the counter and the UI became observers of domain events, and its escape half again when the
+## escape's sections became days — so a refactor of who calls whom shows up here as a difference,
+## line by line, and not as a count that quietly drifted.
 ##
 ## Driven through the real boot with the tree paused, so no frame of the day runs between the calls
 ## below and every line is stamped at the clock it was written at: a day lost to a car, to her
 ## crying, to a catalogue row and to dusk, each tried again, then won and the next day begun; then
-## the escape handed over from day 14, lost once, walked out of and left by the tunnel.
+## the escape handed over from day 14, lost once, walked out of and left by the tunnel — each of its
+## sections a day of its own, ended through the day's own finish path.
 
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 ## The run log the script below wrote on the build this was recorded on, one line per line; the
@@ -113,13 +115,15 @@ func _check_the_observer_runs_after(t, main: Node, world: Array, boot: String) -
 
 # --------------------------------------------------------------- the escape ---
 
-## A won day 14 handing over: the building's brief, the section lost to the masked man and begun
-## again, the walk out of the service door into the city, and out by the tunnel.
+## A won day 14 handing over: the building's brief, the section lost to the masked man — the day's
+## outcome screen — and begun again, the walk out of the service door into the city, and out by the
+## tunnel. Each section is counted as a day of its own (`DaySpec.BUILDING_DAY`,
+## `DaySpec.CITY_DAY`) beside the escape's own names.
 func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	var saved_paused: bool = t.get_tree().paused
 	GameState.start_run(SEED)
 	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.escape_section = FinaleController.Section.BUILDING
+	GameState.escape_section = DaySpec.Section.BUILDING
 	var counter := RecordingCounter.new()
 	t.add_child(counter)
 	t.get_tree().paused = true
@@ -131,34 +135,48 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	main.configure(RunConfig.parse(PackedStringArray(["--no-save"]), "", true))
 	t.add_child(main)
 	var frames := 0
-	while frames < BOOT_FRAMES and not (main._finale and main._summary.is_showing()):
+	while frames < BOOT_FRAMES and not (main._spec.section != DaySpec.Section.NONE
+			and main._summary.is_showing()):
 		await t.get_tree().process_frame
 		frames += 1
-	t.check(main._finale != null and main._summary.is_showing(), "the escape opened on its brief")
+	t.check(main._spec.section == DaySpec.Section.BUILDING and main._summary.is_showing(),
+			"the escape opened on its brief")
 
-	main._on_finale_summary_continued()
-	_check_the_observer_runs_after(t, main, [main._finale, main._finale.clock(), main._edge,
-			main._interior, main._interior_events], "the escape")
+	main._on_summary_continued()
+	_check_the_observer_runs_after(t, main, [main._day, main._edge, main._interior,
+			main._interior_events], "the escape")
 	t.get_tree().paused = true
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
-	main._on_finale_summary_continued()
+	t.check(main._summary.is_showing() and not main._resume_gate_open,
+			"a lost section comes up on the day's outcome screen")
+	main._on_summary_continued()
+	t.check(main._summary.is_showing() and main._resume_gate_open,
+			"and its continue on the section's brief")
+	main._on_summary_continued()
 	t.get_tree().paused = true
-	main._on_escape_exit_requested()
-	main._on_finale_summary_continued()
+	main._interior.exit_requested.emit()
+	t.check(main._spec.section == DaySpec.Section.CITY and main._summary.is_showing(),
+			"through the service door, the city opens on its brief")
+	main._on_summary_continued()
 	t.get_tree().paused = true
-	main._on_finale_escaped(CityEdge.Kind.TUNNEL)
+	main._player.global_position = main._spec.exits[CityEdge.Kind.TUNNEL]
+	main._day._process(0.0)
 
 	var lines := _lines_kept(Telemetry.current_log().lines)
 	Telemetry.end_run()
+	var building := "nappy-day-%d-" % DaySpec.BUILDING_DAY
+	var city := "nappy-day-%d-" % DaySpec.CITY_DAY
 	t.check(counter.sent == [
-			"nappy-run-fresh", "nappy-escape-begun", "nappy-escape-lost", "nappy-day-14-blackout",
-			"nappy-escape-city", "nappy-escape-out", "nappy-ending-neutral"],
+			"nappy-run-fresh", "nappy-escape-begun", building + "began",
+			building + "lost-hard-fail-masked-pursuer", "nappy-escape-lost", building + "began",
+			building + "won", "nappy-escape-city", city + "began", city + "blackout", city + "won",
+			"nappy-escape-out", "nappy-ending-neutral"],
 			"the escape handed over, lost once and left sends exactly these (%s)" % [counter.sent])
 
 	t.remove_child(main)
 	main.free()
 	counter.free()
-	GameState.escape_section = FinaleController.Section.NONE
+	GameState.escape_section = DaySpec.Section.NONE
 	t.get_tree().paused = saved_paused
 	return lines
 

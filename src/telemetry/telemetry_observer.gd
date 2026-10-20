@@ -21,13 +21,14 @@ extends Node
 ## calls it on the domain events that start and end a day or a section.
 ##
 ## **The escape is watched by the same observer.** *("The escape shouldn't behave any different
-## than the rest of the game.")* Each of its two sections is a day with a clock of its own, so
-## `setup_escape()` hands this the section's `DayController` in place of a day's, and the session
-## says which world she is in as each section starts — `watch_building()` or `watch_city()` — before
-## `start_section()`, the escape's `start_day()`. What a day's watchers read that a section does
-## not have is what switches them off, rather than a mode flag in each: no route tree, so no `path`;
-## no `ResistanceDirector`, so no `contact`; no `CityMap` in the building, so no `cross`, `road`,
-## `calm` or `left` there, and a tile in any line is the building's own grid. The events are an
+## than the rest of the game.")* Each of its two sections is a day with the day's own clock, so
+## `setup_escape()` hands this the run's `DayController`, the session says which world she is in as
+## each section starts — `watch_building()` or `watch_city()` — before `start_section()`, the
+## escape's `start_day()`, and a section ends on `day_finished()` as a day does. What a day's
+## watchers read that a section does not have is what switches them off, rather than a mode flag in
+## each: no route tree, so no `path`; no `ResistanceDirector`, so no `contact`; no `CityMap` in the
+## building, so no `cross`, `road`, `calm` or `left` there, no trail and no dusk map, and a tile in
+## any line is the building's own grid. The events are an
 ## event source either way — `EventManager` or `InteriorEvents`, both answering `instances()` and
 ## `total_excitement_at()` — so `near`, `chase`, `cue`, `freeze`, `run`, `idle`, `blocked`, `turn`,
 ## `frame` and the losing line read a section exactly as they read a day.
@@ -127,8 +128,7 @@ var _interior: InteriorScene
 ## `EventManager` outside it. Null on a day, which reads `_city.events` instead; see `_source()`.
 var _events: Node
 ## `"the building"` or `"the city"` while the escape is being watched, `""` on a day. Written into
-## the escape's own `start`, `lost` and `woke` lines, and what keeps the dusk map's two lists empty,
-## since the escape draws no map.
+## the escape's own `start`, `lost`, `home` and `woke` lines.
 var _escape_section := ""
 var _player: Stroller
 var _baby: Baby
@@ -273,9 +273,9 @@ func setup(city: City, player: Stroller, baby: Baby, day: DayController,
 	_edge = edge
 	_listen()
 
-## The escape's own `setup()`: her, the baby, the badges, and the section's clock — the
-## `DayController` `FinaleController.clock()` owns, which is timed and gated exactly as a day's is,
-## so `_process()` and every duration below read a section the way they read a day. No city yet,
+## The escape's own `setup()`: her, the baby, the badges, and the day's clock, which times and
+## gates a section exactly as it does a day, so `_process()` and every duration below read a section
+## the way they read a day. No city yet,
 ## no map and no `ResistanceDirector`: the world is told per section, by `watch_building()` or
 ## `watch_city()`, and the escape has no subquest to watch.
 func setup_escape(player: Stroller, baby: Baby, clock: DayController, spikes: bool,
@@ -319,8 +319,8 @@ func watch_city(city: City) -> void:
 ## `start_day()`. Clears what the last attempt left, puts the log's clock back to zero **and its
 ## automatic-snapshot schedule with it** (`Telemetry.restart_section_clock()`) so a retry's lines
 ## and its shots are both timed from its own start the way a day's are from dawn, and writes the
-## `start` line. **A retry says so on it**, which is the section restart in the log: the `lost`
-## line above it says why, and this one says it began again.
+## `start` line. **A retry says so on it**, under the retry's own header: the `lost` line of the
+## attempt before says why, and this one says it began again.
 ##
 ## `_tree` stays null, which is what keeps `path` silent: the escape's chains are grown by
 ## `FinalePlanner`, not a `RouteTree`, and there is no corridor to be on or off.
@@ -331,27 +331,6 @@ func start_section(restarted: bool) -> void:
 		"restarted" if restarted else "entered", _escape_section,
 		RunTrace.tile(_tile_of(_player.global_position)),
 		RunTrace.compass(_player.facing)])
-
-## A section lost — the escape's half of `day_finished()` for the three losing paths, with the same
-## line and the same picture, and the section named on it. Called on `EventBus.escape_lost`,
-## before the section starts again, so the loss is written above the retry's `start` line and at the
-## second it happened. `result` is a `GameEnums.DayResult` passed as an `int`, the way the event
-## carries it.
-func section_lost(result: int) -> void:
-	_flush_road(_player.global_position)
-	var name: String = GameEnums.DayResult.keys()[result]
-	Telemetry.note("lost", "%s in %s after %.1fs — %s | %s | near: %s" % [
-		name.to_lower(), _escape_section, _day.time_total - _day.time_remaining,
-		_day.failure_reason, _meters(), _nearest()])
-	Telemetry.snapshot("lost-%s" % name.to_lower())
-
-## Out of the city: the escape's `home` line, with the way out and the margin, the way a won day's
-## says how much of the clock was left. `exit_kind` is a `CityEdge.Kind`.
-func escaped(exit_kind: int) -> void:
-	_flush_road(_player.global_position)
-	Telemetry.note("home", "escaped by the %s, %.1fs to spare | %s" % [
-		"tunnel" if exit_kind == CityEdge.Kind.TUNNEL else "bridge", _day.time_remaining,
-		_meters()])
 
 ## Clears yesterday. Called after the day's plan has been written, so the `start` line is the
 ## first thing under the header that the player is responsible for.
@@ -448,15 +427,29 @@ func day_finished(result: GameEnums.DayResult, cause := "") -> void:
 	_flush_corridor()
 	var name: String = GameEnums.DayResult.keys()[result]
 	if result == GameEnums.DayResult.WON:
-		Telemetry.note("home", "WON, %.1fs to spare" % _day.time_remaining)
+		Telemetry.note("home", _won_line())
 		return
-	Telemetry.note("lost", "%s after %.1fs%s — %s | %s | near: %s" % [
-		name.to_lower(), _day.time_total - _day.time_remaining,
+	# A section of the escape is named on its line: the building or the city.
+	var where := " in %s" % _escape_section if _escape_section != "" else ""
+	Telemetry.note("lost", "%s%s after %.1fs%s — %s | %s | near: %s" % [
+		name.to_lower(), where, _day.time_total - _day.time_remaining,
 		" to %s" % cause if cause != "" else "",
 		_day.failure_reason, _meters(), _nearest()])
 	# The single most useful frame in a run, and the only one that is always worth the file: what
 	# the street looked like at the moment the day ended.
 	Telemetry.snapshot("lost-%s" % name.to_lower())
+
+## A won day's `home` line: the margin, and in the escape where she got out — through the
+## building's service exit, or by the tunnel or the bridge out of the city
+## (`DayController.exit_reached`, a `CityEdge.Kind`).
+func _won_line() -> String:
+	if _escape_section == "":
+		return "WON, %.1fs to spare" % _day.time_remaining
+	if _day.exit_reached < 0:
+		return "out of %s, %.1fs to spare | %s" % [_escape_section, _day.time_remaining, _meters()]
+	return "escaped by the %s, %.1fs to spare | %s" % [
+		"tunnel" if _day.exit_reached == CityEdge.Kind.TUNNEL else "bridge", _day.time_remaining,
+		_meters()]
 
 # ------------------------------------------------------------------- watching ---
 
@@ -1198,8 +1191,8 @@ func _watch_the_contact(here: Vector2) -> void:
 ## trail, because running is a property of a stretch of the one walk, not a separate walk of its
 ## own — the same reasoning `_watch_running` uses for the `run` entry, one attribute richer.
 func _watch_the_trail(here: Vector2) -> void:
-	# The escape draws no dusk map, so it keeps no trail for one.
-	if _escape_section != "":
+	# The escape's building has no city map to draw a dusk map on, so it keeps no trail for one.
+	if _interior:
 		return
 	if not _trail.is_empty() and here.distance_to(_trail_last) < TRAIL_SAMPLE_DISTANCE:
 		return
@@ -1216,7 +1209,7 @@ func _watch_the_trail(here: Vector2) -> void:
 ## Once a plan is met it stays met for the rest of the day: the dictionary is never cleared except
 ## in `start_day()`, so streaming an event back out and in again does not un-meet it.
 func _watch_met_events(here: Vector2) -> void:
-	if _escape_section != "":
+	if not _city:
 		return
 	for plan in _city.events.plans():
 		if _met_events.has(plan) or not plan.is_placed() or not plan.live:

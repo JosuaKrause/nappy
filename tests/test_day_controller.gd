@@ -13,8 +13,9 @@ func run(t) -> void:
 	_test_invincible_stops_emitting_once_the_first_second_is_told(t)
 	_test_the_escape_clock_moves_every_frame(t)
 	_test_the_formatters(t)
-	_test_the_finale_flags_its_own_clock(t)
+	_test_an_escape_section_reads_its_clock_to_the_hundredth(t)
 	_test_a_frozen_escape_clock_stays_silent(t)
+	_test_each_section_is_won_at_its_own_goal(t)
 
 func _rig(t) -> DayController:
 	var player := Node2D.new()
@@ -101,7 +102,7 @@ func _test_invincible_stops_emitting_once_the_first_second_is_told(t) -> void:
 ## once a second; the ending screens' formatter keeps three digits. *(inbox #746 in woolly-penguin.)*
 func _test_the_escape_clock_moves_every_frame(t) -> void:
 	var escape := _rig(t)
-	escape.emit_every_frame = true
+	escape.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
 	var labels := []
 	var on_emit := func(remaining: float, _total: float) -> void:
 		labels.append(GameState.format_clock_hundredths(remaining))
@@ -140,23 +141,23 @@ func _test_the_formatters(t) -> void:
 	t.check(GameState.format_clock(179.432) == "2:59.432",
 			"the ending's run length keeps three digits (%s)" % GameState.format_clock(179.432))
 
-## `FinaleController` builds its own clock and has to flag it: drop that line and the escape's
-## label goes back to changing once a second.
-func _test_the_finale_flags_its_own_clock(t) -> void:
-	var finale := FinaleController.new()
-	t.add_child(finale)
-	t.check(finale._clock.emit_every_frame,
-			"the escape's own DayController emits on every frame")
+## The escape's two sections say their clock reads to the hundredth (`DaySpec.clock_hundredths`),
+## which is what the day's clock emits every frame by: drop it and the escape's label goes back to
+## changing once a second. A day's spec, and a `DayController` handed none, read to the second.
+func _test_an_escape_section_reads_its_clock_to_the_hundredth(t) -> void:
+	for section: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
+		t.check(DaySpec.for_section(section, 180.0).clock_hundredths,
+				"escape section %d's clock reads to the hundredth" % section)
+	t.check(not DaySpec.for_day(3, 210.0).clock_hundredths, "a day's clock does not")
 	var plain := DayController.new()
-	t.check(not plain.emit_every_frame, "a day's DayController does not")
+	t.check(not plain.spec.clock_hundredths, "nor does a DayController handed no spec")
 	plain.free()
-	finale.free()
 
 ## A frozen `--invincible` escape clock has nothing new to tell the HUD, flag or not.
 func _test_a_frozen_escape_clock_stays_silent(t) -> void:
 	var escape := _rig(t)
 	escape.invincible = true
-	escape.emit_every_frame = true
+	escape.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
 	var emits := [0]
 	var count := func(_r: float, _tt: float) -> void:
 		emits[0] += 1
@@ -168,3 +169,51 @@ func _test_a_frozen_escape_clock_stays_silent(t) -> void:
 	t.check(emits[0] == 0, "a frozen escape clock is silent (%d emits)" % emits[0])
 	EventBus.day_time_changed.disconnect(count)
 	escape.free()
+
+## **Each section is won at its own goal, through the day's own `day_finished`** *(minty-lemur #785:
+## "the escape is just like a normal day with some special settings")*: the building when the
+## building says she is through its service exit (`reach_the_exit()`), the city when she reaches
+## one of its two ways out, however the baby is — and which way is kept. A day is never won by
+## either: its goal is her front door.
+func _test_each_section_is_won_at_its_own_goal(t) -> void:
+	var results: Array[int] = []
+	var on_finished := func(result: GameEnums.DayResult) -> void:
+		results.append(result)
+
+	var building := _rig(t)
+	building.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+	building.day_finished.connect(on_finished)
+	building.start(180.0)
+	building._process(0.016)
+	t.check(results.is_empty(), "the building is not won by standing anywhere (%s)" % [results])
+	building.reach_the_exit()
+	t.check(results == [GameEnums.DayResult.WON] and not building.is_running(),
+			"through its service exit, the building section is won (%s)" % [results])
+	building.free()
+
+	results.clear()
+	var city := _rig(t)
+	city.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
+	city.spec.exits = {CityEdge.Kind.TUNNEL: Vector2(1000.0, 0.0),
+			CityEdge.Kind.BRIDGE: Vector2(-1000.0, 0.0)}
+	city.day_finished.connect(on_finished)
+	city.start(180.0)
+	city.reach_the_exit()
+	city._process(0.016)
+	t.check(results.is_empty(), "the city is won by neither its building's exit nor standing away "
+			+ "from its two ways out (%s)" % [results])
+	city._player.global_position = Vector2(-1000.0 + Tuning.FINALE_EXIT_REACH - 1.0, 0.0)
+	city._process(0.016)
+	t.check(results == [GameEnums.DayResult.WON] and city.exit_reached == CityEdge.Kind.BRIDGE,
+			"at the bridge deck, awake, the city section is won by the bridge (%s, %d)"
+			% [results, city.exit_reached])
+	city.free()
+
+	results.clear()
+	var day := _rig(t)
+	day.day_finished.connect(on_finished)
+	day.start(210.0)
+	day.reach_the_exit()
+	day._process(0.016)
+	t.check(results.is_empty(), "a day is won by neither (%s)" % [results])
+	day.free()

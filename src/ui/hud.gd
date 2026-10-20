@@ -283,22 +283,23 @@ func _say(line: String, seconds: float) -> void:
 	_teach.show_line(line)
 	_teach_left = seconds
 
-## The escape's two hint lines — *"escape the apartment"* and *"exit the city"* — said by `main` at
-## the start of each section. Public because neither hangs off a day or a telegraph, so there is no
-## signal the HUD could have listened for; it is the same one-line lesson `_teach_the_day()` gives
-## on day 1, for the same length of time, and it is said once per section rather than on a retry.
+## The escape's two hint lines — *"Escape the building"* and *"Escape the city"*, each section's own
+## words (`DaySpec.title`) — said by `main` every time a section is engaged, a first entry, a retry
+## and a resumed one alike. Public because neither hangs off a telegraph; it is the same one-line
+## lesson `_teach_the_day()` gives on day 1, for the same length of time.
 func say_once(line: String) -> void:
 	_say(line, TEACH_SECONDS)
 
-## Whether the clock is the escape's rather than a day's. The only thing it changes is the format —
-## *"in addition to minutes and seconds the timer also shows milliseconds. this makes the timer
-## appear faster than just the seconds alone which adds additional tension"*, tried as hundredths
-## (inbox #746 in woolly-penguin) — so it is a flag on the one function that draws the clock rather than a second
-## clock or a second label.
-var _finale := false
+## Whether the clock reads to the hundredth, as the day being walked says
+## (`DaySpec.clock_hundredths`, the escape's). The only thing it changes is the format — *"in
+## addition to minutes and seconds the timer also shows milliseconds. this makes the timer appear
+## faster than just the seconds alone which adds additional tension"*, tried as hundredths
+## (inbox #746 in woolly-penguin) — so it is a flag on the one function that draws the clock rather
+## than a second clock or a second label. `main` hands it in as each day starts.
+var _hundredths := false
 
-func set_finale(on: bool) -> void:
-	_finale = on
+func set_clock_hundredths(on: bool) -> void:
+	_hundredths = on
 
 func _process(delta: float) -> void:
 	_teach_the_pause(delta)
@@ -327,14 +328,12 @@ func _on_baby_state_changed(_state: GameEnums.BabyState) -> void:
 ## already visible on the pram itself.
 ##
 ## **Re-asks the group every call until it gets an answer**, rather than trusting the one lookup
-## `_ready()` made. In the escape `main._ready_escape()` builds this HUD before the building or
-## the city — and so before the `Baby` it goes looking for even exists — so `_ready()`'s own
-## `get_first_node_in_group("baby")` came back empty and this stayed unset for the section's whole
-## life: the label was left showing `hud.tscn`'s own placeholder text, "awake", forever, while the
-## pram's own picture (`Stroller._draw_baby_cue()`, reading the same `Baby.state`) drew whatever
-## she actually was. Found investigating *"the readout said 'awake' while the baby was drawn
-## asleep"* under `--start-escape stairwell:right --invincible`; the two were never two sources,
-## only one of them was looking at nothing.
+## `_ready()` made. In the escape `main` builds this HUD before the building or the city — and so
+## before the `Baby` it goes looking for even exists — so `_ready()`'s own
+## `get_first_node_in_group("baby")` comes back empty, and a label that stopped asking would show
+## `hud.tscn`'s own placeholder text, "awake", for the section's whole life while the pram's own
+## picture (`Stroller._draw_baby_cue()`, reading the same `Baby.state`) drew whatever she actually
+## was.
 func _refresh_state() -> void:
 	if not _baby:
 		_baby = get_tree().get_first_node_in_group("baby") as Baby
@@ -355,9 +354,9 @@ func _refresh_state() -> void:
 func _on_day_time_changed(remaining: float, total: float) -> void:
 	# A day reads to the second (`GameState.format_clock_seconds()`, shared with the day summary's
 	# elapsed-time line) and the escape reads to the hundredth (`GameState.format_clock_hundredths()`),
-	# which its `DayController` feeds on every frame (`emit_every_frame`). The ending screens'
-	# run length keeps the millisecond (`GameState.format_clock()`): it is a still number.
-	_clock.text = GameState.format_clock_hundredths(remaining) if _finale \
+	# which its `DayController` feeds on every frame (`DaySpec.clock_hundredths`). The ending
+	# screens' run length keeps the millisecond (`GameState.format_clock()`): it is a still number.
+	_clock.text = GameState.format_clock_hundredths(remaining) if _hundredths \
 			else GameState.format_clock_seconds(remaining)
 	# The last minute is the one worth panicking about.
 	var urgent := remaining < 60.0 and total > 0.0

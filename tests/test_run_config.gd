@@ -222,15 +222,17 @@ func _test_the_city_hands_each_value_to_its_part(t) -> void:
 			"and every agent the crowd makes")
 	city.free()
 
-## The escape's clock is a day's: it runs the section length it is handed and stands still when it
-## is handed `invincible`.
+## The escape's clock is a day's: a section's spec carries the section length it is handed, and the
+## day's clock runs it and stands still when it is handed `invincible`.
 func _test_the_escape_clock_takes_its_length_and_invincible(t) -> void:
-	var finale := FinaleController.new()
-	finale.section_length = 25.0
-	finale.invincible = true
-	t.add_child(finale)
-	finale.start_section()
-	t.check(is_equal_approx(finale.time_remaining(), 25.0), "a section runs the length handed in")
-	finale.clock()._process(5.0)
-	t.check(is_equal_approx(finale.time_remaining(), 25.0), "and stands still when invincible")
-	finale.free()
+	var spec := DaySpec.for_section(DaySpec.Section.BUILDING, 25.0)
+	var clock := DayController.new()
+	clock.invincible = true
+	clock.spec = spec
+	t.add_child(clock)
+	clock.set_process(false)
+	clock.start(spec.length)
+	t.check(is_equal_approx(clock.time_remaining, 25.0), "a section runs the length handed in")
+	clock._process(5.0)
+	t.check(is_equal_approx(clock.time_remaining, 25.0), "and stands still when invincible")
+	clock.free()

@@ -17,7 +17,7 @@ extends RefCounted
 ## **The escape's section rides beside those, not inside the snapshot.** `"escape_section"` is a
 ## top-level key like `"day_under_way"`, so a file written before the escape was a run's ending is
 ## still a complete snapshot (`GameState.snapshot_is_complete()` asks only about `"state"`) and
-## still resumes, reading as `FinaleController.Section.NONE` by absence. Putting it in
+## still resumes, reading as `DaySpec.Section.NONE` by absence. Putting it in
 ## `_SAVE_FIELDS` instead would have made every save on disk unreadable for the sake of one int.
 ## `"completed_resistance_alley_tiles"` rides the same way, for the same reason, reading as "none
 ## recorded" by absence. `"fenced_park"`/`"fenced_park_act"` ride the same way too: a save from
