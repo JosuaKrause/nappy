@@ -49,6 +49,11 @@ the worktree, use `.venv/bin/python tools/agent-identity.py run <role> -- <comma
 python tools/agent-identity.py status <role>` first; if the role is not usable, stop and report —
 never fall back to a direct call. Open a ready PR, not a draft.
 
+**Text you post or commit is written to a directory of your own, made with `mktemp -d`**: a PR
+body, a commit message, a review, a comment. Never a fixed name such as `/tmp/pr_body.md`: `/tmp`
+outlives a session, so a fixed name can already hold another run's text, and a write of your own
+that did not land publishes theirs. Read the file back before passing it on.
+
 ## Scope
 
 **Never edit** `docs/TODO.md`, anything under `docs/todo/`, `docs/review/`, `docs/decisions/` or
