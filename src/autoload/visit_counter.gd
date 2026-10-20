@@ -40,11 +40,9 @@ extends Node
 ##   name, one event rather than a `lost-*` beside a second one, folding in what actually did it:
 ##   `car` for the one hard fail that is not a catalogue row, otherwise a catalogue id (hyphenated,
 ##   `charging-dog`); a crying loss names `crowd`, `traffic`, `self`, or a catalogue id, whichever
-##   landed the most on her over the crying window. See `EventBus.day_lost_to`'s own doc and
-##   `_loss_event_suffix()` below. A `LOST_CRYING`/`LOST_HARD_FAIL` day this counter never got a
-##   cause for — reachable only where something drives `day_ended` without first driving
-##   `day_lost_to` for the same day, which nothing in `main.gd`'s own wiring does — still sends the
-##   bare `lost-crying` / `lost-hard-fail` rather than nothing.
+##   landed the most on her over the crying window — the `cause` `EventBus.day_ended` carries, see
+##   its own doc and `_loss_event_suffix()` below. A `LOST_CRYING`/`LOST_HARD_FAIL` day ended with
+##   no cause still sends the bare `lost-crying` / `lost-hard-fail` rather than nothing.
 ## - `nappy-day-3-seen-fire` / `nappy-day-3-fire-unmet` — the burning building sighted, and lit off
 ##   her path at dusk on a day she won without meeting it.
 ## - `nappy-day-14-blackout` — the city goes dark, whether or not a mast was silenced.
@@ -81,7 +79,6 @@ extends Node
 func _ready() -> void:
 	EventBus.run_begun.connect(_on_run_begun)
 	EventBus.day_started.connect(_on_day_started)
-	EventBus.day_lost_to.connect(_on_day_lost_to)
 	EventBus.day_ended.connect(_on_day_ended)
 	EventBus.run_restarted.connect(_on_run_restarted)
 	EventBus.run_ended.connect(_on_run_ended)
@@ -235,14 +232,11 @@ static func _day_event_name(day: int, suffix: String) -> String:
 static func _loss_cause(result: GameEnums.DayResult) -> String:
 	return String(GameEnums.DayResult.keys()[result]).to_lower().replace("_", "-")
 
-## The full name a day's own end sends, `_loss_cause(result)` with `cause` — `EventBus.day_lost_to`'s
-## raw, unprefixed source — folded on for the two results it is ever set for. `cause` is only ever
-## non-empty for `LOST_CRYING`/`LOST_HARD_FAIL` in real play, since `main._on_day_finished()` never
-## fires `day_lost_to` for `WON` or `LOST_TIMEOUT`; this still guards on `result` rather than trusting
-## an empty `cause` alone, so a stale cause left over from an earlier day can never attach itself to
-## either of those two. An empty `cause` reaching here for `LOST_CRYING`/`LOST_HARD_FAIL` — nothing
-## in `main.gd`'s own wiring does this, only a caller driving `_on_day_ended()` without first driving
-## `_on_day_lost_to()` for the same day — sends the bare loss name rather than nothing.
+## The full name a day's own end sends: `_loss_cause(result)` with `cause` — `EventBus.day_ended`'s
+## own, unprefixed — folded on for the two results that ever have one. The game names no cause for
+## `WON` or `LOST_TIMEOUT`; this still guards on `result` rather than trusting an empty `cause`
+## alone, so neither name can ever carry one. An empty `cause` for `LOST_CRYING`/`LOST_HARD_FAIL`
+## sends the bare loss name rather than nothing.
 static func _loss_event_suffix(result: GameEnums.DayResult, cause: String) -> String:
 	var base := _loss_cause(result)
 	if cause.is_empty():
@@ -348,16 +342,6 @@ func _on_run_mode_chosen(hard: bool, day: int) -> void:
 
 func _on_went_back_to_a_checkpoint(checkpoint_day: int, lost_day: int) -> void:
 	_send_event(_checkpoint_event_name(checkpoint_day, lost_day))
-
-## The cause `day_lost_to` supplied for whichever day is currently ending, read once by
-## `_on_day_ended()` immediately after and reset the moment it is read. `main._on_day_finished()`
-## fires the two signals back to back for the same day (`day_lost_to` then `day_ended`, with
-## nothing else in between), so nothing here needs a day key — and the reset means a stale cause
-## from one day can never survive to attach itself to a later one.
-var _pending_loss_cause := ""
-
-func _on_day_lost_to(_day: int, cause: String) -> void:
-	_pending_loss_cause = cause
 
 ## Which day offered a step is on offer, kept only long enough to say whether the day it belongs
 ## to ended with the step done or without it — `step index -> day`. A retry re-offers the same
@@ -489,9 +473,7 @@ func _on_run_restarted(day: int) -> void:
 func _on_run_ended(ending: GameEnums.Ending) -> void:
 	_send_event("nappy-ending-%s" % String(GameEnums.Ending.keys()[ending]).to_lower())
 
-func _on_day_ended(day: int, result: GameEnums.DayResult) -> void:
-	var cause := _pending_loss_cause
-	_pending_loss_cause = ""
+func _on_day_ended(day: int, result: GameEnums.DayResult, cause: String, _elapsed: float) -> void:
 	_send_event(_day_event_name(day, _loss_event_suffix(result, cause)))
 	# Whatever today's step still stands open — never reached, or reached but not finished — is
 	# skipped the moment the day it belonged to ends, whether the day was won or lost.
@@ -507,10 +489,10 @@ func _on_escape_begun() -> void:
 func _on_escape_city_entered() -> void:
 	_send_event("nappy-escape-city")
 
-func _on_escape_lost() -> void:
+func _on_escape_lost(_section: int, _result: int) -> void:
 	_send_event("nappy-escape-lost")
 
-func _on_escape_out() -> void:
+func _on_escape_out(_exit_kind: int) -> void:
 	_send_event("nappy-escape-out")
 
 func _on_controls_chosen(joystick: bool, by_key: bool) -> void:

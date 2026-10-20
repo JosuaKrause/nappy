@@ -13,16 +13,17 @@ extends Node
 ## Nothing below writes to anything outside itself. It reads positions and meters, emits lines,
 ## and — for the dusk map — keeps two lists in memory: the trail she actually walked and which
 ## planned events she came close enough to for them to have cost her anything. Neither is written
-## to the log; `main.gd` hands both to `Telemetry.write_map` at dusk, the same way it already hands
-## the day's route tree.
+## to the log; `RunSession` hands both to `Telemetry.write_map` at dusk, beside the day's route
+## tree.
 ##
-## It is only added to the tree when a run is being traced, so when telemetry is off this
-## costs nothing at all rather than costing a disabled check per frame.
+## `RunSession` owns it: it is only added to the tree when a run is being traced, so when telemetry
+## is off this costs nothing at all rather than costing a disabled check per frame, and the session
+## calls it on the domain events that start and end a day or a section.
 ##
 ## **The escape is watched by the same observer.** *("The escape shouldn't behave any different
 ## than the rest of the game.")* Each of its two sections is a day with a clock of its own, so
-## `setup_escape()` hands this the section's `DayController` in place of a day's, and `main` says
-## which world she is in as each section starts — `watch_building()` or `watch_city()` — before
+## `setup_escape()` hands this the section's `DayController` in place of a day's, and the session
+## says which world she is in as each section starts — `watch_building()` or `watch_city()` — before
 ## `start_section()`, the escape's `start_day()`. What a day's watchers read that a section does
 ## not have is what switches them off, rather than a mode flag in each: no route tree, so no `path`;
 ## no `ResistanceDirector`, so no `contact`; no `CityMap` in the building, so no `cross`, `road`,
@@ -332,10 +333,10 @@ func start_section(restarted: bool) -> void:
 		RunTrace.compass(_player.facing)])
 
 ## A section lost — the escape's half of `day_finished()` for the three losing paths, with the same
-## line and the same picture, and the section named on it. Called by `main` before the section
-## starts again, so the loss is written above the retry's `start` line and at the second it
-## happened. `result` is a `GameEnums.DayResult` passed as an `int`, the way
-## `FinaleController.section_lost` carries it.
+## line and the same picture, and the section named on it. Called on `EventBus.escape_lost`,
+## before the section starts again, so the loss is written above the retry's `start` line and at the
+## second it happened. `result` is a `GameEnums.DayResult` passed as an `int`, the way the event
+## carries it.
 func section_lost(result: int) -> void:
 	_flush_road(_player.global_position)
 	var name: String = GameEnums.DayResult.keys()[result]
@@ -434,13 +435,13 @@ func _live() -> Array[EventInstance]:
 		return []
 	return source.instances()
 
-## The end of the day, with what was around at the moment it ended. Called by `main.gd`
+## The end of the day, with what was around at the moment it ended. Called on `EventBus.day_ended`,
 ## before the calendar advances, so the outcome is written above the nerve it cost.
 ##
-## `cause` is what the page's counter folds into the day's loss — `EventBus.day_lost_to`'s own
-## string, `pelican` for a pelican rather than its row's `cyclist` — or "" for a win or a timeout,
-## which name nothing further. On the `lost` line as `to <cause>`, so a run log and the counter
-## name a lost day the same way.
+## `cause` is the day's end's own — `pelican` for a pelican rather than its row's `cyclist` — or ""
+## for a win or a timeout, which name nothing further. On the `lost` line as `to <cause>`, so a run
+## log and the page's counter, which folds the same `cause` into its loss name, name a lost day the
+## same way.
 func day_finished(result: GameEnums.DayResult, cause := "") -> void:
 	# Above the outcome, because it is part of how the day got there.
 	_flush_road(_player.global_position)
@@ -1223,8 +1224,8 @@ func _watch_met_events(here: Vector2) -> void:
 		if plan.live.global_position.distance_to(here) <= plan.def.outer_radius:
 			_met_events[plan] = true
 
-## The trail and the met events, for `main.gd` to hand to `Telemetry.write_map` at dusk alongside
-## the route tree it already passes. Empty before a day has been walked — before `start_day()` and
+## The trail and the met events, for `RunSession` to hand to `Telemetry.write_map` at dusk beside
+## the route tree. Empty before a day has been walked — before `start_day()` and
 ## on the dawn map, which is the correct answer rather than a gap: there is no walk yet, and a
 ## picture that invented one would be worse than a picture with none.
 func trail() -> Array[Vector3]:

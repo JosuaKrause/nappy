@@ -8,8 +8,8 @@ extends RefCounted
 ## more followed by a space and another word or a `%` (so `"Day %d of %d"`, `"press a button"`
 ## and `"The end."` are sentences, `"res://x"`, `"ui/pause"`, `"%d"` and `"A"` are not).
 ## Comments are not code, and neither is the argument of a log or error call (`print`,
-## `push_warning`, `push_error`, `printerr`, `assert`, `Telemetry.note`), which may run over several
-## lines; both are skipped before a string is judged.
+## `push_warning`, `push_error`, `printerr`, `assert`, `Telemetry.note`, a run trace's `note`), which
+## may run over several lines; both are skipped before a string is judged.
 ##
 ## A text added to a screen's own script therefore fails here, with the file, the line and the
 ## text: it belongs in `Texts`, and the caller reads `Texts.<NAME>`. A developer readout is
@@ -79,8 +79,6 @@ const _ALLOWED_LITERALS := {
 		"%s %s age=%.1f/%.1f %.0fpx i=%.1f": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"no baby yet": "the run log's capture context",
 		"exc %d, sleep %d": "the run log's capture context",
-		"asked for a picture at %s": "a run-log line",
-		"asked for an animation burst at %s": "a run-log line",
 	},
 	"res://src/ui/hud.gd": {
 		"asleep - go home": "the debug HUD's state line",
@@ -161,7 +159,8 @@ static func _log_opener_at(line: String, at: int) -> String:
 				or before.is_valid_int():
 			return ""
 	for opener in ["print(", "push_warning(", "push_error(", "printerr(", "print_rich(",
-			"assert(", "Telemetry.note("]:
+			"assert(", "Telemetry.note(", "trace.note(", "_trace.note(", "_the_trace().note(",
+			"_note("]:
 		if line.substr(at, opener.length()) == opener:
 			return opener
 	return ""

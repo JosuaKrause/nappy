@@ -1037,7 +1037,7 @@ func _look_through_the_camera() -> void:
 ## What the run log and the page's counter call the event whose lethal reach ended today
 ## (`EventInstance.logged_name()` — `pelican` for a pelican, otherwise its row's id), or "" when no
 ## event's reach has (a car, or nothing yet). Set by `_check_hard_fails()` with the
-## `hard_fail_triggered` it sends, read by `main._on_day_finished()` for `EventBus.day_lost_to`, and
+## `hard_fail_triggered` it sends, read by `main._on_day_finished()` for `EventBus.day_ended`, and
 ## reset with `_hard_failed` when a day starts. Telemetry only.
 func what_struck_her() -> String:
 	return _struck_by

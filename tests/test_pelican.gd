@@ -364,6 +364,8 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 			"the page's counter listens to all four of the pelican's signals")
 	Telemetry.begin_memory_log()
 	Telemetry.begin_day(Tuning.RUN_TAUGHT_DAY, 1, SEED, SEED, 180.0)
+	# The manager's own lines reach the run log through the trace a booted city hands it.
+	events.trace = RunTrace.new(Telemetry.note)
 
 	var before := events.instances().size()
 	events.pelican_rig = EventManager.PelicanRig.ALWAYS
@@ -466,6 +468,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 ## Gives the city's manager back as the other tests left it, and lets go of the pelican signals.
 func _untangle(events: EventManager, stroller: Stroller, listeners: Array) -> void:
 	Telemetry.end_run()
+	events.trace = RunTrace.new()
 	events._player = null
 	stroller.free()
 	var signals := [EventBus.pelican_spawned, EventBus.pelican_sighted, EventBus.pelican_excited_her,

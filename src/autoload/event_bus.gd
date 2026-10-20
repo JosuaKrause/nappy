@@ -18,16 +18,30 @@ signal baby_state_changed(state: GameEnums.BabyState)
 ## `VisitCounter`, which is the only listener today — see docs/TELEMETRY.md, "The page counts
 ## visits".
 signal run_begun(day: int, resumed: bool)
+## A day begins — its first attempt or a retry — before anything is placed in it, so a listener
+## clears yesterday's state first. `main._start_day()` and its recipe's are the emitters.
 signal day_started(day: int)
+## Everything the day holds is placed: its closures, its calm, its plan, the resistance's contact and
+## her on the doorstep. `main._start_day()` is the one emitter; the run log writes the day's plan
+## lines, its dawn map and her `start` line here (`RunSession`).
+signal day_planned(day: int)
 signal day_time_changed(remaining: float, total: float)
 signal return_phase_started() ## Baby is asleep; walk home.
 signal nerves_changed(nerves: int)
-## One attempt at `day` is over, with the same `GameEnums.DayResult` the run log's own `lost` line
-## names — `WON` included. Emitted by `main._on_day_finished()` above the calendar move
-## `GameState.finish_day()` makes a moment later, so a lost day's retry and a won day's next dawn
-## are both still "day N" here. Fires once per attempt, same as `day_started` above: a nerve-bought
-## retry begins and ends this pair again for the day it repeats.
-signal day_ended(day: int, result: GameEnums.DayResult)
+## One attempt at `day` is over: its `GameEnums.DayResult` (`WON` included), what ended it and when.
+## `cause` is what filled the meter or struck her on a crying or hard-fail day, named by the game
+## where the moment happened — `car` for the one hard fail that is not a catalogue row, otherwise
+## the row's id hyphenated (`charging-dog`, `pelican` for a pelican rather than its row's
+## `cyclist`), and for crying whichever of `crowd`, `traffic`, `self` or a row landed the most on
+## her — and "" for a win or a timeout, whose result already says everything. `elapsed` is the
+## day's clock at the instant it ended. The run log's `lost` line and the page's loss name both
+## read `cause` from here, so the two name a lost day the same way.
+##
+## Emitted by `main._on_day_finished()` once the charges still running are closed and above the
+## calendar move `GameState.finish_day()` makes a moment later, so a lost day's retry and a won
+## day's next dawn are both still "day N" here. Fires once per attempt, as `day_started` does: a
+## nerve-bought retry begins and ends this pair again for the day it repeats.
+signal day_ended(day: int, result: GameEnums.DayResult, cause: String, elapsed: float)
 ## The held restart — the pause screen's or the day summary's own button — with the day it
 ## abandoned. `run_ended` below is the run finishing on its own terms; this is the player leaving
 ## one early.
@@ -73,16 +87,6 @@ signal save_deleted(operation: int, result: int)
 ## `operation`: `kept` is whether IndexedDB dropped the file. Emitted once per pending deletion, and
 ## only for those.
 signal save_deletion_settled(operation: int, kept: bool)
-## `main._on_day_finished()`'s own answer to *what* ended a crying or hard-fail day, fired
-## immediately before `day_ended` above so `VisitCounter` can fold it into the one event that day's
-## end sends — `nappy-day-N-lost-crying-<cause>` / `nappy-day-N-lost-hard-fail-<cause>` rather than
-## a `nappy-day-N-lost-*` beside a second event of its own. `cause` is the raw source, unprefixed —
-## `car`, `charging-dog`, `homeless-yeller`, `crowd`, `self`, and so on — built where the moment
-## happened rather than re-derived here, since `VisitCounter` only ever listens; see
-## `VisitCounter._loss_event_suffix()` for where the two join. Never fired for `WON` or
-## `LOST_TIMEOUT`, which the existing `lost-timeout` name already says everything about. Listen-only,
-## for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
-signal day_lost_to(day: int, cause: String)
 
 # ------------------------------------------------------------------- events ---
 # `instance` is an `EventInstance`, left untyped: this autoload is loaded before the class is.
@@ -213,25 +217,30 @@ signal city_went_quiet()
 signal city_gone_dark()
 
 # ------------------------------------------------------------------- escape ---
-# The day-14 sequence has none of its own signals here otherwise: `FinaleController`'s own
-# `section_started`/`section_lost`/`escaped` are enough for `main`, which holds the only reference
-# to it. These three exist only for `VisitCounter` to answer "how far people get" past day 14 —
-# see docs/TELEMETRY.md, "The page counts visits".
+# The escape's own moments, emitted by `main` from `FinaleController`'s: what the page counts of
+# "how far people get" past day 14 (`VisitCounter`, docs/TELEMETRY.md, "The page counts visits")
+# and what the run log writes of each section (`RunSession`) read the same events.
 
 ## The escape sequence has just begun — the fresh handover from a won day 14, never a resume of one
 ## already under way (`main._ready_escape()`'s own `_escape_resumed_from_disk` tells the two apart).
 signal escape_begun()
+## A section is about to be walked, the first time or again after a loss (`restarted`). `section`
+## is a `FinaleController.Section` passed as `int` (a cross-script enum is not the same type as
+## itself as a parameter, the **godot** skill); `world` is where it is walked — the building's
+## `InteriorScene` or the `City` — and `events` the events walked among there, `InteriorEvents`
+## or the city's `EventManager`.
+signal escape_section_started(section: int, restarted: bool, world: Node, events: Node)
 ## `main._on_escape_exit_requested()`'s own moment the building is behind her and the city section
 ## begins — once per attempt at the *building* section, never repeated by a retry of the city
-## section alone (`FinaleController.restart_section()`, not `enter_city()`). Listen-only, for
-## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+## section alone (`FinaleController.restart_section()`, not `enter_city()`).
 signal escape_city_entered()
-## Either section was lost — taken, the meter at 100, or the clock at zero — and is about to be
-## offered again from its own brief. No section named: the escape is one sequence as far as this
-## signal is concerned.
-signal escape_lost()
-## The tunnel or the bridge was reached. The run's own `run_ended` fires beside this, with `GOOD`.
-signal escape_out()
+## A section was lost — taken, the meter at 100, or the clock at zero — and is about to be offered
+## again from its own brief. `section` is a `FinaleController.Section` and `result` a
+## `GameEnums.DayResult`, both as `int`. The page counts every one alike, as one sequence.
+signal escape_lost(section: int, result: int)
+## The tunnel or the bridge was reached, by `exit_kind` (a `CityEdge.Kind` as `int`). The run's
+## own `run_ended` fires beside this, a moment later.
+signal escape_out(exit_kind: int)
 
 # --------------------------------------------------------------- presentation ---
 

@@ -94,9 +94,9 @@ func _test_loss_cause_names_every_day_result(t) -> void:
 		"a two-word cause stays entirely hyphenated")
 
 ## `_loss_event_suffix()` is what `_on_day_ended()` actually sends: `_loss_cause(result)` with
-## `EventBus.day_lost_to`'s own raw cause folded on, for the two results that ever have one — a win
-## or a timeout keeps its bare name even if something is (wrongly) still pending, since nothing in
-## `main.gd`'s own wiring ever calls `day_lost_to` for either.
+## `EventBus.day_ended`'s own raw cause folded on, for the two results that ever have one — a win
+## or a timeout keeps its bare name even if it is (wrongly) handed a cause, since the game names
+## none for either.
 func _test_loss_event_suffix_folds_a_cause_only_for_the_two_results_that_ever_have_one(t) -> void:
 	t.check(VISIT_COUNTER_SCRIPT._loss_event_suffix(GameEnums.DayResult.LOST_CRYING, "traffic")
 			== "lost-crying-traffic", "a crying loss folds its cause on")
@@ -207,7 +207,6 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	var before := _gamestate_snapshot()
 	counter._on_run_begun(1, false)
 	counter._on_day_started(1)
-	counter._on_day_lost_to(1, "homeless-yeller")
 	counter._on_task_offered(0)
 	counter._on_task_completed(0)
 	counter._on_task_offered(1)
@@ -232,13 +231,13 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	counter._on_poster_torn()
 	counter._on_poster_pursuit_sent()
 	counter._on_player_detained("chatting_mother")
-	counter._on_day_ended(1, GameEnums.DayResult.WON)
+	counter._on_day_ended(1, GameEnums.DayResult.WON, "", 0.0)
 	counter._on_run_restarted(1)
 	counter._on_run_ended(GameEnums.Ending.NEUTRAL)
 	counter._on_escape_begun()
 	counter._on_escape_city_entered()
-	counter._on_escape_lost()
-	counter._on_escape_out()
+	counter._on_escape_lost(FinaleController.Section.BUILDING, GameEnums.DayResult.LOST_CRYING)
+	counter._on_escape_out(CityEdge.Kind.TUNNEL)
 	counter._on_controls_chosen(false, true)
 	counter._on_run_mode_chosen(true, 1)
 	counter._on_went_back_to_a_checkpoint(4, 6)
@@ -269,7 +268,7 @@ func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 	t.check(not counter._open_tasks.has(5), "a completed step is no longer open")
 	counter._on_task_offered(6)
 	t.check(counter._open_tasks.has(6), "an offered, untouched step stays open")
-	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_TIMEOUT)
+	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_TIMEOUT, "", 0.0)
 	t.check(not counter._open_tasks.has(6),
 		"the day it belonged to ending, won or lost, closes it out as skipped")
 	counter.free()
@@ -289,7 +288,7 @@ func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
 		"a completed mark and a completed task both close out, whatever they are sent as")
 	counter._on_task_offered(1)
 	counter._on_task_offered(2)
-	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_TIMEOUT)
+	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_TIMEOUT, "", 0.0)
 	t.check(not counter._open_tasks.has(1) and not counter._open_tasks.has(2),
 		"the day ending closes out an untouched mark and an untouched task alike")
 	counter.free()
@@ -320,49 +319,43 @@ func _test_every_tear_and_every_hold_is_sent(t) -> void:
 		"a tear that sends a pursuer on foot sends its own poster-pursuit")
 	counter.free()
 
-## The fold this counter makes: `day_lost_to`'s own cause becomes part of the one event a lost day
+## The fold this counter makes: the day's end's own cause becomes part of the one event a lost day
 ## sends, never a `lost-crying` beside a second `noise-traffic` of its own — the double counting the
 ## player asked to see gone ("lost-crying still doesn't tell me anything about how they died").
 func _test_a_lost_day_folds_its_cause_into_one_event_not_two(t) -> void:
 	var counter := RecordingCounter.new()
 	var day := GameState.day
-	counter._on_day_lost_to(day, "traffic")
-	counter._on_day_ended(day, GameEnums.DayResult.LOST_CRYING)
+	counter._on_day_ended(day, GameEnums.DayResult.LOST_CRYING, "traffic", 0.0)
 	t.check(counter.sent == ["nappy-day-%d-lost-crying-traffic" % day],
 		"the cause and the loss kind fold into one event, not a lost-crying beside a noise-traffic")
 	counter.free()
 
-## A hard-fail day folds the same way, off `_hard_fail_cause_suffix()`'s own raw name — there is no
-## `instant-` prefix left for `_on_day_lost_to()` to strip; it stores whatever `day_lost_to` hands it.
+## A hard-fail day folds the same way, off `_hard_fail_cause_suffix()`'s own raw name, as the day's
+## end carries it.
 func _test_a_hard_fail_day_folds_its_cause_too(t) -> void:
 	var counter := RecordingCounter.new()
 	var day := GameState.day
-	counter._on_day_lost_to(day, "alley-robbery")
-	counter._on_day_ended(day, GameEnums.DayResult.LOST_HARD_FAIL)
+	counter._on_day_ended(day, GameEnums.DayResult.LOST_HARD_FAIL, "alley-robbery", 0.0)
 	t.check(counter.sent == ["nappy-day-%d-lost-hard-fail-alley-robbery" % day],
 		"a hard fail folds its cause the same way a crying loss does")
 	counter.free()
 
-## A lost day this counter never got a cause for — reachable only where something drives
-## `_on_day_ended()` without a preceding `_on_day_lost_to()` for the same day, the way this test does
-## on purpose — still sends the bare loss name rather than nothing.
+## A lost day ended with no cause still sends the bare loss name rather than nothing.
 func _test_a_lost_day_with_no_recorded_cause_still_sends_the_bare_loss_name(t) -> void:
 	var counter := RecordingCounter.new()
 	var day := GameState.day
-	counter._on_day_ended(day, GameEnums.DayResult.LOST_CRYING)
+	counter._on_day_ended(day, GameEnums.DayResult.LOST_CRYING, "", 0.0)
 	t.check(counter.sent.has("nappy-day-%d-lost-crying" % day),
 		"an unknown cause sends the bare loss name instead of silently dropping the day's own end")
 	counter.free()
 
-## A pending cause never leaks into a result it was never sent for. `day_lost_to` only ever fires
-## for `LOST_CRYING`/`LOST_HARD_FAIL` through `main.gd`'s own wiring, so a `WON` or `LOST_TIMEOUT`
-## reaching here with something already pending can only happen by driving the handlers directly,
-## the way this test does — and even then, the bare name is what is sent.
+## A cause never attaches to a result that has none. The game names a cause only for
+## `LOST_CRYING`/`LOST_HARD_FAIL`, so a `WON` or `LOST_TIMEOUT` handed one can only happen by driving
+## the handler directly, the way this test does — and even then, the bare name is what is sent.
 func _test_won_and_timeout_never_carry_a_pending_cause(t) -> void:
 	var counter := RecordingCounter.new()
 	var day := GameState.day
-	counter._on_day_lost_to(day, "traffic")
-	counter._on_day_ended(day, GameEnums.DayResult.WON)
+	counter._on_day_ended(day, GameEnums.DayResult.WON, "traffic", 0.0)
 	t.check(counter.sent == ["nappy-day-%d-won" % day], "a win never carries a leftover cause")
 	counter.free()
 
@@ -793,8 +786,7 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 	var counter := RecordingCounter.new()
 	var day := GameState.day
 	counter._on_pelican_struck_her(null)
-	counter._on_day_lost_to(day, "pelican")
-	counter._on_day_ended(day, GameEnums.DayResult.LOST_HARD_FAIL)
+	counter._on_day_ended(day, GameEnums.DayResult.LOST_HARD_FAIL, "pelican", 0.0)
 	t.check(counter.sent == ["nappy-day-%d-pelican-hit" % day,
 			"nappy-day-%d-lost-hard-fail-pelican" % day],
 			"the hit, then the day lost to the pelican (%s)" % [counter.sent])
@@ -825,7 +817,6 @@ func _test_every_event_opts_out_of_sessions(t) -> void:
 	var counter := RecordingCounter.new()
 	counter._on_run_begun(1, false)
 	counter._on_day_started(1)
-	counter._on_day_lost_to(1, "car")
 	counter._on_task_offered(1)
 	counter._on_mark_seen(1)
 	counter._on_task_completed(1)
@@ -849,13 +840,13 @@ func _test_every_event_opts_out_of_sessions(t) -> void:
 	counter._on_poster_pursuit_sent()
 	counter._on_player_detained("chatting_mother")
 	counter._on_player_detained("checkpoint_hut")
-	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_CRYING)
+	counter._on_day_ended(GameState.day, GameEnums.DayResult.LOST_CRYING, "car", 0.0)
 	counter._on_run_restarted(1)
 	counter._on_run_ended(GameEnums.Ending.GOOD)
 	counter._on_escape_begun()
 	counter._on_escape_city_entered()
-	counter._on_escape_lost()
-	counter._on_escape_out()
+	counter._on_escape_lost(FinaleController.Section.CITY, GameEnums.DayResult.LOST_TIMEOUT)
+	counter._on_escape_out(CityEdge.Kind.BRIDGE)
 	counter._on_controls_chosen(true, false)
 	t.check(counter.sent.size() >= 20,
 		"there were events to check (%d)" % counter.sent.size())

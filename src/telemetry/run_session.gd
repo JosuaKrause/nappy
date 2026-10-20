@@ -1,0 +1,233 @@
+class_name RunSession
+extends Node
+## The run log's one owner for a boot: it opens the log for a run and closes it when the run is
+## left, opens each day's and the escape's section, writes the run flow's own lines and pictures,
+## and holds the `TelemetryObserver` that watches the walk.
+##
+## **It listens; the run flow does not call it.** What happens to a day or a section reaches it as a
+## domain event on the bus it is handed — `day_started`, `day_planned`, `day_ended`,
+## `escape_section_started`, `escape_lost`, `escape_out` — and the page's counter (`VisitCounter`)
+## hears the same events, so a path that ends a day or a section through the day's own finish path
+## is counted and logged without remembering either channel. `main` only builds it and hands it
+## what it is to watch (`watch_day()`, `watch_escape()`), opens it once per boot (`open()`) and
+## closes it when the run is left (`close()`).
+##
+## **And it is where game logic's trace comes from.** `trace` writes into the run log; `main`
+## hands it to everything it builds, so nothing that decides anything names the log itself.
+
+## The run log: the `Telemetry` autoload, handed in by `setup()`. Untyped because an autoload's
+## script has no `class_name` of its own.
+var _log
+var _config: RunConfig
+## The trace handed to game logic: every line it is given goes into the run log, or nowhere while
+## no log is open.
+var trace := RunTrace.new()
+
+## Null until a world is watched while a log is open — with telemetry off there is no observer in
+## the tree at all, rather than one checking a flag sixty times a second.
+var _observer: TelemetryObserver
+## The day's city, once `watch_day()` has been handed it: what a day's section names its seed by
+## and its plan lines, dawn map and dusk map are drawn from. Null in the escape.
+var _city: City
+## What the escape's observer is built from at its first section, once `watch_escape()` has been
+## handed them; empty on a day.
+var _escape_world: Dictionary = {}
+
+## Hands the session the run log, the run's configuration and the bus whose events it writes down.
+func setup(run_log: Node, config: RunConfig, bus: Node) -> void:
+	_log = run_log
+	_config = config
+	trace = RunTrace.new(run_log.note)
+	bus.day_started.connect(_on_day_started)
+	bus.day_planned.connect(_on_day_planned)
+	bus.day_ended.connect(_on_day_ended)
+	bus.escape_section_started.connect(_on_escape_section_started)
+	bus.escape_lost.connect(_on_escape_lost)
+	bus.escape_out.connect(_on_escape_out)
+
+## The observer watching this boot's walk, or null while nothing is traced.
+func observer() -> TelemetryObserver:
+	return _observer
+
+# ------------------------------------------------------------- open and close ---
+
+## Opens the run log for the run this boot plays, after its seed is settled and before anything is
+## generated, so the log opens on the seed it is a trace of. Off with `--no-telemetry`; on
+## otherwise, because a trace behind a flag is a trace the person playtesting has to remember to
+## turn on — a player-facing opt-out, answered on every build. `played` is whether a person is at
+## the controls (`Telemetry.begin_run()`).
+##
+## **`keep_an_open_log` keeps a log already open**: the run is the same one going on, so it keeps
+## writing the log it has — the escape's boot after day 14's hand-over, and a normal run carried on
+## from its checkpoint. `Telemetry` is an autoload and outlives the scene reload either came
+## through, and opening again would close it and start a second folder for one run.
+func open(run_seed: int, played: bool, keep_an_open_log: bool) -> void:
+	if _config.no_telemetry:
+		return
+	if keep_an_open_log and _log.is_active():
+		return
+	_log.begin_run(run_seed, played)
+
+## The escape's own timestamped section, opened as its boot begins and before its plan is written,
+## so every line of the escape carries an elapsed time. `length` is a section's length.
+func open_the_escape(length: float) -> void:
+	if _config.no_telemetry:
+		return
+	_log.begin_finale(GameState.run_seed, length)
+
+## Closes the run log: the run is left, by the held restart, a quit or the window closing. Every
+## line is already on disk; this closes the handle tidily.
+func close() -> void:
+	_log.end_run()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		close()
+
+## A picture of this frame and a line saying where, asked for by a person (`P`).
+func picture(context: String) -> void:
+	_log.snapshot_now("asked for a picture at %s" % context)
+
+## A short burst of frames, asked for by a person (`B`).
+func burst(context: String) -> void:
+	_log.start_burst("asked for an animation burst at %s" % context)
+
+# -------------------------------------------------------------------- watching ---
+
+## A day's world: the city, her, the baby, the day's clock, the resistance and the screen-edge
+## badges. Builds the observer only when a log is open.
+func watch_day(city: City, player: Stroller, baby: Baby, day: DayController,
+		resistance: ResistanceDirector, edge: DangerEdge) -> void:
+	_city = city
+	if not _log.is_active():
+		return
+	_observer = _new_observer()
+	_observer.setup(city, player, baby, day, resistance, _config.spikes_requested, edge)
+
+## The escape's walk: her, the baby, the sections' clock and the badges. The observer is built at
+## the first section, because that is when the log is known to be open for it; each section names
+## its own world on `escape_section_started`.
+func watch_escape(player: Stroller, baby: Baby, clock: DayController, edge: DangerEdge) -> void:
+	_escape_world = {"player": player, "baby": baby, "clock": clock, "edge": edge}
+
+func _new_observer() -> TelemetryObserver:
+	var watcher := TelemetryObserver.new()
+	watcher.name = "Telemetry"
+	# Part of the game, not the frame around it: it stops with the pause like the day it watches.
+	watcher.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(watcher)
+	return watcher
+
+# ----------------------------------------------------------------------- a day ---
+
+## The day's header, before anything is placed in it: placing it is what writes the day's `arc`,
+## `roll` and `contact` lines, and they belong under today's header rather than yesterday's.
+func _on_day_started(day: int) -> void:
+	if not _city:
+		return
+	_log.begin_day(day, Tuning.act_for_day(day), GameState.run_seed, _city.map.seed_used,
+			_config.day_length_for(day))
+
+## The shape of the day, written once everything has been placed: what is shut, where the calm is,
+## and what is out — the three things a reader needs before any line below them means anything —
+## and then the same three as a picture, then the `start` line.
+func _on_day_planned(day: int) -> void:
+	if not _city:
+		return
+	_log.note("plan", "closed: %s" % closure_summary(_city))
+	_log.note("plan", "calm: %s" % calm_summary(_city))
+	_log.note("plan", "events: %s" % event_summary(_city))
+	_log.write_map(_city.map, day, _city.closures(), _city.route_tree(), _city.events.plans())
+	if _observer:
+		_observer.start_day()
+
+## The day's end: the outcome above the nerve it cost, timestamped where it happened, and the dusk
+## picture — the trail she left and the marks she reached against the corridor the day planned,
+## the one thing the dawn map cannot say — before the section closes, so it belongs to the day it
+## is of.
+func _on_day_ended(day: int, result: GameEnums.DayResult, cause: String, _elapsed: float) -> void:
+	if not _city:
+		return
+	if _observer:
+		_observer.day_finished(result, cause)
+	# **Not a ternary.** `_observer.trail() if _observer else []` assigned into a typed
+	# `Array[Vector3]` throws at runtime when the `else` side runs, since a bare `[]` is untyped —
+	# and that side is every build with telemetry off.
+	var trail: Array[Vector3] = []
+	var met: Dictionary = {}
+	if _observer:
+		trail = _observer.trail()
+		met = _observer.met_events()
+	_log.write_map(_city.map, day, _city.closures(), _city.route_tree(), _city.events.plans(),
+			true, trail, met)
+	_log.end_day()
+
+# ------------------------------------------------------------------ the escape ---
+
+## A section about to be walked, the first time or again after a loss: the observer is pointed at
+## the world it is walked in — `world` is the building or the city, `events` the events walked
+## among — and writes the `start` line, which on a retry says so.
+func _on_escape_section_started(section: int, restarted: bool, world: Node, events: Node) -> void:
+	if _escape_world.is_empty() or not _log.is_active():
+		return
+	if not _observer:
+		_observer = _new_observer()
+		_observer.setup_escape(_escape_world["player"], _escape_world["baby"],
+				_escape_world["clock"], _config.spikes_requested, _escape_world["edge"])
+	if section == FinaleController.Section.BUILDING:
+		_observer.watch_building(world as InteriorScene, events as InteriorEvents)
+	else:
+		_observer.watch_city(world as City)
+	_observer.start_section(restarted)
+
+## A section lost, written at the second it happened, above the retry's `start` line.
+func _on_escape_lost(_section: int, result: int) -> void:
+	if _observer:
+		_observer.section_lost(result)
+
+## Out of the city, above the `ending` line the run's own end writes.
+func _on_escape_out(exit_kind: int) -> void:
+	if _observer:
+		_observer.escaped(exit_kind)
+
+# --------------------------------------------------------------- the plan lines ---
+
+## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day now
+## that a day can only be won on calm ground.
+static func calm_summary(city: City) -> String:
+	var counts := {}
+	for block in city.map.calm_blocks:
+		var name: String = GameEnums.BlockPurpose.keys()[
+			GameState.city_state.purpose_of(city.map.block_plans, block)].to_lower()
+		counts[name] = counts.get(name, 0) + 1
+	var parts: Array[String] = []
+	for name: String in counts:
+		parts.append("%d %s" % [counts[name], name])
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
+## Which streets are shut today and what shut them. Worth printing rather than counting, because
+## "the route was awful today" and "the closure landed on the one street that mattered" look
+## identical from a count.
+static func closure_summary(city: City) -> String:
+	var parts: Array[String] = []
+	for closure in city.closures():
+		parts.append("%s %s%s" % [
+			RoadClosure.display_name(closure.kind).to_lower(),
+			"h" if closure.segment.horizontal else "v",
+			RunTrace.tile(closure.segment.a)])
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
+## Today's events by id. Counted rather than listed one per line: which of the catalogue's kinds
+## are out is what makes a day, and where each instance stands is only interesting for the ones
+## she actually walked into — which the `near` lines cover, at the moment it matters. The *plan*,
+## not what is live: what is live is a fact about where she is standing this frame.
+static func event_summary(city: City) -> String:
+	var counts := {}
+	for plan in city.events.plans():
+		counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
+	var parts: Array[String] = []
+	for id: String in counts:
+		parts.append("%s x%d" % [id, counts[id]] if counts[id] > 1 else id)
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"

@@ -396,21 +396,15 @@ func _test_the_city_learns_where_she_settled(t) -> void:
 ## *(Reproduced on the deployed build and read out of a real Web export's console: "excitement
 ## pinned at 100 and I'm completely invincible", also swallowing the cyclist and the timeout.)*
 ##
-## `main._on_day_finished()` built its trail for `Telemetry.write_map()` from
-## `_observer.trail() if _observer else []` assigned straight into a declared `Array[Vector3]` — a
-## bare `[]` on the `else` side is an **untyped** `Array`, which is not the declared type, and
-## Godot only throws on the mismatch when the line actually runs rather than at parse time.
-## `_observer` is null on every build with telemetry off (`--no-telemetry`, and always on a Web
-## export, since `Telemetry` disables itself there), which is the ordinary shape nothing that ever
-## exercised this line ran under. The function aborted at that line, before `_summary.show_day()`
-## a few lines below it ever ran — and `DayController._end()` had already moved the day's own phase
-## to `OVER`, so from there the day simply stopped telling anything downstream: no summary, no
-## paused tree, the meter frozen wherever it stood and the player still walking a day already over.
+## The dusk map's trail is built from `_observer.trail()` into a declared `Array[Vector3]`, and a
+## bare `[]` standing in for it is an **untyped** `Array`, which Godot only throws on when the line
+## runs. The observer is null on every build with telemetry off (`--no-telemetry`, and always on a
+## Web export, since `Telemetry` disables itself there), so a day ending there once threw before the
+## summary came up, and the day simply stopped telling anything downstream.
 ##
-## Exercises `main._on_day_finished()` directly rather than through `DayController`'s own signal,
-## the same way `tests/test_main.gd` reaches past `main._ready()` for the rest of its logic — a
-## script-only instance, its handful of world dependencies wired up by hand, with `_observer` left
-## null exactly the way a telemetry-off run leaves it.
+## Exercises `main._on_day_finished()` directly, on a script-only instance with its handful of world
+## dependencies wired up by hand, with a `RunSession` watching the city and no observer — exactly
+## the way a telemetry-off run leaves it — listening for the day's end.
 func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> void:
 	var saved_seed := GameState.run_seed
 	var saved_day := GameState.day
@@ -438,11 +432,16 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
+	var session := RunSession.new()
+	t.add_child(session)
+	session.setup(Telemetry, RunConfig.parse(PackedStringArray(), "", true), EventBus)
+	session._city = city
+	t.check(session.observer() == null, "the session watches with no observer, as with the log off")
+
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._city = city
 	main._day = day
 	main._summary = summary
-	main._observer = null
 
 	main._on_day_finished(GameEnums.DayResult.LOST_CRYING)
 
@@ -450,6 +449,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 			"the summary actually comes up with no telemetry observer in the tree")
 
 	main.free()
+	session.free()
 	summary.free()
 	day.free()
 	player.free()

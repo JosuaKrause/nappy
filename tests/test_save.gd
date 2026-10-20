@@ -209,6 +209,10 @@ const _SAVED_OUTSIDE_THE_SNAPSHOT := [
 	"fenced_park", "fenced_park_act", "hard_mode", "checkpoint",
 ]
 
+## `GameState`'s fields that are not the run's state and so are never saved: `_trace`, where the
+## run's facts are written for the run log, handed in by whoever boots the run.
+const _NOT_RUN_STATE := ["_trace"]
+
 ## The guard the brief asks for: a field added to `GameState` later and forgotten in
 ## `GameState._SAVE_FIELDS` fails here rather than quietly not being saved. `PROPERTY_USAGE_
 ## SCRIPT_VARIABLE` is what separates a field this script actually declares from the base `Node`
@@ -225,7 +229,7 @@ func _test_round_trip_field_list_matches_the_property_list(t) -> void:
 	for name in GameState._SAVE_FIELDS:
 		listed_set[name] = true
 	for name in declared:
-		if name in _SAVED_OUTSIDE_THE_SNAPSHOT:
+		if name in _SAVED_OUTSIDE_THE_SNAPSHOT or name in _NOT_RUN_STATE:
 			continue
 		t.check(listed_set.has(name),
 				"'%s' is a GameState field the save format does not mention" % name)
@@ -1515,14 +1519,14 @@ func _test_the_symbols_listening_ends_with_the_symbol(t) -> void:
 	t.check(EventBus.save_written.get_connections().size() == before_writes,
 			"until it is freed")
 
-## `main._restart_run()` deletes the save before `Telemetry.end_run()` closes the run log, so the
+## `main._restart_run()` deletes the save before the run session closes the run log, so the
 ## "deleted the save" line is written into the run being abandoned. Read from the source, since a
 ## booted `main` is not something this suite builds.
 func _test_the_held_restart_deletes_the_save_before_the_run_log_closes(t) -> void:
 	var text := FileAccess.get_file_as_string("res://src/main.gd")
 	var start := text.find("func _restart_run() -> void:")
 	var cleared := text.find("\tGameSave.clear()\n", start)
-	var closed := text.find("\tTelemetry.end_run()\n", start)
+	var closed := text.find("\t\t_session.close()\n", start)
 	t.check(start != -1 and cleared != -1 and closed != -1 and cleared < closed,
 			"the restart's deletion is logged before the log is closed")
 
