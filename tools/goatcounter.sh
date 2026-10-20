@@ -10,7 +10,7 @@
 #   tools/goatcounter.sh --encounters                 # influenced / seen per event type, by day
 #   tools/goatcounter.sh --by-release                 # one window per release (with --encounters too)
 #   tools/goatcounter.sh --report                     # where players struggle, on one page
-#   tools/goatcounter.sh --report --by-release        # the per-day win rates and walls per release
+#   tools/goatcounter.sh --report --by-release        # the per-day win rates and causes per release
 #   tools/goatcounter.sh --report --markdown          # the report as Markdown, to save as a stats file
 #   tools/goatcounter.sh --raw                        # every path and count, unfiltered
 #   tools/goatcounter.sh --check                      # does the key read statistics, and what else
@@ -47,10 +47,12 @@ the v* tags' dates from git (a tag's own date, its UTC day) open a window that r
 release's day, and a day with several releases is one mixed window naming them all; the days before
 the first release form a window of their own. It cannot combine with --raw or --check. --report prints
 one page on where players struggle: the visitors, runs, controls, mode, endings, escape and checkpoints; a per-day
-table of attempts, wins, win rate, losses (crying / hard fail / timeout) and the top two causes; the cause totals; and
-the walls (a win rate 10 points under the median, or one cause ending 25% of a day's attempts; a day under 20
-attempts is marked low-sample and left out). With --by-release it prints each release's per-day win rates and
-walls; with --json the same data; --markdown (with --report, not --json) prints it as Markdown to save as a stats file. A 404 from the hits endpoint is retried like a 429, and says so on stderr.
+table of attempts, wins, win rate, losses (crying / hard fail / timeout); every cause of each day's losses, biggest first; and the cause totals.
+It describes and flags nothing: the reading is written by hand each time, from the report as a whole, with no
+focus carried over from the previous read. A day under 20 attempts is marked low-sample (a note on how far its
+numbers can be trusted; nothing is left out). A read worth keeping is saved as docs/stats/<end date>-goatcounter.md
+from --report --markdown with that reading under it. With --by-release it prints each release's per-day win rates
+and causes; with --json the same data; --markdown (with --report, not --json) prints it as Markdown to save as a stats file. A 404 from the hits endpoint is retried like a 429, and says so on stderr.
 --check proves the key works with
 GET /api/v0/stats/total (needs only "Read statistics", the one permission every read-only key
 has) and reports its permissions too if GET /api/v0/me allows it -- GET /api/v0/me is optional

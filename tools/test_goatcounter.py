@@ -1410,16 +1410,23 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(report["escape"], {"begun": 3, "lost": 1, "out": 1})
         self.assertEqual(report["checkpoints"], {"total": 6, "from_day": {"5": 4, "6": 2}})
 
-    def test_a_day_row_has_its_split_win_rate_and_top_two_causes_with_their_share(self) -> None:
+    def test_a_day_row_has_its_split_win_rate_and_every_cause_biggest_first(self) -> None:
         row = self.report()["days"][2]
         self.assertEqual((row["began"], row["won"], row["lost"]), (40, 30, 10))
         self.assertEqual((row["crying"], row["hard_fail"], row["timeout"]), (4, 6, 0))
         self.assertAlmostEqual(row["win_rate"], 0.75)
-        self.assertEqual([t["cause"] for t in row["top_causes"]], ["hard-fail-car", "crying-traffic"])
-        self.assertAlmostEqual(row["top_causes"][0]["share"], 0.15)
+        self.assertEqual(list(row["causes"].items()), [("hard-fail-car", 6), ("crying-traffic", 4)])
 
     def test_a_timeout_is_a_cause_of_its_own(self) -> None:
-        self.assertEqual(self.report()["days"][1]["top_causes"][1]["cause"], "timeout")
+        self.assertEqual(self.report()["days"][1]["causes"]["timeout"], 3)
+
+    def test_every_cause_of_a_day_is_listed_not_only_the_top_two(self) -> None:
+        self.assertEqual(
+            list(self.report()["days"][3]["causes"].items()),
+            [("crying-traffic", 9), ("hard-fail-charging-dog", 6), ("timeout", 3)],
+        )
+        text = goatcounter.format_report(self.report(), title="T")
+        self.assertIn("day  4: crying-traffic 9 (30%), hard-fail-charging-dog 6 (20%), timeout 3 (10%)", text)
 
     def test_a_small_day_is_marked_low_sample(self) -> None:
         days = self.report()["days"]
@@ -1432,42 +1439,30 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(list(totals["hard_fail"].items()), [("car", 13), ("charging-dog", 6)])
         self.assertEqual(totals["timeout"], 6)
 
-    def test_walls_are_judged_on_sampled_days_only(self) -> None:
-        walls = self.report()["walls"]
-        # Sampled days: 1..4 -> 0.9, 0.8, 0.75, 0.4 (day 5 has 5 attempts and is left out); median 0.775.
-        self.assertAlmostEqual(walls["median_win_rate"], 0.775)
-        self.assertEqual([w["day"] for w in walls["low_win_rate_days"]], [4])
-        causes = {(w["day"], w["cause"]) for w in walls["single_cause_days"]}
-        self.assertIn((4, "crying-traffic"), causes)  # 9 of 30 = 30%
-        self.assertNotIn((5, "hard-fail-car"), causes)  # low-sample, left out
-        self.assertNotIn((3, "hard-fail-car"), causes)  # 15%
-
     def test_the_text_states_the_thresholds_and_caveats_and_marks_low_sample(self) -> None:
         text = goatcounter.format_report(self.report(), title="T")
         self.assertIn("attempts, not visitors", text)
         self.assertIn(f"fewer than {goatcounter.MIN_ATTEMPTS} attempts", text)
-        self.assertIn("10 points", text)
-        self.assertIn("25%", text)
+        self.assertNotIn("wall", text.lower())
         self.assertIn("Visitors (page visit): 70", text)
-        self.assertIn("day 4: crying-traffic ends 9 attempts (30%", text)
         self.assertIn("(low-sample)", next(row for row in text.splitlines() if row.startswith("    5  ")))
         self.assertIn("day 5: 4", text)  # checkpoints by the day they came from
 
     def test_an_empty_range_reports_without_dividing_by_nothing(self) -> None:
         report = goatcounter.build_report([], "nappy-")
         self.assertEqual(report["days"], [])
-        self.assertIsNone(report["walls"]["median_win_rate"])
-        self.assertIn("(no walls)", goatcounter.format_report(report, title="T"))
+        self.assertIn("(no days)", goatcounter.format_report(report, title="T"))
 
     def test_markdown_has_headings_and_the_per_day_markdown_table(self) -> None:
         text = goatcounter.format_report_markdown(self.report(), title="T")
         self.assertTrue(text.startswith("# T"))
-        for heading in ("## Players", "## Per day", "## Cause totals", "## Walls"):
+        for heading in ("## Players", "## Per day", "## Cause totals", "## Causes per day"):
             self.assertIn(heading, text)
         self.assertIn("| Day | Attempts | Won |", text)
-        self.assertIn("| 3 | 40 | 30 | 75% | 10 | 4 | 6 | 0 | hard-fail-car 6 (15%), crying-traffic 4 (10%) |", text)
+        self.assertIn("| 3 | 40 | 30 | 75% | 10 | 4 | 6 | 0 |", text)
         self.assertIn("| 5 (low-sample) |", text)
-        self.assertIn("- day 4: crying-traffic ends 9 attempts (30%", text)
+        self.assertIn("- Day 3: hard-fail-car 6 (15%), crying-traffic 4 (10%)", text)
+        self.assertNotIn("Walls", text)
 
     def test_markdown_is_refused_without_report_or_with_json(self) -> None:
         for flags in (["--markdown"], ["--report", "--markdown", "--json"]):
@@ -1476,15 +1471,14 @@ class ReportTests(unittest.TestCase):
                 self.assertEqual(goatcounter.main(flags), 2)
             self.assertIn("--markdown", stderr.getvalue())
 
-    def test_the_real_rates_make_days_6_and_7_rate_walls_and_not_day_3(self) -> None:
+    def test_the_real_numbers_make_the_tables_figures(self) -> None:
         real = {1: (108, 33), 2: (70, 28), 3: (79, 18), 4: (31, 21), 5: (30, 19), 6: (54, 10), 7: (25, 5)}
-        days = [
-            {"day": d, "began": b, "won": w, "win_rate": w / b, "low_sample": b < 20, "causes": {}}
-            for d, (b, w) in real.items()
-        ]
-        walls = goatcounter.find_walls(days)
-        self.assertEqual([w["day"] for w in walls["low_win_rate_days"]], [6, 7])
-        self.assertAlmostEqual(walls["median_win_rate"], 33 / 108)
+        hits = report_hits({d: {"began": b, "won": w, "lost-crying-crowd": b - w} for d, (b, w) in real.items()}, {})
+        days = goatcounter.build_report(hits, "nappy-")["days"]
+        self.assertEqual([(d["day"], d["began"], d["won"]) for d in days], [(d, b, w) for d, (b, w) in real.items()])
+        self.assertEqual([round(d["win_rate"] * 100) for d in days], [31, 40, 23, 68, 63, 19, 20])
+        self.assertEqual([d["causes"] for d in days][5], {"crying-crowd": 44})
+        self.assertFalse(any(d["low_sample"] for d in days))
 
     def test_main_prints_markdown_and_by_release_markdown(self) -> None:
         hits = report_hits(self.DAYS, self.RUN)
@@ -1500,12 +1494,12 @@ class ReportTests(unittest.TestCase):
             out = stdout.getvalue()
             self.assertIn("| 3 | 40 | 30 | 75% |", out)
             self.assertIn("| 5 (low-sample) |", out)
-            self.assertIn("- day 4: crying-traffic ends 9 attempts", out)
-            self.assertIn("## v1" if "--by-release" in flags else "## Walls", out)
+            self.assertIn("- Day 4: crying-traffic 9 (30%)", out)
+            self.assertIn("## v1" if "--by-release" in flags else "## Causes per day", out)
 
     def test_main_prints_the_report_and_its_json(self) -> None:
         hits = report_hits(self.DAYS, self.RUN, visitors=70)
-        for flags, check in ((["--report"], "Per day"), (["--report", "--json"], '"walls"')):
+        for flags, check in ((["--report"], "Per day"), (["--report", "--json"], '"cause_totals"')):
             stdout = io.StringIO()
             with (
                 mock.patch.dict("os.environ", {"GOATCOUNTER_TOKEN": "secret"}, clear=True),
@@ -1515,7 +1509,7 @@ class ReportTests(unittest.TestCase):
                 self.assertEqual(goatcounter.main(flags), 0)
             self.assertIn(check, stdout.getvalue())
 
-    def test_by_release_prints_per_window_win_rates_and_walls_and_json_carries_the_windows(self) -> None:
+    def test_by_release_prints_per_window_win_rates_and_causes_and_json_carries_the_windows(self) -> None:
         tags = [("v1", utc(10, 5, 12)), ("v2", utc(10, 12, 12))]
         hits = report_hits(self.DAYS, self.RUN)
         for flags in (["--report", "--by-release"], ["--report", "--by-release", "--json"]):
@@ -1534,10 +1528,10 @@ class ReportTests(unittest.TestCase):
             if "--json" in flags:
                 data = json.loads(out)
                 self.assertEqual([w["label"] for w in data["windows"]], ["before the first release", "v1", "v2"])
-                self.assertIn("walls", data["windows"][1]["result"])
+                self.assertIn("days", data["windows"][1]["result"])
             else:
                 self.assertEqual(out.count("==="), 6)
-                self.assertIn("day  4: 12/30 won (40%)", out)
+                self.assertIn("day  4: 12/30 won (40%) -- crying-traffic 9 (30%), hard-fail-charging-dog 6 (20%)", out)
                 self.assertIn("v2", out)
 
 
