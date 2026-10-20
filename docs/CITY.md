@@ -77,7 +77,7 @@ city stays walkable, sees a post's tile as blocked (`CityMap.post_tiles()`, fold
 pursuer goes round by the pavement as she does and a winnability check counts the row as shut.
 The tile's type stays paving, so the ground and the crowd read it as before. The one exception is
 the day's route tree (`RouteTree`), which grows on the lattice as the tile types lay it
-(`ReachabilityGrid.build(map, false)`): a route that crosses a mouth's row is a detour by the pavement
+(`ReachabilityGrid.build()` over `Mover.ground()`): a route that crosses a mouth's row is a detour by the pavement
 inside the same junction box, which the street it runs along keeps open for every closure, and
 growing it posts-blind keeps the corridor, and so the doors and masts and authored scenes placed
 against it, where they were. The route line is drawn from that tree, so it can cross a row's cell;
@@ -1440,6 +1440,12 @@ day's tiles with every barrier tile added on top; what the flood never reaches i
   never do.
 - The **resistance** never puts a contact behind one. Steps expire, so that would silently
   cost a run its good ending.
+- **Every figure that moves** is stopped by it as she is. `closed_tiles` is one layer of the
+  map's one blocked record (`CityMap.blocked`, a `BlockedLayer`), beside a precinct's posts, the
+  soft seals and the stationary bodies; every step, walk, line and way a figure takes is asked of
+  that record through its own `Mover` (`CityMap.passable()`, the `Navigator` it moves by), so a
+  dog, a bike or a pursuer never walks through a closure's barrier, and a closure's barrier body
+  stands on ground the closure took (`City.barrier_footprint()`).
 
 ### Sealing the tree
 

@@ -361,6 +361,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 	map.set_tile(Vector2i(4, 4), GameEnums.TileType.BUILDING)
 	var guard := _instance(t, "alley_robbery", Vector2(122.0, 134.0))
 	guard._map = map
+	guard._navigator = Navigator.new(map)
 	# Created where a warning pointed, so its chase has not been reported yet: this isolates the
 	# reach, since a live pursuer that is chasing her counts by the chase arm whatever the wall.
 	guard.came_under_a_warning = true

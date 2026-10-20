@@ -946,7 +946,7 @@ func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth
 ## **It deliberately ignores the precinct posts** (`post_tiles()`): `wall_between()` asks whether a
 ## segment is *seen* across, and a bollard blocks a body but not that sight, so a post tile is open
 ## here though no step or flood may enter it. `clear_line()`, the pursuers' notice and lunge line,
-## asks `is_walkable()` instead and is blocked by a post.
+## asks `passable()` instead and is blocked by a post.
 func _open(x: int, y: int) -> bool:
 	if recipe_exterior or stretch_active:
 		return Tile.is_walkable(tile_at(Vector2i(x, y)))

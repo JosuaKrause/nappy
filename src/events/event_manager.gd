@@ -168,6 +168,13 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	AtlasLibrary.release(EventInstance.ATLAS_GROUP)
 
+## The navigator handed in by `setup()`, or one over `_map` where none was handed for it — a rig
+## that sets the map itself.
+func _the_navigator() -> Navigator:
+	if _navigator == null or _navigator.map() != _map:
+		_navigator = Navigator.new(_map)
+	return _navigator
+
 ## Hands the manager its city, the map it places on and the navigator its figures move by — the
 ## city's own (`City.navigator`), or one over `map` for a rig that hands none.
 func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
@@ -283,7 +290,8 @@ func send_a_pursuer() -> void:
 ## patrol car on the `PRESSES` rung his catch is a stop, out of a `HUNTS` van it ends the day) put
 ## down at its door on her side (`EventInstance.door_for_its_officer()`),
 ## spread along its flank `OFFICER_SPACING` apart when there are two, or on the other side where
-## hers is not walkable, or at the vehicle itself where neither is. They appear in her view, so
+## hers is not ground he may stand on (`Navigator.passable_at()`), or at the vehicle itself where
+## neither is. They appear in her view, so
 ## there is no badge: their notice is the sight of them, standing with a hand raised
 ## (`EventDef.sets_off_beside_her`, `stands_for_its_notice`). Outside the day's plan, like everything put down after dawn by
 ## a director.
@@ -294,12 +302,13 @@ func _let_the_officers_out() -> void:
 			continue
 		var def := EventCatalogue.out_of_the_car(_day,
 				vehicle.def.heat_response != EventDef.HeatResponse.HUNTS)
+		var walks := EventInstance.mover_for(def)
 		for i in owed:
 			var along := (float(i) - float(owed - 1) * 0.5) * OFFICER_SPACING
 			var at := vehicle.door_for_its_officer(def, 1.0, along)
-			if not _map.is_walkable(_map.world_to_tile(at)):
+			if not _the_navigator().passable_at(at, walks):
 				at = vehicle.door_for_its_officer(def, -1.0, along)
-			if not _map.is_walkable(_map.world_to_tile(at)):
+			if not _the_navigator().passable_at(at, walks):
 				at = vehicle.global_position
 			var officer := _spawn_unplanned(def, at)
 			officer.player_at = _player.global_position
@@ -375,15 +384,12 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 			fallback = at
 	return [fallback, false]
 
-## Whether every point on the straight line from `from` to `to` is walkable, at a quarter tile, and
-## the line passes through no body of the day's region wall or doors — a man walking through the
-## checkpoint she was inspected at is no run at her.
+## Whether the straight line from `from` to `to` crosses only ground a man on foot may enter
+## (`Navigator.clear_line()`), and passes through no body of the day's region wall or doors — a man
+## walking through the checkpoint she was inspected at is no run at her.
 func _a_clear_run_at(from: Vector2, to: Vector2, region: RegionPlanner.RegionPlan) -> bool:
-	var steps := ceili(from.distance_to(to) / (Tuning.TILE_SIZE * 0.25))
-	for i in steps + 1:
-		var point := from.lerp(to, float(i) / float(maxi(steps, 1)))
-		if not _map.is_walkable(_map.world_to_tile(point)):
-			return false
+	if not _the_navigator().clear_line(from, to, Mover.on_foot()):
+		return false
 	if region:
 		for body: EventScheduler.Planned in region.wall_bodies + region.door_bodies:
 			var nearest := Geometry2D.get_closest_point_to_segment(body.position, from, to)
@@ -1059,7 +1065,7 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 	var instance := EventInstance.new()
 	instance.skip_draw = skip_drawing
 	instance.trace = trace
-	instance.setup(def, at, path, facing, _map, _navigator)
+	instance.setup(def, at, path, facing, _map, _the_navigator())
 	# The day-3 lesson's dog, for its own charging counter: the first dog today on the day the run
 	# is taught (`EventInstance.is_the_lesson`). Telemetry only.
 	if def.id == "charging_dog" and _day == Tuning.RUN_TAUGHT_DAY and not _lesson_dog_made:
@@ -1840,7 +1846,7 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 ## building, a barrier or a body; fewer than two points where it cannot set off at all.
 func _route_down_her_line(def: EventDef, place: Vector2, her: Vector2,
 		direction: Vector2) -> PackedVector2Array:
-	return _navigator.trim(PendingWarning.route_down_her_line(_map, place, her, direction),
+	return _the_navigator().trim(PendingWarning.route_down_her_line(_map, place, her, direction),
 			EventInstance.mover_for(def))
 
 ## A row the director sends down her own line that does not telegraph its coming (`loose_dog`,

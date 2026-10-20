@@ -1,6 +1,6 @@
 extends RefCounted
 ## Measurement probe for velvet-stork: whether the pursuers on foot other than day 13's task guard,
-## which keep the straight chase (`EventInstance.walkable_step_on()`, straight at her, sliding along
+## which keep the straight chase (`Navigator.step()`, straight at her, sliding along
 ## walls), are stuck behind buildings the way he was. The entry left that a question for the player
 ## "if a probe shows them stuck the same way". Not a suite: it prints counts rather than asserting
 ## them, so it lives under `tests/probes/`, and runs only by name:
@@ -77,8 +77,9 @@ func _clear_line_starts(seed_value: int) -> void:
 			if toward.length() <= standoff:
 				reached += 1
 				break
-			him += EventInstance.walkable_step_on(map, him,
-					toward.normalized() * minf(robbery.pursue_speed * STEP, toward.length()))
+			him += Navigator.new(map).step(him,
+					toward.normalized() * minf(robbery.pursue_speed * STEP, toward.length()),
+					Mover.on_foot(EventInstance.FIGURE_RADIUS))
 	print("VELVET_STORK seed %d clear-line starts 360px off, her walking: %d trials, a straight chase reached her stand-off within 20s in %d"
 			% [seed_value, trials, reached])
 
@@ -158,8 +159,9 @@ func _the_sent_robbers_starts(t, seed_value: int) -> void:
 			if toward.length() <= standoff:
 				got = true
 				break
-			him += EventInstance.walkable_step_on(map, him,
-					toward.normalized() * minf(def.pursue_speed * STEP, toward.length()))
+			him += Navigator.new(map).step(him,
+					toward.normalized() * minf(def.pursue_speed * STEP, toward.length()),
+					Mover.on_foot(EventInstance.FIGURE_RADIUS))
 		if got:
 			row[1] += 1
 		elif map.reaches(map.walk_field(map.world_to_tile(start)), open[i]):
