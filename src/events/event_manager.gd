@@ -1762,13 +1762,10 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 		_warn_down_her_heading(def, body.global_position, path[0])
 		return
 	var crossing := _spawn_unplanned(def, path[0], path)
-	if path.size() == 2:
-		# A run cut short by a solid crouches longer by the run it lost
-		# (`EventDef.crouch_for_a_run()`).
-		var crossing_at := body.global_position \
-				+ body.velocity.normalized() * def.ahead_of_player_lead()
-		crossing.hold_still_longer(def.crouch_for_a_run(path[0].distance_to(
-				Geometry2D.get_closest_point_to_segment(crossing_at, path[0], path[1]))))
+	# A run cut short by a solid crouches longer by the run it lost, as the director worked it out
+	# with the run (`EventDef.crouch_for_a_run()`).
+	if due.size() > 2:
+		crossing.hold_still_longer(float(due[2]))
 	# The distance it was actually sited at rather than the constant. A pursuer is sited beyond its
 	# own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant makes every
 	# `ahead` line for the one row a chase is about say the wrong number.

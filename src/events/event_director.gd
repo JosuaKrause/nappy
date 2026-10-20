@@ -870,12 +870,15 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# every `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`) gets; only the road-placed ones
 	# take the road-aware sibling.
 	var path: PackedVector2Array
+	var crouch := 0.0
 	if next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
 		path = _toward_her_on_the_road(at, heading, next) \
 				if next.placement.has(GameEnums.TileType.ROAD) \
 				else _toward_her(at, heading, next)
 	else:
-		path = _crossing_ahead_of(at, heading, next)
+		var crossing := _crossing_with_its_crouch(at, heading, next)
+		path = crossing[0]
+		crouch = crossing[1]
 	if path.is_empty():
 		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
 		# again shortly rather than burning the allowance on a place that would not read.
@@ -902,7 +905,7 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# nothing under this flag.
 	if _forced and _owed.is_empty():
 		_owed.append(_forced)
-	return [handed, path]
+	return [handed, path, crouch]
 
 func _roll_interval() -> float:
 	# Fixed rather than rolled under `--force`, and it does not touch `_rng`: the flag is for
@@ -925,13 +928,14 @@ func _roll_interval() -> float:
 ## building, on a closure or under a body, or outside the map. The caller waits and asks again.
 ##
 ## **The run keeps to the ground the row can run on** (`Navigator.trim()`): cut each way at the
-## first solid, so it never starts or ends inside a lot; both ends go to the nearer cut where that
-## leaves a tile, so the crossing point stays the middle of the run, and where a solid at her
-## pavement's edge leaves less, the run comes from the open side and ends at the solid. Its lead is
-## timed for a run of the whole reach (`EventDef.ahead_of_player_lead()`), so a start cut nearer is
-## made up by a longer crouch (`EventDef.crouch_for_a_run()`), and the cat still reaches her line
-## when she does; a row that does not crouch is refused a cut start. A run shorter than a tile is
-## no crossing, and the caller asks again.
+## first solid, so it never starts or ends inside a lot. **And it crouches no nearer her line than
+## keeps her, walking on, outside its field until it runs** (`EventDef.nearest_crouch()`): both
+## ends go to the nearer cut where that leaves so much, so the crossing point stays the middle of
+## the run; where only one side does, the run comes from it and ends at the other side's solid;
+## where neither does, there is no crossing and the caller asks again. Its lead is timed for a run
+## of the whole reach (`EventDef.ahead_of_player_lead()`), so a start cut nearer is made up by a
+## longer crouch (`EventDef.crouch_for_a_run()`, handed back with the run), and the cat still
+## reaches her line when she does; a row that does not crouch is refused a cut start.
 ##
 ## **A pursuer is sited at the lead point itself and given no route.** It does not cross her line,
 ## it comes down it, so a path is the wrong shape for it entirely — and building one anyway puts
@@ -977,6 +981,13 @@ func _roll_interval() -> float:
 ## because the lesson depends on being unavoidable.
 func _crossing_ahead_of(at: Vector2, heading: Vector2,
 		def: EventDef = null) -> PackedVector2Array:
+	return _crossing_with_its_crouch(at, heading, def)[0]
+
+## `_crossing_ahead_of()`'s run, and how much longer than its telegraph it crouches before running
+## it (`EventDef.crouch_for_a_run()`), as `[path, seconds]`: the crouch is the run's own, so it is
+## worked out where the run is.
+func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = null) -> Array:
+	var none := [PackedVector2Array(), 0.0]
 	var lead := Tuning.offscreen_lead(heading, def.pursue_speed + Tuning.WALK_SPEED,
 				def.offscreen_notice) \
 			if def and def.pursues \
@@ -984,9 +995,9 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 	var centre := at + heading * lead
 	var mover := EventInstance.mover_for(def) if def else Mover.on_foot()
 	if not _navigator.passable_at(centre, mover):
-		return PackedVector2Array()
+		return none
 	if def and def.pursues:
-		return PackedVector2Array([centre])
+		return [PackedVector2Array([centre]), 0.0]
 	var across := Vector2(-heading.y, heading.x) * float(CROSSING_REACH_TILES * Tuning.TILE_SIZE)
 	# The side it comes from is a coin flip, so a player cannot learn to watch one shoulder.
 	if _rng.randf() < 0.5:
@@ -994,30 +1005,34 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 	var from := centre - across
 	var to := centre + across
 	if not _map.in_bounds(_map.world_to_tile(from)) or not _map.in_bounds(_map.world_to_tile(to)):
-		return PackedVector2Array()
-	# Cut each way at the first solid. Where both cuts leave a tile between them, both ends go to
-	# the nearer cut, so the crossing point stays the middle of the run; where a solid stands at her
-	# pavement's edge and leaves less, the run comes from the open side and ends at the solid. Its
-	# start is timed for the whole reach either way: a run that starts nearer is made up by a
-	# longer crouch (`EventDef.crouch_for_a_run()`, held by `EventManager`), and a row with no
-	# crouch to hold is refused a cut start, since it would reach her line before she does.
+		return none
+	# Cut each way at the first solid. A crouch nearer her line than `EventDef.nearest_crouch()`
+	# would have her inside its field before it runs, so the run starts no nearer: where both cuts
+	# leave that much, both ends go to the nearer cut and the crossing point stays the middle of the
+	# run; where only one side does, the run comes from it and ends at the other's solid; where
+	# neither does, there is no crossing and the caller asks again. A start nearer than the whole
+	# reach its lead was timed for is made up by a longer crouch (`EventDef.crouch_for_a_run()`),
+	# and a row with no crouch to hold is refused a cut start, since it would reach her line before
+	# she does.
 	var way := across.normalized()
 	var back := _navigator.trim(PackedVector2Array([centre, from]), mover)
 	var on := _navigator.trim(PackedVector2Array([centre, to]), mover)
 	var behind := centre.distance_to(back[back.size() - 1])
 	var ahead := centre.distance_to(on[on.size() - 1])
+	var nearest := maxf(def.nearest_crouch() if def else 0.0, Tuning.TILE_SIZE * 0.5)
 	var start := minf(behind, ahead)
 	var finish := start
-	if start * 2.0 < Tuning.TILE_SIZE:
+	if start < nearest:
 		if ahead > behind:
 			way = -way
 		start = maxf(behind, ahead)
 		finish = minf(behind, ahead)
-	if start + finish < Tuning.TILE_SIZE:
-		return PackedVector2Array()
+	if start < nearest or start + finish < Tuning.TILE_SIZE:
+		return none
 	if def and not def.still_while_telegraphing and start < across.length() - 0.01:
-		return PackedVector2Array()
-	return PackedVector2Array([centre - way * start, centre + way * finish])
+		return none
+	return [PackedVector2Array([centre - way * start, centre + way * finish]),
+			def.crouch_for_a_run(start) if def else 0.0]
 
 ## A run straight *down* her own line rather than across it: `TOWARD_PLAYER`'s whole point, for a
 ## row on foot (`cyclist`, `loose_dog`). Returns `[place, far end]`: where its warning's badge

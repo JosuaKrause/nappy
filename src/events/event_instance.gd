@@ -4233,9 +4233,6 @@ func is_standing_for_its_notice() -> bool:
 	return (def.stands_for_its_notice or _stands_for_this_notice) and is_telegraphing() \
 			and (def.pursues_within > 0.0 or def.sets_off_beside_her)
 
-## How long this instance's notice runs once it has noticed her: a charger that warns by radius
-## warns for its row's `warns_for` (`warns_by_radius()`); anything else for its row's
-## `telegraph_time`, or the notice a task gave it when it set it on her (`notice_her_at()`).
 ## **Holds a row that crouches before its run `seconds` longer** — a crossing whose run a solid cut
 ## short (`EventDef.crouch_for_a_run()`), so it still reaches the middle when she does. Its telegraph
 ## only grows, so the fairness contract it was validated under still holds.
@@ -4243,6 +4240,10 @@ func hold_still_longer(seconds: float) -> void:
 	if seconds > 0.0 and def.still_while_telegraphing:
 		_notice_time = notice_time() + seconds
 
+## How long this instance's notice runs once it has noticed her: a charger that warns by radius
+## warns for its row's `warns_for` (`warns_by_radius()`); anything else for its row's
+## `telegraph_time`, the notice a task gave it when it set it on her (`notice_her_at()`), or a
+## crossing's crouch held longer (`hold_still_longer()`).
 func notice_time() -> float:
 	if _notice_time >= 0.0:
 		return _notice_time

@@ -322,12 +322,15 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
 	var director := EventDirector.new(map, city.navigator)
 	var sited := 0
 	var bad := 0
+	var cut := 0
+	var in_its_field := 0
 	var sidewalks := map.tiles_of_type(GameEnums.TileType.SIDEWALK)
 	for i in range(0, sidewalks.size(), maxi(1, sidewalks.size() / 300)):
 		var her := map.tile_to_world(sidewalks[i])
 		for heading: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN,
 				Vector2(1.0, 1.0).normalized()]:
-			var run := director._crossing_ahead_of(her, heading, cat)
+			var crossing := director._crossing_with_its_crouch(her, heading, cat)
+			var run: PackedVector2Array = crossing[0]
 			if run.is_empty():
 				continue
 			sited += 1
@@ -335,9 +338,25 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
 					or not map.passable(map.world_to_tile(run[1]), mover) \
 					or not map.clear_line(run[0], run[1], mover):
 				bad += 1
+			# She walks on toward it while it crouches, its telegraph and its longer crouch both,
+			# and is outside the crouching cat's field until it runs.
+			var crouch: float = crossing[1]
+			if crouch > 0.0:
+				cut += 1
+			var clock := 0.0
+			while clock <= cat.telegraph_time + crouch:
+				if (her + heading * Tuning.WALK_SPEED * clock).distance_to(run[0]) \
+						<= cat.outer_radius:
+					in_its_field += 1
+					break
+				clock += 0.02
 	t.check(sited > 100, "crossings were sited (%d)" % sited)
 	t.check(bad == 0, "every crossing starts and ends on open ground with a clear run (%d not)"
 			% bad)
+	t.check(cut > 10, "crossings were sited with a cut start (%d)" % cut)
+	t.check(in_its_field == 0,
+			"walking on, she is never inside the crouching cat's field before it runs (%d were)"
+			% in_its_field)
 	var ends := 0
 	var in_a_lot := 0
 	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):

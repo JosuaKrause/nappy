@@ -201,7 +201,10 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 	t.check(lead > Tuning.AHEAD_LEAD_DISTANCE,
 			"the cat's own lead (%.0fpx) accounts for its held crouch, not just a flat reaction "
 			% lead + "window (%.0fpx)" % Tuning.AHEAD_LEAD_DISTANCE)
-	var crossing := (path[0] + path[1]) * 0.5
+	# Where the run crosses her line: the middle of a run open both ways, and off it where a solid
+	# beside her pavement leaves the run coming from the open side
+	# (`EventDirector._crossing_ahead_of()`).
+	var crossing: Vector2 = Geometry2D.line_intersects_line(path[0], path[1] - path[0], at, north)
 	t.close_to(crossing.distance_to(at), lead,
 			"it crosses where she is about to be, not where she is", 1.0)
 	t.check((crossing - at).normalized().dot(north.normalized()) > 0.99,

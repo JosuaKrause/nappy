@@ -1656,6 +1656,17 @@ func crouch_for_a_run(run: float) -> float:
 		return 0.0
 	return maxf(0.0, (float(Tuning.STREET_WIDTH) * Tuning.TILE_SIZE - run) / speed)
 
+## **The nearest to her line a crossing that holds still may crouch**, in px, so she walking on is
+## outside its field (`outer_radius`) for the whole crouch. A run that starts `run` px off her line
+## reaches the middle when she does (`crouch_for_a_run()`), so as it runs she is still
+## `WALK_SPEED * run / speed` short of the middle and `run * sqrt(1 + (WALK_SPEED / speed)²)` from
+## the crouch, the nearest she comes to it before it runs; this is that distance held at the field's
+## edge. Zero for a row that does not hold still.
+func nearest_crouch() -> float:
+	if not mobile or speed <= 0.0 or not still_while_telegraphing:
+		return 0.0
+	return outer_radius / sqrt(1.0 + pow(Tuning.WALK_SPEED / speed, 2.0))
+
 ## Seconds from the moment this row becomes visible to the earliest it can reach her, on the worst
 ## heading the game can give it — what the fairness contract holds against `minimum_telegraph()`.
 ##
