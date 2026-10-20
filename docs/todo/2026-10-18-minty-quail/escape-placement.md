@@ -17,7 +17,9 @@ and how they are drawn (the escape's marble bag, in the player's order "trucks >
 barriers > empty", minty-lemur #785, with the counts downy-tapir measured, `Tuning.FINALE_SLOTS_PER_STREET` and `FINALE_BAG_*`; `build_finale`
 already takes the bag and the slot count as arguments), and
 which rules apply. The player kept, for the escape, no calm-park rule, the escape's own rules for the
-home's streets, and no per-day caps (minty-lemur #785, the PR #781 forks); those become spec settings.
+home's streets, and no per-day caps (minty-lemur #785, the PR #781 forks); those become spec settings. So do the escape city's crowd,
+which `main` clears today (`_city.crowd.clear()`), and its posters, which `City.start_finale`
+skips: whether a section has them, and how dense its crowd is, is the spec's.
 `EscapeGround`'s guarantees (each street keeps a sidewalk open, the walk stays joined) become a rule
 both paths share. `plan_finale` folds into the seal planner's day path, `City.start_finale` into
 `start_day(spec)`.

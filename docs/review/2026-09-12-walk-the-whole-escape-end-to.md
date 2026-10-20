@@ -9,8 +9,8 @@ standing through his whole warning every time. The basement is entered down a on
 front-facing stair and holds a mouse and three steam vents, each where the corridor is one tile
 wide, blowing for `FINALE_STEAM_BLOWS_FOR` (2s) out of periods of 4, 4.5 and 5.5 seconds. The
 hallway windows all flash together, with each loud explosion every 22 seconds and silently in
-between at gaps of 0.1 to 5 seconds, 1.3 on average. A lost section comes up on the brief screen
-before it starts again.
+between at gaps of 0.1 to 5 seconds, 1.3 on average. A lost section comes up on the day's outcome
+screen with its reason under the section's words, then on the brief screen before it starts again.
 
 **What only a walk answers.** Does rubble, fire, crossing over and the masked man read as a
 sequence of decisions, or as a corridor with no choice in it, and is six seconds between men a
