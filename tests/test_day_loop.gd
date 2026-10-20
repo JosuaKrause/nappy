@@ -32,6 +32,7 @@ func run(t) -> void:
 	_test_the_summary_shows_when_the_day_ended(t)
 	_test_the_summary_shows_the_coming_days_number(t)
 	_test_nerves_are_stars_never_numbers(t)
+	_test_the_epilogue_carries_no_brief_note(t)
 	_test_the_day_7_brief_breaks_before_the_same_face(t)
 	_test_the_bad_ending_names_the_day_it_reached(t)
 	_test_a_lost_day_gives_the_resistance_back(t)
@@ -592,6 +593,22 @@ func _test_nerves_are_stars_never_numbers(t) -> void:
 	t.check("Nerves left: **" in summary._body.text,
 			"and so does an escape section's own brief ('%s')" % summary._body.text)
 
+	summary.free()
+	t.get_tree().paused = saved_paused
+
+## **The escape's epilogue never carries the note line a brief before it showed** — the one line a
+## resumed run's day brief adds (`DaySummary._note`), which every other screen hides on the way in
+## and `show_finale()` hides too, so a section's brief or a resumed day's note cannot leak onto the
+## last screen of the run.
+func _test_the_epilogue_carries_no_brief_note(t) -> void:
+	var saved_paused: bool = t.get_tree().paused
+	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	t.add_child(summary)
+	var note: Label = summary.get_node("Root/Center/Lines/Note")
+	summary.show_day_brief(GameState.day, 3, Texts.RESUMED_DAY_LOST)
+	t.check(note.visible, "a resumed day's brief shows its note")
+	summary.show_finale(CityEdge.Kind.TUNNEL, 42.0)
+	t.check(not note.visible, "and the epilogue after it does not carry it")
 	summary.free()
 	t.get_tree().paused = saved_paused
 

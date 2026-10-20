@@ -456,9 +456,9 @@ static func parse_ground_mode(raw: String) -> int:
 	push_warning("--ground-mode: '%s' is not 1, 2 or 3, ignoring the flag" % raw)
 	return GROUND_MODE_DEFAULT
 
-## `--start-escape` (or `?escape=1` in the open bundle) skips the title and the city and starts
-## `main` straight in the escape: no events of a day, no crowd and no day clock. A recipe of kind
-## `escape` does the same.
+## `--start-escape` (or `?escape=1` in the open bundle) skips the title and a day's city and starts
+## `main` straight in the escape, whose two sections are days of their own: none of an ordinary
+## day's events and no crowd. A recipe of kind `escape` does the same.
 func start_escape() -> bool:
 	if not _recipe.is_empty():
 		return _recipe.get("kind", "city") == "escape"

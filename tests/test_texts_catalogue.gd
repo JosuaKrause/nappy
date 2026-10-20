@@ -54,7 +54,7 @@ const _ALLOWED_LITERALS := {
 	},
 	"res://src/main.gd": {
 		"build %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"seed  %d   day %d": "the dev overlay's readout (debug builds and `?debug=1` only)",
+		"seed  %d   day %d%s": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"skip  %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"phase %s  %.0fs left": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"tile  %d, %d  (%s)": "the dev overlay's readout (debug builds and `?debug=1` only)",
@@ -71,9 +71,6 @@ const _ALLOWED_LITERALS := {
 		"arrows/WASD walk": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"shift       run": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"esc         pause  (r restart, q quit)": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"seed  %d   escape": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"section %s  %.1fs left": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"calm  %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"tile  %d, %d  (building)": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"events      %6d live": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"%s %s age=%.1f/%.1f %.0fpx i=%.1f": "the dev overlay's readout (debug builds and `?debug=1` only)",

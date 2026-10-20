@@ -58,6 +58,7 @@ func run(t) -> void:
 	_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
 	_test_the_clock_reads_hundredths_only_in_the_finale(t)
 	_test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t)
+	_test_the_escape_counts_its_time_and_closes_its_charges(t)
 	_test_the_two_sections_are_named_for_the_player(t)
 	_test_only_a_won_last_day_with_every_task_done_hands_over(t)
 	_test_the_city_word_boots_the_second_section(t)
@@ -1565,6 +1566,43 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 			t.check(is_equal_approx(main._day.time_remaining, length),
 					"on a full clock of its own, whatever the walk down the stairs cost")
 		_free_the_escape(t, main)
+
+## **The escape is counted like a day** *(minty-lemur #785: "telemetry should work the same also in
+## escape both apartment and city")*: the run's played time (`GameState.play_seconds`, which the
+## ending screen shows) runs while a section is walked, and a charge still running when she gets
+## out of the city is closed for the page's counter as cut short, before the section's own end is
+## counted — through the day's own finish path, as a day's are.
+func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
+	var main := _boot_the_escape(t, DaySpec.Section.CITY)
+	main._on_summary_continued()
+	var played := GameState.play_seconds
+	main._process(0.5)
+	t.check(is_equal_approx(GameState.play_seconds, played + 0.5),
+			"walking the city section counts toward the run's played time (%.2f, then %.2f)"
+			% [played, GameState.play_seconds])
+
+	var heard: Array[String] = []
+	var on_cut_short := func(id: String) -> void:
+		heard.append("cut short " + id)
+	var on_ended := func(day: int, result: GameEnums.DayResult, _cause: String, _e: float) -> void:
+		heard.append("day %d %s" % [day, GameEnums.DayResult.keys()[result]])
+	EventBus.pursuit_cut_short.connect(on_cut_short)
+	EventBus.day_ended.connect(on_ended)
+	var guard := EventInstance.new()
+	guard.setup(EventCatalogue.by_id("masked_pursuer"), main._player.global_position,
+			PackedVector2Array([main._player.global_position,
+					main._player.global_position + Vector2(0.0, -400.0)]))
+	main._city.add_child(guard)
+	guard.set_process(false)
+	main._city.events._instances.append(guard)
+	guard._charge.begin()
+	main._player.global_position = main._spec.exits[CityEdge.Kind.TUNNEL]
+	main._day._process(0.0)
+	t.check(heard == ["cut short masked_pursuer", "day %d WON" % DaySpec.CITY_DAY],
+			"getting out closes the charge still running, then ends the city's day (%s)" % [heard])
+	EventBus.pursuit_cut_short.disconnect(on_cut_short)
+	EventBus.day_ended.disconnect(on_ended)
+	_free_the_escape(t, main)
 
 ## Boots the real `main.tscn` on `section` of a normal run's own escape, on seed `SEEDS[0]` and its
 ## last day — the way a won day 14's handover and a game closed in a section both reach the boot —

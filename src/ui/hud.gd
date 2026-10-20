@@ -290,12 +290,12 @@ func _say(line: String, seconds: float) -> void:
 func say_once(line: String) -> void:
 	_say(line, TEACH_SECONDS)
 
-## Whether the clock reads to the hundredth, as the day being walked says (`DaySpec.clock_hundredths`,
-## the escape's). The only thing it changes is the format — *"in addition to minutes and seconds the
-## timer also shows milliseconds. this makes the timer appear faster than just the seconds alone
-## which adds additional tension"*, tried as hundredths (inbox #746 in woolly-penguin) — so it is a
-## flag on the one function that draws the clock rather than a second clock or a second label.
-## `main` hands it in as each day starts.
+## Whether the clock reads to the hundredth, as the day being walked says
+## (`DaySpec.clock_hundredths`, the escape's). The only thing it changes is the format — *"in
+## addition to minutes and seconds the timer also shows milliseconds. this makes the timer appear
+## faster than just the seconds alone which adds additional tension"*, tried as hundredths
+## (inbox #746 in woolly-penguin) — so it is a flag on the one function that draws the clock rather
+## than a second clock or a second label. `main` hands it in as each day starts.
 var _hundredths := false
 
 func set_clock_hundredths(on: bool) -> void:

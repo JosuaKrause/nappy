@@ -54,9 +54,9 @@ var hard_mode := false
 var checkpoint: Dictionary = {}
 
 ## Seconds the world has actually been moving this run — advanced by exactly one owner,
-## `main._process()`'s own day-loop branch, while a day is walking or returning home and the tree
-## is not paused. Never shown during play; the ending screen is the only place it is read, through
-## `format_clock()` below.
+## `main._process()`'s own day-loop branch, while a day — a section of the escape included — is
+## walking or returning and the tree is not paused. Never shown during play; the ending screen is
+## the only place it is read, through `format_clock()` below.
 var play_seconds: float = 0.0
 
 ## `%d:%02d.%03d` — minutes, seconds, milliseconds — the one format a run's own length is ever

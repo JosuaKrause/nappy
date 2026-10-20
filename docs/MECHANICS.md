@@ -468,11 +468,10 @@ run's own ending — is actually running: a real `InputEventAction` for `pause` 
 event and would hear nothing from `Input.action_press()` alone. It fires on release rather than on
 press, and only when the release is still over the button, so a thumb that lands wrong can slide off
 without stopping the day. **Esc** pauses too, on every device, silently. Losing the window's focus
-opens the same screen, unless `--no-focus-pause` says otherwise. Neither ever opens over a section's
-brief or the epilogue, the escape's own two screens between one section and the next — the same
-reason Esc opens over an ordinary day's own end-of-day message and focus loss does not: a section's
-brief stands between her and a clock that has not started yet, not between her and a day already
-decided.
+opens the same screen, unless `--no-focus-pause` says otherwise. Neither ever opens over the
+escape's own screens — a section's brief, a lost section's outcome screen or the epilogue — the
+same reason Esc opens over an ordinary day's own end-of-day message and focus loss does not: each
+stands between her and a walk that has not begun yet, not between her and a day already decided.
 
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.
@@ -1444,7 +1443,8 @@ it is the same screen showing what a load already charged rather than what a day
 ## The run clock
 
 `GameState.play_seconds` is a second clock, over the whole run rather than one day: the sum of
-every second a day spent `WALKING` or `RETURNING` with the tree unpaused. Not wall time, and not
+every second a day — a section of the escape included — spent `WALKING` or `RETURNING` with the
+tree unpaused. Not wall time, and not
 the day timer above, which resets every day — a retried day's first attempt counts toward it, and
 neither the pause screen, the day summary nor the title screen do. It is part of a normal run's
 checkpoint, so going back to one puts it back to that dawn's reading (see "Two modes").
@@ -1467,8 +1467,15 @@ endings say nothing about the day, since both are reached by finishing day 14.
 
 The walk out of the building and out of the city is the fifteenth and sixteenth walks of a run:
 no route to a calm area and home, but one way out, played in two sections — the building and the
-city — that are **each a day of their own**, with a day's brief, a day's clock and a checkpoint at
-the brief.
+city — that are **each a day of their own**, with a day's brief, a day's clock, a day's outcome
+screen and a checkpoint at the brief. *(minty-lemur #785: "the escape is just like a normal day
+with some special settings".)* Each is run by the day's own code: a `DaySpec`
+(`src/day/day_spec.gd`, `DaySpec.for_section()`) says what is special about it — its goal, its
+clock's precision, the night it is walked in, what losing or winning it costs — and is handed to
+the day's own `DayController`, so the clock, the three ways to lose, the loss and its cause, the
+outcome screen, the counters and the run log are a day's. Each is counted as a day of its own,
+**day 15** the building and **day 16** the city (`DaySpec.BUILDING_DAY`, `DaySpec.CITY_DAY`),
+while the calendar (`GameState.day`) stays on day 14, since the run has not moved past it.
 
 **It is where a won run ends.** A day 14 that is won with every task complete — `GameState
 .earned_good_ending()`, `Tuning.RESISTANCE_GOAL` errands run *and* the last night's sabotage
@@ -1490,48 +1497,54 @@ is in the dark as well.
 
 **A full clock per section, `Tuning.FINALE_LENGTH_SECONDS` (180s), stated on its own rather than
 reused from the ordinary day's length** — the player asked that the escape not be easy, so it does
-not grow when the ordinary day does. Each brief starts one, so the time spent walking down three
-floors is not time the city has lost: at the service door the building's clock stops and the
-city's brief starts its own.
-`FinaleController` owns a `DayController` rather than being a second one: the countdown, the three
-losing paths, the `EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the
-clock still are all a day's already and none of them change. What the escape does differently is
-only what happens at the end of one.
+not grow when the ordinary day does. Each section starts one as it begins, standing still behind its
+brief the way a day's stands still behind the title, so the time spent walking down three floors is
+not time the city has lost: the service door is the building's goal, which ends its day, and the
+city's begins with a whole clock. The countdown, the three losing paths, the
+`EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the clock still are all
+a day's and none of them change; **the goal is the section's own**: the building's service exit,
+reached once its fade has covered the screen, and the city's tunnel mouth or bridge deck, within
+`Tuning.FINALE_EXIT_REACH` of the last walkable tile of the spine at either end, reached however
+the baby is.
 
 **The clock reads to the hundredth** — `%d:%02d.%02d` through `GameState.format_clock_hundredths()`,
-in place of a day's `%d:%02d` — and the escape's `DayController` tells the HUD on every frame
-(`emit_every_frame`) so the digits move as often as the screen draws; a day's clock still emits
-once a second. Digits ticking make the same countdown read as faster, which is the whole of the
+in place of a day's `%d:%02d` — and the day's clock tells the HUD on every frame while a section's
+spec says so (`DaySpec.clock_hundredths`), so the digits move as often as the screen draws; a day's
+clock still emits once a second. Digits ticking make the same countdown read as faster, which is the whole of the
 reason. *(The player: "escape clocke we can try 100s but it's not going to be much better?
 framerate is too low? all of this was on phone.")* The ending screens' run length stays at
 milliseconds, a still number.
 
-**A lost section starts again where it began, and in a normal run costs no Nerve.** Being taken,
-the meter reaching 100 and the clock running out are the same three losses a day has, and every one
-of them puts her back at the start of the section she was in — the hallway outside her own door, or
-the service exit — with a fresh clock, the baby asleep with sleepiness full again, and, in a normal
-run, `GameState` untouched. A fourteen-day run is never thrown by one wrong turn in the last
-minutes; at zero the way out is gone, and what she does about it is walk it again.
+**A lost section states its reason and starts again where it began, and in a normal run costs no
+Nerve.** Being taken, the meter reaching 100 and the clock running out are the same three losses a
+day has, and each ends the section through the day's own finish path: what ended it is named, the
+charges still running are closed, and the day's outcome screen comes up with the reason and the
+clock it was lost at, the section's own words standing where "Day N of 14" stands *(minty-lemur
+#785: "losing an escape should still state the reason like the rest of the game. nothing should be
+different")*. Its continue puts her back at the start of the section she was in — the hallway
+outside her own door, or the service exit — with a fresh clock, the baby asleep with sleepiness
+full again, and, in a normal run, `GameState` untouched. A fourteen-day run is never thrown by one
+wrong turn in the last minutes; at zero the way out is gone, and what she does about it is walk it
+again.
 
 **A hard run's escape has nerves.** *(gentle-osprey, the player: "with hard mode the escape also
 has normal nerve counts and ends if nerves go to zero (instead of restarting indefinitely; this is
 only for normal mode)".)* She enters it with the nerves day 14 left her. A lost section costs one
-(`GameState.spend_a_nerve_in_the_escape()`, from `main._on_finale_section_lost()`), and the last one
-is the bad ending, on the `GAME OVER` screen, rather than the section again. No section gives one
+(`GameState.finish_day()`, with the section's `DaySpec`), and the last one is the bad ending, on
+the `GAME OVER` screen after the section's outcome screen, rather than the section again. No section gives one
 back, so a hard run can be lost in the escape
 *([mossy-kestrel](playtests/2026-10-11-mossy-kestrel.md), #718, the player: "No regain in escape
 either. Also, nerves behave the same in escape for hard mode so the game can actually be lost")*.
 Walking out of the city ends the run. Hard mode is the player choosing to
 have the wrong turn in the last minutes count.
 
-**Every section opens on its brief**, a first walk through it and a retry alike — the same screen
-between days that a resumed run opens on (`DaySummary.show_finale_brief()`), titled *"Escape the
-building"* or *"Escape the city"* where a day's number stands, and carrying the Nerve count as the
-run holds it — unchanged in a normal run, whose escape spends none, and in a hard run whatever its
-lost sections spent. Continuing from it is the moment the
-section actually begins: the clock starts there and nowhere else, and the section's one hint line
-is said by the HUD as she starts walking. A retry is not told that line a second time, the way
-day 1 teaches tapping and then never again.
+**Every section opens on its brief** — the same day brief a resumed run opens on
+(`DaySummary.show_day_brief()`), titled *"Escape the building"* or *"Escape the city"* where a day's
+number stands (`DaySpec.title`), and carrying the Nerve count as the run holds it — unchanged in a
+normal run, whose escape spends none, and in a hard run whatever its lost sections spent. A retry
+opens on the lost section's outcome screen instead, which is the screen before it, as a lost day's
+is. Continuing from either is the moment she starts walking, and the section's own words are said
+by the HUD every time she does — a first walk, a retry and a resumed one alike.
 
 **And the brief is the checkpoint a closed game comes back to.** A save is written as each brief
 comes up, carrying which section it is (`GameState.escape_section`, written beside the day-under-
@@ -1544,9 +1557,10 @@ nerve is already on disk, written by the brief its lost section comes back to.
 **Everything around a day exists around a section too, built the same way.** `Esc`, the pause
 button and losing the window's focus open the same pause screen a day opens, with the same continue,
 the same held restart and the same quit; the held restart ends the escape in a fresh run,
-`GameState.escape_section` cleared, the same way it ends any other run. The touch controls, the
-orientation handling, the developer readout and the debug-mode note are all the one instance each
-boot already builds before it knows which of the two it is.
+`GameState.escape_section` cleared, the same way it ends any other run. There is one boot: the
+HUD, the touch controls, the summary, the pause and the title screens, the orientation handling,
+the developer readout and the debug-mode note are built the same way for whichever day it opens on,
+and only the world the first day is walked in differs.
 
 **The building shows what the city shows.** *(PLAYTEST-115: "The escape shouldn't behave any
 different than the rest of the game.")* The screen-edge badge, the excitement halo and the debug
@@ -1556,8 +1570,9 @@ she walks out of the service door. What they read is an **event source** — any
 only where there is one, so indoors the masked man coming up a stairwell raises the same badge a
 fire engine coming down a street does, and the fire she is standing beside wears the same rim a
 dog on a sidewalk does. The debug view's fields, shadows and bounding boxes (`1`–`3`) trace the
-building's events, walls and her; the readout (`4`) names the section and its clock where a day
-names its phase; and the frame graph (`6`) is fed the same way. The route lines (`5`) have nothing
+building's events, walls and her; the readout (`4`) names the section's day and its words beside
+the seed, and its ground and events where a day names its tile, calm and crowd; and the frame graph
+(`6`) is fed the same way. The route lines (`5`) have nothing
 to draw in either section, since neither has a day's route tree. **The run log watches a section as
 it watches a day** — see `docs/TELEMETRY.md`, "The escape's log".
 
@@ -1673,7 +1688,7 @@ then roadblocks, and fewest of all the empty marbles that leave a slot with noth
 (`Tuning.FINALE_BAG_TRUCKS` and the four after it), so most streets stand one danger and some stand
 none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
 happening) as well. we need a fair mix"; "frequency order is trucks > explosions > vans >
-barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk that is not a day". A roadblock
+barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk placed by its own plan". A roadblock
 is a barrier with a guard standing at it from
 the moment it is placed; when he notices her **he** comes for her, on foot, and the barrier he
 leaves stays drawn and stays shut across the road behind him. What takes the baby is his own reach
@@ -1689,7 +1704,7 @@ past at any time, manned or not, as every roadblock's band, a day's included
 (`EventCatalogue._roadblock()`): the guard is the danger, not the concrete. One roadblock a street means there is one guard to lure,
 not a second band's still posted beside the first, and no two bands stand where both guards can
 notice her, so she meets one guard at a time. His warning starts with him on the screen and drawn
-above everything round him. See `docs/EVENTS.md`, "The escape — the walk that is not a day".
+above everything round him. See `docs/EVENTS.md`, "The escape — the walk placed by its own plan".
 
 **Nothing on the walk closes a street.** *(Inbox #747: "one sidewalk must be open if they're
 en-route. the escape's street should not have fully blocking events like in the normal game.")*
@@ -1729,14 +1744,14 @@ its latest checkpoint with five, and a hard run ends with the bad ending.
 
 **A normal run's escape gives none back**, on either of its two sections or on walking out at the
 end, and so does a hard run's (see "The escape, which is the run's ending"): the run's last
-`finish_day()` call, from `main._on_finale_escaped()`, skips the gain in both because
-`GameState.escape_section` is still set to the section she just left. Day 14 itself still gives a
+`finish_day()` call, as she gets out of the city, skips the gain in both because the section's
+`DaySpec` says a win gives none back. Day 14 itself still gives a
 normal run one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s
 hand-over to the escape rather than waiting for `finish_day()`, which by then is deciding the
 escape's ending instead of day 14's.
 
 **Drawn as stars everywhere they show, never as a digit or a word for the count** — the HUD's
-debug header, the day brief, the day summary, the finale brief and the pause screen all read the
+debug header, the day brief, a section's brief, the day summary and the pause screen all read the
 count through `NerveDisplay.stars()` (`src/ui/nerve_display.gd`), a star per nerve and `-` for
 none, so a sixth screen that shows nerves has one function to match rather than a number to
 invent.
@@ -1919,7 +1934,8 @@ her from the hallway. What is asked first is whether this boot is **reading that
 file** rather than carrying it forward from a won day 14 handed over earlier in the same process:
 the two reach the same boot with the same non-empty `escape_section`, and the only thing that
 tells them apart is whether the value was already on the autoload before the save was read or
-only arrived from the file — see `main._escape_resumed_from_disk`. A genuine resume answers the
+only arrived from the file — see `escape_resumed_from_disk` in `main._ready()`. A genuine resume
+answers the
 title first, the same screen a resumed day answers first — paused rather than run behind, since
 the section it stands in front of has no city day's worth of scenery to keep moving for its own
 sake — and pressing start raises that section's own brief over the world already built behind it
