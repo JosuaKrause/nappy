@@ -114,6 +114,30 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 var map: CityMap
 var events: EventManager
 var crowd: Crowd
+
+# ------------------------------------------------- handed in before build() reads them ---
+## How this city draws and schedules itself, set by whoever builds it — `main`, from the run's
+## configuration — before `build()` hands each to the part it belongs to. The defaults are an
+## ordinary run's, which is what a test's own city gets.
+
+## How a needed nearby ground region is scheduled (`--ground-mode`). See `SceneryGround.Mode`.
+var ground_mode := SceneryGround.Mode.ONE
+## A scripted recipe's frame-locked playback. See `SceneryResidency.frame_locked`.
+var scenery_frame_locked := false
+## `--skip shadows`, `--skip events`, `--skip crowd` and `--skip motion`: what a frame reading
+## leaves out. See `DevFlags.skip_words()`.
+var skip_shadows := false
+var skip_event_drawing := false
+var skip_crowd_drawing := false
+var skip_crowd_motion := false
+## `--blackout`: the city counts as sabotaged. See `Blackout.forced`.
+var blackout_forced := false
+## `--pelican`: every cyclist is drawn as the pelican. See `EventManager.rolls_a_pelican()`.
+var all_cyclists_pelicans := false
+## `--force <id> [seconds]`: the one row the director hands out, and how often. See
+## `EventDirector.force()`.
+var forced_row := ""
+var forced_interval := 0.0
 ## The lights on the spine. Held here because both the traffic and the signal heads read it, and
 ## advanced by `Crowd`, which is the thing a rig steps — see `Crowd.step()`.
 var signals: TrafficSignals
@@ -205,9 +229,12 @@ func build(city_map: CityMap) -> void:
 	map = city_map
 	scenery = SceneryResidency.new()
 	scenery.city = self
+	scenery.frame_locked = scenery_frame_locked
 	add_child(scenery)
+	_ground.mode = ground_mode
 	_decals.streamed = true
 	_building_shadows.streamed = true
+	_building_shadows.skip_draw = skip_shadows
 	# The street's decoration, acquired before the first day is drawn. The baked "decoration" page
 	# loads synchronously on `acquire()`, so every draw below already has a region to ask for —
 	# see `AtlasLibrary`.
@@ -243,14 +270,21 @@ func build(city_map: CityMap) -> void:
 	_spawn_signal_heads()
 	events = EventManager.new()
 	events.name = "Events"
+	events.skip_drawing = skip_event_drawing
+	if all_cyclists_pelicans:
+		events.pelican_rig = EventManager.PelicanRig.ALWAYS
 	add_child(events)
 	events.setup(self, map)
+	events.force(forced_row, forced_interval)
 	crowd = Crowd.new()
 	crowd.name = "Crowd"
+	crowd.skip_agent_drawing = skip_crowd_drawing
+	crowd.skip_motion = skip_crowd_motion
 	add_child(crowd)
 	crowd.setup(self, map)
 	blackout = Blackout.new()
 	blackout.name = "Blackout"
+	blackout.forced = blackout_forced
 	add_child(blackout)
 	blackout.setup(self, _buildings)
 	_daylight = CanvasModulate.new()

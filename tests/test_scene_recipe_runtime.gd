@@ -12,13 +12,18 @@ class World extends Node2D:
 			position.x += 1
 		if frames == 2 and position.x == 1:
 			print("ONE_TICK_INPUT_COMPLETED")
+## A scripted recipe's configuration, which is what the runtime probes below are handed.
+func _scripted() -> RunConfig:
+	return RunConfig.parse(PackedStringArray(["--recipe", "probe.json", "--recipe-mode", "scripted"]),
+			"", true)
 func _ready() -> void:
-	var scripted := DevFlags.recipe_mode() == "scripted"
-	if DevFlags.is_rig() != scripted:
+	var config := RunConfig.at_boot()
+	GameSave.configure(config)
+	if config.is_rig != config.recipe_scripted:
 		get_tree().quit(12)
 		return
 	# The desktop policy is checked independently of headless's unconditional no-save gate.
-	if GameSave._debug_run_uses_save(DevFlags.active_args(), false):
+	if GameSave._debug_run_uses_save(config.active_args, false):
 		get_tree().quit(13)
 		return
 	if GameSave.uses_save():
@@ -26,7 +31,7 @@ func _ready() -> void:
 		return
 	if "--probe-camera" in OS.get_cmdline_user_args():
 		var runtime := SceneRecipeRuntime.new()
-		runtime.configure({"data": {}, "manifest": {}, "anchors": {}}, true)
+		runtime.configure({"data": {}, "manifest": {}, "anchors": {}}, _scripted())
 		add_child(runtime)
 		var from := Camera2D.new()
 		from.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -75,7 +80,7 @@ func _ready() -> void:
 			"walk": str(seconds) + "e1p", "observations": [
 			{"tick": 1, "subject": "world", "condition": "near", "at": [1, 0], "distance": 0},
 			{"tick": 2, "subject": "world", "condition": "near", "at": [1, 0], "distance": 0}]}}
-		runtime.configure({"data": data, "anchors": {}, "manifest": {}}, true)
+		runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted())
 		var world := World.new()
 		add_child(world)
 		add_child(runtime)
@@ -91,7 +96,7 @@ func _ready() -> void:
 	var runtime := SceneRecipeRuntime.new()
 	var data := {"name": "failed observation", "playback": {"duration": 1.0 / 60.0,
 		"observations": [{"tick": 1, "subject": "missing", "condition": "moving"}]}}
-	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, true)
+	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted())
 	add_child(runtime)
 	runtime.set_physics_process(false)
 	runtime._active = true
@@ -247,7 +252,7 @@ func _test_heat_installs_the_heated_row(t) -> void:
 			entry["heat"] = heat
 		var runtime := SceneRecipeRuntime.new()
 		runtime.configure({"data": {"setup": {"day": GameState.day, "events": [entry]}},
-				"manifest": {}, "anchors": {}, "map": city.map}, false)
+				"manifest": {}, "anchors": {}, "map": city.map}, _recipe_config(false))
 		runtime._city = city
 		var errors: Array[String] = []
 		for plan in runtime._event_plans(Vector2(4624, 3728), errors):
@@ -313,11 +318,16 @@ class PrintedLines extends Logger:
 	func _log_message(message: String, _error: bool) -> void:
 		lines.append(message)
 
+## The run configuration a recipe boot hands its runtime: a free-play recipe, or a scripted one.
+func _recipe_config(scripted: bool) -> RunConfig:
+	return RunConfig.parse(PackedStringArray(["--recipe", "test.json", "--recipe-mode",
+			"scripted" if scripted else "free"]), "", true)
+
 ## A runtime for `_bind_task_names()` alone, played by hand, its task's mark already started.
 func _task_runtime(director: ResistanceDirector) -> SceneRecipeRuntime:
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure({"data": {"setup": {"task": {"mark": "mark"}}}, "manifest": {},
-			"anchors": {}}, false)
+			"anchors": {}}, _recipe_config(false))
 	runtime._resistance = director
 	runtime.manifest["task"] = {"mark": [0, 0]}
 	return runtime
@@ -346,7 +356,7 @@ func _test_arguments(t) -> void:
 func _test_inputs(t) -> void:
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure({"data": {"playback": {"duration": 3, "walk": "1e1N1p"}},
-			"anchors": {}, "manifest": {}}, true)
+			"anchors": {}, "manifest": {}}, _recipe_config(true))
 	runtime.tick = 0
 	runtime._apply_input()
 	t.check(Input.is_action_pressed("move_right") and not Input.is_action_pressed("run"),

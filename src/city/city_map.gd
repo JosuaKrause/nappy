@@ -17,9 +17,6 @@ var tiles: PackedByteArray
 ## rectangle is presented; the exterior is experimental ground, never a generated street.
 var recipe_bounds := Rect2i()
 var recipe_exterior := false
-## Runtime enables this for scripted playback before building the City. Free play keeps
-## ordinary streaming; movie frames prepare their whole load view synchronously.
-var recipe_frame_locked := false
 var recipe_diagnostics: Array[String] = []
 var recipe_closures: Array[RoadClosure] = []
 var recipe_tree_moves := {}

@@ -1,6 +1,7 @@
 extends RefCounted
-## Focused contracts for `WebDisplay`: the page's `?dpr=` cap is read out of the query, behind the
-## same gate `?controls=` has, and asks nothing of a native build.
+## Focused contracts for `WebDisplay`: the page's `?dpr=` cap is read out of the query the run's
+## configuration read at boot, behind the release-safe bundle's gate, and asks nothing of a native
+## build.
 
 func run(t) -> void:
 	_test_the_cap_is_read_from_the_query(t)
@@ -17,7 +18,8 @@ func _test_the_cap_is_read_from_the_query(t) -> void:
 	t.check(WebDisplay._cap_from_query("?dpr=") == 0.0, "an empty value is no cap")
 	t.check(WebDisplay._cap_from_query("?dpr=0") == 0.0, "zero is no cap, not a blank canvas")
 	t.check(WebDisplay._cap_from_query("?dpr=-1") == 0.0, "a negative value is no cap")
-	t.check(WebDisplay.dpr_cap() == 0.0, "no cap off a page")
+	t.check(WebDisplay.dpr_cap(RunConfig.parse(PackedStringArray(), "?debug=1&dpr=1.5", false))
+			== 0.0, "no cap off a page, whatever the query")
 
 func _test_the_gate(t) -> void:
 	t.check(WebDisplay._reads_the_url(true, true), "an open bundle on a page reads the query")
@@ -25,5 +27,6 @@ func _test_the_gate(t) -> void:
 	t.check(not WebDisplay._reads_the_url(true, false), "off a page there is no address bar")
 
 func _test_apply_asks_nothing_off_a_page(t) -> void:
-	WebDisplay.apply()
-	t.check(WebDisplay.dpr_cap() == 0.0, "a native build is capped by nothing")
+	var config := RunConfig.parse(PackedStringArray(), "", true)
+	WebDisplay.apply(config)
+	t.check(WebDisplay.dpr_cap(config) == 0.0, "a native build is capped by nothing")

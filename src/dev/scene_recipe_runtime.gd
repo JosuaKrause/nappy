@@ -16,6 +16,9 @@ var manifest: Dictionary = {}
 var named: Dictionary = {}
 var scripted := false
 var tick := 0
+## The run's configuration with this recipe on top, handed in by `configure()`: where the manifest
+## and a draft go, whether to validate and quit, a screenshot's tick and a day's length.
+var _config: RunConfig
 var _player: Stroller
 var _city: City
 ## The recipe's `playback.walk`, pressed tick by tick (`playback.smooth` smooths its turns).
@@ -457,14 +460,15 @@ static func _position(value: Variant, where: String, errors: Array[String]) -> v
 	_number(value[0], where + "[0]", -1000000, 1000000, errors)
 	_number(value[1], where + "[1]", -1000000, 1000000, errors)
 
-func configure(result: Dictionary, scripted_mode: bool) -> void:
+func configure(result: Dictionary, config: RunConfig) -> void:
+	_config = config
 	data = result.data
 	_written = result.get("written", result.data)
 	built = result
-	if "--recipe-draft" in DevFlags.active_args():
+	if config.recipe_draft_path != "":
 		_draft = SceneRecipeDraft.new()
 	manifest = result.manifest.duplicate(true)
-	scripted = scripted_mode
+	scripted = config.recipe_scripted
 	manifest["recipe"] = data.get("name", "")
 	manifest["recipe_sha256"] = JSON.stringify(data, "", true).sha256_text()
 	manifest["engine"] = Engine.get_version_info().string
@@ -480,8 +484,8 @@ func configure(result: Dictionary, scripted_mode: bool) -> void:
 			Engine.physics_ticks_per_second, bool(data.get("playback", {}).get("smooth", false)))
 	_observations = data.get("playback", {}).get("observations", [])
 	_duration_ticks = roundi(float(data.get("playback", {}).get("duration", 5)) * Engine.physics_ticks_per_second)
-	if "--screenshot" in DevFlags.active_args():
-		_capture_tick = ceili(DevFlags._word_after("--after").to_float() * Engine.physics_ticks_per_second - 0.00001)
+	if config.screenshot_path != "":
+		_capture_tick = ceili(maxf(config.rig_after, 0.0) * Engine.physics_ticks_per_second - 0.00001)
 	# begin() supplies the first input; subsequent inputs are queued after the world's tick.
 	# Observations and completion therefore see the tick they name, including the final one.
 	process_physics_priority = 100
@@ -630,7 +634,7 @@ func _start_the_task() -> bool:
 		# void would answer every one of them no.
 		var edges := _city.map.witness_only()
 		errors = _resistance.start_recipe_task(GameState.day,
-				GameState.day_rng(GameState.day, "resistance"), DevRig.day_length(GameState.day),
+				GameState.day_rng(GameState.day, "resistance"), _config.day_length_for(GameState.day),
 				mark, neighbor)
 		_city.map.restore_edges(edges)
 	if not errors.is_empty():
@@ -1009,7 +1013,7 @@ func begin() -> void:
 	_record_crowd("initial_crowd")
 	print("[SceneRecipe] manifest " + JSON.stringify(manifest, "", true))
 	write_manifest()
-	if "--recipe-validate" in DevFlags.active_args():
+	if _config.recipe_validate:
 		get_tree().quit(0)
 		return
 	if not scripted:
@@ -1546,7 +1550,7 @@ func _write_the_draft() -> int:
 	var drafted := _draft.compose(_written, _city, start_position(), pinned, problems)
 	for problem in problems:
 		print("[SceneRecipe] draft: " + problem)
-	var path := DevFlags._word_after("--recipe-draft")
+	var path := _config.recipe_draft_path
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if not file:
 		print("[SceneRecipe] cannot write the draft: " + path)
@@ -1564,8 +1568,20 @@ func _write_the_draft() -> int:
 			drafted.setup.actors.size()])
 	return 0
 
+## An escape section of this recipe was lost and is about to start again. A scripted recipe has
+## failed — the manifest says so and the run quits non-zero — and answers `true`; a free one
+## answers `false`, for `main` to reload the authored scene rather than retry the section.
+func lose_the_attempt() -> bool:
+	if not scripted:
+		return false
+	manifest["playback_error"] = "the authored escape attempt was lost"
+	write_manifest()
+	_active = false
+	get_tree().quit(1)
+	return true
+
 func write_manifest() -> void:
-	var path := DevFlags._word_after("--recipe-manifest")
+	var path := _config.recipe_manifest_path
 	if path.is_empty():
 		return
 	var file := FileAccess.open(path, FileAccess.WRITE)

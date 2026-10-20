@@ -50,11 +50,9 @@ var _rects: Array[Rect2i] = []
 ## into its void (`City.build()`): a shadow is ground darkened, and the void has no ground.
 var falls_on := Callable()
 
-## `DevFlags.skip_shadows()`, read once when this node is built. The flag controls drawing, while
-## shadow geometry is prepared per nearby chunk and reconstructed when a chunk returns. Reading
-## the flag once avoids reparsing `--skip`'s comma list in each chunk's `_draw_chunk()`, and a test
-## can set this directly to check the skip without a real `--skip` flag behind it.
-var _skip_draw := DevFlags.skip_shadows()
+## `--skip shadows`, handed in by the city before it builds. It controls drawing only: shadow
+## geometry is still prepared per nearby chunk and reconstructed when a chunk returns.
+var skip_draw := false
 
 ## Stores `rects` — a city's building footprints, in tile coordinates
 ## (`CityMap.building_rects`) — as the source for shadow geometry. Non-streamed use also computes
@@ -199,7 +197,7 @@ func _draw_chunk(canvas: CanvasItem, tiles: Tiles) -> void:
 		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	# `--skip shadows`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (c)): no chunk
 	# draws anything, so a frame under the flag differs from an ordinary one by drawing alone.
-	if _skip_draw:
+	if skip_draw:
 		return
 	var colour := Color(Palette.SHADOW.r, Palette.SHADOW.g, Palette.SHADOW.b,
 			Tuning.BUILDING_SHADOW_ALPHA)

@@ -121,16 +121,18 @@ func _test_the_bag_follows_the_run_and_the_count(t) -> void:
 	t.check(from_100 == other.slice(100), "and put back to 100 carries on from the hundredth")
 	manager.free()
 
-## `--pelican` through the flag's own getter: every cyclist is the pelican, a loose dog still is
-## not, and the bag draws what it would have.
+## `--pelican`, as the run hands it on: the configuration reads the flag, and the manager it reaches
+## (`PelicanRig.ALWAYS`, which the city sets from it) makes every cyclist the pelican while a loose
+## dog still is not, and the bag draws what it would have.
 func _test_the_dev_flag_makes_every_cyclist_a_pelican(t) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var plain := _rolls_for(5, [cyclist], 40)
-	DevFlags.args_for_tests = PackedStringArray(["--pelican"])
-	t.check(DevFlags.pelican(), "the flag is read from the command line")
-	var flagged := _rolls_for(5, [cyclist], 40)
-	var dog := _rolls_for(5, [EventCatalogue.by_id("loose_dog")], 5)
-	DevFlags.args_for_tests = PackedStringArray()
+	t.check(RunConfig.parse(PackedStringArray(["--pelican"]), "", true).pelican,
+			"the flag is read from the command line")
+	t.check(not RunConfig.parse(PackedStringArray(["--pelican"]), "", false).pelican,
+			"and answers nothing on a release build")
+	var flagged := _rolls_for(5, [cyclist], 40, EventManager.PelicanRig.ALWAYS)
+	var dog := _rolls_for(5, [EventCatalogue.by_id("loose_dog")], 5, EventManager.PelicanRig.ALWAYS)
 	t.check(flagged.count(true) == 40 and dog.count(true) == 0,
 			"with it every cyclist is a pelican and no dog is")
 	t.check(GameState.pelican.draws == 0 and _rolls_for(5, [cyclist], 40) == plain,
@@ -224,9 +226,11 @@ func _new_run(run_seed: int) -> void:
 	GameState.pelican.reset()
 
 ## `count` answers of a fresh manager on run `run_seed`, asked for `defs` in turn, from a full bag.
-func _rolls_for(run_seed: int, defs: Array[EventDef], count: int) -> Array[bool]:
+func _rolls_for(run_seed: int, defs: Array[EventDef], count: int,
+		rig := EventManager.PelicanRig.BAG) -> Array[bool]:
 	_new_run(run_seed)
 	var manager := EventManager.new()
+	manager.pelican_rig = rig
 	var answers: Array[bool] = []
 	for i in count:
 		answers.append(manager.rolls_a_pelican(defs[i % defs.size()]))

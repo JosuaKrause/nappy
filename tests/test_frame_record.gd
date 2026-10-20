@@ -429,14 +429,14 @@ func _test_a_timed_body_runs_once(t) -> void:
 	var was := FrameRecord.ledger
 	FrameRecord.stop()
 	var untimed_agent := CrowdAgent.new()
-	untimed_agent._skip_motion = true
+	untimed_agent.skip_motion = true
 	var def := EventCatalogue.by_id("protest")
 	var untimed_event := _event(t, def)
 	var scratch := FrameLedger.new(4)
 	FrameRecord.start(scratch)
 	scratch.process_start(Time.get_ticks_usec())
 	var timed_agent := CrowdAgent.new()
-	timed_agent._skip_motion = true
+	timed_agent.skip_motion = true
 	t.check(not untimed_agent._timed and timed_agent._timed,
 			"an agent copies the switch as it stands when it is made")
 	untimed_agent._process(STEP)

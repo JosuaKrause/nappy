@@ -67,7 +67,7 @@ func _test_should_send_truth_table(t) -> void:
 	t.check(not VISIT_COUNTER_SCRIPT._should_send(true, true, false, true),
 		"a debug build sends nothing, on the web or off it")
 	t.check(not VISIT_COUNTER_SCRIPT._should_send(true, false, true, true),
-		"?debug=1 (DevFlags.readout_requested()) sends nothing even on a release web build")
+		"?debug=1 (RunConfig.readout_requested) sends nothing even on a release web build")
 	t.check(not VISIT_COUNTER_SCRIPT._should_send(true, false, false, false),
 		"a missing or blocked window.goatcounter sends nothing")
 	t.check(not VISIT_COUNTER_SCRIPT._should_send(false, true, true, false),
@@ -198,9 +198,12 @@ func _test_is_pickup_step(t) -> void:
 ## same "telemetry must not touch gameplay" invariant `tests/test_telemetry.gd` pins for the run
 ## log, adapted for a listener with no per-frame watch of its own.
 func _test_listening_touches_no_gameplay_state(t) -> void:
-	t.check(not VISIT_COUNTER_SCRIPT.should_send(),
-		"a headless test process is never the web, so nothing below can reach a real page")
 	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	t.check(not counter.should_send(),
+		"a counter handed no configuration sends nothing")
+	counter.configure(RunConfig.parse(PackedStringArray(), "", false))
+	t.check(not counter.should_send(),
+		"a headless test process is never the web, so nothing below can reach a real page")
 	var before := _gamestate_snapshot()
 	counter._on_run_begun(1, false)
 	counter._on_day_started(1)

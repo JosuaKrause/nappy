@@ -19,14 +19,16 @@ scenes/
   ui/touch_controls.tscn  the pointer scheme's overlay
 src/
   main.gd                 boot: generate the city, drop the player on the doorstep, then the HUD
+  run_config.gd           the run's configuration: every dev flag and the page's query, resolved
+                          once at boot and never changed (see "Dev flags and release builds")
   game_enums.gd           shared enums (see below)
   autoload/
 	tuning.gd             all balance constants           (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
 	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
 	game_state.gd         run/day/nerves/resistance       (autoload: GameState)
-	game_save.gd          persists a run to disk and reads one back; not an autoload, the same
-	                      static-namespace shape as DevFlags
+	game_save.gd          persists a run to disk and reads one back; not an autoload, a static
+	                      namespace
 	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens
 	                                                       (autoload: VisitCounter)
   player/
@@ -169,9 +171,9 @@ src/
 	auto_screenshot.gd    render N frames, save a PNG, quit
 	still_watch.gd        --quit-when-still: once she has moved, quits and saves a picture the
 	                       moment she holds still again, reusing AutoScreenshot's own capture
-	dev_flags.gd          every dev command-line flag, gated behind OS.is_debug_build()
-	dev_rig.gd            the flag-acting half: --spawn/--follow/--overview/--meters/--day-length
-	                       against the live City, testable without booting main
+	dev_flags.gd          the parser behind RunConfig, and the flag manifest the shell tools read
+	dev_rig.gd            the flag-acting half: --spawn/--follow/--overview/--meters against the
+	                       live City, handed the values, testable without booting main
 	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/spawn:<name>)
 	                       along a real, kerb-preferring path, through the ordinary input path
 	debug_layers.gd       the fields, shadows and bounding-box overlays, one number key apiece
@@ -259,12 +261,30 @@ windowed, saves the viewport after N frames and quits.
 
 ### Dev flags and release builds
 
-`DevFlags` (`src/dev/dev_flags.gd`) parses `--seed`, `--day`, `--spawn`, `--follow`, `--meters`,
-`--overview`, `--day-length`, `--ending`, `--controls`, `--layers`, `--blackout` and
-`--start-escape` on the command line, gated behind `OS.is_debug_build()` (`DevFlags.enabled()`) —
-`false` for an exported release template, so none of this furniture, nor the snapshot key
-`main.gd` reads directly, is reachable from a public build's command line, which a visitor has no
-way to set regardless. `--start-escape` takes an optional value — `stairwell:left`,
+**The run's configuration is resolved once, at boot, and handed out from `main`.**
+`RunConfig.at_boot()` (`src/run_config.gd`) reads the command line and, on the web, the page's
+query (`window.location.search`, the one read of the address bar the game makes) once per process,
+and keeps every answer in an immutable `RunConfig`: a later write is refused with a warning and its
+arrays are read-only. `main` is the one place it is read. It hands the config itself to the
+observers — `Telemetry.configure()`, `GameSave.configure()`, `VisitCounter.configure()` — and to
+the dev rigs (`AutoScreenshot.from_config()`, the scene-recipe runtime), and hands the world, the
+day and the baby the plain values they need out of it: a day's length
+(`RunConfig.day_length_for()`, the one place it is decided) to `DayController.start()`, the
+resistance and the run log; `DayController.invincible`, `Baby.excitement_frozen` and the escape's
+`FinaleController.invincible`/`section_length`; and, on `City` before `build()`, the ground mode,
+the frame lock, the four `--skip` words, the forced blackout, `--pelican` and `--force`, which the
+city passes to the part each belongs to. Nothing in the simulation reads a flag, the command line
+or the address bar, and nothing asks for them every frame. A test builds the run it wants with
+`RunConfig.parse(words, query, debug_build)` and hands it in (`main.configure()`), or hands a
+component its plain value directly.
+
+`DevFlags` (`src/dev/dev_flags.gd`) is the parser behind it, over a command line and a query it is
+handed, and the manifest of every flag the shell tools validate against. Its command-line half —
+`--seed`, `--day`, `--spawn`, `--follow`, `--meters`, `--overview`, `--day-length`, `--ending`,
+`--controls`, `--layers`, `--blackout`, `--start-escape` and the rest — answers only on a debug
+build: `OS.is_debug_build()` is `false` for an exported release template, so none of this
+furniture, nor the snapshot key `main.gd` reads directly, is reachable from a public build's
+command line, which a visitor has no way to set regardless. `--start-escape` takes an optional value — `stairwell:left`,
 `stairwell:right`, `lobby`, `basement` or `floor:2`/`floor:1` — that teleports straight to that
 part of the escape scene's one building-wide map instead of starting at her own door on the third
 floor, or `city`, which is the one value that is not a part of the building: it boots the escape's
@@ -274,20 +294,23 @@ with the command line taken out of it so the mapping is testable.
 **A named subset of that same list also answers a release page's own query string, behind
 `?debug=1`.** *(2026-09-25, docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
 flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
-invincible, etc.) so debugging the live build is easier".)* `DevFlags.live_debug_requested()` —
-`enabled()` or `readout_requested()` — is the gate: `?day=`, `?invincible=1`, `?layers=`,
+invincible, etc.) so debugging the live build is easier".)* `RunConfig.live_debug` — a debug
+build, or `?debug=1` (`readout_requested`) — is the gate: `?day=`, `?invincible=1`, `?layers=`,
 `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
 `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
 drives input, takes a picture or writes a file — the frame record's download aside — stay behind
-`enabled()` alone, with no release-page door at all. `GameSave.uses_save()` refuses the player's own save the moment a release page's
-query actually used one of the flags above (`DevFlags.web_debug_flag_used()`), the same way it
-already refuses a debug build's own argv.
+the debug build alone, with no release-page door at all. `GameSave.uses_save()` refuses the
+player's own save the moment a release page's query actually used one of the flags above
+(`RunConfig.web_debug_flag_used`), the same way it already refuses a debug build's own argv.
 
 `src/dev/auto_screenshot.gd` parses `--screenshot` and the flags nested under it (`--after`,
-`--walk`, `--smooth-walk`, `--flee`, `--press`, `--tap`) itself, and gates its own entry point behind `enabled()`
-the same way rather than moving that parsing out — none of it has a release-page door. `--no-telemetry`
+`--walk`, `--smooth-walk`, `--flee`, `--press`, `--tap`) itself, from the gated words the config
+holds (`RunConfig.active_args`, empty on a release build), so none of it has a release-page door.
+One rig list decides what a rig is — `DevFlags`' `RIG_FLAGS`, `--tap` included, plus a movie
+recording and a scripted recipe (`RunConfig.is_rig`) — for the window lockdown, the wall-clock
+quit and whether the run log is a playtest. `--no-telemetry`
 is not part of this: it is a documented player-facing opt-out (see docs/TELEMETRY.md), not
 developer furniture, and stays live in every build. `main.gd`'s own right-hand readout (seed, frame
 rate, the meter's incoming/decay/net arithmetic) is gated on `_debug or _readout_requested` rather
@@ -344,17 +367,17 @@ and `FOCUS_RIGHT`, each choosing its own side, and a `Symbol.TAP` disc midway be
 that lands anywhere else on the screen does nothing — and a direction key or `space` begins one in
 `Mode.TAP` instead, on the reasoning that a player pressing a key has told the screen nothing about
 a thumb. `main._add_touch_controls()` gives `TouchControls` a starting mode and side from
-`ControlsMode.resolve()` and `resolve_side()` (the command line's `--controls
-joystick|joystick-left|joystick-right|tap`, then the page's own `?controls=`, then `TAP`) before the title screen
+`ControlsMode.from_word()` and `side_from_word()` over `RunConfig.controls_word` (the command
+line's `--controls joystick|joystick-left|joystick-right|tap`, then the page's own `?controls=`,
+then `TAP`) before the title screen
 exists at all — the answer a rig gets if it skips the title (`--no-title`, a screenshot rig) — and
 `main._on_title_start()` overrides both the moment a player actually presses a button. The side is
 never saved: it lasts until the title asks again. The day-14 hand-over to the escape reloads the
 scene and opens no title, so `ControlsMode.remember()` keeps the title's answer in static variables
-for the rest of the process, and that boot's `_add_touch_controls()` takes it instead of
-`resolve()`. `resolve()`'s command-line door stays behind `DevFlags.enabled()`;
-its query door stays behind `DevFlags.live_debug_requested()`, so a release page's own
-`?debug=1&controls=` reaches it too (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the
-debug flags").
+for the rest of the process, and that boot's `_add_touch_controls()` takes it instead of the
+configured word. The command-line door stays behind the debug build; the query door behind
+`RunConfig.live_debug`, so a release page's own `?debug=1&controls=` reaches it too
+(docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags").
 
 `TouchControls` (`src/ui/touch_controls.gd`) is the whole of the pointer scheme, and the two modes
 disagree about where a heading is measured from. `Mode.TAP` sets a direction toward its own world
@@ -433,9 +456,9 @@ The run log: one plain-text file per run, written as it happens. **Inert until
 `begin_run()`**, which only `main.gd` calls — so the test suite, which never calls it, writes
 no files and pays nothing. `begin_run()` is also inert on a web export
 (`OS.has_feature("web")`), since `user://` there is a stranger's browser storage that nothing
-ever prunes — **unless the page's own `?telemetry=1` asks otherwise**, which is the one telemetry
-switch not gated behind `DevFlags.enabled()`, because the deployed page has no command line for
-that gate to read. See `docs/TELEMETRY.md` for the format and what belongs in it.
+ever prunes — **unless the page's own `?telemetry=1` asks otherwise**, read from the query the run
+read at boot (`RunConfig.page_query`), since the deployed page has no command line, and honoured
+on a debug export only. See `docs/TELEMETRY.md` for the format and what belongs in it.
 
 The rule that governs it is one line long: **telemetry must not touch gameplay.** No RNG, no
 `day_rng()` stream, nothing that changes a placement or a roll. Where a system logs a random

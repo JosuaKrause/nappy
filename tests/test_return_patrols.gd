@@ -65,9 +65,9 @@ func _test_no_double_batch_in_a_day(t) -> void:
 
 ## `--force <id>` replaces the day's own queue with nothing but the forced row — there is no
 ## ordinary queue left for the return to add to or re-pace, and the brief says leave it alone.
-## `DevFlags` reads the real command line, with no override hook for the row it names (only for
-## `--invincible`), so this reaches `_forced` directly the way other suites reach a director's
-## private state (`tests/test_resistance.gd`'s own `director._rider`, `director._process`).
+## `EventDirector.force()` takes effect at the next `start_day()`, which this rig does not run, so
+## this reaches `_forced` directly the way other suites reach a director's private state
+## (`tests/test_resistance.gd`'s own `director._rider`, `director._process`).
 func _test_forced_queue_is_untouched(t) -> void:
 	var map := _map()
 	var director := _director(map)

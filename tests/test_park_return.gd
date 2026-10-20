@@ -36,14 +36,12 @@ func run(t) -> void:
 	GameSave.restore_run_data(baseline)
 	GameState.hard_mode = bool(baseline["hard_mode"])
 	GameState.checkpoint = baseline["checkpoint"]
-	DevFlags._invincible_override = null
 
 # ------------------------------------------------------------------ fixture ---
 
 ## A booted `Main` standing at day 12's dawn on `seed_value`, a normal run, with the mark read and
 ## the swing offered.
 func _day_twelve(t, seed_value: int) -> Node2D:
-	DevFlags._invincible_override = false
 	# `Main` rolls its own seed unless a command line or a save gives one: a save of this seed's run,
 	# standing at day 12's dawn, is the way a test gives it, and is read back through the scratch
 	# file this suite points `GameSave` at.
@@ -52,6 +50,8 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	GameSave._write_now(true)
 	GameSave._uses_save_override = true
 	var main: Node2D = MAIN_SCENE.instantiate()
+	# A run with no flag at all, whatever this process's own command line says.
+	main.configure(RunConfig.parse(PackedStringArray(), "", true))
 	t.add_child(main)
 	GameSave._uses_save_override = null
 	t.get_tree().process_frame.emit()

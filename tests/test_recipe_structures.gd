@@ -23,7 +23,7 @@ func run(t) -> void:
 	t.add_child(player)
 	var baby: Baby = player.get_node("Baby")
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure(built, false)
+	runtime.configure(built, RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true))
 	var selected := Vector3i(-1, -1, -1)
 	var home := ClosurePlanner.home_street(city.map)
 	for key: Vector3i in StreetTrees.segment_keys_with_trees(city.map):

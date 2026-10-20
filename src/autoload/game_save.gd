@@ -1,11 +1,11 @@
 class_name GameSave
 extends RefCounted
 ## Persists a run to disk so the game can be closed and picked up again — see docs/MECHANICS.md,
-## "Saving and resuming". Not an autoload, the same shape `DevFlags` already uses: every member
-## below is `static`, so the class is a namespace for file I/O and format policy rather than an
-## object with a lifetime of its own. Lives beside `GameState`, the one thing it reads and writes,
-## rather than under `src/ui/` with the symbol that announces a write — a save module is data, the
-## symbol is presentation, and the two only meet through `EventBus`.
+## "Saving and resuming". Not an autoload: every member below is `static`, so the class is a
+## namespace for file I/O and format policy rather than an object with a lifetime of its own. Lives
+## beside `GameState`, the one thing it reads and writes, rather than under `src/ui/` with the
+## symbol that announces a write — a save module is data, the symbol is presentation, and the two
+## only meet through `EventBus`.
 ##
 ## **The save is the run, never the moment inside a day.** `GameState.save_snapshot()` says what a
 ## run holds; this file only adds the facts a run does not know about itself — whether a day was
@@ -183,8 +183,7 @@ static var _last_tick_usec := 0
 ## see the **verify** skill's testing policy: an agent's run never lands in a saved game. `""`
 ## (the default) means "answer normally"; a test sets this before calling
 ## `_write_now()`/`_read_now()` directly (bypassing `uses_save()`'s gate, which a headless test
-## runner would otherwise always fail) and clears it back to `""` when done, the same shape
-## `DevFlags._invincible_override` already uses for the same reason.
+## runner would otherwise always fail) and clears it back to `""` when done.
 static var _path_override := ""
 
 static func set_path_override(path: String) -> void:
@@ -194,13 +193,21 @@ static func _path() -> String:
 	return _path_override if _path_override != "" else _DEFAULT_PATH
 
 ## Set by a test to force `uses_save()`'s own answer, bypassing the headless display server this
-## suite always boots against — the same seam `DevFlags._invincible_override` is for the same
-## reason: a headless runner can drive `write()`/`try_resume()` (the gated names `main.gd` actually
-## calls) no other way, since `uses_save()` refuses a headless run unconditionally. `null` (the
+## suite always boots against: a headless runner can drive `write()`/`try_resume()` (the gated
+## names `main.gd` actually calls) no other way, since `uses_save()` refuses a headless run
+## unconditionally. `null` (the
 ## default) means "answer normally"; a test sets this to `true` before exercising the gated path
 ## against a scratch file (`set_path_override()` first, never `_DEFAULT_PATH`) and clears it back
 ## to `null` when done, or the override leaks into every suite that runs after it.
 static var _uses_save_override: Variant = null
+
+## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then,
+## which `uses_save()` answers with no save at all: nothing reads or writes the player's save
+## before the run has said which flags it carries.
+static var _config: RunConfig
+
+static func configure(config: RunConfig) -> void:
+	_config = config
 
 ## The one function every read and write of the player's save goes through. Every checkout and
 ## worktree of this repository shares one `user://`, so a dev flag, a headless run, the test
@@ -210,34 +217,34 @@ static var _uses_save_override: Variant = null
 ## `DisplayServer.get_name() == "headless"` answers the null display server a headless run boots
 ## against (see the **verify** skill on `AutoScreenshot.can_photograph()`, the same check) —
 ## checked first and unconditionally, since a headless boot carries no dev flag at all and would
-## otherwise read as an ordinary release run. `DevFlags.enabled()` is the same gate every other dev
-## flag already answers to (`OS.is_debug_build()`), so this reaches `--seed`, `--day`, `--walk` and
-## the rest by construction rather than by naming each one again; `DevFlags.no_save()` and a
-## flagless debug run's own empty argument list are the two ways a *windowed* debug session still
-## answers "no" — the first because it asked to, the second because nothing here can tell a bare
-## `tools/run.sh` apart from the player's own desktop build otherwise, and the flag exists exactly
-## so an agent can ask for one anyway.
+## otherwise read as an ordinary release run. On a debug build any dev flag at all keeps the run off
+## the save (`config.active_args` is not empty), which reaches `--seed`, `--day`, `--walk` and the
+## rest by construction rather than by naming each one again; `--no-save` and a flagless debug
+## run's own empty argument list are the two ways a *windowed* debug session still answers "no" —
+## the first because it asked to, the second because nothing here can tell a bare `tools/run.sh`
+## apart from the player's own desktop build otherwise, and the flag exists exactly so an agent
+## can ask for one anyway.
 ##
 ## **A web page keeps its ordinary save too, debug build or release, unless it actually used one
-## of `DevFlags.live_debug_requested()`'s own parameters.** *(docs/DECISIONS.md, M193, "the live page's ?debug=1
-## reaches the debug flags": "a visitor who tries `?day=12` does not lose their own day 3".)*
-## `DevFlags.web_debug_flag_used()` answers that — `false` for the ordinary release page everyone
-## else gets, and for `?debug=1` alone with none of the bundle's own parameters named, since
-## neither one is a run built any differently from the one every other visitor gets.
+## of the release-safe bundle's own parameters** (M193, the live page's ?debug=1 reaches the debug
+## flags: "a visitor who tries `?day=12` does not lose their own day 3").
+## `config.web_debug_flag_used` answers that — `false` for the ordinary release page everyone else
+## gets, and for `?debug=1` alone with none of the bundle's own parameters named, since neither one
+## is a run built any differently from the one every other visitor gets.
 static func uses_save() -> bool:
 	if _uses_save_override != null:
 		return bool(_uses_save_override)
-	if DisplayServer.get_name() == "headless":
+	if DisplayServer.get_name() == "headless" or _config == null:
 		return false
-	if not DevFlags.enabled():
-		return not DevFlags.web_debug_flag_used()
-	return _debug_run_uses_save(DevFlags.active_args(), DevFlags.no_save()) \
-			and not DevFlags.web_debug_flag_used()
+	if not _config.debug_build:
+		return not _config.web_debug_flag_used
+	return _debug_run_uses_save(_config.active_args, _config.no_save) \
+			and not _config.web_debug_flag_used
 
 ## The one piece of `uses_save()`'s policy that does not depend on the live environment — pulled
 ## out so a test can drive every combination of flags directly rather than only through whichever
-## shape `OS.is_debug_build()` happens to answer under the runner. Called only once `enabled()`
-## already holds, so a release build's own empty argument list never reaches this at all.
+## shape `OS.is_debug_build()` happens to answer under the runner. Called only on a debug build, so
+## a release build's own empty argument list never reaches this at all.
 static func _debug_run_uses_save(args: PackedStringArray, no_save: bool) -> bool:
 	return not no_save and args.is_empty()
 

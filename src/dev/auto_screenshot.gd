@@ -117,6 +117,8 @@ const _OPPOSITE := {
 var _path := ""
 var _seconds_to_wait := DEFAULT_SECONDS
 var _elapsed := 0.0
+## Whether Godot's movie writer is recording the run — see `_draw_covered_recording_frame()`.
+var _recording := false
 ## A recipe's movement and screenshot share physics time; ordinary rigs retain their own clock.
 var simulation_clock: Callable
 var before_capture: Callable
@@ -152,34 +154,23 @@ var _presses: Array[Dictionary] = []
 ## Where `--tap X Y` asks for a synthetic tap, or `Vector2.INF` for none given. See `_tap_screen()`.
 var _tap_at := Vector2.INF
 
-## Returns a configured instance for a screenshot, or for a timed, capture-free run — a frame trace
-## or a recording. Returns null without one of those requests or outside a debug build.
-## `--screenshot`, `--after`, `--walk`, `--smooth-walk`, `--flee` and `--press` are developer
-## furniture like every flag `DevFlags` gates, and are gated here rather than moved there because
-## this file already owns their parsing.
+## Returns a configured instance for a screenshot, or for a timed, capture-free run — a frame trace,
+## a frame record or a recording bounded by `--after` (`RunConfig.screenshot_rig()`). Returns null
+## without one of those requests, which is always outside a debug build: `config.active_args` is
+## empty there. `--screenshot`, `--after`, `--walk`, `--smooth-walk`, `--flee`, `--press` and
+## `--tap` are parsed here, from those gated words, because this file owns what they do.
 ##
-## **Deliberately has no override, for the same reason `DevFlags.enabled()` does not get one.**
-## What this gate reaches is scripted input (`--walk`, `--flee`, `--press` can drive any action or
-## bare key, including `key:r` and `key:q`) and a PNG written straight to disk — automation built
-## for the person who already has the source, not a capability to hand a public build's visitor
-## through an address bar. Unlike `Telemetry`'s `?telemetry=1`, which only asks that *this run's own
-## log* go where a run's log already goes on every other platform, an override here would let
-## anyone drive the game like a rig. The entry point stays what it already is: run a debug build.
-static func from_command_line() -> AutoScreenshot:
-	if not OS.is_debug_build():
+## **No release page reaches this.** What it drives is scripted input (`--walk`, `--flee`,
+## `--press` can drive any action or bare key, including `key:r` and `key:q`) and a PNG written
+## straight to disk — automation built for the person who already has the source, not a capability
+## to hand a public build's visitor through an address bar. The entry point is a debug build.
+static func from_config(config: RunConfig) -> AutoScreenshot:
+	if not config.screenshot_rig():
 		return null
-	var args := OS.get_cmdline_user_args()
-	var index := args.find("--screenshot")
-	var has_picture := index != -1 and index + 1 < args.size()
-	# A timed, capture-free run: `--frame-trace` or `--frame-record` measuring, or Godot's own
-	# movie writer recording (`tools/record.sh`, `tools/trailer.sh`) — either way the rig drives
-	# her and quits at `--after`, and nothing here saves a picture of its own.
-	var timed_trace := (DevFlags.frame_trace_requested() or DevFlags.frame_record_requested()
-			or DevFlags.recording()) and "--after" in args
-	if not has_picture and not timed_trace:
-		return null
+	var args := config.active_args
 	var node := AutoScreenshot.new()
-	node._path = args[index + 1] if has_picture else ""
+	node._path = config.screenshot_path
+	node._recording = config.recording
 	var after := args.find("--after")
 	if after != -1 and after + 1 < args.size():
 		node._seconds_to_wait = float(args[after + 1])
@@ -227,9 +218,10 @@ static func from_command_line() -> AutoScreenshot:
 ## writer of the same picture. `_seconds_to_wait` of `0.0` means the very first `_process()` tick
 ## already satisfies `_elapsed >= _seconds_to_wait`, so nothing here duplicates the wait/capture
 ## branch already at the bottom of `_process()`.
-static func immediate(path: String) -> AutoScreenshot:
+static func immediate(path: String, recording := false) -> AutoScreenshot:
 	var node := AutoScreenshot.new()
 	node._path = path
+	node._recording = recording
 	node._seconds_to_wait = 0.0
 	return node
 
@@ -335,7 +327,7 @@ func _ready() -> void:
 ## while hundreds of output frames repeat the last texture. A visible recording stays on the
 ## engine's render path, and non-recording runs never force a draw.
 func _draw_covered_recording_frame() -> void:
-	if recording_frame_needs_force(DevFlags.recording(), DisplayServer.window_can_draw()):
+	if recording_frame_needs_force(_recording, DisplayServer.window_can_draw()):
 		RenderingServer.force_draw(false)
 
 ## The recording-only gate above as a pure question, so the scope contract can be checked without

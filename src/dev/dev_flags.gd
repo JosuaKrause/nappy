@@ -1,38 +1,33 @@
 class_name DevFlags
 extends RefCounted
-## Parses every developer-only command-line flag and is the one place all of them are gated
-## behind `OS.is_debug_build()`.
+## The parser behind `RunConfig`: every developer flag, read from a command line and a page query
+## handed in, never from the process itself. `RunConfig.at_boot()` builds one of these once, from
+## the real command line and the one read of the page's query (`page_query()`), and keeps the
+## answers; nothing else in the game constructs one or asks the process for a flag.
 ##
-## Moved out of `main.gd`, which carried this parsing inline, mixed into the boot sequence and
-## the day loop it sits beside. `OS.is_debug_build()` is `false` for an exported release
-## template — which is what `tools/export-web.sh` produces — so every getter here answers "not
-## given" no matter what is on the command line: a public build cannot be made to jump to a day
-## or write a screenshot by passing it flags nobody documented for a player. A seed is the one
-## exception — `seed_override()`'s own `?seed=` reaches a positive integer on a page already
-## carrying the DEBUG MODE note, through `readout_requested()`'s gate rather than this one; the
-## command line's own `--seed` still answers only to this gate, unbounded and arbitrary, as it
-## always has.
+## **The command-line half answers only on a debug build.** `debug_build` is false for an exported
+## release template, which is what `tools/export-web.sh` produces, so every getter here answers
+## "not given" there whatever the command line says: a public build cannot be made to jump to a
+## day or write a screenshot by flags nobody documented for a player. Two smaller sets answer to a
+## release page too, behind its own `?debug=1` (`readout_requested()`): the readout itself with
+## `?skip=` and `?seed=`, and the bundle `live_debug_requested()` opens, the flags that choose where
+## a run starts or how it is drawn and never one that drives input or takes a picture (M193, the
+## live page's ?debug=1 reaches the debug flags).
 ##
-## **`--no-telemetry` is not here.** It is a documented player-facing opt-out (see
-## docs/TELEMETRY.md), not developer furniture, and stays live in every build.
-## **`AutoScreenshot.from_command_line()` gates itself the same way independently**, since
-## `--screenshot`, `--after`, `--walk`, `--smooth-walk`, `--flee` and `--press` are parsed there
-## rather than in `main.gd`, and are gated in place rather than moved here.
+## **`--no-telemetry` answers on every build.** It is a documented player-facing opt-out (see
+## docs/TELEMETRY.md), not developer furniture, so `no_telemetry()` reads the ungated command line.
+## `AutoScreenshot.from_config()` parses `--screenshot`, `--after`, `--walk`, `--smooth-walk`,
+## `--flee`, `--press` and `--tap` itself, from the gated words this hands it.
 ##
 ## **The table below is the one manifest of the whole surface, even the half parsed elsewhere.**
 ## `tools/run.sh` and `tools/shot.sh` forward whatever a caller gives them straight to the game
-## as a dev flag (see the **cli-tools** skill), so they need to reject a typo before spending a
-## Godot launch on it — and the only way that check cannot drift from what the game actually
-## reads is to read it from the same file the game does. A flag's own parsing stays where it
-## already lives (here, `AutoScreenshot`, `TouchInput`, `QuitOption`, `main.gd`); this table adds
-## nothing to that and changes no behaviour — it is a manifest for the shell side, not a second
-## parser. Each row is `<flag> <arity>`: arity is the exact count of words the flag always
-## consumes, `?` marks one more consumed only when it looks like a number, `w?` marks one more
-## consumed only when it does not itself start with `--` (`--start-escape`'s own target word),
-## and `*` marks a flag that may repeat (`--press` only, two words each time). Keep this in step
-## with the getters below and with
-## `AutoScreenshot.from_command_line()` — a flag added to either without a row here is invisible
-## to the shell tools and gets rejected as unknown.
+## as a dev flag (see the **cli-tools** skill), so they reject a typo before spending a Godot
+## launch on it, reading this table out of this file the way `tools/lib_dev_flags.sh` does. Each
+## row is `<flag> <arity>`: arity is the exact count of words the flag always consumes, `?` marks
+## one more consumed only when it looks like a number, `w?` marks one more consumed only when it
+## does not itself start with `--` (`--start-escape`'s own target word), and `*` marks a flag that
+## may repeat (`--press` only, two words each time). A flag the game reads without a row here is
+## invisible to the shell tools and rejected by them as unknown.
 ##
 ## DEV_FLAG_TABLE
 ##   --seed          1
@@ -87,16 +82,14 @@ extends RefCounted
 ##   --recipe-draft  1
 ## END_DEV_FLAG_TABLE
 ##
-## Which of the flags above mark a run as a **rig** rather than a person at the keyboard — the
-## same set `main._somebody_is_playing()` already lists as "something else is holding the keys"
-## (`--screenshot`, `--walk`, `--flee`, `--press`, `--route`), plus `--tap`, which drives a
-## synthetic touch the same way. A run Godot's own movie writer records (`--write-movie`, which
-## `tools/record.sh` and `tools/trailer.sh` launch with) is a rig too, whatever its flags — see
-## `recording()`. `is_rig()` below is the live read; `tools/lib_dev_flags.sh`'s own
-## `rig_flag_present()` reads this exact block, so shot.sh/run.sh's decision to strip a window's
-## focus, disable vsync, gate input and enforce the wall-clock limit can never name a different set
-## of flags than the game itself locks real input out for. A plain `tools/run.sh` session — no
-## flag on this list — is a person's, and is untouched by any of it.
+## Which of the flags above mark a run as a **rig** rather than a person at the keyboard: the ones
+## that supply the input themselves. A run Godot's own movie writer records (`--write-movie`, which
+## `tools/record.sh` and `tools/trailer.sh` launch with) and a scripted scene recipe are rigs too,
+## whatever their flags — see `is_rig()`. `tools/lib_dev_flags.sh`'s own `rig_flag_present()` reads
+## this exact block, so the shell's decision to strip a window's focus, disable vsync, gate input
+## and enforce the wall-clock limit names the same set of flags the game locks real input out for;
+## `_RIG_FLAGS` below is the GDScript spelling of it. A plain `tools/run.sh` session, with no flag
+## on this list, is a person's and is untouched by any of it.
 ##
 ## RIG_FLAGS
 ##   --screenshot
@@ -120,56 +113,60 @@ extends RefCounted
 ##   movie_slowdown 10.0
 ## END_RIG_QUIT_SECONDS
 
-## Whether dev flags are readable at all. `main.gd` also reads this directly for the two gated
-## things that are not a flag value — the snapshot key, and whether to even ask `AutoScreenshot`
-## for a rig.
-##
-## **Deliberately has no override of its own — the one gate the input-driving, picture-taking and
-## file-writing half of the surface still funnels through unconditionally.** *(2026-09-06, the
-## player: "for dev you need it to be controllable from the getgo -- for release there should be
-## no modifiers".)* That still holds without exception for an arbitrary, unbounded seed from the
-## command line, `--spawn`, `--follow`, `--route`, `--force`, `--pelican`, `--overview`,
-## `--zoom`, `--touch`, `--web`, `--title`/`--no-title`, `--no-focus-pause`, `--no-save`,
-## `--spikes`, `--frame-trace`, `--quit-when-still`, and (through
-## `AutoScreenshot.from_command_line()`'s own copy of this gate) `--screenshot`, `--after`,
-## `--walk`, `--smooth-walk`, `--flee`, `--press` and `--tap` — a release build answers
-## none of it, from any address a visitor could type.
-##
-## **The smaller half — the flags that choose where a run starts or how it is drawn, and the frame
-## record, never one that drives input or takes a picture, and none that writes a file but the
-## frame record's, which leaves only through the browser's download when the player taps its page
-## button — answers to a release page too, behind `?debug=1`.** *(2026-09-25,
-## docs/playtests/PLAYTEST-130.md: "on the published site behind debug=1 we'd want some of the
-## debug flags (like day, invincible, etc.) so debugging the live build is easier", overturning the
-## 2026-09-06 rule above for that half alone — see docs/DECISIONS.md, M193, "the live page's
-## ?debug=1 reaches the debug flags".)* `live_debug_requested()` below is
-## that gate: `day_override()`, `invincible()`, `layers_override()`, `ControlsMode.resolve()`,
-## `start_escape()`, `meters_override()`, `day_length_override()`, `ending_override()`,
-## `blackout_requested()`, `ground_mode()` and `frame_record_requested()` each read the command
-## line under `enabled()` and, failing that, the page's own query under `live_debug_requested()`.
-## *(2026-10-03, inbox #510, asked how the frame record should get off the phone: "Download plus
-## readout line".)*
-##
-## A debug build carries every flag on this whole page immediately, with nothing further to
-## unlock; the entry point for the larger half stays what it already is: run a debug build.
-static func enabled() -> bool:
-	return OS.is_debug_build()
+## The command line as given, every word, gated or not — read directly only for the flags that
+## answer on a release build (`--debug`, `--skip`, `--no-telemetry`).
+var _given := PackedStringArray()
+## The page's query string (`window.location.search`), or "" off the web.
+var _query := ""
+## Whether this is a debug build, the gate on the command-line half.
+var _debug_build := false
+## Whether Godot's own movie writer is recording this run (`OS.has_feature("movie")`).
+var _movie := false
+## A loaded scene recipe's data, or `{}`. Its seed, day, escape part and parent stand in for the
+## flags' own, since a recipe is a whole authored setup rather than a set of overrides.
+var _recipe := {}
 
-## Whether the developer readout was explicitly asked for on a release build — `?debug=1` (or the
-## command line's own `--debug`), parsed straight off the command line or the page's query string
-## and not gated behind `enabled()`. Reaches the readout `main.gd` draws in the top-right corner,
-## and gates every other release-safe query flag in turn: `--skip`/`?skip=` (`skip_words()`),
-## `?seed=`'s own positive integer (`seed_override()`), and, through `live_debug_requested()`
-## below, the smaller bundle M193 opens on top of those two — `?day=`, `?invincible=1`,
-## `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
-## `?groundmode=`, `?framerecord=1` and `?dpr=<x>` (`WebDisplay`).
-## `Telemetry`'s own `?telemetry=1` is not part of any of this: it stays behind `enabled()` alone
-## (docs/TELEMETRY.md, "`--spikes` is off by default"), since a stranger's browser collecting a
-## trace is a different question from a stranger's browser reading a day number back. See
-## docs/DECISIONS.md, M133, "the readout on the live page", and docs/DECISIONS.md, M193, "the live
-## page's ?debug=1 reaches the debug flags".
-static func readout_requested() -> bool:
-	return _readout_from_args(OS.get_cmdline_user_args()) or _readout_from_query(_web_query())
+func _init(args: PackedStringArray, query: String, debug_build: bool, movie := false,
+		recipe: Dictionary = {}) -> void:
+	_given = args.duplicate()
+	_query = query
+	_debug_build = debug_build
+	_movie = movie
+	_recipe = recipe if debug_build else {}
+
+## The page's own query string, read through `JavaScriptBridge` — the one read of the address bar
+## the game makes, at boot, by `RunConfig.at_boot()`. "" outside a Web export.
+static func page_query() -> String:
+	if OS.get_name() != "Web":
+		return ""
+	var search: Variant = JavaScriptBridge.eval("window.location.search")
+	return search as String if search is String else ""
+
+## Whether a scene recipe stands in for the flags: one was handed in and this is a debug build,
+## since a release build keeps no recipe.
+func has_recipe() -> bool:
+	return not _recipe.is_empty()
+
+## Whether the command-line half is readable at all: a debug build. A release build answers no
+## flag of that half from anywhere, so the entry point to it stays what it is: run a debug build
+## (2026-09-06, the player: "for dev you need it to be controllable from the getgo -- for release
+## there should be no modifiers").
+func enabled() -> bool:
+	return _debug_build
+
+## The command line, or nothing at all outside a debug build — the one choke point every gated
+## getter below reads through, and what `RunConfig.active_args` keeps.
+func active_args() -> PackedStringArray:
+	return _given if _debug_build else PackedStringArray()
+
+## Whether the developer readout was asked for — `?debug=1` or `--debug`, read without `enabled()`'s
+## gate. It shows the readout on a release page and gates every other release-safe query flag in
+## turn: `?skip=` (`skip_words()`), `?seed=`'s positive integer (`seed_override()`), and the bundle
+## `live_debug_requested()` opens. `Telemetry`'s own `?telemetry=1` is not part of any of this: it
+## stays behind the debug build alone (docs/TELEMETRY.md), since a stranger's browser collecting a
+## trace is a different question from a stranger's browser reading a day number back.
+func readout_requested() -> bool:
+	return _readout_from_args(_given) or _readout_from_query(_query)
 
 static func _readout_from_args(args: PackedStringArray) -> bool:
 	return "--debug" in args
@@ -181,50 +178,38 @@ static func _readout_from_query(query: String) -> bool:
 			return true
 	return false
 
-## The gate for the smaller, release-safe bundle M193 opens beside the readout: the flags that
-## choose where a run starts or how it is drawn (`day_override()`, `invincible()`,
-## `layers_override()`, `ControlsMode.resolve()`, `start_escape()`, `meters_override()`,
-## `day_length_override()`, `ending_override()`, `blackout_requested()`, `ground_mode()`,
-## `frame_record_requested()`) — never the input-driving or picture-taking half `enabled()` alone
-## still gates (see `enabled()`'s own doc for that list), and no file but the frame record's, which
-## leaves only through the browser's download when the player taps its page button. True on a debug build
-## with or without `?debug=1` in the page, since a debug build already answers the whole of
-## `enabled()`'s own bundle regardless of any query string; true on a release page only once
-## `readout_requested()` holds, so a release page nobody asked `?debug=1` of reads exactly as
-## before. *(2026-09-25, docs/playtests/PLAYTEST-130.md: "on the published site behind debug=1
-## we'd want some of the debug flags (like day, invincible, etc.) so debugging the live build is
-## easier".)*
-static func live_debug_requested() -> bool:
+## The gate for the release-safe bundle: the flags that choose where a run starts or how it is
+## drawn (`day_override()`, `invincible()`, `layers_override()`, `controls_word()`,
+## `start_escape()`, `meters_override()`, `day_length_override()`, `ending_override()`,
+## `blackout_requested()`, `ground_mode()`, `frame_record_requested()`, and `WebDisplay`'s `?dpr=`)
+## — never the input-driving or picture-taking half, and no file but the frame record's, which
+## leaves only through the browser's download when the player taps its page button. Open on a
+## debug build whatever the page says, and on a release page once `readout_requested()` holds,
+## so a release page nobody asked `?debug=1` of reads exactly as an ordinary one.
+func live_debug_requested() -> bool:
 	return _live_debug_requested(enabled(), readout_requested())
 
-## The decision behind `live_debug_requested()`'s own gate, pulled out to a pure function of its
-## two inputs the same shape `ControlsMode._reads_the_url()` and `Telemetry._reads_the_url()`
-## already are, so the promise is a truth table a test can check rather than two live reads
-## nothing in a test process can fake at once.
+## The decision behind `live_debug_requested()`, pure in its two inputs so the promise is a truth
+## table a test can check.
 static func _live_debug_requested(is_debug: bool, readout: bool) -> bool:
 	return is_debug or readout
 
-## The query parameter names `live_debug_requested()`'s own bundle answers to — every one of the
-## getters named in that gate's own doc but `layers`/`controls`/`escape`, which were already
-## partly reachable before M193 and are folded in here too since a run built with any of them is
-## exactly as much a debugging run as one built with `?day=`. `GameSave.uses_save()` reads
-## `web_debug_flag_used()` below against this list so a release page's visitor who actually typed
-## one of these never touches the save the page might otherwise share with a real player — as
-## against `?debug=1` alone, which opens the bundle without yet having used any of it.
+## The query parameter names `live_debug_requested()`'s bundle answers to. `GameSave.uses_save()`
+## reads `web_debug_flag_used()` against this list, so a release page's visitor who typed one of
+## these never touches the save a real player's page shares, as against `?debug=1` alone, which
+## opens the bundle without using any of it.
 const _LIVE_DEBUG_QUERY_KEYS := [
 	"day", "invincible", "layers", "controls", "escape", "meters", "daylength", "ending",
 	"blackout", "groundmode", "framerecord",
 ]
 
-## Whether the page's query string actually named one of `live_debug_requested()`'s own
-## parameters, as against merely being allowed to — on a release page carrying `?debug=1` and on a
-## debug web build alike, since a web page has no command line for `active_args()` to see and
-## `?day=` there is as much a debugging run as `--day` is on the desktop. `false` on a release page
-## nobody asked `?debug=1` of, the ordinary case this must not disturb, and off the web.
-static func web_debug_flag_used() -> bool:
+## Whether the page's query named one of `live_debug_requested()`'s parameters while the bundle is
+## open, as against merely being allowed to. `false` on a release page nobody asked `?debug=1` of,
+## and off the web.
+func web_debug_flag_used() -> bool:
 	if not live_debug_requested():
 		return false
-	return _web_debug_flag_used_in_query(_web_query())
+	return _web_debug_flag_used_in_query(_query)
 
 static func _web_debug_flag_used_in_query(query: String) -> bool:
 	for parameter in query.trim_prefix("?").split("&"):
@@ -233,51 +218,26 @@ static func _web_debug_flag_used_in_query(query: String) -> bool:
 			return true
 	return false
 
-## The words `--skip`/`?skip=` may name, one per desktop probe M124's own measurement turned into
-## something a live page can ask for (docs/DECISIONS.md, M124, "the desktop half", rows (e), (d)
-## and (c)), plus `motion` (docs/DECISIONS.md, M139, "the phone reading", the probe that asks what
-## the crowd's own ticks cost once its drawing is ruled out). Kept in one place so
-## `_validate_skip_words()` and the four getters below cannot each spell the set differently.
+## `--no-telemetry`, the player-facing opt-out: read on every build. See the class doc.
+func no_telemetry() -> bool:
+	return "--no-telemetry" in _given
+
+## The words `--skip`/`?skip=` may name: one per measured cost a phone frame reading can rule out
+## (M124's desktop rows and M139's crowd motion). One place, so `_validate_skip_words()` and
+## `RunConfig`'s four booleans cannot spell the set differently.
 const _SKIP_KNOWN_WORDS := ["events", "crowd", "shadows", "motion"]
 
-## Whether `--skip`/`?skip=` named `events` — every `EventInstance._draw` returns before drawing
-## anything, the desktop's own row (e). Parsed the same shape as
-## `readout_requested()` above (a bare command-line value or a `?skip=` query parameter, read
-## without `enabled()`'s own gate) but **honoured only while `readout_requested()` holds**: a
-## release page without the DEBUG MODE note never skips anything, so this cannot become a second
-## way to reach what `enabled()` gates — a page nobody asked `?debug=1` of still draws everything.
-## `skip_crowd()` (row (d), `CrowdAgent._draw`), `skip_shadows()` (row (c),
-## `BuildingShadows._draw_chunk`) and `skip_motion()` (the crowd's own ticks: every agent's
-## `_process` and `Crowd._physics_process`) are the other three words. Nothing else moves: the
-## fields, the costs and the halo run as normal, so a frame reading differs from an ordinary run
-## by drawing and motion alone, and only whichever of the two this flag named.
-static func skip_events() -> bool:
-	return "events" in skip_words()
-
-## See `skip_events()`.
-static func skip_crowd() -> bool:
-	return "crowd" in skip_words()
-
-## See `skip_events()`.
-static func skip_shadows() -> bool:
-	return "shadows" in skip_words()
-
-## See `skip_events()`. Parks every agent where the day placed it: the street stands full of
-## standing people and parked cars, drawn as normal — the crowd's own drawing, the events and the
-## baby's excitement read of the crowd are unchanged, since that scan is the baby's and not the
-## crowd's.
-static func skip_motion() -> bool:
-	return "motion" in skip_words()
-
-## The full, validated set behind the four getters above — also what the readout's own `skip`
-## line names, through `main.gd`'s cached copy. Empty whenever `readout_requested()` does not
-## hold, so the gate is paid once here rather than four times at each caller.
-static func skip_words() -> Array[String]:
+## The validated `--skip`/`?skip=` words, read without `enabled()`'s gate but **honoured only while
+## `readout_requested()` holds**, so a release page without the DEBUG MODE note never skips
+## anything. `events` stops every `EventInstance` drawing, `crowd` every `CrowdAgent`, `shadows`
+## the building shadows, and `motion` the crowd's own ticks; nothing else moves, so a frame reading
+## differs from an ordinary run by the drawing and motion named and nothing more.
+func skip_words() -> Array[String]:
 	if not readout_requested():
 		return []
-	var raw := _skip_from_args(OS.get_cmdline_user_args())
+	var raw := _skip_from_args(_given)
 	if raw == "":
-		raw = _skip_from_query(_web_query())
+		raw = _skip_from_query(_query)
 	return _validate_skip_words(raw)
 
 static func _skip_from_args(args: PackedStringArray) -> String:
@@ -293,14 +253,10 @@ static func _skip_from_query(query: String) -> String:
 			return pair[1]
 	return ""
 
-## The bare parsing of a `--skip`/`?skip=` value into its words, pulled out so a test can drive it
-## directly the same way `parse_layers()` is for `--layers`. An empty value is simply nothing to
-## skip, the same as the flag being absent — `parse_layers()`'s own precedent for an empty value.
-## Any word this flag does not know refuses the **whole** value rather than the one bad word or
-## the words that did parse: a skip that silently dropped an unrecognised word would measure a
-## different frame than the one asked for and say nothing about it, the reasoning
-## `_show_an_ending_for_a_rig()` in `main.gd` already gives an unknown `--ending` word.
-## `push_warning` so a typo is visible rather than a silently smaller skip than the one asked for.
+## The bare parsing of a `--skip`/`?skip=` value into its words. An empty value is nothing to skip.
+## Any word this flag does not know refuses the **whole** value with `push_warning`: a skip that
+## silently dropped an unrecognised word would measure a different frame than the one asked for
+## and say nothing about it.
 static func _validate_skip_words(raw: String) -> Array[String]:
 	if raw == "":
 		return []
@@ -313,56 +269,22 @@ static func _validate_skip_words(raw: String) -> Array[String]:
 			words.append(word)
 	return words
 
-static func _web_query() -> String:
-	if OS.get_name() != "Web":
-		return ""
-	var search: Variant = JavaScriptBridge.eval("window.location.search")
-	return search as String if search is String else ""
-
-## The command line, or nothing at all outside a debug build — the one choke point every getter
-## below reads through.
-static func _args() -> PackedStringArray:
-	if not enabled():
-		return PackedStringArray()
-	if not args_for_tests.is_empty():
-		return args_for_tests
-	return OS.get_cmdline_user_args()
-
-## Command-line words a test stands in for the real ones, so a flag's own getter can be exercised
-## (`--pelican`); empty outside a test.
-static var args_for_tests := PackedStringArray()
-
-## The same, for a caller that needs to test for a flag's bare presence rather than a value —
-## `main._somebody_is_playing()` is the one case, and it must see no rig flags at all outside a
-## debug build, since none of them can do anything there.
-static func active_args() -> PackedStringArray:
-	return _args()
-
-## `--seed N` regenerates a specific city, so a layout bug can be looked at twice; the command
-## line keeps its own `enabled()` gate and takes precedence when present, unbounded and
-## unvalidated as it always has been. Failing that, the page's own `?seed=N` fills in wherever
-## `readout_requested()` holds — a release page without the DEBUG MODE note never takes a seed —
-## and only for a positive integer: `0`, a negative number, an empty value and anything that is
-## not a positive integer are refused with `push_warning` and treated the same as "not given",
-## the way `_validate_skip_words()` refuses an unknown `--skip` word. `0` is both that sentinel
-## and the game's own behaviour of a fresh seed per run, so nothing is lost by sharing it.
-static func seed_override() -> int:
-	if not recipe_data.is_empty():
-		return int(recipe_data.get("seed", 1))
-	var args := _args()
+## `--seed N` regenerates a specific city, so a layout bug can be looked at twice: the command line
+## is unbounded and unvalidated, and wins when present. Failing that, the page's own `?seed=N`
+## fills in wherever `readout_requested()` holds, and only for a positive integer. `0` is "not
+## given", which is also the game's own fresh seed per run. A recipe's seed wins over both.
+func seed_override() -> int:
+	if not _recipe.is_empty():
+		return int(_recipe.get("seed", 1))
+	var args := active_args()
 	var index := args.find("--seed")
 	if index != -1 and index + 1 < args.size():
 		return int(args[index + 1])
-	return _seed_from_query(_web_query())
+	return _seed_from_query(_query)
 
-## The bare parsing of `?seed=` against a query string, pulled out so a test can drive the whole
-## thing without a debug build or a `JavaScriptBridge` — the gate and the validation stay together
-## here, unlike `_skip_from_query()`/`_validate_skip_words()`, because the gate itself (`?debug=1`
-## in the *same* query) is part of what a release-shaped test case has to drive: `?seed=12345`
-## with no `?debug=1` in the same string must answer the same "not given" sentinel as any other
-## flag `readout_requested()` does not hold for. An absent `seed` parameter says nothing; a
-## present one that is not a positive integer is refused with `push_warning` — an ordinary
-## `?debug=1` page that never mentions `seed` must not warn on every load.
+## The bare parsing of `?seed=`, with its `?debug=1` gate read from the same query: a present seed
+## that is not a positive integer is refused with `push_warning`; an absent one says nothing, so an
+## ordinary `?debug=1` page does not warn on every load.
 static func _seed_from_query(query: String) -> int:
 	if not _readout_from_query(query):
 		return 0
@@ -376,30 +298,23 @@ static func _seed_from_query(query: String) -> int:
 		return 0
 	return 0
 
-## `--day N` (or the page's own `?day=N`, under `live_debug_requested()`) starts on a later day,
-## clamped into the run the same way either source is read. **One of the two required flags M193
-## opens on a release page** (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
-## flags"). `?day=N` with no `?debug=1` in the same query answers the ordinary "not given" default
-## of `1` on a release page, the way every other flag in this bundle does.
-static func day_override() -> int:
-	if not recipe_data.is_empty():
-		return int(recipe_data.get("setup", {}).get("day", 1))
-	var args := _args()
+## `--day N` (or `?day=N` in the open bundle) starts on a later day, clamped into the run. `1` is
+## the default. A recipe's own day wins.
+func day_override() -> int:
+	if not _recipe.is_empty():
+		return int(_recipe.get("setup", {}).get("day", 1))
+	var args := active_args()
 	var index := args.find("--day")
 	if index != -1 and index + 1 < args.size():
 		return clampi(int(args[index + 1]), 1, Tuning.RUN_LENGTH_DAYS)
 	if live_debug_requested():
-		var from_query := _day_from_query(_web_query())
+		var from_query := _day_from_query(_query)
 		if from_query != -1:
 			return from_query
 	return 1
 
-## The bare parsing of `?day=` against a query string, pulled out so a test can drive it without a
-## web query — the same split `_seed_from_query()` makes for `?seed=`, clamped the same way
-## `--day` itself already is rather than refused outright, since an out-of-range or non-numeric
-## day is exactly as harmless here as `--day` already makes it on the command line. `-1` is "not
-## given"; `1` is both a valid day and this flag's own default, so it cannot double as the
-## sentinel the way `0` does for `?seed=`.
+## The bare parsing of `?day=`, clamped the way `--day` is. `-1` is "not given", since `1` is both a
+## valid day and the default.
 static func _day_from_query(query: String) -> int:
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
@@ -407,70 +322,37 @@ static func _day_from_query(query: String) -> int:
 			return clampi(int(pair[1]), 1, Tuning.RUN_LENGTH_DAYS)
 	return -1
 
-## `--spawn <target>` — the raw target string, or "" if none was given. What each target means
-## reads the live `City`, so that lookup stays in `src/dev/dev_rig.gd`'s `DevRig.spawn_position()`;
-## this only extracts the word.
-static func spawn_target() -> String:
-	var args := _args()
-	var index := args.find("--spawn")
-	if index == -1 or index + 1 >= args.size():
-		return ""
-	return args[index + 1]
+## `--spawn <target>`, the raw word, or "". What a target means reads the live `City`, so that
+## lookup is `DevRig.for_spawn_target()`'s.
+func spawn_target() -> String:
+	return _word_after("--spawn")
 
-## `--follow <event id>` — the raw id, or "" if none was given.
-static func follow_target() -> String:
-	var args := _args()
-	var index := args.find("--follow")
-	if index == -1 or index + 1 >= args.size():
-		return ""
-	return args[index + 1]
+## `--follow <event id>`, the raw id, or "".
+func follow_target() -> String:
+	return _word_after("--follow")
 
-## `--route mark,task,calm,home` — an ordered list of target words `src/dev/route_rig.gd`'s
-## `RouteRig` walks to in turn, split on commas with nothing else validated: a word `RouteRig`
-## does not recognise is its own `push_warning`, the same split `spawn_target()` above leaves to
-## `DevRig.for_spawn_target()`, since it is the live `City` that decides what a word means and not
-## the raw argv. `[]` for an absent flag or an empty value, which `main.gd` reads as "no rig".
-static func route_targets() -> Array[String]:
-	var args := _args()
-	var index := args.find("--route")
-	if index == -1 or index + 1 >= args.size():
-		return []
+## `--route mark,task,calm,home`, the ordered target words `RouteRig` walks to in turn, split on
+## commas with nothing else validated: the live `City` decides what a word means, so an unknown one
+## is `RouteRig`'s own warning. `[]` for an absent flag or an empty value: no rig.
+func route_targets() -> Array[String]:
 	var result: Array[String] = []
-	for word in args[index + 1].split(","):
+	for word in _word_after("--route").split(","):
 		if word != "":
 			result.append(word)
 	return result
 
-## `--force <event id> [seconds]` — the raw id, or "" if none was given.
-##
-## **The flag for checking one row rather than one city.** `EventDirector` hands out the day's own
-## `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` plans on an 11–26s interval while she walks, so a row you
-## want to look at — a `cyclist`'s lethal radius, a `charging_dog`'s lead time — arrives when it
-## arrives, mixed into everything else, and a day may not have bought one at all. Under this flag
-## the director hands out **that row and nothing else**, refilled as fast as it is spent, at
-## `forced_interval()` rather than the ordinary band.
-##
-## It bypasses `first_day` and the day's budget on purpose: the question it exists for is *what
-## does this row do when it reaches her*, which is a question about the row and not about whether
-## today's plan contains one. `--seed` and `--day` still decide the city and the act, so everything
-## around the row is the ordinary game.
-static func forced_row() -> String:
-	var args := _args()
-	var index := args.find("--force")
-	if index == -1 or index + 1 >= args.size():
-		return ""
-	return args[index + 1]
+## `--force <event id> [seconds]`, the raw id, or "". **The flag for checking one row rather than one
+## city**: the director hands out that row and nothing else, refilled as fast as it is spent, every
+## `forced_interval()` seconds. It bypasses `first_day` and the day's budget on purpose: the
+## question is what the row does when it reaches her. `--seed` and `--day` still decide the city and
+## the act, so everything around the row is the ordinary game.
+func forced_row() -> String:
+	return _word_after("--force")
 
-## Seconds between two forced rows — the optional second argument to `--force`, or
-## `_FORCED_INTERVAL_DEFAULT` when it is absent or is the next flag rather than a number.
-##
-## Short, because the point of the flag is to see the same encounter several times in a row without
-## walking a day for each one, and long enough that two are never on screen together: a `cyclist`
-## is warned for his one-second badge, then created just off screen, reaches her under a second later
-## closing at 257px/s and is out of sight a second or so after that, so 6s leaves the last one gone
-## before the next is even created.
-static func forced_interval() -> float:
-	var args := _args()
+## Seconds between two forced rows — `--force`'s optional second word when it is a number, else
+## `_FORCED_INTERVAL_DEFAULT`, never below half a second.
+func forced_interval() -> float:
+	var args := active_args()
 	var index := args.find("--force")
 	if index == -1 or index + 2 >= args.size():
 		return _FORCED_INTERVAL_DEFAULT
@@ -479,38 +361,31 @@ static func forced_interval() -> float:
 		return _FORCED_INTERVAL_DEFAULT
 	return maxf(float(word), 0.5)
 
+## Short, so the same encounter is seen several times without walking a day for each, and long
+## enough that two are never on screen together: a `cyclist` is warned for a second, reaches her
+## under a second later at 257px/s and is out of sight a second or so after that.
 const _FORCED_INTERVAL_DEFAULT := 6.0
 
-## `--pelican` — every cyclist the day sends is drawn as the pelican that is otherwise one in a run's
-## bag of four hundred (`EventManager.rolls_a_pelican()`), so the drawing can be looked at on demand rather
-## than waited for. A picture only, like the pelican itself: the riders, their warnings and their
-## fields are the ones the run would have had. `--force cyclist --pelican` sends one every few
-## seconds.
-static func pelican() -> bool:
-	return "--pelican" in _args()
+## `--pelican`: every cyclist the day sends is drawn as the pelican, so the drawing can be looked at
+## on demand. A picture only: the riders, their warnings and their fields are the run's own.
+func pelican() -> bool:
+	return "--pelican" in active_args()
 
-## `--meters <sleepiness> <excitement>` (or the page's own `?meters=sleepiness,excitement`, under
-## `live_debug_requested()`), clamped into range — or `(-1, -1)` if the flag is absent or
-## malformed. Negative is not a valid meter reading, so it costs nothing extra to reuse as the
-## "not given" sentinel. One of the M193 flags cheap to mirror on a release page (docs/DECISIONS.md,
-## M193, "the live page's ?debug=1 reaches the debug flags"): it only seeds `Baby`'s own starting
-## numbers, the same as the command line already does.
-static func meters_override() -> Vector2:
-	var args := _args()
+## `--meters <sleepiness> <excitement>` (or `?meters=sleepiness,excitement` in the open bundle),
+## clamped into range, or `(-1, -1)` for "not given". It only seeds `Baby`'s starting numbers.
+func meters_override() -> Vector2:
+	var args := active_args()
 	var index := args.find("--meters")
 	if index != -1 and index + 2 < args.size():
 		return Vector2(
 				clampf(float(args[index + 1]), 0.0, Tuning.METER_MAX),
 				clampf(float(args[index + 2]), 0.0, Tuning.METER_MAX))
 	if live_debug_requested():
-		return _meters_from_query(_web_query())
+		return _meters_from_query(_query)
 	return Vector2(-1.0, -1.0)
 
-## The bare parsing of `?meters=` against a query string, pulled out so a test can drive it
-## without a web query. `sleepiness,excitement`, both clamped the same way the command line's own
-## two arguments already are; anything that is not exactly two comma-separated numbers refuses the
-## whole value with `push_warning`, the reasoning `_validate_skip_words()` gives for an unknown
-## `--skip` word.
+## The bare parsing of `?meters=`: anything but two comma-separated numbers refuses the whole value
+## with `push_warning`.
 static func _meters_from_query(query: String) -> Vector2:
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
@@ -526,23 +401,19 @@ static func _meters_from_query(query: String) -> Vector2:
 	return Vector2(-1.0, -1.0)
 
 ## `--overview` frames the whole city at once.
-static func overview_requested() -> bool:
-	return "--overview" in _args()
+func overview_requested() -> bool:
+	return "--overview" in active_args()
 
-## `--blackout` (or the page's own `?blackout=1`, under `live_debug_requested()`) stands in for
-## the last night's sabotage, for the blackout alone: `Blackout` treats the city as sabotaged, so
-## it goes dark in one frame the moment she is `Tuning.BLACKOUT_DISTANCE` from the power station —
-## at once, from a spawn that far away — on whatever day `--day`/`?day=` names. Nothing else reads
-## it: no task, ending or save sees a sabotage, which is what keeps it a way to photograph the
-## moment rather than a way to reach the good ending — trivial to mirror on a release page the
-## same way `--day`/`--invincible` are (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the
-## debug flags").
-static func blackout_requested() -> bool:
-	if "--blackout" in _args():
+## `--blackout` (or `?blackout=1` in the open bundle) stands in for the last night's sabotage, for
+## the blackout alone: `Blackout` goes dark the moment she is `Tuning.BLACKOUT_DISTANCE` from the
+## power station, on whatever day is running. No task, ending or save sees a sabotage, which keeps
+## it a way to photograph the moment rather than a way to reach the good ending.
+func blackout_requested() -> bool:
+	if "--blackout" in active_args():
 		return true
 	if not live_debug_requested():
 		return false
-	return _blackout_from_query(_web_query())
+	return _blackout_from_query(_query)
 
 static func _blackout_from_query(query: String) -> bool:
 	for parameter in query.trim_prefix("?").split("&"):
@@ -551,25 +422,17 @@ static func _blackout_from_query(query: String) -> bool:
 			return true
 	return false
 
-## `--ground-mode 1|2|3` (or the page's own `?groundmode=`, under `live_debug_requested()`) — how
-## a needed nearby ground region is scheduled, as `SceneryGround.Mode` numbers it: `1` prepares
-## every region needed in a frame whole in that frame, as many as the 2ms soft budget allows, the
-## rest in the following frames, each under its own budget; `2`, the default, prepares at most
-## one whole region a frame; `3` spreads one region's preparation across frames. *(2026-10-03,
-## docs/playtests/2026-10-03-tawny-stork.md: "let's introduce three options 1) as many graphics as
-## needed are prepared in one frame 2) at most one graphic is prepared in one frame 3) graphic
-## creation is smeared out like in the PR"; and, of the switch, "yes it should be a flag I can use
-## in mobile under debug"; then, after a phone test, inbox #510 in quiet-yak: "mode 2 felt to have the fewest
-## stutters especially when coming back down it was much smoother than mode 1. let's make 2 the
-## default for now".)* It chooses how the ground is drawn, not what is
-## drawn, so it sits in the M193 bundle beside `?layers=`; like every word of that bundle, naming
-## it on a release page keeps the run off the save.
-static func ground_mode() -> int:
-	return _ground_mode_for(_args(), _web_query(), live_debug_requested())
+## `--ground-mode 1|2|3` (or `?groundmode=` in the open bundle): how a needed nearby ground region
+## is scheduled, as `SceneryGround.Mode` numbers it — `1` every needed region whole in its frame
+## under the soft budget, `2` (the default) at most one whole region a frame, `3` one region spread
+## across frames (2026-10-03, tawny-stork; mode 2 the default after a phone test, inbox #510 in
+## quiet-yak: "mode 2 felt to have the fewest stutters"). It chooses how the ground is drawn, not
+## what is drawn.
+func ground_mode() -> int:
+	return _ground_mode_for(active_args(), _query, live_debug_requested())
 
-## `ground_mode()`'s own decision, pure in its three inputs so a test can drive the command line,
-## the page and the `?debug=1` gate without a debug build or a web page: the command line wins,
-## the page is read only while the bundle is open, and `2` answers everything else.
+## `ground_mode()`'s own decision, pure in its three inputs: the command line wins, the page is
+## read only while the bundle is open, and `2` answers everything else.
 static func _ground_mode_for(args: PackedStringArray, query: String, flags_open: bool) -> int:
 	var index := args.find("--ground-mode")
 	if index != -1 and index + 1 < args.size():
@@ -585,34 +448,26 @@ static func _ground_mode_for(args: PackedStringArray, query: String, flags_open:
 const GROUND_MODE_DEFAULT := 2
 
 ## The bare parsing of a `--ground-mode`/`?groundmode=` value. Anything but `1`, `2` or `3` refuses
-## the whole flag with `push_warning` and answers the default, the reasoning
-## `_validate_skip_words()` gives: a measurement of a mode nobody asked for that said nothing
-## about it would compare the wrong thing.
+## the whole flag with `push_warning` and answers the default: a measurement of a mode nobody asked
+## for that said nothing about it would compare the wrong thing.
 static func parse_ground_mode(raw: String) -> int:
 	if raw in ["1", "2", "3"]:
 		return int(raw)
 	push_warning("--ground-mode: '%s' is not 1, 2 or 3, ignoring the flag" % raw)
 	return GROUND_MODE_DEFAULT
 
-## `--start-escape` (or the page's own `?escape=1`) skips the title and the city and starts
-## `main` straight in the escape scene's interior — see docs/TODO.md, "M112 — The escape scene,
-## walkable". The command line stays behind `enabled()` alone, so the one way to reach a *chosen*
-## interior part (`start_escape_at()`) is still a debug build; the bare boolean is read under
-## `live_debug_requested()` instead, one of the flags M193 opens on a release page (docs/DECISIONS.md,
-## M193, "the live page's ?debug=1 reaches the debug flags") — a visitor's `?debug=1&escape=1`
-## reaches the scene's third-floor default start the same way a debug build's `--start-escape`
-## bare does, with no events, no crowd and no day clock either way.
-static func start_escape() -> bool:
-	if not recipe_data.is_empty():
-		return recipe_data.get("kind", "city") == "escape"
-	if "--start-escape" in _args():
+## `--start-escape` (or `?escape=1` in the open bundle) skips the title and the city and starts
+## `main` straight in the escape: no events of a day, no crowd and no day clock. A recipe of kind
+## `escape` does the same.
+func start_escape() -> bool:
+	if not _recipe.is_empty():
+		return _recipe.get("kind", "city") == "escape"
+	if "--start-escape" in active_args():
 		return true
 	if not live_debug_requested():
 		return false
-	return _escape_from_query(_web_query())
+	return _escape_from_query(_query)
 
-## The bare parsing of `?escape=1` against a query string, pulled out so a test can drive it
-## without a web query.
 static func _escape_from_query(query: String) -> bool:
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
@@ -620,51 +475,34 @@ static func _escape_from_query(query: String) -> bool:
 			return true
 	return false
 
-## `--start-escape`'s own optional value — `stairwell:left`, `stairwell:right`, `lobby`, `basement`,
-## `floor:N` or `city` — so a rig or a person can start anywhere in the escape sequence instead of
-## always walking there from her door. The building is one map (see `InteriorMapPlan`'s own doc),
-## so the six part words choose where on it she starts rather than which map loads; `city` is the
-## one word that is not a part of the building at all and boots the escape's **second** section,
-## the streets with one way out of them, with no building built. `""` when the flag was given bare
-## (the default: the third floor at her door) or not given at all; mapping the word onto an
-## `InteriorMap.PARTS` name stays with `main.gd`, the only caller, the same split
-## `ending_override()` leaves to its own caller.
-##
-## Read only when `--start-escape` is itself present, so a bare next word that happens to start
-## with neither `--` nor a recognised target is not silently swallowed as some other flag's own
-## value — there is no other flag this could be confused with, since every value here is a fixed
-## word rather than a number.
-static func start_escape_at() -> String:
-	if not recipe_data.is_empty():
-		return str(recipe_data.get("setup", {}).get("progression", {}).get("escape_part", "city"))
-	var args := _args()
-	var index := args.find("--start-escape")
-	if index == -1 or index + 1 >= args.size():
-		return ""
-	var word: String = args[index + 1]
+## `--start-escape`'s own optional word — `stairwell:left`, `stairwell:right`, `lobby`, `basement`,
+## `floor:N` or `city` — so a rig or a person can start anywhere in the escape: the six part words
+## choose where in the building she starts, and `city` boots the escape's second section with no
+## building built. "" for a bare flag (her own door on the third floor) or none; mapping the word
+## onto an `InteriorMap.PARTS` name is `main.escape_part_for()`'s. Read only right after
+## `--start-escape`, and never a word that starts with `--`, so the next flag is not swallowed.
+func start_escape_at() -> String:
+	if not _recipe.is_empty():
+		return str(_recipe.get("setup", {}).get("progression", {}).get("escape_part", "city"))
+	var word := _word_after("--start-escape")
 	return "" if word.begins_with("--") else word
 
-## `--day-length N` (or the page's own `?daylength=N`, under `live_debug_requested()`) compresses
-## the day, so dusk and the timeout loss can be looked at without sitting through the whole three
-## minutes. `-1.0` is "not given"; the fallback to `Tuning.day_length()` stays with the caller,
-## since that also needs to know which day it is. Trivial to mirror on a release page the same way
-## as the rest of the M193 bundle (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
-## flags"): both `DevRig.day_length()` and `FinaleController.length()` read it unconditionally, so
-## a visitor's own `?daylength=` reaches an ordinary day exactly as `--day-length` already does.
-static func day_length_override() -> float:
-	var args := _args()
+## `--day-length N` (or `?daylength=N` in the open bundle) compresses every day and every escape
+## section to `N` seconds, so dusk and the timeout loss can be looked at without the whole three
+## minutes. `-1.0` is "not given"; `RunConfig.day_length_for()` falls back to the day's own.
+func day_length_override() -> float:
+	var args := active_args()
 	var index := args.find("--day-length")
 	if index != -1 and index + 1 < args.size():
 		return maxf(1.0, float(args[index + 1]))
 	if live_debug_requested():
-		var from_query := _day_length_from_query(_web_query())
+		var from_query := _day_length_from_query(_query)
 		if from_query > 0.0:
 			return from_query
 	return -1.0
 
-## The bare parsing of `?daylength=` against a query string, pulled out so a test can drive it
-## without a web query. Anything that is not a positive number refuses the whole value with
-## `push_warning`, the same as `parse_zoom()` refuses a malformed `--zoom`.
+## The bare parsing of `?daylength=`: anything that is not a positive number refuses the whole value
+## with `push_warning`.
 static func _day_length_from_query(query: String) -> float:
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
@@ -676,45 +514,37 @@ static func _day_length_from_query(query: String) -> float:
 		return -1.0
 	return -1.0
 
-## `--zoom <factor>` — the gameplay camera's zoom relative to its normal one, so `0.5` shows twice
-## as much of the world each way with everything else — lighting, entities, HUD — exactly as a
-## player sees it. For a capture of something bigger than the normal view, where `--overview` is the
-## whole city at a scale nothing is played at. `1.0` is "not given". See `parse_zoom()` for what it
-## refuses.
-static func zoom_override() -> float:
-	var args := _args()
+## `--zoom <factor>`: the gameplay camera's zoom relative to its normal one, so `0.5` shows twice as
+## much of the world each way with everything else exactly as a player sees it. `1.0` is "not
+## given".
+func zoom_override() -> float:
+	var args := active_args()
 	var index := args.find("--zoom")
 	if index == -1 or index + 1 >= args.size():
 		return 1.0
 	return parse_zoom(args[index + 1])
 
-## The bare parsing of a `--zoom` value, pulled out so a test can drive it without a command line.
-## Anything that is not a positive number refuses the whole flag — a warning and the normal zoom —
-## rather than being clamped into one: a capture at a zoom nobody asked for is a picture of the wrong
-## thing that says nothing about it, the reasoning `_validate_skip_words()` gives for `--skip`.
+## The bare parsing of a `--zoom` value. Anything that is not a positive number refuses the whole
+## flag, a warning and the normal zoom, rather than being clamped into one: a capture at a zoom
+## nobody asked for is a picture of the wrong thing that says nothing about it.
 static func parse_zoom(raw: String) -> float:
 	if not raw.is_valid_float() or float(raw) <= 0.0:
 		push_warning("--zoom: '%s' is not a positive number, ignoring the flag" % raw)
 		return 1.0
 	return float(raw)
 
-## `--ending bad|neutral|good` (or the page's own `?ending=`, under `live_debug_requested()`) —
-## the raw word, or "" if none was given. Mapping it onto `GameEnums.Ending` and warning on an
-## unknown word stays in `main.gd`, the only caller, the same for either source. Trivial to mirror
-## on a release page the same way as the rest of the M193 bundle (docs/DECISIONS.md, M193, "the live
-## page's ?debug=1 reaches the debug flags"): the screen it puts up is drawn over a day already
-## running, not a way to end or save a run.
-static func ending_override() -> String:
-	var args := _args()
+## `--ending bad|neutral|good` (or `?ending=` in the open bundle), the raw word, or "". Mapping it
+## onto `GameEnums.Ending` is `main._show_an_ending_for_a_rig()`'s. The screen is drawn over a day
+## already running: it neither ends nor saves a run.
+func ending_override() -> String:
+	var args := active_args()
 	var index := args.find("--ending")
 	if index != -1 and index + 1 < args.size():
 		return args[index + 1]
 	if live_debug_requested():
-		return _ending_from_query(_web_query())
+		return _ending_from_query(_query)
 	return ""
 
-## The bare parsing of `?ending=` against a query string, pulled out so a test can drive it
-## without a web query.
 static func _ending_from_query(query: String) -> String:
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
@@ -722,41 +552,40 @@ static func _ending_from_query(query: String) -> String:
 			return pair[1]
 	return ""
 
-## `--controls joystick|joystick-left|joystick-right|tap` — the raw word, or "" if none was given. Mapping it onto
-## `ControlsMode.Mode` stays in `ControlsMode.resolve()`, the only caller, alongside the page's own
-## `?controls=` query — this is only ever the command-line half of that same question.
-static func controls_override() -> String:
-	var args := _args()
+## `--controls joystick|joystick-left|joystick-right|tap` (or `?controls=` in the open bundle), the
+## raw word, or "". `ControlsMode.from_word()` and `side_from_word()` say what it means.
+func controls_word() -> String:
+	var args := active_args()
 	var index := args.find("--controls")
-	if index == -1 or index + 1 >= args.size():
+	if index != -1 and index + 1 < args.size():
+		return args[index + 1]
+	if not live_debug_requested():
 		return ""
-	return args[index + 1]
+	return _controls_from_query(_query)
 
-## `--layers 1,3` (or the page's own `?layers=1,3`, under `live_debug_requested()`) sets which of
-## `DebugLayers`' three geometry layers start on, so a rig screenshot of a particular disagreement
-## is reproducible without a keypress; `5` (`RouteLines`, the day's routes) and `6` (`FrameGraph`,
-## the spike view) are the two other layers in the list, on the same terms — `main._add_frame_graph()`
-## reads `6 in layers_override()` the same way `_add_route_lines()` reads `5`. `4` (the readout) is
-## not part of this list: it defaults on already, and this flag exists for a clean *geometry* shot.
-## One of the flags M193 opens on a release page (docs/DECISIONS.md, M193, "the live page's ?debug=1
-## reaches the debug flags"): the command line stays behind `enabled()` through `_args()`, and the
-## query read falls back to `live_debug_requested()` the same shape `ControlsMode._url_word()`
-## gates its own query read.
-static func layers_override() -> Array[int]:
-	var args := _args()
+static func _controls_from_query(query: String) -> String:
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "controls":
+			return pair[1]
+	return ""
+
+## `--layers 1,3` (or `?layers=1,3` in the open bundle): which of the debug layers start on, so a
+## rig screenshot of a particular disagreement is reproducible without a keypress — `1`-`3` are
+## `DebugLayers`' geometry, `5` the day's routes (`RouteLines`) and `6` the spike view
+## (`FrameGraph`). `4`, the readout, defaults on already and is not part of this list.
+func layers_override() -> Array[int]:
+	var args := active_args()
 	var index := args.find("--layers")
 	if index != -1 and index + 1 < args.size():
 		return parse_layers(args[index + 1])
 	if not live_debug_requested():
 		return []
-	return parse_layers(_layers_from_query(_web_query()))
+	return parse_layers(_layers_from_query(_query))
 
-## The bare parsing of a `--layers`/`?layers=` value into layer indices, pulled out so a test can
-## drive it directly — the same split `ControlsMode.from_word()` makes for `--controls`, since
-## nothing here can fake a real command line. A malformed entry (not a number, or one outside the
-## six valid indices, `4` included even though it can never be *set* this way) is dropped with a
-## printed note rather than failing the whole flag: a rig's one typo should not fall back to every
-## layer off instead of the two it actually asked for.
+## The bare parsing of a `--layers`/`?layers=` value into layer indices. A malformed entry (not a
+## number, or outside the valid indices, `4` included) is dropped with a warning rather than
+## failing the whole flag: a rig's one typo should not turn off the layers it did ask for.
 static func parse_layers(raw: String) -> Array[int]:
 	var result: Array[int] = []
 	if raw == "":
@@ -780,38 +609,18 @@ static func _layers_from_query(query: String) -> String:
 			return pair[1]
 	return ""
 
-## Set by a test to force `invincible()`'s own answer, bypassing the real command line.
-## `OS.get_cmdline_user_args()` is what `run_tests.gd` itself reads to pick which suites run, so a
-## test cannot drive this flag through actual argv the way a player would — this is the smallest
-## seam that lets one exercise `DayController`'s three loss paths under the flag anyway. `null`
-## (the default) means "answer normally"; a test sets this to `true` or `false` before exercising
-## the flag and clears it back to `null` when done, or the override leaks into every suite that
-## runs after it.
-static var _invincible_override: Variant = null
-
-## `--invincible` (or the page's own `?invincible=1`, under `live_debug_requested()`) makes nothing
-## end the day: `DayController._ignores_loss()` is the one predicate every losing path consults, and
-## this is the flag it reads. **It also stands the day clock and the excitement meter still** —
-## `DayController._process()` skips the countdown outright rather than letting it run to dusk, and
-## `Baby._update_excitement()` never adds to the meter, though decay may still run it down — so a
-## capture waiting for a moment gets quiet held time rather than a flashing alarm and a darkening
-## day. *(2026-09-11, overturning the flag's own first build the same evening: "when invincible the
-## timer should never go down and excitement should never go up. this is just noisy flashing of
-## alarms and the day gets dark.")* The record is in docs/DECISIONS.md under M100, "an invincible
-## mode for playtesting" and "invincible freezes the clock and the meter".
-##
-## **One of the two required flags M193 opens on a release page** (docs/DECISIONS.md, M193, "the live
-## page's ?debug=1 reaches the debug flags") — a visitor's own `?invincible=1` reaches this whole
-## predicate the same way a debug build's `--invincible` already does, gated behind
-## `live_debug_requested()` rather than `enabled()` alone.
-static func invincible() -> bool:
-	if _invincible_override != null:
-		return bool(_invincible_override)
-	if _invincible_from_args(_args()):
+## `--invincible` (or `?invincible=1` in the open bundle): nothing ends the day but a win, the day
+## clock stands still and nothing adds to the excitement meter, though decay may still run it down
+## — so a capture waiting for a moment gets quiet held time rather than a flashing alarm and a
+## darkening day (2026-09-11, the player: "when invincible the timer should never go down and
+## excitement should never go up"). `DayController.invincible` and `Baby.excitement_frozen` are the
+## two values the run hands it to.
+func invincible() -> bool:
+	if _invincible_from_args(active_args()):
 		return true
 	if not live_debug_requested():
 		return false
-	return _invincible_from_query(_web_query())
+	return _invincible_from_query(_query)
 
 static func _invincible_from_args(args: PackedStringArray) -> bool:
 	return "--invincible" in args
@@ -823,22 +632,16 @@ static func _invincible_from_query(query: String) -> bool:
 			return true
 	return false
 
-## `--no-focus-pause` (or the page's own `?nofocuspause=1`, a debug web build only) turns off the
-## pause `main._notification()` opens when the window loses focus — see that function's own doc.
-## **`--screenshot` implies it without being told to**: a screenshot rig's window usually opens
-## behind whatever the operator is doing, so it never has focus to lose, or loses it the instant it
-## opens — either way a game that pauses on that would hand the rig a picture of the pause screen
-## rather than the day it was asked to capture. The flag by itself is what a `tools/run.sh` session
-## with no screenshot needs, since that rig has the same unfocused window and nothing else here
-## would cover it.
-##
-## Gated behind `enabled()` explicitly, the same as `invincible()` gates its own query read: this
-## reaches whether the game can be walked away from behind another window, which stays a developer
-## question rather than one an exported release answers to a visitor's address bar.
-static func no_focus_pause() -> bool:
+## `--no-focus-pause` (or `?nofocuspause=1`, a debug web build only) turns off the pause the window
+## losing focus opens — see `main._notification()`. **`--screenshot` implies it**: a screenshot
+## rig's window opens behind whatever the operator is doing, so a game that paused on that would
+## photograph the pause screen rather than the day it was asked to capture. Whether the game can be
+## walked away from behind another window stays a developer question, so this is the debug build's
+## alone, query included.
+func no_focus_pause() -> bool:
 	if not enabled():
 		return false
-	return _no_focus_pause_from_args(_args()) or _no_focus_pause_from_query(_web_query())
+	return _no_focus_pause_from_args(active_args()) or _no_focus_pause_from_query(_query)
 
 static func _no_focus_pause_from_args(args: PackedStringArray) -> bool:
 	return "--no-focus-pause" in args or "--screenshot" in args
@@ -850,19 +653,14 @@ static func _no_focus_pause_from_query(query: String) -> bool:
 			return true
 	return false
 
-## `--no-save` (or the page's own `?nosave=1`, a debug web build only) says the same thing a
-## flagless `tools/run.sh` session cannot say on its own — see `GameSave.uses_save()`, the one
-## function every read and write of the player's save goes through. Every *other* dev flag already
-## keeps a run off the save by being a dev flag at all (`GameSave.uses_save()` refuses the moment
-## `active_args()` is not empty); this is the one flag whose entire job is to be *a* flag when no
-## other one is wanted, so a plain playtest session run from a shared checkout never touches
-## `user://`'s real save file by accident.
-##
-## Gated behind `enabled()` explicitly, the same as `no_focus_pause()` gates its own query read.
-static func no_save() -> bool:
+## `--no-save` (or `?nosave=1`, a debug web build only): the flag whose whole job is to be *a* flag
+## when no other is wanted, so a plain playtest session run from a shared checkout never touches
+## `user://`'s real save. Every other dev flag already keeps a run off the save by being one — see
+## `GameSave.uses_save()`.
+func no_save() -> bool:
 	if not enabled():
 		return false
-	return "--no-save" in _args() or _no_save_from_query(_web_query())
+	return "--no-save" in active_args() or _no_save_from_query(_query)
 
 static func _no_save_from_query(query: String) -> bool:
 	for parameter in query.trim_prefix("?").split("&"):
@@ -871,28 +669,22 @@ static func _no_save_from_query(query: String) -> bool:
 			return true
 	return false
 
-## `--spikes` turns on the run log's own `spike` line — see `TelemetryObserver._watch_the_frame`.
-## Off by default: *(2026-09-14, the player, asked whether the line should always be on: "make
-## that toggleable separately though since it can be quite noisy")*. Gated behind `enabled()`,
-## the same as every other flag on this table but `--no-telemetry`, and reaches nothing on its
-## own even so — `main.gd` only builds a `TelemetryObserver` while `Telemetry.is_active()` holds,
-## so the flag is honoured only while a run is already being traced.
-static func spikes_requested() -> bool:
-	return "--spikes" in _args()
+## `--spikes` turns on the run log's own `spike` line — see `TelemetryObserver`. Off by default,
+## since the line can be noisy (2026-09-14, the player: "make that toggleable separately though
+## since it can be quite noisy"); honoured only while a run is being traced.
+func spikes_requested() -> bool:
+	return "--spikes" in active_args()
 
-## Buffered post-draw measurements remain available with the ordered telemetry log disabled.
-static func frame_trace_requested() -> bool:
-	return "--frame-trace" in _args()
+## `--frame-trace`: buffered post-draw measurements, available with the ordered run log disabled.
+func frame_trace_requested() -> bool:
+	return "--frame-trace" in active_args()
 
-## `--frame-record` (or the page's own `?framerecord=1`, under `live_debug_requested()`) — keep
-## every frame's time by system for the last few minutes of play, slow frames marked, with a
-## readout line naming the last slow frame's three largest costs; on the page a button saves the
-## record through the browser's download, and on the desktop it is written on scene exit (see
-## `FrameRecorder`). *(2026-10-03, inbox #510: "let's focus on recording what cause spillover in
-## the regular 2ms"; asked how it should get off the phone: "Download plus readout line".)* Like
-## every word of the bundle, naming it on a release page keeps the run off the save.
-static func frame_record_requested() -> bool:
-	return _frame_record_for(_args(), _web_query(), live_debug_requested())
+## `--frame-record` (or `?framerecord=1` in the open bundle): every frame's time by system for the
+## last few minutes of play, slow frames marked, with a readout line naming the last slow frame's
+## three largest costs; on the page a button saves the record through the browser's download, and
+## on the desktop it is written on scene exit (see `FrameRecorder`).
+func frame_record_requested() -> bool:
+	return _frame_record_for(active_args(), _query, live_debug_requested())
 
 ## `frame_record_requested()`'s own decision, pure in its three inputs the way `_ground_mode_for()`
 ## is: the command line, or the page while the bundle is open, and only the value `1` there.
@@ -907,19 +699,17 @@ static func _frame_record_for(args: PackedStringArray, query: String, flags_open
 			return true
 	return false
 
-## `--quit-when-still` is present at all — `StillWatch` (`src/dev/still_watch.gd`) reads this to
-## decide whether to add itself to the tree, the same shape `route_targets().is_empty()` gates
-## `RouteRig` on. See `quit_when_still_seconds()` for the flag's own optional value.
-static func quit_when_still_requested() -> bool:
-	return "--quit-when-still" in _args()
+## `--quit-when-still` is present at all — whether `StillWatch` is built.
+func quit_when_still_requested() -> bool:
+	return "--quit-when-still" in active_args()
 
-## `--quit-when-still [seconds]` — how long she must stay within a few pixels of one spot, once
+## `--quit-when-still [seconds]`: how long she must stay within a few pixels of one spot, once
 ## armed, before `StillWatch` saves a picture and quits. About a second by default, the player's
-## own phrase for it (asked for 2026-09-23: "if the player doesn't move for a second or so"); the
-## optional value is read the same way `--flee`'s own delay is (`_dither`, above) — present and
-## numeric only, so `--quit-when-still --seed 4242` does not swallow the next flag as a duration.
-static func quit_when_still_seconds() -> float:
-	var args := _args()
+## own phrase for it (2026-09-23: "if the player doesn't move for a second or so"); the optional
+## value is read only when it is a number, so `--quit-when-still --seed 4242` does not swallow the
+## next flag as a duration.
+func quit_when_still_seconds() -> float:
+	var args := active_args()
 	var index := args.find("--quit-when-still")
 	if index == -1:
 		return _QUIT_WHEN_STILL_DEFAULT
@@ -929,63 +719,64 @@ static func quit_when_still_seconds() -> float:
 
 const _QUIT_WHEN_STILL_DEFAULT := 1.0
 
+## `--title` photographs the title screen; `--no-title` skips it for a run that drives nothing.
+func title_requested() -> bool:
+	return "--title" in active_args()
+
+func no_title_requested() -> bool:
+	return "--no-title" in active_args()
+
+## `--screenshot <path>`'s path, or "" — read by `RunConfig.screenshot_rig()` and
+## `AutoScreenshot`, which owns the capture.
+func screenshot_path() -> String:
+	return _word_after("--screenshot")
+
 # ------------------------------------------------------- recording, and a trailer shot ---
 ## PLAYTEST-139: "the trailer will be a set of paths in pre determined seeds with fixed events so
-## we can reproduce it easily" · "we shouldn't show something that will never be visible" · and,
-## on the route rig, "I want to also be able to see some runs myself". `tools/record.sh` records
-## any rig run through Godot's own movie writer, and `tools/trailer.sh` records every shot in
-## `tools/trailer/shots.json` the same way, with the flags below beside the ones that already
-## choose a seed, a day, a spawn and a walk.
+## we can reproduce it easily" · "we shouldn't show something that will never be visible".
+## `tools/record.sh` records any rig run through Godot's own movie writer, and `tools/trailer.sh`
+## records every shot in `tools/trailer/shots.json` the same way, with the flags below beside the
+## ones that already choose a seed, a day, a spawn and a walk.
 
 ## Whether Godot's own movie writer is recording this run (`--write-movie`, an engine flag rather
-## than one of this table's): the game then advances exactly `1 / --fixed-fps` a frame however
-## long a frame takes to save, so nobody can be playing it. Read by `is_rig()`, by
-## `main._somebody_is_playing()`, by `main.gd`'s deadline — counted in game seconds while this
-## holds — and by `AutoScreenshot`, which ends a recording at `--after`. Behind `enabled()` like
-## every flag here.
-static func recording() -> bool:
-	return enabled() and OS.has_feature("movie")
+## than one of this table's): the game then advances exactly `1 / --fixed-fps` a frame however long
+## a frame takes to save, so nobody can be playing it. A debug build's only, like every flag here.
+func recording() -> bool:
+	return enabled() and _movie
 
 ## `--player-view` draws the frame a player sees: the release build's own HUD, and the developer
-## readout off unless `--debug` asks for it — `main.gd` reads this for both. The debug layers,
-## the route lines and the frame graph already start off unless `--layers` or `--spikes` asks.
-## *(PLAYTEST-139: "we shouldn't show something that will never be visible"; on the route rig's
-## recording, the game's own view.)*
-static func player_view_requested() -> bool:
-	return "--player-view" in _args()
+## readout off unless `--debug` asks for it.
+func player_view_requested() -> bool:
+	return "--player-view" in active_args()
 
-## `--parent mother|father` — which presentation the run shows, instead of the roll
-## `GameState.start_run()` makes from the seed. The raw word is checked here rather than handed on:
-## `""` for "not given", and an unknown word is refused with `push_warning` and treated the same,
-## the reasoning `_validate_skip_words()` gives — a shot of the wrong parent that said nothing
-## about it would be the one failure the shot list exists to rule out.
-static func parent_override() -> String:
-	if not recipe_data.is_empty():
-		return str(recipe_data.get("setup", {}).get("parent", "mother"))
-	var args := _args()
+## `--parent mother|father`: which presentation the run shows, instead of the roll
+## `GameState.start_run()` makes from the seed. `""` for "not given"; an unknown word is refused
+## with `push_warning` and treated the same, since a shot of the wrong parent that said nothing
+## would be the one failure the shot list exists to rule out. A recipe's own parent wins.
+func parent_override() -> String:
+	if not _recipe.is_empty():
+		return str(_recipe.get("setup", {}).get("parent", "mother"))
+	var args := active_args()
 	var index := args.find("--parent")
 	if index == -1 or index + 1 >= args.size():
 		return ""
 	return parse_parent(args[index + 1])
 
-## `--hard` — the fresh run begins in hard mode, and the title's Hard Mode checkbox opens checked
-## (`main._apply_the_mode_flags()`), so a rig that never reaches the title, or `--title`'s own
-## photograph, sees hard mode without anybody pressing it.
-static func hard_mode_requested() -> bool:
-	return "--hard" in _args()
+## `--hard`: the fresh run begins in hard mode, and the title's Hard Mode checkbox opens checked.
+func hard_mode_requested() -> bool:
+	return "--hard" in active_args()
 
-## `--nerves N` — the fresh run begins with `N` nerves instead of `Tuning.STARTING_NERVES`, so a rig
-## reaches what the last nerve does on the first loss rather than the fifth. `0` for "not given";
-## anything that is not a whole number from 1 to `Tuning.STARTING_NERVES` is refused with
-## `push_warning` and treated the same, the reasoning `_validate_skip_words()` gives.
-static func nerves_override() -> int:
-	var args := _args()
+## `--nerves N`: the fresh run begins with `N` nerves instead of `Tuning.STARTING_NERVES`, so a rig
+## reaches what the last nerve does on the first loss. `0` for "not given".
+func nerves_override() -> int:
+	var args := active_args()
 	var index := args.find("--nerves")
 	if index == -1 or index + 1 >= args.size():
 		return 0
 	return parse_nerves(args[index + 1])
 
-## The bare parsing of a `--nerves` value, pulled out so a test can drive it without a command line.
+## The bare parsing of a `--nerves` value: anything but a whole number from 1 to
+## `Tuning.STARTING_NERVES` is refused with `push_warning` and treated as "not given".
 static func parse_nerves(raw: String) -> int:
 	if raw.is_valid_int() and int(raw) >= 1 and int(raw) <= Tuning.STARTING_NERVES:
 		return int(raw)
@@ -993,7 +784,7 @@ static func parse_nerves(raw: String) -> int:
 			% [raw, Tuning.STARTING_NERVES])
 	return 0
 
-## The bare parsing of a `--parent` value, pulled out so a test can drive it without a command line.
+## The bare parsing of a `--parent` value.
 static func parse_parent(raw: String) -> String:
 	if raw in ["mother", "father"]:
 		return raw
@@ -1001,12 +792,11 @@ static func parse_parent(raw: String) -> String:
 	return ""
 
 ## `--zoom-out <seconds> [delay]` pulls the camera back from her to the whole city over `seconds`,
-## after holding on her for `delay` (0 when absent) — the trailer's last shot, "a zoom out from her
-## doorstep to show the full buzzling city". `-1.0` for "not given"; a value that is not a
-## positive number refuses the whole flag the way `parse_zoom()` refuses a malformed `--zoom`.
-## `ZoomOutCamera` (`src/dev/zoom_out_camera.gd`) is what moves.
-static func zoom_out_seconds() -> float:
-	var args := _args()
+## after holding on her for `delay` — the trailer's last shot. `-1.0` for "not given"; a value that
+## is not a positive number refuses the whole flag the way `parse_zoom()` refuses a malformed
+## `--zoom`. `ZoomOutCamera` is what moves.
+func zoom_out_seconds() -> float:
+	var args := active_args()
 	var index := args.find("--zoom-out")
 	if index == -1 or index + 1 >= args.size():
 		return -1.0
@@ -1016,67 +806,74 @@ static func zoom_out_seconds() -> float:
 		return -1.0
 	return float(raw)
 
-## `--zoom-out`'s optional second value: seconds held on her before the camera starts to move.
-## Read only when it is a number, the same as `--flee`'s own delay, so `--zoom-out 4 --seed 1`
-## does not swallow the next flag.
-static func zoom_out_delay() -> float:
-	var args := _args()
+## `--zoom-out`'s optional second value: seconds held on her before the camera moves, read only
+## when it is a number, so `--zoom-out 4 --seed 1` does not swallow the next flag.
+func zoom_out_delay() -> float:
+	var args := active_args()
 	var index := args.find("--zoom-out")
 	if index == -1 or index + 2 >= args.size() or not args[index + 2].is_valid_float():
 		return 0.0
 	return maxf(0.0, float(args[index + 2]))
 
-## `--caption <text>` — one line of on-screen text for a trailer shot, or `""`. See `TrailerText`
-## (`src/dev/trailer_text.gd`) for where and how it is drawn.
-static func caption_text() -> String:
+## `--caption <text>`: one line of on-screen text for a trailer shot, or "". See `TrailerText`.
+func caption_text() -> String:
 	return _word_after("--caption")
 
-## `--title-card <text>` — the game's name, large and centred over the shot, or `""`.
-static func title_card_text() -> String:
+## `--title-card <text>`: the game's name, large and centred over the shot, or "".
+func title_card_text() -> String:
 	return _word_after("--title-card")
 
-static func _word_after(flag: String) -> String:
-	var args := _args()
+## The word after `flag` on the gated command line, or "" when the flag or its word is missing.
+func _word_after(flag: String) -> String:
+	var args := active_args()
 	var index := args.find(flag)
 	if index == -1 or index + 1 >= args.size():
 		return ""
 	return args[index + 1]
 
+# ---------------------------------------------------------------------- scene recipes ---
+
+## `--recipe <path>`: the authored scene to boot, or "".
+func recipe_path() -> String:
+	return _word_after("--recipe")
+
+## `--recipe-mode free|scripted`, `free` by default: a free-play recipe keeps real controls and no
+## recording deadline; a scripted one plays itself and is a rig.
+func recipe_mode() -> String:
+	var mode := _word_after("--recipe-mode")
+	return "free" if mode.is_empty() else mode
+
+func recipe_scripted() -> bool:
+	return not recipe_path().is_empty() and recipe_mode() == "scripted"
+
+## `--recipe-validate`: quit once the recipe has been installed and its manifest written.
+func recipe_validate() -> bool:
+	return "--recipe-validate" in active_args()
+
+## `--recipe-manifest <path>`, where the recipe's manifest is written, or "".
+func recipe_manifest_path() -> String:
+	return _word_after("--recipe-manifest")
+
+## `--recipe-draft <path>`, where a drafted recipe is written, or "".
+func recipe_draft_path() -> String:
+	return _word_after("--recipe-draft")
+
 # ---------------------------------------------------------------------- a rig's own lockdown ---
 ## PLAYTEST-133: "since those are godot apps that launch in my view it could be that accidentally
 ## pressed a button maybe? since it takes the focus away from what I'm doing every time" — and,
 ## on the same fix, "will it also prevent godot windows from staying open indefinitely?" `main.gd`
-## reads `is_rig()` once, at boot, to strip its own window's focus, gate out real input and start
-## the wall-clock quit timer below; `tools/shot.sh` and `tools/run.sh` read the identical
-## `RIG_FLAGS` list (see the marker block above `enabled()`) to decide the same three things on
-## the shell side — whether to launch with `--disable-vsync`, whether to wrap the launch in an
-## external kill, and what deadline to give it.
+## reads `RunConfig.is_rig` once, at boot, to strip its own window's focus, gate out real input and
+## start the wall-clock quit timer below; `tools/shot.sh` and `tools/run.sh` read the identical
+## `RIG_FLAGS` list (the marker block above) to decide the same three things on the shell side.
 
-## The exact `RIG_FLAGS` list above, spelled out for GDScript rather than parsed from the doc
-## comment the way the shell side reads it — there is no GDScript reader for its own file's doc
-## comments, so this is kept in step with that block by hand, the same promise `DEV_FLAG_TABLE`'s
-## own doc already asks of `AutoScreenshot.from_command_line()`.
+## The `RIG_FLAGS` list above, spelled out for GDScript, which has no reader for its own file's doc
+## comments; kept in step with that block by hand.
 const _RIG_FLAGS := ["--screenshot", "--walk", "--flee", "--press", "--tap", "--route"]
 
-## Whether this run is a rig rather than a person at the keyboard — `main._somebody_is_playing()`
-## asks the same question for telemetry's sake and must never disagree with this: both read
-## `active_args()`/`_args()` against the identical set of flags (this file's one list, above).
-static func is_rig() -> bool:
-	return _is_rig_from_args(_args()) or recording() or recipe_scripted()
-
-## The validated recipe is installed before either boot path makes a run. It never changes argv,
-## so a free-play recipe still has real controls and no recording deadline.
-static var recipe_data: Dictionary = {}
-
-static func recipe_path() -> String:
-	return _word_after("--recipe")
-
-static func recipe_mode() -> String:
-	var mode := _word_after("--recipe-mode")
-	return "free" if mode.is_empty() else mode
-
-static func recipe_scripted() -> bool:
-	return not recipe_path().is_empty() and recipe_mode() == "scripted"
+## Whether this run is a rig rather than a person at the keyboard: a flag on `_RIG_FLAGS`, a movie
+## recording, or a scripted recipe.
+func is_rig() -> bool:
+	return _is_rig_from_args(active_args()) or recording() or recipe_scripted()
 
 static func _is_rig_from_args(args: PackedStringArray) -> bool:
 	for flag in _RIG_FLAGS:
@@ -1084,59 +881,36 @@ static func _is_rig_from_args(args: PackedStringArray) -> bool:
 			return true
 	return false
 
-## The margin added to a rig's own known script length, and the hard ceiling neither that length
-## nor the margin may push the deadline past — a full day (`Tuning.DAY_LENGTH_SECONDS`, 210s) plus
-## this margin is 225s, so 240s leaves headroom without extending a short rig's own wait
-## needlessly. Read by `tools/lib_dev_flags.sh` out of the `RIG_QUIT_SECONDS` marker block above,
-## rather than copied there by hand.
+## The margin added to a rig's own known script length, and the hard ceiling neither may push the
+## deadline past — a full day (`Tuning.DAY_LENGTH_SECONDS`, 210s) plus this margin is 225s, so 240s
+## leaves headroom without extending a short rig's wait needlessly. Read by `tools/lib_dev_flags.sh`
+## out of the `RIG_QUIT_SECONDS` marker block above.
 const RIG_QUIT_MARGIN_SECONDS := 15.0
 const RIG_QUIT_CEILING_SECONDS := 240.0
-## How long `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s) own external kill waits past the
-## deadline it computes with the same formula, before it decides the in-game timer itself did not
-## fire and kills the process from outside — generous enough that a slow atlas rebuild or a slow
-## machine's own boot never races it, short enough that a genuinely wedged rig does not tie up
-## whoever is waiting on the command to return.
+## How long `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s) external kill waits past the
+## deadline it computes with the same formula, before it decides the in-game timer did not fire —
+## generous enough that a slow atlas rebuild or a slow machine's boot never races it.
 const RIG_KILL_GRACE_SECONDS := 15.0
 ## How many wall-clock seconds a recorded game second may take before `tools/record.sh` and
-## `tools/trailer.sh` kill Godot from outside. Under the movie writer (`recording()`) the game runs
-## frame-locked and saves every frame before drawing the next, so it counts its own deadline in
-## game seconds (`main._process()`), and a wall-clock limit is only the outside backstop for a
-## process that stopped running at all — this factor stretches that game-second deadline into one.
-## Generous against the slowest measured recording, a frame-by-frame PNG at 60fps, which records
-## a game second in about four; read by `tools/lib_dev_flags.sh` out of `RIG_QUIT_SECONDS`.
+## `tools/trailer.sh` kill Godot from outside. Under the movie writer the game counts its own
+## deadline in game seconds (`main._process()`), so a wall-clock limit is only the outside backstop
+## for a process that stopped running; this factor stretches the game-second deadline into one,
+## generous against the slowest measured recording (a frame-by-frame PNG at 60fps records a game
+## second in about four).
 const RIG_MOVIE_SLOWDOWN := 10.0
 
-## Pure: seconds until a rig quits itself, from the two numbers that decide it. `after` is
-## `--after`'s own value if the flag was given (a screenshot or timed-trace rig's own wait, the
-## common case — see `AutoScreenshot._seconds_to_wait`) or `-1.0` for "not given"; `day_length` is
-## what a rig with no such bound (`--route`, or `--walk`/`--flee`/`--press`/`--tap` on their own,
-## none of which stop anything by themselves without `--screenshot`, `--frame-trace` or
-## `--frame-record` beside them)
-## can run for at the very most — the day it is playing, since nothing else ends it sooner. Pulled
-## out as a pure function of both so a test can drive every combination without a command line —
-## the same seam `_no_focus_pause_from_args()` already is for its own flag.
+## Pure: seconds until a rig quits itself. `after` is `--after`'s own value (a screenshot or
+## timed-trace rig's wait, the common case) or `-1.0` for "not given"; `day_length` is the longest
+## a rig with no such bound can run, the day it plays, since nothing else ends it sooner.
 static func rig_quit_seconds_from(after: float, day_length: float) -> float:
 	var script := after if after >= 0.0 else day_length
 	return clampf(script + RIG_QUIT_MARGIN_SECONDS, RIG_QUIT_MARGIN_SECONDS, RIG_QUIT_CEILING_SECONDS)
 
-## The live answer `main.gd` times its own quit timer against: `--after`'s value if given, else
-## whatever day this rig is playing's own length (`--day-length`'s override, or the ordinary
-## `Tuning.day_length(day)` for `--day`'s own day — 210s for every day but the curfew ones, 180s
-## for those, see `Tuning.day_length()`'s own doc). Not asked when `is_rig()` is false — a plain
-## `tools/run.sh` session has no deadline at all.
-static func rig_quit_seconds() -> float:
-	var after := _rig_after_value()
-	var day_length := day_length_override()
-	if day_length <= 0.0:
-		day_length = Tuning.day_length(day_override())
-	return rig_quit_seconds_from(after, day_length)
-
-## The bare parsing of `--after`'s own value, pulled out because `rig_quit_seconds()` needs it and
-## `AutoScreenshot` (where `--after` is otherwise read) is not a place `DevFlags` reaches into —
-## `-1.0` for "not given or not a number", the same sentinel `rig_quit_seconds_from()` reads as
-## "fall back to the day's own length".
-static func _rig_after_value() -> float:
-	var args := _args()
+## `--after`'s own value, or `-1.0` for "not given or not a number" — the sentinel
+## `rig_quit_seconds_from()` reads as "fall back to the day's own length". `AutoScreenshot` reads
+## the same flag for its own wait.
+func rig_after() -> float:
+	var args := active_args()
 	var index := args.find("--after")
 	if index != -1 and index + 1 < args.size() and args[index + 1].is_valid_float():
 		return float(args[index + 1])

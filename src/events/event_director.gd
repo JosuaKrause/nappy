@@ -187,10 +187,19 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	_teach_the_run(day, lesson)
 
 ## The row `--force <id>` names, or `null` when the flag is absent — see `DevFlags.forced_row()`
-## for what the flag is for. Debug builds only, like every other dev flag.
+## for what the flag is for.
 var _forced: EventDef
 ## Seconds between two forced rows, from `--force <id> [seconds]`.
 var _forced_interval := 0.0
+## The id and interval `force()` was handed, taken up by each `start_day()`.
+var _force_id := ""
+var _force_interval := 0.0
+
+## `--force <id> [seconds]`, handed in by the manager: from the next `start_day()` on, the day's own
+## owed list is replaced by that one row, every `interval` seconds. "" for the ordinary day.
+func force(id: String, interval: float) -> void:
+	_force_id = id
+	_force_interval = interval
 
 ## Throws away the day's own owed list and replaces it with the one row `--force` names, so the
 ## director hands out that row and nothing else for the whole day.
@@ -205,17 +214,14 @@ var _forced_interval := 0.0
 ## exactly like a day that happened not to schedule one.
 func _take_the_forced_row() -> void:
 	_forced = null
-	if not DevFlags.enabled():
+	if _force_id == "":
 		return
-	var id := DevFlags.forced_row()
-	if id == "":
-		return
-	var def := EventCatalogue.by_id(id)
+	var def := EventCatalogue.by_id(_force_id)
 	if not def:
-		push_error("--force names no event in the catalogue: '%s'" % id)
+		push_error("--force names no event in the catalogue: '%s'" % _force_id)
 		return
 	_forced = def
-	_forced_interval = DevFlags.forced_interval()
+	_forced_interval = _force_interval
 	_owed.clear()
 	_owed.append(def)
 

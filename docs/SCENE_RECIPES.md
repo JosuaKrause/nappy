@@ -430,7 +430,8 @@ the extent are omitted. This exterior is neither a generated street nor evidence
 route guarantee. The data retains its context for dependent validation, while gameplay queries
 outside the authored bounds see only the fallback surface.
 
-The runtime sets `map.recipe_frame_locked` before building scripted scenes. Scenery preparation
+A scripted scene's city is built frame-locked (`City.scenery_frame_locked`, from the run's
+configuration, `RunConfig.recipe_scripted`). Scenery preparation
 then completes the camera's whole loading area synchronously and ignores the ordinary CPU
 preparation budget, including during a zoom. Free play leaves ordinary streaming enabled.
 This removes wall-clock load from scenery readiness; it does not promise frame equality

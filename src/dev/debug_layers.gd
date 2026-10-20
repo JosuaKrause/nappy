@@ -94,8 +94,8 @@ func _agents() -> Array[CrowdAgent]:
 	return _crowd.agents()
 
 ## Sets which layers start on — `1` fields, `2` shadows, `3` bounding boxes — from
-## `DevFlags.layers_override()`. Pulled out from `main._add_debug_layers()` so a test can drive it
-## directly without a real command line to read: see `DevFlags.parse_layers()` for the same split.
+## `RunConfig.layers_override`. Pulled out from `main._add_debug_layers()` so a test can drive it
+## with the indices it wants: see `DevFlags.parse_layers()` for the same split.
 func apply_initial_state(indices: Array[int]) -> void:
 	fields_on = 1 in indices
 	shadows_on = 2 in indices

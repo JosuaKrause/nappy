@@ -1,14 +1,18 @@
 extends Node2D
 ## Boot scene: generate the city, drop the player on the doorstep, then the HUD.
 ##
+## **The composition root.** The run's configuration (`config`, a `RunConfig`) is resolved once at
+## boot and handed from here: to the observers (`Telemetry`, `GameSave`, `VisitCounter`) as the
+## config itself, and to the world, the day and the baby as the plain values each needs out of it
+## — a day's length, whether the clock stands still, how the ground is scheduled.
+##
 ## The right-hand overlay is a developer readout, not part of the game's UI. It runs whenever
-## `_debug` (`DevFlags.enabled()`) or `_readout_requested` (`DevFlags.readout_requested()`, the
-## page's own `?debug=1`) holds — see `_readout_requested`'s own doc. `_debug_layers` and
-## `_route_lines` are built under that same `_debug or _readout_requested` gate now too, so a
-## release page's own `?debug=1&layers=1,3,5` can ask for a picture — but every other piece of
-## developer furniture (the snapshot key, every other dev flag) stays gated behind `_debug` alone,
-## except the smaller M193 bundle (`DevFlags.live_debug_requested()`) named at `_readout_requested`'s
-## own doc.
+## `_debug` (a debug build) or `_readout_requested` (the page's own `?debug=1`) holds — see
+## `_readout_requested`'s own doc. `_debug_layers` and `_route_lines` are built under that same
+## `_debug or _readout_requested` gate, so a release page's own `?debug=1&layers=1,3,5` can ask
+## for a picture; every other piece of developer furniture (the snapshot key, every other dev
+## flag) stays gated behind `_debug` alone, except the release-safe bundle `config.live_debug`
+## opens.
 
 const CITY := preload("res://scenes/world/city.tscn")
 const STROLLER := preload("res://scenes/player/stroller.tscn")
@@ -49,16 +53,18 @@ const ESCAPE_ONLY_GROUPS: Array[StringName] = [&"interior"]
 @onready var _status: Label = $CanvasLayer/Status
 @onready var _status_layer: CanvasLayer = $CanvasLayer
 
-## Whether the developer readout runs at all. Read once from `DevFlags.enabled()` into a member
-## — rather than asked of `OS.is_debug_build()` inside `_process()` — so a test can set it and
-## check the release shape, the way `hud._debug` already does for the HUD's own gate.
-var _debug := DevFlags.enabled()
+## This run's configuration, resolved once at boot — see `configure()`, which also sets the members
+## below that are read from it.
+var config: RunConfig
 
-## Read once into a member for the same reason `_debug` is: so a test can set it directly and
-## check the release shape, rather than only being able to exercise the flag from an actual debug
-## build's own command line. `_ready_escape()` reads this member rather than calling
-## `DevFlags.start_escape()` again, the same shape `_add_debug_layers()` reads `_debug`.
-var _escape_scene_requested := DevFlags.start_escape()
+## Whether the developer readout runs at all: a debug build. A member rather than a read of
+## `config` inside `_process()`, so a test can set it and check the release shape, the way
+## `hud._debug` does for the HUD's own gate.
+var _debug := false
+
+## `--start-escape`, kept in a member for the same reason `_debug` is: so a test can set it
+## directly and check the release shape.
+var _escape_scene_requested := false
 
 ## Whether this boot reached the escape as **a run's own ending** rather than through the flag —
 ## a won day 14 with every task complete handing over, or a game closed inside a section and opened
@@ -93,10 +99,9 @@ var _escape_resumed_from_disk := false
 ## only other thing that button means anywhere in `_ready_escape()`.
 var _escape_title_is_resume_gate := false
 
-## `DevFlags.no_focus_pause()`, read once for the same reason `_debug` is: so a test can set it
-## directly and check the release shape. `_notification()` reads this member rather than calling
-## the getter again on every focus change.
-var _no_focus_pause := DevFlags.no_focus_pause()
+## `--no-focus-pause`, kept in a member for the same reason `_debug` is: so a test can set it
+## directly and check the release shape.
+var _no_focus_pause := false
 
 ## How long every input is ignored after the game gets focus back (`NOTIFICATION_APPLICATION_
 ## FOCUS_IN` or `_RESUMED`). *(2026-10-04, inbox #534: "When returning to the game all inputs should
@@ -113,9 +118,8 @@ const RETURN_INPUT_IGNORED_MSEC := 500
 ## for a rig (`_rig_locked_out`) or under `_no_focus_pause`, which must never be slowed by this.
 var _input_ignored_until_msec := 0
 
-## Whether `_lock_out_a_rig()` found `DevFlags.is_rig()` true for this run — read once for the same
-## reason `_no_focus_pause` is, so a test can set it directly. `_input()` reads this member rather
-## than asking `DevFlags` again on every event.
+## Whether `_lock_out_a_rig()` found `config.is_rig` true for this run — a member for the same
+## reason `_no_focus_pause` is, so a test can set it directly.
 var _rig_locked_out := false
 ## The `Time.get_ticks_msec()` reading a rig quits itself at, or `0` for "no deadline" — a person's
 ## own `tools/run.sh` session, or a test that never calls `_lock_out_a_rig()` at all. `0` is safe
@@ -131,7 +135,7 @@ var _rig_locked_out := false
 ## it is — reads the true time and quits right then, rather than trusting a running total that the
 ## same stall could already have thrown off.
 var _rig_quit_deadline_msec := 0
-## **Under Godot's movie writer (`DevFlags.recording()`), the same deadline in game seconds
+## **Under Godot's movie writer (`config.recording`), the same deadline in game seconds
 ## instead**, or `0.0` for none. A recording runs frame-locked and saves every frame before drawing
 ## the next, so its wall clock runs several times slower than its game clock, and a wall-clock
 ## deadline would end a legitimate recording partway; `delta` is exact there by construction, the
@@ -150,19 +154,16 @@ const READOUT_INTERVAL := 0.25
 var _readout_wait := 0.0
 
 ## Whether the readout was asked for by the page's own `?debug=1` (or the command line's
-## `--debug`) — `DevFlags.readout_requested()`, read once for the same reason `_debug` is: so a
-## test can set it directly and check the release shape. `_status.visible` and the text assembly
-## in `_process()` read `_debug or _readout_requested`, and so now do `_add_debug_layers()` and
-## `_add_route_lines()` — see docs/DECISIONS.md, M133, "the readout on the live page", and M193, "the
-## live page's ?debug=1 reaches the debug flags". The snapshot key and the layer-toggle keys keep
-## reading `_debug` alone: a release page can ask `?layers=` for a picture already drawn a
-## particular way, never toggle one by hand with no keyboard event the page itself sent.
-var _readout_requested := DevFlags.readout_requested()
-## `DevFlags.skip_words()`, read once for the same reason `_readout_requested` is: so a test can
-## set it directly, and so the readout's own `skip` line below is not re-splitting `--skip`'s
-## comma list, or on the Web re-asking the address bar, every frame it is assembled. Empty
-## whenever `_readout_requested` is false, since `skip_words()` carries that gate itself.
-var _skip_words := DevFlags.skip_words()
+## `--debug`), kept in a member for the same reason `_debug` is. `_status.visible` and the text
+## assembly in `_process()` read `_debug or _readout_requested`, and so do `_add_debug_layers()`
+## and `_add_route_lines()` (M133, the readout on the live page; M193, the live page's ?debug=1
+## reaches the debug flags). The snapshot key and the layer-toggle keys read `_debug` alone: a
+## release page can ask `?layers=` for a picture already drawn a particular way, never toggle one
+## by hand with no keyboard event the page itself sent.
+var _readout_requested := false
+## The validated `--skip` words, for the readout's own `skip` line; empty whenever
+## `_readout_requested` is false.
+var _skip_words: Array[String] = []
 ## The readout's first line, `TitleScreen.build_text()` — `git describe`'s form and the commit —
 ## read on the first frame that assembles the readout and kept, since a working tree pays two
 ## `git` spawns for the answer and a release page with neither flag never pays them at all.
@@ -217,21 +218,21 @@ var _frame_graph: FrameGraph
 ## Whether the developer readout (`_status`) is showing, independent of `_debug`: the fourth
 ## layer `_toggle_debug_layer()` owns, on `_status`'s own pre-existing `CanvasLayer` rather than
 ## under `_debug_layers`, which is not a `CanvasLayer` this label could join. Starts `true`, so an
-## unflagged debug run reads exactly as it did before this milestone — and `false` under
-## `--player-view` unless `--debug` asks for it, since that frame is the one a player sees.
-var _layer_readout_on := not DevFlags.player_view_requested() or DevFlags.readout_requested()
+## unflagged debug run shows it — and `false` under `--player-view` unless `--debug` asks for it,
+## since that frame is the one a player sees.
+var _layer_readout_on := true
 ## Whether the frame-time graph (`_frame_graph`) is showing — its own debug layer, key `6` in
 ## `_debug_layer_key()`/`_toggle_debug_layer()`, independent of `_layer_readout_on`'s own `4`:
 ## *(2026-09-15, the player: "spike view should be independent of debug layer 4 it should be its
 ## own debug layer and turned off by default unless --spikes is set".)* Starts `false` — unlike
 ## `_layer_readout_on`, which starts `true` — and `_add_frame_graph()` sets it `true` at boot
-## instead when `DevFlags.spikes_requested()` holds or `--layers` names `6`, the same way `--layers`
+## instead when `--spikes` was given or `--layers` names `6`, the same way `--layers`
 ## naming `5` starts `_route_lines` on. Toggling it off also empties `_frame_graph`'s own ring
 ## (`FrameGraph.clear()`), so a graph switched off and back on again starts from blank rather than
 ## picking up wherever the window it was not fed during happened to leave off.
 var _layer_graph_on := false
-## Every frame's time by system, under `--frame-record`/`?framerecord=1` (`DevFlags.
-## frame_record_requested()`), or `null`. The readout carries its line, the last slow frame's
+## Every frame's time by system, under `--frame-record`/`?framerecord=1`, or `null`. The readout
+## carries its line, the last slow frame's
 ## three largest costs, so a stutter caught on a phone shows as caught.
 var _frame_recorder: FrameRecorder
 ## The pointer controls, on their own layer for the same reason the danger edge is: they have to
@@ -256,10 +257,11 @@ var _reload_override := Callable()
 
 ## Owns the `--follow` camera and the event id it tracks between frames — the one piece of
 ## `DevRig` (`src/dev/dev_rig.gd`) that has to survive across calls, so it is the one piece kept
-## on an instance rather than called as a `static`. The `--spawn`/`--overview`/`--meters`/
-## `--day-length` lookups against the live city need no instance and are called on `DevRig`
-## itself.
+## on an instance rather than called as a `static`. The `--spawn`/`--overview`/`--meters` lookups
+## against the live city need no instance and are called on `DevRig` itself.
 var _dev_rig := DevRig.new()
+## The authored scene `--recipe` loaded, or `null`. Its seed, day, escape part and parent reach the
+## run through `config` (`RunConfig.with_recipe()`); this is the playback and the manifest.
 var _recipe: SceneRecipeRuntime
 ## `--route`'s own walker, `null` outside a debug build or with no `--route` given — see
 ## `src/dev/route_rig.gd`. Unlike `_dev_rig`, this owns a whole target queue that has to survive
@@ -320,18 +322,37 @@ var _rotated := false
 ## until `_retire_the_boot_camera()` frees it — kept so `_apply_orientation()` can turn it with
 ## the window the same way it turns hers.
 var _boot_camera: Camera2D
+
+func _init() -> void:
+	configure(RunConfig.at_boot())
+
+## Hands this boot its run configuration and sets the members read from it. `_init()` hands it the
+## process's own (`RunConfig.at_boot()`); a test hands it one of its own before the boot runs, and a
+## recipe's boot hands it the same run with the recipe on top.
+func configure(run_config: RunConfig) -> void:
+	config = run_config
+	_debug = config.debug_build
+	_readout_requested = config.readout_requested
+	_escape_scene_requested = config.start_escape
+	_no_focus_pause = config.no_focus_pause
+	_skip_words = config.skip_words
+	_layer_readout_on = not config.player_view_requested or config.readout_requested
+
 func _ready() -> void:
-	if not DevFlags.recipe_path().is_empty():
-		var result := SceneRecipeRuntime.load_recipe(DevFlags.recipe_path(), DevFlags.active_args())
+	if not config.recipe_path.is_empty():
+		var result := SceneRecipeRuntime.load_recipe(config.recipe_path, config.active_args)
 		if not result.errors.is_empty():
 			_recipe_failed(result.errors)
 			return
-		DevFlags.recipe_data = result.data
-		_escape_scene_requested = DevFlags.start_escape()
+		configure(config.with_recipe(result.data))
 		_recipe = SceneRecipeRuntime.new()
-		_recipe.configure(result, DevFlags.recipe_scripted())
-		(result.map as CityMap).recipe_frame_locked = DevFlags.recipe_scripted()
+		_recipe.configure(result, config)
 		add_child(_recipe)
+	# Before anything the observers watch can happen: the run log's header, the save's gate and
+	# what the page counts all read this boot's configuration rather than the command line.
+	Telemetry.configure(config)
+	GameSave.configure(config)
+	VisitCounter.configure(config)
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
 	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits
@@ -343,7 +364,7 @@ func _ready() -> void:
 	# nothing earlier is reachable from GDScript at all — and ahead of the escape's own boot branch
 	# just below, so either path gets it from this one call.
 	_lock_out_a_rig()
-	WebDisplay.apply()
+	WebDisplay.apply(config)
 	_return_viewport = get_viewport()
 	_end_the_return_window(true)
 	_return_viewport.set_disable_input(false)
@@ -356,7 +377,7 @@ func _ready() -> void:
 	# clock all read as frozen even though the simulation underneath is running correctly (confirmed
 	# against the run log while building this). Off only for a recording — real play keeps the
 	# smoothing `--fixed-fps` never runs under.
-	if DevFlags.recording():
+	if config.recording:
 		get_tree().physics_interpolation = false
 	# Before either boot path — this is the one thing `?debug=1` adds on top of the readout, and
 	# it has to reach the escape scene's own boot too. Gates itself on `_readout_requested` rather
@@ -405,9 +426,9 @@ func _ready() -> void:
 	# that just earned its ending.
 	if _resume.is_empty() and GameState.escape_section == FinaleController.Section.NONE \
 			and not _carried_from_a_checkpoint:
-		GameState.start_run(DevFlags.seed_override())
+		GameState.start_run(config.seed_override)
 		_apply_the_parent_flag()
-		GameState.day = DevFlags.day_override()
+		GameState.day = config.day_override
 		_apply_the_mode_flags()
 	# `VisitCounter`'s own "a run begun fresh, or resumed from the save" — fired once here for
 	# every path through this function, ordinary or handed over to the escape, since GameState.day
@@ -432,10 +453,10 @@ func _ready() -> void:
 	# After the run seed is settled and before anything is generated, so the log opens on the
 	# seed it is a trace of. Off with `-- --no-telemetry`; on otherwise, because a trace
 	# behind a flag is a trace the person playtesting has to remember to turn on. This is a
-	# player-facing opt-out rather than developer furniture, so it is not gated by `DevFlags`.
+	# player-facing opt-out rather than developer furniture, so it answers on every build.
 	# A run carried on from a checkpoint keeps writing the log it already has, the way the escape's
 	# handover does: `Telemetry` is an autoload and outlives the reload.
-	if not "--no-telemetry" in OS.get_cmdline_user_args() \
+	if not config.no_telemetry \
 			and not (_carried_from_a_checkpoint and Telemetry.is_active()):
 		Telemetry.begin_run(GameState.run_seed, _somebody_is_playing())
 	# Before the city, before the player, before the title: every page a day can draw is on disk
@@ -459,11 +480,9 @@ func _ready() -> void:
 		_resume_went_back = GameState.a_loss_goes_back_to_the_checkpoint()
 		_run_over = not GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 
-	_city = CITY.instantiate()
-	add_child(_city)
-	_pauses_with_the_game(_city)
+	_city = _new_city()
 	var elapsed := Time.get_ticks_msec()
-	_city.build(_recipe.built.map if _recipe else CityGenerator.generate(GameState.run_seed))
+	_city.build(_city_map())
 	print("[Main] city generated in %d ms (seed %d)" % [
 		Time.get_ticks_msec() - elapsed, _city.map.seed_used])
 	# On the doorstep before her own `Camera2D` exists, so the two frames `_warm_the_canvas_shaders()`
@@ -471,7 +490,7 @@ func _ready() -> void:
 	# world's default identity transform — see `_new_boot_camera()`'s own doc. Freed once
 	# `_start_day()` has put her camera in the same place for real.
 	var boot_camera := _new_boot_camera(_city.map.doorstep_world_position())
-	if not _recipe:
+	if config.warms_the_canvas_shaders():
 		await _warm_the_canvas_shaders(boot_camera.global_position)
 
 	_player = _make_player()
@@ -481,7 +500,7 @@ func _ready() -> void:
 	_baby.set_world(_city)
 
 	_hud = HUD.instantiate()
-	_release_shaped_hud()
+	_configure_the_hud()
 	add_child(_hud)
 	_add_danger_edge()
 	_add_excitement_halo()
@@ -525,6 +544,7 @@ func _ready() -> void:
 
 	_day = DayController.new()
 	_day.name = "Day"
+	_day.invincible = config.invincible
 	add_child(_day)
 	_pauses_with_the_game(_day)
 	_day.setup(_city.map, _player)
@@ -537,27 +557,27 @@ func _ready() -> void:
 		_observer.name = "Telemetry"
 		add_child(_observer)
 		_pauses_with_the_game(_observer)
-		_observer.setup(_city, _player, _baby, _day, _resistance, _edge)
+		_observer.setup(_city, _player, _baby, _day, _resistance, config.spikes_requested, _edge)
 
-	if DevFlags.frame_trace_requested():
+	if config.frame_trace_requested:
 		var trace := FrameTrace.new()
 		trace.name = "FrameTrace"
 		add_child(trace)
-		trace.setup(self, _city, _player, _day)
+		trace.setup(self, _city, _player, _day, Array(config.active_args))
 
-	if DevFlags.frame_record_requested():
+	if config.frame_record_requested:
 		_frame_recorder = FrameRecorder.new()
 		add_child(_frame_recorder)
 		_frame_recorder.setup(self, _city, _player, _day)
 
 	# Built before `_start_day()`, which calls `_route_rig.start_day()` once the day it is meant
 	# to walk actually exists — see `src/dev/route_rig.gd`.
-	if not DevFlags.route_targets().is_empty():
+	if not config.route_targets.is_empty():
 		_route_rig = RouteRig.new()
 		_route_rig.name = "RouteRig"
 		add_child(_route_rig)
 		_pauses_with_the_game(_route_rig)
-		_route_rig.setup(_city, _player, _baby, _resistance, _day)
+		_route_rig.setup(_city, _player, _baby, _resistance, _day, config.route_targets)
 
 	_start_day()
 	if _recipe and _recipe.manifest.get("setup_failed", false):
@@ -569,27 +589,22 @@ func _ready() -> void:
 	# straight to hers — see `_new_boot_camera()`'s own doc for why freeing is what does that.
 	_retire_the_boot_camera()
 
-	if DevFlags.overview_requested():
+	if config.overview_requested:
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
-	_dev_rig.setup_follow_camera(self)
+	_dev_rig.setup_follow_camera(self, config.follow_target, config.zoom_override)
 	_add_trailer_rigs()
 	if _recipe:
 		_recipe.begin()
 
-	var screenshot := AutoScreenshot.from_command_line()
-	if screenshot:
-		if _recipe and _recipe.scripted:
-			screenshot.simulation_clock = _recipe.elapsed
-			screenshot.before_capture = _recipe.prepare_capture
-		add_child(screenshot)
+	_add_the_screenshot_rig()
 
 	# Apart from the boot-order block above and below: `StillWatch` only reads `_city`, `_player`
 	# and `_day`, which already exist by here, and does not affect what day starts or how.
-	if DevFlags.quit_when_still_requested():
+	if config.quit_when_still_requested:
 		var still_watch := StillWatch.new()
 		still_watch.name = "StillWatch"
 		add_child(still_watch)
-		still_watch.setup(_city, _player, _day, DevFlags.quit_when_still_seconds())
+		still_watch.setup(_city, _player, _day, config.quit_when_still_seconds, config.recording)
 
 	# **Except under a rig.** A screenshot tool that opened onto the title screen would photograph
 	# the title screen, which is every `tools/shot.sh` recipe quietly answering the wrong
@@ -600,10 +615,10 @@ func _ready() -> void:
 	# resumed boot can never both be true — but the title still comes up for an ordinary resumed
 	# boot exactly as it does for a fresh one; see `_on_title_start()` for what pressing start on it
 	# then leads to.
-	# Through `DevFlags`, which answers with nothing outside a debug build, so a release export
-	# cannot be told to skip its own front door: `--no-title` is a rig's convenience like every
-	# other flag here, and the title screen is the game's first screen.
-	var args := DevFlags.active_args()
+	# Through `config`, whose command-line flags answer nothing outside a debug build, so a release
+	# export cannot be told to skip its own front door: `--no-title` is a rig's convenience like
+	# every other flag here, and the title screen is the game's first screen.
+	#
 	# The continue that carried the run on here was the press that starts the checkpoint's day, so
 	# no title and no brief stand in front of it: she is playing it from this frame, and the save
 	# says so.
@@ -612,7 +627,7 @@ func _ready() -> void:
 		return
 	if _show_an_ending_for_a_rig():
 		return
-	if _recipe or ((screenshot or "--no-title" in args) and not "--title" in args):
+	if config.skips_the_title():
 		return
 	_open_the_title()
 
@@ -632,7 +647,7 @@ static func _escape_section_came_from_the_file(before_resume: int, after_resume:
 ## rig or a person can walk it on demand. Section one is the building — the third floor's hallway,
 ## her at the door with the baby asleep in her arms, and the way down past the barricaded entrance
 ## into the basement — and the service door hands over to section two, the city with nobody in it
-## and one way out of it. `DevFlags.start_escape_at()`'s optional value teleports straight to any
+## and one way out of it. `--start-escape`'s optional word teleports straight to any
 ## of the building's other six parts, or to `city` for section two on its own, so a rig or a person
 ## can look at one without walking there.
 ##
@@ -657,16 +672,17 @@ func _ready_escape() -> void:
 	# the ending screen read — and starting a fresh one here would throw away the fourteen days
 	# that earned this walk.
 	if not _escape_from_a_run:
-		GameState.start_run(DevFlags.seed_override())
+		GameState.start_run(config.seed_override)
 		_apply_the_parent_flag()
-		if _recipe:
-			GameState.day = DevFlags.day_override()
+		# `--day` does not move the flag's escape off day 1; a recipe's own day does.
+		if config.has_recipe:
+			GameState.day = config.day_override
 		_apply_the_mode_flags()
 	# Same opt-out and the same reasoning as the ordinary run: a trace behind a flag nobody
 	# remembers to turn on is a trace nobody gets, and `P`/`B` (`_snapshot_now()`/`_start_burst()`)
 	# both need an active log to write anything at all — see `Telemetry.start_burst()`'s own
 	# "no drawable viewport" refusal, which is really "no active log", not a rendering question.
-	if not "--no-telemetry" in OS.get_cmdline_user_args():
+	if not config.no_telemetry:
 		# `Telemetry` is an autoload and survives the scene reload a handover comes through, so a
 		# run that walked fourteen days and then reached this keeps writing the log it already has
 		# — `begin_run()` would close it and open a second directory for one run. A cold launch
@@ -677,7 +693,7 @@ func _ready_escape() -> void:
 		# elapsed time — the day's `Telemetry.begin_day()` is the only other thing that opens one
 		# and nothing on this boot reaches it. Immediately after the run is opened, so the plan
 		# line `_plan_the_finale_city()` writes already falls inside it.
-		Telemetry.begin_finale(GameState.run_seed, FinaleController.length())
+		Telemetry.begin_finale(GameState.run_seed, config.escape_section_length())
 	# This boot's own startup, and the one place `interior` is ever loaded: the escape is the only
 	# thing that goes inside a building, so no ordinary day pays for those forty-one pictures.
 	#
@@ -695,11 +711,11 @@ func _ready_escape() -> void:
 	# origin is as good as any other point, since nothing is in the tree yet to show a wrong
 	# corner of.
 	var boot_camera := _new_boot_camera(Vector2.ZERO)
-	if not _recipe:
+	if config.warms_the_canvas_shaders():
 		await _warm_the_canvas_shaders(boot_camera.global_position)
 
 	_hud = HUD.instantiate()
-	_release_shaped_hud()
+	_configure_the_hud()
 	add_child(_hud)
 	# The one thing the escape changes about the HUD: the clock reads to the hundredth.
 	_hud.set_finale(true)
@@ -738,6 +754,8 @@ func _ready_escape() -> void:
 
 	_finale = FinaleController.new()
 	_finale.name = "Finale"
+	_finale.section_length = config.escape_section_length()
+	_finale.invincible = config.invincible
 	add_child(_finale)
 	_pauses_with_the_game(_finale)
 	_finale.section_started.connect(_on_finale_section_started)
@@ -773,7 +791,7 @@ func _ready_escape() -> void:
 	# its own boot camera.
 	_retire_the_boot_camera()
 
-	if DevFlags.overview_requested() and _city:
+	if config.overview_requested and _city:
 		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
 	_add_trailer_rigs()
 	if _recipe:
@@ -790,19 +808,25 @@ func _ready_escape() -> void:
 		_hud.visible = true
 		_recipe.begin()
 
-	var screenshot := AutoScreenshot.from_command_line()
-	if screenshot:
-		if _recipe and _recipe.scripted:
-			screenshot.simulation_clock = _recipe.elapsed
-			screenshot.before_capture = _recipe.prepare_capture
-		add_child(screenshot)
+	_add_the_screenshot_rig()
+
+## `--screenshot` and the timed runs `AutoScreenshot` drives, either boot; nothing without one. A
+## scripted recipe's capture is timed off its own physics clock and prepared by it.
+func _add_the_screenshot_rig() -> void:
+	var screenshot := AutoScreenshot.from_config(config)
+	if not screenshot:
+		return
+	if _recipe and _recipe.scripted:
+		screenshot.simulation_clock = _recipe.elapsed
+		screenshot.before_capture = _recipe.prepare_capture
+	add_child(screenshot)
 
 ## `--parent mother|father` over the roll `GameState.start_run()` just made from the seed, so a
 ## trailer shot shows the parent its shot list names. Called straight after each of this file's
 ## two `start_run()` calls, before anything reads the choice — `_hold_every_page_a_day_draws()`
 ## holds that parent's atlas page and `_make_player()` binds the rig to it.
 func _apply_the_parent_flag() -> void:
-	var parent := DevFlags.parent_override()
+	var parent := config.parent_override
 	if parent != "":
 		GameState.player_is_male = parent == "father"
 
@@ -812,24 +836,23 @@ func _apply_the_parent_flag() -> void:
 ## `--title --hard` photographs it checked. Called straight after each of this file's two
 ## `start_run()` calls, beside `_apply_the_parent_flag()`.
 func _apply_the_mode_flags() -> void:
-	if DevFlags.hard_mode_requested():
+	if config.hard_mode_requested:
 		GameState.choose_mode(true)
-	var nerves := DevFlags.nerves_override()
+	var nerves := config.nerves_override
 	if nerves > 0:
 		GameState.nerves = nerves
 
-## Under `--player-view`, the HUD a release build draws: `HUD._debug` is read once from
-## `DevFlags.enabled()` when the scene is instantiated, so it is set here, before `add_child()`
-## runs the HUD's own `_ready()`, rather than by a second flag read inside `src/ui/`.
-func _release_shaped_hud() -> void:
-	if DevFlags.player_view_requested():
-		_hud._debug = false
+## What the HUD draws of the developer's furniture: its debug header on a debug build, the release
+## shape under `--player-view`, and the invincible mark under `--invincible`. Set before
+## `add_child()` runs the HUD's own `_ready()`.
+func _configure_the_hud() -> void:
+	_hud.configure(config.debug_build and not config.player_view_requested, config.invincible)
 
 ## The trailer's two additions to a shot, either boot: `--zoom-out`'s camera move, started from
 ## whichever camera is current once her own has been placed, and `--caption`/`--title-card`'s text.
 ## Both add nothing unless their flag was given.
 func _add_trailer_rigs() -> void:
-	var seconds := DevFlags.zoom_out_seconds()
+	var seconds := config.zoom_out_seconds
 	var bounds := Rect2()
 	if _city:
 		bounds = _city.camera_bounds()
@@ -841,16 +864,40 @@ func _add_trailer_rigs() -> void:
 		add_child(zoom_out)
 		_pauses_with_the_game(zoom_out)
 		zoom_out.setup(get_viewport().get_camera_2d(), bounds, get_viewport_rect().size, seconds,
-				DevFlags.zoom_out_delay())
-	var text := TrailerText.from_flags()
+				config.zoom_out_delay)
+	var text := TrailerText.build(config.caption_text, config.title_card_text)
 	if text:
 		add_child(text)
 
-## All entry points bind the run's existing choice before the rig enters the tree or draws.
+## All entry points bind the run's existing choice before the rig enters the tree or draws, and
+## hand the baby whether `--invincible` stands her excitement meter still.
 func _make_player() -> Stroller:
 	var player: Stroller = STROLLER.instantiate()
 	player.is_male = GameState.player_is_male
+	(player.get_node("Baby") as Baby).excitement_frozen = config.invincible
 	return player
+
+## A city node in the tree, handed the dev choices that decide how it draws and schedules itself
+## before `build()` reads them — either boot builds its city through here.
+func _new_city() -> City:
+	var city: City = CITY.instantiate()
+	city.ground_mode = config.ground_mode as SceneryGround.Mode
+	city.scenery_frame_locked = config.recipe_scripted
+	city.skip_shadows = config.skip_shadows
+	city.skip_event_drawing = config.skip_events
+	city.skip_crowd_drawing = config.skip_crowd
+	city.skip_crowd_motion = config.skip_motion
+	city.blackout_forced = config.blackout_requested
+	city.all_cyclists_pelicans = config.pelican
+	city.forced_row = config.forced_row
+	city.forced_interval = config.forced_interval
+	add_child(city)
+	_pauses_with_the_game(city)
+	return city
+
+## The map the city is built on: a recipe's own, or the one the run's seed generates.
+func _city_map() -> CityMap:
+	return _recipe.built.map if _recipe else CityGenerator.generate(GameState.run_seed)
 
 ## Section one's world: the building, her in it, and the events inside it.
 func _build_the_escape_building() -> void:
@@ -871,6 +918,7 @@ func _build_the_escape_building() -> void:
 
 	_interior_events = InteriorEvents.new()
 	_interior_events.name = "InteriorEvents"
+	_interior_events.skip_drawing = config.skip_events
 	add_child(_interior_events)
 	_pauses_with_the_game(_interior_events)
 	_interior_events.setup(_interior, GameState.day_rng(GameState.day, "finale-interior"))
@@ -890,10 +938,8 @@ func _build_the_escape_building() -> void:
 ## or regular people on the street"*; and `EventManager.start_finale()` takes this scene's own plan
 ## instead of the catalogue's day.
 func _build_the_finale_city() -> void:
-	_city = CITY.instantiate()
-	add_child(_city)
-	_pauses_with_the_game(_city)
-	_city.build(_recipe.built.map if _recipe else CityGenerator.generate(GameState.run_seed))
+	_city = _new_city()
+	_city.build(_city_map())
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
 	_city.start_finale(GameState.city_state, GameState.day)
 	_city.set_act(GameState.current_act())
@@ -958,23 +1004,20 @@ func _plan_the_finale_city() -> void:
 			% [Time.get_ticks_msec() - elapsed, _city.map.seed_used, plan.summary()])
 	Telemetry.note("plan", "finale: %s" % plan.summary())
 
-## `DevFlags.start_escape_at()`'s raw word, mapped onto the `InteriorMap.PARTS` waypoint to
+## `--start-escape`'s raw word (`config.start_escape_at`), mapped onto the `InteriorMap.PARTS` waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
 ## not recognise, which covers both "not given" and a typo alike; `InteriorScene.part_world_
 ## position()` falls back the same way for a part name it does not recognise, so the two defaults
-## agree without one calling the other. Kept here rather than in `DevFlags`, the same split
-## `ending_override()` leaves to its own caller, since mapping a word onto a part name only this
-## file's own `InteriorScene` understands is not that class's job.
+## agree without one calling the other. Kept here rather than in `DevFlags`, since mapping a word
+## onto a part name only this file's own `InteriorScene` understands is not the parser's job.
 ##
 ## `"city"` is the one answer that is not a part of the building: it boots section two on its own,
 ## with no building built at all, so a rig or a person can look at the finale's streets without
 ## walking down three floors first. `_ready_escape()` is what reads it that way.
 func _escape_start_part() -> String:
-	return escape_part_for(DevFlags.start_escape_at())
+	return escape_part_for(config.start_escape_at)
 
-## The mapping itself, with the command line taken out of it — nothing in the suite can put a word
-## on a real `OS.get_cmdline_user_args()`, so the word and what it means are separated here the
-## same way `DevFlags.parse_layers()` separates `--layers`' own parsing from reading argv.
+## The mapping itself, with the configuration taken out of it, so a test can drive every word.
 static func escape_part_for(raw: String) -> String:
 	match raw:
 		"city":
@@ -1031,13 +1074,9 @@ func _on_escape_exit_requested() -> void:
 ## hints"*, so a retry is not lectured about what it is already doing.
 func _on_finale_section_started(section: int, restarted: bool) -> void:
 	if _recipe and restarted:
-		if _recipe.scripted:
-			_recipe.manifest["playback_error"] = "the authored escape attempt was lost"
-			_recipe.write_manifest()
-			_recipe._active = false
-			get_tree().quit(1)
-		else:
-			# Reload every authored actor and progression field, not the ordinary service exit.
+		# A scripted recipe fails on a lost attempt; a free one reloads every authored actor and
+		# progression field rather than taking the ordinary service exit.
+		if not _recipe.lose_the_attempt():
 			_reload_the_scene()
 		return
 	# The run's own record of where it is, which is what the save carries and what the next boot
@@ -1175,7 +1214,7 @@ func _observe_the_section(section: int, restarted: bool) -> void:
 		_observer.name = "Telemetry"
 		add_child(_observer)
 		_pauses_with_the_game(_observer)
-		_observer.setup_escape(_player, _baby, _finale.clock(), _edge)
+		_observer.setup_escape(_player, _baby, _finale.clock(), config.spikes_requested, _edge)
 	if section == FinaleController.Section.BUILDING:
 		_observer.watch_building(_interior, _interior_events)
 	else:
@@ -1204,7 +1243,7 @@ func _on_finale_escaped(exit_kind: int) -> void:
 	EventBus.escape_out.emit()
 	if _escape_from_a_run:
 		_run_over = not GameState.finish_day(GameEnums.DayResult.WON)
-	_summary.show_finale(exit_kind, FinaleController.length() - _finale.time_remaining())
+	_summary.show_finale(exit_kind, _finale.section_length - _finale.time_remaining())
 
 ## `DaySummary.continued` reaches this from the two screens the escape puts up, told apart by
 ## `_finale_brief_open` the same way `_resume_gate_open` tells a resumed run's day brief from an
@@ -1295,10 +1334,10 @@ func _connect_pause_signals() -> void:
 ## is the honest version of relaxing it and does not have to be put back.
 ##
 ## It shows the screen and stops there: the day behind it is running, exactly as it would be under
-## a real ending, and `space` restarts the run like any other finished one. `DevFlags` answers ""
-## outside a debug build, so this can never fire in an exported release.
+## a real ending, and `space` restarts the run like any other finished one. `config.ending_override`
+## is "" on a release page nobody asked `?debug=1` of, so this cannot fire for a player.
 func _show_an_ending_for_a_rig() -> bool:
-	var wanted_arg := DevFlags.ending_override()
+	var wanted_arg := config.ending_override
 	if wanted_arg == "":
 		return false
 	var wanted := {
@@ -1374,7 +1413,7 @@ func _open_the_title() -> void:
 ## two `Symbol.JOYSTICK` buttons or its `Symbol.TAP` one, or `Mode.TAP` when a key began the run
 ## instead — and `side` is which half a joystick button chose to steer from. Both are handed
 ## straight to `_touch_controls.set_mode()`, which overrides whatever `_add_touch_controls()` set
-## from `ControlsMode.resolve()` at boot — see that function's own doc for why a rig that never
+## from `config.controls_word` at boot — see that function's own doc for why a rig that never
 ## reaches this screen keeps that earlier answer instead. `by_key` says a key began the run, which
 ## reaches the counter alone: the controls a key player gets are still `mode`'s.
 ##
@@ -1737,16 +1776,13 @@ func _add_frame_graph() -> void:
 	_frame_graph.name = "FrameGraph"
 	_frame_graph.text_colour = _status.get_theme_color("font_color")
 	_frame_graph.position = Vector2(_status.offset_left, 660.0)
-	_layer_graph_on = _graph_starts_on(DevFlags.spikes_requested(), DevFlags.layers_override())
+	_layer_graph_on = _graph_starts_on(config.spikes_requested, config.layers_override)
 	_frame_graph.visible = _layer_graph_on
 	_status_layer.add_child(_frame_graph)
 
-## Whether `_layer_graph_on` starts `true`, with the command line taken out of it — pulled out the
-## same way `escape_part_for()` separates what `DevFlags.start_escape_at()`'s word means from the
-## word itself, so a test can drive the policy without a real `--spikes` or `--layers 6` on this
-## process's own command line. `--spikes` already means somebody is chasing a stutter, and
-## `--layers` naming `6` is the same "reproducible without a keypress" request `5` already answers
-## for `_route_lines` (`DevFlags.layers_override()`'s own doc).
+## Whether `_layer_graph_on` starts `true`, pure in the two flags so a test can drive the policy.
+## `--spikes` already means somebody is chasing a stutter, and `--layers` naming `6` is the same
+## "reproducible without a keypress" request `5` answers for `_route_lines`.
 static func _graph_starts_on(spikes_requested: bool, layers: Array[int]) -> bool:
 	return spikes_requested or 6 in layers
 
@@ -1776,7 +1812,7 @@ func _add_debug_layers() -> void:
 	_debug_layers.name = "DebugLayers"
 	_debug_layers.z_index = 3
 	_debug_layers.setup(_event_source(), _crowd_now(), _world_now(), _player)
-	_debug_layers.apply_initial_state(DevFlags.layers_override())
+	_debug_layers.apply_initial_state(config.layers_override)
 	add_child(_debug_layers)
 	_pauses_with_the_game(_debug_layers)
 	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes")
@@ -1798,7 +1834,7 @@ func _add_route_lines() -> void:
 	_route_lines.name = "RouteLines"
 	_route_lines.z_index = 3
 	_route_lines.setup(_city.map)
-	_route_lines.apply_initial_state(DevFlags.layers_override())
+	_route_lines.apply_initial_state(config.layers_override)
 	add_child(_route_lines)
 	_pauses_with_the_game(_route_lines)
 
@@ -1809,9 +1845,9 @@ func _add_route_lines() -> void:
 ## set. That is one fact main already produces for other reasons rather than a second wire main
 ## would have to remember to pull on every one of those screens.
 ##
-## `set_mode()` with `ControlsMode.resolve()` and `resolve_side()` gives it the mode and steering
-## side a rig gets if the title screen is never reached at all (`--no-title`, a screenshot rig) —
-## the command line, then the page's own URL, then `TAP`. This is only ever the **pre-title**
+## `set_mode()` with `config.controls_word`'s mode and steering side gives it what a rig gets if
+## the title screen is never reached at all (`--no-title`, a screenshot rig) — `--controls`, then
+## the page's own `?controls=` in the open bundle, then `TAP`. This is only ever the **pre-title**
 ## answer: `_title` does not exist yet at this point in `_ready()`, and `main._on_title_start()`
 ## overrides it the moment a player actually presses one of the title screen's own buttons.
 ##
@@ -1832,7 +1868,8 @@ func _add_touch_controls() -> void:
 	if (_escape_from_a_run or _carried_from_a_checkpoint) and ControlsMode.has_remembered():
 		_touch_controls.set_mode(ControlsMode.remembered_mode(), ControlsMode.remembered_side())
 	else:
-		_touch_controls.set_mode(ControlsMode.resolve(), ControlsMode.resolve_side())
+		_touch_controls.set_mode(ControlsMode.from_word(config.controls_word),
+				ControlsMode.side_from_word(config.controls_word))
 
 ## Adds the final pass before raising the root render target. The engine's final root blit is a
 ## nearest sample, so a larger target alone would discard three quarters of its pixels. The shader
@@ -1939,6 +1976,8 @@ func _start_day() -> void:
 	# the doorstep — as one of the candidates for the wait after a summary's continue button,
 	# and nothing about it had ever been measured.
 	var elapsed := Time.get_ticks_msec()
+	# Decided once, here, and handed to everything that runs on the day's clock as a number.
+	var day_length := config.day_length_for(GameState.day)
 	# Before the announcement and before anything is placed: this is where the run photographs
 	# what the resistance had done, and a lost day gives exactly that back — so the photograph has
 	# to be taken while it is still true of the attempt about to be played. See
@@ -1952,7 +1991,7 @@ func _start_day() -> void:
 	# Before anything is placed, because placing it is what writes the day's `arc`, `roll` and
 	# `contact` entries and they belong under today's header rather than yesterday's.
 	Telemetry.begin_day(GameState.day, GameState.current_act(), GameState.run_seed,
-			_city.map.seed_used, DevRig.day_length(GameState.day))
+			_city.map.seed_used, day_length)
 
 	# Events and the contact are placed before the player, so --spawn has something to find
 	# and so nothing spawns on top of her.
@@ -1990,13 +2029,13 @@ func _start_day() -> void:
 	# tree's own pit. `City.start_day` already emptied the pits its own closures took, so this is
 	# the second half of one refresh rather than a repair of it — see `City.refresh_street_trees`.
 	_city.refresh_street_trees()
-	# Before `start_at` is read, not merely before the player is placed: `DevRig.spawn_position()`'s
-	# own `contact` target reads `resistance.contact_position()` directly, and on the first day —
-	# the only day that target's answer decides where she starts — the mark has to already be on
-	# offer when this line runs, not merely by the time the day is shown to her.
-	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"),
-			DevRig.day_length(GameState.day))
-	var start_at := DevRig.spawn_position(_city, _resistance) if _first_day else doorstep
+	# Before `start_at` is read, not merely before the player is placed: `--spawn contact` reads
+	# `resistance.contact_position()` directly, and on the first day — the only day `--spawn`
+	# decides where she starts — the mark has to already be on offer when this line runs, not
+	# merely by the time the day is shown to her.
+	_resistance.start_day(GameState.day, GameState.day_rng(GameState.day, "resistance"), day_length)
+	var start_at := DevRig.for_spawn_target(config.spawn_target, _city, _resistance) \
+			if _first_day else doorstep
 	_city.events.stream_around(start_at)
 	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), start_at)
 	# The smallest wiring for the checkpoint gates: `City.region_plan()` is already valid by here
@@ -2007,12 +2046,12 @@ func _start_day() -> void:
 	_player.reset_at(start_at)
 	_prepare_city_scenery()
 	_baby.reset()
-	_day.start(DevRig.day_length(GameState.day))
+	_day.start(day_length)
 
 	# After the day is running, not before: the override can put the baby straight to
 	# sleep, and start() would have reset the phase that announcement just set.
 	if _first_day:
-		DevRig.apply_meter_override(_baby)
+		DevRig.apply_meter_override(_baby, config.meters_override)
 	_first_day = false
 
 	print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
@@ -2046,7 +2085,7 @@ func _start_recipe_day() -> void:
 	_city.start_recipe_day(GameState.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"))
 	_city.set_act(GameState.current_act())
-	_day.start(DevRig.day_length(GameState.day))
+	_day.start(config.day_length_for(GameState.day))
 	var errors := _recipe.install(_city, _player, _baby, _resistance)
 	if not errors.is_empty():
 		_recipe.manifest["setup_failed"] = true
@@ -2517,14 +2556,14 @@ func _process(delta: float) -> void:
 	# line itself never runs again.
 	if _rig_quit_deadline_msec != 0 and Time.get_ticks_msec() >= _rig_quit_deadline_msec:
 		printerr("[Main] a rig's own wall-clock limit (%.1fs) passed with the run still going; quitting"
-				% DevFlags.rig_quit_seconds())
+				% config.rig_quit_seconds())
 		get_tree().quit(1)
 		return
 	if _rig_quit_game_seconds > 0.0:
 		_rig_quit_game_seconds -= delta
 		if _rig_quit_game_seconds <= 0.0:
 			printerr("[Main] a recorded rig's own limit (%.1f game seconds) passed with the run still "
-					% DevFlags.rig_quit_seconds() + "going; quitting")
+					% config.rig_quit_seconds() + "going; quitting")
 			get_tree().quit(1)
 			return
 	_dev_rig.update_follow_camera(_city)
@@ -2762,24 +2801,17 @@ func _tile_name(type: GameEnums.TileType) -> String:
 ##   (`src/dev/route_rig.gd`) walks a whole day's worth of it on its own. A run driven by one of
 ##   them can be long, busy and completely unplayed, which is exactly the case the size heuristic
 ##   in `tools/telemetry.sh` could never catch.
-## - **Godot's movie writer is recording it** (`DevFlags.recording()`), frame-locked and several
-##   times slower than real time, which nobody could play.
+## - **Godot's movie writer is recording it**, frame-locked and several times slower than real
+##   time, which nobody could play.
 ##
 ## **`--seed`, `--day`, `--spawn`, `--overview` and the rest are *not* here**, and that is the line:
 ## they change what she is looking at, not who is steering. A playtest of act III started with
 ## `--day 9` is a playtest.
 ##
-## Reads `DevFlags.active_args()` rather than the command line directly, so a release export —
-## where none of the five rig flags below can do anything anyway — never misreads an ordinary
-## player for one.
+## The second and third are `config.is_rig`, the one rig list (`DevFlags`' `RIG_FLAGS`), whose
+## flags answer nothing on a release build, so an ordinary player is never misread for a rig.
 func _somebody_is_playing() -> bool:
-	if DisplayServer.get_name() == "headless" or DevFlags.is_rig():
-		return false
-	var args := DevFlags.active_args()
-	for rig in ["--screenshot", "--walk", "--flee", "--press", "--route"]:
-		if rig in args:
-			return false
-	return true
+	return DisplayServer.get_name() != "headless" and not config.is_rig
 
 ## `Esc` opens the pause. Quitting is a key one step further in: the pause screen owns `Q`.
 ##
@@ -2863,7 +2895,7 @@ var _return_viewport: Viewport = null
 ## (`_has_left_the_game`), which the arming spends, so a second trigger inside the window does
 ## nothing unless the game was left again in between. A no-op for a rig (`_rig_locked_out`: any of
 ## `--screenshot`, `--walk`, `--flee`, `--press`, `--tap`, `--route`, a recording or a scripted
-## recipe — `DevFlags.is_rig()`) and under `_no_focus_pause` (`--no-focus-pause`), so a rig is
+## recipe — `config.is_rig`) and under `_no_focus_pause` (`--no-focus-pause`), so a rig is
 ## never slowed.
 func _arm_the_return_window() -> void:
 	if not _has_left_the_game or _no_focus_pause or _rig_locked_out or _return_viewport == null:
@@ -2930,7 +2962,7 @@ static func _is_the_rigs_own_press(event: InputEvent) -> bool:
 ## quits itself on a wall-clock deadline — three defences for the one thing the player named
 ## ("it takes the focus away from what I'm doing every time" · "if I click somewhere else they
 ## stay open"). Called once, first thing in `_ready()`, ahead of the escape's own boot branch so
-## either path gets all three; a no-op the instant `DevFlags.is_rig()` is false, which is every
+## either path gets all three; a no-op the instant `config.is_rig` is false, which is every
 ## plain `tools/run.sh` session a person is actually playing.
 ##
 ## **The window flag is applied as early as this scene's own script can run, not "before the
@@ -2950,16 +2982,16 @@ static func _is_the_rigs_own_press(event: InputEvent) -> bool:
 ## as before while a real key with nothing left to map it to can no longer move, run or pause
 ## anything.
 func _lock_out_a_rig() -> void:
-	if not DevFlags.is_rig():
+	if not config.is_rig:
 		return
 	_rig_locked_out = true
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 	_erase_real_input_for_a_rig()
-	if DevFlags.recording():
-		_rig_quit_game_seconds = DevFlags.rig_quit_seconds()
+	if config.recording:
+		_rig_quit_game_seconds = config.rig_quit_seconds()
 	else:
-		_rig_quit_deadline_msec = Time.get_ticks_msec() + int(DevFlags.rig_quit_seconds() * 1000.0)
+		_rig_quit_deadline_msec = Time.get_ticks_msec() + int(config.rig_quit_seconds() * 1000.0)
 
 ## Every action `project.godot`'s own `[input]` table defines — read live off `InputMap` rather
 ## than spelled out by hand, so a binding added there is covered without a second list to keep in
@@ -3022,9 +3054,9 @@ func _unhandled_input(event: InputEvent) -> void:
 ## the street, and a day that restarts the instant the window is clicked spends their first second
 ## for them.
 ##
-## `_no_focus_pause` is the override — see `DevFlags.no_focus_pause()` — so a rig's window, which
-## usually opens with no focus to lose in the first place, is never handed a picture of this screen
-## instead of the day it was sent to look at.
+## `_no_focus_pause` (`--no-focus-pause`, which `--screenshot` implies) is the override, so a rig's
+## window, which usually opens with no focus to lose in the first place, is never handed a picture
+## of this screen instead of the day it was sent to look at.
 func _pause_on_focus_lost() -> void:
 	if _no_focus_pause:
 		return

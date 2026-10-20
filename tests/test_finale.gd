@@ -1497,7 +1497,6 @@ func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 ## through the signal a real capture fires, so what is checked is the path the game takes rather
 ## than a call this test invented.
 func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
-	DevFlags._invincible_override = false
 	var finale := FinaleController.new()
 	t.add_child(finale)
 	var started: Array = []
@@ -1513,7 +1512,7 @@ func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 			"and nothing is counting down behind the brief it opens on")
 	var nerves := GameState.nerves
 	finale.start_section()
-	t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
+	t.check(is_equal_approx(finale.time_remaining(), finale.section_length),
 			"the brief's own continue is what starts the clock, at full length")
 	# Half a minute off the clock, so a restart putting it back is visible.
 	finale._clock.time_remaining -= 30.0
@@ -1537,7 +1536,7 @@ func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 	t.check(is_equal_approx(finale.time_remaining(), spent),
 			"still stopped, since a retry begins on its own brief like anything else")
 	finale.start_section()
-	t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
+	t.check(is_equal_approx(finale.time_remaining(), finale.section_length),
 			"and that brief's continue puts the clock back to full")
 	t.check(GameState.nerves == nerves, "and no Nerve spent")
 
@@ -1549,12 +1548,11 @@ func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 	t.check(started.size() == 3 and started[2][0] == FinaleController.Section.CITY,
 			"the service exit begins the second section")
 	finale.start_section()
-	t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
+	t.check(is_equal_approx(finale.time_remaining(), finale.section_length),
 			"on a full clock of its own, whatever the walk down the stairs cost")
 	# And the controller, whose `DayController` child listens on `EventBus` for the hard fail this
 	# test emits: one left in the tree restarts a section on the next suite's fail as well.
 	finale.free()
-	DevFlags._invincible_override = null
 
 ## *"Each the apartment and escape city are treated as their own 'days' with brief and restart
 ## checkpoint. We keep the no nerve costs for now."* — so a section opens on its brief the first
@@ -1573,7 +1571,6 @@ func _test_a_lost_section_starts_again_and_costs_no_nerve(t) -> void:
 ##
 ## Both sections, because the player asked for both by name.
 func _test_each_section_opens_on_its_own_brief(t) -> void:
-	DevFlags._invincible_override = false
 	for section: int in [FinaleController.Section.BUILDING, FinaleController.Section.CITY]:
 		var main: Node2D = MAIN_SCRIPT.new()
 		main._summary = SUMMARY_SCENE.instantiate()
@@ -1609,7 +1606,7 @@ func _test_each_section_opens_on_its_own_brief(t) -> void:
 		main._summary.continued.emit()
 		t.check(not main._summary.is_showing(),
 				"section %d: continuing takes the screen away" % section)
-		t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
+		t.check(is_equal_approx(finale.time_remaining(), finale.section_length),
 				"section %d: and starts a full clock" % section)
 		t.check(main._hud.visible, "section %d: with the HUD back" % section)
 		# *(2026-09-20, the player: "the escape shouldn't behave any different than the rest of the
@@ -1634,7 +1631,7 @@ func _test_each_section_opens_on_its_own_brief(t) -> void:
 
 		teach.text = ""
 		main._summary.continued.emit()
-		t.check(is_equal_approx(finale.time_remaining(), FinaleController.length()),
+		t.check(is_equal_approx(finale.time_remaining(), finale.section_length),
 				"section %d: which then gives the retry a full clock too" % section)
 		t.check(teach.line == MAIN_SCRIPT.finale_hint_for(section),
 				"section %d: and the hint line said again on the retry, not only the first entry"
@@ -1645,7 +1642,6 @@ func _test_each_section_opens_on_its_own_brief(t) -> void:
 		finale.free()
 		main.free()
 	t.get_tree().paused = false
-	DevFlags._invincible_override = null
 
 ## The two names the briefs carry — *"something along 'Escape the building' and ... 'Escape the
 ## city'"*. Pinned as literals because they are the player's own words for the two screens, and a

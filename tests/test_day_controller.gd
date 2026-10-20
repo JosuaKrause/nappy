@@ -74,15 +74,13 @@ func _test_a_day_starting_is_its_own_emit(t) -> void:
 	EventBus.day_time_changed.disconnect(on_emit)
 	day.free()
 
-## `--invincible` freezes `time_remaining` outright (`DevFlags.invincible()`'s own doc in
+## `--invincible` (`DayController.invincible`) freezes `time_remaining` outright (see
 ## `_process()`), so once the first second of a frozen day has been told, the value driving the
 ## gate never changes again -- the gate must not re-emit an unchanging number just because
 ## `_process()` keeps being called.
 func _test_invincible_stops_emitting_once_the_first_second_is_told(t) -> void:
-	# `DevFlags._invincible_override` is the seam `tests/test_invincible.gd` already uses instead
-	# of a real command line -- see that suite's own doc.
-	DevFlags._invincible_override = true
 	var day := _rig(t)
+	day.invincible = true
 	var emits := [0]
 	var on_emit := func(_remaining: float, _total: float) -> void:
 		emits[0] += 1
@@ -98,7 +96,6 @@ func _test_invincible_stops_emitting_once_the_first_second_is_told(t) -> void:
 
 	EventBus.day_time_changed.disconnect(on_emit)
 	day.free()
-	DevFlags._invincible_override = null
 
 ## The escape's clock reads to the hundredth and tells the HUD on every frame; a day's still emits
 ## once a second; the ending screens' formatter keeps three digits. *(inbox #746 in woolly-penguin.)*
@@ -157,8 +154,8 @@ func _test_the_finale_flags_its_own_clock(t) -> void:
 
 ## A frozen `--invincible` escape clock has nothing new to tell the HUD, flag or not.
 func _test_a_frozen_escape_clock_stays_silent(t) -> void:
-	DevFlags._invincible_override = true
 	var escape := _rig(t)
+	escape.invincible = true
 	escape.emit_every_frame = true
 	var emits := [0]
 	var count := func(_r: float, _tt: float) -> void:
@@ -171,4 +168,3 @@ func _test_a_frozen_escape_clock_stays_silent(t) -> void:
 	t.check(emits[0] == 0, "a frozen escape clock is silent (%d emits)" % emits[0])
 	EventBus.day_time_changed.disconnect(count)
 	escape.free()
-	DevFlags._invincible_override = null

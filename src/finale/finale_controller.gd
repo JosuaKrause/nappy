@@ -5,7 +5,7 @@ extends Node
 ## **It is not a day and it is not a second `DayController`.** Everything a day's clock already
 ## does is exactly what the finale wants — count down, emit `EventBus.day_time_changed` so the HUD
 ## draws the clock, end on the meter reaching 100, on a hard fail and at zero, and stand still
-## under `--invincible` (`DayController._ignores_loss`). What the finale does *differently* is only
+## under `--invincible` (`invincible`, handed to the clock). What the finale does *differently* is only
 ## what happens at the end: a day spends a Nerve and moves the calendar, and a lost section instead
 ## comes up on the brief screen and starts again where it began, with the clock back at full length
 ## and, in a normal run, the Nerves untouched (*"sounds good at that point you earned it"*). A hard
@@ -17,7 +17,7 @@ extends Node
 ## this whole class is.
 ##
 ## **Each section gets a full clock of its own, because each section is a day.** *"180s per
-## section"*: the building and the city each start `length()` on the screen the section opens on,
+## section"*: the building and the city each start `section_length` on the screen the section opens on,
 ## so the time spent walking down three floors is not time the city has lost. At zero the way out
 ## is gone — the bridge or the tunnel collapses, or something of that shape — and the section
 ## starts again from its own brief.
@@ -55,6 +55,12 @@ var section := Section.NONE
 ## Set once the tunnel or the bridge has been reached, so the exit check cannot fire twice while
 ## the epilogue's own screen is coming up.
 var is_over := false
+## How long **one section** runs — a day's own length, since each section is a day, and compressed
+## by `--day-length` exactly as a day is. Handed in by `main` (`RunConfig.escape_section_length()`)
+## before this enters the tree.
+var section_length := Tuning.FINALE_LENGTH_SECONDS
+## `--invincible`, handed in by `main` before this enters the tree and passed to the clock.
+var invincible := false
 
 ## The clock and the three losing paths, unchanged from a day. `setup(null, null)` on purpose:
 ## with no map and no player `DayController._is_home()` is always false, so the one thing a day
@@ -68,17 +74,10 @@ var _exits := {}
 func _ready() -> void:
 	_clock.name = "Clock"
 	_clock.emit_every_frame = true
+	_clock.invincible = invincible
 	add_child(_clock)
 	_clock.setup(null, null)
 	_clock.day_finished.connect(_on_section_lost)
-
-## How long **one section** runs — a day's own length, since each section is a day.
-## `--day-length` compresses it exactly as it compresses a day, so a rig can reach the timeout
-## without sitting through three minutes; there is no finale-only flag, because the question the
-## flag answers is the same one.
-static func length() -> float:
-	var override := DevFlags.day_length_override()
-	return override if override > 0.0 else Tuning.FINALE_LENGTH_SECONDS
 
 ## Starts the sequence at `at_section` — `BUILDING` for a run that has handed over to the escape,
 ## `CITY` for a rig booted straight onto the street, or for a game closed on the street and opened
@@ -100,7 +99,7 @@ func enter_city() -> void:
 ## first walk through a section and for a retry alike — *"180s per section"*, so nothing a previous
 ## section or a previous attempt spent is carried in.
 func start_section() -> void:
-	_clock.start(length())
+	_clock.start(section_length)
 
 ## Capture, the meter at 100 and the clock at zero all arrive here, because all three are a day's
 ## own losing paths and `DayController` already tells them apart. Every one of them ends the

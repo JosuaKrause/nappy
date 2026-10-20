@@ -20,14 +20,18 @@ var _player: Stroller
 var _day: DayController
 var _started_usec := -1
 var _metadata: Dictionary = {}
+## The developer flags the run was given, handed in by `main` from its `RunConfig`.
+var _user_flags: Array = []
 
-func setup(main: Node, city: City, player: Stroller, day: DayController) -> void:
+func setup(main: Node, city: City, player: Stroller, day: DayController,
+		user_flags: Array) -> void:
 	for field in MAIN_FIELDS:
 		assert(field in main, "FrameTrace reads main.%s, which main.gd no longer has" % field)
 	_main = main
 	_city = city
 	_player = player
 	_day = day
+	_user_flags = user_flags
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_metadata = environment()
 	_metadata["run_seed"] = GameState.run_seed
@@ -86,7 +90,7 @@ func environment() -> Dictionary:
 		"engine_flags": Array(OS.get_cmdline_args()),
 		"engine_flags_complete": false,
 		"engine_flags_note": "Godot omits consumed startup switches; retain the launch command too",
-		"user_flags": Array(OS.get_cmdline_user_args())}
+		"user_flags": _user_flags}
 
 func _exit_tree() -> void:
 	if RenderingServer.frame_post_draw.is_connected(_sample):

@@ -34,6 +34,9 @@ var _last_emitted_second := -1
 ## keeps the once-a-second emission above. *(inbox #746 in woolly-penguin, the player: "escape clocke we can try
 ## 100s but it's not going to be much better? framerate is too low? all of this was on phone.")*
 var emit_every_frame := false
+## `--invincible`, handed in by whoever builds the day: nothing but a win ends it and its clock
+## stands still. See `_process()` and `_ignores_loss()`.
+var invincible := false
 
 func setup(map: CityMap, player: Node2D) -> void:
 	_map = map
@@ -67,16 +70,14 @@ func _process(delta: float) -> void:
 	if not is_running():
 		return
 
-	# **`--invincible` stands the clock still, never only lets it run past dusk.** *(2026-09-11,
-	# overturning the flag's own first build the same evening: "when invincible the timer should
-	# never go down ... this is just noisy flashing of alarms and the day gets dark.")* Skipping
-	# the countdown outright, rather than decrementing and clamping the result at zero, is what
-	# keeps `fraction_remaining()` at wherever the day started — the earlier build let the light
-	# run itself down to dusk and then held the number, which is the "day gets dark" the player
-	# was overturning. `DevFlags.invincible()` is asked directly rather than through
-	# `_ignores_loss()`, which answers a different question (does a *result* end the day) that a
-	# clock which never reaches zero never gets to ask.
-	if not DevFlags.invincible():
+	# **`invincible` stands the clock still, never only lets it run past dusk** (2026-09-11, the
+	# player: "when invincible the timer should never go down ... this is just noisy flashing of
+	# alarms and the day gets dark"). Skipping the countdown outright, rather than decrementing and
+	# clamping at zero, keeps `fraction_remaining()` at wherever the day started, so the light
+	# never runs down. Read directly rather than through `_ignores_loss()`, which answers a
+	# different question (does a *result* end the day) that a clock which never reaches zero never
+	# gets to ask.
+	if not invincible:
 		time_remaining -= delta
 	var displayed := maxf(time_remaining, 0.0)
 	# A day's label reads to the whole second and nothing finer, so a frame that has not crossed a
@@ -84,9 +85,9 @@ func _process(delta: float) -> void:
 	# urgency colour it already drew — sixty avoidable emits (and, downstream, sixty format calls
 	# and a `modulate` write) for the one that actually changes anything. The escape's clock
 	# (`emit_every_frame`) reads to the hundredth and emits on every frame the countdown moves; a
-	# frozen `--invincible` clock never reaches this line's emit twice, as before.
+	# frozen `invincible` clock never reaches this line's emit twice.
 	var second := int(displayed)
-	if emit_every_frame and not DevFlags.invincible():
+	if emit_every_frame and not invincible:
 		_last_emitted_second = second
 		EventBus.day_time_changed.emit(displayed, time_total)
 	elif second != _last_emitted_second:
@@ -164,11 +165,11 @@ func _on_hard_fail(reason: String) -> void:
 	hard_fail_reason = reason
 	_end(GameEnums.DayResult.LOST_HARD_FAIL)
 
-## The one place all three losing paths ask before ending the day, so `--invincible` cannot drift
+## The one place all three losing paths ask before ending the day, so `invincible` cannot drift
 ## between them. Never suppresses `WON`: a won day still ends normally, so she can still walk home
-## asleep and the summary still shows. See `DevFlags.invincible()`.
+## asleep and the summary still shows.
 func _ignores_loss(result: GameEnums.DayResult) -> bool:
-	return result != GameEnums.DayResult.WON and DevFlags.invincible()
+	return result != GameEnums.DayResult.WON and invincible
 
 func _end(result: GameEnums.DayResult) -> void:
 	if not is_running():

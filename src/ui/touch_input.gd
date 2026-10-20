@@ -21,7 +21,7 @@ extends RefCounted
 ## own platform questions.
 ##
 ## `--touch` forces this true, gated the same way every other dev-only capability in this project
-## is (`DevFlags.enabled()`, `AutoScreenshot.from_command_line()`'s own independent gate) — nothing
+## is (a debug build, `OS.is_debug_build()`) — nothing
 ## on the machine that runs `tools/test.sh` or an exported build has a real touchscreen, so without
 ## this a touch-only screen could be edited, reviewed and merged for milestones without ever once
 ## being rendered. `tools/shot.sh out.png 3 --touch --walk north` is how M60's touch HUD elements

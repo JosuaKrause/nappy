@@ -14,8 +14,8 @@ const STEP_TILES := 4
 ## following frames; STEPPED spreads one region over frames, a renderer quadrant a frame. The
 ## values are the `--ground-mode` numbers (docs/playtests/2026-10-03-tawny-stork.md).
 enum Mode { ALL = 1, ONE = 2, STEPPED = 3 }
-## Read once, when the city's ground is created; a test sets it on an empty ground.
-var mode: Mode = DevFlags.ground_mode() as Mode
+## Handed in by the city before it builds (`--ground-mode`); a test sets it on an empty ground.
+var mode: Mode = Mode.ONE
 @export var tile_set: TileSet
 var chunks: Dictionary = {}
 ## Visible in-tree at their real off-screen coordinates; hidden TileMaps discard render data.

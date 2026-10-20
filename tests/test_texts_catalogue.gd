@@ -48,8 +48,11 @@ const _ALLOWED_LITERALS := {
 		"%s via %d calm, %d cells%s": "the planner's summary line, written to the run log",
 		"%d open streets, %d placements": "the planner's summary line, written to the run log",
 	},
+	"res://src/run_config.gd": {
+		"RunConfig is resolved once at boot and never changes; a write was refused":
+				"the warning for a write to a resolved configuration, read by a developer",
+	},
 	"res://src/main.gd": {
-		"the authored escape attempt was lost": "a scene recipe's playback error, written to its manifest",
 		"build %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"seed  %d   day %d": "the dev overlay's readout (debug builds and `?debug=1` only)",
 		"skip  %s": "the dev overlay's readout (debug builds and `?debug=1` only)",

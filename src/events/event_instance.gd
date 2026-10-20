@@ -1196,12 +1196,8 @@ static func named_for_the_log(id: String, pelican: bool) -> String:
 ## else ever sets it. See `current_intensity()` and `_draw_mast()`.
 var silenced := false
 
-## `DevFlags.skip_events()`, read once at spawn — the same "read once" shape `main._debug` and
-## `main._readout_requested` are, and for the same two reasons: re-parsing `--skip`'s comma list
-## (and, on the Web, re-asking the address bar) on every `_draw()` would be silly work repeated up
-## to a couple of dozen times a frame for an answer that cannot change once the page is loaded, and
-## a test can set this directly to check the skip without a real `--skip` flag behind it.
-var _skip_draw := DevFlags.skip_events()
+## `--skip events`, handed in by the manager that makes this instance: nothing of it is drawn.
+var skip_draw := false
 
 ## Where the player is, in world space, or `INF` for nowhere.
 ##
@@ -1579,7 +1575,7 @@ func _build_scenery() -> void:
 func _update_scenery() -> void:
 	if _scenery == null:
 		return
-	_scenery.visible = not (_skip_draw or is_finished or is_suppressed_by_its_own_hold())
+	_scenery.visible = not (skip_draw or is_finished or is_suppressed_by_its_own_hold())
 	var period := CAR_ACCIDENT_SMOKE_PERIOD if def.look == EventDef.Look.CAR_ACCIDENT \
 			else BURST_MAIN_SPLASH_PERIOD
 	_scenery.set_frame(_idle_stepping(period))
@@ -5170,7 +5166,7 @@ func _draw() -> void:
 	# before anything below is asked for, so a frame under the flag differs from an ordinary one by
 	# drawing alone — the excitement field, the telegraph and everything else `EventInstance` does
 	# keep running.
-	if _skip_draw:
+	if skip_draw:
 		return
 	if is_finished:
 		return
@@ -6530,7 +6526,7 @@ func _move_the_far_guard() -> void:
 	if _far_guard == null or not _far_guard.is_inside_tree():
 		return
 	_far_guard.global_position = _far_guard_at
-	_far_guard.visible = not (_skip_draw or is_finished or is_suppressed_by_its_own_hold())
+	_far_guard.visible = not (skip_draw or is_finished or is_suppressed_by_its_own_hold())
 	_far_guard.queue_redraw()
 
 func _release_the_far_guard() -> void:
@@ -6572,7 +6568,7 @@ func _move_the_band(redraw := false) -> void:
 	var at := body_position()
 	if not _band.global_position.is_equal_approx(at):
 		_band.global_position = at
-	_band.visible = not (_skip_draw or is_finished or is_suppressed_by_its_own_hold())
+	_band.visible = not (skip_draw or is_finished or is_suppressed_by_its_own_hold())
 	if redraw:
 		_band.queue_redraw()
 

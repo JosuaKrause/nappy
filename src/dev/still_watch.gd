@@ -71,15 +71,17 @@ extends Node
 ## drift here, since this accumulates every frame rather than sampling one snapshot at a time.
 const STILL_RADIUS := 4.0
 
-## "About a second" — the player's own phrase for the hold; see `DevFlags.quit_when_still_seconds()`,
-## which this constant duplicates for the sole caller (`tests/test_still_watch.gd`) that wants the
-## default without going through the command line at all.
+## "About a second" — the player's own phrase for the hold; `DevFlags.quit_when_still_seconds()`
+## answers the same default, and this is it for a caller (`tests/test_still_watch.gd`) with no
+## configuration at all.
 const DEFAULT_SECONDS := 1.0
 
 var _city: City
 var _player: Stroller
 var _day: DayController
 var _seconds := DEFAULT_SECONDS
+## Whether Godot's movie writer is recording the run, handed on to the capture.
+var _recording := false
 
 ## Whether she has moved past `STILL_RADIUS` from wherever `_anchor` currently sits — before this
 ## is true, standing at the doorstep for the opening seconds of a day must never trigger anything.
@@ -92,11 +94,13 @@ var _elapsed := 0.0
 ## a frame or two to land) never asks twice.
 var _done := false
 
-func setup(city: City, player: Stroller, day: DayController, hold_seconds: float) -> void:
+func setup(city: City, player: Stroller, day: DayController, hold_seconds: float,
+		recording := false) -> void:
 	_city = city
 	_player = player
 	_day = day
 	_seconds = hold_seconds
+	_recording = recording
 
 func _process(delta: float) -> void:
 	if _done:
@@ -249,7 +253,7 @@ func _trigger() -> void:
 	set_process(false)
 	Telemetry.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
 		_seconds, TelemetryLog.tile(_city.map.world_to_tile(_player.global_position)), _nearest()])
-	add_child(AutoScreenshot.immediate(_picture_path()))
+	add_child(AutoScreenshot.immediate(_picture_path(), _recording))
 
 ## Where the picture goes: a `still/` folder beside the run's other picture kinds (`auto/`,
 ## `asked/`, `maps/` — see docs/TELEMETRY.md) under the run's own directory, read off

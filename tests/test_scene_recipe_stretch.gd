@@ -34,7 +34,9 @@ func _test_appeared_requires_sight(t) -> void:
 	var camera: Camera2D = ordinary.camera
 	var recipe := {"playback": {"duration": 1, "observations": [
 			{"tick": 20, "subject": "event", "condition": "appeared"}]}}
-	runtime.configure({"data": recipe, "manifest": {}, "anchors": {}}, true)
+	runtime.configure({"data": recipe, "manifest": {}, "anchors": {}},
+			RunConfig.parse(PackedStringArray(["--recipe", "test.json", "--recipe-mode", "scripted"]),
+				"", true))
 	var event := Node2D.new()
 	runtime.add_child(event)
 	runtime.named["event"] = event

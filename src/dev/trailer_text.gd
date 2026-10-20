@@ -28,12 +28,8 @@ const CAPTION_COLOR := Color(0.8, 0.78, 0.74, 1.0)
 var _elapsed := 0.0
 var _root: Control
 
-## Builds whatever the two flags asked for; `null` when neither was given, so `main.gd` adds nothing
-## to an ordinary run's tree.
-static func from_flags() -> TrailerText:
-	return build(DevFlags.caption_text(), DevFlags.title_card_text())
-
-## The same, from the two strings directly, so a test can build one without a command line.
+## Builds whatever `--caption` and `--title-card` asked for; `null` when neither was given, so
+## `main.gd` adds nothing to an ordinary run's tree.
 static func build(caption: String, title: String) -> TrailerText:
 	if caption == "" and title == "":
 		return null

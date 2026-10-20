@@ -261,8 +261,9 @@ existing `escape_*` signals already use.
 
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
 things holds: the build is running on the web (`OS.get_name() == "Web"`), it is not a debug build
-(`OS.is_debug_build()`), the page was not asked for `?debug=1`
-(`DevFlags.readout_requested()`), and `window.goatcounter.count` actually exists as a callable —
+(`RunConfig.debug_build`), the page was not asked for `?debug=1`
+(`RunConfig.readout_requested`, from the run's configuration `main` hands the counter at boot —
+nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
 `count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already
 keeps `count.js` off the page entirely (see above), so this is belt and braces rather than a second
 independent switch. One pure function, `VisitCounter._should_send()`, decides the gate from those
@@ -368,7 +369,8 @@ so it stays behind its own dev flag rather than being folded into telemetry's ow
 
 **It is off by default on a web export**, and the page's own `?telemetry=1` query parameter is the
 one way to turn it on there — but only in a **debug** web export. `_web_override_requested()` is
-gated behind `DevFlags.enabled()` (`OS.is_debug_build()`) like every other developer flag: a
+gated behind the debug build (`RunConfig.debug_build`) like every other developer flag, and reads
+the query the run read at boot (`RunConfig.page_query`): a
 release build — the one `.github/workflows/deploy.yml` publishes — answers nothing here regardless
 of the query string, and a debug build — the one `tools/serve-web.sh` exports and serves locally —
 answers immediately. `user://` on the web is still a stranger's browser storage rather than a

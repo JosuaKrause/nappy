@@ -25,3 +25,15 @@
 the debug readout and web lifecycle as their own nodes; one registered list of run sub-states with
 the `PosterState` interface, injected rather than read from `GameState`; a pure `SummaryModel` the
 screen only renders, and `continued(mode)`.
+
+**Scene recipes become configurations of `RunFlow`.** The dev flags are one `RunConfig` read at boot
+(`src/run_config.gd`), but these `_recipe` branches still run through `main`'s flow: loading the
+recipe and building its runtime in `_ready()`; the setup-failed early return after the first day
+starts; `_recipe.begin()` in both boots and the escape boot's install block; the scripted capture
+clock; `_city_map()` choosing the recipe's map; the escape boot taking its day only from a recipe;
+the early return in `_plan_the_finale_city()`; the escape-section retry through
+`lose_the_attempt()`; `_start_day()` branching to `_start_recipe_day()`; `_apply_recipe_teaching()`,
+which writes the HUD's private fields (a dependency pointing up a layer);
+`_hands_over_to_the_escape()` refusing for a recipe; the scene reload in `_on_summary_continued()`.
+And two flags still read the command line themselves, `--touch` in `TouchInput` and `--web` in
+`QuitOption`; they move into `RunConfig`, handed in.
