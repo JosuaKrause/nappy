@@ -925,12 +925,13 @@ func _roll_interval() -> float:
 ## building, on a closure or under a body, or outside the map. The caller waits and asks again.
 ##
 ## **The run keeps to the ground the row can run on** (`Navigator.trim()`): cut each way at the
-## first solid and both ends to the nearer cut, so it never starts or ends inside a lot and the
-## crossing point stays the middle of the run. Its lead is timed for a run of the whole reach
-## (`EventDef.ahead_of_player_lead()`), so a cut run is made up by a longer crouch
-## (`EventDef.crouch_for_a_run()`), and the cat still reaches her line when she does; a row that does
-## not crouch is refused a cut run. A run shorter than a tile is no crossing, and the caller asks
-## again.
+## first solid, so it never starts or ends inside a lot; both ends go to the nearer cut where that
+## leaves a tile, so the crossing point stays the middle of the run, and where a solid at her
+## pavement's edge leaves less, the run comes from the open side and ends at the solid. Its lead is
+## timed for a run of the whole reach (`EventDef.ahead_of_player_lead()`), so a start cut nearer is
+## made up by a longer crouch (`EventDef.crouch_for_a_run()`), and the cat still reaches her line
+## when she does; a row that does not crouch is refused a cut start. A run shorter than a tile is
+## no crossing, and the caller asks again.
 ##
 ## **A pursuer is sited at the lead point itself and given no route.** It does not cross her line,
 ## it comes down it, so a path is the wrong shape for it entirely — and building one anyway puts
@@ -994,20 +995,29 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 	var to := centre + across
 	if not _map.in_bounds(_map.world_to_tile(from)) or not _map.in_bounds(_map.world_to_tile(to)):
 		return PackedVector2Array()
-	# Cut each way at the first solid, and both ends to the nearer cut, so the crossing point stays
-	# the middle of the run. A shorter run than its lead was timed for is made up by a longer
-	# crouch (`EventDef.crouch_for_a_run()`, held by `EventManager`); a row with no crouch to hold
-	# is refused a cut run, since it would reach her line before she does.
+	# Cut each way at the first solid. Where both cuts leave a tile between them, both ends go to
+	# the nearer cut, so the crossing point stays the middle of the run; where a solid stands at her
+	# pavement's edge and leaves less, the run comes from the open side and ends at the solid. Its
+	# start is timed for the whole reach either way: a run that starts nearer is made up by a
+	# longer crouch (`EventDef.crouch_for_a_run()`, held by `EventManager`), and a row with no
+	# crouch to hold is refused a cut start, since it would reach her line before she does.
+	var way := across.normalized()
 	var back := _navigator.trim(PackedVector2Array([centre, from]), mover)
 	var on := _navigator.trim(PackedVector2Array([centre, to]), mover)
-	var run := minf(centre.distance_to(back[back.size() - 1]),
-			centre.distance_to(on[on.size() - 1]))
-	if run * 2.0 < Tuning.TILE_SIZE:
+	var behind := centre.distance_to(back[back.size() - 1])
+	var ahead := centre.distance_to(on[on.size() - 1])
+	var start := minf(behind, ahead)
+	var finish := start
+	if start * 2.0 < Tuning.TILE_SIZE:
+		if ahead > behind:
+			way = -way
+		start = maxf(behind, ahead)
+		finish = minf(behind, ahead)
+	if start + finish < Tuning.TILE_SIZE:
 		return PackedVector2Array()
-	if def and not def.still_while_telegraphing and run < across.length() - 0.01:
+	if def and not def.still_while_telegraphing and start < across.length() - 0.01:
 		return PackedVector2Array()
-	var way := across.normalized()
-	return PackedVector2Array([centre - way * run, centre + way * run])
+	return PackedVector2Array([centre - way * start, centre + way * finish])
 
 ## A run straight *down* her own line rather than across it: `TOWARD_PLAYER`'s whole point, for a
 ## row on foot (`cyclist`, `loose_dog`). Returns `[place, far end]`: where its warning's badge
