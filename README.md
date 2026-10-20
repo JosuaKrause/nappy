@@ -15,6 +15,7 @@ The city is fixed for a whole run, so the map is knowledge you earn and keep. Th
 it is not.
 
 [Watch the gameplay trailer on YouTube.](https://youtu.be/cTB_woqjSMg)
+[Download it in full quality (MP4).](https://github.com/JosuaKrause/nappy/releases/download/trailer-2026-10-18/nappy-trailer.mp4)
 
 https://github.com/user-attachments/assets/778c4d35-5c7c-4d10-92aa-fccd4c434c10
 
