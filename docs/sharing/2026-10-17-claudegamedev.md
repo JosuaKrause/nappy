@@ -26,7 +26,7 @@ worktree, and a separate agent reviews every pull request adversarially before i
 pull requests in seven weeks. The project's rules live in the repo as skills that hooks load right
 before an edit touches their area. Codex painted the PNG art.
 
-I did the design and playtested after nearly every change; my notes are saved word for word and
+I did the design, provided reference drawings and photos, and balanced via playtests; my notes are saved word for word and
 turned into work. I deliberately stayed out of the code itself, no reviews and no advice on how to
 structure it, to see how far vibe coding goes.
 
