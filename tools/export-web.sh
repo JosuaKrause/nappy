@@ -81,13 +81,13 @@ source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 headroom_preflight tools/export-web.sh "$OUT_DIR" "" web-export || exit 1
 
 # What the export says it is. `application/config/version` and `application/config/source_commit`
-# are project settings the game reads at runtime — `TitleScreen.version_text()` and
+# are project settings the game reads at runtime — `BuildInfo.version_text()` and
 # `commit_text()` — where an exported build has no repository to ask `git`, and Godot bakes the
 # project settings into the export, so the two are written into project.godot for the duration
 # of the export and the file is put back from a copy on every exit. The version is RELEASE_TAG
 # when the caller set one (deploy.yml passes the pushed tag; its checkout is shallow, so
 # `git describe` there would name no tag) and `git describe --tags --always` with a `-dirty` mark
-# otherwise, the shape `Telemetry.source_version()` gives a working tree; the commit is HEAD's
+# otherwise, the shape `BuildInfo.source_version()` gives a working tree; the commit is HEAD's
 # abbreviated hash either way, since on a release describe collapses to the tag and a tag can be
 # moved. Each anchor is asserted to occur exactly once before it is written, and the result is
 # read back, so a project.godot that has lost a line fails the export rather than shipping the

@@ -185,7 +185,7 @@ puts the window behind whatever the operator has in front, and on macOS a window
 covered by another app's opaque window, or minimized (both measured); on another Space or behind a
 locked screen by the same occlusion test, though neither has been photographed — is not drawn at
 all while the game runs on. Every capture the game itself takes (`--screenshot`,
-`--quit-when-still`, and the run log's stills and `snapshot_burst` bursts) waits on `AutoScreenshot.drawn_frame()`, which draws its one frame on
+`--quit-when-still`, and the run log's stills and `snapshot_burst` bursts) waits on `DrawnFrame.wait()`, which draws its one frame on
 demand when the window cannot be drawn, and says so on the `[AutoScreenshot] wrote` line.
 
 | Flag | Effect |
