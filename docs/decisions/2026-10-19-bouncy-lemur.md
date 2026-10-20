@@ -1,4 +1,4 @@
-# downy-lemur — The GoatCounter report describes and flags nothing · 2026-10-19
+# bouncy-lemur — The GoatCounter report describes and flags nothing · 2026-10-19 · not from an entry
 
 
 `tools/goatcounter.sh --report` printed a "Walls" section: days whose win rate fell
