@@ -70,13 +70,13 @@ left blank when nothing was seen rather than divided by nothing. The fire's olde
 
 `--report` is the analysis of where players struggle as one page: the page's visitors, fresh and resumed
 runs, controls, mode, endings, the escape and the checkpoints (by the day they came from); a per-day
-table of attempts (`began`), wins, win rate, losses split crying / hard fail / timeout, and the two
-causes ending the most of the day's attempts; the cause totals; and the walls -- days whose win rate
-is `WALL_RATE_MARGIN` under the median, and any one cause ending `WALL_CAUSE_SHARE` of a day's attempts.
-A day under `MIN_ATTEMPTS` attempts is marked low-sample and kept out of the walls. With `--by-release`
-it prints each release window's per-day win rates and walls, so a balance change shows across a
-release; with `--json`, the same data; with `--markdown`, the page as Markdown to save
-as a stats file. `GET /stats/hits` answering 404 (once an HTML page, on a cold
+table of attempts (`began`), wins, win rate and losses split crying / hard fail / timeout; every cause
+of each day's losses, biggest first; and the cause totals. It describes and concludes nothing: no day
+or cause is flagged, and the reading is written by hand each time from the whole report. A day under
+`MIN_ATTEMPTS` attempts is marked low-sample, a note on how far its numbers can be trusted; nothing
+is left out for it. With `--by-release` it prints each release window's per-day win rates and causes,
+so a balance change shows across a release; with `--json`, the same data; with `--markdown`, the page as
+Markdown to save as a stats file. `GET /stats/hits` answering 404 (once an HTML page, on a cold
 first read) is retried like a 429, saying so on stderr.
 
 `--check` proves the key works with `GET /api/v0/stats/total` for the last hour, which needs only
@@ -927,11 +927,8 @@ def to_raw_jsonable(hits: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 # ------------------------------------------------------------------------------------- report ---
 
-# The thresholds `--report` judges by, named here and printed in its output so a reader sees what
-# "a wall" and "low-sample" meant.
-MIN_ATTEMPTS = 20  # a day with fewer began is printed, marked low-sample, and left out of the walls
-WALL_RATE_MARGIN = 0.10  # a wall: a win rate this far (0.10 = 10 points) below the median of the days
-WALL_CAUSE_SHARE = 0.25  # a wall: one cause that ends at least this share of a day's attempts
+# The one threshold `--report` prints: a sample-size note, not a place to look.
+MIN_ATTEMPTS = 20  # a day with fewer began is printed in full, marked low-sample
 # The page visit's stored path: sent as `nappy.josuakrause.com/`, GoatCounter lists it with a leading slash.
 PAGE_VISIT_PATHS = frozenset({"/nappy.josuakrause.com", "nappy.josuakrause.com/", "nappy.josuakrause.com"})
 CHECKPOINT_RE = re.compile(r"^checkpoint-(\d+)-from-day-(\d+)$")
@@ -945,16 +942,13 @@ def _day_report(day: int, bucket: dict[str, int]) -> dict[str, Any]:
     began = bucket.get("began", 0)
     won = bucket.get("won", 0)
     totals, kind_causes, _ = split_losses(bucket)
-    causes: dict[str, int] = {}
+    unsorted: dict[str, int] = {}
     for kind, by_cause in kind_causes.items():
         for cause, count in by_cause.items():
-            causes[f"{kind}-{cause}"] = count
+            unsorted[f"{kind}-{cause}"] = count
     if totals.get("timeout"):
-        causes["timeout"] = totals["timeout"]
-    top = [
-        {"cause": cause, "count": count, "share": count / began if began else None}
-        for cause, count in _sorted_desc(causes)[:2]
-    ]
+        unsorted["timeout"] = totals["timeout"]
+    causes = dict(_sorted_desc(unsorted))
     return {
         "day": day,
         "began": began,
@@ -965,39 +959,13 @@ def _day_report(day: int, bucket: dict[str, int]) -> dict[str, Any]:
         "hard_fail": totals.get("hard-fail", 0),
         "timeout": totals.get("timeout", 0),
         "causes": causes,
-        "top_causes": top,
         "low_sample": began < MIN_ATTEMPTS,
     }
 
 
-def find_walls(days: list[dict[str, Any]]) -> dict[str, Any]:
-    """The days that stand out, judged only on days with at least `MIN_ATTEMPTS` attempts: a win
-    rate `WALL_RATE_MARGIN` or more under the median of those days' win rates, and every single
-    cause that ends `WALL_CAUSE_SHARE` or more of a day's attempts."""
-    sampled = [d for d in days if not d["low_sample"] and d["win_rate"] is not None]
-    rates = sorted(d["win_rate"] for d in sampled)
-    median = (rates[len(rates) // 2] + rates[(len(rates) - 1) // 2]) / 2 if rates else None
-    low_days = (
-        [
-            {"day": d["day"], "win_rate": d["win_rate"], "gap": median - d["win_rate"]}
-            for d in sampled
-            if median - d["win_rate"] >= WALL_RATE_MARGIN - 1e-9
-        ]
-        if median is not None
-        else []
-    )
-    causes = [
-        {"day": d["day"], "cause": cause, "count": count, "share": count / d["began"]}
-        for d in sampled
-        for cause, count in _sorted_desc(d["causes"])
-        if count / d["began"] >= WALL_CAUSE_SHARE
-    ]
-    return {"median_win_rate": median, "low_win_rate_days": low_days, "single_cause_days": causes}
-
-
 def build_report(hits: list[dict[str, Any]], prefix: str) -> dict[str, Any]:
     """Everything `--report` prints, from the API's hits: players, the per-day table, cause totals
-    and the walls, as plain data (the `--json` output is this dict)."""
+    and every cause per day, as plain data (the `--json` output is this dict)."""
     grouped = group_hits(hits, prefix)
     run: dict[str, int] = grouped["run_level"]
     visitors = sum(h["count"] for h in hits if h.get("path") in PAGE_VISIT_PATHS and isinstance(h.get("count"), int))
@@ -1036,12 +1004,7 @@ def build_report(hits: list[dict[str, Any]], prefix: str) -> dict[str, Any]:
             "hard_fail": dict(_sorted_desc(hard_fail)),
             "timeout": timeout,
         },
-        "walls": find_walls(days),
-        "thresholds": {
-            "min_attempts": MIN_ATTEMPTS,
-            "wall_rate_margin": WALL_RATE_MARGIN,
-            "wall_cause_share": WALL_CAUSE_SHARE,
-        },
+        "thresholds": {"min_attempts": MIN_ATTEMPTS},
     }
 
 
@@ -1053,24 +1016,16 @@ def _counts_line(counts: dict[str, int]) -> str:
     return ", ".join(f"{name} {count}" for name, count in _sorted_desc(counts)) or "(none)"
 
 
-def _wall_lines(walls: dict[str, Any]) -> list[str]:
-    median = walls["median_win_rate"]
-    lines = [
-        f"  Median win rate of the days with >= {MIN_ATTEMPTS} attempts: {_pct(median)}. "
-        f"A wall is a win rate >= {WALL_RATE_MARGIN * 100:.0f} points under it, "
-        f"or one cause ending >= {WALL_CAUSE_SHARE * 100:.0f}% of a day's attempts."
-    ]
-    for item in walls["low_win_rate_days"]:
-        lines.append(
-            f"  day {item['day']}: win rate {_pct(item['win_rate'])}, {item['gap'] * 100:.0f} points under the median"
-        )
-    for item in walls["single_cause_days"]:
-        lines.append(
-            f"  day {item['day']}: {item['cause']} ends {item['count']} attempts ({_pct(item['share'])} of the day's)"
-        )
-    if not walls["low_win_rate_days"] and not walls["single_cause_days"]:
-        lines.append("  (no walls)")
-    return lines
+def _cause_list(day: dict[str, Any]) -> str:
+    """Every cause of a day's losses, biggest first, each with its share of the day's attempts."""
+    began = day["began"]
+    return (
+        ", ".join(f"{cause} {count} ({_pct(count / began)})" for cause, count in day["causes"].items()) or "(no losses)"
+    )
+
+
+def _cause_lines(days: list[dict[str, Any]]) -> list[str]:
+    return [f"  day {d['day']:>2}: {_cause_list(d)}" for d in days] or ["  (no days)"]
 
 
 def _day_table(days: list[dict[str, Any]], *, full: bool) -> list[str]:
@@ -1080,18 +1035,15 @@ def _day_table(days: list[dict[str, Any]], *, full: bool) -> list[str]:
         return [
             f"  day {d['day']:>2}: {d['won']}/{d['began']} won ({_pct(d['win_rate'])})"
             + (" (low-sample)" if d["low_sample"] else "")
+            + f" -- {_cause_list(d)}"
             for d in days
         ]
-    lines = [
-        f"  {'day':>3}  {'began':>5}  {'won':>4}  {'rate':>5}  {'lost':>4}  {'cry':>4}  {'hard':>4}  {'time':>4}  "
-        "top causes"
-    ]
+    lines = [f"  {'day':>3}  {'began':>5}  {'won':>4}  {'rate':>5}  {'lost':>4}  {'cry':>4}  {'hard':>4}  {'time':>4}"]
     for d in days:
-        top = ", ".join(f"{t['cause']} {t['count']} ({_pct(t['share'])})" for t in d["top_causes"])
         mark = "  (low-sample)" if d["low_sample"] else ""
         lines.append(
             f"  {d['day']:>3}  {d['began']:>5}  {d['won']:>4}  {_pct(d['win_rate']):>5}  {d['lost']:>4}  "
-            f"{d['crying']:>4}  {d['hard_fail']:>4}  {d['timeout']:>4}  {top}{mark}"
+            f"{d['crying']:>4}  {d['hard_fail']:>4}  {d['timeout']:>4}{mark}"
         )
     return lines
 
@@ -1100,8 +1052,9 @@ def _caveats() -> list[str]:
     return [
         "Caveats: counts are attempts, not visitors -- events opt out of sessions, and a nerve-bought retry "
         "begins its day again, so began is inflated by retries and a win rate is wins per attempt.",
-        f"A day with fewer than {MIN_ATTEMPTS} attempts (MIN_ATTEMPTS) is printed and marked (low-sample), and "
-        "left out of the median and the walls. Only the page visit counts visitors.",
+        f"A day with fewer than {MIN_ATTEMPTS} attempts (MIN_ATTEMPTS) is printed and marked (low-sample); "
+        "that says how far its numbers can be trusted, and nothing is left out of any table. "
+        "Only the page visit counts visitors.",
     ]
 
 
@@ -1125,7 +1078,8 @@ def format_report(report: dict[str, Any], *, title: str) -> str:
     lines += ["", "Cause totals across all days:", f"  Crying: {_counts_line(totals['crying'])}"]
     lines.append(f"  Hard fail: {_counts_line(totals['hard_fail'])}")
     lines.append(f"  Timeout: {totals['timeout']}")
-    lines += ["", "Walls:", *_wall_lines(report["walls"])]
+    lines += ["", "Causes per day (every cause of the losses, biggest first, with its share of the day's attempts):"]
+    lines += _cause_lines(report["days"])
     return "\n".join(lines)
 
 
@@ -1134,7 +1088,6 @@ def format_report_by_release(windows: list[ReleaseWindow], reports: list[dict[st
     for window, report in zip(windows, reports, strict=True):
         lines += ["", f"=== {window.label} -- {rfc3339(window.start)} to {rfc3339(window.end)} ==="]
         lines += _day_table(report["days"], full=False)
-        lines += _wall_lines(report["walls"])
     if not windows:
         lines += ["", "(no time in range)"]
     return "\n".join(lines)
@@ -1143,20 +1096,19 @@ def format_report_by_release(windows: list[ReleaseWindow], reports: list[dict[st
 def _md_days(days: list[dict[str, Any]]) -> list[str]:
     if not days:
         return ["(no days)"]
-    head = "| Day | Attempts | Won | Win rate | Lost | Crying | Hard fail | Timeout | Top causes |"
-    lines = [head, "|---|---|---|---|---|---|---|---|---|"]
+    head = "| Day | Attempts | Won | Win rate | Lost | Crying | Hard fail | Timeout |"
+    lines = [head, "|---|---|---|---|---|---|---|---|"]
     for d in days:
-        top = ", ".join(f"{t['cause']} {t['count']} ({_pct(t['share'])})" for t in d["top_causes"])
         day = f"{d['day']} (low-sample)" if d["low_sample"] else str(d["day"])
         lines.append(
             f"| {day} | {d['began']} | {d['won']} | {_pct(d['win_rate'])} | {d['lost']} | {d['crying']} | "
-            f"{d['hard_fail']} | {d['timeout']} | {top} |"
+            f"{d['hard_fail']} | {d['timeout']} |"
         )
     return lines
 
 
-def _md_walls(walls: dict[str, Any]) -> list[str]:
-    return [line.replace("  ", "- ", 1) if line.startswith("  day ") else line.strip() for line in _wall_lines(walls)]
+def _md_causes(days: list[dict[str, Any]]) -> list[str]:
+    return [f"- Day {d['day']}: {_cause_list(d)}" for d in days] or ["(no days)"]
 
 
 def format_report_markdown(report: dict[str, Any], *, title: str) -> str:
@@ -1182,9 +1134,11 @@ def format_report_markdown(report: dict[str, Any], *, title: str) -> str:
         f"- Hard fail: {_counts_line(totals['hard_fail'])}",
         f"- Timeout: {totals['timeout']}",
         "",
-        "## Walls",
+        "## Causes per day",
         "",
-        *_md_walls(report["walls"]),
+        "Every cause of the day's losses, biggest first, with its share of the day's attempts.",
+        "",
+        *_md_causes(report["days"]),
     ]
     return "\n".join(lines)
 
@@ -1195,7 +1149,9 @@ def format_report_by_release_markdown(
     lines = [f"# {title}", "", *_caveats()]
     for window, report in zip(windows, reports, strict=True):
         lines += ["", f"## {window.label} ({rfc3339(window.start)} to {rfc3339(window.end)})", ""]
-        lines += [*_md_days(report["days"]), "", *_md_walls(report["walls"])]
+        lines += _md_days(report["days"])
+        if report["days"]:
+            lines += ["", *_md_causes(report["days"])]
     if not windows:
         lines += ["", "(no time in range)"]
     return "\n".join(lines)
@@ -1249,8 +1205,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--report",
         action="store_true",
         help=(
-            "one page on where players struggle: players, a per-day table of attempts, wins and top causes, "
-            "cause totals and the walls; with --by-release the win rates and walls per release; with --json the data"
+            "one page on where players struggle: players, a per-day table of attempts, wins and losses, "
+            "every cause per day and the cause totals, flagging nothing; with --by-release the win rates and causes "
+            "per release; with --json the data"
         ),
     )
     parser.add_argument(
