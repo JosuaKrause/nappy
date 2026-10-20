@@ -1149,7 +1149,9 @@ def format_report_by_release_markdown(
     lines = [f"# {title}", "", *_caveats()]
     for window, report in zip(windows, reports, strict=True):
         lines += ["", f"## {window.label} ({rfc3339(window.start)} to {rfc3339(window.end)})", ""]
-        lines += [*_md_days(report["days"]), "", *_md_causes(report["days"])]
+        lines += _md_days(report["days"])
+        if report["days"]:
+            lines += ["", *_md_causes(report["days"])]
     if not windows:
         lines += ["", "(no time in range)"]
     return "\n".join(lines)

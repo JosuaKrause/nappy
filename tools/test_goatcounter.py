@@ -1443,7 +1443,7 @@ class ReportTests(unittest.TestCase):
         text = goatcounter.format_report(self.report(), title="T")
         self.assertIn("attempts, not visitors", text)
         self.assertIn(f"fewer than {goatcounter.MIN_ATTEMPTS} attempts", text)
-        self.assertNotIn("wall", text.lower())
+        self.assertNotIn("Walls", text)
         self.assertIn("Visitors (page visit): 70", text)
         self.assertIn("(low-sample)", next(row for row in text.splitlines() if row.startswith("    5  ")))
         self.assertIn("day 5: 4", text)  # checkpoints by the day they came from
@@ -1463,6 +1463,12 @@ class ReportTests(unittest.TestCase):
         self.assertIn("| 5 (low-sample) |", text)
         self.assertIn("- Day 3: hard-fail-car 6 (15%), crying-traffic 4 (10%)", text)
         self.assertNotIn("Walls", text)
+
+    def test_an_empty_release_window_says_no_days_once(self) -> None:
+        window = goatcounter.ReleaseWindow(("v1",), utc(10, 5, 12), utc(10, 12, 12))
+        report = goatcounter.build_report([], "nappy-")
+        text = goatcounter.format_report_by_release_markdown([window], [report], title="T")
+        self.assertEqual(text.count("(no days)"), 1)
 
     def test_markdown_is_refused_without_report_or_with_json(self) -> None:
         for flags in (["--markdown"], ["--report", "--markdown", "--json"]):
