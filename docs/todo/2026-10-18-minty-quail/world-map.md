@@ -8,7 +8,7 @@ not an `EventManager`" (`docs/decisions/2026-09-12-M102-the-finale-built-behind-
 spawn, retire, `_tell_them_where_she_is`, `_check_hard_fails`, and none of the manager's
 `player_view`, `pram_at`, `she_is_held`, `outranked_by_a_stronger_barrier`, `_struck_by` (so no loss
 cause), pending warnings, detentions, encounter watch or frame timing. It gives `EventInstance` no
-map, and with `_map` null `_walkable_step` lets anything step through walls and `_clear_line_to` is
+map, and with `_map` null its navigator lets anything step through walls and `_clear_line_to` is
 always true (`event_instance.gd` near 1341, 2173, 2877, 3138, 3229, 4765, 6762, 7272). It scripts in
 code what should be data: the fire as an `EventDef` mutated in code (`_indoor_fire`), vents on
 `Tuning.FINALE_STEAM_PERIODS` timers, the masked man's respawn timer, the explosion beat at her own

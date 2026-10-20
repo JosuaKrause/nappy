@@ -24,7 +24,10 @@ for events (`EventInstance.solid_footprint_of`) and closure barriers (`City.barr
 15px), so a long frame cannot carry anything through a one-tile wall, plus `move_to`, `walk`,
 `path`, `way_out` and `trim`; the city builds it with the map and hands it to the event manager, its
 figures, the crowd and the resistance director. On it now: every event figure's chase, walk-back,
-departure, route walk, the far guard and the mouse's dash; both cat crossings, cut to open ground;
+departure, route walk, the far guard and the mouse's dash; both cat crossings, cut at the first solid on each side (a cramped one runs from the open side,
+and a cat whose start is cut crouches longer by the run it lost, `EventDef.crouch_for_a_run()`, so
+it still reaches her line when it did and its telegraph only grows; a crossing that cannot be cut so
+is refused);
 bike, dog and patrol-car routes, trimmed when sited and when created; `_along_street_path` and the
 neighbor's walk to work; the crowd's push and tile questions; the director's hand copies, chase
 prediction, the guard's clear run and the roadblock guard's line; and the floods
@@ -32,8 +35,8 @@ prediction, the guard's clear run and the roadblock guard's line; and the floods
 `likely-bugs.md`: the cat's crossing no longer ends inside a lot.
 
 **Verified at test parity** (inbox #813): `check.sh`, `lint.sh`, `ci_telemetry_kinds.py` and
-`cost-table.sh --check` (no route cost moved), and about fifty suites with 0 failures; the full suite
-is CI's. Tests changed only as far as the code moved: instances given a map by hand get its
+`cost-table.sh --check` (no route cost moved), and the full suite (`tools/test.sh`, all shards) with 0
+failures. Tests changed only as far as the code moved: instances given a map by hand get its
 navigator, callers of the removed step call `Navigator.step`, day 13's guard is measured over the
 ground he walks, and the placement test samples day 3 as well, since a scheduler re-roll moved day
 1's only walled pacing beat. A new `tests/test_world_passability.gd` checks the rules on hand-built
@@ -42,7 +45,9 @@ the cat crosses open ground and a dog departs round solids; its walker runs 13 m
 laid through her own building and fails when the route walk or the chase step bypasses the
 navigator.
 
-**Choices made where the design was silent, open to overturn:** a row's radius is its shape's reach
+**Choices made where the design was silent, open to overturn:** a figure sees along its own
+layers without street ground only, so the investigating police car (merry-stork) still sees her on
+an alley, square, park or courtyard while it drives only on the street; a row's radius is its shape's reach
 where the shape moves and a man's 9px where it is a solid he stands at; closures block lines as well
 as steps; a pacer whose beat a solid crosses holds until the beat comes back, and any other route
 ends at the solid and the figure leaves from there; a departure that meets a solid ahead plans a way
