@@ -48,6 +48,6 @@ goes.
 - Paths through the city come first; obstacles are placed along them.
 - Random events come from a marble bag, not dice.
 - A fast hazard is announced before it appears.
-- One unlucky hit never ends a day.
+- One unlucky turn never ends a day.
 
 **If you try it:** what made you pick one street over another?
