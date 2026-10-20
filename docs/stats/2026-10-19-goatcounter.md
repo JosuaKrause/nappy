@@ -1,4 +1,4 @@
-# GoatCounter, 2026-09-20 to 2026-10-19: where players struggled
+# GoatCounter, 2026-09-27 to 2026-10-19: where players struggled
 
 
 The player asked on 2026-10-19 for an analysis of GoatCounter ("can you have a look at goatcounter
@@ -7,7 +7,10 @@ the release". This file is that note: the baseline, read on `main` at v0.29.2, t
 release's window is compared against.
 
 **Read with** `tools/goatcounter.sh --days 30`, `--raw`, `--encounters` and `--by-release`, on
-2026-10-19 at about 21:00 Eastern, covering 2026-09-20 to 2026-10-19 (releases v0.13.1 to v0.29.2).
+2026-10-19 at about 21:00 Eastern. The read asked for 2026-09-20 to 2026-10-19; the game's own site,
+`nappy.goatcounter.com`, has its first event on 2026-09-27, so this is its whole history, 2026-09-27
+to 2026-10-19 (releases v0.19.0 to v0.29.2). The history before that is on
+`josuakrause.goatcounter.com`, which this site's API key cannot read (a key belongs to one site).
 An event counts every time it is sent, so a day's attempts include every retry; the page visit is
 counted once per visitor. The player's own playtests are in these numbers and cannot be separated.
 
