@@ -41,7 +41,7 @@ structure it, to see how far vibe coding goes.
   grew huge (the main script past 3,000 lines, one event class past 7,000) and the escape sequence
   got its own parallel copy of the game's engine.
 
-**What keeps it fair**
+**What keeps the game fair**
 
 - Paths through the city come first; obstacles are placed along them.
 - Random events come from a marble bag, not dice.
