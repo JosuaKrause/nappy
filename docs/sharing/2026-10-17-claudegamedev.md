@@ -37,7 +37,7 @@ structure it, to see how far vibe coding goes.
   recolored the other leg.
 - Lag on phones. The obvious suspect, draw calls, turned out not to matter: cutting them in half
   left the frame time where it was.
-- Undertale-level code quality. Agents add code where similar code already lives, so a few files
+- Undertale-level code quality. Agents added code where similar code already lived, so a few files
   grew huge (the main script past 3,000 lines, one event class past 7,000) and the escape sequence
   got its own parallel copy of the game's engine.
 
