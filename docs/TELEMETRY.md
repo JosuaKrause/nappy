@@ -257,9 +257,12 @@ Every signal named above that exists purely for this page — `event_sighted`,
 `pelican_sighted`, `pelican_excited_her`, `pelican_struck_her`, `encounter_seen`,
 `encounter_influenced`, `run_bout_began` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so. The day's and
-the escape's own events (`run_begun`, `day_started`, `day_ended`, `escape_begun`,
-`escape_city_entered`, `escape_lost`, `escape_out`) are the run flow's facts: the page, the run log
-and the HUD all hear them, and none of them is called inline.
+the escape's own events are the run flow's facts, each emitted where it happens, and no listener is
+called inline. The page hears `run_begun`, `day_started`, `day_ended`, `escape_begun`,
+`escape_city_entered`, `escape_lost` and `escape_out`, and is the only listener of `run_begun`,
+`escape_begun` and `escape_city_entered`. The run log (`RunSession`) hears `day_started`,
+`day_planned`, `day_ended`, `escape_section_started`, `escape_lost` and `escape_out`. The HUD hears
+`day_started` alone.
 
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
 things holds: the build is running on the web (`OS.get_name() == "Web"`), it is not a debug build
