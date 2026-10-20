@@ -43,6 +43,10 @@ onto `PelicanRig.ALWAYS`; the HUD's debug view keeps the build's own answer unti
 the escape's flag boot takes its day only from a recipe, as before; a recipe's screenshot moment
 reads `--after` as a number, which differs only for a malformed value such as `2s`.
 
+**The item's "day length is a day-spec value"** is not built here, since no day spec exists yet:
+`RunConfig.day_length_for()` resolves the length in one place and hands it in as a plain value, and
+`escape-as-day-spec.md`'s `DaySpec`, which already lists the length among its fields, takes it over.
+
 **Left to `main-and-state.md`**, written into that item: the `_recipe` branches that need `RunFlow`,
 and the two flags (`--touch` in `TouchInput`, `--web` in `QuitOption`) that still read the command
 line themselves. `comments.md` was applied to the passages edited and to all of `dev_flags.gd`, not

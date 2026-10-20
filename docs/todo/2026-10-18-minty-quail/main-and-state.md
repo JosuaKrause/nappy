@@ -26,9 +26,8 @@ the debug readout and web lifecycle as their own nodes; one registered list of r
 the `PosterState` interface, injected rather than read from `GameState`; a pure `SummaryModel` the
 screen only renders, and `continued(mode)`.
 
-**Left by `run-config.md`, finished here:** the dev flags are one `RunConfig` read at boot
-(`src/run_config.gd`), but these `_recipe` branches still run through `main`'s flow and become
-configurations of `RunFlow`: loading the recipe and building its runtime in `_ready()`; the
+**Scene recipes become configurations of `RunFlow`.** The dev flags are one `RunConfig` read at
+boot (`src/run_config.gd`), but these `_recipe` branches still run through `main`'s flow: loading the recipe and building its runtime in `_ready()`; the
 setup-failed early return after the first day starts; `_recipe.begin()` in both boots and the escape
 boot's install block; the scripted capture clock; `_city_map()` choosing the recipe's map; the escape
 boot taking its day only from a recipe; the early return in `_plan_the_finale_city()`; the
