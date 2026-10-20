@@ -104,7 +104,7 @@ func _check_boot_camera_handoff(t) -> void:
 	player.free()
 	main.free()
 
-## `main._debug` is read once from `DevFlags.enabled()` rather than asked of the OS inside
+## `main._debug` is read once from the run's configuration rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
 ## reason `hud._debug` exists. Checked both ways: nothing is drawn when it is off, and the
 ## ordinary debug readout still appears when it is on, so the gate is not just "always empty".
@@ -386,12 +386,12 @@ func _test_key_six_twice_empties_the_ring(t) -> void:
 
 ## **One node goes into the tree, not a choice between two.** `TouchControls` is the whole of the
 ## pointer scheme regardless of which aiming mode is chosen — `_add_touch_controls()` builds the
-## one node either way and hands it a starting mode through `set_mode()` with `ControlsMode.resolve()`,
-## which the title screen goes on to override once a player actually presses a button (see
-## `main._on_title_start()`). `ControlsMode.resolve()` answers `TAP` here, with neither `--controls`
-## nor a URL query present in this suite's own process.
+## one node either way and hands it a starting mode through `set_mode()` from the configured
+## `--controls` word, which the title screen goes on to override once a player actually presses a
+## button (see `main._on_title_start()`). A run with no word gets `TAP`.
 func _test_add_touch_controls_builds_the_one_control_reader(t) -> void:
 	var main: Node2D = MAIN_SCRIPT.new()
+	main.configure(RunConfig.parse(PackedStringArray(), "", true))
 	t.check(main._touch_controls == null, "nothing is built before _ready() runs")
 
 	main._add_touch_controls()
@@ -399,9 +399,16 @@ func _test_add_touch_controls_builds_the_one_control_reader(t) -> void:
 	t.check(main._touch_controls.get_parent() == main._touch_layer,
 			"parented under the layer it builds alongside it")
 	t.check(main._touch_controls._mode == ControlsMode.Mode.TAP,
-			"and gives it ControlsMode.resolve()'s own answer as a starting mode")
-
+			"and gives it TAP, with no --controls word, as a starting mode")
 	main.free()
+
+	var steered: Node2D = MAIN_SCRIPT.new()
+	steered.configure(RunConfig.parse(PackedStringArray(["--controls", "joystick-right"]), "", true))
+	steered._add_touch_controls()
+	t.check(steered._touch_controls._mode == ControlsMode.Mode.JOYSTICK
+			and steered._touch_controls._steering_focus == TouchControls.FOCUS_RIGHT,
+			"and `--controls joystick-right` steers from the right with the joystick")
+	steered.free()
 
 ## `main._on_title_start()` is the one seam that lets the title screen's own button press reach the
 ## node `_add_touch_controls()` already built — nothing else in `main` ever calls `set_mode()`. The
@@ -1233,8 +1240,8 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	t.get_tree().paused = saved_paused
 
 # ------------------------------------------------------------------ a rig's own lockdown ---
-## M195: `DevFlags.is_rig()` reads the real command line, so a test drives its own pure inner
-## function directly — the same seam `_no_focus_pause_from_args()` above already is for its flag.
+## M195: the rig list, through `DevFlags`' own pure inner function — the same seam
+## `_no_focus_pause_from_args()` above is for its flag.
 ## This is also the exact set `main._input()`'s own gate (`_rig_locked_out`) and
 ## `_lock_out_a_rig()`'s window-flag/`InputMap`-erasure both key off, so a case proven here holds
 ## for all three without a live window to check them against.

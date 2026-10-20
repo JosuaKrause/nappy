@@ -334,7 +334,6 @@ func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t) -> void:
 ## costs a nerve and comes back on its brief with one fewer star, and the last one is the bad
 ## ending, with no continue, rather than the section again.
 func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
-	DevFlags._invincible_override = false
 	GameState.start_run(_SEED)
 	GameState.choose_mode(true)
 	GameState.day = Tuning.RUN_LENGTH_DAYS
@@ -377,7 +376,6 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	finale.free()
 	main.free()
 	t.get_tree().paused = false
-	DevFlags._invincible_override = null
 	GameState.ending = GameEnums.Ending.NONE
 
 ## *(dotted-hawk, the player, #718: "No regain in escape either.")* A hard run handed over to the

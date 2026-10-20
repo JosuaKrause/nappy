@@ -1,7 +1,7 @@
 extends RefCounted
 ## Focused contracts for `readout_requested()` — the release-safe query flag M133, "the readout on
 ## the live page", adds — and for the two flags parsed beside it. Each is read the same shape: a
-## bare command-line flag or a `?name=1` query parameter, without `DevFlags.enabled()`'s own gate.
+## bare command-line flag or a `?name=1` query parameter, without the debug build's own gate.
 ##
 ## **The presentation mode is not one of them any more.** A build is whichever mode the atlases
 ## were baked in (`AtlasLibrary.bake_mode()`), so there is nothing at runtime left to select: the
@@ -22,8 +22,8 @@ extends RefCounted
 ## flags") opens a second, smaller bundle on top of the two above — `?day=`, `?invincible=1` and
 ## the rest named at its own doc. It is `enabled()` (a build type nothing here can fake) `or`
 ## `readout_requested()`, so its own pure half, `_live_debug_requested()`, is the truth table this
-## suite drives directly — the same split `ControlsMode._reads_the_url()` and
-## `Telemetry._reads_the_url()` already use for the same reason.
+## suite drives directly; the whole configuration is driven through `RunConfig.parse()`, which
+## takes the build type, the command line and the page's query as arguments.
 
 func run(t) -> void:
 	_test_the_bake_alone_decides_the_presentation(t)
@@ -84,11 +84,12 @@ func _test_readout_requested_false_for_everything_else(t) -> void:
 		"only the exact documented parameter name requests the readout")
 
 func _test_readout_requested_does_not_move_enabled(t) -> void:
-	var before := DevFlags.enabled()
-	DevFlags._readout_from_query("?debug=1")
-	t.check(DevFlags.enabled() == before,
-		"the readout's own release-safe flag reaches nothing enabled() gates — no seed, day, "
-		+ "spawn, meter, layer or scripted-input flag moves with it")
+	var page := RunConfig.parse(PackedStringArray(["--spawn", "park", "--walk", "1e"]),
+			"?debug=1", false)
+	t.check(page.readout_requested and not page.debug_build and page.active_args.is_empty()
+			and page.spawn_target == "",
+		"the readout's own release-safe flag reaches nothing the debug build gates — no spawn, "
+		+ "meter or scripted-input flag moves with it")
 
 ## `--skip`'s own words — see `DevFlags._validate_skip_words()`'s own doc for why an unknown word
 ## refuses the whole value and an empty one is simply nothing to skip.
@@ -125,16 +126,21 @@ func _test_skip_from_args_and_query_extract_the_raw_value(t) -> void:
 	t.check(DevFlags._skip_from_query("") == "",
 		"an absent URL parameter is an empty raw value")
 
-## The gate: `skip_words()` and the three per-word getters read `readout_requested()` before
-## parsing anything, and an ordinary test run never asks for the readout (no `--debug` reaches
-## this process, and there is no web query to read outside a Web export), so all four answer
-## nothing skipped regardless of whatever `--skip` this process's own command line might carry.
+## The gate: the skip words are read only while the readout was requested, even on a debug build,
+## and the configuration's four booleans carry the same set.
 func _test_skip_is_gated_on_the_readout_being_requested(t) -> void:
-	t.check(DevFlags.skip_words().is_empty(),
-		"skip_words() answers nothing skipped while the readout was not requested")
-	t.check(not DevFlags.skip_events() and not DevFlags.skip_crowd() and not DevFlags.skip_shadows()
-			and not DevFlags.skip_motion(),
-		"the four per-word getters carry the same gate")
+	var words := PackedStringArray(["--skip", "events,crowd,shadows,motion"])
+	var unasked := RunConfig.parse(words, "", true)
+	t.check(unasked.skip_words.is_empty() and not unasked.skip_events and not unasked.skip_crowd
+			and not unasked.skip_shadows and not unasked.skip_motion,
+		"nothing is skipped while the readout was not requested")
+	words.append("--debug")
+	var asked := RunConfig.parse(words, "", true)
+	t.check(asked.skip_events and asked.skip_crowd and asked.skip_shadows and asked.skip_motion,
+		"all four are skipped once it was")
+	var page := RunConfig.parse(PackedStringArray(), "?debug=1&skip=shadows", false)
+	t.check(page.skip_shadows and not page.skip_events,
+		"a release page that asked ?debug=1 skips what its own ?skip= names")
 
 ## `?seed=`'s own query parser (M138, "a seed on the live page under `?debug=1`") — see
 ## `DevFlags._seed_from_query()`'s own doc for why the `?debug=1` gate is checked inside the same
@@ -214,22 +220,25 @@ func _test_layers_from_query_is_unchanged_by_m193(t) -> void:
 		"the layers parameter is read out of the query the same as before M193")
 	t.check(DevFlags._layers_from_query("") == "", "an absent parameter is still an empty value")
 
-## `ControlsMode._reads_the_url()`'s own truth table, moved from `is_debug and on_web` to
-## `flags_open and on_web` under M193 — `flags_open` is `DevFlags.live_debug_requested()`.
+## `--controls`, then the page's own `?controls=` in the open bundle: the command line wins, and a
+## release page answers the query only once it asked `?debug=1`.
 func _test_controls_reads_the_url_is_the_live_debug_gate_and_web(t) -> void:
-	t.check(ControlsMode._reads_the_url(true, true), "the bundle open and on the web reads it")
-	t.check(not ControlsMode._reads_the_url(true, false),
-		"the bundle open off the web has no address bar to ask")
-	t.check(not ControlsMode._reads_the_url(false, true),
-		"on the web with the bundle closed reads nothing")
-	t.check(not ControlsMode._reads_the_url(false, false), "neither open nor on the web")
+	var none := PackedStringArray()
+	t.check(RunConfig.parse(none, "?debug=1&controls=joystick", false).controls_word == "joystick",
+		"a release page that asked ?debug=1 reads its own ?controls=")
+	t.check(RunConfig.parse(none, "?controls=joystick", false).controls_word == "",
+		"a release page that did not reads nothing")
+	t.check(RunConfig.parse(PackedStringArray(["--controls", "tap"]), "?controls=joystick", true)
+			.controls_word == "tap", "the command line wins over the page")
+	t.check(RunConfig.parse(PackedStringArray(["--controls", "tap"]), "", false).controls_word == "",
+		"and answers nothing on a release build")
 
 func _test_controls_word_from_query_is_unchanged_by_m193(t) -> void:
-	t.check(ControlsMode._word_from_query("?controls=joystick") == "joystick",
-		"the controls parameter is read out of the query the same as before M193")
-	t.check(ControlsMode._word_from_query("?seed=4&controls=tap") == "tap",
+	t.check(DevFlags._controls_from_query("?controls=joystick") == "joystick",
+		"the controls parameter is read out of the query")
+	t.check(DevFlags._controls_from_query("?seed=4&controls=tap") == "tap",
 		"found among other URL parameters")
-	t.check(ControlsMode._word_from_query("") == "", "an absent parameter is still empty")
+	t.check(DevFlags._controls_from_query("") == "", "an absent parameter is still empty")
 
 ## `?escape=1` — the bare boolean M193 opens; `start_escape_at()`'s own optional target word stays
 ## command-line only (see that function's own doc).

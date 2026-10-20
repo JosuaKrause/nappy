@@ -128,7 +128,7 @@ var _recipe := {}
 
 func _init(args: PackedStringArray, query: String, debug_build: bool, movie := false,
 		recipe: Dictionary = {}) -> void:
-	_given = args
+	_given = args.duplicate()
 	_query = query
 	_debug_build = debug_build
 	_movie = movie

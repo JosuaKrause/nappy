@@ -166,8 +166,8 @@ func _test_examples(t) -> void:
 			continue
 		var map: CityMap = built.map
 		t.check(map.is_walkable(map.world_to_tile(built.anchors.start)), "%s start is exactly walkable" % side)
-		map.recipe_frame_locked = true
 		var city: City = CITY_SCENE.instantiate()
+		city.scenery_frame_locked = true
 		t.add_child(city)
 		city.build(map)
 		var wall_tile := Vector2i(118 if side == "hall" else 132, 14)

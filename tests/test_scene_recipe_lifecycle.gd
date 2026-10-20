@@ -30,7 +30,7 @@ func _ready() -> void:
 			if not actor:
 				fail("Main did not install authored actor " + str(entry.name))
 				return
-	if GameSave.uses_save() or get_tree().paused or DevFlags.is_rig() != recipe.scripted:
+	if GameSave.uses_save() or get_tree().paused or RunConfig.at_boot().is_rig != recipe.scripted:
 		fail("recipe boot has the wrong save, pause or input mode")
 		return
 	if get_tree().has_meta("recipe_retry_expected"):

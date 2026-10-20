@@ -41,9 +41,11 @@ var web_debug_flag_used := false:
 ## that parse a parameter of their own (`Telemetry`'s `?telemetry=1`, `WebDisplay`'s `?dpr=`).
 var page_query := "":
 	set(value): page_query = _write(page_query, value)
-## The command line on a debug build, or nothing: every dev flag given, as words. A value, so a
-## reader's copy cannot change this one.
+## The command line on a debug build, or nothing: every dev flag given, as words. Every read is a
+## copy, since a packed array is shared by reference and a reader's edit would otherwise reach
+## every other reader.
 var active_args := PackedStringArray():
+	get: return active_args.duplicate()
 	set(value): active_args = _write(active_args, value)
 ## `--no-telemetry`, the player-facing opt-out, read on every build.
 var no_telemetry := false:
@@ -197,7 +199,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 		recording_movie := false, recipe_data: Dictionary = {}) -> RunConfig:
 	var flags := DevFlags.new(args, query, debug_build, recording_movie, recipe_data)
 	var config := RunConfig.new()
-	config._given = args
+	config._given = args.duplicate()
 	config._movie = recording_movie
 	config.debug_build = debug_build
 	config.readout_requested = flags.readout_requested()

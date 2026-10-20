@@ -1254,8 +1254,8 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 	# is short and has nothing left to prove about `_nearest_calm()` or the baby's own settle that
 	# the dedicated tests above have not already covered — what is left to prove here is the seam:
 	# resolving, planning, pressing the ordinary axes, and `_arrive()` firing for real.
-	rig.setup(_city, _stroller, baby, _resistance, day)
-	rig._targets = ["home"]
+	var targets: Array[String] = ["home"]
+	rig.setup(_city, _stroller, baby, _resistance, day, targets)
 	rig.start_day()
 
 	var start_position := _stroller.global_position
@@ -1345,7 +1345,8 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	var rig := RouteRigNoQuit.new()
 	t.add_child(rig)
 	rig.set_physics_process(false)
-	rig.setup(city, _stroller, baby, null, day)
+	var no_targets: Array[String] = []
+	rig.setup(city, _stroller, baby, null, day, no_targets)
 	rig.start_day()
 	var reach := float(Tuning.TILE_SIZE) * 5.0
 	# On the carriageway either side of the boom, so the straight line — and the bare grid's

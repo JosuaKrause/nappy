@@ -1244,9 +1244,8 @@ func _test_the_web_override_flag_parses_the_query(t) -> void:
 	t.check(not Telemetry._telemetry_flag_from_query(""), "no query at all is also false")
 
 ## *(2026-09-06, the player: "I never asked for telemetry on web ... that browser build should be
-## dev only the CI build is release.")* `_web_override_requested()`'s own gate used to be welded
-## into an `if` as `DevFlags.enabled() or OS.get_name() != "Web"` — a build type and a platform,
-## neither of which a test can fake — so `_reads_the_url()` exists to make that promise a truth
+## dev only the CI build is release.")* `_web_override_requested()`'s gate is a build type and a
+## platform, which a test cannot fake together, so `_reads_the_url()` makes that promise a truth
 ## table instead.
 func _test_reads_the_url_only_when_debug_and_web(t) -> void:
 	t.check(Telemetry._reads_the_url(true, true),
@@ -1267,8 +1266,7 @@ func _test_reads_the_url_only_when_debug_and_web(t) -> void:
 
 ## A real, empty `City` and a bare `Stroller` standing still — the least `_watch_for_a_spike`
 ## needs to read (`_city.events.instances()`, `_map.world_to_tile(_player.global_position)`)
-## without crashing. `_spikes_on` is set directly, the same way `_blocked_rig()` and `_trail_rig()`
-## above set a private field straight rather than fake a command line for `DevFlags` to parse.
+## without crashing. `spikes_on` is handed in the way `main` hands it from the run's configuration.
 func _spike_rig(t) -> TelemetryObserver:
 	var map := CityGenerator.generate(9001)
 	var city: City = preload("res://scenes/world/city.tscn").instantiate()
@@ -1279,7 +1277,7 @@ func _spike_rig(t) -> TelemetryObserver:
 	observer._map = city.map
 	observer._player = Stroller.new()
 	observer._player.global_position = city.map.home_world_position()
-	observer._spikes_on = true
+	observer.spikes_on = true
 	return observer
 
 ## Feeds a series of frame deltas straight into `_watch_the_frame` — no real clock and no
@@ -1369,7 +1367,7 @@ func _test_two_spikes_in_one_second_write_only_the_worse_one(t) -> void:
 func _test_no_spike_line_with_the_flag_off(t) -> void:
 	Telemetry.begin_memory_log()
 	var observer := _spike_rig(t)
-	observer._spikes_on = false
+	observer.spikes_on = false
 	var deltas := _steady_frames(10, 0.02)
 	deltas.append(0.1)
 	deltas.append_array(_steady_frames(36, 0.02))
