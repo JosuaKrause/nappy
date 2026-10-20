@@ -11,7 +11,7 @@ existed twice, main's copy missing `--tap`.
 **Built.** `RunConfig` (`src/run_config.gd`) holds every flag value, the release and debug gates, the
 page's query and the `--no-telemetry` opt-out. `RunConfig.at_boot()` reads it once per process, the
 only place the game reads the address bar; tests build one with `RunConfig.parse(words, query,
-debug_build, ...)`. A built config refuses a later write, its lists are read-only, and every read of
+debug_build, ...)`. A built config refuses every later write with a warning, its lists are read-only, and every read of
 the gated words is a copy. It decides a day's length (`day_length_for()`, `escape_section_length()`),
 replacing `DevRig.day_length()` and `FinaleController.length()`. `DevFlags` is only the parser now,
 built from what it is handed; the blocks the shell tools read (`DEV_FLAG_TABLE`, `RIG_FLAGS`,
@@ -20,7 +20,8 @@ built from what it is handed; the blocks the shell tools read (`DEV_FLAG_TABLE`,
 `VisitCounter` through `configure()`, and plain values to simulation: `DayController.invincible`,
 `Baby.excitement_frozen`, `FinaleController.invincible` and `section_length`, the day's length, and
 the city's values set before `build()` and passed on to ground, scenery, shadows, events, the crowd
-and its agents, blackout, the pelican drawing and `--force`; the building's events get
+and its agents, blackout, the pelican drawing and `--force`; the run-log observer gets `--spikes` on the day and in the escape alike, as a setup
+parameter; the building's events get
 `skip_drawing`. `CityMap` lost `recipe_frame_locked`. One rig flag list, read as `config.is_rig`. A
 recipe's seed, day, escape part and parent come in through `config.with_recipe()`; the frame lock,
 the shader warm-up skip and the title skip are config values; main's write of the recipe runtime's
@@ -35,7 +36,9 @@ failures; three `--no-save` stills (a day with `--invincible`, `--start-escape`,
 --day-length 40`) show nothing visible changed. The full suite is CI's.
 
 **Choices made where the design was silent, open to overturn:** each setter refuses a write after the
-build; `at_boot()` is kept per process in a static, so a scene reload is not a second boot; `DevFlags`
+build with `push_warning` rather than `push_error`, since an engine error line fails the test run that
+meets it and a test could not then exercise the refusal; a recipe is kept only on a debug build, so a
+release parse handed one answers none of its values; `at_boot()` is kept per process in a static, so a scene reload is not a second boot; `DevFlags`
 stays apart from `RunConfig` because the shell tools read the flag table from its file; before a
 config is handed in, `GameSave` uses no save, `VisitCounter` sends nothing and `Telemetry` behaves as
 for a run with no flags; the city's values are plain fields, not a settings object; `--pelican` maps
