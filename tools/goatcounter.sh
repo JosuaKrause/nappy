@@ -9,6 +9,9 @@
 #   tools/goatcounter.sh --json
 #   tools/goatcounter.sh --encounters                 # influenced / seen per event type, by day
 #   tools/goatcounter.sh --by-release                 # one window per release (with --encounters too)
+#   tools/goatcounter.sh --report                     # where players struggle, on one page
+#   tools/goatcounter.sh --report --by-release        # the per-day win rates and walls per release
+#   tools/goatcounter.sh --report --markdown          # the report as Markdown, to save as a stats file
 #   tools/goatcounter.sh --raw                        # every path and count, unfiltered
 #   tools/goatcounter.sh --check                      # does the key read statistics, and what else
 #
@@ -26,8 +29,8 @@ usage() {
 	cat <<'EOF'
 usage: tools/goatcounter.sh [--help|-h] [--days N] [--start DATE] [--end DATE]
                              [--prefix PREFIX] [--site URL] [--json]
-                             [--by-release]
-                             [--raw | --encounters | --check]
+                             [--by-release] [--markdown]
+                             [--raw | --encounters | --report | --check]
 
 Prints the nappy- GoatCounter event counts as a per-day funnel for a date range, reading the API
 key from GOATCOUNTER_TOKEN (never accepted as a flag). The site read is the game's own,
@@ -42,7 +45,13 @@ influences from encounters she never saw, overall and per day. --raw prints ever
 --prefix -- events and the page visit alike. --by-release groups the funnel, or with --encounters the encounters, into one window per release:
 the v* tags' dates from git (a tag's own date, its UTC day) open a window that runs to the next
 release's day, and a day with several releases is one mixed window naming them all; the days before
-the first release form a window of their own. It cannot combine with --raw or --check. --check proves the key works with
+the first release form a window of their own. It cannot combine with --raw or --check. --report prints
+one page on where players struggle: the visitors, runs, controls, mode, endings, escape and checkpoints; a per-day
+table of attempts, wins, win rate, losses (crying / hard fail / timeout) and the top two causes; the cause totals; and
+the walls (a win rate 10 points under the median, or one cause ending 25% of a day's attempts; a day under 20
+attempts is marked low-sample and left out). With --by-release it prints each release's per-day win rates and
+walls; with --json the same data; --markdown (with --report, not --json) prints it as Markdown to save as a stats file. A 404 from the hits endpoint is retried like a 429, and says so on stderr.
+--check proves the key works with
 GET /api/v0/stats/total (needs only "Read statistics", the one permission every read-only key
 has) and reports its permissions too if GET /api/v0/me allows it -- GET /api/v0/me is optional
 extra information, and a 403/404 from it does not fail the check, since the statistics call
@@ -57,6 +66,9 @@ web request.
   tools/goatcounter.sh --encounters
   tools/goatcounter.sh --by-release
   tools/goatcounter.sh --by-release --encounters
+  tools/goatcounter.sh --report
+  tools/goatcounter.sh --report --by-release
+  tools/goatcounter.sh --report --markdown
   tools/goatcounter.sh --raw
   tools/goatcounter.sh --check
 EOF
@@ -70,7 +82,7 @@ done
 
 for arg in "$@"; do
 	case "$arg" in
-		--days|--start|--end|--prefix|--site|--json|--raw|--encounters|--check|--by-release) ;;
+		--days|--start|--end|--prefix|--site|--json|--raw|--encounters|--report|--markdown|--check|--by-release) ;;
 		-*)
 			echo "unknown option: $arg" >&2
 			echo >&2
