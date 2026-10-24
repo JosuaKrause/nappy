@@ -178,11 +178,13 @@ func _walked_short(walked: Walked, taken: Vector2) -> void:
 ## `from`'s to the tile before `to`'s, then `to` itself, by a breadth-first search over the tiles
 ## `mover` may stand on, square steps only, so each leg stays on the two tiles it joins, never
 ## entering a tile of `avoid`. Empty when `to`'s tile is not reached within `SEARCH_LIMIT` tiles,
-## and just `to` when the two share a tile.
+## and empty as well when the two share a tile, since there is no way to lay: a caller tells the
+## two apart by asking whether `from` and `to` share a tile.
 ##
 ## **`near` above zero ends it beside `to`** rather than on it: at the first tile whose centre is
 ## within `near` of `to`, that tile's centre last and `to` left out — the way up to somebody whose
-## own body takes the ground they stand on, which no way can end on.
+## own body takes the ground they stand on, which no way can end on. Empty, too, when `from`'s own
+## tile is already within `near`.
 func path(from: Vector2, to: Vector2, mover: Mover, avoid := Rect2i(),
 		near := 0.0) -> PackedVector2Array:
 	if not _map.has_ground():
