@@ -38,8 +38,7 @@ the run flow hands in: `main` hands each day's spec to `EventManager.use_the_spe
 `start_day()`, `main` hands an authored scene the spec its clock and HUD run on
 (`main.day_spec()` for a day scene, `--day-length` included; the escape boot's section for an escape
 scene) through `SceneRecipeRuntime.install()`, which hands it to `start_recipe(plans, spec, day,
-focus)`, and
-`start_finale()` is `start_planned(spec, plans, focus)`. The distant window flashes are the
+focus)`, and `start_finale()` is `start_planned(spec, plans, focus)`. The distant window flashes are the
 scene's own night, and the grates are laid once per boot.
 
 **Two content losses the plain map caused, fixed rather than accepted.** On the building's tile map
@@ -64,9 +63,11 @@ across its passage; a chatting mother streamed out while leaving does not come b
 `likely-bugs.md`'s suspicion that she would (her chat ends with her leaving, and that plan is spent);
 on the same day a day's spec is owed its return rows and a spec that owes none is owed none; the
 debug fields layer cuts a row from outside at no wall; a bang from outside that comes once lights the
-windows; an authored scene runs under the spec it is handed (`test_recipe_structures`); every mover
-on a map shares its one navigator (`test_world_passability`); the explosion's debug outline is drawn
-whole (`test_wall_shield`).
+windows; an authored scene runs under the spec it is handed (`test_recipe_structures`); an event
+director handed only the map takes the map's navigator, the one the city, its events and its crowd
+hold (`test_world_passability`). The crowd's and the resistance director's fallbacks to the map's
+navigator are right by reading and untested, as is `main` handing `install()` its own spec;
+`SceneRecipeRuntime.walk_spec` is read by tests alone.
 
 **Choices made where the design was silent, open to overturn:** each map reaches the node that draws
 it through a `world` field that node hands over; `has_ground()` is the one question the navigator and

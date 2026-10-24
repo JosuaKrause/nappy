@@ -7,7 +7,10 @@ instantiate `main`; `test_home_block.gd` (near 249) copies `City._height_for`'s 
 rebuilds placement from other classes' private functions (`SealPlanner._eligible`, `_place`,
 `_seal_along_tile`, `_mark_soft_sealed`; `EventScheduler._build_placement`, `_room_around`,
 `_finale_ground`, `_without_its_aftermath`; `RegionPlanner._add_door_bodies`; `city.events._plans`;
-`instance._advance_gait`), so authored scenes drift from the game.
+`instance._advance_gait`), so authored scenes drift from the game. `SceneRecipeRuntime.walk_spec` is a
+public field only tests read, and two checks compare it with the value just assigned; no test
+reaches the crowd's or `ResistanceDirector`'s fallback to the map's navigator, or `main` handing
+`SceneRecipeRuntime.install()` the spec its clock runs on.
 
 **Build:** as each owner is extracted (the items above), it gets public seams and injected
 dependencies, and the tests that reached into it move to the seams, with fakes injected instead of
