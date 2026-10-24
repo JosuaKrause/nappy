@@ -742,7 +742,7 @@ func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
 ## cities, and at every roadblock the escape can stand there, in a straight line from all round it, with the camera's view led by her walk as `Stroller` leads it
 ## (`RoadblockRig.view_round()`), and on the frame his hand goes up the whole of his raised-hand
 ## picture at his post (`EventInstance.warning_guard_rect()`) is inside that view, he is drawn above
-## the street's other figures (`EventInstance.WARNING_GUARD_Z`); on every approach that ends in his
+## the street's other figures (`DrawLayer.Layer.WARNING`); on every approach that ends in his
 ## charge, his hand went up first; once he charges, he sorts
 ## with the street again. The approaches on which the radius alone would have warned her with him
 ## off the view are counted, so the view's part in the notice is shown to be doing something.
@@ -803,7 +803,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 						t.check(view.encloses(EventInstance.warning_guard_rect(
 								guard._spread_vertical, band, her)),
 								"%s: his raised hand goes up in her view" % where)
-						t.check(guard.z_index == EventInstance.WARNING_GUARD_Z,
+						t.check(DrawLayer.layer_of(guard) == DrawLayer.Layer.WARNING,
 								"%s: and he is drawn above the street round him" % where)
 						if open_walk:
 							outside += 1
@@ -812,7 +812,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 						charges += 1
 						t.check(warned_here,
 								"%s: his hand went up before he charged" % where)
-						t.check(guard.z_index == 0,
+						t.check(DrawLayer.layer_of(guard) == DrawLayer.Layer.ENTITIES,
 								"%s: once he charges he sorts with the street again" % where)
 				made[0].free()
 	t.check(warned > 0 and outside > 0,

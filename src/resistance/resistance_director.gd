@@ -478,7 +478,9 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			_contact.ride(_step, _rider, Vector2.ZERO)
 		at = _contact.global_position
 	_contact.completed.connect(_on_contact_completed)
-	_city.add_entity(_contact)
+	# A mark on the ground belongs under everything that stands on it, including her, standing on it
+	# to read it.
+	_city.add_entity(_contact, DrawLayer.Layer.GROUND_MARKS)
 	# Where several places answer, the arrow starts on the one the contact was placed on, and
 	# `_process()` moves it to the closest on foot once the first sweep has finished.
 	if ResistanceSteps.answers_at_several_places(_step):
