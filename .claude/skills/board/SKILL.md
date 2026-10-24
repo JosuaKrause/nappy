@@ -15,16 +15,15 @@ conversation (inbox #830).
 The board is the Claude Doc "Nappy board", https://claude.ai/artifact/UbMpXbepDzN4Mfgs7tAxqm (doc
 id `df72dcc8-963b-4b22-bf78-ca097d25c920`, its one tab `4560d3a5-7376`, the tab's body node
 `bdec01d2-2025`). Only a Claude Code session with the Claude Docs tools reaches it; Codex has no
-route to it and keeps asking in its own chat. **Only the orchestrating session writes it**: a
-session that opens it by accident changes nothing and answers nothing, and the board says so in
-its own words. **Nobody @-mentions Claude in it**, since a mention summons a separate session that
-has none of this context.
+route to it. **Only the orchestrating Claude Code session acts on it**: any other session that opens
+it changes nothing and answers nothing (inbox #830), and the board says so. Claude is never
+@-mentioned in it, since a mention summons a separate session that has none of this context.
 
 ## When it is read
 
-**On every turn the orchestrator takes, and whenever the player says "doc" or "check the doc"**
-(inbox #830). Nothing notifies the terminal session of an edit, so the board is never polled on a
-timer: the player gives a heads-up when it matters. A report from an agent, a merge or a review
+**On every turn the orchestrator takes, and whenever the player says "doc" or "check the doc".**
+Nothing notifies the terminal session of an edit, and the player gives a heads-up when it matters
+rather than have the board polled (inbox #830). A report from an agent, a merge or a review
 verdict updates the Running table in the same turn.
 
 ## The layout
@@ -42,7 +41,7 @@ Top to bottom, every part present even when empty:
 6. `## How this board works`: a bullet list of the rules below, in the player's terms.
 
 **A question is a level-3 heading with a stable kebab-case name and one bullet list under it**,
-nested exactly like this (the player's own layout):
+nested exactly like this, the layout the player set on the board:
 
 ```markdown
 ### charger-size
