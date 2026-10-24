@@ -24,7 +24,7 @@ hack and the per-panel offset arithmetic are gone. The warning guard's raise is 
 field `EventDef.warns_over_the_street`, set on `roadblock`, draws him on `WARNING` while he warns
 and on `ENTITIES` otherwise.
 
-**Verified at test parity** (inbox #813): `check.sh`, `lint.sh`, `ci_telemetry_kinds.py` and 26
+**Verified at test parity** (inbox #813 in curly-moose): `check.sh`, `lint.sh`, `ci_telemetry_kinds.py` and 26
 suites two or three per call with 0 failures, the full suite left to CI. A new
 `tests/test_draw_layers.gd` fails on any `z_index` or `z_as_relative` write in `src/` or `scenes/`
 outside `DrawLayer`, and checks the layer order, adding on a layer, the slice arithmetic and that a

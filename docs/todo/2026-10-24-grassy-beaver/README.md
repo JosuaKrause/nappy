@@ -19,9 +19,11 @@ day 3 moved to the head of the director's queue and one line said on the frame i
 objects that cause noise, (c) turn around at a dead end, (d) cross the street when one sidewalk is
 blocked, (e) time the approach for moving obstacles, (f) not the same way every day (curly-moose
 #819). Agreed after the research (the orchestrator's proposal; the player: "the rest sounds good",
-curly-moose #819): **day 1 teaches (a), (b) and (d)**, as one sequence; (c) and (e) are day 2's
-(`day-two.md`); (f) is learned on day 2 by construction. Day 1's car losses are players running
-across the street away from the crossings (curly-moose #832), which `day-two.md` also takes up.
+curly-moose #819): **day 1 teaches (a), (b) and (d)**, as one sequence; (c) is day 2's ("dead end in day 2
+sounds good as well", curly-moose #819, in `day-two.md`); where (e) goes is open there; (f) is
+learned on day 2 by construction. On day 1's car losses the player: "traffic crossings are already
+only where cars are stopped -- the issue comes from players who just run across the street"
+(curly-moose #832), which `day-two.md` takes up.
 
 **The research behind it** (an agent's survey of onboarding studies on 2026-10-24; the sources are
 in the conversation's report, summarised here): in simple games tutorial text made a negligible
