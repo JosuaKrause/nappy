@@ -34,7 +34,9 @@ which is how the explosion outside is placed. The fire and the explosion are cat
 `EventDef.from_outside` means no wall stops the field and the world shows the bang
 (`WorldContext.bang_outside()`, the window flash). `without_its_aftermath()` exists once, in the
 catalogue. The escape's flags are spec settings (`DaySpec.owes_a_return`, `DaySpec.poster_pursuits`)
-and `start_finale()` is `start_planned(spec, plans, focus)`. The distant window flashes are the
+the run flow hands in: `main` hands each day's spec to `EventManager.use_the_spec()` before
+`start_day()`, a recipe's runtime hands its spec to `start_recipe(plans, spec, day, focus)`, and
+`start_finale()` is `start_planned(spec, plans, focus)`. The distant window flashes are the
 scene's own night, and the grates are laid once per boot.
 
 **Two content losses the plain map caused, fixed rather than accepted.** On the building's tile map
@@ -49,13 +51,17 @@ across its passage wall to wall.
 **Verified at test parity** (inbox #813 in curly-moose): `check.sh`, `lint.sh`,
 `ci_telemetry_kinds.py` and about 45 suites with 0 failures, the full suite on CI. Tests changed only
 as far as the code moved: the building's events are built through `tests/building_events.gd` and a
-vent is its plan; a restart leaves the grates lying; the far flashes are asserted on the scene; the
-indoor wall check compares the map's wall answer with its walkability; static helpers that took a
-null map take open ground; `start_planned` and `test_pursuer_on_foot` are handed the escape's
-settings. New tests: a catch in the building ends the section through the day's hard fail and
+vent is its plan; a restart leaves the grates lying; the far flashes are asserted on the scene; static
+helpers that took a null map take open ground; `start_planned`, `test_pursuer_on_foot` and
+`test_scene_recipe_task` are handed the spec. `test_wall_shield`'s indoor wall check is dropped: on
+the building's own map the wall answer is its walkability by definition, and nothing independent of
+it is left to compare with. New tests: a catch in the building ends the section through the day's hard fail and
 `what_struck_her()` names the masked man; he never stands off the building's floor; the mouse dashes
 across its passage; a chatting mother streamed out while leaving does not come back, which answers
-`likely-bugs.md`'s suspicion that she would (her chat ends with her leaving, and that plan is spent).
+`likely-bugs.md`'s suspicion that she would (her chat ends with her leaving, and that plan is spent);
+on the same day a day's spec is owed its return rows and a spec that owes none is owed none; the
+debug fields layer cuts a row from outside at no wall; a bang from outside that comes once lights the
+windows.
 
 **Choices made where the design was silent, open to overturn:** each map reaches the node that draws
 it through a `world` field that node hands over; `has_ground()` is the one question the navigator and
