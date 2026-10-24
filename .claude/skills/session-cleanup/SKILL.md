@@ -178,7 +178,8 @@ Name every open thread by PR number and short title, branch or worktree when rel
 checkpoint, exact next action, remaining gate and verification already completed. **List the
 open inbox notes** by issue number and title, as `tools/inbox.py list` prints them at the
 handover, so the next session knows what the player has written and nobody has filed yet
-(**inbox**). Restate the scope fences that matter. If delegation should continue, say to start fresh agents with
+(**inbox**). Give the Nappy board's last read `rev` and last comment `seq`, so the next session
+reads only what changed since (**board**). Restate the scope fences that matter. If delegation should continue, say to start fresh agents with
 self-contained briefs rather than resuming the session's agents. Keep the prompt self-contained and
 current at the moment of handover; the final report may summarize it, but the file must stand on
 its own.
