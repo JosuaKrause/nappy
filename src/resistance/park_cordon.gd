@@ -138,6 +138,9 @@ class Officer extends RefCounted:
 
 var _map: CityMap
 var _city: City
+## What an officer's way out is searched over: ground a figure on foot may stand on
+## (`Mover.on_foot()`).
+var _officer_walks := Mover.on_foot()
 ## The day's obstruction as the director's reachability answer has it (`EventScheduler.
 ## blocked_by()`: today's closures plus every body's disc), which the last gap is checked under.
 var _blocked: Dictionary
@@ -648,8 +651,9 @@ func _route_away(start: Vector2i, her: Vector2, shows: Callable) -> PackedVector
 			points.append(_map.tile_to_world(found[i]))
 	return points
 
-## A breadth-first search from `start` over walkable ground outside the park and clear of the day's
-## obstruction, roads only when `roads`, to the first tile out of her sight. The tiles of the way
+## A breadth-first search from `start` over ground an officer may stand on (`CityMap.passable()`)
+## outside the park and clear of the day's obstruction, roads only when `roads`, to the first tile
+## out of her sight. The tiles of the way
 ## there, or empty when none is found within `ROUTE_SEARCH_LIMIT`.
 func _search_away(start: Vector2i, her: Vector2, shows: Callable,
 		roads: bool) -> Array[Vector2i]:
@@ -675,8 +679,8 @@ func _search_away(start: Vector2i, her: Vector2, shows: Callable,
 	return []
 
 func _may_walk(tile: Vector2i, roads: bool) -> bool:
-	if not _map.in_bounds(tile) or not _map.is_walkable(tile) or _rect.has_point(tile) \
-			or _blocked.has(tile):
+	if not _map.in_bounds(tile) or not _map.passable(tile, _officer_walks) \
+			or _rect.has_point(tile) or _blocked.has(tile):
 		return false
 	return roads or _map.tile_at(tile) != GameEnums.TileType.ROAD
 
@@ -798,6 +802,14 @@ func _walk_path(officer: Officer, step: float) -> bool:
 ## `_walk_path()`, answering what is left of `step` once the path is walked, or -1 while it is not,
 ## so a taper goes on into his next stretch in the same frame rather than losing the rest of it at
 ## every stretch's end, which over a large park's forty-odd stretches makes the close late.
+##
+## **Not through the navigator**: an officer's walk in and a taper's walk round the park's edge are
+## laid straight, at a fixed offset outside it, through whatever the day stands there — a band on
+## the park's sidewalk, a figure in the park — and the close is timed and its pace set over those
+## straight walks (`_round_path()`, the cordon's own timing). Stopped by what stops her, an officer
+## stalls at such a body, or goes round it and the last gap closes late, so the walks have to be
+## planned round the bodies before they can be walked round them. His way out and an escort's are
+## searched over ground he may stand on (`_may_walk()`).
 func _walk_path_for(officer: Officer, step: float) -> float:
 	var left := step
 	while left > 0.0 and not officer.path.is_empty():

@@ -491,8 +491,9 @@ func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going
 ## no field, no line of text — so the neighbor is a figure she may notice and never a task.
 ##
 ## The way is a coin flip between the two directions along her street, each taken as far as
-## `EventScheduler._room_along()` allows and stopped short of a closed tile, the same shape every
-## route along a street is given; the longer one when only one fits a block. A figure walking half
+## `EventScheduler._room_along()` allows and stopped short of anything that stops a figure on foot
+## (`CityMap.passable()`: a closure, a seal, a body), the same shape every route along a street is
+## given; the longer one when only one fits a block. A figure walking half
 ## her pace down her own street is out of sight long before the route runs out, whichever way she
 ## goes, so the departure at its end is one nobody sees.
 func _send_the_neighbor_to_work() -> EventInstance:
@@ -510,8 +511,9 @@ func _send_the_neighbor_to_work() -> EventInstance:
 		along = -along
 	var room := maxi(east, west)
 	var length := 0
+	var mover := EventInstance.mover_for(def)
 	for step in range(1, room + 1):
-		if _map.is_closed(tile + along * step) or not _map.is_walkable(tile + along * step):
+		if not _map.passable(tile + along * step, mover):
 			break
 		length = step
 	if length < 2:

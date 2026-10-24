@@ -3021,7 +3021,8 @@ static func _build_placement(def: EventDef, map: CityMap, tile: Vector2i,
 		return placed
 	match def.path_mode:
 		EventDef.PathMode.CROSS_STREET:
-			return Planned.new(def, at, _cross_street_path(map, tile))
+			var crossing := _cross_street_path(map, tile)
+			return null if crossing.is_empty() else Planned.new(def, at, crossing)
 		EventDef.PathMode.ALONG_STREET:
 			var route := _along_street_path(map, tile, def, rng)
 			# Nowhere to go from here; a "mobile" event that stands still is worse than
@@ -3981,14 +3982,16 @@ static func _along_street_path(map: CityMap, tile: Vector2i, def: EventDef,
 		room = backward_room
 
 	var length := mini(def.path_length_tiles, room)
-	# Stop short of a closed street rather than driving through the barrier at the end of it — and
-	# short of a calm zone's absorbed corridor as well. A corridor that ends in a park is
-	# not a corridor a delivery van can drive down, and unlike a closure there is nothing there
-	# to hit: the route would simply cross the grass.
+	# Stop short of anything that stops the row (`CityMap.passable()`, as it moves: a closure's
+	# barrier, a seal, a body standing today) rather than walking or driving through it — and short
+	# of a calm zone's absorbed corridor as well. A corridor that ends in a park is not a corridor a
+	# delivery van can drive down, and unlike a closure there is nothing there to hit: the route
+	# would simply cross the grass.
 	var from_a_street := map.is_street(tile)
+	var mover := EventInstance.mover_for(def)
 	for step in range(1, length + 1):
 		var next := tile + along * step
-		if map.is_closed(next) or (from_a_street and not map.is_street(next)):
+		if not map.passable(next, mover) or (from_a_street and not map.is_street(next)):
 			length = step - 1
 			break
 	if length <= 0:
@@ -4010,14 +4013,26 @@ static func _along_street_path(map: CityMap, tile: Vector2i, def: EventDef,
 	return PackedVector2Array([map.tile_to_world(tile), map.tile_to_world(finish)])
 
 ## A route straight across the street the tile sits on. A cat runs *across* traffic, so the
-## path is perpendicular to the road it starts from.
+## path is perpendicular to the road it starts from: out from the tile each way, at most a street's
+## width, as far as a figure on foot may stand (`CityMap.passable()`), so it comes out of one kerb
+## and goes into the other and never starts or ends inside a lot. Empty, so the candidate is
+## refused, where the tile is not one a figure on foot may stand on or nothing either side of it is.
 static func _cross_street_path(map: CityMap, tile: Vector2i) -> PackedVector2Array:
 	var vertical_road := CityMap.corridor_offset(tile.x) >= 0
 	var across := Vector2i.RIGHT if vertical_road else Vector2i.DOWN
 	var reach := Tuning.STREET_WIDTH
-	var from := map.tile_to_world(tile - across * reach)
-	var to := map.tile_to_world(tile + across * reach)
-	return PackedVector2Array([from, to])
+	var mover := Mover.on_foot()
+	var ends: Array[Vector2i] = []
+	for way: Vector2i in [-across, across]:
+		var end := tile
+		for step in range(1, reach + 1):
+			if not map.passable(tile + way * step, mover):
+				break
+			end = tile + way * step
+		ends.append(end)
+	if ends[0] == ends[1] or not map.passable(tile, mover):
+		return PackedVector2Array()
+	return PackedVector2Array([map.tile_to_world(ends[0]), map.tile_to_world(ends[1])])
 
 # ---------------------------------------------------------------- park rules ---
 

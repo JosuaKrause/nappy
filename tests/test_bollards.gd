@@ -247,7 +247,8 @@ func _test_nothing_walks_through_the_row_but_her_own_body(t) -> void:
 					"a post's tile is neither walkable nor open")
 		# A pursuer walking straight down the band is not let onto the row's tile.
 		var before := middle - along * float(Tuning.TILE_SIZE)
-		var step := EventInstance.walkable_step_on(map, before, along * float(Tuning.TILE_SIZE))
+		var step := Navigator.new(map).step(before, along * float(Tuning.TILE_SIZE),
+				Mover.on_foot(EventInstance.FIGURE_RADIUS))
 		t.check(not step.is_equal_approx(along * float(Tuning.TILE_SIZE)),
 				"a pursuer's step does not enter the row's tile (seed %d)" % seed_value)
 		# Reachability: round by the pavement, never through.
@@ -260,7 +261,7 @@ func _test_nothing_walks_through_the_row_but_her_own_body(t) -> void:
 				% [map.distance_at(field, to), seed_value])
 		var grid := ReachabilityGrid.build(map)
 		t.check(grid.node_at(map.world_to_tile(middle)) < 0, "the grid has no node on a post's tile")
-		t.check(ReachabilityGrid.build(map, false).node_at(map.world_to_tile(middle)) >= 0,
+		t.check(ReachabilityGrid.build(map, Mover.ground()).node_at(map.world_to_tile(middle)) >= 0,
 				"but the lattice the route tree grows on still does")
 		var reached := grid.flood([from])
 		t.check(grid.reaches(to, {}, reached), "the grid joins the two sides of the row (seed %d)" % seed_value)

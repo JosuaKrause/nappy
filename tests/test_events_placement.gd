@@ -435,7 +435,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	var passes_a_side_route := 0
 	var unavoidable_on_the_route := 0
 	var first := ""
-	for day in [1, 5, 8, 11, 14]:
+	for day in [1, 3, 5, 8, 11, 14]:
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)

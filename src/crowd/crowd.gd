@@ -61,6 +61,13 @@ var _cars: Array[CrowdAgent] = []
 var _walkers: Array[CrowdAgent] = []
 var _city: City
 var _map: CityMap
+## How a walker pushed out of her way moves (`_bump()`): over `_map` through the city's navigator,
+## so a contact never shoves anybody into a wall, a barrier or a body.
+var _navigator: Navigator
+## What a pushed walker moves as: stopped by the ground, today's closures, the soft seals and every
+## stationary body, and not by a precinct's posts, which the crowd walks between as it always does
+## (it has no body, `CityMap.post_tiles()`).
+var _pushed := Mover.of(Mover.GROUND | Mover.TODAY)
 var _player: Stroller
 ## The patch of city being simulated. Held here, moved onto the player every physics frame, and
 ## read by every agent when it recycles.
@@ -145,9 +152,12 @@ func _is_she_under(gate: RegionPlanner.GateState) -> bool:
 	return _player != null \
 			and _player.global_position.distance_to(gate.position) <= _under_the_boom_within()
 
-func setup(city: City, map: CityMap) -> void:
+## Hands the crowd its city, the map it walks and drives and the navigator a push moves a walker by
+## — the city's own (`City.navigator`), or one over `map` for a rig that hands none.
+func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	_city = city
 	_map = map
+	_navigator = navigator if navigator else Navigator.new(map)
 	_signals = city.signals
 	_field = CrowdField.new(map, map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, map.size)).get_center())
@@ -1200,7 +1210,10 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	# To the clear radius rather than to the contact radius. The difference is the whole of
 	# whether the contact is over on the next frame.
 	var overlap := Tuning.BUMP_CLEAR_RADIUS - distance
-	agent.global_position += direction * overlap * (1.0 - Tuning.BUMP_PLAYER_SHARE)
+	# Their share of the separation moves them only over ground they may stand on: against a wall,
+	# a barrier or a body they slide along it or stay, and she takes her own share as she always does.
+	var push := direction * overlap * (1.0 - Tuning.BUMP_PLAYER_SHARE)
+	agent.global_position += _navigator.step(agent.global_position, push, _pushed)
 	if not agent.touching:
 		agent.touching = true
 		agent.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,

@@ -267,11 +267,11 @@ static func _growable_areas(map: CityMap) -> Array[ClosurePlanner.CalmArea]:
 	return areas
 
 ## The grid a tree is grown on: the permanent lattice as the tile types lay it, **without** the
-## precinct posts (`ReachabilityGrid.build()`'s `posts_block` false). Every caller of `grow()` takes
+## precinct posts (`ReachabilityGrid.build()` over `Mover.ground()`). Every caller of `grow()` takes
 ## its grid from here, so no tree is grown on a grid that sees the posts while `for_day()` grows on
 ## one that does not.
 static func lattice_grid(map: CityMap) -> ReachabilityGrid:
-	return ReachabilityGrid.build(map, false)
+	return ReachabilityGrid.build(map, Mover.ground())
 
 ## Grows the tree. `closed` is the merged set `CityMap.blocked_segments()` returns — the streets a
 ## calm zone absorbed. Their ground is already reflected in `grid` as walkable calm tiles, so it

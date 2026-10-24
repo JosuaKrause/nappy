@@ -1646,6 +1646,27 @@ func ahead_of_player_lead() -> float:
 		time_to_middle += telegraph_time
 	return maxf(Tuning.AHEAD_LEAD_DISTANCE, time_to_middle * Tuning.WALK_SPEED)
 
+## **How much longer a crossing that holds still crouches when its run is shorter than the one its
+## lead was timed for** (`ahead_of_player_lead()`, a half crossing of `Tuning.STREET_WIDTH` tiles):
+## a run of `run` px, cut where a solid stands nearer, reaches the middle sooner by the run it lost,
+## so it holds that much longer and still reaches the middle when she does. Zero for a run as long
+## as the timed one, and for a row that does not hold still, which has no crouch to lengthen.
+func crouch_for_a_run(run: float) -> float:
+	if not mobile or speed <= 0.0 or not still_while_telegraphing:
+		return 0.0
+	return maxf(0.0, (float(Tuning.STREET_WIDTH) * Tuning.TILE_SIZE - run) / speed)
+
+## **The nearest to her line a crossing that holds still may crouch**, in px, so she walking on is
+## outside its field (`outer_radius`) for the whole crouch. A run that starts `run` px off her line
+## reaches the middle when she does (`crouch_for_a_run()`), so as it runs she is still
+## `WALK_SPEED * run / speed` short of the middle and `run * sqrt(1 + (WALK_SPEED / speed)²)` from
+## the crouch, the nearest she comes to it before it runs; this is that distance held at the field's
+## edge. Zero for a row that does not hold still.
+func nearest_crouch() -> float:
+	if not mobile or speed <= 0.0 or not still_while_telegraphing:
+		return 0.0
+	return outer_radius / sqrt(1.0 + pow(Tuning.WALK_SPEED / speed, 2.0))
+
 ## Seconds from the moment this row becomes visible to the earliest it can reach her, on the worst
 ## heading the game can give it — what the fairness contract holds against `minimum_telegraph()`.
 ##

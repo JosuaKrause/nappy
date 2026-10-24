@@ -612,8 +612,8 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 
 ## **With a building between them, he walks round it to her.** On seed 4242's day 13, the task's
 ## own guard is set on her where she stands a few blocks off with a building across his straight
-## line — a spot from which a chase straight at her, sliding along walls
-## (`EventInstance.walkable_step_on()`), never comes within his stand-off of her, and which she
+## line — a spot from which a chase straight at her, sliding along walls (`Navigator.step()`, as a
+## man on foot), never comes within his stand-off of her, and which she
 ## could walk to from him — and he reaches her stand-off within the time his walk to her takes
 ## at his speed, his notice and a margin on top.
 func _test_the_guard_walks_round_a_building_to_her(t) -> void:
@@ -645,7 +645,8 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 			"(round a building) the red arrow's cached ground is the guard's walk's ground")
 	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
 	var from := guard.global_position
-	var walk := map.walk_field(map.world_to_tile(from))
+	# His walk to her goes round what stops a figure on foot today, as his sweep does.
+	var walk := map.walk_field(map.world_to_tile(from), map.blocked.tiles_of(Mover.TODAY))
 	var at := Vector2.INF
 	var tiles_to_her := -1
 	for radius in range(5, 16):
@@ -692,17 +693,19 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 
 ## Whether a chase straight at `to` from `from`, sliding along walls as every pursuer's step does
-## (`EventInstance.walkable_step_on()`), ever comes within `standoff` of it in 30s at `speed`, in
+## (`Navigator.step()`, a man on foot), ever comes within `standoff` of it in 30s at `speed`, in
 ## steps of a tenth of a second.
 static func _a_straight_chase_reaches(map: CityMap, from: Vector2, to: Vector2,
 		standoff: float, speed: float) -> bool:
 	var at := from
+	var navigator := Navigator.new(map)
+	var chaser := Mover.on_foot(EventInstance.FIGURE_RADIUS)
 	for i in 300:
 		var toward := to - at
 		if toward.length() <= standoff:
 			return true
 		var step := toward.normalized() * minf(speed * 0.1, toward.length())
-		at += EventInstance.walkable_step_on(map, at, step)
+		at += navigator.step(at, step, chaser)
 	return false
 
 ## Walkable, open, unobstructed ground within `reach` of `body`, nearest the reach's edge first —

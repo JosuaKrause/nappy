@@ -112,6 +112,9 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 @onready var _building_shadows: BuildingShadows = $BuildingShadows
 
 var map: CityMap
+## How everything that moves over `map` moves (`Navigator`), built once with the map and handed to
+## the event manager, the crowd and whatever else this city's world puts in motion — never fetched.
+var navigator: Navigator
 var events: EventManager
 ## Where the city, its posters, its events and the day's closures write their own account for the
 ## run log — set before `build()`, which hands it on; silent until then.
@@ -233,6 +236,7 @@ class HomeDoor extends Sprite2D:
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
 	map = city_map
+	navigator = Navigator.new(map)
 	scenery = SceneryResidency.new()
 	scenery.city = self
 	scenery.frame_locked = scenery_frame_locked
@@ -282,14 +286,14 @@ func build(city_map: CityMap) -> void:
 	if all_cyclists_pelicans:
 		events.pelican_rig = EventManager.PelicanRig.ALWAYS
 	add_child(events)
-	events.setup(self, map)
+	events.setup(self, map, navigator)
 	events.force(forced_row, forced_interval)
 	crowd = Crowd.new()
 	crowd.name = "Crowd"
 	crowd.skip_agent_drawing = skip_crowd_drawing
 	crowd.skip_motion = skip_crowd_motion
 	add_child(crowd)
-	crowd.setup(self, map)
+	crowd.setup(self, map, navigator)
 	blackout = Blackout.new()
 	blackout.name = "Blackout"
 	blackout.forced = blackout_forced
@@ -1291,15 +1295,20 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 			(panel as ParkFenceMarker).sign_offset = at - panel.position
 		_add_closure_node(panel, true)
 
-	var body := StaticBody2D.new()
-	var shape := CollisionShape2D.new()
-	var box := RectangleShape2D.new()
-	box.size = Vector2(width, Tuning.CLOSURE_BARRIER_DEPTH) if across \
-			else Vector2(Tuning.CLOSURE_BARRIER_DEPTH, width)
-	shape.shape = box
+	var body := barrier_footprint(closure).body()
 	body.position = at
-	body.add_child(shape)
 	_add_closure_node(body, false)
+
+## **A closure's barrier line as a solid**: one box `barrier_width()` long and
+## `Tuning.CLOSURE_BARRIER_DEPTH` deep, laid across the street or along the park's edge, its origin
+## at the line's middle. Its body stops her (`_spawn_barrier()`); its tiles are closed ground, since
+## the line stands on a mouth the closure takes (`CityMap.close_streets()`), so every other mover is
+## stopped by the same line.
+static func barrier_footprint(closure: RoadClosure) -> Footprint:
+	var width := closure.barrier_width()
+	var size := Vector2(width, Tuning.CLOSURE_BARRIER_DEPTH) if closure.barrier_runs_across() \
+			else Vector2(Tuning.CLOSURE_BARRIER_DEPTH, width)
+	return Footprint.of(GroundShape.rect(size * 0.5))
 
 func _add_closure_node(node: Node, y_sorted: bool) -> void:
 	_closure_nodes.append(node)

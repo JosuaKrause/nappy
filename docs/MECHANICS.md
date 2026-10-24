@@ -1037,19 +1037,24 @@ whole contract and it runs on load.
 
 **And it stops at walls.** A chase is a straight line at whatever is chasing her (all but day 13's
 task guard, set on her from wherever he stands, who walks the way to her round buildings where no
-clear line runs to her: `docs/EVENTS.md`, the resistance's trap), and nothing about that line asks
-the city anything — so `EventInstance._walkable_step()` clamps every step of it to
-ground `CityMap.is_walkable()` agrees with, sliding along whichever single axis is still open when
-the direct line is not, rather than cutting the corner of a building the way an unclamped chase
-would. It is not a body — a pursuer stays exempt from `obstructs_radius` for the same reason
-`dog_walker` is, a moving wall on a two-tile pavement pins her against a building — it is only ever
-a question about the one tile the next step would land on.
+clear line runs to her: `docs/EVENTS.md`, the resistance's trap), and every step of it goes through
+the one navigator every mover moves by (`Navigator.step()`): it is refused where it would enter
+ground a figure on foot may not stand on — a building, a precinct's post, a closure, a soft seal or
+a stationary body (`CityMap.passable()`) — sliding along whichever single axis is still open when
+the direct line is not, rather than cutting the corner of a building or a barrier the way an
+unclamped chase would. **The step is swept**: every tile it crosses is asked, so a long frame cannot
+carry a chaser through a wall a tile thick, and the ground his body's reach takes past where he
+lands, in the way he is going, has to be open too. It is not a body — a pursuer stays exempt from
+`obstructs_radius` for the same reason `dog_walker` is, a moving wall on a two-tile pavement pins her
+against a building.
 
 **Nor does it reach through them: it catches her only by touching her.** *(freckled-goose, #544:
 "Only if the Robert touches the player should it end instantly".)* A pursuer's catch is its reach
 **and** a clear line — `EventInstance.is_lethal_at()` asks `_clear_line_to()` whether the straight
-line from it to her crosses any ground `CityMap.is_walkable()` refuses, every tile the line enters,
-so within reach across a building's corner is not a catch. The reach itself is unchanged, and only
+line from it to her crosses any ground a figure on foot may not enter (`CityMap.clear_line()`),
+every tile the line enters, so within reach across a building's corner, a barrier or a café is not
+a catch. The line sees out of a band the pursuer stands in, and the tile she stands on never hides
+her. The reach itself is unchanged, and only
 a pursuer asks — every other `hard_fail` row's catch is still the straight-line distance.
 
 **Nor does it notice or lunge through them.** *(leafy-puffin, inbox #648: "yes noticing needs a

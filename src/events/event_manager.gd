@@ -33,6 +33,9 @@ var _plans: Array[EventScheduler.Planned] = []
 var _director: EventDirector
 var _city: City
 var _map: CityMap
+## How every figure this manager makes moves over `_map` (`Navigator`): handed to each in
+## `_create()`, so a figure never finds its own way over the city.
+var _navigator: Navigator
 ## Where the manager, the day's planning and every instance it creates write their own account for
 ## the run log — the city's, set before `setup()`; silent until then.
 var trace := RunTrace.new()
@@ -165,10 +168,20 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	AtlasLibrary.release(EventInstance.ATLAS_GROUP)
 
-func setup(city: City, map: CityMap) -> void:
+## The navigator handed in by `setup()`, or one over `_map` where none was handed for it — a rig
+## that sets the map itself.
+func _the_navigator() -> Navigator:
+	if _navigator == null or _navigator.map() != _map:
+		_navigator = Navigator.new(_map)
+	return _navigator
+
+## Hands the manager its city, the map it places on and the navigator its figures move by — the
+## city's own (`City.navigator`), or one over `map` for a rig that hands none.
+func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	_city = city
 	_map = map
-	_director = EventDirector.new(map)
+	_navigator = navigator if navigator else Navigator.new(map)
+	_director = EventDirector.new(map, _navigator)
 	_director.force(_forced_row, _forced_interval)
 	# **Connected once however often this is called.** `City.build()` calls `setup()` and a rig
 	# that wants its own map calls it again on the same manager, which Godot answers with an
@@ -277,7 +290,8 @@ func send_a_pursuer() -> void:
 ## patrol car on the `PRESSES` rung his catch is a stop, out of a `HUNTS` van it ends the day) put
 ## down at its door on her side (`EventInstance.door_for_its_officer()`),
 ## spread along its flank `OFFICER_SPACING` apart when there are two, or on the other side where
-## hers is not walkable, or at the vehicle itself where neither is. They appear in her view, so
+## hers is not ground he may stand on (`Navigator.passable_at()`), or at the vehicle itself where
+## neither is. They appear in her view, so
 ## there is no badge: their notice is the sight of them, standing with a hand raised
 ## (`EventDef.sets_off_beside_her`, `stands_for_its_notice`). Outside the day's plan, like everything put down after dawn by
 ## a director.
@@ -288,12 +302,13 @@ func _let_the_officers_out() -> void:
 			continue
 		var def := EventCatalogue.out_of_the_car(_day,
 				vehicle.def.heat_response != EventDef.HeatResponse.HUNTS)
+		var walks := EventInstance.mover_for(def)
 		for i in owed:
 			var along := (float(i) - float(owed - 1) * 0.5) * OFFICER_SPACING
 			var at := vehicle.door_for_its_officer(def, 1.0, along)
-			if not _map.is_walkable(_map.world_to_tile(at)):
+			if not _the_navigator().passable_at(at, walks):
 				at = vehicle.door_for_its_officer(def, -1.0, along)
-			if not _map.is_walkable(_map.world_to_tile(at)):
+			if not _the_navigator().passable_at(at, walks):
 				at = vehicle.global_position
 			var officer := _spawn_unplanned(def, at)
 			officer.player_at = _player.global_position
@@ -369,15 +384,12 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 			fallback = at
 	return [fallback, false]
 
-## Whether every point on the straight line from `from` to `to` is walkable, at a quarter tile, and
-## the line passes through no body of the day's region wall or doors — a man walking through the
-## checkpoint she was inspected at is no run at her.
+## Whether the straight line from `from` to `to` crosses only ground a man on foot may enter
+## (`Navigator.clear_line()`), and passes through no body of the day's region wall or doors — a man
+## walking through the checkpoint she was inspected at is no run at her.
 func _a_clear_run_at(from: Vector2, to: Vector2, region: RegionPlanner.RegionPlan) -> bool:
-	var steps := ceili(from.distance_to(to) / (Tuning.TILE_SIZE * 0.25))
-	for i in steps + 1:
-		var point := from.lerp(to, float(i) / float(maxi(steps, 1)))
-		if not _map.is_walkable(_map.world_to_tile(point)):
-			return false
+	if not _the_navigator().clear_line(from, to, Mover.on_foot()):
+		return false
 	if region:
 		for body: EventScheduler.Planned in region.wall_bodies + region.door_bodies:
 			var nearest := Geometry2D.get_closest_point_to_segment(body.position, from, to)
@@ -845,16 +857,9 @@ static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 	# it is asked of the placed position for the same reason the axis is: a piece offset the wrong
 	# way is a body recorded across the street from the car it belongs to.
 	var spread_vertical := EventInstance._spread_is_vertical(map, placed)
-	var covered: Array[Vector2i] = []
-	for piece in def.parts():
-		var offset := piece.offset_for(spread_vertical)
-		var centre := placed + (Vector2(0.0, offset) if spread_vertical else Vector2(offset, 0.0))
-		for tile in piece.shape.tiles_under(centre, axis):
-			# Two pieces may overhang one tile, and the record counts **bodies** rather than
-			# pieces: a body that recorded one tile twice would need two releases to give it back.
-			if not covered.has(tile):
-				covered.append(tile)
-	return covered
+	# The footprint the instance builds its physics body from
+	# (`EventInstance.solid_footprint_of()`), so the record and the body are one solid.
+	return EventInstance.solid_footprint_of(def, axis, spread_vertical).tiles(placed)
 
 ## The ground-plane direction a sited body's spine lies along — `EventInstance._solid_axis()` for a
 ## body that does not exist yet, off the same two statics that instance would read.
@@ -1060,7 +1065,7 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 	var instance := EventInstance.new()
 	instance.skip_draw = skip_drawing
 	instance.trace = trace
-	instance.setup(def, at, path, facing, _map)
+	instance.setup(def, at, path, facing, _map, _the_navigator())
 	# The day-3 lesson's dog, for its own charging counter: the first dog today on the day the run
 	# is taught (`EventInstance.is_the_lesson`). Telemetry only.
 	if def.id == "charging_dog" and _day == Tuning.RUN_TAUGHT_DAY and not _lesson_dog_made:
@@ -1756,15 +1761,20 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	if def.pursues:
 		_warn_down_her_heading(def, body.global_position, path[0])
 		return
-	_spawn_unplanned(def, path[0], path)
+	var crossing := _spawn_unplanned(def, path[0], path)
+	# A run cut short by a solid crouches longer by the run it lost, as the director worked it out
+	# with the run (`EventDef.crouch_for_a_run()`).
+	if due.size() > 2:
+		crossing.hold_still_longer(float(due[2]))
 	# The distance it was actually sited at rather than the constant. A pursuer is sited beyond its
 	# own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant makes every
 	# `ahead` line for the one row a chase is about say the wrong number.
-	var crossing_point: Vector2 = path[0] if path.size() < 2 \
-			else (path[0] + path[path.size() - 1]) * 0.5
-	var lead := crossing_point.distance_to(body.global_position)
-	var verb := "comes at her from" \
-			if def.pursues or def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER else "crosses"
+	# A crossing is measured where the director sited it to cross her line (`due[3]`), not at its
+	# midpoint, which a run from the open side is not centred on. A row that comes down her own
+	# street has no crossing, so it is measured to where it is created, `path[0]`.
+	var crosses := due.size() > 3 and due[3] is Vector2
+	var lead := (due[3] as Vector2 if crosses else path[0]).distance_to(body.global_position)
+	var verb := "crosses" if crosses else "comes at her from"
 	trace.note("ahead", "%s %s %.0fpx in front of her at %s" % [
 		def.id, verb, lead,
 		RunTrace.tile(_map.world_to_tile(body.global_position))])
@@ -1824,8 +1834,8 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.down_her_line(_map, def, at, direction, _visible)
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
-		var path := PendingWarning.route_down_her_line(_map, place, at, direction)
-		if not _director.clear_of_the_doors(path, def):
+		var path := _route_down_her_line(def, place, at, direction)
+		if path.size() < 2 or not _director.clear_of_the_doors(path, def):
 			return false
 		var instance := spawn_warned(def, path, pelican)
 		trace.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
@@ -1835,6 +1845,14 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var warning := warn_first(def, her, where, arrive)
 	if warning:
 		warning.is_pelican = pelican
+
+## The route a row coming down her line is created on (`PendingWarning.route_down_her_line()`), cut
+## to the ground the row can run on (`Navigator.trim()`), so a bike or a dog never comes through a
+## building, a barrier or a body; fewer than two points where it cannot set off at all.
+func _route_down_her_line(def: EventDef, place: Vector2, her: Vector2,
+		direction: Vector2) -> PackedVector2Array:
+	return _the_navigator().trim(PendingWarning.route_down_her_line(_map, place, her, direction),
+			EventInstance.mover_for(def))
 
 ## A row the director sends down her own line that does not telegraph its coming (`loose_dog`,
 ## `EventDef.telegraphs`): no badge and no warning, so it is created at once just out of sight down
@@ -1846,8 +1864,8 @@ func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	var place := PendingWarning.down_her_line(_map, def, her, direction, _visible)
 	if place == Vector2.INF:
 		return
-	var path := PendingWarning.route_down_her_line(_map, place, her, direction)
-	if not _director.clear_of_the_doors(path, def):
+	var path := _route_down_her_line(def, place, her, direction)
+	if path.size() < 2 or not _director.clear_of_the_doors(path, def):
 		return
 	var instance := _spawn_unplanned(def, path[0], path)
 	instance.resume(age_when_warned(def), 0.0)

@@ -1224,7 +1224,7 @@ func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF, insid
 ##
 ## A real building corner, chased round: she walks from its north face to its east face, and a dog
 ## aimed straight at wherever she currently is would cut across the building itself to follow her —
-## exactly the shape of the bug. `EventInstance._walkable_step` is the fix, and this is what it
+## exactly the shape of the bug. `EventInstance._step()` is the fix, and this is what it
 ## has to hold true of every frame regardless of the geometry, which is why the check runs the
 ## whole walk rather than sampling the end of it.
 func _test_a_pursuer_stops_at_walls(t) -> void:
@@ -1242,6 +1242,7 @@ func _test_a_pursuer_stops_at_walls(t) -> void:
 	t.add_child(instance)
 	instance.set_process(false)
 	instance._map = map
+	instance._navigator = Navigator.new(map)
 
 	# Clear the telegraph with her held far off, so what follows is about the wall and not about
 	# the stand-off.
@@ -1296,6 +1297,7 @@ func _a_chasing_robber(t, map: CityMap) -> EventInstance:
 	instance._process(STEP)
 	_advance(instance, def.warns_for + 0.1)
 	instance._map = map
+	instance._navigator = Navigator.new(map)
 	return instance
 
 ## **He catches her only by touching her.** *(freckled-goose, #544: "Even then the distance would
@@ -1344,6 +1346,7 @@ func _a_waiting_robber(t, map: CityMap, mouth: Dictionary, back: float) -> Event
 	var at := corner + d1 * 16.0 - d2 * back
 	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), at)
 	instance._map = map
+	instance._navigator = Navigator.new(map)
 	return instance
 
 ## **He notices her only along a clear line.** *(leafy-puffin, inbox #648, asked whether noticing
@@ -1452,7 +1455,7 @@ func _test_a_late_notice_is_answered_by_his_warning(t) -> void:
 			while elapsed < 8.0 and not caught and not instance.is_finished:
 				if answer == "run" and elapsed >= 0.3:
 					speed = move_toward(speed, Tuning.RUN_SPEED, Tuning.ACCELERATION * STEP)
-				her += EventInstance.walkable_step_on(map, her, d1 * speed * STEP)
+				her += Navigator.new(map).step(her, d1 * speed * STEP, Mover.lattice())
 				instance.player_at = her
 				instance.player_running = speed > Tuning.WALK_SPEED
 				instance._process(STEP)
@@ -1491,6 +1494,7 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 	for back in [20.0, 40.0, 60.0, 90.0]:
 		var instance := _instance(t, def, corner + d1 * 16.0 - d2 * back)
 		instance._map = map
+		instance._navigator = Navigator.new(map)
 		var her := corner - d1 * 300.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 		var elapsed := 0.0
 		var noticed_at := INF
@@ -1559,7 +1563,7 @@ func _test_the_red_caret_is_measured_from_the_catch(t) -> void:
 
 ## **To catch her round a corner he has to come round it.** She stands on the sidewalk just round
 ## the building from him, inside his catch in a straight line, and he chases: he slides along the
-## building's face (`_walkable_step`) and catches her only once the line between them clears the
+## building's face (`_step()`) and catches her only once the line between them clears the
 ## building's corner, never through it. Every frame of the chase is checked against a line sampled
 ## a quarter pixel at a time, a second answer to the question `_clear_line_to()` asks, so a frame
 ## that catches through the corner fails it wherever it falls.
@@ -1613,6 +1617,7 @@ func _test_a_clear_line_is_every_tile_the_line_crosses(t) -> void:
 	var buildings := map.tiles_of_type(GameEnums.TileType.BUILDING)
 	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), Vector2.ZERO)
 	instance._map = map
+	instance._navigator = Navigator.new(map)
 	var asked := 0
 	var blocked := 0
 	var disagreed := 0
@@ -1645,6 +1650,7 @@ func _a_small_map(buildings: Array[Vector2i]) -> CityMap:
 func _clear_on(t, map: CityMap, from: Vector2, to: Vector2) -> bool:
 	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), from)
 	instance._map = map
+	instance._navigator = Navigator.new(map)
 	var clear := instance._clear_line_to(to)
 	instance.free()
 	return clear

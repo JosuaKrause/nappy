@@ -659,12 +659,16 @@ at the full rate and the shoulder outside it is short. **It is the one seal that
 it is the one place `docs/CITY.md`'s *a closure is silent* does not hold; squeezing past costs more
 than half the meter, which `tests/test_seals.gd` walks rather than asserts.
 
-**A body is solid to the crowd as well as to her.** `EventManager` rasterises every stationary
-solid body's own pieces — `EventDef.parts()`, which is one piece carrying `shape` for every row but
-the crash — at the placement and along the axis the instance itself would draw them, into
-`CityMap.obstructed_tiles`, and the walkers and the cars read that record: a walker steps
+**A body is solid to everything that moves as well as to her, and both come from one footprint.**
+A row's solid footprint (`EventInstance.solid_footprint_of()`, a `Footprint`: one piece per
+`EventDef.parts()` entry, which is one piece carrying `shape` for every row but the crash, at the
+offset and along the axis the instance itself draws them) builds the instance's physics body
+(`Footprint.body()`), and `EventManager` rasterises the same footprint at the placement into
+`CityMap.obstructed_tiles` (`Footprint.tiles()`), so the body that stops her and the record that
+stops everything else cannot disagree. The walkers and the cars read that record — a walker steps
 into the other lane of its footway to get past a café and a car turns at the last junction rather
-than driving through a stall. It is taken from the day's **plan** rather than from the live
+than driving through a stall — and so does every event figure that moves, through the navigator
+it moves by (see "Every mover is stopped by what stops her" below). It is taken from the day's **plan** rather than from the live
 instances, since the crowd is steered across the whole map while an instance only exists within
 `Tuning.EVENT_STREAM_RADIUS` of the player. A piece stands on the tiles whose **middle** it covers
 (`GroundShape.tiles_under()`), since every lane is travelled down its own centre line: a van
@@ -673,6 +677,26 @@ below are the rows the record leaves out, plus one the crowd has its own answer 
 door body holds walkers at the gatehouse and cars at the boom. A hard seal's and a region wall's bodies
 are in the record like any other, because they are what a walker walks up to; a car is turned a
 junction earlier by the segment being held. See docs/MECHANICS.md, "The crowd goes round a seal".
+
+**Every mover is stopped by what stops her.** A figure walks, runs or drives only through the
+`Navigator` it is handed (`src/world/navigator.gd`), which asks the map's one blocked record through
+the figure's own `Mover`: a figure on foot is stopped by a building, a precinct's post, a closure, a
+soft seal and a stationary body (`CityMap.passable()`), a car that drives by all but the soft seal,
+which takes only the pavement. Every step is swept, so a long frame cannot carry anything through a
+wall a tile thick, and keeps the figure's body clear of what it walks toward. So a cat's crossing,
+a bike or a dog coming down her line and a car sent at her are cut, before they are accepted, to
+the ground they can run on (`Navigator.trim()`), and a crossing never starts or ends inside a lot; a
+route a solid was put across since ends where the solid stands, and the figure leaves from there; a
+departure that meets a solid straight ahead leaves by a way out of her sight
+(`Navigator.way_out()`); a man walking back to his vehicle goes round what was put across his trail
+(`Navigator.path()`); and a pursuer's notice, lunge and catch are along a line a figure on foot
+could walk (`CityMap.clear_line()`), which sees out of a band he stands in and never hides her behind
+the tile she stands on. Two exceptions: the flock's birds, since they fly (their flock's own ground
+point leaves as everything does); and day 12's cordon officers and escorts (`ParkCordon`), whose
+walk in and round the park's edge are laid straight at a fixed offset outside it and timed over
+those straight walks, so a body the day stands beside the park stops them or makes the close late
+until the cordon plans its walks round the bodies. Their way out of her sight is searched over
+ground they may stand on.
 
 **The catalogue is not the only thing carrying this datum.** A building's collision is a rectangle
 built from `shape.collision_shape()` on `GroundShape.rect(footprint * 0.5)` — `src/city/building.gd`

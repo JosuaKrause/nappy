@@ -9,5 +9,3 @@ it does not hold.
 - **An event car's re-run frame is not fully rolled back:** `_drive` (near 1928) and `_timed` (near
   2200) re-run `_process` and restore position, heading, travelled and gait, but not an emit or a
   spawn made inside it.
-- **The cat's crossing path is unchecked** (`_cross_street_path`, `event_scheduler.gd` near 3941) and
-  can end inside a lot: fixed by `world-passability.md`.

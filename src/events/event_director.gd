@@ -39,11 +39,15 @@ extends RefCounted
 ## interval or a spawn — a crossing is created on the spot and forgotten, and a place is written
 ## into the day's own plan for `EventManager` to stream like any other.
 
-## How far to either side of the crossing point the run reaches. A street's width, so the cat
-## comes out of one kerb and is gone into the other.
+## How far to either side of the crossing point the run reaches at most. A street's width, so the
+## cat comes out of one kerb and is gone into the other; a run is cut where something solid stands
+## sooner (`_crossing_ahead_of()`).
 const CROSSING_REACH_TILES := Tuning.STREET_WIDTH
 
 var _map: CityMap
+## What every run this director sites is cut to (`Navigator.trim()`), so a cat, a bike or a car sent
+## at her never runs through a building, a barrier or a body.
+var _navigator: Navigator
 var _rng := RandomNumberGenerator.new()
 ## The events the day has budgeted and not yet spent, in the order they are handed out. A `null`
 ## entry is **a marble from the route's bag**: one of the events the day bought for her route,
@@ -118,8 +122,9 @@ var _walk_rng := RandomNumberGenerator.new()
 ## stream of their own and never move the fire's.
 var _crew_rng := RandomNumberGenerator.new()
 
-func _init(map: CityMap) -> void:
+func _init(map: CityMap, navigator: Navigator = null) -> void:
 	_map = map
+	_navigator = navigator if navigator else Navigator.new(map)
 
 ## Takes over the day's `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` plans — everything the scheduler
 ## budgeted but left for the director to site while she walks. Called with the same plan list the
@@ -828,7 +833,10 @@ func _patrol_toward_her(heat: int) -> EventDef:
 ## facing: something that crosses in front of a player standing still is not in front of
 ## anything.
 ##
-## Returns `[EventDef, PackedVector2Array]`, or an empty array. A place the route's bag names is
+## Returns `[EventDef, PackedVector2Array, float, Variant]`: the row, the path to place it on, the
+## seconds it crouches beyond its telegraph (`EventDef.crouch_for_a_run()`, zero for anything but a
+## cut crossing), and the point on her line the run was sited to cross (a `Vector2`, or `null` for a
+## `TOWARD_PLAYER` row, which has no crossing), or an empty array. A place the route's bag names is
 ## handed to her walk to site (`_place_on_her_route()`) and answers the empty array: it joins the
 ## day's plan through `site_what_is_on_her_way()` once it has a site.
 func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
@@ -865,12 +873,17 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# every `TOWARD_PLAYER` row on foot (`cyclist`, `loose_dog`) gets; only the road-placed ones
 	# take the road-aware sibling.
 	var path: PackedVector2Array
+	var crouch := 0.0
+	var crossing_point = null
 	if next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
 		path = _toward_her_on_the_road(at, heading, next) \
 				if next.placement.has(GameEnums.TileType.ROAD) \
 				else _toward_her(at, heading, next)
 	else:
-		path = _crossing_ahead_of(at, heading, next)
+		var crossing := _crossing_with_its_crouch(at, heading, next)
+		path = crossing[0]
+		crouch = crossing[1]
+		crossing_point = crossing[2]
 	if path.is_empty():
 		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
 		# again shortly rather than burning the allowance on a place that would not read.
@@ -897,7 +910,7 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# nothing under this flag.
 	if _forced and _owed.is_empty():
 		_owed.append(_forced)
-	return [handed, path]
+	return [handed, path, crouch, crossing_point]
 
 func _roll_interval() -> float:
 	# Fixed rather than rolled under `--force`, and it does not touch `_rng`: the flag is for
@@ -916,8 +929,18 @@ func _roll_interval() -> float:
 ## cat that crosses the road and a cat that crosses her path. On a pavement those are the same
 ## thing; walking across a square they are not, and the second one is what was asked for.
 ##
-## Empty when the crossing point is not somewhere anybody could walk — the lead lands inside a
-## building, or outside the map. The caller waits and asks again.
+## Empty when the crossing point is not somewhere the row could stand — the lead lands inside a
+## building, on a closure or under a body, or outside the map. The caller waits and asks again.
+##
+## **The run keeps to the ground the row can run on** (`Navigator.trim()`): cut each way at the
+## first solid, so it never starts or ends inside a lot. **And it crouches no nearer her line than
+## keeps her, walking on, outside its field until it runs** (`EventDef.nearest_crouch()`): both
+## ends go to the nearer cut where that leaves so much, so the crossing point stays the middle of
+## the run; where only one side does, the run comes from it and ends at the other side's solid;
+## where neither does, there is no crossing and the caller asks again. Its lead is timed for a run
+## of the whole reach (`EventDef.ahead_of_player_lead()`), so a start cut nearer is made up by a
+## longer crouch (`EventDef.crouch_for_a_run()`, handed back with the run), and the cat still
+## reaches her line when she does; a row that does not crouch is refused a cut start.
 ##
 ## **A pursuer is sited at the lead point itself and given no route.** It does not cross her line,
 ## it comes down it, so a path is the wrong shape for it entirely — and building one anyway puts
@@ -963,15 +986,24 @@ func _roll_interval() -> float:
 ## because the lesson depends on being unavoidable.
 func _crossing_ahead_of(at: Vector2, heading: Vector2,
 		def: EventDef = null) -> PackedVector2Array:
+	return _crossing_with_its_crouch(at, heading, def)[0]
+
+## `_crossing_ahead_of()`'s run, and how much longer than its telegraph it crouches before running
+## it (`EventDef.crouch_for_a_run()`), as `[path, seconds, point]`: the crouch is the run's own, so it is
+## worked out where the run is, and the point is where the run meets her line (`Vector2.ZERO` with
+## an empty path).
+func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = null) -> Array:
+	var none := [PackedVector2Array(), 0.0, Vector2.ZERO]
 	var lead := Tuning.offscreen_lead(heading, def.pursue_speed + Tuning.WALK_SPEED,
 				def.offscreen_notice) \
 			if def and def.pursues \
 			else (def.ahead_of_player_lead() if def else Tuning.AHEAD_LEAD_DISTANCE)
 	var centre := at + heading * lead
-	if not _map.is_walkable(_map.world_to_tile(centre)):
-		return PackedVector2Array()
+	var mover := EventInstance.mover_for(def) if def else Mover.on_foot()
+	if not _navigator.passable_at(centre, mover):
+		return none
 	if def and def.pursues:
-		return PackedVector2Array([centre])
+		return [PackedVector2Array([centre]), 0.0, centre]
 	var across := Vector2(-heading.y, heading.x) * float(CROSSING_REACH_TILES * Tuning.TILE_SIZE)
 	# The side it comes from is a coin flip, so a player cannot learn to watch one shoulder.
 	if _rng.randf() < 0.5:
@@ -979,8 +1011,34 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 	var from := centre - across
 	var to := centre + across
 	if not _map.in_bounds(_map.world_to_tile(from)) or not _map.in_bounds(_map.world_to_tile(to)):
-		return PackedVector2Array()
-	return PackedVector2Array([from, to])
+		return none
+	# Cut each way at the first solid. A crouch nearer her line than `EventDef.nearest_crouch()`
+	# would have her inside its field before it runs, so the run starts no nearer: where both cuts
+	# leave that much, both ends go to the nearer cut and the crossing point stays the middle of the
+	# run; where only one side does, the run comes from it and ends at the other's solid; where
+	# neither does, there is no crossing and the caller asks again. A start nearer than the whole
+	# reach its lead was timed for is made up by a longer crouch (`EventDef.crouch_for_a_run()`),
+	# and a row with no crouch to hold is refused a cut start, since it would reach her line before
+	# she does.
+	var way := across.normalized()
+	var back := _navigator.trim(PackedVector2Array([centre, from]), mover)
+	var on := _navigator.trim(PackedVector2Array([centre, to]), mover)
+	var behind := centre.distance_to(back[back.size() - 1])
+	var ahead := centre.distance_to(on[on.size() - 1])
+	var nearest := maxf(def.nearest_crouch() if def else 0.0, Tuning.TILE_SIZE * 0.5)
+	var start := minf(behind, ahead)
+	var finish := start
+	if start < nearest:
+		if ahead > behind:
+			way = -way
+		start = maxf(behind, ahead)
+		finish = minf(behind, ahead)
+	if start < nearest or start + finish < Tuning.TILE_SIZE:
+		return none
+	if def and not def.still_while_telegraphing and start < across.length() - 0.01:
+		return none
+	return [PackedVector2Array([centre - way * start, centre + way * finish]),
+			def.crouch_for_a_run(start) if def else 0.0, centre]
 
 ## A run straight *down* her own line rather than across it: `TOWARD_PLAYER`'s whole point, for a
 ## row on foot (`cyclist`, `loose_dog`). Returns `[place, far end]`: where its warning's badge
@@ -1014,8 +1072,9 @@ func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2A
 	var place := PendingWarning.down_her_line(_map, def, at, site_heading)
 	if place == Vector2.INF:
 		return PackedVector2Array()
-	var path := PendingWarning.route_down_her_line(_map, place, at, site_heading)
-	if path[0].distance_to(path[1]) < Tuning.TILE_SIZE:
+	var path := _navigator.trim(PendingWarning.route_down_her_line(_map, place, at, site_heading),
+			EventInstance.mover_for(def))
+	if path.size() < 2 or path[0].distance_to(path[1]) < Tuning.TILE_SIZE:
 		return PackedVector2Array()
 	return path
 
@@ -1084,7 +1143,10 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> Pa
 	if not _map.is_driveable_at(vertical, _map.world_to_tile(far)) \
 			or not _map.is_driveable_at(vertical, _map.world_to_tile(behind)):
 		return PackedVector2Array()
-	return PackedVector2Array([far, behind])
+	var path := _navigator.trim(PackedVector2Array([far, behind]), EventInstance.mover_for(def))
+	if path.size() < 2 or path[0].distance_to(path[1]) < Tuning.TILE_SIZE:
+		return PackedVector2Array()
+	return path
 
 ## Swaps a heading with a lateral drift for the corridor's own axis, when she is standing on a plain
 ## pavement edge — `CityMap.pavement_inward()` names which side of a corridor a sidewalk tile is on,

@@ -119,6 +119,16 @@ src/
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
   world/
 	world_context.gd      the only questions the baby may ask the world
+	mover.gd              who is asking whether ground can be walked: the layers that stop it
+	                      (the ground, the posts, the day's closures, soft seals and bodies) and
+	                      how wide it is
+	blocked_layer.gd      one map's record of what stands on its ground today, read through a
+	                      mover (`CityMap.passable()`, `CityMap.clear_line()`)
+	footprint.gd          one solid's ground contact, the one datum its physics body and its
+	                      tiles on the record are both built from
+	navigator.gd          the one way anything moves over a map: a swept step that keeps the
+	                      body clear, a walk down points, a way round, a way out, a route cut to
+	                      the ground; handed to every mover by whoever builds it
 	release_latch.gd      "she has just come through this, leave her alone until she has left it":
 	                      the flag a door arms on the way out, cleared by her walking out of its
 	                      own reach. The region doors and the building's doors share it
