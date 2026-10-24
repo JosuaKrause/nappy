@@ -154,10 +154,17 @@ try {
     if (observing || exited) return;
     observing = scratch.observe(browser.pid).finally(() => { observing = null; });
   }, 2000);
+  // A loaded CI runner can take well over 20 s to start Chrome; 60 s covers that while a Chrome
+  // that has exited is still caught at once by the check below.
+  const cdpWait = 60000;
+  const cdpStart = Date.now();
   const port = await until(async () => {
-    assert(browser.exitCode === null && browser.signalCode === null, 'Chrome exited before CDP startup');
+    assert(browser.exitCode === null && browser.signalCode === null, `Chrome exited before CDP startup; stderr tail:\n${browserLog.slice(-2000)}`);
     try { return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; } catch { return false; }
-  }, 'Chrome CDP port', 20000);
+  }, 'Chrome CDP port', cdpWait).catch(error => {
+    if (!String(error.message).startsWith('Timed out')) throw error;
+    throw new Error(`${error.message} after ${((Date.now() - cdpStart) / 1000).toFixed(1)}s; Chrome stderr tail:\n${browserLog.slice(-2000) || '(empty)'}`);
+  });
   const response = await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT', signal: AbortSignal.timeout(10000) });
   assert(response.ok, 'Chrome CDP target request failed');
   const target = await response.json();
