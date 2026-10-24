@@ -69,7 +69,8 @@ var _hard_failed := false
 var _day := 0
 
 ## The walk's own settings (`DaySpec.owes_a_return`, `DaySpec.poster_pursuits`), read by
-## `_owe_the_return()` and `send_a_pursuer()`: a day's, until a walk with others starts.
+## `_owe_the_return()` and `send_a_pursuer()`, as the run flow hands them in (`use_the_spec()`): a
+## day's, `DaySpec`'s own defaults, until a spec is handed in.
 var _owes_a_return := true
 var _sends_poster_pursuits := true
 
@@ -451,7 +452,6 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	_day = day
 	_encounters.day = day
 	_consumed = consumed_one_shots
-	_use_the_settings_of(DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS))
 	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
 	# than grown again so that the walls, the friction and the picture are all stated against one
 	# tree; `RouteTree.for_day` would give the same answer, and two places agreeing by arithmetic
@@ -592,7 +592,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	stream_around(focus)
 
 ## Clears whatever was here and takes a walk's whole plan as given, under `spec`'s settings
-## (`_use_the_settings_of()`) and day number, which counts her encounters (`EncounterWatch`).
+## (`use_the_spec()`) and day number, which counts her encounters (`EncounterWatch`).
 ##
 ## **Everything `start_day` works out, the plan has already decided**, which is the whole of why
 ## this is a second entry point rather than a flag on that one. The escape's city has no route tree
@@ -615,7 +615,7 @@ func start_planned(spec: DaySpec, plans: Array[EventScheduler.Planned],
 	_lesson_dog_made = false
 	_day = GameState.day
 	_encounters.day = spec.number
-	_use_the_settings_of(spec)
+	use_the_spec(spec)
 	# Nothing is held: a hold keeps the catalogue's own roll off ground something else has taken,
 	# and nothing rolls here. Cleared rather than left, so a rig that ran a day before the escape
 	# does not leave yesterday's holds on the map.
@@ -632,13 +632,12 @@ func start_planned(spec: DaySpec, plans: Array[EventScheduler.Planned],
 	stream_around(focus)
 
 ## Accepts only the builder's validated placements. Streaming, collisions, pursuits, event
-## successors and warnings keep their production behavior; random siting is suppressed. `finale`
-## gives the walk the escape's city's settings rather than a day's.
-func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2,
-		finale := false) -> void:
+## successors and warnings keep their production behavior; random siting is suppressed. `spec` is
+## the walk the recipe stands for, handed in by the recipe's runtime — a day's, or the escape city's —
+## and its settings are the walk's; `day` keys the walk's streams and counts its encounters.
+func start_recipe(plans: Array[EventScheduler.Planned], spec: DaySpec, day: int,
+		focus: Vector2) -> void:
 	var held := _city_map.held_segments.duplicate()
-	var spec := DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS) \
-			if finale else DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS)
 	start_planned(spec, plans, focus)
 	_city_map.held_segments.merge(held)
 	for plan in plans:
@@ -655,9 +654,12 @@ func stand_down() -> void:
 	clear()
 	set_physics_process(false)
 
-## The walk's own settings out of its spec: whether falling asleep owes her a return
-## (`DaySpec.owes_a_return`) and whether a torn poster sends a pursuer (`DaySpec.poster_pursuits`).
-func _use_the_settings_of(spec: DaySpec) -> void:
+## **The walk's own settings, out of the spec the run flow hands in**: whether falling asleep owes
+## her a return (`DaySpec.owes_a_return`) and whether a torn poster sends a pursuer
+## (`DaySpec.poster_pursuits`). `main` hands each day's spec in before it starts the day
+## (`start_day()`); a walk whose plan is given is handed its spec with the plan (`start_planned()`).
+## Until one is handed in, a day's settings (`DaySpec`'s own defaults).
+func use_the_spec(spec: DaySpec) -> void:
 	_owes_a_return = spec.owes_a_return
 	_sends_poster_pursuits = spec.poster_pursuits
 
@@ -1119,6 +1121,7 @@ var _lesson_dog_made := false
 ## missed by whichever path created the event.
 func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_scar := true,
 		facing := Vector2.RIGHT) -> EventInstance:
+	_show_the_bang(def)
 	var instance := EventInstance.new()
 	instance.skip_draw = skip_drawing
 	instance.trace = trace
@@ -2154,10 +2157,10 @@ func _bring_back_what_repeats(delta: float) -> void:
 		if plan.live != null or plan.comes_in > 0.0:
 			continue
 		plan.comes_in += plan.repeat_every
-		if plan.def.from_outside and _map.has_world():
-			_map.world.bang_outside()
 		if plan.at_her:
 			if not _find_player():
+				# Nobody for its charge to stand on, and the bang still goes off.
+				_show_the_bang(plan.def)
 				continue
 			plan.position = _player.global_position
 		_stream_in(plan)
@@ -2169,6 +2172,12 @@ func _find_what_repeats() -> void:
 	for plan in _plans:
 		if plan.repeats():
 			_repeating.append(plan)
+
+## **A row from outside the walls is shown by the world as it comes** (`EventDef.from_outside`,
+## `WorldContext.bang_outside()`): every coming, planned or not, the first or a repeat.
+func _show_the_bang(def: EventDef) -> void:
+	if def.from_outside and _map.has_world():
+		_map.world.bang_outside()
 
 ## A repeating plan whose instance is done, made ready to come again: the instance is let go — a
 ## leaving one walks on out of sight on its own, retired when it is finished — the plan's own body

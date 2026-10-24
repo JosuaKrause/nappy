@@ -4607,10 +4607,14 @@ func _contribution_at_uncached(world_position: Vector2, intensity_override: floa
 func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
 	return not def.from_outside and _map.wall_between(source_at, her_at)
 
-## The map `_walled_off()` asks. Read by the debug view's fields layer too, which cuts this source's
-## outline from its own node along the same lines (`DebugLayers.open_runs()`).
+## The map `_walled_off()` asks — open ground for a row no wall stops (`EventDef.from_outside`), so
+## the debug view's fields layer, which cuts this source's outline from its own node along the same
+## lines (`DebugLayers.open_runs()`), cuts it exactly where the meter does.
 func wall_grid() -> WorldMap:
-	return _map
+	return _NO_WALLS if def.from_outside else _map
+
+## Open ground, the walls a field from outside meets.
+static var _NO_WALLS := WorldMap.open_ground()
 
 ## The last line `contribution_at()` asked about and its answer, kept by value. The meter's sum,
 ## the halo's pick and the caret's present rate ask the same pair in a frame, and the answer

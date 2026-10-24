@@ -66,6 +66,7 @@ func run(t) -> void:
 	_test_the_city_word_boots_the_second_section(t)
 	_test_every_part_word_reaches_its_own_walkable_position(t)
 	_test_the_escape_owes_no_return_leg(t)
+	_test_a_day_owes_its_return_only_as_its_spec_says(t)
 	_test_nothing_the_escape_places_stands_in_a_street_tree(t)
 	_test_finale_entities_stop_when_the_tree_pauses(t)
 	_test_the_escape_pauses_the_same_way_a_day_does(t)
@@ -1755,6 +1756,34 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 	t.check(city.events.owed_ahead() == 0,
 			"and the escape owes nothing to a return it does not have (got %d)"
 					% city.events.owed_ahead())
+	GameState.day = was_the_day
+	city.free()
+
+## **The walk's settings are the spec's, handed in, not the manager's own**: on the same act IV day
+## and the same city, a day's spec owes the return its rows and a spec that says it owes none
+## (`DaySpec.owes_a_return` false) is owed none, by the same `start_day()`. So what decides it is the
+## spec the run flow hands over (`EventManager.use_the_spec()`), never a branch in the manager.
+func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
+	var an_act_iv_day := 13
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEEDS[0]))
+	city.events.setup(city, city.map)
+	var was_the_day := GameState.day
+	GameState.day = an_act_iv_day
+	var owed := {}
+	for owes: bool in [true, false]:
+		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
+		spec.owes_a_return = owes
+		city.events.use_the_spec(spec)
+		var consumed: Array[String] = []
+		city.events.start_day(an_act_iv_day, GameState.day_rng(an_act_iv_day), consumed)
+		var before := city.events.owed_ahead()
+		EventBus.return_phase_started.emit()
+		owed[owes] = city.events.owed_ahead() - before
+	t.check(int(owed[true]) > 0, "a day's spec owes its return rows (%d)" % owed[true])
+	t.check(int(owed[false]) == 0,
+			"and a spec that owes none is owed none on the same day (%d)" % owed[false])
 	GameState.day = was_the_day
 	city.free()
 

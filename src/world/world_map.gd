@@ -43,6 +43,11 @@ var day_record_version := 0
 ## map no world draws — a data rig's; `has_world()` asks.
 var world: WorldContext = null
 
+## The map's one navigator while anything holds it (`navigator()`), kept by a weak reference: a map
+## holding its navigator strongly while the navigator holds the map would be a reference cycle that
+## is never freed.
+var _navigator: WeakRef = null
+
 ## Open ground: a map with no ground of its own (see the class doc).
 static func open_ground() -> WorldMap:
 	return WorldMap.new()
@@ -402,12 +407,15 @@ static func _inside_disc(from: Vector2, delta: Vector2, centre: Vector2, radius:
 
 # ---------------------------------------------------------------------- moving ---
 
-## How anything that walks or drives over this map moves (`Navigator`). A navigator holds nothing
-## but its map, so this builds one for whoever asks; the world that builds a map hands its one on to
-## everything it builds (`City.navigator`). Not kept here, since a map holding a navigator that holds
-## the map is a reference cycle that is never freed.
+## How anything that walks or drives over this map moves (`Navigator`): **one per map**, the same
+## one to every caller for as long as anything holds it — the city (`City.navigator`), the event
+## manager, every figure on the map — and a fresh one only once nothing does.
 func navigator() -> Navigator:
-	return Navigator.new(self)
+	var held: Navigator = _navigator.get_ref() if _navigator else null
+	if held == null:
+		held = Navigator.new(self)
+		_navigator = weakref(held)
+	return held
 
 ## A way from `from` to `to` round whatever stands between, for `mover` (`Navigator.path()`).
 func path(from: Vector2, to: Vector2, mover: Mover) -> PackedVector2Array:

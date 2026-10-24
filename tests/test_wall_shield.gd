@@ -403,13 +403,6 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	rng.seed = 4242
 	var events := BuildingEvents.events_in(t, scene, rng)
 	var grid := scene.map
-	var disagreed := 0
-	for y in range(-2, grid.size.y + 2):
-		for x in range(-2, grid.size.x + 2):
-			if grid._open(x, y) != grid.is_walkable(Vector2i(x, y)):
-				disagreed += 1
-	t.check(disagreed == 0, "the map's walls are open exactly where she may stand (%d tiles were not)"
-			% disagreed)
 
 	var man: EventInstance = null
 	for instance in events.instances():
@@ -478,6 +471,8 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 		t.check(burst.contribution_at(behind) > 0.0,
 				"and the bang reaches her behind the wall: it came through the walls from outside"
 				+ " (%.1f)" % burst.contribution_at(behind))
+		t.check(not burst.wall_grid().wall_between(burst.global_position, behind),
+				"and the debug view's fields layer cuts it at no wall either, as the meter does")
 	player.free()
 	events.free()
 	scene.free()

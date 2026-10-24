@@ -341,8 +341,8 @@ func solid_reach() -> float:
 @export var falloff_power := 2.0
 ## **Something outside the walls of the world she is in**, which reaches her through them: what
 ## lands on her from it ignores every wall between, where every other field stops at the middle of
-## one (`WorldMap.wall_between()`, plaid-wombat, inbox #554), and the moment it comes the world shows
-## it the one way a thing outside can be seen from in there (`WorldContext.bang_outside()`: the
+## one (`WorldMap.wall_between()`, plaid-wombat, inbox #554), and every time it comes the world
+## shows it the one way a thing outside can be seen from in there (`WorldContext.bang_outside()`: the
 ## building lights every window). The explosion outside the building, whose charge stands where she
 ## is (`EventCatalogue.explosion_outside()`).
 @export var from_outside := false

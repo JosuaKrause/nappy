@@ -2192,6 +2192,15 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 	scene._process(Tuning.FINALE_WINDOW_FLASH_SECONDS + 0.01)
 	t.check(not scene.windows_are_flashing(), "and they go dark again a frame or two later")
 	t.check(scene.windows_lit() == 0, "all of them, with none left lit (%d)" % scene.windows_lit())
+	# Every coming of a row from outside lights them, not only a repeat: a plan that comes once, in
+	# the world from its first frame, lights them as it is put there.
+	var once := EventScheduler.Planned.new(EventCatalogue.explosion_outside(),
+			scene.map.start_world_position())
+	once.repeat_every = 0.0
+	events.start_planned(BuildingEvents.spec(), [once] as Array[EventScheduler.Planned],
+			scene.map.start_world_position())
+	t.check(once.live != null and scene.windows_are_flashing(),
+			"a bang from outside that comes once lights every window as it comes")
 	events.free()
 	scene.free()
 

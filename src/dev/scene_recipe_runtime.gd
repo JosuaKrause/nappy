@@ -534,7 +534,7 @@ func install(city: City, player: Stroller, baby: Baby,
 	var background: Dictionary = setup.get("background", {})
 	_select_structures(errors)
 	var plans := _event_plans(at, errors)
-	city.events.start_recipe(plans, GameState.day, at, data.get("kind", "city") == "escape")
+	city.events.start_recipe(plans, _walk_spec(), GameState.day, at)
 	city.refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
@@ -851,6 +851,14 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 					SealPlanner._mark_soft_sealed(map, SealPlanner._sidewalk_band_tiles(segment, side, along))
 	map.set_seal_tree_pits(emptied)
 	return plans
+
+## The walk this recipe stands for, as the run flow would hand it to the day's events: the escape
+## city's section for an `escape` recipe, today's day otherwise, so the events run under that walk's
+## settings (`EventManager.use_the_spec()`).
+func _walk_spec() -> DaySpec:
+	if data.get("kind", "city") == "escape":
+		return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	return DaySpec.for_day(GameState.day, Tuning.DAY_LENGTH_SECONDS)
 
 func _event_plans(player_at: Vector2, errors: Array[String],
 		standing: Array[EventScheduler.Planned] = []) -> Array[EventScheduler.Planned]:
