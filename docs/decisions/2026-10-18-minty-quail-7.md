@@ -85,9 +85,11 @@ events for the baby, and `BuildingPlan.lay_the_grates()` reads `EventInstance.st
 **For the remeasuring step:** the masked man leaves round the walls rather than through them; the
 mouse's dash is 27px wall to wall (64px through both walls before); the fire's body and a blowing
 vent's body go on the building's blocked record; the building now has the mark over her head near
-the masked man, the encounter watch (GoatCounter counts encounters under day 15, the event names
-unchanged, so each explosion outside, about eight a section, counts as
-`nappy-day-15-influenced-unseen-finale_explosion`, the name a city burst she walked near has), `FrameRecord.EVENTS` timing, and the screen-edge badge read from the manager's view; the
+the masked man, the encounter watch (GoatCounter counts the building's encounters under day 15, the event
+names unchanged, so each explosion outside, about eight a section, counts as an encounter, sent as
+`nappy-day-15-influenced-unseen-finale-explosion` when it reaches her unseen; the old building
+sent no encounter events, and the escape's city section counts its own explosions under day 16,
+`DaySpec.CITY_DAY`), `FrameRecord.EVENTS` timing, and the screen-edge badge read from the manager's view; the
 explosions keep an exact 22s period, where they slipped up to a frame per bang; the grates persist
 through a retry. No city behaviour is meant to change. Pictures of the masked man leaving the top of
 the shaft, the mouse's dash, and the mark in the stairwell.
