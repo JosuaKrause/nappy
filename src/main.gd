@@ -935,25 +935,25 @@ func _build_the_escape_building() -> void:
 ##
 ## The city is generated from the run seed exactly as an ordinary run's is, so the streets, the
 ## parks and the two exits are the ones she has walked for fourteen days. What is different is
-## everything laid *on* it: `City.start_finale()` dresses the blocks without growing a day's route
-## tree, closures or region wall; the crowd is cleared and never started, since *"no regular cars
-## or regular people on the street"*; and `EventManager.start_planned()` takes this scene's own plan
-## instead of the catalogue's day. It is dark from its first frame and stays at night, as the
-## section's `DaySpec` says.
+## everything laid *on* it, and every difference is the section's `DaySpec`: `City.start_day()`
+## dresses the blocks and grows no route tree, closures or region wall, since the walk is handed in
+## once it is planned (`DaySpec.closes_streets`), and the posters only show (`pastes_posters`); the
+## crowd is nobody (`crowd_density`, *"no regular cars or regular people on the street"*); and the
+## plan is the escape's own (`_plan_the_finale_city()`). It is dark from its first frame and stays
+## at night.
 func _build_the_finale_city() -> void:
 	_city = _new_city()
 	_city.dark_from_the_start = _spec.dark_from_the_start
 	_city.build(_city_map())
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
-	_city.start_finale(GameState.city_state, GameState.day)
+	_city.start_day(GameState.city_state, GameState.day,
+			GameState.day_rng(GameState.day, "closures"), _spec)
 	_city.set_act(GameState.current_act())
 	# Night, and fixed there: the escape happens after the last day and the clock is the tension
 	# rather than the light, so the sky does not run itself down over the sequence.
 	if not _spec.daylight_runs_down:
 		_city.set_daylight(0.0)
-	# Never `Crowd.start_day()`: a cleared crowd is the whole of "nobody in it", and clearing is
-	# the one call this file makes into `src/crowd/`.
-	_city.crowd.clear()
+	_start_the_crowd(Vector2.INF)
 
 	if not _player:
 		_player = _make_player()
@@ -1002,10 +1002,10 @@ func _plan_the_finale_city() -> void:
 	if _recipe:
 		return
 	var elapsed := Time.get_ticks_msec()
-	var plan := FinalePlanner.plan(_city.map, GameState.day_rng(GameState.day, "finale"))
+	var plan := FinalePlanner.plan(_city.map, GameState.day_rng(GameState.day, "finale"), _spec)
 	_city.events.start_planned(_spec, plan.placements, _finale_start_position())
 	# The streets the chains run through carry the route's kerb tint, as a day's corridor does.
-	_city.tint_the_escape_route(plan.open_streets)
+	_city.tint_the_route(plan)
 	# Printed as well as logged, for the same reason `_start_day()` prints the day it just built:
 	# the shape of the walk is the one thing worth knowing before anything else in the log means
 	# anything, and a run with telemetry off still has a console.
@@ -1868,7 +1868,7 @@ func _start_day() -> void:
 	var start_at := DevRig.for_spawn_target(config.spawn_target, _city, _resistance) \
 			if _first_day else doorstep
 	_city.events.stream_around(start_at)
-	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), start_at)
+	_start_the_crowd(start_at)
 	# The smallest wiring for the checkpoint gates: `City.region_plan()` is already valid by here
 	# (`_city.start_day()` built it above), so the crowd just needs to be told where today's gates
 	# are — empty before `Tuning.REGION_WALL_FIRST_DAY`, which is a harmless no-op day for `Crowd`.
@@ -1896,6 +1896,16 @@ func _start_day() -> void:
 	EventBus.day_planned.emit(GameState.day)
 	if _route_rig:
 		_route_rig.start_day()
+
+## Today's crowd, as dense as the spec says (`DaySpec.crowd_density`), built round `at`: a day's
+## whole crowd, or nobody at all — a cleared crowd that is never started, the escape's *"no regular
+## cars or regular people on the street"*.
+func _start_the_crowd(at: Vector2) -> void:
+	if _spec.crowd_density <= 0.0:
+		_city.crowd.clear()
+		return
+	_city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), at, true, false,
+			false, _spec.crowd_density, _spec.crowd_density)
 
 ## The day about to be walked, handed to the day's clock and to the HUD's. Either may be absent
 ## from a script-only `main` a test builds by hand.

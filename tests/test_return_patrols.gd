@@ -116,7 +116,7 @@ func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
 	map.repaint(state)
 	var plan_rng := RandomNumberGenerator.new()
 	plan_rng.seed = 23
-	var plans := EventScheduler.build_day(day, plan_rng, map, [], [], [], RouteTree.for_day(map, day), 0)
+	var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map, [], [], [], RouteTree.for_day(map, day), 0)
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 29
@@ -163,7 +163,7 @@ func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t) -> void:
 	map.repaint(state)
 	var plan_rng := RandomNumberGenerator.new()
 	plan_rng.seed = 23
-	var plans := EventScheduler.build_day(day, plan_rng, map, [], [], [], RouteTree.for_day(map, day), 0)
+	var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map, [], [], [], RouteTree.for_day(map, day), 0)
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 31

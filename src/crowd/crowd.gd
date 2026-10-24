@@ -174,8 +174,11 @@ func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 ## population on one pixel.
 ## `city_view` is the recipe-only overview: the field stays over the map and population scales
 ## by covered area at the existing field density. Ordinary calls retain their moving field.
+## `walker_multiplier` and `car_multiplier` scale the act's walkers and cars: the run flow hands the
+## day's crowd density (`DaySpec.crowd_density`) to both.
 func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
-		populate := true, city_view := false, uniform_walkers := false, walker_multiplier := 1.0) -> void:
+		populate := true, city_view := false, uniform_walkers := false, walker_multiplier := 1.0,
+		car_multiplier := 1.0) -> void:
 	clear()
 	# Taken on the first day only — see `_atlas_held`'s own doc for why a day's own end keeps
 	# holding this rather than releasing it, and `_exit_tree()` for where it finally does.
@@ -236,7 +239,8 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 			_populate_uniform_walkers(walkers, rng)
 		else:
 			_populate(CrowdAgent.Kind.WALKER, walkers, rng)
-		_populate(CrowdAgent.Kind.CAR, roundi(Tuning.crowd_cars(act) * area_scale), rng)
+		_populate(CrowdAgent.Kind.CAR, roundi(Tuning.crowd_cars(act) * area_scale * car_multiplier),
+				rng)
 	# **The unpack the first frame would do anyway, done before the first frame is drawn.** The
 	# morning places every car without consulting the ones already placed, so some of them start
 	# inside each other and the first `space_out_the_traffic()` pulls them apart — a correction of up

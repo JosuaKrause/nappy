@@ -1,6 +1,6 @@
 extends RefCounted
 ## Measurement probe for whether the escape's city section can be got through, and what its
-## marble bag (`EventScheduler.escape_bag()`) should hold *(inbox #794 in minty-lemur: "make escape
+## marble bag (`EventScheduler.street_bag()`) should hold *(inbox #794 in minty-lemur: "make escape
 ## winnable with minimal changes (fixing event distribution in some cheap way)")*. Not a suite: it
 ## prints a table rather than asserting, so it lives under `tests/probes/` and runs only by name:
 ##
@@ -137,7 +137,7 @@ func _measure_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictio
 	t.add_child(city)
 	city.build(CityGenerator.generate(GameState.run_seed))
 	GameState.city_state.begin_day(city.map.block_plans, day)
-	city.start_finale(GameState.city_state, day)
+	city.start_day(GameState.city_state, day, GameState.day_rng(day, "closures"), _city_spec())
 	city.crowd.clear()
 	city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var her := Stroller.new()
@@ -176,26 +176,17 @@ func _measure_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictio
 	return found
 
 ## The section's plan, drawn the way a straight city boot draws it; for a mix other than `as built`,
-## the same plan with the escape's events drawn from that mix's bag on the stream the game's own
-## bag is drawn on (`EventScheduler.escape_bag_seed()`), handed to `build_finale()` in place of
-## `Tuning`'s.
+## the same plan under a spec whose bag and slots are that mix's, drawn on the stream the game's own
+## bag is drawn on (`EventScheduler.street_bag_seed()`).
 func _plan(map: CityMap, day: int, mix: Dictionary) -> FinalePlanner.Plan:
 	var rng := GameState.day_rng(day, "finale")
-	if not mix.has("slots"):
-		return FinalePlanner.plan(map, rng)
-	var plan := FinalePlanner.plan(map, rng, false)
-	var seals: Array[EventScheduler.Planned] = []
-	seals.assign(plan.placements)
-	var counts: Array = mix["counts"]
-	var bag := EventScheduler.escape_bag({"military_convoy": counts[0],
-			"finale_explosion": counts[1], "abduction": counts[2], "roadblock": counts[3],
-			EventScheduler.ESCAPE_EMPTY_MARBLE: counts[4]}, EventScheduler.escape_bag_seed(rng))
-	var ends: Array[Vector2] = [
-			map.tile_to_world(FinalePlanner.exit_tile(map, CityEdge.Kind.TUNNEL)),
-			map.tile_to_world(FinalePlanner.exit_tile(map, CityEdge.Kind.BRIDGE))]
-	plan.placements.append_array(EventScheduler.build_finale(map, rng, plan.open_streets,
-			FinalePlanner.service_exit_world_position(map), seals, ends, bag, int(mix["slots"])))
-	return plan
+	var spec := _city_spec()
+	if mix.has("slots"):
+		var counts: Array = mix["counts"]
+		spec.bag = {"military_convoy": counts[0], "finale_explosion": counts[1],
+				"abduction": counts[2], "roadblock": counts[3], DaySpec.EMPTY_MARBLE: counts[4]}
+		spec.slots_per_street = int(mix["slots"])
+	return FinalePlanner.plan(map, rng, spec)
 
 ## `{streets, empty, dangers}`: the open streets, those standing none of the four rows, and how many
 ## of the four rows stand on them in all.
@@ -643,3 +634,7 @@ func _print_summary(mix: String, rows: Array[Dictionary]) -> void:
 		print("ESCAPE_WINNABLE [%s] | %s: %s | mean peak %.0f | out in %.1fs on average" % [
 				mix, "walking" if pace == "walk" else "running", outcomes[pace], peaks[pace] / walks,
 				times[pace] / maxf(1.0, outs[pace])])
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)

@@ -73,6 +73,10 @@ var _day := 0
 ## day's, `DaySpec`'s own defaults, until a spec is handed in.
 var _owes_a_return := true
 var _sends_poster_pursuits := true
+## The whole spec the run flow handed in (`use_the_spec()`), whose placement settings `start_day()`
+## plans the day's seals and events under; null until one is handed in, when `start_day()` plans
+## under a day's own (`DaySpec.for_day()`).
+var _spec: DaySpec = null
 
 ## Elapsed seconds since this day started, advanced every physics frame regardless of whether
 ## anybody is near a mast. **The city's own broadcast clock** — every mast reads it, not its own
@@ -498,8 +502,10 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 		_city_map.hold_segment(segment.key())
 	for segment in region_plan.doors:
 		_city_map.hold_segment(segment.key())
-	for segment in StreetNetwork.around_blocks(Rect2i(_city_map.home_block, Vector2i.ONE)):
-		_city_map.hold_segment(segment.key())
+	var spec := _spec if _spec else DaySpec.for_day(day)
+	if spec.holds_the_home_streets:
+		for segment in StreetNetwork.around_blocks(Rect2i(_city_map.home_block, Vector2i.ONE)):
+			_city_map.hold_segment(segment.key())
 
 	# Off the catalogue's own budget on purpose — see `SealPlanner`'s own doc. It seals everything
 	# `EventScheduler` was not permitted to touch: every street off `tree` (a share of them from
@@ -524,7 +530,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# how soon `build_day` can see where they landed. `held` is `_city_map.held_segments` itself: a hard
 	# seal's segment is marked there as it is placed, so the catalogue never offers a candidate row
 	# that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street").
-	var seals := SealPlanner.plan_day(_city_map, day, tree, GameState.day_rng(day, "seals"),
+	var seals := SealPlanner.plan_day(_city_map, spec, tree, GameState.day_rng(day, "seals"),
 			boundary, _city_map.held_segments)
 	# Where today's doors stand, before a single candidate is rolled. `build_day` keeps
 	# `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around each of them — the ground she is let out
@@ -545,7 +551,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	var standing: Array[EventScheduler.Planned] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
-	_plans = EventScheduler.build_day(day, rng, _city_map, consumed_one_shots, GameState.scars,
+	_plans = EventScheduler.build_day(spec, rng, _city_map, consumed_one_shots, GameState.scars,
 			GameState.settled_this_act(), tree, GameState.resistance_progress, doors,
 			ResistanceDirector.target_ground(_city_map, day, region_plan), standing, trace)
 	_plans.append_array(seals)
@@ -661,6 +667,7 @@ func stand_down() -> void:
 ## (`start_day()`); a walk whose plan is given is handed its spec with the plan (`start_planned()`).
 ## Until one is handed in, a day's settings (`DaySpec`'s own defaults).
 func use_the_spec(spec: DaySpec) -> void:
+	_spec = spec
 	_owes_a_return = spec.owes_a_return
 	_sends_poster_pursuits = spec.poster_pursuits
 

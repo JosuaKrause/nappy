@@ -22,7 +22,7 @@ func run(t) -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = seed_value
 			var started := Time.get_ticks_msec()
-			var plan := FinalePlanner.plan(map, rng)
+			var plan := FinalePlanner.plan(map, rng, _city_spec())
 			took.append(Time.get_ticks_msec() - started)
 			placed.append(plan.placements.size())
 		firsts.append(took[0])
@@ -35,3 +35,7 @@ func run(t) -> void:
 			% [SEEDS.size(), firsts[0], firsts[-1], firsts[firsts.size() / 2], restarts[0],
 			restarts[-1], restarts[restarts.size() / 2]])
 	t.check(true, "a probe asserts nothing")
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)

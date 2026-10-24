@@ -44,13 +44,14 @@ func run(_t) -> void:
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 14)
 	map.repaint(state)
-	var finale := FinalePlanner.plan(map, GameState.day_rng(14, "finale"))
+	var finale := FinalePlanner.plan(map, GameState.day_rng(14, "finale"), _city_spec())
 	var guards := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))
 	var found := 0
 	for segment in finale.open_streets:
-		var ground := EventScheduler._finale_ground(map, segment, guards,
-				StreetTrees.footprint_tiles(map), FinalePlanner.service_exit_world_position(map))
+		var ground := EventScheduler._street_ground(map, segment, guards,
+				StreetTrees.footprint_tiles(map), FinalePlanner.service_exit_world_position(map), {},
+				false)
 		if ground.is_empty():
 			continue
 		print("ESCAPE_GUARD ", map.tile_to_world(ground[ground.size() / 2]), " street=", segment.key())
@@ -60,3 +61,7 @@ func run(_t) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
 	print("DOG_LEAD ", Tuning.offscreen_lead(Vector2.RIGHT,
 			dog.pursue_speed + Tuning.WALK_SPEED, dog.offscreen_notice))
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)

@@ -84,7 +84,7 @@ static func _plan_for(seed_value: int) -> Dictionary:
 	map.repaint(GameState.city_state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	return {"map": map, "plan": FinalePlanner.plan(map, rng)}
+	return {"map": map, "plan": FinalePlanner.plan(map, rng, _city_spec())}
 
 ## *"No overlapping routes"*: the choice is made once, at the door, and is the game's verb. The
 ## cell she leaves from is the one exception, since both walks have to start somewhere.
@@ -828,7 +828,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 static func _roadblocks_everywhere(map: CityMap, seed_value: int,
 		slots: int) -> Array[EventScheduler.Planned]:
 	return _escape_rows_on(map, _bare_plan(map, seed_value),
-			EventScheduler.escape_bag({"roadblock": 1}, seed_value), slots)
+			EventScheduler.street_bag({"roadblock": 1}, seed_value), slots)
 
 ## The plan's own roadblocks, the escape's copy of the row.
 static func _escape_roadblocks(plan: FinalePlanner.Plan) -> Array[EventScheduler.Planned]:
@@ -864,7 +864,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 			"seed %d: the service door puts her in the city" % PLAYERS_SEED)
 	if main._city != null:
 		var map: CityMap = main._city.map
-		var plan := FinalePlanner.plan(map, GameState.day_rng(GameState.day, "finale"))
+		var plan := FinalePlanner.plan(map, GameState.day_rng(GameState.day, "finale"), _city_spec())
 		var bands := _escape_roadblocks(plan)
 		var hers := StreetNetwork.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
@@ -972,7 +972,7 @@ const ESCAPE_ROWS := ["military_convoy", "abduction", "roadblock", "finale_explo
 func _test_an_alley_mouth_wall_fits_the_mouth(t) -> void:
 	var mouth := float(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE)
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		var id := SealPlanner._best_alley_mouth_def(day)
+		var id := SealPlanner._alley_mouth_def(SealPlanner.candidates(), day)
 		if id != "":
 			t.check(EventCatalogue.by_id(id).obstructs_radius * 2.0 <= mouth,
 					"day %d's alley-mouth row %s fits the mouth" % [day, id])
@@ -981,7 +981,7 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t) -> void:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var ground := EventScheduler.EscapeGround.new(map, [], [])
+		var ground := WalkGround.new(map)
 		for placement in plan.placements:
 			var tile := map.world_to_tile(placement.position)
 			if map.tile_at(tile) != GameEnums.TileType.ALLEY:
@@ -1011,7 +1011,7 @@ func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var ground := EventScheduler.EscapeGround.new(map, [], [])
+		var ground := WalkGround.new(map)
 		for placement in plan.placements:
 			if placement.def.id == "barricade":
 				barricades += 1
@@ -1037,8 +1037,8 @@ func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 	for attempt in 2:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = SEEDS[0]
-		plans.append(FinalePlanner.plan(map, rng))
-		kept.append(EventScheduler._finale_ground_kept)
+		plans.append(FinalePlanner.plan(map, rng, _city_spec()))
+		kept.append(EventScheduler._kept_ground_answers)
 	var same := plans[0].placements.size() == plans[1].placements.size()
 	for i in mini(plans[0].placements.size(), plans[1].placements.size()):
 		var a := plans[0].placements[i]
@@ -1052,8 +1052,8 @@ func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 	map.closed_tiles[tile] = true
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEEDS[0]
-	FinalePlanner.plan(map, rng)
-	t.check(not is_same(EventScheduler._finale_ground_kept, kept[1]),
+	FinalePlanner.plan(map, rng, _city_spec())
+	t.check(not is_same(EventScheduler._kept_ground_answers, kept[1]),
 			"a city with a tile closed since is read again (%s)" % tile)
 
 # ------------------------------------------------------------ the marble bag ---
@@ -1069,8 +1069,8 @@ func _test_the_escape_bag_keeps_the_players_order(t) -> void:
 			"the bag holds more trucks than explosions, than vans, than roadblocks, than empty marbles")
 	t.check(Tuning.FINALE_BAG_EMPTY > 0, "and it holds empty marbles")
 	t.check(Tuning.FINALE_SLOTS_PER_STREET > 0, "and every open street has a slot to draw for")
-	var counts := EventScheduler.escape_bag_counts()
-	var bag := EventScheduler.escape_bag(counts, 7)
+	var counts := _city_spec().bag
+	var bag := EventScheduler.street_bag(counts, 7)
 	var total := 0
 	for marble: String in counts:
 		total += int(counts[marble])
@@ -1097,7 +1097,7 @@ func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
 		var bare := _bare_plan(map, seed_value)
 		var streets: Array[StreetNetwork.Segment] = bare["streets"]
 		for slots in [1, 2]:
-			var bag := EventScheduler.escape_bag(EventScheduler.escape_bag_counts(), seed_value)
+			var bag := EventScheduler.street_bag(_city_spec().bag, seed_value)
 			var placed := _escape_rows_on(map, bare, bag, slots)
 			t.check(bag.drawn == streets.size() * slots,
 					"seed %d, %d a street: every slot drew one marble (%d of %d)"
@@ -1112,10 +1112,10 @@ func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
 				most = maxi(most, here)
 			t.check(most <= slots, "seed %d: no street stands more than its %d slots (%d)"
 					% [seed_value, slots, most])
-		var empty := EventScheduler.escape_bag({EventScheduler.ESCAPE_EMPTY_MARBLE: 1}, seed_value)
+		var empty := EventScheduler.street_bag({DaySpec.EMPTY_MARBLE: 1}, seed_value)
 		t.check(_escape_rows_on(map, bare, empty, 1).is_empty(),
 				"seed %d: a bag of empty marbles stands nothing" % seed_value)
-		var bands := EventScheduler.escape_bag({"roadblock": 1}, seed_value)
+		var bands := EventScheduler.street_bag({"roadblock": 1}, seed_value)
 		var stood := _escape_rows_on(map, bare, bands, 1)
 		t.check(bands.drawn == streets.size(), "seed %d: a bag of roadblocks draws once a street (%d)"
 				% [seed_value, bands.drawn])
@@ -1133,8 +1133,8 @@ func _test_the_game_draws_the_escape_from_tunings_bag(t) -> void:
 		var plan: FinalePlanner.Plan = built["plan"]
 		var bare := _bare_plan(map, seed_value)
 		var rng: RandomNumberGenerator = bare["rng"]
-		var bag := EventScheduler.escape_bag(EventScheduler.escape_bag_counts(),
-				EventScheduler.escape_bag_seed(rng))
+		var bag := EventScheduler.street_bag(_city_spec().bag,
+				EventScheduler.street_bag_seed(rng))
 		var placed := _escape_rows_on(map, bare, bag, Tuning.FINALE_SLOTS_PER_STREET)
 		var played: Array[EventScheduler.Planned] = []
 		for placement in plan.placements:
@@ -1147,31 +1147,29 @@ func _test_the_game_draws_the_escape_from_tunings_bag(t) -> void:
 		t.check(same and played.size() > 0, "seed %d: the game's plan is Tuning's bag (%d and %d)"
 				% [seed_value, played.size(), placed.size()])
 
-## The plan `_plan_for()` builds with no events of the escape's own yet: its streets, its seals,
-## both ends and the rng where `FinalePlanner.plan()` hands it to `build_finale()`.
+## The plan `_plan_for()` builds with no events of the escape's own yet: its walk and streets, its
+## seals and the rng where `FinalePlanner.plan()` hands it to `EventScheduler.build_day()`.
 static func _bare_plan(map: CityMap, seed_value: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	var plan := FinalePlanner.plan(map, rng, false)
+	var plan := FinalePlanner.plan(map, rng, _city_spec(), false)
 	var seals: Array[EventScheduler.Planned] = []
 	seals.assign(plan.placements)
-	var ends: Array[Vector2] = [
-			map.tile_to_world(FinalePlanner.exit_tile(map, CityEdge.Kind.TUNNEL)),
-			map.tile_to_world(FinalePlanner.exit_tile(map, CityEdge.Kind.BRIDGE))]
-	return {"streets": plan.open_streets, "seals": seals, "ends": ends, "rng": rng,
+	return {"plan": plan, "streets": plan.open_streets, "seals": seals, "rng": rng,
 			"state": rng.state}
 
-## The escape's rows `build_finale()` stands on the bare plan from `bag` at `slots` a street, the
-## rng put back where `FinalePlanner.plan()` would hand it over each time.
+## The escape's rows the bag draw (`EventScheduler._fill_the_walk_from_the_bag()`) stands on the bare
+## plan from `bag` at `slots` a street, the rng put back where `FinalePlanner.plan()` would hand it
+## over each time.
 static func _escape_rows_on(map: CityMap, bare: Dictionary, bag: MarbleBag,
 		slots: int) -> Array[EventScheduler.Planned]:
 	var rng: RandomNumberGenerator = bare["rng"]
 	rng.state = bare["state"]
-	var streets: Array[StreetNetwork.Segment] = bare["streets"]
 	var seals: Array[EventScheduler.Planned] = bare["seals"]
-	var ends: Array[Vector2] = bare["ends"]
-	return EventScheduler.build_finale(map, rng, streets,
-			FinalePlanner.service_exit_world_position(map), seals, ends, bag, slots)
+	var spec := _city_spec()
+	spec.slots_per_street = slots
+	return EventScheduler._fill_the_walk_from_the_bag(spec, rng, map, bare["plan"], bag, [],
+			PackedVector2Array(), seals)
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.
@@ -1224,7 +1222,7 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 		map.repaint(GameState.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		var plan := FinalePlanner.plan(map, rng)
+		var plan := FinalePlanner.plan(map, rng, _city_spec())
 		var spawn := FinalePlanner.service_exit_world_position(map)
 		t.check(map.is_walkable(map.world_to_tile(spawn)),
 				"seed %d: she is put down on walkable ground" % seed_value)
@@ -1272,7 +1270,7 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 		map.repaint(GameState.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		var plan := FinalePlanner.plan(map, rng)
+		var plan := FinalePlanner.plan(map, rng, _city_spec())
 		var spawn := FinalePlanner.service_exit_world_position(map)
 		for placement: EventScheduler.Planned in plan.placements:
 			if not placement.def.hard_fail:
@@ -1293,7 +1291,8 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 # ------------------------------------------------------------------ the city ---
 
 ## *"No regular cars or regular people on the street."* Non-vacuous on purpose: the crowd is
-## populated first, so what is asserted is that clearing it and dressing the city for the escape
+## populated first, so what is asserted is that dressing the city for the escape and starting its
+## crowd as the section's spec says (`DaySpec.crowd_density`, through `main._start_the_crowd()`)
 ## leaves it empty rather than that it started that way.
 func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	var city: City = CITY_SCENE.instantiate()
@@ -1302,11 +1301,16 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	GameState.city_state.begin_day(city.map.block_plans, 1)
 	city.crowd.start_day(1, GameState.day_rng(1, "crowd"), city.map.doorstep_world_position())
 	t.check(city.crowd.agent_count() > 0, "a day's crowd is a crowd")
-	city.start_finale(GameState.city_state, 1)
-	city.crowd.clear()
+	var spec := _section(DaySpec.Section.CITY)
+	city.start_day(GameState.city_state, 1, GameState.day_rng(1, "closures"), spec)
+	var main: Node2D = MAIN_SCRIPT.new()
+	main._city = city
+	main._spec = spec
+	main._start_the_crowd(Vector2.INF)
 	t.check(city.crowd.agent_count() == 0, "and the escape's city has nobody in it")
 	t.check(city.route_tree() == null and city.closures().is_empty(),
 			"the escape grows no corridor and closes no street")
+	main.free()
 	# `.free()`, not `queue_free()`, so the city is gone before the next check rather than at a
 	# frame that passes after this suite.
 	city.free()
@@ -1343,9 +1347,10 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 			on_the_day += 1
 	t.check(on_the_day > 0, "the day before tints its own route's kerbs (%d)" % on_the_day)
 
-	city.start_finale(state, day)
+	main._spec = _section(DaySpec.Section.CITY)
+	city.start_day(state, day, rng, main._spec)
 	main._plan_the_finale_city()
-	var plan := FinalePlanner.plan(city.map, GameState.day_rng(day, "finale"))
+	var plan := FinalePlanner.plan(city.map, GameState.day_rng(day, "finale"), _city_spec())
 	var on_the_walk := {}
 	for segment in plan.open_streets:
 		on_the_walk[segment.key()] = true
@@ -1358,7 +1363,7 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 			"the first plan tints every kerb of the escape's streets and no other (%d wrong)"
 			% first.z)
 
-	city.tint_the_escape_route([] as Array[StreetNetwork.Segment])
+	city.tint_the_route(null)
 	t.check(_escape_tint(city, day, on_the_walk, corridor).z == first.x,
 			"wiping the tint leaves every kerb of the walk plain")
 	main._summary = SUMMARY_SCENE.instantiate()
@@ -1793,7 +1798,7 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
 ## trucks, vans, masked men and bursts on the open streets, and every seal body off them.
 ##
 ## **The one licensed exception is a seal that could not step off a tree without stepping onto the
-## chain.** `SealPlanner.plan_finale` refuses that move, because a picture overlapping a picture is
+## chain.** `SealPlanner.plan_day` refuses that move, because a picture overlapping a picture is
 ## better than a city with no way out of it; the count is reported so an exception that stopped
 ## being rare would be visible rather than silent.
 func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
@@ -1810,15 +1815,14 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
 		# event's own row.
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		var standing_at := FinalePlanner.service_exit_world_position(map)
-		for placement in EventScheduler.build_finale(map, rng, plan.open_streets, standing_at):
+		for placement in EventScheduler.build_day(_city_spec(), rng, map, [], [], [], plan):
 			var tile := map.world_to_tile(placement.position)
 			t.check(not trees.has(tile),
 					"seed %d: the escape's '%s' stands in a street tree at %s"
 							% [seed_value, placement.def.id, tile])
 			checked += 1
 		rng.seed = seed_value
-		for seal in SealPlanner.plan_finale(map, plan.open_cells, rng, standing_at):
+		for seal in SealPlanner.plan_day(map, _city_spec(), plan, rng):
 			if trees.has(map.world_to_tile(seal.position)):
 				in_a_tree += 1
 			checked += 1
@@ -2105,3 +2109,7 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
 	main._summary.queue_free()
 	main.free()
 	GameState.escape_section = saved_section
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)

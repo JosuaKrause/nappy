@@ -3,7 +3,7 @@ extends RefCounted
 ## Shared by `tests/test_seals.gd` and `tests/test_finale.gd`, which hold that no seal reaches one
 ## on a day or in the escape, and `tests/probes/seal_overhang.gd`, which prints the depths.
 ##
-## **The body** is each solid piece where it stands (`EventScheduler.EscapeGround.solids_of()`),
+## **The body** is each solid piece where it stands (`WalkGround.solids_of()`),
 ## without her body radius: its spine, laid along the piece's own axis, grown by its rounding. The
 ## depth is how far that reaches past a building tile's edge, measured between the spine's box and
 ## the tile's box, which is exact for a spine laid along a street's axis, the only way a seal lies.
@@ -16,7 +16,7 @@ extends RefCounted
 ## is not ground.
 
 ## The deepest any solid piece of `plan` reaches into a building tile, in px; 0 when none does.
-static func body_overhang(map: CityMap, ground: EventScheduler.EscapeGround,
+static func body_overhang(map: CityMap, ground: WalkGround,
 		plan: EventScheduler.Planned) -> float:
 	var worst := 0.0
 	for solid in ground.solids_of(plan):
@@ -45,7 +45,7 @@ static func drawing_overhang(map: CityMap, plan: EventScheduler.Planned) -> floa
 ## The piece's spine as a box: a point, or a segment along an axis, or a rectangle's own extent.
 ## A piece turned off the street's axes is taken at the whole disc of its reach, which can only
 ## overstate.
-static func _spine_box(solid: EventScheduler.EscapeSolid) -> Rect2:
+static func _spine_box(solid: WalkGround.Solid) -> Rect2:
 	var shape := solid.shape
 	var along_x := absf(solid.axis.y) < 0.001
 	var along_y := absf(solid.axis.x) < 0.001

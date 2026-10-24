@@ -359,7 +359,7 @@ func _test_the_named_decisions_arrive(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:1" % city_seed)
 		var counts := {}
-		for plan in EventScheduler.build_day(1, rng, seeded, consumed):
+		for plan in EventScheduler.build_day(DaySpec.for_day(1), rng, seeded, consumed):
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
 			totals[plan.def.id] = int(totals.get(plan.def.id, 0)) + 1
 		# No day-1 map may be without either of them at all, which is the failure the player
@@ -501,7 +501,7 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 	var spoiled_days := 0
 	for day in range(2, 15):
 		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [], used_set)
+		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], used_set)
 
 		var on_her_park := 0
 		var clean_elsewhere := 0
@@ -550,9 +550,9 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 	# And a day that knows nothing about yesterday plans exactly as it always did.
 	var forgetful: Array[String] = []
 	var remembering: Array[String] = []
-	var a := EventScheduler.build_day(3, _rng(3), map, forgetful)
+	var a := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), map, forgetful)
 	var nothing: Array[Vector2i] = []
-	var b := EventScheduler.build_day(3, _rng(3), map, remembering, [], nothing)
+	var b := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), map, remembering, [], nothing)
 	t.check(_signature(a) == _signature(b),
 			"and a day with nothing to remember is unchanged by the rule")
 
@@ -569,7 +569,7 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 			act = Tuning.act_for_day(day)
 			used_this_act = []
 		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [], used_this_act)
+		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], used_this_act)
 		var quietest := _quietest_calm_block(map, planned)
 		t.check(not used_this_act.has(quietest),
 				"day %d sends her somewhere she has not used this act" % day)

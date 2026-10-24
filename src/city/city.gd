@@ -144,10 +144,9 @@ var _day := 1
 ## current TileSet would feed a prior day's composed grass atlas back into the compositor.
 var _authored_ground_tile_set: TileSet
 var scenery: SceneryResidency
-var _ground_corridor: Corridor
-## The escape's own route kerbs: the segment keys of every street its two chains run through, set
-## by `tint_the_escape_route()`. Empty on a day, whose kerbs `_ground_corridor` answers for.
-var _escape_route_streets := {}
+## The walk whose kerbs are tinted (`tint_the_route()`): the day's tree, or the escape's chains once
+## they are planned. Null until one is handed in, and again after every repaint of the ground.
+var _tinted_route: RouteSource = null
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
 ## Today's corridor: the ways from the doorstep to the calm areas still worth reaching, grown
@@ -972,7 +971,42 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## once and reused, and the between-days screen only had to restart the events. Rebuilding
 ## the block interiors is cheap (the buildings and the lattice are untouched) and it is the
 ## only way a requisitioned park can stop having swings in it.
-func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
+##
+## **The escape's city is the same call with its section's spec** (`DaySpec`), since what differs is
+## settings rather than steps: `spec.closes_streets` says whether the day grows its route tree and
+## closes streets off it (`_close_streets()`) or has its walk handed in once it is planned
+## (`tint_the_route()` — the escape's chains, planned after the city is dressed, are not a tree for
+## `ClosurePlanner` or `RegionPlanner` to be stated against, so `route_tree()` and `region_plan()`
+## answer `null` and `closures()` is empty, which is what their own contract says about a city whose
+## day has grown none); `spec.pastes_posters` says whether the crews paste at dawn
+## (`PosterWalls.start_day()`) or the walls only show what the run left (`PosterWalls.show_only()`).
+## The repaint, the door, the ground, the litter, the block dressing and the street trees happen
+## either way, because the parks she walks through have to be the parks the run's seed built. `spec`
+## left out is a day's (`DaySpec.for_day()`). `day` is the calendar's — the escape is walked on the
+## last day's — and `rng` the closures' stream.
+func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
+		spec: DaySpec = null) -> void:
+	if spec == null:
+		spec = DaySpec.for_day(day)
+	_dress(state, day)
+	if spec.closes_streets:
+		# Last, and after the repaint: which blocks are calm is what the closure invariant is
+		# stated over, and a requisitioned park is not one of them.
+		_close_streets(day, rng)
+	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
+	# once more after the day's seals are planned — see `refresh_street_trees()`.
+	refresh_street_trees()
+	if spec.pastes_posters:
+		# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
+		# off, and after `_dress_blocks()`, which is what says a front has burnt.
+		_posters.start_day(day, _tree)
+	else:
+		_posters.show_only()
+	scenery.update(_home_scenery_view(), true)
+
+## Everything a day does to the city before its streets are closed: the repaint, the door, the
+## ground, the litter and the block dressing.
+func _dress(state: CityState, day: int) -> void:
 	scenery.view = _home_scenery_view()
 	map.repaint(state, trace)
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
@@ -984,16 +1018,6 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 	_paint_ground()
 	_decals.set_placed(_recipe_litter(day))
 	_dress_blocks(state)
-	# Last, and after the repaint: which blocks are calm is what the closure invariant is
-	# stated over, and a requisitioned park is not one of them.
-	_close_streets(day, rng)
-	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
-	# once more after the day's seals are planned — see `refresh_street_trees()`.
-	refresh_street_trees()
-	# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
-	# off, and after `_dress_blocks()`, which is what says a front has burnt.
-	_posters.start_day(day, _tree)
-	scenery.update(_home_scenery_view(), true)
 
 ## Recipe activity is installed by its runtime after this shared day presentation. The
 ## explicit construction witness supplies global route/region context without randomly
@@ -1002,7 +1026,9 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 ## **A stretch pastes no dawn**: its posters are the recipe's own (`setup.posters`), so the walls are
 ## marked pasted through today before the day starts and nothing the seed would paste appears.
 func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -> void:
-	start_finale(state, day)
+	_dress(state, day)
+	_posters.show_only()
+	scenery.update(_home_scenery_view(), true)
 	var edges := map.witness_only()
 	_tree = RouteTree.for_day(map, day)
 	_region_plan = RegionPlanner.plan_day(map, day, _tree)
@@ -1015,35 +1041,6 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 		GameState.posters.pasted_through = maxi(GameState.posters.pasted_through, day)
 	_posters.start_day(day, _tree)
 
-## The same city, dressed for the escape: everything `start_day()` does except grow a day's
-## corridor and close streets off it.
-##
-## **The finale's route is not a tree**, so there is nothing here for `RouteTree` to grow and
-## nothing for `ClosurePlanner` or `RegionPlanner` to be stated against — one ordered chain to each
-## edge, with everything off it sealed, is `FinalePlanner`'s and `SealPlanner`'s work and arrives
-## through `EventManager.start_planned()` instead. `route_tree()` and `region_plan()` therefore
-## answer `null` for the whole sequence and `closures()` is empty, which is what their own
-## contract already says about a `City` whose `start_day` has not run: *only meaningful after
-## `start_day`*.
-##
-## The repaint, the ground, the litter and the block dressing all still happen, because the parks
-## she walks through have to be the parks the run's seed built.
-##
-## The route-kerb tint (M145) is not painted here, because what it marks is not known yet: the
-## escape's streets are `FinalePlanner`'s chains, planned after the city is dressed, and `Main`
-## hands them to `tint_the_escape_route()` once they are. `_paint_ground()` above paints every kerb
-## cell its plain source first, so a twin from yesterday's tree cannot survive into the escape.
-func start_finale(state: CityState, day: int) -> void:
-	scenery.view = _home_scenery_view()
-	map.repaint(state, trace)
-	_sleepiness_tile = Vector2i(-1, -1)
-	_day = day
-	_paint_ground()
-	_decals.set_placed(_recipe_litter(day))
-	_dress_blocks(state)
-	_posters.show_only()
-	scenery.update(_home_scenery_view(), true)
-
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.
 func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
@@ -1051,8 +1048,10 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 		node.queue_free()
 	_closure_nodes.clear()
 	# Before the closures, because they are placed off it. See `ClosurePlanner._shuffled_candidates`.
+	# Tinted before the region plan or the closures, so a tree a closure has not yet touched is what
+	# the tint answers for.
 	_tree = RouteTree.for_day(map, day)
-	_tint_the_route_kerbs()
+	tint_the_route(_tree)
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
 	_region_plan = RegionPlanner.plan_day(map, day, _tree)
@@ -1064,8 +1063,12 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	for closure in _closures:
 		_spawn_closure(closure)
 
-## The route's own curbstones, tinted — a trial (M145) of whether a faint hint on the ground can
-## stay under the threshold of being noticed as one; see `docs/CITY.md`, "Guiding her to the calm".
+## The route's own curbstones, tinted — a trial of whether a faint hint on the ground can stay under
+## the threshold of being noticed as one; see `docs/CITY.md`, "Guiding her to the calm". **One tint
+## for every walk**: the day's tree, handed in by `_close_streets()` as soon as it is grown, and the
+## escape's two chains, handed in by `Main` after every plan of the section, a restart's included.
+## *(Inbox #747: "yes, of course the yellow tint. we spent the whole game establishing that why would
+## it be different in the last section?")*
 ##
 ## No second layer: `GroundLayers.build_tile_set()` already gave every kerb source
 ## (`GroundTiles.ROUTE_KERB_SOURCES`) a tinted twin (`GroundTiles.route_twin_of`), composed with the
@@ -1077,61 +1080,34 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 ## leaves the tile on its plain source, the same graceful fallback `GroundLayers` gives everywhere
 ## else. Alpha zero is the trial's off switch, with nothing else to change.
 ##
-## **A kerb tile qualifies when its street's `Corridor.depth()` is zero — the mark says *this
-## street*, not *this sidewalk*.** `depth()` answers at the grain of the whole street on purpose
-## (see `Corridor`'s own doc — that grain is what every placement rule is stated in), so both
-## pavements of every street the tree runs along are tinted, from intersection to intersection: a
-## street tile resolves to its segment's key regardless of which of the segment's own cells the
-## tree actually walked, so a tree that only uses part of a segment — leaving it through an alley
-## or a park, or ending at a calm area partway along — still tints the whole segment rather than a
-## stretch of it, with nothing here having to special-case a partial run.
+## **A kerb tile qualifies when the walk marks it** (`RouteSource.marks_the_kerb_at()`) **— the mark
+## says *this street*, not *this sidewalk*.** Both pavements of every street the walk runs along are
+## tinted, from intersection to intersection, whichever of the street's own cells the walk actually
+## used: a tree that only uses part of a segment — leaving it through an alley or a park, or ending at
+## a calm area partway along — still tints the whole segment, and a chain tints every street it walks
+## (`SealPlanner.runs_through()`), the same set the escape's events stand on and its seals spare.
 ##
-## **Never a street the tree only crosses at a junction, and never an unwalked stretch of the main
+## **Never a street the walk only crosses at a junction, and never an unwalked stretch of the main
 ## road.** A junction cell resolves to no segment at all (`StreetNetwork.segment_containing`), so
 ## crossing one — a route switching pavements, or cutting through from a park or an alley — marks
-## no street's `depth()` down to zero; `RouteTree.junctions()`'s own doc says the same thing from
-## the other side, that such a crossing "contributes a junction no on-tree street names". And the
-## main road's own cells, anywhere but at a junction, are off the growth graph entirely
-## (`RouteTree._is_off_the_growths_graph`), so they carry no colour and no segment of the spine
-## reaches zero unless the tree's trunk genuinely had to walk it — which is a street the tree does
-## run along, not one it merely passes near.
+## no street; `RouteTree.junctions()`'s own doc says the same thing from the other side, that such a
+## crossing "contributes a junction no on-tree street names", and a chain's street it only turns at
+## is sealed and carries no tint. And the main road's own cells, anywhere but at a junction, are off
+## the tree's growth graph entirely (`RouteTree._is_off_the_growths_graph`), so no segment of the
+## spine is marked on a day unless the tree's trunk genuinely had to walk it.
 ##
-## **The placement rules keep the narrower question.** `Corridor.carries_a_route(tile)` — whether
-## the tree runs along *this cell*, non-empty `RouteTree.branches_on(tile)` — is what a wall, a
-## piece of friction or a set piece still asks; only the paint here asks the wider one, so nothing
-## about where a body may stand moves with the mark.
-##
-## Called from `_close_streets`, right after `_tree` is grown and before the region plan or the
-## closures, so a tree a closure has not yet touched is what the tint answers for.
-func _tint_the_route_kerbs() -> void:
-	_ground_corridor = Corridor.of(_tree)
+## **The placement rules keep the narrower question.** `RouteSource.carries_a_route(tile)` — whether
+## the walk runs along *this cell* — is what a wall, a piece of friction or a set piece still asks;
+## only the paint here asks the wider one, so nothing about where a body may stand moves with the
+## mark. `_paint_ground()` paints every kerb cell its plain source first, so a twin from yesterday's
+## walk cannot survive into today's.
+func tint_the_route(route: RouteSource) -> void:
+	_tinted_route = route
 	_ground.repaint()
 
-## The same tint on the escape's streets: both kerb lines of every street either chain runs
-## through, from intersection to intersection. *(Inbox #747: "yes, of course the yellow tint. we
-## spent the whole game establishing that why would it be different in the last section?")*
-##
-## **The same grain as a day's, read from the escape's own plan.** A day tints every street whose
-## `Corridor.depth()` is zero, a whole segment at a time; the escape has no tree to build a
-## `Corridor` from, so the streets are `FinalePlanner.Plan.open_streets` — the ones
-## `SealPlanner.runs_through()` says a chain walks, which is the same set the escape's events
-## stand on and its seals spare. A street a chain only turns at is sealed and carries no tint, and
-## a junction resolves to no street, exactly as on a day. Called by `Main` after every plan of the
-## section, a restart's included; the plan is deterministic, so a replan paints the same kerbs.
-func tint_the_escape_route(streets: Array[StreetNetwork.Segment]) -> void:
-	_escape_route_streets.clear()
-	for segment in streets:
-		_escape_route_streets[segment.key()] = true
-	_ground.repaint()
-
-## Whether a kerb tile is on today's route — the day's tree, or the escape's chains.
+## Whether a kerb tile is on today's tinted walk.
 func _is_on_the_tinted_route(tile: Vector2i) -> bool:
-	if _ground_corridor:
-		return _ground_corridor.depth(tile) == 0
-	if _escape_route_streets.is_empty():
-		return false
-	var segment := StreetNetwork.segment_containing(tile)
-	return segment != null and _escape_route_streets.has(segment.key())
+	return _tinted_route != null and _tinted_route.marks_the_kerb_at(tile)
 
 func closures() -> Array[RoadClosure]:
 	return _closures
@@ -1589,8 +1565,7 @@ func _spawn_boundary() -> void:
 ## can be edited in a drawing program instead of by changing arithmetic, and it is one
 ## place rather than four.
 func _paint_ground() -> void:
-	_ground_corridor = null
-	_escape_route_streets.clear()
+	_tinted_route = null
 	_ground.configure(self, _composed_ground_tile_set())
 	var initial := scenery.view if scenery.view.has_area() else _home_scenery_view()
 	for key in _ground.keys_in(initial.grow(SceneryResidency.LOAD_MARGIN)):

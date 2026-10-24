@@ -115,7 +115,7 @@ func _test_one_offer_per_look(t) -> void:
 	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY
 	var consumed: Array[String] = []
-	var plans := EventScheduler.build_day(day, _rng(day), map, consumed)
+	var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed)
 	var fire: EventDef = null
 	for plan in plans:
 		if plan.def.id == "burning_building":
@@ -342,7 +342,7 @@ func _test_the_director_drops_the_verdicts(t) -> void:
 	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY
 	var consumed: Array[String] = []
-	var plans := EventScheduler.build_day(day, _rng(day), map, consumed)
+	var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed)
 	var fire: EventDef = null
 	for plan in plans:
 		if plan.def.id == "burning_building":

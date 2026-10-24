@@ -619,7 +619,7 @@ func _test_winnability_holds_with_the_wall_standing(t) -> void:
 			var boundary := _boundary_keys(region_plan)
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary)
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 
 			var blocked := map.closed_tiles.duplicate()
 			for plan_item in seals:
@@ -678,7 +678,7 @@ func _test_closures_and_seals_never_land_on_a_boundary(t) -> void:
 
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary)
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 			for plan_item in seals:
 				var segment := StreetNetwork.segment_containing(map.world_to_tile(plan_item.position))
 				if segment:

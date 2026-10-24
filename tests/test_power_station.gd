@@ -182,7 +182,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t) -> void:
 			boundary[rect.position] = true
 		var seal_rng := RandomNumberGenerator.new()
 		seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-		var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary)
+		var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 
 		var blocked := map.closed_tiles.duplicate()
 		for item in seals:

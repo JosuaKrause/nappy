@@ -82,7 +82,7 @@ func _role_and_depth_sweep() -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("zz_m64:%d:%d" % [map.seed_used, day])
 			var consumed: Array[String] = []
-			var planned := EventScheduler.build_day(day, rng, map, consumed, [], [], tree)
+			var planned := EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], [], tree)
 			day_count += 1
 			sum_corridor_streets += tree.streets().size()
 			var crossing_streets := {}

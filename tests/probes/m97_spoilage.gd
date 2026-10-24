@@ -115,7 +115,7 @@ func _reproduce_zero_density_visits() -> void:
 				var rng2 := RandomNumberGenerator.new()
 				rng2.seed = hash("m97:full:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
 				var full_planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-						day, rng2, map, [], [], [block], tree, 0)
+						DaySpec.for_day(day), rng2, map, [], [], [block], tree, 0)
 				var full_in_lot: Array[EventScheduler.Planned] = []
 				for plan: EventScheduler.Planned in full_planned:
 					if plan.def.kind == GameEnums.EventKind.AMBIENT or plan.permanent \
