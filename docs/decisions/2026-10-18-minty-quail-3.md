@@ -28,7 +28,7 @@ or ended, replacing three booleans and five senders in `EventInstance`. The buil
 GoatCounter's names are unchanged; the escape's counts are left as they were, for
 `escape-as-day-spec.md`.
 
-**Verified at test parity** (inbox #813): `check.sh` and `lint.sh`, and every suite the change
+**Verified at test parity** (inbox #813 in curly-moose): `check.sh` and `lint.sh`, and every suite the change
 reaches, 0 failures; the full suite is CI's. One new suite, `tests/test_observers.gd`, kept as the
 cheapest proof of parity: it boots the game, loses day 1 to a car, to crying, to a catalogue row and
 to dusk, wins it, starts day 2 and runs a handed-over escape, and checks the exact GoatCounter names

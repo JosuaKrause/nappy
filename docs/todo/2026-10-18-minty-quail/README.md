@@ -52,7 +52,7 @@ patching statics or reaching into private fields. Every item below applies it to
 Each step leaves the game working and is its own PR, reviewed on its own. **A step is done at test
 parity**: every existing test passes, changed only as far as the code it reaches moved, or converted
 early to injected fakes and public APIs (`tests-public-seams.md`); nothing is remeasured per step. The player: "let's do remeasuring at the very end and not get blocked by it
-during the refactor", "for the refactor test parity is enough" (inbox #813).
+during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
 1. `world-passability.md`, `draw-layers.md`, then `world-map.md`: the world layer, which the building
    needs before it can run on the day's event manager.

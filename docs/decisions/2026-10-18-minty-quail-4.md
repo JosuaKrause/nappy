@@ -30,7 +30,7 @@ log opens a section header per attempt (`Telemetry.begin_section`). From `likely
 `play_seconds` counts the escape, the charges running when she escapes are closed, and
 `show_finale` hides the note line.
 
-**Verified at test parity** (inbox #813): `check.sh`, `lint.sh` and `ci_telemetry_kinds.py`, and 42
+**Verified at test parity** (inbox #813 in curly-moose): `check.sh`, `lint.sh` and `ci_telemetry_kinds.py`, and 42
 suites, 0 failures; the full suite is CI's. Tests that pinned the escape-only behaviour now pin the
 new one: `test_finale`'s lost section is one real-boot test (the outcome screen with its reason,
 then the retry's brief, the clock standing still behind it); `test_finale` boots a resumed escape
