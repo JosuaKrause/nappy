@@ -28,8 +28,8 @@ extends Control
 ## world, and this needs to ask the world where things are every frame. `main` owns it.
 ##
 ## **What it reads is an event source, not a day.** The one thing asked of `_events` is
-## `instances() -> Array[EventInstance]`, which `EventManager` answers in the city and
-## `InteriorEvents` answers in the building — so the masked man coming up a stairwell is
+## `instances() -> Array[EventInstance]`, which `EventManager` answers in the city and in the
+## building alike — so the masked man coming up a stairwell is
 ## announced exactly the way a fire engine coming down a street is. See `setup()`.
 ##
 ## **And a warning can be up before its thing exists.** A source that also answers
@@ -103,8 +103,8 @@ var rotated := false
 var _events: Node
 var _player: Node2D
 ## What she can see, when the event source does not keep the day's own (`EventManager.
-## visible_view()`): the escape's building, whose source is `InteriorEvents`. Looked through once a
-## frame from her camera.
+## visible_view()`): a stand-in source a test hands over. Looked through once a frame from her
+## camera.
 var _own_view := VisibleView.new()
 ## Per live instance: where it was last frame, its smoothed approach speed, how long its badge is
 ## still owed, and the generation it was last touched on. Keyed by instance id and mutated in
@@ -122,11 +122,11 @@ var _watch_generation := 0
 ## silhouette is still drawn for — and nothing drawn reads it.
 var _coming: Array = []
 
-## `events` is anything that answers `instances() -> Array[EventInstance]`: `EventManager` on a
-## day and in the escape's city, `InteriorEvents` in the escape's building. **Called again when the
-## escape walks out of the service door**, with the city's source in place of the building's, so
-## one badge serves both sections; an id the new source no longer carries simply drops out of
-## `_watch` on the next `_measure()`.
+## `events` is anything that answers `instances() -> Array[EventInstance]`: an `EventManager`, the
+## city's on a day and in the escape's city, the building's in the escape's building. **Called
+## again when the escape walks out of the service door**, with the city's source in place of the
+## building's, so one badge serves both sections; an id the new source no longer carries simply
+## drops out of `_watch` on the next `_measure()`.
 func setup(events: Node, player: Node2D) -> void:
 	_events = events
 	_player = player
@@ -165,7 +165,7 @@ static func world_per_screen_px() -> float:
 	return Tuning.VIEW_HALF_EXTENT.x * 2.0 / ScreenOrientation.DESIGN_SIZE.x
 
 ## The warnings that are up for something not in the world yet, or none for a source that has no
-## such thing (`InteriorEvents`).
+## such thing (a test's stand-in).
 func _warnings() -> Array[PendingWarning]:
 	if not _events.has_method("pending_warnings"):
 		return []

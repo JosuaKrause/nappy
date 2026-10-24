@@ -5,7 +5,8 @@
   `_sample_expected_landed`, `accumulate_landed`, `_prune_landed_history`, `_walled_off_now`,
   `wall_grid`, `will_be_lethal`, `set_halo_strength`, ...), documented as "duck-typed with
   CrowdAgent's own copy"; the copies already differ (signatures, extra bookkeeping, the wall cache
-  keyed on `_map` in one and `wall_grid()` in the other, a pelican hook in one).
+  keyed on the two points in `EventInstance` and on the two points and `_map` in `CrowdAgent`, a
+  pelican hook in one).
 - **Walker and car are one class.** `CrowdAgent` (`src/crowd/crowd_agent.gd`, 4,044 lines, 87 fields)
   switches on `Kind` 66 times; `_cannot_go_on` and `_may_stand_on` mix the car's seal logic with the
   walker's footway logic.

@@ -425,8 +425,8 @@ func _test_a_spread_rotates_with_the_street(t) -> void:
 	t.check(not EventInstance._spread_is_vertical(map, map.tile_to_world(block_tile)),
 			"ground that was never a street keeps the default lay too")
 
-	t.check(not EventInstance._spread_is_vertical(null, Vector2.ZERO),
-			"a data-level rig with no map at all gets the unrotated default")
+	t.check(not EventInstance._spread_is_vertical(WorldMap.open_ground(), Vector2.ZERO),
+			"a data-level rig on open ground gets the unrotated default")
 
 ## Stationary seal vehicles use the street axis even though their default facing is right. The van
 ## faces along it and the burnt car lies across it. Side art fits the circular body's diameter,
@@ -448,7 +448,7 @@ func _test_stationary_vehicles_face_their_street(t) -> void:
 			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
 			"a burnt car across an east-west street uses its end view")
 	t.check(EventInstance._stationary_vehicle_uses_side(
-			EventDef.Look.MOVING_VAN, null, Vector2.ZERO, Vector2.RIGHT),
+			EventDef.Look.MOVING_VAN, WorldMap.open_ground(), Vector2.ZERO, Vector2.RIGHT),
 			"off-street or data-level placement follows the vehicle's own default facing")
 
 	var vehicle_looks: Array[EventDef.Look] = [
@@ -754,7 +754,7 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## truck not the fire"). The finale's own fire, indoors, is the whole hazard again: there is no
 ## truck to call in a stairwell, and closing the shaft it stands in is the point of it there. It
 ## breathes, the way the row's pulse makes it, so what it costs over a stay is under its peak, and a
-## fire with a body casts that body's shadow. `InteriorEvents._indoor_fire()` is the duplicate.
+## fire with a body casts that body's shadow. `EventCatalogue.building_fire()` is the duplicate.
 func _test_the_street_fire_costs_nothing_but_the_indoor_one_still_does(t) -> void:
 	var street := EventCatalogue.by_id("burning_building")
 	t.check(street != null, "the catalogue still carries the street fire")
@@ -763,7 +763,7 @@ func _test_the_street_fire_costs_nothing_but_the_indoor_one_still_does(t) -> voi
 	t.check(street.intensity <= 0.0, "it costs nothing of its own to stand beside")
 	t.check(street.obstructs_radius <= 0.0, "and nothing to walk through")
 
-	var indoors := InteriorEvents._indoor_fire()
+	var indoors := EventCatalogue.building_fire()
 	t.check(indoors.id == "burning_building", "the indoor fire is a duplicate of the same row")
 	t.check(indoors.intensity > 0.0, "but the finale's own copy still costs the meter")
 	t.check(indoors.obstructs_radius > 0.0, "and still closes the shaft it stands in")

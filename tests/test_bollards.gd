@@ -4,7 +4,7 @@ extends RefCounted
 ## The player's words *(2026-10-10, azure-puffin: "let's add the bollards back. it will make the
 ## middle of the road impassable when going from street to pedestrian road. that's okay. this is
 ## intended")*. Her real `CharacterBody2D` rig is swept through real `Prop` posts at the positions
-## `City.bollard_positions()` gives for a generated map, with the same synchronous
+## `CityMap.post_positions()` gives for a generated map, with the same synchronous
 ## `move_and_collide()` sweep `tests/test_interior.gd` uses (one displacement per step, not
 ## `move_and_slide()`'s own).
 
@@ -50,7 +50,7 @@ func _test_the_post_body_is_its_drawn_ground_contact(t) -> void:
 func _rows(map: CityMap) -> Array:
 	var rows := {}
 	var out: Array = []
-	var posts := City.bollard_positions(map)
+	var posts := map.post_positions()
 	for span in map.precinct_spans:
 		var vertical := span.x == 1
 		for at in posts:
@@ -117,7 +117,7 @@ func _test_the_row_stops_her_and_the_pavement_does_not(t) -> void:
 	var along: float = row.along
 	var run := RUN_UP * 2.0
 	var band_px := float(Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH * 2) * Tuning.TILE_SIZE
-	var margin := (band_px - float(across.size() - 1) * City.BOLLARD_SPACING) * 0.5
+	var margin := (band_px - float(across.size() - 1) * CityMap.BOLLARD_SPACING) * 0.5
 	var band_start := float(across[0]) - margin
 	var on_pavement := band_start - float(Tuning.TILE_SIZE)
 	var on_far_pavement := band_start + band_px + float(Tuning.TILE_SIZE)
@@ -139,7 +139,7 @@ func _row_with_posts(t) -> Array:
 	var map := CityGenerator.generate(1000)
 	var holder := Node2D.new()
 	t.add_child(holder)
-	for at in City.bollard_positions(map):
+	for at in map.post_positions():
 		var post := Prop.new()
 		post.kind = Prop.Kind.BOLLARD
 		post.position = at
@@ -236,7 +236,7 @@ func _test_holding_a_diagonal_never_gets_her_past_the_row(t) -> void:
 func _test_nothing_walks_through_the_row_but_her_own_body(t) -> void:
 	for seed_value in [1000, 500, 4242]:
 		var map: CityMap = CityGenerator.generate(seed_value)
-		var posts := City.bollard_positions(map)
+		var posts := map.post_positions()
 		var row: Dictionary = _rows(map)[0]
 		var vertical: bool = row.vertical
 		var along := Vector2(0.0, 1.0) if vertical else Vector2(1.0, 0.0)

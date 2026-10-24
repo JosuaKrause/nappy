@@ -245,7 +245,7 @@ static func net_landed(landed: float, total_landed: float, decay: float) -> floa
 	return maxf(0.0, landed - decay * (landed / total_landed))
 
 ## The event source: anything answering `instances() -> Array[EventInstance]` — `EventManager` in
-## the city, `InteriorEvents` in the escape's building. See `setup()`.
+## the city and in the escape's building alike. See `setup()`.
 var _events: Node
 ## The crowd, or null where there is none — the escape's building has nobody in it but the events.
 var _crowd: Crowd
@@ -265,8 +265,8 @@ var _candidates: Array = []
 var _holders := {}
 
 ## **The building shows what the city shows.** `events` is an event source rather than a day, the
-## one question asked of it being `instances()`, and `crowd` may be null — so `InteriorEvents` and
-## no crowd is a whole candidate set, and a masked man on the stairs or a steam vent in the
+## one question asked of it being `instances()`, and `crowd` may be null — so the building's events
+## and no crowd is a whole candidate set, and a masked man on the stairs or a steam vent in the
 ## basement wears the same rim a dog on a sidewalk does. `Baby._update_excitement()` traces
 ## `landed()` from `WorldContext.excitement_sources_at()`, which `InteriorScene` answers from the
 ## same instances, so nothing about the netting changes indoors. **Called again when the escape

@@ -64,7 +64,7 @@ at the paving's edge, so the street reads as closed on purpose rather than as th
 The pavements either side of the posts run straight past them onto the precinct's own paving — a
 pram walks past on the pavement, and nothing gets through the carriageway band between them, a car
 or her. **Each post is a body** (a circle of the post's shadow radius,
-4.8px, so the body is the drawn ground contact), and the posts stand `City.BOLLARD_SPACING` (14px)
+4.8px, so the body is the drawn ground contact), and the posts stand `CityMap.BOLLARD_SPACING` (14px)
 apart. Her collision shape is her 28px-wide body plus the pram's 8px circle, 14px out along her
 facing, so a gap has to be narrower than her body to shut; 14px less two posts' radii leaves a
 4.4px slit, and the row of five (4px in from either edge of the 64px band) is a wall to her at

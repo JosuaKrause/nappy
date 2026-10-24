@@ -660,8 +660,8 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t) -> void:
 	counter.free()
 
 ## **The masked man in the escape's stairwell has his counter** like every charger: `-warned` as his
-## hand goes up, `-chased` when he starts his run, and then `-caught` (`InteriorEvents` reports his
-## catch) or `-outlasted` when his run is over without one.
+## hand goes up, `-chased` when he starts his run, and then `-caught` (the building's `EventManager`
+## reports his catch, as a day's does) or `-outlasted` when his run is over without one.
 func _test_the_masked_man_has_his_counter(t) -> void:
 	var counter := RecordingCounter.new()
 	var listening := _listen(counter)

@@ -142,8 +142,8 @@ The events:
     (`EventInstance._be_done()`, `EventInstance.gave_up`); or `-ended`, the day or the escape's
     section ended some other way while it was still charging — the meter at its cap, another
     thing's catch, home (`EventBus.pursuit_cut_short`, `EventManager.end_the_charges_still_running()`,
-    which `main._on_day_finished()` asks before the day's own end is sent, and `InteriorEvents` as a
-    section ends). A charger's own `ChargeRecord` (`src/events/charge_record.gd`) is the one owner
+    which `main._on_day_finished()` asks of the city's or the building's events before the day's or
+    the section's own end is sent). A charger's own `ChargeRecord` (`src/events/charge_record.gd`) is the one owner
     of that rule: every ending asks it, and the first to ask is the only one sent.
 
   `<charger>` is the row's own id hyphenated, as the encounter events are (`alley-robbery`,
@@ -256,7 +256,8 @@ The events:
   `nappy-day-16-won` as she gets out of the city; a lost section's `lost-timeout`,
   `lost-crying-<source>` or `lost-hard-fail-<what>` (`nappy-day-15-lost-hard-fail-masked-pursuer`);
   the charging counters (`nappy-day-15-masked-pursuer-warned`, `-chased`, and `-ended` for a
-  charge still running when the section ends); the escape city's encounters and runs; its holds;
+  charge still running when the section ends); both sections' encounters and runs, the
+  building's events being the day's own `EventManager` as the city's are; the city's holds;
   and `nappy-day-16-blackout` as the escape's city is built dark. `GameState.day`, the calendar,
   stays on day 14 for the whole escape, so `VisitCounter` names what it counts by the day the last
   `day_started` announced rather than by the calendar.
@@ -483,8 +484,8 @@ day 15 Escape the building  run seed 1674637177  length 180.0s
 which world she is in as each section starts — `watch_building()` or `watch_city()`, off
 `EventBus.escape_section_started`, which carries the section's world — before `start_section()`,
 the escape's `start_day()`; a section ends on `day_ended`, as a day does. The events are read from
-an event source either way, `InteriorEvents` in the
-building and the city's `EventManager` outside it, so these read a section exactly as they read a
+an `EventManager` either way, the building's in the
+building and the city's outside it, so these read a section exactly as they read a
 day: `start`, `near`, `chase`, `cue` (the mark over her head and the screen-edge badges), `freeze` /
 `thaw`, `asleep` / `woke`, `run`, `idle`, `blocked`, `turn`, `frame` and `spike`, and in the city
 section `cross`, `road` and `calm` / `left` as well — the calm ground a chain passes through is

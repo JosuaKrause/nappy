@@ -169,7 +169,7 @@ func _roof_the_tunnel() -> void:
 	var portal_rows := AtlasLibrary.native_size(TUNNEL).y / Tuning.TILE_SIZE
 	var left := -columns * tile * 0.5
 	var mountain := AtlasLibrary.region(MOUNTAIN)
-	for row in range(portal_rows, City.OUTSIDE_DEPTH_TILES):
+	for row in range(portal_rows, CityMap.OUTSIDE_DEPTH_TILES):
 		for column in columns:
 			draw_texture_rect(mountain,
 					Rect2(left + column * tile, -tile * float(row + 1), tile, tile), false)

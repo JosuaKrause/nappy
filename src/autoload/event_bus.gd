@@ -234,8 +234,8 @@ signal escape_begun()
 ## A section is about to be walked, the first time or again after a loss (`restarted`). `section`
 ## is a `DaySpec.Section` passed as `int` (a cross-script enum is not the same type as itself as a
 ## parameter, the **godot** skill); `world` is where it is walked — the building's
-## `InteriorScene` or the `City` — and `events` the events walked among there, `InteriorEvents`
-## or the city's `EventManager`.
+## `InteriorScene` or the `City` — and `events` the events walked among there, the building's
+## `EventManager` or the city's.
 signal escape_section_started(section: int, restarted: bool, world: Node, events: Node)
 ## The building section won — she is out of its service exit — and the city section is about to
 ## begin: once per won attempt at the *building* section, never repeated by a retry of the city

@@ -38,8 +38,8 @@ extends Node2D
 ## shape-per-emitter decision is made, and `open_runs()` where the cut is.
 ##
 ## **The building shows what the city shows.** Nothing here needs a day: the events are an event
-## source (anything answering `instances() -> Array[EventInstance]`, which `InteriorEvents` does as
-## well as `EventManager`), the crowd may be null, and the world is any `Node2D` whose subtree holds
+## source (anything answering `instances() -> Array[EventInstance]`, which the city's
+## `EventManager` and the building's answer alike), the crowd may be null, and the world is any `Node2D` whose subtree holds
 ## the bodies — `City` or `InteriorScene`. Only the props are a city's, and a building has none.
 
 ## The falloff's own outline colour for a merely costly field — `Palette.MARK_COSTLY`, the same
@@ -252,7 +252,7 @@ static func _may_be_seen(view: Rect2, at: Vector2, level: float, spine := 0.0) -
 ## plain-point form `field_outline_at()` (a crowd agent or one bird of a flock, neither of which
 ## owns a body in field terms) — added to `drawn` as the runs `open_runs()` leaves, and not at all
 ## off screen. See `_cuts` for `key` and `cuts`.
-func _field_boundary(outline: PackedVector2Array, source: Vector2, grid: CityMap, colour: Color,
+func _field_boundary(outline: PackedVector2Array, source: Vector2, grid: WorldMap, colour: Color,
 		key: Array, view: Rect2, cuts: Dictionary, drawn: Array) -> void:
 	if outline.is_empty() or not view.intersects(_bounds_of(outline)):
 		return
@@ -291,10 +291,12 @@ const _CUT_STEPS := 4
 ## where the answer turns along it**, found by halving it, so the line ends at the wall's depth
 ## rather than at whichever point of the outline happened to fall short of it.
 ##
-## **Most outlines ask no line at all**: `_deep_ground_meets()` answers first whether anything
+## **Most outlines ask no line at all**: a source on open ground — a row from outside the walls
+## (`EventInstance.wall_grid()`) — has its whole outline at once, and otherwise
+## `_deep_ground_meets()` answers first whether anything
 ## within the outline's bounds could be deep enough in a building to wall one, and a walker on a
 ## sidewalk beside a facade almost never reaches that far in.
-static func open_runs(points: PackedVector2Array, source: Vector2, grid: CityMap
+static func open_runs(points: PackedVector2Array, source: Vector2, grid: WorldMap
 		) -> Array[PackedVector2Array]:
 	var runs: Array[PackedVector2Array] = []
 	if points.size() < 2:
@@ -302,7 +304,8 @@ static func open_runs(points: PackedVector2Array, source: Vector2, grid: CityMap
 	var shut: Array[bool] = []
 	var first_shut := -1
 	var pieces := PackedVector2Array()
-	if grid != null and _deep_ground_meets(grid, _bounds_of(points).expand(source)):
+	if grid != null and grid.has_ground() \
+			and _deep_ground_meets(grid, _bounds_of(points).expand(source)):
 		pieces = _in_pieces(points)
 		for i in pieces.size():
 			var is_shut := grid.wall_between(source, pieces[i])
@@ -348,7 +351,7 @@ static func _in_pieces(points: PackedVector2Array) -> PackedVector2Array:
 
 ## The last point from `open` towards `shut`, one piece apart, whose line from `source` the grid
 ## leaves open.
-static func _where_the_wall_starts(open: Vector2, shut: Vector2, source: Vector2, grid: CityMap
+static func _where_the_wall_starts(open: Vector2, shut: Vector2, source: Vector2, grid: WorldMap
 		) -> Vector2:
 	for _i in _CUT_STEPS:
 		var middle := (open + shut) * 0.5
@@ -363,7 +366,7 @@ static func _where_the_wall_starts(open: Vector2, shut: Vector2, source: Vector2
 ## to block at, since no tile asks less than that depth and the corner discs it also leaves out only
 ## take more away. A line from the source to the outline lies inside the outline's bounds with the
 ## source added, so where this is false no line on it can be walled and none need be asked.
-static func _deep_ground_meets(grid: CityMap, rect: Rect2) -> bool:
+static func _deep_ground_meets(grid: WorldMap, rect: Rect2) -> bool:
 	var size := float(Tuning.TILE_SIZE)
 	var depth := minf(Tuning.THIN_WALL_SHIELD_DEPTH, Tuning.WALL_SHIELD_DEPTH)
 	var first := grid.world_to_tile(rect.position)

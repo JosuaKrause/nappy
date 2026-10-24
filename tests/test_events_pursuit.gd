@@ -76,7 +76,8 @@ class _BlockedLesson extends EventManager:
 
 func _test_a_failed_lesson_retry_leaves_the_director_running(t) -> void:
 	var manager := _BlockedLesson.new()
-	var director := _RetryDirector.new(null)
+	# An empty city map: the director owes its retry the same way with nothing on the ground.
+	var director := _RetryDirector.new(CityMap.new())
 	var body := CharacterBody2D.new()
 	body.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
 	manager._player = body

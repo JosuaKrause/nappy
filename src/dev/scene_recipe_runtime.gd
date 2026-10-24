@@ -11,6 +11,8 @@ const OWNED_FLAGS := ["--seed", "--day", "--spawn", "--parent", "--meters", "--w
 		"--press", "--tap", "--ending", "--quit-when-still", "--skip", "--smooth-walk"]
 
 var data: Dictionary = {}
+## The walk the scene was installed into (`install()`), handed in by the run flow.
+var walk_spec: DaySpec = null
 var built: Dictionary = {}
 var manifest: Dictionary = {}
 var named: Dictionary = {}
@@ -507,9 +509,12 @@ func start_position() -> Vector2:
 	return position_of(data.get("setup", {}).get("player", {}).get("at", "doorstep"), errors)
 
 ## Installs the fixed day before the world gets a simulation frame. Geometry eligibility reads
-## the declared construction context, never the exterior's unbuilt walkable floor.
-func install(city: City, player: Stroller, baby: Baby,
+## the declared construction context, never the exterior's unbuilt walkable floor. `spec` is the walk
+## the run flow started for the scene — the same object its clock and HUD run on — and the scene's
+## events run under its settings (`EventManager.start_recipe()`).
+func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		resistance: ResistanceDirector = null) -> Array[String]:
+	walk_spec = spec
 	_city = city
 	_player = player
 	_resistance = resistance
@@ -534,7 +539,7 @@ func install(city: City, player: Stroller, baby: Baby,
 	var background: Dictionary = setup.get("background", {})
 	_select_structures(errors)
 	var plans := _event_plans(at, errors)
-	city.events.start_recipe(plans, GameState.day, at, data.get("kind", "city") == "escape")
+	city.events.start_recipe(plans, spec, GameState.day, at)
 	city.refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
@@ -987,7 +992,7 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 	if def.id == "roadblock":
 		def = EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL)
 	elif def.id == "military_convoy":
-		def = EventScheduler._without_its_aftermath(def)
+		def = EventCatalogue.without_its_aftermath(def)
 	var map := _city.map
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):

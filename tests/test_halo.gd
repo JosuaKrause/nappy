@@ -1123,7 +1123,7 @@ func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -
 
 ## **A holder that leaves the candidate set without being freed is told zero, still counted while it
 ## fades, and freed once the fade is over.** Every source that leaves today is queued for deletion
-## as it goes (`EventManager`'s retirement, `InteriorEvents.stand_down()`, `Crowd.clear()`), so this
+## as it goes (`EventManager`'s retirement, `EventManager.stand_down()`, `Crowd.clear()`), so this
 ## is the net for a later path that takes a source out of `instances()` and keeps it: without it,
 ## such a source is never told zero, so its rim stays lit on a thing that is no longer charging her,
 ## and holds a block nothing counts against the budget.

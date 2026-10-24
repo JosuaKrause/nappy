@@ -191,7 +191,7 @@ func _maybe_raid(her: Vector2, shows: Callable) -> void:
 	if _raid_beat.size() == 2:
 		var patrol: EventDef = row.duplicate()
 		# `shape` is a plain `RefCounted` field `Resource.duplicate()` does not copy (the note on
-		# `EventScheduler._without_its_aftermath()`); dropped, the car draws and charges nothing.
+		# `EventCatalogue.without_its_aftermath()`); dropped, the car draws and charges nothing.
 		patrol.shape = row.shape
 		patrol.solid_parts = row.solid_parts
 		patrol.paces = true
@@ -442,7 +442,7 @@ func _bring_the_column(def: EventDef, place: Vector2, her: Vector2, lane_x: floa
 		stop = _where_the_column_stops(her, lane_x, her.y - going * past, -going,
 				absf(start_y - her.y), def)
 	var far_y := bottom if going > 0.0 else top
-	var trailing := EventScheduler._without_its_aftermath(def)
+	var trailing := EventCatalogue.without_its_aftermath(def)
 	for i in Tuning.COLUMN_TRUCKS:
 		var back := -going * Tuning.COLUMN_SPACING * i
 		var from := Vector2(lane_x, clampf(start_y + back, top, bottom))

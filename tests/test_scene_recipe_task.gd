@@ -126,7 +126,8 @@ func _day(t, day: int) -> Array:
 		region.alley_doors.clear()
 		region.alley_walls.clear()
 	var empty: Array[EventScheduler.Planned] = []
-	city.events.start_recipe(empty, day, map.tile_to_world(MOUTH))
+	city.events.start_recipe(empty, DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), day,
+			map.tile_to_world(MOUTH))
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)

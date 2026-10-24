@@ -66,6 +66,7 @@ func run(t) -> void:
 	_test_the_city_word_boots_the_second_section(t)
 	_test_every_part_word_reaches_its_own_walkable_position(t)
 	_test_the_escape_owes_no_return_leg(t)
+	_test_a_day_owes_its_return_only_as_its_spec_says(t)
 	_test_nothing_the_escape_places_stands_in_a_street_tree(t)
 	_test_finale_entities_stop_when_the_tree_pauses(t)
 	_test_the_escape_pauses_the_same_way_a_day_does(t)
@@ -1452,7 +1453,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 	var road := city.map.tiles_of_type(GameEnums.TileType.ROAD)[0]
 	var plans: Array[EventScheduler.Planned] = [
 		EventScheduler.Planned.new(burst, city.map.tile_to_world(road))]
-	city.events.start_finale(plans)
+	city.events.start_planned(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS), plans)
 	t.check(city.events.instances().size() == 1, "the burst is in the world")
 	var live := city.events.instances()[0]
 	var steps := 0
@@ -1712,13 +1713,13 @@ func _test_every_part_word_reaches_its_own_walkable_position(t) -> void:
 		var part: String = MAIN_SCRIPT.escape_part_for(word)
 		var at := scene.part_world_position(part)
 		t.check(at != start, "'%s' (part '%s') teleports away from her own door" % [word, part])
-		t.check(scene.is_walkable(scene.world_to_tile(at)),
+		t.check(scene.map.is_walkable(scene.map.world_to_tile(at)),
 				"'%s' (part '%s') lands on a walkable tile" % [word, part])
 		# **And one she stays on.** A part word puts her down with nothing armed, and
 		# `process_player()` fires a transition on the frame she is standing on a door or the
 		# service exit — so a waypoint that is a threshold shows her the part on the other side of
 		# it rather than the part she asked for, silently, with the flag looking like it worked.
-		t.check(scene.transition_at(scene.world_to_tile(at)).is_empty(),
+		t.check(scene.map.transition_at(scene.map.world_to_tile(at)).is_empty(),
 				"'%s' (part '%s') lands somewhere that is not a door" % [word, part])
 	scene.free()
 
@@ -1749,11 +1750,40 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 	city.events.setup(city, city.map)
 	var was_the_day := GameState.day
 	GameState.day = an_act_iv_day
-	city.events.start_finale([] as Array[EventScheduler.Planned])
+	city.events.start_planned(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS),
+			[] as Array[EventScheduler.Planned])
 	EventBus.return_phase_started.emit()
 	t.check(city.events.owed_ahead() == 0,
 			"and the escape owes nothing to a return it does not have (got %d)"
 					% city.events.owed_ahead())
+	GameState.day = was_the_day
+	city.free()
+
+## **The walk's settings are the spec's, handed in, not the manager's own**: on the same act IV day
+## and the same city, a day's spec owes the return its rows and a spec that says it owes none
+## (`DaySpec.owes_a_return` false) is owed none, by the same `start_day()`. So what decides it is the
+## spec the run flow hands over (`EventManager.use_the_spec()`), never a branch in the manager.
+func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
+	var an_act_iv_day := 13
+	var city: City = CITY_SCENE.instantiate()
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEEDS[0]))
+	city.events.setup(city, city.map)
+	var was_the_day := GameState.day
+	GameState.day = an_act_iv_day
+	var owed := {}
+	for owes: bool in [true, false]:
+		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
+		spec.owes_a_return = owes
+		city.events.use_the_spec(spec)
+		var consumed: Array[String] = []
+		city.events.start_day(an_act_iv_day, GameState.day_rng(an_act_iv_day), consumed)
+		var before := city.events.owed_ahead()
+		EventBus.return_phase_started.emit()
+		owed[owes] = city.events.owed_ahead() - before
+	t.check(int(owed[true]) > 0, "a day's spec owes its return rows (%d)" % owed[true])
+	t.check(int(owed[false]) == 0,
+			"and a spec that owes none is owed none on the same day (%d)" % owed[false])
 	GameState.day = was_the_day
 	city.free()
 

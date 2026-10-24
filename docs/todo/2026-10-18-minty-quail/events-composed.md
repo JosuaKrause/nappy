@@ -36,10 +36,13 @@ times, so the task guard *is* the robber row and moving him throws away his stat
 `EventManager` checks catches, hard fails and detentions in `_physics_process`, which already caused
 a flicker (`event_instance.gd` near 2249). **Re-entrant `_process`:** `_drive` and `_timed` re-run
 the whole frame and roll it back, which does not roll back any emit or spawn. **Upward coupling:** the
-instance fetches the player and drives the camera (`hide_for_inspection`, `focus_camera_on`), fetches
+instance and the manager fetch the player (`EventManager._find_player()` from the `player` group), the
+instance drives the camera (`hide_for_inspection`, `focus_camera_on`), fetches
 the `ResistanceDirector` from a draw path, uses the red arrow's `ArrowField` as its pathfinder, and
 copies crowd traffic's give-way (`_room_to_its_line`). **Streaming** carries hand-picked fields
-(`Planned`: age, travelled, noticed_at, guard_spent, chaser_side; `resume()` restores three).
+(`Planned`: age, travelled, noticed_at, guard_spent, chaser_side; `resume()` restores three). **Events held by the scene:** `City` and `InteriorScene` each sum their
+events for the baby rather than the manager answering it, and `BuildingPlan.lay_the_grates()`, a
+placement class, builds the grates' sprite nodes through `EventInstance.steam_grate()`.
 
 **How behaviour is captured in classes is the implementer's call.** Asked whether the design
 encapsulates event types into classes, the player: "well leave that part vague -- the agent that will

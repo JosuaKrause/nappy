@@ -235,7 +235,8 @@ var _mouths_of: CityMap
 var _mark_tiles_of_mouths: Array[Vector2i] = []
 
 ## Hands the director its city, the map it places on and the navigator a chase it predicts walks
-## by — the city's own (`City.navigator`), or one over `map` for a rig that hands none.
+## by — the city's own (`City.navigator`), or the map's
+## own (`WorldMap.navigator()`) for a rig that hands none.
 func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	# The same self-registration `WorldContext` and `Stroller` use, so anything that needs to ask
 	# this director a read-only question — `pointable_objective()`, for a protester — finds it
@@ -244,7 +245,7 @@ func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	add_to_group("resistance")
 	_city = city
 	_map = map
-	_navigator = navigator if navigator else Navigator.new(map)
+	_navigator = navigator if navigator else map.navigator()
 	if city and city.events and not city.events.door_crossed.is_connected(_on_door_crossed):
 		city.events.door_crossed.connect(_on_door_crossed)
 	_happenings.trace = trace

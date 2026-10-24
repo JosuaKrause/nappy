@@ -44,7 +44,7 @@ func _ready() -> void:
 ## per object, M61) rather than a second number. A tree, a sack and a pile stay bodiless; a post
 ## stops her *(2026-10-10, the player, azure-puffin, on the bollards: "it will make the middle of
 ## the road impassable when going from street to pedestrian road. that's okay. this is intended")*,
-## and `City.BOLLARD_SPACING` keeps every gap between posts narrower than her body, so a row of
+## and `CityMap.BOLLARD_SPACING` keeps every gap between posts narrower than her body, so a row of
 ## them shuts the carriageway band while the pavements beside it stay open. Open to overturn: the
 ## radius is the shadow's 0.4 of the 12px picture (4.8px), not the picture's 6px rim.
 func _add_bollard_body() -> void:

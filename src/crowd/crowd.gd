@@ -153,11 +153,12 @@ func _is_she_under(gate: RegionPlanner.GateState) -> bool:
 			and _player.global_position.distance_to(gate.position) <= _under_the_boom_within()
 
 ## Hands the crowd its city, the map it walks and drives and the navigator a push moves a walker by
-## — the city's own (`City.navigator`), or one over `map` for a rig that hands none.
+## — the city's own (`City.navigator`), or the map's
+## own (`WorldMap.navigator()`) for a rig that hands none.
 func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	_city = city
 	_map = map
-	_navigator = navigator if navigator else Navigator.new(map)
+	_navigator = navigator if navigator else map.navigator()
 	_signals = city.signals
 	_field = CrowdField.new(map, map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, map.size)).get_center())

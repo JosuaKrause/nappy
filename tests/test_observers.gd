@@ -144,7 +144,7 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 
 	main._on_summary_continued()
 	_check_the_observer_runs_after(t, main, [main._day, main._edge, main._interior,
-			main._interior_events], "the escape")
+			main._building_events], "the escape")
 	t.get_tree().paused = true
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
 	t.check(main._summary.is_showing() and not main._resume_gate_open,

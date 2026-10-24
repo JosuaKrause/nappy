@@ -404,7 +404,8 @@ func _walk_it(city: City, her: Stroller, plan: FinalePlanner.Plan, line: PackedV
 	var start := line[0]
 	her.global_position = start
 	her.velocity = Vector2.ZERO
-	city.events.start_finale(plan.placements, start)
+	city.events.start_planned(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS), plan.placements,
+			start)
 	var meter := Meter.new()
 	var s := 0.0
 	var clock := 0.0

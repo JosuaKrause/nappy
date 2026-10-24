@@ -118,8 +118,14 @@ src/
 	                      went and which events she met
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
   world/
-	world_context.gd      the only questions the baby may ask the world, and adding a node to the
-	                      world on a draw layer (`add_entity()`)
+	world_map.gd          the one map interface the city's map and the building's implement and
+	                      everything in a world is handed: tile conversions, passability, the
+	                      line walk, the wall's depth, the blocked record, the street questions,
+	                      the navigator, adding to its world, what its ground does to her walk;
+	                      open ground (`open_ground()`) for a rig with no world
+	world_context.gd      the only questions the baby may ask the world, adding a node to the
+	                      world on a draw layer (`add_entity()`), and what its ground does to her
+	                      each frame and how it shows a bang outside
 	draw_layer.gd         the one list of draw layers both worlds share, the only place a
 	                      z_index is written, and a long footprint's feet-anchored slices
 	world_layers.gd       the node one world draws each of its layers in
@@ -127,7 +133,7 @@ src/
 	                      (the ground, the posts, the day's closures, soft seals and bodies) and
 	                      how wide it is
 	blocked_layer.gd      one map's record of what stands on its ground today, read through a
-	                      mover (`CityMap.passable()`, `CityMap.clear_line()`)
+	                      mover (`WorldMap.passable()`, `WorldMap.clear_line()`)
 	footprint.gd          one solid's ground contact, the one datum its physics body and its
 	                      tiles on the record are both built from
 	navigator.gd          the one way anything moves over a map: a swept step that keeps the
@@ -139,21 +145,25 @@ src/
   interior/               the escape scene's building, built as the escape's first section
 	                      begins — the run's own ending, or --start-escape
 	interior_tile.gd      the tile-kind enum and which kinds are walkable
-	interior_map_plan.gd  the whole building's plan: tiles, walls, doors, decals, waypoints
+	interior_map_plan.gd  the whole building's plan and its `WorldMap`: tiles, walls, doors, decals,
+	                      waypoints, and its pure geometry — the flights' bands, the walks down its
+	                      stairwells and basement, where its vents stand, what a door leads to
 	interior_map.gd       lays all seven parts (three hallways, two stairwells, the lobby, the
 	                      basement) into one plan, 64 tiles apart, and parses STAIRWELL_ROWS,
 	                      the ten-column symbol grammar each shaft is drawn and walked from
 	interior_tileset.gd   the interior's own TileSet, built in code from the interior atlas
 	                      page's own baked regions
-	interior_scene.gd     the WorldContext node: paints the building once, every door's
-	                      fade-teleport-fade transition, the service exit, and the hallway
-	                      windows that flash for a bang outside and for the far ones between them
+	interior_scene.gd     the WorldContext node that draws the building's map: paints it once,
+	                      every door's fade-teleport-fade transition, the service exit, and the
+	                      hallway windows that flash for a bang outside and for the far ones between
+	                      them
   finale/                 the escape: a won day 14 with every task complete goes here, and
 	                      --start-escape reaches the same sequence directly
 	finale_planner.gd     the two chains — service exit, three calm areas, tunnel or bridge —
 	                      and the whole plan built off them
-	interior_events.gd    section one's events: the mouse, the masked man who keeps coming back,
-	                      the fire, the steam, and the explosions outside
+	building_plan.gd      what the building places and where, as plans the day's `EventManager`
+	                      runs on its map: the fire, the masked man who keeps coming back, the
+	                      mouse, the steam, and the explosions outside
   ui/
 	hud.gd                the clock, the two bars, the teach line and the status line
 	texts.gd              `Texts`, every text the game shows on screen: one constant per line, grouped by
@@ -507,16 +517,33 @@ ended the day), `run_restarted`, `run_ended`, the resistance's own `resistance_c
 with `?debug=1` unasked and `window.goatcounter.count` actually present — `VisitCounter._should_send()` is the pure gate, and
 `tests/test_visit_counter.gd` drives its truth table and its event-name builders directly.
 
+## WorldMap
+
+The city and the building implement one map interface, `WorldMap` (`src/world/world_map.gd`):
+`CityMap` is the city's, `InteriorMapPlan` the building's. Everything that stands in a world is
+handed its map by whoever builds it, never fetches it — the event manager and each event, the
+navigator, the stroller and the run log — and asks it every question about the ground: which tile a
+point is on, whether a mover may stand there (`passable()`), whether a line is clear
+(`clear_line()`), whether a wall keeps a field from her (`wall_between()`), a way round
+(`navigator()`), adding something to the world on a draw layer (`add_entity()`, through the world
+node that draws the map), what the ground does to her walk (`process_player()`, the building's
+doors; `slope_dir_at()`, its flights), and the street questions, which a map with no streets answers
+"no street here". The line walk, the wall's depth, the blocked record and the tile conversions are
+written once in `WorldMap`, over each map's own answer about its ground. A rig with no world stands
+an event on open ground (`WorldMap.open_ground()`), where nothing is walled and every way is
+straight; nothing asks whether it has a map. Which world a day spec is walked in is the run flow's
+choice (`main`), which hands that world's map down.
+
 ## WorldContext
 
 `Baby` never learns what a tile or an event is. It asks a `WorldContext` three questions —
 `is_calm_zone()`, `is_alley()`, `total_excitement_at()` — and that is the entire surface
 between the meters and the world. The debug world answers with hand-placed test data; the generated
 city and the event manager answer for real. `InteriorScene` (the escape's building) is a third
-implementor that overrides nothing at all: the base class's own defaults (1.0 recovery everywhere,
-no excitement sources) are exactly the "meters idle" the escape scene wants, since it has no
-events and no crowd. Adding an event type therefore never touches the meter code, and the meters
-can be unit-tested against a fake world.
+implementor: its excitement is its events' — the day's own `EventManager`, run on the building's
+map — and its basement gives no decay back. `main` hands her the world she walks
+(`Baby.set_world()`) each time it puts her into one. Adding an event type therefore never touches
+the meter code, and the meters can be unit-tested against a fake world.
 
 ## Excitement aggregation
 

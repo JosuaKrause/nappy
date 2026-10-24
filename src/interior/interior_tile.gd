@@ -97,7 +97,7 @@ static func is_walkable(kind: Kind) -> bool:
 ## other kind. The main shafts use both reviewed walkable roles in each direction; the basement's
 ## own entry stair answers `0`, because it is a level cell seen from the front rather than a
 ## diagonal tread and a sideways press on it has no slope to be redirected along. This is the one
-## number `Stroller`'s own slope redirection needs; see `InteriorScene.slope_dir_at()`.
+## number `Stroller`'s own slope redirection needs; see `InteriorMapPlan.slope_dir_at()`.
 static func flight_direction(kind: Kind) -> int:
 	if kind in [Kind.STAIR_FLIGHT_E, Kind.STAIR_TOP_E, Kind.STAIR_MIDDLE_E]:
 		return 1

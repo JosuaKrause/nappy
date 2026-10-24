@@ -124,7 +124,7 @@ var _crew_rng := RandomNumberGenerator.new()
 
 func _init(map: CityMap, navigator: Navigator = null) -> void:
 	_map = map
-	_navigator = navigator if navigator else Navigator.new(map)
+	_navigator = navigator if navigator else map.navigator()
 
 ## Takes over the day's `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` plans — everything the scheduler
 ## budgeted but left for the director to site while she walks. Called with the same plan list the

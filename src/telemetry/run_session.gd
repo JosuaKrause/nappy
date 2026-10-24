@@ -217,7 +217,7 @@ func _on_escape_section_started(section: int, restarted: bool, world: Node, even
 		_observer.setup_escape(_escape_world["player"], _escape_world["baby"],
 				_escape_world["clock"], _config.spikes_requested, _escape_world["edge"])
 	if section == DaySpec.Section.BUILDING:
-		_observer.watch_building(world as InteriorScene, events as InteriorEvents)
+		_observer.watch_building((world as InteriorScene).map, events)
 	else:
 		_observer.watch_city(world as City)
 	_observer.start_section(restarted)

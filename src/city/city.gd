@@ -64,10 +64,6 @@ const HOME_BUILDING_WALL_ROWS := 4
 ## constant only has to be something that cap can act on.
 const HOME_FLANKING_WALL_ROWS := 2
 const BOUNDARY_THICKNESS := 64.0
-## How deep the framed border band outside the finite map is, in tiles. The southern bridge's
-## road and the unwalkable landscape beneath and beyond that band are drawn wherever the view
-## asks for them, the player's camera included.
-const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
 
 ## Trees per *block* of open ground, by what the block currently is. A forest is a park with
 ## more trees in it and no swings, which is most of what the difference between them is on the
@@ -83,15 +79,6 @@ const _TREES := {
 	GameEnums.BlockPurpose.COURTYARD: 3,
 }
 
-## Distance between adjacent bollards' centres across a precinct's mouth, in px. The row shuts the
-## carriageway band to her *(2026-10-10, the player, azure-puffin: "it will make the middle of the
-## road impassable when going from street to pedestrian road. that's okay. this is intended")*, so
-## every gap has to be narrower than her body alone: her circle is 28px across (14px radius) at
-## whatever facing, so a gap of 28px or more lets her through sideways-on, and the pram circle
-## only makes that harder. 14px less two posts' 4.8px radii leaves a 4.4px slit, and puts five
-## posts on the 64px band, 4px in from either edge. The pavements either side of the band stay
-## open. Open to overturn; `tests/test_bollards.gd` holds the walks.
-const BOLLARD_SPACING := 14.0
 
 ## The least two trees in one lot may stand apart, centre to centre — read off the picture rather
 ## than asked for. `Prop.TREES` (`tree_a.svg`, `tree_b.svg`) are both drawn 40px wide, and
@@ -232,7 +219,6 @@ class HomeDoor extends Sprite2D:
 ## a block edge stack the way the eye expects. A building never sorts against an entity, being a
 ## layer of its own beneath them — see the note at the top of this file.
 func _ready() -> void:
-	super()
 	layers().hold(DrawLayer.Layer.BUILDINGS, _buildings_layer, true)
 	layers().hold(DrawLayer.Layer.ENTITIES, _entities, true)
 
@@ -240,7 +226,9 @@ func _ready() -> void:
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
 	map = city_map
-	navigator = Navigator.new(map)
+	# The city draws this map: what is added to the world through it comes here.
+	map.world = self
+	navigator = map.navigator()
 	scenery = SceneryResidency.new()
 	scenery.city = self
 	scenery.frame_locked = scenery_frame_locked
@@ -1033,7 +1021,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 ## **The finale's route is not a tree**, so there is nothing here for `RouteTree` to grow and
 ## nothing for `ClosurePlanner` or `RegionPlanner` to be stated against — one ordered chain to each
 ## edge, with everything off it sealed, is `FinalePlanner`'s and `SealPlanner`'s work and arrives
-## through `EventManager.start_finale()` instead. `route_tree()` and `region_plan()` therefore
+## through `EventManager.start_planned()` instead. `route_tree()` and `region_plan()` therefore
 ## answer `null` for the whole sequence and `closures()` is empty, which is what their own
 ## contract already says about a `City` whose `start_day` has not run: *only meaningful after
 ## `start_day`*.
@@ -1540,45 +1528,14 @@ static func _too_close_to_a_planted_tree(at: Vector2, planted: Array[Vector2]) -
 
 ## A line of posts across the carriageway at each mouth of every precinct, so a street that
 ## meets one reads as closed on purpose rather than as the road running out. Placed from the map
-## alone, with no rng: a closed mouth is geometry, not a roll, so `bollard_positions` needs no
-## seed and a test can call it without building a scene.
+## alone, with no rng: a closed mouth is geometry, not a roll, so `CityMap.post_positions()` needs
+## no seed and a test can call it without building a scene.
 func _dress_precincts() -> void:
-	for at in bollard_positions(map):
+	for at in map.post_positions():
 		var bollard := Prop.new()
 		bollard.kind = Prop.Kind.BOLLARD
 		bollard.position = at
 		_add_prop(bollard)
-
-## Where the posts across a precinct's mouth stand, in world space. One row on the first tile of
-## paving at each end of every span (`CityMap.precinct_spans`), spread across the carriageway
-## band only — the middle two tiles of the corridor's `Tuning.STREET_WIDTH` — so the pavements on
-## either side stay open for a pram while the road itself reads as stopped.
-##
-## Static, and stated entirely over `map`: a bollard's position is a fact about the lattice, not
-## about the day, so nothing here reaches for a seed the way `_dress_block`'s trees do.
-static func bollard_positions(map: CityMap) -> Array[Vector2]:
-	var positions: Array[Vector2] = []
-	var tile := float(Tuning.TILE_SIZE)
-	var band_tiles := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH * 2
-	var band_px := band_tiles * tile
-	var count := maxi(2, floori(band_px / BOLLARD_SPACING) + 1)
-	var margin := (band_px - float(count - 1) * BOLLARD_SPACING) * 0.5
-	for span in map.precinct_spans:
-		var vertical := span.x == 1
-		var corridor: int = span.y
-		# The paving now reaches the crossroads' own road edge at each end — the same widened
-		# range `CityMap.street_kind()` reads paving from, so a post never stands short of or
-		# past where the ground itself changes.
-		var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
-		var hi := (span.w + 1) * CityMap.period() + Tuning.SIDEWALK_WIDTH
-		var band_start := (corridor * CityMap.period() + Tuning.SIDEWALK_WIDTH) * tile
-		for along_tile: int in [lo, hi - 1]:
-			var along_px := (along_tile + 0.5) * tile
-			for i in count:
-				var across_px := band_start + margin + i * BOLLARD_SPACING
-				positions.append(Vector2(across_px, along_px) if vertical
-						else Vector2(along_px, across_px))
-	return positions
 
 func _add_prop(prop: Node2D) -> void:
 	if not _recipe_contains(prop.position):
@@ -1598,7 +1555,7 @@ func _add_prop(prop: Node2D) -> void:
 func camera_bounds() -> Rect2:
 	if map.recipe_exterior or map.has_stretch():
 		return Rect2(-100000000, -100000000, 200000000, 200000000)
-	var depth := OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE)
+	var depth := CityMap.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE)
 	return Rect2(Vector2.ZERO, map.world_size()).grow(depth - Stroller.CAMERA_LOOK_AHEAD)
 
 ## Walls just outside the map, so the player cannot walk off the edge of the world.

@@ -157,9 +157,13 @@ var _interior: InteriorScene
 ## Handed to `_day` as each one starts, and what everything here that differs between a day and a
 ## section reads, rather than a global "are we in the escape". An ordinary day until one starts.
 var _spec := DaySpec.new()
-## The events inside the building — mice, the pursuers, the fire, the steam and the off-screen
-## explosions — hosted on the interior map, since `InteriorScene` has no `EventManager`.
-var _interior_events: InteriorEvents
+## The events inside the building — the fire, the masked man, the mouse, the steam and the
+## explosions outside — run by the day's own `EventManager` on the building's map, from the
+## building's own placements (`BuildingPlan`).
+var _building_events: EventManager
+## The seed the building's placements and its night are drawn from, once a boot
+## (`GameState.day_rng(day, "finale-interior")`), so every attempt is the same building.
+var _building_seed := 0
 var _player: Stroller
 var _baby: Baby
 var _day: DayController
@@ -473,7 +477,7 @@ func _ready() -> void:
 		_city.add_entity(_player)
 		_player.clear_camera_limits()
 		_baby = _player.get_node("Baby")
-		_baby.set_world(_city)
+		_put_her_in(_city.map)
 
 	_build_the_screens()
 
@@ -558,7 +562,8 @@ func _ready() -> void:
 		_recipe.begin()
 	elif _recipe:
 		# An escape recipe plays from its first frame, with no brief in front of it.
-		var problems := _recipe.install(_city, _player, _baby)
+		# The escape section's spec the boot started (`_the_first_day()`), the one its clock runs.
+		var problems := _recipe.install(_city, _player, _baby, _spec)
 		if not problems.is_empty():
 			_recipe_failed(problems)
 			return
@@ -689,7 +694,14 @@ func _the_first_day() -> DaySpec:
 				or (_escape_from_a_run and GameState.escape_section == DaySpec.Section.CITY)
 		return escape_section_spec(DaySpec.Section.CITY if start_at_the_city
 				else DaySpec.Section.BUILDING, config.escape_section_length())
-	return DaySpec.for_day(GameState.day, config.day_length_for(GameState.day))
+	return day_spec(config, GameState.day)
+
+## One of the fourteen days as this boot walks it: `day`, its clock `config`'s length for it
+## (`RunConfig.day_length_for()`, which `--day-length` compresses). The one spec a day is handed to
+## its clock, its HUD and its events alike, an authored scene's day included. Static so a test builds
+## the same spec the run walks.
+static func day_spec(run_config: RunConfig, day: int) -> DaySpec:
+	return DaySpec.for_day(day, run_config.day_length_for(day))
 
 ## One of the escape's two sections, `length` seconds long, with its own words — *"Escape the
 ## building"* and *"Escape the city"*, the player's names for the two screens — handed to the spec
@@ -865,6 +877,22 @@ func _build_the_world_for(spec: DaySpec) -> void:
 ## Whether the run log's session has been told what to watch the escape with — once a boot.
 var _escape_watched := false
 
+## Hands her and the baby the map of the world she now walks (`WorldMap`): the stroller asks it how
+## the ground under her turns a press (`Stroller.set_map()`), and the baby asks its world how loud it
+## is and what the ground does to her (`Baby.set_world()`). Called whenever she is put into a world,
+## so neither ever asks a world she has left.
+func _put_her_in(map: WorldMap) -> void:
+	_player.set_map(map)
+	_baby.set_world(map.world)
+
+## The map of the world the current spec is walked in — the building's in the escape's first
+## section, the city's otherwise — the one the run flow hands down to her and asks each walking
+## frame what its ground does to her.
+func _world_map() -> WorldMap:
+	if _spec.world == DaySpec.World.BUILDING and _interior:
+		return _interior.map
+	return _city.map if _city else null
+
 ## Section one's world: the building, her in it, and the events inside it. Reaching its service
 ## exit is the section's goal, so the exit's own moment — once its fade has covered the screen —
 ## reaches the day's clock (`DayController.reach_the_exit()`).
@@ -878,22 +906,27 @@ func _build_the_escape_building() -> void:
 
 	_player = _make_player()
 	_player.carrying = true
-	_player.slope_dir_at = _interior.slope_dir_at
 	_interior.add_entity(_player)
 	_player.set_camera_limits(_interior.camera_bounds())
 	_baby = _player.get_node("Baby")
-	_baby.set_world(_interior)
+	_put_her_in(_interior.map)
 
-	_interior_events = InteriorEvents.new()
-	_interior_events.name = "InteriorEvents"
-	_interior_events.skip_drawing = config.skip_events
-	_interior_events.trace = _the_trace()
-	add_child(_interior_events)
-	_pauses_with_the_game(_interior_events)
-	_interior_events.setup(_interior, GameState.day_rng(GameState.day, "finale-interior"))
-	# The building shows what the city shows: the same badge, halo and debug view, reading
-	# `InteriorEvents` where a day reads `EventManager` — see `_event_source()`. The city's own
-	# build calls the same three again when she walks out, which points them at the street.
+	# The building's events are the day's own manager, handed the building's map: no city, and the
+	# whole plan in the world at once, since the building is walked part by part through doors.
+	_building_events = EventManager.new()
+	_building_events.name = "BuildingEvents"
+	_building_events.skip_drawing = config.skip_events
+	_building_events.trace = _the_trace()
+	_building_events.stream_radius = INF
+	add_child(_building_events)
+	_pauses_with_the_game(_building_events)
+	_building_events.setup_world(_interior.map)
+	_interior.events = _building_events
+	_building_seed = GameState.day_rng(GameState.day, "finale-interior").randi()
+	BuildingPlan.lay_the_grates(_interior.map)
+	# The building shows what the city shows: the same badge, halo and debug view, reading its
+	# events as a day reads the city's — see `_event_source()`. The city's own build calls the same
+	# three again when she walks out, which points them at the street.
 	_add_danger_edge()
 	_add_excitement_halo()
 	_add_debug_layers()
@@ -904,7 +937,7 @@ func _build_the_escape_building() -> void:
 ## parks and the two exits are the ones she has walked for fourteen days. What is different is
 ## everything laid *on* it: `City.start_finale()` dresses the blocks without growing a day's route
 ## tree, closures or region wall; the crowd is cleared and never started, since *"no regular cars
-## or regular people on the street"*; and `EventManager.start_finale()` takes this scene's own plan
+## or regular people on the street"*; and `EventManager.start_planned()` takes this scene's own plan
 ## instead of the catalogue's day. It is dark from its first frame and stays at night, as the
 ## section's `DaySpec` says.
 func _build_the_finale_city() -> void:
@@ -928,14 +961,12 @@ func _build_the_finale_city() -> void:
 		_city.add_entity(_player)
 		_baby = _player.get_node("Baby")
 	else:
-		# Out of the building and onto the street: the same rig, reparented, with the stairwell's
-		# own slope redirection dropped — there are no flights outdoors, and a `Callable` left
-		# pointing at the interior would answer for tiles on a map she is no longer standing on.
-		_player.slope_dir_at = Callable()
+		# Out of the building and onto the street: the same rig, reparented.
 		_player.get_parent().remove_child(_player)
 		_city.add_entity(_player)
-	# Told, not discovered: the same baby now asks the street, not the building behind her.
-	_baby.set_world(_city)
+	# Told, not discovered: she now walks the street's map and the baby asks the street, not the
+	# building behind her.
+	_put_her_in(_city.map)
 	_player.clear_camera_limits()
 	# Built here for a boot straight onto the street, and pointed at the street here when she has
 	# walked out of the building, which built them first — see `_add_danger_edge()`.
@@ -972,7 +1003,7 @@ func _plan_the_finale_city() -> void:
 		return
 	var elapsed := Time.get_ticks_msec()
 	var plan := FinalePlanner.plan(_city.map, GameState.day_rng(GameState.day, "finale"))
-	_city.events.start_finale(plan.placements, _finale_start_position(), _spec.number)
+	_city.events.start_planned(_spec, plan.placements, _finale_start_position())
 	# The streets the chains run through carry the route's kerb tint, as a day's corridor does.
 	_city.tint_the_escape_route(plan.open_streets)
 	# Printed as well as logged, for the same reason `_start_day()` prints the day it just built:
@@ -1047,16 +1078,19 @@ func _start_section(spec: DaySpec, restarted: bool) -> void:
 		if not restarted:
 			start_at = _interior.part_world_position(_escape_start_part())
 		_player.reset_at(start_at, Vector2.UP)
-		if _interior_events:
-			_interior_events.restart()
+		_building_events.start_planned(spec, BuildingPlan.plan(_interior.map, _building_seed),
+				start_at)
+		_interior.start_the_night(_building_seed)
 	else:
 		# The building is behind her and nobody is in it, so its own events stop rather than
 		# playing on to an empty map — the vents, the window flashes and the masked man who comes
 		# up the shaft every few seconds would otherwise run for the rest of the sequence, unseen
-		# and in the log. `InteriorEvents.restart()` is what starts them again, and section one is
-		# never entered without it.
-		if _interior_events:
-			_interior_events.stand_down()
+		# and in the log. Starting the building's plan again is what brings them back, and section
+		# one is never entered without it.
+		if _building_events:
+			_building_events.stand_down()
+		if _interior:
+			_interior.stop_the_night()
 		# A restart of section two replans it: see `_plan_the_finale_city()`.
 		if restarted:
 			_plan_the_finale_city()
@@ -1067,7 +1101,7 @@ func _start_section(spec: DaySpec, restarted: bool) -> void:
 	_baby.force_sleep()
 	_day.start(spec.length)
 	if spec.world == DaySpec.World.BUILDING:
-		EventBus.escape_section_started.emit(spec.section, restarted, _interior, _interior_events)
+		EventBus.escape_section_started.emit(spec.section, restarted, _interior, _building_events)
 	else:
 		EventBus.escape_section_started.emit(spec.section, restarted, _city, _city.events)
 	EventBus.day_planned.emit(spec.number)
@@ -1322,8 +1356,8 @@ func _engage_the_day() -> void:
 ## every frame, and the HUD's rule is that it listens to `EventBus` and holds no reference to
 ## the world. Bending that for one indicator would cost more than the node does.
 ##
-## **One badge for every world.** It reads `_event_source()`, which is the building's
-## `InteriorEvents` in the escape's first section and a `City`'s `EventManager` everywhere else, so
+## **One badge for every world.** It reads `_event_source()`, which is the building's events in the
+## escape's first section and a `City`'s everywhere else, so
 ## a second call — the escape walking out of the service door — points the same badge at the city
 ## rather than building a second layer over the first.
 func _add_danger_edge() -> void:
@@ -1358,7 +1392,7 @@ func _add_danger_edge() -> void:
 ## it reads is moving either, so freezing alongside the world it draws needs no case of its own.
 ##
 ## Called once per world the same way `_add_danger_edge()` is: in the escape's building it reads
-## `InteriorEvents` and no crowd, and walking out of the service door points it at the city.
+## the building's events and no crowd, and walking out of the service door points it at the city.
 func _add_excitement_halo() -> void:
 	if _halo:
 		_halo.setup(_event_source(), _crowd_now(), _player, _baby)
@@ -1370,15 +1404,14 @@ func _add_excitement_halo() -> void:
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
 
-## What the badge, the halo, the debug view and the readout read the world's events from: the
-## building's `InteriorEvents` while the escape's first section is the only world there is, and a
-## `City`'s own `EventManager` once there is a city — a day's, or the escape's second section,
-## which the building never comes back after. Both answer `instances()`, which is all any of the
-## readers asks.
-func _event_source() -> Node:
+## What the badge, the halo, the debug view, the readout and the loss's cause read the world's events
+## from: the building's while the escape's first section is the only world there is, and a `City`'s
+## once there is a city — a day's, or the escape's second section, which the building never comes
+## back after. Each is an `EventManager`.
+func _event_source() -> EventManager:
 	if _city:
 		return _city.events
-	return _interior_events
+	return _building_events
 
 ## The crowd, or null in the escape's building, which has nobody in it but its events.
 func _crowd_now() -> Crowd:
@@ -1778,7 +1811,7 @@ func _start_day() -> void:
 	var elapsed := Time.get_ticks_msec()
 	# Decided once, here, and handed to everything that runs on the day's clock as a number.
 	var day_length := config.day_length_for(GameState.day)
-	_use_the_day(DaySpec.for_day(GameState.day, day_length))
+	_use_the_day(day_spec(config, GameState.day))
 	# Before the announcement and before anything is placed: this is where the run photographs
 	# what the resistance had done, and a lost day gives exactly that back — so the photograph has
 	# to be taken while it is still true of the attempt about to be played. See
@@ -1820,6 +1853,7 @@ func _start_day() -> void:
 	# which is why the crowd is populated after the spawn position is settled rather than
 	# before it, and why the events are streamed a second time once it is known.
 	var doorstep := _city.map.doorstep_world_position()
+	_city.events.use_the_spec(_spec)
 	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots,
 			doorstep)
 	# The day's seals are planned inside the call above, and a `fallen_tree_seal` takes a street
@@ -1875,15 +1909,16 @@ func _use_the_day(spec: DaySpec) -> void:
 ## The ordinary game's components start from the authored setup before any actor is allowed to
 ## tick. The recipe selects every event; the random scheduler does not fill authored scenes.
 func _start_recipe_day() -> void:
-	_use_the_day(DaySpec.for_day(GameState.day, config.day_length_for(GameState.day)))
+	_use_the_day(day_spec(config, GameState.day))
 	GameState.begin_day()
 	EventBus.day_started.emit(GameState.day)
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
 	_city.start_recipe_day(GameState.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"))
 	_city.set_act(GameState.current_act())
-	_day.start(config.day_length_for(GameState.day))
-	var errors := _recipe.install(_city, _player, _baby, _resistance)
+	_day.start(_spec.length)
+	# The scene's events run under the very spec the clock and the HUD were just handed.
+	var errors := _recipe.install(_city, _player, _baby, _spec, _resistance)
 	if not errors.is_empty():
 		_recipe.manifest["setup_failed"] = true
 		_recipe_failed(errors)
@@ -2046,7 +2081,8 @@ static func _group_what_events_landed(instances: Array[EventInstance], by_group:
 func _loss_cause(result: GameEnums.DayResult) -> String:
 	match result:
 		GameEnums.DayResult.LOST_HARD_FAIL:
-			var struck_by := _city.events.what_struck_her() if _city and _city.events else ""
+			var source := _event_source()
+			var struck_by := source.what_struck_her() if source else ""
 			return _hard_fail_cause_suffix(_day.hard_fail_reason, struck_by)
 		GameEnums.DayResult.LOST_CRYING:
 			return _crying_cause_suffix(_crying_landed_by_group())
@@ -2403,12 +2439,13 @@ func _process(delta: float) -> void:
 			and not _tree_is_paused()
 	if walking:
 		GameState.play_seconds += delta
-	# The building's doors and its service exit are asked about the ground under her while she is
-	# walking it. Nothing of the walk is asked while a screen stands in front of it: this node runs
-	# through a pause (it has to, or Esc would not answer), so without this the door under her feet
-	# would keep being tested against a section that has not begun.
-	if _spec.world == DaySpec.World.BUILDING and _interior and not _tree_is_paused():
-		_interior.process_player(_player, delta)
+	# The world's ground is asked what it does to her while she is walking it — the building's doors
+	# and its service exit; nothing in the city. Nothing of the walk is asked while a screen stands
+	# in front of it: this node runs through a pause (it has to, or Esc would not answer), so without
+	# this the door under her feet would keep being tested against a section that has not begun.
+	var world_map := _world_map()
+	if world_map and _player and not _tree_is_paused():
+		world_map.process_player(_player, delta)
 	if _city and _spec.daylight_runs_down:
 		_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_spec.goal == DaySpec.Goal.HOME
@@ -2497,7 +2534,7 @@ func _where_she_is_lines() -> Array:
 				"yes" if _city.is_alley(here) else "no"],
 		]
 	if _interior:
-		var tile := _interior.world_to_tile(here)
+		var tile := _interior.map.world_to_tile(here)
 		return ["tile  %d, %d  (building)" % [tile.x, tile.y]]
 	return []
 

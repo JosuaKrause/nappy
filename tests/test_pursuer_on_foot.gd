@@ -205,7 +205,8 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t) -> void:
 	t.check(city.events.pending_warnings().size() == 1 and told[0] == 2,
 			"once he has given up, the next marble sends the next one")
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
-	city.events._walking_the_finale = true
+	city.events.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY,
+			Tuning.FINALE_LENGTH_SECONDS))
 	city.events._pending.clear()
 	city.events._sent_after_her = null
 	city.events.send_a_pursuer()
