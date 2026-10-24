@@ -32,11 +32,12 @@ real ones. What other people wrote on Reddit is given in rough summary, never qu
   were resumed saves rather than fresh runs, so part of the bump is returning players or the player.
 - **The r/ClaudeAI comment gave little or none**: 3 visitors the day after, inside the first post's
   tail. A comment inside a large shared thread reaches few readers.
-- **New players stop on day 1**: 10 fresh runs made 12 day-1 attempts and won 1 (8%), against 31%
-  over the three weeks of the previous read. The losses: crying from a car accident 3, hit by a car
+- **New players seem to stop on day 1**: 10 fresh runs made 12 day-1 attempts and won 1 (8%),
+  against 31% over the three weeks of the previous read; 12 attempts, retries and the player's own
+  play included, are too few to be sure. The losses: crying from a car accident 3, hit by a car
   2, a loose dog 1, the pigeon flock 1. Inbox #819 (a better day one for a new player) is open on it.
-- **The post's replies agree with that**: the one reply that reported playing, on desktop, said in
-  rough summary that from the starting block it could not tell which way led to calm ground. The
+- **The post's replies agree with that**: the one reply that reported playing, on desktop, from an
+  account that pitched its own service in the same reply, said in rough summary that from the starting block it could not tell which way led to calm ground. The
   others were reactions (parenting and horror jokes, a likeness to an old arcade game) rather than
   play reports.
 - **Phones still dominate**: controls chosen were tap 6 and joystick 5, keys none.
