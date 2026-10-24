@@ -158,7 +158,8 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 			people += 1
 	result.people = people
 	cordon.clear()
-	var again := ParkCordon.new(city.map, city, cordon.park, director._reach_blocked)
+	var again := ParkCordon.new(city.map, city.navigator, city, cordon.park,
+			director._reach_blocked)
 	her[0] = swing
 	again.tick(STEP, her[0], shows)
 	var walking := _play(again, her, shows, true)
@@ -178,7 +179,8 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 			area.position + area.size * Vector2(0.25, 0.3))
 	if not busker:
 		return {"person_placed": false}
-	var cordon := ParkCordon.new(city.map, city, park, director._reach_blocked)
+	var cordon := ParkCordon.new(city.map, city.navigator, city, park,
+			director._reach_blocked)
 	var her := [swing]
 	var shows := _camera_on(her)
 	cordon.tick(STEP, her[0], shows)

@@ -14,6 +14,12 @@ extends RefCounted
 ##   the park's edge. Their arrival is the warning: nothing about them telegraphs under the cue
 ##   rules, since they walk and come toward nobody (`docs/EVENTS.md`, "What telegraphs"), so no
 ##   screen-edge badge goes up for them.
+## - **They walk round what the day stands in their way**, as every figure does: each officer's
+##   walk is laid round the day's bodies on the map's blocked record before he sets off
+##   (`_lay()`, over the navigator's way round), and walked through the navigator he was handed
+##   (`Navigator.walk()`), so a band on the park's sidewalk or a figure in the park stops him as it
+##   stops her. Laying the walk first is what keeps the close on time: the close is timed and each
+##   taper paced over the walk he will take, detours included.
 ## - **They tape the edge one stretch at a time, working round it from where they arrived**, one
 ##   each way, so the open part of the edge shrinks to a last gap. A stretch is one tile of a
 ##   side's edge, more or less; the tape stands on the park's own edge row, half a barrier's depth
@@ -89,6 +95,21 @@ const WALKER_REACH := Tuning.PLAYER_BODY_RADIUS + CordonTape.DEPTH * 0.5 + 2.0
 const GAP_INSIDE := Tuning.TILE_SIZE * 0.75
 ## The step along a planned walk at which `_time_the_close()` asks whether an officer is in view.
 const SIGHT_STEP := 4.0
+## How near the person he walks out an escort's way up to them ends, tile centre to them, where
+## their own body takes the ground they stand on: a tile and a half, so the tiles beside theirs,
+## corners included, all qualify and the nearest by the way wins.
+const BESIDE := Tuning.TILE_SIZE * 1.5
+## How far from where his way up to them was laid the person may have gone before an escort lays
+## it again.
+const REAIM := Tuning.TILE_SIZE * 0.5
+## How many tiles round a point a walk is laid through `_standing_point()` looks for ground an
+## officer may stand on, when the point itself is under a body.
+const STANDING_SEARCH := 3
+## How much longer a taper's way round a body outside the park may be than the way along the
+## park's own edge row before he takes the edge row: a solid that cuts the sidewalk and the street
+## from the park's edge outward, a burst water main's band, leaves no way round outside it short of
+## the next block.
+const EDGE_ROW_SLACK := Tuning.TILE_SIZE * 4.0
 ## The most tiles a search for the way out of her sight visits.
 const ROUTE_SEARCH_LIMIT := 6000
 
@@ -121,25 +142,41 @@ class Officer extends RefCounted:
 	var at := Vector2.ZERO
 	var heading := Vector2.DOWN
 	var path := PackedVector2Array()
+	## The tiles his walks never enter: the park's, for a taper, who works round it from outside;
+	## none for an escort, who goes in for his person.
+	var avoid := Rect2i()
 	var speed := 0.0
 	## How long a waiting escort stands before he sets off.
 	var wait := 0.0
 	## A taper's stretches, in the order he tapes them, and which way he walks each.
 	var stretches: Array[Stretch] = []
+	## A taper's walk along each of his stretches, laid at set-out round the day's bodies
+	## (`_lay_the_round()`): the walk from the end of the one before to the end of this one.
+	var legs: Array[PackedVector2Array] = []
+	## Which of his stretches he tapes at the end of each leg, by index into `stretches`: its own,
+	## or none where a later leg of his still steps on its tiles (`_lay_the_round()`).
+	var due: Array[PackedInt32Array] = []
 	var forward := true
 	var next := 0
 	## Whether he is standing beside a stretch, waiting for her or the park's people to be clear.
 	var holding := false
-	## A taper's pace along the edge, set when he reaches it.
+	## A taper's pace along the edge, set at the start of each leg (`_pace()`), and the most it may
+	## be: his whole round at `Tuning.PARK_CLOSING_STRETCH_MIN` a stretch, set when he reaches it.
 	var tape_speed := 0.0
-	## An escort's person.
+	var top_speed := INF
+	## An escort's person, and where they stood when his way up to them was laid (`Vector2.INF`
+	## while he is still on his way in to the gap).
 	var person: EventInstance = null
+	var aim := Vector2.INF
 	var node: CordonOfficer = null
 
 var _map: CityMap
 var _city: City
-## What an officer's way out is searched over: ground a figure on foot may stand on
-## (`Mover.on_foot()`).
+## The map's navigator, handed in: what every officer's walk is laid by and walked through.
+var _navigator: Navigator
+## What an officer walks as: a figure on foot (`Mover.on_foot()`), stopped by everything that stops
+## her, with no reach ahead of him. His walks keep to tile-centre ways and to the park's edge, where
+## a reach would only stop him short of a point beside a solid that his feet can stand on.
 var _officer_walks := Mover.on_foot()
 ## The day's obstruction as the director's reachability answer has it (`EventScheduler.
 ## blocked_by()`: today's closures plus every body's disc), which the last gap is checked under.
@@ -179,9 +216,14 @@ var other_calm_reached := false
 ## The way out for the park's people and their escorts: from inside the last gap, through it and
 ## along the ground outside to a place out of her sight, in world points.
 var _exit := PackedVector2Array()
+## The tiles the way out steps on crossing the park's edge, from inside the last gap to outside it.
+var _exit_crossing := {}
 ## The park's people sent off down `_exit`, still walking out.
 var _leaving: Array[EventInstance] = []
 var _started := false
+## How many times an officer met something his walk was not laid round, and had the rest of it
+## laid again from where he stood: something solid put down after he set out. Kept for the tests.
+var relaid := 0
 ## Where the cordon writes its own account for the run log; the happenings' trace, handed on as it is
 ## built.
 var trace := RunTrace.new()
@@ -189,8 +231,11 @@ var trace := RunTrace.new()
 ## Starts closing `block`'s park: the line, its stretches and which of them need tape. Nothing is
 ## placed until the first `tick()`, which knows where she is and what the camera sees. `blocked` is
 ## the day's obstruction the last gap is checked under (`ResistanceDirector`'s `_reach_blocked`).
-func _init(map: CityMap, city: City, block: Vector2i, blocked: Dictionary = {}) -> void:
+## `navigator` is the map's (`WorldMap.navigator()`), which the officers walk through.
+func _init(map: CityMap, navigator: Navigator, city: City, block: Vector2i,
+		blocked: Dictionary = {}) -> void:
 	_map = map
+	_navigator = navigator
 	_city = city
 	_blocked = blocked
 	park = block
@@ -464,12 +509,17 @@ func _set_out(her: Vector2, shows: Callable) -> void:
 		officer.job = Officer.Job.TAPE
 		officer.phase = Officer.Phase.APPROACH
 		officer.speed = Tuning.PARK_CLOSING_OFFICER_SPEED
-		var behind := TAPER_SPACING if officer == second else 0.0
-		officer.at = spawn_at + away * behind
-		officer.path = PackedVector2Array([kerb, door])
+		officer.avoid = _rect
+		officer.at = spawn_at
+		var behind := spawn_at + away * TAPER_SPACING
+		if officer == second and _stands(_map.world_to_tile(behind), _rect):
+			officer.at = behind
+		officer.path = _lay(officer.at, PackedVector2Array([kerb, door]), _rect)
+		officer.legs = _lay_the_round(officer)
 		officers.append(officer)
 		_make_figure(officer)
 	_exit = _way_out_through_the_gap(her, shows)
+	_exit_crossing = _tiles_along(_exit[0], _exit.slice(1, 2))
 	_send_escorts()
 	_time_the_close(her, shows)
 	trace.note("contact", "the police set out to cordon the park at block %s: %d stretches, "
@@ -495,8 +545,9 @@ func _point_at(s: float) -> Vector2:
 
 ## **Where an officer comes from**: out from `door` across the sidewalk by a tile, then along that
 ## sidewalk one way or the other, half a tile at a time, to the first place none of his figure
-## would be in the camera's whole view and his feet are on walkable ground — the nearer of the two
-## ways. Answers `[spawn, direction from the sidewalk point to it, the sidewalk point]`.
+## would be in the camera's whole view and his feet are on ground he may stand on today, off the
+## park's — the nearer of the two ways. Answers `[spawn, direction from the sidewalk point to it,
+## the sidewalk point]`.
 func _spawn_out_of_sight(door: Vector2, outward: Vector2i, her: Vector2,
 		shows: Callable) -> Array:
 	var kerb := door + Vector2(outward) * Tuning.TILE_SIZE
@@ -507,7 +558,7 @@ func _spawn_out_of_sight(door: Vector2, outward: Vector2i, her: Vector2,
 	for way: Vector2 in [along, -along]:
 		for step in range(1, SEARCH_STEPS + 1):
 			var at := kerb + way * SEARCH_STEP * step
-			if not _map.is_walkable(_map.world_to_tile(at)) or _seen(at, her, shows):
+			if not _stands(_map.world_to_tile(at), _rect) or _seen(at, her, shows):
 				continue
 			if step < best_steps:
 				best_steps = step
@@ -602,21 +653,154 @@ static func _length_of(points: PackedVector2Array) -> float:
 		total += points[i - 1].distance_to(points[i])
 	return total
 
-## A taper's whole walk round the edge, from where he reaches it: beside each of his stretches in
-## turn, and round the outside of every corner between two of them — the walk `_begin_stretch()`
-## lays a stretch at a time.
+## A taper's whole walk round the edge, from where he reaches it: his legs (`_lay_the_round()`) one
+## after the other — the walk `_begin_stretch()` hands him a stretch at a time.
 func _round_path(officer: Officer) -> PackedVector2Array:
-	var at := officer.path[officer.path.size() - 1] if not officer.path.is_empty() else officer.at
-	var points := PackedVector2Array([at])
+	var points := PackedVector2Array([_edge_reached_at(officer)])
+	for leg in officer.legs:
+		points.append_array(leg)
+	return points
+
+## Where a taper reaches the edge: the end of his walk in.
+func _edge_reached_at(officer: Officer) -> Vector2:
+	return officer.path[officer.path.size() - 1] if not officer.path.is_empty() else officer.at
+
+## **A taper's walk round the edge, laid at set-out**, one leg a stretch: beside each of his
+## stretches in turn, `OFFICER_OUTSIDE` out from the line, and round the outside of every corner
+## between two of them, each leg laid round the day's bodies off the park's ground (`_lay()`).
+func _lay_the_round(officer: Officer) -> Array[PackedVector2Array]:
+	var legs: Array[PackedVector2Array] = []
+	var at := _edge_reached_at(officer)
+	# Where the straight walk stands, which the corners are measured from; `at` is where the laid
+	# walk does, which differs only where a body put a point somewhere else.
+	var beside := at
 	for stretch in officer.stretches:
+		var straight := PackedVector2Array()
 		var on_the_line := _start_of(officer, stretch)
 		var start := _outside(on_the_line, stretch.outward)
-		if at.distance_to(start) > 1.0:
-			points.append(at + (start - on_the_line))
-			points.append(start)
-		at = _outside(_end_of(officer, stretch), stretch.outward)
-		points.append(at)
-	return points
+		if beside.distance_to(start) > 1.0:
+			# He is beside the corner on the side he has just finished: round it by its outside, out
+			# from the corner by both sides' offsets at once.
+			straight.append(beside + (start - on_the_line))
+			straight.append(start)
+		beside = _outside(_end_of(officer, stretch), stretch.outward)
+		straight.append(beside)
+		var leg := _lay(at, straight, _rect)
+		legs.append(leg)
+		at = leg[leg.size() - 1]
+	officer.due = _when_each_is_taped(officer, legs)
+	return legs
+
+## **Which stretches a taper tapes at the end of each leg**: each at the end of its own, unless a
+## later leg steps on one of its tiles — a way round a body by the park's edge row, which enters
+## the row where the stretch before it ends — and then at the end of the last leg that does, since
+## tape is solid and he could not step on it once it is up. Still one gap: the stretches go up in
+## his order, several at once.
+func _when_each_is_taped(officer: Officer, legs: Array[PackedVector2Array]) -> Array[PackedInt32Array]:
+	var stepped_on: Array[Dictionary] = []
+	var at := _edge_reached_at(officer)
+	for leg in legs:
+		var tiles := {_map.world_to_tile(at): true}
+		for point in leg:
+			tiles[_map.world_to_tile(point)] = true
+		stepped_on.append(tiles)
+		at = leg[leg.size() - 1]
+	var due: Array[PackedInt32Array] = []
+	for j in legs.size():
+		due.append(PackedInt32Array())
+	var last_due := 0
+	for k in officer.stretches.size():
+		var when := maxi(k, last_due)
+		for j in range(k + 1, legs.size()):
+			for tile in officer.stretches[k].tiles:
+				if stepped_on[j].has(tile):
+					when = maxi(when, j)
+		due[when].append(k)
+		last_due = when
+	return due
+
+# ---------------------------------------------------------------- laying walks ---
+
+## **A walk laid round the day's bodies before it is walked**: through `points` from `from`, each
+## leg kept straight where the navigator takes the whole of it, and where it does not, the
+## navigator's way round to the point (`Navigator.path()`), never entering a tile of `avoid`. A
+## point on ground an officer may not stand on gives way to the nearest ground he may
+## (`_standing_point()`). Every officer's walk is laid by this before he walks it, so what the
+## close is timed and paced over is the walk he takes.
+##
+## **A taper kept off the park may still cut along its edge row** (`avoid` less its outer ring of
+## tiles) where the way round outside is more than `EDGE_ROW_SLACK` longer or there is none: ahead
+## of him the edge is not taped yet, so he steps in by it and out again.
+##
+## `settle` false keeps every point where it is, for the rest of a walk already laid.
+func _lay(from: Vector2, points: PackedVector2Array, avoid: Rect2i,
+		settle := true) -> PackedVector2Array:
+	var laid := PackedVector2Array()
+	var at := from
+	var inner := avoid.grow(-1) if avoid.has_area() else avoid
+	for point in points:
+		var to := point
+		if settle:
+			to = _standing_point(point, avoid)
+			if to == point and not _stands(_map.world_to_tile(point), avoid):
+				to = _standing_point(point, inner)
+		var way := PackedVector2Array()
+		if not _walks_whole(at, to):
+			way = _navigator.path(at, to, _officer_walks, avoid)
+			if inner != avoid:
+				var by_the_edge := _navigator.path(at, to, _officer_walks, inner)
+				if not by_the_edge.is_empty() and (way.is_empty() or _length_of(way)
+						> _length_of(by_the_edge) + EDGE_ROW_SLACK):
+					way = by_the_edge
+		if way.is_empty():
+			way.append(to)
+		laid.append_array(way)
+		at = to
+	return laid
+
+## Whether an officer walks the whole straight line from `from` to `to`.
+func _walks_whole(from: Vector2, to: Vector2) -> bool:
+	var leg := to - from
+	return _navigator.step(from, leg, _officer_walks) == leg
+
+## `point` where an officer may stand on it, otherwise the middle of the nearest tile within
+## `STANDING_SEARCH` of it that he may stand on, off `avoid`; `point` itself where none is.
+func _standing_point(point: Vector2, avoid: Rect2i) -> Vector2:
+	var tile := _map.world_to_tile(point)
+	if _stands(tile, avoid):
+		return point
+	var best := point
+	var nearest := INF
+	for dy in range(-STANDING_SEARCH, STANDING_SEARCH + 1):
+		for dx in range(-STANDING_SEARCH, STANDING_SEARCH + 1):
+			var near := tile + Vector2i(dx, dy)
+			var centre := _map.tile_to_world(near)
+			if centre.distance_to(point) < nearest and _stands(near, avoid):
+				nearest = centre.distance_to(point)
+				best = centre
+	return best
+
+## Whether an officer may stand on `tile` today, off `avoid`.
+func _stands(tile: Vector2i, avoid: Rect2i) -> bool:
+	return _map.in_bounds(tile) and _map.passable(tile, _officer_walks) \
+			and not avoid.has_point(tile)
+
+## **An escort's way up to his person**: straight where he walks the whole of it, otherwise the
+## navigator's way round to beside them (`BESIDE`, since their own body takes the ground they stand
+## on) and on toward them as far as the ground lets him (`Navigator.trim()`).
+func _way_up_to(from: Vector2, to: Vector2) -> PackedVector2Array:
+	if _walks_whole(from, to):
+		return PackedVector2Array([to])
+	var way := _navigator.path(from, to, _officer_walks, Rect2i(), BESIDE)
+	if not way.is_empty() and way[way.size() - 1] == to:
+		return way
+	var last := way[way.size() - 1] if not way.is_empty() else from
+	var toward := _navigator.trim(PackedVector2Array([last, to]), _officer_walks)
+	if toward.size() > 1:
+		way.append(toward[1])
+	elif way.is_empty():
+		way.append(from)
+	return way
 
 # ------------------------------------------------------------ the way out ---
 
@@ -737,8 +921,7 @@ func _send_escorts() -> void:
 		escort.speed = Tuning.PARK_CLOSING_OFFICER_SPEED
 		escort.person = live
 		escort.at = _exit[_exit.size() - 1]
-		escort.path = _way_in()
-		escort.path.append(live.global_position)
+		escort.path = _lay(escort.at, _way_in(), escort.avoid)
 		officers.append(escort)
 		_make_figure(escort)
 		sent += 1
@@ -803,41 +986,53 @@ func _walk_path(officer: Officer, step: float) -> bool:
 ## so a taper goes on into his next stretch in the same frame rather than losing the rest of it at
 ## every stretch's end, which over a large park's forty-odd stretches makes the close late.
 ##
-## **Not through the navigator**: an officer's walk in and a taper's walk round the park's edge are
-## laid straight, at a fixed offset outside it, through whatever the day stands there — a band on
-## the park's sidewalk, a figure in the park — and the close is timed and its pace set over those
-## straight walks (`_round_path()`, the cordon's own timing). Stopped by what stops her, an officer
-## stalls at such a body, or goes round it and the last gap closes late, so the walks have to be
-## planned round the bodies before they can be walked round them. His way out and an escort's are
-## searched over ground he may stand on (`_may_walk()`).
+## Each step goes through the navigator (`Navigator.walk()`), down a walk laid round the day's
+## bodies (`_lay()`), so it is taken whole. **Something solid put down after the walk was laid** —
+## nothing on the day's plan, which is on the record before he sets out — cuts the step short; the
+## rest of the walk is then laid again from where he stands and walked on in the same frame, so he
+## goes round it rather than standing at it.
 func _walk_path_for(officer: Officer, step: float) -> float:
-	var left := step
-	while left > 0.0 and not officer.path.is_empty():
-		var to := officer.path[0]
-		var gap_left := officer.at.distance_to(to)
-		if gap_left > 0.001:
-			officer.heading = (to - officer.at) / gap_left
-		if gap_left <= left:
-			officer.at = to
-			left -= gap_left
-			officer.path.remove_at(0)
-		else:
-			officer.at += officer.heading * left
-			left = 0.0
-	return left if officer.path.is_empty() else -1.0
+	var walked := _navigator.walk(officer.at, officer.path, step, _officer_walks)
+	_take_the_walk(officer, walked)
+	if not officer.path.is_empty() and walked.travelled < step - 0.001:
+		relaid += 1
+		officer.path = _lay(officer.at, officer.path, officer.avoid, false)
+		walked = _navigator.walk(officer.at, officer.path, step - walked.travelled,
+				_officer_walks)
+		_take_the_walk(officer, walked)
+	return walked.left if officer.path.is_empty() else -1.0
+
+## Puts an officer where a walk ended, facing the way it last went, with the points it did not
+## reach left to walk.
+func _take_the_walk(officer: Officer, walked: Navigator.Walked) -> void:
+	officer.at = walked.at
+	officer.path = walked.points
+	if walked.toward != Vector2.ZERO:
+		officer.heading = walked.toward
 
 ## A taper at the edge: his pace round it is set so his last stretch is taped at `deadline`,
-## counting the corners he walks round — so the two finish together and the last gap closes then —
-## never faster than `Tuning.PARK_CLOSING_STRETCH_MIN` a stretch.
+## counting the corners and the ways round bodies he walks — so the two finish together and the
+## last gap closes then — never faster than `Tuning.PARK_CLOSING_STRETCH_MIN` a stretch.
 func _reach_the_edge(officer: Officer) -> void:
 	officer.phase = Officer.Phase.TAPING
 	if officer.stretches.is_empty():
 		return
-	var left := maxf(deadline - elapsed,
-			Tuning.PARK_CLOSING_STRETCH_MIN * officer.stretches.size())
-	officer.tape_speed = _length_of(_round_path(officer)) / left
+	officer.top_speed = _length_of(_round_path(officer)) \
+			/ (Tuning.PARK_CLOSING_STRETCH_MIN * officer.stretches.size())
 	_plant_a_post(_start_of(officer, officer.stretches[0]))
 	_begin_stretch(officer)
+
+## Sets a taper's pace for the rest of his round at the start of each leg (`_reach_the_edge()`'s
+## rule): the same pace all the way round while nothing holds him, and a quicker one after he has
+## waited at a stretch, so the wait is made up rather than added to the close — up to his top
+## speed, past which the close comes late.
+func _pace(officer: Officer) -> void:
+	var rest := PackedVector2Array([officer.at])
+	for j in range(officer.next, officer.legs.size()):
+		rest.append_array(officer.legs[j])
+	var left := deadline - elapsed
+	var wanted := _length_of(rest) / left if left > 0.0 else INF
+	officer.tape_speed = minf(wanted, officer.top_speed)
 
 func _start_of(officer: Officer, stretch: Stretch) -> Vector2:
 	return stretch.a if officer.forward else stretch.b
@@ -845,18 +1040,11 @@ func _start_of(officer: Officer, stretch: Stretch) -> Vector2:
 func _end_of(officer: Officer, stretch: Stretch) -> Vector2:
 	return stretch.b if officer.forward else stretch.a
 
-## Lays the walk along the officer's next stretch, by the outside of the corner when it turns one.
+## Hands the officer the walk along his next stretch, laid at set-out (`_lay_the_round()`), and
+## his pace for the rest of the round.
 func _begin_stretch(officer: Officer) -> void:
-	var stretch := officer.stretches[officer.next]
-	var on_the_line := _start_of(officer, stretch)
-	var start := _outside(on_the_line, stretch.outward)
-	officer.path = PackedVector2Array()
-	if officer.at.distance_to(start) > 1.0:
-		# He is beside the corner on the side he has just finished: round it by its outside, out
-		# from the corner by both sides' offsets at once.
-		officer.path.append(officer.at + (start - on_the_line))
-		officer.path.append(start)
-	officer.path.append(_outside(_end_of(officer, stretch), stretch.outward))
+	_pace(officer)
+	officer.path = officer.legs[officer.next].duplicate()
 
 func _tape(officer: Officer, delta: float, her: Vector2) -> void:
 	var left := officer.tape_speed * delta
@@ -864,14 +1052,16 @@ func _tape(officer: Officer, delta: float, her: Vector2) -> void:
 		left = _walk_path_for(officer, left)
 		if left < 0.0:
 			return
-		var stretch := officer.stretches[officer.next]
-		if stretch.needed and not stretch.taped:
-			officer.holding = _in_the_way(stretch, her) \
-					or (gap.has(stretch) and _still_to_come_out())
-			if officer.holding:
-				return
-			_tape_up(stretch)
-		_plant_a_post(_end_of(officer, stretch))
+		for k in officer.due[officer.next]:
+			var stretch := officer.stretches[k]
+			if stretch.needed and not stretch.taped:
+				officer.holding = _in_the_way(stretch, her) \
+						or (_on_the_way_out(stretch) and _still_to_come_out()) \
+						or _another_steps_on(stretch, officer)
+				if officer.holding:
+					return
+				_tape_up(stretch)
+			_plant_a_post(_end_of(officer, stretch))
 		officer.next += 1
 		if officer.next < officer.stretches.size():
 			_begin_stretch(officer)
@@ -893,6 +1083,42 @@ func _in_the_way(stretch: Stretch, her: Vector2) -> bool:
 		if _body_on(stretch, walker, WALKER_REACH):
 			return true
 	return false
+
+## Whether a stretch's tape would stand on the way out: it is the last gap, or its tiles take
+## ground the way out crosses the edge on (`_exit_crossing`) — tape is solid, so on that ground it
+## would shut the gap to anyone still to come out through it.
+func _on_the_way_out(stretch: Stretch) -> bool:
+	if gap.has(stretch):
+		return true
+	for tile in stretch.tiles:
+		if _exit_crossing.has(tile):
+			return true
+	return false
+
+## Whether another officer still has to step on one of a stretch's tiles on the walk he is on — a
+## taper cutting along the park's edge row round a body — so taping it now would shut it in front
+## of him. The tile he stands on is not counted, since anyone may walk off a solid he stands in.
+func _another_steps_on(stretch: Stretch, officer: Officer) -> bool:
+	for other in officers:
+		if other == officer or other.phase == Officer.Phase.GONE or other.path.is_empty():
+			continue
+		var ahead := _tiles_along(other.at, other.path)
+		for tile in stretch.tiles:
+			if ahead.has(tile):
+				return true
+	return false
+
+## The tiles a walk from `from` down `points` crosses, the one it starts on left out.
+func _tiles_along(from: Vector2, points: PackedVector2Array) -> Dictionary:
+	var crossed := {}
+	var at := from
+	for point in points:
+		var steps := maxi(1, ceili(at.distance_to(point) / (Tuning.TILE_SIZE * 0.25)))
+		for i in range(1, steps + 1):
+			crossed[_map.world_to_tile(at.lerp(point, float(i) / steps))] = true
+		at = point
+	crossed.erase(_map.world_to_tile(from))
+	return crossed
 
 ## Where everyone walking out through the gap is: the park's people still leaving and every escort
 ## not yet gone.
@@ -960,8 +1186,9 @@ func _plant_a_post(at: Vector2) -> void:
 	_posts.append(post)
 	_city.add_entity(post)
 
-## An escort on his way in, along the way out from its far end and through the gap, then to his
-## person, whom he sends off once he reaches them.
+## An escort on his way in, along the way out from its far end and through the gap, then up to
+## his person (`_way_up_to()`, laid again whenever they have moved off where it was laid for), whom
+## he sends off once he reaches them or the end of his way up to them.
 func _approach_the_person(officer: Officer, delta: float, her: Vector2) -> void:
 	var person := officer.person
 	if not person or not is_instance_valid(person) or person.is_finished:
@@ -970,14 +1197,20 @@ func _approach_the_person(officer: Officer, delta: float, her: Vector2) -> void:
 	# Someone who set off on their own before he reached them is turned onto the way out at once,
 	# and he walks out behind them from where he is.
 	var already := person.is_leaving and not _leaving.has(person)
-	if not officer.path.is_empty():
-		officer.path[officer.path.size() - 1] = person.global_position
 	if not already:
+		var there := person.global_position
+		if officer.aim != Vector2.INF and officer.aim.distance_to(there) > REAIM:
+			officer.aim = there
+			officer.path = _way_up_to(officer.at, there)
 		_walk_path(officer, officer.speed * delta)
-	if already or officer.at.distance_to(person.global_position) <= ESCORT_REACH:
+		if officer.path.is_empty() and officer.aim == Vector2.INF:
+			officer.aim = there
+			officer.path = _way_up_to(officer.at, there)
+	var beside := officer.aim != Vector2.INF and officer.path.is_empty()
+	if already or beside or officer.at.distance_to(person.global_position) <= ESCORT_REACH:
 		_send_off(person)
 		officer.phase = Officer.Phase.ESCORTING
-		officer.path = _way_out_from(officer.at)
+		officer.path = _lay(officer.at, _way_out_from(officer.at), officer.avoid)
 
 ## Walks out behind the person he sent off, down the same way, never nearer them along it than
 ## `ESCORT_BEHIND` — measured along the way rather than straight, so he stays behind them rather
@@ -1022,7 +1255,7 @@ func _close(her: Vector2, shows: Callable) -> void:
 ## where she can see: from inside the gap if he is in the park, else from its point nearest him.
 func _leave(officer: Officer) -> void:
 	officer.phase = Officer.Phase.LEAVING
-	officer.path = _way_out_from(officer.at)
+	officer.path = _lay(officer.at, _way_out_from(officer.at), officer.avoid)
 
 ## An officer on his way is gone once none of him could be seen.
 func _maybe_gone(officer: Officer, her: Vector2, shows: Callable) -> void:

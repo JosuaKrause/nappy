@@ -41,6 +41,8 @@ const COLUMN_DAY := 13
 
 var _city: City
 var _map: CityMap
+## The map's navigator, handed in by `setup()`: what day 12's cordon officers walk by.
+var _navigator: Navigator
 var _day := 0
 var _rng: RandomNumberGenerator
 ## The neighbor's morning figure, or null on a day that has none. Kept for the tests.
@@ -78,9 +80,12 @@ var trace := RunTrace.new()
 var _column_owed := false
 var column: Array[EventInstance] = []
 
-func setup(city: City, map: CityMap) -> void:
+## Hands the happenings their city, the map they place on and the navigator what they send walks
+## by — the director's own, or the map's (`WorldMap.navigator()`) for a rig that hands none.
+func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	_city = city
 	_map = map
+	_navigator = navigator if navigator else (map.navigator() if map else null)
 
 ## Starts the day's happenings: on the mornings before `NEIGHBOR_DAY` the neighbor walks out of
 ## her building beside her and off along her street.
@@ -342,7 +347,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	_map.recompute_calm(state)
 	if cordon:
 		cordon.clear()
-	cordon = ParkCordon.new(_map, _city, park, blocked)
+	cordon = ParkCordon.new(_map, _navigator, _city, park, blocked)
 	cordon.trace = trace
 	trace.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
 			% park)

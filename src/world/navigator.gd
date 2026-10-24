@@ -176,17 +176,25 @@ func _walked_short(walked: Walked, taken: Vector2) -> void:
 
 ## **A way from `from` to `to` round whatever stands between**: tile centres from the tile after
 ## `from`'s to the tile before `to`'s, then `to` itself, by a breadth-first search over the tiles
-## `mover` may stand on, square steps only, so each leg stays on the two tiles it joins. Empty when
-## `to`'s tile is not reached within `SEARCH_LIMIT` tiles, and just `to` when the two share a tile.
-func path(from: Vector2, to: Vector2, mover: Mover) -> PackedVector2Array:
+## `mover` may stand on, square steps only, so each leg stays on the two tiles it joins, never
+## entering a tile of `avoid`. Empty when `to`'s tile is not reached within `SEARCH_LIMIT` tiles,
+## and just `to` when the two share a tile.
+##
+## **`near` above zero ends it beside `to`** rather than on it: at the first tile whose centre is
+## within `near` of `to`, that tile's centre last and `to` left out — the way up to somebody whose
+## own body takes the ground they stand on, which no way can end on.
+func path(from: Vector2, to: Vector2, mover: Mover, avoid := Rect2i(),
+		near := 0.0) -> PackedVector2Array:
 	if not _map.has_ground():
 		return PackedVector2Array([to])
 	var goal := _map.world_to_tile(to)
-	var found := _search(_map.world_to_tile(from), mover, Rect2i(),
-			func(tile: Vector2i) -> bool: return tile == goal)
+	var found := _search(_map.world_to_tile(from), mover, avoid,
+			func(tile: Vector2i) -> bool: return tile == goal \
+					or (near > 0.0 and _map.tile_to_world(tile).distance_to(to) <= near))
 	if found.is_empty():
 		return found
-	found[found.size() - 1] = to
+	if _map.world_to_tile(found[found.size() - 1]) == goal:
+		found[found.size() - 1] = to
 	return found
 
 ## **A way out of her sight**: tile centres from `from`'s tile to the nearest tile `mover` may stand
