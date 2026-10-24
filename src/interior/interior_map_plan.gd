@@ -162,6 +162,31 @@ func walkable_lut() -> PackedByteArray:
 func is_carriageway(_tile: Vector2i) -> bool:
 	return false
 
+## **The building's alleys are its passages one tile wide**: the run of such cells `tile` lies in,
+## walled on both sides across it, or an empty rect where the floor is wider. What an alley is
+## asked for is the same here — the short way across is across her path, and a spread laid in one
+## closes it — so the basement's mouse darts across the passage it stands in, wall to wall, as an
+## alley's mouse darts across its alley (`EventInstance._alley_crossing_path()`).
+func alley_at(tile: Vector2i) -> Rect2i:
+	if not is_walkable(tile):
+		return Rect2i()
+	for across: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN]:
+		if not _one_wide(tile, across):
+			continue
+		var along := Vector2i(across.y, across.x)
+		var first := tile
+		while _one_wide(first - along, across):
+			first -= along
+		var last := tile
+		while _one_wide(last + along, across):
+			last += along
+		return Rect2i(first, last - first + Vector2i.ONE)
+	return Rect2i()
+
+## Whether `tile` is floor with closed ground on both sides of it along `across`.
+func _one_wide(tile: Vector2i, across: Vector2i) -> bool:
+	return is_walkable(tile) and not is_walkable(tile + across) and not is_walkable(tile - across)
+
 ## `+1`/`-1` if `world_position`'s tile is a diagonal flight tile, `0` otherwise — the one question
 ## `Stroller._physics_process()` asks every frame to redirect a sideways press along a flight's own
 ## slope (`InteriorTile.flight_direction()`). Off a flight, a landing tile included, she walks the

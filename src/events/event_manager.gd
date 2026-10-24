@@ -37,6 +37,9 @@ var _instances: Array[EventInstance] = []
 var _pending: Array[PendingWarning] = []
 ## Today's whole plan, sited and unsited, spent and unspent. See `EventScheduler.Planned`.
 var _plans: Array[EventScheduler.Planned] = []
+## The plans in `_plans` that come again (`EventScheduler.Planned.repeats()`), found once when a walk
+## starts so the per-frame pass over them (`_bring_back_what_repeats()`) asks nothing of the rest.
+var _repeating: Array[EventScheduler.Planned] = []
 ## What sites rows ahead of her on a day, over the city (`EventDirector`); none in a world with no
 ## city (`setup_world()`), where nothing is sited while she walks.
 var _director: EventDirector
@@ -620,6 +623,7 @@ func start_planned(spec: DaySpec, plans: Array[EventScheduler.Planned],
 		_city_map.clear_day_holds()
 	_siting = null
 	_plans = plans
+	_find_what_repeats()
 	# The director owes nothing — every such placement is `MAP`-sited — but it is started anyway
 	# so that `owed_ahead()` and its own per-day state answer for this walk rather than for
 	# whatever ran before it.
@@ -677,6 +681,7 @@ func clear() -> void:
 	for plan in _plans:
 		plan.live = null
 	_plans.clear()
+	_repeating.clear()
 	# Yesterday's bodies go with yesterday's events, the same once-a-day sweep `clear_day_holds()`
 	# and `clear_day_soft_seals()` get — every owner in the record is a plan or an instance this
 	# call has just thrown away.
@@ -2134,8 +2139,8 @@ func _mark_plan_spent(instance: EventInstance) -> void:
 ## outside the walls (`EventDef.from_outside`) is shown by the world as it comes
 ## (`WorldContext.bang_outside()`), whether or not there is anybody for its charge to stand on.
 func _bring_back_what_repeats(delta: float) -> void:
-	for plan in _plans:
-		if plan.spent or not plan.repeats():
+	for plan in _repeating:
+		if plan.spent:
 			continue
 		# Its run is over when it is off the end of it, not when the instance is finally freed: a
 		# mobile row that has run out of route spends a leaving phase walking out of sight, so a wait
@@ -2156,6 +2161,14 @@ func _bring_back_what_repeats(delta: float) -> void:
 				continue
 			plan.position = _player.global_position
 		_stream_in(plan)
+
+## Finds the plans of the walk just started that come again (`_repeating`). A day's own plan has
+## none; the building's vents, its masked man and its explosions outside are.
+func _find_what_repeats() -> void:
+	_repeating.clear()
+	for plan in _plans:
+		if plan.repeats():
+			_repeating.append(plan)
 
 ## A repeating plan whose instance is done, made ready to come again: the instance is let go — a
 ## leaving one walks on out of sight on its own, retired when it is finished — the plan's own body

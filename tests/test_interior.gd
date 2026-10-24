@@ -35,6 +35,8 @@ func run(t) -> void:
 	_test_she_has_to_run_to_the_first_floor_door(t)
 	_test_the_edge_badge_points_at_the_masked_man_from_his_run(t)
 	_test_another_masked_man_comes_up_the_same_shaft(t)
+	_test_his_catch_ends_the_section_with_what_struck_her(t)
+	_test_his_run_stops_at_the_building_walls(t)
 	_test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t)
 	_test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t)
 	_test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t)
@@ -1515,6 +1517,80 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 	events.free()
 	scene.free()
 
+## **A catch in the building is a day's catch** *(minty-lemur #785: "losing an escape should still
+## state the reason like the rest of the game")*: the building's events are the day's own
+## `EventManager`, so standing on the masked man's line ends the section through the same
+## `EventBus.hard_fail_triggered` a day's catch sends, and the manager names what struck her
+## (`EventManager.what_struck_her()`), which the loss's cause reads.
+func _test_his_catch_ends_the_section_with_what_struck_her(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	var events := BuildingEvents.events_in(t, scene, rng)
+	var man := BuildingEvents.live(events, "masked_pursuer")
+	t.check(man != null, "a masked man is on the stairs")
+	if not man:
+		events.free()
+		scene.free()
+		return
+	var player := Node2D.new()
+	player.add_to_group("player")
+	t.add_child(player)
+	player.global_position = man.path[4]
+	var fired: Array[String] = []
+	var heard := func(reason: String) -> void: fired.append(reason)
+	EventBus.hard_fail_triggered.connect(heard)
+	var at := 0.0
+	while fired.is_empty() and at < 20.0:
+		events._physics_process(STEP)
+		man._process(STEP)
+		at += STEP
+	EventBus.hard_fail_triggered.disconnect(heard)
+	t.check(fired.size() == 1 and fired[0] == "masked_pursuer",
+			"standing on his line, his catch ends the section as a day's catch does (%s)" % str(fired))
+	t.check(events.what_struck_her() == "masked_pursuer",
+			"and the building's events name what struck her (%s)" % events.what_struck_her())
+	player.free()
+	events.free()
+	scene.free()
+
+## **He walks where she can, and out of sight round the walls**: once he has run off the top of the
+## shaft he leaves the way every figure leaves, through the building's map, so he never goes on
+## through the wall past the top landing; every step he takes after his run is on ground she could
+## stand on.
+func _test_his_run_stops_at_the_building_walls(t: Node) -> void:
+	const STEP := 1.0 / 60.0
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	var events := BuildingEvents.events_in(t, scene, rng)
+	var man := BuildingEvents.live(events, "masked_pursuer")
+	t.check(man != null, "a masked man is on the stairs")
+	if not man:
+		events.free()
+		scene.free()
+		return
+	var off_the_ground := 0
+	var leaving_frames := 0
+	var at := 0.0
+	while at < 15.0 and not man.is_finished:
+		man.player_at = man.global_position + Vector2(40.0, -40.0)
+		man._process(STEP)
+		if man.is_leaving:
+			leaving_frames += 1
+		if not scene.map.is_walkable(scene.map.world_to_tile(man.global_position)):
+			off_the_ground += 1
+		at += STEP
+	t.check(leaving_frames > 0, "he ran his line and is leaving (%d frames)" % leaving_frames)
+	t.check(off_the_ground == 0,
+			"and never stood off the building's ground, running or leaving (%d frames did)"
+			% off_the_ground)
+	events.free()
+	scene.free()
+
 ## **The three of them together still leave a way out.** The rubble shuts the top floor's right
 ## half, the fire shuts a flight of the left shaft, and the masked man runs the right one — and a
 ## section where any pair of those closed the last route would be unplayable rather than hard.
@@ -1641,6 +1717,14 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 	if mouse:
 		t.check(walk.has(scene.map.world_to_tile(mouse.global_position)),
 				"and stands on the basement's own corridor")
+		# Its dash crosses the passage it stands in, wall to wall, and never leaves the floor: the
+		# building's map stops it at the walls as an alley's stop the city's mouse.
+		var dash := mouse.path
+		var on_the_floor := dash.size() >= 2
+		for point in dash:
+			on_the_floor = on_the_floor and scene.map.is_walkable(scene.map.world_to_tile(point))
+		t.check(on_the_floor and dash[0].distance_to(dash[dash.size() - 1]) > 16.0,
+				"and darts across its passage on the floor, wall to wall (%s)" % dash)
 
 	var steam := EventCatalogue.by_id("basement_steam")
 	var vents := BuildingEvents.vents(events)
