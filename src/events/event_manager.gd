@@ -1769,8 +1769,16 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	# The distance it was actually sited at rather than the constant. A pursuer is sited beyond its
 	# own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant makes every
 	# `ahead` line for the one row a chase is about say the wrong number.
-	var crossing_point: Vector2 = path[0] if path.size() < 2 \
-			else (path[0] + path[path.size() - 1]) * 0.5
+	# A run is measured where it meets her line, not at its midpoint: a run cut by a solid beside her
+	# sidewalk comes from the open side and is not centred on it. A route that does not cross her
+	# heading (parallel to it) falls back to its midpoint.
+	var crossing_point: Vector2 = path[0]
+	if path.size() >= 2:
+		crossing_point = (path[0] + path[path.size() - 1]) * 0.5
+		var met = Geometry2D.line_intersects_line(
+				path[0], path[path.size() - 1] - path[0], body.global_position, body.velocity)
+		if met is Vector2:
+			crossing_point = met
 	var lead := crossing_point.distance_to(body.global_position)
 	var verb := "comes at her from" \
 			if def.pursues or def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER else "crosses"

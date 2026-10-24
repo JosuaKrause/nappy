@@ -833,7 +833,9 @@ func _patrol_toward_her(heat: int) -> EventDef:
 ## facing: something that crosses in front of a player standing still is not in front of
 ## anything.
 ##
-## Returns `[EventDef, PackedVector2Array]`, or an empty array. A place the route's bag names is
+## Returns `[EventDef, PackedVector2Array, float]`: the row, the path to place it on, and the seconds
+## it crouches beyond its telegraph (`EventDef.crouch_for_a_run()`, zero for anything but a cut
+## crossing), or an empty array. A place the route's bag names is
 ## handed to her walk to site (`_place_on_her_route()`) and answers the empty array: it joins the
 ## day's plan through `site_what_is_on_her_way()` once it has a site.
 func due(delta: float, at: Vector2, velocity: Vector2) -> Array:

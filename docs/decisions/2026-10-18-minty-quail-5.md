@@ -24,10 +24,15 @@ for events (`EventInstance.solid_footprint_of`) and closure barriers (`City.barr
 15px), so a long frame cannot carry anything through a one-tile wall, plus `move_to`, `walk`,
 `path`, `way_out` and `trim`; the city builds it with the map and hands it to the event manager, its
 figures, the crowd and the resistance director. On it now: every event figure's chase, walk-back,
-departure, route walk, the far guard and the mouse's dash; both cat crossings, cut at the first solid on each side (a cramped one runs from the open side,
-and a cat whose start is cut crouches longer by the run it lost, `EventDef.crouch_for_a_run()`, so
-it still reaches her line when it did and its telegraph only grows; a crossing that cannot be cut so
-is refused);
+departure, route walk, the far guard and the mouse's dash; both cat crossings, cut at the first solid
+on each side. The run starts no nearer her line than `EventDef.nearest_crouch()` (the crouching
+field's outer radius over sqrt(1 + (WALK_SPEED / speed)^2), about 112px for the cat), because when
+the cat runs she is still short of the middle by the ground she covers meanwhile, and her walk must
+not reach the crouching field before it does. It is centred where both sides allow that, runs from
+the open side where only one does, and is refused where neither does (the director retries after a
+second's walk, the owed row kept). A cat whose start is cut crouches longer by the run it lost
+(`EventDef.crouch_for_a_run()`), so it still reaches her line when it did and its telegraph only
+grows;
 bike, dog and patrol-car routes, trimmed when sited and when created; `_along_street_path` and the
 neighbor's walk to work; the crowd's push and tile questions; the director's hand copies, chase
 prediction, the guard's clear run and the roadblock guard's line; and the floods
@@ -38,10 +43,17 @@ prediction, the guard's clear run and the roadblock guard's line; and the floods
 `cost-table.sh --check` (no route cost moved), and the full suite (`tools/test.sh`, all shards) with 0
 failures. Tests changed only as far as the code moved: instances given a map by hand get its
 navigator, callers of the removed step call `Navigator.step`, day 13's guard is measured over the
-ground he walks, and the placement test samples day 3 as well, since a scheduler re-roll moved day
-1's only walled pacing beat. A new `tests/test_world_passability.gd` checks the rules on hand-built
+ground he walks, the placement test samples day 3 as well, since a scheduler re-roll moved day
+1's only walled pacing beat, and `test_events_fire` measures where the cat's run meets her line
+(`Geometry2D.line_intersects_line`) rather than the run's midpoint, which is the property its
+sentence states: a run from the open side is not centred on her line, and at that test's spot (cuts
+40.5px and 136.5px) the midpoint is 48px off it. A new `tests/test_world_passability.gd` checks the rules on hand-built
 ground and, on seed 4242's day 9, that bodies and the record agree, barriers stand on closed ground,
-the cat crosses open ground and a dog departs round solids; its walker runs 13 moving rows on routes
+the cat crosses open ground, a dog departs round solids and, walking on, she is never inside the
+crouching cat's field before it runs (on seed 4242 day 9, 416 sidewalk tiles and 4 headings: the
+old rule, a start under half a tile, put her inside it on 306 of 1062 crossings, the new one on 0 of
+1031; the nearest start is 136.5px; the new rule refuses 31 more of 1063 placeable tries, 2.9%, each
+a one-second delay); its walker runs 13 moving rows on routes
 laid through her own building and fails when the route walk or the chase step bypasses the
 navigator.
 
