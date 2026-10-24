@@ -61,16 +61,17 @@ key, so the bag draws as before.
 constructor, `street_bag`. **orchestrating**'s exception for that fix covers no code; the PR closing
 minty-quail removes it (minty-lemur #799).
 
-**Left for later items:** `FinalePlanner` (routes, layer 2) calls the seal planner and the scheduler,
-the escape's planning half where a day's is `EventManager.start_day`; the alternative is the escape
-planned inside `start_day` once `events-composed.md` splits the manager. `WalkSiting` reads the day's
-home-street rule always, since only day specs reach it. `--route` from the building section waits at
-the city's brief. `comments.md` is applied to the code this PR wrote only.
+**Left for later items**, filed in `events-composed.md`: `FinalePlanner` (routes, layer 2) calls the
+seal planner and the scheduler, the escape's planning half where a day's is `EventManager.start_day`,
+and `EventManager.start_planned()` stays a second entry point, the alternative being the escape
+planned inside `start_day` once the manager is split; `WalkSiting` reads the day's home-street rule
+always, since only day specs reach it; `--route` from the building section waits at the city's
+brief. `comments.md` is applied to the code this PR wrote only.
 
 **For the remeasuring step:** the walk rule keeps a parked van's 54px reach as ground (no change on
 the eight fingerprinted seeds; where it binds, a van moves or is spent unmet); the winnable probe
 measures with the game's walker, which neither lures a roadblock's guard nor settles the baby, so its
 numbers are not comparable with `docs/evidence/winnable-escape-2026-10-19/` and the full 24-seed run
 is the remeasuring step's; the escape city's home door shows the run's own state (sealed after day
-10's raid); `RouteRig`'s route lines name day 16 in the escape's city; a `--route` escape boot opens on
+10's raid), and so does an authored scene's (`start_recipe_day()` shares the dressing); `RouteRig`'s route lines name day 16 in the escape's city; a `--route` escape boot opens on
 no brief.
