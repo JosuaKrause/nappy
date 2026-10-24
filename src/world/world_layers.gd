@@ -31,6 +31,13 @@ func node(layer: int) -> Node2D:
 	made.name = String(DrawLayer.Layer.keys()[layer]).to_pascal_case() + "Layer"
 	return hold(layer, made, layer == DrawLayer.Layer.ENTITIES)
 
+## Every node the world has for a layer so far.
+func nodes() -> Array[Node2D]:
+	var found: Array[Node2D] = []
+	for layer: int in _nodes:
+		found.append(_nodes[layer])
+	return found
+
 ## Whether the world has a node for `layer` yet.
 func has(layer: int) -> bool:
 	return _nodes.has(layer)

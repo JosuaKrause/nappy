@@ -837,10 +837,12 @@ func _city_map() -> CityMap:
 ## straight onto the street on a boot that opens there. A retried section walks the world it
 ## already has.
 ##
-## **Walking out of the building, its wall blockers go; its pictures and its fade stay.** The
-## building and the city share one physics space and both are laid out from the world origin, so
-## its blockers would stand across the city's top rows as a wall nobody draws (inbox #777 in
-## minty-lemur) — `InteriorScene.take_the_walls_out()`. The fade is not reversed here:
+## **Walking out of the building, its wall blockers and its pictures go; its fade stays.** The
+## building and the city share one physics space and one canvas, both laid out from the world
+## origin, so its blockers would stand across the city's top rows as a wall nobody draws (inbox
+## #777 in minty-lemur) — `InteriorScene.take_the_walls_out()` — and its walls and doors would be
+## drawn on the city's top streets — `InteriorScene.put_the_pictures_away()`, once the city stands
+## and she has been moved into it. The fade is not reversed here:
 ## `InteriorScene` holds the black at full opacity from the moment she reaches the door, and
 ## `_start_section()` clears it once she has been put down on the street, so nothing of the city is
 ## seen being assembled.
@@ -852,6 +854,8 @@ func _build_the_world_for(spec: DaySpec) -> void:
 		if _interior:
 			_interior.take_the_walls_out()
 		_build_the_finale_city()
+		if _interior:
+			_interior.put_the_pictures_away()
 	# The first world this boot stands is where the run log's observer starts watching the escape —
 	# her, the baby, the day's clock and the badges, which exist from here on.
 	if not _escape_watched and _session:

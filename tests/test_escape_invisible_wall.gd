@@ -50,6 +50,7 @@ func run(t) -> void:
 	if main._city != null:
 		_test_she_can_walk_north_from_where_the_player_stood(t, main)
 		_test_nothing_but_the_city_stands_on_the_escape_streets(t, main)
+		_test_nothing_of_the_building_is_drawn_in_the_city(t, main)
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
@@ -109,6 +110,34 @@ func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) ->
 	t.check(foreign == 0,
 			"no body outside the city stands on them (%d of %d tiles, under %s; first %s)"
 			% [foreign, asked, owners.keys(), first])
+
+## **Nothing of the building is drawn once she is in the city.** The building shares the city's
+## canvas from the world origin, so its walls and doors stand on the city's top streets: drawn,
+## they would show over the city's ground and buildings there. Every picture under the building
+## but its fade, which `InteriorScene.clear_fade()` still lifts over the street, is hidden.
+func _test_nothing_of_the_building_is_drawn_in_the_city(t, main: Node2D) -> void:
+	var interior: InteriorScene = main._interior
+	var fade := interior.get_node("FadeLayer")
+	var asked := 0
+	var drawn := 0
+	var shown: Array[String] = []
+	var stack: Array[Node] = [interior]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node == fade:
+			continue
+		stack.append_array(node.get_children())
+		var item := node as CanvasItem
+		if item == null or not (item is Sprite2D or item is TileMapLayer):
+			continue
+		asked += 1
+		if item.is_visible_in_tree():
+			drawn += 1
+			if shown.size() < 5:
+				shown.append(str(interior.get_path_to(item)))
+	t.check(asked > 0, "the building has pictures to ask about (%d)" % asked)
+	t.check(drawn == 0, "none of them is drawn in the city (%d of %d drawn, first %s)"
+			% [drawn, asked, ", ".join(shown)])
 
 ## Her three pages' reference counts — the parent's, the stroller's and the `ui` page — in that
 ## order. **The walk-out moves her from the building to the city**, out of the tree and back in,

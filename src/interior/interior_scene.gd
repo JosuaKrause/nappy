@@ -843,8 +843,9 @@ func clear_fade() -> void:
 ## into the city. **The building shares the city's space and its coordinates:** both are laid out
 ## from the world origin, and the footprint's blockers reach city row 26, with the margin row
 ## solid along the city's whole width, so left in place they are a wall across the city that
-## nothing draws (inbox #777 in minty-lemur). Only the blockers go: the building's pictures stay, under the city's
-## own, and so does its fade, which `clear_fade()` still lifts over the street. Freed at once
+## nothing draws (inbox #777 in minty-lemur). Only the blockers go here: its pictures go once the city
+## stands (`put_the_pictures_away()`), and its fade stays, which `clear_fade()` still lifts over
+## the street. Freed at once
 ## rather than queued, so nothing else in this same call, the city's build and its first streaming
 ## pass included, finds them in the space; the caller is the exit's own tween callback, never a
 ## physics query. Nothing walks the building again on this boot — a lost city section starts the
@@ -855,6 +856,17 @@ func take_the_walls_out() -> void:
 	remove_child(_collision)
 	_collision.free()
 	_collision = null
+
+## Hides everything the building draws, once she has walked out and the city stands where it was:
+## its floor and every layer node it draws in (`layers()`), whose walls and doors stand on the
+## city's top streets in the same canvas and would be drawn over the city's ground and buildings.
+## Not its fade (`FadeLayer`), which `clear_fade()` still lifts over the street. Nothing walks the
+## building again on this boot, so nothing shows them again.
+func put_the_pictures_away() -> void:
+	if _ground != null:
+		_ground.hide()
+	for node in layers().nodes():
+		node.hide()
 
 ## Moves `player` to the door named `door_id`'s own tile — "just inside its counterpart door," in
 ## the TODO's own words, since the door tile is exactly where she is placed. Exposed rather than
