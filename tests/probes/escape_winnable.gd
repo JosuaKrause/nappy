@@ -8,7 +8,8 @@ extends RefCounted
 ##
 ## `ESCAPE_WINNABLE_SEEDS` (comma-separated run seeds) and `ESCAPE_WINNABLE_MIX` (see `MIXES`)
 ## replace the seeds and the mixes; `ESCAPE_WINNABLE_WALK` set to `0` leaves the walking out and
-## prints the plans alone.
+## prints the plans alone; `ESCAPE_WINNABLE_PARALLEL` raises how many walks run at once
+## (`PARALLEL`).
 ##
 ## **What it measures, per seed.** The section's plan as a straight city boot builds it
 ## (`--start-escape city`: `GameState.start_run(seed)`, the city built from the run seed, the plan
@@ -54,8 +55,10 @@ const MIXES: Array[Dictionary] = [
 	{"name": "1:0,0,0,0,1", "slots": 1, "counts": [0, 0, 0, 0, 1]},
 ]
 const EXITS: Array[String] = ["tunnel", "bridge"]
-## How many walks run side by side: each is one Godot process at the game's own clock.
-const PARALLEL := 6
+## How many walks run side by side by default: each is one Godot process at the game's own clock,
+## and several agents share the machine and have crashed Godot running many at once (minty-lemur
+## #792), so two unless `ESCAPE_WINNABLE_PARALLEL` asks for more.
+const PARALLEL := 2
 ## Well past the section's own `Tuning.FINALE_LENGTH_SECONDS` and the boot before it: a walk still
 ## running then has hung, and is reported so rather than waited on.
 const TIMEOUT_SECONDS := 260.0
@@ -189,7 +192,7 @@ static func _counts(counts: Dictionary) -> String:
 
 # ------------------------------------------------------------------- the walks ---
 
-## One walk of the game's own walker per seed and exit, `PARALLEL` at a time: launch, wait for each
+## One walk of the game's own walker per seed and exit, `_parallel()` at a time: launch, wait for each
 ## to quit or to be killed at `TIMEOUT_SECONDS`, find the run log each wrote, and read how it ended.
 ## **The two exits of one seed never run side by side**, because a run's log folder is named by its
 ## seed and start time (`Telemetry.begin_run()`), so `_find_log()` tells two runs of one seed apart
@@ -204,7 +207,7 @@ func _walk_every_seed(seeds: Array[int]) -> Array[Dictionary]:
 		var batch: Array[Dictionary] = []
 		var seeds_in_batch := {}
 		var i := 0
-		while i < queue.size() and batch.size() < PARALLEL:
+		while i < queue.size() and batch.size() < _parallel():
 			if seeds_in_batch.has(queue[i]["seed"]):
 				i += 1
 				continue
@@ -213,6 +216,11 @@ func _walk_every_seed(seeds: Array[int]) -> Array[Dictionary]:
 			queue.remove_at(i)
 		rows.append_array(_walk_batch(batch))
 	return rows
+
+## `PARALLEL`, or `ESCAPE_WINNABLE_PARALLEL` when it is set to a positive whole number.
+func _parallel() -> int:
+	var given := int(OS.get_environment("ESCAPE_WINNABLE_PARALLEL"))
+	return given if given > 0 else PARALLEL
 
 func _walk_batch(batch: Array[Dictionary]) -> Array[Dictionary]:
 	var godot := OS.get_executable_path()

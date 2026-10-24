@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_both_exits_are_reachable_through_the_open_cells_alone(t)
 	_test_both_exits_are_reachable_past_every_body_the_escape_stands(t)
 	_test_both_exits_are_reachable_past_every_standing_lethal_reach(t)
+	_test_a_street_of_vans_leaves_a_walk_past_every_reach(t)
 	_test_no_street_of_the_walk_stands_two_roadblocks(t)
 	_test_a_roadblock_band_costs_nothing(t)
 	_test_the_far_guard_leaves_with_his_partner(t)
@@ -328,6 +329,45 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t) -> void:
 	var band := EventScheduler.Planned.new(EventCatalogue.escape_roadblock(), map.tile_to_world(tile))
 	t.check(ground.held_by(band).size() == ground.solids_of(band).size(),
 			"a roadblock, whose guard pursues, holds its band alone")
+
+## **Where the reach is what decides it, the walk still gets through.** A bag of vans alone at two
+## slots a street (`_escape_rows_on()` with `street_bag({"abduction": 1})`) packs the walk with
+## parked vans; on these seeds a placement that keeps a sidewalk open past each van's 22px body but
+## not past its 54px reach would cut the walk to one exit — the walk rule counting bodies alone
+## leaves the tunnel unreachable on seeds 8 and 39 and the bridge on seed 1. So with the rule
+## (`WalkGround.held_by()`), both exits are reached from the door past every body and every reach,
+## and this is what fails if the judge stops asking the reach.
+const VAN_STREET_SEEDS := [1, 8, 39]
+
+func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t) -> void:
+	var vans := 0
+	for seed_value in VAN_STREET_SEEDS:
+		var map := CityGenerator.generate(seed_value)
+		GameState.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.city_state)
+		var bare := _bare_plan(map, seed_value)
+		var placed := _escape_rows_on(map, bare,
+				EventScheduler.street_bag({"abduction": 1}, seed_value), 2)
+		vans += placed.size()
+		var whole := FinalePlanner.Plan.new()
+		whole.placements.assign((bare["plan"] as FinalePlanner.Plan).placements.duplicate())
+		whole.placements.append_array(placed)
+		var blocked := {}
+		_block_every_body(t, map, whole, blocked)
+		_block_every_standing_reach(t, map, whole, blocked)
+		var reached := _flood_past_the_bodies(map, blocked,
+				map.tile_to_world(FinalePlanner.service_exit_tile(map)))
+		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
+			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
+			var found := false
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					if reached.has(at + Vector2i(dx, dy)):
+						found = true
+			t.check(found, "seed %d, vans two a street: the %s is reached past every van's reach"
+					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+	t.check(vans > 100, "there were streets full of vans to walk past (%d)" % vans)
 
 ## Marks every grid point within the lethal reach of a row the plan stands that is not mobile, is
 ## `hard_fail` and does not pursue, measured from where its `EventInstance` stands, and answers how

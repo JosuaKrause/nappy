@@ -503,6 +503,9 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	for segment in region_plan.doors:
 		_city_map.hold_segment(segment.key())
 	var spec := _spec if _spec else DaySpec.for_day(day)
+	# The seals and events are planned under `spec.number` and the day's streams under `day`: a spec
+	# left over from another day would plan that day's catalogue on today's streams, so it fails here.
+	assert(spec.number == day, "EventManager.start_day(%d) was handed day %d's spec" % [day, spec.number])
 	if spec.holds_the_home_streets:
 		for segment in StreetNetwork.around_blocks(Rect2i(_city_map.home_block, Vector2i.ONE)):
 			_city_map.hold_segment(segment.key())

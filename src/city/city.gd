@@ -981,9 +981,11 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## day has grown none); `spec.pastes_posters` says whether the crews paste at dawn
 ## (`PosterWalls.start_day()`) or the walls only show what the run left (`PosterWalls.show_only()`).
 ## The repaint, the door, the ground, the litter, the block dressing and the street trees happen
-## either way, because the parks she walks through have to be the parks the run's seed built. `spec`
-## left out is a day's (`DaySpec.for_day()`). `day` is the calendar's — the escape is walked on the
-## last day's — and `rng` the closures' stream.
+## either way, because the parks she walks through have to be the parks the run's seed built. The run
+## flow hands `spec` in on every day and every section (`main`, the same object the day's event
+## manager is handed); left out, as a rig that builds a city with no run flow leaves it, it is a
+## day's (`DaySpec.for_day()`). `day` is the calendar's — the escape is walked on the last day's —
+## and `rng` the closures' stream.
 func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 		spec: DaySpec = null) -> void:
 	if spec == null:

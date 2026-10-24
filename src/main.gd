@@ -1863,7 +1863,7 @@ func _start_day() -> void:
 	_city.map.set_fenced_park_state(GameState.fenced_park, GameState.fenced_park_act,
 			GameState.current_act())
 	_city.start_day(GameState.city_state, GameState.day,
-			GameState.day_rng(GameState.day, "closures"))
+			GameState.day_rng(GameState.day, "closures"), _spec)
 	# Remember the first choice for the run. Today's physical fence disappears after its act,
 	# but that must not erase the history and allow tomorrow to choose another one.
 	GameState.remember_fenced_park(_city.map.fenced_park, _city.map.fenced_park_act)
