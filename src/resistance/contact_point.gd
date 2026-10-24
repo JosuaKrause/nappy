@@ -64,9 +64,6 @@ func _exit_tree() -> void:
 func setup(which: ResistanceSteps.Step, at: Vector2) -> void:
 	step = which
 	position = at
-	# A mark on the ground belongs under everything that stands on it, including the
-	# player who is standing on it to read it.
-	z_index = -1
 
 ## A perform: the contact follows `instance`, standing `offset` from it — zero for every task, so
 ## it stands on the thing itself.
@@ -75,7 +72,6 @@ func ride(which: ResistanceSteps.Step, instance: EventInstance, offset: Vector2)
 	_rider = instance
 	_rider_offset = offset
 	position = instance.global_position + offset
-	z_index = -1
 
 ## Whether the thing this rides on is still there to be touched.
 func rider_alive() -> bool:

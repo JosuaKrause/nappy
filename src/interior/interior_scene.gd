@@ -7,19 +7,18 @@ extends WorldContext
 ## no crowd of its own — `WorldContext`'s own defaults (1.0 recovery, no excitement sources) are
 ## exactly "meters idle" already.
 ##
-## Ground is a `TileMapLayer` built from `InteriorTileSet`; walls, doors, the barricade and the
-## brick stand in elevation in a plain layer under everything, the same reasoning `Building` and
-## `City`'s own `Buildings` layer use — nothing can ever legitimately stand *behind* a wall, so
-## nothing needs to sort against one. **Every door is drawn under her**, in its own layer between
-## the walls and her *(the player, 2026-10-18: the escape's door graphics should always be under
-## her)*: the stairwell doors, the open and the apartments' thresholds and the emergency exit, as the
-## lift door and the entrance in the wall layer already are. A door in her y-sorted layer, sorted by
-## its foot against hers, was drawn over her whenever its foot was lower than hers, which a
-## threshold's, at its tile's south edge, always is while she stands on it. The chandelier and the
-## ground decals live in a y-sorted layer above the ground, the same layer the player joins through
-## `add_entity()`. The stair-side roles are ground cells now: the TileMap paints exactly
-## the grammar the collision pass reads instead of placing a second visual assembly over another
-## walkable map.
+## Ground is a `TileMapLayer` built from `InteriorTileSet`, on the ground layer, with the stairwell
+## walls behind it (`DrawLayer.Layer.BACKDROP`); walls, the lift door, the entrance, the barricade
+## and the brick stand in elevation on the buildings layer, not y-sorted, for the reason `City`'s
+## own `Buildings` layer has one: nothing can ever legitimately stand *behind* a wall, so nothing
+## needs to sort against one. **Every door is drawn under her**, on the doors layer between the
+## walls and her *(minty-lemur #789: "the escape doors should be in a way that the graphics is
+## always under her")*: the stairwell doors, the open and the apartments' thresholds and the
+## emergency exit. Sorted by its foot against hers a threshold, standing at its tile's south edge,
+## would be drawn over her whenever she stood on it. The chandelier and the ground decals live in
+## the y-sorted entity layer, the one the player joins through `add_entity()`. The stair-side roles
+## are ground cells: the TileMap paints exactly the grammar the collision pass reads instead of
+## placing a second visual assembly over another walkable map.
 ##
 ## **One map, seven parts, no loading.** `InteriorMap.build()` lays all seven parts at once, `64`
 ## tiles apart from each other — comfortably more than the 20×11.25 tiles a 640×360 view at zoom 2
@@ -124,23 +123,10 @@ func build() -> void:
 	_ground = TileMapLayer.new()
 	_ground.name = "Ground"
 	add_child(_ground)
-	_backdrops = Node2D.new()
-	_backdrops.name = "StairwellBackdrops"
-	_backdrops.z_index = -1
-	add_child(_backdrops)
-	_walls = Node2D.new()
-	_walls.name = "Walls"
-	_walls.z_index = 1
-	add_child(_walls)
-	_doors = Node2D.new()
-	_doors.name = "Doors"
-	_doors.z_index = 1
-	add_child(_doors)
-	_entities = Node2D.new()
-	_entities.name = "Entities"
-	_entities.z_index = 2
-	_entities.y_sort_enabled = true
-	add_child(_entities)
+	_backdrops = _layer_node(DrawLayer.Layer.BACKDROP, "StairwellBackdrops")
+	_walls = _layer_node(DrawLayer.Layer.BUILDINGS, "Walls")
+	_doors = _layer_node(DrawLayer.Layer.DOORS, "Doors")
+	_entities = _layer_node(DrawLayer.Layer.ENTITIES, "Entities", true)
 	_collision = Node2D.new()
 	_collision.name = "Collision"
 	add_child(_collision)
@@ -343,7 +329,7 @@ func _rebuild_walls() -> void:
 		barricade.centered = false
 		barricade.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
-		_walls.add_child(barricade)
+		add_entity(barricade, DrawLayer.Layer.BUILDINGS)
 
 ## The fallen ceiling on the top floor, drawn over exactly the cells `InteriorMapPlan.rubble`
 ## closes. One picture registered at the patch's own top-left corner rather than one sprite per
@@ -359,7 +345,7 @@ func _add_rubble() -> void:
 	heap.texture = AtlasLibrary.region(HALLWAY_RUBBLE_TEXTURE)
 	heap.centered = false
 	heap.position = Vector2(_plan.rubble.position) * TILE
-	_walls.add_child(heap)
+	add_entity(heap, DrawLayer.Layer.BUILDINGS)
 
 func _add_wall_sprite(at: Vector2i, name: StringName) -> Sprite2D:
 	if name == &"":
@@ -372,7 +358,7 @@ func _add_wall_sprite(at: Vector2i, name: StringName) -> Sprite2D:
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = Vector2((at.x + 0.5) * TILE, at.y * TILE)
-	_walls.add_child(sprite)
+	add_entity(sprite, DrawLayer.Layer.BUILDINGS)
 	return sprite
 
 # ------------------------------------------------------------------- the light ---
@@ -494,7 +480,7 @@ func _rebuild_overlays() -> void:
 		var sprite := Sprite2D.new()
 		sprite.texture = AtlasLibrary.region(name)
 		sprite.position = tile_to_world(tile)
-		_entities.add_child(sprite)
+		add_entity(sprite)
 	_add_chandeliers()
 
 func _is_edge_threshold(door_id: String) -> bool:
@@ -513,7 +499,7 @@ func _add_chandeliers() -> void:
 		chandelier.centered = false
 		chandelier.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 		chandelier.position = tile_to_world(_plan.waypoints[id] + Vector2i(0, -1))
-		_entities.add_child(chandelier)
+		add_entity(chandelier)
 
 func _decal_texture(kind: InteriorTile.Kind) -> StringName:
 	match kind:
@@ -534,7 +520,7 @@ func _add_standing(tile: Vector2i, name: StringName) -> void:
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = tile_to_world(tile)
-	_doors.add_child(sprite)
+	add_entity(sprite, DrawLayer.Layer.DOORS)
 
 ## A threshold sits at a floor tile's south boundary. Its origin is intentionally lower than an
 ## upright stairwell door's: the opening belongs to the wall beyond the corridor, not the floor.
@@ -545,7 +531,7 @@ func _add_threshold(tile: Vector2i, name: StringName) -> void:
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
 	sprite.position = Vector2((tile.x + 0.5) * TILE, (tile.y + 1) * TILE)
-	_doors.add_child(sprite)
+	add_entity(sprite, DrawLayer.Layer.DOORS)
 
 ## Repeats the shaft wall behind the ten-column grammar. The four eight-row panels cover the
 ## complete 26-row stairwell, including the final two-cell lobby approach, but add no floor:
@@ -561,12 +547,12 @@ func _rebuild_stairwell_backdrops() -> void:
 			backdrop.texture = segment_texture
 			backdrop.centered = false
 			backdrop.position = Vector2(origin + Vector2i(0, panel * 8)) * TILE
-			_backdrops.add_child(backdrop)
+			add_entity(backdrop, DrawLayer.Layer.BACKDROP)
 		var cap := Sprite2D.new()
 		cap.texture = cap_texture
 		cap.centered = false
 		cap.position = Vector2(origin + Vector2i(0, -2)) * TILE
-		_backdrops.add_child(cap)
+		add_entity(cap, DrawLayer.Layer.BACKDROP)
 
 # ------------------------------------------------------------------ placement and queries ---
 
@@ -755,9 +741,12 @@ func camera_bounds() -> Rect2:
 	var box := _footprint()
 	return Rect2(Vector2(box.position) * TILE, Vector2(box.size) * TILE).grow(_CAMERA_MARGIN)
 
-## Joins the y-sorted layer everything standing in this scene lives on.
-func add_entity(node: Node) -> void:
-	_entities.add_child(node)
+## The building's node for `layer`, named `name`, handed over as its node for that draw layer
+## (`add_entity()`).
+func _layer_node(layer: int, name: String, y_sorted := false) -> Node2D:
+	var node := Node2D.new()
+	node.name = name
+	return layers().hold(layer, node, y_sorted)
 
 # ------------------------------------------------------------------ the meters ---
 # `InteriorScene` is a `WorldContext`, so the baby asks it how loud it is here. With nothing in the
@@ -854,8 +843,9 @@ func clear_fade() -> void:
 ## into the city. **The building shares the city's space and its coordinates:** both are laid out
 ## from the world origin, and the footprint's blockers reach city row 26, with the margin row
 ## solid along the city's whole width, so left in place they are a wall across the city that
-## nothing draws (inbox #777 in minty-lemur). Only the blockers go: the building's pictures stay, under the city's
-## own, and so does its fade, which `clear_fade()` still lifts over the street. Freed at once
+## nothing draws (inbox #777 in minty-lemur). Only the blockers go here: its pictures go once the city
+## stands (`put_the_pictures_away()`), and its fade stays, which `clear_fade()` still lifts over
+## the street. Freed at once
 ## rather than queued, so nothing else in this same call, the city's build and its first streaming
 ## pass included, finds them in the space; the caller is the exit's own tween callback, never a
 ## physics query. Nothing walks the building again on this boot — a lost city section starts the
@@ -866,6 +856,17 @@ func take_the_walls_out() -> void:
 	remove_child(_collision)
 	_collision.free()
 	_collision = null
+
+## Hides everything the building draws, once she has walked out and the city stands where it was:
+## its floor and every layer node it draws in (`layers()`), whose walls and doors stand on the
+## city's top streets in the same canvas and would be drawn over the city's ground and buildings.
+## Not its fade (`FadeLayer`), which `clear_fade()` still lifts over the street. Nothing walks the
+## building again on this boot, so nothing shows them again.
+func put_the_pictures_away() -> void:
+	if _ground != null:
+		_ground.hide()
+	for node in layers().nodes():
+		node.hide()
 
 ## Moves `player` to the door named `door_id`'s own tile — "just inside its counterpart door," in
 ## the TODO's own words, since the door tile is exactly where she is placed. Exposed rather than

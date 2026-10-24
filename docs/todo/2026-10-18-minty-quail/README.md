@@ -54,7 +54,7 @@ parity**: every existing test passes, changed only as far as the code it reaches
 early to injected fakes and public APIs (`tests-public-seams.md`); nothing is remeasured per step. The player: "let's do remeasuring at the very end and not get blocked by it
 during the refactor", "for the refactor test parity is enough" (inbox #813).
 
-1. `world-passability.md`, `draw-layers.md`, then `world-map.md`: the world layer, which the building
+1. `world-passability.md`, then `world-map.md`: the world layer, which the building
    needs before it can run on the day's event manager.
 2. `escape-placement.md`: the escape folded into the day's code.
 3. `events-composed.md` and `shared-components.md`.

@@ -636,7 +636,15 @@ disc every shape used to collide as; a narrower row, or a point-drawn one, stays
 The width it is drawn is the whole of it either way — the number is half the silhouette, not a
 balance value — and `EventInstance._draw_spread` draws a blocking object at exactly the width its
 shape reaches, for the same reason in the other direction: a body that disagrees with the picture
-is a lie about where she can walk, whichever way it lies.
+is a lie about where she can walk, whichever way it lies. On the screen a spread is drawn in
+slices, one per segment, each a node standing at its own feet along the row's solid footprint
+(`EventInstance.Slice`, `DrawLayer.slice_feet()`), so a spread running away from the camera sorts
+slice by slice against her; the shadow and the far end cap go down with the first slice and the
+near cap with the last, and the slices stand ahead of the instance in the tree, so its caret is
+drawn over its own picture. The café is drawn the same way, one slice a table and its sitter, so
+each table sorts against her and the next (inbox #827), and so are the protest's
+rank and the firefight, one slice a figure at its own feet, the protest's back rank up the screen
+of its front one.
 
 **A row may be solid in parts, and one is.** `EventDef.solid_parts` is a list of pieces — each an
 offset along the scene's own spread axis and a `GroundShape` of its own — and `EventInstance` puts
@@ -1036,10 +1044,17 @@ coordinates inside a corridor band) and ground off any corridor at all (a square
 courtyard) both keep the default lay along local X: neither has one street to be wrong about.
 
 The fallen tree, car accident and burst water main each have one complete street scene picture,
-fitted to the obstructed span. The fallen tree is drawn whole by `EventInstance._draw_wide_scene()`.
-The crash and burst main are drawn on screen as `EventScenery` layers of their cropped static and
-moving spans, which `_build_scenery()` places with the same extent and anchor; `_draw_wide_scene()`
-draws their complete picture only on the halo's own canvas. On an east–west street, its vertical
+fitted to the obstructed span. On the screen each is cut into slices, one a tile of its run, each
+a node standing at its own feet and drawing the part of the picture over its own band
+(`EventInstance._wide_scene_band()`), so a scene lying across an east-west street, its length running
+down the screen, sorts against her
+band by band; the shadow goes down whole with the first. The fallen tree's slices draw their part
+of its one picture (`EventInstance._draw_wide_scene()`). The crash and burst main are drawn as
+`EventScenery` layers of their cropped static and moving spans, one scenery behind each slice
+holding the part of every span inside its band, placed with the same extent and anchor;
+`_draw_wide_scene()` draws their complete picture only on the halo's own canvas. An upright part
+standing over a nearer band's ground, a fountain's top or a tree's crown, sorts with the band its
+screen rows fall in. On an east–west street, its vertical
 image (and its shadow, for the two of the three that draw one — see
 `draws_body_shadow` above) is centred on the event's ground point; the bottom-centred anchor
 used for an upright person would shift the whole scene onto the northern pavement.
@@ -1662,15 +1677,17 @@ standing at his. Two fields make that work and both are general rather than writ
   stops waiting, because a moving pursuer with a body is a wall. A barrier is not the man's own
   bulk: `EventInstance` pins it at the place it was left and draws it there for the rest of the
   event's life, so **the street he abandoned stays shut behind him**. Nothing appears and nothing
-  disappears. **The barrier is furniture, not part of the man**: the band and the guard posted
-  beside it are their own y-sorted node (`EventInstance.RoadblockBand`) standing at the body, so
-  they never ride his stride bob and never re-sort with him, and the body is re-pinned through his
-  departure too. **It outlives the chase**: when the chase ends — she shook him off, or his chase
+  disappears. **The barrier is furniture, not part of the man**: the guards posted beside the band
+  are their own node in the entity layer (`EventInstance.RoadblockBand`) standing at the body, and
+  the band's segments slices of their own at their own feet (`EventInstance.Slice`), so they never
+  ride his stride bob and never re-sort with him, and the body is re-pinned through his departure
+  too. **It outlives the chase**: when the chase ends — she shook him off, or his chase
   ran out — he walks away at his chasing pace over walkable ground, and the instance goes back to
   being only the barrier, waiting and solid, with the post he left empty. **A warning that ends with her walking back out of his
   180px is not a chase**: he is back at the band, both guards posted and the body under him, and
   he can warn again (`EventInstance._stop_warning()`). **While he warns he is drawn above the
-  street's other figures** (`EventInstance.WARNING_GUARD_Z`): he sorts at his own feet, so a van
+  street's other figures**, on the warning layer (`EventDef.warns_over_the_street`,
+  `DrawLayer.Layer.WARNING`), under the tunnel's overhead dark: he sorts at his own feet, so a van
   parked in front of his post or another band nearer her would otherwise be drawn over the man
   whose raised hand is the warning; once he charges he sorts with them again. Once he has chased, he does not come back for her, and **the guard at the
   other post walks off with him**, on every day as in the escape, so the band stands unmanned

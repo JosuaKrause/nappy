@@ -207,11 +207,21 @@ func mouth_centres(_map: CityMap) -> Array[Vector2]:
 func posts(_map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
 	var horizontal := outward.y != 0
+	var ends := rail_ends()
 	if horizontal or not joined_start:
-		found.append(_point(from_along if joined_start else from_along + POST_HALF))
+		found.append(ends[0])
 	if horizontal or not joined_end:
-		found.append(_point(to_along if joined_end else to_along - POST_HALF))
+		found.append(ends[1])
 	return found
+
+## Where the fence's rails start and end: on the post at each end, the corner a joined end turns on
+## or `POST_HALF` in from an open end, the start first. One pair of points for the posts
+## (`posts()`) and the rails' slices (`City._spawn_barrier()`), so the rail's last slice and the
+## post it ends on stand on the same point and not on two sums of one length.
+func rail_ends() -> PackedVector2Array:
+	return PackedVector2Array([
+		_point(from_along if joined_start else from_along + POST_HALF),
+		_point(to_along if joined_end else to_along - POST_HALF)])
 
 ## The point `along` pixels down this run's axis, on its fence line.
 func _point(along: float) -> Vector2:

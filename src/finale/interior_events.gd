@@ -291,10 +291,10 @@ func _place_the_basement(rng: RandomNumberGenerator) -> void:
 ## A vent's floor grate, lying on its site for the whole section.
 ##
 ## **Ground, not something standing on it.** She walks over the grate between blows, so it is never
-## drawn over her: it is a child of the building itself at the ground's own `z_index` (0), after
-## the floor tiles in the tree so it lies on them, and under the walls (1) and the y-sorted layer
-## (2) she and every blow stand in. A decal in that y-sorted layer, as the basement's puddles are,
-## would be drawn over her feet whenever she stood on its northern half.
+## drawn over her: it lies on the building's ground layer (`DrawLayer.Layer.GROUND`), added after
+## the floor tiles so it lies on them, under the walls and the y-sorted layer she and every blow
+## stand in. A decal in that y-sorted layer, as the basement's puddles are, would be drawn over her
+## feet whenever she stood on its northern half.
 ##
 ## **Centred on the vent's own point**, as a ground decal is, and that point is where each blow's
 ## cloud stands — the frames' bottom-centre anchor — so the column comes up out of the slots.
@@ -306,9 +306,8 @@ func _lay_a_grate(at: Vector2) -> Sprite2D:
 	grate.name = "SteamGrate"
 	grate.texture = EventInstance.steam_grate()
 	grate.centered = true
-	grate.z_index = 0
 	grate.position = at
-	_interior.add_child(grate)
+	_interior.add_entity(grate, DrawLayer.Layer.GROUND)
 	return grate
 
 ## The grates of the vents being replaced. A restart places the same vents on the same sites, but
@@ -392,6 +391,7 @@ func _spawn(def: EventDef, at: Vector2, path := PackedVector2Array(), walled := 
 	# through the solid between them.
 	if walled:
 		instance.set_walls(_interior.wall_grid())
+	instance.world = _interior
 	_interior.add_entity(instance)
 	_instances.append(instance)
 	return instance

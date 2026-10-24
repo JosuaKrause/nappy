@@ -4,7 +4,7 @@ extends RefCounted
 func run(t) -> void:
 	_test_roof_rotors(t)
 	_test_rotor_registration_matches_authored_crops(t)
-	_test_event_parts(t)
+	await _test_event_parts(t)
 	_test_water_ownership(t)
 
 func _test_roof_rotors(t) -> void:
@@ -78,6 +78,8 @@ func _test_rotor_registration_matches_authored_crops(t) -> void:
 		t.check(Building.VENT_ROTOR_RECT.get_center().distance_to(Vector2(29, 22)) < 0.01,
 				"the rotor display is centered in the generated housing's circular opening")
 
+## A crash and a burst main are drawn in slices, each holding its part's scenery
+## (`EventInstance.Slice`, `EventScenery`), so what is asked here is asked of every slice's.
 func _test_event_parts(t) -> void:
 	AtlasLibrary.acquire(&"events")
 	for id: String in ["car_accident", "burst_water_main"]:
@@ -86,36 +88,55 @@ func _test_event_parts(t) -> void:
 			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
 			instance._spread_vertical = vertical
 			t.add_child(instance)
+			instance._attach_the_slices()
 			instance._process(instance.def.telegraph_time + 0.01)
-			var scenery := instance._scenery
-			t.check(scenery != null and not scenery.moving_layers.is_empty(),
-					"%s/%s has independently moving detail" % [id, vertical])
+			var sceneries := instance._sceneries.duplicate()
+			var moving: Array[SceneryLayer] = []
+			var still: Array[SceneryLayer] = []
+			for scenery: EventScenery in sceneries:
+				moving.append_array(scenery.moving_layers)
+				still.append_array(scenery.static_layers)
+			t.check(sceneries.size() > 1 and not moving.is_empty(),
+					"%s/%s has independently moving detail across its slices" % [id, vertical])
 			var body := instance._obstruction
 			var centers := instance.solid_part_centres()
 			var key := instance._picture_key()
-			var initial: bool = scenery.moving_layers[0].frame_b
+			var initial: bool = moving[0].frame_b
 			var period := EventInstance.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
 					else EventInstance.BURST_MAIN_SPLASH_PERIOD
 			instance._process(period * 0.5)
-			for layer in scenery.moving_layers:
+			for layer in moving:
 				t.check(layer.frame_b != initial, "the existing event clock advances each detail")
 				for alternate in layer._alternates:
 					t.check(alternate != null, "every moving detail owns an alternate texture")
-			for layer in scenery.static_layers:
+			for layer in still:
 				for alternate in layer._alternates:
 					t.check(alternate == null, "stationary surroundings have no alternate texture")
 			t.check(instance._picture_key() == key, "animation leaves the static event key alone")
 			t.check(instance._obstruction == body and instance.solid_part_centres() == centers,
 					"animation preserves both collision resource and placement")
 			instance._finish()
-			t.check(not scenery.visible, "a finished event hides every scenery layer")
+			t.check(sceneries.all(func(scenery: EventScenery) -> bool: return not scenery.visible),
+					"a finished event hides every scenery layer")
+			# Detached, it takes its slices and their scenery with it; back in the tree, it builds
+			# them again once it has settled.
 			t.remove_child(instance)
-			t.check(scenery.moving_layers.is_empty() and scenery.static_layers.is_empty(),
-					"detaching the event releases retained atlas regions")
+			await t.get_tree().process_frame
+			t.check(sceneries.all(func(scenery: Variant) -> bool:
+					return not is_instance_valid(scenery)),
+					"detaching the event releases its scenery and its retained atlas regions")
 			t.add_child(instance)
-			t.check(not scenery.moving_layers.is_empty(), "reentry rebinds event scenery regions")
+			await t.get_tree().process_frame
+			var rebound := false
+			for scenery: EventScenery in instance._sceneries:
+				rebound = rebound or not scenery.moving_layers.is_empty()
+			t.check(rebound, "reentry rebinds event scenery regions")
+			var again := instance._sceneries.duplicate()
 			instance.free()
-			t.check(not is_instance_valid(scenery), "removing an event releases its scenery")
+			await t.get_tree().process_frame
+			t.check(again.all(func(scenery: Variant) -> bool:
+					return not is_instance_valid(scenery)),
+					"removing an event releases its scenery")
 	AtlasLibrary.release(&"events")
 
 func _test_water_ownership(t) -> void:

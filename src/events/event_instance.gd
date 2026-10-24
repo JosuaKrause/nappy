@@ -998,11 +998,11 @@ static func has_a_spread(def: EventDef) -> bool:
 ## `_spread_vertical` together pick the texture, with no field on the def.
 ##
 ## `frame_b` asks for the scene's second frame where it has one — the crash's smoke and the burst
-## main's fountain. On screen the two are `EventScenery` layers built by `_build_scenery()`, and
-## `_update_scenery()` alternates their frame off its own `_idle_stepping()` call; `_draw_body()`
-## only picks `frame_b` here when it draws the whole scene itself, which happens on the halo's own
-## canvas (`canvas != self`) or before `_build_scenery()` has run (`_scenery == null`). The fallen
-## tree has nothing that moves and answers its one picture either way.
+## main's fountain. On screen the two are `EventScenery` layers, one behind each of the scene's
+## slices (`_build_the_slices()`), and `_update_scenery()` alternates their frame off its own
+## `_idle_stepping()` call; `_draw_body()` only picks `frame_b` here when it draws the whole scene
+## itself, which happens on the halo's own canvas (`canvas != self`) or with no slices standing. The
+## fallen tree has nothing that moves and answers its one picture either way.
 static func _wide_scene_texture(look: EventDef.Look, vertical: bool, frame_b := false) -> String:
 	match look:
 		EventDef.Look.FALLEN_TREE: return FALLEN_TREE_VERTICAL if vertical else FALLEN_TREE
@@ -1199,6 +1199,12 @@ var silenced := false
 ## `--skip events`, handed in by the manager that makes this instance: nothing of it is drawn.
 var skip_draw := false
 
+## The world this instance stands in, handed in by the manager that makes it (`EventManager`,
+## `InteriorEvents`) before it is added: what it adds beside itself — its band, the far guard
+## walking off, the slices of a long picture — goes in through the world's `add_entity()`. Null in
+## a rig that stands it under a bare node, where they stand beside it in that node.
+var world: WorldContext = null
+
 ## Where the player is, in world space, or `INF` for nowhere.
 ##
 ## Written once per frame by `EventManager`, which is the one place that already knows. An instance
@@ -1388,7 +1394,8 @@ var _stationary_vehicle_side := true
 ## negative, which makes this starting value one no key can ever equal: the first tick of an
 ## instance's life always asks for its own draw rather than relying on a coincidence.
 var _picture := Vector4i(-1, 0, 0, 0)
-var _scenery: EventScenery
+## The scenery behind each slice of a crash or a burst main, index for index with `_slices`.
+var _sceneries: Array[EventScenery] = []
 
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
@@ -1567,32 +1574,23 @@ func _ready() -> void:
 		_build_obstruction()
 	if def.flock_size > 0:
 		_build_the_flock()
-	_build_scenery()
 	if def.look == EventDef.Look.ROADBLOCK:
 		_build_the_band()
+	_build_the_slices()
 
-## The whole A/B sources remain the badge and halo pictures. The visible scene is instead
-## retained in painter-order layers behind this node's caret and ahead of its halo.
-func _build_scenery() -> void:
-	if def.look not in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
-		return
-	var picture := _wide_scene_texture(def.look, _spread_vertical)
-	var half := maxf(11.0, def.obstructs_radius)
-	var size := _native_size(picture)
-	var thickness := size.x if _spread_vertical else size.y
-	_scenery = EventScenery.new()
-	_scenery.configure(picture, _spread_extent(half * 2.0, thickness),
-			_wide_scene_anchor(_spread_vertical, half), _wide_scene_shadow(picture))
-	add_child(_scenery)
-	_update_scenery()
-
+## The crash's and the burst main's visible scene: retained painter-order layers behind each of
+## its slices (`EventScenery`), shown while the instance is, on the frame its own clock picks. The
+## whole A/B sources remain the badge and halo pictures.
 func _update_scenery() -> void:
-	if _scenery == null:
+	if _sceneries.is_empty():
 		return
-	_scenery.visible = not (skip_draw or is_finished or is_suppressed_by_its_own_hold())
+	var shown := not (skip_draw or is_finished or is_suppressed_by_its_own_hold())
 	var period := CAR_ACCIDENT_SMOKE_PERIOD if def.look == EventDef.Look.CAR_ACCIDENT \
 			else BURST_MAIN_SPLASH_PERIOD
-	_scenery.set_frame(_idle_stepping(period))
+	var frame_b := _idle_stepping(period)
+	for scenery in _sceneries:
+		scenery.visible = shown
+		scenery.set_frame(frame_b)
 
 ## Where this instance's body was left standing when its pursuer walked out of it, in world space,
 ## or `Vector2.INF` while the two are still the same place. See `EventDef.body_stays_behind`.
@@ -1809,12 +1807,23 @@ func solid_part_shapes() -> Array[GroundShape]:
 ## `_draw_body` and `_current_bob` so its ring rides the same lift `_draw()` gives the body.
 func _build_halo() -> void:
 	_halo = EntityHalo.new(_draw_body, _current_bob)
-	add_child(_halo)
+	var holder := _rim_holder()
+	holder.add_child(_halo)
+	_halo.position = global_position - holder.global_position
 	# **First child, so first of the behind-parent drawers.** The rim and the visible scene's layers
 	# (`EventScenery`) both opt into `show_behind_parent`, and siblings that do are painted in
-	# tree order: a rim added after the scenery -- which `_ready()` built long before any pick --
-	# painted over the pictures it is meant to outline.
-	move_child(_halo, 0)
+	# tree order, so a rim after the scenery, which `_ready()` builds long before any pick, would
+	# paint over the pictures it is meant to outline.
+	holder.move_child(_halo, 0)
+
+## What the rim stands behind: this node, or the first slice of a long picture drawn in slices,
+## which is drawn before every other part of it (`_draw_a_slice()`), so the rim is behind the whole
+## picture as it is behind a picture drawn on this node. A roadblock's rim stays here: its slices
+## are the band's, and the rim it lights traces the man who sets off from it.
+func _rim_holder() -> Node2D:
+	if _band == null and not _slices.is_empty() and _slices[0].is_inside_tree():
+		return _slices[0]
+	return self
 
 ## Whether this instance is solid right now. True from `_ready()` for anything with
 ## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` —
@@ -2356,27 +2365,19 @@ func _process(delta: float) -> void:
 		# needs no redraw for it. A spent guard moves nothing, so there is nothing to re-pin.
 		_keep_the_body_where_it_was_left()
 	_move_the_band()
-	_draw_a_warning_guard_on_top()
+	_take_the_layer_it_warns_on()
 	_redraw_if_the_picture_changed()
 
-## **A roadblock's guard warning her is drawn over everything round him**, for the whole of his
-## warning: from the frame he steps out to his post with his hand raised until he charges. *(Inbox
-## #771 in minty-lemur, 2026-10-18: "the second guard is invisible (hidden) until it already charges".)* He sorts
-## at his own feet like any other figure, so anything standing between him and her with its feet
-## nearer her than his — a van parked in front of his post, another band and the guard posted on
-## its far side — is drawn over him, and a man who is hidden while he warns has not warned. Above
-## the rest of the street (`WARNING_GUARD_Z`) only while he warns; once he charges he sorts with
-## everything else again.
-func _draw_a_warning_guard_on_top() -> void:
-	if def.look != EventDef.Look.ROADBLOCK:
+## **A pursuer that warns over the street is drawn on the warning layer for the whole of its
+## warning** (`EventDef.warns_over_the_street`, `DrawLayer.Layer.WARNING`): the roadblock's guard,
+## from the frame he steps out to his post with his hand raised until he charges, over every figure
+## on the street, under the city's overhead layer. Once he charges he sorts with the street again,
+## on the entity layer at his own feet.
+func _take_the_layer_it_warns_on() -> void:
+	if not def.warns_over_the_street:
 		return
-	var wanted := WARNING_GUARD_Z if is_standing_for_its_notice() else 0
-	if z_index != wanted:
-		z_index = wanted
-
-## How far above the street's own figures a warning roadblock guard is drawn — one step, under the
-## city's overhead layer (`City.OVERHEAD_Z_INDEX`).
-const WARNING_GUARD_Z := 1
+	DrawLayer.draw_on(self, DrawLayer.Layer.WARNING if is_standing_for_its_notice()
+			else DrawLayer.Layer.ENTITIES)
 
 # ------------------------------------------------------------------- the chat ---
 # `chatting_mother`'s whole mechanic: a trigger rather than a field. `EventManager` decides *when*
@@ -4206,8 +4207,8 @@ func _finish() -> void:
 	if is_finished:
 		return
 	is_finished = true
-	if _scenery != null:
-		_scenery.hide()
+	for scenery in _sceneries:
+		scenery.hide()
 	_invalidate_contribution_cache()
 
 # ------------------------------------------------------------------ emission ---
@@ -5010,7 +5011,7 @@ func _redraw_if_the_picture_changed() -> bool:
 	var asked := changed or _picture_never_settles()
 	if asked:
 		queue_redraw()
-	_move_the_band(changed)
+	_move_the_band(asked)
 	return asked
 
 ## True while what this instance shows is not being kept current because none of it can be on the
@@ -5424,7 +5425,12 @@ func _glow_the_band(strength: float, colour: Color) -> void:
 		return
 	if _band_halo == null:
 		_band_halo = EntityHalo.new(_draw_the_band_for_the_halo, func() -> float: return 0.0)
-		_band.add_child(_band_halo)
+		# Behind the band's first slice, drawn before every other part of the band, as a rim is
+		# behind the picture it outlines (`_rim_holder()`).
+		var holder: Node2D = _slices[0] if not _slices.is_empty() and _slices[0].is_inside_tree() \
+				else _band
+		holder.add_child(_band_halo)
+		_band_halo.position = _band.global_position - holder.global_position
 	_band_halo.set_glow(strength, colour)
 
 var _band_halo: EntityHalo
@@ -5878,7 +5884,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BUSKER:
 			_draw_busker(canvas)
 		EventDef.Look.ROADWORKS:
-			_draw_spread(_roadwork_segment_texture(_spread_vertical), BARRIER_END, canvas)
+			_draw_the_spread(canvas)
 		EventDef.Look.FIRE_ENGINE:
 			# Drawn over its own body like the patrol car (`_body_anchor()`): the body is the
 			# truck's `shape`, and the shadow, which is that shape, stays under the node.
@@ -5896,7 +5902,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.LOOSE_DOG:
 			_draw_loose_dog(canvas)
 		EventDef.Look.STALL:
-			_draw_spread(STALL, "", canvas)
+			_draw_the_spread(canvas)
 		EventDef.Look.LEAF_BLOWER:
 			_draw_eight_view(LEAF_BLOWER_BY_VIEW, _heading, canvas, false, LEAF_BLOWER_BY_VIEW_B)
 		EventDef.Look.BIRDS:
@@ -5954,7 +5960,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(ARMY_TRUCK_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BARRICADE:
-			_draw_spread(BARRICADE_PILE, "", canvas)
+			_draw_the_spread(canvas)
 		EventDef.Look.PROTEST:
 			_draw_protest(canvas)
 		EventDef.Look.FIREFIGHT:
@@ -5962,17 +5968,17 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.FALLEN_TREE:
 			_draw_wide_scene(_wide_scene_texture(EventDef.Look.FALLEN_TREE, _spread_vertical), canvas)
 		EventDef.Look.CAR_ACCIDENT:
-			if canvas != self or _scenery == null:
+			if canvas != self or _slices.is_empty():
 				_draw_wide_scene(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical,
 						_idle_stepping(CAR_ACCIDENT_SMOKE_PERIOD)), canvas)
 		EventDef.Look.BURST_MAIN:
-			if canvas != self or _scenery == null:
+			if canvas != self or _slices.is_empty():
 				_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical,
 						_idle_stepping(BURST_MAIN_SPLASH_PERIOD)), canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
-			_draw_spread(COLLAPSED_FRONTAGE, "", canvas)
+			_draw_the_spread(canvas)
 		EventDef.Look.SCAFFOLDING:
-			_draw_spread(SCAFFOLDING, "", canvas)
+			_draw_the_spread(canvas)
 		EventDef.Look.SKIP:
 			_draw_simple(SKIP, canvas)
 		EventDef.Look.MOVING_VAN:
@@ -6345,13 +6351,14 @@ func _robber_waiting_heading() -> Vector2:
 ## So the street he abandoned stays visibly and physically shut behind him, and what she has to get
 ## away from is a man rather than a band of concrete.
 ##
-## **Two nodes, so two sort points**: the instance sorts at the chaser's feet once he has set off, and
-## the band and the guards posted beside it sort at the band's line (`RoadblockBand`).
+## **The man, the band and its slices are nodes of their own, so each sorts at its own point**: the
+## instance at the chaser's feet once he has set off, the guards posted beside the band at the band's
+## line (`RoadblockBand`), and the band's segments each at its own slice's feet (`Slice`).
 func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	# **The barrier never rides the chaser's stride.** `_draw()` lifts the whole canvas by
 	# `_current_bob()` for anything that pursues or leaves, and the band and the posted guard are
 	# furniture of the street rather than part of the man who walked out of it. On the screen they
-	# are their own node (`RoadblockBand`), standing at the body and sorting at its own feet; the
+	# are nodes of their own (`RoadblockBand`, its `Slice`s), standing at the body; the
 	# halo ring's canvas has no such node and draws them back down by the lift
 	# (*"the guard pursuer makes his barrier jump up and down"*).
 	if canvas == self and _band != null:
@@ -6365,9 +6372,10 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 		_draw_the_band(canvas, _roadblock_band_at())
 	_draw_the_chaser(canvas)
 
-## The band and the guard posted at each end of it, drawn at `band_at` in `canvas`.
+## The band and the guard posted at each end of it, drawn at `band_at` in `canvas`; on the band's
+## own node only the guards, its segments being its slices (`_draw_spread()`).
 func _draw_the_band(canvas: CanvasItem, band_at: Vector2) -> void:
-	_draw_spread(_roadblock_segment_texture(_spread_vertical), ROADBLOCK_END, canvas, band_at)
+	_draw_the_spread(canvas, band_at)
 	if _far_guard_has_left():
 		return
 	for side: int in def.guard_sides:
@@ -6393,9 +6401,10 @@ func chaser_pictures() -> Dictionary:
 		return GUARD_STANDING_BY_VIEW
 	return GUARD_LUNGING_BY_VIEW
 
-## **The barrier's own node.** A y-sorted sibling of this instance standing at `body_position()`,
-## drawing the band and the posted guards, so that they sort at the band's line however far the
-## man who set off has walked from it. Freed with the instance.
+## **The barrier's own node.** A sibling of this instance in the world's entity layer standing at
+## `body_position()`, drawing the posted guards, so that they sort at the band's line however far
+## the man who set off has walked from it; the band's segments are its slices (`Slice`), each at
+## its own feet. Freed with the instance.
 class RoadblockBand extends Node2D:
 	var instance: EventInstance
 
@@ -6424,8 +6433,8 @@ var _band: RoadblockBand
 ## nothing: the band is silent from the same frame. A band streamed back in after its guard was
 ## spent comes back with neither (`come_back_as_the_barrier()`).
 ##
-## **His own node** (`FarGuard`), a y-sorted sibling like the band's, so he sorts at his own feet
-## as he walks rather than at the band's line.
+## **His own node** (`FarGuard`), in the world's entity layer like the band's, so he sorts at his
+## own feet as he walks rather than at the band's line.
 var _far_guard_at := Vector2.INF
 var _far_guard_heading := Vector2.ZERO
 var _far_guard_walked := 0.0
@@ -6484,7 +6493,7 @@ func _send_the_far_guard_off() -> void:
 	_far_guard.name = "FarGuard"
 	_far_guard.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	if is_inside_tree() and get_parent() != null:
-		get_parent().add_child(_far_guard)
+		_add_beside_it(_far_guard)
 	_move_the_far_guard()
 
 ## One frame of the far guard's walk away, and his end once she could not be watching.
@@ -6554,16 +6563,28 @@ func _build_the_band() -> void:
 	_band.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_attach_the_band.call_deferred()
 
-## Idempotent, so a rig that never reaches the idle frame can call it itself.
+## Idempotent, so a rig that never reaches the idle frame can call it itself. The band's slices go
+## in with it.
 func _attach_the_band() -> void:
+	_attach_the_slices()
 	if _band == null or _band.is_inside_tree() or not is_inside_tree() or get_parent() == null:
 		return
 	_band.position = body_position()
-	get_parent().add_child(_band)
+	_add_beside_it(_band)
 	_move_the_band()
 
-## Keeps the band where its body is, shown while the instance is, and redrawn when asked.
+## Adds `node` to the world this instance stands in, on the entity layer, or beside it in its own
+## parent in a rig that handed it no world.
+func _add_beside_it(node: Node2D) -> void:
+	if world != null:
+		world.add_entity(node)
+	else:
+		get_parent().add_child(node)
+
+## Keeps the band and the slices where the body is, shown while the instance is, and redrawn when
+## asked.
 func _move_the_band(redraw := false) -> void:
+	_move_the_slices(redraw)
 	if _band == null or not _band.is_inside_tree():
 		return
 	var at := body_position()
@@ -6579,6 +6600,7 @@ func _exit_tree() -> void:
 		_band.queue_free()
 	_band = null
 	_release_the_far_guard()
+	_release_the_slices()
 
 ## Where the band is drawn in this node's local space when it is drawn on this node's own canvas (the
 ## halo ring's): back at `body_position()`, and drawn down by the lift `_draw()` puts the whole canvas
@@ -6775,7 +6797,7 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 
 ## A blocking object is drawn at exactly the width it obstructs, by repeating a segment
 ## across it. Anything else would be a lie about where the player can walk. On either axis the
-## segments cover `-half` to `half` and no further (`_spread_slice_feet`).
+## segments cover the run its body closes (`_spread_run()`) and no further.
 ##
 ## **The end cap is inset by half its own width, for the same reason, on either axis.** A cap
 ## centred at `±half` hangs half its own width past the obstruction — `barrier_end.svg` is 6px wide,
@@ -6785,44 +6807,283 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## A cap is an upright post on both axes, so it is drawn at its own size and its width is what it
 ## covers along the run whichever way the run goes (`_cap_along`). End-on, the far post stands
 ## behind the board and the near one in front of it (`_cap_sides`).
+##
+## **On the screen it is drawn in slices** (`_build_the_slices()`), one per segment, each standing
+## at its own feet, so a run going away from the camera sorts slice by slice against her: on this
+## node's own canvas, or the band's, nothing is drawn here. On any other canvas — a rim tracing the
+## whole picture — it is drawn whole, in the order its slices draw it.
 ## `origin` moves the whole spread, its shadow included, to a local point other than this node's
 ## own — which is what a body left standing while its owner walks away needs (`_draw_roadblock()`,
 ## `EventDef.body_stays_behind`). Zero, the default, is every other caller: the spread is drawn
 ## where the instance is.
 func _draw_spread(segment_picture: String, cap: String = "", canvas: CanvasItem = self,
 		origin := Vector2.ZERO) -> void:
-	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas, origin)
+	if _drawn_by_its_slices(canvas):
+		return
+	_draw_spread_slices(segment_picture, cap, canvas, origin, 0,
+			_spread_slice_count(segment_picture) - 1)
+
+## Slices `first` to `last` of the spread on `canvas`, the spread's origin at `origin`: the shadow
+## and the far cap with the first slice, before its segment, and the near cap or caps with the last,
+## after its segment — the order the whole picture is drawn in.
+func _draw_spread_slices(segment_picture: String, cap: String, canvas: CanvasItem, origin: Vector2,
+		first: int, last: int) -> void:
+	var run := _spread_run()
+	var half := run[0].distance_to(run[1]) * 0.5
+	var segment := _native_size(segment_picture)
+	var thickness := segment.x if _spread_vertical else segment.y
+	var segments := _spread_slice_count(segment_picture)
+	var width := half * 2.0 / segments
+	var feet := DrawLayer.slice_feet(run[0], run[1], segments)
+	var cap_size := _native_size(cap) if not cap.is_empty() else Vector2.ZERO
+	for i in range(first, last + 1):
+		if i == 0:
+			_draw_body_shadow(canvas, origin)
+			if not cap.is_empty():
+				for side: float in _cap_sides(_spread_vertical, true):
+					_draw_cap(canvas, cap, cap_size, origin, half, side)
+		Sprites.draw_standing(canvas, _drawn(segment_picture), origin + feet[i],
+				_spread_extent(width, thickness))
+		if i == segments - 1 and not cap.is_empty():
+			for side: float in _cap_sides(_spread_vertical, false):
+				_draw_cap(canvas, cap, cap_size, origin, half, side)
+
+## How many segments a spread of `segment_picture` is drawn in: as few as cover its run with no
+## segment stretched past its own picture's length.
+func _spread_slice_count(segment_picture: String) -> int:
+	var run := _spread_run()
 	var segment := _native_size(segment_picture)
 	var along_natural := segment.y if _spread_vertical else segment.x
-	var thickness := segment.x if _spread_vertical else segment.y
-	var segments := maxi(1, ceili(half * 2.0 / along_natural))
-	var width := half * 2.0 / segments
-	var cap_size := _native_size(cap) if not cap.is_empty() else Vector2.ZERO
-	if not cap.is_empty():
-		for side: float in _cap_sides(_spread_vertical, true):
-			_draw_cap(canvas, cap, cap_size, origin, half, side)
-	for i in segments:
-		Sprites.draw_standing(canvas, _drawn(segment_picture),
-				origin + _spread_at(_spread_slice_feet(_spread_vertical, half, width, i)),
-				_spread_extent(width, thickness))
-	if not cap.is_empty():
-		for side: float in _cap_sides(_spread_vertical, false):
-			_draw_cap(canvas, cap, cap_size, origin, half, side)
+	return maxi(1, ceili(run[0].distance_to(run[1]) / along_natural))
 
-## Where slice `index` of a spread stands its feet, along the run: every slice is `width` long and
-## together they cover `-half` to `half`, the obstruction's own extent.
-##
-## **Broadside, at the middle of its slice; end-on, at the near end of it.** `Sprites.draw_standing`
-## puts the feet at the bottom of the picture, and broadside the run is across the picture, so the
-## middle is what centres a slice on its ground. End-on the run goes *up* the picture: a slice drawn
-## `width` tall with its feet at its middle would stand half a slice up the screen from its own
-## ground, and the whole column with it — overhanging the far end of the body by half a slice and
-## falling half a slice short of the near end, where she walks up to it. With the feet at the near
-## end each slice's picture covers its own slice of ground, and the column covers exactly the
-## ground its body closes.
-static func _spread_slice_feet(vertical: bool, half: float, width: float, index: int) -> float:
-	return -half + width * (index + (1.0 if vertical else 0.5))
+## The run a spread covers from its own origin, far end first: its solid footprint end to end
+## (`solid_footprint_of()`, `DrawLayer.run_of()`), the ground its body closes. A spread with no body
+## covers 11px either side of its origin, as `drawn_box()` reserves.
+func _spread_run() -> PackedVector2Array:
+	if def.obstructs_radius > 0.0 and def.shape != null:
+		return DrawLayer.run_of(solid_footprint_of(def, _spread_axis(), _spread_vertical),
+				Vector2.ZERO)
+	return PackedVector2Array([_spread_at(-11.0), _spread_at(11.0)])
+
+## The segment and the end cap (`""` for none) a spread-drawn look repeats along its run, or an empty
+## list for a look that is not drawn as a spread.
+func _spread_pictures() -> PackedStringArray:
+	match def.look:
+		EventDef.Look.ROADWORKS:
+			return PackedStringArray([_roadwork_segment_texture(_spread_vertical), BARRIER_END])
+		EventDef.Look.STALL:
+			return PackedStringArray([STALL, ""])
+		EventDef.Look.BARRICADE:
+			return PackedStringArray([BARRICADE_PILE, ""])
+		EventDef.Look.COLLAPSED_FRONTAGE:
+			return PackedStringArray([COLLAPSED_FRONTAGE, ""])
+		EventDef.Look.SCAFFOLDING:
+			return PackedStringArray([SCAFFOLDING, ""])
+		EventDef.Look.ROADBLOCK:
+			return PackedStringArray([_roadblock_segment_texture(_spread_vertical), ROADBLOCK_END])
+	return PackedStringArray()
+
+## The whole spread of this instance's look on `canvas` (`_draw_spread()`).
+func _draw_the_spread(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
+	var pictures := _spread_pictures()
+	_draw_spread(pictures[0], pictures[1], canvas, origin)
+
+# ------------------------------------------------------------------ the slices ---
+# **A picture longer than a tile is drawn in slices**, each a node of its own in the world's entity
+# layer standing at its own feet, so a run going away from the camera sorts slice by slice against
+# her: a spread, one slice per segment; a café, one per table and its sitter; a protest, one per
+# protester; a firefight, one per gunman; a wide scene, one per tile of its run, each drawing the
+# part of the authored picture over its own band. The instance itself then draws only its caret;
+# any other canvas, a rim tracing the whole picture, gets the whole picture.
+
+## **One slice of a long picture on the screen**: a node of its own in the world's entity layer,
+## standing at its slice's feet (`DrawLayer.add_slices()`), drawing its own part of the picture
+## (`_draw_a_slice()`), and for a crash or a burst main holding that part's scenery. Freed with the
+## instance.
+class Slice extends Node2D:
+	var instance: EventInstance
+	var index := 0
+
+	func _draw() -> void:
+		if instance != null and is_instance_valid(instance):
+			instance._draw_a_slice(self)
+
+## The slices this instance's picture is drawn in, far end first, and where each stands from the
+## body (`body_position()`), index for index.
+var _slices: Array[Slice] = []
+var _slice_feet := PackedVector2Array()
+## Whether this look is drawn in slices, so they are built again if it re-enters the tree.
+var _sliced := false
+
+## Whether a picture drawn on `canvas` is left to the slices: on this node's own canvas, or the
+## band's, once its slices stand.
+func _drawn_by_its_slices(canvas: CanvasItem) -> bool:
+	return not _slices.is_empty() and (canvas == self or canvas == _band)
+
+## Where each slice of this look's picture stands its feet, from the body, in draw order; empty for
+## a look drawn on this node alone.
+func _slice_plan() -> PackedVector2Array:
+	match def.look:
+		EventDef.Look.PROTEST:
+			return _protest_feet(_protest_pose_now()[0])
+		EventDef.Look.FIREFIGHT:
+			var half := maxf(11.0, def.obstructs_radius)
+			return DrawLayer.slice_feet(Vector2(-half, 0.0), Vector2(half, 0.0), 2)
+		EventDef.Look.CAFE:
+			var tables := _spread_run()
+			return DrawLayer.slice_feet(tables[0], tables[1], _cafe_table_count())
+		EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN:
+			var run := _wide_scene_run()
+			return DrawLayer.slice_feet(run[0], run[1], _wide_scene_slice_count())
+	var pictures := _spread_pictures()
+	if pictures.is_empty():
+		return PackedVector2Array()
+	var spread := _spread_run()
+	return DrawLayer.slice_feet(spread[0], spread[1], _spread_slice_count(pictures[0]))
+
+## The run a wide scene covers from its own origin, far end first: its shape end to end
+## (`DrawLayer.run_of()`), the whole ground the scene is drawn over — for the crash, both cars and
+## the debris between them, of which its solid footprint is the cars alone.
+func _wide_scene_run() -> PackedVector2Array:
+	return DrawLayer.run_of(Footprint.of(def.shape, _spread_axis()), Vector2.ZERO)
+
+## A wide scene is cut into one slice per tile of its run.
+func _wide_scene_slice_count() -> int:
+	var run := _wide_scene_run()
+	return maxi(1, ceili(run[0].distance_to(run[1]) / Tuning.TILE_SIZE))
+
+## The band of a wide scene's picture slice `index` draws, from the instance's origin: its share of
+## the run, across the screen on a north-south street, down it on an east-west one, the picture's
+## whole height or width the other way.
+func _wide_scene_band(index: int) -> Rect2:
+	var run := _wide_scene_run()
+	var count := _wide_scene_slice_count()
+	const FAR := 4096.0
+	if _spread_vertical:
+		var share := (run[1].y - run[0].y) / count
+		return Rect2(-FAR, run[0].y + share * index, FAR * 2.0, share)
+	var width := (run[1].x - run[0].x) / count
+	return Rect2(run[0].x + width * index, -FAR, width, FAR * 2.0)
+
+## Builds the slices of a look drawn in slices (`_slice_plan()`), put in beside it once it has
+## settled into the world (`_attach_the_slices()`), and the scenery behind each slice of a crash or a
+## burst main. None when nothing of it is drawn.
+func _build_the_slices() -> void:
+	var plan := _slice_plan()
+	if plan.is_empty() or skip_draw:
+		return
+	_sliced = true
+	_slice_feet = plan
+	for i in _slice_feet.size():
+		var slice := Slice.new()
+		slice.instance = self
+		slice.index = i
+		slice.name = "Slice%d" % i
+		# Moved from `_process()`, so it opts out of physics interpolation like this instance does.
+		slice.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		_slices.append(slice)
+		_build_the_scenery_of(slice)
+	_update_scenery()
+	_attach_the_slices.call_deferred()
+
+## The scenery of a crash's or a burst main's slice: the part of every span over the slice's band,
+## standing at the instance's origin, the first slice's with the contact shadow whole.
+func _build_the_scenery_of(slice: Slice) -> void:
+	if def.look not in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
+		return
+	var picture := _wide_scene_texture(def.look, _spread_vertical)
+	var half := maxf(11.0, def.obstructs_radius)
+	var size := _native_size(picture)
+	var thickness := size.x if _spread_vertical else size.y
+	var scenery := EventScenery.new()
+	scenery.configure(picture, _spread_extent(half * 2.0, thickness),
+			_wide_scene_anchor(_spread_vertical, half),
+			_wide_scene_shadow(picture) if slice.index == 0 else "", _wide_scene_band(slice.index))
+	scenery.position = -_slice_feet[slice.index]
+	slice.add_child(scenery)
+	_sceneries.append(scenery)
+
+## Builds the slices again when the instance comes back into the tree after leaving it, which took
+## them with it.
+func _enter_tree() -> void:
+	if _sliced and _slices.is_empty():
+		_build_the_slices()
+
+## Puts the slices into the world at their feet, each ahead of this instance in the tree, so at a
+## tie of feet its caret is drawn over its own picture. Idempotent, so a rig that never reaches the
+## idle frame can call it itself (`_attach_the_band()`).
+func _attach_the_slices() -> void:
+	if _slices.is_empty() or _slices[0].is_inside_tree() or not is_inside_tree() \
+			or get_parent() == null:
+		return
+	var feet := PackedVector2Array()
+	for at in _slice_feet:
+		feet.append(body_position() + at)
+	var nodes: Array[Node2D] = []
+	nodes.assign(_slices)
+	if world != null:
+		DrawLayer.add_slices(world, nodes, feet, DrawLayer.Layer.ENTITIES, self)
+	else:
+		DrawLayer.add_slices_beside(self, nodes, feet)
+	_move_the_slices(true)
+
+## Keeps the slices at the body's feet, shown while the instance is, and redrawn when asked. A
+## protest whose pose changes how many protesters its rank holds is sliced again.
+func _move_the_slices(redraw := false) -> void:
+	if _slices.is_empty() or not _slices[0].is_inside_tree():
+		return
+	if redraw and def.look == EventDef.Look.PROTEST:
+		var plan := _slice_plan()
+		if plan.size() != _slice_feet.size():
+			_release_the_slices()
+			_build_the_slices()
+			_attach_the_slices()
+			return
+	var at := body_position()
+	var shown := not (skip_draw or is_finished or is_suppressed_by_its_own_hold())
+	for slice in _slices:
+		var feet := at + _slice_feet[slice.index]
+		if not slice.global_position.is_equal_approx(feet):
+			slice.global_position = feet
+		slice.visible = shown
+		if redraw:
+			slice.queue_redraw()
+
+## One slice of the picture, drawn on its own node from the body's own origin. A crash's or a burst
+## main's draws nothing itself: its scenery does.
+func _draw_a_slice(slice: Slice) -> void:
+	var origin := -_slice_feet[slice.index]
+	match def.look:
+		EventDef.Look.PROTEST:
+			_draw_protest(slice, slice.index, origin)
+		EventDef.Look.CAFE:
+			_draw_cafe(slice, slice.index, origin)
+		EventDef.Look.FIREFIGHT:
+			_draw_firefight(slice, slice.index, origin)
+		EventDef.Look.FALLEN_TREE:
+			_draw_wide_scene(_wide_scene_texture(def.look, _spread_vertical), slice, slice.index,
+					origin)
+		EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN:
+			pass
+		_:
+			var pictures := _spread_pictures()
+			_draw_spread_slices(pictures[0], pictures[1], slice, origin, slice.index, slice.index)
+
+## Frees the slices with whatever they hold: the scenery, and a rim standing behind the first,
+## given back on the spot as a rim always is (`EntityHalo.release()`).
+func _release_the_slices() -> void:
+	if _halo != null and _halo.get_parent() is Slice:
+		EntityHalo.release(_halo)
+		_halo = null
+	if _band_halo != null and _band_halo.get_parent() is Slice:
+		EntityHalo.release(_band_halo)
+		_band_halo = null
+	for slice in _slices:
+		if is_instance_valid(slice):
+			slice.hide()
+			slice.queue_free()
+	_slices.clear()
+	_sceneries.clear()
 
 ## One end cap of a spread, standing at its end of the run — see `_draw_spread`.
 func _draw_cap(canvas: CanvasItem, cap: String, cap_size: Vector2, origin: Vector2, half: float,
@@ -6831,10 +7092,12 @@ func _draw_cap(canvas: CanvasItem, cap: String, cap_size: Vector2, origin: Vecto
 			origin + _spread_at(_cap_offset(half, _cap_along(cap_size), side)), cap_size)
 
 ## Which end caps are drawn before the segments (`behind` true) and which after, as the `side` of
-## each (−1 the start of the run, +1 its end). The whole spread is one node, so nothing y-sorts
-## within it and draw order is the only depth there is. Broadside, both posts stand level with the
-## board and go over it. End-on, the run goes away from the camera: the start is its far end, so
-## that post stands behind the board and is drawn first, and only the near post goes over it.
+## each (−1 the start of the run, +1 its end): before the first slice's segment and after the last
+## one's (`_draw_spread_slices()`). A cap stands inside its end slice's ground, so it sorts with that
+## slice and its draw order within the slice is its only depth. Broadside, both posts stand level
+## with the board and go over it. End-on, the run goes away from the camera: the start is its far
+## end, so that post stands behind the board and is drawn first, and only the near post goes over
+## it.
 static func _cap_sides(vertical: bool, behind: bool) -> Array[float]:
 	var sides: Array[float] = []
 	if vertical:
@@ -6849,23 +7112,41 @@ static func _cap_sides(vertical: bool, behind: bool) -> Array[float]:
 ## obstruction: `Sprites.draw_standing` anchors the bottom edge, while this scene must span both
 ## sides of the ground point. Only the three wide scenes use this path; segmented looks keep the
 ## repeated standing anchors above unchanged.
-func _draw_wide_scene(picture: String, canvas: CanvasItem = self) -> void:
+##
+## **On the screen it is cut into slices** along its run (`_wide_scene_band()`): slice `only` draws
+## the part of the picture over its own band, the first also the shadow, whole, first. On any
+## other canvas, or with `only` below zero, the whole picture is drawn, from `origin`.
+func _draw_wide_scene(picture: String, canvas: CanvasItem = self, only := -1,
+		origin := Vector2.ZERO) -> void:
+	if only < 0 and _drawn_by_its_slices(canvas):
+		return
 	var half := maxf(11.0, def.obstructs_radius)
 	var size := _native_size(picture)
 	var thickness := size.x if _spread_vertical else size.y
 	var extent := _spread_extent(half * 2.0, thickness)
-	var anchor := _wide_scene_anchor(_spread_vertical, half)
-	var shadow := _wide_scene_shadow(picture)
-	if not shadow.is_empty() and canvas != _halo:
-		canvas.draw_texture_rect(_drawn(shadow),
-				Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
-				false, Palette.SHADOW)
-	else:
-		# No authored ground-contact art for this axis (only `car_accident` has one either way) —
-		# the shape's own capsule shadow follows the same span as the body, `-half` to `half`
-		# along the spread axis.
-		_draw_body_shadow(canvas)
-	Sprites.draw_standing(canvas, _drawn(picture), anchor, extent)
+	var anchor := origin + _wide_scene_anchor(_spread_vertical, half)
+	var whole := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
+	if only <= 0:
+		var shadow := _wide_scene_shadow(picture)
+		if not shadow.is_empty() and canvas != _halo:
+			canvas.draw_texture_rect(_drawn(shadow), whole, false, Palette.SHADOW)
+		else:
+			# No authored ground-contact art for this axis (only `car_accident` has one either
+			# way) — the shape's own capsule shadow follows the same span as the body, `-half` to
+			# `half` along the spread axis.
+			_draw_body_shadow(canvas, origin)
+	if only < 0:
+		Sprites.draw_standing(canvas, _drawn(picture), anchor, extent)
+		return
+	var clip := _wide_scene_band(only)
+	clip.position += origin
+	var band := whole.intersection(clip)
+	if not band.has_area():
+		return
+	var texture := _drawn(picture)
+	var texels := texture.get_size() / whole.size
+	canvas.draw_texture_rect_region(texture, band,
+			Rect2((band.position - whole.position) * texels, band.size * texels))
 
 static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
 	return Vector2(0.0, half) if vertical else Vector2.ZERO
@@ -6930,45 +7211,74 @@ func masked_pursuer_pictures() -> Dictionary:
 ## **Both halves have to be drawn**: the tables are what obstructs and the conversation is what it
 ## emits, so a café drawn as furniture alone is the loudest pleasant thing in act I looking like
 ## something somebody left out. The spread is `_draw_spread`'s, so the width is exactly the width in
-## the way; the sitters are drawn *first* and a little behind, because the table is the part she
-## cannot walk through and the picture has to agree with that.
+## the way; each sitter is drawn before their own table and a little behind it, because the table is
+## the part she cannot walk through and the picture has to agree with that.
 ##
 ## Alternate tables are mirrored, which turns a rank of clones into pairs facing each other — the
 ## same reason a spoiled park rolls a different def per cell. The chair's own shift stays *along*
 ## the spread axis, same as the table it sits beside; the −7 lift is a fixed screen-depth nudge that
 ## puts a sitter visibly behind their table whichever way the row runs, so it stays a plain Y offset
 ## rather than turning with the spread.
-func _draw_cafe(canvas: CanvasItem = self) -> void:
+##
+## **On the screen each table and its sitter are a slice of their own** (`_slice_plan()`), standing
+## at their share of the run's feet, so each table sorts against her and against the next table and
+## its sitter *(inbox #827: "yes, slice the cafe tables")*; slice `only` draws its own sitter and
+## table from `origin`, the first also the shadow. On any other canvas, or with `only` below zero,
+## the whole frontage is drawn, every sitter before every table.
+func _draw_cafe(canvas: CanvasItem = self, only := -1, origin := Vector2.ZERO) -> void:
+	if only < 0 and _drawn_by_its_slices(canvas):
+		return
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas)
-	# The lean is the whole row's, the facing is each seat's. `_idle_stepping()` is a property of
-	# this instance rather than of a chair, so the frame table is chosen once here and every sitter
-	# leans together; the view and the mirror are picked per seat inside the loop below, because a
-	# party at one table faces the table rather than sharing the frontage's own bearing.
-	var by_view := CAFE_SITTER_BY_VIEW_B if _idle_stepping(SITTER_IDLE_PERIOD) else CAFE_SITTER_BY_VIEW
-	var segment := _native_size(CAFE_TABLE)
-	var along_natural := segment.y if _spread_vertical else segment.x
-	var thickness := segment.x if _spread_vertical else segment.y
-	var segments := maxi(1, ceili(half * 2.0 / along_natural))
+	if only <= 0:
+		_draw_body_shadow(canvas, origin)
+	var segments := _cafe_table_count()
 	var width := half * 2.0 / segments
 	for i in segments:
-		var along := -half + width * (i + 0.5)
-		# The chair is drawn at one end of the table sprite and turns round with it.
-		var alternate := i % 2 == 1
-		var chair_along := along + width * (0.26 if alternate else -0.26)
-		# Face the table from this chair. The +Vector2(0, -7) below is a screen-depth lift for
-		# the sitter's projected feet; it is deliberately not part of the table-facing bearing.
-		var sitter_heading := _cafe_seat_heading(_spread_vertical, alternate)
-		var sitter_sector := EightDirection.nearest(sitter_heading)
-		var view: String = EIGHT_VIEW_BY_SECTOR[sitter_sector]
-		var sitter: String = by_view[view]
-		var mirror := EightDirection.is_mirrored(sitter_sector)
-		Sprites.draw_standing(canvas, _drawn(sitter), _spread_at(chair_along) + Vector2(0.0, -7.0),
-				Vector2.ZERO, mirror)
-	for i in segments:
-		var along := -half + width * (i + 0.5)
-		Sprites.draw_standing(canvas, _drawn(CAFE_TABLE),
-				_spread_at(along), _spread_extent(width, thickness), i % 2 == 1)
+		if only < 0 or i == only:
+			_draw_cafe_sitter(canvas, origin, half, width, i)
+			if only >= 0:
+				_draw_cafe_table(canvas, origin, half, width, i)
+	if only < 0:
+		for i in segments:
+			_draw_cafe_table(canvas, origin, half, width, i)
+
+## How many tables the café's frontage holds: as few as cover its run, none stretched past its own
+## picture's length.
+func _cafe_table_count() -> int:
+	var half := maxf(11.0, def.obstructs_radius)
+	var segment := _native_size(CAFE_TABLE)
+	var along_natural := segment.y if _spread_vertical else segment.x
+	return maxi(1, ceili(half * 2.0 / along_natural))
+
+## The sitter of table `i`, at one end of the table sprite, turned to face it. The lean is the whole
+## row's and the facing each seat's: `_idle_stepping()` is a property of this instance rather than of
+## a chair, so every sitter leans together, while the view and the mirror are picked per seat,
+## because a party at one table faces the table rather than sharing the frontage's own bearing.
+func _draw_cafe_sitter(canvas: CanvasItem, origin: Vector2, half: float, width: float,
+		i: int) -> void:
+	var by_view := CAFE_SITTER_BY_VIEW_B if _idle_stepping(SITTER_IDLE_PERIOD) else CAFE_SITTER_BY_VIEW
+	var along := -half + width * (i + 0.5)
+	var alternate := i % 2 == 1
+	var chair_along := along + width * (0.26 if alternate else -0.26)
+	# Face the table from this chair. The +Vector2(0, -7) below is a screen-depth lift for the
+	# sitter's projected feet; it is deliberately not part of the table-facing bearing.
+	var sitter_heading := _cafe_seat_heading(_spread_vertical, alternate)
+	var sitter_sector := EightDirection.nearest(sitter_heading)
+	var view: String = EIGHT_VIEW_BY_SECTOR[sitter_sector]
+	var sitter: String = by_view[view]
+	var mirror := EightDirection.is_mirrored(sitter_sector)
+	Sprites.draw_standing(canvas, _drawn(sitter),
+			origin + _spread_at(chair_along) + Vector2(0.0, -7.0), Vector2.ZERO, mirror)
+
+## Table `i` of the frontage, standing at the middle of its share of the run, alternate ones
+## mirrored.
+func _draw_cafe_table(canvas: CanvasItem, origin: Vector2, half: float, width: float,
+		i: int) -> void:
+	var segment := _native_size(CAFE_TABLE)
+	var thickness := segment.x if _spread_vertical else segment.y
+	var along := -half + width * (i + 0.5)
+	Sprites.draw_standing(canvas, _drawn(CAFE_TABLE), origin + _spread_at(along),
+			_spread_extent(width, thickness), i % 2 == 1)
 
 ## The bearing from an alternating café chair to its own table. This follows the chair anchor's
 ## spread-axis offset, while leaving the sprite's fixed screen-depth lift out of the calculation.
@@ -7084,9 +7394,26 @@ func _protest_objective() -> Vector2:
 ## other and the objective is blocks away, so the bearing from any one of them to it is the same
 ## bearing to within a sector; asking once for the whole rank is the same picture a per-body ask
 ## would draw, for a fortieth of the cost.
-func _draw_protest(canvas: CanvasItem = self) -> void:
-	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas)
+##
+## **On the screen each protester is a slice of his own**, standing at his own feet
+## (`_protest_feet()`), so the back rank sorts behind the front one and either sorts against her;
+## slice `only` draws its own protester from `origin`, the first also the shadow. On any other
+## canvas, or with `only` below zero, the whole rank is drawn.
+func _draw_protest(canvas: CanvasItem = self, only := -1, origin := Vector2.ZERO) -> void:
+	if only < 0 and _drawn_by_its_slices(canvas):
+		return
+	if only <= 0:
+		_draw_body_shadow(canvas, origin)
+	var pose := _protest_pose_now()
+	var picture: String = pose[0]
+	var mirror: bool = pose[1]
+	var feet := _protest_feet(picture)
+	for i in feet.size():
+		if only < 0 or i == only:
+			Sprites.draw_standing(canvas, _drawn(picture), origin + feet[i], Vector2.ZERO, mirror)
+
+## The protest's picture this frame and whether it is mirrored.
+func _protest_pose_now() -> Array:
 	var picture := _protester_texture(global_position, _protest_objective())
 	var mirror := false
 	# `PROTESTER` is `_protester_texture()`'s own sentinel for "nothing to point at" — a mark step
@@ -7101,19 +7428,24 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 		var by_view := PROTESTER_BY_VIEW_B if _gait_stepping() else PROTESTER_BY_VIEW
 		picture = by_view[view]
 		mirror = EightDirection.is_mirrored(_view_sector)
-	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
-	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
-	# which is the lie `_draw_spread` exists to avoid in the other direction. Off the drawn pose's
-	# own width rather than the plain one's, because a pointing pose's placard arm doubles it.
+	return [picture, mirror]
+
+## Where each protester of the rank drawn in `picture` stands, in draw order: the back rank, 14px up
+## the screen and a half step along, then the front rank, each a slice of the run across the
+## screen (`DrawLayer.slice_feet()`), drawn across the screen whichever way the street runs.
+## Spaced off the body rather than off the sprite, so the rank ends where the ground it takes ends:
+## a crowd drawn at its own natural spacing overhangs its own body by most of a person, which is the
+## lie `_draw_spread` exists to avoid in the other direction. Off the drawn pose's own width rather
+## than the plain one's, because a pointing pose's placard arm doubles it, so the count of slices
+## follows the pose (`_move_the_slices()`).
+func _protest_feet(picture: String) -> PackedVector2Array:
+	var half := maxf(11.0, def.obstructs_radius)
 	var across := maxi(2, roundi(half * 2.0 / (_native_size(picture).x * 0.8)))
 	var step := half * 2.0 / across
-	for rank in 2:
-		var back := rank == 0
-		var lift := -14.0 if back else 0.0
-		var shift := step * 0.5 if back else 0.0
-		for i in across - (1 if back else 0):
-			var x := -half + step * (i + 0.5) + shift
-			Sprites.draw_standing(canvas, _drawn(picture), Vector2(x, lift), Vector2.ZERO, mirror)
+	var feet := DrawLayer.slice_feet(Vector2(-half + step * 0.5, -14.0),
+			Vector2(half - step * 0.5, -14.0), across - 1)
+	feet.append_array(DrawLayer.slice_feet(Vector2(-half, 0.0), Vector2(half, 0.0), across))
+	return feet
 
 ## People behind cover, shooting at each other. Not a building on fire, which is what it drew for
 ## fourteen milestones — the same five flames as `burning_building`, on the one event in the
@@ -7123,14 +7455,24 @@ func _draw_protest(canvas: CanvasItem = self) -> void:
 ## and they are timed off the pulse envelope so they land on the beat the meter is already moving
 ## on. Between beats there is nothing but two shapes behind sandbags, which is the point: it is a
 ## thing to time a run past, and `can_be_timed()` already says so.
-func _draw_firefight(canvas: CanvasItem = self) -> void:
+##
+## **On the screen each half is a slice of its own** (`_slice_plan()`), standing at the middle of its
+## share of the run, and slice `only` draws its own gunman and flash from `origin`, the first also
+## the shadow. On any other canvas, or with `only` below zero, both are drawn.
+func _draw_firefight(canvas: CanvasItem = self, only := -1, origin := Vector2.ZERO) -> void:
+	if only < 0 and _drawn_by_its_slices(canvas):
+		return
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas)
+	if only <= 0:
+		_draw_body_shadow(canvas, origin)
 	var strength := 1.0
 	if def.intensity > 0.0:
 		strength = clampf(current_intensity() / def.intensity, 0.0, 1.0)
-	for side in [-1.0, 1.0]:
-		var at := Vector2(side * half * 0.62, 0.0)
+	for index in 2:
+		if only >= 0 and index != only:
+			continue
+		var side := -1.0 if index == 0 else 1.0
+		var at := origin + Vector2(side * half * 0.62, 0.0)
 		Sprites.draw_standing(canvas, _drawn(GUNMAN), at, Vector2.ZERO, side > 0.0)
 		# Sized off the current emission and jittered per side, so the two are never in step.
 		var flare := strength * (0.6 + 0.4 * sin(age * 17.0 + side * 2.1))
