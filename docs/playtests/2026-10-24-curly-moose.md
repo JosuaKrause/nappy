@@ -219,3 +219,23 @@
 2. **The note.**
 
    > keep track of all the ideas we discussed even the ones we rejected. so we can look at them later and rethink again.
+
+## #831
+
+1. **Context** (the assistant's):
+
+   The player's answer on 2026-10-24 to "Should keeping set-aside ideas in a parked entry become a standing rule for every design discussion?", asked after the day-one discussion's set-aside ideas were filed as the parked queue entry woolly-chipmunk (curly-moose #829, PR #828).
+
+2. **The note.**
+
+   > only if it's far enough out of the way so that it can turn up during a research but doesn't otherwise clutter the context
+
+## #832
+
+1. **Context** (the assistant's):
+
+   The player's answer on 2026-10-24 to "Does day 1's traffic, crossing only where cars are stopped or the street is quiet, work for you?", the orchestrator's answer to the player's question "how do you plan to do traffic timing on day 2 only? you don't want any traffic on day 1?" (curly-moose #819). The proposal had been that day 1's hand-crafted route asks for no lethal timing test, its crossings where cars are stopped at a signal or the street is quiet, and day 2's route carries the first crossing that needs timing. Day 1's losses to cars in GoatCounter's read of 2026-10-19 to 2026-10-24: 2 of 12 attempts (hard fail, car); over the three weeks before, a car was day 1's largest single cause, 17%.
+
+2. **The note.**
+
+   > traffic crossings are already only where cars are stopped -- the issue comes from players who just run across the street

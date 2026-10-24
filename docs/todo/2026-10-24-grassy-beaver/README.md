@@ -30,7 +30,9 @@ a thing that starts moving catches the eye; landmarks at junctions cut navigatio
 ones did not; players who blame their own mistake rate a game higher than players who blame the
 game; guidance should fade as players improve.
 
-**Not built, by the player's word:** a face over the pram or in place of the two bars ("I don't
+**Set aside** (each with why, and what would bring it back, in the record
+`docs/decisions/2026-10-24-grassy-beaver.md`; three more ideas there were left undecided). **Not
+built, by the player's word:** a face over the pram or in place of the two bars ("I don't
 want to add the face yet especially if also keeping the bars. I don't want the UI to be cluttered",
 curly-moose #819); an NPC to follow (the chatting mother is already an obstacle, "so we don't need
 two types with different purpose which makes it unclear whether approaching is good or not",
