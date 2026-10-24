@@ -256,7 +256,8 @@ The events:
   `nappy-day-16-won` as she gets out of the city; a lost section's `lost-timeout`,
   `lost-crying-<source>` or `lost-hard-fail-<what>` (`nappy-day-15-lost-hard-fail-masked-pursuer`);
   the charging counters (`nappy-day-15-masked-pursuer-warned`, `-chased`, and `-ended` for a
-  charge still running when the section ends); the escape city's encounters and runs; its holds;
+  charge still running when the section ends); both sections' encounters and runs, the
+  building's events being the day's own `EventManager` as the city's are; the city's holds;
   and `nappy-day-16-blackout` as the escape's city is built dark. `GameState.day`, the calendar,
   stays on day 14 for the whole escape, so `VisitCounter` names what it counts by the day the last
   `day_started` announced rather than by the calendar.
