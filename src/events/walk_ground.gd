@@ -31,6 +31,11 @@ extends RefCounted
 ## laid along the street's own spread axis, in its own pieces — rather than a disc at the tile it
 ## was rolled on, because the half tile between the two is what decides whether a lane survives.
 ##
+## **And a lethal reach that stands is counted as ground she cannot cross** (`held_by()`): the van's
+## 54px, round where it is parked, takes her however open the ground under it is, so a sidewalk kept
+## open past the van's 22px body but not past its reach is a walk that ends the section. A reach that
+## moves — a pursuer's, which warns before it charges — is the fairness contract's, not ground.
+##
 ## **The seals are counted like everything else.** They stand on the streets and alleys the walk
 ## does not use, but an alley's mouth wall (`SealPlanner.alley_mouth_wall()`) lies along the street
 ## the alley opens onto, and with her body on top it reaches the outer lane of that street's
@@ -145,10 +150,11 @@ func _init(map: CityMap, standing: Array[EventScheduler.Planned] = [],
 		_ends.append(Vector2i(roundi(at.x / STEP), roundi(at.y / STEP)))
 
 ## **Whether the walk stays open with `candidate` standing too**: every street it reaches keeps a
-## sidewalk open, and the ground round it still joins up the way it did without it. A candidate with
-## nothing that stands for the whole walk is accepted as it is.
+## sidewalk open, and the ground round it still joins up the way it did without it, past its body
+## and its standing lethal reach (`held_by()`). A candidate with nothing that stands for the whole
+## walk is accepted as it is.
 func accepts(candidate: EventScheduler.Planned) -> bool:
-	var own := solids_of(candidate)
+	var own := held_by(candidate)
 	if own.is_empty():
 		return true
 	return leaves_a_sidewalk_open(own) and keeps_the_walk_joined(own)
@@ -163,7 +169,7 @@ func catch_up(plans: Array[EventScheduler.Planned]) -> void:
 ## Puts a placement's pieces down for every later question.
 func stand(plan: EventScheduler.Planned) -> void:
 	_stood[plan.get_instance_id()] = true
-	for solid in solids_of(plan):
+	for solid in held_by(plan):
 		var reach := solid.shape.reach()
 		var low := _chunk_of(solid.centre - Vector2.ONE * reach)
 		var high := _chunk_of(solid.centre + Vector2.ONE * reach)
@@ -173,6 +179,31 @@ func stand(plan: EventScheduler.Planned) -> void:
 				if not _chunks.has(key):
 					_chunks[key] = []
 				_chunks[key].append(solid)
+
+## **The ground a placement holds her off for the whole walk**: its body (`solids_of()`), and the
+## lethal reach of a row that stands — not mobile, `hard_fail` and no pursuer — as a disc round where
+## its body stands, whose edge is where her centre is taken (`EventDef.lethal_reach()`, measured from
+## the instance to her centre, as `EventInstance` measures it). A reach no wider than her own body
+## holds nothing her body does not already.
+func held_by(plan: EventScheduler.Planned) -> Array[Solid]:
+	var found := solids_of(plan)
+	var def := plan.def
+	if def.mobile or not def.hard_fail or def.pursues:
+		return found
+	var reach := def.lethal_reach() - Tuning.PLAYER_BODY_RADIUS
+	if reach <= 0.0:
+		return found
+	found.append(Solid.new(_stands_at(plan), GroundShape.point(reach), Vector2.RIGHT))
+	return found
+
+## Where a placement stands once it is built: the first point of its path when it has one,
+## recentred on the pavement band when it has a body `pavement_side` does not pin — the reading
+## `EventInstance.setup()` makes.
+func _stands_at(plan: EventScheduler.Planned) -> Vector2:
+	var at: Vector2 = plan.path[0] if plan.path.size() > 0 else plan.position
+	if plan.def.obstructs_radius > 0.0 and plan.def.pavement_side == EventDef.Pavement.ANY:
+		at = EventInstance._centred_on_the_pavement_band(_map, at)
+	return at
 
 ## A placement's pieces as they stand for the whole walk — its own body, and its successor's
 ## where it leaves a solid one — with nothing for a mobile row or one with no body. The same

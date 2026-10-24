@@ -1696,7 +1696,7 @@ then roadblocks, and fewest of all the empty marbles that leave a slot with noth
 (`Tuning.FINALE_BAG_TRUCKS` and the four after it), so most streets stand one danger and some stand
 none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
 happening) as well. we need a fair mix"; "frequency order is trucks > explosions > vans >
-barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk placed by its own plan". A roadblock
+barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk filled before she sets off". A roadblock
 is a barrier with a guard standing at it from
 the moment it is placed; when he notices her **he** comes for her, on foot, and the barrier he
 leaves stays drawn and stays shut across the road behind him. What takes the baby is his own reach
@@ -1712,14 +1712,14 @@ past at any time, manned or not, as every roadblock's band, a day's included
 (`EventCatalogue._roadblock()`): the guard is the danger, not the concrete. One roadblock a street means there is one guard to lure,
 not a second band's still posted beside the first, and no two bands stand where both guards can
 notice her, so she meets one guard at a time. His warning starts with him on the screen and drawn
-above everything round him. See `docs/EVENTS.md`, "The escape — the walk placed by its own plan".
+above everything round him. See `docs/EVENTS.md`, "The escape — the walk filled before she sets off".
 
 **Nothing on the walk closes a street.** *(Inbox #747: "one sidewalk must be open if they're
 en-route. the escape's street should not have fully blocking events like in the normal game.")*
 A roadblock's band leaves the far sidewalk open past it, a parked van shuts the sidewalk it stands
 on, and a burst's crater narrows the road's edge — and every street either chain walks keeps at
 least one of its two sidewalks walkable from junction to junction past all of them together,
-standing as they stand for the whole walk: the hunting van stays parked, the band stays after its
+and past a parked van's reach as well as its body, standing as they stand for the whole walk: the hunting van stays parked, the band stays after its
 guard has gone, and the crater stays where the burst was. The seals off the chains count too: an
 unused alley's mouth wall stands in the alley's end tile, beside the chain street it opens onto, and
 can narrow that sidewalk's outer lane. **And nothing standing on the walk cuts it anywhere else**: where a chain leaves a street

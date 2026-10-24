@@ -36,6 +36,7 @@ func run(t) -> void:
 	_test_every_street_off_the_chains_is_sealed(t)
 	_test_both_exits_are_reachable_through_the_open_cells_alone(t)
 	_test_both_exits_are_reachable_past_every_body_the_escape_stands(t)
+	_test_both_exits_are_reachable_past_every_standing_lethal_reach(t)
 	_test_no_street_of_the_walk_stands_two_roadblocks(t)
 	_test_a_roadblock_band_costs_nothing(t)
 	_test_the_far_guard_leaves_with_his_partner(t)
@@ -278,6 +279,82 @@ func _test_both_exits_are_reachable_past_every_body_the_escape_stands(t) -> void
 			t.check(found, "seed %d: the %s is reached from the door past every body standing"
 					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
 	t.check(bodies > 0, "there were escape bodies to stand in the way (%d)" % bodies)
+
+## **And past every lethal reach that stands**: from the door both exits are reached with her
+## centre kept outside the reach of every row that stands, is lethal and does not pursue — the van's
+## 54px round where it is parked — as well as off every body. A sidewalk kept open past a van's body
+## but not past its reach is a walk that ends the section, so the walk rule keeps the reach as
+## ground (`WalkGround.held_by()`); a pursuer's reach moves with him and warns first.
+func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t) -> void:
+	var reaches := 0
+	for seed_value in BODY_FLOOD_SEEDS:
+		var built := _plan_for(seed_value)
+		var map: CityMap = built["map"]
+		var plan: FinalePlanner.Plan = built["plan"]
+		var blocked := {}
+		_block_every_body(t, map, plan, blocked)
+		reaches += _block_every_standing_reach(t, map, plan, blocked)
+		var reached := _flood_past_the_bodies(map, blocked,
+				map.tile_to_world(FinalePlanner.service_exit_tile(map)))
+		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
+			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
+			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
+			var found := false
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					if reached.has(at + Vector2i(dx, dy)):
+						found = true
+			t.check(found, "seed %d: the %s is reached from the door past every standing lethal reach"
+					% [seed_value, "tunnel" if kind == CityEdge.Kind.TUNNEL else "bridge"])
+	t.check(reaches > 0, "there were standing lethal reaches to keep out of (%d)" % reaches)
+	# The rule's own reading of one van and one roadblock, on open sidewalk: the van holds her off
+	# its 54px reach as well as its body, the roadblock — whose guard pursues — its band alone.
+	var map: CityMap = _plan_for(SEEDS[0])["map"]
+	var ground := WalkGround.new(map)
+	var tile := Vector2i.ZERO
+	for candidate in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if not map.is_on_home_block(candidate):
+			tile = candidate
+			break
+	var van := EventScheduler.Planned.new(EventCatalogue.by_id("abduction"), map.tile_to_world(tile))
+	var held := ground.held_by(van)
+	t.check(held.size() == ground.solids_of(van).size() + 1,
+			"a van holds one piece more than its body: its reach")
+	var reach: WalkGround.Solid = held[held.size() - 1]
+	var lethal := EventCatalogue.by_id("abduction").lethal_reach()
+	t.check(reach.stops_her_at(reach.centre + Vector2.RIGHT * (lethal - 2.0))
+			and not reach.stops_her_at(reach.centre + Vector2.RIGHT * (lethal + 2.0)),
+			"and that piece takes her centre exactly within %.0fpx" % lethal)
+	var band := EventScheduler.Planned.new(EventCatalogue.escape_roadblock(), map.tile_to_world(tile))
+	t.check(ground.held_by(band).size() == ground.solids_of(band).size(),
+			"a roadblock, whose guard pursues, holds its band alone")
+
+## Marks every grid point within the lethal reach of a row the plan stands that is not mobile, is
+## `hard_fail` and does not pursue, measured from where its `EventInstance` stands, and answers how
+## many reaches it marked.
+static func _block_every_standing_reach(t, map: CityMap, plan: FinalePlanner.Plan,
+		blocked: Dictionary) -> int:
+	var holder := Node2D.new()
+	t.add_child(holder)
+	var count := 0
+	for placement: EventScheduler.Planned in plan.placements:
+		var def := placement.def
+		if def.mobile or not def.hard_fail or def.pursues:
+			continue
+		var instance := EventInstance.new()
+		instance.setup(def, placement.position, placement.path, placement.facing, map)
+		holder.add_child(instance)
+		count += 1
+		var centre := instance.global_position
+		var reach := def.lethal_reach()
+		for gy in range(floori((centre.y - reach) / BODY_FLOOD_STEP),
+				ceili((centre.y + reach) / BODY_FLOOD_STEP) + 1):
+			for gx in range(floori((centre.x - reach) / BODY_FLOOD_STEP),
+					ceili((centre.x + reach) / BODY_FLOOD_STEP) + 1):
+				if (Vector2(gx, gy) * BODY_FLOOD_STEP).distance_to(centre) <= reach:
+					blocked[Vector2i(gx, gy)] = true
+	holder.free()
+	return count
 
 ## Marks every grid point a solid piece of the plan's bodies keeps her centre off, and answers how
 ## many bodies it built. Mobile rows have no body (a truck is traffic), and a row that leaves a
@@ -932,7 +1009,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 
 # ------------------------------------------------------- the day's own rules ---
 
-## **The escape's own rows stand on the day's own ground for them** (`EventScheduler._finale_ground()`
+## **The escape's own rows stand on the day's own ground for them** (`EventScheduler._street_ground()`
 ## asks `_open_ground_for()`): every truck, van, roadblock and burst on a tile a day would offer that
 ## row — none on the home block, none in a street tree, none on the wrong side of a sidewalk, no
 ## spread on a corner — all but the front door's street, a door the escape never sets off from.
@@ -960,7 +1037,7 @@ func _test_the_escape_stands_its_rows_on_the_days_own_ground(t) -> void:
 					% [seed_value, placement.def.id, at])
 	t.check(asked > 0, "there were escape rows to ask about (%d)" % asked)
 
-## The escape's own rows, the four `EventScheduler.build_finale()` places.
+## The escape's own rows, the four the city section's bag draws (`DaySpec.bag_rows`).
 const ESCAPE_ROWS := ["military_convoy", "abduction", "roadblock", "finale_explosion"]
 
 ## **An alley's mouth wall fits the mouth**, on a day and in the escape: the widest row whose body
@@ -1025,7 +1102,7 @@ func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
 
 ## **A restart plans the same escape, on the ground the first plan read.** A loss in the city
 ## replans it on the same city (`main._plan_the_finale_city()`), and the day's ground for the
-## escape's rows is kept across it (`EventScheduler._finale_ground_cache()`): the restart's plan is
+## escape's rows is kept across it (`EventScheduler._kept_ground()`): the restart's plan is
 ## the first one, placement for placement, and the kept ground is the same answer. A city whose
 ## ground did change — a tile closed — is read again rather than answered from the kept copy.
 func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
@@ -1122,11 +1199,18 @@ func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
 		unmet += streets.size() - stood.size()
 	t.check(unmet > 0, "and some roadblock marbles were spent unmet (%d)" % unmet)
 
-## **The game's plan is `Tuning`'s bag, drawn on the escape bag's own stream**: what
-## `FinalePlanner.plan()` stands is what `build_finale()` stands from `escape_bag()` off
-## `escape_bag_counts()` and `escape_bag_seed()` at `Tuning.FINALE_SLOTS_PER_STREET`, placement for
-## placement — the plan `tests/probes/escape_winnable.gd` measures other mixes against.
+## **The game's plan is `Tuning`'s bag, drawn on the street bag's own stream**: the city section's
+## spec holds `Tuning`'s counts and slots, and what `FinalePlanner.plan()` stands is what the bag
+## draw (`EventScheduler._fill_the_walk_from_the_bag()`) stands from `street_bag()` off those counts
+## and `street_bag_seed()`, placement for placement — the plan `tests/probes/escape_winnable.gd`
+## measures other mixes against.
 func _test_the_game_draws_the_escape_from_tunings_bag(t) -> void:
+	var spec := _city_spec()
+	t.check(spec.bag == {"military_convoy": Tuning.FINALE_BAG_TRUCKS,
+			"finale_explosion": Tuning.FINALE_BAG_EXPLOSIONS, "abduction": Tuning.FINALE_BAG_VANS,
+			"roadblock": Tuning.FINALE_BAG_ROADBLOCKS, DaySpec.EMPTY_MARBLE: Tuning.FINALE_BAG_EMPTY}
+			and spec.slots_per_street == Tuning.FINALE_SLOTS_PER_STREET,
+			"the city section's spec holds Tuning's bag and slots")
 	for seed_value in SEEDS:
 		var built := _plan_for(seed_value)
 		var map: CityMap = built["map"]
@@ -1199,8 +1283,8 @@ const SPAWN_SEEDS := [4242, 1, 77, 9001, 5, 1234, 31337, 808, 6, 27]
 ##
 ## **This is the confirmation, not the mechanism.** What makes it true is that everything the
 ## section plans is planned from the tile she is put down on — the chains enter the grid at her own
-## cell, `SealPlanner.plan_finale()` spares the street she is standing in rather than the one the
-## front door opens onto, and `EventScheduler.build_finale()` is never offered ground its own body
+## cell, `SealPlanner.plan_day()` spares the street she is standing in rather than the one the
+## front door opens onto, and `EventScheduler.build_day()` is never offered ground its own body
 ## would reach her on. This walks seeds and asks the outcome instead.
 ##
 ## **A 14px body at the spawn overlaps no static body**, and in this scene that is exactly the two

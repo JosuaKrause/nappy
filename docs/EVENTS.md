@@ -1894,7 +1894,7 @@ day 9")*.
 | `policeman_giving_chase` **`hard_fail`** | SCRIPTED | day 4 | **The task robber's chase in a uniform**: every number is `robber_giving_chase`'s — 16 over a 26–200px field, 130px/s, the 26px catch with the 116px lunge, the day-3 dog's half-second badge, arriving already chasing, a chase that does not give up on a walker within `Tuning.PURSUIT_TIME` and that running shakes off, the walk-off at 100px/s. **His catch ends the day** *([merry-stork](playtests/2026-10-10-merry-stork.md), asked whether it ends the day or costs calm and ends the chase: "Ends the day (Recommended)")*: "The policeman caught up with you. They took you in." — as he is sent by a torn poster; out of a patrol car his catch is a stop, out of a hunting van it ends the day (above). His own look, `POLICEMAN_GIVING_CHASE`, draws `art/events/policeman_*` as the robber is drawn (waiting while a notice runs, the lunge with its stride once he chases), badged by the unsuffixed lunge. |
 | `guardsman_giving_chase` **`hard_fail`** | SCRIPTED | day 9 | **The same pursuer once guards are in the city**: every number the policeman's, the checkpoint guard's drawing (`GUARDSMAN_GIVING_CHASE`, `guard_standing_*` then `guard_lunging_*`, as `door_guard` is drawn), badged by the lunge's front diagonal, the one picture of the guard no other look stands for. "The guard caught up with you. They took you in." |
 
-### The escape — the walk placed by its own plan
+### The escape — the walk filled before she sets off
 
 Four rows nothing but the escape ever places. All four are `SCRIPTED` with `scripted_day` 0, the
 same gate the seal pictures use, so the ordinary catalogue roll can never reach one:
@@ -2033,8 +2033,12 @@ asked of a box round the placement, its whole rim the arms) — which is what ke
 in the middle of a block open as well as the street it opens onto. The bodies are counted as they
 stand for the whole walk and at the body they have: the hunting van parked, the roadblock's band
 after its guard has gone, a burst at the crater it leaves, each recentred and laid along the street
-the way `EventInstance` builds it, and the seals with them. A refused candidate is never a
-fallback, so a street with no such ground simply carries one fewer. The rule is one class
+the way `EventInstance` builds it, and the seals with them. **A lethal reach that stands is counted
+as ground she cannot cross**, as well as the body under it: the parked van's 54px round where it
+stands (`WalkGround.held_by()`), since a sidewalk left open past its 22px body but inside its reach
+is a walk that ends the section; a pursuer's reach moves with him and warns first, so a roadblock
+counts at its band. A refused candidate is never a fallback, so a street with no such ground simply
+carries one fewer. The rule is one class
 (`WalkGround`), stated over the walk it is handed (`RouteSource`), which any spec that keeps the
 walk open (`DaySpec.keeps_the_walk_open`, the city section's) has the judge ask; a day keeps its
 routes through its corridor's own rules instead.
