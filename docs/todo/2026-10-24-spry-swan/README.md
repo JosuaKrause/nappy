@@ -9,7 +9,7 @@ The player: "some ideas where to go next when the day one is fixed", with Gemini
 session, the file sizes, how agents handled the node structure), r/daddit and r/Mommit (the theme
 only, not the AI), r/WebGames (a short pitch: free, no sign-up, a roguelite in the browser),
 r/roguelites (the design: the marble bag, the fixed map with daily events, telegraphed fast
-hazards). The player posts by hand.
+hazards). The player posts by hand (minty-lemur #769).
 
 **Build, once grassy-beaver (day one) has shipped:** for each subreddit, read its rules and
 self-promotion and AI-disclosure terms (`tools/reddit.py rules` and `about`), and draft a post in a

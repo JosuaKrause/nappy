@@ -45,8 +45,8 @@ over).
 - **Day 3's charging dog is the largest single wall**: it ended 42% of day 3's attempts, and between
   a third and two thirds of them in each release window from v0.21 to v0.27. teal-trout's change (PR #770, merged
   2026-10-17, first released in v0.29.0: every charger that does not arrive charging warns first, by
-  radius) has no day-3 attempt after it yet, so its effect is not measured. The queue entry lilac-marten (after the refactor) asks for shorter warnings and
-  larger radii for every charger.
+  radius) has no day-3 attempt after it yet, so its effect is not measured. The player asks for shorter warnings and
+  larger radii for every charger (curly-moose #803).
 - **Traffic decides the early days**: cars are the largest hard-fail cause (days 1-2 most), and a
   car accident and traffic are the two largest crying causes.
 - **Day 6 is the second wall** (19%), its losses spread over 16 causes (5 hard fails, 11 crying) with none above

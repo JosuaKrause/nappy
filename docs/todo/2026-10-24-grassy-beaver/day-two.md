@@ -1,9 +1,10 @@
-# Day 2 teaches the dead end; day 1's car losses are players running across the street
+# Day 2 teaches the dead end and timing; day 1's car losses are players running across the street
 
 The player: "dead end in day 2 sounds good as well" (curly-moose #819), answering the proposal that
 turning back at a dead end (c) and timing moving obstacles (e) move to day 2.
 
-**Build:** day 2 carries a dead end met early, with its thought bubble (`thought-bubbles.md`).
+**Build:** day 2 carries a dead end met early, and the first moving obstacle whose approach she has
+to time (lesson (e)), each with its thought bubble (`thought-bubbles.md`).
 
 **Traffic.** Asked "how do you plan to do traffic timing on day 2 only? you don't want any traffic
 on day 1?" (curly-moose #819), and told the proposal was that day 1's route asks for no lethal

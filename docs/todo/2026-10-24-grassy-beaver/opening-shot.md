@@ -9,4 +9,11 @@ for now. but let's experiment" (curly-moose #819).
 intended path back to her door, and play starts; a tap skips it. It goes to the player as a burst
 before it is kept.
 
+**Read as:** "but let's experiment" asks for the day-1 shot as an experiment; whether it also asks
+to try a shot on later days is open.
+
+**Collides with** M151 (the first frame draws the doorstep: `docs/decisions/2026-09-15-M151-the-first-frame-draws-the-doorstep-built-the-hidden-city-overturned.md`)
+and `tests/test_camera_start.gd`, which assert the first frame is on her; the shot changes that on
+day 1, so the record that builds it says so.
+
 *Proposed, not asked for:* a retry of day 1 skips it.

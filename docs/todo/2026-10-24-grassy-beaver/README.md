@@ -20,7 +20,8 @@ objects that cause noise, (c) turn around at a dead end, (d) cross the street wh
 blocked, (e) time the approach for moving obstacles, (f) not the same way every day (curly-moose
 #819). Agreed after the research (the orchestrator's proposal; the player: "the rest sounds good",
 curly-moose #819): **day 1 teaches (a), (b) and (d)**, as one sequence; (c) and (e) are day 2's
-(`day-two.md`); (f) is learned on day 2 by construction.
+(`day-two.md`); (f) is learned on day 2 by construction. Day 1's car losses are players running
+across the street away from the crossings (curly-moose #832), which `day-two.md` also takes up.
 
 **The research behind it** (an agent's survey of onboarding studies on 2026-10-24; the sources are
 in the conversation's report, summarised here): in simple games tutorial text made a negligible
@@ -30,15 +31,16 @@ a thing that starts moving catches the eye; landmarks at junctions cut navigatio
 ones did not; players who blame their own mistake rate a game higher than players who blame the
 game; guidance should fade as players improve.
 
-**Set aside** (each with why, and what would bring it back, in the record
-`docs/decisions/2026-10-24-grassy-beaver.md`; three more ideas there were left undecided). **Not
-built, by the player's word:** a face over the pram or in place of the two bars ("I don't
-want to add the face yet especially if also keeping the bars. I don't want the UI to be cluttered",
-curly-moose #819); an NPC to follow (the chatting mother is already an obstacle, "so we don't need
-two types with different purpose which makes it unclear whether approaching is good or not",
-curly-moose #819); an opening shot on days 2 and on ("how would showing the park tell anything if
-it's not placed anywhere via route?", curly-moose #819); a first-day line of text about the tinted
-sidewalks.
+**Set aside or not yet** (each with why, and what would bring it back, in the record
+`docs/decisions/2026-10-24-leafy-lark.md`, with four ideas left undecided). **Not yet:** a face over
+the pram or in place of the two bars ("I don't want to add the face yet especially if also keeping
+the bars. I don't want the UI to be cluttered", curly-moose #819). **Dropped on the orchestrator's
+proposal, which the player accepted with "the rest sounds good":** an NPC to follow, after the
+player had said "following NPC let's explore that" and then "we already have a fellow mother but
+she's an obstacle. so we don't need two types with different purpose which makes it unclear whether
+approaching is good or not" (curly-moose #819). **Set aside by the player:** an opening shot on days 2
+and on ("how would showing the park tell anything if it's not placed anywhere via route?",
+curly-moose #819); a first-day line of text about the tinted sidewalks.
 
 **Text.** On-screen text only "when it becomes relevant otherwise players will forget and it will
 make the intro a slog. we want to start right into the action" (curly-moose #819); the thought

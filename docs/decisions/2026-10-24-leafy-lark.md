@@ -1,11 +1,12 @@
-# grassy-beaver — Day-one ideas set aside, kept to rethink · 2026-10-24
+# leafy-lark — Day-one ideas set aside, kept to rethink · 2026-10-24
 
 
 Every idea from the day-one discussion of 2026-10-24 that grassy-beaver (a day one that teaches) does
 not build: what it was, whose it was, why it was set aside or left undecided, and what would bring it
 back. The player asked to keep them all, the rejected ones too, "so we can look at them later and
 rethink again" (curly-moose #829), somewhere that turns up in research without cluttering the
-context (curly-moose #831). A set-aside idea comes back as a question to the player, never as a plan
+context (curly-moose #831); a record of its own name under `docs/decisions/` is the filer's way of
+meeting that, open to overturn. A set-aside idea comes back as a question to the player, never as a plan
 (**playtest-feedback**). The chirp study's ideas not adopted are in coral-newt's README, "Not
 adopted".
 
@@ -16,7 +17,7 @@ obvious indicator (eg diegetic face)" (curly-moose #819); the orchestrator then 
 bars and adding a bigger reacting face over the pram, and the research favoured that pairing (players
 read a continuous value better from a HUD; a HUD icon paired with an in-world display did best).
 
-**Set aside:** "I don't want to add the face yet especially if also keeping the bars. I don't want
+**Not yet:** "I don't want to add the face yet especially if also keeping the bars. I don't want
 the UI to be cluttered and also take away more visual space" (curly-moose #819). "Yet": it is not
 ruled out.
 
@@ -34,7 +35,8 @@ wayfinding study every participant used characters to find their way). The playe
 **Set aside:** "maybe that makes a fellow mother obsolete. we already have a fellow mother but she's
 an obstacle. so we don't need two types with different purpose which makes it unclear whether
 approaching is good or not" (curly-moose #819); the orchestrator proposed dropping it and the player
-agreed ("the rest sounds good").
+accepted the proposal with the rest ("the rest sounds good"). The first half of that reason leaned on
+an opening shot every day, which the player then set aside, so it is weaker than it reads.
 
 **Would come back** with a guide that cannot be mistaken for an obstacle (not a mother, not a
 pedestrian kind that costs), if day one still loses players on the way to the park.
@@ -69,13 +71,13 @@ argues against.
 **What:** the player's toolbox idea, "we can use more subtle hints (eg make the pavement more obvious
 by eg also adding fallen leaves or something)" (curly-moose #819).
 
-**Set aside:** the research found a faint cue spread over many kerbs does not stand out while the
+**Not decided:** the research found a faint cue spread over many kerbs does not stand out while the
 player is busy, which is why the tint goes unnoticed, and the orchestrator judged more of the same
-subtlety likely to fail the same way; the player's own reading of the tint as a patch (see
-`text-about-the-tint.md`) points the same way. Not explicitly rejected by the player.
+subtlety likely to fail the same way; the player's own reading of the tint as a patch (the section
+on the first-day line above) points the same way. The player did not answer it.
 
 **Would come back** as reinforcement of something already taught (a subtle cue confirms a lesson; it
-does not teach one), or as a moving cue (`moving-cues.md`).
+does not teach one), or as a moving cue (the section on moving cues below).
 
 ## On-screen text as a briefing at dawn
 
@@ -119,7 +121,7 @@ the map next to a quiet route.
 
 **Not decided:** the research's simpler version, freezing on what caused the loss, is what the
 player agreed to ("showing what causes a loss is also a good idea -- show not tell", curly-moose
-#819, built as grassy-beaver's `the-loss-shown.md`); the map was not answered.
+#819, queued as grassy-beaver's `the-loss-shown.md`); the map was not answered.
 
 **Would come back** if showing the cause alone leaves players repeating the same route into the same
 loss.

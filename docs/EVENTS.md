@@ -642,7 +642,7 @@ slices, one per segment, each a node standing at its own feet along the row's so
 slice by slice against her; the shadow and the far end cap go down with the first slice and the
 near cap with the last, and the slices stand ahead of the instance in the tree, so its caret is
 drawn over its own picture. The café is drawn the same way, one slice a table and its sitter, so
-each table sorts against her and the next (inbox #827), and so are the protest's
+each table sorts against her and the next (inbox #827 in curly-moose), and so are the protest's
 rank and the firefight, one slice a figure at its own feet, the protest's back rank up the screen
 of its front one.
 

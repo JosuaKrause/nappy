@@ -9,14 +9,17 @@ certain order of events (still within a generated city; just manipulating spawn 
 generated city and inside every fairness check (checked before accepted, two cost-free routes, every
 day winnable): first a noise source she can pass wide, then one with less room, then one sidewalk
 fully blocked so she crosses (the lesson (d)), then the park. One park is "relatively close" to her
-door on day 1. The loud car accident (a hard seal that emits) is not on day 1, since it is the
-largest day-1 loss and the first meeting with each kind of thing should be survivable.
+door on day 1.
 
 **Read as:** "close" is the builder's to measure (a walk a new player finishes in the first minute
-is the target); day 2's park blocking is the existing rule that a calm area used one day is spoiled
-the next (`docs/EVENTS.md`, "Going to the same park on day one and day two must not be possible"),
-so retrying day 1's path on day 2 finds it blocked with nothing new built.
+is the target). For day 2, the existing rule spoils a calm area used the day before with events while
+it stays walkable (`docs/EVENTS.md`, "Going to the same park on day one and day two must not be
+possible"); whether the player's "will find the park blocked" asks for more than that is open.
 
 *Proposed, not asked for:* the four-step order (introduce safely, develop, twist, conclude), from
-the research; the car accident's removal (the orchestrator's, which "the rest sounds good" agreed
-to). A retry of day 1 replays the same order.
+the research. A retry of day 1 replays the same order.
+
+**Open, the orchestrator's proposal the player has not answered:** taking the loud car accident (a
+hard seal that emits, `docs/EVENTS.md`'s `car_accident` row, placed from day 1) off day 1, since it is
+the largest day-1 crying loss and the research says a first meeting should be survivable. It was in
+the first proposal; the player's point-by-point answer and "the rest sounds good" did not name it.
