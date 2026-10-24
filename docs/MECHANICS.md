@@ -1726,8 +1726,8 @@ can narrow that sidewalk's outer lane. **And nothing standing on the walk cuts i
 in the middle of a block, through an alley, a park or a courtyard, the ground around a placement
 still joins up everything it joined without it, so a van and a roadblock either side of an alley's
 mouth cannot shut it while the street's far sidewalk stays open. Each placement is checked before
-it is accepted (`EventScheduler._the_escape_accepts()`: the day's own sidewalk-band reading asked of
-both bands, and the day's junction rule asked of the ground around the placement), so a van and a
+it is accepted (`WalkGround.accepts()`: the day's own sidewalk-band reading asked of both bands, and
+the day's junction rule asked of the ground around the placement), so a van and a
 roadblock can stand on the same side of a street and never on opposite sides of it, and the walk
 from the service exit reaches both exits past everything that stands on it.
 

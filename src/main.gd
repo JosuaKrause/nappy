@@ -621,10 +621,16 @@ func _ready() -> void:
 ## `_escape_section_came_from_the_file()`), which opens on the title first, exactly as a resumed day
 ## does, and the title's start then shows the brief (`_show_the_resume_gate()`). Either screen
 ## pauses the tree, so the section's clock, started by `_start_section()`, stands still behind it.
-## Its own function so a test booting the real scene can drive both answers.
+## A walker on the city's boot (`--route`) opens on neither and walks. Its own function so a test
+## booting the real scene can drive every answer.
 func _open_the_first_screen_of_the_escape(resumed_from_disk: bool) -> void:
 	if resumed_from_disk:
 		_open_the_title()
+	elif _route_rig:
+		# A walker on the escape boot has nobody to press the brief's continue, so the section is
+		# engaged the way that continue engages it.
+		AtlasLibrary.close_loading_window()
+		_engage_the_day()
 	else:
 		_show_the_section_brief()
 
@@ -1107,6 +1113,25 @@ func _start_section(spec: DaySpec, restarted: bool) -> void:
 	EventBus.day_planned.emit(spec.number)
 	if _interior:
 		_interior.clear_fade()
+	if spec.world == DaySpec.World.CITY:
+		_start_the_route_rig_in_the_city()
+
+## `--route` in the escape's city (`RouteRig`, `src/dev/route_rig.gd`): the game's own walker, built
+## once the city stands — the first time a city section starts — and started afresh on every attempt,
+## with no `ResistanceDirector`, since the escape has no subquest. Its targets are the city's two ways
+## out (`tunnel`, `bridge`) as much as anything a day offers. A rig the building section was booted
+## with waits at the city's brief, since nobody presses its continue; `--start-escape city` is the
+## boot it walks from.
+func _start_the_route_rig_in_the_city() -> void:
+	if config.route_targets.is_empty() or not _city:
+		return
+	if not _route_rig:
+		_route_rig = RouteRig.new()
+		_route_rig.name = "RouteRig"
+		add_child(_route_rig)
+		_pauses_with_the_game(_route_rig)
+		_route_rig.setup(_city, _player, _baby, null, _day, config.route_targets)
+	_route_rig.start_day()
 
 ## The screen a section opens on, over the world she is already standing in — *"each the apartment
 ## and escape city are treated as their own 'days' with brief and restart checkpoint"*: the day

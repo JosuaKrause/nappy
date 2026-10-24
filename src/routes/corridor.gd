@@ -151,7 +151,7 @@ func depth(tile: Vector2i) -> int:
 ## street rather than down the middle of it. So the sidewalk across the street from a route is
 ## ground the route never touches, although the street it belongs to is the route's own — which is
 ## exactly where a wall belongs. The kerb tint does not follow this grain: it marks the whole
-## street, both kerb lines (`City._tint_the_route_kerbs`, which asks `depth()`), so that which of a
+## street, both kerb lines (`City.tint_the_route()`, which asks the tree's `RouteTree.marks_the_kerb_at()`, `depth()` at zero), so that which of a
 ## street's two sidewalks the route walks is not painted on the ground.
 ##
 ## It is the depth map read at the cell grain rather than a second structure: a node the tree

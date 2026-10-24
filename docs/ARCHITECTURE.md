@@ -62,6 +62,8 @@ src/
 	road_closure.gd       one street shut for one day, and what shut it
 	closure_planner.gd    picks the day's closures; enforces the two-routes invariant
     closure_marker.gd     one barrier panel, sign or piece of wreckage
+	route_source.gd       the walk placement is stated against, as the questions it asks of it —
+	                      a day's route tree and the escape's two chains both answer them
 	route_tree.gd         the day's corridor: one branch per calm area, grown on the grid
 	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep
 	seal_planner.gd       seals every street off the day's route tree (a share of them from the
@@ -84,7 +86,10 @@ src/
 	                       it draws is a region of the baked `events` page, by path
 	charge_record.gd      a charger's warning, charge and the one way it ended, as counted
 	event_catalogue.gd    every event, defined in code
-	event_scheduler.gd    builds a day's event set from seed + day
+	event_scheduler.gd    builds a day's event set from seed + the day's spec: the catalogue's
+	                      day, or the escape city's streets from its marble bag
+	walk_ground.gd        the walk kept open past everything standing on it: each street a
+	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      owns the live instances and one reference on the `events` atlas page;
@@ -95,9 +100,10 @@ src/
 	                       second: where its badge points, fixed against her, and where the
 	                       thing is then placed just out of sight on its own ground
   day/
-	day_spec.gd           what one day is: its number, its words, its clock, its goal and what
-	                      losing or winning it costs — the fourteen days and the escape's two
-	                      sections, days 15 and 16, are each one of these
+	day_spec.gd           what one day is: its number, its words, its clock, its goal, who is on
+	                      its streets, what stands on them and how it is placed, and what losing
+	                      or winning it costs — the fourteen days and the escape's two sections,
+	                      days 15 and 16, are each one of these
 	day_controller.gd     the clock, the two phases, the four ways a day ends, handed the day's
 	                      spec: her front door, the building's service exit or the city's two
 	                      ways out is its goal
@@ -159,8 +165,9 @@ src/
 	                      them
   finale/                 the escape: a won day 14 with every task complete goes here, and
 	                      --start-escape reaches the same sequence directly
-	finale_planner.gd     the two chains — service exit, three calm areas, tunnel or bridge —
-	                      and the whole plan built off them
+	finale_planner.gd     the two chains — service exit, three calm areas, tunnel or bridge — as
+	                      the escape city's walk, and the plan the day's seal planner and
+	                      scheduler build off them under the section's spec
 	building_plan.gd      what the building places and where, as plans the day's `EventManager`
 	                      runs on its map: the fire, the masked man who keeps coming back, the
 	                      mouse, the steam, and the explosions outside
@@ -205,8 +212,9 @@ src/
 	dev_flags.gd          the parser behind RunConfig, and the flag manifest the shell tools read
 	dev_rig.gd            the flag-acting half: --spawn/--follow/--overview/--meters against the
 	                       live City, handed the values, testable without booting main
-	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/spawn:<name>)
-	                       along a real, kerb-preferring path, through the ordinary input path
+	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/tunnel/
+	                       bridge/spawn:<name>) along a real, kerb-preferring path, through the
+	                       ordinary input path
 	debug_layers.gd       the fields, shadows and bounding-box overlays, one number key apiece
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)

@@ -363,7 +363,7 @@ static func _layered_image(source_id: int, manifest: Dictionary, page: Image,
 ## component tinted; where the page carries the whole authored tile (an SVG bake) there is no
 ## separate stone to tint, so the stone is found by its own fill colour instead. A source with no
 ## registered twin id is left without one — that is `GroundTiles`' own decision about which kerbs
-## the route casts on, and `City._tint_the_route_kerbs()` walks the same list. A twin that
+## the route casts on, and `City.tint_the_route()` walks the same list. A twin that
 ## **cannot be built** is an error naming what was missing, like the plain source's own.
 static func _register_route_kerb_twins(tile_set: TileSet, manifest: Dictionary, page: Image,
 		pictures: Dictionary) -> void:

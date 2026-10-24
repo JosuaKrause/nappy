@@ -603,10 +603,11 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 ##
 ## **Everything `start_day` works out, the plan has already decided**, which is the whole of why
 ## this is a second entry point rather than a flag on that one. The escape's city has no route tree
-## to grow and no region plan to place against — its route is an ordered chain and not a tree — no
-## closures and no catalogue budget: `FinalePlanner` has already asked `SealPlanner` what closes the
-## city off the chains and `EventScheduler.build_finale` what stands on them. The building's plan is
-## its own placements (`BuildingPlan`). What arrives here is the result.
+## to grow and no region plan to place against — its route is an ordered chain and not a tree — and
+## no closures: `FinalePlanner.plan()` has already asked the day's own `SealPlanner.plan_day()` what
+## closes the city off the chains and `EventScheduler.build_day()` what stands on them, under the
+## section's spec. The building's plan is its own placements (`BuildingPlan`). What arrives here is
+## the result.
 ##
 ## The streaming, the successors, the scars, the detentions and the hard fails are all the day's
 ## own and are untouched: an explosion leaves its crater through exactly the `spawns_on_finish`
