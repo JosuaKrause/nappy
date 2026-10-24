@@ -37,15 +37,20 @@ instead of its stand-in meter, walker and camera.
 **Verified at test parity** (inbox #813 in curly-moose): `check.sh`, `lint.sh`,
 `ci_telemetry_kinds.py`, and the whole suite shard by shard with 0 failures and no script error. A
 throwaway fingerprint of every placement's row, position, facing, role and path on eight escape seeds
-and days 1, 4, 8, 9, 10, 12 and 14 on two seeds was identical before and after, and again after the
-lethal-reach rule, which refused nothing a body had not on those seeds. The real walker got out on
+and days 1, 4, 8, 9, 10, 12 and 14 on two seeds was identical before and after the refactor. The
+lethal-reach rule, compared on and off on the eight escape seeds, changes nothing on the game's own
+stream (the city from the run seed, `GameState.day_rng(day, "finale")`, what
+`main._plan_the_finale_city()` draws); on `test_finale._plan_for()`'s stream (an rng seeded with the
+seed) it changes seed 9001 alone, where the first van moves from (1392,816) to (1360,720) and
+placements 588–595 of 608 move (three vans, two trucks, three explosions), the rows, their order and
+count unchanged. The real walker got out on
 seeds 4242 and 1 by the tunnel (64.3s, 81.9s) and the bridge (40.6s, 53.6s). Tests changed only as far
 as the code moved: every `build_day`, `plan_day` and `FinalePlanner.plan` call hands a spec; the
 renamed classes and fields (`WalkGround`, `street_bag`, `DaySpec.EMPTY_MARBLE`, `_street_ground`);
 `start_day(…, city spec)` for `start_finale`. New tests: a walk filled with vans alone, two a street, on seeds 1, 8
 and 39 still reaches both exits past every body and every van's reach, which fails on those seeds
 with the rule removed (`test_finale`); both exits are reached past every body and every standing
-lethal reach on nine seeds of the game's own bag, where the rule refuses nothing, with the rule's
+lethal reach on nine seeds of the game's own bag, which passes with the rule removed too, with the rule's
 reading of one van and one roadblock (`test_finale`); `--route tunnel|bridge` resolves to the spec's exits and `mark`/`task`
 are unavailable with no resistance director (`test_route_rig`).
 
@@ -72,7 +77,8 @@ always, since only day specs reach it; `--route` from the building section waits
 brief. `comments.md` is applied to the code this PR wrote only.
 
 **For the remeasuring step:** the walk rule keeps a parked van's 54px reach as ground (no change on
-the eight fingerprinted seeds; where it binds, a van moves or is spent unmet); the winnable probe
+the game's stream for the eight fingerprinted seeds, one van and seven rows after it moved on seed
+9001 on the test's stream; where it binds, a van moves or is spent unmet); the winnable probe
 measures with the game's walker, which neither lures a roadblock's guard nor settles the baby, so its
 numbers are not comparable with `docs/evidence/winnable-escape-2026-10-19/` and the full 24-seed run
 is the remeasuring step's; the escape city's home door shows the run's own state (sealed after day
