@@ -19,7 +19,10 @@ extends RefCounted
 ##   (`_lay()`, over the navigator's way round), and walked through the navigator he was handed
 ##   (`Navigator.walk()`), so a band on the park's sidewalk or a figure in the park stops him as it
 ##   stops her. Laying the walk first is what keeps the close on time: the close is timed and each
-##   taper paced over the walk he will take, detours included.
+##   taper paced over the walk he will take, detours included. Where a solid cuts the sidewalk and
+##   the street from the park's edge outward, a taper cuts along the park's own edge row, and a
+##   stretch any officer still has to step on is taped once nobody does, while its taper walks on:
+##   **no officer ever waits for another** (`_tape_what_he_can()`).
 ## - **They tape the edge one stretch at a time, working round it from where they arrived**, one
 ##   each way, so the open part of the edge shrinks to a last gap. A stretch is one tile of a
 ##   side's edge, more or less; the tape stands on the park's own edge row, half a barrier's depth
@@ -878,8 +881,15 @@ func _may_walk(tile: Vector2i, roads: bool) -> bool:
 	return roads or _map.tile_at(tile) != GameEnums.TileType.ROAD
 
 ## The way out from `from`, in order: all of `_exit` from inside the park, by way of the gap, or
-## from its point nearest `from` for someone already outside it, who is not walked back in.
+## from its point nearest `from` for someone already outside it, who is not walked back in. Someone
+## standing on the ground the way out crosses the edge on (`_exit_crossing`) — in the gap itself —
+## goes straight out from there rather than in to the point inside the gap first: one standing in
+## the edge row would walk back over the tile they stood on, which their own body holds on the
+## record until they are gone, and be stopped there for good.
 func _way_out_from(from: Vector2) -> PackedVector2Array:
+	if not _exit.is_empty() and _exit_crossing.has(_map.world_to_tile(from)) \
+			and _rect.has_point(_map.world_to_tile(from)):
+		return _exit.slice(1)
 	if line.grow(WALKER_REACH).has_point(from) or _exit.is_empty():
 		return PackedVector2Array(_exit)
 	var nearest := INF
@@ -1281,10 +1291,13 @@ func _approach_the_person(officer: Officer, delta: float, her: Vector2) -> void:
 		if officer.aim != Vector2.INF and officer.aim.distance_to(there) > REAIM:
 			officer.aim = there
 			officer.path = _way_up_to(officer.at, there)
-		_walk_path(officer, officer.speed * delta)
+		var left := _walk_path_for(officer, officer.speed * delta)
 		if officer.path.is_empty() and officer.aim == Vector2.INF:
+			# Through the gap: on up to them with what is left of the step.
 			officer.aim = there
 			officer.path = _way_up_to(officer.at, there)
+			if left > 0.0:
+				_walk_path_for(officer, left)
 	var beside := officer.aim != Vector2.INF and officer.path.is_empty()
 	if already or beside or officer.at.distance_to(person.global_position) <= ESCORT_REACH:
 		_send_off(person)
