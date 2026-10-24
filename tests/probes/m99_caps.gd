@@ -66,7 +66,7 @@ func _measure_caps() -> void:
 			var plan_rng := RandomNumberGenerator.new()
 			plan_rng.seed = hash("m99:plan:%d:%d" % [map.seed_used, day])
 			var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-					day, plan_rng, map, [], [], [], tree, 0)
+					DaySpec.for_day(day), plan_rng, map, [], [], [], tree, 0)
 
 			var budgeted := {}
 			for id in TRACKED_IDS:

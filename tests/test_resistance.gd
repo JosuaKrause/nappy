@@ -1823,7 +1823,7 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("%d:events:%d" % [seed_value, day])
-			for plan in EventScheduler.build_day(day, events_rng, map, consumed, [], [], tree):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), events_rng, map, consumed, [], [], tree):
 				if plan.def.id != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1
@@ -2808,7 +2808,7 @@ func _assert_a_trap_row_is_never_the_schedulers(t, id: String) -> void:
 						"day %d at heat %d does not offer '%s'" % [day, heat, id])
 	var map := CityGenerator.generate(SEED)
 	var consumed: Array[String] = []
-	var plans := EventScheduler.build_day(ResistanceDirector.TRAP_FIRST_DAY,
+	var plans := EventScheduler.build_day(DaySpec.for_day(ResistanceDirector.TRAP_FIRST_DAY),
 			_rng(ResistanceDirector.TRAP_FIRST_DAY, "events"), map, consumed)
 	t.check(not plans.is_empty(), "the day planned something to look through (%d)" % plans.size())
 	for plan in plans:

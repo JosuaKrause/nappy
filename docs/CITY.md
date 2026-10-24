@@ -653,7 +653,8 @@ a shut street is the street with nobody on it, and that is legible from a block 
   along, both kerb lines, from intersection to intersection (`Corridor.depth() == 0`) — never a
   street the tree only crosses at a junction, since a junction cell belongs to no street segment
   (`StreetNetwork.segment_containing`). In the escape it marks the streets the two chains run
-  through (`City.tint_the_escape_route()`, from the finale plan's `open_streets`). The trial's question is whether a hint this quiet can stay
+  through. Both are one tint, `City.tint_the_route()`, asking the walk it is handed which kerbs it
+  marks (`RouteSource.marks_the_kerb_at()`). The trial's question is whether a hint this quiet can stay
   below being noticed as one; alpha zero is the off switch the moment it cannot. "Planning-time
   legibility" is named a paragraph above as not existing.
 - **The main road as a soft block** — the one thing in the design that would divide the city into
@@ -1552,8 +1553,9 @@ spine, walkable and lethal like every other carriageway, and `tests/test_blocks.
 never count as calm — which is why an edge can be the end of a chain without a day's own guarantees
 having anything to say about it.
 
-**Everything off the chains is sealed**, by `SealPlanner.plan_finale()`, which takes the chains'
-open cells where `plan_day` takes a tree. Three differences, each for a reason the escape changes:
+**Everything off the chains is sealed**, by the day's own `SealPlanner.plan_day()`, handed the
+chains as its walk (`FinalePlanner.Plan`, a `RouteSource` like a day's tree) and the city section's
+`DaySpec`. Three differences, each a setting of that spec, each for a reason the escape changes:
 seals are all **hard**, since a soft one leaves the carriageway open and the brief is a single path;
 the **main road is sealed like anything else**, because the chains *end* on the spine and leaving
 the rest of it open would join them at the one street that touches both exits; and **every alley
@@ -1570,8 +1572,9 @@ along, and the home street is sealed here like any other.
 **Nothing the escape places can be standing on her, by construction.** *(2026-09-19: "the spawning
 shouldn't be a check. the pathing should start from the position. then obstacles can never
 happen".)* Every pass that puts something in the city is handed the tile she is put down on: the
-chains enter the grid at her own cell, the sealing spares her street, and
-`EventScheduler.build_finale()` is never offered ground a body of its own would reach her from — a
+chains enter the grid at her own cell, the sealing spares her street, and the events
+(`EventScheduler.build_day()`, drawing the section's marble bag) are never offered ground a body of
+their own would reach her from — a
 tile within `obstructs_radius + PLAYER_BODY_RADIUS` of her, plus the half tile a stationary body
 may be moved by when it is centred on its pavement band. It is refused rather than cleared up
 afterwards, and the spawn itself is never checked or moved: a check that rejected a bad spawn is
@@ -2319,8 +2322,8 @@ Top-down camera with a fake vertical extrusion:
   candidate is offered rather than moving something afterwards. So a van, a café, a market stall,
   a yeller, a dog walker or a seal is never in or behind a tree, and the only thing that ever
   stands in a pit is the tree that fell out of it. The escape's own plan keeps the same rule
-  through the same two functions — `EventScheduler._finale_ground` refuses a tree's ground and
-  `SealPlanner.plan_finale` steps its seals off one — **with one exception the escape has and a
+  through the same two functions — `EventScheduler._street_ground` refuses a tree's ground and
+  `SealPlanner.plan_day` steps its seals off one — **with one exception the escape has and a
   day does not**: a seal stepped off a tree may land on ground one of the chains walks, and there
   it stands in the tree instead, since a picture overlapping a picture is better than the one way
   out of the city being walled. `tests/test_finale.gd` holds that exception to a small share of

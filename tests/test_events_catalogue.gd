@@ -490,7 +490,7 @@ func _test_a_spread_never_lands_on_a_corner(t) -> void:
 		for day in range(1, 15):
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in EventScheduler.build_day(day, rng, map, consumed):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed):
 				if not plan.is_placed() or not EventInstance.has_a_spread(plan.def):
 					continue
 				checked += 1

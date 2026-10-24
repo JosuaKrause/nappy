@@ -23,7 +23,7 @@ func run(t) -> void:
 		map.repaint(GameState.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		var plan := FinalePlanner.plan(map, rng)
+		var plan := FinalePlanner.plan(map, rng, _city_spec())
 		var bands: Array[EventScheduler.Planned] = []
 		for placement in plan.placements:
 			if placement.def.id == "roadblock":
@@ -48,3 +48,7 @@ func run(t) -> void:
 	print("ESCAPE_SPACING | %d seeds | %d roadblocks | %d pairs, %d nearer than their two notices | nearest %.0fpx"
 			% [SEEDS, total, pairs, under, nearest_of_all])
 	t.check(true, "a probe asserts nothing")
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)

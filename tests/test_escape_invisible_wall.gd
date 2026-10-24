@@ -77,7 +77,7 @@ func _test_she_can_walk_north_from_where_the_player_stood(t, main: Node2D) -> vo
 func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) -> void:
 	var city: City = main._city
 	var player: Stroller = main._player
-	var plan := FinalePlanner.plan(city.map, GameState.day_rng(GameState.day, "finale"), false)
+	var plan := FinalePlanner.plan(city.map, GameState.day_rng(GameState.day, "finale"), _city_spec(), false)
 	var space := city.get_world_2d().direct_space_state
 	var query := PhysicsShapeQueryParameters2D.new()
 	var circle := CircleShape2D.new()
@@ -154,3 +154,7 @@ static func _owner_path(main: Node, body: Object) -> String:
 	if node == null:
 		return str(body)
 	return str(main.get_path_to(node))
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)

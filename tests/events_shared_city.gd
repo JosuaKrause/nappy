@@ -49,6 +49,6 @@ var _plans := {}
 func _planned(day: int) -> Array[EventScheduler.Planned]:
 	if not _plans.has(day):
 		var consumed: Array[String] = []
-		_plans[day] = EventScheduler.build_day(day, _rng(day), _map(), consumed)
+		_plans[day] = EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map(), consumed)
 	var found: Array[EventScheduler.Planned] = _plans[day]
 	return found

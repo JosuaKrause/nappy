@@ -439,7 +439,7 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 			rng.seed = hash("events:%d:%d" % [map.seed_used, day])
 			var no_one_shots: Array[String] = []
 			var no_scars: Array[Dictionary] = []
-			var planned := EventScheduler.build_day(day, rng, map, no_one_shots, no_scars, used,
+			var planned := EventScheduler.build_day(DaySpec.for_day(day), rng, map, no_one_shots, no_scars, used,
 					tree)
 			if map.fenced_park.x >= 0:
 				var fenced_tiles := {}

@@ -57,7 +57,7 @@ func _measure() -> void:
 			var plan_rng := RandomNumberGenerator.new()
 			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
 			var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-					day, plan_rng, map, [], [], [], tree, 0)
+					DaySpec.for_day(day), plan_rng, map, [], [], [], tree, 0)
 			var bought := 0
 			for plan in planned:
 				var mode := plan.def.spawn_mode_on(day)
@@ -129,7 +129,7 @@ func _measure_the_return() -> void:
 			var plan_rng := RandomNumberGenerator.new()
 			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
 			var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-					day, plan_rng, map, [], [], [], tree, 0)
+					DaySpec.for_day(day), plan_rng, map, [], [], [], tree, 0)
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.seed_used, day])

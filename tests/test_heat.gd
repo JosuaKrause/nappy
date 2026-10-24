@@ -244,9 +244,9 @@ func _test_heat_is_derived_once_and_kept(t) -> void:
 func _test_a_day_is_a_function_of_its_heat(t) -> void:
 	var day := 9
 	var consumed: Array[String] = []
-	var first := EventScheduler.build_day(day, _rng(day), _map, consumed.duplicate(),
+	var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, consumed.duplicate(),
 			[], [], null, Tuning.RESISTANCE_GOAL)
-	var second := EventScheduler.build_day(day, _rng(day), _map, consumed.duplicate(),
+	var second := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, consumed.duplicate(),
 			[], [], null, Tuning.RESISTANCE_GOAL)
 	t.check(first.size() == second.size(),
 			"a hot day planned twice is the same day (%d vs %d)" % [first.size(), second.size()])
@@ -660,8 +660,8 @@ func _test_a_hot_day_places_more_patrols(t) -> void:
 		cold_rng.seed = rng_seed
 		var hot_rng := RandomNumberGenerator.new()
 		hot_rng.seed = rng_seed
-		var cold := _count_patrols(EventScheduler.build_day(day, cold_rng, map, [], [], [], null, 0))
-		var hot := _count_patrols(EventScheduler.build_day(day, hot_rng, map, [], [], [], null,
+		var cold := _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), cold_rng, map, [], [], [], null, 0))
+		var hot := _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), hot_rng, map, [], [], [], null,
 				Tuning.RESISTANCE_GOAL))
 		t.check(hot >= cold,
 				"seed %d: a fully heated day places at least as many patrols as a cold one (%d vs %d)"

@@ -1,7 +1,8 @@
 class_name SealPlanner
 extends RefCounted
 ## Seals the streets off the day's route tree — every one of them before the gatehouse day, a share
-## of them from it — the placement M64 exists for.
+## of them from it — and, through the same `plan_day()`, every street off the escape city's two
+## chains (`DaySpec`'s seal settings, `RouteSource` for the walk either way).
 ##
 ## The design is `docs/DECISIONS.md`, "Nothing off the path". The corridor
 ## (`RouteTree.for_day`) is the day's only free way through; everything else in the lattice is
@@ -153,11 +154,39 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 
 # ------------------------------------------------------------------- planning ---
 
-## Every seal for the day: one per off-tree, real, non-home, non-spine, non-boundary street — one in
-## `Tuning.GATEHOUSE_DAY_SEAL_SHARE` of them from `Tuning.REGION_WALL_FIRST_DAY` on — thinned by a
-## small fraction, plus the mouths of any through-alley that rejoins the corridor at neither end.
-## Returned as `EventScheduler.Planned` so the caller (`EventManager.start_day`) can simply append
-## them to the day's plan.
+## Every seal for the walk `spec` describes: one per real street off the walk `route` hands in
+## (`RouteSource.walks_the_street()`) that is not the street the walk starts in, the main road or a
+## boundary — one in `Tuning.GATEHOUSE_DAY_SEAL_SHARE` of them from `Tuning.REGION_WALL_FIRST_DAY` on
+## — thinned by a small fraction, plus the mouths of any through-alley the walk does not reach
+## (`RouteSource.reaches_the_alley()`). Returned as `EventScheduler.Planned` so the caller
+## (`EventManager.start_day`, or `FinalePlanner.plan()` for the escape's city) can simply append
+## them to the walk's plan.
+##
+## **A day and the escape's city are this one path with the spec's settings**, since the walk is
+## what decides which streets are spared and the spec decides how the rest are closed. The escape's
+## spec turns three of a day's habits off, each for a reason the finale changes:
+##
+## - **Its pictures are all hard** (`DaySpec.SealPictures.ESCAPE`, `escape_candidates()`), so no soft
+##   seal and no thinning: a soft seal leaves the carriageway open, which is exactly the wrong answer
+##   when the brief is *"a single path through the city"*, and the thinning pass exists to let a wrong
+##   turn be taken and discovered, which is a day's lesson rather than the climax's.
+## - **The main road is sealed like anything else** (`DaySpec.seals_the_main_road`). The day's
+##   exemption is that `RouteTree` refuses to route along the spine and sealing it as well would
+##   wall the one street she is meant to be free to cross. The escape's chains *end* on the spine —
+##   the tunnel is at its north end and the bridge at its south — so the spine is chain ground where
+##   they run on it and ordinary closed ground everywhere else, and leaving the rest of it open would
+##   join the two chains at the one street that touches both exits.
+## - **Every street and every alley mouth off the walk is sealed**
+##   (`DaySpec.seals_every_street_off_the_walk`), rather than a share of them and a fraction of the
+##   alleys: `Tuning.ALLEY_MOUTH_SEAL_CHANCE` exists so an alley reads as an occasional exception on
+##   an ordinary day; one open alley in the finale is a second way through.
+##
+## **The exempt street is the one the walk starts in** (`RouteSource.street_it_starts_in()`): a
+## day's doorstep street, because the home is a notch with one exit and sealing that street seals her
+## in, and in the escape the street she comes out of the service exit into, which sealing would be
+## the same mistake one door along. *(2026-09-19: "pathing is not done from the spawn but from the
+## original door which is incorrect".)* The escape seals the home street like any other, because on
+## the last night nobody uses it.
 ##
 ## `skip` is a set of keys to leave alone on top of the ordinary exclusions — today's region
 ## boundary, both wall and door, from `Tuning.REGION_WALL_FIRST_DAY` on. It carries two kinds of
@@ -177,7 +206,7 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ## also offered to a catalogue row. A soft seal is not marked: its carriageway is still walkable,
 ## and a café on it is the price of that route (`docs/TODO.md`, "Events spawn inside a fully
 ## blocked street"). Left `{}` for a caller — a test, a rig — that only wants the placements.
-static func plan_day(map: CityMap, day: int, tree: RouteTree,
+static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		rng: RandomNumberGenerator, skip: Dictionary = {},
 		held: Dictionary = {}) -> Array[EventScheduler.Planned]:
 	# The walker-facing half of a soft seal — see `CityMap.soft_sealed_tiles` — is this function's
@@ -185,10 +214,12 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 	# itself is, rather than trusting a caller to clear it first.
 	map.clear_day_soft_seals()
 	var planned: Array[EventScheduler.Planned] = []
-	if not tree:
+	if not route:
 		map.set_seal_tree_pits([] as Array[Vector2i])
 		return planned
-	var home := ClosurePlanner.home_street(map)
+	var day := spec.number
+	var pictures := pictures_for(spec)
+	var home := route.street_it_starts_in()
 	# The city's standing street trees, asked once rather than once per street. `trees` is the
 	# ground no seal body may stand on (`_seal_along_tile` steps along the street until it is
 	# clear); `lined` is which streets may carry a fallen tree at all; `emptied` collects the pits
@@ -203,21 +234,29 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 	var soft_pairs: Array = []
 	# From the gatehouse day on, only a share of the streets below is sealed at all — see
 	# `_seals_this_street`. Asked once here so a day before it draws nothing extra from `rng`.
-	var thinned := day >= Tuning.REGION_WALL_FIRST_DAY
+	var thinned := day >= Tuning.REGION_WALL_FIRST_DAY and not spec.seals_every_street_off_the_walk
 	for segment in StreetNetwork.segments():
 		var key := segment.key()
-		if not map.has_street(key) or tree.is_on_the_tree(key) or skip.has(key):
+		if not map.has_street(key) or route.walks_the_street(segment) or skip.has(key):
 			continue
 		if home and key == home.key():
 			continue
-		if _is_the_main_road(map, segment):
+		if not spec.seals_the_main_road and _is_the_main_road(map, segment):
 			continue
 		if thinned and not _seals_this_street(rng):
 			continue
-		var candidate := _pick_candidate(day, rng, lined.has(key))
+		var candidate := _pick_candidate(pictures, day, rng, lined.has(key))
 		if not candidate:
 			continue
 		var along := _seal_along_tile(map, segment, candidate, trees, emptied)
+		# **Stepping off a tree may never step onto the walk.** The street was spared the walk as a
+		# whole, or at its own midpoint for a walk that answers there (a chain); a tile or two along
+		# from there can be ground the walk takes, and a seal placed on it would wall the one way
+		# through. So the moved position is asked the same question, and a move that would close the
+		# walk is refused — the seal stands in the tree instead, which is a picture overlapping a
+		# picture rather than a city with no way through it.
+		if route.walks_the_street(segment, along):
+			along = -1
 		var placed := _place(map, segment, candidate, along)
 		if candidate.strength == Strength.SOFT:
 			soft_pairs.append([segment, placed, along])
@@ -226,91 +265,10 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree,
 			held[key] = true
 	map.set_seal_tree_pits(emptied)
 	planned.append_array(_thin_soft_pairs(map, soft_pairs, rng))
-	planned.append_array(_seal_alley_mouths(map, tree, day, rng, skip))
+	planned.append_array(_seal_alley_mouths(map, route, spec, rng, skip))
 	return planned
 
-# -------------------------------------------------------------- the finale ---
-
-## The escape's own seals: every street the two chains do not run through, plus both mouths of
-## every alley they do not run through, all of them **hard**.
-##
-## **It takes a set of open cells rather than a `RouteTree`, and that is the whole difference.**
-## A day grows a tree to several calm areas and counts two distinct routes to each; the finale has
-## one ordered chain to each edge and *"no overlapping routes"*, so there is no tree to ask and the
-## caller (`FinalePlanner`) hands over the cells its chains actually cover — `ReachabilityGrid`
-## cells, `Vector2i`, the same two-tile cells the chains were grown on. Everything below is
-## `plan_day`'s own placement code, unchanged, asked a different question about which streets are
-## spared.
-##
-## Three things `plan_day` does that this does not, each for a reason the finale changes:
-##
-## - **No soft seals and no thinning.** A soft seal leaves the carriageway open, which is exactly
-##   the wrong answer when the brief is *"a single path through the city"* — and the thinning pass
-##   exists to let a wrong turn be taken and discovered, which is a day's lesson rather than the
-##   climax's.
-## - **The main road is sealed like anything else.** The day's exemption is that `RouteTree`
-##   refuses to route along the spine and sealing it as well would wall the one street she is meant
-##   to be free to cross. The finale's chains *end* on the spine — the tunnel is at its north end
-##   and the bridge at its south — so the spine is chain ground where they run on it and ordinary
-##   closed ground everywhere else, and leaving the rest of it open would join the two chains at
-##   the one street that touches both exits.
-## - **Every alley mouth off the chains is sealed, rather than a fraction of the qualifying ones.**
-##   `Tuning.ALLEY_MOUTH_SEAL_CHANCE` exists so an alley reads as an occasional exception on an
-##   ordinary day; one open alley in the finale is a second way through.
-##
-## **The exempt street is the one she is standing in, not the one the front door opens onto.** A
-## day's exemption is the doorstep, because the home is a notch with one exit and sealing that
-## street seals her in. The escape does not use that door at all: she comes out of the service exit
-## on the side of the block, and `standing_at` is where. Sealing *that* street is the same mistake
-## the doorstep exemption exists to stop, one door along — a wall across the first street of a walk
-## whose whole plan was grown from the cell she is put down in, placed by a pass that never asked
-## where she was. *(2026-09-19: "pathing is not done from the spawn but from the original door
-## which is incorrect".)* The home street is sealed like any other now, because on the last night
-## nobody uses it.
-static func plan_finale(map: CityMap, open_cells: Dictionary,
-		rng: RandomNumberGenerator, standing_at: Vector2) -> Array[EventScheduler.Planned]:
-	map.clear_day_soft_seals()
-	# And no pit is emptied, for the same reason the soft seals are cleared: whatever a day left on
-	# this map is not the escape's, and nothing here fells a tree. `plan_day` makes the same call
-	# on its own no-tree path.
-	map.set_seal_tree_pits([] as Array[Vector2i])
-	var planned: Array[EventScheduler.Planned] = []
-	var hers := StreetNetwork.segment_containing(map.world_to_tile(standing_at))
-	# A seal never stands in a street tree here either — the same rule `plan_day` keeps, and a
-	# `City` plants its trees in `build()`, so the escape's city has the row it has always had. No
-	# `emptied` pit ever comes back: `fallen_tree_seal` is a day's candidate and none of
-	# `finale_candidates()` is it, so `_seal_along_tile` only ever takes its tree-avoiding branch.
-	var trees := StreetTrees.footprint_tiles(map)
-	var no_pits_are_emptied: Array[Vector2i] = []
-	for segment in StreetNetwork.segments():
-		var key := segment.key()
-		if not map.has_street(key) or runs_through(segment, open_cells):
-			continue
-		if hers and key == hers.key():
-			continue
-		var candidate := _finale_candidate(rng)
-		# **Stepping off a tree may never step onto the chain.** The street was spared the walk at
-		# its own midpoint, which is the only position `runs_through` above asked about; a tile or
-		# two along from there can be ground a chain walks, and a seal placed on it would wall the
-		# one route out of the city. So the moved position is asked the same question, and a move
-		# that would close the chain is refused — the seal stands in the tree instead, which is a
-		# picture overlapping a picture rather than a city with no way through it.
-		var along := _seal_along_tile(map, segment, candidate, trees, no_pits_are_emptied)
-		if runs_through(segment, open_cells, along):
-			along = -1
-		planned.append_array(_place_hard(map, segment, candidate.def_ids[0], along))
-	for rect in map.alley_rects:
-		# A through-alley can be built over by a later generation pass, which does not retract it
-		# from `alley_rects` — so the ground is checked rather than trusted, the same as
-		# `_seal_alley_mouths` does.
-		if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
-			continue
-		if _covers_any_cell(rect, open_cells):
-			continue
-		var vertical := rect.size.x < rect.size.y
-		planned.append(alley_mouth_wall(map, rect, vertical, true, _finale_alley_def()))
-		planned.append(alley_mouth_wall(map, rect, vertical, false, _finale_alley_def()))
-	return planned
+# ---------------------------------------------------------------- the escape ---
 
 ## Whether a chain actually **walks** this street, as opposed to clipping a corner of it.
 ##
@@ -327,8 +285,9 @@ static func plan_finale(map: CityMap, open_cells: Dictionary,
 ## to that would put trucks on streets she cannot reach.
 ##
 ## `along` names a tile on the street's own along axis to ask about instead of the midpoint, which
-## is what `plan_finale` uses to check a position a seal has been stepped to in order to clear a
-## street tree. `-1` is the midpoint, the same convention `_cross_section_tiles` already keeps.
+## is what `plan_day` uses to check a position a seal has been stepped to in order to clear a street
+## tree (`FinalePlanner.Plan.walks_the_street()`). `-1` is the midpoint, the same convention
+## `_cross_section_tiles` already keeps.
 static func runs_through(segment: StreetNetwork.Segment, open_cells: Dictionary,
 		along: int = -1) -> bool:
 	for tile in _cross_section_tiles(segment, along):
@@ -336,19 +295,7 @@ static func runs_through(segment: StreetNetwork.Segment, open_cells: Dictionary,
 			return true
 	return false
 
-## Whether any `ReachabilityGrid` cell inside `rect` is one of the chains' own. A cell is two tiles
-## square and every cell is wholly street or wholly block (see `ReachabilityGrid`), so a street's
-## own tile rect divides into whole cells and this is an exact question rather than an overlap
-## test. Used for an alley, which is two tiles wide and has no midpoint worth distinguishing: a
-## chain that is in it at all is through it.
-static func _covers_any_cell(rect: Rect2i, open_cells: Dictionary) -> bool:
-	for y in range(rect.position.y, rect.end.y):
-		for x in range(rect.position.x, rect.end.x):
-			if open_cells.has(Vector2i(x, y) / ReachabilityGrid.CELL):
-				return true
-	return false
-
-## The finale's own seal pictures, in the brief's own words: *"burnt cars, blockades, craters,
+## The escape's own seal pictures, in the brief's own words: *"burnt cars, blockades, craters,
 ## etc. block paths through the city."* All four are `intensity = 0.0` rows, which is the same
 ## rule the day's candidates keep — *"static blockages in general shouldn't increase excitement"* —
 ## and it matters more here than on a day, because a loud wall either side of a 192px chain street
@@ -358,7 +305,10 @@ static func _covers_any_cell(rect: Rect2i, open_cells: Dictionary) -> bool:
 ## for exactly that reason: it emits 13 over a 179px field and is manned, so a street lined with
 ## them would be the loudest thing on the map and none of it is ground she is meant to reach.
 ## Its guards appear in the finale anyway, on foot and hunting, which is what that row is here for.
-static func _build_finale_candidates() -> Array[Candidate]:
+##
+## **The day gate passes every one of them**: `_eligible`/`_effective_first_day` answer which act a
+## picture belongs to, and the escape is the night after the last of the fourteen days.
+static func _build_escape_candidates() -> Array[Candidate]:
 	return [
 		_candidate("finale_burnt_cars", Strength.HARD, ["burnt_out_car"]),
 		_candidate("finale_barricade", Strength.HARD, ["barricade"]),
@@ -366,45 +316,23 @@ static func _build_finale_candidates() -> Array[Candidate]:
 		_candidate("finale_craters", Strength.HARD, ["impact_crater"]),
 	]
 
-static var _finale_candidates: Array[Candidate] = []
+static var _escape_candidates: Array[Candidate] = []
 
-static func finale_candidates() -> Array[Candidate]:
-	if _finale_candidates.is_empty():
-		_finale_candidates = _build_finale_candidates()
-	return _finale_candidates
+static func escape_candidates() -> Array[Candidate]:
+	if _escape_candidates.is_empty():
+		_escape_candidates = _build_escape_candidates()
+	return _escape_candidates
 
-## **No day gate.** `_eligible`/`_effective_first_day` answer *which act does this picture belong
-## to*, which is a question about a fourteen-day calendar; the escape is the night after the last
-## of those days, so every picture in the list above is available to it.
-static func _finale_candidate(rng: RandomNumberGenerator) -> Candidate:
-	var eligible := finale_candidates()
-	return eligible[rng.randi_range(0, eligible.size() - 1)]
-
-## What stands in an alley mouth off the chains: the day's own pick (`_widest_that_fits_a_mouth()`)
-## made of the finale's own list — the widest row whose body still fits the mouth, so it leaves the
-## least of the mouth's 64px open beside it without reaching past it. Decided once rather than
-## rolled, since the finale's list does not change with the day.
-##
-## **Fitting the mouth is the day's rule, and the finale's list is where it has to be asked.** A
-## day's alley-mouth rows are its soft seals, every one of them sidewalk-sized, so a day's pick has
-## always fitted. The finale's rows are street seals, sized for a 192px street: the widest, the
-## collapsed frontage, stood its six tiles of timber across a two-tile alley and two tiles into the
-## buildings either side, over their roofs. *(Inbox #785 in minty-lemur, 2026-10-18: "does the escape use the same
-## placement rules as the regular game? it doesn't seem like it does. it should, though. I saw wood
-## on the roof for example")*
-static func _finale_alley_def() -> String:
-	if _finale_alley == "":
-		var ids: Array[String] = []
-		for candidate in finale_candidates():
-			ids.append_array(candidate.def_ids)
-		_finale_alley = _widest_that_fits_a_mouth(ids)
-	return _finale_alley
-
-static var _finale_alley := ""
+## The pictures `spec` seals with (`DaySpec.seal_pictures`).
+static func pictures_for(spec: DaySpec) -> Array[Candidate]:
+	if spec.seal_pictures == DaySpec.SealPictures.ESCAPE:
+		return escape_candidates()
+	return candidates()
 
 ## Whether `segment` is the main road. See the class doc: never a seal candidate on a day, because
 ## `RouteTree` already refuses to route a strand along it, and sealing it too would wall the one
-## street the design deliberately leaves open to cross. `plan_finale` above does not ask.
+## street the design deliberately leaves open to cross. A spec that seals the main road
+## (`DaySpec.seals_the_main_road`) does not ask.
 static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	return map.is_main_road(not segment.horizontal, segment.a.x)
 
@@ -433,10 +361,10 @@ static func _seals_this_street(rng: RandomNumberGenerator) -> bool:
 ## rather than a preference — so a tree in the road is always one of that street's own.
 const FALLEN_TREE_SEAL_ID := "fallen_tree_seal"
 
-static func _pick_candidate(day: int, rng: RandomNumberGenerator,
+static func _pick_candidate(pictures: Array[Candidate], day: int, rng: RandomNumberGenerator,
 		street_has_trees: bool) -> Candidate:
 	var eligible: Array[Candidate] = []
-	for candidate in candidates():
+	for candidate in pictures:
 		if candidate.id == FALLEN_TREE_SEAL_ID and not street_has_trees:
 			continue
 		if _eligible(candidate, day):
@@ -775,9 +703,11 @@ static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -
 
 # ----------------------------------------------------------------------- alleys ---
 
-## Seals the mouths of every through-alley that touches the tree at neither end — and only a
-## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` fraction of those, rolled once per qualifying alley, and from
-## `Tuning.REGION_WALL_FIRST_DAY` on that fraction times `Tuning.GATEHOUSE_DAY_SEAL_SHARE`. See the
+## Seals the mouths of every through-alley the walk does not reach (`RouteSource.reaches_the_alley()`:
+## on a day, one that touches the tree at neither end) — and only a `Tuning.ALLEY_MOUTH_SEAL_CHANCE`
+## fraction of those, rolled once per qualifying alley, and from `Tuning.REGION_WALL_FIRST_DAY` on
+## that fraction times `Tuning.GATEHOUSE_DAY_SEAL_SHARE`, unless the spec seals every alley off the
+## walk (`DaySpec.seals_every_street_off_the_walk`, the escape's), which rolls nothing. See the
 ## class doc, "What alleys are for" — the smallest reading of a detail the design leaves open, taken
 ## rather than guessed at: an alley that touches the corridor at either end is kept open outright
 ## (the way round a wall), and one that touches it at neither is a *candidate* to be walled at both
@@ -785,13 +715,15 @@ static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -
 ## — *(playtest 25, finding 5: "the probability of blocking off alleys should be way lower")* — since
 ## walling every one of them, every day, is what made an alley read as closed off wholesale rather
 ## than as the occasional exception the design wants.
-static func _seal_alley_mouths(map: CityMap, tree: RouteTree,
-		day: int, rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventScheduler.Planned]:
+static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
+		rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventScheduler.Planned]:
 	var planned: Array[EventScheduler.Planned] = []
-	var def_id := _best_alley_mouth_def(day)
+	var day := spec.number
+	var def_id := _alley_mouth_def(pictures_for(spec), day)
 	if def_id == "":
 		return planned
 	var mouth_def := sealed_variant(EventCatalogue.by_id(def_id), true)
+	var every := spec.seals_every_street_off_the_walk
 	# From the gatehouse day on, the same share `_seals_this_street` keeps of the streets, folded
 	# into the one roll each qualifying alley already gets rather than rolled a second time.
 	var chance := Tuning.ALLEY_MOUTH_SEAL_CHANCE
@@ -810,19 +742,12 @@ static func _seal_alley_mouths(map: CityMap, tree: RouteTree,
 		if skip.has(rect.position):
 			continue
 		var vertical := rect.size.x < rect.size.y
-		var block := map.block_at(map.tile_rect_to_world(rect).get_center())
-		var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
-		var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
-		var segment_a := StreetNetwork.beside_block(block, side_a)
-		var segment_b := StreetNetwork.beside_block(block, side_b)
-		var a_rejoins := segment_a != null and tree.is_on_the_tree(segment_a.key())
-		var b_rejoins := segment_b != null and tree.is_on_the_tree(segment_b.key())
-		if a_rejoins or b_rejoins:
+		if route.reaches_the_alley(map, rect):
 			continue
-		# The roll is per qualifying alley, after the tree-connectivity rule already decided which
-		# alleys are candidates at all — so the fraction is of "alleys that would have been sealed",
-		# not of every alley in the city.
-		if rng.randf() >= chance:
+		# The roll is per qualifying alley, after the walk already decided which alleys are
+		# candidates at all — so the fraction is of "alleys that would have been sealed", not of
+		# every alley in the city.
+		if not every and rng.randf() >= chance:
 			continue
 		planned.append(_alley_mouth_plan(map, rect, vertical, true, mouth_def))
 		planned.append(_alley_mouth_plan(map, rect, vertical, false, mouth_def))
@@ -852,14 +777,26 @@ static func alley_mouth_wall(map: CityMap, rect: Rect2i, vertical: bool, at_star
 	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
 	return _alley_mouth_plan(map, rect, vertical, at_start, def)
 
-## The soft candidate whose single row best fills a two-tile alley mouth today — the widest
-## `obstructs_radius` among today's eligible soft rows, since a wider body leaves less of the
-## mouth's own 64px open beside it. Generic over the candidate list for the same reason `_place`
-## is: a future candidate with a wider row simply wins this pick on the days it is eligible.
-static func _best_alley_mouth_def(day: int) -> String:
+## The row of `pictures` that best fills a two-tile alley mouth today — the widest
+## `obstructs_radius` among today's eligible rows, since a wider body leaves less of the mouth's own
+## 64px open beside it, and never one wider than the mouth (`_widest_that_fits_a_mouth()`). Generic
+## over the candidate list for the same reason `_place` is: a future candidate with a wider row
+## simply wins this pick on the days it is eligible.
+##
+## **The soft rows, where the pictures have any**, since they are sidewalk-sized: a day's
+## alley-mouth rows are its soft seals. Pictures that seal hard only — the escape's, sized for a
+## 192px street — offer every row, and fitting the mouth is what keeps the widest of them out of the
+## buildings either side: the collapsed frontage stood its six tiles of timber across a two-tile
+## alley and over the roofs. *(Inbox #785 in minty-lemur, 2026-10-18: "does the escape use the same
+## placement rules as the regular game? it doesn't seem like it does. it should, though. I saw wood
+## on the roof for example")*
+static func _alley_mouth_def(pictures: Array[Candidate], day: int) -> String:
+	var any_soft := false
+	for candidate in pictures:
+		any_soft = any_soft or candidate.strength == Strength.SOFT
 	var ids: Array[String] = []
-	for candidate in candidates():
-		if candidate.strength != Strength.SOFT:
+	for candidate in pictures:
+		if any_soft and candidate.strength != Strength.SOFT:
 			continue
 		for id in candidate.def_ids:
 			var def := EventCatalogue.by_id(id)
@@ -869,7 +806,7 @@ static func _best_alley_mouth_def(day: int) -> String:
 
 ## Of `ids`, the row with the widest `obstructs_radius` whose body still fits a through-alley's
 ## mouth — `Tuning.ALLEY_WIDTH_TILES` across, so twice its radius no wider than that — or `""` when
-## none does. The first of equals, in `ids`' own order. Shared by a day's pick and the finale's.
+## none does. The first of equals, in `ids`' own order.
 static func _widest_that_fits_a_mouth(ids: Array[String]) -> String:
 	var mouth := float(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE)
 	var best_id := ""

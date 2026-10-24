@@ -1898,7 +1898,7 @@ day 9")*.
 | `policeman_giving_chase` **`hard_fail`** | SCRIPTED | day 4 | **The task robber's chase in a uniform**: every number is `robber_giving_chase`'s — 16 over a 26–200px field, 130px/s, the 26px catch with the 116px lunge, the day-3 dog's half-second badge, arriving already chasing, a chase that does not give up on a walker within `Tuning.PURSUIT_TIME` and that running shakes off, the walk-off at 100px/s. **His catch ends the day** *([merry-stork](playtests/2026-10-10-merry-stork.md), asked whether it ends the day or costs calm and ends the chase: "Ends the day (Recommended)")*: "The policeman caught up with you. They took you in." — as he is sent by a torn poster; out of a patrol car his catch is a stop, out of a hunting van it ends the day (above). His own look, `POLICEMAN_GIVING_CHASE`, draws `art/events/policeman_*` as the robber is drawn (waiting while a notice runs, the lunge with its stride once he chases), badged by the unsuffixed lunge. |
 | `guardsman_giving_chase` **`hard_fail`** | SCRIPTED | day 9 | **The same pursuer once guards are in the city**: every number the policeman's, the checkpoint guard's drawing (`GUARDSMAN_GIVING_CHASE`, `guard_standing_*` then `guard_lunging_*`, as `door_guard` is drawn), badged by the lunge's front diagonal, the one picture of the guard no other look stands for. "The guard caught up with you. They took you in." |
 
-### The escape — the walk placed by its own plan
+### The escape — the walk filled before she sets off
 
 Four rows nothing but the escape ever places. All four are `SCRIPTED` with `scripted_day` 0, the
 same gate the seal pictures use, so the ordinary catalogue roll can never reach one:
@@ -1916,7 +1916,7 @@ feasibly work at all. that is why the density is so high that it's impossible to
 a marble bag is absolutely needed with empty events (nothing happening) as well. we need a fair
 mix"; "frequency order is trucks > explosions > vans > barriers > empty".)* Every open street of
 the walk has `Tuning.FINALE_SLOTS_PER_STREET` slots (1), and each slot draws one marble from a bag
-for the whole escape (`EventScheduler.escape_bag()`): `Tuning.FINALE_BAG_TRUCKS` army trucks (10),
+for the whole escape (`EventScheduler.street_bag()`): `Tuning.FINALE_BAG_TRUCKS` army trucks (10),
 `FINALE_BAG_EXPLOSIONS` explosions (8), `FINALE_BAG_VANS` vans (3), `FINALE_BAG_ROADBLOCKS`
 roadblocks (2) and `FINALE_BAG_EMPTY` empty marbles (1). A row's marble puts one of that row on the
 street through every placement rule below; an empty marble leaves the slot with nothing; a row's
@@ -1924,10 +1924,14 @@ marble that finds no ground the rules accept is spent unmet, so a refused danger
 the next street. The bag has its own stream off the plan's seed, so a lost section replans the same
 streets. The two rows that take her, the van and the roadblock's guard, have the fewest marbles the
 player's order allows, and the counts were chosen by walking the shortest walk from the service
-exit to each exit through the plan's own events on two sets of 24 seeds
-(`tests/probes/escape_winnable.gd`): a walk meets about three trucks, three explosions, one van and
-one roadblock, and a plain walk gets out on 95 of 96. The bag is the escape's own until the escape
-is planned by the day's scheduler, which takes it as it is (minty-quail, escape-placement).
+exit to each exit through the plan's own events on two sets of 24 seeds: a walk meets about three
+trucks, three explosions, one van and one roadblock, and a plain walk gets out on 95 of 96.
+`tests/probes/escape_winnable.gd` walks the game's own plan with the game's own walker (`RouteRig`,
+`--start-escape city --route tunnel`) to measure it again. **The bag is a draw of the day's own
+scheduler**: the city section's `DaySpec` holds the bag, the slots and the rows
+(`DaySpec.Draw.BAG_PER_STREET`, `bag`, `slots_per_street`, `bag_rows`), `EventScheduler.build_day()`
+draws them (`_fill_the_walk_from_the_bag()`) along the streets of the walk `FinalePlanner` hands it
+(`RouteSource`), and every candidate goes through the same judge a day's does (`_best_of()`).
 
 **The escape's roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way
 that luring away the guard is enough. Right now there are for guards and the player adds
@@ -1955,7 +1959,8 @@ obstacle survivable")* Four things make that true:
 - **One guard at a time, wherever the bands stand.** No two of the escape's roadblocks stand where
   both guards can notice her: their notices, `pursues_within` round each band, never overlap, so
   two bands are at least twice the guard's 180px radius, 360px, apart on one street or on two
-  (`EventScheduler._keeps_its_notice_to_itself()`, a refusal at placement). *(Inbox #771 in minty-lemur: "two
+  (`EventScheduler._keeps_its_notice_to_itself()`, a refusal at placement, which the city section's
+  spec turns on: `DaySpec.one_notice_at_a_time`). *(Inbox #771 in minty-lemur: "two
   roadblocks are right next to each other and the second guard is invisible (hidden) until it
   already charges")* Dealing with a band happens inside its guard's notice, so she meets one band
   and its guard at a time, across a junction or a corner as well as along a street, and no guard
@@ -1980,22 +1985,24 @@ street; `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over
 two are.
 
 **The escape rolls its ground per street rather than per city, on the day's own ground** —
-`EventScheduler._finale_ground` takes the day's answer for the row (`_open_ground_for()`) on one
+`EventScheduler._street_ground` takes the day's answer for the row (`_open_ground_for()`) on one
 segment's own rect, since the chains already say which streets exist for it and there is no
 corridor to weight against. *(Inbox #785 in minty-lemur: "does the escape use the same placement rules as the
 regular game? it doesn't seem like it does. it should, though.")* So every refusal a day makes of a
 tile holds here — a closed tile, a held street, the home block, **a standing street tree's ground**
 (`docs/CITY.md`, "Street trees"), the side of the sidewalk a row wants, a corner for a row with a
 spread, the power station's front — and the precinct weight with them; all but the street the
-home's front door opens onto, a door the escape never sets off from (`docs/CITY.md`, "The escape").
+home's front door opens onto, a door the escape never sets off from (`DaySpec.holds_the_home_streets`
+off; `docs/CITY.md`, "The escape").
 Each candidate then meets the day's own spacing (`_room_around()`) and the escape's own refusals
 below. The answers are a function of the city alone, so a restart of the city section reads the
-ones the first plan worked out (`EventScheduler._finale_ground_cache()`) unless the city's tiles,
+ones the first plan worked out (`EventScheduler._kept_ground()`) unless the city's tiles,
 closures, held streets or trees have changed since.
 
 **Three of a day's rules are not the escape's, each by the player's word** *(inbox #785 in minty-lemur, asked
 which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules" for the home's
-streets and the caps)*:
+streets and the caps)*, each a setting the city section's spec turns off
+(`DaySpec.keeps_unused_calm_clear`, `holds_the_home_streets`, `caps_per_day`):
 
 - **The calm a day leaves alone** (`_calm_to_leave_alone()`: nothing's field may reach a calm area
   she has not used yet). The escape is the climax and the chains pass a calm area at every stop,
@@ -2023,15 +2030,22 @@ are impossible to get past. one sidewalk must be open if they're en-route.")* On
 placement rules keep the bodies off the route; in the escape they stand on it, so each candidate is
 refused when, with the seals and everything already planned whose reach touches the street, it
 would leave neither sidewalk of a chain street walkable from end to end
-(`EventScheduler.EscapeGround.leaves_a_sidewalk_open()`, which asks the day's own
+(`WalkGround.leaves_a_sidewalk_open()`, which asks the day's own
 `closes_a_walked_sidewalk_band()` of both bands), or when the ground around it would no longer join
-up everything it joined without it (`EscapeGround.keeps_the_walk_joined()`, the day's junction rule
+up everything it joined without it (`WalkGround.keeps_the_walk_joined()`, the day's junction rule
 asked of a box round the placement, its whole rim the arms) — which is what keeps an alley's mouth
 in the middle of a block open as well as the street it opens onto. The bodies are counted as they
 stand for the whole walk and at the body they have: the hunting van parked, the roadblock's band
 after its guard has gone, a burst at the crater it leaves, each recentred and laid along the street
-the way `EventInstance` builds it, and the seals with them. A refused candidate is never a
-fallback, so a street with no such ground simply carries one fewer.
+the way `EventInstance` builds it, and the seals with them. **A lethal reach that stands is counted
+as ground she cannot cross**, as well as the body under it: the parked van's 54px round where it
+stands (`WalkGround.held_by()`), since a sidewalk left open past its 22px body but inside its reach
+is a walk that ends the section; a pursuer's reach moves with him and warns first, so a roadblock
+counts at its band. A refused candidate is never a fallback, so a street with no such ground simply
+carries one fewer. The rule is one class
+(`WalkGround`), stated over the walk it is handed (`RouteSource`), which any spec that keeps the
+walk open (`DaySpec.keeps_the_walk_open`, the city section's) has the judge ask; a day keeps its
+routes through its corridor's own rules instead.
 
 | id | kind | where | Behaviour |
 | --- | --- | --- | --- |

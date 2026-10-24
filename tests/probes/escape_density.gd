@@ -20,7 +20,7 @@ func run(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var started := Time.get_ticks_msec()
-		var plan := FinalePlanner.plan(map, rng)
+		var plan := FinalePlanner.plan(map, rng, _city_spec())
 		var took := Time.get_ticks_msec() - started
 		var counts := {}
 		for placement in plan.placements:
@@ -32,10 +32,15 @@ func run(t) -> void:
 		totals["streets"] = int(totals.get("streets", 0)) + plan.open_streets.size()
 		print("ESCAPE_DENSITY seed %5d | %d streets | %s | alley walls: %s | planned in %d ms"
 				% [seed_value, plan.open_streets.size(), ", ".join(parts),
-				SealPlanner._finale_alley_def(), took])
+				SealPlanner._alley_mouth_def(SealPlanner.escape_candidates(), DaySpec.CITY_DAY),
+				took])
 	var parts: Array[String] = []
 	for id in ROWS:
 		parts.append("%s %d" % [id, int(totals.get(id, 0))])
 	print("ESCAPE_DENSITY | %d seeds | %d streets | %s" % [SEEDS.size(),
 			int(totals.get("streets", 0)), ", ".join(parts)])
 	t.check(true, "a probe asserts nothing")
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
