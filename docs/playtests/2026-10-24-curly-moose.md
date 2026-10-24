@@ -209,3 +209,13 @@
 2. **The note.**
 
    > yes, slice the cafe tables
+
+## #829
+
+1. **Context** (the assistant's):
+
+   Said on 2026-10-24 after the filing PR #828 (curly-moose) was opened, about the day-one discussion of that day (the toolbox, the research's techniques, the orchestrator's own ideas, the chirp study) whose set-aside ideas appeared only in grassy-beaver's "Not built" paragraph and coral-newt's "Not adopted" paragraph, and some (moving cues toward the park, sound as a teaching tool, a map of the lost route) nowhere.
+
+2. **The note.**
+
+   > keep track of all the ideas we discussed even the ones we rejected. so we can look at them later and rethink again.
