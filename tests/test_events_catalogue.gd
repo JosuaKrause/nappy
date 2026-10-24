@@ -527,16 +527,17 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 	var segment := EventInstance._native_size(EventInstance.BARRIER_SEGMENT_VERTICAL)
 	var segments := maxi(1, ceili(half * 2.0 / segment.y))
 	var width := half * 2.0 / segments
-	var last_slice_starts := EventInstance._spread_slice_feet(true, half, width, segments - 1) - width
+	var last_slice_starts := DrawLayer.slice_along(-half, half, segments, segments - 1, true) - width
 	t.check(cap_size.y > cap_size.x * 2.0,
 			"the post is an upright picture (%s), so its height and width are different questions"
 			% cap_size)
 	t.check(half - offset <= cap_size.x and offset > last_slice_starts,
 			"end-on, the near post stands at the barrier's end (%.1f of %.1f), inside the last"
 			% [offset, half] + " segment's slice (from %.1f)" % last_slice_starts)
-	# The spread is one node, so draw order is its only depth. End-on, the side drawn behind the
-	# board has to be the far end, up the screen (`_spread_at` puts side −1 at negative y), and
-	# the near end is the only one drawn over it; broadside, both stand level with the board.
+	# A cap sorts with its end slice, so draw order within the slice is its only depth. End-on, the
+	# side drawn behind the board has to be the far end, up the screen (`_spread_at` puts side −1
+	# at negative y), and the near end is the only one drawn over it; broadside, both stand level
+	# with the board.
 	var behind := EventInstance._cap_sides(true, true)
 	var in_front := EventInstance._cap_sides(true, false)
 	t.check(behind.size() == 1 and behind[0] < 0.0 and in_front.size() == 1 and in_front[0] > 0.0,

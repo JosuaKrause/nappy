@@ -118,7 +118,11 @@ src/
 	                      went and which events she met
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
   world/
-	world_context.gd      the only questions the baby may ask the world
+	world_context.gd      the only questions the baby may ask the world, and adding a node to the
+	                      world on a draw layer (`add_entity()`)
+	draw_layer.gd         the one list of draw layers both worlds share, the only place a
+	                      z_index is written, and a long footprint's feet-anchored slices
+	world_layers.gd       the node one world draws each of its layers in
 	mover.gd              who is asking whether ground can be walked: the layers that stop it
 	                      (the ground, the posts, the day's closures, soft seals and bodies) and
 	                      how wide it is
@@ -566,10 +570,25 @@ kept strictly out of anything that touches the meters.
 
 ## Rendering / 2.5D
 
-- `city.tscn` has two y-sorted layers: `Buildings` (z 1) and `Entities` (z 2). Everything that
-  stands on the ground goes in the second. **Buildings never sort against entities** — a
-  building's mass extends a block north of the origin y-sort compares, and nothing walkable is
-  ever inside a lot, so the comparison could only ever be wrong. See docs/CITY.md, "Rendering".
+- **One list of draw layers for both worlds**, `DrawLayer` (`src/world/draw_layer.gd`), from the
+  bottom: the building's stairwell backdrop, the ground, buildings and walls, the building's
+  doors, marks on the ground, the halo, the entities, a figure warning over the street, the
+  tunnel's overhead dark, and the debug view. It is the only place a `z_index` is written
+  (`tests/test_draw_layers.gd` reads `src/` and `scenes/` for any other). A world holds a node per
+  layer it draws on (`WorldLayers`) and adds what it is handed through `add_entity(node, layer)`
+  (`WorldContext`), `ENTITIES` unless another is named; the city's are `city.tscn`'s `Buildings`
+  and `Entities`, both y-sorted, and the building's are its own. Whatever is not a world's own —
+  the halo, the debug view, the warning roadblock guard — asks `DrawLayer.draw_on()` for its layer.
+  Everything that stands on the ground goes in `ENTITIES`. **Buildings never sort against
+  entities** — a building's mass extends a block north of the origin y-sort compares, and nothing
+  walkable is ever inside a lot, so the comparison could only ever be wrong. See docs/CITY.md,
+  "Rendering".
+- **A footprint longer than a tile is drawn as slices**, each a node standing at its own feet
+  (`DrawLayer.slice_feet()`, `DrawLayer.add_slices()`), so a run going away from the camera sorts
+  slice by slice against her: an event's spread (`EventInstance.Slice`, the roadblock's band among
+  them) along its solid footprint, and a closure's barrier and a park's fence panel by panel along
+  the barrier's footprint or post to post. Broadside a slice stands at the middle of its share;
+  end-on at its near end, the last exactly on the run's end, so a post there shares its feet.
 - Ground: freeable `TileMapLayer` children of `SceneryGround`, fed by `GroundTiles`,
   which is the only place that decides which
   tile a cell gets. Source ids in `assets/ground_tileset.tres` are positional and

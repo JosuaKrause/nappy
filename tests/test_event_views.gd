@@ -329,7 +329,7 @@ func _test_a_spread_covers_the_ground_its_body_closes(t) -> void:
 
 ## The union of every rect `EventInstance._draw_spread()` draws a roadblock's band into, segments
 ## and end posts, in the band's own local space — the same slice and cap arithmetic that function
-## uses, through the same `_spread_slice_feet()`, `_cap_offset()` and `_cap_along()` it calls.
+## uses, through the same `DrawLayer.slice_along()`, `_cap_offset()` and `_cap_along()` it calls.
 func _roadblock_band_rect(vertical: bool, half: float) -> Rect2:
 	return _spread_rect(EventInstance._roadblock_segment_texture(vertical),
 			EventInstance.ROADBLOCK_END, vertical, half)
@@ -359,7 +359,7 @@ func _spread_segment_rects(segment_picture: String, vertical: bool, half: float)
 	var width := half * 2.0 / segments
 	var rects: Array[Rect2] = []
 	for i in segments:
-		var along := EventInstance._spread_slice_feet(vertical, half, width, i)
+		var along := DrawLayer.slice_along(-half, half, segments, i, vertical)
 		var feet := Vector2(0.0, along) if vertical else Vector2(along, 0.0)
 		var size := Vector2(thickness, width) if vertical else Vector2(width, thickness)
 		rects.append(Rect2(feet - Vector2(size.x * 0.5, size.y), size))

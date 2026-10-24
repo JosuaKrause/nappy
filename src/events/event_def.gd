@@ -631,6 +631,13 @@ func departure_speed() -> float:
 ## the day-3 dog sent down her heading, and the same dog sprinkled in later — keeps closing, since
 ## its approach is the lesson (`EventInstance.is_standing_for_its_notice()`).
 @export var stands_for_its_notice := false
+## Whether this pursuer is **drawn over the street's other figures while it stands for its notice**
+## (`DrawLayer.Layer.WARNING`), and sorts with them again once it charges: `roadblock`, whose guard
+## at his post sorts at his own feet, so a van parked in front of the post or another band and the
+## guard on its far side, standing nearer her, would be drawn over the man whose raised hand is the
+## warning *(inbox #771 in minty-lemur: "the second guard is invisible (hidden) until it already
+## charges")*. A man hidden while he warns has not warned.
+@export var warns_over_the_street := false
 ## Whether this pursuer **charges from its first frame because its warning came before it was set on
 ## her**: `door_guard`, whose warning is the raised hand of the hut's guard across the road (or the
 ## alley post's) from the frame she crosses the door's line, for `Tuning.CROSSING_WARNING`; he is

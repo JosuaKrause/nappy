@@ -10,7 +10,7 @@ extends RefCounted
 ## from the solid's own origin, its spine lying along an axis. Almost every solid is one piece at its
 ## origin; a crash is a car per piece, with the debris between them open ground. A long solid — a
 ## band, a spread, a fence — is one piece whose length lies along its axis, which is what a drawing
-## that slices it at the feet reads.
+## that slices it at the feet reads (`Piece.span()`, `DrawLayer.run_of()`).
 
 class Piece:
 	extends RefCounted
@@ -19,6 +19,27 @@ class Piece:
 	var offset := Vector2.ZERO
 	## The way the piece's spine lies on the ground (`GroundShape.tiles_under()`).
 	var axis := Vector2.RIGHT
+
+	## How far the piece reaches from its middle along its length: a disc's or a capsule's reach
+	## along its axis, a rectangle's longer half side.
+	func half_length() -> float:
+		if shape.kind == GroundShape.Kind.RECT:
+			return maxf(shape.half_extents.x, shape.half_extents.y)
+		return shape.reach()
+
+	## The two ends of the piece along its length on the ground with the solid's origin at `at`,
+	## the end up or left of the screen first: the run a drawing that slices it at the feet covers
+	## (`DrawLayer.run_of()`). A rectangle lies its own frame along `axis`, as its body does
+	## (`Footprint.body()`), so its length is along `axis` or across it, whichever side is longer.
+	func span(at: Vector2) -> PackedVector2Array:
+		var along := axis.normalized()
+		if shape.kind == GroundShape.Kind.RECT and shape.half_extents.y > shape.half_extents.x:
+			along = along.orthogonal()
+		if along.y < 0.0 or (is_zero_approx(along.y) and along.x < 0.0):
+			along = -along
+		var middle := at + offset
+		var half := half_length()
+		return PackedVector2Array([middle - along * half, middle + along * half])
 
 var pieces: Array[Piece] = []
 

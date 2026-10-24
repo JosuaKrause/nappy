@@ -1199,6 +1199,12 @@ var silenced := false
 ## `--skip events`, handed in by the manager that makes this instance: nothing of it is drawn.
 var skip_draw := false
 
+## The world this instance stands in, handed in by the manager that makes it (`EventManager`,
+## `InteriorEvents`) before it is added: what it adds beside itself — its band, the far guard
+## walking off, the slices of a long picture — goes in through the world's `add_entity()`. Null in
+## a rig that stands it under a bare node, where they stand beside it in that node.
+var world: WorldContext = null
+
 ## Where the player is, in world space, or `INF` for nowhere.
 ##
 ## Written once per frame by `EventManager`, which is the one place that already knows. An instance
@@ -1570,6 +1576,7 @@ func _ready() -> void:
 	_build_scenery()
 	if def.look == EventDef.Look.ROADBLOCK:
 		_build_the_band()
+	_build_the_slices()
 
 ## The whole A/B sources remain the badge and halo pictures. The visible scene is instead
 ## retained in painter-order layers behind this node's caret and ahead of its halo.
@@ -1809,12 +1816,23 @@ func solid_part_shapes() -> Array[GroundShape]:
 ## `_draw_body` and `_current_bob` so its ring rides the same lift `_draw()` gives the body.
 func _build_halo() -> void:
 	_halo = EntityHalo.new(_draw_body, _current_bob)
-	add_child(_halo)
+	var holder := _rim_holder()
+	holder.add_child(_halo)
+	_halo.position = global_position - holder.global_position
 	# **First child, so first of the behind-parent drawers.** The rim and the visible scene's layers
 	# (`EventScenery`) both opt into `show_behind_parent`, and siblings that do are painted in
-	# tree order: a rim added after the scenery -- which `_ready()` built long before any pick --
-	# painted over the pictures it is meant to outline.
-	move_child(_halo, 0)
+	# tree order, so a rim after the scenery, which `_ready()` builds long before any pick, would
+	# paint over the pictures it is meant to outline.
+	holder.move_child(_halo, 0)
+
+## What the rim stands behind: this node, or the first slice of a long picture drawn in slices,
+## which is drawn before every other part of it (`_draw_a_slice()`), so the rim is behind the whole
+## picture as it is behind a picture drawn on this node. A roadblock's rim stays here: its slices
+## are the band's, and the rim it lights traces the man who sets off from it.
+func _rim_holder() -> Node2D:
+	if _band == null and not _slices.is_empty() and _slices[0].is_inside_tree():
+		return _slices[0]
+	return self
 
 ## Whether this instance is solid right now. True from `_ready()` for anything with
 ## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` —
@@ -2356,27 +2374,19 @@ func _process(delta: float) -> void:
 		# needs no redraw for it. A spent guard moves nothing, so there is nothing to re-pin.
 		_keep_the_body_where_it_was_left()
 	_move_the_band()
-	_draw_a_warning_guard_on_top()
+	_take_the_layer_it_warns_on()
 	_redraw_if_the_picture_changed()
 
-## **A roadblock's guard warning her is drawn over everything round him**, for the whole of his
-## warning: from the frame he steps out to his post with his hand raised until he charges. *(Inbox
-## #771 in minty-lemur, 2026-10-18: "the second guard is invisible (hidden) until it already charges".)* He sorts
-## at his own feet like any other figure, so anything standing between him and her with its feet
-## nearer her than his — a van parked in front of his post, another band and the guard posted on
-## its far side — is drawn over him, and a man who is hidden while he warns has not warned. Above
-## the rest of the street (`WARNING_GUARD_Z`) only while he warns; once he charges he sorts with
-## everything else again.
-func _draw_a_warning_guard_on_top() -> void:
-	if def.look != EventDef.Look.ROADBLOCK:
+## **A pursuer that warns over the street is drawn on the warning layer for the whole of its
+## warning** (`EventDef.warns_over_the_street`, `DrawLayer.Layer.WARNING`): the roadblock's guard,
+## from the frame he steps out to his post with his hand raised until he charges, over every figure
+## on the street, under the city's overhead layer. Once he charges he sorts with the street again,
+## on the entity layer at his own feet.
+func _take_the_layer_it_warns_on() -> void:
+	if not def.warns_over_the_street:
 		return
-	var wanted := WARNING_GUARD_Z if is_standing_for_its_notice() else 0
-	if z_index != wanted:
-		z_index = wanted
-
-## How far above the street's own figures a warning roadblock guard is drawn — one step, under the
-## city's overhead layer (`City.OVERHEAD_Z_INDEX`).
-const WARNING_GUARD_Z := 1
+	DrawLayer.draw_on(self, DrawLayer.Layer.WARNING if is_standing_for_its_notice()
+			else DrawLayer.Layer.ENTITIES)
 
 # ------------------------------------------------------------------- the chat ---
 # `chatting_mother`'s whole mechanic: a trigger rather than a field. `EventManager` decides *when*
@@ -5424,7 +5434,12 @@ func _glow_the_band(strength: float, colour: Color) -> void:
 		return
 	if _band_halo == null:
 		_band_halo = EntityHalo.new(_draw_the_band_for_the_halo, func() -> float: return 0.0)
-		_band.add_child(_band_halo)
+		# Behind the band's first slice, drawn before every other part of the band, as a rim is
+		# behind the picture it outlines (`_rim_holder()`).
+		var holder: Node2D = _slices[0] if not _slices.is_empty() and _slices[0].is_inside_tree() \
+				else _band
+		holder.add_child(_band_halo)
+		_band_halo.position = _band.global_position - holder.global_position
 	_band_halo.set_glow(strength, colour)
 
 var _band_halo: EntityHalo
@@ -5878,7 +5893,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.BUSKER:
 			_draw_busker(canvas)
 		EventDef.Look.ROADWORKS:
-			_draw_spread(_roadwork_segment_texture(_spread_vertical), BARRIER_END, canvas)
+			_draw_the_spread(canvas)
 		EventDef.Look.FIRE_ENGINE:
 			# Drawn over its own body like the patrol car (`_body_anchor()`): the body is the
 			# truck's `shape`, and the shadow, which is that shape, stays under the node.
@@ -5896,7 +5911,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.LOOSE_DOG:
 			_draw_loose_dog(canvas)
 		EventDef.Look.STALL:
-			_draw_spread(STALL, "", canvas)
+			_draw_the_spread(canvas)
 		EventDef.Look.LEAF_BLOWER:
 			_draw_eight_view(LEAF_BLOWER_BY_VIEW, _heading, canvas, false, LEAF_BLOWER_BY_VIEW_B)
 		EventDef.Look.BIRDS:
@@ -5954,7 +5969,7 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(ARMY_TRUCK_BY_VIEW, _heading, canvas, true)
 		EventDef.Look.BARRICADE:
-			_draw_spread(BARRICADE_PILE, "", canvas)
+			_draw_the_spread(canvas)
 		EventDef.Look.PROTEST:
 			_draw_protest(canvas)
 		EventDef.Look.FIREFIGHT:
@@ -5970,9 +5985,9 @@ func _draw_body(canvas: CanvasItem = self) -> void:
 				_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical,
 						_idle_stepping(BURST_MAIN_SPLASH_PERIOD)), canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
-			_draw_spread(COLLAPSED_FRONTAGE, "", canvas)
+			_draw_the_spread(canvas)
 		EventDef.Look.SCAFFOLDING:
-			_draw_spread(SCAFFOLDING, "", canvas)
+			_draw_the_spread(canvas)
 		EventDef.Look.SKIP:
 			_draw_simple(SKIP, canvas)
 		EventDef.Look.MOVING_VAN:
@@ -6345,13 +6360,14 @@ func _robber_waiting_heading() -> Vector2:
 ## So the street he abandoned stays visibly and physically shut behind him, and what she has to get
 ## away from is a man rather than a band of concrete.
 ##
-## **Two nodes, so two sort points**: the instance sorts at the chaser's feet once he has set off, and
-## the band and the guards posted beside it sort at the band's line (`RoadblockBand`).
+## **The man, the band and its slices are nodes of their own, so each sorts at its own point**: the
+## instance at the chaser's feet once he has set off, the guards posted beside the band at the band's
+## line (`RoadblockBand`), and the band's segments each at its own slice's feet (`Slice`).
 func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	# **The barrier never rides the chaser's stride.** `_draw()` lifts the whole canvas by
 	# `_current_bob()` for anything that pursues or leaves, and the band and the posted guard are
 	# furniture of the street rather than part of the man who walked out of it. On the screen they
-	# are their own node (`RoadblockBand`), standing at the body and sorting at its own feet; the
+	# are nodes of their own (`RoadblockBand`, its `Slice`s), standing at the body; the
 	# halo ring's canvas has no such node and draws them back down by the lift
 	# (*"the guard pursuer makes his barrier jump up and down"*).
 	if canvas == self and _band != null:
@@ -6365,9 +6381,10 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 		_draw_the_band(canvas, _roadblock_band_at())
 	_draw_the_chaser(canvas)
 
-## The band and the guard posted at each end of it, drawn at `band_at` in `canvas`.
+## The band and the guard posted at each end of it, drawn at `band_at` in `canvas`; on the band's
+## own node only the guards, its segments being its slices (`_draw_spread()`).
 func _draw_the_band(canvas: CanvasItem, band_at: Vector2) -> void:
-	_draw_spread(_roadblock_segment_texture(_spread_vertical), ROADBLOCK_END, canvas, band_at)
+	_draw_the_spread(canvas, band_at)
 	if _far_guard_has_left():
 		return
 	for side: int in def.guard_sides:
@@ -6393,9 +6410,10 @@ func chaser_pictures() -> Dictionary:
 		return GUARD_STANDING_BY_VIEW
 	return GUARD_LUNGING_BY_VIEW
 
-## **The barrier's own node.** A y-sorted sibling of this instance standing at `body_position()`,
-## drawing the band and the posted guards, so that they sort at the band's line however far the
-## man who set off has walked from it. Freed with the instance.
+## **The barrier's own node.** A sibling of this instance in the world's entity layer standing at
+## `body_position()`, drawing the posted guards, so that they sort at the band's line however far
+## the man who set off has walked from it; the band's segments are its slices (`Slice`), each at
+## its own feet. Freed with the instance.
 class RoadblockBand extends Node2D:
 	var instance: EventInstance
 
@@ -6424,8 +6442,8 @@ var _band: RoadblockBand
 ## nothing: the band is silent from the same frame. A band streamed back in after its guard was
 ## spent comes back with neither (`come_back_as_the_barrier()`).
 ##
-## **His own node** (`FarGuard`), a y-sorted sibling like the band's, so he sorts at his own feet
-## as he walks rather than at the band's line.
+## **His own node** (`FarGuard`), in the world's entity layer like the band's, so he sorts at his
+## own feet as he walks rather than at the band's line.
 var _far_guard_at := Vector2.INF
 var _far_guard_heading := Vector2.ZERO
 var _far_guard_walked := 0.0
@@ -6484,7 +6502,7 @@ func _send_the_far_guard_off() -> void:
 	_far_guard.name = "FarGuard"
 	_far_guard.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	if is_inside_tree() and get_parent() != null:
-		get_parent().add_child(_far_guard)
+		_add_beside_it(_far_guard)
 	_move_the_far_guard()
 
 ## One frame of the far guard's walk away, and his end once she could not be watching.
@@ -6554,16 +6572,28 @@ func _build_the_band() -> void:
 	_band.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_attach_the_band.call_deferred()
 
-## Idempotent, so a rig that never reaches the idle frame can call it itself.
+## Idempotent, so a rig that never reaches the idle frame can call it itself. The band's slices go
+## in with it.
 func _attach_the_band() -> void:
+	_attach_the_slices()
 	if _band == null or _band.is_inside_tree() or not is_inside_tree() or get_parent() == null:
 		return
 	_band.position = body_position()
-	get_parent().add_child(_band)
+	_add_beside_it(_band)
 	_move_the_band()
 
-## Keeps the band where its body is, shown while the instance is, and redrawn when asked.
+## Adds `node` to the world this instance stands in, on the entity layer, or beside it in its own
+## parent in a rig that handed it no world.
+func _add_beside_it(node: Node2D) -> void:
+	if world != null:
+		world.add_entity(node)
+	else:
+		get_parent().add_child(node)
+
+## Keeps the band and the slices where the body is, shown while the instance is, and redrawn when
+## asked.
 func _move_the_band(redraw := false) -> void:
+	_move_the_slices(redraw)
 	if _band == null or not _band.is_inside_tree():
 		return
 	var at := body_position()
@@ -6579,6 +6609,7 @@ func _exit_tree() -> void:
 		_band.queue_free()
 	_band = null
 	_release_the_far_guard()
+	_release_the_slices()
 
 ## Where the band is drawn in this node's local space when it is drawn on this node's own canvas (the
 ## halo ring's): back at `body_position()`, and drawn down by the lift `_draw()` puts the whole canvas
@@ -6775,7 +6806,7 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 
 ## A blocking object is drawn at exactly the width it obstructs, by repeating a segment
 ## across it. Anything else would be a lie about where the player can walk. On either axis the
-## segments cover `-half` to `half` and no further (`_spread_slice_feet`).
+## segments cover the run its body closes (`_spread_run()`) and no further.
 ##
 ## **The end cap is inset by half its own width, for the same reason, on either axis.** A cap
 ## centred at `±half` hangs half its own width past the obstruction — `barrier_end.svg` is 6px wide,
@@ -6785,44 +6816,166 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## A cap is an upright post on both axes, so it is drawn at its own size and its width is what it
 ## covers along the run whichever way the run goes (`_cap_along`). End-on, the far post stands
 ## behind the board and the near one in front of it (`_cap_sides`).
+##
+## **On the screen it is drawn in slices** (`_build_the_slices()`), one per segment, each standing
+## at its own feet, so a run going away from the camera sorts slice by slice against her: on this
+## node's own canvas, or the band's, nothing is drawn here. On any other canvas — a rim tracing the
+## whole picture — it is drawn whole, in the order its slices draw it.
 ## `origin` moves the whole spread, its shadow included, to a local point other than this node's
 ## own — which is what a body left standing while its owner walks away needs (`_draw_roadblock()`,
 ## `EventDef.body_stays_behind`). Zero, the default, is every other caller: the spread is drawn
 ## where the instance is.
 func _draw_spread(segment_picture: String, cap: String = "", canvas: CanvasItem = self,
 		origin := Vector2.ZERO) -> void:
-	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas, origin)
+	if not _slices.is_empty() and (canvas == self or canvas == _band):
+		return
+	_draw_spread_slices(segment_picture, cap, canvas, origin, 0,
+			_spread_slice_count(segment_picture) - 1)
+
+## Slices `first` to `last` of the spread on `canvas`, the spread's origin at `origin`: the shadow
+## and the far cap with the first slice, before its segment, and the near cap or caps with the last,
+## after its segment — the order the whole picture is drawn in.
+func _draw_spread_slices(segment_picture: String, cap: String, canvas: CanvasItem, origin: Vector2,
+		first: int, last: int) -> void:
+	var run := _spread_run()
+	var half := run[0].distance_to(run[1]) * 0.5
+	var segment := _native_size(segment_picture)
+	var thickness := segment.x if _spread_vertical else segment.y
+	var segments := _spread_slice_count(segment_picture)
+	var width := half * 2.0 / segments
+	var feet := DrawLayer.slice_feet(run[0], run[1], segments)
+	var cap_size := _native_size(cap) if not cap.is_empty() else Vector2.ZERO
+	for i in range(first, last + 1):
+		if i == 0:
+			_draw_body_shadow(canvas, origin)
+			if not cap.is_empty():
+				for side: float in _cap_sides(_spread_vertical, true):
+					_draw_cap(canvas, cap, cap_size, origin, half, side)
+		Sprites.draw_standing(canvas, _drawn(segment_picture), origin + feet[i],
+				_spread_extent(width, thickness))
+		if i == segments - 1 and not cap.is_empty():
+			for side: float in _cap_sides(_spread_vertical, false):
+				_draw_cap(canvas, cap, cap_size, origin, half, side)
+
+## How many segments a spread of `segment_picture` is drawn in: as few as cover its run with no
+## segment stretched past its own picture's length.
+func _spread_slice_count(segment_picture: String) -> int:
+	var run := _spread_run()
 	var segment := _native_size(segment_picture)
 	var along_natural := segment.y if _spread_vertical else segment.x
-	var thickness := segment.x if _spread_vertical else segment.y
-	var segments := maxi(1, ceili(half * 2.0 / along_natural))
-	var width := half * 2.0 / segments
-	var cap_size := _native_size(cap) if not cap.is_empty() else Vector2.ZERO
-	if not cap.is_empty():
-		for side: float in _cap_sides(_spread_vertical, true):
-			_draw_cap(canvas, cap, cap_size, origin, half, side)
-	for i in segments:
-		Sprites.draw_standing(canvas, _drawn(segment_picture),
-				origin + _spread_at(_spread_slice_feet(_spread_vertical, half, width, i)),
-				_spread_extent(width, thickness))
-	if not cap.is_empty():
-		for side: float in _cap_sides(_spread_vertical, false):
-			_draw_cap(canvas, cap, cap_size, origin, half, side)
+	return maxi(1, ceili(run[0].distance_to(run[1]) / along_natural))
 
-## Where slice `index` of a spread stands its feet, along the run: every slice is `width` long and
-## together they cover `-half` to `half`, the obstruction's own extent.
-##
-## **Broadside, at the middle of its slice; end-on, at the near end of it.** `Sprites.draw_standing`
-## puts the feet at the bottom of the picture, and broadside the run is across the picture, so the
-## middle is what centres a slice on its ground. End-on the run goes *up* the picture: a slice drawn
-## `width` tall with its feet at its middle would stand half a slice up the screen from its own
-## ground, and the whole column with it — overhanging the far end of the body by half a slice and
-## falling half a slice short of the near end, where she walks up to it. With the feet at the near
-## end each slice's picture covers its own slice of ground, and the column covers exactly the
-## ground its body closes.
-static func _spread_slice_feet(vertical: bool, half: float, width: float, index: int) -> float:
-	return -half + width * (index + (1.0 if vertical else 0.5))
+## The run a spread covers from its own origin, far end first: its solid footprint end to end
+## (`solid_footprint_of()`, `DrawLayer.run_of()`), the ground its body closes. A spread with no body
+## covers 11px either side of its origin, as `drawn_box()` reserves.
+func _spread_run() -> PackedVector2Array:
+	if def.obstructs_radius > 0.0 and def.shape != null:
+		return DrawLayer.run_of(solid_footprint_of(def, _spread_axis(), _spread_vertical),
+				Vector2.ZERO)
+	return PackedVector2Array([_spread_at(-11.0), _spread_at(11.0)])
+
+## The segment and the end cap (`""` for none) a spread-drawn look repeats along its run, or an empty
+## list for a look that is not drawn as a spread.
+func _spread_pictures() -> PackedStringArray:
+	match def.look:
+		EventDef.Look.ROADWORKS:
+			return PackedStringArray([_roadwork_segment_texture(_spread_vertical), BARRIER_END])
+		EventDef.Look.STALL:
+			return PackedStringArray([STALL, ""])
+		EventDef.Look.BARRICADE:
+			return PackedStringArray([BARRICADE_PILE, ""])
+		EventDef.Look.COLLAPSED_FRONTAGE:
+			return PackedStringArray([COLLAPSED_FRONTAGE, ""])
+		EventDef.Look.SCAFFOLDING:
+			return PackedStringArray([SCAFFOLDING, ""])
+		EventDef.Look.ROADBLOCK:
+			return PackedStringArray([_roadblock_segment_texture(_spread_vertical), ROADBLOCK_END])
+	return PackedStringArray()
+
+## The whole spread of this instance's look on `canvas` (`_draw_spread()`).
+func _draw_the_spread(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
+	var pictures := _spread_pictures()
+	_draw_spread(pictures[0], pictures[1], canvas, origin)
+
+# ------------------------------------------------------------------ the slices ---
+
+## **One slice of a spread on the screen**: a node of its own in the world's entity layer, standing
+## at its slice's feet (`DrawLayer.add_slices()`), drawing its own segment and whatever goes with it
+## (`_draw_spread_slices()`). Freed with the instance.
+class Slice extends Node2D:
+	var instance: EventInstance
+	var index := 0
+
+	func _draw() -> void:
+		if instance != null and is_instance_valid(instance):
+			instance._draw_a_slice(self)
+
+## The slices this instance's spread is drawn in, far end first, and where each stands from the
+## body (`body_position()`), index for index.
+var _slices: Array[Slice] = []
+var _slice_feet := PackedVector2Array()
+
+## Builds the slices of a spread-drawn look (`_spread_pictures()`), put in beside it once it has
+## settled into the world (`_attach_the_slices()`). None when nothing of it is drawn.
+func _build_the_slices() -> void:
+	var pictures := _spread_pictures()
+	if pictures.is_empty() or skip_draw:
+		return
+	var run := _spread_run()
+	_slice_feet = DrawLayer.slice_feet(run[0], run[1], _spread_slice_count(pictures[0]))
+	for i in _slice_feet.size():
+		var slice := Slice.new()
+		slice.instance = self
+		slice.index = i
+		slice.name = "Slice%d" % i
+		# Moved from `_process()`, so it opts out of physics interpolation like this instance does.
+		slice.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		_slices.append(slice)
+	_attach_the_slices.call_deferred()
+
+## Puts the slices into the world at their feet, each ahead of this instance in the tree, so at a
+## tie of feet its caret is drawn over its own picture. Idempotent, so a rig that never reaches the
+## idle frame can call it itself (`_attach_the_band()`).
+func _attach_the_slices() -> void:
+	if _slices.is_empty() or _slices[0].is_inside_tree() or not is_inside_tree() \
+			or get_parent() == null:
+		return
+	var feet := PackedVector2Array()
+	for at in _slice_feet:
+		feet.append(body_position() + at)
+	var nodes: Array[Node2D] = []
+	nodes.assign(_slices)
+	if world != null:
+		DrawLayer.add_slices(world, nodes, feet, DrawLayer.Layer.ENTITIES, self)
+	else:
+		DrawLayer.add_slices_beside(self, nodes, feet)
+	_move_the_slices(true)
+
+## Keeps the slices at the body's feet, shown while the instance is, and redrawn when asked.
+func _move_the_slices(redraw := false) -> void:
+	if _slices.is_empty() or not _slices[0].is_inside_tree():
+		return
+	var at := body_position()
+	var shown := not (skip_draw or is_finished or is_suppressed_by_its_own_hold())
+	for slice in _slices:
+		var feet := at + _slice_feet[slice.index]
+		if not slice.global_position.is_equal_approx(feet):
+			slice.global_position = feet
+		slice.visible = shown
+		if redraw:
+			slice.queue_redraw()
+
+## One slice of the spread, drawn on its own node from the body's own origin.
+func _draw_a_slice(slice: Slice) -> void:
+	var pictures := _spread_pictures()
+	_draw_spread_slices(pictures[0], pictures[1], slice, -_slice_feet[slice.index], slice.index,
+			slice.index)
+
+func _release_the_slices() -> void:
+	for slice in _slices:
+		if is_instance_valid(slice):
+			slice.queue_free()
+	_slices.clear()
 
 ## One end cap of a spread, standing at its end of the run — see `_draw_spread`.
 func _draw_cap(canvas: CanvasItem, cap: String, cap_size: Vector2, origin: Vector2, half: float,
@@ -6831,10 +6984,12 @@ func _draw_cap(canvas: CanvasItem, cap: String, cap_size: Vector2, origin: Vecto
 			origin + _spread_at(_cap_offset(half, _cap_along(cap_size), side)), cap_size)
 
 ## Which end caps are drawn before the segments (`behind` true) and which after, as the `side` of
-## each (−1 the start of the run, +1 its end). The whole spread is one node, so nothing y-sorts
-## within it and draw order is the only depth there is. Broadside, both posts stand level with the
-## board and go over it. End-on, the run goes away from the camera: the start is its far end, so
-## that post stands behind the board and is drawn first, and only the near post goes over it.
+## each (−1 the start of the run, +1 its end): before the first slice's segment and after the last
+## one's (`_draw_spread_slices()`). A cap stands inside its end slice's ground, so it sorts with that
+## slice and its draw order within the slice is its only depth. Broadside, both posts stand level
+## with the board and go over it. End-on, the run goes away from the camera: the start is its far
+## end, so that post stands behind the board and is drawn first, and only the near post goes over
+## it.
 static func _cap_sides(vertical: bool, behind: bool) -> Array[float]:
 	var sides: Array[float] = []
 	if vertical:
