@@ -23,7 +23,8 @@ the PR #781 forks, minty-lemur #785), `one_notice_at_a_time` and `keeps_the_walk
 `RouteSource` it is handed. `plan_finale` is folded into `SealPlanner.plan_day(map, spec, route, rng,
 …)`, with `seal_pictures`, `seals_the_main_road` and `seals_every_street_off_the_walk` as spec
 settings and one alley-mouth pick. `City.start_finale` is folded into `City.start_day(state, day, rng,
-spec)` (`closes_streets`, `pastes_posters`), the two tints are `City.tint_the_route(route)`, and the
+spec)` (`closes_streets`, `pastes_posters`), handed by `main` the same spec as the manager on every
+day, and `EventManager.start_day` asserts the spec is the day's, the two tints are `City.tint_the_route(route)`, and the
 crowd is the spec's (`DaySpec.crowd_density`, `main._start_the_crowd()`).
 
 **Two changes on purpose.** The walk is kept clear of a standing lethal reach, not only a body
@@ -41,9 +42,11 @@ lethal-reach rule, which refused nothing a body had not on those seeds. The real
 seeds 4242 and 1 by the tunnel (64.3s, 81.9s) and the bridge (40.6s, 53.6s). Tests changed only as far
 as the code moved: every `build_day`, `plan_day` and `FinalePlanner.plan` call hands a spec; the
 renamed classes and fields (`WalkGround`, `street_bag`, `DaySpec.EMPTY_MARBLE`, `_street_ground`);
-`start_day(…, city spec)` for `start_finale`. New tests: both exits are reached from the service exit
-past every body and every standing lethal reach on nine seeds, with the rule's reading of one van and
-one roadblock (`test_finale`); `--route tunnel|bridge` resolves to the spec's exits and `mark`/`task`
+`start_day(…, city spec)` for `start_finale`. New tests: a walk filled with vans alone, two a street, on seeds 1, 8
+and 39 still reaches both exits past every body and every van's reach, which fails on those seeds
+with the rule removed (`test_finale`); both exits are reached past every body and every standing
+lethal reach on nine seeds of the game's own bag, where the rule refuses nothing, with the rule's
+reading of one van and one roadblock (`test_finale`); `--route tunnel|bridge` resolves to the spec's exits and `mark`/`task`
 are unavailable with no resistance director (`test_route_rig`).
 
 **Choices made where the design was silent, open to overturn:** the shared rule is one class asked by
