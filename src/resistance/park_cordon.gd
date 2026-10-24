@@ -581,10 +581,11 @@ func _seen(feet: Vector2, her: Vector2, shows: Callable) -> bool:
 ## **When the last gap closes**: `Tuning.PARK_CLOSING_SECONDS` after the touch, or later where the
 ## first officer would come into the camera's view of where she stood too late for her to walk from
 ## there to the gap with `Tuning.PARK_CLOSING_WARNING` to spare. Each taper's whole walk is known
-## here — the walk in, then round the edge at the pace that ends it at the deadline — so the point
-## of it where he first comes into view is a fraction of it, and the deadline is solved for rather
-## than searched: walking in, he is seen at a fixed time; going round, at `t_edge + f·(T − t_edge)`,
-## so `T − t_seen ≥ W` needs `T ≥ t_edge + W / (1 − f)`. The earlier of the two tapers sets it.
+## here, laid round the day's bodies (`_lay()`) — the walk in, then round the edge at the pace that
+## ends it at the deadline — so the point of it where he first comes into view is a fraction of it,
+## and the deadline is solved for rather than searched: walking in, he is seen at a fixed time;
+## going round, at `t_edge + f·(T − t_edge)`, so `T − t_seen ≥ W` needs `T ≥ t_edge + W / (1 − f)`.
+## The earlier of the two tapers sets it.
 ## A park neither of them comes into view of from where she stood closes on the plain clock, and
 ## the run log says so. **And never faster than `Tuning.PARK_CLOSING_STRETCH_MIN` a stretch**, the
 ## floor `_reach_the_edge()` paces to, folded in here so that `deadline` is when the gap closes and
@@ -696,14 +697,12 @@ func _lay_the_round(officer: Officer) -> Array[PackedVector2Array]:
 ## the row where the stretch before it ends — and then at the end of the last leg that does, since
 ## tape is solid and he could not step on it once it is up. Still one gap: the stretches go up in
 ## his order, several at once.
-func _when_each_is_taped(officer: Officer, legs: Array[PackedVector2Array]) -> Array[PackedInt32Array]:
+func _when_each_is_taped(officer: Officer,
+		legs: Array[PackedVector2Array]) -> Array[PackedInt32Array]:
 	var stepped_on: Array[Dictionary] = []
 	var at := _edge_reached_at(officer)
 	for leg in legs:
-		var tiles := {_map.world_to_tile(at): true}
-		for point in leg:
-			tiles[_map.world_to_tile(point)] = true
-		stepped_on.append(tiles)
+		stepped_on.append(_tiles_along(at, leg))
 		at = leg[leg.size() - 1]
 	var due: Array[PackedInt32Array] = []
 	for j in legs.size():
