@@ -833,9 +833,10 @@ func _patrol_toward_her(heat: int) -> EventDef:
 ## facing: something that crosses in front of a player standing still is not in front of
 ## anything.
 ##
-## Returns `[EventDef, PackedVector2Array, float]`: the row, the path to place it on, and the seconds
-## it crouches beyond its telegraph (`EventDef.crouch_for_a_run()`, zero for anything but a cut
-## crossing), or an empty array. A place the route's bag names is
+## Returns `[EventDef, PackedVector2Array, float, Variant]`: the row, the path to place it on, the
+## seconds it crouches beyond its telegraph (`EventDef.crouch_for_a_run()`, zero for anything but a
+## cut crossing), and the point on her line the run was sited to cross (a `Vector2`, or `null` for a
+## `TOWARD_PLAYER` row, which has no crossing), or an empty array. A place the route's bag names is
 ## handed to her walk to site (`_place_on_her_route()`) and answers the empty array: it joins the
 ## day's plan through `site_what_is_on_her_way()` once it has a site.
 func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
@@ -873,6 +874,7 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# take the road-aware sibling.
 	var path: PackedVector2Array
 	var crouch := 0.0
+	var crossing_point = null
 	if next.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER:
 		path = _toward_her_on_the_road(at, heading, next) \
 				if next.placement.has(GameEnums.TileType.ROAD) \
@@ -881,6 +883,7 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 		var crossing := _crossing_with_its_crouch(at, heading, next)
 		path = crossing[0]
 		crouch = crossing[1]
+		crossing_point = crossing[2]
 	if path.is_empty():
 		# Nowhere to put it — she is in the middle of a park, or against the map edge. Try
 		# again shortly rather than burning the allowance on a place that would not read.
@@ -907,7 +910,7 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# nothing under this flag.
 	if _forced and _owed.is_empty():
 		_owed.append(_forced)
-	return [handed, path, crouch]
+	return [handed, path, crouch, crossing_point]
 
 func _roll_interval() -> float:
 	# Fixed rather than rolled under `--force`, and it does not touch `_rng`: the flag is for
@@ -986,10 +989,11 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 	return _crossing_with_its_crouch(at, heading, def)[0]
 
 ## `_crossing_ahead_of()`'s run, and how much longer than its telegraph it crouches before running
-## it (`EventDef.crouch_for_a_run()`), as `[path, seconds]`: the crouch is the run's own, so it is
-## worked out where the run is.
+## it (`EventDef.crouch_for_a_run()`), as `[path, seconds, point]`: the crouch is the run's own, so it is
+## worked out where the run is, and the point is where the run meets her line (`Vector2.ZERO` with
+## an empty path).
 func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = null) -> Array:
-	var none := [PackedVector2Array(), 0.0]
+	var none := [PackedVector2Array(), 0.0, Vector2.ZERO]
 	var lead := Tuning.offscreen_lead(heading, def.pursue_speed + Tuning.WALK_SPEED,
 				def.offscreen_notice) \
 			if def and def.pursues \
@@ -999,7 +1003,7 @@ func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = nu
 	if not _navigator.passable_at(centre, mover):
 		return none
 	if def and def.pursues:
-		return [PackedVector2Array([centre]), 0.0]
+		return [PackedVector2Array([centre]), 0.0, centre]
 	var across := Vector2(-heading.y, heading.x) * float(CROSSING_REACH_TILES * Tuning.TILE_SIZE)
 	# The side it comes from is a coin flip, so a player cannot learn to watch one shoulder.
 	if _rng.randf() < 0.5:
@@ -1034,7 +1038,7 @@ func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = nu
 	if def and not def.still_while_telegraphing and start < across.length() - 0.01:
 		return none
 	return [PackedVector2Array([centre - way * start, centre + way * finish]),
-			def.crouch_for_a_run(start) if def else 0.0]
+			def.crouch_for_a_run(start) if def else 0.0, centre]
 
 ## A run straight *down* her own line rather than across it: `TOWARD_PLAYER`'s whole point, for a
 ## row on foot (`cyclist`, `loose_dog`). Returns `[place, far end]`: where its warning's badge

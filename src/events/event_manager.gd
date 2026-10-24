@@ -1769,19 +1769,12 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	# The distance it was actually sited at rather than the constant. A pursuer is sited beyond its
 	# own stand-off and a cat at `AHEAD_LEAD_DISTANCE`, so printing the constant makes every
 	# `ahead` line for the one row a chase is about say the wrong number.
-	# A run is measured where it meets her line, not at its midpoint: a run cut by a solid beside her
-	# sidewalk comes from the open side and is not centred on it. A route that does not cross her
-	# heading (parallel to it) falls back to its midpoint.
-	var crossing_point: Vector2 = path[0]
-	if path.size() >= 2:
-		crossing_point = (path[0] + path[path.size() - 1]) * 0.5
-		var met = Geometry2D.line_intersects_line(
-				path[0], path[path.size() - 1] - path[0], body.global_position, body.velocity)
-		if met is Vector2:
-			crossing_point = met
-	var lead := crossing_point.distance_to(body.global_position)
-	var verb := "comes at her from" \
-			if def.pursues or def.spawn_mode == EventDef.SpawnMode.TOWARD_PLAYER else "crosses"
+	# A crossing is measured where the director sited it to cross her line (`due[3]`), not at its
+	# midpoint, which a run from the open side is not centred on. A row that comes down her own
+	# street has no crossing, so it is measured to where it is created, `path[0]`.
+	var crosses := due.size() > 3 and due[3] is Vector2
+	var lead := (due[3] as Vector2 if crosses else path[0]).distance_to(body.global_position)
+	var verb := "crosses" if crosses else "comes at her from"
 	trace.note("ahead", "%s %s %.0fpx in front of her at %s" % [
 		def.id, verb, lead,
 		RunTrace.tile(_map.world_to_tile(body.global_position))])

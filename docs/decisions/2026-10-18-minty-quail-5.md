@@ -25,14 +25,14 @@ for events (`EventInstance.solid_footprint_of`) and closure barriers (`City.barr
 `path`, `way_out` and `trim`; the city builds it with the map and hands it to the event manager, its
 figures, the crowd and the resistance director. On it now: every event figure's chase, walk-back,
 departure, route walk, the far guard and the mouse's dash; both cat crossings, cut at the first solid
-on each side. The run starts no nearer her line than `EventDef.nearest_crouch()` (the crouching
+on each side. The director's run (not the scheduler's placed cat, which is only cut at solids and refused when it has no length) starts no nearer her line than `EventDef.nearest_crouch()` (the crouching
 field's outer radius over sqrt(1 + (WALK_SPEED / speed)^2), about 112px for the cat), because when
 the cat runs she is still short of the middle by the ground she covers meanwhile, and her walk must
 not reach the crouching field before it does. It is centred where both sides allow that, runs from
 the open side where only one does, and is refused where neither does (the director retries after a
 second's walk, the owed row kept). A cat whose start is cut crouches longer by the run it lost
 (`EventDef.crouch_for_a_run()`), so it still reaches her line when it did and its telegraph only
-grows;
+grows, and a crossing event that does not crouch is refused a shortened start;
 bike, dog and patrol-car routes, trimmed when sited and when created; `_along_street_path` and the
 neighbor's walk to work; the crowd's push and tile questions; the director's hand copies, chase
 prediction, the guard's clear run and the roadblock guard's line; and the floods
