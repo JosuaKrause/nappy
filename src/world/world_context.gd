@@ -52,3 +52,23 @@ func total_excitement_at(_world_position: Vector2) -> float:
 ## the debug world, which has no bodies to attribute to.
 func excitement_sources_at(_world_position: Vector2) -> Array:
 	return []
+
+# ------------------------------------------------------------ the draw layers ---
+# Not a question the baby asks: the world's own service to whatever it is handed to — an event
+# manager and its events, the crowd, the resistance, `main` putting her down.
+
+## Adds `node` to this world, drawn on `layer` (`DrawLayer.Layer`; an `int` for the reason
+## `DrawLayer.z_of()` gives): `ENTITIES`, the y-sorted layer everything standing on the ground
+## sorts in at its feet, unless the caller asks for another.
+func add_entity(node: Node, layer: int = DrawLayer.Layer.ENTITIES) -> void:
+	layers().node(layer).add_child(node)
+
+## The nodes this world draws its layers in. The city and the building hand over the ones their
+## scenes hold when they are built; any other layer, and every layer of a test's stand-in world,
+## gets a node of its own the first time something is added to it.
+func layers() -> WorldLayers:
+	if _layers == null:
+		_layers = WorldLayers.new(self)
+	return _layers
+
+var _layers: WorldLayers

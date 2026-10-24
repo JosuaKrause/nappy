@@ -837,10 +837,12 @@ func _city_map() -> CityMap:
 ## straight onto the street on a boot that opens there. A retried section walks the world it
 ## already has.
 ##
-## **Walking out of the building, its wall blockers go; its pictures and its fade stay.** The
-## building and the city share one physics space and both are laid out from the world origin, so
-## its blockers would stand across the city's top rows as a wall nobody draws (inbox #777 in
-## minty-lemur) — `InteriorScene.take_the_walls_out()`. The fade is not reversed here:
+## **Walking out of the building, its wall blockers and its pictures go; its fade stays.** The
+## building and the city share one physics space and one canvas, both laid out from the world
+## origin, so its blockers would stand across the city's top rows as a wall nobody draws (inbox
+## #777 in minty-lemur) — `InteriorScene.take_the_walls_out()` — and its walls and doors would be
+## drawn on the city's top streets — `InteriorScene.put_the_pictures_away()`, once the city stands
+## and she has been moved into it. The fade is not reversed here:
 ## `InteriorScene` holds the black at full opacity from the moment she reaches the door, and
 ## `_start_section()` clears it once she has been put down on the street, so nothing of the city is
 ## seen being assembled.
@@ -852,6 +854,8 @@ func _build_the_world_for(spec: DaySpec) -> void:
 		if _interior:
 			_interior.take_the_walls_out()
 		_build_the_finale_city()
+		if _interior:
+			_interior.put_the_pictures_away()
 	# The first world this boot stands is where the run log's observer starts watching the escape —
 	# her, the baby, the day's clock and the badges, which exist from here on.
 	if not _escape_watched and _session:
@@ -1344,12 +1348,12 @@ func _add_danger_edge() -> void:
 ## unlike `DangerEdge`, this cue is a picture of the ground itself, not screen furniture laid over
 ## it, so it has to sit where the ground does and move with the same camera.
 ##
-## `z_index = 1` puts it above `City`'s `Ground` (default 0) and below its `Entities` (2, the
-## y-sorted layer the player, the crowd and every event live on) — under everything the cue is
-## required to be under: the entities, the crowd and the player, none of which can ever read as
-## lit from beneath. It ties `Buildings` (also 1) rather than sitting under it as well, which a
-## glow can afford to: a wall the field happens to reach warms slightly, the way it would under
-## any coloured light near it, and nothing the cue exists to protect is a wall.
+## It draws on the halo layer (`DrawLayer.Layer.HALO`): over the ground and under the entities, the
+## y-sorted layer the player, the crowd and every event live on — under everything the cue is
+## required to be under, none of which can ever read as lit from beneath. It is over the buildings
+## rather than under them as well, which a glow can afford: a wall the field happens to reach warms
+## slightly, the way it would under any coloured light near it, and nothing the cue exists to
+## protect is a wall.
 ## `_pauses_with_the_game()` is the same reasoning `_city` gets: while the tree is paused nothing
 ## it reads is moving either, so freezing alongside the world it draws needs no case of its own.
 ##
@@ -1361,7 +1365,7 @@ func _add_excitement_halo() -> void:
 		return
 	_halo = ExcitementHalo.new()
 	_halo.name = "ExcitementHalo"
-	_halo.z_index = 1
+	DrawLayer.draw_on(_halo, DrawLayer.Layer.HALO)
 	_halo.setup(_event_source(), _crowd_now(), _player, _baby)
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
@@ -1587,9 +1591,9 @@ static func _graph_starts_on(spikes_requested: bool, layers: Array[int]) -> bool
 ## `_debug_layers` stays `null`, so nothing here is queried, nothing is drawn and an ordinary
 ## release page pays for none of it.
 ##
-## `z_index = 3` puts it above `Entities` (2, the y-sorted layer everything on the ground lives on)
-## — above everything else in the world, unlike the halo's own `z_index = 1`, because a bounding
-## box drawn under the thing it outlines would be the one cue in the game nobody could read.
+## It draws on the debug layer (`DrawLayer.Layer.DEBUG`), above everything else in the world, unlike
+## the halo, because a bounding box drawn under the thing it outlines would be the one cue in the
+## game nobody could read.
 ## Every layer starts off, unless `-- --layers 1,3` (or the page's own `?layers=1,3`, which also
 ## reaches a release page behind `?debug=1` — docs/DECISIONS.md, M193, "the live page's ?debug=1
 ## reaches the debug flags") says otherwise — see `_toggle_debug_layer()` for the number key that
@@ -1606,7 +1610,7 @@ func _add_debug_layers() -> void:
 		return
 	_debug_layers = DebugLayers.new()
 	_debug_layers.name = "DebugLayers"
-	_debug_layers.z_index = 3
+	DrawLayer.draw_on(_debug_layers, DrawLayer.Layer.DEBUG)
 	_debug_layers.setup(_event_source(), _crowd_now(), _world_now(), _player)
 	_debug_layers.apply_initial_state(config.layers_override)
 	add_child(_debug_layers)
@@ -1628,7 +1632,7 @@ func _add_route_lines() -> void:
 		return
 	_route_lines = RouteLines.new()
 	_route_lines.name = "RouteLines"
-	_route_lines.z_index = 3
+	DrawLayer.draw_on(_route_lines, DrawLayer.Layer.DEBUG)
 	_route_lines.setup(_city.map)
 	_route_lines.apply_initial_state(config.layers_override)
 	add_child(_route_lines)

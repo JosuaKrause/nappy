@@ -937,10 +937,11 @@ func _tape_up(stretch: Stretch) -> void:
 	tape.piece = CordonTape.Piece.TAPE
 	tape.across = stretch.across()
 	tape.length = stretch.length()
-	tape.position = (stretch.a + stretch.b) * 0.5 if tape.across \
-			else Vector2(stretch.a.x, maxf(stretch.a.y, stretch.b.y))
 	stretch.node = tape
-	_city.add_entity(tape)
+	# A tile-long stretch is one slice of the park's edge, standing at its own feet: the middle of a
+	# broadside stretch, the near end of an end-on one (`DrawLayer.slice_feet()`).
+	var slices: Array[Node2D] = [tape]
+	DrawLayer.add_slices(_city, slices, DrawLayer.slice_feet(stretch.a, stretch.b, 1))
 
 ## The posts the tape is strung on, one at every stretch end an officer reaches, never two at one.
 var _posts: Array[CordonTape] = []

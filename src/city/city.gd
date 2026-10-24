@@ -3,8 +3,8 @@ extends WorldContext
 ## Turns a CityMap into a scene: ground, buildings, props, boundary, and the answers the
 ## baby needs about the ground it is standing on.
 ##
-## The `Ground` child owns the freeable ground chunks and draws them behind the y-sorted `Entities`
-## child without needing a z_index fight.
+## The `Ground` child owns the freeable ground chunks; with the decals and the buildings' shadows it
+## draws on `DrawLayer.Layer.GROUND`, under every other layer the city hosts (`add_entity()`).
 ##
 ## **Buildings are a layer of their own, underneath the entities**, or the warning indicators
 ## render below roofs. A `Building`'s origin is the south edge of its
@@ -68,11 +68,6 @@ const BOUNDARY_THICKNESS := 64.0
 ## road and the unwalkable landscape beneath and beyond that band are drawn wherever the view
 ## asks for them, the player's camera included.
 const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
-
-## The layer for the one thing drawn *over* the entities: the dark inside the tunnel, which has to
-## land on a car as it drives in. `Entities` is 2 in `city.tscn`; nothing else in the city is
-## above it.
-const OVERHEAD_Z_INDEX := 3
 
 ## Trees per *block* of open ground, by what the block currently is. A forest is a park with
 ## more trees in it and no swings, which is most of what the difference between them is on the
@@ -231,6 +226,15 @@ class HomeDoor extends Sprite2D:
 
 	func scenery_bounds() -> Rect2:
 		return Rect2(global_position + offset, Vector2(AtlasLibrary.native_size(picture)))
+
+## Hands the scene's `Buildings` and `Entities` over as the city's nodes for those draw layers
+## (`add_entity()`), both y-sorted: everything on the ground sorts at its feet, and two lots sharing
+## a block edge stack the way the eye expects. A building never sorts against an entity, being a
+## layer of its own beneath them — see the note at the top of this file.
+func _ready() -> void:
+	super()
+	layers().hold(DrawLayer.Layer.BUILDINGS, _buildings_layer, true)
+	layers().hold(DrawLayer.Layer.ENTITIES, _entities, true)
 
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
 ## that lives in `start_day()`.
@@ -461,7 +465,7 @@ func _spawn_home() -> void:
 	# blanked window column can never disagree about where the door actually is.
 	var x_range := _door_world_x_range()
 	_home_door.position = Vector2((x_range.x + x_range.y) * 0.5, stoop.position.y)
-	_entities.add_child(_home_door)
+	add_entity(_home_door)
 	scenery.register(_home_door)
 
 ## `SEALED_DOOR_TEXTURE` once the scar it leaves is on record, `DOOR_TEXTURE` before then.
@@ -560,7 +564,7 @@ func _spawn_street_trees() -> void:
 		tree.kind = Prop.Kind.STREET_TREE
 		tree.position = planted_tree.position
 		tree.variant = hash(planted_tree.position)
-		_entities.add_child(tree)
+		add_entity(tree)
 		scenery.register(tree)
 		_street_trees.append(tree)
 		_street_tree_pits[planted_tree.tile] = tree
@@ -635,12 +639,11 @@ func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 	exit.kind = kind
 	exit.position = at
 	if exit.overhangs():
-		exit.z_index = OVERHEAD_Z_INDEX
-		add_child(exit)
+		add_entity(exit, DrawLayer.Layer.OVERHEAD)
 	elif exit.occludes():
-		_entities.add_child(exit)
+		add_entity(exit)
 	else:
-		_buildings_layer.add_child(exit)
+		add_entity(exit, DrawLayer.Layer.BUILDINGS)
 	scenery.register(exit)
 
 ## A signal head on every arm of every junction the spine passes through.
@@ -685,7 +688,7 @@ func _spawn_signal_heads() -> void:
 				light.faces(heading)
 				light.signals = signals
 				light.position = at
-				_entities.add_child(light)
+				add_entity(light)
 				scenery.register(light)
 
 func _spawn_buildings() -> void:
@@ -750,7 +753,7 @@ func _spawn_buildings() -> void:
 		# reach into the walkable row north of the lot, so it must sort against street actors just
 		# like the power station stacks do.
 		building.roof_object_parent = _entities
-		_buildings_layer.add_child(building)
+		add_entity(building, DrawLayer.Layer.BUILDINGS)
 		_buildings.append(building)
 		scenery.register(building)
 		# The one part of a building drawn among the entities — see the note at the top of this file.
@@ -759,7 +762,7 @@ func _spawn_buildings() -> void:
 			var stack := Building.StationStack.new()
 			stack.name = "StationStack%d" % i
 			stack.position = building.position + feet[i]
-			_entities.add_child(stack)
+			add_entity(stack)
 			scenery.register(stack)
 
 ## `Building.covered_ground_cols` for `rect`: true at column `col` where the tile directly south of
@@ -1237,19 +1240,24 @@ func _spawn_closure(closure: RoadClosure) -> void:
 		_add_closure_node(cause, true)
 
 ## A line of barrier panels across the mouth, with the sign on the middle one, and one static
-## body behind the whole line. The panels are separate nodes so that a barrier running away
-## from the camera y-sorts panel by panel against the player; the collision is one box,
-## because collision does not care what order things are drawn in.
+## body behind the whole line. The panels are the line's slices (`DrawLayer.add_slices()`), each
+## standing at its own feet, so a barrier running away from the camera y-sorts panel by panel
+## against the player; the collision is one box, because collision does not care what order things
+## are drawn in.
 ##
 ## **The line's width is the closure's own** (`barrier_width()`), a street's width for an ordinary
 ## closure and one calm area's own edge for a `ParkClosure` — so a run longer or shorter than a
 ## street's mouth still tiles panels edge to edge across its own real length rather than a fixed
-## one, with no overlap and no gap to overshoot a corner with.
+## one, with no overlap and no gap to overshoot a corner with. The panels run the barrier's own
+## footprint end to end (`barrier_footprint()`, `DrawLayer.run_of()`), and a park's fence post to
+## post (`ParkClosure.rail_ends()`).
 func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 	var across := closure.barrier_runs_across()
 	var width := closure.barrier_width()
+	var footprint := barrier_footprint(closure)
 	var picture_width := width
 	var picture_at := at
+	var run := DrawLayer.run_of(footprint, at)
 	if closure is ParkClosure:
 		var fence := closure as ParkClosure
 		# An open end's post is inset on its own ground. Rails end on that post, while
@@ -1258,6 +1266,7 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		var end_inset := 0.0 if fence.joined_end else ParkClosure.POST_HALF
 		picture_width -= start_inset + end_inset
 		picture_at += (Vector2.RIGHT if across else Vector2.DOWN) * (start_inset - end_inset) * 0.5
+		run = fence.rail_ends()
 	var pitch := float(AtlasLibrary.native_size(ClosureMarker.FENCE_ACROSS).x)
 	if closure is ParkClosure and not across:
 		pitch = 44.0
@@ -1270,6 +1279,8 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		var sign_from_start := at.y - (picture_at.y - picture_width * 0.5)
 		sign_panel = mini(panels - 1,
 				ceili((sign_from_start + ParkFenceMarker.UPPER_RISE) / span) - 1)
+	var feet := DrawLayer.slice_feet(run[0], run[1], panels)
+	var slices: Array[Node2D] = []
 	for i in panels:
 		var panel := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
 		panel.piece = ClosureMarker.Piece.SIGN if i == sign_panel else ClosureMarker.Piece.FENCE
@@ -1280,22 +1291,13 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		if panel is ParkFenceMarker:
 			(panel as ParkFenceMarker).draw_support = i < panels - 1
 			(panel as ParkFenceMarker).rail_offset = -(closure as ParkClosure).outward.x * 4.0
-		# Broadside a panel's feet are the middle of its share; end-on they are the near end of
-		# it, since an end-on panel is drawn up the screen from its feet — feet at the middle
-		# would stand the whole column half a panel up the screen from the ground it covers.
-		var offset := -picture_width * 0.5 + span * (i + (0.5 if across else 1.0))
-		panel.position = picture_at + (Vector2(offset, 0.0) if across else Vector2(0.0, offset))
-		if closure is ParkClosure and not across and i == panels - 1:
-			var fence := closure as ParkClosure
-			# Use the post's exact anchor: two arithmetically equivalent float paths can
-			# differ by a fraction of a pixel and make y-sort put the post over the sign.
-			panel.position = fence._point(fence.to_along if fence.joined_end
-					else fence.to_along - ParkClosure.POST_HALF)
-		if panel is ParkFenceMarker:
-			(panel as ParkFenceMarker).sign_offset = at - panel.position
-		_add_closure_node(panel, true)
+			(panel as ParkFenceMarker).sign_offset = at - feet[i]
+		slices.append(panel)
+	DrawLayer.add_slices(self, slices, feet)
+	for panel in slices:
+		_track_closure_node(panel)
 
-	var body := barrier_footprint(closure).body()
+	var body := footprint.body()
 	body.position = at
 	_add_closure_node(body, false)
 
@@ -1311,11 +1313,15 @@ static func barrier_footprint(closure: RoadClosure) -> Footprint:
 	return Footprint.of(GroundShape.rect(size * 0.5))
 
 func _add_closure_node(node: Node, y_sorted: bool) -> void:
-	_closure_nodes.append(node)
 	if y_sorted:
-		_entities.add_child(node)
+		add_entity(node)
 	else:
 		add_child(node)
+	_track_closure_node(node)
+
+## Keeps a closure's node for the day, to be taken down with it, and hands a picture to the scenery.
+func _track_closure_node(node: Node) -> void:
+	_closure_nodes.append(node)
 	if node is ScenerySprite:
 		scenery.register(node)
 
@@ -1579,7 +1585,7 @@ func _add_prop(prop: Node2D) -> void:
 		prop.free()
 		return
 	_props.append(prop)
-	_entities.add_child(prop)
+	add_entity(prop)
 	if prop is ScenerySprite:
 		scenery.register(prop)
 
@@ -1616,11 +1622,6 @@ func _spawn_boundary() -> void:
 		body.position = wall.get_center()
 		body.add_child(shape)
 		add_child(body)
-
-## Adds a node to the y-sorted layer, where it sorts against the props, the power station's stacks
-## and every other entity — never against a building, which is a layer of its own beneath them.
-func add_entity(node: Node) -> void:
-	_entities.add_child(node)
 
 # ------------------------------------------------------------------ ground ---
 

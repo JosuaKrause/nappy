@@ -73,10 +73,13 @@ func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	_fixtures.add_child(event)
 	_events.append(event)
 	_watch(event, id + "_owner")
-	for layer in event._scenery.static_layers:
-		_watch(layer, id + "_static")
-	for layer in event._scenery.moving_layers:
-		_watch(layer, id + "_motion")
+	# The scene is drawn in slices beside the event, each with its part's scenery.
+	event._attach_the_slices()
+	for scenery in event._sceneries:
+		for layer in scenery.static_layers:
+			_watch(layer, id + "_static")
+		for layer in scenery.moving_layers:
+			_watch(layer, id + "_motion")
 
 func _watch(item: CanvasItem, key: String) -> void:
 	_counts[key] = 0

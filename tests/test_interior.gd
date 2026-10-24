@@ -2018,8 +2018,10 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: Node) -> void:
 				"the grate is drawn under her, not sorted against her (z %d against %d)"
 				% [_drawn_z(grate), _drawn_z(her)])
 		if ground:
-			t.check(_drawn_z(grate) == _drawn_z(ground) and grate.get_parent() == ground.get_parent()
-					and grate.get_index() > ground.get_index(),
+			# On the building's ground layer, whose node stands after the floor tiles.
+			var layer := grate.get_parent()
+			t.check(_drawn_z(grate) == _drawn_z(ground) and layer.get_parent() == ground.get_parent()
+					and layer.get_index() > ground.get_index(),
 					"and lies on the floor tiles rather than under them")
 
 	var far := Vector2(-10000.0, -10000.0)

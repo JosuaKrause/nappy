@@ -1915,6 +1915,7 @@ static func _roadblock() -> EventDef:
 	# than walking at her *(inbox #748: "guards should lift their hand in warning")*, for his
 	# `warns_for` while she stays inside his radius (`EventInstance.warns_by_radius()`).
 	def.stands_for_its_notice = true
+	def.warns_over_the_street = true
 	# On the clock every charger that waits for her keeps (`EventDef.warns_for`; inbox #788 in minty-lemur): read
 	# only once the hunting copy waits for her.
 	def.warns_for = Tuning.CHARGER_WARNING
