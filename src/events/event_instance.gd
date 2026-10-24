@@ -6891,10 +6891,10 @@ func _draw_the_spread(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 # ------------------------------------------------------------------ the slices ---
 # **A picture longer than a tile is drawn in slices**, each a node of its own in the world's entity
 # layer standing at its own feet, so a run going away from the camera sorts slice by slice against
-# her: a spread, one slice per segment; a protest, one per protester; a firefight, one per gunman;
-# a wide scene, one per tile of its run, each drawing the part of the authored picture over its own
-# band. The instance itself then draws only its caret; any other canvas, a rim tracing the whole
-# picture, gets the whole picture in the order its slices draw it.
+# her: a spread, one slice per segment; a café, one per table and its sitter; a protest, one per
+# protester; a firefight, one per gunman; a wide scene, one per tile of its run, each drawing the
+# part of the authored picture over its own band. The instance itself then draws only its caret;
+# any other canvas, a rim tracing the whole picture, gets the whole picture.
 
 ## **One slice of a long picture on the screen**: a node of its own in the world's entity layer,
 ## standing at its slice's feet (`DrawLayer.add_slices()`), drawing its own part of the picture
@@ -6929,6 +6929,9 @@ func _slice_plan() -> PackedVector2Array:
 		EventDef.Look.FIREFIGHT:
 			var half := maxf(11.0, def.obstructs_radius)
 			return DrawLayer.slice_feet(Vector2(-half, 0.0), Vector2(half, 0.0), 2)
+		EventDef.Look.CAFE:
+			var tables := _spread_run()
+			return DrawLayer.slice_feet(tables[0], tables[1], _cafe_table_count())
 		EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN:
 			var run := _wide_scene_run()
 			return DrawLayer.slice_feet(run[0], run[1], _wide_scene_slice_count())
@@ -7053,6 +7056,8 @@ func _draw_a_slice(slice: Slice) -> void:
 	match def.look:
 		EventDef.Look.PROTEST:
 			_draw_protest(slice, slice.index, origin)
+		EventDef.Look.CAFE:
+			_draw_cafe(slice, slice.index, origin)
 		EventDef.Look.FIREFIGHT:
 			_draw_firefight(slice, slice.index, origin)
 		EventDef.Look.FALLEN_TREE:
@@ -7206,45 +7211,74 @@ func masked_pursuer_pictures() -> Dictionary:
 ## **Both halves have to be drawn**: the tables are what obstructs and the conversation is what it
 ## emits, so a café drawn as furniture alone is the loudest pleasant thing in act I looking like
 ## something somebody left out. The spread is `_draw_spread`'s, so the width is exactly the width in
-## the way; the sitters are drawn *first* and a little behind, because the table is the part she
-## cannot walk through and the picture has to agree with that.
+## the way; each sitter is drawn before their own table and a little behind it, because the table is
+## the part she cannot walk through and the picture has to agree with that.
 ##
 ## Alternate tables are mirrored, which turns a rank of clones into pairs facing each other — the
 ## same reason a spoiled park rolls a different def per cell. The chair's own shift stays *along*
 ## the spread axis, same as the table it sits beside; the −7 lift is a fixed screen-depth nudge that
 ## puts a sitter visibly behind their table whichever way the row runs, so it stays a plain Y offset
 ## rather than turning with the spread.
-func _draw_cafe(canvas: CanvasItem = self) -> void:
+##
+## **On the screen each table and its sitter are a slice of their own** (`_slice_plan()`), standing
+## at their share of the run's feet, so each table sorts against her and against the next table and
+## its sitter *(inbox #827: "yes, slice the cafe tables")*; slice `only` draws its own sitter and
+## table from `origin`, the first also the shadow. On any other canvas, or with `only` below zero,
+## the whole frontage is drawn, every sitter before every table.
+func _draw_cafe(canvas: CanvasItem = self, only := -1, origin := Vector2.ZERO) -> void:
+	if only < 0 and _drawn_by_its_slices(canvas):
+		return
 	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas)
-	# The lean is the whole row's, the facing is each seat's. `_idle_stepping()` is a property of
-	# this instance rather than of a chair, so the frame table is chosen once here and every sitter
-	# leans together; the view and the mirror are picked per seat inside the loop below, because a
-	# party at one table faces the table rather than sharing the frontage's own bearing.
-	var by_view := CAFE_SITTER_BY_VIEW_B if _idle_stepping(SITTER_IDLE_PERIOD) else CAFE_SITTER_BY_VIEW
-	var segment := _native_size(CAFE_TABLE)
-	var along_natural := segment.y if _spread_vertical else segment.x
-	var thickness := segment.x if _spread_vertical else segment.y
-	var segments := maxi(1, ceili(half * 2.0 / along_natural))
+	if only <= 0:
+		_draw_body_shadow(canvas, origin)
+	var segments := _cafe_table_count()
 	var width := half * 2.0 / segments
 	for i in segments:
-		var along := -half + width * (i + 0.5)
-		# The chair is drawn at one end of the table sprite and turns round with it.
-		var alternate := i % 2 == 1
-		var chair_along := along + width * (0.26 if alternate else -0.26)
-		# Face the table from this chair. The +Vector2(0, -7) below is a screen-depth lift for
-		# the sitter's projected feet; it is deliberately not part of the table-facing bearing.
-		var sitter_heading := _cafe_seat_heading(_spread_vertical, alternate)
-		var sitter_sector := EightDirection.nearest(sitter_heading)
-		var view: String = EIGHT_VIEW_BY_SECTOR[sitter_sector]
-		var sitter: String = by_view[view]
-		var mirror := EightDirection.is_mirrored(sitter_sector)
-		Sprites.draw_standing(canvas, _drawn(sitter), _spread_at(chair_along) + Vector2(0.0, -7.0),
-				Vector2.ZERO, mirror)
-	for i in segments:
-		var along := -half + width * (i + 0.5)
-		Sprites.draw_standing(canvas, _drawn(CAFE_TABLE),
-				_spread_at(along), _spread_extent(width, thickness), i % 2 == 1)
+		if only < 0 or i == only:
+			_draw_cafe_sitter(canvas, origin, half, width, i)
+			if only >= 0:
+				_draw_cafe_table(canvas, origin, half, width, i)
+	if only < 0:
+		for i in segments:
+			_draw_cafe_table(canvas, origin, half, width, i)
+
+## How many tables the café's frontage holds: as few as cover its run, none stretched past its own
+## picture's length.
+func _cafe_table_count() -> int:
+	var half := maxf(11.0, def.obstructs_radius)
+	var segment := _native_size(CAFE_TABLE)
+	var along_natural := segment.y if _spread_vertical else segment.x
+	return maxi(1, ceili(half * 2.0 / along_natural))
+
+## The sitter of table `i`, at one end of the table sprite, turned to face it. The lean is the whole
+## row's and the facing each seat's: `_idle_stepping()` is a property of this instance rather than of
+## a chair, so every sitter leans together, while the view and the mirror are picked per seat,
+## because a party at one table faces the table rather than sharing the frontage's own bearing.
+func _draw_cafe_sitter(canvas: CanvasItem, origin: Vector2, half: float, width: float,
+		i: int) -> void:
+	var by_view := CAFE_SITTER_BY_VIEW_B if _idle_stepping(SITTER_IDLE_PERIOD) else CAFE_SITTER_BY_VIEW
+	var along := -half + width * (i + 0.5)
+	var alternate := i % 2 == 1
+	var chair_along := along + width * (0.26 if alternate else -0.26)
+	# Face the table from this chair. The +Vector2(0, -7) below is a screen-depth lift for the
+	# sitter's projected feet; it is deliberately not part of the table-facing bearing.
+	var sitter_heading := _cafe_seat_heading(_spread_vertical, alternate)
+	var sitter_sector := EightDirection.nearest(sitter_heading)
+	var view: String = EIGHT_VIEW_BY_SECTOR[sitter_sector]
+	var sitter: String = by_view[view]
+	var mirror := EightDirection.is_mirrored(sitter_sector)
+	Sprites.draw_standing(canvas, _drawn(sitter),
+			origin + _spread_at(chair_along) + Vector2(0.0, -7.0), Vector2.ZERO, mirror)
+
+## Table `i` of the frontage, standing at the middle of its share of the run, alternate ones
+## mirrored.
+func _draw_cafe_table(canvas: CanvasItem, origin: Vector2, half: float, width: float,
+		i: int) -> void:
+	var segment := _native_size(CAFE_TABLE)
+	var thickness := segment.x if _spread_vertical else segment.y
+	var along := -half + width * (i + 0.5)
+	Sprites.draw_standing(canvas, _drawn(CAFE_TABLE), origin + _spread_at(along),
+			_spread_extent(width, thickness), i % 2 == 1)
 
 ## The bearing from an alternating café chair to its own table. This follows the chair anchor's
 ## spread-axis offset, while leaving the sprite's fixed screen-depth lift out of the calculation.

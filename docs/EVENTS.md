@@ -641,8 +641,10 @@ slices, one per segment, each a node standing at its own feet along the row's so
 (`EventInstance.Slice`, `DrawLayer.slice_feet()`), so a spread running away from the camera sorts
 slice by slice against her; the shadow and the far end cap go down with the first slice and the
 near cap with the last, and the slices stand ahead of the instance in the tree, so its caret is
-drawn over its own picture. The protest's rank and the firefight are drawn the same way, one
-slice a figure at its own feet, the protest's back rank up the screen of its front one.
+drawn over its own picture. The café is drawn the same way, one slice a table and its sitter, so
+each table sorts against her and the next (inbox #827), and so are the protest's
+rank and the firefight, one slice a figure at its own feet, the protest's back rank up the screen
+of its front one.
 
 **A row may be solid in parts, and one is.** `EventDef.solid_parts` is a list of pieces — each an
 offset along the scene's own spread axis and a `GroundShape` of its own — and `EventInstance` puts

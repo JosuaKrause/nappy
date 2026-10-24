@@ -223,14 +223,16 @@ static func _slices_in(layer: Node) -> int:
 			count += 1
 	return count
 
-## **Every long picture the item names is drawn in slices**, not only the spreads: the protest's
-## rank and the firefight, one slice a figure, and the three wide scenes, one a tile of their run.
+## **Every long picture the item names is drawn in slices**, not only the spreads: the café, one
+## slice a table and its sitter, the protest's rank and the firefight, one slice a figure, and the
+## three wide scenes, one a tile of their run.
 ## Each stands in a world in more than one slice, every slice ahead of its instance in the entity
 ## layer; a protest's back rank stands up the screen of its front rank; a wide scene's bands
 ## together cover its picture's run exactly, and end-on its slices rise toward the camera.
 func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 	AtlasLibrary.acquire(&"events")
-	for id: String in ["protest", "firefight", "fallen_tree", "car_accident", "burst_water_main"]:
+	for id: String in ["cafe_tables", "protest", "firefight", "fallen_tree", "car_accident",
+			"burst_water_main"]:
 		for vertical: bool in [false, true]:
 			var what := "%s %s" % [id, "end-on" if vertical else "broadside"]
 			var world := WorldContext.new()
