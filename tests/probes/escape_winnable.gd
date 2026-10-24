@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ## `ESCAPE_WINNABLE_SEEDS` (comma-separated run seeds) and `ESCAPE_WINNABLE_MIX` (see `MIXES`)
 ## replace the seeds and the mixes; `ESCAPE_WINNABLE_WALK` set to `0` leaves the walking out and
-## prints the plans alone; `ESCAPE_WINNABLE_PARALLEL` raises how many walks run at once
+## prints the plans alone; `ESCAPE_WINNABLE_PARALLEL` sets how many walks run at once
 ## (`PARALLEL`).
 ##
 ## **What it measures, per seed.** The section's plan as a straight city boot builds it
@@ -56,8 +56,8 @@ const MIXES: Array[Dictionary] = [
 ]
 const EXITS: Array[String] = ["tunnel", "bridge"]
 ## How many walks run side by side by default: each is one Godot process at the game's own clock,
-## and several agents share the machine and have crashed Godot running many at once (minty-lemur
-## #792), so two unless `ESCAPE_WINNABLE_PARALLEL` asks for more.
+## on a machine several agents share, where agents' test runs have crashed Godot (minty-lemur #792),
+## so two unless `ESCAPE_WINNABLE_PARALLEL` sets another number.
 const PARALLEL := 2
 ## Well past the section's own `Tuning.FINALE_LENGTH_SECONDS` and the boot before it: a walk still
 ## running then has hung, and is reported so rather than waited on.

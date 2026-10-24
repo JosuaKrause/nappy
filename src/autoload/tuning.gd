@@ -2714,7 +2714,7 @@ const FINALE_STEAM_BLOWS_FOR := 2.0
 ## climax and every walk out of it walkable**, measured by walking the shortest walk
 ## from the service exit to each exit through the plan's own events, on two sets of 24 seeds
 ## (measured by `tests/probes/escape_winnable.gd` at f8172b7ccb7f, whose own stand-in walker and
-## meter produced `docs/evidence/winnable-escape-2026-10-19/`; the probe now walks with the game's own
+## meter produced `docs/evidence/winnable-escape-2026-10-19/`; the probe walks with the game's own
 ## walker, `RouteRig`, and its numbers are not comparable with those):
 ## at one slot a walk to an exit meets about eight dangers, one every eight seconds of walking, and
 ## a plain walk gets out on 95 of 96 with the baby woken on 4; at two slots it meets about twelve,
