@@ -1573,9 +1573,9 @@ and only the world the first day is walked in differs.
 **The building shows what the city shows.** *(PLAYTEST-115: "The escape shouldn't behave any
 different than the rest of the game.")* The screen-edge badge, the excitement halo and the debug
 view's layers are built with whichever world a boot builds first and pointed at the next one when
-she walks out of the service door. What they read is an **event source** — anything answering
-`instances()`, which `InteriorEvents` does under the same name `EventManager` does — and a crowd
-only where there is one, so indoors the masked man coming up a stairwell raises the same badge a
+she walks out of the service door. What they read is the world's **events** — the day's own
+`EventManager` in both, the building's handed the building's map and its own placements
+(`BuildingPlan`) — and a crowd only where there is one, so indoors the masked man coming up a stairwell raises the same badge a
 fire engine coming down a street does, and the fire she is standing beside wears the same rim a
 dog on a sidewalk does. The debug view's fields, shadows and bounding boxes (`1`–`3`) trace the
 building's events, walls and her; the readout (`4`) names the section's day and its words beside
@@ -1593,9 +1593,9 @@ since a dev-flagged boot writes nothing a symbol could ever announce.
 floor's hallway between her own door and the right stair door, both rows of it
 (`InteriorMap.TOP_FLOOR_RUBBLE`), so the right stairwell cannot be entered on that floor at all and
 the only flight down is the left one — which is the shaft the fire is in
-(`InteriorEvents._BURNING_SIDE`, fixed rather than rolled, since a fire on the shut side would
+(`BuildingPlan.BURNING_SIDE`, fixed rather than rolled, since a fire on the shut side would
 leave her nothing). **The fire always stands on the second floor's level approach, never rolled**
-(`InteriorScene.waypoint()` of the left shaft's second-floor landing, one cell in), so it closes
+(`InteriorMapPlan.waypoint()` of the left shaft's second-floor landing, one cell in), so it closes
 the flight from the second floor down and the first half of the walk is the same every attempt:
 left from the third floor to the second, then across that hallway to the other stairwell and down
 to the first. The last leg is not forced: from the first floor the right shaft reaches the lobby
@@ -1627,15 +1627,15 @@ she presses** *(inbox #782 in minty-lemur)*. On a flight tile any press with a l
 the left, down if the flight descends to the left and up if it climbs, and a rightward one
 likewise; a pure up or down press on a flight moves nowhere, as there is no floor beside the tread
 to step onto. On a landing, as in a hallway, a press is not turned, so stepping off a landing onto
-a flight is a level step until she is on its first tread (`InteriorScene.slope_dir_at()`, read by
-`Stroller._redirect_along_a_flight()`).
+a flight is a level step until she is on its first tread (`WorldMap.slope_dir_at()`, the
+building's map answering it, read by `Stroller._redirect_along_a_flight()`).
 
 **And her body goes where she is steered, because a flight's edges are straight.** The solid
 cells either side of a flight meet it at square corners only 22.6px apart across the slope, against
 her 28px body, so with whole-cell walls she could pass each pair of corners only nearly flat or
 nearly straight down, and a held press would walk a zigzag. Each of those cells has the part inside the
-flight's band cut off along the slope (`InteriorScene._blocker_outline()`), leaving straight edges
-51px apart across it (`InteriorScene.FLIGHT_HALF_WIDTH`). From the landing tile level with a
+flight's band cut off along the slope (`InteriorMapPlan.blocker_outline()`), leaving straight edges
+51px apart across it (`InteriorMapPlan.FLIGHT_HALF_WIDTH`). From the landing tile level with a
 flight's first or last tread she walks the whole flight within two degrees of 45 and touches neither
 edge; from the landing tile one row below that, she slides along the stair side for about a tile
 before she is on the line. `tests/test_interior.gd` pins the steering of every tile of both

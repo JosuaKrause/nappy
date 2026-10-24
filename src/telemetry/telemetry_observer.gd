@@ -125,6 +125,9 @@ var _map: CityMap
 ## runs — handed in with it (`setup()`, `watch_building()`, `watch_city()`): what every line that
 ## names a tile asks.
 var _world_map := WorldMap.open_ground()
+## Whether the walk being watched keeps a trail for a dusk map: every day's and the escape's city's,
+## not the building's, which has no city map to draw one on.
+var _keeps_a_trail := true
 ## The event source for the section being watched — the building's `EventManager` in the building,
 ## the city's outside it. Null on a day, which reads `_city.events` instead; see `_source()`.
 var _events: Node
@@ -305,6 +308,7 @@ func watch_building(map: WorldMap, events: Node) -> void:
 	_events = events
 	_city = null
 	_map = null
+	_keeps_a_trail = false
 	_escape_section = "the building"
 
 ## Section two: the city with nobody in it, and the finale's own plan on it. The map is the one
@@ -314,6 +318,7 @@ func watch_city(city: City) -> void:
 	_city = city
 	_map = city.map
 	_world_map = city.map
+	_keeps_a_trail = true
 	_events = city.events
 	_escape_section = "the city"
 
@@ -1188,8 +1193,7 @@ func _watch_the_contact(here: Vector2) -> void:
 ## trail, because running is a property of a stretch of the one walk, not a separate walk of its
 ## own — the same reasoning `_watch_running` uses for the `run` entry, one attribute richer.
 func _watch_the_trail(here: Vector2) -> void:
-	# The escape's building has no city map to draw a dusk map on, so it keeps no trail for one.
-	if not _city:
+	if not _keeps_a_trail:
 		return
 	if not _trail.is_empty() and here.distance_to(_trail_last) < TRAIL_SAMPLE_DISTANCE:
 		return

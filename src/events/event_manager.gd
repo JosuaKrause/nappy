@@ -42,8 +42,9 @@ var _plans: Array[EventScheduler.Planned] = []
 var _director: EventDirector
 var _city: City
 ## The map of the world these events stand in (`WorldMap`): every instance is made on it, added to
-## its world through it and stopped by its walls, and its blocked record holds their bodies.
-var _map: WorldMap
+## its world through it and stopped by its walls, and its blocked record holds their bodies. Open
+## ground until a world is handed over, for a rig that never hands one.
+var _map: WorldMap = WorldMap.open_ground()
 ## The city's own map, for planning a day over it — its holds, its route tree, its blocks — or null
 ## where the world is not the city (`setup_world()`).
 var _city_map: CityMap
@@ -679,8 +680,7 @@ func clear() -> void:
 	# Yesterday's bodies go with yesterday's events, the same once-a-day sweep `clear_day_holds()`
 	# and `clear_day_soft_seals()` get — every owner in the record is a plan or an instance this
 	# call has just thrown away.
-	if _map:
-		_map.clear_day_obstructions()
+	_map.clear_day_obstructions()
 	_door_entry_side.clear()
 	_door_release_latches.clear()
 	_last_seen_at = Vector2.INF
@@ -863,8 +863,6 @@ func _stream_out(plan: EventScheduler.Planned) -> void:
 ## out. Safe to call for every plan and every instance: the deciding is all in
 ## `obstructed_footprint()`.
 func _record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -> void:
-	if not _map:
-		return
 	_map.obstruct_tiles(owner, obstructed_footprint(_map, def, at, facing))
 
 ## The tiles a row's own solid body stands on when it is sited at `at` looking `facing`, or an
@@ -889,7 +887,7 @@ func _record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -
 static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 		facing: Vector2) -> Array[Vector2i]:
 	var nothing: Array[Vector2i] = []
-	if not map or def == null or def.shape == null or def.obstructs_radius <= 0.0:
+	if def == null or def.shape == null or def.obstructs_radius <= 0.0:
 		return nothing
 	# A moving wall pins her, so the catalogue exempts anything mobile from being solid at all; a
 	# door is a crossing the day means to keep open, answered for a walker by `WalkerDoorHold` at a

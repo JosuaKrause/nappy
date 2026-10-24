@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_a_conversation_prices_by_the_babys_state(t)
 	_test_a_conversation_only_starts_inside_detain_radius(t)
 	_test_a_conversation_happens_once_per_instance(t)
+	_test_a_mother_streamed_out_after_her_chat_does_not_come_back(t)
 	_test_the_take_begins_only_once_she_is_close(t)
 	_test_a_completed_take_is_logged_exactly_once(t)
 	_test_a_hunting_van_draws_no_victim(t)
@@ -260,6 +261,57 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 	mother.free()
 	stroller.free()
 	manager.free()
+
+## **No second conversation across streaming**, though the chat is kept on the instance and not on
+## its plan (`EventScheduler.Planned` carries no `_has_chatted`): a conversation ends with her
+## leaving (`EventInstance._be_done()`), and a plan streamed out while its instance is leaving is
+## spent (`EventManager._stream_out()`), so walking away past the stream radius and back brings no
+## second mother to stop her. Driven through the manager's own streaming on a plan, the way a day
+## puts her in the world.
+func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
+	var def := EventCatalogue.by_id("chatting_mother")
+	var at := Vector2(5000.0, 5000.0)
+	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
+	var world := WorldContext.new()
+	t.add_child(world)
+	var manager := _chat_manager()
+	manager._map.world = world
+	t.add_child(manager)
+	var plan := EventScheduler.Planned.new(def, at, path)
+	manager._plans = [plan] as Array[EventScheduler.Planned]
+	var stroller := _chat_stroller(t)
+	manager._player = stroller
+	stroller.global_position = at
+	manager.stream_around(at)
+	var mother := plan.live
+	t.check(mother != null, "she is streamed in where the day planned her")
+	if not mother:
+		stroller.free()
+		manager.free()
+		world.free()
+		return
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(mother.is_chatting(), "the first approach starts the conversation")
+	_advance(mother, def.detain_seconds + 0.1)
+	t.check(mother.is_leaving, "it ends with her leaving")
+	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
+			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
+	stroller.global_position = far
+	manager.stream_around(far)
+	t.check(plan.live == null and plan.spent,
+			"walking off past the stream radius takes her away for good (live %s, spent %s)"
+			% [plan.live != null, plan.spent])
+	stroller.global_position = at
+	stroller._detained_for = 0.0
+	manager.stream_around(at)
+	manager._tell_them_where_she_is()
+	manager._check_detentions()
+	t.check(plan.live == null and not stroller.is_detained(),
+			"and walking back past her place brings no second conversation")
+	stroller.free()
+	manager.free()
+	world.free()
 
 # `abduction` draws its own scripted victim rather than touching a real `CrowdAgent` — see
 # docs/TODO.md, M56. Drawing and telemetry only, so a data-level rig can drive the whole scene by
