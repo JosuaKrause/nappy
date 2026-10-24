@@ -867,7 +867,8 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 	var doors := PackedVector2Array()
 	var finale: FinalePlanner.Plan
 	if data.get("kind", "city") == "escape":
-		finale = FinalePlanner.plan(map, GameState.day_rng(GameState.day, "finale"), false)
+		finale = FinalePlanner.plan(map, GameState.day_rng(GameState.day, "finale"), walk_spec,
+				false)
 		for chain in finale.chains:
 			if not chain.complete:
 				errors.append("escape route construction could not complete its ordinary chains")
@@ -982,17 +983,15 @@ func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Pla
 		return null
 	return candidate
 
-## The escape's exact actors use its own row variants, open streets, tree exclusion, spawn
-## clearance and body spacing. No ordinary-day corridor or offscreen director stands in for it.
+## The escape's exact actors use its own row variants (the walk's spec's `DaySpec.bag_rows`), open
+## streets, tree exclusion, spawn clearance and body spacing. No ordinary-day corridor or offscreen
+## director stands in for it.
 func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 		finale: FinalePlanner.Plan, prior: Array[EventScheduler.Planned],
 		route_seed: int) -> EventScheduler.Planned:
-	if not def.id in ["military_convoy", "abduction", "roadblock", "finale_explosion"]:
+	if not walk_spec.bag_rows.has(def.id):
 		return null
-	if def.id == "roadblock":
-		def = EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL)
-	elif def.id == "military_convoy":
-		def = EventCatalogue.without_its_aftermath(def)
+	def = walk_spec.bag_rows[def.id]
 	var map := _city.map
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):
@@ -1000,7 +999,8 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 	var ground_ok := false
 	var trees := StreetTrees.footprint_tiles(map)
 	for segment in finale.open_streets:
-		if tile in EventScheduler._finale_ground(map, segment, def, trees, player_at):
+		if tile in EventScheduler._street_ground(map, segment, def, trees, player_at, {},
+				walk_spec.holds_the_home_streets):
 			ground_ok = true
 			break
 	if not ground_ok:

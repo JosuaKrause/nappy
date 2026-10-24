@@ -42,7 +42,12 @@ the `ResistanceDirector` from a draw path, uses the red arrow's `ArrowField` as 
 copies crowd traffic's give-way (`_room_to_its_line`). **Streaming** carries hand-picked fields
 (`Planned`: age, travelled, noticed_at, guard_spent, chaser_side; `resume()` restores three). **Events held by the scene:** `City` and `InteriorScene` each sum their
 events for the baby rather than the manager answering it, and `BuildingPlan.lay_the_grates()`, a
-placement class, builds the grates' sprite nodes through `EventInstance.steam_grate()`.
+placement class, builds the grates' sprite nodes through `EventInstance.steam_grate()`. **The
+escape planned beside the day:** `FinalePlanner` (routes, layer 2) runs the seal planner and the
+scheduler, the escape's planning half where a day's is `EventManager.start_day`, and
+`EventManager.start_planned()` is a second entry point that hosts its result; once the manager is
+split, the escape is planned inside `start_day(spec)`. `WalkSiting` (after-dawn siting) always reads
+the day's home-street rule, and `--route` from the building section waits at the city's brief.
 
 **How behaviour is captured in classes is the implementer's call.** Asked whether the design
 encapsulates event types into classes, the player: "well leave that part vague -- the agent that will

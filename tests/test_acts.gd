@@ -87,13 +87,13 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 	t.check(GameState.scars.size() == 1, "the same scar is not recorded twice")
 
 	var consumed: Array[String] = []
-	var same_day := EventScheduler.build_day(3, _rng(3), _map, consumed, GameState.scars)
+	var same_day := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), _map, consumed, GameState.scars)
 	t.check(not _contains(same_day, "burnt_shell"),
 			"a scar does not double up on the day it was made")
 
 	for day in [4, 9, 14]:
 		var later: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), _map, later, GameState.scars)
+		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, later, GameState.scars)
 		t.check(_contains(planned, "burnt_shell"),
 				"the burnt-out shell is still there on day %d" % day)
 		for plan in planned:
@@ -276,7 +276,7 @@ func _test_a_park_stays_reachable_every_day(t) -> void:
 
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), _map, consumed, GameState.scars)
+		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, consumed, GameState.scars)
 		# Typed deliberately: passing a bare `Array` here makes GDScript coerce it at the
 		# call boundary, and that coercion leaves the CityMap alive at shutdown ("N
 		# ObjectDB instances were leaked"). Declaring the real element type avoids it.

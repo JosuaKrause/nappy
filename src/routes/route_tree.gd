@@ -1,5 +1,5 @@
 class_name RouteTree
-extends RefCounted
+extends RouteSource
 ## The day's corridor: one branch from the doorstep to every calm area still worth reaching, and
 ## a spur to the day's own narrow destination where one is not already on it — the power station's
 ## front door on its day (`_grow_a_spur_to`).
@@ -166,6 +166,9 @@ var _home := {}
 ## question still asked in segment terms without a cell to derive it from: whether a candidate
 ## street for `gaps()` is a real street at all.
 var _absent := {}
+## The street the tree is grown from: the one the front door opens onto, `ClosurePlanner.home_street()`.
+## Kept even for a tree that grew nothing, since a seal still spares it (`street_it_starts_in()`).
+var _home_street: StreetNetwork.Segment = null
 
 ## Node id -> the edges that remain after `_is_off_the_growths_graph`. The grid topology, the map's
 ## paint and its main-road position are all fixed for the tree's lifetime, so repeated probes can
@@ -286,10 +289,11 @@ static func grow(map: CityMap, home: StreetNetwork.Segment, areas: Array[Closure
 static func _grow_into(tree: RouteTree, map: CityMap, home: StreetNetwork.Segment,
 		areas: Array[ClosurePlanner.CalmArea], closed: Dictionary, grid: ReachabilityGrid,
 		rng: RandomNumberGenerator) -> RouteTree:
+	tree._map = map
+	tree._home_street = home
 	if not home or areas.is_empty():
 		return tree
 	tree.grid = grid
-	tree._map = map
 	tree._absent = closed
 	for tile in _rect_tiles(home.tile_rect()):
 		var node := grid.node_at(tile)
@@ -801,6 +805,65 @@ func streets() -> Array[Vector3i]:
 func is_on_the_tree(key: Vector3i) -> bool:
 	_ensure_street_keys()
 	return _street_keys.has(key)
+
+# --------------------------------------------------------- as the day's walk ---
+
+## Every street the tree runs along, in `StreetNetwork.segments()`' order — `RouteSource`'s question,
+## answered from `is_on_the_tree()`.
+func streets_on_the_walk() -> Array[StreetNetwork.Segment]:
+	var found: Array[StreetNetwork.Segment] = []
+	for segment in StreetNetwork.segments():
+		if is_on_the_tree(segment.key()):
+			found.append(segment)
+	return found
+
+## A tree answers for a whole street: a branch that is on it at all walks it end to end, so where
+## along it the question is asked does not change the answer.
+func walks_the_street(segment: StreetNetwork.Segment, _along := -1) -> bool:
+	return is_on_the_tree(segment.key())
+
+## **An alley that opens onto the tree at either end is the way round a wall**, so the walk reaches
+## it whether or not a branch goes down it; one that touches the tree at neither end would only join
+## two streets off it. The two streets are the ones its two mouths open onto, across its block.
+func reaches_the_alley(map: CityMap, rect: Rect2i) -> bool:
+	var vertical := rect.size.x < rect.size.y
+	var block := map.block_at(map.tile_rect_to_world(rect).get_center())
+	var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
+	var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
+	var segment_a := StreetNetwork.beside_block(block, side_a)
+	var segment_b := StreetNetwork.beside_block(block, side_b)
+	return (segment_a != null and is_on_the_tree(segment_a.key())) \
+			or (segment_b != null and is_on_the_tree(segment_b.key()))
+
+## Whether a branch runs along `tile`'s own cell: the cell's node is one the tree carries, which is
+## `Corridor.carries_a_route()`'s depth zero read without building a corridor.
+func carries_a_route(tile: Vector2i) -> bool:
+	if not grid:
+		return false
+	var node := grid.node_at(tile)
+	return node >= 0 and _colours.has(node)
+
+## **The street grain, where a tile has a street**: every tile of a street the tree runs along, and
+## a tile on no street (a junction's box, a park cut, an alley the tree takes) by its own cell —
+## `Corridor.depth()` at zero, the two halves it answers at.
+func marks_the_kerb_at(tile: Vector2i) -> bool:
+	var segment := StreetNetwork.segment_containing(tile)
+	if segment:
+		return is_on_the_tree(segment.key())
+	return carries_a_route(tile)
+
+## The home street, which the tree is grown from and nothing seals: the home is a notch with one
+## exit, so sealing it seals her in.
+func street_it_starts_in() -> StreetNetwork.Segment:
+	return _home_street
+
+## The tree's own corridor, built afresh: what every placement of the day is stated against.
+func corridor() -> Corridor:
+	return Corridor.of(self)
+
+## Her doorstep.
+func start() -> Vector2:
+	return _map.doorstep_world_position() if _map else Vector2.INF
 
 ## Every junction a route passes through, and the junction at each end of every street the tree
 ## runs along — **the crossings a walk along a route has no way around**.

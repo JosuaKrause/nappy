@@ -96,7 +96,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 		if map.has_street(segment.key()) and not tree.is_on_the_tree(segment.key()):
 			off_tree += 1
 
-	var seals := SealPlanner.plan_day(map, day, tree, _rng(map, day, "seals"), boundary,
+	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
 			map.held_segments)
 	var sealed := {}
 	var mouths := 0
@@ -118,7 +118,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	var consumed: Array[String] = []
 	var walls := 0
 	var friction := 0
-	for plan in EventScheduler.build_day(day, _rng(map, day, "events"), map, consumed, [], [],
+	for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(map, day, "events"), map, consumed, [], [],
 			tree, 0, doors, [] as Array[Vector2i], standing):
 		if not plan.is_placed():
 			continue

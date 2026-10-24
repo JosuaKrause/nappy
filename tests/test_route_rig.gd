@@ -47,6 +47,7 @@ func run(t) -> void:
 	_test_resolve_target_task_is_unavailable_before_the_mark_is_touched(t)
 	_test_resolve_target_home_is_the_home_rects_centre(t)
 	_test_resolve_target_spawn_reaches_devrig(t)
+	_test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t)
 	_test_resolve_target_unknown_word_warns_and_answers_inf(t)
 	_test_task_target_resolves_for_the_neighbor_task_on_day_10(t)
 	_test_task_target_resolves_for_the_mast_task_on_day_11(t)
@@ -701,6 +702,28 @@ func _test_resolve_target_spawn_reaches_devrig(t) -> void:
 	var at := rig._resolve_target("spawn:park")
 	t.check(at == DevRig.for_spawn_target("park", _city, _resistance),
 			"'spawn:park' resolves exactly as DevRig.for_spawn_target('park', ...) does")
+	rig.free()
+
+## `tunnel` and `bridge` are the escape city's two ways out, read off the day's spec
+## (`DaySpec.exits`, which `main` hands a `CITY_EDGE` section once its city stands); a day has none,
+## so on a day they are unavailable, and with no `ResistanceDirector` — the escape has none —
+## `mark` and `task` are unavailable rather than a crash.
+func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t) -> void:
+	var rig := _rig(t)
+	var clock := DayController.new()
+	rig._day = clock
+	t.check(rig._resolve_target("tunnel") == Vector2.INF and rig._resolve_target("bridge") \
+			== Vector2.INF, "a day has no tunnel or bridge to walk to")
+	var tunnel := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.TUNNEL))
+	var bridge := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.BRIDGE))
+	clock.spec = DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	clock.spec.exits = {CityEdge.Kind.TUNNEL: tunnel, CityEdge.Kind.BRIDGE: bridge}
+	t.check(rig._resolve_target("tunnel") == tunnel, "'tunnel' resolves to the spec's tunnel")
+	t.check(rig._resolve_target("bridge") == bridge, "'bridge' resolves to the spec's bridge")
+	rig._resistance = null
+	t.check(rig._resolve_target("mark") == Vector2.INF and rig._resolve_target("task") \
+			== Vector2.INF, "with no resistance director, 'mark' and 'task' are unavailable")
+	clock.free()
 	rig.free()
 
 func _test_resolve_target_unknown_word_warns_and_answers_inf(t) -> void:

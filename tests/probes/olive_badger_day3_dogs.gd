@@ -33,7 +33,7 @@ func run(t) -> void:
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
 		var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-				day, plan_rng, map, [], [], [], RouteTree.for_day(map, day), 0)
+				DaySpec.for_day(day), plan_rng, map, [], [], [], RouteTree.for_day(map, day), 0)
 		var bought_a_dog := false
 		for plan in planned:
 			if plan.def.id == DOG:

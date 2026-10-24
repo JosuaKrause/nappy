@@ -17,7 +17,7 @@ extends RefCounted
 ##
 ## **Her line** is the middle of the open sidewalk: the widest run of offsets across the street
 ## her body fits on at every roadblock's own place along it, past the bands' solid pieces
-## (`EventScheduler.EscapeGround.solids_of()`), from `BEYOND` before the first band to `BEYOND`
+## (`WalkGround.solids_of()`), from `BEYOND` before the first band to `BEYOND`
 ## past the last.
 
 const STEP := 1.0 / 60.0
@@ -31,7 +31,7 @@ static func plan_for(seed_value: int) -> Dictionary:
 	map.repaint(GameState.city_state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	return {"map": map, "plan": FinalePlanner.plan(map, rng)}
+	return {"map": map, "plan": FinalePlanner.plan(map, rng, _city_spec())}
 
 ## The plan's roadblocks on each open street that carries any, `[segment, Array[Planned]]` pairs.
 static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan) -> Array:
@@ -50,12 +50,12 @@ static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan) -> Array:
 ## every band.
 static func her_line(t: Node, map: CityMap, segment: StreetNetwork.Segment,
 		group: Array[EventScheduler.Planned]) -> PackedVector2Array:
-	var ground := EventScheduler.EscapeGround.new(map, [], [])
+	var ground := WalkGround.new(map)
 	var along := Vector2.RIGHT if segment.horizontal else Vector2.DOWN
 	var across := Vector2(-along.y, along.x)
 	var rect := map.tile_rect_to_world(segment.tile_rect())
 	var centre := rect.get_center()
-	var solids: Array[EventScheduler.EscapeSolid] = []
+	var solids: Array[WalkGround.Solid] = []
 	var holder := Node2D.new()
 	t.add_child(holder)
 	var places: Array[float] = []
@@ -282,3 +282,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 		made[0].free()
 		return {"lure": luring, "after": {}}
 	return {"lure": luring, "after": walk(t, map, group, her, to, meter, made)}
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)

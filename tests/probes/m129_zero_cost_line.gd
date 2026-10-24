@@ -395,7 +395,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	for rect in region_plan.alley_doors:
 		boundary[rect.position] = true
 
-	var seals := SealPlanner.plan_day(map, day, tree, _rng(map, day, "seals"), boundary,
+	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
 			map.held_segments)
 	var no_one_shots: Array[String] = []
 	var no_scars: Array[Dictionary] = []
@@ -418,7 +418,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	var standing: Array[EventScheduler.Planned] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
-	var plans := EventScheduler.build_day(day, _rng(map, day, "events"), map, no_one_shots,
+	var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(map, day, "events"), map, no_one_shots,
 			no_scars, _used if not _used.is_empty() else no_calm, tree, 0, doors, [], standing)
 	# Which pass placed a row is not on the plan, so it is recorded as the lists are joined — the
 	# one place that still knows. See `Source`.

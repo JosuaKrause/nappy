@@ -293,7 +293,7 @@ func _test_the_three_rows_validate_and_are_never_rolled(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("checkpoints:%d:%d" % [map.seed_used, day])
 		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(day, rng, map, consumed):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed):
 			scheduled += 1
 			if plan.def.id.begins_with("checkpoint_"):
 				rolled += 1
@@ -428,7 +428,7 @@ func _planned_day(map: CityMap, day: int, tree: RouteTree,
 	var consumed: Array[String] = []
 	var scars: Array[Dictionary] = []
 	var used_calm: Array[Vector2i] = []
-	return EventScheduler.build_day(day, rng, map, consumed, scars, used_calm, tree, 0, doors)
+	return EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, scars, used_calm, tree, 0, doors)
 
 func _placed_count(plans: Array[EventScheduler.Planned]) -> int:
 	var total := 0

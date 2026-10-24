@@ -490,7 +490,7 @@ const CITY_BLOCKS := Vector2i(11, 11)
 const BUILDING_SHADOW_ALPHA := 0.22
 
 ## How far a route curbstone's own pixels are blended toward `Palette.ROUTE_KERB_TINT`
-## (`GroundLayers._tint_opaque`/`_tint_matching`, `City._tint_the_route_kerbs()`) — the whole of the
+## (`GroundLayers._tint_opaque`/`_tint_matching`, `City.tint_the_route()`) — the whole of the
 ## M145 trial's own dial. The player sets it by eye against a still, not this comment: raise it
 ## while the cast reads as invisible, lower it while it reads as a drawn hint rather than a cast,
 ## and zero is the trial's off switch, with nothing else to change. The strip the blend applies to
@@ -2709,10 +2709,13 @@ const FINALE_STEAM_PERIODS: Array[float] = [4.0, 4.5, 5.5]
 const FINALE_STEAM_BLOWS_FOR := 2.0
 
 ## How many slots each open street of the escape's walk has, each filled by one draw from the
-## escape's marble bag below (`EventScheduler.build_finale()`, `escape_bag()`). **One keeps the
-## section the climax and every walk out of it walkable**, measured by walking the shortest walk
+## escape's marble bag below (`DaySpec.slots_per_street`, which the city section's spec takes from
+## here; `EventScheduler._fill_the_walk_from_the_bag()` draws them). **One keeps the section the
+## climax and every walk out of it walkable**, measured by walking the shortest walk
 ## from the service exit to each exit through the plan's own events, on two sets of 24 seeds
-## (`tests/probes/escape_winnable.gd`; its output under `docs/evidence/winnable-escape-2026-10-19/`):
+## (measured by `tests/probes/escape_winnable.gd` at f8172b7ccb7f, whose own stand-in walker and
+## meter produced `docs/evidence/winnable-escape-2026-10-19/`; the probe walks with the game's own
+## walker, `RouteRig`, and its numbers are not comparable with those):
 ## at one slot a walk to an exit meets about eight dangers, one every eight seconds of walking, and
 ## a plain walk gets out on 95 of 96 with the baby woken on 4; at two slots it meets about twelve,
 ## the baby wakes on about one walk in five, and one walk in sixteen to one in nine ends in crying.

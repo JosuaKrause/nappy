@@ -80,15 +80,15 @@ func _test_scheduler_is_deterministic(t) -> void:
 	for day in [1, 5, 14]:
 		var consumed_a: Array[String] = []
 		var consumed_b: Array[String] = []
-		var first := EventScheduler.build_day(day, _rng(day), map, consumed_a)
-		var second := EventScheduler.build_day(day, _rng(day), map, consumed_b)
+		var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed_a)
+		var second := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed_b)
 		t.check(_signature(first) == _signature(second),
 				"day %d replans identically from the same seed" % day)
 
 	var consumed: Array[String] = []
-	var day_one := EventScheduler.build_day(1, _rng(1), map, consumed)
+	var day_one := EventScheduler.build_day(DaySpec.for_day(1), _rng(1), map, consumed)
 	consumed.clear()
-	var day_two := EventScheduler.build_day(2, _rng(2), map, consumed)
+	var day_two := EventScheduler.build_day(DaySpec.for_day(2), _rng(2), map, consumed)
 	t.check(_signature(day_one) != _signature(day_two), "different days plan differently")
 
 func _test_scheduler_respects_placement_and_caps(t) -> void:
@@ -145,7 +145,7 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 			return rng
 		for day in range(1, 15):
 			var groups := {}
-			for plan in EventScheduler.build_day(day, rng_for.call(day), map, consumed):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng_for.call(day), map, consumed):
 				if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 					continue
 				t.check(int(seen.get(plan.def.id, day)) == day,
@@ -183,7 +183,7 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
 			var corridor := Corridor.of(tree)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in EventScheduler.build_day(day, rng, map, consumed, [], [], tree):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], [], tree):
 				if plan.def.id != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1
@@ -370,7 +370,7 @@ func _test_calm_she_has_not_used_is_left_alone(t) -> void:
 			if Tuning.act_for_day(day) != act:
 				act = Tuning.act_for_day(day)
 				used_this_act = []
-			var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [],
+			var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [],
 					used_this_act)
 			for block in map.calm_blocks:
 				if used_this_act.has(block):

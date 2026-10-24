@@ -24,7 +24,14 @@ extends Node
 ##   straight line. She stops and presses nothing once she is there, and stays until the baby is
 ##   asleep, however long that takes — the day's own clock is what answers whether that fits.
 ## - `home` — the doorstep's own block, the centre of `CityMap.home_rect`.
+## - `tunnel` and `bridge` — the escape city's two ways out (`DaySpec.exits`, the last walkable tile
+##   of the spine at each end), where reaching one wins the section. Unavailable on a day.
 ## - `spawn:<name>` — whatever `DevRig.for_spawn_target()` already knows how to find.
+##
+## **The escape's city is walked the same way** (`--start-escape city --route tunnel`): `main` builds
+## the rig when the city section starts, with no `ResistanceDirector` (the escape has no subquest, so
+## `mark` and `task` are unavailable there), and engages the section without its brief, since a rig
+## has nobody to press its continue.
 ##
 ## An unresolved target (nothing to walk to yet, or nothing found within `_RESOLVE_TIMEOUT`) and an
 ## unreachable one (no path exists) are both logged and skipped rather than hung on forever — see
@@ -214,9 +221,10 @@ var _held := false
 ## side always does. `Vector2.INF` before the day's first frame.
 var _last_position := Vector2.INF
 var _teleported := false
-## The day this rig's queue was started for, read once in `start_day()`. `GameState.day` has
-## already moved to the next day by the time `DayController.day_finished` reports a win, so a line
-## written from `_on_day_finished()` would otherwise name the wrong day.
+## The day this rig's queue was started for, read once in `start_day()` off the day's spec
+## (`DaySpec.number`: 1 to 14, or the escape's city, 16). `GameState.day` has already moved to the
+## next day by the time `DayController.day_finished` reports a win, so a line written from
+## `_on_day_finished()` would otherwise name the wrong day.
 var _day_number := 0
 
 ## Every `ROAD` tile in the map, built once — the lattice itself never changes within a run, only
@@ -250,7 +258,7 @@ func _cache_road_tiles() -> void:
 ## a probe that simply keeps going) starts the new day's targets fresh rather than chasing
 ## yesterday's mark.
 func start_day() -> void:
-	_day_number = GameState.day
+	_day_number = _day.spec.number
 	_target_index = 0
 	_elapsed_seconds = 0.0
 	_waypoints.clear()
@@ -336,6 +344,8 @@ func _try_resolve(delta: float) -> void:
 func _resolve_target(word: String) -> Vector2:
 	match word:
 		"mark":
+			if not _resistance:
+				return Vector2.INF
 			var step := _resistance.current_step()
 			return _resistance.contact_position() if step != null and step.is_pickup else Vector2.INF
 		"task":
@@ -346,6 +356,10 @@ func _resolve_target(word: String) -> Vector2:
 			return _nearest_calm(true)
 		"home":
 			return _city.map.home_world_position()
+		"tunnel":
+			return _day.spec.exits.get(CityEdge.Kind.TUNNEL, Vector2.INF)
+		"bridge":
+			return _day.spec.exits.get(CityEdge.Kind.BRIDGE, Vector2.INF)
 		_:
 			if word.begins_with("spawn:"):
 				return DevRig.for_spawn_target(word.get_slice(":", 1), _city, _resistance)
@@ -361,6 +375,8 @@ func _resolve_target(word: String) -> Vector2:
 ## 50.6px) completes from the tile straight below (32px); the van's and a mast's stand on their own
 ## body's tile, which a plan cannot end on either and which their body reach completes from beside.
 func _task_target() -> Vector2:
+	if not _resistance:
+		return Vector2.INF
 	var step := _resistance.current_step()
 	if step == null or step.is_pickup:
 		return Vector2.INF

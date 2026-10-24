@@ -267,10 +267,10 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary, map.held_segments)
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_segments)
 			var unheld_rng := RandomNumberGenerator.new()
 			unheld_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals_unheld := SealPlanner.plan_day(map, day, tree, unheld_rng, boundary)
+			var seals_unheld := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, unheld_rng, boundary)
 			t.check(seals.size() == seals_unheld.size(),
 					"seed %d day %d: holding the hard seals' ground plans the same seals (%d vs %d)"
 					% [map.seed_used, day, seals.size(), seals_unheld.size()])
@@ -289,7 +289,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 				checked_trees += 1
 
 			var consumed: Array[String] = []
-			for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
 				if not plan.is_placed():
 					continue
 				checked += 1
@@ -378,11 +378,11 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary, map.held_segments)
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_segments)
 
 			var consumed: Array[String] = []
 			var bodies: Array = []
-			for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
 				_add_a_physical_body(bodies, plan)
 			for plan in seals:
 				_add_a_physical_body(bodies, plan)

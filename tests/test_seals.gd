@@ -84,7 +84,7 @@ func _seals_for(map: CityMap, day: int) -> Array[EventScheduler.Planned]:
 	var key := "%d:%d" % [map.seed_used, day]
 	if not _seal_cache.has(key):
 		var tree := _tree_for(map, day)
-		_seal_cache[key] = SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+		_seal_cache[key] = SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 	return _seal_cache[key]
 
 ## Every real, non-home, non-spine, off-tree street — what a day's seals are supposed to cover
@@ -207,7 +207,7 @@ func _test_the_tree_itself_is_untouched(t) -> void:
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day)
 		var before := tree.cells()
-		SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var after := tree.cells()
 		t.check(before.size() == after.size(),
 				"seed %d: sealing does not add or remove tree cells (%d before, %d after)"
@@ -284,7 +284,7 @@ func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
 	var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree)
 	map.close_streets(closures)
-	var seals := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 	var blocked := map.closed_tiles.duplicate()
 	for plan in seals:
 		_add_circle(map, blocked, plan.position, plan.def.obstructs_radius)
@@ -469,7 +469,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t) -> void:
 			continue
 		# Sealing (and its thinning pass) is run for its side effect on `map.closed_tiles`/RNG
 		# consumption alone; the guarantee below is asked of the tree, which sealing never edits.
-		SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var joined := false
 		for junction in [home.a, home.b]:
 			for segment in StreetNetwork.at_junction(junction):
@@ -680,7 +680,7 @@ func _test_no_seal_reaches_over_a_building(t) -> void:
 	var checked := 0
 	var barricades := 0
 	for map in _maps:
-		var ground := EventScheduler.EscapeGround.new(map, [], [])
+		var ground := WalkGround.new(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for plan in _seals_for(map, day):
 				checked += 1
@@ -719,7 +719,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
-			var planned := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+			var planned := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 			var felled := {}
 			for plan in planned:
 				if plan.def.id != "fallen_tree":
@@ -826,7 +826,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 				boundary[rect.position] = true
 			for rect in region_plan.alley_doors:
 				boundary[rect.position] = true
-			var seals := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day), boundary,
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day), boundary,
 					map.held_segments)
 			var standing: Array[EventScheduler.Planned] = []
 			standing.append_array(seals)
@@ -838,7 +838,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 			var no_target: Array[Vector2i] = []
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("events:%d:%d" % [map.seed_used, day])
-			var rows := EventScheduler.build_day(day, events_rng, map, no_one_shots, no_scars,
+			var rows := EventScheduler.build_day(DaySpec.for_day(day), events_rng, map, no_one_shots, no_scars,
 					no_calm, tree, 0, PackedVector2Array(), no_target, standing)
 
 			var corridor := Corridor.of(tree)

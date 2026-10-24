@@ -231,7 +231,8 @@ func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 		var city: City = CITY_SCENE.instantiate()
 		t.add_child(city)
 		city.build(map)
-		city.start_finale(state, 7)
+		city.start_day(state, 7, RandomNumberGenerator.new(),
+				DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS))
 		t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK,
 				"the real finale/day preparation also keeps the manual ground")
 		city.free()
