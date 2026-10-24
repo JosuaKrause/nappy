@@ -19,5 +19,5 @@
 
 **Build:** an `ExcitementSource` component both compose, with only the field itself per type; a
 `LaneMover` with walker and car strategies; one `SpawnSiting` service with registered legality rules
-and a "reaches her" query on the navigator (`world-passability.md`); a shared separation pass over
+and a "reaches her" query on the map's one `Navigator` (`WorldMap.navigator()`); a shared separation pass over
 every mover.
