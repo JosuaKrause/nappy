@@ -772,12 +772,12 @@ func _along_across_rect(vertical: bool, along_lo: int, along_size: int,
 			else Rect2i(Vector2i(along_lo, across_lo), Vector2i(along_size, across_size))
 
 ## Every precinct span gets a line of posts at each end, standing exactly where the paving
-## begins: `City.bollard_positions` is geometry alone, so this holds it without a scene.
+## begins: `CityMap.post_positions()` is geometry alone, so this holds it without a scene.
 func _test_bollards_stand_where_the_paving_begins(t) -> void:
 	var seeds := 25
 	for i in seeds:
 		var map := _map(i)
-		var positions := City.bollard_positions(map)
+		var positions := map.post_positions()
 		for span in map.precinct_spans:
 			var vertical := span.x == 1
 			var corridor: int = span.y

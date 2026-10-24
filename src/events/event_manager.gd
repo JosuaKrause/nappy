@@ -19,10 +19,10 @@ extends Node
 ## fires and finishes at dawn, unobserved, and the budget bought nothing. An event that waits for
 ## her is an event she meets.
 ##
-## **This node owns no instance as a scene child.** Every `EventInstance` is added under `City`'s
-## shared, y-sorted `Entities` node (`City.add_entity()`) rather than under here, so
-## `EventInstance._ready()` opts itself out of physics interpolation rather than inheriting the
-## setting from this node.
+## **This node owns no instance as a scene child.** Every `EventInstance` is added to the world its
+## map is drawn in (`WorldMap.add_entity()`), under that world's y-sorted entity layer rather than
+## under here, so `EventInstance._ready()` opts itself out of physics interpolation rather than
+## inheriting the setting from this node.
 
 var _instances: Array[EventInstance] = []
 ## Warnings that are up for something not yet in the world — see `PendingWarning` and
@@ -180,6 +180,9 @@ func _the_navigator() -> Navigator:
 func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	_city = city
 	_map = map
+	# A map a rig hands in on its own is drawn in the city it hands with it.
+	if city and not map.has_world():
+		map.world = city
 	_navigator = navigator if navigator else Navigator.new(map)
 	_director = EventDirector.new(map, _navigator)
 	_director.force(_forced_row, _forced_interval)
@@ -1073,8 +1076,7 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 		instance.is_the_lesson = true
 	# The lights a car that drives stops at, the crowd's own (`EventInstance.signals`).
 	instance.signals = _city.signals
-	instance.world = _city
-	_city.add_entity(instance)
+	_map.add_entity(instance)
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and
 	# this is the one path every one of those comes through. See "the bodies in the street" above.

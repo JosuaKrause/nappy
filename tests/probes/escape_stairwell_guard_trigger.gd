@@ -71,11 +71,11 @@ func _once(t, s: int, route: String, pace: String) -> void:
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	player.carrying = true
-	player.slope_dir_at = scene.slope_dir_at
+	player.set_map(scene.map)
 	scene.add_entity(player)
 	player.set_physics_process(false)
 	var start := door_tile if route == "door" else second_door
-	player.global_position = scene.tile_to_world(start)
+	player.global_position = scene.map.tile_to_world(start)
 	player.velocity = Vector2.ZERO
 	var running := pace == "run"
 	_hold(["move_down"], running)
@@ -92,7 +92,7 @@ func _once(t, s: int, route: String, pace: String) -> void:
 		StrollerSteer.velocity_step(player, TICK)
 		_move(player, player.velocity * TICK)
 		var her := player.global_position
-		var tile := scene.world_to_tile(her)
+		var tile := scene.map.world_to_tile(her)
 		events._physics_process(TICK)
 		man.player_running = running
 		var caught := man.is_lethal_at(her)
@@ -103,7 +103,7 @@ func _once(t, s: int, route: String, pace: String) -> void:
 			near = minf(near, man.global_position.distance_to(her))
 		elapsed += TICK
 		if not turned and tile.y - origin.y >= int(ROUTES[route][0]) \
-				and her.y >= scene.tile_to_world(tile).y:
+				and her.y >= scene.map.tile_to_world(tile).y:
 			turned = true
 			_hold(ROUTES[route][1], running)
 		if charged_at == Vector2.INF and not man.is_waiting() and not man.is_telegraphing():
@@ -128,11 +128,11 @@ func _once(t, s: int, route: String, pace: String) -> void:
 			outcome = "through the door"
 			break
 		var on_landing := tile.x == origin.x + 1 and tile.y - origin.y >= 16 \
-				and scene.slope_dir_at(her) == 0
+				and scene.map.slope_dir_at(her) == 0
 		if charged_at != Vector2.INF and on_landing:
 			_hold(["move_up"], running)
 	_hold([], false)
-	var local := charged_at - scene.tile_to_world(origin) + Vector2.ONE * InteriorScene.TILE * 0.5
+	var local := charged_at - scene.map.tile_to_world(origin) + Vector2.ONE * InteriorScene.TILE * 0.5
 	print("TRIGGER seed %d %s %s charged at %s %.0fpx from him, %s at %.2fs, %.2fs after he ran, closest %.1fpx drawn, %.1fpx on a tick (the catch is 28px)"
 			% [s, route, pace, (local / InteriorScene.TILE).snapped(Vector2(0.01, 0.01)),
 			charged_range, outcome, elapsed, charged_for, closest, closest_on_tick])

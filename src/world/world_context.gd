@@ -23,9 +23,6 @@ extends Node2D
 ## `City` still has an `is_calm_zone` of its own, for the debug overlay and the telemetry, which
 ## genuinely do want the yes/no. It is not on this interface because `Baby` has no use for it.
 
-func _ready() -> void:
-	add_to_group("world")
-
 ## What this ground multiplies the sleepiness gain by while she walks. 1.0 is anywhere that is not
 ## calm; calm ground is worth many times that, and a small calm area more again.
 func sleepiness_multiplier(_world_position: Vector2) -> float:
@@ -72,3 +69,11 @@ func layers() -> WorldLayers:
 	return _layers
 
 var _layers: WorldLayers
+
+# ------------------------------------------------------------- the player's walk ---
+
+## What this world's ground does to her each frame she walks it, asked through its map
+## (`WorldMap.process_player()`): the building's doors fade her through and its light follows the
+## part she is in. Nothing in a world whose ground does nothing to her walk.
+func process_player(_player: Node2D, _delta: float) -> void:
+	pass

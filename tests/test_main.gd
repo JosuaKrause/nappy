@@ -842,7 +842,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 				lead if toward.y > size.y * 0.5 else -lead)
 		var window := Rect2(toward + glance - half, half * 2.0)
 		var band := Rect2(Vector2.ZERO, size).grow(
-				City.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE))
+				CityMap.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE))
 		beyond_the_band = beyond_the_band or not band.encloses(window)
 		city.scenery.update(window, true)
 		var lo := city.map.world_to_tile(window.position)
@@ -894,12 +894,12 @@ func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 	t.check(city.scenery_ground_source(Vector2i(lo.x, hi.y)) == GroundTiles.WATER \
 			and city.scenery_ground_source(hi) == GroundTiles.WATER,
 			"south owns both overview corners as water")
-	for depth in [City.OUTSIDE_DEPTH_TILES, City.OUTSIDE_DEPTH_TILES * 4]:
+	for depth in [CityMap.OUTSIDE_DEPTH_TILES, CityMap.OUTSIDE_DEPTH_TILES * 4]:
 		t.check(city.scenery_ground_source(Vector2i(south_spine_x,
 				city.map.size.y + depth)) != GroundTiles.WATER,
 				"the southern bridge's road carries on %d tiles out, to the edge of any view" % depth)
 	t.check(city.scenery_ground_source(Vector2i(south_spine_x - 2,
-			city.map.size.y + City.OUTSIDE_DEPTH_TILES * 4)) == GroundTiles.WATER,
+			city.map.size.y + CityMap.OUTSIDE_DEPTH_TILES * 4)) == GroundTiles.WATER,
 			"the water either side of the bridge goes on too")
 
 	city.free()

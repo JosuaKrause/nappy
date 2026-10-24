@@ -1199,12 +1199,6 @@ var silenced := false
 ## `--skip events`, handed in by the manager that makes this instance: nothing of it is drawn.
 var skip_draw := false
 
-## The world this instance stands in, handed in by the manager that makes it (`EventManager`,
-## `InteriorEvents`) before it is added: what it adds beside itself — its band, the far guard
-## walking off, the slices of a long picture — goes in through the world's `add_entity()`. Null in
-## a rig that stands it under a bare node, where they stand beside it in that node.
-var world: WorldContext = null
-
 ## Where the player is, in world space, or `INF` for nowhere.
 ##
 ## Written once per frame by `EventManager`, which is the one place that already knows. An instance
@@ -1328,17 +1322,19 @@ var _gait_moving := false
 ## the same day do not lean or strum in lockstep.
 var _idle_phase_offset := 0.0
 
-## The city, for the questions about its ground that are not about moving over it: where a body
-## stands on a pavement, which way a spread lies, and whether a building keeps this field from her
-## (`_walled_off`, which asks `_walls` instead where the building's own walls were handed over).
-## `null` in every data-level test that builds an instance without one, and in the building's
-## interior; always set by `EventManager._create`, the only real caller in the city.
-var _map: CityMap
+## **The map of the world this instance stands in** (`WorldMap`), handed in by the manager that makes
+## it: the questions about the ground that are not about moving over it — where a body stands on a
+## pavement, which way a spread lies, which alley a mouse crosses, whether a wall keeps this field
+## from her — and the world it adds what it draws beside itself to (`WorldMap.add_entity()`: its
+## band, the far guard walking off, the slices of a long picture). The city's map outdoors, the
+## building's indoors, and open ground (`WorldMap.open_ground()`) for a data rig that names none,
+## where every street question answers "no street" and nothing is walled.
+var _map: WorldMap
 ## **How this figure moves, and what it sees along**: every step, walk, way round and way out, and
 ## every notice, lunge and catch line, go through it (`Navigator`), asked as `_mover`. Handed in by
-## `setup()` — `EventManager` hands every figure the city's own — or, for a rig that hands none, one
-## over `_map`, which is open ground where there is no map: a rig that walks a straight line on
-## purpose gets exactly the unclamped movement it always had.
+## `setup()` — `EventManager` hands every figure its world's own — or, for a rig that hands none, one
+## over `_map`: on open ground a rig that walks a straight line on purpose gets exactly the
+## unclamped movement it asks for.
 var _navigator: Navigator
 ## What this figure walks as (`mover_for()`): a figure on foot or a car, at its body's radius.
 var _mover: Mover
@@ -1346,12 +1342,6 @@ var _mover: Mover
 ## may drive and not what it can see. A car that investigates notices her in an alley mouth or on
 ## a square as a figure would.
 var _sight: Mover
-## The building's own wall grid indoors (`InteriorScene.wall_grid()`), handed over by
-## `set_walls()` for `_walled_off()` alone, with none of the city's other questions behind it: a
-## stairwell has no pavement band to centre on and no alley for a mouse to cross, but its walls stop
-## excitement as a city's buildings do. `null` in the city, where `_walled_off()` asks `_map`.
-var _walls: CityMap
-
 ## The solid body `_build_obstruction()` made, or `null` before it exists and after
 ## `_process()` has dropped it. See `is_solid()`.
 var _obstruction: StaticBody2D
@@ -1400,22 +1390,22 @@ var _sceneries: Array[EventScenery] = []
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
-		face := Vector2.RIGHT, map: CityMap = null, navigator: Navigator = null) -> void:
+		face := Vector2.RIGHT, map: WorldMap = null, navigator: Navigator = null) -> void:
 	def = definition
 	path = route
-	_navigator = navigator if navigator else Navigator.new(map)
+	_map = map if map else WorldMap.open_ground()
+	_navigator = navigator if navigator else _map.navigator()
 	_mover = mover_for(definition)
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	var start := route[0] if route.size() > 0 else at
-	if map and not definition.mobile and definition.obstructs_radius > 0.0 \
+	if not definition.mobile and definition.obstructs_radius > 0.0 \
 			and definition.pavement_side == EventDef.Pavement.ANY:
-		start = _centred_on_the_pavement_band(map, start)
+		start = _centred_on_the_pavement_band(_map, start)
 	position = start
 	_heading = face
 	_view_sector = EightDirection.nearest(face)
-	_map = map
-	_spread_vertical = _spread_is_vertical(map, position)
-	_stationary_vehicle_side = _stationary_vehicle_uses_side(definition.look, map, position, face)
+	_spread_vertical = _spread_is_vertical(_map, position)
+	_stationary_vehicle_side = _stationary_vehicle_uses_side(definition.look, _map, position, face)
 	# A stride never starts mid-cycle — the mother's own `reset_at()` precedent.
 	_gait_phase = 0.0
 	_gait_moving = false
@@ -1430,7 +1420,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 		# route at all (`EventScheduler._build_placement`'s default case) — this is the one place
 		# its own dash gets built, from the alley it actually landed in rather than a flat offset,
 		# and cut to the ground the mouse fits on.
-		path = _navigator.trim(_alley_crossing_path(map, position), _mover)
+		path = _navigator.trim(_alley_crossing_path(_map, position), _mover)
 
 ## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
 ## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
@@ -1451,14 +1441,15 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 ## 26px gap to the frontage, narrower than the 28px pram, which is how `docs/EVENTS.md`'s
 ## `delivery_van` row reads that placement — a **wall** by physical fit, so a van at the kerb is
 ## *also* "no line to walk," on purpose.
-static func _centred_on_the_pavement_band(map: CityMap, at: Vector2) -> Vector2:
+static func _centred_on_the_pavement_band(map: WorldMap, at: Vector2) -> Vector2:
 	var tile := map.world_to_tile(at)
 	if map.pavement_inward(tile) == Vector2i.ZERO:
 		# Not a pavement tile at all, or a junction belonging to both corridors at once — nothing
 		# here has one band to be centred on.
 		return at
-	var x_offset := CityMap.corridor_offset(tile.x)
-	var offset := x_offset if x_offset >= 0 else CityMap.corridor_offset(tile.y)
+	var offsets := map.corridor_offsets(tile)
+	var x_offset := offsets.x
+	var offset := x_offset if x_offset >= 0 else offsets.y
 	var band_offset := Tuning.SIDEWALK_WIDTH * 0.5 if offset < Tuning.SIDEWALK_WIDTH \
 			else float(Tuning.STREET_WIDTH) - Tuning.SIDEWALK_WIDTH * 0.5
 	var shift := (band_offset - offset - 0.5) * Tuning.TILE_SIZE
@@ -1469,24 +1460,24 @@ static func _centred_on_the_pavement_band(map: CityMap, at: Vector2) -> Vector2:
 ## traffic, blocking nothing — on an east-west one, unless the direction it spreads in changes with
 ## the street. `CityMap.corridor_offset` answers which axis a tile's corridor runs on without
 ## caring what the tile's *type* is, so a `ROAD` tile (`checkpoint`, the barricade a stopped convoy
-## leaves) is asked exactly the way a `SIDEWALK` tile is, with no second lookup for either.
+## leaves) is asked exactly the way a `SIDEWALK` tile is, with no second lookup for either
+## (`WorldMap.corridor_offsets()`).
 ##
 ## A tile whose two coordinates are **both** inside a corridor band is a junction — belonging to
 ## two streets at once, with no single direction to be wrong about — and a tile whose coordinates
 ## are **neither** is off any corridor at all: a square, a park, a courtyard. Both keep the spread's
 ## long-standing lay along local X, which is what every row drew before this rule existed and is the
 ## smallest answer for ground that was never a street to lie across in the first place.
-static func _spread_is_vertical(map: CityMap, at: Vector2) -> bool:
-	if not map:
-		return false
+static func _spread_is_vertical(map: WorldMap, at: Vector2) -> bool:
 	var tile := map.world_to_tile(at)
-	for alley: Rect2i in map.alley_rects:
-		if alley.has_point(tile):
-			# An alley's barrier closes its short mouth, so a horizontal alley gets a vertical
-			# spread and a vertical alley keeps the default horizontal spread.
-			return alley.size.x > alley.size.y
-	var on_a_north_south_street := CityMap.corridor_offset(tile.x) >= 0
-	var on_an_east_west_street := CityMap.corridor_offset(tile.y) >= 0
+	var alley := map.alley_at(tile)
+	if alley.has_area():
+		# An alley's barrier closes its short mouth, so a horizontal alley gets a vertical
+		# spread and a vertical alley keeps the default horizontal spread.
+		return alley.size.x > alley.size.y
+	var offsets := map.corridor_offsets(tile)
+	var on_a_north_south_street := offsets.x >= 0
+	var on_an_east_west_street := offsets.y >= 0
 	return on_an_east_west_street and not on_a_north_south_street
 
 ## The roadworks panel source follows the spread's authored projection. The vertical source is
@@ -1502,19 +1493,14 @@ static func _roadwork_segment_texture(spread_vertical: bool) -> String:
 static func _roadblock_segment_texture(spread_vertical: bool) -> String:
 	return ROADBLOCK_SEGMENT_VERTICAL if spread_vertical else ROADBLOCK_SEGMENT
 
-## The `Rect2i` (from `CityMap.alley_rects`) that `at` falls inside, in **world** space, or an
-## empty `Rect2` when it is not inside any of them — a data-level rig with no map, or a placement
-## that has fallen off the lattice. `corridor_offset` cannot answer this the way `_spread_is_vertical`
+## The alley (`WorldMap.alley_at()`) that `at` falls inside, in **world** space, or an empty
+## `Rect2` when it is not inside any — open ground, the building, or a placement that has fallen
+## off the lattice. `corridor_offset` cannot answer this the way `_spread_is_vertical`
 ## does above: an alley is cut into the middle of a block rather than laid on the periodic street
 ## pattern that function reads, so its own tiles are never on a corridor at all.
-static func _alley_rect_at(map: CityMap, at: Vector2) -> Rect2:
-	if not map:
-		return Rect2()
-	var tile := map.world_to_tile(at)
-	for rect in map.alley_rects:
-		if rect.has_point(tile):
-			return map.tile_rect_to_world(rect)
-	return Rect2()
+static func _alley_rect_at(map: WorldMap, at: Vector2) -> Rect2:
+	var rect := map.alley_at(map.world_to_tile(at))
+	return map.tile_rect_to_world(rect) if rect.has_area() else Rect2()
 
 ## A two-point dash across the **short** side of the alley `at` sits in, for `alley_mouse` — see
 ## `EventCatalogue._alley_mouse()`. `_alley_rect_at` gives the alley's own rect rather than a
@@ -1522,10 +1508,10 @@ static func _alley_rect_at(map: CityMap, at: Vector2) -> Rect2:
 ## (2) is always the narrower side of a real alley, and she can only be walking the longer one, so
 ## crossing the narrower side is crossing her path by construction rather than by luck.
 ##
-## Falls back to a short fixed dash along local X when there is no rect to ask — `_alley_rect_at`
-## returning empty — which `validate()` and a real `MAP` placement never let happen; this is only
-## for a data-level rig that calls `setup()` with no map at all.
-static func _alley_crossing_path(map: CityMap, at: Vector2) -> PackedVector2Array:
+## Falls back to a short fixed dash along local X where no alley holds it — `_alley_rect_at`
+## returning empty — which a city's `MAP` placement never lets happen: on open ground, and in the
+## building, whose basement mouse crosses its corridor this way.
+static func _alley_crossing_path(map: WorldMap, at: Vector2) -> PackedVector2Array:
 	var rect := _alley_rect_at(map, at)
 	if rect.size == Vector2.ZERO:
 		return PackedVector2Array([at - Vector2(32.0, 0.0), at + Vector2(32.0, 0.0)])
@@ -1542,13 +1528,11 @@ static func _alley_crossing_path(map: CityMap, at: Vector2) -> PackedVector2Arra
 ## Whether a stationary vehicle is seen side-on at this point. The moving van faces along the
 ## street and the burnt car lies perpendicular to it. A junction or ground outside the lattice has
 ## no single street axis, so the vehicle's own facing supplies the coherent default.
-static func _stationary_vehicle_uses_side(look: EventDef.Look, map: CityMap, at: Vector2,
+static func _stationary_vehicle_uses_side(look: EventDef.Look, map: WorldMap, at: Vector2,
 		face: Vector2) -> bool:
-	if not map:
-		return absf(face.x) >= absf(face.y)
-	var tile := map.world_to_tile(at)
-	var on_a_north_south_street := CityMap.corridor_offset(tile.x) >= 0
-	var on_an_east_west_street := CityMap.corridor_offset(tile.y) >= 0
+	var offsets := map.corridor_offsets(map.world_to_tile(at))
+	var on_a_north_south_street := offsets.x >= 0
+	var on_an_east_west_street := offsets.y >= 0
 	if on_a_north_south_street != on_an_east_west_street:
 		var parallel_side := on_an_east_west_street
 		return not parallel_side if look == EventDef.Look.BURNT_OUT_CAR else parallel_side
@@ -2018,9 +2002,10 @@ func is_standing() -> bool:
 ##   and that is decided from `Tuning.CAR_JUNCTION_SIGHT` short of the box, wherever she waits along
 ##   that zebra, rather than from the zebra's own sight circle.
 ##
-## Only on its route and along a street's own axis, which is every route a patrol drives.
+## Only on its route and along a street's own axis, which is every route a patrol drives, and only
+## on a map laid out on the street lattice (`WorldMap.has_street_lattice()`).
 func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
-	if _map == null or not _drives_its_route():
+	if not _map.has_street_lattice() or not _drives_its_route():
 		return INF
 	var vertical := absf(heading.y) > absf(heading.x)
 	if absf(heading.y if vertical else heading.x) < 0.99:
@@ -2066,7 +2051,7 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 		for k in Tuning.SIDEWALK_WIDTH:
 			var zebra := Vector2i(lane_index, first + k) if vertical \
 					else Vector2i(first + k, lane_index)
-			if _map.tile_at(zebra) == GameEnums.TileType.CROSSING \
+			if _map.is_crossing(zebra) \
 					and absf(her_along - float(first + k) * tile) <= Tuning.CAR_ZEBRA_WAIT_RADIUS:
 				room = minf(room, box_line)
 				break
@@ -2079,7 +2064,7 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 		for k in range(0, ceili(Tuning.CAR_ZEBRA_SIGHT / tile) + 1):
 			var at_tile := here + step * k
 			var along_index: int = at_tile.y if vertical else at_tile.x
-			if _map.tile_at(at_tile) != GameEnums.TileType.CROSSING:
+			if not _map.is_crossing(at_tile):
 				run_start = -1
 				continue
 			if run_start < 0:
@@ -2203,10 +2188,10 @@ func _meets_her(at: Vector2, heading: Vector2, her: Vector2, seconds: float) -> 
 		return false
 	return _in_front(at, heading, her + (pram_at - player_at), Stroller.PRAM_BODY_RADIUS, seconds)
 
-## Whether `at` is on the carriageway: a road or a crossing tile. True with no map, which is every
-## data-level rig built without one, as `_clear_line_to()` is.
+## Whether `at` is on the carriageway: a road or a crossing tile (`WorldMap.is_carriageway()`),
+## anywhere on open ground, as `_clear_line_to()` is.
 func _on_the_carriageway(at: Vector2) -> bool:
-	return _map == null or Tile.is_road(_map.tile_type_at_world(at))
+	return _map.is_carriageway(_map.world_to_tile(at))
 
 ## **The car's warning, a horn said with the mark over her head**: true while it drives at her where
 ## she stands on the carriageway, within `Tuning.CAR_HORN_TIME` of its travel of the strike — so the
@@ -2884,18 +2869,18 @@ func _runs_its_route() -> bool:
 
 ## **Whether any part of this car's body stands in a junction box**: a tile under its spine, from
 ## its tail to its nose, inside the crossing street's whole corridor as well as its own
-## (`CityMap.junction_at()`) — the box with its zebras, the ground a red light holds a car short of
+## (`WorldMap.junction_box_at()`) — the box with its zebras, the ground a red light holds a car short of
 ## (`_room_to_its_line()`). An investigating car never stops there: nothing stands in a box it
 ## cannot leave, and the crossing traffic cannot see a patrol car's body to wait for it
 ## (sunny-finch, the **crowd-traffic** skill). False for anything that does not drive.
 func _stands_in_a_junction() -> bool:
-	if not def.drives or _map == null or def.shape == null:
+	if not def.drives or def.shape == null:
 		return false
 	var axis := _solid_axis()
 	var reach := def.shape.reach()
 	for i in JUNCTION_SAMPLES + 1:
 		var point := global_position + axis * lerpf(-reach, reach, float(i) / JUNCTION_SAMPLES)
-		if CityMap.junction_at(_map.world_to_tile(point)) != Vector2i(-1, -1):
+		if _map.junction_box_at(_map.world_to_tile(point)) != Vector2i(-1, -1):
 			return true
 	return false
 
@@ -3190,7 +3175,7 @@ var _her_way_next_from := Vector2i(-1, -1)
 ## Her tile `_her_way` was swept from.
 var _her_way_from := Vector2i(-1, -1)
 ## The ground laid out for the sweeps, and the state of what blocks her it was laid out for
-## (`CityMap.day_record_version`, `CityMap.obstruction_version`).
+## (`WorldMap.day_record_version`, `WorldMap.obstruction_version`).
 var _her_way_ground_laid := PackedInt32Array()
 var _her_way_ground_versions := Vector2i(-1, -1)
 ## The tiles down `_her_way` from the tile he stood on when it was walked
@@ -3224,7 +3209,7 @@ const WAY_LOOKAHEAD_TILES := 6
 ## reached his tile. A sweep runs the walk out from her in rings, so every tile at most as far as
 ## his is final once his is reached, and the walk down from his tile never asks one further out.
 func _keep_the_way_to_her_fresh() -> void:
-	if not _map or player_at == Vector2.INF:
+	if player_at == Vector2.INF or not _map.has_ground():
 		return
 	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
 	if _her_way_next == null:
@@ -3965,7 +3950,7 @@ func _walk_the_way(step: float) -> void:
 ## `_step()`'s part of `delta_pos`, or none where that would end on `_way_avoids`.
 func _step_clear_of_the_avoided(delta_pos: Vector2) -> Vector2:
 	var moved := _step(delta_pos)
-	if _map and _way_avoids.has_point(_map.world_to_tile(global_position + moved)):
+	if _way_avoids.has_point(_map.world_to_tile(global_position + moved)):
 		return Vector2.ZERO
 	return moved
 
@@ -4613,25 +4598,19 @@ func _contribution_at_uncached(world_position: Vector2, intensity_override: floa
 		return 0.0
 	return field
 
-## Whether a building stands between a source standing at `source_at` and her at `her_at`, deep
-## enough to keep its excitement from her — `CityMap.wall_between()`, measured from this node
-## (a flock's centre, a shaped row's middle) to her centre. *(plaid-wombat, inbox #554: "Excitement
-## should not go through any wall".)* Asked of `wall_grid()`, so indoors the building's own walls
-## answer it; false with no grid at all, which is every data-level rig built without one.
+## Whether a wall stands between a source standing at `source_at` and her at `her_at`, deep enough
+## to keep its excitement from her — `WorldMap.wall_between()`, measured from this node (a flock's
+## centre, a shaped row's middle) to her centre. *(plaid-wombat, inbox #554: "Excitement should not
+## go through any wall".)* The map's own walls answer it, the city's buildings outdoors and the
+## building's walls indoors; nothing is walled on open ground, and nothing for a row whose field no
+## wall stops (`EventDef.heard_through_walls`).
 func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
-	var grid := wall_grid()
-	return grid != null and grid.wall_between(source_at, her_at)
+	return not def.heard_through_walls and _map.wall_between(source_at, her_at)
 
-## What `_walled_off()` asks: the building's walls indoors (`_walls`), the city's map outdoors, and
-## `null` for a rig with neither. Read by the debug view's fields layer too, which cuts this
-## source's outline from its own node along the same lines (`DebugLayers.open_runs()`).
-func wall_grid() -> CityMap:
-	return _walls if _walls != null else _map
-
-## Indoors, the grid `_walled_off()` asks — `InteriorEvents` hands every source in the building its
-## walls this way, since it has no `CityMap` to give `setup()`. See `_walls`.
-func set_walls(walls: CityMap) -> void:
-	_walls = walls
+## The map `_walled_off()` asks. Read by the debug view's fields layer too, which cuts this source's
+## outline from its own node along the same lines (`DebugLayers.open_runs()`).
+func wall_grid() -> WorldMap:
+	return _map
 
 ## The last line `contribution_at()` asked about and its answer, kept by value. The meter's sum,
 ## the halo's pick and the caret's present rate ask the same pair in a frame, and the answer
@@ -4639,17 +4618,14 @@ func set_walls(walls: CityMap) -> void:
 ## nothing here can answer stale the way a clock-keyed cache of the field would.
 var _wall_from := Vector2.INF
 var _wall_to := Vector2.INF
-var _wall_map: CityMap = null
 var _wall_answer := false
 
 ## `_walled_off()` through that one-line cache, for `contribution_at()` alone: the caret's
 ## projection asks a different pair at every step and would only push the frame's own pair out.
 func _walled_off_now(source_at: Vector2, her_at: Vector2) -> bool:
-	var grid := wall_grid()
-	if source_at != _wall_from or her_at != _wall_to or grid != _wall_map:
+	if source_at != _wall_from or her_at != _wall_to:
 		_wall_from = source_at
 		_wall_to = her_at
-		_wall_map = grid
 		_wall_answer = _walled_off(source_at, her_at)
 	return _wall_answer
 
@@ -4759,7 +4735,7 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## may enter, street ground or not (`Navigator.clear_line()`, as `_sight`) — the question a pursuer's catch asks, since a
 ## catch across a wall, a barrier or a café is a man reaching through it, and the one its notice
 ## and its lunge ask in `_chase()`, since he can neither see nor go for her through one.
-## `CityMap.clear_line()` walks it, the one walk every caller asks, so a line that clips a
+## `WorldMap.clear_line()` walks it, the one walk every caller asks, so a line that clips a
 ## building's corner by a pixel is blocked however short it is; a guard sees out of the band he
 ## stands in, and her own tile never hides her. True on open ground, which is every data-level rig
 ## built without a map, exactly as `_step()` is.
@@ -6502,7 +6478,7 @@ func _walk_the_far_guard_off(delta: float) -> void:
 		return
 	var step := def.pursue_speed * delta
 	var left := step
-	if _map and player_at != Vector2.INF:
+	if player_at != Vector2.INF:
 		if _far_guard_way.is_empty():
 			_far_guard_way = _way_on_out_of_sight_from(_far_guard_at)
 		var walked := _navigator.walk(_far_guard_at, _far_guard_way, left, _mover)
@@ -6516,7 +6492,7 @@ func _walk_the_far_guard_off(delta: float) -> void:
 		if player_at != Vector2.INF and not player_at.is_equal_approx(_far_guard_at):
 			away = (_far_guard_at - player_at).normalized()
 		var moved := _navigator.step(_far_guard_at, away * left, _mover)
-		if _map and _way_avoids.has_point(_map.world_to_tile(_far_guard_at + moved)):
+		if _way_avoids.has_point(_map.world_to_tile(_far_guard_at + moved)):
 			moved = Vector2.ZERO
 		if not moved.is_zero_approx():
 			_far_guard_heading = moved.normalized()
@@ -6573,11 +6549,11 @@ func _attach_the_band() -> void:
 	_add_beside_it(_band)
 	_move_the_band()
 
-## Adds `node` to the world this instance stands in, on the entity layer, or beside it in its own
-## parent in a rig that handed it no world.
+## Adds `node` to the world this instance stands in, on the entity layer (`WorldMap.add_entity()`),
+## or beside it in its own parent on a map no world draws — a rig that stands it under a bare node.
 func _add_beside_it(node: Node2D) -> void:
-	if world != null:
-		world.add_entity(node)
+	if _map.has_world():
+		_map.add_entity(node)
 	else:
 		get_parent().add_child(node)
 
@@ -6711,20 +6687,17 @@ func _draw_fire_where_it_stands(canvas: CanvasItem) -> void:
 ## `Building`) holding the tile the sidewalk's `pavement_inward()` points at, less every column
 ## whose ground in front is not walkable — the column another building's roof reaches up to cover
 ## (`City._covered_ground_cols()`, the same lattice fact), whose facade is not drawn, so a flame
-## there would burn on the other building's roof. With no map or no lot there, one stretch of the
-## five flames' own width, so a data-level rig draws them as they are.
-static func _facade_runs_at(map: CityMap, at: Vector2) -> PackedVector2Array:
+## there would burn on the other building's roof. Off a pavement or with no lot there (open ground,
+## the building's stairwell), one stretch of the five flames' own width, drawn as they are.
+static func _facade_runs_at(map: WorldMap, at: Vector2) -> PackedVector2Array:
 	var reach := 2.0 * _FIRE_SPREAD + _FIRE_WIDTH * 0.5
 	var unclamped := PackedVector2Array([Vector2(-reach, reach)])
-	if not map:
-		return unclamped
 	var tile := map.world_to_tile(at)
 	var inward := map.pavement_inward(tile)
 	if inward == Vector2i.ZERO:
 		return unclamped
-	for rect in map.building_rects:
-		if not rect.has_point(tile + inward):
-			continue
+	var rect := map.lot_at(tile + inward)
+	if rect.has_area():
 		var runs := PackedVector2Array()
 		var size := float(Tuning.TILE_SIZE)
 		var west := map.tile_rect_to_world(rect).position.x - at.x
@@ -6775,11 +6748,9 @@ static func _smoke_across(runs: PackedVector2Array) -> PackedVector2Array:
 ## nodes' local axes never rotate. A row with no body is never moved off the centre of the tile it
 ## was sited on (`setup()` centres only a body on its pavement band), and the frontage lane's tile
 ## centre is half a tile from the wall, so this is that half tile, closing the gap onto the
-## frontage. `Vector2.ZERO` with no map, the harmless default a data-level rig gets: the flames stay
+## frontage. `Vector2.ZERO` off a pavement (open ground, the building's stairwell): the flames stay
 ## where they are drawn with no wall to reach for.
 func _wall_offset() -> Vector2:
-	if not _map:
-		return Vector2.ZERO
 	var inward := _map.pavement_inward(_map.world_to_tile(global_position))
 	return Vector2(inward) * (Tuning.TILE_SIZE * 0.5)
 
@@ -7021,8 +6992,8 @@ func _attach_the_slices() -> void:
 		feet.append(body_position() + at)
 	var nodes: Array[Node2D] = []
 	nodes.assign(_slices)
-	if world != null:
-		DrawLayer.add_slices(world, nodes, feet, DrawLayer.Layer.ENTITIES, self)
+	if _map.has_world():
+		DrawLayer.add_slices(_map.world, nodes, feet, DrawLayer.Layer.ENTITIES, self)
 	else:
 		DrawLayer.add_slices_beside(self, nodes, feet)
 	_move_the_slices(true)
@@ -7606,13 +7577,11 @@ func _draw_at_anchor(canvas: CanvasItem, picture: String, anchor: Vector2,
 ## is the same geometry every other row that cares which way a pavement faces already asks —
 ## `EventDef.Pavement.AGAINST_THE_BUILDING`'s own facing is `-pavement_inward`, and the doorway
 ## faces the carriageway for the same reason a lorry backing into a yard faces out of the wall
-## behind it. `Vector2i.DOWN` (south) with no map, the harmless default a data-level rig gets.
+## behind it. `Vector2i.DOWN` (south) off a pavement, the harmless default open ground gets.
 func _hut_doorway() -> Vector2i:
-	if _map:
-		var tile := _map.world_to_tile(global_position)
-		var inward := _map.pavement_inward(tile)
-		if inward != Vector2i.ZERO:
-			return -inward
+	var inward := _map.pavement_inward(_map.world_to_tile(global_position))
+	if inward != Vector2i.ZERO:
+		return -inward
 	return Vector2i.DOWN
 
 func _hut_texture(doorway: Vector2i) -> String:

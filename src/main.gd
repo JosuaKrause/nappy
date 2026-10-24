@@ -473,7 +473,7 @@ func _ready() -> void:
 		_city.add_entity(_player)
 		_player.clear_camera_limits()
 		_baby = _player.get_node("Baby")
-		_baby.set_world(_city)
+		_put_her_in(_city.map)
 
 	_build_the_screens()
 
@@ -865,6 +865,22 @@ func _build_the_world_for(spec: DaySpec) -> void:
 ## Whether the run log's session has been told what to watch the escape with — once a boot.
 var _escape_watched := false
 
+## Hands her and the baby the map of the world she now walks (`WorldMap`): the stroller asks it how
+## the ground under her turns a press (`Stroller.set_map()`), and the baby asks its world how loud it
+## is and what the ground does to her (`Baby.set_world()`). Called whenever she is put into a world,
+## so neither ever asks a world she has left.
+func _put_her_in(map: WorldMap) -> void:
+	_player.set_map(map)
+	_baby.set_world(map.world)
+
+## The map of the world the current spec is walked in — the building's in the escape's first
+## section, the city's otherwise — the one the run flow hands down to her and asks each walking
+## frame what its ground does to her.
+func _world_map() -> WorldMap:
+	if _spec.world == DaySpec.World.BUILDING and _interior:
+		return _interior.map
+	return _city.map if _city else null
+
 ## Section one's world: the building, her in it, and the events inside it. Reaching its service
 ## exit is the section's goal, so the exit's own moment — once its fade has covered the screen —
 ## reaches the day's clock (`DayController.reach_the_exit()`).
@@ -878,11 +894,10 @@ func _build_the_escape_building() -> void:
 
 	_player = _make_player()
 	_player.carrying = true
-	_player.slope_dir_at = _interior.slope_dir_at
 	_interior.add_entity(_player)
 	_player.set_camera_limits(_interior.camera_bounds())
 	_baby = _player.get_node("Baby")
-	_baby.set_world(_interior)
+	_put_her_in(_interior.map)
 
 	_interior_events = InteriorEvents.new()
 	_interior_events.name = "InteriorEvents"
@@ -928,14 +943,12 @@ func _build_the_finale_city() -> void:
 		_city.add_entity(_player)
 		_baby = _player.get_node("Baby")
 	else:
-		# Out of the building and onto the street: the same rig, reparented, with the stairwell's
-		# own slope redirection dropped — there are no flights outdoors, and a `Callable` left
-		# pointing at the interior would answer for tiles on a map she is no longer standing on.
-		_player.slope_dir_at = Callable()
+		# Out of the building and onto the street: the same rig, reparented.
 		_player.get_parent().remove_child(_player)
 		_city.add_entity(_player)
-	# Told, not discovered: the same baby now asks the street, not the building behind her.
-	_baby.set_world(_city)
+	# Told, not discovered: she now walks the street's map and the baby asks the street, not the
+	# building behind her.
+	_put_her_in(_city.map)
 	_player.clear_camera_limits()
 	# Built here for a boot straight onto the street, and pointed at the street here when she has
 	# walked out of the building, which built them first — see `_add_danger_edge()`.
@@ -2403,12 +2416,13 @@ func _process(delta: float) -> void:
 			and not _tree_is_paused()
 	if walking:
 		GameState.play_seconds += delta
-	# The building's doors and its service exit are asked about the ground under her while she is
-	# walking it. Nothing of the walk is asked while a screen stands in front of it: this node runs
-	# through a pause (it has to, or Esc would not answer), so without this the door under her feet
-	# would keep being tested against a section that has not begun.
-	if _spec.world == DaySpec.World.BUILDING and _interior and not _tree_is_paused():
-		_interior.process_player(_player, delta)
+	# The world's ground is asked what it does to her while she is walking it — the building's doors
+	# and its service exit; nothing in the city. Nothing of the walk is asked while a screen stands
+	# in front of it: this node runs through a pause (it has to, or Esc would not answer), so without
+	# this the door under her feet would keep being tested against a section that has not begun.
+	var world_map := _world_map()
+	if world_map and _player and not _tree_is_paused():
+		world_map.process_player(_player, delta)
 	if _city and _spec.daylight_runs_down:
 		_city.set_daylight(_day.fraction_remaining())
 	_hud.set_home_guidance(_spec.goal == DaySpec.Goal.HOME
@@ -2497,7 +2511,7 @@ func _where_she_is_lines() -> Array:
 				"yes" if _city.is_alley(here) else "no"],
 		]
 	if _interior:
-		var tile := _interior.world_to_tile(here)
+		var tile := _interior.map.world_to_tile(here)
 		return ["tile  %d, %d  (building)" % [tile.x, tile.y]]
 	return []
 

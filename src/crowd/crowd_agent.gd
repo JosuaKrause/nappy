@@ -3311,10 +3311,10 @@ const TUNNEL_ROOM := float(CityEdge.TUNNEL_DEPTH_TILES * Tuning.TILE_SIZE) \
 const BRIDGE_RUN := CityEdge.BRIDGE_DECK_PX - 2.0 * Tuning.CAR_STRIKE_HALF_LENGTH
 
 ## How far past the north edge a car coming out of the tunnel may be put: the roof over the
-## portal (`City.OUTSIDE_DEPTH_TILES` rows of mountain drawn over the traffic) less half a car,
+## portal (`CityMap.OUTSIDE_DEPTH_TILES` rows of mountain drawn over the traffic) less half a car,
 ## so it exists only under the roof or in the dark, never in the open. `TUNNEL_ROOM` is how
 ## shallow it may be put: front and rear already inside the opaque dark.
-const TUNNEL_ENTRY_ROOM := float(City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE) \
+const TUNNEL_ENTRY_ROOM := float(CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE) \
 		- Tuning.CAR_STRIKE_HALF_LENGTH
 
 ## How far past the south edge a car coming onto the bridge is put at the least: further than

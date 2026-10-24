@@ -169,8 +169,8 @@ func _counterfactual(city: City, t) -> void:
 		var layer := TileMapLayer.new()
 		layer.tile_set = source.tile_set
 		# Deliberately outside the tree: no renderer/physics/quadrant processing in this experiment.
-		var lo := Vector2i(-City.OUTSIDE_DEPTH_TILES, -City.OUTSIDE_DEPTH_TILES)
-		var hi := city.map.size + Vector2i.ONE * City.OUTSIDE_DEPTH_TILES
+		var lo := Vector2i(-CityMap.OUTSIDE_DEPTH_TILES, -CityMap.OUTSIDE_DEPTH_TILES)
+		var hi := city.map.size + Vector2i.ONE * CityMap.OUTSIDE_DEPTH_TILES
 		if mode == "nearby":
 			lo = Vector2i((nearby.position / 32).floor())
 			hi = Vector2i((nearby.end / 32).ceil())

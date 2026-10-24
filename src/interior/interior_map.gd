@@ -71,6 +71,7 @@ static func build() -> InteriorMapPlan:
 	_build_basement(f, _BASEMENT_ORIGIN)
 	f.start_tile = f.waypoints["hallway_third"]
 	_mark_diagonal_clearances(f)
+	f.finish()
 	return f
 
 ## A diagonal step pinches only when neither orthogonal neighbor is walkable, and **nothing in the

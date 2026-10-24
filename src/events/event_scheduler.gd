@@ -905,14 +905,12 @@ class EscapeGround extends RefCounted:
 	## Whether the tile under `at` is in the map, walkable and not closed, asked of the map once per
 	## tile.
 	func _tile_open(at: Vector2) -> bool:
-		var x := floori(at.x / Tuning.TILE_SIZE)
-		var y := floori(at.y / Tuning.TILE_SIZE)
-		if x < 0 or y < 0 or x >= _map.size.x or y >= _map.size.y:
+		var tile := WorldMap.tile_of(at)
+		if not _map.in_bounds(tile):
 			return false
-		var index := y * _map.size.x + x
+		var index := tile.y * _map.size.x + tile.x
 		var known := _tiles[index]
 		if known == _UNASKED:
-			var tile := Vector2i(x, y)
 			known = _FITS if _map.is_walkable(tile) and not _map.is_closed(tile) \
 					else _DOES_NOT_FIT
 			_tiles[index] = known

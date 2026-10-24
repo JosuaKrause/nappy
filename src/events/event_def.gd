@@ -339,6 +339,12 @@ func solid_reach() -> float:
 ## than a change to `Tuning.falloff` that moves all thirty of them; a row that does take it owes the
 ## same fairness contract, which is stated over distance and does not care.
 @export var falloff_power := 2.0
+## **A field no wall stops**: what lands on her from it ignores every wall between, where every
+## other field stops at the middle of one (`WorldMap.wall_between()`, plaid-wombat, inbox #554).
+## Only for a source that stands for something that has already come through the walls to reach
+## her: the explosion outside the building, whose charge stands where she is
+## (`EventInstance._walled_off()`).
+@export var heard_through_walls := false
 
 ## Seconds at full strength. 0 means it lasts the whole day.
 @export var duration := 0.0

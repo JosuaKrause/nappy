@@ -33,7 +33,7 @@ var keys: Array = []
 ## targets are still the ones this field measures.
 var anchors := {}
 ## The two versions of what blocks her that this field was started under
-## (`CityMap.day_record_version`, `CityMap.obstruction_version`).
+## (`WorldMap.day_record_version`, `WorldMap.obstruction_version`).
 var versions := Vector2i(-1, -1)
 var done := false
 
@@ -51,14 +51,14 @@ var _tail := 0
 
 ## Where `target` (`{key, at, reach, beat}`) counts as standing for `anchors`: the tile of the
 ## start of its beat when it paces one, which does not move as it walks it, or else its own tile.
-static func anchor_of(map: CityMap, target: Dictionary) -> Vector2i:
+static func anchor_of(map: WorldMap, target: Dictionary) -> Vector2i:
 	var beat: PackedVector2Array = target["beat"]
 	return map.world_to_tile(beat[0] if not beat.is_empty() else target["at"])
 
 ## A sweep out from `targets`, each `{key, at, reach, beat}`: `at` where it stands, `reach` how far
 ## from it a touch counts, `beat` the path it paces (empty for one that stands still). Nothing is
 ## laid out or swept until `advance()`, so starting one costs a frame nothing.
-static func start(map: CityMap, targets: Array[Dictionary],
+static func start(map: WorldMap, targets: Array[Dictionary],
 		blocked_versions: Vector2i) -> ArrowField:
 	var field := ArrowField.new()
 	field.versions = blocked_versions
@@ -69,25 +69,25 @@ static func start(map: CityMap, targets: Array[Dictionary],
 	return field
 
 ## The ground a sweep runs over: each tile `UNREACHED`, or `BLOCKED` where she cannot walk right
-## now — the map's ground for a figure on foot (`CityMap.ground_for()`, `Mover.on_foot()`): today's
+## now — the map's ground for a figure on foot (`WorldMap.ground_for()`, `Mover.on_foot()`): today's
 ## closures, the fenced park's ground included, the soft seals shut to walkers, the tile under
 ## every stationary solid body standing and a precinct's posts, and outside an authored scene's
 ## stretch. What that record leaves out she walks through here as she does in the street: a mobile
 ## row, which moves out of her way, and a door's own bodies, which let a walker through. One reading
 ## for every sweep, so the red arrow and day 13's guard set on her (`EventInstance._paths_to_her`)
 ## never disagree about where she can walk; a caller lays it out once for each state of what blocks
-## her (`CityMap.day_record_version`, `CityMap.obstruction_version`).
-static func ground_for(map: CityMap) -> PackedInt32Array:
+## her (`WorldMap.day_record_version`, `WorldMap.obstruction_version`).
+static func ground_for(map: WorldMap) -> PackedInt32Array:
 	return map.ground_for(Mover.on_foot())
 
 ## Lays the field out on `ground` — every tile `UNREACHED`, or `BLOCKED` where she cannot walk
 ## today (`ResistanceDirector._ground_for_the_arrow()`) — and seeds the targets.
-func _begin(map: CityMap, ground: PackedInt32Array) -> void:
+func _begin(map: WorldMap, ground: PackedInt32Array) -> void:
 	_begun = true
 	_width = map.size.x
 	_cells = map.size.x * map.size.y
-	_tiles = map.tiles
-	_walkable = CityMap.walkable_by_type()
+	_tiles = map.walk_tiles()
+	_walkable = map.walkable_lut()
 	_distance = ground.duplicate()
 	_label = PackedInt32Array()
 	_label.resize(_cells)
@@ -109,7 +109,7 @@ func _begin(map: CityMap, ground: PackedInt32Array) -> void:
 	_targets = []
 
 ## Seeds every open tile whose centre is within `within` of `at` as at the target `label`.
-func _seed_around(map: CityMap, at: Vector2, within: float, label: int) -> void:
+func _seed_around(map: WorldMap, at: Vector2, within: float, label: int) -> void:
 	var centre := map.world_to_tile(at)
 	var r := ceili(within / Tuning.TILE_SIZE)
 	for dy in range(-r, r + 1):
@@ -128,7 +128,7 @@ func _seed_around(map: CityMap, at: Vector2, within: float, label: int) -> void:
 ## Sweeps up to `budget` more tiles over `ground` (read on the first call only) and answers how
 ## much of `budget` it used; `done` once nothing is left. The first call only lays the field out
 ## and seeds it, and answers the whole budget used.
-func advance(map: CityMap, ground: PackedInt32Array, budget: int) -> int:
+func advance(map: WorldMap, ground: PackedInt32Array, budget: int) -> int:
 	if not _begun:
 		# Laying the field out and seeding it is a frame's work of its own, so it never shares one
 		# with a slice of the sweep.

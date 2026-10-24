@@ -421,11 +421,11 @@ func _test_unstick_tries_the_direction_away_from_what_caught_her_first(t) -> voi
 # --------------------------------------------------------- _reachable_point_near ---
 
 ## **A plan across a precinct's mouth goes round the row on the pavement.** The posts shut the
-## carriageway band (`City.bollard_positions()`, `tests/test_bollards.gd`), so a plan from the
+## carriageway band (`CityMap.post_positions()`, `tests/test_bollards.gd`), so a plan from the
 ## street side of the middle of the row to the precinct side must not step on a tile of the posts'
 ## reach, and the pavement beside the row stays open, so there is a plan.
 func _test_a_plan_never_goes_through_a_precincts_posts(t) -> void:
-	var posts := City.bollard_positions(_city.map)
+	var posts := _city.map.post_positions()
 	t.check(posts.size() >= 2, "the suite's city has a precinct with a row of posts")
 	if posts.size() < 2:
 		return

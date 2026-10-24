@@ -159,9 +159,9 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 		var world := WorldContext.new()
 		t.add_child(world)
 		var instance := EventInstance.new()
-		instance.setup(def, Vector2(200.0, 200.0))
+		instance.setup(def, Vector2(200.0, 200.0), PackedVector2Array(), Vector2.RIGHT,
+				_open_ground_in(world))
 		instance._spread_vertical = vertical
-		instance.world = world
 		world.add_entity(instance)
 		instance._attach_the_slices()
 		var slices := instance._slices
@@ -203,8 +203,8 @@ func _test_the_slices_go_with_their_event(t) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0))
-	instance.world = world
+	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0),
+			PackedVector2Array(), Vector2.RIGHT, _open_ground_in(world))
 	world.add_entity(instance)
 	instance._attach_the_slices()
 	var layer := world.layers().node(DrawLayer.Layer.ENTITIES)
@@ -215,6 +215,13 @@ func _test_the_slices_go_with_their_event(t) -> void:
 			% _slices_in(layer))
 	world.free()
 	AtlasLibrary.release(&"events")
+
+## Open ground drawn in `world`: the map an instance stood in that world is handed, so what it adds
+## beside itself goes into the world (`WorldMap.add_entity()`).
+static func _open_ground_in(world: WorldContext) -> WorldMap:
+	var ground := WorldMap.open_ground()
+	ground.world = world
+	return ground
 
 static func _slices_in(layer: Node) -> int:
 	var count := 0
@@ -238,9 +245,9 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 			var world := WorldContext.new()
 			t.add_child(world)
 			var instance := EventInstance.new()
-			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0))
+			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0), PackedVector2Array(),
+					Vector2.RIGHT, _open_ground_in(world))
 			instance._spread_vertical = vertical
-			instance.world = world
 			world.add_entity(instance)
 			instance._attach_the_slices()
 			var slices := instance._slices

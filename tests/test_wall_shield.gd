@@ -403,11 +403,11 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	events.setup(scene, rng)
-	var grid := scene.wall_grid()
+	var grid := scene.map
 	var disagreed := 0
 	for y in range(-2, grid.size.y + 2):
 		for x in range(-2, grid.size.x + 2):
-			if grid.is_walkable(Vector2i(x, y)) != scene.is_walkable(Vector2i(x, y)):
+			if grid.is_walkable(Vector2i(x, y)) != scene.map.is_walkable(Vector2i(x, y)):
 				disagreed += 1
 	t.check(disagreed == 0, "the wall grid is open exactly where she may stand (%d tiles were not)"
 			% disagreed)
@@ -420,8 +420,8 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	if man:
 		man.resume(man.def.telegraph_time, 0.0, INF)
 		var shaft: Array[Vector2] = []
-		for tile in scene.stairwell_tiles("stairwell_right"):
-			if not scene.is_walkable(tile):
+		for tile in scene.map.stairwell_tiles("stairwell_right"):
+			if not scene.map.is_walkable(tile):
 				continue
 			for sy in 4:
 				for sx in 4:
@@ -429,8 +429,8 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 		var reached := 0
 		var stopped := 0
 		var wrong := 0
-		for tile in scene.stairwell_walk("stairwell_right"):
-			man.global_position = scene.tile_to_world(tile)
+		for tile in scene.map.stairwell_walk("stairwell_right"):
+			man.global_position = scene.map.tile_to_world(tile)
 			for her in shaft:
 				var field := man._field_at(her, -1.0, Vector2.INF)
 				if field <= 0.0:
@@ -453,12 +453,12 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	# Somewhere on the stairs with open stair behind a wall from it, well inside the bang's reach.
 	var stands := Vector2.INF
 	var behind := Vector2.INF
-	for from in scene.stairwell_walk("stairwell_right"):
-		for tile in scene.stairwell_tiles("stairwell_right"):
-			var at := scene.tile_to_world(tile)
-			if scene.is_walkable(tile) and at.distance_to(scene.tile_to_world(from)) < 200.0 \
-					and grid.wall_between(scene.tile_to_world(from), at):
-				stands = scene.tile_to_world(from)
+	for from in scene.map.stairwell_walk("stairwell_right"):
+		for tile in scene.map.stairwell_tiles("stairwell_right"):
+			var at := scene.map.tile_to_world(tile)
+			if scene.map.is_walkable(tile) and at.distance_to(scene.map.tile_to_world(from)) < 200.0 \
+					and grid.wall_between(scene.map.tile_to_world(from), at):
+				stands = scene.map.tile_to_world(from)
 				behind = at
 				break
 		if behind != Vector2.INF:

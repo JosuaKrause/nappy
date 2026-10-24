@@ -200,12 +200,12 @@ func _place_the_fire() -> void:
 	# not forced: the right shaft reaches the lobby, and the left one stays open too, which is where
 	# the masked man coming up the right shaft pushes her. The first floor's approach would instead
 	# shut the last flight and leave the second one open, so no crossing back is possible.
-	var landing := _interior.waypoint("stairwell_%s:landing_second" % _BURNING_SIDE)
+	var landing := _interior.map.waypoint("stairwell_%s:landing_second" % _BURNING_SIDE)
 	var at := landing + Vector2i.DOWN
-	if landing == InteriorScene.NOWHERE or not _interior.is_walkable(at):
+	if landing == InteriorMapPlan.NOWHERE or not _interior.map.is_walkable(at):
 		push_error("the second floor's approach in the %s shaft is not walkable" % _BURNING_SIDE)
 		return
-	_spawn(_indoor_fire(), _interior.tile_to_world(at))
+	_spawn(_indoor_fire(), _interior.map.tile_to_world(at))
 
 ## `burning_building` outdoors carries no field and no body of its own — the fire truck it calls in
 ## is the danger, not the fire, and `EventInstance._draw_fire()` paints it on a building's own
@@ -218,6 +218,14 @@ func _place_the_fire() -> void:
 ## the row's 60–260px field, and a 3s pulse, so it breathes between a quarter of that and all of it
 ## (11.25/s on average) and its flames, which `_draw_fire()` scales by what it is emitting, visibly
 ## roar and die back with it.
+## The explosion's charge indoors: the row's own field, which no wall stops
+## (`EventDef.heard_through_walls`), since the bang is outside and has already come through the
+## building's walls to reach her.
+static func _indoor_explosion() -> EventDef:
+	var variant := _without_its_aftermath(EventCatalogue.by_id(_EXPLOSION_ID))
+	variant.heard_through_walls = true
+	return variant
+
 static func _indoor_fire() -> EventDef:
 	var variant := _without_its_aftermath(EventCatalogue.by_id(_FIRE_ID))
 	variant.solid(GroundShape.point(30.0))
@@ -247,12 +255,12 @@ static func _indoor_fire() -> EventDef:
 ## neighbour is the level approach below it, so a door is always further from his line than the
 ## radius that takes the baby. `tests/test_interior.gd` measures that gap rather than assuming it.
 func _place_the_masked_man() -> void:
-	var walk := _interior.stairwell_walk("stairwell_%s" % _PURSUED_SIDE)
+	var walk := _interior.map.stairwell_walk("stairwell_%s" % _PURSUED_SIDE)
 	if walk.size() < 2:
 		return
 	var path := PackedVector2Array()
 	for tile in walk:
-		path.append(_interior.tile_to_world(tile))
+		path.append(_interior.map.tile_to_world(tile))
 	_pursuer = _spawn(EventCatalogue.by_id(_PURSUER_ID), path[0], path)
 
 ## The mouse a third of the way along the basement's own corridor, and the vents spread down the
@@ -263,11 +271,11 @@ func _place_the_masked_man() -> void:
 ## branches, so "a third of the way along it" is a well-defined place however it is laid out, and
 ## everything sited this way stands somewhere she has to pass rather than somewhere she might.
 func _place_the_basement(rng: RandomNumberGenerator) -> void:
-	var walk := _interior.basement_walk()
+	var walk := _interior.map.basement_walk()
 	if walk.size() < 4:
 		return
 	var mouse_at: Vector2i = walk[walk.size() / 3]
-	_spawn(EventCatalogue.by_id(_MOUSE_ID), _interior.tile_to_world(mouse_at))
+	_spawn(EventCatalogue.by_id(_MOUSE_ID), _interior.map.tile_to_world(mouse_at))
 	# The mouse's dash is built from the alley it stands in when there is a map to ask; indoors
 	# there is none, so `EventInstance` gives it its own short crossing and the roll is spent here
 	# only to keep this function's own stream advancing with the rest of the section.
@@ -341,7 +349,7 @@ func _vent_sites(walk: Array[Vector2i]) -> Array[Vector2]:
 	for tile in walk:
 		on_the_walk[tile] = true
 	var count: int = Tuning.FINALE_STEAM_PERIODS.size()
-	var narrows := _interior.basement_narrows()
+	var narrows := _interior.map.basement_narrows()
 	if narrows.size() != count:
 		push_error("the basement corridor offers %d one-tile gates for %d steam vents"
 				% [narrows.size(), count])
@@ -350,7 +358,7 @@ func _vent_sites(walk: Array[Vector2i]) -> Array[Vector2]:
 		if not on_the_walk.has(tile):
 			push_error("the steam vent at %s is not on the basement's own walk" % tile)
 			return []
-		found.append(_interior.tile_to_world(tile))
+		found.append(_interior.map.tile_to_world(tile))
 	return found
 
 ## Every vent's own clock, one blow at a time. A blow is an ordinary `EventInstance` of the steam
@@ -373,26 +381,18 @@ func vents() -> Array[Vent]:
 
 # -------------------------------------------------------------- the instances ---
 
-## `walled` false is the explosion's alone: see `_explode_every_so_often()`.
-func _spawn(def: EventDef, at: Vector2, path := PackedVector2Array(), walled := true
-		) -> EventInstance:
+## Every instance stands on the building's map (`InteriorScene.map`): its walls stop excitement as a
+## city's buildings do (plaid-wombat, inbox #554) and its figures walk round them, and it is added to
+## the building through the map. The map has no streets, so a body is centred on no pavement band, a
+## spread lies the default way and the mouse crosses its corridor on its own short dash.
+func _spawn(def: EventDef, at: Vector2, path := PackedVector2Array()) -> EventInstance:
 	if not def:
 		return null
 	var instance := EventInstance.new()
 	instance.skip_draw = skip_drawing
 	instance.trace = trace
-	# No `CityMap`: every question `setup()` asks one of it — which pavement band to centre on,
-	# which way a spread lies, which alley a mouse crosses — is about a lattice this building does
-	# not sit on, and `EventInstance` already answers all three for a caller with no map.
-	instance.setup(def, at, path)
-	# **But the walls are the building's own**, and stop excitement as a city's buildings do.
-	# *(plaid-wombat, inbox #554: "Excitement should not go through **any** wall".)* The masked
-	# man's field reaches round the flights of his own shaft, and without this it would reach her
-	# through the solid between them.
-	if walled:
-		instance.set_walls(_interior.wall_grid())
-	instance.world = _interior
-	_interior.add_entity(instance)
+	instance.setup(def, at, path, Vector2.RIGHT, _interior.map, _interior.map.navigator())
+	_interior.map.add_entity(instance)
 	_instances.append(instance)
 	return instance
 
@@ -438,8 +438,7 @@ func _explode_every_so_often(delta: float) -> void:
 	# **And no wall stops it.** The bang is outside and has already come through the building's
 	# walls to reach her; the instance standing where she is only carries its charge, so a wall
 	# between that spot and a step she takes in the next second is not a wall between her and it.
-	var burst := _spawn(EventCatalogue.by_id(_EXPLOSION_ID), _player.global_position,
-			PackedVector2Array(), false)
+	var burst := _spawn(_indoor_explosion(), _player.global_position)
 	if burst:
 		burst.resume(burst.def.telegraph_time, 0.0, INF)
 

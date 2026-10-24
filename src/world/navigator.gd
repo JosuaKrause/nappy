@@ -1,19 +1,20 @@
 class_name Navigator
 extends RefCounted
-## **The one way anything that walks or drives across a world moves**, handed to every mover by
-## whoever builds it — the city to its event manager, its crowd and the resistance, the event
-## manager to every figure it makes — rather than fetched. A step, a walk down a list of points, a
-## way round and a way out are all asked of the map's one blocked record through the mover's own
-## layers (`Mover`, `CityMap.passable()`), so a cat, a bike, a pursuer, a departing dog and a man
-## walking back to his van are all stopped by what stops her.
+## **The one way anything that walks or drives across a world moves**: each map builds one
+## (`WorldMap.navigator()`), and it is handed to every mover by whoever builds it — the city to its
+## event manager, its crowd and the resistance, the event manager to every figure it makes — rather
+## than fetched. A step, a walk down a list of points, a way round and a way out are all asked of the
+## map's one blocked record through the mover's own layers (`Mover`, `WorldMap.passable()`), so a cat,
+## a bike, a pursuer, a departing dog, a man walking back to his van and the masked man on the
+## building's stairs are all stopped by what stops her.
 ##
 ## **Every step is swept**: the tiles the whole step crosses are asked, not only the one it lands
 ## on, so a long frame cannot carry a chaser through a wall a tile thick. And it keeps the mover's
 ## body clear: the ground its radius reaches past where it would land, in the way it is going, has
 ## to be open too.
 ##
-## A navigator with no map (`open_ground()`) answers every question as open ground: what a data
-## rig with no city walks on.
+## A navigator over open ground (`open_ground()`, `WorldMap.open_ground()`) takes every step whole,
+## sees every line clear and walks every way straight: what a data rig with no world walks on.
 
 ## How far, at most, past where a step lands the ground has to be open, whatever the mover's own
 ## radius: under half a tile, since every way between solids is a tile wide at least and a walk
@@ -24,36 +25,37 @@ const REACH_LIMIT := Tuning.TILE_SIZE * 0.5 - 1.0
 ## times the tiles in her view, so it gives up only where solids leave no way at all.
 const SEARCH_LIMIT := 4096
 
-var _map: CityMap
+var _map: WorldMap
 
-func _init(map: CityMap = null) -> void:
-	_map = map
+## A navigator over `map`, or over open ground where none is named.
+func _init(map: WorldMap = null) -> void:
+	_map = map if map else WorldMap.open_ground()
 
 ## A navigator over open ground: every step is taken whole and every line is clear.
 static func open_ground() -> Navigator:
-	return Navigator.new(null)
+	return Navigator.new()
 
-## The map this navigator walks, or null for open ground.
-func map() -> CityMap:
+## The map this navigator walks.
+func map() -> WorldMap:
 	return _map
 
-## Whether `mover` may stand on `tile` (`CityMap.passable()`).
+## Whether `mover` may stand on `tile` (`WorldMap.passable()`).
 func passable(tile: Vector2i, mover: Mover) -> bool:
-	return _map == null or _map.passable(tile, mover)
+	return _map.passable(tile, mover)
 
 ## Whether `mover` may stand at the world point `at`.
 func passable_at(at: Vector2, mover: Mover) -> bool:
-	return _map == null or _map.passable(_map.world_to_tile(at), mover)
+	return _map.passable(_map.world_to_tile(at), mover)
 
 ## Whether the straight line from `from` to `to` crosses only ground `mover` may enter
-## (`CityMap.clear_line()`): the line a pursuer notices her along, lunges along and catches her
+## (`WorldMap.clear_line()`): the line a pursuer notices her along, lunges along and catches her
 ## along.
 func clear_line(from: Vector2, to: Vector2, mover: Mover) -> bool:
-	return _map == null or _map.clear_line(from, to, mover)
+	return _map.clear_line(from, to, mover)
 
-## The ground a sweep over the whole map runs on for `mover` (`CityMap.ground_for()`).
+## The ground a sweep over the whole map runs on for `mover` (`WorldMap.ground_for()`).
 func ground(mover: Mover) -> PackedInt32Array:
-	return _map.ground_for(mover) if _map else PackedInt32Array()
+	return _map.ground_for(mover)
 
 # ---------------------------------------------------------------------- steps ---
 
@@ -68,7 +70,7 @@ func ground(mover: Mover) -> PackedInt32Array:
 ## ground's own type until it stands clear, and one inside the ground itself (which a placement
 ## never does) about nothing, so nothing the world put somewhere can be stuck there.
 func step(from: Vector2, delta: Vector2, mover: Mover) -> Vector2:
-	if _map == null or delta.is_zero_approx():
+	if not _map.has_ground() or delta.is_zero_approx():
 		return delta
 	if _sweep_is_clear(from, delta, mover):
 		return delta
@@ -177,7 +179,7 @@ func _walked_short(walked: Walked, taken: Vector2) -> void:
 ## `mover` may stand on, square steps only, so each leg stays on the two tiles it joins. Empty when
 ## `to`'s tile is not reached within `SEARCH_LIMIT` tiles, and just `to` when the two share a tile.
 func path(from: Vector2, to: Vector2, mover: Mover) -> PackedVector2Array:
-	if _map == null:
+	if not _map.has_ground():
 		return PackedVector2Array([to])
 	var goal := _map.world_to_tile(to)
 	var found := _search(_map.world_to_tile(from), mover, Rect2i(),
@@ -192,7 +194,7 @@ func path(from: Vector2, to: Vector2, mover: Mover) -> PackedVector2Array:
 ## of `avoid`. Empty when none is found within `SEARCH_LIMIT` tiles.
 func way_out(from: Vector2, her: Vector2, beyond: float, mover: Mover,
 		avoid := Rect2i()) -> PackedVector2Array:
-	if _map == null:
+	if not _map.has_ground():
 		return PackedVector2Array()
 	var far := beyond + Tuning.TILE_SIZE
 	return _search(_map.world_to_tile(from), mover, avoid,
@@ -230,7 +232,7 @@ func _search(start: Vector2i, mover: Mover, avoid: Rect2i, arrived: Callable) ->
 ## that is not cut at the farthest point it reaches, the rest dropped. Empty when the route's first
 ## point is not ground the mover may stand on.
 func trim(route: PackedVector2Array, mover: Mover) -> PackedVector2Array:
-	if route.is_empty() or _map == null:
+	if route.is_empty() or not _map.has_ground():
 		return route
 	if not passable_at(route[0], mover):
 		return PackedVector2Array()

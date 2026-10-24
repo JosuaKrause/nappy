@@ -121,9 +121,10 @@ var _city: City
 ## `_city`'s map, or null in the escape's building — which is what every street, calm-ground and
 ## corridor question below reads to know there is nothing to ask.
 var _map: CityMap
-## The escape's building while section one runs, for the one question asked of it: which of its
-## own tiles she is on.
-var _interior: InteriorScene
+## The map of the world being walked (`WorldMap`) — the city's, or the building's while section one
+## runs — handed in with it (`setup()`, `watch_building()`, `watch_city()`): what every line that
+## names a tile asks.
+var _world_map := WorldMap.open_ground()
 ## The event source for the section being watched — `InteriorEvents` in the building, the city's
 ## `EventManager` outside it. Null on a day, which reads `_city.events` instead; see `_source()`.
 var _events: Node
@@ -266,6 +267,7 @@ func setup(city: City, player: Stroller, baby: Baby, day: DayController,
 	spikes_on = spikes
 	_city = city
 	_map = city.map
+	_world_map = city.map
 	_player = player
 	_baby = baby
 	_day = day
@@ -296,10 +298,10 @@ func _listen() -> void:
 	EventBus.pelican_sighted.connect(_on_pelican_sighted)
 	EventBus.pelican_struck_her.connect(_on_pelican_struck_her)
 
-## Section one: the building, with `InteriorEvents` as the event source. No `CityMap`, so the
-## street, calm-ground and closure watchers have nothing to ask and say nothing.
-func watch_building(interior: InteriorScene, events: InteriorEvents) -> void:
-	_interior = interior
+## Section one: the building's map, and the events walked among in it. No `CityMap`, so the street,
+## calm-ground and closure watchers have nothing to ask and say nothing.
+func watch_building(map: WorldMap, events: Node) -> void:
+	_world_map = map
 	_events = events
 	_city = null
 	_map = null
@@ -309,9 +311,9 @@ func watch_building(interior: InteriorScene, events: InteriorEvents) -> void:
 ## she walked for fourteen days, so crossings, stretches on the road and arrivals at calm ground —
 ## the chains' stops — are written exactly as a day writes them.
 func watch_city(city: City) -> void:
-	_interior = null
 	_city = city
 	_map = city.map
+	_world_map = city.map
 	_events = city.events
 	_escape_section = "the city"
 
@@ -387,16 +389,11 @@ func _forget_the_walk() -> void:
 	_trail_last = Vector2.ZERO
 	_met_events.clear()
 
-## Which tile she is on, on whichever grid the walk has — the city's, or the building's own. Every
-## line that names a place asks this rather than the map, so a line written in the building names
-## a building tile instead of failing to name one.
+## Which tile she is on, on the map of the world being walked — the city's, or the building's own.
+## Every line that names a place asks this, so a line written in the building names a building
+## tile.
 func _tile_of(world_position: Vector2) -> Vector2i:
-	if _map:
-		return _map.world_to_tile(world_position)
-	if _interior:
-		return _interior.world_to_tile(world_position)
-	return Vector2i(floori(world_position.x / Tuning.TILE_SIZE),
-			floori(world_position.y / Tuning.TILE_SIZE))
+	return _world_map.world_to_tile(world_position)
 
 ## The event source being watched: the escape's, or a day's city's own `EventManager`. A day never
 ## sets `_events` — `setup()` is handed the `City` and the manager is asked of it — so the fallback
@@ -1192,7 +1189,7 @@ func _watch_the_contact(here: Vector2) -> void:
 ## own — the same reasoning `_watch_running` uses for the `run` entry, one attribute richer.
 func _watch_the_trail(here: Vector2) -> void:
 	# The escape's building has no city map to draw a dusk map on, so it keeps no trail for one.
-	if _interior:
+	if not _city:
 		return
 	if not _trail.is_empty() and here.distance_to(_trail_last) < TRAIL_SAMPLE_DISTANCE:
 		return
