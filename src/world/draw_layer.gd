@@ -5,7 +5,8 @@ extends RefCounted
 ## node of its own (`WorldLayers`) and adds what it is handed through `add_entity(node, layer)`
 ## (`WorldContext`); whatever is not one of a world's own nodes — the halo, the debug view, a
 ## figure raised for its warning — asks for its layer here (`draw_on()`). Nothing else in `src/`
-## writes a `z_index` or a `z_as_relative`; `tests/test_draw_layers.gd` reads the tree for one.
+## writes a `z_index` or a `z_as_relative`; `tests/test_draw_layers.gd` reads `src/` and `scenes/`
+## for one.
 ##
 ## **Within a layer, depth is the feet.** A layer that holds things standing on the ground is
 ## y-sorted, so each sorts at its own origin, its feet; a thing longer than a tile, whose ground

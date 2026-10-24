@@ -118,7 +118,11 @@ src/
 	                      went and which events she met
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
   world/
-	world_context.gd      the only questions the baby may ask the world
+	world_context.gd      the only questions the baby may ask the world, and adding a node to the
+	                      world on a draw layer (`add_entity()`)
+	draw_layer.gd         the one list of draw layers both worlds share, the only place a
+	                      z_index is written, and a long footprint's feet-anchored slices
+	world_layers.gd       the node one world draws each of its layers in
 	mover.gd              who is asking whether ground can be walked: the layers that stop it
 	                      (the ground, the posts, the day's closures, soft seals and bodies) and
 	                      how wide it is
