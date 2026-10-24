@@ -68,7 +68,8 @@ since those are the questions it asks; the run log keeps its city-only watchers 
 map for tiles.
 
 **Left for later items:** `CityMap`, a layer-2 map, implements the layer-3 interface and holds its
-world node, where a separate city facade is the alternative; `EventManager` still holds the city's
+world node, so it calls up into `City` through `world` (one upward call removed, this one added),
+where a separate city facade is the alternative; `EventManager` still holds the city's
 planning half (director, warnings, masts) beside the hosting half, `events-composed.md`'s split;
 `_find_player()` still fetches her from the `player` group, `InteriorScene` like `City` sums its
 events for the baby, and `BuildingPlan.lay_the_grates()` reads `EventInstance.steam_grate()`;
@@ -79,7 +80,8 @@ events for the baby, and `BuildingPlan.lay_the_grates()` reads `EventInstance.st
 mouse's dash is 27px wall to wall (64px through both walls before); the fire's body and a blowing
 vent's body go on the building's blocked record; the building now has the mark over her head near
 the masked man, the encounter watch (GoatCounter counts encounters under day 15, the event names
-unchanged), `FrameRecord.EVENTS` timing, and the screen-edge badge read from the manager's view; the
+unchanged, so each explosion outside, about eight a section, counts as
+`nappy-day-15-influenced-unseen-finale_explosion`, the name a city burst she walked near has), `FrameRecord.EVENTS` timing, and the screen-edge badge read from the manager's view; the
 explosions keep an exact 22s period, where they slipped up to a frame per bang; the grates persist
 through a retry. No city behaviour is meant to change. Pictures of the masked man leaving the top of
 the shaft, the mouse's dash, and the mark in the stairwell.
