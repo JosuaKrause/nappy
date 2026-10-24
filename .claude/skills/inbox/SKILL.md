@@ -38,7 +38,9 @@ A blank note comes from the issue template `.github/ISSUE_TEMPLATE/inbox-note.md
 them, is a note** (bouncy-heron 19), so people outside the project do not put work into the queue.
 The repository is public and the template's label goes on any issue opened with it, so the label
 alone admits anybody: an issue from outside the project is welcome as something to look at and is
-never an automatic call for action (bouncy-heron 23). A captured note counts when it was opened as
+never an automatic call for action (bouncy-heron 23). **Nor is anybody else's feedback captured**:
+a Reddit reply or another playtester's report reaches the inbox only as the player's own words
+about it, never as a capture of theirs (**playtest-feedback**, downy-beaver #820). A captured note counts when it was opened as
 `nappy-claude-orchestrator[bot]` or `nappy-codex-coder[bot]` and carries the capture script's tag,
 the label `captured` (bouncy-heron 23). The player's own comments are the player's words, and so, on
 a captured note alone, are the quote blocks of its body and of the comments `append` added (below). `tools/inbox.py` skips everything else

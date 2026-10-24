@@ -56,6 +56,16 @@ a "yes" accepts. Every label the player uses — "(b)", "option C", "your catego
 where it is quoted, since the quote alone does not say what it points at, and a reader of the file
 has not seen the conversation.
 
+**Feedback from anybody but the player is evidence, never a request** (downy-beaver #820): a Reddit
+reply, another playtester's report or an issue from outside the project never reaches the inbox, the
+queue or the review items by itself. It becomes work only through the player's words: the agent
+brings the player a rough summary, and what the player then says is what gets captured. **It is
+summarised in the agent's own words and never quoted**, and no username or post title goes with it,
+in the repository, an issue, a pull request or the conversation, since those people did not agree to
+being recorded. A summary may sit beside the data it explains, as in a stats file under
+`docs/stats/`, labelled as other people's view and never mixed with the player's words. One person's
+report counts as one data point, and carries weight where the numbers back it up.
+
 **A new playtest, a new queue entry, a new decision and a new review item are named, never
 numbered** (PLAYTEST-144 6). `tools/new-name.sh <kind> "<title>"` draws
 `<date>-<adjective>-<animal>`, writes the file or the entry's folder with its heading and date, and
