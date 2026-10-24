@@ -37,8 +37,8 @@ reader loses the half with the measurement in it.
 
 ## Write it down with all of its detail, before doing anything about it
 
-**Every piece of playtest feedback goes into a playtest file under `docs/playtests/` in full — the
-player's own words, and every specific they gave — before a line of code is written.** Then it
+**Every piece of the player's playtest feedback goes into a playtest file under `docs/playtests/` in
+full — the player's own words, and every specific they gave — before a line of code is written.** Then it
 becomes a queue entry, and only then does it get implemented.
 
 **The first place the player's words are written is the inbox** (bouncy-heron 13). When the player
@@ -60,11 +60,12 @@ has not seen the conversation.
 reply, another playtester's report or an issue from outside the project never reaches the inbox, the
 queue or the review items by itself. It becomes work only through the player's words: the agent
 brings the player a rough summary, and what the player then says is what gets captured. **It is
-summarised in the agent's own words and never quoted**, and no username or post title goes with it,
-in the repository, an issue, a pull request or the conversation, since those people did not agree to
+summarised in the agent's own words and never quoted**, and no username or title of theirs goes with
+it, in the repository, an issue, a pull request or the conversation, since those people did not agree to
 being recorded. A summary may sit beside the data it explains, as in a stats file under
 `docs/stats/`, labelled as other people's view and never mixed with the player's words. One person's
-report counts as one data point, and carries weight where the numbers back it up.
+report counts as one data point, and carries weight where the numbers back it up. A playtest file
+holds the player's words alone; somebody else's report reaches one only as a summary in context.
 
 **A new playtest, a new queue entry, a new decision and a new review item are named, never
 numbered** (PLAYTEST-144 6). `tools/new-name.sh <kind> "<title>"` draws
