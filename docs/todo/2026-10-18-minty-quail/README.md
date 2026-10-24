@@ -55,12 +55,11 @@ early to injected fakes and public APIs (`tests-public-seams.md`); nothing is re
 during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
 1. `world-passability.md`: what is left of the world layer's passability.
-2. `escape-placement.md`: the escape folded into the day's code.
-3. `events-composed.md` and `shared-components.md`.
-4. `main-and-state.md` and `tuning.md`, alongside the extractions they serve.
-5. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
-6. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs.
-7. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
+2. `events-composed.md` and `shared-components.md`.
+3. `main-and-state.md` and `tuning.md`, alongside the extractions they serve.
+4. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
+5. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs.
+6. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
    step's record lists what its change needs remeasured.
@@ -68,5 +67,5 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 The PR that closes this entry rewrites **orchestrating**'s "Code is designed by layer", whose
 proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal
 escape fix**: "the exception only holds until the refactor -- I don't want a month from now hear that
-the exception still stands" (minty-lemur #799). `escape-placement.md` replaces the code that fix
-put in `build_finale`, so nothing of the exception is left.
+the exception still stands" (minty-lemur #799). The escape city's placement runs on the day's
+scheduler and that fix's `build_finale` is gone (minty-quail-8), so the exception covers no code.
