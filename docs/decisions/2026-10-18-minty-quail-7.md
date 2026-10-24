@@ -35,7 +35,10 @@ which is how the explosion outside is placed. The fire and the explosion are cat
 (`WorldContext.bang_outside()`, the window flash). `without_its_aftermath()` exists once, in the
 catalogue. The escape's flags are spec settings (`DaySpec.owes_a_return`, `DaySpec.poster_pursuits`)
 the run flow hands in: `main` hands each day's spec to `EventManager.use_the_spec()` before
-`start_day()`, a recipe's runtime hands its spec to `start_recipe(plans, spec, day, focus)`, and
+`start_day()`, `main` hands an authored scene the spec its clock and HUD run on
+(`main.day_spec()` for a day scene, `--day-length` included; the escape boot's section for an escape
+scene) through `SceneRecipeRuntime.install()`, which hands it to `start_recipe(plans, spec, day,
+focus)`, and
 `start_finale()` is `start_planned(spec, plans, focus)`. The distant window flashes are the
 scene's own night, and the grates are laid once per boot.
 
@@ -61,7 +64,9 @@ across its passage; a chatting mother streamed out while leaving does not come b
 `likely-bugs.md`'s suspicion that she would (her chat ends with her leaving, and that plan is spent);
 on the same day a day's spec is owed its return rows and a spec that owes none is owed none; the
 debug fields layer cuts a row from outside at no wall; a bang from outside that comes once lights the
-windows.
+windows; an authored scene runs under the spec it is handed (`test_recipe_structures`); every mover
+on a map shares its one navigator (`test_world_passability`); the explosion's debug outline is drawn
+whole (`test_wall_shield`).
 
 **Choices made where the design was silent, open to overturn:** each map reaches the node that draws
 it through a `world` field that node hands over; `has_ground()` is the one question the navigator and
@@ -86,7 +91,7 @@ events for the baby, and `BuildingPlan.lay_the_grates()` reads `EventInstance.st
 mouse's dash is 27px wall to wall (64px through both walls before); the fire's body and a blowing
 vent's body go on the building's blocked record; the building now has the mark over her head near
 the masked man, the encounter watch (GoatCounter counts the building's encounters under day 15, the event
-names unchanged, so each explosion outside, about eight a section, counts as an encounter, sent as
+names unchanged, so each explosion outside, eight a section, counts as an encounter, sent as
 `nappy-day-15-influenced-unseen-finale-explosion` when it reaches her unseen; the old building
 sent no encounter events, and the escape's city section counts its own explosions under day 16,
 `DaySpec.CITY_DAY`), `FrameRecord.EVENTS` timing, and the screen-edge badge read from the manager's view; the
