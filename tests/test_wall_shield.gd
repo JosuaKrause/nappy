@@ -473,6 +473,11 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 				+ " (%.1f)" % burst.contribution_at(behind))
 		t.check(not burst.wall_grid().wall_between(burst.global_position, behind),
 				"and the debug view's fields layer cuts it at no wall either, as the meter does")
+		var outline := GroundShape.field_outline_at(burst.global_position, Vector2.ZERO,
+				burst.def.outer_radius)
+		var runs := DebugLayers.open_runs(outline, burst.global_position, burst.wall_grid())
+		t.check(runs.size() == 1 and runs[0].size() == outline.size() + 1,
+				"so its outline is drawn whole, in one closed run (%d runs)" % runs.size())
 	player.free()
 	events.free()
 	scene.free()

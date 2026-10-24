@@ -191,15 +191,16 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	AtlasLibrary.release(EventInstance.ATLAS_GROUP)
 
-## The navigator handed in by `setup()`, or one over `_map` where none was handed for it — a rig
-## that sets the map itself.
+## The navigator handed in by `setup()`, or the map's own (`WorldMap.navigator()`) where none was
+## handed for it — a rig that sets the map itself.
 func _the_navigator() -> Navigator:
 	if _navigator == null or _navigator.map() != _map:
 		_navigator = _map.navigator()
 	return _navigator
 
 ## Hands the manager its city, the map it places on and the navigator its figures move by — the
-## city's own (`City.navigator`), or one over `map` for a rig that hands none.
+## city's own (`City.navigator`), or the map's
+## own (`WorldMap.navigator()`) for a rig that hands none.
 func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	_city = city
 	_map = map

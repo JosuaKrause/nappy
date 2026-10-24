@@ -291,7 +291,9 @@ const _CUT_STEPS := 4
 ## where the answer turns along it**, found by halving it, so the line ends at the wall's depth
 ## rather than at whichever point of the outline happened to fall short of it.
 ##
-## **Most outlines ask no line at all**: `_deep_ground_meets()` answers first whether anything
+## **Most outlines ask no line at all**: a source on open ground — a row from outside the walls
+## (`EventInstance.wall_grid()`) — has its whole outline at once, and otherwise
+## `_deep_ground_meets()` answers first whether anything
 ## within the outline's bounds could be deep enough in a building to wall one, and a walker on a
 ## sidewalk beside a facade almost never reaches that far in.
 static func open_runs(points: PackedVector2Array, source: Vector2, grid: WorldMap
@@ -302,7 +304,8 @@ static func open_runs(points: PackedVector2Array, source: Vector2, grid: WorldMa
 	var shut: Array[bool] = []
 	var first_shut := -1
 	var pieces := PackedVector2Array()
-	if grid != null and _deep_ground_meets(grid, _bounds_of(points).expand(source)):
+	if grid != null and grid.has_ground() \
+			and _deep_ground_meets(grid, _bounds_of(points).expand(source)):
 		pieces = _in_pieces(points)
 		for i in pieces.size():
 			var is_shut := grid.wall_between(source, pieces[i])

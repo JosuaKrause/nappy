@@ -33,7 +33,20 @@ func run(t) -> void:
 	_test_the_cat_crossing_never_ends_in_a_lot(t, city)
 	_test_a_departure_leaves_round_a_building(t, city)
 	_test_every_row_that_moves_stays_off_blocked_ground(t, city)
+	_test_every_mover_on_a_map_shares_its_one_navigator(t, city)
 	city.free()
+
+## **One navigator per map** (`WorldMap.navigator()`): the city's, its event manager's, its crowd's and
+## its director's are one object, and a mover built over the map with none handed to it takes that
+## same one rather than a second.
+func _test_every_mover_on_a_map_shares_its_one_navigator(t, city: City) -> void:
+	t.check(city.map.navigator() == city.navigator
+			and city.events._the_navigator() == city.navigator
+			and city.crowd._navigator == city.navigator,
+			"the city, its events and its crowd move by the map's one navigator")
+	var director := EventDirector.new(city.map)
+	t.check(director._navigator == city.navigator,
+			"and a director handed only the map takes that same navigator, not a second")
 
 # ---------------------------------------------------------------------- ground ---
 

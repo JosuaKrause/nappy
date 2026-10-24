@@ -2609,7 +2609,7 @@ const FINALE_EXIT_REACH := TILE_SIZE * 1.5
 
 ## Seconds between two off-screen explosions inside the building. Section one is *"relatively
 ## minimal"* and an explosion is its only city-wide beat, so it is spaced like the director's own
-## `AHEAD_INTERVAL` band rather than more often: four of them over a 180s clock is enough for the
+## `AHEAD_INTERVAL` band rather than more often: eight of them over a 180s clock is enough for the
 ## hallway windows to flash more than once without the basement becoming a drum.
 const FINALE_EXPLOSION_INTERVAL := 22.0
 
@@ -2626,7 +2626,7 @@ const FINALE_WINDOW_FLASH_SECONDS := 0.12
 ## is 1.3s and the rest of the curve is smooth.")*
 ##
 ## **Light without noise, and that is the whole of why these exist.** A flash was only ever the
-## near bang's own cue, one every `FINALE_EXPLOSION_INTERVAL` (22s), which is about four over the
+## near bang's own cue, one every `FINALE_EXPLOSION_INTERVAL` (22s), which is eight over the
 ## whole clock — and an explosion is loud: shortening that interval would have made the windows
 ## flash more often and made the building cost more in the same stroke, which the player did not
 ## ask for. A distant flash is a picture and nothing else: no instance, no field, nothing on the

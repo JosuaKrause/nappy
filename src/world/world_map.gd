@@ -409,7 +409,9 @@ static func _inside_disc(from: Vector2, delta: Vector2, centre: Vector2, radius:
 
 ## How anything that walks or drives over this map moves (`Navigator`): **one per map**, the same
 ## one to every caller for as long as anything holds it — the city (`City.navigator`), the event
-## manager, every figure on the map — and a fresh one only once nothing does.
+## manager, the director, the crowd, the resistance, every figure on the map — and a fresh one only
+## once nothing does. The one other navigator over a map is one a caller builds itself
+## (`Navigator.new(map)`), which only a test does, to step a figure by hand.
 func navigator() -> Navigator:
 	var held: Navigator = _navigator.get_ref() if _navigator else null
 	if held == null:

@@ -562,7 +562,8 @@ func _ready() -> void:
 		_recipe.begin()
 	elif _recipe:
 		# An escape recipe plays from its first frame, with no brief in front of it.
-		var problems := _recipe.install(_city, _player, _baby)
+		# The escape section's spec the boot started (`_the_first_day()`), the one its clock runs.
+		var problems := _recipe.install(_city, _player, _baby, _spec)
 		if not problems.is_empty():
 			_recipe_failed(problems)
 			return
@@ -693,7 +694,14 @@ func _the_first_day() -> DaySpec:
 				or (_escape_from_a_run and GameState.escape_section == DaySpec.Section.CITY)
 		return escape_section_spec(DaySpec.Section.CITY if start_at_the_city
 				else DaySpec.Section.BUILDING, config.escape_section_length())
-	return DaySpec.for_day(GameState.day, config.day_length_for(GameState.day))
+	return day_spec(config, GameState.day)
+
+## One of the fourteen days as this boot walks it: `day`, its clock `config`'s length for it
+## (`RunConfig.day_length_for()`, which `--day-length` compresses). The one spec a day is handed to
+## its clock, its HUD and its events alike, an authored scene's day included. Static so a test builds
+## the same spec the run walks.
+static func day_spec(run_config: RunConfig, day: int) -> DaySpec:
+	return DaySpec.for_day(day, run_config.day_length_for(day))
 
 ## One of the escape's two sections, `length` seconds long, with its own words — *"Escape the
 ## building"* and *"Escape the city"*, the player's names for the two screens — handed to the spec
@@ -1803,7 +1811,7 @@ func _start_day() -> void:
 	var elapsed := Time.get_ticks_msec()
 	# Decided once, here, and handed to everything that runs on the day's clock as a number.
 	var day_length := config.day_length_for(GameState.day)
-	_use_the_day(DaySpec.for_day(GameState.day, day_length))
+	_use_the_day(day_spec(config, GameState.day))
 	# Before the announcement and before anything is placed: this is where the run photographs
 	# what the resistance had done, and a lost day gives exactly that back — so the photograph has
 	# to be taken while it is still true of the attempt about to be played. See
@@ -1901,15 +1909,16 @@ func _use_the_day(spec: DaySpec) -> void:
 ## The ordinary game's components start from the authored setup before any actor is allowed to
 ## tick. The recipe selects every event; the random scheduler does not fill authored scenes.
 func _start_recipe_day() -> void:
-	_use_the_day(DaySpec.for_day(GameState.day, config.day_length_for(GameState.day)))
+	_use_the_day(day_spec(config, GameState.day))
 	GameState.begin_day()
 	EventBus.day_started.emit(GameState.day)
 	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
 	_city.start_recipe_day(GameState.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"))
 	_city.set_act(GameState.current_act())
-	_day.start(config.day_length_for(GameState.day))
-	var errors := _recipe.install(_city, _player, _baby, _resistance)
+	_day.start(_spec.length)
+	# The scene's events run under the very spec the clock and the HUD were just handed.
+	var errors := _recipe.install(_city, _player, _baby, _spec, _resistance)
 	if not errors.is_empty():
 		_recipe.manifest["setup_failed"] = true
 		_recipe_failed(errors)
