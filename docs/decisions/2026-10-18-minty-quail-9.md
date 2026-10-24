@@ -20,39 +20,65 @@ blocked)`. `Navigator.path()` gained two optional arguments: `avoid`, a tile rec
 enters, and `near`, which ends the way beside a goal whose own body takes its tile. The straight
 walks and the comment explaining why the officers were off the navigator are gone.
 
-**Three problems the planned walks raised, each handled.** A solid can cut off the way outside the
-park (a burst water main across the sidewalk and street on seed 34, burnt-out cars beside the
-officers' arrival on seed 31), so a taper may cut along the park's own edge row where going round
-outside is more than four tiles longer or impossible. His own tape would then shut that row behind
-him, so a stretch whose tiles a later leg of his still steps on is taped at the end of that leg, a
-stretch another officer's walk still steps on waits for him (seed 31), and the stretches the way out
-crosses wait for everyone to come out, as the last gap already did. A wait is made up: each leg is
-re-paced to the deadline, capped at the round's 0.3s-a-stretch speed.
+**Problems the planned walks raised, each handled.** A solid can cut off the way outside the park (a
+burst water main across the sidewalk and street on seed 34, burnt-out cars beside the officers'
+arrival on seed 31), so a taper may cut along the park's own edge row where going round outside is
+more than four tiles longer or impossible. His tape would then shut ground an officer still has to
+cross, so **no officer waits for another**: a taper puts his stretches up in his own order once he
+has walked past them, and a passed stretch stays owed while any officer still has to step on one of
+its tiles (the taper on a later leg, the other taper's current walk and every leg still to come, an
+escort's walk, the tile an officer stands on inside the park) and goes up the moment nobody does,
+while its taper walks on (`_tape_what_he_can()`, `_still_stepped_on()`). The first build let one
+taper wait for the other's current walk only, so a taper taped a stretch the other's later edge-row
+leg had to cross, the second re-planned every frame and the first waited for him: with a busker in
+the park's south edge row, seeds 19, 25, 35 and 39 never closed (the review of PR #840). The only
+waits left are for her, for the park's people and their escorts, and for those still to come out,
+none of which depends on an officer, so no wait cycle can form. Re-planning is bounded: an officer
+whose walk is cut short 30 frames running walks the rest of it straight, noted in the run log under
+the existing `contact` kind. A taper's round ends off the park, the tile an officer stands on inside
+holds its stretch, and the gap does not close while a taper stands inside (`_a_taper_inside()`).
+Someone standing on the ground the way out crosses goes straight out from where they stand
+(`_way_out_from()`): a busker standing in the gap otherwise walked back over his own body's tile and
+stood for good, which hung the cordon on seeds 5 and 13, and `main`'s straight-walking cordon hangs
+the same way on seed 5. An escort walks on up to his person in the same frame his way in ends. A wait
+for her is made up: each leg is re-paced to the deadline, capped at the round's 0.3s-a-stretch speed;
+with a person being walked out, the gap waits for them.
 
 **Verified at test parity** (inbox #813 in curly-moose): `check.sh`, `lint.sh`,
-`ci_telemetry_kinds.py`, and the whole suite shard by shard with 0 failures and no script error. On
-all 41 parks `test_park_cordon_seeds` sweeps, the close is within 0.25s of the deadline the cordon
-sets (no sooner than `Tuning.PARK_CLOSING_SECONDS`, and the walk from where she stood to the gap plus
-2s after the first officer comes into view, the plush-marten record), first sight within 0.25s of
-when it said, and the busker is walked out through the last gap. Tests changed only to hand the
-cordon `city.navigator`. New checks in `test_park_cordon_seeds`: no officer steps onto a tile a solid
-thing takes, and none stands stuck with his walk still ahead; with the straight walks put back for one
-run, 19 of the 41 parks fail the first.
+`ci_telemetry_kinds.py`, and the whole suite shard by shard with 0 failures and no script error. With
+nobody in the park and her not in the way, on all 41 parks `test_park_cordon_seeds` sweeps, the close
+is within 0.25s of the deadline the cordon sets (no sooner than `Tuning.PARK_CLOSING_SECONDS`, and the
+walk from where she stood to the gap plus 2s after the first officer comes into view, the plush-marten
+record) and first sight within 0.25s of when it said. The busker run plays at four spots on each park
+(25%/30%, 50%/94%, the middles of the east and north edge rows) until he is gone and the cordon has
+closed, checking that it closes, that no officer steps onto a body's tile, and that none stalls or
+re-plans; on the first build (711f5b9c) those runs failed 30 checks, 9 runs never closing. With her
+walking out from 4s, all 164 busker runs close, 158 within 0.25s of the deadline and six later, where
+the gap waited for the person walked out (seed 10 at 50%/94% 14.6s and in the east edge row 15.1s
+against 13.4s; seed 90210 13.8s and 14.2s against 13.4s; seed 2 12.7s against 12.0s; seed 34 13.7s
+against 13.4s). Tests changed only to hand the cordon `city.navigator`. New checks in
+`test_park_cordon_seeds`: no officer steps onto a tile a solid thing takes, and none stands stuck with
+his walk still ahead; with the straight walks put back for one run, 19 of the 41 parks fail the first.
 
 **Choices made where the design was silent, open to overturn:** an officer walks as a figure on foot
-(`Mover.on_foot()`) with no body radius; a taper may use the park's edge row, never deeper; taping is
-put off rather than a taper walking over his own tape; each leg is re-paced, capped at the
-0.3s-a-stretch speed; an escort sends his person off once he reaches the end of his way up to them,
-within a tile and a half, and re-plans if they move half a tile; a walk blocked by something put down
-after it was planned is re-planned from where the officer stands (the seeds suite holds this at 0);
-where the spot 18px behind the first taper is blocked, the second starts on the same spot.
+(`Mover.on_foot()`) with no body radius; a taper may use the park's edge row, never deeper; an owed
+stretch goes up in order behind its taper, sometimes a few stretches behind him and several at once,
+rather than the taper standing to wait; re-planning gives up after 30 frames; someone standing in the
+gap goes straight out; each leg is re-paced, capped at the 0.3s-a-stretch speed; an escort sends his
+person off once he reaches the end of his way up to them, within a tile and a half, and re-plans if
+they move half a tile; a walk blocked by something put down after it was planned is re-planned from
+where the officer stands (the seeds suite holds this at 0); where the spot 18px behind the first
+taper is blocked, the second starts on the same spot.
 
 **For the remeasuring step:** officers go round solid things on the park's sidewalk; where the way
-outside is cut off, a taper steps into the park's edge row and back out, and a few stretches go up
-together a moment later; a stretch under a solid thing is taped from the nearest ground the officer
-can stand on, a tile or two away; an escort walks up beside a person instead of into them; a taper
-who was held up hurries afterwards, up to the top speed. Seed 13, a large park, closes at 29.0s where
-the plush-marten record measured 26.3s over the straight walks: the officers' way round a body counts
-when the deadline is set, and she still has her 2.0s beyond the walk. Every other park matches the
-record: small parks at 12.0s, the large ones at 13.4–13.5s, seed 40 at 27.9s. Pictures of a taper
-stepping into the edge row and of an escort walking up beside the busker.
+outside is cut off, a taper steps into the park's edge row and back out; a stretch an officer still
+has to step on goes up behind its taper, sometimes a few stretches back and several at once; a
+stretch under a solid thing is taped from the nearest ground the officer can stand on, a tile or two
+away; an escort walks up beside a person instead of into them; someone standing in the gap walks
+straight out; a taper who was held up hurries afterwards, up to the top speed; with a person walked
+out the close can come up to about 1.7s after the deadline (the six runs above). Seed 13, a large
+park, closes at 29.0s where the plush-marten record measured 26.3s over the straight walks: the
+officers' way round a body counts when the deadline is set, and she still has her 2.0s beyond the
+walk. Every other park matches the record: small parks at 12.0s, the large ones at 13.4–13.5s, seed
+40 at 27.9s. Pictures of a taper stepping into the edge row and of an escort walking up beside the
+busker.
