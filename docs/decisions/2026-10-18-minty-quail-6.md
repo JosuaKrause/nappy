@@ -24,7 +24,7 @@ hack and the per-panel offset arithmetic are gone. The warning guard's raise is 
 field `EventDef.warns_over_the_street`, set on `roadblock`, draws him on `WARNING` while he warns
 and on `ENTITIES` otherwise.
 
-**Verified at test parity** (inbox #813): `check.sh`, `lint.sh`, `ci_telemetry_kinds.py` and 26
+**Verified at test parity** (inbox #813 in curly-moose): `check.sh`, `lint.sh`, `ci_telemetry_kinds.py` and 26
 suites two or three per call with 0 failures, the full suite left to CI. A new
 `tests/test_draw_layers.gd` fails on any `z_index` or `z_as_relative` write in `src/` or `scenes/`
 outside `DrawLayer`, and checks the layer order, adding on a layer, the slice arithmetic and that a
@@ -50,7 +50,7 @@ drawing its own band of the authored picture (a cropped draw for the tree, a cli
 for the other two, through a source rect on `SceneryLayer`), the shadow going down whole with the
 first; day 12's cordon tape places each stretch through the helper, its positions unchanged; and the
 café is one slice per table and its sitter, so sitters and tables interleave, which the player
-accepted (inbox #827). Once the escape's city is built, `InteriorScene.put_the_pictures_away()`
+accepted (inbox #827 in curly-moose). Once the escape's city is built, `InteriorScene.put_the_pictures_away()`
 hides the building's floor and layer nodes, keeping its `FadeLayer` for `clear_fade()`: the
 building's door pictures would otherwise draw over the city's buildings, and 15 of its walls and 11
 of its doors already stood on walkable city tiles over the city's ground. The z scan also catches a

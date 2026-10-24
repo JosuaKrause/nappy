@@ -180,6 +180,16 @@ than picking off a menu they cannot see.
 So when parking something, record **what it was and why it was not taken**, and record the symptom
 as *what would make this worth discussing again*. **Never as what would authorise it.**
 
+**Every idea a design discussion sets aside or leaves undecided is kept, out of the way until
+research looks for it** (curly-moose #829, #831): the player's own ideas, the agent's, a study's,
+the rejected ones too, each with whose it was, why it was set aside or left open, and what would
+make it worth discussing again. *Proposed by the filer, open to overturn:* they go in a record with
+a name of its own under `docs/decisions/` (`tools/new-name.sh decision "<title>"`, never `--entry`,
+since a record named after an entry is that entry's build record and lets CI accept its items'
+deletion), which the entry it was weighed for names; `tools/decisions.sh` finds it during research,
+while it stays out of the queue, unlike an entry in the `parked` band, and out of every session's
+context until then.
+
 ## Evidence lives in the repo
 
 **Every log, telemetry map or screenshot a doc points at gets copied into `docs/evidence/` in the
