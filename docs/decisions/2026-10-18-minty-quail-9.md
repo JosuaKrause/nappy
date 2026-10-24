@@ -62,11 +62,12 @@ their escort to come out, as plush-marten asks, so the close can come after the 
 before. With her standing at the swing, all 164 busker runs close, 117 within 0.25s and 47 later:
 most small parks 0.3–1.9s, the large parks up to 8.6s (seed 37 at 25%/30% 22.02s against 13.42s, the
 same as `main`; seed 90210 at 25%/30% 21.70s; seed 34 in the east edge row 17.93s against 13.43s).
-With her walking out from 4s (measured before the escort's straight walk-up, which only shortens his
-walk), 158 of 164 close within 0.25s and six up to 1.7s later. On `main`'s straight-walking cordon,
+With her walking out from 4s, all 164 close within
+0.25s of the deadline. On `main`'s straight-walking cordon,
 seed 13 with a busker in the east edge row and her standing never closes; here it closes at its
-deadline, 29.02s. Tests changed only to hand the cordon `city.navigator`. New checks in
-`test_park_cordon_seeds`: no officer steps onto a tile a solid thing takes, and none stands stuck with
+deadline, 29.02s. Tests changed to hand the cordon `city.navigator`, and the busker run
+in `test_park_cordon_seeds` plays at four spots and ends with the manager's retirement
+(`city.events._retire_finished()`). New checks in `test_park_cordon_seeds`: no officer steps onto a tile a solid thing takes, and none stands stuck with
 his walk still ahead; with the straight walks put back for one run, 19 of the 41 parks fail the first.
 
 **Choices made where the design was silent, open to overturn:** an officer walks as a figure on foot
