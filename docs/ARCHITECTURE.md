@@ -586,8 +586,10 @@ kept strictly out of anything that touches the meters.
 - **A footprint longer than a tile is drawn as slices**, each a node standing at its own feet
   (`DrawLayer.slice_feet()`, `DrawLayer.add_slices()`), so a run going away from the camera sorts
   slice by slice against her: an event's spread (`EventInstance.Slice`, the roadblock's band among
-  them) along its solid footprint, and a closure's barrier and a park's fence panel by panel along
-  the barrier's footprint or post to post. Broadside a slice stands at the middle of its share;
+  them) along its solid footprint, a protest or a firefight one figure a slice, a wide scene one
+  tile of its run a slice, each drawing its band of the picture, a closure's barrier and a park's
+  fence panel by panel along the barrier's footprint or post to post, and day 12's cordon tape one
+  tile-long stretch a slice. Broadside a slice stands at the middle of its share;
   end-on at its near end, the last exactly on the run's end, so a post there shares its feet.
 - Ground: freeable `TileMapLayer` children of `SceneryGround`, fed by `GroundTiles`,
   which is the only place that decides which

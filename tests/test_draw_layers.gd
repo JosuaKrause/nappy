@@ -13,6 +13,7 @@ func run(t) -> void:
 	_test_a_world_adds_a_node_on_its_layer(t)
 	_test_slices_stand_at_their_own_feet(t)
 	_test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t)
+	_test_every_long_picture_is_drawn_in_slices(t)
 	await _test_the_slices_go_with_their_event(t)
 
 # ------------------------------------------------------------------ the module ---
@@ -221,3 +222,48 @@ static func _slices_in(layer: Node) -> int:
 		if child is EventInstance.Slice:
 			count += 1
 	return count
+
+## **Every long picture the item names is drawn in slices**, not only the spreads: the protest's
+## rank and the firefight, one slice a figure, and the three wide scenes, one a tile of their run.
+## Each stands in a world in more than one slice, every slice ahead of its instance in the entity
+## layer; a protest's back rank stands up the screen of its front rank; a wide scene's bands
+## together cover its picture's run exactly, and end-on its slices rise toward the camera.
+func _test_every_long_picture_is_drawn_in_slices(t) -> void:
+	AtlasLibrary.acquire(&"events")
+	for id: String in ["protest", "firefight", "fallen_tree", "car_accident", "burst_water_main"]:
+		for vertical: bool in [false, true]:
+			var what := "%s %s" % [id, "end-on" if vertical else "broadside"]
+			var world := WorldContext.new()
+			t.add_child(world)
+			var instance := EventInstance.new()
+			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0))
+			instance._spread_vertical = vertical
+			instance.world = world
+			world.add_entity(instance)
+			instance._attach_the_slices()
+			var slices := instance._slices
+			var ahead := slices.size() > 1
+			for slice in slices:
+				ahead = ahead and slice.get_parent() == instance.get_parent() \
+						and slice.get_index() < instance.get_index()
+			t.check(ahead, "%s: drawn in %d slices ahead of its instance" % [what, slices.size()])
+			if id == "protest" and slices.size() > 2:
+				t.check(slices[0].global_position.y < slices[slices.size() - 1].global_position.y,
+						"%s: the back rank stands up the screen of the front rank" % what)
+			if id in ["fallen_tree", "car_accident", "burst_water_main"]:
+				var covered := 0.0
+				for i in slices.size():
+					var band := instance._wide_scene_band(i)
+					covered += band.size.y if vertical else band.size.x
+				t.check(is_equal_approx(covered, instance.def.obstructs_radius * 2.0),
+						"%s: its bands cover its run, %.1f of %.1f"
+						% [what, covered, instance.def.obstructs_radius * 2.0])
+				if vertical:
+					var rising := true
+					for i in range(1, slices.size()):
+						rising = rising and slices[i].global_position.y \
+								> slices[i - 1].global_position.y
+					t.check(rising, "%s: each slice stands nearer the camera than the one before"
+							% what)
+			world.free()
+	AtlasLibrary.release(&"events")

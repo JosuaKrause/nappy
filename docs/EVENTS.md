@@ -641,7 +641,8 @@ slices, one per segment, each a node standing at its own feet along the row's so
 (`EventInstance.Slice`, `DrawLayer.slice_feet()`), so a spread running away from the camera sorts
 slice by slice against her; the shadow and the far end cap go down with the first slice and the
 near cap with the last, and the slices stand ahead of the instance in the tree, so its caret is
-drawn over its own picture.
+drawn over its own picture. The protest's rank and the firefight are drawn the same way, one
+slice a figure at its own feet, the protest's back rank up the screen of its front one.
 
 **A row may be solid in parts, and one is.** `EventDef.solid_parts` is a list of pieces — each an
 offset along the scene's own spread axis and a `GroundShape` of its own — and `EventInstance` puts
@@ -1041,10 +1042,16 @@ coordinates inside a corridor band) and ground off any corridor at all (a square
 courtyard) both keep the default lay along local X: neither has one street to be wrong about.
 
 The fallen tree, car accident and burst water main each have one complete street scene picture,
-fitted to the obstructed span. The fallen tree is drawn whole by `EventInstance._draw_wide_scene()`.
-The crash and burst main are drawn on screen as `EventScenery` layers of their cropped static and
-moving spans, which `_build_scenery()` places with the same extent and anchor; `_draw_wide_scene()`
-draws their complete picture only on the halo's own canvas. On an east–west street, its vertical
+fitted to the obstructed span. On the screen each is cut into slices, one a tile of its run, each
+a node standing at its own feet and drawing the part of the picture over its own band
+(`EventInstance._wide_scene_band()`), so a scene lying down an east-west street sorts against her
+band by band; the shadow goes down whole with the first. The fallen tree's slices draw their part
+of its one picture (`EventInstance._draw_wide_scene()`). The crash and burst main are drawn as
+`EventScenery` layers of their cropped static and moving spans, one scenery behind each slice
+holding the part of every span inside its band, placed with the same extent and anchor;
+`_draw_wide_scene()` draws their complete picture only on the halo's own canvas. An upright part
+standing over a nearer band's ground, a fountain's top or a tree's crown, sorts with the band its
+screen rows fall in. On an east–west street, its vertical
 image (and its shadow, for the two of the three that draw one — see
 `draws_body_shadow` above) is centred on the event's ground point; the bottom-centred anchor
 used for an upright person would shift the whole scene onto the northern pavement.

@@ -1,16 +1,17 @@
 class_name CordonTape
 extends Node2D
 ## One piece of day 12's police cordon (`ParkCordon`): a taped stretch of the park's edge, solid,
-## or a stanchion the tape is strung on. Each is its own node in `City`'s y-sorted `Entities`, so a
-## stretch running away from the camera sorts against her stretch by stretch, the way a closure's
+## or a stanchion the tape is strung on. Each stretch is a tile-long slice of the park's edge, its
+## own node in the city's y-sorted entity layer at its own feet (`DrawLayer.add_slices()`), so a
+## side running away from the camera sorts against her stretch by stretch, the way a closure's
 ## panels do (`City._spawn_barrier()`).
 ##
 ## **A stretch is drawn at the length it closes and is solid along all of it**: one static body the
 ## stretch's length and `DEPTH` deep, on the tape's own line, which is the park's own edge row half
 ## a barrier's depth in, so the sidewalk beside the park stays as wide as it was.
 ##
-## Feet: a broadside stretch's are the middle of it; an end-on stretch's are its near end (the
-## larger y), since an end-on picture is drawn up the screen from its feet.
+## Feet (`DrawLayer.slice_feet()`): a broadside stretch's are the middle of it; an end-on stretch's
+## are its near end (the larger y), since an end-on picture is drawn up the screen from its feet.
 
 enum Piece { TAPE, POST }
 
