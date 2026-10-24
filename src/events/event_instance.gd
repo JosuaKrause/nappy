@@ -7194,7 +7194,7 @@ func masked_pursuer_pictures() -> Dictionary:
 ##
 ## **On the screen each table and its sitter are a slice of their own** (`_slice_plan()`), standing
 ## at their share of the run's feet, so each table sorts against her and against the next table and
-## its sitter *(inbox #827: "yes, slice the cafe tables")*; slice `only` draws its own sitter and
+## its sitter *(inbox #827 in curly-moose: "yes, slice the cafe tables")*; slice `only` draws its own sitter and
 ## table from `origin`, the first also the shadow. On any other canvas, or with `only` below zero,
 ## the whole frontage is drawn, every sitter before every table.
 func _draw_cafe(canvas: CanvasItem = self, only := -1, origin := Vector2.ZERO) -> void:

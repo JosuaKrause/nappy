@@ -39,7 +39,7 @@ prediction, the guard's clear run and the roadblock guard's line; and the floods
 (`ReachabilityGrid`, `ArrowField`, the guard's sweep, the way out of her sight). From
 `likely-bugs.md`: the cat's crossing no longer ends inside a lot.
 
-**Verified at test parity** (inbox #813): `check.sh`, `lint.sh`, `ci_telemetry_kinds.py` and
+**Verified at test parity** (inbox #813 in curly-moose): `check.sh`, `lint.sh`, `ci_telemetry_kinds.py` and
 `cost-table.sh --check` (no route cost moved), and the full suite (`tools/test.sh`, all shards) with 0
 failures. Tests changed only as far as the code moved: instances given a map by hand get its
 navigator, callers of the removed step call `Navigator.step`, day 13's guard is measured over the
