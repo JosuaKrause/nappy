@@ -201,7 +201,7 @@ class LintRunsTheCheckTests(unittest.TestCase):
             if not directory or not Path(directory).is_dir():
                 continue
             for tool in Path(directory).iterdir():
-                if tool.name.startswith("python") or (bin_dir / tool.name).exists():
+                if tool.name.startswith("python") or os.path.lexists(bin_dir / tool.name):
                     continue
                 (bin_dir / tool.name).symlink_to(tool)
         result = self.lint(".claude/skills/good/SKILL.md", env={"PATH": str(bin_dir)})
