@@ -5,6 +5,7 @@ extends RefCounted
 ## `InteriorScene` itself.
 
 const StrollerSteer := preload("res://tests/stroller_steer.gd")
+const BuildingEvents := preload("res://tests/building_events.gd")
 
 func run(t) -> void:
 	_test_the_map_builds(t)
@@ -990,8 +991,9 @@ func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: Node) -> vo
 				"%s still walks between both of its stair doors, so crossing over is possible" % id)
 
 # ------------------------------------------------------------ the escape's own events ---
-# `InteriorEvents` is the escape's first section: a mouse, a masked man on one stairwell, a fire on
-# the other, steam in the basement and the explosions outside. What these check is the placement's
+# The escape's first section's events (`BuildingPlan`, run by the day's `EventManager` on the
+# building's map): a mouse, a masked man on one stairwell, a fire on the other, steam in the basement
+# and the explosions outside. What these check is the placement's
 # own promises — the ones the brief makes and a screenshot cannot see.
 
 ## *"There might be a fire on one staircase forcing us to use the other staircase (all buildings
@@ -1004,11 +1006,9 @@ func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: Node) -> vo
 func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 
 	var fire: EventInstance = null
 	for instance in events.instances():
@@ -1016,7 +1016,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 			fire = instance
 	t.check(fire != null, "the escape puts a fire in the building")
 	if fire:
-		var burning := events.burning_side()
+		var burning := BuildingPlan.BURNING_SIDE
 		var other := "right" if burning == "left" else "left"
 		# **The fire and the rubble may never take the same shaft.** The collapse shuts one
 		# stairwell off the top floor outright, so a fire on that same side would leave her
@@ -1071,11 +1071,9 @@ func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t
 	for run_seed in [1, 2, 7, 99, 4242, 12345, 777, 31337, 5, 8675309]:
 		var scene := InteriorScene.new()
 		t.add_child(scene)
-		var events := InteriorEvents.new()
-		t.add_child(events)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = run_seed
-		events.setup(scene, rng)
+		var events := BuildingEvents.events_in(t, scene, rng)
 		var fire: EventInstance = null
 		for instance in events.instances():
 			if instance.def.id == "burning_building":
@@ -1158,11 +1156,9 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 
 	var man: EventInstance = null
 	for instance in events.instances():
@@ -1170,7 +1166,7 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 			man = instance
 	t.check(man != null, "a masked man is on the stairs")
 	if man:
-		var side := "right" if events.burning_side() == "left" else "left"
+		var side := "right" if BuildingPlan.BURNING_SIDE == "left" else "left"
 		var part := "stairwell_%s" % side
 		var steps := man.path
 		t.check(steps.size() > 8,
@@ -1225,7 +1221,7 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## stairwell and runs his line once she is within `masked_pursuer.charges_within` of him
 ## (`EventInstance._warn_on_its_line()`). Stepped at the game's own rhythm: the game's physics
 ## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
-## carrying body moves with the real stair steering and collision, `InteriorEvents._physics_process()`
+## carrying body moves with the real stair steering and collision, the building's `EventManager._physics_process()`
 ## tells him where she is, and the catch is checked; he moves in his own `_process()` on every drawn
 ## frame, two to a tick here (60fps). She comes in at his shaft's second-floor door and down the
 ## landing, and takes the second flight from each line a player turns onto it by. Once he runs she
@@ -1303,11 +1299,9 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false) ->
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	var man: EventInstance = null
 	for instance in events.instances():
 		if instance.def.id == "masked_pursuer":
@@ -1430,7 +1424,7 @@ func _hold_keys(actions: Array, running: bool) -> void:
 
 ## *"Then the pursuing guy should respawn forcing to switch the side again."*
 ##
-## Driven through `InteriorEvents._physics_process()` and each instance's own `_process()`, the two
+## Driven through the building's `EventManager._physics_process()` and each instance's own `_process()`, the two
 ## calls the running game makes every frame, with her standing on the lobby's door at the shaft's
 ## foot for the whole run — off his line, clear of his reach, and inside
 ## `masked_pursuer.charges_within` of where each man appears, so every man that appears notices her,
@@ -1450,12 +1444,10 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 	const STEP := 1.0 / 60.0
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
-	var part := "stairwell_%s" % ("right" if events.burning_side() == "left" else "left")
+	var events := BuildingEvents.events_in(t, scene, rng)
+	var part := "stairwell_%s" % ("right" if BuildingPlan.BURNING_SIDE == "left" else "left")
 	var plan := InteriorMap.build()
 	var her := scene.map.tile_to_world((plan.doors["%s:landing_lobby" % part] as InteriorMapPlan.Door).tile)
 
@@ -1540,11 +1532,9 @@ func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	var fire: EventInstance = null
 	for instance in events.instances():
 		if instance.def.id == "burning_building":
@@ -1640,11 +1630,9 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 	var walk := scene.map.basement_walk()
 	t.check(walk.size() > 8, "the basement is a walk from its entry to its exit (%d tiles)"
 			% walk.size())
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	var mouse: EventInstance = null
 	for instance in events.instances():
 		if instance.def.id == "alley_mouse":
@@ -1655,7 +1643,7 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 				"and stands on the basement's own corridor")
 
 	var steam := EventCatalogue.by_id("basement_steam")
-	var vents := events.vents()
+	var vents := BuildingEvents.vents(events)
 	t.check(vents.size() == Tuning.FINALE_STEAM_PERIODS.size(),
 			"the corridor has one vent per period in `Tuning` (%d)" % vents.size())
 	t.check(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS > InteriorScene.TILE * 0.5,
@@ -1665,11 +1653,11 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 	var periods := {}
 	var spacing := INF
 	for i in vents.size():
-		var vent: InteriorEvents.Vent = vents[i]
-		periods[vent.period] = true
-		var tile := scene.map.world_to_tile(vent.at)
+		var vent: EventScheduler.Planned = vents[i]
+		periods[vent.repeat_every] = true
+		var tile := scene.map.world_to_tile(vent.position)
 		t.check(walk.has(tile), "vent %d stands on the walk she has to take (%s)" % [i, tile])
-		t.check(vent.at.is_equal_approx(scene.map.tile_to_world(tile)),
+		t.check(vent.position.is_equal_approx(scene.map.tile_to_world(tile)),
 				"vent %d stands on its cell's own centre, where a one-tile passage is symmetric" % i)
 		var sideways := scene.map.is_walkable(tile + Vector2i.LEFT) \
 				or scene.map.is_walkable(tile + Vector2i.RIGHT)
@@ -1680,7 +1668,7 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 		t.check(not _basement_reaches_the_exit_without(tile),
 				"vent %d stands on a cell the walk to the exit cannot go round" % i)
 		if i > 0:
-			spacing = minf(spacing, vent.at.distance_to((vents[i - 1] as InteriorEvents.Vent).at))
+			spacing = minf(spacing, vent.position.distance_to((vents[i - 1] as EventScheduler.Planned).position))
 	t.check(periods.size() == vents.size(),
 			"and no two vents share a period, so their gaps do not line up by themselves")
 	t.check(spacing > (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0,
@@ -1720,7 +1708,7 @@ func _basement_reaches_the_exit_without(without: Vector2i) -> bool:
 	return seen.has(f.exit_tile)
 
 ## The corridor as a timing puzzle: *"have them turn off an on in different intervals"*. Driven
-## through `InteriorEvents._physics_process()` and each instance's own `_process()`, the two calls
+## through the building's `EventManager._physics_process()` and each instance's own `_process()`, the two calls
 ## the running game makes every frame, since a suite advances no clock of its own.
 ##
 ## Three contracts, and none of them is a number this test chose:
@@ -1736,11 +1724,9 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: Node) -> 
 	const WINDOW := 24.0
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	var steam := EventCatalogue.by_id("basement_steam")
 	t.check(steam.telegraph_time
 			>= (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) / Tuning.WALK_SPEED,
@@ -1774,17 +1760,17 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: Node) -> 
 		live += STEP
 	t.check(solid_before_the_notice == 0,
 			"no blow was ever solid before its notice was over (%d were)" % solid_before_the_notice)
-	t.check(blows.size() == events.vents().size(),
+	t.check(blows.size() == BuildingEvents.vents(events).size(),
 			"every vent blew inside %.0fs and nothing blew anywhere else (%d places)"
 			% [WINDOW, blows.size()])
 	var off_period := 0
 	var beats := 0
-	for vent: InteriorEvents.Vent in events.vents():
-		var times: Array = blows.get(vent.at, [])
-		t.check(times.size() >= 2, "vent at %s blew more than once (%d)" % [vent.at, times.size()])
+	for vent: EventScheduler.Planned in BuildingEvents.vents(events):
+		var times: Array = blows.get(vent.position, [])
+		t.check(times.size() >= 2, "vent at %s blew more than once (%d)" % [vent.position, times.size()])
 		for i in range(1, times.size()):
 			beats += 1
-			if absf((times[i] - times[i - 1]) - vent.period) > STEP * 2.0:
+			if absf((times[i] - times[i - 1]) - vent.repeat_every) > STEP * 2.0:
 				off_period += 1
 	t.check(beats > 0, "there were gaps between blows to measure (%d)" % beats)
 	t.check(off_period == 0, "and every one of them is that vent's own period (%d were not)"
@@ -1803,19 +1789,17 @@ func _test_a_vent_never_closes_around_her(t: Node) -> void:
 	const STEP := 1.0 / 60.0
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	var steam := EventCatalogue.by_id("basement_steam")
-	var vents := events.vents()
+	var vents := BuildingEvents.vents(events)
 	t.check(not vents.is_empty(), "there are vents to stand in")
 	if vents.is_empty():
 		events.free()
 		scene.free()
 		return
-	var inside: Vector2 = (vents[0] as InteriorEvents.Vent).at
+	var inside: Vector2 = (vents[0] as EventScheduler.Planned).position
 
 	# Driven only as far as the first blow at that vent getting past its own notice, which is the
 	# frame the contract is about: any longer and the instance under test would be a later cycle
@@ -1864,20 +1848,18 @@ func _test_a_vent_never_closes_around_her(t: Node) -> void:
 func _test_no_pocket_between_two_vents_outlasts_the_noise(t: Node) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	var steam := EventCatalogue.by_id("basement_steam")
-	var vents := events.vents()
+	var vents := BuildingEvents.vents(events)
 	var pairs := 0
 	for i in range(1, vents.size()):
-		var a: InteriorEvents.Vent = vents[i - 1]
-		var b: InteriorEvents.Vent = vents[i]
+		var a: EventScheduler.Planned = vents[i - 1]
+		var b: EventScheduler.Planned = vents[i]
 		pairs += 1
 		var shut := _longest_both_shut(a, b, steam)
-		var half := a.at.distance_to(b.at) * 0.5
+		var half := a.position.distance_to(b.position) * 0.5
 		var rate := 2.0 * Tuning.falloff(half, steam.intensity, steam.inner_radius,
 				steam.outer_radius, steam.falloff_power)
 		t.check(shut * rate < Tuning.METER_MAX,
@@ -1902,8 +1884,8 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
 	const STAND_AT := 30.0
 	var steam := EventCatalogue.by_id("basement_steam")
 	var blow := EventInstance.new()
-	# Set up before it joins the tree, the order `InteriorEvents._spawn()` uses: `_ready()` reads
-	# the def.
+	# Set up before it joins the tree, the order `EventManager._create()` uses: `_ready()` reads the
+	# def.
 	blow.setup(steam, Vector2.ZERO)
 	t.add_child(blow)
 	var cost := 0.0
@@ -1922,7 +1904,7 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
 ## The longest run of seconds during which both vents are solid at once, over the whole sequence's
 ## own clock. Sampled rather than solved: the two windows are periodic with different periods and
 ## the overlap pattern does not repeat inside the clock, so the honest answer is to walk it.
-func _longest_both_shut(a: InteriorEvents.Vent, b: InteriorEvents.Vent, steam: EventDef) -> float:
+func _longest_both_shut(a: EventScheduler.Planned, b: EventScheduler.Planned, steam: EventDef) -> float:
 	const STEP := 1.0 / 60.0
 	var longest := 0.0
 	var run := 0.0
@@ -1939,11 +1921,11 @@ func _longest_both_shut(a: InteriorEvents.Vent, b: InteriorEvents.Vent, steam: E
 ## Whether one vent's body is down at `at` seconds into the section. A vent's cycle is its notice,
 ## then `Tuning.FINALE_STEAM_BLOWS_FOR` of blowing, then nothing until its own period comes round;
 ## `until_the_next_blow` is how far into the first cycle it starts.
-func _is_shut(vent: InteriorEvents.Vent, at: float, steam: EventDef) -> bool:
-	var since := at - (vent.until_the_next_blow - vent.period)
+func _is_shut(vent: EventScheduler.Planned, at: float, steam: EventDef) -> bool:
+	var since := at - (vent.comes_in - vent.repeat_every)
 	if since < 0.0:
 		return false
-	var phase := fmod(since, vent.period)
+	var phase := fmod(since, vent.repeat_every)
 	return phase >= steam.telegraph_time \
 			and phase < steam.telegraph_time + Tuning.FINALE_STEAM_BLOWS_FOR
 
@@ -1984,34 +1966,33 @@ func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
 ##   frames' bottom-centre anchor is the grate's middle;
 ## - the grate is ground: drawn over the floor tiles and under the layer she and every blow stand
 ##   in, so she walks over it and each blow's cloud is drawn over it, never the other way round;
-## - a restart lays each vent's grate once, not a second time over the first.
+## - a restart leaves each vent's grate lying, and lays none over it.
 func _test_every_vent_has_its_grate_blowing_or_not(t: Node) -> void:
 	const STEP := 1.0 / 60.0
 	const WINDOW := 12.0
 	var grate_size := AtlasLibrary.native_size(StringName(EventInstance.STEAM_GRATE))
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
+	var grates := BuildingPlan.lay_the_grates(scene.map)
 	var ground := scene.get_node_or_null("Ground") as CanvasItem
 	t.check(ground != null, "the building has its floor tiles to lie on")
 	# She joins the same layer every blow does (`InteriorScene.add_entity()`), so a stand-in there
 	# answers where she is drawn without building the whole stroller.
 	var her := Node2D.new()
 	scene.add_entity(her)
-	t.check(events.vents().size() == Tuning.FINALE_STEAM_PERIODS.size(),
-			"the basement has its vents (%d)" % events.vents().size())
-	for vent: InteriorEvents.Vent in events.vents():
-		var grate := vent.grate
+	t.check(BuildingEvents.vents(events).size() == Tuning.FINALE_STEAM_PERIODS.size(),
+			"the basement has its vents (%d)" % BuildingEvents.vents(events).size())
+	for vent: EventScheduler.Planned in BuildingEvents.vents(events):
+		var grate := _grate_at(grates, vent.position)
 		t.check(is_instance_valid(grate) and grate.is_inside_tree(),
-				"the vent at %s has a grate lying in the building" % vent.at)
+				"the vent at %s has a grate lying in the building" % vent.position)
 		if not is_instance_valid(grate):
 			continue
-		t.check(grate.position == vent.at and grate.centered,
-				"the grate is centred on its vent's own point (%s, %s)" % [grate.position, vent.at])
+		t.check(grate.position == vent.position and grate.centered,
+				"the grate is centred on its vent's own point (%s, %s)" % [grate.position, vent.position])
 		t.check(grate.texture != null and Vector2i(grate.texture.get_size()) == grate_size,
 				"the grate is drawn with its own picture")
 		t.check(_drawn_z(grate) < _drawn_z(her),
@@ -2040,48 +2021,60 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: Node) -> void:
 			instance.player_at = far
 			blowing[instance.global_position] = instance
 			instance._process(STEP)
-		for vent: InteriorEvents.Vent in events.vents():
-			if not is_instance_valid(vent.grate) or not vent.grate.is_inside_tree():
+		for vent: EventScheduler.Planned in BuildingEvents.vents(events):
+			var grate := _grate_at(grates, vent.position)
+			if not is_instance_valid(grate) or not grate.is_inside_tree():
 				grates_missing += 1
 				continue
-			var blow: EventInstance = blowing.get(vent.at)
+			var blow: EventInstance = blowing.get(vent.position)
 			var tally: Dictionary = blowing_frames if blow else quiet_frames
-			tally[vent.at] = int(tally.get(vent.at, 0)) + 1
+			tally[vent.position] = int(tally.get(vent.position, 0)) + 1
 			if not blow or seen.has(blow.get_instance_id()):
 				continue
 			seen[blow.get_instance_id()] = true
-			if _drawn_z(blow) <= _drawn_z(vent.grate):
+			if _drawn_z(blow) <= _drawn_z(grate):
 				under_its_grate += 1
 		live += STEP
-	t.check(seen.size() > events.vents().size(),
+	t.check(seen.size() > BuildingEvents.vents(events).size(),
 			"the vents blew over %.0fs (%d blows)" % [WINDOW, seen.size()])
-	for vent: InteriorEvents.Vent in events.vents():
-		t.check(int(blowing_frames.get(vent.at, 0)) > 0 and int(quiet_frames.get(vent.at, 0)) > 0,
+	for vent: EventScheduler.Planned in BuildingEvents.vents(events):
+		t.check(int(blowing_frames.get(vent.position, 0)) > 0 and int(quiet_frames.get(vent.position, 0)) > 0,
 				"the vent at %s was seen both blowing (%d frames) and between blows (%d)"
-				% [vent.at, int(blowing_frames.get(vent.at, 0)), int(quiet_frames.get(vent.at, 0))])
+				% [vent.position, int(blowing_frames.get(vent.position, 0)), int(quiet_frames.get(vent.position, 0))])
 	t.check(grates_missing == 0,
 			"no vent was ever without its grate (%d frames were)" % grates_missing)
 	t.check(under_its_grate == 0,
 			"every blow's cloud is drawn over its grate (%d were not)" % under_its_grate)
 
-	var old_grates: Array[Sprite2D] = []
-	for vent: InteriorEvents.Vent in events.vents():
-		old_grates.append(vent.grate)
-	events.restart()
+	# The grates are the building's floor for the whole escape, laid once: a restart of the section
+	# starts its plans again and leaves the floor as it is.
+	var lying_before := _grates_lying(scene)
+	BuildingEvents.restart(events, scene)
 	var lying := 0
-	for vent: InteriorEvents.Vent in events.vents():
-		if is_instance_valid(vent.grate) and not vent.grate.is_queued_for_deletion():
-			lying += 1
-	t.check(lying == events.vents().size(),
-			"a restart lays every vent's grate again (%d of %d)" % [lying, events.vents().size()])
-	var left_over := 0
-	for grate in old_grates:
+	for grate in grates:
 		if is_instance_valid(grate) and not grate.is_queued_for_deletion():
-			left_over += 1
-	t.check(left_over == 0, "and takes the old ones up rather than laying two (%d stayed)"
-			% left_over)
+			lying += 1
+	t.check(lying == grates.size(),
+			"a restart leaves every vent's grate lying (%d of %d)" % [lying, grates.size()])
+	t.check(_grates_lying(scene) == lying_before,
+			"and lays none over them (%d grates, %d before)" % [_grates_lying(scene), lying_before])
 	events.free()
 	scene.free()
+
+## The grate lying at `at`, or null.
+func _grate_at(grates: Array[Sprite2D], at: Vector2) -> Sprite2D:
+	for grate in grates:
+		if grate.position == at:
+			return grate
+	return null
+
+## How many grates lie in the building, on any layer.
+func _grates_lying(scene: InteriorScene) -> int:
+	var count := 0
+	for node in scene.find_children("SteamGrate*", "Sprite2D", true, false):
+		if not node.is_queued_for_deletion():
+			count += 1
+	return count
 
 ## The `z_index` a canvas item is drawn at: its own, plus every parent's for as long as each is
 ## relative to the one above it. Godot keeps this sum to itself, and it is what decides whether a
@@ -2103,11 +2096,9 @@ func _drawn_z(item: CanvasItem) -> int:
 func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	t.check(not scene.windows_are_flashing(), "the windows are dark to begin with")
 	events._physics_process(Tuning.FINALE_EXPLOSION_INTERVAL)
 	t.check(scene.windows_are_flashing(), "an explosion lights the hallway windows")
@@ -2136,7 +2127,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 ##   single window cannot flash by itself.")* Checked on every frame of the minute, so an overlap
 ##   between two flashes 0.1s apart cannot leave one lit or blink the corridor dark for a frame.
 ## - **The cost, which is none.** Excitement in this building is a pure query over
-##   `InteriorEvents.instances()` — nothing writes at the baby — so "adds nothing to the meter" is
+##   the building's events' `instances()` — nothing writes at the baby — so "adds nothing to the meter" is
 ##   exactly "creates no instance", and that is asked directly rather than through an integral
 ##   that a stray source elsewhere in the building could muddy.
 ##
@@ -2147,11 +2138,9 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	const DRAWS := 4000
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	t.check(scene.window_count() > 0, "the building has hallway windows (%d)" % scene.window_count())
 
 	# The distribution, asked of the function the running game draws from.
@@ -2159,7 +2148,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	var outside := 0
 	var total := 0.0
 	for _draw in DRAWS:
-		var wait := events._wait_for_the_next_distant_flash()
+		var wait := scene._wait_for_the_next_distant_flash()
 		if wait < Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS \
 				or wait > Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS:
 			outside += 1
@@ -2179,7 +2168,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 			"and the median (%.3fs) is under it, which is the bias toward short gaps" % median)
 	print("Distant flash waits over %d draws: mean %.3fs, median %.3fs, longest %.2fs"
 			% [DRAWS, mean, median, waits[DRAWS - 1]])
-	events.restart()
+	BuildingEvents.restart(events, scene)
 
 	var flashes := 0
 	var when: Array[float] = []
@@ -2189,6 +2178,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	var at := 0.0
 	while at < SPAN:
 		events._physics_process(STEP)
+		scene._physics_process(STEP)
 		var now := scene.windows_are_flashing()
 		if now and not was:
 			when.append(at)
@@ -2212,7 +2202,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	print("Window flashes over %.0fs: %d, against %d explosions" % [SPAN, flashes, bangs])
 
 	var instances := events.instances().size()
-	events._light_the_far_windows(Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS + 0.01)
+	scene._physics_process(Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS + 0.01)
 	t.check(events.instances().size() == instances,
 			"a distant flash creates nothing, so it can charge nothing (%d instances either side)"
 			% instances)
@@ -2223,20 +2213,19 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	# The same seed, the same night: a second building flashes at the same instants.
 	var twin_scene := InteriorScene.new()
 	t.add_child(twin_scene)
-	var twin := InteriorEvents.new()
-	t.add_child(twin)
 	var twin_rng := RandomNumberGenerator.new()
 	twin_rng.seed = 4242
-	twin.setup(twin_scene, twin_rng)
-	# `restart()` reseeds the flash stream from the run seed, which is what makes this a comparison
-	# of two nights rather than of two points in one stream — the loop above is run after its own
-	# `restart()` for the same reason, since the draws taken for the distribution came first.
-	twin.restart()
+	var twin := BuildingEvents.events_in(t, twin_scene, twin_rng)
+	# A restart starts the night over from the run seed, which is what makes this a comparison of
+	# two nights rather than of two points in one stream — the loop above is run after its own
+	# restart for the same reason, since the draws taken for the distribution came first.
+	BuildingEvents.restart(twin, twin_scene)
 	var twin_when: Array[float] = []
 	var twin_was := false
 	at = 0.0
 	while at < SPAN:
 		twin._physics_process(STEP)
+		twin_scene._physics_process(STEP)
 		var now := twin_scene.windows_are_flashing()
 		if now and not twin_was:
 			twin_when.append(at)
@@ -2253,8 +2242,8 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	scene.free()
 
 ## *"The escape shouldn't behave any different than the rest of the game."* The screen-edge badge,
-## the excitement halo and the debug view read the building's `InteriorEvents` the way they read a
-## day's `EventManager` — the one question each asks being `instances()` — and none of them needs
+## the excitement halo and the debug view read the building's events the way they read a day's —
+## the building's are the day's own `EventManager` — and none of them needs
 ## a crowd. Each is driven here against the real building rather than a stand-in, so what is
 ## checked is that the masked man coming up a stairwell raises a badge, the fire she is standing
 ## beside wears a rim, and the building's walls are bodies the bounding-box layer traces.
@@ -2262,11 +2251,9 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	const STEP := 1.0 / 60.0
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	var fire: EventInstance = null
 	var man: EventInstance = null
 	for instance in events.instances():
@@ -2288,7 +2275,7 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	t.add_child(halo)
 	halo.setup(events, null, player, baby)
 	player.global_position = fire.global_position + Vector2(fire.def.inner_radius * 0.5, 0.0)
-	# Past its notice, the way `InteriorEvents` hands an explosion over: a fire still telegraphing
+	# Past its notice, the way the explosion outside comes: a fire still telegraphing
 	# emits nothing, and a rim on it would be the cue marking a thing that costs her nothing.
 	fire.resume(fire.def.telegraph_time, 0.0, INF)
 	t.check(fire.contribution_at(player.global_position) > ExcitementHalo.CONTRIBUTION_FLOOR,
@@ -2296,7 +2283,7 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	fire.accumulate_landed(20.0)
 	halo._process(STEP)
 	t.check(fire.holds_a_halo() and fire._halo._target_alpha > 0.0,
-			"the fire she is standing beside wears a rim, read from InteriorEvents with no crowd")
+			"the fire she is standing beside wears a rim, read from the building's events, no crowd")
 	t.check(not man.holds_a_halo(),
 			"and the masked man on the other shaft, charging her nothing, holds no rim at all")
 
@@ -2329,7 +2316,7 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	t.check(layers.body_outline_count() == bodies + DebugLayers.collision_nodes_under(stroller).size(),
 			"and the layer outlines every one of them, with no crowd to add a strike box")
 	t.check(layers._live().size() == events.instances().size(),
-			"its fields and shadows read the same instances InteriorEvents holds")
+			"its fields and shadows read the same instances the building's events hold")
 
 	layers.free()
 	stroller.free()

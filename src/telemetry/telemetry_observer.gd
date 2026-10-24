@@ -29,8 +29,8 @@ extends Node
 ## each: no route tree, so no `path`; no `ResistanceDirector`, so no `contact`; no `CityMap` in the
 ## building, so no `cross`, `road`, `calm` or `left` there, no trail and no dusk map, and a tile in
 ## any line is the building's own grid. The events are an
-## event source either way — `EventManager` or `InteriorEvents`, both answering `instances()` and
-## `total_excitement_at()` — so `near`, `chase`, `cue`, `freeze`, `run`, `idle`, `blocked`, `turn`,
+## event source either way — an `EventManager`, the city's or the building's, answering `instances()`
+## and `total_excitement_at()` — so `near`, `chase`, `cue`, `freeze`, `run`, `idle`, `blocked`, `turn`,
 ## `frame` and the losing line read a section exactly as they read a day.
 
 ## How far off the committed heading counts as doubling back rather than turning a corner.
@@ -125,8 +125,8 @@ var _map: CityMap
 ## runs — handed in with it (`setup()`, `watch_building()`, `watch_city()`): what every line that
 ## names a tile asks.
 var _world_map := WorldMap.open_ground()
-## The event source for the section being watched — `InteriorEvents` in the building, the city's
-## `EventManager` outside it. Null on a day, which reads `_city.events` instead; see `_source()`.
+## The event source for the section being watched — the building's `EventManager` in the building,
+## the city's outside it. Null on a day, which reads `_city.events` instead; see `_source()`.
 var _events: Node
 ## `"the building"` or `"the city"` while the escape is being watched, `""` on a day. Written into
 ## the escape's own `start`, `lost`, `home` and `woke` lines.

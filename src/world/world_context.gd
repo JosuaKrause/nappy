@@ -72,6 +72,13 @@ var _layers: WorldLayers
 
 # ------------------------------------------------------------- the player's walk ---
 
+## **Something going off outside this world's walls**, as a row from outside comes
+## (`EventDef.from_outside`, asked by `EventManager`): the world shows it the one way it can be seen
+## from inside. The building lights every window at once; a world with no walls between her and the
+## street shows nothing for it.
+func bang_outside() -> void:
+	pass
+
 ## What this world's ground does to her each frame she walks it, asked through its map
 ## (`WorldMap.process_player()`): the building's doors fade her through and its light follows the
 ## part she is in. Nothing in a world whose ground does nothing to her walk.

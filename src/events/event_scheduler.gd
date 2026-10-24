@@ -35,11 +35,38 @@ class Planned extends RefCounted:
 	## silenced the next time she comes near it — see `EventManager._stream_in()`.
 	var silenced := false
 
+	## **A plan that comes again** (`repeats()`): seconds from one of its instances coming to the
+	## next, kept on its own clock, and seconds from one being done to the next coming
+	## (`EventDef.repeat_every`, `repeat_after`, the row's unless a placement gives this plan its own,
+	## as each of the building's vents has its own period). `EventManager` keeps the clock.
+	var repeat_every := 0.0
+	var repeat_after := 0.0
+	## Seconds until this plan's instance next comes; nothing streams it in before then. 0 for a plan
+	## whose instance may be in the world now, which is every plan that does not repeat.
+	var comes_in := 0.0
+	## Whether this plan's instance is put where she stands each time it comes, rather than at
+	## `position` — the explosion outside, whose charge stands where she is wherever in the building
+	## she has got to. Its `position` is where it last came.
+	var at_her := false
+	## The age each of its instances arrives at: 0 for one that comes and gives its notice, the
+	## row's `telegraph_time` for one whose notice is already over when it comes (the explosion
+	## outside: what the windows say is that it has already happened).
+	var arrives_aged := 0.0
+	## Set the frame a wait on its last instance begins, so that frame is not counted off the wait.
+	var wait_began := false
+
 	func _init(definition: EventDef, at: Vector2,
 			route := PackedVector2Array()) -> void:
 		def = definition
 		position = at
 		path = route
+		if definition:
+			repeat_every = definition.repeat_every
+			repeat_after = definition.repeat_after
+
+	## Whether this plan's instance comes again once it is done (`repeat_every`, `repeat_after`).
+	func repeats() -> bool:
+		return repeat_every > 0.0 or repeat_after > 0.0
 
 	## The live instance, while this plan is streamed in. Owned by `EventManager`: a plan is the
 	## day's intention and the instance is the few seconds it exists for, and those are not the
@@ -398,7 +425,8 @@ static func build_finale(map: CityMap, rng: RandomNumberGenerator,
 	if slots < 0:
 		slots = Tuning.FINALE_SLOTS_PER_STREET
 	var rows := {
-		"military_convoy": _without_its_aftermath(EventCatalogue.by_id("military_convoy")),
+		"military_convoy": EventCatalogue.without_its_aftermath(
+				EventCatalogue.by_id("military_convoy")),
 		"finale_explosion": EventCatalogue.by_id("finale_explosion"),
 		"abduction": EventCatalogue.by_id("abduction"),
 		"roadblock": EventCatalogue.escape_roadblock(),
@@ -1078,22 +1106,6 @@ static func _clearance_around_her(def: EventDef) -> float:
 	if reach <= 0.0:
 		return 0.0
 	return reach + Tuning.TILE_SIZE * 0.5
-
-## A row with whatever it ordinarily leaves behind taken off it — the scar it records against the
-## run and the successor it spawns when it finishes. The convoy is the only caller: what it leaves
-## on an ordinary day is a barricade that closes that street for the rest of the run, which is a
-## statement about a city that has thirteen more mornings in it.
-##
-## A **derived copy, never a mutation**, for the reason `EventDef.at_heat()` gives: the catalogue's
-## rows are shared by every day of the run and validated once at boot. `shape` is carried across by
-## hand because it is a plain `RefCounted` field with no storage usage, so `Resource.duplicate()`
-## does not copy it; sharing the reference is safe, since a shape is never mutated in place.
-static func _without_its_aftermath(def: EventDef) -> EventDef:
-	var variant: EventDef = def.duplicate()
-	variant.shape = def.shape
-	variant.scar_id = ""
-	variant.spawns_on_finish = ""
-	return variant
 
 ## A `MAP` placement's own answer to `EventDef.pursues_within_on(day)` — a derived copy for the same
 ## reason `at_heat()`'s is one: the catalogue's rows are shared by every day of the run and validated

@@ -288,7 +288,7 @@ static func _build_lobby(f: InteriorMapPlan, origin: Vector2i) -> void:
 ## Where the corridor is one tile wide on the way to the exit, local to the basement's own origin
 ## and **in the order she meets them walking up from the entry**: the jog between bands A and B,
 ## the narrowing laid across band B, and the jog between bands B and C. A steam vent stands on each
-## (`InteriorEvents._vent_sites()`).
+## (`InteriorMapPlan.vent_sites()`).
 ##
 ## **One cloud is the whole width here, which is what the vents are for.** *(2026-09-19: "there are
 ## only two steams and they are not blocking in any way they should go in the narrow hallways.")*

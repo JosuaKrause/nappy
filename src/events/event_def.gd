@@ -339,12 +339,23 @@ func solid_reach() -> float:
 ## than a change to `Tuning.falloff` that moves all thirty of them; a row that does take it owes the
 ## same fairness contract, which is stated over distance and does not care.
 @export var falloff_power := 2.0
-## **A field no wall stops**: what lands on her from it ignores every wall between, where every
-## other field stops at the middle of one (`WorldMap.wall_between()`, plaid-wombat, inbox #554).
-## Only for a source that stands for something that has already come through the walls to reach
-## her: the explosion outside the building, whose charge stands where she is
-## (`EventInstance._walled_off()`).
-@export var heard_through_walls := false
+## **Something outside the walls of the world she is in**, which reaches her through them: what
+## lands on her from it ignores every wall between, where every other field stops at the middle of
+## one (`WorldMap.wall_between()`, plaid-wombat, inbox #554), and the moment it comes the world shows
+## it the one way a thing outside can be seen from in there (`WorldContext.bang_outside()`: the
+## building lights every window). The explosion outside the building, whose charge stands where she
+## is (`EventCatalogue.explosion_outside()`).
+@export var from_outside := false
+
+## **A planned row that comes again**, on its plan's own clock (`EventManager`): seconds from one of
+## its instances coming to the next coming, kept on the clock whatever the last one did. 0 for a row
+## that comes once. A plan may carry its own (`EventScheduler.Planned.repeat_every`), as each of the
+## basement's vents keeps its own period.
+@export var repeat_every := 0.0
+## Seconds from one of a planned row's instances being done — finished, or leaving the end of its
+## route — to the next coming: the masked man, another of whom comes up the shaft this long after
+## the last has run out of the top of it. 0 for a row that does not wait on its last one.
+@export var repeat_after := 0.0
 
 ## Seconds at full strength. 0 means it lasts the whole day.
 @export var duration := 0.0
@@ -1270,6 +1281,14 @@ func available_on(day: int) -> bool:
 ## playgrounds are on day 1 and that knowledge holds for the rest of the run — which is the
 ## whole point of a city that does not change.
 func validate() -> bool:
+	# **A row that comes again comes from a plan**: a repeat is kept on its plan's clock, and only a
+	# `MAP` row has a plan to keep it on.
+	if repeat_every < 0.0 or repeat_after < 0.0:
+		push_error("event '%s' repeats after a negative wait" % id)
+		return false
+	if (repeat_every > 0.0 or repeat_after > 0.0) and spawn_mode != SpawnMode.MAP:
+		push_error("event '%s' repeats but is not MAP-sited: only a plan can bring it again" % id)
+		return false
 	# **The body is the shape, always.** A row that draws something has a shape to draw it from,
 	# and a row whose shape claims a reach has to claim the same one `obstructs_radius` does — the
 	# two are one datum read two ways, not two numbers that happen to agree today.

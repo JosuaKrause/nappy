@@ -3,6 +3,13 @@ extends Node
 ## Owns the live events for one day: spawns them from the scheduler's plan, sums their
 ## excitement, retires them when they finish, and fires hard fails.
 ##
+## **Every world's events, the escape's building included.** It is handed the map of the world its
+## events stand in (`WorldMap`) and runs whatever plan it is given on it: a city's day it plans
+## itself (`start_day()`), and a plan handed over whole — the escape's city, the building's own
+## placements (`BuildingPlan`) — it takes as given (`start_planned()`). A world that is not the city
+## has no city to plan a day over (`setup_world()`): no director sites anything ahead of her there,
+## and a plan that comes again (`EventScheduler.Planned.repeats()`) is brought back on its own clock.
+##
 ## Lookup is a linear scan. The architecture sketch called for a spatial hash, but the
 ## budget formula tops out around 32 concurrent events on the last day — 32 distance
 ## checks per physics frame is nothing, and a hash would be more code with more ways to be
@@ -30,12 +37,22 @@ var _instances: Array[EventInstance] = []
 var _pending: Array[PendingWarning] = []
 ## Today's whole plan, sited and unsited, spent and unspent. See `EventScheduler.Planned`.
 var _plans: Array[EventScheduler.Planned] = []
+## What sites rows ahead of her on a day, over the city (`EventDirector`); none in a world with no
+## city (`setup_world()`), where nothing is sited while she walks.
 var _director: EventDirector
 var _city: City
-var _map: CityMap
+## The map of the world these events stand in (`WorldMap`): every instance is made on it, added to
+## its world through it and stopped by its walls, and its blocked record holds their bodies.
+var _map: WorldMap
+## The city's own map, for planning a day over it — its holds, its route tree, its blocks — or null
+## where the world is not the city (`setup_world()`).
+var _city_map: CityMap
 ## How every figure this manager makes moves over `_map` (`Navigator`): handed to each in
-## `_create()`, so a figure never finds its own way over the city.
+## `_create()`, so a figure never finds its own way over the world.
 var _navigator: Navigator
+## The lights a car that drives stops at, the crowd's own (`EventInstance.signals`): handed over by
+## the city; none in a world with no streets.
+var signals: TrafficSignals
 ## Where the manager, the day's planning and every instance it creates write their own account for
 ## the run log — the city's, set before `setup()`; silent until then.
 var trace := RunTrace.new()
@@ -47,9 +64,10 @@ var _hard_failed := false
 ## bag (`rolls_a_pelican()`) is the run's, not the day's, and does not read it.
 var _day := 0
 
-## True between `start_finale()` and the next `start_day()`: this walk is the escape, not a day.
-## Read by `_owe_the_return()` only — see there for why the difference matters.
-var _walking_the_finale := false
+## The walk's own settings (`DaySpec.owes_a_return`, `DaySpec.poster_pursuits`), read by
+## `_owe_the_return()` and `send_a_pursuer()`: a day's, until a walk with others starts.
+var _owes_a_return := true
+var _sends_poster_pursuits := true
 
 ## Elapsed seconds since this day started, advanced every physics frame regardless of whether
 ## anybody is near a mast. **The city's own broadcast clock** — every mast reads it, not its own
@@ -172,7 +190,7 @@ func _exit_tree() -> void:
 ## that sets the map itself.
 func _the_navigator() -> Navigator:
 	if _navigator == null or _navigator.map() != _map:
-		_navigator = Navigator.new(_map)
+		_navigator = _map.navigator()
 	return _navigator
 
 ## Hands the manager its city, the map it places on and the navigator its figures move by — the
@@ -180,10 +198,13 @@ func _the_navigator() -> Navigator:
 func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	_city = city
 	_map = map
+	_city_map = map
 	# A map a rig hands in on its own is drawn in the city it hands with it.
 	if city and not map.has_world():
 		map.world = city
-	_navigator = navigator if navigator else Navigator.new(map)
+	if city:
+		signals = city.signals
+	_navigator = navigator if navigator else map.navigator()
 	_director = EventDirector.new(map, _navigator)
 	_director.force(_forced_row, _forced_interval)
 	# **Connected once however often this is called.** `City.build()` calls `setup()` and a rig
@@ -193,22 +214,32 @@ func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	if not EventBus.return_phase_started.is_connected(_owe_the_return):
 		EventBus.return_phase_started.connect(_owe_the_return)
 
+## Hands the manager a world that is not the city — the escape's building — whose events stand on
+## `map` and move by its navigator: no city to plan a day over, no director siting anything ahead of
+## her, no lights. What runs there is the plan it is given (`start_planned()`).
+func setup_world(map: WorldMap) -> void:
+	_city = null
+	_city_map = null
+	_director = null
+	signals = null
+	_map = map
+	_navigator = map.navigator()
+
 ## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns
 ## to `RETURNING` — see that function's own doc for the shape it owes. `_day` is `start_day()`'s
 ## own argument, kept for exactly this: the signal carries nothing, so this is the one place still
 ## reading the day and the resistance level directly rather than having them threaded through.
 ##
-## **The escape owes no return, because it has no walk home.** `Baby.force_sleep()` emits this
-## signal, and the escape force-sleeps her at the top of every section and every retry — *"the
-## player holding the sleeping baby (sleep bar is full)"* — so without this guard a walk that is
-## outbound from its first frame to its last would be handed the return leg's own pressure at the
-## moment it begins, and the director's pacing would tighten to `Tuning.RETURN_PATROL_INTERVAL`
-## for the rest of it. The guard is on the day rather than on the act because it has to hold
-## whatever day the escape is eventually entered from: today the flag boots it on day 1, where
-## `RETURN_PATROLS_PER_ACT[0]` is 0 and nothing would be owed anyway, and from day 14 — the one
-## `TODO.md` item still open — act IV would owe three.
+## **A walk that owes no return is owed none** (`DaySpec.owes_a_return`, false for the escape's
+## sections, which have no walk home). `Baby.force_sleep()` emits this signal, and the escape
+## force-sleeps her at the top of every section and every retry — *"the player holding the sleeping
+## baby (sleep bar is full)"* — so without the setting a walk that is outbound from its first frame
+## to its last would be handed the return leg's own pressure at the moment it begins, and the
+## director's pacing would tighten to `Tuning.RETURN_PATROL_INTERVAL` for the rest of it. It is the
+## walk's setting rather than the act's because it has to hold whatever day the escape is entered
+## from: from day 14, act IV would owe three.
 func _owe_the_return() -> void:
-	if _walking_the_finale or _recipe_plan:
+	if not _owes_a_return or _recipe_plan or _director == null:
 		return
 	_director.owe_the_return(_day, GameState.resistance_progress)
 
@@ -239,13 +270,14 @@ var _sent_warning: PendingWarning = null
 ## ("nothing influences across them"). Which of above and below he is tried from first is a hash of
 ## the run and the tear count, not a roll.
 ##
-## **One at a time, and nothing during the escape.** A pursuit marble drawn while his warning is up
+## **One at a time, and nothing on a walk with no poster pursuits** (`DaySpec.poster_pursuits`, false
+## for the escape's sections). A pursuit marble drawn while his warning is up
 ## or while he is still after her (`a_pursuer_is_after_her()`) sends nobody more; once he has caught
 ## her, given up or run out his chase, the next marble sends the next one. *(Proposed, not asked
 ## for: the README of sandy-ferret.)* `EventBus.poster_pursuit_sent` fires only when this sends one,
 ## the moment his warning goes up, so the counter's `poster-pursuit` is one per pursuer sent.
 func send_a_pursuer() -> void:
-	if _walking_the_finale or not _find_player() or a_pursuer_is_after_her():
+	if not _sends_poster_pursuits or not _find_player() or a_pursuer_is_after_her():
 		return
 	var def := EventCatalogue.on_foot_on(_day)
 	if not def:
@@ -377,7 +409,8 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 	for bearing in bearings:
 		var at := PendingWarning.just_out_of_sight(view, def, her, bearing)
 		var tile := _map.world_to_tile(at)
-		if not _map.in_bounds(tile) or not ResistanceDirector.is_legal_ground(_map, tile, walled):
+		if not _map.in_bounds(tile) \
+				or not ResistanceDirector.is_legal_ground(_city_map, tile, walled):
 			continue
 		if not PendingWarning.is_out_of_sight(view, def, her, at):
 			continue
@@ -414,7 +447,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	_day = day
 	_encounters.day = day
 	_consumed = consumed_one_shots
-	_walking_the_finale = false
+	_use_the_settings_of(DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS))
 	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
 	# than grown again so that the walls, the friction and the picture are all stated against one
 	# tree; `RouteTree.for_day` would give the same answer, and two places agreeing by arithmetic
@@ -432,13 +465,13 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# fallback and the real thing can never disagree.
 	var tree: RouteTree = _city.route_tree() if _city else null
 	if not tree:
-		tree = RouteTree.for_day(_map, day)
+		tree = RouteTree.for_day(_city_map, day)
 	# Grown the same way `tree` was, so the two never answer for two different days — see
 	# `City._close_streets`. `_city.region_plan()` can itself be null for the same reason as
 	# `tree` above, and the explicit null check here falls through to growing one the same way.
 	var region_plan: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
 	if not region_plan:
-		region_plan = RegionPlanner.plan_day(_map, day, tree)
+		region_plan = RegionPlanner.plan_day(_city_map, day, tree)
 
 	# Held ground, before `EventScheduler.build_day` rolls a single candidate — see
 	# `CityMap.held_segments`. Closures, the region's own wall and door segments, and the
@@ -452,16 +485,16 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# `EventManager`'s, so a rig that wants them run has to run `City.start_day()` first. The
 	# wall, the doors and the home block are still held, because all three come from
 	# `region_plan` and `_map` alone.
-	_map.clear_day_holds()
+	_city_map.clear_day_holds()
 	if _city:
 		for closure in _city.closures():
-			_map.hold_segment(closure.segment.key())
+			_city_map.hold_segment(closure.segment.key())
 	for segment in region_plan.walls:
-		_map.hold_segment(segment.key())
+		_city_map.hold_segment(segment.key())
 	for segment in region_plan.doors:
-		_map.hold_segment(segment.key())
-	for segment in StreetNetwork.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
-		_map.hold_segment(segment.key())
+		_city_map.hold_segment(segment.key())
+	for segment in StreetNetwork.around_blocks(Rect2i(_city_map.home_block, Vector2i.ONE)):
+		_city_map.hold_segment(segment.key())
 
 	# Off the catalogue's own budget on purpose — see `SealPlanner`'s own doc. It seals everything
 	# `EventScheduler` was not permitted to touch: every street off `tree` (a share of them from
@@ -483,11 +516,11 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# **Planned before `build_day` now, not after.** `SealPlanner.plan_day` is a pure function of
 	# `_map`, `day`, `tree` and its own RNG stream (`GameState.day_rng(day, "seals")`, never shared
 	# with the catalogue's), so moving it earlier changes which seals a day gets not at all — only
-	# how soon `build_day` can see where they landed. `held` is `_map.held_segments` itself: a hard
+	# how soon `build_day` can see where they landed. `held` is `_city_map.held_segments` itself: a hard
 	# seal's segment is marked there as it is placed, so the catalogue never offers a candidate row
 	# that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street").
-	var seals := SealPlanner.plan_day(_map, day, tree, GameState.day_rng(day, "seals"), boundary,
-			_map.held_segments)
+	var seals := SealPlanner.plan_day(_city_map, day, tree, GameState.day_rng(day, "seals"),
+			boundary, _city_map.held_segments)
 	# Where today's doors stand, before a single candidate is rolled. `build_day` keeps
 	# `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around each of them — the ground she is let out
 	# onto, on either side — by refusing a candidate whose field or beat reaches inside it, which is
@@ -507,9 +540,9 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	var standing: Array[EventScheduler.Planned] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
-	_plans = EventScheduler.build_day(day, rng, _map, consumed_one_shots, GameState.scars,
+	_plans = EventScheduler.build_day(day, rng, _city_map, consumed_one_shots, GameState.scars,
 			GameState.settled_this_act(), tree, GameState.resistance_progress, doors,
-			ResistanceDirector.target_ground(_map, day, region_plan), standing, trace)
+			ResistanceDirector.target_ground(_city_map, day, region_plan), standing, trace)
 	_plans.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
@@ -543,7 +576,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	for plan in _plans:
 		if plan.def.sited_on_her_way and not plan.is_placed():
 			if not _siting:
-				_siting = EventScheduler.WalkSiting.new(day, _map, tree,
+				_siting = EventScheduler.WalkSiting.new(day, _city_map, tree,
 						GameState.settled_this_act(), doors)
 				# Where a crew may paste: only the city's buildings know their blank walls.
 				if _city and _city.poster_walls():
@@ -554,57 +587,74 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 			GameState.resistance_progress)
 	stream_around(focus)
 
-## Clears whatever was here and takes the escape's whole plan as given.
+## Clears whatever was here and takes a walk's whole plan as given, under `spec`'s settings
+## (`_use_the_settings_of()`) and day number, which counts her encounters (`EncounterWatch`).
 ##
-## **Everything `start_day` works out, the finale has already decided**, which is the whole of why
-## this is a second entry point rather than a flag on that one. There is no route tree to grow and
-## no region plan to place against — the finale's route is an ordered chain and not a tree — no
-## closures, and no catalogue budget: `FinalePlanner` has already asked `SealPlanner` what closes
-## the city off the chains and `EventScheduler.build_finale` what stands on them, and what arrives
-## here is the result. Trying to express that as a mode inside `start_day` would mean skipping six
-## of its seven passes.
+## **Everything `start_day` works out, the plan has already decided**, which is the whole of why
+## this is a second entry point rather than a flag on that one. The escape's city has no route tree
+## to grow and no region plan to place against — its route is an ordered chain and not a tree — no
+## closures and no catalogue budget: `FinalePlanner` has already asked `SealPlanner` what closes the
+## city off the chains and `EventScheduler.build_finale` what stands on them. The building's plan is
+## its own placements (`BuildingPlan`). What arrives here is the result.
 ##
 ## The streaming, the successors, the scars, the detentions and the hard fails are all the day's
 ## own and are untouched: an explosion leaves its crater through exactly the `spawns_on_finish`
-## mechanism a convoy leaves a barricade through. So is the page's count of her encounters
-## (`EncounterWatch`), under `counted_day`, the section's own day number (`DaySpec.number`) —
-## `GameState.day` until one is handed in.
-func start_finale(plans: Array[EventScheduler.Planned], focus := Vector2.ZERO,
-		counted_day := 0) -> void:
+## mechanism a convoy leaves a barricade through, and a plan that comes again comes on its own
+## clock (`_bring_back_what_repeats()`).
+func start_planned(spec: DaySpec, plans: Array[EventScheduler.Planned],
+		focus := Vector2.ZERO) -> void:
 	_recipe_plan = false
 	clear()
+	set_physics_process(true)
 	_hard_failed = false
 	_struck_by = ""
 	_lesson_dog_made = false
 	_day = GameState.day
-	_encounters.day = counted_day if counted_day > 0 else _day
-	_walking_the_finale = true
+	_encounters.day = spec.number
+	_use_the_settings_of(spec)
 	# Nothing is held: a hold keeps the catalogue's own roll off ground something else has taken,
 	# and nothing rolls here. Cleared rather than left, so a rig that ran a day before the escape
 	# does not leave yesterday's holds on the map.
-	_map.clear_day_holds()
+	if _city_map:
+		_city_map.clear_day_holds()
 	_siting = null
 	_plans = plans
-	# The director owes nothing — every finale placement is `MAP`-sited — but it is started anyway
+	# The director owes nothing — every such placement is `MAP`-sited — but it is started anyway
 	# so that `owed_ahead()` and its own per-day state answer for this walk rather than for
 	# whatever ran before it.
-	_director.start_day(_day, _plans, GameState.day_rng(_day, "finale-ahead"))
+	if _director:
+		_director.start_day(_day, _plans, GameState.day_rng(_day, "finale-ahead"))
 	stream_around(focus)
 
 ## Accepts only the builder's validated placements. Streaming, collisions, pursuits, event
-## successors and warnings keep their production behavior; random siting is suppressed.
+## successors and warnings keep their production behavior; random siting is suppressed. `finale`
+## gives the walk the escape's city's settings rather than a day's.
 func start_recipe(plans: Array[EventScheduler.Planned], day: int, focus: Vector2,
 		finale := false) -> void:
-	var held := _map.held_segments.duplicate()
-	start_finale(plans, focus)
-	_map.held_segments.merge(held)
+	var held := _city_map.held_segments.duplicate()
+	var spec := DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS) \
+			if finale else DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS)
+	start_planned(spec, plans, focus)
+	_city_map.held_segments.merge(held)
 	for plan in plans:
 		if plan.is_placed():
 			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 	_day = day
 	_encounters.day = day
-	_walking_the_finale = finale
 	_recipe_plan = true
+
+## Everything in this world stops, because she is not in it any more: the escape's building once
+## she has walked out of its service exit into the city. Every instance goes, its charge counted cut
+## short, and nothing comes again until a plan is started here once more (`start_planned()`).
+func stand_down() -> void:
+	clear()
+	set_physics_process(false)
+
+## The walk's own settings out of its spec: whether falling asleep owes her a return
+## (`DaySpec.owes_a_return`) and whether a torn poster sends a pursuer (`DaySpec.poster_pursuits`).
+func _use_the_settings_of(spec: DaySpec) -> void:
+	_owes_a_return = spec.owes_a_return
+	_sends_poster_pursuits = spec.poster_pursuits
 
 ## **Every charge still running ends for its counter as cut short** (`EventInstance.
 ## report_the_charge_cut_short()`): asked by `main._on_day_finished()` as a day ends, before the day's
@@ -662,7 +712,8 @@ func clear() -> void:
 func stream_around(at: Vector2) -> void:
 	var stream_out_beyond := stream_radius + Tuning.EVENT_STREAM_HYSTERESIS
 	for plan in _plans:
-		if plan.spent:
+		# A plan waiting to come again is brought back on its own clock, not by her distance.
+		if plan.spent or plan.comes_in > 0.0:
 			continue
 		var position := plan.position
 		if position == Vector2.INF:
@@ -835,7 +886,7 @@ func _record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) -
 ## whole of what makes a crash two cars to the crowd rather than a wall: the pieces are a subset of
 ## `shape` (`EventDef.validate()` refuses one reaching past it), so the change only ever *removes*
 ## tiles from the record, and removing obstruction can only add reachable ground.
-static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
+static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 		facing: Vector2) -> Array[Vector2i]:
 	var nothing: Array[Vector2i] = []
 	if not map or def == null or def.shape == null or def.obstructs_radius <= 0.0:
@@ -866,7 +917,7 @@ static func obstructed_footprint(map: CityMap, def: EventDef, at: Vector2,
 
 ## The ground-plane direction a sited body's spine lies along — `EventInstance._solid_axis()` for a
 ## body that does not exist yet, off the same two statics that instance would read.
-static func _body_axis(map: CityMap, def: EventDef, placed: Vector2, facing: Vector2) -> Vector2:
+static func _body_axis(map: WorldMap, def: EventDef, placed: Vector2, facing: Vector2) -> Vector2:
 	if def.has_a_spread or def.look == EventDef.Look.PROTEST \
 			or def.look == EventDef.Look.FIREFIGHT:
 		return Vector2.DOWN if EventInstance._spread_is_vertical(map, placed) else Vector2.RIGHT
@@ -1074,8 +1125,7 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 	if def.id == "charging_dog" and _day == Tuning.RUN_TAUGHT_DAY and not _lesson_dog_made:
 		_lesson_dog_made = true
 		instance.is_the_lesson = true
-	# The lights a car that drives stops at, the crowd's own (`EventInstance.signals`).
-	instance.signals = _city.signals
+	instance.signals = signals
 	_map.add_entity(instance)
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and
@@ -1101,7 +1151,9 @@ func _mark_the_block(scar_id: String, at: Vector2) -> void:
 	var cause: int = _CAUSES.get(scar_id, -1)
 	if cause < 0:
 		return
-	GameState.city_state.apply_cause(_map.block_plans, _map.block_at(at),
+	if not _city_map:
+		return
+	GameState.city_state.apply_cause(_city_map.block_plans, _city_map.block_at(at),
 			cause as GameEnums.BlockCause, GameState.day)
 
 ## Which scars move a block along its arc. Keyed by scar id rather than by event id, because
@@ -1180,7 +1232,7 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 		return null
 	var def := EventCatalogue.heated(EventCatalogue.by_id("loudspeaker"),
 			GameState.resistance_progress)
-	var siting := _siting if _siting else EventScheduler.WalkSiting.new(_day, _map, _day_tree,
+	var siting := _siting if _siting else EventScheduler.WalkSiting.new(_day, _city_map, _day_tree,
 			GameState.settled_this_act(), _day_doors)
 	var plan := siting.among(def, rng, _plans, offered)
 	if not plan:
@@ -1228,7 +1280,7 @@ func _task_siting() -> EventScheduler.WalkSiting:
 	if _siting:
 		return _siting
 	if not _task_siting_cache or _task_siting_tree != _day_tree:
-		_task_siting_cache = EventScheduler.WalkSiting.new(_day, _map, _day_tree,
+		_task_siting_cache = EventScheduler.WalkSiting.new(_day, _city_map, _day_tree,
 				GameState.settled_this_act(), _day_doors)
 		_task_siting_tree = _day_tree
 	return _task_siting_cache
@@ -1311,7 +1363,7 @@ func plans() -> Array[EventScheduler.Planned]:
 ## Events the day has budgeted for the director to put in front of the player and has not
 ## spent yet.
 func owed_ahead() -> int:
-	return _director.owed()
+	return _director.owed() if _director else 0
 
 func instances() -> Array[EventInstance]:
 	return _instances
@@ -1524,15 +1576,17 @@ func _physics_process(delta: float) -> void:
 func _tick_the_events(delta: float) -> void:
 	_broadcast_clock += delta
 	_retire_finished()
+	_bring_back_what_repeats(delta)
 	if _find_player():
 		# First, so everything below asks the same view of what she can see this frame.
 		_look_through_the_camera()
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
-		# would have been had the day placed it at dawn.
-		if not _recipe_plan:
+		# would have been had the day placed it at dawn. Nothing is sited in a world with no
+		# director.
+		if not _recipe_plan and _director:
 			_site_what_is_on_her_way(delta)
 		stream_around(_player.global_position)
-		if not _recipe_plan:
+		if not _recipe_plan and _director:
 			_place_what_is_owed_ahead(delta)
 		_summon_what_has_been_sighted()
 		_report_the_pelicans_in_view()
@@ -1594,7 +1648,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2,
 	if inward == Vector2i.ZERO:
 		return false
 	var along := Vector2(inward.y, inward.x)
-	var road_at := where_the_summoned_row_stops(_map, at)
+	var road_at := where_the_summoned_row_stops(_city_map, at)
 	var headings: Array[Vector2] = [along, -along]
 	if GameState.day_rng(_day, "sighted:%s" % source.id).randf() < 0.5:
 		headings.reverse()
@@ -1616,7 +1670,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2,
 ## How far the road runs from `from` along the axis-aligned `heading` before the map's edge, less
 ## half a tile — as far up its street as a summoned row may wait.
 func _road_left(from: Vector2, heading: Vector2) -> float:
-	var size := _map.world_size()
+	var size := _city_map.world_size()
 	var room := INF
 	if heading.x > 0.0:
 		room = size.x - from.x
@@ -1812,8 +1866,8 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 	if not _director.route_bag():
 		return []
 	if not _siting:
-		_siting = EventScheduler.WalkSiting.new(_day, _map, _day_tree if _day_tree \
-				else RouteTree.for_day(_map, _day), GameState.settled_this_act(), _day_doors)
+		_siting = EventScheduler.WalkSiting.new(_day, _city_map, _day_tree if _day_tree \
+				else RouteTree.for_day(_city_map, _day), GameState.settled_this_act(), _day_doors)
 		if _city and _city.poster_walls():
 			_siting.fronts = _city.poster_walls().fronts()
 	var rigged := _director.rig_her_route(ids, size, GameState.resistance_progress, _siting)
@@ -1835,7 +1889,7 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	# in the run log already name the pelican — see `rolls_a_pelican()`.
 	var pelican := rolls_a_pelican(def)
 	var where := func(at: Vector2) -> Vector2:
-		return PendingWarning.down_her_line(_map, def, at, direction, _visible)
+		return PendingWarning.down_her_line(_city_map, def, at, direction, _visible)
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path := _route_down_her_line(def, place, at, direction)
 		if path.size() < 2 or not _director.clear_of_the_doors(path, def):
@@ -1854,7 +1908,8 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 ## building, a barrier or a body; fewer than two points where it cannot set off at all.
 func _route_down_her_line(def: EventDef, place: Vector2, her: Vector2,
 		direction: Vector2) -> PackedVector2Array:
-	return _the_navigator().trim(PendingWarning.route_down_her_line(_map, place, her, direction),
+	return _the_navigator().trim(PendingWarning.route_down_her_line(_city_map, place, her,
+			direction),
 			EventInstance.mover_for(def))
 
 ## A row the director sends down her own line that does not telegraph its coming (`loose_dog`,
@@ -1864,7 +1919,7 @@ func _route_down_her_line(def: EventDef, place: Vector2, her: Vector2,
 ## Nothing is created where there is no such ground, or its route would come through a region door;
 ## the director has already spent the moment either way.
 func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
-	var place := PendingWarning.down_her_line(_map, def, her, direction, _visible)
+	var place := PendingWarning.down_her_line(_city_map, def, her, direction, _visible)
 	if place == Vector2.INF:
 		return
 	var path := _route_down_her_line(def, place, her, direction)
@@ -1887,7 +1942,7 @@ func _warn_down_her_heading(def: EventDef, her: Vector2, sited: Vector2) -> void
 	if direction == Vector2.ZERO:
 		return
 	var where := func(at: Vector2) -> Vector2:
-		return PendingWarning.along_her_heading(_map, def, at, direction, _visible)
+		return PendingWarning.along_her_heading(_city_map, def, at, direction, _visible)
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		spawn_warned(def, PackedVector2Array([place]))
 		trace.note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
@@ -2059,12 +2114,65 @@ func _retire_finished() -> void:
 func _mark_plan_spent(instance: EventInstance) -> void:
 	for plan in _plans:
 		if plan.live == instance:
+			if plan.repeats():
+				_done_for_now(plan)
+				return
 			plan.live = null
 			plan.spent = true
 			# A spent plan is a body that has left, so its ground opens again — the plan's own half
 			# of the release. See "the bodies in the street".
 			_map.release_obstruction(plan.get_instance_id())
 			return
+
+# ------------------------------------------------------------- what comes again ---
+# A plan that repeats (`EventScheduler.Planned.repeats()`) is not spent when its instance is done:
+# it waits and comes again, a fresh instance every time, so each comes, warns and runs exactly as
+# the first did. The building's vents blow on their own periods, the masked man comes up the shaft
+# again once the last has run out of the top, and the explosions outside come on theirs.
+
+## Counts every repeating plan's clock down and brings back each whose time has come: a vent its
+## period after its last blow began (`repeat_every`), the masked man his wait after the last one
+## started leaving (`repeat_after`), and one sited at her (`at_her`) where she stands now. A row from
+## outside the walls (`EventDef.from_outside`) is shown by the world as it comes
+## (`WorldContext.bang_outside()`), whether or not there is anybody for its charge to stand on.
+func _bring_back_what_repeats(delta: float) -> void:
+	for plan in _plans:
+		if plan.spent or not plan.repeats():
+			continue
+		# Its run is over when it is off the end of it, not when the instance is finally freed: a
+		# mobile row that has run out of route spends a leaving phase walking out of sight, so a wait
+		# counted from its deletion would be the stated one plus however long that took.
+		if plan.live != null and (plan.live.is_leaving or plan.live.is_finished):
+			_done_for_now(plan)
+		if plan.wait_began:
+			plan.wait_began = false
+			continue
+		plan.comes_in -= delta
+		if plan.live != null or plan.comes_in > 0.0:
+			continue
+		plan.comes_in += plan.repeat_every
+		if plan.def.from_outside and _map.has_world():
+			_map.world.bang_outside()
+		if plan.at_her:
+			if not _find_player():
+				continue
+			plan.position = _player.global_position
+		_stream_in(plan)
+
+## A repeating plan whose instance is done, made ready to come again: the instance is let go — a
+## leaving one walks on out of sight on its own, retired when it is finished — the plan's own body
+## is given back, it will start over from where every instance of it starts, and a wait on its last
+## one (`repeat_after`) begins now.
+func _done_for_now(plan: EventScheduler.Planned) -> void:
+	plan.live = null
+	_map.release_obstruction(plan.get_instance_id())
+	plan.age = plan.arrives_aged
+	plan.travelled = 0.0
+	plan.noticed_at = INF
+	plan.guard_spent = false
+	if plan.repeat_after > 0.0:
+		plan.comes_in = maxf(plan.comes_in, plan.repeat_after)
+		plan.wait_began = true
 
 ## An event that leaves something behind where it stopped — how a fire engine ends its run
 ## at a fire. The successor is placed at the finishing position, not at a planned tile, so
@@ -2655,4 +2763,4 @@ func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: 
 	_recipe_plan = false
 	_director.start_recipe_route(marbles, pre_bag, owed, first_after,
 			GameState.resistance_progress)
-	return _director.owed()
+	return _director.owed() if _director else 0

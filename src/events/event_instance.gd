@@ -817,13 +817,13 @@ const BOOM_GATE_EW_RAISED := "checkpoints/boom_gate_ew_raised"
 const STEAM := "events/steam"
 ## Its second frame: the cloud lifted and spread and a fresh puff pushing up out of the grate.
 ## Alternated off `_idle_stepping(STEAM_BILLOW_PERIOD)` for the instance's whole life, which is
-## exactly one blow — between blows `InteriorEvents` keeps no instance at all.
+## exactly one blow — between blows the vent's plan keeps no instance at all.
 const STEAM_B := "events/steam_b"
 const STEAM_BILLOW_PERIOD := 0.7
 ## The vent's floor grate, which is **not** the blow's picture: a blow is an instance that comes
 ## and goes, and a vent that is there all the time, blowing or not, is what a player can plan
-## around. So no look draws it — `InteriorEvents` lays one at every vent for the whole section,
-## through `steam_grate()`, at floor level under everything that stands, and each blow's cloud
+## around. So no look draws it — the building lays one at every vent for the whole escape
+## (`BuildingPlan.lay_the_grates()`), through `steam_grate()`, at floor level under everything that stands, and each blow's cloud
 ## rises out of it. A ground decal on its own 32×32 canvas, centred on the vent's point, which is
 ## the two cloud frames' bottom-centre anchor, so the column comes up out of the slots with no
 ## offset of its own.
@@ -2504,8 +2504,8 @@ func charger_name() -> String:
 ## (`_stop_her_if_he_has_reached_her()`), whose catch does not. Telemetry only: it sends
 ## `EventBus.pursuit_caught` and keeps `_be_done()` from also sending `pursuit_ended`, so a charge
 ## ends in exactly one of caught, shaken off, outlasted and cut short, whatever the day does
-## *(inbox #764 in minty-lemur, the player: "Charging is independent of an ended day")*. Also asked by
-## `InteriorEvents` when the masked man catches her. Nothing for a row with no charging counter
+## *(inbox #764 in minty-lemur, the player: "Charging is independent of an ended day")*. Nothing for
+## a row with no charging counter
 ## (`counts_a_charge()`) or a charge that has not begun.
 func report_the_catch() -> void:
 	if counts_a_charge():
@@ -2514,7 +2514,7 @@ func report_the_catch() -> void:
 ## **Its charge was cut short**: the day, or the escape's section, ended some other way while it
 ## was still charging — the meter reached its cap, another thing caught her, she reached home.
 ## Sends `EventBus.pursuit_cut_short` once, so that charge too ends in exactly one counted way.
-## Asked by `EventManager.end_the_charges_still_running()` and `InteriorEvents` as they end.
+## Asked by `EventManager.end_the_charges_still_running()` as a walk ends.
 ## Telemetry only.
 func report_the_charge_cut_short() -> void:
 	if counts_a_charge() and not is_finished:
@@ -4603,9 +4603,9 @@ func _contribution_at_uncached(world_position: Vector2, intensity_override: floa
 ## centre, a shaped row's middle) to her centre. *(plaid-wombat, inbox #554: "Excitement should not
 ## go through any wall".)* The map's own walls answer it, the city's buildings outdoors and the
 ## building's walls indoors; nothing is walled on open ground, and nothing for a row whose field no
-## wall stops (`EventDef.heard_through_walls`).
+## wall stops (`EventDef.from_outside`).
 func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
-	return not def.heard_through_walls and _map.wall_between(source_at, her_at)
+	return not def.from_outside and _map.wall_between(source_at, her_at)
 
 ## The map `_walled_off()` asks. Read by the debug view's fields layer too, which cuts this source's
 ## outline from its own node along the same lines (`DebugLayers.open_runs()`).
@@ -5649,7 +5649,8 @@ static func _drawn(picture: String) -> AtlasTexture:
 static func _native_size(picture: String) -> Vector2:
 	return Vector2(AtlasLibrary.native_size(StringName(picture)))
 
-## The basement vent's floor grate, for `InteriorEvents` to lay at every vent — see `STEAM_GRATE`
+## The basement vent's floor grate, for the building to lay at every vent
+## (`BuildingPlan.lay_the_grates()`) — see `STEAM_GRATE`
 ## for why no instance draws it. Fetched here rather than by name there, so the region is still
 ## named in this file with every other picture of the page.
 static func steam_grate() -> AtlasTexture:
@@ -6620,7 +6621,7 @@ var _fire_facade := PackedVector2Array()
 var _fire_facade_found := false
 
 ## Two fires share one look. **A fire with a body burns where it stands**: the finale's stairwell
-## fire (`InteriorEvents._indoor_fire()`), which is the hazard there. **A fire with none burns on
+## fire (`EventCatalogue.building_fire()`), which is the hazard there. **A fire with none burns on
 ## the facade of the building its row stands against, along the whole of it**: the street fire,
 ## *"the fire goes on the building. the challenge is the fire truck not the fire"* (PLAYTEST-144,
 ## statement 12) and *"the fire should be on the whole building not only the door"*

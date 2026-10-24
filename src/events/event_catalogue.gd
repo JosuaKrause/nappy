@@ -45,6 +45,9 @@ const MAST_BODY := 6.0
 static var _all: Array[EventDef] = []
 ## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
 static var _hot: Dictionary[String, EventDef] = {}
+## The building's two derived rows, built once. See `building_fire()` and `explosion_outside()`.
+static var _building_fire: EventDef = null
+static var _explosion_outside: EventDef = null
 
 ## Every heat level a run can reach. Progress runs 0..`RESISTANCE_GOAL`; a task completed past the
 ## goal adds nothing, because full heat is the qualification rather than the last errand. A
@@ -70,6 +73,8 @@ static func all() -> Array[EventDef]:
 			out_of_the_car(day).validate()
 			out_of_the_car(day, false).validate()
 		escape_roadblock().validate()
+		building_fire().validate()
+		explosion_outside().validate()
 	return _all
 
 ## This row at a resistance level, derived once per run and kept.
@@ -92,6 +97,60 @@ static func heated(def: EventDef, level: int) -> EventDef:
 ## `EventInstance._send_the_far_guard_off()`).
 static func escape_roadblock() -> EventDef:
 	return heated(by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+
+## **A row with the marks it leaves on a run taken off it**: the scar it records, the row it spawns
+## when it finishes and the row it calls in when it is first seen. What the escape's rows are made
+## of where the run has no mornings left for those marks to mean anything: the convoy whose
+## barricade would close a street for thirteen more days, the building's fire whose fire engine has
+## no street to come down, the explosion whose crater has no road to stand in indoors.
+##
+## A **derived copy, never a mutation**, for the reason `EventDef.at_heat()` gives: the catalogue's
+## rows are shared by every day of the run and validated once at boot. `shape` is carried across by
+## hand because it is a plain `RefCounted` field with no storage usage, so `Resource.duplicate()`
+## does not copy it; sharing the reference is safe, since a shape is never mutated in place.
+static func without_its_aftermath(def: EventDef) -> EventDef:
+	var variant: EventDef = def.duplicate()
+	variant.shape = def.shape
+	variant.scar_id = ""
+	variant.spawns_on_finish = ""
+	variant.spawns_on_sight = ""
+	return variant
+
+## **The fire in the building's stairwell**: `burning_building` without its aftermath, and the
+## whole hazard again. Outdoors the fire costs nothing and stands nothing on the sidewalk — the fire
+## engine it calls in is the danger — and neither belongs in a stairwell: there is no engine to call
+## and no frontage to burn on. So this one costs the meter while it burns and closes the shaft it
+## stands in: a 30px body (five flames spanning ±31px) that casts its shadow, 18 over the row's
+## 60–260px field, and a 3s pulse, so it breathes between a quarter of that and all of it (11.25/s
+## on average) and its flames, scaled by what it emits, roar and die back with it. The building
+## places it (`BuildingPlan`), so it is not left for her walk to site. Its id stays the row's, since
+## it is the same fire to everything that counts or logs it.
+static func building_fire() -> EventDef:
+	if _building_fire == null:
+		var variant := without_its_aftermath(by_id("burning_building"))
+		variant.solid(GroundShape.point(30.0))
+		variant.intensity = 18.0
+		variant.pulse_period = 3.0
+		variant.draws_body_shadow = true
+		variant.sited_on_her_way = false
+		_building_fire = variant
+	return _building_fire
+
+## **The explosion outside, as it reaches her inside the building**: `finale_explosion` without its
+## crater, coming every `Tuning.FINALE_EXPLOSION_INTERVAL` (`repeat_every`). Indoors there is no
+## street for it to stand on and nothing of it to see, so what it is in there is a beat: every
+## window lights (`from_outside`, `WorldContext.bang_outside()`) and the row's own field — its
+## `intensity` for its `duration` — charges her wherever she stands, since a building is not a
+## place she can walk out of the blast's way in. No wall stops it: the bang has already come through
+## them. The building places it where she is each time it comes, with its notice over, since what
+## the windows say is that it has already happened (`BuildingPlan`). Its id stays the row's.
+static func explosion_outside() -> EventDef:
+	if _explosion_outside == null:
+		var variant := without_its_aftermath(by_id("finale_explosion"))
+		variant.from_outside = true
+		variant.repeat_every = Tuning.FINALE_EXPLOSION_INTERVAL
+		_explosion_outside = variant
+	return _explosion_outside
 
 static func by_id(id: String) -> EventDef:
 	for def in all():
@@ -195,7 +254,7 @@ static func _build() -> Array[EventDef]:
 		_guardsman_giving_chase(),
 
 		# The finale — never rolled by the ordinary scheduler, placed only by `FinalePlanner` and
-		# `InteriorEvents`. See "the finale" below.
+		# the building (`BuildingPlan`). See "the finale" below.
 		_finale_explosion(),
 		_impact_crater(),
 		_masked_pursuer(),
@@ -249,7 +308,7 @@ const NEIGHBOR_RUN_SPEED := 150.0
 ## the same person in the same picture.
 ##
 ## `shape` and `solid_parts` are carried across by hand, as every copy of a row does
-## (`EventScheduler._without_its_aftermath()`): `Resource.duplicate()` does not copy a plain
+## (`EventCatalogue.without_its_aftermath()`): `Resource.duplicate()` does not copy a plain
 ## `RefCounted` field, and a copy without its shape has nothing to draw its shadow with.
 static func neighbor_heading_home() -> EventDef:
 	var row := by_id("neighbor")
@@ -870,9 +929,8 @@ static func _fire_truck() -> EventDef:
 ## _still_leaves_a_park_reachable()` treats the same disc as ground a site has to leave her a way
 ## round. The `burnt_shell` scar it leaves is the building it burned, drawn burnt from the next
 ## morning on. **The finale's own fire, inside the building on the last night, is a duplicate of
-## this row with a field and a body** (`InteriorEvents._indoor_fire()`,
-## `src/finale/interior_events.gd`), because in there the fire is the hazard and there is no truck
-## to call.
+## this row with a field and a body** (`building_fire()`), because in there the fire is the hazard
+## and there is no truck to call.
 ##
 ## **It always catches on a wall the city actually draws, since the building itself has to be shown
 ## burnt afterwards** (`City.mark_the_burnt_frontage()`, `Building.Condition.BURNT`) — *"the
@@ -3061,6 +3119,11 @@ static func _masked_pursuer() -> EventDef:
 	# accepted both (inbox #782 in minty-lemur).
 	def.charges_within = 426.0
 	def.hard_fail = true
+	# **One of him at a time, and there is always another** *(2026-09-19: "then the pursuing guy
+	# should respawn forcing to switch the side again")*: a fresh one comes up the shaft this long
+	# after the last has run out of the top of it, so every run waits, warns and runs exactly as the
+	# first did (`EventManager`'s repeats).
+	def.repeat_after = Tuning.FINALE_PURSUER_RESPAWN_SECONDS
 	return def
 
 ## Steam in the basement: *"maybe some steam in the basement etc."* A vent that blows on a timer,
@@ -3081,9 +3144,10 @@ static func _masked_pursuer() -> EventDef:
 ##
 ## **One vent is a gate; the corridor is several of them on their own clocks.** The count, the
 ## periods and how long a blow lasts are `Tuning.FINALE_STEAM_PERIODS` and
-## `Tuning.FINALE_STEAM_BLOWS_FOR`; `InteriorEvents` sites them along the basement's own walk and
-## runs their clocks. What this row owns is one blow: notice, body, field, over. Its plume billows
-## over two frames (`EventInstance.STEAM_B`) for the whole blow.
+## `Tuning.FINALE_STEAM_BLOWS_FOR`; the building sites them on the basement's narrows
+## (`BuildingPlan`), each plan coming again on its own period (`EventScheduler.Planned.
+## repeat_every`). What this row owns is one blow: notice, body, field, over. Its plume billows over
+## two frames (`EventInstance.STEAM_B`) for the whole blow.
 static func _basement_steam() -> EventDef:
 	var def := EventDef.new()
 	def.id = "basement_steam"

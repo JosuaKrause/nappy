@@ -38,8 +38,8 @@ extends Node2D
 ## shape-per-emitter decision is made, and `open_runs()` where the cut is.
 ##
 ## **The building shows what the city shows.** Nothing here needs a day: the events are an event
-## source (anything answering `instances() -> Array[EventInstance]`, which `InteriorEvents` does as
-## well as `EventManager`), the crowd may be null, and the world is any `Node2D` whose subtree holds
+## source (anything answering `instances() -> Array[EventInstance]`, which the city's
+## `EventManager` and the building's answer alike), the crowd may be null, and the world is any `Node2D` whose subtree holds
 ## the bodies — `City` or `InteriorScene`. Only the props are a city's, and a building has none.
 
 ## The falloff's own outline colour for a merely costly field — `Palette.MARK_COSTLY`, the same

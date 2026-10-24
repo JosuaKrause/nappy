@@ -15,6 +15,7 @@ extends RefCounted
 ## `Telemetry.note()` on a dormant log must cost nothing. If this fails, every one of the
 ## fourteen thousand checks below it is running a file write it did not ask for.
 
+const BuildingEvents := preload("res://tests/building_events.gd")
 func run(t) -> void:
 	_test_it_is_off_until_a_run_asks_for_it(t)
 	_test_a_line_is_a_time_a_kind_and_a_sentence(t)
@@ -272,11 +273,9 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	const STEP := 1.0 / 60.0
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	var man: EventInstance = null
 	for instance in events.instances():
 		if instance.def.id == "masked_pursuer":
@@ -296,7 +295,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 
 	Telemetry.begin_memory_log()
 	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
-	observer.watch_building(scene, events)
+	observer.watch_building(scene.map, events)
 	observer.start_section(false)
 	clock.start(180.0)
 	# One frame of every watcher a day runs, in a building with no map, no corridor, no crowd and

@@ -9,7 +9,7 @@ extends RefCounted
 ##
 ## The second tries another charge distance for his row on that run alone. Her real carrying body
 ## walks with the real stair steering and collision, and the real man is driven by
-## `InteriorEvents._physics_process()`, which tells him where she is, and his own `_process()`. It
+## the building's `EventManager._physics_process()`, which tells him where she is, and his own `_process()`. It
 ## is stepped at the game's rhythm: a 30Hz physics tick moves her, tells him where she is and checks
 ## the catch, and he moves in `_process()` on two 60fps frames between ticks. A
 ## line is `TRIGGER seed <s> <route> <pace> charged at (<local tile units>) <d>px from him,
@@ -28,6 +28,7 @@ extends RefCounted
 ## running from then on. Once he runs she makes for the first floor's door: on along the flight to
 ## the landing, then up into the door.
 
+const BuildingEvents := preload("res://tests/building_events.gd")
 const TICK := 1.0 / 30.0
 ## Drawn frames between ticks: 2 is 60fps. `FRAMES_PER_TICK=4` (120fps) or `5` (150fps) in the
 ## environment steps him on more, shorter frames.
@@ -54,11 +55,9 @@ func _once(t, s: int, route: String, pace: String) -> void:
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = s
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	var man: EventInstance = null
 	for instance in events.instances():
 		if instance.def.id == "masked_pursuer":

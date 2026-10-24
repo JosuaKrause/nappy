@@ -9,6 +9,7 @@ extends RefCounted
 ## caret's projection) agreeing, the escape's building stopping it at its own walls, and the debug
 ## view's fields layer cut where the meter receives nothing.
 
+const BuildingEvents := preload("res://tests/building_events.gd")
 const _SIZE := float(Tuning.TILE_SIZE)
 
 ## Lines whose two directions answered differently, checked once every hand-built case has run.
@@ -387,9 +388,9 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t) -> void:
 		car.free()
 
 ## **Indoors too.** *(plaid-wombat, inbox #554: "Excitement should not go through **any** wall".)*
-## The escape's building has no `CityMap`, so `InteriorEvents` hands every source its own walls
-## (`InteriorScene.wall_grid()`, the plan's walkability as a grid `CityMap.wall_between()` answers)
-## and they stop a field at the depths a city's buildings do. The masked man is stood on every tile
+## Every source in the escape's building stands on the building's map (`InteriorMapPlan`), open
+## where she may stand, and its walls stop a field at the depths a city's buildings do
+## (`WorldMap.wall_between()`). The masked man is stood on every tile
 ## of his own shaft's walk and asked at every walkable point of it within his reach: nothing where
 ## the grid walls the line, the field itself everywhere else; the guard counts the points a field
 ## reached and a wall stopped, which is what the solid between two flights does to him. The
@@ -398,18 +399,16 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t) -> void:
 func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var events := InteriorEvents.new()
-	t.add_child(events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	events.setup(scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng)
 	var grid := scene.map
 	var disagreed := 0
 	for y in range(-2, grid.size.y + 2):
 		for x in range(-2, grid.size.x + 2):
-			if grid.is_walkable(Vector2i(x, y)) != scene.map.is_walkable(Vector2i(x, y)):
+			if grid._open(x, y) != grid.is_walkable(Vector2i(x, y)):
 				disagreed += 1
-	t.check(disagreed == 0, "the wall grid is open exactly where she may stand (%d tiles were not)"
+	t.check(disagreed == 0, "the map's walls are open exactly where she may stand (%d tiles were not)"
 			% disagreed)
 
 	var man: EventInstance = null
@@ -468,7 +467,7 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	player.add_to_group("player")
 	t.add_child(player)
 	player.global_position = stands
-	events._explode_every_so_often(Tuning.FINALE_EXPLOSION_INTERVAL)
+	events._physics_process(Tuning.FINALE_EXPLOSION_INTERVAL)
 	var burst: EventInstance = null
 	for instance in events.instances():
 		if instance.def.id == "finale_explosion":

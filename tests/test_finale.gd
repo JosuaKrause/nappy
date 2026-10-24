@@ -1452,7 +1452,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 	var road := city.map.tiles_of_type(GameEnums.TileType.ROAD)[0]
 	var plans: Array[EventScheduler.Planned] = [
 		EventScheduler.Planned.new(burst, city.map.tile_to_world(road))]
-	city.events.start_finale(plans)
+	city.events.start_planned(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS), plans)
 	t.check(city.events.instances().size() == 1, "the burst is in the world")
 	var live := city.events.instances()[0]
 	var steps := 0
@@ -1749,7 +1749,8 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 	city.events.setup(city, city.map)
 	var was_the_day := GameState.day
 	GameState.day = an_act_iv_day
-	city.events.start_finale([] as Array[EventScheduler.Planned])
+	city.events.start_planned(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS),
+			[] as Array[EventScheduler.Planned])
 	EventBus.return_phase_started.emit()
 	t.check(city.events.owed_ahead() == 0,
 			"and the escape owes nothing to a return it does not have (got %d)"

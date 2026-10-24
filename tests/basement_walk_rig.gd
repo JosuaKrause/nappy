@@ -4,8 +4,8 @@ extends RefCounted
 ## basement costs, and `tests/probes/basement_meter.gd`, which prints the table.
 ##
 ## **What is real and what is stood in for.** The vents, their clocks, the blows and the field each
-## blow charges her with are `InteriorEvents` and `EventInstance` themselves, ticked the way the
-## game ticks them; the corridor is `InteriorScene.basement_walk()`; the decay is the baby's own
+## blow charges her with are the building's own plans on the day's `EventManager` and
+## `EventInstance` themselves, ticked the way the game ticks them; the corridor is `InteriorScene.basement_walk()`; the decay is the baby's own
 ## rule (`Baby.decay_rate()`: `Tuning.EXCITEMENT_DECAY_WALKING` times the scene's
 ## `decay_multiplier()` while she walks, `EXCITEMENT_DECAY_IDLE` while she waits) and the
 ## sensitivity is `Tuning.SLEEPING_SENSITIVITY` asleep. Her body is a point moving at
@@ -23,18 +23,18 @@ const STEP := 1.0 / 60.0
 const HELD_OUT := 30.0
 const GIVE_UP_SECONDS := 240.0
 
+const BuildingEvents := preload("res://tests/building_events.gd")
+
 var _scene: InteriorScene
-var _events: InteriorEvents
+var _events: EventManager
 var _points := PackedVector2Array()
 
 func _init(t: Node) -> void:
 	_scene = InteriorScene.new()
 	t.add_child(_scene)
-	_events = InteriorEvents.new()
-	t.add_child(_events)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	_events.setup(_scene, rng)
+	_events = BuildingEvents.events_in(t, _scene, rng)
 	for tile in _scene.map.basement_walk():
 		_points.append(_scene.map.tile_to_world(tile))
 
@@ -48,7 +48,7 @@ func free_rig() -> void:
 ## reached `Tuning.METER_MAX`, so the section is lost), `held` (the vents that stopped her, in the
 ## order she meets them), `seconds` and `finished` (she reached the exit).
 func walk(arrival: float, delay: float, asleep: bool) -> Dictionary:
-	_events.restart()
+	BuildingEvents.restart(_events, _scene)
 	var far := Vector2(1.0e6, 1.0e6)
 	var time := 0.0
 	while time < arrival:
@@ -88,11 +88,11 @@ func walk(arrival: float, delay: float, asleep: bool) -> Dictionary:
 ## The vent whose body is down within `HELD_OUT` of where this step would put her, and nearer than
 ## she is now, or -1.
 func _held_by(pos: Vector2, candidate: Vector2) -> int:
-	var vents := _events.vents()
+	var vents := BuildingEvents.vents(_events)
 	for i in vents.size():
-		var vent: InteriorEvents.Vent = vents[i]
-		var there := candidate.distance_to(vent.at)
-		if there >= HELD_OUT or there >= pos.distance_to(vent.at):
+		var vent: EventScheduler.Planned = vents[i]
+		var there := candidate.distance_to(vent.position)
+		if there >= HELD_OUT or there >= pos.distance_to(vent.position):
 			continue
 		var blow := _blow_at(vent)
 		if blow != null and blow.is_solid():
@@ -100,18 +100,20 @@ func _held_by(pos: Vector2, candidate: Vector2) -> int:
 	return -1
 
 ## The blow standing at a vent right now, or null between blows.
-func _blow_at(vent: InteriorEvents.Vent) -> EventInstance:
+func _blow_at(vent: EventScheduler.Planned) -> EventInstance:
 	for instance in _events.instances():
 		if instance.def.id == "basement_steam" and not instance.is_finished \
-				and instance.global_position.distance_to(vent.at) < 1.0:
+				and instance.global_position.distance_to(vent.position) < 1.0:
 			return instance
 	return null
 
 ## One frame of the vents alone (the fire, the bangs and the masked man are not ticked); what the
-## blows charge at `at`, per second.
+## blows charge at `at`, per second. The manager's own repeats bring the blows on their clocks; with
+## no player in the rig the bangs outside charge nothing, and the masked man, never ticked, never
+## runs out of the shaft to come again.
 func _tick(at: Vector2, awake: bool) -> float:
 	_events._retire_finished()
-	_events._blow_the_vents(STEP)
+	_events._bring_back_what_repeats(STEP)
 	var incoming := 0.0
 	for instance in _events.instances():
 		if instance.def.id != "basement_steam":

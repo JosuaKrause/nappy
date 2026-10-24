@@ -324,6 +324,65 @@ func windows_lit() -> int:
 func window_count() -> int:
 	return _window_sprites.size()
 
+## **A bang outside** (`WorldContext.bang_outside()`): the explosion outside, as the day's events
+## bring it, lights every window at once.
+func bang_outside() -> void:
+	flash_windows()
+
+# ------------------------------------------------------------------ the night ---
+# *(2026-09-19: "the flashing lights in the window are too rare.")* Between the bangs she is charged
+# for, something goes off far enough away that only the light reaches her: a picture and nothing
+# else. No event, no field, nothing on the meter — which is why it is not simply a shorter
+# `Tuning.FINALE_EXPLOSION_INTERVAL`: the player asked for the light and said nothing about the
+# noise, and an explosion is loud by definition. The same call a near bang makes, so every window
+# lights together and goes dark together; what separates the far flashes from the near ones is how
+# often they happen and what they cost, never which windows they reach. Nothing is logged for one:
+# the run log records what the code cannot recompute, and the loud bangs are visible in it through
+# what they charge.
+
+## Seconds until the next distant flash, and the stream the waits are drawn from. **Its own stream,
+## seeded from the run's**, so a seed replays the same night and no draw here can move a placement.
+var _until_the_next_distant_flash := 0.0
+var _flashes := RandomNumberGenerator.new()
+var _night_running := false
+
+## Starts the night over, its waits drawn from `seed` — the same seed the building's placements are
+## drawn from (`BuildingPlan.plan()`), on a stream of its own. Called on every entry into the
+## building's section, fresh or retried, so a retry is the same night again.
+func start_the_night(seed: int) -> void:
+	_flashes.seed = seed
+	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
+	_night_running = true
+
+## Stops the night, because she is not in the building any more: she has walked out of the service
+## exit. Without this the windows of a building nobody is in would go on flashing to an empty map.
+func stop_the_night() -> void:
+	_night_running = false
+
+## Counted on the physics tick, as everything that keeps the game's time does, so it freezes behind
+## a pause screen.
+func _physics_process(delta: float) -> void:
+	if not _night_running:
+		return
+	_until_the_next_distant_flash -= delta
+	if _until_the_next_distant_flash > 0.0:
+		return
+	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
+	flash_windows()
+
+## How long until the next one: a scaled Kumaraswamy draw, short-biased and smooth, bounded by
+## `Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape
+## constant — see that constant's own doc for the formula and for why `B` is not a number to edit by
+## feel. **Its inverse CDF is closed form**, which is why this is one expression and not a rejection
+## loop: a loop would draw a variable number of values from the stream and make how many times the
+## windows flash depend on how many times the dice were rolled, so a seed would stop replaying the
+## same night.
+func _wait_for_the_next_distant_flash() -> float:
+	var u := _flashes.randf()
+	var span := Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS - Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS
+	return Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS \
+			+ span * sqrt(1.0 - pow(1.0 - u, 1.0 / Tuning.FINALE_DISTANT_FLASH_SHAPE_B))
+
 func _process(delta: float) -> void:
 	if _window_flash_left <= 0.0:
 		return
@@ -479,14 +538,13 @@ func _layer_node(layer: int, name: String, y_sorted := false) -> Node2D:
 	return layers().hold(layer, node, y_sorted)
 
 # ------------------------------------------------------------------ the meters ---
-# `InteriorScene` is a `WorldContext`, so the baby asks it how loud it is here. With nothing in the
-# building the base class's own defaults are already the right answer — 1.0 recovery everywhere and
-# nothing charging excitement — and the escape's own events are what make them say otherwise.
+# `InteriorScene` is a `WorldContext`, so the baby asks it how loud it is here: its events' sum, and
+# the basement's decay.
 
-## The events inside the building, or null while the building is walked empty. The same
-## relationship `City` has to its own `EventManager`: the world holds the events and the events
-## hold the world, because an event has to be added to the scene it stands in.
-var events: InteriorEvents = null
+## The events inside the building — the day's `EventManager`, handed the building's map — or null
+## while the building is walked empty. The same relationship `City` has to its own: the world sums
+## the events it is handed.
+var events: EventManager = null
 
 ## **The basement gives nothing back**: the meter does not fall while she is in it, awake or asleep
 ## (`Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`), so what a vent charges her with stays until she

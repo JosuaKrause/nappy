@@ -1021,7 +1021,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 ## **The finale's route is not a tree**, so there is nothing here for `RouteTree` to grow and
 ## nothing for `ClosurePlanner` or `RegionPlanner` to be stated against — one ordered chain to each
 ## edge, with everything off it sealed, is `FinalePlanner`'s and `SealPlanner`'s work and arrives
-## through `EventManager.start_finale()` instead. `route_tree()` and `region_plan()` therefore
+## through `EventManager.start_planned()` instead. `route_tree()` and `region_plan()` therefore
 ## answer `null` for the whole sequence and `closures()` is empty, which is what their own
 ## contract already says about a `City` whose `start_day` has not run: *only meaningful after
 ## `start_day`*.

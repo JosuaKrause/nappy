@@ -68,7 +68,7 @@ var waypoints: Dictionary = {}
 ## Where the basement corridor is one tile wide on the way to the exit, in the order she meets them
 ## walking up from the entry — see `InteriorMap.BASEMENT_NARROWS` for which they are and why the
 ## entry stair is not among them. A gate stands on each; the layout says where a gate *can* stand
-## and `InteriorEvents` decides what stands there.
+## and the building's placements decide what stands there (`BuildingPlan`).
 var corridor_narrows: Array[Vector2i] = []
 ## The cells the fallen ceiling fills, as one tile rect — floor that is painted and drawn over but
 ## cannot be stood on. Its own field rather than a tile kind, because what is underneath a heap is
@@ -368,6 +368,27 @@ func stairwell_walk(part_id: String) -> Array[Vector2i]:
 ## `corridor_narrows`, what the layout laid rather than whatever the geometry happens to offer.
 func basement_narrows() -> Array[Vector2i]:
 	return corridor_narrows
+
+## **Where the basement's vents stand**: each of the corridor's one-tile-wide cells
+## (`basement_narrows()`), at its centre, in the order she meets them. A vent closes the corridor
+## because of where it stands, not because of how wide it is (`EventCatalogue.STEAM_VENT_BODY`): the
+## one place a 32px cloud is the whole width is a passage one tile across, where her centre has 16px
+## of play either side of the middle and a blow holds it 30px out (2026-09-19: "they should go in the
+## narrow hallways"). The cells are the layout's, so the gates are in the same places every attempt
+## — *"multiple fixed locations"* — and each is checked against the corridor's own walk, because a
+## gate she can go round is not a gate and nothing else would notice the layout and the walk
+## disagreeing. Empty, with the error said, where one is not on the walk.
+func vent_sites() -> Array[Vector2]:
+	var found: Array[Vector2] = []
+	var on_the_walk := {}
+	for tile in basement_walk():
+		on_the_walk[tile] = true
+	for tile in basement_narrows():
+		if not on_the_walk.has(tile):
+			push_error("the steam vent at %s is not on the basement's own walk" % tile)
+			return []
+		found.append(tile_to_world(tile))
+	return found
 
 ## The basement's corridor, entry to exit, tile by tile. The corridor has no branches, so its
 ## shortest walk *is* the corridor, and anything sited a fraction of the way along it stands

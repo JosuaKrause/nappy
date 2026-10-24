@@ -987,7 +987,7 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 	if def.id == "roadblock":
 		def = EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL)
 	elif def.id == "military_convoy":
-		def = EventScheduler._without_its_aftermath(def)
+		def = EventCatalogue.without_its_aftermath(def)
 	var map := _city.map
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):

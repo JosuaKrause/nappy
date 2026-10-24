@@ -162,7 +162,7 @@ func _test_hard_fail_loses_with_a_reason(t) -> void:
 	_teardown()
 
 ## The escape's own catch — `EventBus.hard_fail_triggered` is the same signal a day's own lethal
-## rows fire (`InteriorEvents._check_hard_fails()`), so this table has to carry it too, or losing
+## rows fire (`EventManager._check_hard_fails()`, the building's as a day's), so this table has to carry it too, or losing
 ## the section on the stairs falls back to the generic "It went wrong." the table's own default
 ## reads whenever an id has no line.
 func _test_the_masked_pursuer_has_its_own_hard_fail_line(t) -> void:

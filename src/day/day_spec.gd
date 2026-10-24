@@ -63,6 +63,16 @@ var daylight_runs_down := true
 ## blackout.
 var dark_from_the_start := false
 
+# --------------------------------------------------------------- what is on it ---
+
+## Whether falling asleep owes her a walk home, and with it the return leg's own pressure on the
+## events (`EventManager._owe_the_return()`): every day's does. A section is outbound from its first
+## frame to its last, and the baby is put to sleep at the top of each attempt, so it owes none.
+var owes_a_return := true
+## Whether a torn poster sends a pursuer on foot at her (`EventManager.send_a_pursuer()`): on every
+## day, and never in the escape.
+var poster_pursuits := true
+
 # --------------------------------------------------------------- what it costs ---
 
 ## Whether a normal run spends a Nerve on a loss. A hard run always does. The escape's sections
@@ -111,6 +121,8 @@ static func for_section(which: int, section_length: float, section_title := "") 
 	spec.a_loss_gives_back_the_attempt = false
 	spec.a_win_gives_a_nerve_back = false
 	spec.saved_as_under_way = false
+	spec.owes_a_return = false
+	spec.poster_pursuits = false
 	if which == Section.BUILDING:
 		spec.number = BUILDING_DAY
 		spec.world = World.BUILDING

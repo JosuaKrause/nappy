@@ -157,9 +157,13 @@ var _interior: InteriorScene
 ## Handed to `_day` as each one starts, and what everything here that differs between a day and a
 ## section reads, rather than a global "are we in the escape". An ordinary day until one starts.
 var _spec := DaySpec.new()
-## The events inside the building — mice, the pursuers, the fire, the steam and the off-screen
-## explosions — hosted on the interior map, since `InteriorScene` has no `EventManager`.
-var _interior_events: InteriorEvents
+## The events inside the building — the fire, the masked man, the mouse, the steam and the
+## explosions outside — run by the day's own `EventManager` on the building's map, from the
+## building's own placements (`BuildingPlan`).
+var _building_events: EventManager
+## The seed the building's placements and its night are drawn from, once a boot
+## (`GameState.day_rng(day, "finale-interior")`), so every attempt is the same building.
+var _building_seed := 0
 var _player: Stroller
 var _baby: Baby
 var _day: DayController
@@ -899,16 +903,22 @@ func _build_the_escape_building() -> void:
 	_baby = _player.get_node("Baby")
 	_put_her_in(_interior.map)
 
-	_interior_events = InteriorEvents.new()
-	_interior_events.name = "InteriorEvents"
-	_interior_events.skip_drawing = config.skip_events
-	_interior_events.trace = _the_trace()
-	add_child(_interior_events)
-	_pauses_with_the_game(_interior_events)
-	_interior_events.setup(_interior, GameState.day_rng(GameState.day, "finale-interior"))
-	# The building shows what the city shows: the same badge, halo and debug view, reading
-	# `InteriorEvents` where a day reads `EventManager` — see `_event_source()`. The city's own
-	# build calls the same three again when she walks out, which points them at the street.
+	# The building's events are the day's own manager, handed the building's map: no city, and the
+	# whole plan in the world at once, since the building is walked part by part through doors.
+	_building_events = EventManager.new()
+	_building_events.name = "BuildingEvents"
+	_building_events.skip_drawing = config.skip_events
+	_building_events.trace = _the_trace()
+	_building_events.stream_radius = INF
+	add_child(_building_events)
+	_pauses_with_the_game(_building_events)
+	_building_events.setup_world(_interior.map)
+	_interior.events = _building_events
+	_building_seed = GameState.day_rng(GameState.day, "finale-interior").randi()
+	BuildingPlan.lay_the_grates(_interior.map)
+	# The building shows what the city shows: the same badge, halo and debug view, reading its
+	# events as a day reads the city's — see `_event_source()`. The city's own build calls the same
+	# three again when she walks out, which points them at the street.
 	_add_danger_edge()
 	_add_excitement_halo()
 	_add_debug_layers()
@@ -919,7 +929,7 @@ func _build_the_escape_building() -> void:
 ## parks and the two exits are the ones she has walked for fourteen days. What is different is
 ## everything laid *on* it: `City.start_finale()` dresses the blocks without growing a day's route
 ## tree, closures or region wall; the crowd is cleared and never started, since *"no regular cars
-## or regular people on the street"*; and `EventManager.start_finale()` takes this scene's own plan
+## or regular people on the street"*; and `EventManager.start_planned()` takes this scene's own plan
 ## instead of the catalogue's day. It is dark from its first frame and stays at night, as the
 ## section's `DaySpec` says.
 func _build_the_finale_city() -> void:
@@ -985,7 +995,7 @@ func _plan_the_finale_city() -> void:
 		return
 	var elapsed := Time.get_ticks_msec()
 	var plan := FinalePlanner.plan(_city.map, GameState.day_rng(GameState.day, "finale"))
-	_city.events.start_finale(plan.placements, _finale_start_position(), _spec.number)
+	_city.events.start_planned(_spec, plan.placements, _finale_start_position())
 	# The streets the chains run through carry the route's kerb tint, as a day's corridor does.
 	_city.tint_the_escape_route(plan.open_streets)
 	# Printed as well as logged, for the same reason `_start_day()` prints the day it just built:
@@ -1060,16 +1070,19 @@ func _start_section(spec: DaySpec, restarted: bool) -> void:
 		if not restarted:
 			start_at = _interior.part_world_position(_escape_start_part())
 		_player.reset_at(start_at, Vector2.UP)
-		if _interior_events:
-			_interior_events.restart()
+		_building_events.start_planned(spec, BuildingPlan.plan(_interior.map, _building_seed),
+				start_at)
+		_interior.start_the_night(_building_seed)
 	else:
 		# The building is behind her and nobody is in it, so its own events stop rather than
 		# playing on to an empty map — the vents, the window flashes and the masked man who comes
 		# up the shaft every few seconds would otherwise run for the rest of the sequence, unseen
-		# and in the log. `InteriorEvents.restart()` is what starts them again, and section one is
-		# never entered without it.
-		if _interior_events:
-			_interior_events.stand_down()
+		# and in the log. Starting the building's plan again is what brings them back, and section
+		# one is never entered without it.
+		if _building_events:
+			_building_events.stand_down()
+		if _interior:
+			_interior.stop_the_night()
 		# A restart of section two replans it: see `_plan_the_finale_city()`.
 		if restarted:
 			_plan_the_finale_city()
@@ -1080,7 +1093,7 @@ func _start_section(spec: DaySpec, restarted: bool) -> void:
 	_baby.force_sleep()
 	_day.start(spec.length)
 	if spec.world == DaySpec.World.BUILDING:
-		EventBus.escape_section_started.emit(spec.section, restarted, _interior, _interior_events)
+		EventBus.escape_section_started.emit(spec.section, restarted, _interior, _building_events)
 	else:
 		EventBus.escape_section_started.emit(spec.section, restarted, _city, _city.events)
 	EventBus.day_planned.emit(spec.number)
@@ -1335,8 +1348,8 @@ func _engage_the_day() -> void:
 ## every frame, and the HUD's rule is that it listens to `EventBus` and holds no reference to
 ## the world. Bending that for one indicator would cost more than the node does.
 ##
-## **One badge for every world.** It reads `_event_source()`, which is the building's
-## `InteriorEvents` in the escape's first section and a `City`'s `EventManager` everywhere else, so
+## **One badge for every world.** It reads `_event_source()`, which is the building's events in the
+## escape's first section and a `City`'s everywhere else, so
 ## a second call — the escape walking out of the service door — points the same badge at the city
 ## rather than building a second layer over the first.
 func _add_danger_edge() -> void:
@@ -1371,7 +1384,7 @@ func _add_danger_edge() -> void:
 ## it reads is moving either, so freezing alongside the world it draws needs no case of its own.
 ##
 ## Called once per world the same way `_add_danger_edge()` is: in the escape's building it reads
-## `InteriorEvents` and no crowd, and walking out of the service door points it at the city.
+## the building's events and no crowd, and walking out of the service door points it at the city.
 func _add_excitement_halo() -> void:
 	if _halo:
 		_halo.setup(_event_source(), _crowd_now(), _player, _baby)
@@ -1383,15 +1396,14 @@ func _add_excitement_halo() -> void:
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
 
-## What the badge, the halo, the debug view and the readout read the world's events from: the
-## building's `InteriorEvents` while the escape's first section is the only world there is, and a
-## `City`'s own `EventManager` once there is a city — a day's, or the escape's second section,
-## which the building never comes back after. Both answer `instances()`, which is all any of the
-## readers asks.
-func _event_source() -> Node:
+## What the badge, the halo, the debug view, the readout and the loss's cause read the world's events
+## from: the building's while the escape's first section is the only world there is, and a `City`'s
+## once there is a city — a day's, or the escape's second section, which the building never comes
+## back after. Each is an `EventManager`.
+func _event_source() -> EventManager:
 	if _city:
 		return _city.events
-	return _interior_events
+	return _building_events
 
 ## The crowd, or null in the escape's building, which has nobody in it but its events.
 func _crowd_now() -> Crowd:
@@ -2059,7 +2071,8 @@ static func _group_what_events_landed(instances: Array[EventInstance], by_group:
 func _loss_cause(result: GameEnums.DayResult) -> String:
 	match result:
 		GameEnums.DayResult.LOST_HARD_FAIL:
-			var struck_by := _city.events.what_struck_her() if _city and _city.events else ""
+			var source := _event_source()
+			var struck_by := source.what_struck_her() if source else ""
 			return _hard_fail_cause_suffix(_day.hard_fail_reason, struck_by)
 		GameEnums.DayResult.LOST_CRYING:
 			return _crying_cause_suffix(_crying_landed_by_group())
