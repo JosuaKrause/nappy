@@ -43,13 +43,31 @@ spread row with no body falls back to 11px either side of its middle (no such ro
 ahead of their event in the tree, so its caret stays on top of its own picture. The row field is a
 plain flag, so the event data names no world type.
 
-**Left:** the café's, the protest's and the firefight's ranks are not sliced, since the café draws
-every sitter before every table and slicing it changes its look; the three wide scenes (fallen tree,
-car accident, burst water main) are each one authored picture; the cordon tape is `ParkCordon`'s,
-which `world-passability.md` holds.
+**Also built, after the first review (PR #825):** every long picture the item names goes through the
+one helper. The protest is one slice per protester at his feet and the firefight one per gunman; the
+fallen tree, the car accident and the burst water main are one slice per tile of the run, each
+drawing its own band of the authored picture (a cropped draw for the tree, a clipped `EventScenery`
+for the other two, through a source rect on `SceneryLayer`), the shadow going down whole with the
+first; day 12's cordon tape places each stretch through the helper, its positions unchanged; and the
+café is one slice per table and its sitter, so sitters and tables interleave, which the player
+accepted (inbox #827). Once the escape's city is built, `InteriorScene.put_the_pictures_away()`
+hides the building's floor and layer nodes, keeping its `FadeLayer` for `clear_fade()`: the
+building's door pictures would otherwise draw over the city's buildings, and 15 of its walls and 11
+of its doors already stood on walkable city tiles over the city's ground. The z scan also catches a
+setter or the property named in a string, and a test frees one event while its world stays and
+finds no slice left.
 
-**For the remeasuring step:** a spread running down the screen sorts slice by slice against her and
-every figure, where it sorted at its middle (its shadow and far end cap go with the far slice); in
-the escape's city section the halo draws over the buildings, the debug view over the tunnel's dark,
-and the building's doors over the city's buildings wherever the building still shows under the
-city; pictures of a vertical spread with her beside it, and of the escape city's halo.
+**A limit of slicing an authored picture, open to overturn:** the bands are cut by screen rows, so
+an upright part standing over nearer ground (a tree's crown, the water main's fountain on an
+east-west street) sorts with the farther band its rows fall in and is drawn under a figure standing
+on the nearer band; only spans authored into the picture could tell an upright part from the ground
+behind it.
+
+**For the remeasuring step:** end-on spreads (roadworks, the stall, the barricade, scaffolding,
+the collapsed frontage, the roadblock's band on a north-south street) sort slice by slice against
+her, their shadow and far end cap going with the far slice; the café's tables and sitters
+interleave and sort table by table; the protest sorts protester by protester, back rank behind the
+front; the wide scenes on an east-west street sort band by band, with the limit above and their
+band joins to be checked by eye for seams; in the escape's city section the building is no longer
+drawn at all, the halo draws over the buildings, and the debug view over the tunnel's dark and the
+warning guard (debug builds only). Pictures of each.
