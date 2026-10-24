@@ -21,8 +21,10 @@ extends RefCounted
 ##   stops her. Laying the walk first is what keeps the close on time: the close is timed and each
 ##   taper paced over the walk he will take, detours included. Where a solid cuts the sidewalk and
 ##   the street from the park's edge outward, a taper cuts along the park's own edge row, and a
-##   stretch any officer still has to step on is taped once nobody does, while its taper walks on:
-##   **no officer ever waits for another** (`_tape_what_he_can()`).
+##   stretch any officer still has to step on is taped once nobody does, while its taper walks on
+##   (`_tape_what_he_can()`): **a taper never waits for a taper and an escort never waits for a
+##   taper**, so no wait between officers can come round in a cycle. A taper does stand for an
+##   escort beside the stretch he is about to tape, as for her and the park's people.
 ## - **They tape the edge one stretch at a time, working round it from where they arrived**, one
 ##   each way, so the open part of the edge shrinks to a last gap. A stretch is one tile of a
 ##   side's edge, more or less; the tape stands on the park's own edge row, half a barrier's depth
@@ -797,12 +799,15 @@ func _stands(tile: Vector2i, avoid: Rect2i) -> bool:
 	return _map.in_bounds(tile) and _map.passable(tile, _officer_walks) \
 			and not avoid.has_point(tile)
 
-## **An escort's way up to his person**: straight where he walks the whole of it, otherwise the
-## navigator's way round to beside them (`BESIDE`, since their own body takes the ground they stand
-## on) and on toward them as far as the ground lets him (`Navigator.trim()`).
+## **An escort's way up to his person**: straight to beside them where nothing stands between
+## (the line toward them cut where their own body begins, `Navigator.trim()`, ending within
+## `BESIDE` of them — the person's own position is never open ground, since their body takes it),
+## otherwise the navigator's way round to beside them and on toward them as far as the ground lets
+## him.
 func _way_up_to(from: Vector2, to: Vector2) -> PackedVector2Array:
-	if _walks_whole(from, to):
-		return PackedVector2Array([to])
+	var straight := _navigator.trim(PackedVector2Array([from, to]), _officer_walks)
+	if straight.size() > 1 and straight[1].distance_to(to) <= BESIDE:
+		return PackedVector2Array([straight[1]])
 	var way := _navigator.path(from, to, _officer_walks, Rect2i(), BESIDE)
 	if not way.is_empty() and way[way.size() - 1] == to:
 		return way
@@ -1099,7 +1104,14 @@ func _end_of(officer: Officer, stretch: Stretch) -> Vector2:
 ## his pace for the rest of the round.
 func _begin_stretch(officer: Officer) -> void:
 	_pace(officer)
-	officer.path = officer.legs[officer.next].duplicate()
+	_set_path(officer, officer.legs[officer.next].duplicate())
+
+## Hands an officer a new walk in place of the one he was on. Having given up on the navigator for
+## that one (`_walk_path_for()`) says nothing about this one, so he walks it through the navigator.
+func _set_path(officer: Officer, path: PackedVector2Array) -> void:
+	officer.path = path
+	officer.straight = false
+	officer.stuck = 0
 
 ## A taper's frame at the edge: whatever he owes taped that can be, then on round at his pace,
 ## a leg at a time, taping behind him as he goes. He stands only while the stretch next to be taped
@@ -1128,9 +1140,10 @@ func _tape(officer: Officer, delta: float, her: Vector2) -> void:
 ## first that cannot go up yet. One that waits for her, one of the park's people or their escorts
 ## or someone still to come out answers false, and he stands beside it. One that an officer still
 ## has to step on (`_still_stepped_on()`) — the taper himself on a later leg, the other on his way
-## round, an escort — stays owed while he walks on, and goes up the moment nobody has to: **no
-## officer ever waits for another**, so two can never wait for each other. In his order, so the
-## open edge stays one gap.
+## round, an escort — stays owed while he walks on, and goes up the moment nobody has to. So a
+## taper never waits for a taper, and an escort, who walks his person out and waits only behind
+## them, never waits for a taper: a taper's wait for an escort beside his stretch cannot come back
+## round to him, and no wait cycle can form. In his order, so the open edge stays one gap.
 func _tape_what_he_can(officer: Officer, her: Vector2) -> bool:
 	while officer.taped_upto < officer.next:
 		var stretch := officer.stretches[officer.taped_upto]
@@ -1290,19 +1303,19 @@ func _approach_the_person(officer: Officer, delta: float, her: Vector2) -> void:
 		var there := person.global_position
 		if officer.aim != Vector2.INF and officer.aim.distance_to(there) > REAIM:
 			officer.aim = there
-			officer.path = _way_up_to(officer.at, there)
+			_set_path(officer, _way_up_to(officer.at, there))
 		var left := _walk_path_for(officer, officer.speed * delta)
 		if officer.path.is_empty() and officer.aim == Vector2.INF:
 			# Through the gap: on up to them with what is left of the step.
 			officer.aim = there
-			officer.path = _way_up_to(officer.at, there)
+			_set_path(officer, _way_up_to(officer.at, there))
 			if left > 0.0:
 				_walk_path_for(officer, left)
 	var beside := officer.aim != Vector2.INF and officer.path.is_empty()
 	if already or beside or officer.at.distance_to(person.global_position) <= ESCORT_REACH:
 		_send_off(person)
 		officer.phase = Officer.Phase.ESCORTING
-		officer.path = _lay(officer.at, _way_out_from(officer.at), officer.avoid)
+		_set_path(officer, _lay(officer.at, _way_out_from(officer.at), officer.avoid))
 
 ## Walks out behind the person he sent off, down the same way, never nearer them along it than
 ## `ESCORT_BEHIND` — measured along the way rather than straight, so he stays behind them rather
@@ -1333,8 +1346,8 @@ func _close(her: Vector2, shows: Callable) -> void:
 		if officer.job == Officer.Job.TAPE:
 			officer.phase = Officer.Phase.LEAVING
 			var from := _map.world_to_tile(officer.at)
-			officer.path = _route_away(from, her, shows) if not _rect.has_point(from) \
-					else PackedVector2Array()
+			_set_path(officer, _route_away(from, her, shows) if not _rect.has_point(from)
+					else PackedVector2Array())
 	if trapped:
 		trace.note("contact", "the last gap of the park's cordon is taped %.1fs after the "
 				% elapsed + "swing, with her inside: she is shut in")
@@ -1347,7 +1360,7 @@ func _close(her: Vector2, shows: Callable) -> void:
 ## where she can see: from inside the gap if he is in the park, else from its point nearest him.
 func _leave(officer: Officer) -> void:
 	officer.phase = Officer.Phase.LEAVING
-	officer.path = _lay(officer.at, _way_out_from(officer.at), officer.avoid)
+	_set_path(officer, _lay(officer.at, _way_out_from(officer.at), officer.avoid))
 
 ## An officer on his way is gone once none of him could be seen.
 func _maybe_gone(officer: Officer, her: Vector2, shows: Callable) -> void:

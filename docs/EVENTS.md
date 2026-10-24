@@ -708,9 +708,11 @@ the navigator too, and their walks are laid round the day's bodies before they s
 way round a body is part of the walk the deadline is solved over, not a delay added to it. Where a
 solid cuts the sidewalk and the street from the park's edge outward, a taper cuts along the park's
 own edge row ahead of his tape. A stretch any officer still has to step on goes up only once nobody
-does, while its taper walks on, so no officer ever waits for another and two can never wait for
-each other; a taper's round ends outside the park, and one whose walk cannot be laid again for half
-a second walks the rest of it straight, which the run log notes.
+does, while its taper walks on: a taper never waits for a taper, and an escort never waits for a
+taper, so no wait cycle can form, though a taper does stand for an escort beside the stretch he is
+about to tape, as for her and the park's people. A taper's round ends outside the park, and an
+officer whose walk cannot be laid again for half a second walks the rest of it straight, which the
+run log notes.
 
 **The catalogue is not the only thing carrying this datum.** A building's collision is a rectangle
 built from `shape.collision_shape()` on `GroundShape.rect(footprint * 0.5)` — `src/city/building.gd`
