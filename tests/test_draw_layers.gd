@@ -13,6 +13,7 @@ func run(t) -> void:
 	_test_a_world_adds_a_node_on_its_layer(t)
 	_test_slices_stand_at_their_own_feet(t)
 	_test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t)
+	await _test_the_slices_go_with_their_event(t)
 
 # ------------------------------------------------------------------ the module ---
 
@@ -38,14 +39,20 @@ func _test_the_scan_finds_a_write(t) -> void:
 			"and one that writes z_as_relative")
 	t.check(_z_writes("[node name=\"A\" type=\"Node2D\"]\nz_index = 2\n", true).size() == 1,
 			"and a scene that sets one")
+	for form: String in ["node.z_index += 1", "set_z_index(-1)", "node.set_z_as_relative(false)",
+			"set(\"z_index\", -1)", "node.set_deferred(&\"z_as_relative\", false)",
+			"tween.tween_property(node, ^\"z_index\", 2, 0.1)", "z_as_relative=true"]:
+		t.check(_z_writes("\t%s\n" % form, false).size() == 1, "the scan finds `%s`" % form)
 	t.check(_z_writes("\t## `z_index = 1` puts it above\n\tif a.z_index == b.z_index:\n", false)
 			.is_empty(), "a comment naming one, or a comparison, is not a write")
 
-## The lines of `text` that write a `z_index` or a `z_as_relative`: an assignment in a script,
-## outside a comment, or the property set in a scene.
+## The lines of `text` that write a `z_index` or a `z_as_relative`, outside a comment: in a script
+## an assignment, a call to the setter, or the property named in a string (`set()`,
+## `set_deferred()`, a tween); in a scene, the property set.
 static func _z_writes(text: String, scene: bool) -> PackedStringArray:
 	var found := PackedStringArray()
-	var write := RegEx.create_from_string("\\bz_(index|as_relative)\\s*[-+*/]?=(?!=)")
+	var write := RegEx.create_from_string("\\bz_(index|as_relative)\\s*[-+*/]?=(?!=)"
+			+ "|\\bset_z_(index|as_relative)\\s*\\(|[&^]?[\"']z_(index|as_relative)[\"']")
 	for raw in text.split("\n"):
 		var line := raw.strip_edges()
 		if scene:
@@ -186,3 +193,31 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 		instance.release_halo()
 		world.free()
 	AtlasLibrary.release(&"events")
+
+## **An event's slices go with it** while the world it stood in stays: freed with the instance on
+## its own, a frame later no slice of it is left in the world's entity layer. Freeing the world
+## would take every slice with it whatever the instance does, so the world is kept.
+func _test_the_slices_go_with_their_event(t) -> void:
+	AtlasLibrary.acquire(&"events")
+	var world := WorldContext.new()
+	t.add_child(world)
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0))
+	instance.world = world
+	world.add_entity(instance)
+	instance._attach_the_slices()
+	var layer := world.layers().node(DrawLayer.Layer.ENTITIES)
+	t.check(_slices_in(layer) > 1, "the event stands in its world in slices (%d)" % _slices_in(layer))
+	instance.free()
+	await t.get_tree().process_frame
+	t.check(_slices_in(layer) == 0, "and a frame after it is freed none of them is left (%d)"
+			% _slices_in(layer))
+	world.free()
+	AtlasLibrary.release(&"events")
+
+static func _slices_in(layer: Node) -> int:
+	var count := 0
+	for child in layer.get_children():
+		if child is EventInstance.Slice:
+			count += 1
+	return count
