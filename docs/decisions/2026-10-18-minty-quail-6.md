@@ -59,9 +59,11 @@ finds no slice left.
 
 **A limit of slicing an authored picture, open to overturn:** the bands are cut by screen rows, so
 an upright part standing over nearer ground (a tree's crown, the water main's fountain on an
-east-west street) sorts with the farther band its rows fall in and is drawn under a figure standing
-on the nearer band; only spans authored into the picture could tell an upright part from the ground
-behind it.
+east-west street) sorts with the farther band its rows fall in. No figure can stand where that
+shows: the nearest she stands is 38px from the scene's centre line (its 24px band and her 14px
+body) and all three pictures lie within about 30px of it, so only a sprite wider than its body (her
+pram pushed toward the scene) reaches a few pixels in; spans authored into the picture would remove
+it.
 
 **For the remeasuring step:** end-on spreads (roadworks, the stall, the barricade, scaffolding,
 the collapsed frontage, the roadblock's band on a north-south street) sort slice by slice against

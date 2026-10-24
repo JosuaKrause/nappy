@@ -1046,7 +1046,8 @@ courtyard) both keep the default lay along local X: neither has one street to be
 The fallen tree, car accident and burst water main each have one complete street scene picture,
 fitted to the obstructed span. On the screen each is cut into slices, one a tile of its run, each
 a node standing at its own feet and drawing the part of the picture over its own band
-(`EventInstance._wide_scene_band()`), so a scene lying down an east-west street sorts against her
+(`EventInstance._wide_scene_band()`), so a scene lying across an east-west street, its length running
+down the screen, sorts against her
 band by band; the shadow goes down whole with the first. The fallen tree's slices draw their part
 of its one picture (`EventInstance._draw_wide_scene()`). The crash and burst main are drawn as
 `EventScenery` layers of their cropped static and moving spans, one scenery behind each slice
