@@ -109,6 +109,10 @@ often:
 
 The editor's traps that have each cost a failed call:
 
+- A markdown source drops a trailing space, so a `**You:** ` stub written as markdown loses its plain
+  space and the player's typing turns bold. Write the stub's paragraph as blocks instead: a bold
+  `You:` text run followed by a plain `" "` run.
+
 - A read prints later ids of a session short (`.10005`); a write needs the full id, the session of
   the nearest full id printed above it (`mqa612es4mw.10005`).
 - A whole-block `replace` or `delete` needs `ifHash` and `ifRev` from the read that showed the block.
