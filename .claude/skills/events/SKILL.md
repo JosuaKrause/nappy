@@ -15,7 +15,9 @@ an `EventDef.Look` of its own, an SVG in `art/events/`, a `_draw_*` in `EventIns
 in `EventInstance.icon_for()` so the screen-edge badge has a silhouette. There is no generic to
 borrow — `tests/test_events.gd` fails the build if two rows share a picture.
 
-If it needs behaviour no field covers, add the field to `EventDef` and handle it in `EventInstance`.
+If it needs behaviour no field covers, add the field to `EventDef` and handle it in the behaviour
+that owns that rule under `src/events/behaviours/`, or in a new `EventBehaviour` that
+`EventBehaviours.compose()` adds for the rows whose data ask for it.
 
 ## The fields that are decisions, and the ones that are not
 
@@ -216,7 +218,7 @@ traps:
   is gone only once she could not be watching.
 - **A car that stops where it noticed her stops in junction boxes**, standing in the crossing
   traffic's way for a whole chase. One that notices her with any of its body on a junction drives on
-  until it is clear of the box (`EventInstance._stands_in_a_junction()`). A test on a hand-made
+  until it is clear of the box (`EventInvestigation._stands_in_a_junction()`). A test on a hand-made
   straight route away from junctions cannot see this; `tests/test_pursuer_on_foot.gd` drives real
   routes on three seeds.
 
@@ -251,7 +253,7 @@ guard is the danger), and the guard at its far post walks off with him, on every
 (`EventInstance._send_the_far_guard_off()`). A barrier whose guard has gone raises no mark over her head (`EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard), since he
 never notices her or charges again — so "it is over the moment it starts leaving" holds for the
 man and not for the barrier he left. He is in her view as he goes, so
-he is held to the sight rule like a car (`_leaving_must_clear_sight`) rather than vanishing on the
+he is held to the sight rule like a car (`EventDeparture._must_clear_sight`) rather than vanishing on the
 6-second backstop beside her; the backstop remains for a departure with no player to be out of
 sight of. A plan streamed out while he is spent or leaving must carry that (`Planned.guard_spent`), or
 the barrier comes back armed. **Streaming is a way out too**: `EventManager.stream_around()` takes a
@@ -278,7 +280,7 @@ it was written from. The traps:
   beside her charges from where it stood once its notice has run. A wall between them that holds the lunge back is the same trap: at an
   alley mouth the line clears with her already inside the stand-off. The notice, the lunge and the
   catch all ask for a clear line, so a held lunge is not deferred until the line clears: the pursuer
-  holds the ground of one that sets off beside her (`EventInstance._lunge_held`) — it stands while
+  holds the ground of one that sets off beside her (`EventPursuit.lunge_held`) — it stands while
   she is nearer than the stand-off and follows at it once she is further, or only stands if it
   stands for its notice — and lunges once she is back at the
   full stand-off; a timed notice does not run out while she is inside it (`_pause_a_held_notice()`)
@@ -289,7 +291,7 @@ it was written from. The traps:
   alley robber, the hunting roadblock's guard) warns for its row's `PursuitSpec.warns_for` from
   the frame it notices her inside its one radius, and charges only if she is still inside once
   that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
-  `notice_time()`; inbox #788 in minty-lemur). **Running while it warns counts for nothing**: `_chase()` adds to
+  `notice_time()`; inbox #788 in minty-lemur). **Running while it warns counts for nothing**: `EventPursuit` adds to
   `PURSUIT_SHAKEN_OFF`'s count only once it has charged, or a half-second run beside a roadblock's
   band would send its guards off with no lure. Behind a wall at that moment it goes on warning until the line
   clears. A late notice, at an alley mouth, is answered by the warning: she has its whole length to
@@ -299,8 +301,7 @@ it was written from. The traps:
   view hands it one (`tests/escape_roadblock_rig.gd`, `view_round()`). **The masked man is the one
   exception**: he runs a line rather than pursuing, so neither his notice nor his run asks the
   clear line, his notice asks no view, and he runs the moment she comes within his
-  `NoticeSpec.runs_within`, with no warning clock (`EventInstance._check_for_notice()`,
-  `_warn_on_its_line()`; inbox #788 in minty-lemur): in the stairwell his warning is off screen, which the player
+  `NoticeSpec.runs_within`, with no warning clock (`EventNoticeRun`; inbox #788 in minty-lemur): in the stairwell his warning is off screen, which the player
   accepted (inbox #782 in minty-lemur), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
   (inbox #764 in minty-lemur, inbox #788 in minty-lemur). His warning comes before he exists — from the frame she crosses a
@@ -338,7 +339,7 @@ wrong posture.
   one disc `validate_event` checked. A moving emitter is only legal while that is true.
 - **`lerp` cannot turn a vector round.** Interpolating a unit vector toward its opposite runs down
   the same line to zero and back out the way it came, so normalising gives the heading it started
-  with. Rotate by a bounded angle (`EventInstance._steer`), and steer from *half way out*, because a
+  with. Rotate by a bounded angle (`EventFlock._steer`), and steer from *half way out*, because a
   turn costs ground.
 
 ## A moving thing has to look like it is moving

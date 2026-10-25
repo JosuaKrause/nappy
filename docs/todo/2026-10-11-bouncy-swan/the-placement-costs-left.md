@@ -4,7 +4,7 @@
   logarithmic number of floods; it matters only on a dawn that drops many, which was not measured.
 - **Door points passed in `ResistanceDirector._add_a_mast_near()`**, as `MastSites` now builds them
   once per `compute()`; it changes no placement.
-- **A failed `_way_on_out_of_sight()` search remembered for a while**, so a leaving body stops
+- **A failed `EventDeparture.way_out_from()` search remembered for a while**, so a leaving body stops
   searching up to 4096 tiles every frame; it changes when the body asks again, so it goes to the
   player first.
 - **Skipping identical unplaced copies in a look** is not taken: it changes how much the crews'
