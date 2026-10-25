@@ -8,7 +8,7 @@ extends Control
 ## their warning already spent. The fairness contract is met by the geometry and missed by the
 ## player.
 ##
-## `MARGIN`, `CHEVRON`, `ICON` and `SCREEN_MARGIN` are all screen px, and that is only fair because
+## `MARGIN`, `CHEVRON` and `ICON` (and `BadgeModel.SCREEN_MARGIN`, which decides where a badge is raised) are all screen px, and that is only fair because
 ## the window is letterboxed: `window/stretch/aspect="keep"` in `project.godot` holds the viewport
 ## at a fixed 1280×720 for every monitor, camera included, so a badge measured in screen px warns
 ## the same distance out on a 21:9 monitor as on a 4:3 one. Under `"expand"` the same margin would
@@ -74,7 +74,7 @@ var model := BadgeModel.new()
 ## city's on a day and in the escape's city, the building's in the escape's building. **Called
 ## again when the escape walks out of the service door**, with the city's source in place of the
 ## building's, so one badge serves both sections; an id the new source no longer carries simply
-## drops out of `_watch` on the next `_measure()`.
+## drops out of `model.watch` on the next `_measure()`.
 func setup(events: Node, player: Node2D) -> void:
 	_events = events
 	_player = player

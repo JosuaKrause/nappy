@@ -5,11 +5,12 @@ extends RefCounted
 ## no scene, no camera and no frame timing: the live dangers and the warnings that are up
 ## (`Subject`), where she is, how long the frame was, and a `sees` Callable that answers "is this
 ## world point in sight, counting this many screen px past the edge as in sight". `DangerEdge`
-## builds those from the event source and the camera once a frame and draws what `badges()` says.
+## builds those from the event source and the camera once a frame and draws what `announcing()` says
+## (the first `MOST_AT_ONCE` of `coming`, soonest arrival first).
 ##
 ## **The seam for the event manager's warning board.** Whatever collects the live dangers and the
 ## pending warnings (`EventManager`, or the `WarningBoard` split out of it) hands this model
-## `Subject`s and a view and reads `badges()` back; nothing here knows `EventInstance`,
+## `Subject`s and a view and reads `coming` / `announcing()` back; nothing here knows `EventInstance`,
 ## `PendingWarning`, `VisibleView` or a node.
 ##
 ## The thresholds are the badge's: see each constant. The reasons for the rules (its own approach
@@ -103,8 +104,9 @@ class Subject extends RefCounted:
 ## What to put on the edge this frame, soonest arrival first:
 ## `[time_to_reach, distance, payload, world position, approach, logged name]`.
 var coming: Array = []
-## Per live subject: where it was last frame, its smoothed approach speed, how long its badge is
-## still owed, and the generation it was last touched on. Keyed by `Subject.key` and mutated in
+## Per live subject: where it was last frame (`was`), its smoothed approach speed (`approach`),
+## whether its badge is up (`up`), whether it has been in sight (`seen`), whether its charge has been
+## met (`charged`), and the generation it was last touched on (`generation`). Keyed by `Subject.key` and mutated in
 ## place, so a subject that stops being handed over drops out the frame after.
 var watch := {}
 var _generation := 0

@@ -12,6 +12,7 @@ func run(t) -> void:
 	_test_a_danger_walking_away_or_too_slow_gets_none(t)
 	_test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(t)
 	_test_a_raised_badge_ends_when_its_danger_leaves_the_world(t)
+	_test_kept_badges_stay_drawn_while_the_cap_is_not_exceeded(t)
 	_test_a_fourth_kept_badge_waits_for_a_slot(t)
 	_test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t)
 	_test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t)
@@ -121,6 +122,28 @@ func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t) -> void:
 		t.check(not _up(model, "truck"),
 				"a danger that is finished (%s) or no longer handed over ends its badge" % finished)
 
+## Three badges raised, then their dangers stop (one turns away) and stay out of sight: all three are
+## kept and drawn for as long as the cap of three is not exceeded. Fails if a badge ends when its
+## condition (the danger closing) lapses.
+func _test_kept_badges_stay_drawn_while_the_cap_is_not_exceeded(t) -> void:
+	var model := BadgeModel.new()
+	var subjects: Array = []
+	for i in 3:
+		var v := _vehicle(i + 1, Vector2(500.0 + 100.0 * i, 0.0))
+		v.logged_name = "k%d" % i
+		subjects.append(v)
+	for f in 20:
+		for v: BadgeModel.Subject in subjects:
+			v.position.x -= v.speed * STEP
+		_step(model, subjects)
+	t.check(model.announcing().size() == 3, "three raised while closing")
+	var missing := 0
+	for f in 120:
+		(subjects[1] as BadgeModel.Subject).position.x += 190.0 * STEP  # turned away
+		_step(model, subjects)  # the others stopped
+		missing += 3 - model.announcing().size()
+	t.check(missing == 0, "all three kept badges stay drawn after their dangers stopped or turned away (%d missing)" % missing)
+
 ## A fourth kept badge over the cap of three is not drawn; it stays up in the model, and takes a slot
 ## (soonest arrival first) when one frees.
 func _test_a_fourth_kept_badge_waits_for_a_slot(t) -> void:
@@ -145,8 +168,8 @@ func _test_a_fourth_kept_badge_waits_for_a_slot(t) -> void:
 	t.check(names.has("v3"), "and takes a slot when one frees (%s)" % str(names))
 
 func _test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t) -> void:
-	# Seen, then out past the edge but inside the margin band: the band is the hysteresis for a
-	# badge already up, so a non-charging thing closing from inside it raises none.
+	# Seen, then out past the edge but inside the margin band: the band only decides whether a badge
+	# goes up, so a seen, non-charging thing closing from inside it is not raised until it is past it.
 	var model := BadgeModel.new()
 	var truck := _vehicle(1, Vector2(300.0, 0.0))
 	truck.logged_name = "truck"
