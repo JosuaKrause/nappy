@@ -26,6 +26,11 @@ Nothing notifies the terminal session of an edit, and the player gives a heads-u
 rather than have the board polled (inbox #830). A report from an agent, a merge or a review
 verdict updates the Running table in the same turn.
 
+**Anything the player may want to act on goes on the board, not only into a chat report** (inbox
+#850): a review thread closed by mistake, a nit left open on a merged pull request, a choice made on
+their behalf that they might undo. It is written as a question under `## Waiting on you`, with My
+pick saying what happens if they leave it, since a line in a report is read once and scrolled away.
+
 ## The layout
 
 Top to bottom, every part present even when empty:
