@@ -13,14 +13,14 @@ func run(t) -> void:
 	_test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(t)
 	_test_a_raised_badge_ends_when_its_danger_leaves_the_world(t)
 	_test_kept_badges_stay_drawn_while_the_cap_is_not_exceeded(t)
-	_test_a_fourth_kept_badge_waits_for_a_slot(t)
+	_test_six_badges_at_once_are_all_drawn_and_none_drops_early(t)
 	_test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t)
 	_test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t)
 	_test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_view(t)
 	_test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_the_way(t)
 	_test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t)
 	_test_a_pending_warning_is_announced_for_its_whole_warning(t)
-	_test_three_at_once_soonest_arrival_first(t)
+	_test_every_badge_is_listed_soonest_arrival_first(t)
 	_test_a_subject_no_longer_handed_over_is_forgotten(t)
 	_test_what_is_worth_an_arrow(t)
 
@@ -123,7 +123,7 @@ func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t) -> void:
 				"a danger that is finished (%s) or no longer handed over ends its badge" % finished)
 
 ## Three badges raised, then their dangers stop (one turns away) and stay out of sight: all three are
-## kept and drawn for as long as the cap of three is not exceeded. Fails if a badge ends when its
+## kept and drawn. Fails if a badge ends when its
 ## condition (the danger closing) lapses.
 func _test_kept_badges_stay_drawn_while_the_cap_is_not_exceeded(t) -> void:
 	var model := BadgeModel.new()
@@ -132,7 +132,7 @@ func _test_kept_badges_stay_drawn_while_the_cap_is_not_exceeded(t) -> void:
 		var v := _vehicle(i + 1, Vector2(500.0 + 100.0 * i, 0.0))
 		v.logged_name = "k%d" % i
 		subjects.append(v)
-	for f in 20:
+	for f in 40:
 		for v: BadgeModel.Subject in subjects:
 			v.position.x -= v.speed * STEP
 		_step(model, subjects)
@@ -144,28 +144,30 @@ func _test_kept_badges_stay_drawn_while_the_cap_is_not_exceeded(t) -> void:
 		missing += 3 - model.announcing().size()
 	t.check(missing == 0, "all three kept badges stay drawn after their dangers stopped or turned away (%d missing)" % missing)
 
-## A fourth kept badge over the cap of three is not drawn; it stays up in the model, and takes a slot
-## (soonest arrival first) when one frees.
-func _test_a_fourth_kept_badge_waits_for_a_slot(t) -> void:
+## Six badges at once, all drawn, none dropped before its danger is in sight: no cap. Five are kept
+## (stopped, out of sight) while a sixth keeps closing; then one comes into sight and only it goes.
+func _test_six_badges_at_once_are_all_drawn_and_none_drops_early(t) -> void:
 	var model := BadgeModel.new()
 	var subjects: Array = []
-	for i in 4:
-		var v := _vehicle(i + 1, Vector2(500.0 + 100.0 * i, 0.0))
+	for i in 6:
+		var v := _vehicle(i + 1, Vector2(500.0 + 80.0 * i, 0.0))
 		v.logged_name = "v%d" % i
 		subjects.append(v)
-	for f in 20:
+	for f in 40:
 		for v: BadgeModel.Subject in subjects:
 			v.position.x -= v.speed * STEP
 		_step(model, subjects)
-	t.check(model.announcing().size() == 3 and model.coming.size() >= 3, "three drawn at most")
-	var fourth := subjects[3] as BadgeModel.Subject
-	t.check(model.watch[fourth.key]["up"], "the fourth is up in the model although it is not drawn")
-	subjects.remove_at(0)
+	t.check(model.announcing().size() == 6, "six drawn, not three (%d)" % model.announcing().size())
+	var short := 0
+	for f in 60:
+		(subjects[5] as BadgeModel.Subject).position.x -= 190.0 * STEP
+		_step(model, subjects)  # the first five stopped out of sight
+		short += 6 - model.announcing().size() if not (subjects[5] as BadgeModel.Subject).shown else 0
+	t.check(short == 0, "all six stay drawn while out of sight (%d short)" % short)
+	(subjects[0] as BadgeModel.Subject).position = Vector2(100.0, 0.0)
 	_step(model, subjects)
-	var names := []
-	for b in model.announcing():
-		names.append(b["id"])
-	t.check(names.has("v3"), "and takes a slot when one frees (%s)" % str(names))
+	t.check(not _up(model, "v0") and _up(model, "v1") and _up(model, "v4"),
+			"only the one that came into sight is dropped")
 
 func _test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t) -> void:
 	# Seen, then out past the edge but inside the margin band: the band only decides whether a badge
@@ -297,21 +299,21 @@ func _test_a_pending_warning_is_announced_for_its_whole_warning(t) -> void:
 	t.check(_up(model, "cyclist"), "a warning with nothing in the world yet is up, on screen or off")
 	t.check(is_equal_approx(float(model.coming[0][0]), 0.7), "sorted by the seconds its warning has left")
 
-func _test_three_at_once_soonest_arrival_first(t) -> void:
+func _test_every_badge_is_listed_soonest_arrival_first(t) -> void:
 	var model := BadgeModel.new()
 	var subjects: Array = []
 	for i in 5:
 		var v := _vehicle(i + 1, Vector2(500.0 + 100.0 * i, 0.0))
 		v.logged_name = "v%d" % i
 		subjects.append(v)
-	for f in 20:
+	for f in 40:
 		for v: BadgeModel.Subject in subjects:
 			v.position.x -= v.speed * STEP
 		_step(model, subjects)
 	var names := []
 	for b in model.announcing():
 		names.append(b["id"])
-	t.check(names == ["v0", "v1", "v2"], "at most three, the soonest to arrive first (%s)" % str(names))
+	t.check(names == ["v0", "v1", "v2", "v3", "v4"], "all five, the soonest to arrive first (%s)" % str(names))
 
 func _test_a_subject_no_longer_handed_over_is_forgotten(t) -> void:
 	var model := BadgeModel.new()

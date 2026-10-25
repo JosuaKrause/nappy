@@ -216,7 +216,8 @@ func _draw() -> void:
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()
-	for i in mini(BadgeModel.MOST_AT_ONCE, model.coming.size()):
+	# Every badge is drawn, farthest arrival first so the soonest lies on top where two overlap.
+	for i in range(model.coming.size() - 1, -1, -1):
 		_draw_arrow(model.coming[i][2] as EventDef, model.coming[i][3] as Vector2, float(model.coming[i][1]),
 				transform)
 

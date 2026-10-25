@@ -628,8 +628,6 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 				"'%s' is not, because turning round and leaving is enough" % id)
 		instance.free()
 
-	t.check(BadgeModel.MOST_AT_ONCE <= 3,
-			"and at most a handful at once, or the edge of the screen becomes wallpaper")
 	edge.free()
 
 ## **A pursuer sited off screen has to have something announcing it while it is off screen.**

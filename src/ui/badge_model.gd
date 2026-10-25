@@ -6,7 +6,7 @@ extends RefCounted
 ## (`Subject`), where she is, how long the frame was, and a `sees` Callable that answers "is this
 ## world point in sight, counting this many screen px past the edge as in sight". `DangerEdge`
 ## builds those from the event source and the camera once a frame and draws what `announcing()` says
-## (the first `MOST_AT_ONCE` of `coming`, soonest arrival first).
+## (every badge in `coming`, soonest arrival first; there is no cap).
 ##
 ## **The seam for the event manager's warning board.** Whatever collects the live dangers and the
 ## pending warnings (`EventManager`, or the `WarningBoard` split out of it) hands this model
@@ -47,9 +47,6 @@ const SMOOTHING := 6.0
 ## margin is 0 from the frame it runs, and a warned arrival's until it has been seen once, so each is
 ## raised from outside the view proper.
 const SCREEN_MARGIN := 130.0
-## At most this many at once. Three arrows is a warning; eight is wallpaper, and the day the
-## edge of the screen becomes wallpaper is the day it stops being read.
-const MOST_AT_ONCE := 3
 
 ## One thing the badge may have to say something about, as plain data. The event source's adapter
 ## fills the fields it has; a warning with nothing in the world yet is a `Subject` with `pending`
@@ -218,16 +215,15 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 	state["approach"] = approach
 	state["generation"] = _generation
 	if state["up"]:
-		# Sorted by *when it arrives* rather than by how near it is, because that is what
-		# `MOST_AT_ONCE` is choosing between: the one worth keeping is the one that gets here first,
-		# which a slow thing standing closer is not.
+		# Sorted by *when it arrives* rather than by how near it is: the soonest arrival comes first
+		# (and is drawn last, on top where badges overlap), which a slow thing standing closer is not.
 		coming.append([gap / maxf(approach, 1.0), distance, subject.payload, at, approach,
 				subject.logged_name])
 
 ## What is on the edge right now: `{id, distance, approach}` per badge, nearest arrival first.
 func announcing() -> Array[Dictionary]:
 	var badges: Array[Dictionary] = []
-	for i in mini(MOST_AT_ONCE, coming.size()):
+	for i in coming.size():
 		badges.append({
 			"id": str(coming[i][5]),
 			"distance": float(coming[i][1]),
