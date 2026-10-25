@@ -479,7 +479,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) ->
 				officer = car.its_officer()
 				# Where he was put down, the first point of his trail: this frame has already
 				# stepped him toward her.
-				door = officer._trail[0]
+				door = officer.on_foot.trail[0]
 				out_at = elapsed
 				stopped_at = car.global_position
 				t.check(events.pending_warnings().is_empty(),
@@ -624,7 +624,7 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 			officer = car.its_officer()
 		var out_of_reach := car.global_position.distance_to(her.global_position) \
 				> hot.outer_radius + hot.shape.reach()
-		if car.is_finished or car.is_leaving or (car._investigated and out_of_reach):
+		if car.is_finished or car.is_leaving or (car.investigation._investigated and out_of_reach):
 			break
 	var finished := officer != null and (not is_instance_valid(officer) or officer.is_finished)
 	for instance in events.instances().duplicate():
@@ -709,7 +709,7 @@ func _drive_until_it_stops(t, hot: EventDef, route: PackedVector2Array, map: Cit
 		car.player_at = her
 		car._process(STEP)
 		elapsed += STEP
-		if car._seen_her and car.is_waiting():
+		if car.investigation._seen_her and car.is_waiting():
 			saw_in_a_box = true
 	if car.is_waiting() or car.is_leaving or car.is_finished:
 		car.free()

@@ -13,6 +13,12 @@ static func compose(event: EventInstance, row: EventDef) -> Array[EventBehaviour
 	if row.mobile:
 		event.route = EventRouteWalk.new()
 		event.route.attach(event)
+	if row.investigates:
+		event.investigation = EventInvestigation.new()
+		_add(out, event, event.investigation)
+	if row.pursuit != null:
+		event.on_foot = EventOfficer.new()
+		_add(out, event, event.on_foot)
 	if row.flock_size > 0:
 		event.flock = EventFlock.new()
 		_add(out, event, event.flock)

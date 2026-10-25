@@ -1080,6 +1080,10 @@ var abduction: EventAbduction
 var departure: EventDeparture
 ## Following its route or pacing its beat (`EventDef.mobile`).
 var route: EventRouteWalk
+## A vehicle that stops for her and lets men out (`EventDef.investigates`).
+var investigation: EventInvestigation
+## A man on foot who may stop her and walk back to the vehicle that let him out (every pursuer).
+var on_foot: EventOfficer
 ## A flock's birds (`EventDef.flock_size`).
 var flock: EventFlock
 ## A row sent down her line that is retired once it cannot reach her (the loose dog).
@@ -2242,7 +2246,7 @@ func is_driving() -> bool:
 ## Whether the car is on its route rather than in any other state: not standing still through a
 ## telegraph or parked, not leaving — it is over, and nothing that is over ends the day — and **not
 ## stopped to investigate**: the heated copy that has noticed her stands where it stopped while the
-## man it let out pursues her (`EventDef.investigates`, `_investigate()`), and a standing car
+## man it let out pursues her (`EventDef.investigates`, `EventInvestigation`), and a standing car
 ## strikes nobody. Once he is back in it drives its route again, and is a car on it like any other.
 func _drives_its_route() -> bool:
 	if not def.drives or is_finished or is_leaving or is_parked:
@@ -2251,7 +2255,7 @@ func _drives_its_route() -> bool:
 		return false
 	if def.pursuit != null and not is_waiting():
 		return false
-	if def.investigates and not _runs_its_route():
+	if investigation and not investigation.runs_its_route():
 		return false
 	return def.speed >= Tuning.CAR_STRIKE_MIN_SPEED
 
@@ -2364,15 +2368,12 @@ func _process(delta: float) -> void:
 
 	if flock:
 		flock.step(delta)
-	if def.investigates:
-		_investigate()
-		if _runs_its_route() and def.mobile and path.size() > 1:
-			route.advance(delta)
+	if investigation:
+		investigation.step(delta)
 	elif def.pursuit != null and has_stopped_her():
 		# **He has reached her and stopped her** (`EventDef.stop_excitement`): he stands with her
 		# while his field lands the stop, and then walks back to the vehicle that let him out.
-		if age - _stopped_her_at >= Tuning.OFFICER_STOP_SECONDS:
-			_be_done()
+		on_foot.stand_with_her()
 	elif def.pursuit != null:
 		# **A pursuer that has a route runs it until it notices her.** No field says so — see
 		# `EventDef.at_heat()`'s own note on `PRESSES` — it is read off the two flags a mobile
@@ -2383,8 +2384,7 @@ func _process(delta: float) -> void:
 		if is_waiting() and def.mobile and path.size() > 1:
 			route.advance(delta)
 		_chase(delta)
-		_stop_her_if_he_has_reached_her()
-		_lay_the_trail()
+		on_foot.step(delta)
 	elif def.notice_within() > 0.0:
 		# The same waiting state a pursuer gets, for a row that only waits and then runs its own
 		# path rather than turning to chase her once noticed — see `_check_for_notice()` and
@@ -2543,7 +2543,7 @@ func charger_name() -> String:
 
 ## **Its charge caught her**, said once: by `EventManager._check_hard_fails()` when its catch ends
 ## the day, ahead of `hard_fail_triggered`, and by a patrol car's man the frame he stops her
-## (`_stop_her_if_he_has_reached_her()`), whose catch does not. Telemetry only: it sends
+## (`EventOfficer`), whose catch does not. Telemetry only: it sends
 ## `EventBus.pursuit_caught` and keeps `_be_done()` from also sending `pursuit_ended`, so a charge
 ## ends in exactly one of caught, shaken off, outlasted and cut short, whatever the day does
 ## *(inbox #764 in minty-lemur, the player: "Charging is independent of an ended day")*. Nothing for
@@ -2807,151 +2807,30 @@ func _chase(delta: float) -> void:
 	_path_travelled += moved.length()
 
 # ------------------------------------------------------------ the investigation ---
-# *(merry-stork, the player: "an investigating police car should not leave the street. it should
-# stop if close to her and a policeman should emerge and pursue her"; inbox #669 in coral-lark: "once the
-# policeman reaches her they stop and walk back to the car" · "Van stops, men get out
-# (Recommended)".)*
 
-## Whether this investigating vehicle has noticed her along a clear line, from that frame on —
-## its notice waits until it has also stopped, which a car with its body in a junction box does
-## only once the body is clear of the box (`_stands_in_a_junction()`).
-var _seen_her := false
-## How many men this vehicle has stopped for and still owes: `EventDef.lets_out` from the frame it
-## stops until `EventManager` has put them all down (`let_out()`).
-var _officers_owed := 0
-## The men this vehicle let out, once they are in the world.
-var _officers: Array[EventInstance] = []
-## True once every man it let out is back in: a car drives its route again from here, and a van
-## stands where it always stood. It does not stop for her a second time.
-var _investigated := false
-
-## **An investigating vehicle notices her and stops** (`EventDef.investigates`): while it waits, a
-## car drives its route (`_process()`), and from the frame she is within `EventDef.notice` of it
-## along a clear line (`_clear_line_to()`, every notice's test) it has seen her. It stops —
-## where it is, on its route — as soon as its body is clear of every junction box
-## (`_stands_in_a_junction()`), which it is at once unless it saw her from inside one, and then
-## owes the men it lets out (`officers_owed()`). From then on it stands while they are out, and
-## once every one of them is back in (`_officer_is_back()`) — or it has none, streamed back in
-## already stopped — it is done investigating: a car drives on along its route, standing first
-## while she is in its way (`_standing`, `_drive()`), and a van stands where it is.
-func _investigate() -> void:
-	if _investigated:
-		if not _left_her_once and _left_her():
-			_left_her_once = true
-		return
-	if is_waiting():
-		if not _seen_her and player_at != Vector2.INF \
-				and global_position.distance_to(player_at) <= def.notice_within() \
-				and _clear_line_to(player_at):
-			_seen_her = true
-		if _seen_her and not _stands_in_a_junction():
-			_notice_her()
-			_officers_owed = def.lets_out
-		return
-	if _officers_owed > 0:
-		return
-	for officer in _officers:
-		if not _officer_is_back(officer):
-			return
-	_investigated = true
-	_officers.clear()
-	# A car that stood for its men has stood, so it pulls away only once she is out of its way —
-	# never into her (`_drive()`'s own rule for a car that has stood).
-	_standing = def.drives
-
-## **A car that stood for its man is quiet until it has left her: the man is the encounter.** From
-## the frame an investigating car stops for her, through his notice, chase, stop and walk back, and
-## on as it drives on — past her, or waiting at a line beside her — until it is outside its own
-## field's reach of her (`_left_her()`), its field is off. So what the encounter costs her is his
-## notice, his chase and his stop: substantial, and never the end of a calm day by itself for a
-## player who stands through all of it *(inbox #669 in coral-lark: "a substantial cost but not lethal
-## directly")*. While she stays within its resting reach, a car that stood for a policeman does not
-## then also cost her as a passing car. Once it has left her — measured at rest, while a moving car's
-## field reaches further ahead (`GroundShape.eccentric_distance()`) — it is an ordinary car, and one
-## that then drives at her costs her as any car does. Its strike and its horn are a driving car's
-## and come back the moment it drives. *Chosen while building, open to overturn.*
+## A car that stood for its man is quiet until it has left her (`EventInvestigation`).
 func is_quiet_for_its_man() -> bool:
-	return def.investigates and def.drives and not is_waiting() and not _left_her_once
+	return investigation != null and investigation.is_quiet_for_its_man()
 
-## True once an investigating car, done with its man, has been outside its own field's reach of her
-## — it stays an ordinary car from then on, whatever she does after. Latched once a frame by
-## `_investigate()`, so the field stays a pure query.
-var _left_her_once := false
-
-## Whether she is outside this car's field from where it is: further than its outer radius past its
-## own body, or nobody to be near.
-func _left_her() -> bool:
-	return player_at == Vector2.INF or global_position.distance_to(player_at) \
-			> def.outer_radius + def.shape.reach()
-
-## Whether this investigating vehicle is running its route: before it has stopped for her, and
-## again once it is done investigating. Always false for one that never moves.
-func _runs_its_route() -> bool:
-	return is_waiting() or _investigated
-
-## **Whether any part of this car's body stands in a junction box**: a tile under its spine, from
-## its tail to its nose, inside the crossing street's whole corridor as well as its own
-## (`WorldMap.junction_box_at()`) — the box with its zebras, the ground a red light holds a car short of
-## (`_room_to_its_line()`). An investigating car never stops there: nothing stands in a box it
-## cannot leave, and the crossing traffic cannot see a patrol car's body to wait for it
-## (sunny-finch, the **crowd-traffic** skill). False for anything that does not drive.
-func _stands_in_a_junction() -> bool:
-	if not def.drives or def.shape == null:
-		return false
-	var axis := _solid_axis()
-	var reach := def.shape.reach()
-	for i in JUNCTION_SAMPLES + 1:
-		var point := global_position + axis * lerpf(-reach, reach, float(i) / JUNCTION_SAMPLES)
-		if _map.junction_box_at(_map.world_to_tile(point)) != Vector2i(-1, -1):
-			return true
-	return false
-
-## How many steps `_stands_in_a_junction()` takes along the body: under a quarter tile each for the
-## patrol's 42px, so no tile under it is stepped over.
-const JUNCTION_SAMPLES := 8
-
-## Whether a man this vehicle let out is back in it — gone from the world, by getting in at its
-## door (`_walk_back()`) or by having been out of her sight — or no longer exists.
-static func _officer_is_back(officer: EventInstance) -> bool:
-	return not is_instance_valid(officer) or officer.is_finished
-
-## How many men this vehicle has stopped for and still owes. Read by
+## How many men this vehicle has stopped for and still owes (`EventInvestigation`). Read by
 ## `EventManager._let_the_officers_out()`.
 func officers_owed() -> int:
-	return _officers_owed if not is_finished and not is_leaving else 0
+	return investigation.officers_owed() if investigation else 0
 
-## Hands the vehicle one man `EventManager` put down at its door (`door_for_its_officer()`), so it
-## stands until he is back, and starts his trail at the door he got out of, which is where he walks
-## back to.
+## Hands the vehicle one man `EventManager` put down at its door, so it stands until he is back and
+## he walks back to that door (`EventInvestigation.let_out()`).
 func let_out(officer: EventInstance) -> void:
-	_officers_owed = maxi(_officers_owed - 1, 0)
-	_officers.append(officer)
-	officer._vehicle = self
-	officer._trail = PackedVector2Array([officer.global_position])
+	if investigation:
+		investigation.let_out(officer)
 
 ## The first man this vehicle let out who is still in the world, or null.
 func its_officer() -> EventInstance:
-	for officer in _officers:
-		if is_instance_valid(officer):
-			return officer
-	return null
+	var out := its_officers()
+	return out[0] if not out.is_empty() else null
 
 ## Every man this vehicle let out who is still in the world.
 func its_officers() -> Array[EventInstance]:
-	var out: Array[EventInstance] = []
-	for officer in _officers:
-		if is_instance_valid(officer):
-			out.append(officer)
-	return out
-
-## **One of its men has stopped her: every man it let out walks back to it** — "once the policeman
-## reaches her they stop and walk back to the car" (inbox #669 in coral-lark), so a vehicle that let out more than
-## one man whose catch is a stop costs her once, not once a man. The one who stopped her stands with
-## her through his stop first.
-func _call_back_its_officers(stopped_by: EventInstance) -> void:
-	for officer in its_officers():
-		if officer != stopped_by:
-			officer._be_done()
+	return investigation.its_officers() if investigation else [] as Array[EventInstance]
 
 ## Where a man gets out: beside the body's flank on her side, clear of it by his own reach, `along`
 ## px from its middle along its length — `side` 1 for her side, -1 for the other.
@@ -2964,85 +2843,14 @@ func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:
 
 # ------------------------------------------------------------------- the stop ---
 
-## The vehicle that let this man out, or null for everything else — a torn poster's man included.
-var _vehicle: EventInstance = null
-## The way he came, laid down every `TRAIL_STEP` px while he is out (`_lay_the_trail()`), from the
-## door: walked back in reverse, it is ground he has already walked, so no building stands between
-## him and his vehicle on the way back.
-var _trail := PackedVector2Array()
-## The age at which he reached her and stopped her (`EventDef.stop_excitement`), or `INF`.
-var _stopped_her_at := INF
 ## Whether she is inside a district door's hold this frame, told by
-## `EventManager._tell_them_where_she_is()`. **A man who would stop her waits outside for her**: a
-## stop is a cost on the meter, and inside a hold nothing but the door's toll reaches her
-## (`CheckpointController.door_holding_her_at()`), so a stop made there would land nothing. He
-## keeps after her and stops her once she is let out — as a pursuer's chase goes on past a hut.
-## *Chosen while building, open to overturn: ending his chase on a hold, as the door's own
-## guard's ends, is the other way.*
+## `EventManager._tell_them_where_she_is()`: a man who would stop her waits outside for her
+## (`EventOfficer`).
 var she_is_held := false
 
-## How far apart the points of a man's trail are, in px: a third of a tile, so a corner he went
-## round is a corner on the way back.
-const TRAIL_STEP := 10.0
-
-## Whether this man has reached her and stopped her. See `EventDef.stop_excitement`.
+## Whether this man has reached her and stopped her (`EventOfficer`, `EventDef.stop_excitement`).
 func has_stopped_her() -> bool:
-	return _stopped_her_at != INF
-
-## **His catch, made a stop** (`EventDef.stop_excitement`): chasing — his notice over and not a
-## man walking back — within his catch's own reach of her and along a clear line, which is the
-## very test `is_lethal_at()` asks of a man whose catch ends the day. From here he stands with her
-## (`_process()`), his field lands the stop (`current_intensity()`), and every man his vehicle let
-## out walks back to it.
-func _stop_her_if_he_has_reached_her() -> void:
-	if def.stop_excitement <= 0.0 or has_stopped_her() or player_at == Vector2.INF or she_is_held:
-		return
-	if is_finished or is_leaving or is_waiting() or is_telegraphing():
-		return
-	if global_position.distance_to(player_at) > def.lethal_reach() \
-			or not _clear_line_to(player_at):
-		return
-	_stopped_her_at = age
-	transition(Phase.STOPPED)
-	report_the_catch()
-	_heading = (player_at - global_position).normalized()
-	if is_instance_valid(_vehicle):
-		_vehicle._call_back_its_officers(self)
-
-## Lays the next point of his trail once he is `TRAIL_STEP` from the last. Only a man a vehicle let
-## out has one.
-func _lay_the_trail() -> void:
-	if _trail.is_empty():
-		return
-	if global_position.distance_to(_trail[_trail.size() - 1]) >= TRAIL_STEP:
-		_trail.append(global_position)
-
-## **He walks back the way he came, and gets in**: toward the last point of his trail, dropping each
-## point as he reaches it (`Navigator.walk()`), and gone once he is at the door (`_finish()`). Back
-## along his own trail rather than straight at the vehicle, since a chase can take him round a
-## corner the straight line would cut through a building; where something solid now stands across
-## it, round it to the next point of the trail (`Navigator.path()`), and where nothing goes round,
-## he gets in from there. True while he is still walking back.
-func _walk_back(step: float) -> bool:
-	if not _trail.is_empty():
-		var back := _trail.duplicate()
-		back.reverse()
-		var walked := _navigator.walk(global_position, back, step, _mover)
-		departure.take_the_walk(walked)
-		_trail = walked.points
-		_trail.reverse()
-		if walked.stopped:
-			var round := _navigator.path(global_position, _trail[_trail.size() - 1], _mover)
-			if round.is_empty():
-				_trail.clear()
-			# The way round ends at the trail point itself; the rest goes on the trail's end,
-			# nearest last, since the trail is walked from its end.
-			for i in range(round.size() - 2, -1, -1):
-				_trail.append(round[i])
-		if not _trail.is_empty():
-			return true
-	_finish()
-	return false
+	return on_foot != null and on_foot.has_stopped_her()
 
 ## Ends this chase from outside `_chase()`'s own loop, in the one state `_chase()` reaches when she
 ## has outrun it: `gave_up` set, `_be_done()` called — the same departure, the same drawing and the
@@ -3648,9 +3456,8 @@ func _has_expired() -> bool:
 	# **A vehicle waits for its men**: a hunting van's `duration` runs from its notice, and a van
 	# gone from the kerb would leave a man walking back to nothing. It may leave only once every
 	# man it let out is back in.
-	for officer in _officers:
-		if not _officer_is_back(officer):
-			return false
+	if investigation and not investigation.all_back():
+		return false
 	return def.duration > 0.0 and chase_age() >= notice_time() + def.duration
 
 func _finish() -> void:
@@ -3864,7 +3671,7 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# him — at the centre of his own field, which is where his catch puts her. A short sharp
 		# spike rather than a field she strolls out of, and his field, so walking away takes some
 		# of it off. Nothing after it: he is walking back by then (`_process()`).
-		var into := clampf((age - _stopped_her_at) / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
+		var into := clampf(on_foot.stopped_for() / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
 		return 2.0 * def.stop_excitement / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
@@ -5723,7 +5530,7 @@ func robber_pictures() -> Dictionary:
 	return ROBBER_LUNGING_BY_VIEW_B if _gait_stepping() else ROBBER_LUNGING_BY_VIEW
 
 ## **The policeman on foot, drawn as the robber is.** He faces her while he is after her (`_chase()`
-## keeps `_heading` on her) and his vehicle's door as he walks back (`_walk_back()`); which picture
+## keeps `_heading` on her) and his vehicle's door as he walks back (`EventOfficer.walk_back()`); which picture
 ## is `policeman_pictures()`.
 func _draw_policeman(canvas: CanvasItem = self) -> void:
 	_draw_body_shadow(canvas)

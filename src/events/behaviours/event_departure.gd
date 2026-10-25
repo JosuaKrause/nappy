@@ -63,7 +63,7 @@ func begin() -> void:
 		_way_on = PackedVector2Array()
 		_way_avoids = event._tiles_under_the_band()
 		event._send_the_far_guard_off()
-	if not event._trail.is_empty():
+	if event.on_foot and event.on_foot.walks_back():
 		# **A man a vehicle let out walks back to it** rather than away from her, in her view as he
 		# goes, so he is gone only at its door or out of her sight.
 		_must_clear_sight = true
@@ -129,8 +129,8 @@ func leave(delta: float) -> void:
 	var her: Vector2 = event.player_at
 	if _walks_a_way:
 		_walk_the_way(step)
-	elif not event._trail.is_empty():
-		if not event._walk_back(step):
+	elif event.on_foot and event.on_foot.walks_back():
+		if not event.on_foot.walk_back(step):
 			return
 	else:
 		var wanted: Vector2 = event._heading * step
