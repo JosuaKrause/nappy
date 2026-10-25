@@ -1068,6 +1068,19 @@ var _age := 0.0
 ## tell a fresh instance from one streamed back in.
 var came_under_a_warning := false
 
+## **What this event does**, composed per catalogue row (`EventBehaviours.compose()`): each an
+## `EventBehaviour` owning its own state, ticked in this order. The typed fields below are the same
+## objects, null for a behaviour the row is not composed of.
+var _behaviours: Array[EventBehaviour] = []
+## A conversation or a door's hold (`EventDef.detain_seconds`).
+var hold: EventHold
+## The unmarked van's take of a bystander.
+var abduction: EventAbduction
+## A flock's birds (`EventDef.flock_size`).
+var flock: EventFlock
+## A row sent down her line that is retired once it cannot reach her (the loose dog).
+var unreachable: EventUnreachable
+
 ## **Where this event is in its life, stored and changed in one place** (`transition()`), so every
 ## question about it — is it waiting, warning, done — reads one value rather than re-deriving the
 ## phase from a dozen flags each frame. Every row has one, a pursuer or not.
@@ -1383,7 +1396,7 @@ var _gait_phase := 0.0
 ## on. See `_advance_gait()` and `_gait_stepping()`.
 var _gait_moving := false
 ## A deterministic 0..1 drawn once, in `setup()`, from this instance's own siting position — the
-## same position-hash approach `_flock_roll()` uses, since the day's own RNG is not reachable from
+## same position-hash approach `EventFlock._roll()` uses, since the day's own RNG is not reachable from
 ## here and streaming an instance out and back in must not draw twice from it. Offsets the café
 ## sitters' and the busker's own idle timer (`_idle_stepping()`) so two of either kind placed on
 ## the same day do not lean or strum in lockstep.
@@ -1460,6 +1473,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 		face := Vector2.RIGHT, map: WorldMap = null, navigator: Navigator = null) -> void:
 	def = definition
 	path = route
+	_behaviours = EventBehaviours.compose(self, definition)
 	_map = map if map else WorldMap.open_ground()
 	_navigator = navigator if navigator else _map.navigator()
 	_mover = mover_for(definition)
@@ -1632,8 +1646,8 @@ func _ready() -> void:
 	# first frame she is not — a body never goes down around her.
 	if def.drives and _gap_to_her(position, _heading) >= 0.0:
 		_build_obstruction()
-	if def.flock_size > 0:
-		_build_the_flock()
+	if flock:
+		flock.build()
 	if def.look == EventDef.Look.ROADBLOCK:
 		_build_the_band()
 	_build_the_slices()
@@ -2324,7 +2338,8 @@ func _process(delta: float) -> void:
 
 	if is_leaving:
 		_leave(delta)
-		_fly_the_flock(delta)
+		for behaviour in _behaviours:
+			behaviour.step_leaving(delta)
 		_advance_gait(_path_travelled - _travelled_before)
 		if has_left_its_body_behind() and not is_finished:
 			# He walks off and the barrier does not go with him: its body stays where it was built
@@ -2334,28 +2349,17 @@ func _process(delta: float) -> void:
 		return
 
 	if is_chatting():
-		# The one thing that runs while she is otherwise frozen. Her own controls are locked by
-		# `Stroller.detain()`, called the frame `start_chat()` fires; here it is only a clock, held
-		# apart from `_has_expired()` because `duration` means something else for every other row.
-		_chat_seconds_left = maxf(0.0, _chat_seconds_left - delta)
-		# `redetains` is the one thing that skips `_be_done()` here: a checkpoint's hut or post
-		# stays exactly where it is, still solid, ready for `CheckpointController` to arm it again
-		# the instant she is released and clear of `detain_distance()` — see `EventDef.redetains`.
-		# `chatting_mother` has none of this: her conversation ending is what starts her own
-		# departure, `_be_done()`'s ordinary meaning for anything that is not a fixture.
-		#
-		# **And nothing here shows her again, deliberately.** This clock runs in `_process`, a
-		# *drawn* frame, and the release that moves her runs on a physics frame
-		# (`CheckpointController.release_finished_holds()`), which shows her as it moves her.
-		if _chat_seconds_left <= 0.0 and not def.redetains:
-			_be_done()
+		# The one thing that runs while she is otherwise frozen (`EventHold.step()`): her own controls
+		# are locked by `Stroller.detain()`, and here only the hold's clock runs.
+		hold.step(delta)
 		# Frozen, so no distance is covered — `_advance_gait(0.0)` marks the frame stopped rather
 		# than leaving `_gait_moving` at whatever it read the tick before the conversation started.
 		_advance_gait(0.0)
 		_redraw_if_the_picture_changed()
 		return
 
-	_fly_the_flock(delta)
+	if flock:
+		flock.step(delta)
 	if def.investigates:
 		_investigate()
 		if _runs_its_route() and def.mobile and path.size() > 1:
@@ -2388,7 +2392,8 @@ func _process(delta: float) -> void:
 			_advance_along_path(delta)
 	elif def.mobile and path.size() > 1 and not is_telegraphing_still() and not is_parked:
 		_advance_along_path(delta)
-	_give_up_what_cannot_reach_her(delta)
+	if unreachable:
+		unreachable.step(delta)
 
 	# A car that drives keeps its body through a chase (`EventDef.drives`): cars that drive are the
 	# only bodies that move, and `_drive()` is what keeps them off her.
@@ -2413,8 +2418,8 @@ func _process(delta: float) -> void:
 	_become_solid_once_it_starts()
 	_let_the_body_follow_the_arm()
 
-	if def.look == EventDef.Look.UNMARKED_VAN:
-		_update_the_take()
+	if abduction:
+		abduction.step(delta)
 
 	_advance_gait(_path_travelled - _travelled_before)
 	if _has_expired():
@@ -2439,23 +2444,12 @@ func _take_the_layer_it_warns_on() -> void:
 	DrawLayer.draw_on(self, DrawLayer.Layer.WARNING if is_standing_for_its_notice()
 			else DrawLayer.Layer.ENTITIES)
 
-# ------------------------------------------------------------------- the chat ---
-# `chatting_mother`'s whole mechanic, and a door's hold: a trigger rather than a field.
-# `CheckpointController` decides *when* — it holds the player, whom it detains, hides and lets out
-# — and the clock of *what happens once it has* lives here.
+# ------------------------------------------------------------------- the hold ---
 
-## Whether she has ever had her one conversation. Checked by `CheckpointController` before it
-## will ever call `start_chat()` again: once true, this instance can never detain a second time,
-## whatever she does — she is spent as a detainer the moment the first one starts.
-var _has_chatted := false
-## Seconds left in the conversation currently running, or `0.0` when none is.
-var _chat_seconds_left := 0.0
-
-## Whether a conversation is running right now. Freezes pacing (see `_process`) and switches the
-## posture from strolling to talking (see `_draw_chatting_mother`) — the only two things about her
-## that a conversation changes, since the lock on the player's own movement lives on `Stroller`.
+## Whether a conversation or a door's hold is running right now (`EventHold`). Freezes pacing (see
+## `_process`) and switches a mother's posture from strolling to talking (`_draw_chatting_mother`).
 func is_chatting() -> bool:
-	return _chat_seconds_left > 0.0
+	return hold != null and hold.is_running()
 
 ## Whether the guard this instance draws is inside with her for its own hold right now — he is the
 ## one taking her in, so he is not also standing in the street, see
@@ -2481,19 +2475,16 @@ func is_its_guard_inside() -> bool:
 func is_suppressed_by_its_own_hold() -> bool:
 	return is_its_guard_inside() and def.look == EventDef.Look.CHECKPOINT_POST
 
-## Whether this instance has ever detained anybody. See `_has_chatted`.
+## Whether this instance has ever held her (`EventHold.has_held()`). A row that does not redetain
+## never holds her twice.
 func has_chatted() -> bool:
-	return _has_chatted
+	return hold != null and hold.has_held()
 
-## Starts the one conversation this instance will ever have. Called by `EventManager` the frame it
-## decides the player has come within `def.detain_distance()` of an instance that has not chatted
-## yet — see
-## `CheckpointController.check_detentions()`. Spends the instance as a detainer immediately,
-## before the clock has run a single frame, so a second call before this one finishes can never
-## restart it.
+## Starts a hold, the frame `CheckpointController.check_detentions()` decides she has come within
+## `def.detain_distance()` of an instance that may take her (`EventHold.start()`).
 func start_chat() -> void:
-	_has_chatted = true
-	_chat_seconds_left = def.detain_seconds
+	if hold:
+		hold.start()
 
 ## Whether the chase ended because she shook it off rather than because the clock ran out. Read by
 ## the telemetry, which is the only thing that can tell the two apart from outside.
@@ -3127,7 +3118,7 @@ func _check_for_notice() -> void:
 ## **Birds go up when she reaches them, and a clock cannot know when that is.**
 ## *(2026-09-20: "birds are also very late to start. they shouldn't prematurely start but they
 ## should basically start fluttering when I touch them not after".)* A flock's telegraph is the
-## birds still pecking — `_fly_the_flock()` keeps them on the ground for the whole of it — so
+## birds still pecking — `EventFlock` keeps them on the ground for the whole of it — so
 ## whatever the telegraph's length, it is the wait between her walking into the flock and the flock
 ## reacting. Walked into at `Tuning.WALK_SPEED` it put them up well past her.
 ##
@@ -3441,265 +3432,37 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 		_advance_along_path(0.0)
 
 # ------------------------------------------------------------------- the take ---
-# `abduction`'s own scene: a bystander walked to the van and taken, the first time she comes close
-# enough to see it happen. Drawing and telemetry only — nothing here reaches into the crowd, and
-# nothing here changes `contribution_at()`. See docs/TODO.md, M56, "the van draws its own victim".
 
-## How long the walk to the van takes, once it starts.
-const VICTIM_TAKEN_OVER := 2.5
-## How far to the side of the van the victim stands before the walk begins.
-const VICTIM_STANDING_OFFSET := 32.0
-
-## Age the take began, or `INF` before it has and after a hunting van abandons one mid-walk. Not
-## restored by `resume()`, which carries `age`, `travelled` and the notice but stops there — and
-## it is harmless for a reason the notice does not share: the whole scene is under three
-## seconds, far short of anything that gets an instance streamed out and back in.
-var _victim_taken_at := INF
-## Whether the one telemetry entry for this take has already been written, so a frame that finds
-## the walk finished twice in a row cannot log it twice.
-var _victim_logged := false
-## Where the instance writes its own account for the run log — the take above — handed in by the
-## manager that creates it; silent otherwise.
+## Where the instance writes its own account for the run log, handed in by the manager that
+## creates it; silent otherwise.
 var trace := RunTrace.new()
 
-## How long this instance has left before it is simply gone, or `INF` where the question does not
-## yet apply. A pursuer that is still only waiting has no expiry of its own — `_has_expired()`
-## returns false for the whole time — so its life is unbounded until she gives it a reason to end.
-func _victim_time_left() -> float:
-	if is_waiting() or def.duration <= 0.0:
-		return INF
-	return (notice_time() + def.duration) - chase_age()
-
-## Runs the scene: starts it, times it, and tells the log when it finishes.
-##
-## **Begins the first time she can see it happen.** `def.outer_radius` rather than some smaller
-## trigger, because the design's own sentence is that the take "only means anything where she can
-## see it happen" — a van she never came near never runs it. `player_at` is the same write
-## `_chase` reads, which is what lets a data-level rig drive this scene by hand.
-##
-## **Never starts without enough of the van's own life left to finish in.** A take cut short by the
-## van disappearing mid-walk would read as a bug rather than as an abduction.
-##
-## **A hunting van has other business.** The instant it stops waiting it is letting its men out
-## after her (`EventDef.hunts_on_foot`) rather than idling at the kerb, so an in-progress take is
-## abandoned rather than finished: no victim is drawn again, taken or not, and nothing is logged for
-## a take that never completed.
-func _update_the_take() -> void:
-	if (def.pursuit != null or def.investigates) and not is_waiting():
-		_victim_taken_at = INF
-		return
-	if _victim_taken_at == INF:
-		if player_at == Vector2.INF \
-				or global_position.distance_to(player_at) > def.outer_radius \
-				or _victim_time_left() < VICTIM_TAKEN_OVER:
-			return
-		_victim_taken_at = age
-		return
-	if _victim_logged or age - _victim_taken_at < VICTIM_TAKEN_OVER:
-		return
-	_victim_logged = true
-	trace.note("taken", "'%s' takes a bystander" % def.id)
-
-## Whether the scene is running right now, for `_draw_abduction` and for a test to drive by hand
-## without reaching into a private field.
+## Whether the van's take of a bystander is running right now (`EventAbduction`), for
+## `_draw_abduction` and for a test to drive by hand.
 func is_taking_a_victim() -> bool:
-	return _victim_taken_at != INF and (age - _victim_taken_at) < VICTIM_TAKEN_OVER
+	return abduction != null and abduction.is_taking()
 
 # ------------------------------------------------------------------ the flock ---
-# **A flock drawn as one picture repeated is a flock that freezes.** Offsets derived from the
-# instance's own position keep the shape from boiling between frames, which is right for a still and
-# is exactly what stops the birds ever moving apart; a single `rise` term that reaches 1.0 at the
-# end of the telegraph and then holds sends the flock up in one movement and hangs it in the air,
-# motionless, for the whole burst that is supposed to *be* the event.
-#
-# So each bird is its own body: its own place on the pavement, its own heading, its own speed, its
-# own height, its own wingbeat, and its own contribution to the excitement. Three things follow and
-# each is load-bearing:
-#
-# - **The excitement is still a pure query, and it is now a query over eleven sources.** `Baby` asks
-#   the world, the world sums `contribution_at()`, and this one sums over its birds — which is the
-#   invariant working exactly as written rather than an exception to it. It is also what makes the
-#   flock *dangerous* in the way a route-planning game can use: the middle of it stacks four or five
-#   overlapping fields and the edge of it stacks one, so walking round it is cheap and walking
-#   through it is the most expensive thing on an act I pavement.
-# - **The birds stay inside `flock_spread` of the middle**, which is what keeps the telegraph
-#   fairness contract true. The contract is stated over `outer_radius` from the instance's own
-#   position; `flock_spread + _bird_outer()` is `outer_radius`, so the union of eleven moving fields
-#   is a subset of the one disc `Tuning.validate_event` checked. Widening the wheel without shrinking
-#   the per-bird radius would quietly move the field the contract was written about.
-# - **They wheel rather than fly straight.** A bird that flies straight leaves, and a flock that
-#   leaves is a flock that is over — so being over is said with `is_leaving`, and only then do they
-#   all pick the same direction.
 
-## One bird. Deliberately not a node: eleven Node2Ds per flock, y-sorted against a city, to draw
-## eleven 18px sprites that are always within 60px of each other, is a great deal of tree for a
-## picture that one `_draw()` produces correctly. `RefCounted` rather than `Node` so it cannot leak.
-class Bird extends RefCounted:
-	## Where it is on the ground plane, relative to the flock's own origin.
-	var at := Vector2.ZERO
-	## How far off that ground, in px. Zero while it is standing on the pavement.
-	var lift := 0.0
-	var heading := Vector2.RIGHT
-	var speed := 0.0
-	## Radians per second, signed. What makes it wheel instead of flying out of its own event.
-	var turn := 0.0
-	## How high this one goes, and how fast it gets there.
-	var ceiling := 0.0
-	var climb := 0.0
-	## Wingbeats per second, and where in one it currently is.
-	var beat := 0.0
-	var phase := 0.0
-	## This bird's own held eight-view sector — one per bird rather than one shared with the
-	## instance's own `_view_sector`, since a flock is eleven bodies wheeling independently rather
-	## than one actor with one facing. See `EventInstance._select_view()`, the same hold applied
-	## per bird by `_draw_birds()`.
-	var view_sector := 2
-
-var _flock: Array[Bird] = []
-
-## How fast a bird crosses the ground once it is up, and how slowly it shuffles before it is.
-const BIRD_FLIGHT_SPEED := 96.0
-const BIRD_GROUND_SPEED := 7.0
-## How much faster a bird that is getting out of here goes than one that is wheeling.
-const BIRD_DEPARTURE_GAIN := 2.1
-
-## Scatters the flock across the pavement it is standing on.
-##
-## Seeded from the instance's own position rather than from an RNG, and that is not laziness: the
-## determinism invariant says nothing gameplay-relevant may call the global `randi()`, and the day's
-## RNG is not reachable from here — nor should it be, since streaming this event out and back in
-## would then consume from it twice and move every event planned after it. A hash of where it stands
-## gives the same flock every time the same flock is built, which is the property that matters.
-func _build_the_flock() -> void:
-	_flock.clear()
-	var count := def.flock_size
-	for i in count:
-		var bird := Bird.new()
-		# Spread round the middle rather than scattered independently, so eleven birds read as a
-		# flock rather than as eleven birds who happen to be near each other.
-		var angle := TAU * (float(i) + 0.35 * _flock_roll(i, 1)) / float(count)
-		var reach := def.flock_spread * (0.3 + 0.7 * _flock_roll(i, 2))
-		bird.at = Vector2(cos(angle), sin(angle) * GROUND_SQUASH) * reach
-		bird.heading = Vector2.from_angle(TAU * _flock_roll(i, 3))
-		bird.view_sector = EightDirection.nearest(bird.heading)
-		bird.speed = BIRD_GROUND_SPEED
-		# Half of them wheel each way, or the flock rotates as a body and reads as a carousel.
-		bird.turn = (1.2 + 1.4 * _flock_roll(i, 4)) * (1.0 if i % 2 == 0 else -1.0)
-		bird.ceiling = 20.0 + 34.0 * _flock_roll(i, 5)
-		bird.climb = 34.0 + 40.0 * _flock_roll(i, 6)
-		bird.beat = 6.0 + 5.0 * _flock_roll(i, 7)
-		bird.phase = TAU * _flock_roll(i, 8)
-		_flock.append(bird)
-
-## The oblique view: a circle on the ground is drawn as an ellipse, so the flock's footprint is
-## squashed on Y exactly as every shadow in the game is.
-const GROUND_SQUASH := 0.55
-
-## A deterministic 0..1 from the flock's own position, its index and a salt. One salt per property,
-## or every bird's speed would be a function of its own heading.
-func _flock_roll(index: int, salt: int) -> float:
-	var mixed := int(global_position.x) * 73856093 + int(global_position.y) * 19349663 \
-			+ index * 83492791 + salt * 2971215073
-	return float(absi(mixed) % 4096) / 4096.0
-
-## Steps every bird. Three phases, and they are the whole event: **on the pavement** while it waits
-## for her and while it telegraphs, which is the part she can see from down the street and walk
-## around; **up and wheeling** for the duration, which is the part that costs; and **away** once it
-## is over.
-##
-## **The wait is on the ground with the telegraph, not in the air with the burst**, and the two are
-## separate predicates: `is_waiting()` is false for a row with no trigger and `is_telegraphing()` is
-## false *while* a row waits, so a flock asked only the second question would hold its whole wait in
-## the air — birds flying in place over a pavement for as long as it takes her to walk up to them,
-## which is the frozen-flock bug with a longer fuse.
-func _fly_the_flock(delta: float) -> void:
-	if _flock.is_empty():
-		return
-	var grounded := is_waiting() or is_telegraphing()
-	for bird in _flock:
-		bird.phase += bird.beat * TAU * delta
-		if grounded:
-			# Pecking about. It has to move — a bird standing perfectly still is the bug being
-			# fixed, one phase earlier — but slowly enough that the flock is plainly still on the
-			# ground and plainly still avoidable.
-			bird.speed = BIRD_GROUND_SPEED
-			bird.heading = bird.heading.rotated(bird.turn * 0.5 * delta)
-			bird.lift = 0.0
-		elif is_leaving:
-			# Everybody the same way now, and climbing hard. What is over says so by leaving, and a
-			# flock that was still wheeling would read as still happening.
-			bird.heading = _steer(bird.heading, _heading, BIRD_TURN_IN, delta)
-			bird.speed = move_toward(bird.speed, BIRD_FLIGHT_SPEED * BIRD_DEPARTURE_GAIN,
-					260.0 * delta)
-			bird.lift += bird.climb * delta
-		else:
-			bird.heading = bird.heading.rotated(bird.turn * delta)
-			bird.speed = move_toward(bird.speed, BIRD_FLIGHT_SPEED, 320.0 * delta)
-			bird.lift = move_toward(bird.lift, bird.ceiling, bird.climb * delta)
-			# Turned back before the edge of its own event, not at it. A bird's own wheel is wider
-			# than the flock at every speed either of them wants, so without this they simply fly
-			# out of the field they are supposed to be, and take the fairness contract with them.
-			#
-			# **From half way out** rather than from the boundary, because a turn is not free: at
-			# `BIRD_FLIGHT_SPEED` and `BIRD_TURN_IN` the tightest circle a bird can fly has a radius
-			# of about 21px, so a bird that is still heading outwards when it reaches the edge is
-			# already outside by the time it has come round. Starting at half the spread leaves it
-			# the room the turn costs.
-			if bird.at.length() > def.flock_spread * 0.5:
-				bird.heading = _steer(bird.heading, -bird.at.normalized(), BIRD_TURN_IN, delta)
-		bird.at += bird.heading * bird.speed * Vector2(1.0, GROUND_SQUASH) * delta
-		if not is_leaving and bird.at.length() > def.flock_spread:
-			# The steering above is what a bird turning back *looks* like; this is the line that
-			# makes it a **guarantee**, and the fairness contract needs one rather than a tendency:
-			# `_bird_outer()` is `outer_radius - flock_spread` precisely so that a bird at the rim
-			# reaches exactly as far as the event was validated to. Steering from half way out means
-			# it shaves a pixel or two when it fires at all, so nothing visible rides on it.
-			bird.at = bird.at.normalized() * def.flock_spread
-
-## Turns `heading` toward `wanted` at up to `rate` radians a second.
-##
-## **Rotating rather than interpolating, and that is not a style choice.** The first version was
-## `heading.lerp(wanted, k)`, which cannot turn a vector round: interpolating between a unit vector
-## and its opposite runs *down the same line* to zero and back out the way it came, so normalising
-## the result gives the heading it started with. A bird flying directly out of its own flock was
-## therefore the one case the containment could not fix, and it is the case that matters — it flew
-## 202px out of a 62px wheel while the code that was supposed to hold it ran every frame.
-func _steer(heading: Vector2, wanted: Vector2, rate: float, delta: float) -> Vector2:
-	var difference := angle_difference(heading.angle(), wanted.angle())
-	return heading.rotated(clampf(difference, -rate * delta, rate * delta))
-
-## How hard a bird can turn, in radians a second. Fast enough that the wheel it flies fits inside
-## the flock — see the note in `_fly_the_flock` — and slow enough to read as a bird banking.
-const BIRD_TURN_IN := 4.6
-
-## The radius one bird emits over. The rest of the field is the room the flock takes up: a bird at
-## the far edge of the wheel reaches exactly as far as the event says it does and no further.
-func _bird_outer() -> float:
-	return maxf(def.inner_radius + 1.0, def.outer_radius - def.flock_spread)
-
-## `_bird_outer()`, read by `DebugLayers` so a flock's own fields layer draws the exact radius
-## `_flock_contribution_at()` sums over rather than a second formula that could drift from it.
+## The radius one bird emits over (`EventFlock.bird_outer()`), read by `DebugLayers` so a flock's
+## own fields layer draws the exact radius `_flock_contribution_at()` sums over.
 func flock_outer_radius() -> float:
-	return _bird_outer()
+	return flock.bird_outer() if flock else 0.0
 
 ## Each live bird's own ground-plane offset from this instance's origin — empty for anything
-## without a flock. The one place `DebugLayers` reads into `_flock`, which otherwise has no public
-## accessor: see that class for why the fields layer draws one pair of radii per bird rather than
-## one for the whole instance.
+## without a flock. What `DebugLayers` draws one pair of radii per bird from.
 func flock_offsets() -> Array[Vector2]:
-	var offsets: Array[Vector2] = []
-	for bird in _flock:
-		offsets.append(bird.at)
-	return offsets
+	return flock.offsets() if flock else [] as Array[Vector2]
 
-## Each live bird's own `heading * speed`, parallel to `flock_offsets()` — the velocity
-## `_flock_contribution_at()` already reads per bird, exposed so the debug view's fields layer can
-## draw the same eccentric boundary rather than a circle standing in for it.
+## Each live bird's own `heading * speed`, parallel to `flock_offsets()`.
 func flock_velocities() -> Array[Vector2]:
-	var velocities: Array[Vector2] = []
-	for bird in _flock:
-		velocities.append(bird.heading * bird.speed)
-	return velocities
+	return flock.velocities() if flock else [] as Array[Vector2]
+
+## Its birds (`EventFlock.birds`), or none for a row that is one body.
+func _birds() -> Array[EventFlock.Bird]:
+	return flock.birds if flock else _NO_BIRDS
+
+static var _NO_BIRDS: Array[EventFlock.Bird] = []
 
 # --------------------------------------------------------------- going away ---
 # **Nothing vanishes while you are looking at it.** An event that ends by `_finish()` wherever it
@@ -3745,49 +3508,6 @@ var _leaving_must_clear_sight := false
 ## from his barrier, set `_leaving_must_clear_sight`, which keeps this clock from
 ## ending an instance she could still be watching — see `_leave()`.
 const LEAVING_GIVES_UP := 6.0
-
-## How long a row sent down her line without a warning (`loose_dog`) may be out of sight and not
-## closing on her before it is retired, in seconds.
-const CANNOT_REACH_HER_GIVES_UP := 2.0
-## How often the gap to her is looked at, in seconds, and the least it must have shrunk by, per
-## second, to count as closing — a dog running at 132px/s after a walker going away at 92 closes at
-## 40, a dog after someone running (168px/s) at none.
-const CLOSING_LOOK_EVERY := 0.5
-const CLOSING_AT_LEAST := 10.0
-
-var _gap_looked_at := INF
-var _gap_look_clock := 0.0
-var _not_closing_for := 0.0
-
-## **A row sent down her line that cannot reach her is retired, not left to run on out of sight.**
-## *(sunny-hedgehog, 2026-09-27: "a loose dog that spawns behind me never arrives it stays offscreen
-## indefinitely".)* The director sends it ahead of her, but she may turn round or run (`RUN_SPEED`
-## 168 against its 132), and a dog behind her that is not gaining on her never arrives: it ran its
-## whole route out of sight and charged nothing. Once it is more than `Tuning.OUT_OF_SIGHT` from
-## her — nothing on screen — and has not closed on her for `CANNOT_REACH_HER_GIVES_UP` seconds, it
-## is finished where it stands; nothing is seen to go. A dog that is closing, even slowly after a
-## walker going away, runs on and passes her.
-func _give_up_what_cannot_reach_her(delta: float) -> void:
-	if not def.comes_down_her_line() or def.telegraphs or is_finished or is_leaving \
-			or player_at == Vector2.INF:
-		return
-	var gap := global_position.distance_to(player_at)
-	if gap <= Tuning.OUT_OF_SIGHT:
-		_gap_looked_at = INF
-		_gap_look_clock = 0.0
-		_not_closing_for = 0.0
-		return
-	_gap_look_clock += delta
-	if _gap_look_clock < CLOSING_LOOK_EVERY:
-		return
-	if _gap_looked_at != INF and (_gap_looked_at - gap) / _gap_look_clock < CLOSING_AT_LEAST:
-		_not_closing_for += _gap_look_clock
-	else:
-		_not_closing_for = 0.0
-	_gap_looked_at = gap
-	_gap_look_clock = 0.0
-	if _not_closing_for >= CANNOT_REACH_HER_GIVES_UP:
-		_finish()
 
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
 ##
@@ -4614,7 +4334,7 @@ func contribution_at(world_position: Vector2, intensity_override := -1.0,
 ## a flock's birds and a guard's band stand away from this node.
 func _contribution_at_uncached(world_position: Vector2, intensity_override: float,
 		velocity_override: Vector2) -> float:
-	if not is_leaving and _flock.is_empty():
+	if not is_leaving and _birds().is_empty():
 		var reach := def.silent_beyond()
 		if global_position.distance_squared_to(world_position) > reach * reach:
 			return 0.0
@@ -4670,7 +4390,7 @@ func _field_at(world_position: Vector2, intensity_override: float,
 		# roadblock's band has no field strength of its own (`EventCatalogue._roadblock()`).
 		return 0.0
 	var intensity := intensity_override if intensity_override >= 0.0 else current_intensity()
-	if not _flock.is_empty():
+	if not _birds().is_empty():
 		return _flock_contribution_at(world_position, intensity)
 	var velocity := velocity_override if velocity_override != Vector2.INF else travel_velocity()
 	# `EventDef.emission_at_distance()` rather than `Tuning.falloff` direct, so the one row with a
@@ -4719,10 +4439,10 @@ func field_shape() -> GroundShape:
 ## eleven of them is not where the general capsule-and-ellipse sum earns its cost.
 func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float:
 	var total_intensity := intensity if intensity >= 0.0 else current_intensity()
-	var share := total_intensity / float(_flock.size())
-	var outer := _bird_outer()
+	var share := total_intensity / float(_birds().size())
+	var outer := flock.bird_outer()
 	var total := 0.0
-	for bird in _flock:
+	for bird in _birds():
 		var d := GroundShape.eccentric_distance(global_position + bird.at, bird.heading * bird.speed,
 				world_position)
 		total += Tuning.falloff(d, share, def.inner_radius, outer, def.falloff_power)
@@ -4834,7 +4554,7 @@ func expected_gross_at(player_position: Vector2) -> float:
 	# Compare the effective sample inputs by value, including mutable definition/shape fields.
 	# Age alone cannot cover a retirement, silence, external movement or changed player state.
 	# Flocks retain their ordinary path: every bird has independently mutable geometry.
-	if _flock.is_empty():
+	if _birds().is_empty():
 		var key := [global_position, player_position, player_velocity, velocity,
 			live_intensity, def.intensity, def.inner_radius, def.outer_radius,
 			def.falloff_power, def.core_intensity, def.core_radius, _solid_axis(),
@@ -5027,7 +4747,7 @@ var _picture_is_stale := false
 ## and spread about its feet, or the band it left at its post (`RoadblockBand`, whose redraw rides on
 ## this gate). A flock that is leaving is always drawn, since its birds fly off past any reach.
 func _in_the_drawn_view() -> bool:
-	if is_leaving and not _flock.is_empty():
+	if is_leaving and not _birds().is_empty():
 		return true
 	var reach := _drawn_reach()
 	if DrawnView.shows(self, reach):
@@ -5065,10 +4785,10 @@ const SWELL_STEPS := 128.0
 ## **flock**, whose eleven birds each hold their own position, lift and wingbeat phase; a
 ## **burning building** and a **firefight**, whose flames and muzzle flashes are sized off `sin(age
 ## × k)` and are drawn rather than authored; and an **abduction mid-take**, whose victim slides
-## from her standing offset to the van over `VICTIM_TAKEN_OVER` seconds. Every one of them is a
+## from her standing offset to the van over `EventAbduction.VICTIM_TAKEN_OVER` seconds. Every one of them is a
 ## handful of instances on a day at most, and none of them was ever going to be gated.
 func _picture_never_settles() -> bool:
-	if not _flock.is_empty():
+	if not _birds().is_empty():
 		return true
 	if is_taking_a_victim():
 		return true
@@ -5277,24 +4997,24 @@ func _gait_stepping() -> bool:
 func _gait_second_half() -> bool:
 	return _gait_phase >= PI
 
-## The victim's own short scripted walk to the van (`VICTIM_STANDING_OFFSET` over
-## `VICTIM_TAKEN_OVER` seconds, `_update_the_take()`) is a straight-line lerp on `age` rather than
-## anything that touches `_path_travelled`, so it gets its own derived stride instead of sharing
-## `_gait_phase` — a persistent field would have nothing to reset between takes that `age -
-## _victim_taken_at` restarting at zero does not already give it. The walk is at a constant speed
-## by construction (linear interpolation over a fixed time), so the distance covered by moment
-## `t` is exactly `t * (VICTIM_STANDING_OFFSET / VICTIM_TAKEN_OVER)`, fed through the same
+## The victim's own short scripted walk to the van (`EventAbduction`) is a straight-line lerp on
+## `age` rather than anything that touches `_path_travelled`, so it gets its own derived stride
+## instead of sharing `_gait_phase` — a persistent field would have nothing to reset between takes
+## that the walk's own time (`EventAbduction.walked_for()`) restarting at zero does not already
+## give it. The walk is at a constant speed by construction (linear interpolation over a fixed
+## time), so the distance covered by moment `t` is exactly `t * (VICTIM_STANDING_OFFSET /
+## VICTIM_TAKEN_OVER)`, fed through the same
 ## `GAIT_RATE` and doubled-phase test `_gait_stepping()` uses. `sin(0) == 0`, so the walk always
 ## starts on frame a rather than mid-stride.
 func _victim_gait_stepping() -> bool:
 	if not is_taking_a_victim():
 		return false
-	var elapsed := age - _victim_taken_at
-	var speed := VICTIM_STANDING_OFFSET / VICTIM_TAKEN_OVER
+	var elapsed := abduction.walked_for()
+	var speed := EventAbduction.VICTIM_STANDING_OFFSET / EventAbduction.VICTIM_TAKEN_OVER
 	return sin(elapsed * speed * GAIT_RATE * 2.0) > 0.0
 
 ## A deterministic 0..1 from this instance's own siting position, an index and a salt — the same
-## hash `_flock_roll()` already uses for a flock's own scatter, generalised to one index (0) since
+## hash `EventFlock._roll()` already uses for a flock's own scatter, generalised to one index (0) since
 ## nothing outside a flock needs more than one draw. No global RNG is reachable from here, and
 ## streaming an instance out and back in must not draw from one twice; a hash of where the day
 ## placed it answers the same way every time the same plan places the same instance.
@@ -6211,11 +5931,11 @@ func _draw_loose_dog(canvas: CanvasItem = self) -> void:
 ## a bird standing 40px further north.
 func _draw_birds(canvas: CanvasItem = self) -> void:
 	var order: Array[int] = []
-	for i in _flock.size():
+	for i in _birds().size():
 		order.append(i)
-	order.sort_custom(func(a: int, b: int) -> bool: return _flock[a].at.y < _flock[b].at.y)
+	order.sort_custom(func(a: int, b: int) -> bool: return _birds()[a].at.y < _birds()[b].at.y)
 	for i in order:
-		var bird := _flock[i]
+		var bird := _birds()[i]
 		if bird.lift < BIRD_SHADOW_CEILING:
 			# Smaller and fainter the higher it is, and gone by the time it is over the rooftops.
 			var faded := 1.0 - bird.lift / BIRD_SHADOW_CEILING
@@ -7519,9 +7239,8 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 ## The van, and the bystander it is taking while there is one to draw.
 ##
 ## `_draw_dog_walker` above is the precedent for a second figure with its own offset; here the
-## second figure has a scene rather than a fixed span, sliding from `VICTIM_STANDING_OFFSET` to
-## the van's own position over `VICTIM_TAKEN_OVER` — see `_update_the_take()`, the only place that
-## ever sets `_victim_taken_at`. Drawn first so the van's own silhouette is what she is left
+## second figure has a scene rather than a fixed span, sliding from its standing offset to the van's
+## own position over the take's length — see `EventAbduction`, the one place that starts it. Drawn first so the van's own silhouette is what she is left
 ## looking at once the walk ends, the same order `_draw_cafe` draws its sitters before its tables.
 ##
 ## The van itself goes through `_draw_eight_view` rather than `_draw_simple`: a parked van never
@@ -7530,7 +7249,7 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 ## does once it turns off its own axis.
 ## The victim and the van share one `_view_sector` field — safely, because both headings are always
 ## exactly east or west by construction while they can ever be drawn together. `is_taking_a_victim()`
-## is only ever true while the van `is_waiting()` (`_update_the_take()` abandons it the instant a
+## is only ever true while the van `is_waiting()` (`EventAbduction` abandons it the instant a
 ## `HUNTS`-heated copy starts hunting), and idling the van's own `_heading` is `Planned.facing`'s
 ## untouched default, always due east — so the van's own `_select_view(_heading)` call below, after
 ## the victim's, only ever asks for exactly the sector the victim's own call left it on (both facing
@@ -7538,9 +7257,9 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 ## anything a stale hold could get wrong.
 func _draw_abduction(canvas: CanvasItem = self) -> void:
 	if is_taking_a_victim():
-		var through := (age - _victim_taken_at) / VICTIM_TAKEN_OVER
-		var standing := Vector2(
-				-VICTIM_STANDING_OFFSET if _heading_is_west() else VICTIM_STANDING_OFFSET, 0.0)
+		var through := abduction.walked_for() / EventAbduction.VICTIM_TAKEN_OVER
+		var offset := EventAbduction.VICTIM_STANDING_OFFSET
+		var standing := Vector2(-offset if _heading_is_west() else offset, 0.0)
 		var at := standing.lerp(Vector2.ZERO, through)
 		_draw_shadow(canvas, at, 8.0)
 		# She faces the van, which is the only place she is walking to — a pure east/west direction

@@ -80,7 +80,7 @@ func _audit_prediction(key: Array) -> void:
 """)
         if relative.startswith("events"):
             anchor = "\tvar live_intensity := _caret_intensity_over_horizon()\n"
-            addition = "\tif _flock.is_empty():\n\t\t_audit_prediction(" + key + ")\n"
+            addition = "\tif _birds().is_empty():\n\t\t_audit_prediction(" + key + ")\n"
         else:
             anchor = "\tvar current_rate := contribution_at(player_position)\n"
             addition = "\t_audit_prediction(" + key + ")\n"

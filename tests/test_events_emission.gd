@@ -338,9 +338,9 @@ func _test_contribution_skips_only_silence(t) -> void:
 func _test_flocks_are_not_skipped(t) -> void:
 	var flock := EventInstance.new()
 	flock.setup(EventCatalogue.by_id("pigeon_flock"), Vector2.ZERO)
-	flock._build_the_flock()
+	flock.flock.build()
 	var far_bird := Vector2(flock.def.silent_beyond() * 3.0, 0.0)
-	flock._flock[0].at = far_bird
+	flock.flock.birds[0].at = far_bird
 	t.check(flock.contribution_at(far_bird) > 0.0,
 			"a bird far past its flock's silent_beyond() is still heard where it is")
 	flock.free()

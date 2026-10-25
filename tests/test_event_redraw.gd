@@ -422,8 +422,8 @@ func _test_the_flock_and_the_drawn_flames_are_never_gated(t) -> void:
 	var flock := EventInstance.new()
 	flock.setup(EventCatalogue.by_id("pigeon_flock"), Vector2.ZERO)
 	# `_ready()` is what builds the birds in a real scene; a bare rig has to ask for them.
-	flock._build_the_flock()
-	t.check(not flock._flock.is_empty(), "the flock has birds")
+	flock.flock.build()
+	t.check(not flock.flock.birds.is_empty(), "the flock has birds")
 	t.check(flock._picture_never_settles(), "a flock is never gated — every bird moves every tick")
 	flock.free()
 
@@ -450,12 +450,12 @@ func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t) -> void:
 	instance.setup(EventCatalogue.by_id("abduction"), Vector2.ZERO, PackedVector2Array(),
 			Vector2.RIGHT)
 	t.check(not instance._picture_never_settles(), "an idle van is gated like any other vehicle")
-	instance._victim_taken_at = instance.age
+	instance.abduction.take_now()
 	instance._process(STEP)
 	t.check(instance.is_taking_a_victim(), "the take is running")
 	t.check(instance._picture_never_settles(), "a van mid-take is never gated")
 	var during := instance._picture_key()
-	instance._victim_taken_at = INF
+	instance.abduction.stop()
 	instance._process(STEP)
 	t.check(not instance.is_taking_a_victim(), "the take is over")
 	t.check(instance._picture_key() != during,

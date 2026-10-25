@@ -69,7 +69,7 @@ func _instance_at(def: EventDef, at: Vector2) -> EventInstance:
 	return instance
 
 ## A catalogue row's instance, live in the tree so `_ready()` actually runs — which is what
-## builds `_flock` for a flock row, and what a rim needs to be a child in the tree of, neither of
+## builds a flock row's birds, and what a rim needs to be a child in the tree of, neither of
 ## which `_instance_at()` above gets, since it never calls `setup()` through a parent. Mirrors
 ## `tests/test_events.gd`'s own `_instance()` helper, kept local here rather than shared, because
 ## the two suites hold different halves of this class and neither should have to know the other's
@@ -563,7 +563,7 @@ func _test_a_cat_dash_is_selected_and_lands(t) -> void:
 func _test_a_flock_is_selected_and_lands(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var flock := _rig_instance(t, def, Vector2.ZERO)
-	t.check(flock._flock.size() == def.flock_size,
+	t.check(flock.flock.birds.size() == def.flock_size,
 			"_ready() (live in the tree) built the flock, unlike a bare _instance_at()")
 	# Standing in it: a flock waits on the pavement until she is inside `EventDef.notice`, and both
 	# the telegraph and the burst below are measured from the moment it notices her — which is the
@@ -608,16 +608,16 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 	flock._process(def.telegraph_time + 0.1)
 
 	var before: Array[Vector2] = []
-	for bird in flock._flock:
+	for bird in flock.flock.birds:
 		before.append(bird.at)
 	flock._process(STEP)
 	var moved := 0
-	for i in flock._flock.size():
-		if not flock._flock[i].at.is_equal_approx(before[i]):
+	for i in flock.flock.birds.size():
+		if not flock.flock.birds[i].at.is_equal_approx(before[i]):
 			moved += 1
-	t.check(flock._flock.size() > 0 and moved == flock._flock.size(),
+	t.check(flock.flock.birds.size() > 0 and moved == flock.flock.birds.size(),
 			"every one of the %d birds is somewhere new one frame on, so the silhouette the rim "
-			% flock._flock.size()
+			% flock.flock.birds.size()
 			+ "traces is a different silhouette every frame")
 
 	# And the rim over them is exactly the state that used to stop re-tracing.

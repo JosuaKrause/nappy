@@ -68,8 +68,8 @@ func _flock_walked_through(t, def: EventDef, offset: float) -> float:
 ## when they move independently and does not when they move as one shape.
 func _widest_gap_between_birds(instance: EventInstance) -> float:
 	var widest := 0.0
-	for a in instance._flock:
-		for b in instance._flock:
+	for a in instance.flock.birds:
+		for b in instance.flock.birds:
 			widest = maxf(widest, a.at.distance_to(b.at))
 	return widest
 
@@ -120,7 +120,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 		instance._process(STEP)
 		if instance.is_leaving:
 			break
-		for bird in instance._flock:
+		for bird in instance.flock.birds:
 			furthest = maxf(furthest, bird.at.length())
 	t.check(furthest <= def.flock_spread + 2.0,
 			"every bird stayed inside the %.0fpx flock for the whole burst (furthest %.0fpx)"
@@ -138,7 +138,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 ## **A flock goes up when she reaches the birds, and a clock cannot know when that is.**
 ## *(2026-09-20: "birds are also very late to start. they shouldn't prematurely start but they
 ## should basically start fluttering when I touch them not after".)* The birds are on the ground for
-## the whole telegraph by construction — `EventInstance._fly_the_flock()` has them pecking while
+## the whole telegraph by construction — `EventFlock` has them pecking while
 ## `is_telegraphing()` — so under the clock alone a walk straight in put them up well past her.
 ##
 ## Two claims, and the second is what stops the fix being a way of deleting the telegraph. **Walked
@@ -177,7 +177,7 @@ func _test_a_flock_goes_up_when_she_reaches_the_birds(t) -> void:
 ## relationship has to be held.
 ##
 ## **And the instance has to be in the tree.** A bare `EventInstance.new()` never gets `_ready()`,
-## so `_build_the_flock()` never runs, `_flock` stays empty and `contribution_at()` falls back to
+## so `EventFlock.build()` never runs, its birds stay empty and `contribution_at()` falls back to
 ## the modelled ring on the def — which reads far higher than eleven birds that fly up and away
 ## from her actually charge. `_instance()` adds it, which is the whole reason this is a suite and
 ## not arithmetic.
@@ -253,7 +253,7 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 	t.check(instance.is_waiting() and not instance.is_finished,
 			"five seconds out of reach and the flock is still standing there")
 	var still_grounded := true
-	for bird in instance._flock:
+	for bird in instance.flock.birds:
 		still_grounded = still_grounded and is_zero_approx(bird.lift)
 	t.check(still_grounded, "every bird is on the pavement, which is what she can see from there")
 	t.close_to(instance.current_intensity(),
@@ -265,7 +265,7 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 	instance._process(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(),
 			"walking up to it is what starts it")
-	for bird in instance._flock:
+	for bird in instance.flock.birds:
 		still_grounded = still_grounded and is_zero_approx(bird.lift)
 	t.check(still_grounded, "and the telegraph is still eleven birds on the ground")
 	# Read at the flock's own middle rather than at her: every bird is inside `flock_spread` of it
@@ -275,10 +275,10 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 
 	_advance(instance, def.telegraph_time + 0.2)
 	var up := 0
-	for bird in instance._flock:
+	for bird in instance.flock.birds:
 		if bird.lift > 0.0:
 			up += 1
-	t.check(up == instance._flock.size(), "then all %d of them are up" % instance._flock.size())
+	t.check(up == instance.flock.birds.size(), "then all %d of them are up" % instance.flock.birds.size())
 	t.check(instance.contribution_at(Vector2.ZERO) > on_the_ground * 3.0,
 			"and the burst is what costs (%.1f/s through the middle against %.1f/s while they peck)"
 			% [instance.contribution_at(Vector2.ZERO), on_the_ground])

@@ -50,7 +50,7 @@ func _event_parity(t, source: CountedEvent, at: Vector2, label: String) -> void:
 	t.check(_same_bits(source.expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
 	t.check(_same_bits(source.expected_gross_at(at), expected), label + " repeats exactly")
-	if source._flock.is_empty():
+	if source._birds().is_empty():
 		t.check(source.sampling_runs == runs, label + " repeats without sampling")
 
 func _crowd_parity(t, source: CountedCrowd, at: Vector2, label: String) -> void:
@@ -69,7 +69,7 @@ func _test_catalogue_and_mutations(t) -> void:
 		source.setup(_copy_definition(definition), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]))
 		if source.def.flock_size > 0:
-			source._build_the_flock()
+			source.flock.build()
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id + " before player")
 		for phase: float in [0.0, 0.7, 4.0, 9.0]:
 			source.age = phase
@@ -103,11 +103,12 @@ func _test_catalogue_and_mutations(t) -> void:
 		_event_parity(t, source, at, definition.id + " silence")
 		source.silenced = false
 		if source.def.detain_seconds > 0.0:
-			source._chat_seconds_left = 1.0
+			source.hold._seconds_left = 1.0
 			_event_parity(t, source, at, definition.id + " chatting")
 		source.baby_awake = false
 		_event_parity(t, source, at, definition.id + " sleep")
-		source._chat_seconds_left = 0.0
+		if source.hold:
+			source.hold._seconds_left = 0.0
 		source.outranked_by_a_stronger_barrier = true
 		_event_parity(t, source, at, definition.id + " outranked")
 		source.outranked_by_a_stronger_barrier = false
@@ -132,12 +133,12 @@ func _test_catalogue_and_mutations(t) -> void:
 		_event_parity(t, source, at, definition.id + " no shape")
 		source.def = _copy_definition(definition)
 		_event_parity(t, source, at, definition.id + " definition replacement")
-		if not source._flock.is_empty():
+		if not source._birds().is_empty():
 			flock_queries += 1
 			var runs := source.sampling_runs
-			source._flock[0].at += Vector2(17.0, 4.0)
-			source._flock[0].heading = Vector2.LEFT
-			source._flock[0].speed += 10.0
+			source._birds()[0].at += Vector2(17.0, 4.0)
+			source._birds()[0].heading = Vector2.LEFT
+			source._birds()[0].speed += 10.0
 			_event_parity(t, source, at, definition.id + " bird geometry")
 			t.check(source.sampling_runs > runs, "flock always samples its mutable birds")
 		source.transition(EventInstance.Phase.LEAVING)

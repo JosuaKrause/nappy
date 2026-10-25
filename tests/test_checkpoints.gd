@@ -499,7 +499,7 @@ func _free_door_rig(rig: Dictionary) -> void:
 	(rig["stroller"] as Stroller).free()
 	(rig["manager"] as EventManager).free()
 
-## Steps every live instance's own clock (`_chat_seconds_left` only runs down inside
+## Steps every live instance's own clock (the hold's clock, `EventHold`, only runs down inside
 ## `EventInstance._process()`) alongside the manager's own trigger, the same pairing
 ## `_test_the_chatting_mother_still_detains_once` below drives by hand.
 func _advance_chat(manager: EventManager, seconds: float) -> void:
