@@ -2951,10 +2951,10 @@ func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t) ->
 		instance.set_process(false)
 
 		# 50px is the beat's first half (walking east); 350px is past the 200px turn, the second
-		# half (walking west) — `_advance_along_path(0.0)` reads `_path_travelled` back into a
+		# half (walking west) — `route.advance(0.0)` reads `_path_travelled` back into a
 		# heading and a position without covering any further ground.
 		instance._path_travelled = 350.0 if on_the_second_half else 50.0
-		instance._advance_along_path(0.0)
+		instance.route.advance(0.0)
 		var walking := instance._heading
 		t.check((walking.x < 0.0) == on_the_second_half,
 				"set up walking %s" % ("west, the second half" if on_the_second_half
@@ -2973,7 +2973,7 @@ func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t) ->
 		instance.free()
 
 ## Contribution stops the instant he leaves, and he walks rather than vanishing. He does **not**
-## pop out of existence mid-screen at `EventInstance.LEAVING_GIVES_UP` (6.0s) while she is still
+## pop out of existence mid-screen at `EventDeparture.LEAVING_GIVES_UP` (6.0s) while she is still
 ## standing right there watching — that backstop is for a departure nobody could be watching (a
 ## headless rig, a streamed-out day), not for one that starts with her in reach. He only finishes
 ## once he has actually walked far enough away.
@@ -2995,7 +2995,7 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t) -> v
 
 	var before := instance.global_position
 	var before_distance := before.distance_to(instance.player_at)
-	instance._leave(EventInstance.LEAVING_GIVES_UP)
+	instance.departure.leave(EventDeparture.LEAVING_GIVES_UP)
 	t.check(not instance.is_finished,
 			"still leaving past the backstop's own six seconds, since she is still watching")
 	t.close_to(instance.contribution_at(instance.global_position), 0.0,
@@ -3005,11 +3005,11 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t) -> v
 
 	# She still has not moved. At `departs_at` (60px/s) from 20px away, he clears
 	# `Tuning.OUT_OF_SIGHT` (420px) in well under ten more seconds.
-	instance._leave(10.0)
+	instance.departure.leave(10.0)
 	t.check(instance.is_finished, "gone once he is actually out of sight, not before")
 	instance.free()
 
-## `_leaving_must_clear_sight` is set only by `leave_for_a_completed_task()`. An ordinary
+## The departure's sight rule (`EventDeparture._must_clear_sight`) is set by `leave_for_a_completed_task()`. An ordinary
 ## departure — `_be_done()` reached on its own, with nothing routing it through the resistance —
 ## still gives up at the plain six-second backstop, watched or not: this changes nothing about it.
 func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
@@ -3022,9 +3022,9 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
 	instance._be_done()
 	t.check(instance.is_leaving, "an ordinary departure starts leaving the same way")
 
-	instance._leave(EventInstance.LEAVING_GIVES_UP - 0.1)
+	instance.departure.leave(EventDeparture.LEAVING_GIVES_UP - 0.1)
 	t.check(not instance.is_finished, "not gone yet, just under six seconds in")
-	instance._leave(0.2)
+	instance.departure.leave(0.2)
 	t.check(instance.is_finished, "gone at the six-second backstop, watched or not")
 	instance.free()
 

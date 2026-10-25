@@ -183,7 +183,7 @@ func _test_the_barrier_costs_nothing_while_he_walks_away(t) -> void:
 			"he does not vanish beside her: he is out of sight before the barrier stands alone")
 	guard.free()
 
-## The sight rule: with her staying within ~300px of him the backstop (`LEAVING_GIVES_UP`, 6s) must
+## The sight rule: with her staying within ~300px of him the backstop (`EventDeparture.LEAVING_GIVES_UP`, 6s) must
 ## not remove him in view; he is still leaving after 8s, well away from the post.
 func _test_he_is_never_removed_in_view_while_she_stays_near(t) -> void:
 	var post := Vector2(400.0, 0.0)

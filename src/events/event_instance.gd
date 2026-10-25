@@ -1076,6 +1076,10 @@ var _behaviours: Array[EventBehaviour] = []
 var hold: EventHold
 ## The unmarked van's take of a bystander.
 var abduction: EventAbduction
+## Going away once it is over (`Phase.LEAVING`); every event has one.
+var departure: EventDeparture
+## Following its route or pacing its beat (`EventDef.mobile`).
+var route: EventRouteWalk
 ## A flock's birds (`EventDef.flock_size`).
 var flock: EventFlock
 ## A row sent down her line that is retired once it cannot reach her (the loose dog).
@@ -2196,7 +2200,7 @@ func _short_of_its_line(seconds: float) -> float:
 func _route_left(travelled: float) -> float:
 	if not def.stops_where_it_arrives or def.paces or path.size() < 2:
 		return INF
-	return maxf(_path_length() - travelled, 0.0)
+	return maxf(route.length() - travelled, 0.0)
 
 ## `seconds` of the car's travel cut to the `left` px of a route it stops at (`_route_left()`).
 func _short_of_its_stop(seconds: float, left: float) -> float:
@@ -2328,7 +2332,7 @@ func _process(delta: float) -> void:
 	_settle_the_notice()
 	_walk_the_far_guard_off(delta)
 	# The gait phase advances by whatever this tick actually adds to `_path_travelled` below,
-	# whichever branch does the adding (`_leave`, `_advance_along_path`, `_chase`) or none of them
+	# whichever branch does the adding (`_leave`, `EventRouteWalk.advance()`, `_chase`) or none of them
 	# — see `_advance_gait()`, called once at every exit from this function.
 	var _travelled_before := _path_travelled
 
@@ -2337,7 +2341,7 @@ func _process(delta: float) -> void:
 		EventBus.event_activated.emit(self)
 
 	if is_leaving:
-		_leave(delta)
+		departure.leave(delta)
 		for behaviour in _behaviours:
 			behaviour.step_leaving(delta)
 		_advance_gait(_path_travelled - _travelled_before)
@@ -2363,7 +2367,7 @@ func _process(delta: float) -> void:
 	if def.investigates:
 		_investigate()
 		if _runs_its_route() and def.mobile and path.size() > 1:
-			_advance_along_path(delta)
+			route.advance(delta)
 	elif def.pursuit != null and has_stopped_her():
 		# **He has reached her and stopped her** (`EventDef.stop_excitement`): he stands with her
 		# while his field lands the stop, and then walks back to the vehicle that let him out.
@@ -2377,7 +2381,7 @@ func _process(delta: float) -> void:
 		# turns it round the frame it notices. A stationary pursuer (`alley_robbery`) has no path to
 		# run and this is simply never true of it.
 		if is_waiting() and def.mobile and path.size() > 1:
-			_advance_along_path(delta)
+			route.advance(delta)
 		_chase(delta)
 		_stop_her_if_he_has_reached_her()
 		_lay_the_trail()
@@ -2389,9 +2393,9 @@ func _process(delta: float) -> void:
 		_warn_on_its_line(delta)
 		_flush_the_flock_if_she_is_among_them()
 		if not is_waiting() and def.mobile and path.size() > 1 and not is_telegraphing_still():
-			_advance_along_path(delta)
+			route.advance(delta)
 	elif def.mobile and path.size() > 1 and not is_telegraphing_still() and not is_parked:
-		_advance_along_path(delta)
+		route.advance(delta)
 	if unreachable:
 		unreachable.step(delta)
 
@@ -3024,7 +3028,7 @@ func _walk_back(step: float) -> bool:
 		var back := _trail.duplicate()
 		back.reverse()
 		var walked := _navigator.walk(global_position, back, step, _mover)
-		_take_the_walk(walked)
+		departure.take_the_walk(walked)
 		_trail = walked.points
 		_trail.reverse()
 		if walked.stopped:
@@ -3103,7 +3107,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 ## finished off screen long before she ever walked into the alley — the review finding this
 ## exists to fix.
 ##
-## Turns to face her the same way `_chase()` does, which costs nothing here: `_advance_along_path`
+## Turns to face her the same way `_chase()` does, which costs nothing here: `EventRouteWalk.advance()`
 ## overwrites `_heading` from the path's own direction the instant it starts moving, so this only
 ## shows for whatever is left of the frame it happens on.
 func _check_for_notice() -> void:
@@ -3429,7 +3433,7 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 	_gait_phase = 0.0
 	_gait_moving = false
 	if def.mobile and path.size() > 1:
-		_advance_along_path(0.0)
+		route.advance(0.0)
 
 # ------------------------------------------------------------------- the take ---
 
@@ -3490,25 +3494,6 @@ var is_leaving: bool:
 var is_parked: bool:
 	get:
 		return phase == Phase.PARKED
-var _leaving_for := 0.0
-
-## True when `LEAVING_GIVES_UP` may not end this instance while she could still be watching it.
-## Set by `leave_for_a_completed_task()`, whose departure starts with her beside it, and by
-## `_be_done()` for every car that drives (`EventDef.drives`), whose body she can stand against so
-## a departure can be held up beside her (`_drive()`), by `_be_done()` for a guard walking away
-## from his barrier, who is in her view as he goes, and for the man a vehicle let out, who walks back
-## to it (`_walk_back()`). False for every other departure — see
-## `_leave()` and `LEAVING_GIVES_UP`'s own doc for why those need no such wait.
-var _leaving_must_clear_sight := false
-
-## The most it may spend on the way out. A backstop rather than a timing: with no player to be out
-## of sight of — a headless rig, a streamed-out day — nothing else would ever end it. **Not a
-## backstop for a departure she is actually standing next to**: `leave_for_a_completed_task()`, and
-## `_be_done()` for a car that drives, a man walking back to his vehicle and a guard walking away
-## from his barrier, set `_leaving_must_clear_sight`, which keeps this clock from
-## ending an instance she could still be watching — see `_leave()`.
-const LEAVING_GIVES_UP := 6.0
-
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
 ##
 ## Three things never leave, and each would break something that reads the finishing position. An
@@ -3540,50 +3525,14 @@ func _be_done(may_park := true) -> void:
 		# engine bobs for ever at the kerb. Clamped to the route's own length rather than left
 		# where the last step put it, so `path_travelled()` still answers "the whole route" for a
 		# streaming resume.
-		_path_travelled = _path_length()
+		_path_travelled = route.length()
 		queue_redraw()
 		return
-	if (_leaving_speed() <= 0.0 or def.spawns_on_finish != ""):
+	if (departure.speed() <= 0.0 or def.spawns_on_finish != ""):
 		_finish()
 		return
 	transition(Phase.LEAVING)
-	_leaving_for = 0.0
-	# Something on a route carries on the way it was going; anything else goes away from her,
-	# which is the only direction a flushed flock or a dog that has lost interest can mean.
-	if not (def.mobile and path.size() > 1) and player_at != Vector2.INF \
-			and not global_position.is_equal_approx(player_at):
-		_heading = (global_position - player_at).normalized()
-	if def.drives:
-		# **A car leaves the way it can, and never vanishes beside her.** Every step of a departure
-		# into her is refused (`_drive()`), and a car that has a body she can stand against is gone
-		# only once she could not be watching (`_leaving_must_clear_sight`), not off
-		# `LEAVING_GIVES_UP`'s clock while she stands beside it. An investigating car reaches here
-		# only at the end of its route, which it drives on to once its man is back in
-		# (`_investigate()`), so it leaves the way it was going, as every patrol does.
-		_leaving_must_clear_sight = true
-	if _is_a_guard_leaving_his_barrier():
-		# **He is in her view as he goes**, and the barrier he leaves is there to be looked at: he is
-		# gone only once she could not be watching, never off `LEAVING_GIVES_UP`'s clock beside her.
-		_leaving_must_clear_sight = true
-		# **And he walks off over walkable ground**, by the way `leave_along()` plans on from its
-		# end (`_way_on_out_of_sight()`), never in a straight line across a roof: straight away
-		# from her, from anywhere not level with the band along its street, crosses the buildings
-		# beside it in her view.
-		_walks_a_way = true
-		_way = PackedVector2Array()
-		_way_on = PackedVector2Array()
-		# **And never through his own band**: she usually stands on the side she lured him from, so
-		# the nearest ground out of her sight lies straight through the concrete she cannot pass.
-		# The band's tiles are on the day's record as a body, which his walk and its search already
-		# refuse, and `_way_avoids` names them as well (what `leave_along()` refuses for a cordon's
-		# park), so he goes round by the open ground, and so does his partner at the far post.
-		_way_avoids = _tiles_under_the_band()
-		# And on a band whose far guard leaves too, his partner at the far post goes with him.
-		_send_the_far_guard_off()
-	if not _trail.is_empty():
-		# **A man a vehicle let out walks back to it** (`_walk_back()`) rather than away from her,
-		# and he is in her view as he goes, so he is gone only at its door or out of her sight.
-		_leaving_must_clear_sight = true
+	departure.begin()
 
 ## Ends this instance early because a resistance step's contact rode on it and she has just
 ## completed the step — called by `ResistanceDirector._on_contact_completed()` on the instance
@@ -3599,8 +3548,8 @@ func _be_done(may_park := true) -> void:
 ## exactly as often as away.
 ##
 ## **And she is standing right next to him when it starts**, unlike everything else that leaves —
-## so `_leaving_must_clear_sight` keeps `LEAVING_GIVES_UP` from popping him out of existence
-## mid-screen at six seconds if she is still nearby; see `_leave()`.
+## so the departure is held to her sight: its six-second backstop does not pop him out of
+## existence mid-screen while she is still nearby (`EventDeparture`).
 ##
 ## **A row that parks where its route runs out leaves anyway when asked** — the warned neighbor,
 ## whose ordinary end is standing at the door (`EventDef.stops_where_it_arrives`) and who runs
@@ -3611,186 +3560,17 @@ func leave_for_a_completed_task() -> void:
 	_be_done(false)
 	if not is_leaving:
 		return
-	_leaving_must_clear_sight = true
-	if player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
-		_heading = (global_position - player_at).normalized()
+	departure.for_a_completed_task()
 
-## **Leaves down a way chosen for it**: walks `way`'s points in order at `speed` (0 keeps the row's
-## own departure speed), then **plans the rest from where she is now** (`_way_on_out_of_sight()`, a
-## short search over walkable ground) and walks that at the same pace, again each time it runs out,
-## until she could not be watching — `Tuning.OUT_OF_SIGHT` from her, the end every departure here
-## has. Steering straight away from her instead runs into walls and the city's edge, and sliding
-## along one at the size of whatever part of the step is left square to it is, beside the city's
-## edge, next to nothing: a person standing at the edge of her screen. Only where the search finds
-## nothing does it step away from her over ground it may walk (`_step()`). **It never ends at
-## the way's last point**: that point was chosen out of her sight from where she was when the way
-## was planned, and she may since have walked there herself, so ending there would be a vanishing in
-## front of her (see "going away" above: the end of an event is a departure, not a deletion).
-##
-## For a departure that may not go in a straight line away from her: day 12's park people, walked
-## out through the cordon's last gap (`ParkCordon`) rather than through the tape. `speed` gives a
-## row that stands where it was placed, which has no departure of its own, a walking pace. An
-## instance already leaving on its own is turned onto the way. Like `leave_for_a_completed_task()`
-## it is a departure she may be standing beside, so `LEAVING_GIVES_UP` does not end it while she
-## could still be watching. `avoid` is ground the rest planned past the way's end never enters,
-## nor a step away from her where no rest is found: the cordon's park, whose grass is walkable and
-## whose tape is a body rather than a tile, so the nearest ground out of her sight is often across
-## it. Answers whether it is now leaving along the way: not for something finished, parked, a guard
-## leaving his barrier, or a row that ends rather than leaving (`spawns_on_finish`).
+## **Leaves down a way chosen for it** (`EventDeparture.along()`): day 12's park people, walked out
+## through the cordon's last gap rather than through the tape. Answers whether it is now leaving
+## along the way.
 func leave_along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
-	if is_finished or is_parked or _guard_spent or _is_a_guard_leaving_his_barrier():
-		return false
-	_way_speed = speed
-	if not is_leaving:
-		_be_done(false)
-	if not is_leaving:
-		_way_speed = 0.0
-		return false
-	_way = way.duplicate()
-	_way_on = PackedVector2Array()
-	_way_avoids = avoid
-	_walks_a_way = true
-	_leaving_must_clear_sight = true
-	return true
+	return departure.along(way, speed, avoid)
 
-## What is left of the way `leave_along()` set, in order; empty once it is walked, or for any other
-## departure. The way planned on from its end (`_way_on_out_of_sight()`) is not part of it.
+## What is left of the way `leave_along()` set, in order (`EventDeparture.way_left()`).
 func way_left() -> PackedVector2Array:
-	return _way
-
-## The way `leave_along()` set, each point dropped as it is reached; the way planned on from its
-## end, the same, and the tiles that one never enters; whether this departure walks one; and its
-## pace, 0 for the row's own.
-var _way := PackedVector2Array()
-var _way_on := PackedVector2Array()
-var _way_avoids := Rect2i()
-var _walks_a_way := false
-var _way_speed := 0.0
-
-## Walks `step` pixels of `leave_along()`'s way; past its end, of a way planned on from where it
-## stands (`_way_on_out_of_sight()`, again each time one runs out while she could still be
-## watching); and only where none is found, or one is walked to its end inside this step, away from
-## her over ground it may walk.
-func _walk_the_way(step: float) -> void:
-	var left := _walk_points(false, step)
-	if left <= 0.0:
-		return
-	if _way_on.is_empty() and player_at != Vector2.INF:
-		_way_on = _way_on_out_of_sight()
-	left = _walk_points(true, left)
-	if left <= 0.0:
-		return
-	var away := _heading
-	if player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
-		away = (global_position - player_at).normalized()
-	var moved := _step_clear_of_the_avoided(away * left)
-	if moved.is_zero_approx() and player_at != Vector2.INF:
-		# Straight away from her is a wall or the city's edge: along it, whichever way takes it
-		# farther from her.
-		for side: Vector2 in [away.orthogonal(), -away.orthogonal()]:
-			var along := _step_clear_of_the_avoided(side * left)
-			if not along.is_zero_approx() and (global_position + along).distance_to(player_at) \
-					> (global_position + moved).distance_to(player_at):
-				moved = along
-	if moved.is_zero_approx():
-		return
-	_heading = moved.normalized()
-	position += moved
-	_path_travelled += moved.length()
-
-## `_step()`'s part of `delta_pos`, or none where that would end on `_way_avoids`.
-func _step_clear_of_the_avoided(delta_pos: Vector2) -> Vector2:
-	var moved := _step(delta_pos)
-	if _way_avoids.has_point(_map.world_to_tile(global_position + moved)):
-		return Vector2.ZERO
-	return moved
-
-## Walks up to `step` pixels down `_way`, or `_way_on` when `planned`, dropping each point as it is
-## reached (`Navigator.walk()`); answers how much of the step is left once that way is walked, 0
-## while it is not. **A way a solid now stands across is given up** where it stops, and what is left
-## of the step goes to the way planned on from here, so a body put down after the way was chosen
-## turns the walker rather than holding it in front of her.
-func _walk_points(planned: bool, step: float) -> float:
-	var points := _way_on if planned else _way
-	var walked := _navigator.walk(global_position, points, step, _mover)
-	_take_the_walk(walked)
-	if walked.stopped:
-		walked.points = PackedVector2Array()
-	if planned:
-		_way_on = walked.points
-	else:
-		_way = walked.points
-	return walked.left
-
-## Puts this figure where a walk (`Navigator.walk()`) ended, facing the way it last walked toward a
-## point it did not reach, and counts the ground it covered.
-func _take_the_walk(walked: Navigator.Walked) -> void:
-	if walked.heading != Vector2.ZERO:
-		_heading = walked.heading
-	global_position = walked.at
-	_path_travelled += walked.travelled
-
-## **The rest of a way out, planned from where she is now** (`Navigator.way_out()`): the tile centres
-## from the tile it stands on to the nearest tile it may stand on more than `Tuning.OUT_OF_SIGHT`
-## and a tile from her, outside `_way_avoids` (`leave_along()`'s `avoid`), square steps only, so
-## that each leg stays on the two tiles it joins. Empty when no such tile is found, and the step
-## falls back to walking away from her.
-func _way_on_out_of_sight() -> PackedVector2Array:
-	return _way_on_out_of_sight_from(global_position)
-
-## `_way_on_out_of_sight()` from any point, not only this instance's own: the far guard at a band
-## walks off from his post by the same search (`_walk_the_far_guard_off()`).
-func _way_on_out_of_sight_from(at: Vector2) -> PackedVector2Array:
-	return _navigator.way_out(at, player_at, Tuning.OUT_OF_SIGHT, _mover, _way_avoids)
-
-## One frame of a departure: down the way it was given, back along a man's trail to his vehicle, or
-## on the way it was going. **Something solid straight ahead turns it onto a way out**
-## (`_way_on_out_of_sight()`) rather than holding it against the solid in her view, so a dog that
-## loses interest, a pursuer who gives up, a flock and the neighbor all leave over ground she could
-## walk.
-func _leave(delta: float) -> void:
-	_leaving_for += delta
-	var step := _leaving_speed() * delta
-	if _walks_a_way:
-		_walk_the_way(step)
-	elif not _trail.is_empty():
-		if not _walk_back(step):
-			return
-	else:
-		var wanted := _heading * step
-		var moved := _step(wanted)
-		if moved.is_zero_approx() and not wanted.is_zero_approx() and player_at != Vector2.INF:
-			_walks_a_way = true
-			_way = PackedVector2Array()
-			_way_on = PackedVector2Array()
-			_walk_the_way(step)
-		else:
-			position += moved
-			_path_travelled += step if moved == wanted else moved.length()
-	var gone := player_at != Vector2.INF \
-			and global_position.distance_to(player_at) > Tuning.OUT_OF_SIGHT
-	# `LEAVING_GIVES_UP` is a backstop for a departure nobody could be watching (a headless rig, a
-	# streamed-out day) — not for one she is standing next to. `_leaving_must_clear_sight` holds
-	# the clock off until she genuinely could not be watching: no player to be out of sight of, or
-	# already past `OUT_OF_SIGHT`. A completed task's departure, a car that drives, the man walking
-	# back to the vehicle that let him out and the guard walking away from his barrier set the flag
-	# (see its doc); every other departure gives up on the clock as it always did.
-	var may_give_up := not _leaving_must_clear_sight or player_at == Vector2.INF or gone
-	if gone or (may_give_up and _leaving_for >= LEAVING_GIVES_UP):
-		if _is_a_guard_leaving_his_barrier():
-			_stand_as_the_barrier()
-		else:
-			_finish()
-
-## How fast this instance walks away once it is over. The row's own departure speed, except for a
-## guard who set off from a barrier (`EventDef.body_stays_behind`): a roadblock has none of its own
-## (it never travelled), and he leaves at the pace he chased at rather than vanishing in the street.
-func _leaving_speed() -> float:
-	if _way_speed > 0.0:
-		return _way_speed
-	if _is_a_guard_leaving_his_barrier():
-		return def.chase_speed()
-	return def.departure_speed()
+	return departure.way_left()
 
 ## True once the guard who set off from a barrier is gone for good, and this instance is only the
 ## barrier: solid and silent, for as long as the roadblock would have stood
@@ -3809,7 +3589,7 @@ func is_a_spent_guard() -> bool:
 	return _guard_spent or (is_leaving and _is_a_guard_leaving_his_barrier())
 
 ## True for the man who set off from a barrier (`EventDef.body_stays_behind`) once he has left it
-## behind: what `_leaving_speed()`, the field and the halo ask of the departure.
+## behind: what `EventDeparture.speed()`, the field and the halo ask of the departure.
 func _is_a_guard_leaving_his_barrier() -> bool:
 	return def.body_stays_behind and has_left_its_body_behind()
 
@@ -3837,10 +3617,7 @@ func chaser_side() -> int:
 ## were built and the post he left empty. Nothing appears and nothing disappears.
 func _stand_as_the_barrier() -> void:
 	transition(Phase.SPENT)
-	_walks_a_way = false
-	_way_avoids = Rect2i()
-	_leaving_for = 0.0
-	_leaving_must_clear_sight = false
+	departure.reset()
 	_notice.stop()
 	global_position = _body_left_at
 	_keep_the_body_where_it_was_left()
@@ -3863,67 +3640,6 @@ func come_back_as_the_barrier(side: int) -> void:
 	_charge.ended = true
 	_keep_the_body_where_it_was_left()
 	_move_the_band()
-
-func _advance_along_path(delta: float) -> void:
-	# Movement starts when the telegraph does, so an approaching siren is audible and
-	# visible while it is still far away — which is what makes the warning usable.
-	_path_travelled += def.speed * delta
-	var remaining := _path_travelled
-	# **A beat rather than a journey.** The distance covered is folded back and forth over
-	# the route, so the same walk up and down happens for ever and the end of the path is never
-	# reached — which is what stops a fixture that moves from departing like something that was
-	# passing through. Folded rather than reset, so streaming it out and back in resumes it mid-beat
-	# exactly as `resume()` promises.
-	var back := false
-	if def.paces:
-		var beat := _path_length()
-		if beat <= 0.0:
-			return
-		var cycle := fmod(_path_travelled, beat * 2.0)
-		back = cycle > beat
-		remaining = beat * 2.0 - cycle if back else cycle
-	for i in range(1, path.size()):
-		var segment := path[i] - path[i - 1]
-		var length := segment.length()
-		if remaining <= length:
-			_heading = segment.normalized()
-			# Facing the way it is actually walking. Without this a man pacing a pavement moons
-			# along it backwards for half of every beat, which is worse than not moving at all.
-			if back:
-				_heading = -_heading
-			_keep_to_the_route(path[i - 1] + segment.normalized() * remaining)
-			return
-		remaining -= length
-	if not _keep_to_the_route(path[path.size() - 1]):
-		return
-	if def.paces:
-		return
-	# A mobile event that has driven off the end of its route is done, whatever its
-	# nominal duration says — and it keeps going until it is out of sight, rather than stopping
-	# dead on the pavement she is walking down. See "going away" above.
-	_be_done()
-
-## **Moves this figure to `on_the_route`, the point its route has reached, through the navigator**:
-## the whole way where nothing solid stands between (`Navigator.move_to()`), which is every frame of
-## a route checked before it was accepted. Where a solid put down since stands in the way, a figure
-## that paces a beat holds where it is until the beat brings the point back to its side, and any
-## other has come to the end of its route there (`_be_done()`), leaving from it the way every route
-## that runs out leaves. Answers whether it reached the point.
-func _keep_to_the_route(on_the_route: Vector2) -> bool:
-	var reached := _navigator.move_to(global_position, on_the_route, _mover)
-	global_position = reached
-	if reached == on_the_route:
-		return true
-	if not def.paces:
-		_be_done()
-	return false
-
-## The length of the whole route, in px.
-func _path_length() -> float:
-	var total := 0.0
-	for i in range(1, path.size()):
-		total += path[i].distance_to(path[i - 1])
-	return total
 
 func _has_expired() -> bool:
 	if is_waiting():
@@ -6150,12 +5866,12 @@ var _band: RoadblockBand
 ##
 ## **His partner's departure, from his own post.** He sets off the frame his partner starts walking
 ## away (`_be_done()`), at the pace his partner leaves at (`PursuitSpec.speed`,
-## `_leaving_speed()`'s for a guard leaving his barrier), standing as he walks, over walkable ground
-## by the way his partner walks (`_way_on_out_of_sight_from()`, planned again from where he is each
+## `EventDeparture.speed()`'s for a guard leaving his barrier), standing as he walks, over walkable
+## ground by the way his partner walks (`EventDeparture.way_out_from()`, planned again from where he is each
 ## time it runs out while she could still be watching; away from her by `Navigator.step()` only
 ## where it finds none), and he is gone once she could not be watching: past `Tuning.OUT_OF_SIGHT` from her, or
-## after `LEAVING_GIVES_UP` with no player to be out of sight of — the sight rule his partner's
-## departure keeps (`_leaving_must_clear_sight`). He notices nothing, chases nothing and costs
+## after `EventDeparture.LEAVING_GIVES_UP` with no player to be out of sight of — the sight rule his partner's
+## departure keeps. He notices nothing, chases nothing and costs
 ## nothing: the band is silent from the same frame. A band streamed back in after its guard was
 ## spent comes back with neither (`come_back_as_the_barrier()`).
 ##
@@ -6230,7 +5946,7 @@ func _walk_the_far_guard_off(delta: float) -> void:
 	var left := step
 	if player_at != Vector2.INF:
 		if _far_guard_way.is_empty():
-			_far_guard_way = _way_on_out_of_sight_from(_far_guard_at)
+			_far_guard_way = departure.way_out_from(_far_guard_at)
 		var walked := _navigator.walk(_far_guard_at, _far_guard_way, left, _mover)
 		if walked.heading != Vector2.ZERO:
 			_far_guard_heading = walked.heading
@@ -6242,7 +5958,7 @@ func _walk_the_far_guard_off(delta: float) -> void:
 		if player_at != Vector2.INF and not player_at.is_equal_approx(_far_guard_at):
 			away = (_far_guard_at - player_at).normalized()
 		var moved := _navigator.step(_far_guard_at, away * left, _mover)
-		if _way_avoids.has_point(_map.world_to_tile(_far_guard_at + moved)):
+		if departure.avoids().has_point(_map.world_to_tile(_far_guard_at + moved)):
 			moved = Vector2.ZERO
 		if not moved.is_zero_approx():
 			_far_guard_heading = moved.normalized()
@@ -6251,7 +5967,7 @@ func _walk_the_far_guard_off(delta: float) -> void:
 	_far_guard_for += delta
 	var gone := player_at != Vector2.INF \
 			and _far_guard_at.distance_to(player_at) > Tuning.OUT_OF_SIGHT
-	if gone or (player_at == Vector2.INF and _far_guard_for >= LEAVING_GIVES_UP):
+	if gone or (player_at == Vector2.INF and _far_guard_for >= EventDeparture.LEAVING_GIVES_UP):
 		_far_guard_at = Vector2.INF
 		_far_guard_gone = true
 		_release_the_far_guard()

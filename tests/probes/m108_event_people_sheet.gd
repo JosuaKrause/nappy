@@ -78,7 +78,7 @@ func _row(label: String, entries: Array) -> Dictionary:
 
 ## The exact runtime selection for a family whose heading source is `_heading`: every stationary
 ## family reads its own fixed site facing this way, and every mobile one has `_heading` set the
-## same way by `_advance_along_path()`/`_chase()` during play — `setup()`'s own `face` argument is
+## same way by `EventRouteWalk.advance()`/`_chase()` during play — `setup()`'s own `face` argument is
 ## the identical assignment (`_heading = face`), so sitting a fresh instance at each of the eight
 ## headings and reading `_view_sector` back is the same selection the real draw path runs.
 func _heading_row(def_id: String, by_view: Dictionary) -> Array:

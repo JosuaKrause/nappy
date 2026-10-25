@@ -535,7 +535,7 @@ func _test_finishing_outside_process_invalidates_the_contribution_cache(t) -> vo
 # rows a player once reported as invisible still reach the meter.
 
 ## `cat_dash` is `AHEAD_OF_PLAYER` and `mobile`, but a rig instance built with no route never
-## enters `_advance_along_path()` (`path.size() > 1` is false), so it holds still at `at` for its
+## enters `EventRouteWalk.advance()` (`path.size() > 1` is false), so it holds still at `at` for its
 ## whole life -- exactly what "standing on her" needs to hold the distance at zero throughout.
 func _test_a_cat_dash_is_selected_and_lands(t) -> void:
 	var def := EventCatalogue.by_id("cat_dash")

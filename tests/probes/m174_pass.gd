@@ -14,7 +14,7 @@ extends RefCounted
 ## walked next to him without effect which highlights an even worse drop in effect".*
 ##
 ## **The rig.** A real `EventInstance` (`EventCatalogue`'s own def, or a historical copy — see
-## `_historical_def()`), given a long straight two-point path so `_advance_along_path()` — the
+## `_historical_def()`), given a long straight two-point path so `EventRouteWalk.advance()` — the
 ## same function the scheduler's placement drives — carries it at its own `speed`, pacing back
 ## and forth if `def.paces`. Never added to a tree: `contribution_at()`, `accumulate_landed()` and
 ## `_process()` all work on a bare `.setup()` instance, the same convention

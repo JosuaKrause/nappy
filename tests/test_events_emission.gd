@@ -244,7 +244,7 @@ func _test_an_event_leaves_rather_than_vanishing(t) -> void:
 	alone.player_at = Vector2.ZERO
 	alone._process(STEP)
 	alone.player_at = Vector2.INF
-	_advance(alone, def.telegraph_time + def.duration + EventInstance.LEAVING_GIVES_UP + 0.2)
+	_advance(alone, def.telegraph_time + def.duration + EventDeparture.LEAVING_GIVES_UP + 0.2)
 	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")
 	alone.free()
 

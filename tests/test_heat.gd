@@ -559,7 +559,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 ## `EventInstance.resume()` restores age and distance travelled so a streamed-out event picks up
 ## where it left off rather than rewinding — checked here because a heated patrol is the first
 ## `mobile` row that is also a `EventDef.pursuit` one, and `resume()`'s own "if def.mobile and
-## path.size() > 1: _advance_along_path(0.0)" line does not know or care whether the def pursues.
+## path.size() > 1: route.advance(0.0)" line does not know or care whether the def pursues.
 func _test_a_streamed_patrol_resumes_where_it_left_off(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])

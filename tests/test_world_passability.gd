@@ -410,7 +410,7 @@ func _test_a_departure_leaves_round_a_building(t, city: City) -> void:
 	var off := 0
 	var before := instance.global_position
 	for _frame in 120:
-		instance._leave(0.05)
+		instance.departure.leave(0.05)
 		if instance.is_finished:
 			break
 		if not map.step_is_clear(before, instance.global_position, Mover.of(mover.blocked_by)):
@@ -460,7 +460,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 			if instance.is_leaving:
 				if left_from == Vector2.INF:
 					left_from = instance.global_position
-				instance._leave(0.05)
+				instance.departure.leave(0.05)
 			else:
 				instance._process(0.05)
 			if instance.is_finished:
