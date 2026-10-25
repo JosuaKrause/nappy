@@ -1131,14 +1131,15 @@ static func hold_refusal_message(event_name: String, def: EventDef) -> String:
 var _relentless: Array[EventInstance] = []
 
 ## **A relentless pursuer never gives up because she ran.** A pursuer that has seen her run for
-## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventInstance._chase()`'s `_outrun_for`), right for a played
+## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventPursuit.outrun_for`), right for a played
 ## day, and a guard who stops coming half a second into a mother's run in a trailer shot. Each physics
 ## tick this clears that running clock, so it never gets near the limit; nothing else about the
 ## chase changes, and the game's rule is untouched.
 func _keep_the_pursuers_coming() -> void:
 	for instance in _relentless:
-		if is_instance_valid(instance) and not instance.is_finished and not instance.is_leaving:
-			instance._outrun_for = 0.0
+		if is_instance_valid(instance) and not instance.is_finished and not instance.is_leaving \
+				and instance.pursuit != null:
+			instance.pursuit.outrun_for = 0.0
 
 ## The events the recipe asked to keep (`hold`), so a recording never loses one to the game's own
 ## despawn: see `_process()`.
@@ -1146,10 +1147,10 @@ var _held: Array[EventInstance] = []
 
 ## **A held event is never removed while the scene runs.** A pursuer that gave up the chase walks
 ## away and is removed once she is more than `Tuning.OUT_OF_SIGHT` from it, which is well inside the
-## picture on a wide frame, or after `EventInstance.LEAVING_GIVES_UP` seconds: right for a played
+## picture on a wide frame, or after `EventDeparture.LEAVING_GIVES_UP` seconds: right for a played
 ## day, and a dog vanishing in the middle of a trailer shot. Once a held event is leaving, its own
 ## process is switched off and this walks it on instead, the same straight departure away from her
-## at the row's own departure speed and gait (`EventInstance._leave()`'s plain branch), with the
+## at the row's own departure speed and gait (`EventDeparture.leave()`'s plain branch), with the
 ## removal left out, and only for a row whose departure is that plain walk (`hold` on any other row
 ## fails the recipe, `hold_refusal()`), and the scene fails if a held event is sent along a set path
 ## or otherwise stops leaving in a straight line mid-scene (day 12's park cordon does that).
@@ -1160,7 +1161,8 @@ func _process(delta: float) -> void:
 	for instance in _held:
 		if not is_instance_valid(instance) or instance.is_finished or not instance.is_leaving:
 			continue
-		if instance._walks_a_way or not instance._trail.is_empty() \
+		if instance.departure.walks_a_way() \
+				or (instance.on_foot != null and instance.on_foot.walks_back()) \
 				or instance._is_a_guard_leaving_his_barrier():
 			manifest["playback_error"] = "held event %s no longer leaves in a straight line" \
 					% instance.def.id
@@ -1173,7 +1175,7 @@ func _process(delta: float) -> void:
 			return
 		instance.set_process(false)
 		var before := instance._path_travelled
-		var step := instance._leaving_speed() * delta
+		var step := instance.departure.speed() * delta
 		instance.position += instance._heading * step
 		instance._path_travelled += step
 		instance._advance_gait(instance._path_travelled - before)

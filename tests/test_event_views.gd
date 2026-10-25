@@ -469,7 +469,7 @@ func _test_setup_resets_the_view_to_the_exact_siting(t) -> void:
 # ------------------------------------------------------------------- targeted facing ---
 
 ## "A stationary actor whose action has a target faces that target": the waiting robber has not
-## noticed her yet (`is_waiting()` stays true — `_chase()` only turns `_heading` toward her once
+## noticed her yet (`is_waiting()` stays true — `EventPursuit` only turns `_heading` toward her once
 ## she is inside `EventDef.notice`), but a man only watching the street is worth nothing next to a
 ## man watching *her*, so `_robber_waiting_heading()` reads `player_at` directly.
 func _test_robber_waiting_faces_her(t) -> void:
@@ -498,14 +498,14 @@ func _test_robber_waiting_falls_back_to_its_siting_with_no_player(t) -> void:
 			"with nothing to face, the waiting posture keeps the site's own authored facing")
 	instance.free()
 
-## Once he has noticed her, `_chase()` keeps `_heading` pointed at her for the whole of the
+## Once he has noticed her, `EventPursuit` keeps `_heading` pointed at her for the whole of the
 ## telegraph and the chase — "a lunging robber faces its lunge" is this, already true through the
 ## existing pursuit code, and this test is what proves the drawing actually reads it.
 func _test_robber_lunging_faces_her_through_the_chase(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	# Southeast of him and inside `EventDef.notice`, so one `_chase()` step notices her and turns to
+	# Southeast of him and inside `EventDef.notice`, so one `EventPursuit` step notices her and turns to
 	# face her.
 	var her := _heading_for_sector(1) * (def.notice_within() - 10.0)
 	instance.player_at = her

@@ -653,7 +653,7 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 
 ## **Neither guard walks off over a building.** The guard on her side, shaken off, and on the
 ## escape's band his partner at the far post walk away over walkable ground
-## (`EventInstance._way_on_out_of_sight()`, the way `leave_along()` plans on from its end), not in
+## (`EventDeparture.way_out_from()`, the way `leave_along()` plans on from its end), not in
 ## a straight line away from her, which from anywhere not level with the band along its street
 ## crossed the roofs beside it in her view. Walked on the escape's real plan for seed 4242: at every
 ## band, from 16 bearings, she walks in until his charge, runs straight back until he gives up and
@@ -713,7 +713,7 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 					and bearing == 4
 			if the_reviewed_walk:
 				her = map.tile_to_world(Vector2i(70, 50))
-				guard._way_on = PackedVector2Array()
+				guard.departure.plan_the_rest_again()
 				guard._far_guard_way = PackedVector2Array()
 			var far_walked := false
 			var on_ground := true

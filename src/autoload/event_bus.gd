@@ -124,7 +124,7 @@ signal event_lit_unmet(id: String)
 ## instance — and a checkpoint hut's or post's guard raising his hand from her crossing of its
 ## door's line (`CheckpointController.warn_at_the_doors()`, `door_guard`), each time he does.
 signal pursuit_warned(id: String)
-## `EventInstance._chase()`'s own moment a pursuer comes for her: its charge, never its warning — a
+## `EventPursuit`'s own moment a pursuer comes for her: its charge, never its warning — a
 ## waiting charger when its warning has run with her still inside its radius, the man a vehicle lets out and day 13's guard in
 ## her view when their raised hand has been up its second, the masked man when he starts his run,
 ## and a pursuer whose telegraph is its approach (the day-3 dog) or that arrives charging from its
@@ -139,7 +139,7 @@ signal pursuit_caught(id: String)
 ## reaching home. Once per instance, and never beside `pursuit_caught` or `pursuit_ended`.
 signal pursuit_cut_short(id: String)
 ## `EventInstance._be_done()`'s own moment a charge that had begun is over without catching her.
-## `shaken_off` is `EventInstance.gave_up` — `_chase()`'s own record of whether she outran it
+## `shaken_off` is `EventInstance.gave_up` — `EventPursuit`'s own record of whether she outran it
 ## (`Tuning.PURSUIT_SHAKEN_OFF`) rather than its `duration` simply running out. Never for a charge
 ## that caught her (`pursuit_caught`) or was cut short (`pursuit_cut_short`), so every charge ends in
 ## exactly one of the four.

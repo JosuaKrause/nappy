@@ -90,7 +90,12 @@ src/
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
-	                       emission; every picture it draws is a region of the baked `events` page
+	                       emission, and the behaviours it is composed of, stepped in order;
+	                       every picture it draws is a region of the baked `events` page
+	behaviours/           what an event does, one rule and its state each, composed per row
+	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
+	                       line run, a route, a flock, a hold, a stop, a departure, ...; each
+	                       saves and restores its own state, which a streamed-out plan carries
 	charge_record.gd      a charger's warning, charge and the one way it ended, as counted
 	warning.gd            the one warning clock: started, held, called off or run out, read against
 	                      its owner's clock — an event's notice, a door crossing, a badge up alone

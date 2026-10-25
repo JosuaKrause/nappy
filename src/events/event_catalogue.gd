@@ -463,7 +463,7 @@ static func _cat_dash() -> EventDef:
 ## screen before she was anywhere near the alley, which read as nothing happening at all: the review
 ## finding this field exists to answer. `EventDef.notice` is not only for a pursuer any more —
 ## see its own docstring — so this row sets it (150px) without `EventDef.pursuit`:
-## `EventInstance._check_for_notice()` holds it `is_waiting()`, emitting nothing above the
+## `EventNoticeRun` holds it `is_waiting()`, emitting nothing above the
 ## ordinary field and not yet on the clock, until she is within 150px, and only then does the
 ## telegraph start and the path run. 150px is inside `VIEW_HALF_EXTENT.y` (180, the shorter
 ## axis, so this holds whichever way she is facing) with room to spare, and past the field's own
@@ -1220,7 +1220,7 @@ static func _leaf_blower() -> EventDef:
 ## fluttering when I touch them not after".)* They are on the ground for the whole telegraph by
 ## construction — that is what the telegraph *is* for this row — so under the clock alone a walk
 ## straight in put them up about 84px past her, which is a flock reacting to somebody who has
-## already gone. `EventInstance._flush_the_flock_if_she_is_among_them()` fires the burst at
+## already gone. `EventNoticeRun` fires the burst at
 ## `flock_spread` plus her own body instead, the distance at which she is among the birds rather
 ## than near them, exactly the way a pursuer's lunge is fired by her reaching its stand-off.
 ##
@@ -1240,8 +1240,8 @@ static func _leaf_blower() -> EventDef:
 ## out between eleven birds that fly up and away from her while she crosses, and the flush is
 ## geometric, so neither `walk_through_cost()` nor `docs/COSTS.md` prices this row — the table
 ## dashes its pass columns for exactly that reason. **And the instance has to be in the tree**: a
-## bare `EventInstance.new()` never gets `_ready()`, so `_build_the_flock()` never runs, `_flock`
-## stays empty and `contribution_at()` falls back to the modelled ring on this def — which reads
+## bare `EventInstance.new()` never gets `_ready()`, so `EventFlock.build()` never runs, its birds
+## stay empty and `contribution_at()` falls back to the modelled ring on this def — which reads
 ## far higher than eleven birds actually charge. `tests/test_events.gd` walks it in the tree, and
 ## that is the figure the intensity was set against.
 ##
@@ -1980,7 +1980,7 @@ static func _roadblock() -> EventDef:
 ## the inner radius ends the day. Getting close does not excite the baby; it takes you.
 ##
 ## **And it takes somebody else first.** While she is close enough to watch (`outer_radius`), it
-## draws its own bystander walked to it and taken — `EventInstance._update_the_take()`. A scripted
+## draws its own bystander walked to it and taken — `EventAbduction`. A scripted
 ## figure that belongs to the event, never a real `CrowdAgent`: the crowd is a population of the
 ## field around the player rather than of the city, recycled as she moves, so a taken pedestrian
 ## could never be a lasting fact about the world either way. Drawing and telemetry only — nothing

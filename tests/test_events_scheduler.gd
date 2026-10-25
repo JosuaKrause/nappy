@@ -235,7 +235,7 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
 ## `Tuning.EVENT_STREAM_RADIUS` (900px) outside the view and far past `Tuning.VIEW_HALF_EXTENT`, so
 ## a row that started telegraphing the moment it existed dashed and finished off screen before she
 ## ever walked into the alley — nothing happened, from where she was standing. `EventDef.notice`
-## without `EventDef.pursuit` (`EventDef.notice`'s own note, `EventInstance._check_for_notice()`) is
+## without `EventDef.pursuit` (`EventDef.notice`'s own note, `EventNoticeRun`) is
 ## the fix: this holds the whole sequence end to end, on a real generated alley, rather than only
 ## the crossing axis `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in
 ## isolation.

@@ -706,7 +706,7 @@ enum HeatResponse {
 ## pursue her"; inbox #669 in coral-lark, on the night raid's van: "Van stops, men get out (Recommended)", and on
 ## the unmarked van: "Same as the police".)* Heated copies carry it, each made by `at_heat()`, with
 ## a `notice` it notices her within — along a clear line, as every notice is
-## (`EventInstance._investigate()`):
+## (`EventInvestigation`):
 ##
 ## - **`police_patrol`'s heated copy past `Tuning.HEAT_INVESTIGATES_LEVEL`**, a car that drives: it
 ##   drives its route until it notices her, and stops on its route at once — **never inside a
@@ -793,7 +793,7 @@ enum Pavement {
 ## see `EventScheduler.WalkSiting`.
 ##
 ## Three things in `EventInstance` read it and all three would be wrong left alone: `_be_done()`
-## neither finishes nor leaves such a row, `_advance_along_path()` stops adding to the distance it
+## neither finishes nor leaves such a row, `EventRouteWalk.advance()` stops adding to the distance it
 ## has covered (a gait is driven by distance, so a parked engine would bob for ever), and
 ## `travel_velocity()` answers zero (the screen-edge badge reads that as a closing speed, and a
 ## parked thing is not closing).

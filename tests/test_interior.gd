@@ -1221,7 +1221,7 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## **She has to run to the door** *(inbox #764 in minty-lemur, the player: "player should have to run to the
 ## door"; inbox #782 in minty-lemur, the player: the radius bigger, not him moved)*. He warns while she is in the
 ## stairwell and runs his line once she is within `masked_pursuer.notice.runs_within` of him
-## (`EventInstance._warn_on_its_line()`). Stepped at the game's own rhythm: the game's physics
+## (`EventNoticeRun`). Stepped at the game's own rhythm: the game's physics
 ## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
 ## carrying body moves with the real stair steering and collision, the building's `EventManager._physics_process()`
 ## tells him where she is, and the catch is checked; he moves in his own `_process()` on every drawn
@@ -1437,7 +1437,7 @@ func _hold_keys(actions: Array, running: bool) -> void:
 ## - **More than one of him over a section**, or "switch the side again" has nothing behind it.
 ## - **Every one of them warns her standing still before he runs.** Appearing with her already
 ##   inside his charge distance, he warns for `Tuning.WARNING_ALONE_MAX` first
-##   (`EventInstance._warn_on_its_line()`); a respawned pursuer that inherited an old instance's
+##   (`EventNoticeRun`); a respawned pursuer that inherited an old instance's
 ##   state would arrive at speed, which is the exact thing `still_while_telegraphing` exists to
 ##   prevent, and no screenshot could ever catch it.
 ## - **The gap is the stated one**, measured from him leaving the top of the shaft to the next one

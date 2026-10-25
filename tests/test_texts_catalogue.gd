@@ -134,7 +134,7 @@ static func _log_opener_at(line: String, at: int) -> String:
 			return ""
 	for opener in ["print(", "push_warning(", "push_error(", "printerr(", "print_rich(",
 			"assert(", "Telemetry.note(", "trace.note(", "_trace.note(", "_the_trace().note(",
-			"_note("]:
+			"event.trace.note(", "_note("]:
 		if line.substr(at, opener.length()) == opener:
 			return opener
 	return ""

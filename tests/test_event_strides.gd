@@ -119,7 +119,7 @@ func _test_moving_instance_alternates_gait_frames(t) -> void:
 	t.check(saw_a_again, "and back to the rest frame later in the same walk")
 	instance.free()
 
-## `alley_robbery`'s waiting posture never covers ground — `_chase()` only turns `_heading` toward
+## `alley_robbery`'s waiting posture never covers ground — `EventPursuit` only turns `_heading` toward
 ## her while `is_waiting()`, it does not move — so it must hold frame a for as long as it waits,
 ## whatever `_gait_phase` happens to be sitting on.
 func _test_waiting_robber_holds_frame_a(t) -> void:
@@ -272,7 +272,7 @@ func _test_a_standing_normal_dog_rests(t) -> void:
 				"a dog stopped at phase %.2f stands in its rest pose" % phase)
 	instance.free()
 
-## The victim's own scripted walk to the van is a straight lerp over `VICTIM_TAKEN_OVER` seconds
+## The victim's own scripted walk to the van is a straight lerp over `EventAbduction.VICTIM_TAKEN_OVER` seconds
 ## rather than anything that touches `_path_travelled`, so it gets its own derived query
 ## (`_victim_gait_stepping()`) instead of sharing `_gait_phase` — see that function's own doc. It
 ## must start on frame a (`sin(0) == 0`) and later step, the same shape the distance-driven gait
@@ -283,10 +283,10 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t) -> void:
 	instance.setup(def, Vector2.ZERO)
 	t.check(not instance._victim_gait_stepping(), "no take is running yet")
 	instance.player_at = instance.global_position
-	instance._victim_taken_at = instance.age
+	instance.abduction.take_now()
 	t.check(not instance._victim_gait_stepping(), "the walk starts on frame a")
 	var saw_b := false
-	var steps := int(EventInstance.VICTIM_TAKEN_OVER / STEP)
+	var steps := int(EventAbduction.VICTIM_TAKEN_OVER / STEP)
 	for i in steps:
 		instance.age += STEP
 		if instance._victim_gait_stepping():

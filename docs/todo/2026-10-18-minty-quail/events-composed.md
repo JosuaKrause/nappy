@@ -1,20 +1,16 @@
 # Events composed from behaviours on an explicit phase machine
 
-`EventInstance` (`src/events/event_instance.gd`) holds, in one class, the sprite tables, car
-driving and give-way, the chat and checkpoint hold, pursuit, investigation, pathing, the abduction,
-flocking, departure, the excitement field and about 2,300 lines of drawing, including the band and
-far guard as nested nodes. `_process` runs exactly one movement branch chosen by flag combinations,
-so a row needing two behaviours silently gets the first. This item's first step has its record in
-minty-quail-10.
-
-**The pursuit rules are instance methods.** The phase's transitions are made from inside
-`_chase()`, `_check_for_notice()`, `_warn_on_its_line()`, `_investigate()` and the flock's flush, and
-the four ways a charge starts (a warning's clock running out, a lunge at the stand-off, the masked
-man's run distance, a start at once) are branches there rather than parts a row is composed of. The
-masked man's warning on his line is a counter of its own (`_warned_on_its_line_for` against
-`Tuning.WARNING_ALONE_MAX`) rather than a `Warning`, and `Warning`'s called-off and run-out half
-(`cancel_if`, `on_expired`, `tick()`) has no caller in the game yet: every warning polls `has_run()`.
-The behaviours composed per row are what call it.
+What an event does is a list of behaviours (`src/events/behaviours/`) that
+`EventBehaviours.compose()` builds per catalogue row, each saving and restoring its own state for
+streaming. `EventInstance` (`src/events/event_instance.gd`) holds, besides that list, the sprite
+tables, car driving and its give-way, the excitement field and the drawing, including the band and
+far guard as nested nodes; a car runs its frame in `_drive()` rather than as a behaviour. The four
+ways a charge starts (a warning's clock running out, a lunge at the stand-off, the masked man's run
+distance, a start at once) are branches inside `EventPursuit` and `EventNoticeRun` rather than parts
+a row is composed of. `EventInstance.notice_her_at()`, which sets a waiting pursuer on her, can
+bring a row that left before it ever noticed her back to `WARNING`, since such a row still answers
+`is_waiting()`; nothing calls it on a leaving row, and the guard against it belongs to the behaviour
+that makes that reachable, the task guard moved with his saved state.
 
 **Single-row flags:** `pastes_a_front`, `solid_once_it_starts`, `field_from_its_centre`,
 `stop_excitement`, `spawns_on_sight`, `lifts_for_traffic`, `body_stays_behind`,
@@ -36,9 +32,7 @@ from the `player` group), `CheckpointController` drives her and the camera direc
 (`hide_for_inspection`, `focus_camera_on`, `teleport_to`, `show_after_inspection`,
 `release_camera_focus`), the instance fetches the `ResistanceDirector` from a draw path, uses the
 red arrow's `ArrowField` as its pathfinder, and copies crowd traffic's give-way
-(`_room_to_its_line`). **Streaming** carries hand-picked fields (`Planned`: age, travelled,
-noticed_at, guard_spent, chaser_side; `resume()` restores the age, the distance and the notice).
-**Events held by the scene:** `City` and `InteriorScene` each sum their
+(`_room_to_its_line`). **Events held by the scene:** `City` and `InteriorScene` each sum their
 events for the baby rather than the manager answering it, and `BuildingPlan.lay_the_grates()`, a
 placement class, builds the grates' sprite nodes through `EventInstance.steam_grate()`. **The
 escape planned beside the day:** `FinalePlanner` (routes, layer 2) runs the seal planner and the
@@ -57,11 +51,10 @@ class is for here, prefers composing behaviour, and may give a component of an e
 band, its far guard, a van's scene) a class of its own rather than one class per event type; the
 design below is a direction, not a prescription, and the PR says which shape was chosen and why.
 
-**A direction for the build:** behaviour components (wait, warn, charge, follow a route, pace,
-drive, flock, let out, hold, leave) composed per catalogue row over the stored phase, each saving and
-restoring its own state for streaming; grouped sub-resources replace the remaining single-row flags;
-looks only draw, in a separate view; the day-3 lesson dog marked by the director that sends it and
-the task guard moved with his saved state, both keeping their row ids so GoatCounter's names and the
+**A direction for the build:** driving a behaviour of its own; grouped sub-resources replace the
+remaining single-row flags; a look's behaviour (the mouse's dash, the roadblock's band and posts,
+its far guard, the van's take) keyed by data or a class of its own, so looks only draw, in a
+separate view; the day-3 lesson dog marked by the director that sends it and the task guard moved with his saved state, both keeping their row ids so GoatCounter's names and the
 loss causes do not change (*proposed by the orchestrating session, not asked for, open to the
 player's overturn*), and the mast a role; simulation in physics only,
 `_process` draws; movement proposed, validated, then committed; intents emitted for the player and

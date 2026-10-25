@@ -773,6 +773,7 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# time, not because anything coordinates them frame to frame. See `_broadcast_clock` below.
 	var resume_age := _broadcast_clock if plan.mast_id != "" else plan.age
 	plan.live.resume(resume_age, plan.travelled, plan.noticed_at)
+	plan.live.restore_behaviours(plan.behaviours)
 	# A guard spent before the stream-out comes back as only his barrier, never as a guard again.
 	if plan.guard_spent:
 		plan.live.come_back_as_the_barrier(plan.chaser_side)
@@ -814,7 +815,8 @@ func _spend_the_rest_of_the_group(chosen: EventScheduler.Planned) -> void:
 ## leaving carries on past the route's end, and a car she follows out of its street is a long way
 ## from the route while she is a few paces behind it. Streaming that one out would delete it in
 ## front of her (*nothing vanishes while you are looking at it*, "Going away" in `docs/EVENTS.md`),
-## so it stays until it is out of sight — where its own departure ends it anyway (`_leave()`).
+## so it stays until it is out of sight — where its own departure ends it anyway
+## (`EventDeparture.leave()`).
 func _could_be_watched(instance: EventInstance, at: Vector2) -> bool:
 	return is_instance_valid(instance) \
 			and instance.global_position.distance_to(at) <= Tuning.OUT_OF_SIGHT
@@ -823,6 +825,7 @@ func _stream_out(plan: EventScheduler.Planned) -> void:
 	plan.age = plan.live.age
 	plan.travelled = plan.live.path_travelled()
 	plan.noticed_at = plan.live.noticed_at()
+	plan.behaviours = plan.live.save_behaviours()
 	if plan.live.is_a_spent_guard():
 		plan.guard_spent = true
 		plan.chaser_side = plan.live.chaser_side()
@@ -2146,6 +2149,7 @@ func _done_for_now(plan: EventScheduler.Planned) -> void:
 	plan.travelled = 0.0
 	plan.noticed_at = INF
 	plan.guard_spent = false
+	plan.behaviours = {}
 	if plan.repeat_after > 0.0:
 		plan.comes_in = maxf(plan.comes_in, plan.repeat_after)
 		plan.wait_began = true

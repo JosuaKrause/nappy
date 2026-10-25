@@ -101,7 +101,7 @@ func _included_rows() -> Array[EventDef]:
 		out.append(def)
 	return out
 
-## Rows whose notice/chase state (`is_waiting()`, `_chase()`) is driven by `EventInstance.
+## Rows whose notice/chase state (`is_waiting()`, `EventPursuit`) is driven by `EventInstance.
 ## player_at`, which `M174Pass`'s rig never sets — its own `_pass_net()` walks a fixed straight
 ## line and never tells the instance where "she" is except through the field it samples. Run
 ## through the rig anyway, a pursuer would just read as permanently `is_waiting()` (full

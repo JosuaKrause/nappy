@@ -113,6 +113,9 @@ class Planned extends RefCounted:
 	## come_back_as_the_barrier()` restores, so a re-streamed barrier is only the barrier.
 	var guard_spent := false
 	var chaser_side := 0
+	## Each behaviour's own state when it was last streamed out (`EventInstance.save_behaviours()`),
+	## empty before then and once a repeating plan starts over.
+	var behaviours := {}
 
 	## False for an event the day has budgeted but not sited.
 	func is_placed() -> bool:
