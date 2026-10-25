@@ -65,7 +65,7 @@ func _physics_process(delta: float) -> void:
 ```
 
 A thing timed **once per body per frame** (a crowd agent, a live event) copies the switch when it
-is made and keeps its body where it is, so off it pays one member read: a static read and a second
+is made, so off it pays one member read: a static read and a second
 call on each of a couple of hundred bodies made every player's frame measurably longer on a desktop
 (docs/evidence/m159-frame-record-2026-10-04/). It is made per day, after the recorder has started:
 
@@ -83,6 +83,11 @@ func _process(delta: float) -> void:
 		return
 	# the body, unchanged
 ```
+
+That is a crowd agent's shape, which keeps its body where it is by calling itself under `_timing`.
+A live event times one frame instead, with no call to itself (`EventInstance._process()` round
+`_frame()`): a car's frame is proposed and committed by its driving, and a frame that re-ran
+`_process` inside itself could not take back what the inner run emitted.
 
 The **scenery queue** (`SceneryResidency.update()`) is the third shape, and it is the scenery
 queue's alone. It reads `FrameRecord.on` once into a local and, under the record, also times what

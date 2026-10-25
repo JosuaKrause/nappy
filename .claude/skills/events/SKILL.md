@@ -30,7 +30,7 @@ three seconds of cat is not a place. `TOWARD_PLAYER` (`cyclist`, `loose_dog`) is
 coming at her: traffic she answers with a route, not an ambush. Neither director-sited mode may
 obstruct.
 
-**`sited_on_her_way` is a decision about *when* a place is chosen.** A `MAP` one-shot, never
+**`EventDef.on_her_way` is a decision about *when* a place is chosen.** A `MAP` one-shot, never
 mobile, placed by her walk rather than at dawn; `EventDef.validate()` refuses any other
 combination.
 
@@ -179,11 +179,11 @@ is the event). `tests/test_events.gd` requires everything else to have one.
 
 ## A car that drives is a body that moves, and its strike is not the body
 
-`EventDef.drives` (`police_patrol` and every copy of it, and `fire_truck`) makes the only bodies
-that move, and it answers
-the pin the mobile exemption is for by **never moving into her**: `EventInstance._drive()` takes
-back any step or turn that would bring the body into her or her pram, and the car stands for her
-until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its
+`EventDef.vehicle` (`police_patrol` and every copy of it, and `fire_truck`) makes the only bodies
+that move, and it answers the pin the mobile exemption is for by **never moving into her**: a car's
+frame is proposed, checked and then committed (`EventCarDriving`), and a step or turn that would
+bring the body into her or her pram is taken back, with whatever the frame decided on that pose (the
+end of its route reached there), so the car stands for her until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its
 lethality is **a strike area ahead of its nose, only while it drives its route, only with her on
 the carriageway**, reaching `Tuning.PATROL_STRIKE_LEAD` past the touch so a car driving its nose
 into her strikes rather than stands. It gives way where the crowd's cars do — short of a zebra she
@@ -202,13 +202,13 @@ traps:
   nearer her than a fast car's warning reaches her — the fire engine's 1.7s of 190px/s past a
   touch that counts its body and hers, against the view's 180px half height up a north-south
   street and 320px half width across an east-west one — so one driving from its first frame
-  strikes her inside the time it takes to walk off the road. A car that drives is created standing
-  (`EventInstance.setup()`), so it waits until she is out of its way, as a car that has stood does.
+  strikes her inside the time it takes to walk off the road. A car that drives is made standing
+  (`EventCarDriving`), so it waits until she is out of its way, as a car that has stood does.
 - **A car that parks where it arrives must not reach past where it parks.** Its warning, strike,
   doubled caret and standing for her are stated in seconds of its travel, and the fire engine's
   route ends at its kerb: uncut, it warned her past the kerb of a strike it could not make, ended
   the day parking short of her, and stood off screen for her there. They end at the touch it would
-  make parked (`EventInstance._route_left()`), with no strike lead past it.
+  make parked (`EventCarDriving.route_left()`), with no strike lead past it.
 - **A heading change that newly brings her inside its warning's reach is refused like a step into
   her.** A turn moves nothing, so the body check passes it — and the raid's pacing car reversing at
   the end of its beat turns her from behind a car driving away into the front of one, struck with
@@ -245,25 +245,25 @@ nothing, cannot end the day and carries no cue, and moves until it is past `Tuni
 (420px) before it is deleted. **It is over the moment it starts leaving.**
 
 **Three things never leave**, and each would break something that reads the finishing position: a
-`spawns_on_finish` row stops where the thing it leaves belongs; a `stops_where_it_arrives` row parks
+row with an `aftermath.on_finish` stops where the thing it leaves belongs; a `stops_where_it_arrives` row parks
 and stays — still emitting, still the same event (the fire engine at its fire); and anything that
 was a *place* rather than a moment is simply over. **One thing leaves and is not deleted**: the
-guard who set off from a barrier (`EventDef.body_stays_behind`) walks away at his chasing pace over walkable ground and round his own band, and
+guard who set off from a barrier (`PursuitSpec.leaves_its_body`, `EventBarrierPost`) walks away at his chasing pace over walkable ground and round his own band, and
 the instance goes back to being only the barrier: solid and silent, since a roadblock's band
 costs nothing at any time, manned or not, on a day as in the escape (its `intensity` is 0; the
 guard is the danger), and the guard at its far post walks off with him, on every day
-(`EventInstance._send_the_far_guard_off()`). A barrier whose guard has gone raises no mark over her head (`EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard), since he
+(`RoadblockFarGuard`). A barrier whose guard has gone raises no mark over her head (`EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard), since he
 never notices her or charges again — so "it is over the moment it starts leaving" holds for the
 man and not for the barrier he left. He is in her view as he goes, so
 he is held to the sight rule like a car (`EventDeparture._must_clear_sight`) rather than vanishing on the
 6-second backstop beside her; the backstop remains for a departure with no player to be out of
-sight of. A plan streamed out while he is spent or leaving must carry that (`Planned.guard_spent`), or
+sight of. A plan streamed out while he is spent or leaving must carry that (`EventBarrierPost.save()`), or
 the barrier comes back armed. **Streaming is a way out too**: `EventManager.stream_around()` takes a
 plan out by her distance from its *route*, and a car that has run out of route drives on past its
 end, so `stream_around()` keeps any live instance within `Tuning.OUT_OF_SIGHT` of her in the world
 however far its route is, or a car she follows out of its street is deleted in front of her; and a
-leaving plan it does stream out is spent, as one that finished is, the guard's `guard_spent` being
-the exception. The rest is `docs/EVENTS.md`, "Going away".
+leaving plan it does stream out is spent, as one that finished is, a spent or leaving guard (whose
+barrier comes back as only the barrier) being the exception. The rest is `docs/EVENTS.md`, "Going away".
 
 ## Pursuits
 
