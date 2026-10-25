@@ -157,8 +157,7 @@ per pull request.
 **Who writes it is decided case by case** (inbox #842). The orchestrating session asks the
 builder for the rethink when it judges the builder has the context and the capability for it, and
 otherwise writes it itself or starts a fresh planning agent for it; a builder on a small model
-(Haiku) is the player's example of one that may not. In a session with no orchestrator (a Codex
-session working alone), the session that owns the pull request writes it.
+(Haiku) is the player's example of one that may not.
 
 *Proposed, not asked for, open to the player's correction:*
 
@@ -169,6 +168,8 @@ session working alone), the session that owns the pull request writes it.
   to the player. It decides *how* the open findings get fixed, never whether: the pull request still
   does not merge with a found defect open ("Is every defect already found in this change fixed
   inside it?", above).
+- **With no orchestrator** (a Codex session working alone), the session that owns the pull request
+  writes the rethink.
 - **A builder's rethink is checked:** the orchestrating session checks it against the player's
   words and the queue before it stands.
 - **Where:** the rethink and what it decided go in the pull request's conversation before any
