@@ -346,12 +346,12 @@ func _test_the_barrier_post_round_trips(t) -> void:
 			"both guards at their posts, there is nothing to carry")
 	first.player_at = Vector2(0.0, 120.0)
 	first.barrier_post.leave_the_body()
-	var side := first.chaser_side()
+	var side := first.barrier_post.chaser_side()
 	first.barrier_post.stand_as_the_barrier()
-	t.check(side != 0 and first.is_a_spent_guard(), "his guard set off from his post and is spent")
+	t.check(side != 0 and first.barrier_post.is_spent(), "his guard set off from his post and is spent")
 	var second := _round_trip(t, first, "barrier post", &"EventBarrierPost")
-	t.check(second.is_a_spent_guard() and second.chaser_side() == side
-			and second.phase == EventInstance.Phase.SPENT and not second.has_its_far_guard_posted(),
+	t.check(second.barrier_post.is_spent() and second.barrier_post.chaser_side() == side
+			and second.phase == EventInstance.Phase.SPENT and not second.barrier_post.has_its_far_guard_posted(),
 			"it comes back as only the barrier, his post empty and the far guard gone")
 	first.free()
 	second.free()
@@ -361,7 +361,7 @@ func _test_the_barrier_post_round_trips(t) -> void:
 func _test_a_car_is_composed_of_its_vehicle(t) -> void:
 	var patrol := _instance(t, EventCatalogue.by_id("police_patrol"))
 	var robber := _instance(t, EventCatalogue.by_id("alley_robbery"))
-	t.check(patrol.car != null and patrol.is_standing() and robber.car == null,
+	t.check(patrol.car != null and patrol.car.is_standing() and robber.car == null,
 			"a patrol car drives, made standing; a robber does not drive")
 	patrol.free()
 	robber.free()

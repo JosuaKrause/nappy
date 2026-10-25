@@ -213,8 +213,8 @@ func _stands_at(plan: EventScheduler.Planned) -> Vector2:
 func solids_of(plan: EventScheduler.Planned) -> Array[Solid]:
 	var found: Array[Solid] = []
 	var defs: Array[EventDef] = [plan.def]
-	if plan.def.spawns_on_finish() != "":
-		var successor := EventCatalogue.by_id(plan.def.spawns_on_finish())
+	if plan.def.aftermath.on_finish != "":
+		var successor := EventCatalogue.by_id(plan.def.aftermath.on_finish)
 		if successor:
 			defs.append(successor)
 	for def in defs:

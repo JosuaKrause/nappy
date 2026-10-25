@@ -406,7 +406,7 @@ static func _block_every_body(t, map: CityMap, plan: FinalePlanner.Plan,
 	var count := 0
 	for placement: EventScheduler.Planned in plan.placements:
 		for def: EventDef in [placement.def,
-				EventCatalogue.by_id(placement.def.spawns_on_finish())]:
+				EventCatalogue.by_id(placement.def.aftermath.on_finish)]:
 			if def == null or def.mobile or def.obstructs_radius <= 0.0:
 				continue
 			var path := placement.path if def == placement.def else PackedVector2Array()
@@ -544,7 +544,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 			frames += 1
 		var her := guard.player_at
 		guard.player_running = false
-		var leaving := guard.is_leaving and guard.is_a_spent_guard()
+		var leaving := guard.is_leaving and guard.barrier_post.is_spent()
 		strongest = maxf(strongest, guard.contribution_at(beside))
 		frames = 0
 		while guard.is_leaving and frames < int(30.0 / step):
@@ -552,7 +552,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 			guard._process(step)
 			strongest = maxf(strongest, guard.contribution_at(beside))
 			frames += 1
-		var gone := guard.is_a_spent_guard() and not guard.is_leaving and guard.is_solid()
+		var gone := guard.barrier_post.is_spent() and not guard.is_leaving and guard.is_solid()
 		strongest = maxf(strongest, guard.contribution_at(beside))
 		t.check(warned and charged and leaving and gone,
 				"%s guard warns, charges, is shaken off and leaves the band standing solid" % name)
@@ -564,7 +564,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		streamed.setup(def, Vector2(400.0, 0.0))
 		t.add_child(streamed)
 		streamed.set_process(false)
-		streamed.come_back_as_the_barrier(1)
+		streamed.barrier_post.come_back_as_the_barrier(1)
 		t.check(streamed.is_solid() and streamed.contribution_at(Vector2(400.0, 70.0)) == 0.0,
 				"%s band streamed back in after its guard was spent is solid and silent" % name)
 		streamed.free()
@@ -589,7 +589,7 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	t.add_child(guard)
 	guard.set_process(false)
 	guard._attach_the_band()
-	var posted_first := guard.has_its_far_guard_posted()
+	var posted_first := guard.barrier_post.has_its_far_guard_posted()
 	guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
 	guard._process(step)
 	var waited := 0
@@ -604,15 +604,15 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 		guard._process(step)
 		if not guard.is_leaving:
 			posted_through_the_chase = posted_through_the_chase \
-					and guard.has_its_far_guard_posted()
+					and guard.barrier_post.has_its_far_guard_posted()
 		frames += 1
 	var her := guard.player_at
 	guard.player_running = false
 	t.check(posted_first and posted_through_the_chase,
 			"the far guard stands at his post until his partner leaves")
 	t.check(guard.is_leaving, "the guard on her side was shaken off and walks away")
-	var set_off := guard.far_guard_at()
-	t.check(set_off != Vector2.INF and not guard.has_its_far_guard_posted(),
+	var set_off := guard.barrier_post.far.at
+	t.check(set_off != Vector2.INF and not guard.barrier_post.has_its_far_guard_posted(),
 			"the far guard sets off from his post the frame his partner starts to leave")
 	t.check(set_off.distance_to(her) > guard.body_position().distance_to(her),
 			"and he sets off from the far post, beyond the band from her")
@@ -624,11 +624,11 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	var paced := true
 	var last := set_off
 	var walked := 0
-	while guard.far_guard_at() != Vector2.INF and walked < int(30.0 / step):
+	while guard.barrier_post.far.at != Vector2.INF and walked < int(30.0 / step):
 		guard.player_at = her
 		guard._process(step)
 		walked += 1
-		var now := guard.far_guard_at()
+		var now := guard.barrier_post.far.at
 		if now == Vector2.INF:
 			break
 		paced = paced and now.distance_to(last) <= def.chase_speed() * step + 0.01 \
@@ -636,7 +636,7 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 		last = now
 	t.check(last.distance_to(her) > set_off.distance_to(her) and paced,
 			"he walks away from her at his partner's pace (%d frames)" % walked)
-	t.check(guard.far_guard_at() == Vector2.INF and not guard.has_its_far_guard_posted(),
+	t.check(guard.barrier_post.far.at == Vector2.INF and not guard.barrier_post.has_its_far_guard_posted(),
 			"and he is gone, and nobody stands at the band")
 	t.check(last.distance_to(her) > Tuning.OUT_OF_SIGHT - def.chase_speed() * step,
 			"only once he is out of her sight (%.0fpx from her)" % last.distance_to(her))
@@ -646,8 +646,8 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	streamed.setup(def, Vector2(400.0, 0.0))
 	t.add_child(streamed)
 	streamed.set_process(false)
-	streamed.come_back_as_the_barrier(1)
-	t.check(not streamed.has_its_far_guard_posted(),
+	streamed.barrier_post.come_back_as_the_barrier(1)
+	t.check(not streamed.barrier_post.has_its_far_guard_posted(),
 			"a band streamed back in after its guard was spent stands unmanned")
 	streamed.free()
 
@@ -718,15 +718,15 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 			var far_walked := false
 			var on_ground := true
 			frames = 0
-			while (guard.is_leaving or guard.far_guard_at() != Vector2.INF) \
+			while (guard.is_leaving or guard.barrier_post.far.at != Vector2.INF) \
 					and frames < int(30.0 / step):
 				RoadblockRig._tick(made[1], her, false)
 				frames += 1
 				var at: Array[Vector2] = []
 				if guard.is_leaving:
 					at.append(guard.global_position)
-				if guard.far_guard_at() != Vector2.INF:
-					at.append(guard.far_guard_at())
+				if guard.barrier_post.far.at != Vector2.INF:
+					at.append(guard.barrier_post.far.at)
 					far_walked = true
 				for k in at.size():
 					var point := at[k]
@@ -773,7 +773,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t) -> void:
 	manager._warn_about_the_ground_she_is_on()
 	t.check(her.alert_level() == Stroller.Alert.SOON,
 			"a posted band's guard waiting for her raises the mark inside its outer radius")
-	band.come_back_as_the_barrier(1)
+	band.barrier_post.come_back_as_the_barrier(1)
 	her._physics_process(1.0)
 	manager._warn_about_the_ground_she_is_on()
 	t.check(her.alert_level() == Stroller.Alert.NONE,
@@ -1352,7 +1352,7 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 				"seed %d: she is put down on walkable ground" % seed_value)
 		for placement: EventScheduler.Planned in plan.placements:
 			checked += 1
-			for def in [placement.def, EventCatalogue.by_id(placement.def.spawns_on_finish())]:
+			for def in [placement.def, EventCatalogue.by_id(placement.def.aftermath.on_finish)]:
 				if def == null or def.obstructs_radius <= 0.0:
 					continue
 				if placement.position.distance_to(spawn) \
@@ -1561,7 +1561,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 	var burst := EventCatalogue.by_id("finale_explosion")
 	var crater := EventCatalogue.by_id("impact_crater")
 	t.check(burst != null and crater != null, "both finale rows are in the catalogue")
-	t.check(burst.spawns_on_finish() == crater.id, "the burst names the crater it leaves")
+	t.check(burst.aftermath.on_finish == crater.id, "the burst names the crater it leaves")
 	t.check(burst.look == EventDef.Look.NONE, "and draws nothing itself")
 	# The width comes from the baked region table rather than from a loaded texture — the crater's
 	# picture is a region of the `events` page now, and `AtlasLibrary.native_size()` answers the

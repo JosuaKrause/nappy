@@ -116,7 +116,7 @@ static func escape_roadblock() -> EventDef:
 static func without_its_aftermath(def: EventDef) -> EventDef:
 	var variant: EventDef = def.duplicate()
 	variant.shape = def.shape
-	variant.aftermath = null
+	variant.aftermath = Aftermath.new()
 	return variant
 
 ## **The fire in the building's stairwell**: `burning_building` without its aftermath, and the
@@ -915,7 +915,7 @@ static func _construction() -> EventDef:
 ## street.
 ##
 ## Never scheduled directly — a SCRIPTED def with no day, created only once the fire has been
-## seen (`EventDef.spawns_on_sight()`, `EventManager._summon_what_has_been_sighted()`). The engine
+## seen (`EventDef.aftermath.on_sight`, `EventManager._summon_what_has_been_sighted()`). The engine
 ## used to be the day's own one-shot with the fire left behind wherever its route ended; the
 ## instruction reversed the two — *"the player should encounter the burning building before the
 ## fire truck ... the fire truck should spawn when the player sees the burning building not the
@@ -1016,7 +1016,6 @@ static func _burning_building() -> EventDef:
 	# draw either — see `draws_body_shadow` below.
 	def.shape = GroundShape.point(30.0)
 	def.draws_body_shadow = false
-	def.aftermath = Aftermath.new()
 	def.aftermath.scar = "burnt_shell"
 	def.aftermath.on_sight = "fire_truck"
 	def.cost = 4
@@ -2510,7 +2509,6 @@ static func _military_convoy() -> EventDef:
 	def.speed = 120.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 50
-	def.aftermath = Aftermath.new()
 	def.aftermath.on_finish = "barricade"
 	def.weight = 2.0
 	def.cost = 4
@@ -2535,7 +2533,6 @@ static func _barricade() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.band(62.0))
-	def.aftermath = Aftermath.new()
 	def.aftermath.scar = "barricade"
 	return def
 
@@ -3065,7 +3062,6 @@ static func _finale_explosion() -> EventDef:
 	# Short and over: a sharp spike is a short `duration` at high `intensity`, since there is no
 	# `impulse` field and none is wanted (`CLAUDE.md`, "Things deliberately not done").
 	def.duration = 1.2
-	def.aftermath = Aftermath.new()
 	def.aftermath.on_finish = "impact_crater"
 	return def
 

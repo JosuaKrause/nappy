@@ -1051,23 +1051,14 @@ static func sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
 	return step != null and not keeps_a_waiting_guard(step) \
 			and step.target_kind != ResistanceSteps.TargetKind.NEIGHBOR
 
-## Which catalogue row `_set_the_trap_on_her()` spawns for `step`'s own task: the roadblock's own
-## guard for the van, whose package is what he comes for, and the alley robber for every other —
-## the man shouting, the burnt shell, the district door, a mast's foot, the swing and the station's
-## door. Only ever asked once `sets_a_trap_on_her(step)` is already true. Takes the completed step
-## its caller already holds rather than reading `_step`, so it names the right row by construction
-## rather than by the coincidence that `_step` has not yet advanced when a perform step's own
-## completion calls it.
-func _trap_row_id(step: ResistanceSteps.Step) -> String:
-	return step.trap_row if step else ResistanceSteps.Step.new().trap_row
-
 ## **The trap comes to her.** *(2026-09-13, the player: "maybe spawn the robber in pursuing mode
 ## offscreen when she interacts with the yeller so it runs towards her from offscreen"; 2026-10-04,
 ## grassy-goose: "the robber should spawn in off-screen already pursuing when I touch the goal".)*
 ## The moment she completes a task `sets_a_trap_on_her()` answers for — hands over the note or the
 ## package, reaches the burnt building's door, crosses the district door, reaches a mast's foot or
-## the swing, or hands the key over at the station's door — `_trap_row_id()`'s row is sent at her
-## from off screen, and comes at her, awake from its first frame. On day 9 only an inspected
+## the swing, or hands the key over at the station's door — the step's own row
+## (`ResistanceSteps.Step.trap_row`: the van's guard for the van, the robber for every other) is
+## sent at her from off screen, and comes at her, awake from its first frame. On day 9 only an inspected
 ## crossing sends him (`_on_door_crossed()`). So the errand's price is paid on the way out, from
 ## wherever she did it, rather than guarded at one seeded spot she could walk round — and for the
 ## man shouting, whichever look-alike she chose costs the same.
@@ -1095,7 +1086,7 @@ func _trap_row_id(step: ResistanceSteps.Step) -> String:
 func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 	if _day < TRAP_FIRST_DAY or not _city or not _city.events:
 		return
-	var def := EventCatalogue.by_id(_trap_row_id(step))
+	var def := EventCatalogue.by_id(step.trap_row)
 	if not def:
 		return
 	_send_at_her(def, is_at_a_front_door(step))
@@ -2118,7 +2109,7 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 		for body in region_plan.door_bodies:
 			if not area.has_point(body.position):
 				continue
-			if body.def.is_a_boom():
+			if body.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED:
 				_door_at = body.position
 				_door_axis = body.facing
 			elif body.def.redetains:

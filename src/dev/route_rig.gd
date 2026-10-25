@@ -781,10 +781,10 @@ func _planned_position(plan: EventScheduler.Planned) -> Vector2:
 ## (`EventManager.obstructed_footprint()`): solid, and neither `mobile` — somewhere else by the time
 ## a plan gets there, the reason `_is_stationary_hazard()` gives — nor a door body, which is a
 ## crossing the day keeps open: a hut or a post (`detain_seconds`) or the boom
-## (`EventDef.is_a_boom()`), whose ground `_gate_ground()` keeps off instead.
+## (`EventDef.SolidWhen.WHILE_LOWERED`), whose ground `_gate_ground()` keeps off instead.
 func _is_planned_body(def: EventDef) -> bool:
 	return def.shape != null and def.obstructs_radius > 0.0 and not def.mobile \
-			and def.detain_seconds <= 0.0 and not def.is_a_boom()
+			and def.detain_seconds <= 0.0 and def.solid_when != EventDef.SolidWhen.WHILE_LOWERED
 
 ## Every tile whose centre lies within a door's reach — `EventDef.detain_distance()` from a
 ## `checkpoint_hut` or `checkpoint_post` (the `redetains` rows, the two that inspect her), plus

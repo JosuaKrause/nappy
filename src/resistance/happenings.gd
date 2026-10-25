@@ -466,7 +466,7 @@ func _bring_the_column(def: EventDef, place: Vector2, her: Vector2, lane_x: floa
 ## and to a calm area — or `Vector2.INF`.
 func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going: float,
 		limit: float, def: EventDef) -> Vector2:
-	var barricade := EventCatalogue.by_id(def.spawns_on_finish())
+	var barricade := EventCatalogue.by_id(def.aftermath.on_finish)
 	if not barricade:
 		return Vector2.INF
 	if not _siting:

@@ -289,7 +289,7 @@ func _test_mobile_follows_its_path(t) -> void:
 	# mechanic, not about fire, and it needs a row whose `_be_done()` finishes immediately rather
 	# than driving on until it is out of sight — `spawns_on_finish` is what does that, which the
 	# fire engine no longer carries now that `burning_building` calls it in rather than the other
-	# way round (`EventDef.spawns_on_sight()`).
+	# way round (`EventDef.aftermath.on_sight`).
 	var def := EventCatalogue.by_id("military_convoy")
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(300.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)

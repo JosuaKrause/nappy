@@ -180,7 +180,7 @@ func _test_finished_instances_are_dropped(t) -> void:
 	var before := _city.events.active_count()
 	var victim: EventInstance = null
 	for instance in _city.events.instances():
-		if instance.def.spawns_on_finish() == "":
+		if instance.def.aftermath.on_finish == "":
 			victim = instance
 			break
 	t.check(victim != null, "there is an event that leaves nothing behind")
@@ -199,7 +199,7 @@ func _test_finished_instances_are_dropped(t) -> void:
 ## `military_convoy`/`barricade` rather than the fire engine: `fire_truck` no longer sets
 ## `spawns_on_finish` — the day the fire is found before the engine reversed that link, so it is
 ## `burning_building` that now names something, in the opposite direction
-## (`EventDef.spawns_on_sight()`, checked in `tests/test_events.gd`, not here). The convoy is the
+## (`EventDef.aftermath.on_sight`, checked in `tests/test_events.gd`, not here). The convoy is the
 ## row `spawns_on_finish` still governs, and the wiring this test exists for is the same either
 ## way.
 func _test_successor_replaces_its_parent(t) -> void:
@@ -308,7 +308,7 @@ func _test_an_event_that_has_run_does_not_run_again(t) -> void:
 	_start(1)
 	var plan: EventScheduler.Planned = null
 	for candidate in _city.events.plans():
-		if candidate.is_placed() and candidate.def.spawns_on_finish() == "":
+		if candidate.is_placed() and candidate.def.aftermath.on_finish == "":
 			plan = candidate
 			break
 	if not plan:
@@ -1134,7 +1134,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 				other.def.inner_radius if other.def.hard_fail else 0.0)
 		_block(blocked, other.position, radius)
 	_block(blocked, plan.position, plan.def.outer_radius)
-	var engine_def := EventCatalogue.by_id(plan.def.spawns_on_sight())
+	var engine_def := EventCatalogue.by_id(plan.def.aftermath.on_sight)
 	var parked := EventManager.where_the_summoned_row_stops(_city.map, plan.position)
 	if engine_def and parked != Vector2.INF:
 		_block(blocked, parked, engine_def.outer_radius)

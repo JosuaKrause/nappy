@@ -81,7 +81,7 @@ func _what_stops(player: Stroller, heading: Vector2) -> Object:
 
 func _test_the_row_is_a_car_with_the_engines_body(t) -> void:
 	var def := _truck()
-	t.check(def.drives(), "fire_truck drives: solid in every state, lethal in front while driving")
+	t.check(def.vehicle != null, "fire_truck drives: solid in every state, lethal in front while driving")
 	t.check(def.shape != null and def.shape.kind == GroundShape.Kind.SEGMENT,
 			"its body is a capsule laid along its heading")
 	t.check(is_equal_approx(def.shape.reach() * 2.0, 58.0)
@@ -130,9 +130,9 @@ func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 		for i in int(8.0 / STEP):
 			_step(engine, player)
 			var now := float(i) * STEP
-			if warned_at < 0.0 and engine.closes_on(player.global_position):
+			if warned_at < 0.0 and engine.car.closes_on(player.global_position):
 				warned_at = now
-			held = held or engine.is_standing()
+			held = held or engine.car.is_standing()
 			if engine.is_lethal_at(player.global_position):
 				struck_at = now
 				break
@@ -192,7 +192,7 @@ func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 		for i in int(5.0 / STEP):
 			_step(engine, player)
 			var now := float(i) * STEP
-			if warned_at < 0.0 and engine.closes_on(player.global_position):
+			if warned_at < 0.0 and engine.car.closes_on(player.global_position):
 				warned_at = now
 			if engine.is_lethal_at(player.global_position):
 				struck_at = now
@@ -222,7 +222,7 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 	var lethal := false
 	for i in int(5.0 / STEP):
 		_step(engine, player)
-		warned = warned or engine.closes_on(player.global_position)
+		warned = warned or engine.car.closes_on(player.global_position)
 		lethal = lethal or engine.will_be_lethal(player.global_position) \
 				or engine.is_lethal_at(player.global_position)
 		if engine.is_parked:
@@ -269,7 +269,7 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 	for i in int(5.0 / STEP):
 		_step(engine, player)
 		var now := float(i) * STEP
-		if warned_at < 0.0 and engine.closes_on(player.global_position):
+		if warned_at < 0.0 and engine.car.closes_on(player.global_position):
 			warned_at = now
 		if engine.is_lethal_at(player.global_position):
 			struck_at = now
@@ -292,7 +292,7 @@ func _test_behind_and_beside_it_nothing_strikes(t) -> void:
 		if player.move_and_collide(Vector2.RIGHT * Tuning.WALK_SPEED * STEP) != null:
 			touched = true
 	t.check(not struck, "a truck driving away from her never strikes her behind it")
-	t.check(engine.is_driving(), "and it was driving")
+	t.check(engine.car.is_driving(), "and it was driving")
 	player.free()
 	engine.free()
 	# Standing beside its line, it passes her without a strike.
@@ -320,7 +320,7 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 		if engine.is_parked:
 			break
 	t.check(engine.is_parked, "the truck parks where its route ends")
-	t.check(not engine.is_driving() and not engine.will_be_lethal(Vector2(40.0, 0.0)),
+	t.check(not engine.car.is_driving() and not engine.will_be_lethal(Vector2(40.0, 0.0)),
 			"and a parked truck is not driving")
 	for place in [Vector2(40.0, 0.0), Vector2(-40.0, 0.0), Vector2(0.0, 30.0), Vector2(0.0, -30.0)]:
 		t.check(not engine.is_lethal_at(place), "a parked truck strikes nobody at %s" % place)

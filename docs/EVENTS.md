@@ -819,7 +819,7 @@ switched-off kill the constraint below refuses for a standing thing. **Its contr
 a crowd car's** ("The traffic fairness contract" in `docs/MECHANICS.md`): the painted carriageway
 she chooses to step onto — with her on the sidewalk and her pram poking over the kerb, the car
 stops for her — and a warning `Tuning.CAR_HORN_TIME` (1.6s) of its own travel before the strike,
-the exclamation mark over her head (`EventInstance.closes_on()`), which is longer than walking off
+the exclamation mark over her head (`EventCarDriving.closes_on()`), which is longer than walking off
 the carriageway with the doubled margin, which `Tuning.validate_traffic()` holds on boot — the
 warning is stated in seconds of the car's own travel, so no row's numbers can break it. The doubled red caret is over the car whenever staying put in its lane
 would end the day (`EventInstance.will_be_lethal()`). `hard_fail` stays false: what it decides —

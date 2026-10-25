@@ -608,7 +608,7 @@ static func sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
 	# fix, wearing a passing test suite.
 	variant.shape = def.shape
 	variant.solid_parts = def.solid_parts
-	variant.aftermath = null
+	variant.aftermath = Aftermath.new()
 	if suppress_recenter and variant.pavement_side == EventDef.Pavement.ANY:
 		variant.pavement_side = EventDef.Pavement.AT_THE_KERB
 	return variant

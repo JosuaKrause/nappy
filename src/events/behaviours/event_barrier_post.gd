@@ -45,10 +45,12 @@ func body_position() -> Vector2:
 func chaser_side() -> int:
 	return _chaser_side
 
-## Whether the guard who set off from the barrier has left it behind: what `EventDeparture.speed()`,
-## the field and the halo ask of a departure.
-func is_walking_off() -> bool:
-	return has_left_its_body()
+## **Whether its guard is spent, or on his way out from the barrier**: what a stream-out carries
+## (`save()`) so that a barrier streamed in again comes back as only the barrier, never as a guard
+## who has forgotten and chases again, and what passes over a band that has nothing to warn of
+## (`EventManager._warn_about_the_ground_she_is_on()`).
+func is_spent() -> bool:
+	return event.phase == EventInstance.Phase.SPENT or (event.is_leaving and has_left_its_body())
 
 ## Whether a guard still stands at the band's far post: the band's own drawing while both are
 ## posted, and after his partner has set off, until he leaves too.
@@ -160,7 +162,7 @@ func come_back_as_the_barrier(side: int) -> void:
 ## Its guard spent, or on his way out from the barrier, and the side he left: only then is there
 ## anything to carry.
 func save() -> Dictionary:
-	if not event.is_a_spent_guard():
+	if not is_spent():
 		return {}
 	return {"spent": true, "side": _chaser_side}
 

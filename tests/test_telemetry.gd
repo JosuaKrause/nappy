@@ -881,7 +881,7 @@ func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
 		# draw. The picture has to be able to draw one, and what it draws is a sited plan — so this
 		# stands in for the walk, which is nothing this test has or wants.
 		for plan in plans:
-			if plan.def.sited_on_her_way() and not plan.is_placed():
+			if plan.def.on_her_way != null and not plan.is_placed():
 				plan.position = map.tile_to_world(
 						map.tiles_of_type(GameEnums.TileType.SIDEWALK)[0])
 		var plain := TelemetryMap.render(map, [], tree)

@@ -394,7 +394,7 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 		instance._process(STEP)
 	t.check(instance.position == stopped_at and not instance.is_leaving,
 			"it stands where it stopped while he is after her")
-	t.check(not instance.is_driving(), "and a standing car is not driving, so it strikes nobody")
+	t.check(not instance.car.is_driving(), "and a standing car is not driving, so it strikes nobody")
 	officer.give_up_the_chase()
 	t.check(officer.is_leaving and not officer.is_finished, "he gives up and walks back")
 	instance.player_at = her
@@ -458,13 +458,13 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	t.add_child(guard)
 	guard.set_process(false)
 	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
-	t.check(not guard.has_left_its_body_behind(), "with its body still under its own feet")
+	t.check(not guard.barrier_post.has_left_its_body(), "with its body still under its own feet")
 
 	var her := post + Vector2(hot.notice_within() - 10.0, 0.0)
 	guard.player_at = her
 	guard._process(STEP)
 	t.check(not guard.is_waiting(), "she comes inside the trigger and the guard notices her")
-	t.check(guard.is_solid() and guard.has_left_its_body_behind(),
+	t.check(guard.is_solid() and guard.barrier_post.has_left_its_body(),
 			"he sets off and the barrier stays solid behind him")
 	t.check(guard.body_position().is_equal_approx(post),
 			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
@@ -536,7 +536,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 			var her := post + across * side * (hot.notice_within() - 1.0)
 			guard.player_at = her
 			guard._process(STEP)
-			t.check(guard.has_left_its_body_behind() and guard.chaser_side() == side,
+			t.check(guard.barrier_post.has_left_its_body() and guard.barrier_post.chaser_side() == side,
 					"%s: the guard on her side sets off" % what)
 			var his_post := post + EventInstance._guard_post_offset(vertical, side)
 			t.check(guard.global_position.is_equal_approx(his_post),

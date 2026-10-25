@@ -172,10 +172,11 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 		# by the plan, rather than by a second wire from the region planner to here. The huts and
 		# posts are the bodies that inspect her and the boom is the one that does not; all three
 		# keep their clear ground.
-		if (plan.def.redetains or plan.def.is_a_boom()) and plan.is_placed():
+		if (plan.def.redetains or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED) \
+				and plan.is_placed():
 			_doors.append(plan.position)
 		# A place the day budgeted and left unsited, read off the same list for the same reason.
-		if plan.def.sited_on_her_way() and not plan.is_placed():
+		if plan.def.on_her_way != null and not plan.is_placed():
 			_on_her_way.append(plan)
 		var mode := plan.def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:

@@ -401,7 +401,7 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 	var crews := 0
 	for day in range(1, 15):
 		for plan in _planned(day):
-			if not plan.def.sited_on_her_way():
+			if plan.def.on_her_way == null:
 				continue
 			t.check(not plan.is_placed(), "day %d: '%s' is planned with no position"
 					% [day, plan.def.id])
@@ -409,7 +409,7 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 					"day %d: and it is a place that stands still, not a director's moment" % day)
 			if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 				crews += 1
-				t.check(plan.def.id == "poster_crew" and plan.def.pastes_a_front(),
+				t.check(plan.def.id == "poster_crew" and plan.def.on_her_way.at_a_front,
 						"day %d: the only recurring row left for her walk is the poster crew, not '%s'"
 						% [day, plan.def.id])
 				continue

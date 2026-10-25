@@ -216,7 +216,7 @@ func _test_a_walk_goes_round_what_was_put_down(t) -> void:
 ## its own driving would never take.
 func _test_a_car_sees_her_off_street_ground(t) -> void:
 	var patrol := EventCatalogue.by_id("police_patrol")
-	t.check(patrol.drives(), "the patrol is a car that drives")
+	t.check(patrol.vehicle != null, "the patrol is a car that drives")
 	for ground in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE, GameEnums.TileType.PARK,
 			GameEnums.TileType.SIDEWALK]:
 		var map := _yard(Vector2i(8, 8))
@@ -285,7 +285,7 @@ func _test_a_body_and_its_record_are_one_footprint(t, city: City) -> void:
 	var differ := 0
 	for plan in city.events.plans():
 		if not plan.is_placed() or plan.def.mobile or plan.def.detain_seconds > 0.0 \
-				or plan.def.is_a_boom() or plan.def.obstructs_radius <= 0.0:
+				or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED or plan.def.obstructs_radius <= 0.0:
 			continue
 		var recorded := EventManager.obstructed_footprint(map, plan.def, plan.position,
 				plan.facing)
@@ -471,13 +471,13 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 				if not map.step_is_clear(before, now, asked):
 					bad.append("%s %s -> %s" % [def.id, before, now])
 			before = now
-			if instance.far_guard_at() != Vector2.INF:
+			if instance.barrier_post and instance.barrier_post.far.at != Vector2.INF:
 				if guard_before != Vector2.INF \
 						and map.passable(map.world_to_tile(guard_before), asked) \
-						and not map.step_is_clear(guard_before, instance.far_guard_at(), asked):
+						and not map.step_is_clear(guard_before, instance.barrier_post.far.at, asked):
 					bad.append("%s's far guard %s -> %s" % [def.id, guard_before,
-							instance.far_guard_at()])
-				guard_before = instance.far_guard_at()
+							instance.barrier_post.far.at])
+				guard_before = instance.barrier_post.far.at
 		if left_from != Vector2.INF and not instance.is_finished \
 				and instance.global_position.distance_to(left_from) < TILE:
 			stalled.append(def.id)

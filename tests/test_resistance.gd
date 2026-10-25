@@ -4176,7 +4176,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 					"in one lane of the main road")
 			t.check(truck.path[0].distance_to(her) >= minf(lead, edge) - 1.0,
 					"far enough up the road (%.0fpx)" % truck.path[0].distance_to(her))
-			if truck.def.spawns_on_finish() != "":
+			if truck.def.aftermath.on_finish != "":
 				leaving += 1
 				var stop := truck.path[1]
 				t.check(i == trucks.size() - 1, "only the rear truck leaves anything")
@@ -4869,7 +4869,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 			# is not vacuous.
 			var walked_before := _city.events.walks_under_a_boom()
 			for body in _city.region_plan().door_bodies:
-				if body.def.is_a_boom() and body.position.distance_to(director._door_at) > 200.0:
+				if body.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and body.position.distance_to(director._door_at) > 200.0:
 					_walk_through(body.position, body.facing, direction, player)
 					break
 			t.check(_city.events.walks_under_a_boom() > walked_before,
@@ -4999,7 +4999,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 				# Another door's boom with the named door well to one side of its line, so that she
 				# can be across A's line while she stands at B.
 				for body in _city.region_plan().door_bodies:
-					if body.def.is_a_boom() and body.position.distance_to(b_at) > 200.0 \
+					if body.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and body.position.distance_to(b_at) > 200.0 \
 							and absf((b_at - body.position).dot(body.facing)) > 100.0:
 						a_at = body.position
 						a_axis = body.facing

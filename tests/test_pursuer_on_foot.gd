@@ -761,7 +761,7 @@ func _test_the_hunting_vans_hunt_on_foot(t) -> void:
 func _test_no_vehicle_pursues_her(t) -> void:
 	var vehicles := 0
 	for def in EventCatalogue.all():
-		if not (def.drives() or EventInstance.WHEELS_BY_LOOK.has(def.look)):
+		if not (def.vehicle != null or EventInstance.WHEELS_BY_LOOK.has(def.look)):
 			continue
 		vehicles += 1
 		for level in EventCatalogue.heat_levels():

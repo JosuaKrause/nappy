@@ -49,13 +49,13 @@ func begin() -> void:
 	if not (def.mobile and event.path.size() > 1) and her != Vector2.INF \
 			and not event.global_position.is_equal_approx(her):
 		event._heading = (event.global_position - her).normalized()
-	if def.drives():
+	if def.vehicle != null:
 		# **A car leaves the way it can, and never vanishes beside her.** Every step of a departure
 		# into her is refused, and a car that has a body she can stand against is gone only once she
 		# could not be watching. An investigating car reaches here only at the end of its route,
 		# which it drives on to once its man is back in, so it leaves the way it was going.
 		_must_clear_sight = true
-	if event.is_a_guard_leaving_his_barrier():
+	if event.barrier_post and event.barrier_post.has_left_its_body():
 		# **He is in her view as he goes**, and **he walks off over walkable ground**, by the way
 		# planned on from here, never in a straight line across a roof — and never through his own
 		# band (`_way_avoids`): she usually stands on the side she lured him from, so the nearest
@@ -94,7 +94,7 @@ func for_a_completed_task() -> void:
 ## guard leaving his barrier, or a row that ends rather than leaving (`spawns_on_finish`).
 func along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
 	if event.is_finished or event.is_parked or event._guard_spent \
-			or event.is_a_guard_leaving_his_barrier():
+			or event.barrier_post and event.barrier_post.has_left_its_body():
 		return false
 	_way_speed = speed
 	if not event.is_leaving:
@@ -131,7 +131,7 @@ func way_left() -> PackedVector2Array:
 func speed() -> float:
 	if _way_speed > 0.0:
 		return _way_speed
-	if event.is_a_guard_leaving_his_barrier():
+	if event.barrier_post and event.barrier_post.has_left_its_body():
 		return event.def.chase_speed()
 	return event.def.departure_speed()
 
@@ -163,7 +163,7 @@ func leave(delta: float) -> void:
 			and event.global_position.distance_to(her) > Tuning.OUT_OF_SIGHT
 	var may_give_up: bool = not _must_clear_sight or her == Vector2.INF or gone
 	if gone or (may_give_up and _leaving_for >= LEAVING_GIVES_UP):
-		if event.is_a_guard_leaving_his_barrier():
+		if event.barrier_post and event.barrier_post.has_left_its_body():
 			event.barrier_post.stand_as_the_barrier()
 		else:
 			event._finish()

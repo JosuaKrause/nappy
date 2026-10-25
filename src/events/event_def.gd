@@ -394,13 +394,6 @@ func notice_on(day: int) -> NoticeSpec:
 ## **Where her walk sites this row**, or null for a row the dawn places — see `OnHerWay`.
 @export var on_her_way: OnHerWay = null
 
-## Whether the day leaves where this row stands to her walk (`on_her_way`).
-func sited_on_her_way() -> bool:
-	return on_her_way != null
-
-## Whether her walk sites it in front of a building's front (`OnHerWay.at_a_front`).
-func pastes_a_front() -> bool:
-	return on_her_way != null and on_her_way.at_a_front
 
 ## Seconds of notice this row gives from off screen before it can be seen — `Tuning.OFFSCREEN_NOTICE`
 ## (0.2) unless a row overrides it. Two readings, by how the row arrives:
@@ -683,21 +676,11 @@ enum SolidWhen {
 
 @export var solid_when := SolidWhen.ALWAYS
 
-## Whether its body goes down only when its notice ends (`SolidWhen.ONCE_IT_STARTS`).
-func solid_once_it_starts() -> bool:
-	return solid_when == SolidWhen.ONCE_IT_STARTS
-
-## Whether it is a boom, solid only while lowered (`SolidWhen.WHILE_LOWERED`).
-func is_a_boom() -> bool:
-	return solid_when == SolidWhen.WHILE_LOWERED
 
 ## **A car that drives**, or null for anything else — see `VehicleSpec`: `police_patrol` and every
 ## copy of it, and `fire_truck`.
 @export var vehicle: VehicleSpec = null
 
-## Whether this row is a car that drives (`vehicle`).
-func drives() -> bool:
-	return vehicle != null
 
 ## **A vehicle that investigates: once it notices her it stops and lets men out on foot, who pursue
 ## her; the vehicle itself never chases.** *(merry-stork, the player: "an investigating police car
@@ -754,7 +737,7 @@ enum Pavement {
 	## lot behind it — the one face of a building the city draws. Where a fire catches, so the
 	## building it burns is the one drawn burnt afterwards (`burning_building`'s own
 	## `pavement_side`), and where a poster crew pastes (`EventScheduler.WalkSiting` asks it for a
-	## row that `pastes_a_front()`).
+	## row whose `OnHerWay.at_a_front` is set).
 	AT_THE_FRONT,
 }
 
@@ -936,20 +919,9 @@ enum Role {
 ## swells (a protest gathering), below 1.0 fades.
 @export var intensity_ramp := 1.0
 
-## **The rows this one brings after it**, or null for a row that brings none — see `Aftermath`.
-@export var aftermath: Aftermath = null
+## **The rows this one brings after it** — see `Aftermath`; empty for a row that brings none.
+@export var aftermath := Aftermath.new()
 
-## The scar it leaves on the run (`Aftermath.scar`), or `""`.
-func scar_id() -> String:
-	return aftermath.scar if aftermath else ""
-
-## The row it leaves where it ends (`Aftermath.on_finish`), or `""`.
-func spawns_on_finish() -> String:
-	return aftermath.on_finish if aftermath else ""
-
-## The row it calls in once she has seen it (`Aftermath.on_sight`), or `""`.
-func spawns_on_sight() -> String:
-	return aftermath.on_sight if aftermath else ""
 
 ## Which act the row belongs to, narratively. No game code reads it — `first_day` is what
 ## actually decides when a row can appear — but `tests/test_acts.gd` asserts every row's
@@ -1177,9 +1149,9 @@ func validate() -> bool:
 			push_error("event '%s' stops where it arrives and does not move: there is no route " % id
 					+ "for it to run out of")
 			return false
-		if spawns_on_finish() != "":
+		if aftermath.on_finish != "":
 			push_error("event '%s' stops where it arrives and spawns '%s' when it finishes: it "
-					% [id, spawns_on_finish()] + "does one or the other, never both")
+					% [id, aftermath.on_finish] + "does one or the other, never both")
 			return false
 	# **A pursuer awake from its first frame is never the scheduler's to place.** With no notice its
 	# telegraph and its chase are clocked from the moment it exists, so a `MAP` row would spend both
@@ -1230,10 +1202,10 @@ func validate() -> bool:
 	# The same shape again, both ways round. Holding a body back through the notice means nothing
 	# on a row that has no body, and a row with no notice has nothing to hold it back through — its
 	# body would go down on the first frame anyway, which is what the flag exists to stop.
-	if solid_once_it_starts() and obstructs_radius <= 0.0:
+	if solid_when == SolidWhen.ONCE_IT_STARTS and obstructs_radius <= 0.0:
 		push_error("event '%s' waits for its own notice to become solid and has no body" % id)
 		return false
-	if solid_once_it_starts() and telegraph_time <= 0.0:
+	if solid_when == SolidWhen.ONCE_IT_STARTS and telegraph_time <= 0.0:
 		push_error("event '%s' waits for a notice it does not have before it becomes solid" % id)
 		return false
 	# A `TOWARD_PLAYER` row is created at least `PendingWarning.least_distance()` from her when it is
@@ -1548,7 +1520,8 @@ func as_warned_first() -> EventDef:
 ## crosses no building — see docs/EVENTS.md, "Solid things are solid", and
 ## `EventInstance.is_lethal_at()`.
 func field_reach() -> float:
-	if shape != null and shape.kind == GroundShape.Kind.SEGMENT and not (vehicle and vehicle.field_from_its_centre):
+	if shape != null and shape.kind == GroundShape.Kind.SEGMENT \
+			and not (vehicle and vehicle.field_from_its_centre):
 		return shape.half_length + outer_radius
 	var moving_speed := pursuit.speed if pursuit else (speed if mobile else 0.0)
 	return outer_radius * Tuning.field_scale(Tuning.field_eccentricity(moving_speed))

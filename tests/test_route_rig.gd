@@ -1338,7 +1338,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	var gate: EventInstance = null
 	var hut: EventInstance = null
 	for instance in city.events.instances():
-		if instance.def.is_a_boom() and not gate:
+		if instance.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and not gate:
 			gate = instance
 	if gate:
 		var axis_of_gate := gate.facing_now()

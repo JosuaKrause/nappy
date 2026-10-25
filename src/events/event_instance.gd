@@ -1652,7 +1652,7 @@ func _ready() -> void:
 	_telegraph_announced = true
 	# `EventDef.SolidWhen.ONCE_IT_STARTS` is the one row shape that does not put its body down here
 	# — see its own doc, and `_become_solid_once_it_starts()` below, which is where it goes down.
-	if def.obstructs_radius > 0.0 and not def.solid_once_it_starts():
+	if def.obstructs_radius > 0.0 and def.solid_when != EventDef.SolidWhen.ONCE_IT_STARTS:
 		_build_obstruction()
 	# A car's body is its `shape` (`EventDef.vehicle`), put down here like any other unless she is
 	# already where it would stand, in which case `_become_solid_once_it_starts()` puts it down the
@@ -1710,10 +1710,6 @@ static func _guard_post_offset(vertical: bool, side: int) -> Vector2:
 static func _guard_post_heading(vertical: bool, side: int) -> Vector2:
 	var outward := Vector2.RIGHT if vertical else Vector2.DOWN
 	return outward * (-1.0 if side < 0 else 1.0)
-
-## Whether its barrier has been left behind by the guard who set off (`EventBarrierPost`).
-func has_left_its_body_behind() -> bool:
-	return barrier_post != null and barrier_post.has_left_its_body()
 
 ## Where its body stands, which is where the street is still shut: `global_position`, or where a
 ## barrier's guard left it (`EventBarrierPost.body_position()`), so a caller never has to ask which
@@ -1810,9 +1806,9 @@ const FIGURE_RADIUS := 9.0
 ## car — and a man's (`FIGURE_RADIUS`) where the shape is a solid he stands at.
 static func mover_for(row: EventDef) -> Mover:
 	var radius := FIGURE_RADIUS
-	if row.shape != null and (row.obstructs_radius <= 0.0 or row.drives()):
+	if row.shape != null and (row.obstructs_radius <= 0.0 or row.vehicle != null):
 		radius = row.shape.reach()
-	return Mover.vehicle(radius) if row.drives() else Mover.on_foot(radius)
+	return Mover.vehicle(radius) if row.vehicle != null else Mover.on_foot(radius)
 
 ## Where each of this instance's solid pieces stands, in world space — paired index for index with
 ## `solid_part_shapes()` below, the same two-parallel-arrays shape `flock_offsets()` and
@@ -1864,9 +1860,10 @@ func _rim_holder() -> Node2D:
 ## Whether this instance is solid right now. True from `_ready()` for anything with
 ## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` —
 ## false through the notice of a `SolidWhen.ONCE_IT_STARTS` row, which is what that setting is for, and
-## false while a boom (`EventDef.is_a_boom()`) stands raised.
+## false while a boom (`EventDef.SolidWhen.WHILE_LOWERED`) stands raised.
 func is_solid() -> bool:
-	return _obstruction != null and not (def.is_a_boom() and is_raised())
+	return _obstruction != null \
+			and not (def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and is_raised())
 
 ## Whether this boom's arm is up right now — `RegionPlanner.GateState.raised`, which only `Crowd`
 ## writes. `false` with no `gate_state`, the same safe default the drawing reads: a gate that has
@@ -1884,7 +1881,7 @@ func is_raised() -> bool:
 ## the body cannot go down around her: following the arm is enough. Deferred, because the switch
 ## can land while the physics server is mid-query.
 func _let_the_body_follow_the_arm() -> void:
-	if not def.is_a_boom() or _obstruction == null:
+	if def.solid_when != EventDef.SolidWhen.WHILE_LOWERED or _obstruction == null:
 		return
 	var open := is_raised()
 	if open == _arm_was_open:
@@ -1916,7 +1913,7 @@ func _become_solid_once_it_starts() -> void:
 	if car and _obstruction == null and car.gap_to_her(position, _heading) >= 0.0:
 		_build_obstruction()
 		return
-	if not def.solid_once_it_starts() or _obstruction != null:
+	if def.solid_when != EventDef.SolidWhen.ONCE_IT_STARTS or _obstruction != null:
 		return
 	if is_finished or is_leaving or is_waiting() or is_telegraphing():
 		return
@@ -1932,21 +1929,6 @@ func _become_solid_once_it_starts() -> void:
 ## that drives stops where they stop (`EventCarDriving.room_to_its_line()`). Null in a rig with no
 ## city, which then has no red light to stop at.
 var signals: TrafficSignals = null
-
-## Whether the car is standing (`EventCarDriving.is_standing()`); false for anything that does not
-## drive.
-func is_standing() -> bool:
-	return car != null and car.is_standing()
-
-## Whether this car is driving right now: the one state its warning and its strike are live in
-## (`EventCarDriving.is_driving()`).
-func is_driving() -> bool:
-	return car != null and car.is_driving()
-
-## **The car's warning, a horn said with the mark over her head** (`EventCarDriving.closes_on()`).
-## `EventManager._warn_about_the_ground_she_is_on()` raises the mark from it.
-func closes_on(her: Vector2) -> bool:
-	return car != null and car.closes_on(her)
 
 ## **The end of its route, reached or cut short** (`EventRouteWalk`): it is done there, unless a
 ## car's frame is open, which acts on it only once the pose that reached it is kept
@@ -2008,7 +1990,7 @@ func _tick(delta: float) -> void:
 		for behaviour in _behaviours:
 			behaviour.step_leaving(delta)
 		_advance_gait(_path_travelled - _travelled_before)
-		if has_left_its_body_behind() and not is_finished:
+		if barrier_post and barrier_post.has_left_its_body() and not is_finished:
 			# He walks off and the barrier does not go with him: its body stays where it was built
 			# through the departure as through the chase (its picture is its own node).
 			barrier_post.keep_the_body()
@@ -2033,7 +2015,7 @@ func _tick(delta: float) -> void:
 
 	# A car that drives keeps its body through a chase (`EventDef.vehicle`): cars that drive are the
 	# only bodies that move, and `EventCarDriving` is what keeps them off her.
-	if _obstruction and def.pursuit != null and not def.drives() and not is_waiting():
+	if _obstruction and def.pursuit != null and def.vehicle == null and not is_waiting():
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
 		# `_step`'s own note says why a moving pursuer may not keep a body: "giving a
 		# pursuer one would let a moving wall pin her against a building on a two-tile pavement."
@@ -2057,7 +2039,7 @@ func _tick(delta: float) -> void:
 	_advance_gait(_path_travelled - _travelled_before)
 	if _has_expired():
 		_be_done()
-	if has_left_its_body_behind() and not _guard_spent:
+	if barrier_post and barrier_post.has_left_its_body() and not _guard_spent:
 		# The body is a child of a node that is walking away, so it is re-pinned on every frame he
 		# moves. The band's picture is its own node (`RoadblockBand`), which stands at the body and
 		# needs no redraw for it. A spent guard moves nothing, so there is nothing to re-pin.
@@ -2705,7 +2687,7 @@ func _be_done(may_park := true) -> void:
 		_path_travelled = route.length()
 		queue_redraw()
 		return
-	if (departure.speed() <= 0.0 or def.spawns_on_finish() != ""):
+	if (departure.speed() <= 0.0 or def.aftermath.on_finish != ""):
 		_finish()
 		return
 	transition(Phase.LEAVING)
@@ -2759,27 +2741,6 @@ var _guard_spent: bool:
 	get:
 		return phase == Phase.SPENT
 
-## Whether this is a spent guard, or one on his way out from a barrier: what a stream-out carries
-## (`EventBarrierPost.save()`) so that a barrier streamed in again comes back as only the barrier
-## (`come_back_as_the_barrier()`), never as a guard who has forgotten and chases again.
-func is_a_spent_guard() -> bool:
-	return _guard_spent or (is_leaving and is_a_guard_leaving_his_barrier())
-
-## True for the man who set off from a barrier (`PursuitSpec.leaves_its_body`) once he has left it
-## behind: what `EventDeparture.speed()`, the field and the halo ask of the departure.
-func is_a_guard_leaving_his_barrier() -> bool:
-	return barrier_post != null and barrier_post.is_walking_off()
-
-## Which side's guard set off, the other half of what a stream-out carries; `0` while both stand.
-func chaser_side() -> int:
-	return barrier_post.chaser_side() if barrier_post else 0
-
-## A barrier streamed in after its guard was spent: only the barrier, the post `side` left empty
-## (`EventBarrierPost.come_back_as_the_barrier()`, which a stream-in's restore runs). Nothing for a
-## row with no barrier post.
-func come_back_as_the_barrier(side: int) -> void:
-	if barrier_post:
-		barrier_post.come_back_as_the_barrier(side)
 
 func _has_expired() -> bool:
 	if is_waiting():
@@ -3279,10 +3240,10 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 ##
 ## **Cars that drive are the only rows lethal without `hard_fail`** (`EventDef.vehicle`): one strikes
 ## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
-## else — not behind it, not beside it, not while it stands (`is_driving()`). A body touching her is
+## else — not behind it, not beside it, not while it stands (`EventCarDriving.is_driving()`). A body touching her is
 ## not enough, and not needed: the strike reaches `Tuning.PATROL_STRIKE_LEAD` of its travel past the
 ## touch, so a car driving its nose into her strikes her rather than standing for her (`EventCarDriving`).
-## Its telegraph is not asked: its warning is a car's, `closes_on()`, not a field coming up to
+## Its telegraph is not asked: its warning is a car's, `EventCarDriving.closes_on()`, not a field coming up to
 ## strength.
 func is_lethal_at(world_position: Vector2) -> bool:
 	if car:
@@ -3602,7 +3563,7 @@ func _picture_never_settles() -> bool:
 func _drawn_heading() -> Vector2:
 	if def.look == EventDef.Look.ROBBER and is_waiting():
 		return _robber_waiting_heading()
-	if def.look == EventDef.Look.ROADBLOCK and not has_left_its_body_behind():
+	if def.look == EventDef.Look.ROADBLOCK and not barrier_post.has_left_its_body():
 		return _guard_post_heading(_spread_vertical, 1)
 	return _heading
 
@@ -3681,7 +3642,7 @@ func _picture_key() -> Vector4i:
 	# A car's picture is anchored on its live heading (`_body_anchor()`), and its shadow and
 	# body turn with it, so a car rounding a corner redraws as it turns rather than only when it
 	# crosses into another sector. Whole degrees, above the protest's own poses.
-	var turn := posmod(roundi(rad_to_deg(_heading.angle())), 360) if def.drives() else 0
+	var turn := posmod(roundi(rad_to_deg(_heading.angle())), 360) if def.vehicle != null else 0
 	return Vector4i(
 			flags,
 			sector + 8 * caret + 32 * _protest_pose() + 320 * turn,
@@ -3887,7 +3848,7 @@ func _spread_axis() -> Vector2:
 ## point shape, where an axis means nothing.
 func _solid_axis() -> Vector2:
 	# A car's body lies along the way it is driving, and turns with it (`EventCarDriving.turn_the_body()`).
-	if def.drives():
+	if def.vehicle != null:
 		return _heading.normalized() if not _heading.is_zero_approx() else Vector2.RIGHT
 	if def.has_a_spread or def.look == EventDef.Look.PROTEST or def.look == EventDef.Look.FIREFIGHT:
 		return _spread_axis()
@@ -3916,7 +3877,8 @@ func set_halo_strength(strength: float, colour: Color) -> void:
 	# never holds two rims at once** (`ExcitementHalo` counts one block per instance against
 	# `EntityHalo.RIM_BUDGET`): the man's is given back on the spot as the band's is built, and the
 	# band's on the spot as the instance's own is wanted again once the barrier stands alone.
-	if is_leaving and is_a_guard_leaving_his_barrier() and _band != null and not is_finished:
+	if is_leaving and barrier_post and barrier_post.has_left_its_body() and _band != null \
+			and not is_finished:
 		if _halo:
 			EntityHalo.release(_halo)
 			_halo = null
@@ -4892,7 +4854,7 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	# the instance stands on the band, only the man once he has set off (his halo would otherwise
 	# paint over the band wherever he stands south of it). A departing guard's band has a rim of its
 	# own, `_band_halo`.
-	if chaser_side() == 0 or _guard_spent or _band == null:
+	if barrier_post.chaser_side() == 0 or _guard_spent or _band == null:
 		_draw_the_band(canvas, _roadblock_band_at())
 	_draw_the_chaser(canvas)
 
@@ -4903,12 +4865,12 @@ func _draw_the_band(canvas: CanvasItem, band_at: Vector2) -> void:
 	if barrier_post == null or barrier_post.far.has_left():
 		return
 	for side: int in def.guard_sides:
-		if side != chaser_side():
+		if side != barrier_post.chaser_side():
 			_draw_posted_guard(canvas, band_at, side)
 
 ## The man who set off, drawn on this node, which walks with him.
 func _draw_the_chaser(canvas: CanvasItem) -> void:
-	if chaser_side() == 0 or _guard_spent:
+	if barrier_post.chaser_side() == 0 or _guard_spent:
 		return
 	# His own small shadow — not the band's — so `_draw_eight_view()` below is asked not to draw
 	# one of its own; see that function's own doc comment.
@@ -4954,16 +4916,6 @@ class FarGuard extends Node2D:
 	func _draw() -> void:
 		if instance != null and is_instance_valid(instance):
 			instance._draw_the_far_guard(self)
-
-## Where the far guard's feet are while he walks away, in world space; `Vector2.INF` while he
-## stands at his post, once he is gone, and for anything with no band (`RoadblockFarGuard`).
-func far_guard_at() -> Vector2:
-	return barrier_post.far.at if barrier_post else Vector2.INF
-
-## Whether a guard still stands at the band's far post: the band's own drawing while both are
-## posted, and after his partner has set off, until he leaves too.
-func has_its_far_guard_posted() -> bool:
-	return barrier_post != null and barrier_post.has_its_far_guard_posted()
 
 ## The far guard as he walks, at his node's origin: his own small shadow on the ground and his
 ## standing picture lifted by his own stride, the bob his partner's departure rides on

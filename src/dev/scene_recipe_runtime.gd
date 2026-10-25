@@ -1090,13 +1090,13 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 static func hold_refusal(def: EventDef) -> String:
 	if def.pursuit == null:
 		return "does not pursue her, so it has no straight walk away to hold"
-	if def.drives():
+	if def.vehicle != null:
 		return "drives, and a car leaves by its own rules"
 	if def.investigates:
 		return "lets men out, who walk back to it"
 	if def.stops_where_it_arrives:
 		return "parks where it arrives"
-	if def.spawns_on_finish() != "":
+	if def.aftermath.on_finish != "":
 		return "hands on to another event when it finishes"
 	if def.leaves_its_body():
 		return "leaves a barrier standing as a guard walks off"
@@ -1163,7 +1163,7 @@ func _process(delta: float) -> void:
 			continue
 		if instance.departure.walks_a_way() \
 				or (instance.on_foot != null and instance.on_foot.walks_back()) \
-				or instance.is_a_guard_leaving_his_barrier():
+				or (instance.barrier_post and instance.barrier_post.has_left_its_body()):
 			manifest["playback_error"] = "held event %s no longer leaves in a straight line" \
 					% instance.def.id
 			manifest["stopped_tick"] = tick

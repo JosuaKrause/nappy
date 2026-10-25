@@ -348,7 +348,7 @@ const NO_CALM := Vector2i(-1, -1)
 static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 	for i in planned.size():
 		var plan := planned[i]
-		if not plan.def.sited_on_her_way() or plan.def.kind != GameEnums.EventKind.RECURRING \
+		if plan.def.on_her_way == null or plan.def.kind != GameEnums.EventKind.RECURRING \
 				or not plan.is_placed():
 			continue
 		var owed := Planned.new(plan.def, Vector2.INF)
@@ -1122,7 +1122,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		# window was widened. It costs the day exactly what it always did — the plan is budgeted here
 		# and only its *position* is left for `EventDirector.site_what_is_on_her_way()` to choose, the
 		# same split an `AHEAD_OF_PLAYER` row is budgeted and sited under.
-		if def.sited_on_her_way():
+		if def.on_her_way != null:
 			var owed := Planned.new(def, Vector2.INF)
 			owed.role = _role_for(def, day)
 			# Tagged like any other set piece even though there is only ever one of it: a plan outside
@@ -1267,7 +1267,7 @@ class WalkSiting extends RefCounted:
 	## How many sitings had to widen past the band to the end of her branch, for the same probe.
 	var widened := 0
 	## The sidewalk tiles in front of a blank ground-floor cell, as a set — `PosterWalls.fronts()`,
-	## handed over by `EventManager` from the city it belongs to. What a row that `pastes_a_front()`
+	## handed over by `EventManager` from the city it belongs to. What a row whose `OnHerWay.at_a_front` is set
 	## may stand on; empty, and so nowhere, for a rig with no city.
 	var fronts := {}
 
@@ -1349,7 +1349,7 @@ class WalkSiting extends RefCounted:
 			return _waited("the site would close her way out")
 		# A crew faces the wall it pastes, its back to the street. `_build_placement` turned it by
 		# the dawn's own side, out of a wall it was never going to stand at.
-		if def.pastes_a_front():
+		if def.on_her_way != null and def.on_her_way.at_a_front:
 			candidate.facing = Vector2.UP
 		return candidate
 
@@ -1396,7 +1396,8 @@ class WalkSiting extends RefCounted:
 	## from one place, and the last question asked is kept and given back.
 	func _offer_ahead(def: EventDef, at: Vector2, heading: Vector2, near: float,
 			far: float) -> Array:
-		var side := EventDef.Pavement.AT_THE_FRONT if def.pastes_a_front() else def.pavement_side
+		var at_a_front := def.on_her_way != null and def.on_her_way.at_a_front
+		var side := EventDef.Pavement.AT_THE_FRONT if at_a_front else def.pavement_side
 		var question := [def.placement, side, def.role == EventDef.Role.MAST, at, heading, near, far]
 		if question == _last_offer_question:
 			return _last_offer
@@ -1798,12 +1799,13 @@ class WalkSiting extends RefCounted:
 	## tiles in `fronts` — in front of a blank ground-floor cell, which only the city's buildings
 	## know — and nothing at all where no city handed any over.
 	func _ground_as_a_set(def: EventDef) -> Dictionary:
-		var side := EventDef.Pavement.AT_THE_FRONT if def.pastes_a_front() else def.pavement_side
+		var at_a_front := def.on_her_way != null and def.on_her_way.at_a_front
+		var side := EventDef.Pavement.AT_THE_FRONT if at_a_front else def.pavement_side
 		var key := "set|%s|%d" % [def.placement, side]
 		if not _ground.has(key):
 			var found := {}
 			for tile in EventScheduler._open_ground_for(def, _map, _ground, side):
-				if not def.pastes_a_front() or fronts.has(tile):
+				if not at_a_front or fronts.has(tile):
 					found[tile] = true
 			_ground[key] = found
 		return _ground[key]
@@ -1860,8 +1862,8 @@ class WalkSiting extends RefCounted:
 		var blocked := EventScheduler.blocked_by(_map, blockers)
 		EventScheduler.block_a_disc(_map, blocked, candidate.position, candidate.def.outer_radius)
 		var parked := EventManager.where_the_summoned_row_stops(_map, candidate.position)
-		var summoned := EventCatalogue.by_id(candidate.def.spawns_on_sight()) \
-				if candidate.def.spawns_on_sight() != "" else null
+		var summoned := EventCatalogue.by_id(candidate.def.aftermath.on_sight) \
+				if candidate.def.aftermath.on_sight != "" else null
 		if summoned and parked != Vector2.INF:
 			EventScheduler.block_a_disc(_map, blocked, parked, summoned.outer_radius)
 		if _she_can_still_get_away(her, blocked):
@@ -2518,7 +2520,7 @@ static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 ## Whether `def` leaves the building it stands against burnt (its scar is the one `City` draws as
 ## a burnt frontage), so the front it catches on has to be one that can be drawn burnt.
 static func _burns_its_front(def: EventDef) -> bool:
-	return def.scar_id() == City.BURNT_FRONTAGE_SCAR
+	return def.aftermath.scar == City.BURNT_FRONTAGE_SCAR
 
 ## Whether a tile is the lane of the pavement this event wants.
 ##
@@ -2535,7 +2537,7 @@ static func _burns_its_front(def: EventDef) -> bool:
 ##
 ## `AT_THE_FRONT` is the south face's own lane, the one side a front is drawn on: `burning_building`'s
 ## own `pavement_side`, since the building it catches on is drawn burnt afterwards, and what
-## `WalkSiting` asks, through `side`, for a row that `pastes_a_front()`. **The tile behind has to be
+## `WalkSiting` asks, through `side`, for a row whose `OnHerWay.at_a_front` is set. **The tile behind has to be
 ## on the map as well as read `BUILDING`**, because `CityMap.tile_at()` reads anything off the map
 ## as `BUILDING`: without the bounds check the north sidewalk of the map's northmost street, with
 ## nothing behind it but the edge of the world, passes as a front. `side` is typed `int` for the
@@ -2768,7 +2770,7 @@ static func _counts_against_the_line(plan: Planned) -> bool:
 static func _a_line_has_to_avoid(def: EventDef) -> bool:
 	if def.role == EventDef.Role.SCENERY or def.pursuit != null or def.id.begins_with(_DOOR_ID_PREFIX):
 		return false
-	if def.sited_on_her_way() and def.kind == GameEnums.EventKind.ONE_SHOT:
+	if def.on_her_way != null and def.kind == GameEnums.EventKind.ONE_SHOT:
 		return false
 	if def.mobile and not def.paces:
 		return false
