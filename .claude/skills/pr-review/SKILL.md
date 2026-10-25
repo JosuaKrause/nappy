@@ -163,10 +163,15 @@ per pull request.
   to the player. It decides *how* the open findings get fixed, never whether: the pull request still
   does not merge with a found defect open ("Is every defect already found in this change fixed
   inside it?", above).
-- **Who and where:** the orchestrating session, or in a session with none (a Codex session working
-  alone) the session that owns the pull request, writes the rethink and what it decided in the pull
-  request's conversation before any further commit; a change of approach that touches what the
-  player asked for goes to them as a question first.
+- **Who writes it is decided case by case** (inbox #842). The orchestrating session asks the
+  builder for the rethink when the builder has the context and a model strong enough for it, and
+  checks it against the player's words and the queue; otherwise it writes the rethink itself or starts
+  a fresh planning agent for it. A builder on a small model (Haiku) is the player's example of one
+  not to ask. In a session with no orchestrator (a Codex session working
+  alone), the session that owns the pull request writes it.
+- **Where:** the rethink and what it decided go in the pull request's conversation before any
+  further commit; a change of approach that touches what the player asked for goes to the player as
+  a question first.
 
 ## Briefing a review agent
 
