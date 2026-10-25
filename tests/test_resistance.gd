@@ -4511,7 +4511,7 @@ func _walk_until_the_route_mast(at_the_mark: Dictionary, player: Stroller) -> St
 	var step := 0.1
 	while walked < 600.0:
 		for plan in _city.events.plans():
-			if plan.def.id == ResistanceDirector.MAST_ROW and plan.mast_id != "" \
+			if plan.def.role == EventDef.Role.MAST and plan.mast_id != "" \
 					and not at_the_mark.has(plan.mast_id):
 				_seconds_walked_to_the_route_mast = walked
 				return plan.mast_id
@@ -4582,7 +4582,7 @@ func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 ## longest route, heading along it: the question `_walk_until_the_route_mast()` answers by walking.
 func _a_mast_can_be_sited_along_her_route() -> bool:
 	var siting: EventScheduler.WalkSiting = _city.events._siting
-	var def: EventDef = _city.events._director.route_row(ResistanceDirector.MAST_ROW)
+	var def: EventDef = _city.events._director.route_row(EventCatalogue.mast().id)
 	var band: Vector2 = _city.events._director._siting_band()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1

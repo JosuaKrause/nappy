@@ -32,6 +32,7 @@ func run(t) -> void:
 	_test_a_fire_that_was_never_lit_was_not_spent(t)
 	_test_a_won_day_with_the_fire_unmet_still_burns(t)
 	_test_the_first_dog_of_the_run_day_is_the_lesson(t)
+	_test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t)
 	_teardown()
 
 func _build_city(t) -> void:
@@ -44,29 +45,64 @@ func _build_city(t) -> void:
 	# streaming itself is checked in `_test_an_event_waits_until_she_is_near_it`.
 	_city.events.stream_radius = INF
 
-## **The day-3 lesson's dog is the first dog the manager makes on `Tuning.RUN_TAUGHT_DAY`**, so its
-## charging counter can tell it from the up to three that day's `max_per_day` lets the director send
-## (`EventInstance.is_the_lesson`, `charger_name()`, docs/TELEMETRY.md, "The page counts visits").
-## Not a second dog that day, not a dog on any other day, and not any other row.
+## **A guard moved is the same man, in the middle of what he was doing** (`move_extra()`): day 13's
+## task guard following her to her roadblock keeps his warning and its clock, where a guard retired
+## and made again would forget her. **And a guard walking off is never turned back**: one that left
+## before he ever noticed her still answers `is_waiting()`, and the task setting him on her
+## (`EventInstance.notice_her_at()`) leaves him leaving.
+func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t) -> void:
+	var events := _city.events
+	var at := _city.map.doorstep_world_position()
+	var her := at + Vector2(200.0, 0.0)
+	var guard := events.spawn_extra(EventCatalogue.task_guard(), at)
+	guard.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
+	guard.age = guard.age + 0.4
+	var noticed := guard.noticed_at()
+	t.check(guard.is_telegraphing() and noticed != INF, "set on her, the guard warns her")
+	events.move_extra(guard, at + Vector2(64.0, 0.0))
+	t.check(is_instance_valid(guard) and not guard.is_finished
+			and guard.global_position.is_equal_approx(at + Vector2(64.0, 0.0))
+			and guard.is_telegraphing() and guard.noticed_at() == noticed
+			and guard.is_standing_for_its_notice(),
+			"moved, he is the same man, still warning her on the same clock (noticed at %.2f, %.2f)"
+			% [noticed, guard.noticed_at()])
+	var walking := events.spawn_extra(EventCatalogue.task_guard(), at)
+	walking._be_done()
+	t.check(walking.is_leaving and walking.is_waiting(),
+			"a guard who left before he noticed her still answers waiting")
+	walking.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
+	t.check(walking.is_leaving and not walking.is_telegraphing(),
+			"and set on her, he walks on rather than warning her")
+	for instance: EventInstance in [guard, walking]:
+		events.retire(instance)
+
+## **The day-3 lesson's dog is a row of its own**, `charging_dog_tutorial`, so its charging counter
+## and its seen and lost-day counts tell it from the up to three that day's `max_per_day` lets the
+## director send (`EventDirector._teach_the_run()` hands it out; `charger_name()`, docs/TELEMETRY.md,
+## "The page counts visits"). What the manager makes of each row is named by the row alone, on the
+## day the run is taught as on any other.
 func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 	var events := _city.events
 	var day_before := events._day
 	var dog := EventCatalogue.by_id("charging_dog")
+	var lesson := EventCatalogue.lesson_of(dog)
 	var at := _city.map.doorstep_world_position()
 	events._day = Tuning.RUN_TAUGHT_DAY
-	events._lesson_dog_made = false
 	var robber := events._create(EventCatalogue.by_id("alley_robbery"), at)
-	var first := events._create(dog, at)
+	var first := events._create(lesson, at)
 	var second := events._create(dog, at)
-	t.check(not robber.is_the_lesson and first.is_the_lesson and not second.is_the_lesson,
-			"on day %d the first dog made is the lesson's, and only it" % Tuning.RUN_TAUGHT_DAY)
-	t.check(first.charger_name() == "charging_dog_tutorial" and second.charger_name() == "charging_dog",
-			"and it is counted apart (%s, %s)" % [first.charger_name(), second.charger_name()])
-	events._day = Tuning.RUN_TAUGHT_DAY + 1
-	events._lesson_dog_made = false
-	var later := events._create(dog, at)
-	t.check(not later.is_the_lesson, "a dog on another day is never the lesson's")
-	for instance: EventInstance in [robber, first, second, later]:
+	t.check(lesson.id == "charging_dog_tutorial" and lesson != dog
+			and lesson.pursuit != null and lesson.look == dog.look,
+			"the lesson's dog is a row of its own, drawn and chasing as the dog does")
+	t.check(first.charger_name() == "charging_dog_tutorial" and second.charger_name() == "charging_dog"
+			and robber.charger_name() == "alley_robbery",
+			"and it is counted apart (%s, %s, %s)"
+			% [first.charger_name(), second.charger_name(), robber.charger_name()])
+	t.check(first.logged_name() == "charging_dog_tutorial" and second.logged_name() == "charging_dog",
+			"and seen apart (%s, %s)" % [first.logged_name(), second.logged_name()])
+	t.check(EventCatalogue.lesson_of(robber.def) == robber.def,
+			"no other row has a lesson's row of its own")
+	for instance: EventInstance in [robber, first, second]:
 		instance.queue_free()
 	events._day = day_before
 

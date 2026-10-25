@@ -143,6 +143,7 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 		rng: RandomNumberGenerator, siting: EventScheduler.WalkSiting = null,
 		heat: int = 0) -> void:
 	_owed.clear()
+	_lesson = null
 	_rng = rng
 	_day = day
 	_met_today.clear()
@@ -255,6 +256,11 @@ func _take_the_forced_row() -> void:
 ## It is *not* a scripted event, and that is deliberate: it is one of the day's own budgeted
 ## `AHEAD_OF_PLAYER` plans, so teaching the run cannot quietly make day 3 denser than the budget
 ## says. If the day happened not to buy one, there is nothing to teach and nothing happens.
+##
+## **The one it hands out is the lesson's own row** (`EventCatalogue.lesson_of()`: the charging
+## dog's is `charging_dog_tutorial`), the first of `lesson`'s row `due()` hands out, so its
+## GoatCounter counts are its own. A dog forced with `--force` is not the lesson: the forced day
+## teaches nothing.
 func _teach_the_run(day: int, lesson: EventDef) -> void:
 	if day != Tuning.RUN_TAUGHT_DAY or not lesson:
 		return
@@ -270,6 +276,11 @@ func _teach_the_run(day: int, lesson: EventDef) -> void:
 		_owed.remove_at(at)
 		_owed.push_front(lesson)
 	_next_in = LESSON_DELAY
+	_lesson = lesson
+
+## The row `_teach_the_run()` put first today, until `due()` has handed it out as the lesson's own
+## row; null on every other day and after.
+var _lesson: EventDef = null
 
 ## How far into day 3 the lesson lands. A few seconds of ordinary walking first, so that what
 ## happens reads as the day changing rather than as the day starting.
@@ -905,6 +916,9 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 		_route.draw()
 		_handed_from_the_route()
 	_met_today[handed.id] = int(_met_today.get(handed.id, 0)) + 1
+	if _lesson and handed.id == _lesson.id:
+		handed = EventCatalogue.lesson_of(handed)
+		_lesson = null
 	# Refilled rather than seeded with a hundred copies, so the queue length stays honest and
 	# `owed()` — which the HUD reads — says "one more coming" rather than a number that means
 	# nothing under this flag.

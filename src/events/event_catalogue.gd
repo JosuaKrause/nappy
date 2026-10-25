@@ -73,6 +73,11 @@ static func all() -> Array[EventDef]:
 			out_of_the_car(day).validate()
 			out_of_the_car(day, false).validate()
 		escape_roadblock().validate()
+		# The rows of its own a row is met as on its one occasion: the day-3 lesson's dog and day
+		# 13's task guard, waiting and sent.
+		lesson_of(by_id("charging_dog")).validate()
+		task_guard().validate()
+		task_guard_sent().validate()
 		building_fire().validate()
 		explosion_outside().validate()
 	return _all
@@ -155,6 +160,53 @@ static func by_id(id: String) -> EventDef:
 		if def.id == id:
 			return def
 	return null
+
+## The row that plays `role` (`EventDef.Role`), the first in catalogue order, or null.
+static func by_role(role: EventDef.Role) -> EventDef:
+	for def in all():
+		if def.role == role:
+			return def
+	return null
+
+## The loudspeaker mast (`EventDef.Role.MAST`): what the masts' sites, the day's masts and the
+## resistance's mast task are made of.
+static func mast() -> EventDef:
+	return by_role(EventDef.Role.MAST)
+
+## **The day-3 lesson's own row for `row`**: for the charging dog, `charging_dog_tutorial`, the dog
+## under an id of its own, which `EventDirector._teach_the_run()` hands out in place of the first
+## dog it sends on `Tuning.RUN_TAUGHT_DAY`, so its GoatCounter counts (`seen-charging-dog-tutorial`,
+## its `dog-tutorial-*` charges) are its own (PLAYTEST-141; inbox #849); `row` itself for any other.
+## A derived copy, built once: it shares the dog's picture and every number, and the day's roll
+## never places it.
+static func lesson_of(row: EventDef) -> EventDef:
+	if row == null or row.id != "charging_dog":
+		return row
+	if _lesson_dog == null:
+		_lesson_dog = _charging_dog()
+		_lesson_dog.id = "charging_dog_tutorial"
+	return _lesson_dog
+
+static var _lesson_dog: EventDef = null
+
+## **The alley robber who guards a chalk mark**: the alley robbery row itself, standing in the
+## mark's alley (`ResistanceDirector._maybe_set_a_trap()`).
+static func mark_guard() -> EventDef:
+	return by_id("alley_robbery")
+
+## **Day 13's task guard: the alley robber, waiting in a band round the roadblock**
+## (`ResistanceDirector._maybe_set_a_trap()`), moved with her target (`EventManager.move_extra()`)
+## and set on her when the roadblock's task is done. Every number and the picture are the alley
+## robber's; the id, `task_guard`, is his own, so GoatCounter's seen, lost-day and charge counts
+## tell him apart from the robber in an alley (inbox #849). A derived copy, built once, as the
+## catalogue's rows are never placed by the day's roll.
+static func task_guard() -> EventDef:
+	if _task_guard == null:
+		_task_guard = _alley_robbery()
+		_task_guard.id = "task_guard"
+	return _task_guard
+
+static var _task_guard: EventDef = null
 
 ## Every def that may appear on this day, in catalogue order, in the shape `heat` puts them in.
 static func available_on(day: int, heat: int = 0) -> Array[EventDef]:
@@ -1815,6 +1867,7 @@ static func _loudspeaker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "loudspeaker"
 	def.display_name = Texts.EVENT_NAMES[def.id]
+	def.role = EventDef.Role.MAST
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.LOUDSPEAKER_MAST
@@ -2364,13 +2417,15 @@ static func out_of_the_car(day: int, stops := true) -> EventDef:
 ## the waiting guard is drawn as, warned of by the screen-edge badge alone for
 ## `Tuning.WARNING_ALONE_MAX` rather than the day-3 dog's half second, then arriving charging. *(Inbox
 ## #764 in minty-lemur, the player: "yes, we can do a 1s on screen and 1s off-screen warning if they were not
-## visible".)* A derived copy, built once.
+## visible".)* A derived copy, built once, under an id of its own, `task_guard_sent`, so GoatCounter
+## tells him apart from the robber a task sends (inbox #849); his charges count as the task
+## guard's (`EventDef.counts_charges_as`).
 static func task_guard_sent() -> EventDef:
 	if _task_guard_sent == null:
-		var robber := by_id("robber_giving_chase")
-		_task_guard_sent = robber.duplicate() as EventDef
-		_task_guard_sent.shape = robber.shape
+		_task_guard_sent = _robber_giving_chase()
+		_task_guard_sent.id = "task_guard_sent"
 		_task_guard_sent.offscreen_notice = Tuning.WARNING_ALONE_MAX
+		_task_guard_sent.counts_charges_as = "task_guard"
 	return _task_guard_sent
 
 static var _task_guard_sent: EventDef = null

@@ -94,7 +94,9 @@ The events:
   one that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
   `Crowd._strike()`), otherwise the id off whichever row's own `is_lethal_at()` fired
   (`EventManager._check_hard_fails()`), hyphenated the same way every other name here is — a
-  caught `charging_dog` is `lost-hard-fail-charging-dog` — and a pelican is `pelican` rather than
+  caught `charging_dog` is `lost-hard-fail-charging-dog`, the day-3 lesson's dog
+  `lost-hard-fail-charging-dog-tutorial` and day 13's task guard `lost-hard-fail-task-guard` or,
+  sent at her, `lost-hard-fail-task-guard-sent` — and a pelican is `pelican` rather than
   its row's `cyclist` (`EventManager.what_struck_her()`). A crying loss names whichever source
   landed the most on her over the halo's own window (`ExcitementHalo.WINDOW`, 5s) at the moment she
   cried: a catalogue id (`EventInstance.landed()`), again `pelican` for a pelican, `crowd` for
@@ -150,17 +152,19 @@ The events:
   `roadblock`, `door-guard`, `masked-pursuer`, `robber-giving-chase`, `van-guard-giving-chase`),
   except that `charging_dog` keeps its `dog-*` names, so `dog-chased`, `dog-shaken` and
   `dog-outlasted` count what they always counted, and **day 13's task guard counts as
-  `task-guard`** once the task sets him on her, in her view or sent from out of it
-  (`EventInstance.counted_as`), apart from every other alley robber and sent robber. A man out of a
+  `task-guard`**, waiting at his roadblock or sent from out of her view: his own rows,
+  `task_guard` (`EventCatalogue.task_guard()`) and `task_guard_sent`, whose charges count as his
+  (`EventDef.counts_charges_as`), apart from every other alley robber and sent robber. A man out of a
   patrol car or a hunting van counts under his row, `policeman-giving-chase` or
   `guardsman-giving-chase`, as the one a torn poster sends does.
   **The day-3 lesson's dog has its own set**, `nappy-day-3-dog-tutorial-chased`, `-caught`,
   `-shaken`, `-outlasted` and `-ended` *(PLAYTEST-141: "we need to record like dog tutorial")*, and
   does not also send the dog's: `charging_dog`'s `max_per_day` of 3 holds on day 3 for the dogs the
   director hands out (`EventDirector._met_today`), so day 3 can send up to three, and the lesson is
-  the first of them, the one the run tip is shown for (`EventInstance.is_the_lesson`, set by
-  `EventManager._create()` on the first dog it makes that day). It never waits, so it has no
-  `-warned`.
+  the first of them, the one the run tip is shown for: a row of its own, `charging_dog_tutorial`
+  (`EventCatalogue.lesson_of()`), which `EventDirector._teach_the_run()` hands out in place of
+  that first dog. A dog forced with `--force charging_dog` is not the lesson. It never waits, so it
+  has no `-warned`.
 - `nappy-day-N-pelican-spawned` / `nappy-day-N-pelican-seen` / `nappy-day-N-pelican-excited` /
   `nappy-day-N-pelican-hit` — the one cyclist in four hundred drawn as a pelican from the run's one shared bag (a run meets at most one), as its own
   entry *(inbox #527 in [azure-tapir](playtests/2026-10-04-azure-tapir.md), the player: "when the pelican spawns, when it's on screen, and when it's
@@ -179,7 +183,10 @@ The events:
   avoid it or ignore it *([misty-newt](playtests/2026-10-04-misty-newt.md), the player: "mostly I'm
   interested in the ratio of interacted/seen")*. `<event>` is a catalogue row's id hyphenated
   (`charging-dog`), or `pelican` for a pelican, never `cyclist`; ordinary walkers and cars send
-  none. `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
+  none. The rows met on one occasion are their own events: the day-3 lesson's dog is
+  `seen-charging-dog-tutorial`, never `seen-charging-dog`, and day 13's task guard is
+  `seen-task-guard` waiting and `seen-task-guard-sent` sent at her, never the alley robber's or the
+  robber giving chase's. `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
   `EventManager` while a day is played — the escape's city included, as day 16, but not behind
   the title, and not in the escape's building, whose events are not an `EventManager`'s — decides
   each:

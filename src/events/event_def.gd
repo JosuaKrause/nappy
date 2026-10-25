@@ -911,9 +911,18 @@ enum Role {
 	## field crosses `Tuning.WALL_WORTH_OF_COST` and would otherwise be pulled off every route like
 	## any other expensive row.
 	SCENERY,
+	## **The loudspeaker mast**, which the masts' sites (`MastSites`), the day's masts and the
+	## resistance's mast task find by this role (`EventCatalogue.mast()`). The curfew announcement
+	## shares a mast's foot and is not one.
+	MAST,
 }
 
 @export var role := Role.NONE
+
+## The name its charges are counted under when it is not its own id (`EventInstance.
+## charger_name()`): `task_guard` for the task guard sent from out of her view, whose charges are
+## the task guard's. `""` for every other row.
+@export var counts_charges_as := ""
 
 ## Intensity multiplier reached at the end of `duration`. 1.0 holds steady; above 1.0
 ## swells (a protest gathering), below 1.0 fades.

@@ -900,7 +900,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		if entry.has("heat"):
 			def = EventCatalogue.heated(def, int(entry.heat))
 		var plan: EventScheduler.Planned
-		if def.id == EventScheduler.WalkSiting.MAST_ROW:
+		if def.role == EventDef.Role.MAST:
 			plan = _mast_placement(def, at, plans, doors)
 		elif finale:
 			plan = _finale_placement(def, at, player_at, finale, plans,
@@ -949,7 +949,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 			errors.append("event %s.relentless is refused: row %s %s"
 					% [entry.name, plan.def.id, relentless_refusal(plan.def)])
 		plan.set_meta("recipe_relentless", bool(entry.get("relentless", false)))
-		if def.id == EventScheduler.WalkSiting.MAST_ROW:
+		if def.role == EventDef.Role.MAST:
 			# Every mast the game stands has an id, and the director's lists and the blackout
 			# find a mast by it: a recipe's own, or the one a mast added for day 11 is named by.
 			plan.mast_id = str(entry.mast_id) if entry.has("mast_id") \

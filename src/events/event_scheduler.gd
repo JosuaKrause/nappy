@@ -1016,7 +1016,7 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0,
 	var planned: Array[Planned] = []
 	if day < Tuning.MAST_FIRST_DAY:
 		return planned
-	var loudspeaker := EventCatalogue.heated(EventCatalogue.by_id("loudspeaker"), heat)
+	var loudspeaker := EventCatalogue.heated(EventCatalogue.mast(), heat)
 	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
 			if day == Tuning.CURFEW_ANNOUNCE_DAY else null
 	var sites := MastSites.compute(map)
@@ -1401,7 +1401,7 @@ class WalkSiting extends RefCounted:
 	func _offer_ahead(def: EventDef, at: Vector2, heading: Vector2, near: float,
 			far: float) -> Array:
 		var side := EventDef.Pavement.AT_THE_FRONT if def.pastes_a_front() else def.pavement_side
-		var question := [def.placement, side, def.id == MAST_ROW, at, heading, near, far]
+		var question := [def.placement, side, def.role == EventDef.Role.MAST, at, heading, near, far]
 		if question == _last_offer_question:
 			return _last_offer
 		offers_worked_out += 1
@@ -1743,7 +1743,7 @@ class WalkSiting extends RefCounted:
 	func _its_ground_on(def: EventDef, ahead: Dictionary, at: Vector2, near: float,
 			far: float) -> Array[Vector2i]:
 		var pool := _ground_as_a_set(def)
-		var a_mast := def.id == MAST_ROW
+		var a_mast := def.role == EventDef.Role.MAST
 		var offered: Array[Vector2i] = []
 		for cell: Vector2i in ahead:
 			if float(ahead[cell]) > far:
@@ -1765,9 +1765,6 @@ class WalkSiting extends RefCounted:
 						continue
 					offered.append(tile)
 		return offered
-
-	## The row a mast is, for `_its_ground_on()`.
-	const MAST_ROW := "loudspeaker"
 
 	## **A mast is offered only ground a mast site would be** (`MastSites._is_eligible()`: off the
 	## home street, its field off a calm interior and off every place a region door could stand),
@@ -2752,7 +2749,7 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
 ## about whether a line exists past one.
 static func _counts_against_the_line(plan: Planned) -> bool:
-	return plan.is_placed() and plan.mast_id == "" and plan.def.id != WalkSiting.MAST_ROW \
+	return plan.is_placed() and plan.mast_id == "" and plan.def.role != EventDef.Role.MAST \
 			and _a_line_has_to_avoid(plan.def)
 
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to

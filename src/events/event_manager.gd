@@ -434,7 +434,6 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	clear()
 	_hard_failed = false
 	_struck_by = ""
-	_lesson_dog_made = false
 	_day = day
 	_encounters.day = day
 	_consumed = consumed_one_shots
@@ -604,7 +603,6 @@ func start_planned(spec: DaySpec, plans: Array[EventScheduler.Planned],
 	set_physics_process(true)
 	_hard_failed = false
 	_struck_by = ""
-	_lesson_dog_made = false
 	_day = GameState.day
 	_encounters.day = spec.number
 	use_the_spec(spec)
@@ -1102,10 +1100,6 @@ func what_struck_her() -> String:
 
 var _struck_by := ""
 
-## Whether today's first `charging_dog` has been made, the day-3 lesson's dog (`_create()`). Reset
-## with the day. Telemetry only.
-var _lesson_dog_made := false
-
 ## Builds an instance, puts it in the world, and records any permanent mark it leaves.
 ## Everything that puts an event on the map goes through here, so a scar can never be
 ## missed by whichever path created the event.
@@ -1116,11 +1110,6 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 	instance.skip_draw = skip_drawing
 	instance.trace = trace
 	instance.setup(def, at, path, facing, _map, _the_navigator())
-	# The day-3 lesson's dog, for its own charging counter: the first dog today on the day the run
-	# is taught (`EventInstance.is_the_lesson`). Telemetry only.
-	if def.id == "charging_dog" and _day == Tuning.RUN_TAUGHT_DAY and not _lesson_dog_made:
-		_lesson_dog_made = true
-		instance.is_the_lesson = true
 	instance.signals = signals
 	_map.add_entity(instance)
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
@@ -1174,6 +1163,18 @@ func retire(instance: EventInstance) -> void:
 	if instance and is_instance_valid(instance) and not instance.is_finished:
 		instance._finish()
 
+## **Moves one unplanned instance to `at` with everything it is in the middle of** — its phase, its
+## notice and every behaviour's state (`EventInstance.move_to()`) — rather than retiring it and
+## making it again: the resistance director's own use, when day 13's task guard follows her to the
+## roadblock she is making for. Its body's footprint goes with it.
+func move_extra(instance: EventInstance, at: Vector2) -> void:
+	if not instance or not is_instance_valid(instance) or instance.is_finished:
+		return
+	_map.release_obstruction(instance.get_instance_id())
+	instance.move_to(at)
+	_record_the_body(instance.get_instance_id(), instance.def, instance.global_position,
+			instance.facing_now())
+
 ## **Takes today's plans of the rows `ids` standing inside `rect` out of the day**, placed or live —
 ## what a once-only happening that empties a place owes the day's own plan: day 11's market stalls
 ## at the block boarded up ahead of her, and day 12's playground once its park is taken
@@ -1201,7 +1202,7 @@ func take_away_within(rect: Rect2, ids: Array[String]) -> int:
 ## plan, which always exists for a live mast's id; the curfew announcement shares the same foot.
 func mast_foot(mast_id: String) -> Vector2:
 	for plan in _plans:
-		if plan.mast_id == mast_id and plan.def.id == "loudspeaker":
+		if plan.mast_id == mast_id and plan.def.role == EventDef.Role.MAST:
 			return plan.position
 	return Vector2.INF
 
@@ -1226,7 +1227,7 @@ func mast_foot(mast_id: String) -> Vector2:
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
 	if offered.is_empty():
 		return null
-	var def := EventCatalogue.heated(EventCatalogue.by_id("loudspeaker"),
+	var def := EventCatalogue.heated(EventCatalogue.mast(),
 			GameState.resistance_progress)
 	var siting := _siting if _siting else EventScheduler.WalkSiting.new(_day, _city_map, _day_tree,
 			GameState.settled_this_act(), _day_doors)
@@ -1809,7 +1810,7 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 func _put_down_on_her_route(plan: EventScheduler.Planned, body: Node2D) -> void:
 	# A mast is a mast like the one `queue_a_mast()` adds: it broadcasts on the one clock, is
 	# silenced by `silence_mast()` and counts for `silence_all_masts()`.
-	if plan.def.id == "loudspeaker":
+	if plan.def.role == EventDef.Role.MAST:
 		plan.mast_id = EventScheduler.added_mast_id(plan.position)
 	_plans.append(plan)
 	_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)

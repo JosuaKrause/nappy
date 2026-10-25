@@ -71,7 +71,7 @@ func run(t) -> void:
 static func _where_a_mast_may_stand(city: City) -> Array:
 	var events: EventManager = city.events
 	var siting: EventScheduler.WalkSiting = events._siting
-	var def: EventDef = events._director.route_row(ResistanceDirector.MAST_ROW)
+	var def: EventDef = events._director.route_row(EventCatalogue.mast().id)
 	var map: CityMap = city.map
 	var plans: Array[EventScheduler.Planned] = events.plans()
 	var none: Array[EventScheduler.Planned] = []

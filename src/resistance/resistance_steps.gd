@@ -85,6 +85,24 @@ class Step extends RefCounted:
 	## touches the inner circle it counts as delivered." False for every other step, whose
 	## contact's own `reach` decides regardless of the rider's geometry.
 	var completes_at_inner_radius := false
+	## **A roadblock's task** (day 13): its row is placed near the mark the moment she reads it,
+	## under the day's own rules, and its own guard waits in a band round it rather than being sent
+	## after her (`ResistanceDirector.keeps_a_waiting_guard()`).
+	var is_a_guarded_band := false
+	## The row a done task sends after her from off screen (`ResistanceDirector.sets_a_trap_on_her()`):
+	## the robber, or the van's own guard for the van, whose package is what he comes for.
+	var trap_row := "robber_giving_chase"
+	## Whether the task's target is a door on a building's front, where she stands on the sidewalk
+	## below the facade (`ResistanceDirector.is_at_a_front_door()`): the burnt building's, and the
+	## power station's, which its `TargetKind.STATION_DOOR` already says.
+	var at_a_front_door := false
+	## Whether its rider stays and keeps shouting for `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS`
+	## once she has handed it over (day 6's man shouting).
+	var lingers_after_handover := false
+	## How many of her route's next marbles the task's row is rigged within once she has read its
+	## mark (`ResistanceDirector._rig_her_route_for()`), or 0 for a task that rigs nothing. The row
+	## is `task_event_id`, or the mast's for a `TargetKind.MAST` task.
+	var rigs_within := 0
 
 static var _all: Array[Step] = []
 
@@ -281,6 +299,22 @@ static func _build() -> Array[Step]:
 			[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], false,
 			TargetKind.EVENT, false, Texts.NOTE_HEADER)
 	note_for_a_stranger.completes_at_inner_radius = true
+	note_for_a_stranger.lingers_after_handover = true
+	note_for_a_stranger.rigs_within = Tuning.TASK_CONTACT_WITHIN_THE_NEXT
+	var the_package := _perform(4, Texts.PACKAGE_TITLE, 7, "delivery_van",
+			[GameEnums.TileType.SIDEWALK], true, TargetKind.EVENT, true, Texts.PACKAGE_HEADER)
+	the_package.trap_row = "van_guard_giving_chase"
+	the_package.rigs_within = Tuning.VAN_WITHIN_THE_NEXT
+	var the_burnt_shell := _perform(6, Texts.BURNT_SHELL_TITLE, 8, "burnt_shell",
+			[GameEnums.TileType.SIDEWALK], true, TargetKind.SCAR, false, Texts.BURNT_SHELL_HEADER)
+	the_burnt_shell.at_a_front_door = true
+	var the_mast := _perform(12, Texts.MAST_TITLE, 11, "", [], true, TargetKind.MAST, false,
+			Texts.MAST_HEADER)
+	the_mast.rigs_within = Tuning.MAST_WITHIN_THE_NEXT
+	var the_roadblock := _perform(16, Texts.ROADBLOCK_TITLE, 13, "roadblock",
+			[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING], false, TargetKind.EVENT,
+			false, Texts.ROADBLOCK_HEADER)
+	the_roadblock.is_a_guarded_band = true
 
 	return [
 		_mark(1, Texts.MARK_TITLE, 6, Texts.NOTE_BRIEF),
@@ -290,8 +324,7 @@ static func _build() -> Array[Step]:
 		# to the neighbor down the hall; carrying it makes the pram heavier for the rest of the
 		# day.
 		_mark(3, Texts.MARK_TITLE_MORE, 7, Texts.PACKAGE_BRIEF),
-		_perform(4, Texts.PACKAGE_TITLE, 7, "delivery_van", [GameEnums.TileType.SIDEWALK], true,
-				TargetKind.EVENT, true, Texts.PACKAGE_HEADER),
+		the_package,
 
 		# Day 8 · leave something at the burnt shell from day 3 — one place, red arrow. What she
 		# carries is the neighbor's drawing, left in the stroller overnight, so the words say where
@@ -302,8 +335,7 @@ static func _build() -> Array[Step]:
 		# there and burns the building behind it, so the words still lead to a burnt building — see
 		# `ResistanceDirector._begin_step()`.
 		_mark(5, Texts.MARK_TITLE_MORE, 8, Texts.BURNT_SHELL_BRIEF),
-		_perform(6, Texts.BURNT_SHELL_TITLE, 8, "burnt_shell", [GameEnums.TileType.SIDEWALK], true,
-				TargetKind.SCAR, false, Texts.BURNT_SHELL_HEADER),
+		the_burnt_shell,
 
 		# Day 9 · cross a named region door — one place, red arrow. The districts close that
 		# morning (`Tuning.REGION_WALL_FIRST_DAY`) and this is the day she finds out whether a
@@ -325,8 +357,7 @@ static func _build() -> Array[Step]:
 		# skill. The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no
 		# power of their own.
 		_mark(11, Texts.MARK_TITLE_MORE, 11, Texts.MAST_BRIEF),
-		_perform(12, Texts.MAST_TITLE, 11, "", [], true, TargetKind.MAST, false,
-				Texts.MAST_HEADER),
+		the_mast,
 
 		# Day 12 · the swing on the playground of one specific park — one place, red arrow. The
 		# park is the one the city chose for it (`CityGenerator._plan_the_swing_park()`), forced
@@ -339,9 +370,7 @@ static func _build() -> Array[Step]:
 		# nobody looks twice at a parent walking a baby who won't settle. A roadblock is solid, so
 		# the words ask how close she gets rather than for a way through it.
 		_mark(15, Texts.MARK_TITLE_MORE, 13, Texts.ROADBLOCK_BRIEF),
-		_perform(16, Texts.ROADBLOCK_TITLE, 13, "roadblock",
-				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING], false, TargetKind.EVENT,
-				false, Texts.ROADBLOCK_HEADER),
+		the_roadblock,
 
 		# The finale, offered only to a player who already did the work: the power station's
 		# front door, one place, by the red arrow. She hands the key over there and walks away.

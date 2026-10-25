@@ -2492,25 +2492,12 @@ var guard_warns_her := false
 func counts_a_charge() -> bool:
 	return def.pursuit != null or (def.notice != null and def.notice.runs_within > 0.0)
 
-## The name its counter goes under when something other than its row gave it its errand
-## (`charger_name()`): `task_guard` for day 13's task guard once the task sets him on her, in her
-## view or sent from out of it (`ResistanceDirector._set_the_task_guard_on_her()`). Empty for every
-## other instance. Telemetry only.
-var counted_as := ""
-
-## **The day-3 lesson's dog**, the one the run tip is shown for: the first `charging_dog`
-## `EventManager` creates on `Tuning.RUN_TAUGHT_DAY` (`EventManager._create()`), which is the lesson
-## `EventDirector._teach_the_run()` puts first. Telemetry only — it names the dog's charging counter
-## (`charger_name()`) and nothing that decides anything reads it.
-var is_the_lesson := false
-
 ## The name a charge is counted under (`EventBus.pursuit_warned`, `pursuit_began`, `pursuit_caught`,
-## `pursuit_ended`): `charging_dog_tutorial` for the day-3 lesson's dog (`is_the_lesson`), otherwise
-## the row's own `def.id`. Telemetry only.
+## `pursuit_ended`): the row's `EventDef.counts_charges_as` where it sets one (the task guard sent
+## from out of her view counts as `task_guard`), otherwise the row's own `def.id` — the day-3
+## lesson's dog is `charging_dog_tutorial` by its own row. Telemetry only.
 func charger_name() -> String:
-	if counted_as != "":
-		return counted_as
-	return "charging_dog_tutorial" if is_the_lesson else def.id
+	return def.counts_charges_as if def.counts_charges_as != "" else def.id
 
 ## **Its charge caught her**, said once: by `EventManager._check_hard_fails()` when its catch ends
 ## the day, ahead of `hard_fail_triggered`, and by a patrol car's man the frame he stops her
@@ -2619,7 +2606,10 @@ func give_up_the_chase() -> void:
 ## and lunging only along a clear line; noticed inside his stand-off, his lunge is held
 ## (`EventPursuit.lunge_held`). A guard already warning her by sight is set on her the same way,
 ## since she could walk out of his warning and he would never come. Nothing for a row that does
-## not pursue, a pursuer already charging or done, or a `her` of `Vector2.INF`.
+## not pursue, a pursuer already charging, leaving or done, or a `her` of `Vector2.INF`. **A row
+## that left before it ever noticed her still answers `is_waiting()`**, and the task guard is moved
+## with his state rather than made again (`EventManager.move_extra()`), so the leaving guard is
+## refused here: a man walking off is never turned back into a warning.
 ##
 ## `notice` replaces the row's `telegraph_time` for this notice when it is not negative, and `stand`
 ## has him stand still in his warning for it (`is_standing_for_its_notice()`): in her view, day
@@ -2629,7 +2619,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	if pursuit == null:
 		return
 	if not (is_waiting() or (is_telegraphing() and warns_by_radius())) or her == Vector2.INF \
-			or is_finished:
+			or is_finished or is_leaving:
 		return
 	# A warning of his own already under way gives way to the one the task sets: the lunge it held
 	# back and the notice it held still start again from here.
@@ -2937,6 +2927,18 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 
 ## **Every behaviour's own state**, keyed by its class, as plain values a plan carries while this
 ## event is out of the world (`EventManager._stream_out()`, `EventScheduler.Planned.behaviours`).
+## **Stands it at `at`, keeping everything it is in the middle of**: its phase, its notice, every
+## behaviour's state. What setup reads off the ground it stands on is read again for the new ground
+## (the axis of a spread, which side a parked vehicle shows, its idle phase), and its field is asked
+## afresh. `EventManager.move_extra()` is the caller, which records its body again.
+func move_to(at: Vector2) -> void:
+	global_position = at
+	_spread_vertical = _spread_is_vertical(_map, at)
+	_stationary_vehicle_side = _stationary_vehicle_uses_side(def.look, _map, at, _heading)
+	_idle_phase_offset = _position_roll(101)
+	_invalidate_contribution_cache()
+	queue_redraw()
+
 func save_behaviours() -> Dictionary:
 	var out := {}
 	for behaviour in _behaviours:

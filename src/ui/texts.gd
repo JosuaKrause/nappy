@@ -189,9 +189,14 @@ const DAY_LOST_DEFAULT := "It went wrong."
 const HARD_FAIL_TEXT := {
 	"abduction": "The van door opened. Nobody saw where you went.",
 	"alley_robbery": "They were waiting in the alley.",
+	# Day 13's task guard, the alley robber under a row of his own, and his line.
+	"task_guard": "They were waiting in the alley.",
 	# The same man, sent after her by a handed-over task rather than met in an alley, so the line
 	# is the alley robber's with the alley taken out of it.
 	"robber_giving_chase": "They were waiting for you.",
+	# Day 13's task guard sent from out of her view: the robber a task sends, under a row of its
+	# own, and his line.
+	"task_guard_sent": "They were waiting for you.",
 	# The van's own guard, sent after her the same way — but he is the door's own man rather than
 	# the alley's, so his line follows `door_guard`'s tone (a detention, not a killing) with the
 	# package named as the reason, the same "what is lost is named, never dwelt on" rule.
