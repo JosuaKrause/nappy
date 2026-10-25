@@ -65,8 +65,8 @@ const TIMEOUT_SECONDS := 260.0
 const POLL_MSEC := 250
 
 func run(t) -> void:
-	var saved_seed := GameState.run_seed
-	var saved_day := GameState.day
+	var saved_seed := GameState.header.run_seed
+	var saved_day := GameState.header.day
 	var mixes := _mixes()
 	var seeds := _seeds()
 	var plans: Array[Dictionary] = []
@@ -78,8 +78,8 @@ func run(t) -> void:
 			if row["mix"] == mix["name"]:
 				own.append(row)
 		_print_plans(mix["name"], own)
-	GameState.run_seed = saved_seed
-	GameState.day = saved_day
+	GameState.header.run_seed = saved_seed
+	GameState.header.day = saved_day
 	if OS.get_environment("ESCAPE_WINNABLE_WALK") != "0":
 		_print_walks(_walk_every_seed(seeds))
 	t.check(true, "a probe asserts nothing")
@@ -117,12 +117,12 @@ func _mixes() -> Array[Dictionary]:
 ## Every mix's plan for one seed, on the city a straight city boot builds.
 func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionary]:
 	GameState.start_run(seed_value)
-	var day := GameState.day
+	var day := GameState.header.day
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
-	city.build(CityGenerator.generate(GameState.run_seed))
-	GameState.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(GameState.city_state, day, GameState.day_rng(day, "closures"), _city_spec())
+	city.build(CityGenerator.generate(GameState.header.run_seed))
+	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
+	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"), _city_spec())
 	var found: Array[Dictionary] = []
 	for mix in mixes:
 		var plan := _plan(city.map, day, mix)

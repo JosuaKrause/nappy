@@ -47,7 +47,7 @@ func _measure(t, seed_value: int, trial: int) -> void:
 		_counterfactual(city, t)
 	var state := CityState.new()
 	for day: int in [1, 8, 14]:
-		GameState.day = day
+		GameState.header.day = day
 		state.begin_day(map.block_plans, day)
 		city.set("spans", {})
 		started = Time.get_ticks_usec()

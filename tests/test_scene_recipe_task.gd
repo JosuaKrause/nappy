@@ -20,24 +20,24 @@ func run(t) -> void:
 	_test_the_door_scenes_show_the_robber_a_done_task_sends(t)
 	_test_an_authored_mast_carries_its_own_id(t)
 	_test_an_authored_mast_stands_only_where_the_days_masts_may(t)
-	var saved := {"day": GameState.day, "completed": GameState.completed_resistance_steps.duplicate(),
-			"failed": GameState.failed_resistance_steps.duplicate(),
-			"progress": GameState.resistance_progress, "scars": GameState.scars.duplicate(true),
-			"tiles": GameState.completed_resistance_alley_tiles.duplicate(),
-			"state": GameState.city_state}
+	var saved := {"day": GameState.header.day, "completed": GameState.resistance.completed_steps.duplicate(),
+			"failed": GameState.resistance.failed_steps.duplicate(),
+			"progress": GameState.resistance.progress, "scars": GameState.attempt_spend.scars.duplicate(true),
+			"tiles": GameState.facts.completed_resistance_alley_tiles.duplicate(),
+			"state": GameState.attempt_spend.city_state}
 	_test_a_pinned_mark_is_read_and_its_task_placed_near_it(t)
 	_test_a_mark_is_touched_only_from_inside_its_alley(t)
 	_test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t)
 	_test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t)
 	_test_a_neighbor_start_the_day_could_not_draw_is_refused(t)
 	_test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t)
-	GameState.day = saved.day
-	GameState.completed_resistance_steps = saved.completed
-	GameState.failed_resistance_steps = saved.failed
-	GameState.resistance_progress = saved.progress
-	GameState.scars = saved.scars
-	GameState.completed_resistance_alley_tiles = saved.tiles
-	GameState.city_state = saved.state
+	GameState.header.day = saved.day
+	GameState.resistance.completed_steps = saved.completed
+	GameState.resistance.failed_steps = saved.failed
+	GameState.resistance.progress = saved.progress
+	GameState.attempt_spend.scars = saved.scars
+	GameState.facts.completed_resistance_alley_tiles = saved.tiles
+	GameState.attempt_spend.city_state = saved.state
 
 func _recipe(day: int, task: Variant, observations := []) -> Dictionary:
 	var setup := {"day": day}
@@ -101,14 +101,14 @@ func _day(t, day: int) -> Array:
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
 	t.check(built.errors.is_empty(), "the context city builds: %s" % [built.errors])
 	var map: CityMap = built.map
-	GameState.day = day
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
-	GameState.scars = []
-	GameState.completed_resistance_alley_tiles = []
+	GameState.header.day = day
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
+	GameState.attempt_spend.scars = []
+	GameState.facts.completed_resistance_alley_tiles = []
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(map.block_plans, day)
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
@@ -151,7 +151,7 @@ func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t) -> void:
 	t.check(director.current_step().is_pickup and director.red_arrow_target() == Vector2.INF
 			and director.contact_position() == mark,
 			"no task is on offer and no arrow is drawn before she reads it")
-	t.check(not GameState.completed_resistance_steps.has(director.current_step().index),
+	t.check(not GameState.resistance.completed_steps.has(director.current_step().index),
 			"nothing is completed at the start")
 	director._contact.complete_now()
 	var task := director.current_step()

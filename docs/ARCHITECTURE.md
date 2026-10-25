@@ -554,9 +554,9 @@ what was photographed. The parts are `RunHeader` (`run_seed`, `day`, `nerves`, t
 ending, play time), `ResistanceRunState`, `AttemptSpendState` (consumed one-shots, scars, block
 arcs), `SettledState`, `RunFacts`, and `PosterState` and `PelicanState`. A part says where the
 save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a save must all carry,
-beside it with a default for absence, or under a key of its own. `GameState.day`, `.scars` and the
-rest forward to the part that owns them, so a reader not handed the part reads the same value; code
-written against a part takes it as an argument. `tests/test_run_state.gd` replays a run against a
+beside it with a default for absence, or under a key of its own. Readers use the part that owns a field
+(`GameState.header.day`, `GameState.attempt_spend.scars`); code written against a part takes it as
+an argument. `tests/test_run_state.gd` replays a run against a
 save written before the parts existed (the fixture `tests/fixtures/run_state_saved_by_main.json`, dumped
 on commit e1cc7c7f) and checks every part is on the list.
 

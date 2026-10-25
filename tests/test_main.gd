@@ -197,12 +197,12 @@ func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
 	# The text is re-set a few times a second, not every frame: a changed seed line shows only once
 	# the interval has run out, and the first frame after the layer is switched on shows at once.
 	var first: String = readout._status.text
-	GameState.run_seed += 1
+	GameState.header.run_seed += 1
 	readout._process(0.016)
 	t.check(readout._status.text == first, "a frame inside the interval leaves the readout's text alone")
 	readout._process(DebugReadout.READOUT_INTERVAL)
 	t.check(readout._status.text != first, "the interval's end rebuilds it")
-	GameState.run_seed -= 1
+	GameState.header.run_seed -= 1
 	readout._layer_readout_on = false
 	readout._process(0.016)
 	readout._layer_readout_on = true
@@ -691,7 +691,7 @@ func _test_no_interior_exists_outside_a_debug_build(t: Node) -> void:
 			"and never builds the interior scene at all, not even off to one side")
 	main.free()
 
-## `GameState.play_seconds` has exactly one owner: the branch of this `_process()` reached only
+## `GameState.header.play_seconds` has exactly one owner: the branch of this `_process()` reached only
 ## once a day is actually running, walking or returning, with the tree unpaused. Same rig as
 ## `_test_the_readout_is_not_assembled_outside_a_debug_build` above — city, stroller, baby, day
 ## controller and hud, all built by hand rather than through `_ready()`, since this file's own
@@ -704,15 +704,15 @@ func _test_no_interior_exists_outside_a_debug_build(t: Node) -> void:
 ## question from being answerable.
 func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
-	var saved_run_seed := GameState.run_seed
-	var saved_day := GameState.day
-	var saved_nerves := GameState.nerves
-	var saved_progress := GameState.resistance_progress
-	var saved_sabotage := GameState.sabotage_done
+	var saved_run_seed := GameState.header.run_seed
+	var saved_day := GameState.header.day
+	var saved_nerves := GameState.header.nerves
+	var saved_progress := GameState.resistance.progress
+	var saved_sabotage := GameState.resistance.sabotage_done
 
-	GameState.play_seconds = 42.0
+	GameState.header.play_seconds = 42.0
 	GameState.start_run(SEED)
-	t.check(is_zero_approx(GameState.play_seconds), "start_run() zeroes the clock with the rest of the run")
+	t.check(is_zero_approx(GameState.header.play_seconds), "start_run() zeroes the clock with the rest of the run")
 
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
@@ -753,19 +753,19 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 
 	t.get_tree().paused = false
 	main._process(DELTA)
-	t.check(is_equal_approx(GameState.play_seconds, DELTA),
+	t.check(is_equal_approx(GameState.header.play_seconds, DELTA),
 			"a walking frame with the tree unpaused advances the clock")
 
 	# The pause screen: phase stays WALKING (a day in progress, Esc pressed), the tree pauses.
 	t.get_tree().paused = true
 	main._process(DELTA)
-	t.check(is_equal_approx(GameState.play_seconds, DELTA), "a paused frame does not")
+	t.check(is_equal_approx(GameState.header.play_seconds, DELTA), "a paused frame does not")
 
 	# The day summary: `DayController._end()` sets `phase` to `OVER` before the summary ever
 	# pauses the tree, so this is the shape a real day-end frame actually arrives in.
 	day.phase = GameEnums.DayPhase.OVER
 	main._process(DELTA)
-	t.check(is_equal_approx(GameState.play_seconds, DELTA),
+	t.check(is_equal_approx(GameState.header.play_seconds, DELTA),
 			"the day summary (phase OVER, tree still paused) does not advance it either")
 
 	# The title screen: unpaused, so the phase/pause check alone could not explain a stopped
@@ -774,12 +774,12 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	t.get_tree().paused = false
 	main._in_the_title = true
 	main._process(DELTA)
-	t.check(is_equal_approx(GameState.play_seconds, DELTA),
+	t.check(is_equal_approx(GameState.header.play_seconds, DELTA),
 			"the title screen does not advance it, even with the tree unpaused behind it")
 
 	main._in_the_title = false
 	main._process(DELTA)
-	t.check(is_equal_approx(GameState.play_seconds, DELTA * 2),
+	t.check(is_equal_approx(GameState.header.play_seconds, DELTA * 2),
 			"and a walking frame afterwards resumes rather than having latched off")
 
 	main._status.free()
@@ -792,12 +792,12 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	# restores these five: the suite shares one `GameState` and `t.get_tree()`, so a value this
 	# left behind outlives the function.
 	t.get_tree().paused = saved_paused
-	GameState.run_seed = saved_run_seed
-	GameState.day = saved_day
-	GameState.nerves = saved_nerves
-	GameState.resistance_progress = saved_progress
-	GameState.sabotage_done = saved_sabotage
-	GameState.play_seconds = 0.0
+	GameState.header.run_seed = saved_run_seed
+	GameState.header.day = saved_day
+	GameState.header.nerves = saved_nerves
+	GameState.resistance.progress = saved_progress
+	GameState.resistance.sabotage_done = saved_sabotage
+	GameState.header.play_seconds = 0.0
 
 ## The player's camera has no limits, so at each map corner the view is centered on her, the
 ## look-ahead is added toward the corner, and the ground has to be painted under all of it through
@@ -846,7 +846,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 
 	t.check(beyond_the_band, "a corner view reaches past the band, so the check is not vacuous")
 	city.free()
-	GameState.play_seconds = 0.0
+	GameState.header.play_seconds = 0.0
 
 ## The trailer overview grows the finite city by one authored landscape margin. Its added east and
 ## west columns are forest, while the north and south bands own their corners and the bridge's
@@ -889,7 +889,7 @@ func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 			"the water either side of the bridge goes on too")
 
 	city.free()
-	GameState.play_seconds = 0.0
+	GameState.header.play_seconds = 0.0
 
 # ------------------------------------------------------------- focus pause ---
 
@@ -989,7 +989,7 @@ func _test_focus_lost_does_nothing_over_the_day_summary(t) -> void:
 ## show_ending()` — so it is covered by the same `is_showing()` guard rather than a case of its own.
 func _test_focus_lost_does_nothing_over_the_ending(t) -> void:
 	var main := _build_focus_pause_main(t)
-	main._summary.show_ending(GameEnums.Ending.GOOD, GameState.day)
+	main._summary.show_ending(GameEnums.Ending.GOOD, GameState.header.day)
 	t.check(main._summary.is_showing(), "the ending screen is up")
 	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "focus loss does not open a second screen over the ending")
@@ -1182,50 +1182,50 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	main._summary = summary
 
 	GameState.start_run(SEED)
-	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
-	GameState.sabotage_done = true
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+	GameState.resistance.sabotage_done = true
 	# Below the cap (`Tuning.STARTING_NERVES`, 5) so a missing or doubled
 	# `GameState.regain_a_nerve()` call in the hand-over branch (`main.gd`'s
 	# `_hands_over_to_the_escape()` path) would show up as a wrong count rather than being masked
 	# by the cap `GameState.start_run()` already sets `nerves` to.
-	GameState.nerves = 3
+	GameState.header.nerves = 3
 	main._on_day_finished(GameEnums.DayResult.WON)
-	t.check(GameState.ending == GameEnums.Ending.NONE,
+	t.check(GameState.header.ending == GameEnums.Ending.NONE,
 			"a won day 14 with every task complete does not end the run")
-	t.check(GameState.escape_section == DaySpec.Section.BUILDING,
+	t.check(GameState.facts.escape_section == DaySpec.Section.BUILDING,
 			"it puts the run in the building, which is where the escape starts")
-	t.check(GameState.day == Tuning.RUN_LENGTH_DAYS, "and leaves the calendar alone")
+	t.check(GameState.header.day == Tuning.RUN_LENGTH_DAYS, "and leaves the calendar alone")
 	t.check(not main._run_over, "so nothing downstream thinks the run is over")
-	t.check(GameState.nerves == 4,
+	t.check(GameState.header.nerves == 4,
 			"day 14's win still gives a nerve back, and exactly once, through the direct call")
 
 	# The same hand-over in a hard run gives nothing back: reverting the branch to a bare
 	# `GameState.regain_a_nerve()` makes this the one that fails.
 	GameState.start_run(SEED)
 	GameState.choose_mode(true)
-	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
-	GameState.sabotage_done = true
-	GameState.nerves = 3
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+	GameState.resistance.sabotage_done = true
+	GameState.header.nerves = 3
 	main._on_day_finished(GameEnums.DayResult.WON)
-	t.check(GameState.escape_section == DaySpec.Section.BUILDING,
+	t.check(GameState.facts.escape_section == DaySpec.Section.BUILDING,
 			"a hard run's day 14 also hands over to the escape")
-	t.check(GameState.nerves == 3, "and its win gives a hard run no nerve back")
+	t.check(GameState.header.nerves == 3, "and its win gives a hard run no nerve back")
 
 	# The other side of the same day: the legwork done and the last night skipped is still the
 	# neutral ending it has always been, and must not reach the escape.
 	GameState.start_run(SEED)
-	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
-	GameState.sabotage_done = false
-	GameState.nerves = 3
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+	GameState.resistance.sabotage_done = false
+	GameState.header.nerves = 3
 	main._on_day_finished(GameEnums.DayResult.WON)
-	t.check(GameState.ending == GameEnums.Ending.NEUTRAL,
+	t.check(GameState.header.ending == GameEnums.Ending.NEUTRAL,
 			"a won day 14 without the last night still ends the run on the neutral ending")
-	t.check(GameState.escape_section == DaySpec.Section.NONE,
+	t.check(GameState.facts.escape_section == DaySpec.Section.NONE,
 			"and never reaches the escape")
-	t.check(GameState.nerves == 4,
+	t.check(GameState.header.nerves == 4,
 			"and this path's win gains a nerve too, through the ordinary GameState.finish_day()")
 
 	summary.free()
@@ -1234,7 +1234,7 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	city.free()
 	main.free()
 	GameState.restore_snapshot(baseline)
-	GameState.escape_section = DaySpec.Section.NONE
+	GameState.facts.escape_section = DaySpec.Section.NONE
 	t.get_tree().paused = saved_paused
 
 # ------------------------------------------------------------------ a rig's own lockdown ---

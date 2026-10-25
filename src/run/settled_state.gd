@@ -4,7 +4,10 @@ extends RunSubState
 ## photographed: `GameState.finish_day()` erases the lost day's own entry, which is what a retry
 ## has to forget.
 
-## Day -> the block she settled in.
+## The calm block the baby actually went to sleep in, per day: `day -> Vector2i`. Run-scoped and
+## gameplay-owned, deliberately *not* read out of the telemetry log even though the `calm` entries
+## say the same thing: telemetry never touches gameplay, and a rule that reads a trace to decide
+## tomorrow's events would make the game play differently with `--no-telemetry`.
 var settled_in: Dictionary = {}
 
 func reset() -> void:

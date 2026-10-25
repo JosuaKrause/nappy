@@ -10,6 +10,10 @@ var player_is_male := false
 var day: int = 1
 var nerves: int = Tuning.STARTING_NERVES
 var ending: GameEnums.Ending = GameEnums.Ending.NONE
+## Seconds the world has actually been moving this run — advanced by exactly one owner,
+## `main._process()`'s own day-loop branch, while a day — a section of the escape included — is
+## walking or returning and the tree is not paused. Never shown during play; the ending screen is
+## the only place it is read, through `GameState.format_clock()`.
 var play_seconds: float = 0.0
 
 ## Back to day 1 with every nerve and no ending. The seed and the presentation are the run's

@@ -181,11 +181,11 @@ func _test_space_carries_on_from_every_screen(t) -> void:
 func _test_the_pause_says_where_the_run_stands(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
 	t.add_child(pause)
-	var day := GameState.day
-	var nerves := GameState.nerves
+	var day := GameState.header.day
+	var nerves := GameState.header.nerves
 
-	GameState.day = 7
-	GameState.nerves = 3
+	GameState.header.day = 7
+	GameState.header.nerves = 3
 	t.get_tree().paused = false
 	pause.open()
 	var line: String = pause._standing.text
@@ -195,15 +195,15 @@ func _test_the_pause_says_where_the_run_stands(t) -> void:
 
 	# A single nerve is one star, drawn through the same `NerveDisplay.stars()` every other screen
 	# reads the count through — never a digit and never the word.
-	GameState.nerves = 1
+	GameState.header.nerves = 1
 	pause.open()
 	t.check(pause._standing.text.contains(NerveDisplay.stars(1))
 				and not pause._standing.text.contains("1 nerve"),
 			"and the last one is one star, not a number ('%s')" % pause._standing.text)
 	pause.close()
 
-	GameState.day = day
-	GameState.nerves = nerves
+	GameState.header.day = day
+	GameState.header.nerves = nerves
 	t.get_tree().paused = false
 	pause.queue_free()
 
@@ -236,7 +236,7 @@ func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
 	# And the other end of the same dead end: the last screen of a run has a key on it.
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	t.add_child(summary)
-	summary.show_ending(GameEnums.Ending.BAD, GameState.day)
+	summary.show_ending(GameEnums.Ending.BAD, GameState.header.day)
 	t.check(summary.is_showing(), "the ending screen is up")
 	var carried_on := [0]
 	summary.continued.connect(func() -> void: carried_on[0] += 1)
@@ -1180,7 +1180,7 @@ func _test_the_summary_hint_matches_the_platform(t) -> void:
 	t.check(summary._hint.text == "", "the touch hint says nothing either — the buttons say it now")
 	t.check(summary._buttons.visible, "and the continue/restart pair is what shows instead")
 
-	summary.show_ending(GameEnums.Ending.GOOD, GameState.day)
+	summary.show_ending(GameEnums.Ending.GOOD, GameState.header.day)
 	t.check(summary._hint.text == "", "and the ending screen agrees too ('%s')" % summary._hint.text)
 	t.check(summary._buttons.visible, "the row still shows, for the restart button")
 	t.check(not summary._continue_column.visible,
@@ -1203,7 +1203,7 @@ func _test_an_ending_has_no_continue_button(t) -> void:
 	summary.show_day(GameEnums.DayResult.WON, "", 5)
 	t.check(summary._continue_column.visible, "an ordinary day summary still offers continue")
 
-	summary.show_ending(GameEnums.Ending.BAD, GameState.day)
+	summary.show_ending(GameEnums.Ending.BAD, GameState.header.day)
 	t.check(not summary._continue_column.visible, "but the ending screen does not")
 	t.check(summary._restart_button.get_parent().visible,
 			"the restart button stays, hold and all")

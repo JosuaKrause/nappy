@@ -129,9 +129,9 @@ func _test_every_part_gives_back_what_it_photographed(t) -> void:
 	var photographed := GameSave.run_data()
 	GameState.complete_resistance_step(9)
 	GameState.fail_resistance_step(8)
-	GameState.sabotage_done = not GameState.sabotage_done
-	GameState.resistance_carrying_package = not GameState.resistance_carrying_package
-	GameState.consumed_one_shots.append("spent_after_the_photograph")
+	GameState.resistance.sabotage_done = not GameState.resistance.sabotage_done
+	GameState.resistance.carrying_package = not GameState.resistance.carrying_package
+	GameState.attempt_spend.consumed_one_shots.append("spent_after_the_photograph")
 	GameState.add_scar("scarred_after_the_photograph", Vector2(1.0, 2.0))
 	GameState.posters.paste(Vector2i(40, 41), 2, false, 1)
 	GameState.posters.tears += 2

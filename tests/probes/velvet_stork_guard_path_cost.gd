@@ -42,16 +42,16 @@ func run(t) -> void:
 
 func _measure(t, seed_value: int, walks: bool) -> void:
 	var suite = SUITE.new()
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	var city: City = SUITE.CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director: ResistanceDirector = suite._start_the_day(t, city, seed_value)
 	var player: Stroller = suite._rig_player(t, director.contact_position())
 	var label := "VELVET_STORK seed %d %s:" % [seed_value, "walking away" if walks else "standing"]
@@ -155,4 +155,4 @@ func _finish(suite, player: Stroller, director: ResistanceDirector, city: City, 
 		failed: Array, progress: int, scars: Array, state: CityState, alleys: Array) -> void:
 	suite._tear_down(player, director, city)
 	suite._restore(completed, failed, progress, scars, state)
-	GameState.completed_resistance_alley_tiles.assign(alleys)
+	GameState.facts.completed_resistance_alley_tiles.assign(alleys)

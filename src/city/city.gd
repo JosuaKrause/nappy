@@ -189,14 +189,14 @@ const DOOR_TEXTURE := &"props/door"
 ## home_door_sealed.svg`, the same 26×34 canvas and feet anchor as `DOOR_TEXTURE` (`docs/
 ## GRAPHICS.md`), so swapping `_home_door`'s texture needs no change to its offset or position.
 const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
-## `GameState.scars` id for the sealed street door, recorded at the doorstep by
+## `GameState.attempt_spend.scars` id for the sealed street door, recorded at the doorstep by
 ## `ResistanceHappenings._maybe_raid()` once the raid actually arrives. No `since_day` comparison
 ## is needed the way `EventScheduler.SILENCED_MAST` reads one: `_spawn_home()` and `start_day()`'s
 ## `_sync_home_door()` both run after `GameState.begin_day()`'s dawn photograph, so the scar's mere
 ## presence already answers "sealed as of this dawn" for every day after the one it was added on,
 ## and the moment it happens on its own day is `seal_home_door()`'s, called live.
 const SEALED_DOOR_SCAR := "sealed_door"
-## `GameState.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
+## `GameState.attempt_spend.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
 ## `scar_id`), read by `mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
 ## `SEALED_DOOR_SCAR` above.
 const BURNT_FRONTAGE_SCAR := "burnt_shell"
@@ -1340,7 +1340,7 @@ func _dress_the_stretch() -> void:
 ## purpose above too — the same look for a different, per-building reason.
 ##
 ## **The lookup is the shape of `board_neighbor_window()`/`_home_door_building()`**: a fixed fact
-## about the run (`GameState.scars`) answers which `Building` it is, once, rather than a field
+## about the run (`GameState.attempt_spend.scars`) answers which `Building` it is, once, rather than a field
 ## carried on the building itself. `burning_building` only ever catches on a wall this file actually
 ## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the
 ## tile one step north of the scar (`Vector2i.UP`, the same direction `EventScheduler.

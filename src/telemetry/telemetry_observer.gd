@@ -343,7 +343,7 @@ func start_section(restarted: bool) -> void:
 ## first thing under the header that the player is responsible for.
 func start_day() -> void:
 	_forget_the_walk()
-	_tree = RouteTree.for_day(_map, GameState.day)
+	_tree = RouteTree.for_day(_map, GameState.header.day)
 	_corridor = Corridor.of(_tree)
 	Telemetry.note("start", "doorstep %s, facing %s" % [
 		RunTrace.tile(_map.world_to_tile(_player.global_position)),

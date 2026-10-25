@@ -3035,11 +3035,11 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
 func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> void:
 	var saved_seed := GameState.run_seed
 	var saved_day := GameState.day
-	var saved_nerves := GameState.nerves
+	var saved_nerves := GameState.header.nerves
 	_with_clean_run(func() -> void:
 		GameState.run_seed = SEED
 		GameState.day = 6
-		GameState.nerves = Tuning.STARTING_NERVES
+		GameState.header.nerves = Tuning.STARTING_NERVES
 		GameState.begin_day()
 
 		var attempt := _director(t)
@@ -3077,7 +3077,7 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 
 	GameState.run_seed = saved_seed
 	GameState.day = saved_day
-	GameState.nerves = saved_nerves
+	GameState.header.nerves = saved_nerves
 
 ## The sabotage is what puts the city's power out, and the masts go with it. Not at the door she
 ## touched: the hand-over takes minutes, so every mast is still speaking until the blackout, which

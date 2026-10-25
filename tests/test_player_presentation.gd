@@ -17,29 +17,29 @@ func _test_seeded_equal_choice_and_lifetime(t) -> void:
 	var observed: Dictionary = {}
 	for seed_value in range(1, 33):
 		state.start_run(seed_value)
-		var selected: bool = state.player_is_male
+		var selected: bool = state.header.player_is_male
 		observed[selected] = true
 		# The independent stream must make one uniform inclusive two-way draw. This also pins
 		# seed replay without requiring a statistical sample to land at exactly half.
 		var expected_rng: RandomNumberGenerator = state.run_rng("player-presentation")
 		t.check(selected == (expected_rng.randi_range(0, 1) == 1),
 				"the presentation is the run stream's equal two-way draw")
-		state.day = 9
+		state.header.day = 9
 		state.begin_day()
 		state.finish_day(GameEnums.DayResult.WON)
 		state.begin_day()
 		state.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
-		t.check(state.player_is_male == selected, "winning, retrying and starting days retain the choice")
+		t.check(state.header.player_is_male == selected, "winning, retrying and starting days retain the choice")
 		state.start_run(seed_value)
-		t.check(state.player_is_male == selected, "replaying a seed reproduces the presentation")
+		t.check(state.header.player_is_male == selected, "replaying a seed reproduces the presentation")
 	t.check(observed.size() == 2, "the seed sweep exercises both families")
 	state.free()
 
 func _test_main_binds_both_complete_families_before_drawing(t) -> void:
-	var saved := GameState.player_is_male
+	var saved := GameState.header.player_is_male
 	var main := MAIN_SCRIPT.new()
 	for male in [false, true]:
-		GameState.player_is_male = male
+		GameState.header.player_is_male = male
 		var rig: Stroller = main._make_player()
 		t.check(rig.is_male == male and not rig.is_inside_tree(),
 				"ordinary and escape construction share a choice bound before the first draw")
@@ -61,11 +61,11 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 					t.check(rig._mother_is_mirrored() == EightDirection.is_mirrored(direction),
 							"both presentations retain the same west-facing mirrors")
 					rig._mother_texture(frame)
-			t.check(rig.is_male == male and GameState.player_is_male == male,
+			t.check(rig.is_male == male and GameState.header.player_is_male == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")
 		rig.free()
 	main.free()
-	GameState.player_is_male = saved
+	GameState.header.player_is_male = saved
 
 ## Every path the rig can draw is a name the bake actually knows — the completeness check
 ## `assets/atlases/membership.json` wants. **Which page each one is on is

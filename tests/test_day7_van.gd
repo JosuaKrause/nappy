@@ -39,16 +39,16 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var consumed: Array[String] = []
 	city.events.start_day(DAY, _rng(seed_value, "events"), consumed)
 
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	GameState.completed_resistance_steps.assign(done)
-	GameState.failed_resistance_steps.assign([])
-	GameState.resistance_progress = 0
+	GameState.resistance.completed_steps.assign(done)
+	GameState.resistance.failed_steps.assign([])
+	GameState.resistance.progress = 0
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
@@ -178,9 +178,9 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	player.free()
 	resistance.free()
 	city.free()
-	GameState.completed_resistance_steps.assign(saved_completed)
-	GameState.failed_resistance_steps.assign(saved_failed)
-	GameState.resistance_progress = saved_progress
+	GameState.resistance.completed_steps.assign(saved_completed)
+	GameState.resistance.failed_steps.assign(saved_failed)
+	GameState.resistance.progress = saved_progress
 	return placed.size() == 1
 
 ## **No part of the route van is in the camera's view the frame it is created** ("Nothing may be

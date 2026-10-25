@@ -58,12 +58,12 @@ const A_WALK_ESCAPES := 3
 
 func run(t) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-	var saved_scars := GameState.scars.duplicate(true)
-	var saved_day := GameState.day
-	var saved_state := GameState.city_state
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	var saved_day := GameState.header.day
+	var saved_state := GameState.attempt_spend.city_state
 	var starts := {}
 	var walks := {}
 	for day in DAYS:
@@ -81,13 +81,13 @@ func run(t) -> void:
 			for step in ResistanceSteps.all():
 				if (finale and not step.needs_goal) or (not finale and step.index <= 2 * (day - 6)):
 					done.append(step.index)
-			GameState.completed_resistance_steps = done
-			GameState.resistance_progress = Tuning.RESISTANCE_GOAL if finale else 0
-			GameState.completed_resistance_alley_tiles = []
-			GameState.scars.clear()
-			GameState.day = day
+			GameState.resistance.completed_steps = done
+			GameState.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
+			GameState.facts.completed_resistance_alley_tiles = []
+			GameState.attempt_spend.scars.clear()
+			GameState.header.day = day
 			var state := CityState.new()
-			GameState.city_state = state
+			GameState.attempt_spend.city_state = state
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			city.events.start_day(day, _rng(seed_value, day, "events"), [],
@@ -139,12 +139,12 @@ func run(t) -> void:
 							% [seed_value, day, ", ".join(escaped), start - her])
 			director.free()
 		city.free()
-	GameState.completed_resistance_steps = saved_completed
-	GameState.resistance_progress = saved_progress
-	GameState.completed_resistance_alley_tiles = saved_tiles
-	GameState.scars = saved_scars
-	GameState.day = saved_day
-	GameState.city_state = saved_state
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.progress = saved_progress
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
+	GameState.attempt_spend.scars = saved_scars
+	GameState.header.day = saved_day
+	GameState.attempt_spend.city_state = saved_state
 	print("\n== grassy-goose: where a touched target's robber starts, %d seeds ==" % SEEDS_TO_SWEEP)
 	print("| day | across the street | above/below, clear run | beside, clear run | no clear run at all | no legal start | no task |")
 	print("|---|---|---|---|---|---|---|")

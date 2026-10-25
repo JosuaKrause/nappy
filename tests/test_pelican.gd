@@ -222,7 +222,7 @@ func _test_the_pelican_never_becomes_a_png(t) -> void:
 
 ## Starts a run of `run_seed` with the full bag.
 func _new_run(run_seed: int) -> void:
-	GameState.run_seed = run_seed
+	GameState.header.run_seed = run_seed
 	GameState.pelican.reset()
 
 ## `count` answers of a fresh manager on run `run_seed`, asked for `defs` in turn, from a full bag.
@@ -239,7 +239,7 @@ func _rolls_for(run_seed: int, defs: Array[EventDef], count: int,
 
 ## `count` answers of a fresh manager for the cyclist `def`, from wherever `GameState.pelican` stands.
 func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
-	GameState.run_seed = run_seed
+	GameState.header.run_seed = run_seed
 	var manager := EventManager.new()
 	var answers: Array[bool] = []
 	for _i in count:
@@ -248,10 +248,10 @@ func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
 	return answers
 
 func _save_the_run() -> Dictionary:
-	return {"seed": GameState.run_seed, "pelican": GameState.pelican.to_data()}
+	return {"seed": GameState.header.run_seed, "pelican": GameState.pelican.to_data()}
 
 func _restore_the_run(saved: Dictionary) -> void:
-	GameState.run_seed = saved["seed"]
+	GameState.header.run_seed = saved["seed"]
 	GameState.pelican.restore(saved["pelican"])
 
 ## A rider created as the pelican, through the path every cyclist takes (`spawn_warned()`, handed

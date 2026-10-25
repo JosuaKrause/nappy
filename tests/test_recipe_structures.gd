@@ -5,10 +5,10 @@ extends RefCounted
 const MAIN := preload("res://src/main.gd")
 
 func run(t) -> void:
-	var prior_seed := GameState.run_seed
-	var prior_day := GameState.day
-	GameState.run_seed = 11
-	GameState.day = 13
+	var prior_seed := GameState.header.run_seed
+	var prior_day := GameState.header.day
+	GameState.header.run_seed = 11
+	GameState.header.day = 13
 	var loaded := SceneRecipe.load_file("res://scene-recipes/trailer-trucks.json")
 	var data: Dictionary = loaded.data.duplicate(true)
 	data.setup = {"day": 13, "player": {"at": [16, 16]}}
@@ -38,14 +38,14 @@ func run(t) -> void:
 	t.check(selected.x >= 0, "tree regression has a real eligible off-route street")
 	if selected.x >= 0:
 		data.setup.seals = [{"segment": [selected.x, selected.y, selected.z], "candidate": "fallen_tree_seal"}]
-		var errors := runtime.install(city, player, baby, DaySpec.for_day(GameState.day, Tuning.DAY_LENGTH_SECONDS))
+		var errors := runtime.install(city, player, baby, DaySpec.for_day(GameState.header.day, Tuning.DAY_LENGTH_SECONDS))
 		t.check(errors.is_empty(), "authored fallen tree installs through production siting: %s" % [errors])
 		t.check(city.map._seal_tree_pits.size() == 1, "authored fallen tree empties exactly one source pit")
 		for tile: Vector2i in city.map._seal_tree_pits:
 			t.check(city._street_tree_pits.has(tile) and not (city._street_tree_pits[tile] as Prop).visible,
 					"runtime hides the standing source tree after installing its fallen seal")
 		data.setup.erase("seals")
-		errors = runtime.install(city, player, baby, DaySpec.for_day(GameState.day, Tuning.DAY_LENGTH_SECONDS))
+		errors = runtime.install(city, player, baby, DaySpec.for_day(GameState.header.day, Tuning.DAY_LENGTH_SECONDS))
 		t.check(errors.is_empty() and city.map._seal_tree_pits.is_empty(), "reinstallation clears unselected fallen-tree state")
 		for tree: Prop in city._street_trees:
 			t.check(tree.visible, "standing source trees return when no authored fallen tree selects them")
@@ -58,7 +58,7 @@ func run(t) -> void:
 		elif collection == "seals":
 			entry.candidate = "cafe_pair"
 		data.setup[collection] = [entry]
-		var errors := runtime.install(city, player, baby, DaySpec.for_day(GameState.day, Tuning.DAY_LENGTH_SECONDS))
+		var errors := runtime.install(city, player, baby, DaySpec.for_day(GameState.header.day, Tuning.DAY_LENGTH_SECONDS))
 		t.check("\n".join(errors).contains("leaves the authored extent"),
 				"%s outside a bounded scene rejects instead of silently dropping bodies" % collection)
 		data.setup.erase(collection)
@@ -67,8 +67,8 @@ func run(t) -> void:
 	runtime.free()
 	player.free()
 	city.free()
-	GameState.run_seed = prior_seed
-	GameState.day = prior_day
+	GameState.header.run_seed = prior_seed
+	GameState.header.day = prior_day
 
 ## **One spec for an authored scene**: the walk the run flow started — the one its clock and HUD run
 ## on (`main._start_recipe_day()`, or the escape boot's section) — is the spec the scene's events run
@@ -90,7 +90,7 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t, runtime: SceneRecipeRun
 	t.check(city.events.pending_warnings().is_empty(), "so a torn poster there sends nobody")
 
 	var day := MAIN.day_spec(RunConfig.parse(PackedStringArray(["--day-length", "77"]), "", true),
-			GameState.day)
+			GameState.header.day)
 	t.check(is_equal_approx(day.length, 77.0),
 			"a day scene's walk is the configured day's length (%.1fs)" % day.length)
 	errors = runtime.install(city, player, baby, day)

@@ -340,7 +340,7 @@ var _day := 0
 ## The day what happens now is counted under: the one `day_started` announced, or, before any has
 ## been heard on this page — a suite driving the counter by hand — the run's own day.
 func _counted_day() -> int:
-	return _day if _day > 0 else GameState.day
+	return _day if _day > 0 else GameState.header.day
 
 func _on_day_started(day: int) -> void:
 	_day = day

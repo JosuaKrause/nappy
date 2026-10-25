@@ -13,10 +13,10 @@ const STEP := 1.0 / 60.0
 var _city: City
 
 func run(t) -> void:
-	var saved_sabotage := GameState.sabotage_done
-	var saved_section := GameState.escape_section
-	GameState.sabotage_done = false
-	GameState.escape_section = DaySpec.Section.NONE
+	var saved_sabotage := GameState.resistance.sabotage_done
+	var saved_section := GameState.facts.escape_section
+	GameState.resistance.sabotage_done = false
+	GameState.facts.escape_section = DaySpec.Section.NONE
 	_city = CITY_SCENE.instantiate()
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
@@ -35,8 +35,8 @@ func run(t) -> void:
 
 	_test_the_escape_is_dark_from_its_first_frame(t)
 	_test_the_building_is_dark_too(t)
-	GameState.sabotage_done = saved_sabotage
-	GameState.escape_section = saved_section
+	GameState.resistance.sabotage_done = saved_sabotage
+	GameState.facts.escape_section = saved_section
 
 func _rng(label: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -83,14 +83,14 @@ func _spine_junction() -> Vector2i:
 # ---------------------------------------------------------------------- tests ---
 
 func _test_nothing_goes_dark_without_the_sabotage(t) -> void:
-	GameState.sabotage_done = false
+	GameState.resistance.sabotage_done = false
 	_city.blackout.update(_south_of_the_station(Tuning.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _city.blackout.is_dark, "far from the station with no sabotage, the city is lit")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the spine's lights are working")
 
 ## The station must be off screen before it goes, so the moment is the city going dark round her.
 func _test_nothing_goes_dark_beside_the_station(t) -> void:
-	GameState.sabotage_done = true
+	GameState.resistance.sabotage_done = true
 	_city.blackout.update(_city.map.power_station_door_position())
 	t.check(not _city.blackout.is_dark, "at the door she has just touched, nothing is off yet")
 	_city.blackout.update(_south_of_the_station(Tuning.BLACKOUT_DISTANCE - 4.0))
@@ -109,7 +109,7 @@ func _test_everything_goes_dark_at_once(t) -> void:
 	var handler := func() -> void: quiet.append(true)
 	EventBus.city_went_quiet.connect(handler)
 
-	GameState.sabotage_done = true
+	GameState.resistance.sabotage_done = true
 	_city.blackout.update(_south_of_the_station(Tuning.BLACKOUT_DISTANCE + 4.0))
 
 	t.check(_city.blackout.is_dark, "past the distance, with the sabotage done, the city is dark")
@@ -140,7 +140,7 @@ func _test_it_stays_dark_walking_back(t) -> void:
 
 ## A lost day 14 gives the sabotage back at dawn, and with it the power: the retry is the same day.
 func _test_a_retry_gives_the_power_back(t) -> void:
-	GameState.sabotage_done = false
+	GameState.resistance.sabotage_done = false
 	_city.blackout.update(_south_of_the_station(Tuning.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _city.blackout.is_dark, "with the sabotage given back, the power is back")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the lights decide the spine again")
@@ -243,7 +243,7 @@ func _spine_traffic(powered: bool) -> Vector2:
 ## The escape is the same night, so a city built for it — its `DaySpec` dark from the start — is
 ## dark before its first frame.
 func _test_the_escape_is_dark_from_its_first_frame(t) -> void:
-	GameState.sabotage_done = true
+	GameState.resistance.sabotage_done = true
 	var city: City = CITY_SCENE.instantiate()
 	city.dark_from_the_start = DaySpec.for_section(DaySpec.Section.CITY, 180.0).dark_from_the_start
 	t.add_child(city)

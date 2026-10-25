@@ -347,7 +347,7 @@ func _work_the_crews(delta: float) -> void:
 ## A crew's work: which kind it carries and which cells, in the order it pastes them.
 func _job_for(tile: Vector2i) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d:%d:%d:poster-crew" % [GameState.run_seed, _day, tile.x, tile.y])
+	rng.seed = hash("%d:%d:%d:%d:poster-crew" % [GameState.header.run_seed, _day, tile.x, tile.y])
 	var at: Vector2i = _by_tile[tile]
 	var tiles: Array = _walls[at.x]["tiles"]
 	var kind := _kind_for(_day, rng)
@@ -433,7 +433,7 @@ func _presses_into_the_front(tile: Vector2i, at: Vector2, steering: Vector2) -> 
 func _tear(tile: Vector2i) -> void:
 	var state := posters
 	var kind := int(state.cells[tile]["kind"])
-	var which := posmod(hash("%d:%d:%d:%d:tear" % [GameState.run_seed, tile.x, tile.y,
+	var which := posmod(hash("%d:%d:%d:%d:tear" % [GameState.header.run_seed, tile.x, tile.y,
 			state.tears]), PosterArt.TEARS)
 	var bag := _the_bag()
 	if not state.tear(tile, which):
@@ -457,7 +457,7 @@ func _tear(tile: Vector2i) -> void:
 ## draw the same marbles the run would have drawn.
 func _the_bag() -> MarbleBag:
 	var tears := posters.tears
-	var seed_value := hash("%d:poster-tears" % GameState.run_seed)
+	var seed_value := hash("%d:poster-tears" % GameState.header.run_seed)
 	if _bag == null or _bag_seed != seed_value or _bag.drawn != tears:
 		_bag = MarbleBag.new(TEAR_PRE_BAG, TEAR_BAG, seed_value)
 		_bag_seed = seed_value

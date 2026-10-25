@@ -37,7 +37,7 @@ func run(t) -> void:
 
 ## Repaints `map` for `day` with `used` handed over the way `Main._start_day()` hands
 ## `GameState.settled_this_act()` over, and `fenced`/`fenced_act` the way it hands over
-## `GameState.fenced_park`/`fenced_park_act` — both defaulting to "nothing fenced yet", the shape
+## `GameState.facts.fenced_park`/`fenced_park_act` — both defaulting to "nothing fenced yet", the shape
 ## every test but the ones about the fence itself wants. Returns the pair to feed the same map's
 ## next call, the way `Main._start_day()` reads them back into `GameState` for tomorrow, so a fence
 ## chosen on one day of the sweep carries into the next rather than being re-decided.
@@ -49,14 +49,14 @@ func _repaint(map: CityMap, day: int, used: Array[Vector2i],
 	map.set_fenced_park_state(fenced, fenced_act, Tuning.act_for_day(day))
 	map.repaint(state)
 	# Exercise Main's actual read-back policy without leaving this fixture's run in the autoload.
-	var saved_block := GameState.fenced_park
-	var saved_act := GameState.fenced_park_act
-	GameState.fenced_park = fenced
-	GameState.fenced_park_act = fenced_act
-	GameState.remember_fenced_park(map.fenced_park, map.fenced_park_act)
-	var remembered := [GameState.fenced_park, GameState.fenced_park_act]
-	GameState.fenced_park = saved_block
-	GameState.fenced_park_act = saved_act
+	var saved_block := GameState.facts.fenced_park
+	var saved_act := GameState.facts.fenced_park_act
+	GameState.facts.fenced_park = fenced
+	GameState.facts.fenced_park_act = fenced_act
+	GameState.facts.remember_fenced_park(map.fenced_park, map.fenced_park_act)
+	var remembered := [GameState.facts.fenced_park, GameState.facts.fenced_park_act]
+	GameState.facts.fenced_park = saved_block
+	GameState.facts.fenced_park_act = saved_act
 	return remembered
 
 ## The calm areas today's repaint leaves calm with nothing handed over.
@@ -68,7 +68,7 @@ func _calm_on(map: CityMap, day: int) -> Array[Vector2i]:
 ## What an act would have used by `day`: one area a day since the act began, most recent first,
 ## drawn from today's calm in an order rolled from the seed — the shape `GameState.
 ## settled_this_act()` has, without playing the days. A block chosen as `CityMap.fenced_park` on an
-## earlier day may still be here on a later one, the same way `GameState.settled_in` still carries
+## earlier day may still be here on a later one, the same way `GameState.settled.settled_in` still carries
 ## the day she used it before it was fenced — fencing does not erase the past.
 func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
 	var calm := _calm_on(map, day)
@@ -172,7 +172,7 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t) -> void:
 				# The fenced park stays off the tree by carrying over from the day it was chosen
 				# (`CityMap._shut_the_spent_calm()`), not by being in every later day's own `used` —
 				# once fenced she cannot settle there again, but a day she did before it was fenced
-				# is still one `GameState.settled_in` remembers. Every other shut area is
+				# is still one `GameState.settled.settled_in` remembers. Every other shut area is
 				# recomputed fresh from `used` each day, so it has to be in it.
 				t.check(is_fenced or block in used,
 						"seed %d day %d takes %s off the tree, which she used"

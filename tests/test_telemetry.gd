@@ -597,8 +597,8 @@ func _test_the_trail_carries_whether_she_was_running(t) -> void:
 ## day was not walked, so the picture of it must start from nothing rather than carrying the
 ## abandoned attempt's trail into the retry.
 func _test_a_lost_day_restarts_the_trail(t) -> void:
-	var saved_day := GameState.day
-	GameState.day = 1
+	var saved_day := GameState.header.day
+	GameState.header.day = 1
 	var map := CityGenerator.generate(4242)
 	var city: City = preload("res://scenes/world/city.tscn").instantiate()
 	t.add_child(city)
@@ -622,7 +622,7 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 	t.check(observer.trail().is_empty(),
 			"a new day's start — including a rewound day's — starts the trail over from nothing")
 
-	GameState.day = saved_day
+	GameState.header.day = saved_day
 	observer.free()
 	player.free()
 	city.free()
@@ -1194,7 +1194,7 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 	Telemetry.end_run()
 
 ## `GameState.finish_day()` retries a lost day by calling `_start_day()` again with the same
-## `GameState.day` — `begin_day()` sees the same day number twice — and `write_map()` is called
+## `GameState.header.day` — `begin_day()` sees the same day number twice — and `write_map()` is called
 ## once per attempt from `main.gd`. Without the attempt in the name the second call's map would
 ## overwrite the first's, which is exactly the picture worth keeping: the day that went wrong.
 func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t) -> void:

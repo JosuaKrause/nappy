@@ -33,20 +33,20 @@ class FallbackDirector extends ResistanceDirector:
 		return null
 
 func run(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
-	var saved_state := GameState.city_state
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
 	for fallback in [true, false]:
 		_measure(t, fallback)
-	GameState.completed_resistance_steps.assign(saved_completed)
-	GameState.failed_resistance_steps.assign(saved_failed)
-	GameState.resistance_progress = saved_progress
-	GameState.scars.assign(saved_scars)
-	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
-	GameState.city_state = saved_state
+	GameState.resistance.completed_steps.assign(saved_completed)
+	GameState.resistance.failed_steps.assign(saved_failed)
+	GameState.resistance.progress = saved_progress
+	GameState.attempt_spend.scars.assign(saved_scars)
+	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
+	GameState.attempt_spend.city_state = saved_state
 
 func _measure(t, fallback: bool) -> void:
 	var label := "before (edge spawn)" if fallback else "after (placed under the day's rules)"
@@ -62,7 +62,7 @@ func _measure(t, fallback: bool) -> void:
 		var city: City = CITY_SCENE.instantiate()
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
-		GameState.scars = []
+		GameState.attempt_spend.scars = []
 		var director: ResistanceDirector = FallbackDirector.new() if fallback \
 				else ResistanceDirector.new()
 		var player := _start_the_day(t, city, director, seed_value)
@@ -130,14 +130,14 @@ func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	GameState.completed_resistance_steps.assign(done)
-	GameState.failed_resistance_steps.assign([])
-	GameState.resistance_progress = 0
+	GameState.resistance.completed_steps.assign(done)
+	GameState.resistance.failed_steps.assign([])
+	GameState.resistance.progress = 0
 	# A read mark's alley is remembered and never chosen again, so each day built on one seed starts
 	# from none remembered and reads the same mark.
-	GameState.completed_resistance_alley_tiles.assign([])
+	GameState.facts.completed_resistance_alley_tiles.assign([])
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	city.events.start_day(DAY, _rng(seed_value, "events"), [], city.map.doorstep_world_position())

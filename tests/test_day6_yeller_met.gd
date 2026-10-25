@@ -24,10 +24,10 @@ const SETTLE_SECONDS := 12.0
 func run(t) -> void:
 	# Whether the rigged man is sited in view depends on the run's seed; this was checked on seed 2.
 	GameState.start_run(2)
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	var met := 0
 	var outcomes: Array[String] = []
 	for seed_value in SEEDS:
@@ -37,10 +37,10 @@ func run(t) -> void:
 			met += 1
 	t.check(met >= AT_LEAST, "the rigged man shouting is in her view on most walks of day %d (%d of %d: %s)"
 			% [DAY, met, SEEDS.size(), outcomes])
-	GameState.completed_resistance_steps.assign(saved_completed)
-	GameState.failed_resistance_steps.assign(saved_failed)
-	GameState.resistance_progress = saved_progress
-	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
+	GameState.resistance.completed_steps.assign(saved_completed)
+	GameState.resistance.failed_steps.assign(saved_failed)
+	GameState.resistance.progress = saved_progress
+	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
 
 ## "seen", "sited, never in view", "never sited", or "no mark".
 func _walk(t, seed_value: int) -> String:
@@ -56,10 +56,10 @@ func _walk(t, seed_value: int) -> String:
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	GameState.completed_resistance_steps.assign(done)
-	GameState.failed_resistance_steps.assign([])
-	GameState.resistance_progress = 0
-	GameState.completed_resistance_alley_tiles.assign([])
+	GameState.resistance.completed_steps.assign(done)
+	GameState.resistance.failed_steps.assign([])
+	GameState.resistance.progress = 0
+	GameState.facts.completed_resistance_alley_tiles.assign([])
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)

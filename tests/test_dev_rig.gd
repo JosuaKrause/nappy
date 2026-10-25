@@ -60,14 +60,14 @@ func _build_day(t) -> void:
 	var consumed: Array[String] = []
 	_city.events.start_day(DAY, _rng("events"), consumed)
 
-	_saved_completed = GameState.completed_resistance_steps.duplicate()
-	_saved_failed = GameState.failed_resistance_steps.duplicate()
-	_saved_progress = GameState.resistance_progress
-	_saved_package = GameState.resistance_carrying_package
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
-	GameState.resistance_carrying_package = false
+	_saved_completed = GameState.resistance.completed_steps.duplicate()
+	_saved_failed = GameState.resistance.failed_steps.duplicate()
+	_saved_progress = GameState.resistance.progress
+	_saved_package = GameState.resistance.carrying_package
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
+	GameState.resistance.carrying_package = false
 
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
@@ -76,10 +76,10 @@ func _build_day(t) -> void:
 	_resistance.start_day(DAY, _rng("resistance"), 300.0)
 
 func _teardown(t) -> void:
-	GameState.completed_resistance_steps = _saved_completed
-	GameState.failed_resistance_steps = _saved_failed
-	GameState.resistance_progress = _saved_progress
-	GameState.resistance_carrying_package = _saved_package
+	GameState.resistance.completed_steps = _saved_completed
+	GameState.resistance.failed_steps = _saved_failed
+	GameState.resistance.progress = _saved_progress
+	GameState.resistance.carrying_package = _saved_package
 	_resistance.free()
 	_city.free()
 

@@ -350,7 +350,7 @@ static func _new_operation() -> int:
 
 ## Whether the run has an ending, after which nothing is written — see `_write_now()`.
 static func _run_has_ended() -> bool:
-	return GameState.ending != GameEnums.Ending.NONE
+	return GameState.header.ending != GameEnums.Ending.NONE
 
 ## Starts a web flush for `operation` and settles it through `settled` — see `_FLUSH_JS` for the
 ## page's half and `FLUSH_TIMEOUT_SECONDS` for the backstop. The operation id is the flush's token,
@@ -470,7 +470,7 @@ static func _settle(token: int, result: Result, reason: String) -> void:
 ## exercise the actual file format — pointed at a scratch path with `set_path_override()` first,
 ## never at `_DEFAULT_PATH`.
 ##
-## **Refuses once `GameState.ending` is set**, checked here rather than only in `write()` so a test
+## **Refuses once `GameState.header.ending` is set**, checked here rather than only in `write()` so a test
 ## can drive it without also having to make `uses_save()` answer `true` under the headless runner.
 ## A finished run already had its save cleared in `GameState._end_run()`; this is the second line
 ## of the same reasoning `CLAUDE.md`'s "check before accepting, never repair afterwards" asks for

@@ -15,8 +15,8 @@ const SEED := 1
 const DAY := 8
 
 func run(t) -> void:
-	var saved_scars := GameState.scars.duplicate(true)
-	var saved_state := GameState.city_state
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	var saved_state := GameState.attempt_spend.city_state
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
@@ -30,7 +30,7 @@ func run(t) -> void:
 	var step := maxi(1, fronts.size() / 10)
 	for i in range(0, fronts.size(), step):
 		var shell_at := city.map.tile_to_world(fronts[i])
-		GameState.scars = [{"id": "burnt_shell", "position": shell_at, "since_day": 3}]
+		GameState.attempt_spend.scars = [{"id": "burnt_shell", "position": shell_at, "since_day": 3}]
 		var director := _task_on_offer(t, city)
 		var door := city.way_in_behind(shell_at)
 		if door == Vector2.INF or director.current_step() == null:
@@ -74,7 +74,7 @@ func run(t) -> void:
 			+ "being taken (%d)" % from_the_side)
 
 	# A run with no recorded scar burns a front for the task, and stands on that building's door too.
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director := _task_on_offer(t, city)
 	t.check(director.current_step() != null, "the fallback task is on offer")
 	if director.current_step() != null and director._rider != null:
@@ -84,8 +84,8 @@ func run(t) -> void:
 				% [director.red_arrow_target(), door])
 	director.free()
 
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
+	GameState.attempt_spend.scars = saved_scars
+	GameState.attempt_spend.city_state = saved_state
 	city.free()
 
 ## Whether the frontage tile `tile` cannot be stood on today, whatever the reason.
@@ -94,11 +94,11 @@ func tile_is_taken(city: City, tile: Vector2i) -> bool:
 
 ## Day 8 started through the real order and its mark read, so the task is placed.
 func _task_on_offer(t, city: City) -> ResistanceDirector:
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng("closures"))
 	var none: Array[String] = []

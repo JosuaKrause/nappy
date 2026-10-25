@@ -129,7 +129,7 @@ const DISTANCE_METRES := "%d m"
 ## not tied to its own day's resistance task or once-only happening, so one that would give a
 ## task away says something else that is true that morning instead. Looked up by the calendar day
 ## alone — `DaySummary.show_day_brief(day, …)` (a resumed run's own gate) is handed the day and
-## `show_day()` (the ordinary transition) reads `GameState.day` — never by what an attempt
+## `show_day()` (the ordinary transition) reads `GameState.header.day` — never by what an attempt
 ## touched, so a lost day's own line reads exactly as it did this morning.
 ##
 ## Written as plain prose, one space between sentences and no `\n` of its own: `SentenceLines

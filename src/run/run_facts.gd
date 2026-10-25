@@ -6,11 +6,19 @@ extends RunSubState
 ## Nothing here is photographed or given back by a lost day.
 
 ## Which section of the escape this run is in, as a `DaySpec.Section` — `0` (`NONE`) for every one
-## of the fourteen days. An `int` rather than the enum because a cross-script enum is not the same
-## type as itself across a script boundary (see the **godot** skill).
+## of the fourteen days, `BUILDING` or `CITY` once a won day 14 with every task complete has handed
+## over to it. An `int` rather than the enum because a cross-script enum is not the same type as
+## itself across a script boundary (see the **godot** skill), and a field on the *run* rather than
+## on the scene for two reasons: it survives `reload_current_scene()`, which is how the handover
+## reaches the escape's own boot with the run intact, and it is the one thing the save carries about
+## the escape, so a game closed in a section opens on that section's brief.
 var escape_section: int = 0
 var completed_resistance_alley_tiles: Array[Vector2i] = []
-## The one calm area barriers stand around, or `(-1, -1)` before act III chooses one.
+## The one calm area barriers ever stand around this run, once she has used it — `(-1, -1)` until
+## one is. Chosen no earlier than act III; see docs/CITY.md, "Shutting a spent park". `Main`
+## hands this and `fenced_park_act` to `CityMap.set_fenced_park_state()` before the repaint and
+## remembers its first choice once it returns. This history survives the act boundary even though
+## the physical fence does not.
 var fenced_park := Vector2i(-1, -1)
 ## The act that chose `fenced_park`.
 var fenced_park_act := 0

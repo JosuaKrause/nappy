@@ -18,7 +18,7 @@ var _saved_seed := 0
 var _saved_posters: Dictionary = {}
 
 func run(t) -> void:
-	_saved_seed = GameState.run_seed
+	_saved_seed = GameState.header.run_seed
 	_saved_posters = GameState.posters.to_data()
 	_test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t)
 	_test_the_wanted_notice_crosses_out_a_taken_neighbor(t)
@@ -29,7 +29,7 @@ func run(t) -> void:
 	_test_a_held_push_tears_every_sheet_she_slides_past(t)
 	_test_a_door_in_the_wall_does_not_end_the_slide(t)
 	_test_a_crew_under_a_covered_corner_does_not_paste(t)
-	GameState.run_seed = _saved_seed
+	GameState.header.run_seed = _saved_seed
 	GameState.posters.restore(_saved_posters)
 
 # ---------------------------------------------------------------- the tears ---
@@ -53,22 +53,22 @@ func _test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t) -> void:
 ## its warning not among the steps she completed — and the two-X copy after, intact or torn.
 func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t) -> void:
 	AtlasLibrary.acquire(PosterArt.ATLAS_GROUP)
-	var saved_day := GameState.day
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_day := GameState.header.day
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
 	var plain := AtlasLibrary.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
 	var crossed := AtlasLibrary.region(PosterArt.WANTED_CROSSED)
 	t.check(plain != null and crossed != null, "both copies of the wanted notice are baked")
-	GameState.day = ResistanceHappenings.NEIGHBOR_DAY + 2
-	GameState.completed_resistance_steps = [ResistanceSteps.warning_step().index]
+	GameState.header.day = ResistanceHappenings.NEIGHBOR_DAY + 2
+	GameState.resistance.completed_steps = [ResistanceSteps.warning_step().index]
 	t.check(PosterArt.sheet(PosterArt.Kind.WANTED) == plain,
 			"a warned neighbor's face is not crossed out")
-	GameState.completed_resistance_steps = []
+	GameState.resistance.completed_steps = []
 	t.check(PosterArt.sheet(PosterArt.Kind.WANTED) == crossed,
 			"a taken neighbor's face is crossed out")
 	t.check(PosterArt.sheet(PosterArt.Kind.LEADER) == AtlasLibrary.region(
 			PosterArt.SHEETS[PosterArt.Kind.LEADER]), "and no other kind changes")
-	GameState.day = saved_day
-	GameState.completed_resistance_steps = saved_completed
+	GameState.header.day = saved_day
+	GameState.resistance.completed_steps = saved_completed
 	AtlasLibrary.release(PosterArt.ATLAS_GROUP)
 
 # ----------------------------------------------------------------- the state ---
@@ -110,7 +110,7 @@ func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 		t.check(walls.wall_count() > 0, "seed %d: there are fronts to paste on (%d)"
 				% [seed_value, walls.wall_count()])
 		_check_every_front_is_blank_wall(t, city, map, seed_value)
-		GameState.run_seed = seed_value
+		GameState.header.run_seed = seed_value
 		GameState.posters.reset()
 		var state := CityState.new()
 		var before := 0
@@ -266,7 +266,7 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(map)
-	GameState.run_seed = SEEDS[0]
+	GameState.header.run_seed = SEEDS[0]
 	GameState.posters.reset()
 	var walls := city.poster_walls()
 	var tiles: Array = walls.fronts().keys()
@@ -299,7 +299,7 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(map)
-	GameState.run_seed = SEEDS[0]
+	GameState.header.run_seed = SEEDS[0]
 	GameState.posters.reset()
 	var walls := city.poster_walls()
 	var tiles: Array = walls.fronts().keys()
@@ -416,7 +416,7 @@ func _test_a_held_push_tears_every_sheet_she_slides_past(t) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(map)
-	GameState.run_seed = SEEDS[0]
+	GameState.header.run_seed = SEEDS[0]
 	GameState.posters.reset()
 	var walls := city.poster_walls()
 	walls._day_running = true
@@ -521,7 +521,7 @@ func _test_a_door_in_the_wall_does_not_end_the_slide(t) -> void:
 	var city: City = CITY_SCENE.instantiate()
 	t.add_child(city)
 	city.build(map)
-	GameState.run_seed = SEEDS[0]
+	GameState.header.run_seed = SEEDS[0]
 	GameState.posters.reset()
 	var walls := city.poster_walls()
 	walls._day_running = true

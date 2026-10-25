@@ -26,28 +26,28 @@ func _test_every_task_days_destination_draws_no_mark(t) -> void:
 	for step in ResistanceSteps.all():
 		if step.day not in days:
 			days.append(step.day)
-	var saved_scars := GameState.scars.duplicate(true)
-	var saved_day := GameState.day
-	var saved_state := GameState.city_state
-	var saved_sabotage := GameState.sabotage_done
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_package := GameState.resistance_carrying_package
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	var saved_day := GameState.header.day
+	var saved_state := GameState.attempt_spend.city_state
+	var saved_sabotage := GameState.resistance.sabotage_done
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_package := GameState.resistance.carrying_package
 	for day in days:
 		_build_city(t)
 		var finale := day == finale_day
-		GameState.scars.clear()
-		GameState.day = day
-		GameState.failed_resistance_steps = []
-		GameState.completed_resistance_steps = _all_but_the_finale() if finale \
+		GameState.attempt_spend.scars.clear()
+		GameState.header.day = day
+		GameState.resistance.failed_steps = []
+		GameState.resistance.completed_steps = _all_but_the_finale() if finale \
 				else _completed_before(day)
-		GameState.resistance_progress = Tuning.RESISTANCE_GOAL if finale else 0
-		GameState.resistance_carrying_package = false
-		GameState.sabotage_done = false
+		GameState.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
+		GameState.resistance.carrying_package = false
+		GameState.resistance.sabotage_done = false
 		var state := CityState.new()
-		GameState.city_state = state
+		GameState.attempt_spend.city_state = state
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures"))
 		_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
@@ -82,15 +82,15 @@ func _test_every_task_days_destination_draws_no_mark(t) -> void:
 			contact.is_done = true
 			t.check(not contact.draws_a_mark(), "day %d: a done task draws no touched chalk" % day)
 		director.free()
-	GameState.scars = saved_scars
-	GameState.day = saved_day
-	GameState.city_state = saved_state
-	GameState.sabotage_done = saved_sabotage
-	GameState.completed_resistance_alley_tiles = saved_tiles
-	GameState.completed_resistance_steps = saved_completed
-	GameState.failed_resistance_steps = saved_failed
-	GameState.resistance_progress = saved_progress
-	GameState.resistance_carrying_package = saved_package
+	GameState.attempt_spend.scars = saved_scars
+	GameState.header.day = saved_day
+	GameState.attempt_spend.city_state = saved_state
+	GameState.resistance.sabotage_done = saved_sabotage
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.failed_steps = saved_failed
+	GameState.resistance.progress = saved_progress
+	GameState.resistance.carrying_package = saved_package
 
 func _build_city(t) -> void:
 	if _city != null:

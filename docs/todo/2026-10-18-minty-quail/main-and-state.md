@@ -6,15 +6,18 @@
   to outcomes decided by `_recipe`, the day's `_spec`, `_resume_gate_open`, `_run_over`, `_went_back`
   and `_ending_shown`, and whether a run stands behind the escape is `main`'s `_escape_from_a_run`. `tests/test_resistance.gd` (near
   3414) copies `_start_day`'s order because it lives only in a private method.
-- **The registered run state reaches the save and most readers through `GameState`.** The run's
+- **The registered run state reaches the save and every reader through `GameState`.** The run's
   sub-states are one list, `GameState.run_parts`, and the dawn copy, the lost day's give-back, the
   snapshot and the save walk it; `GameSave` is a static that reads that list off `GameState` rather
   than being handed it; `City`'s `run_posters`, `run_spend` and `run_resistance` fall back to
-  `GameState`'s parts when a city is built outside `main`; and `ResistanceDirector`,
-  `EventManager`, `Happenings`, `hud.gd`, `day_summary.gd` and the dev rigs (`scene_recipe_runtime.gd`,
-  `scene_recipe_draft.gd`, `route_rig.gd`) read the run's fields (`GameState.pelican`, `.scars`, `.city_state`,
-  `.completed_resistance_steps`) through `GameState`'s forwarding properties rather than a part they
-  are handed. `GameState.` is read about a hundred times in `main`, `GameState.day` among them. The
+  `GameState`'s parts when a city is built outside `main`; every other reader takes a part off the
+  `GameState` global (`GameState.header.day`, `GameState.attempt_spend.scars`) rather than being
+  handed it; and `GameState` keeps eleven forwarding properties (`run_seed`, `day`,
+  `resistance_progress`, `consumed_one_shots`, `completed_resistance_steps`,
+  `failed_resistance_steps`, `scars`, `city_state`, `sabotage_done`, `resistance_carrying_package`,
+  `completed_resistance_alley_tiles`) for the readers in `src/events/**`, `src/resistance/**`,
+  `tests/test_resistance.gd` and `tests/test_event_manager.gd`, which go when those files read the
+  parts. `GameState.` is read about a hundred times in `main`, `GameState.day` among them. The
   hidden globals held in statics are filed in `hidden-statics.md`.
 - **One summary screen with four hand-reset modes** (`day_summary.gd`: `show_day_brief`, `show_day`,
   `show_ending`, `show_finale`); the screen's mode is tracked in `main`'s booleans. The resistance tally and the run-standing

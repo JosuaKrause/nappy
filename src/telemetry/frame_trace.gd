@@ -33,7 +33,7 @@ func setup(in_the_title: Callable, readout_on: Callable, graph_on: Callable, cit
 	_user_flags = user_flags
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_metadata = environment()
-	_metadata["run_seed"] = GameState.run_seed
+	_metadata["run_seed"] = GameState.header.run_seed
 	_metadata["build"] = BuildInfo.build_text()
 	_metadata["warmup_usec"] = WARMUP_USEC
 	RenderingServer.frame_post_draw.connect(_sample)
@@ -63,7 +63,7 @@ func _sample() -> void:
 		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
-		roundi(here.x * 1000.0), roundi(here.y * 1000.0), GameState.day,
+		roundi(here.x * 1000.0), roundi(here.y * 1000.0), GameState.header.day,
 		int(_readout_on.call()), int(_graph_on.call()),
 		int(Telemetry.is_active())])
 	buffer.append(now, Engine.get_process_frames(), Engine.get_frames_drawn(), counters)
@@ -104,7 +104,7 @@ func _exit_tree() -> void:
 		return
 	var path := "%s/trace-%s-seed%d-%d.json" % [directory,
 		Time.get_datetime_string_from_system().replace(":", "-"),
-		GameState.run_seed, Time.get_ticks_usec()]
+		GameState.header.run_seed, Time.get_ticks_usec()]
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		push_error("Cannot write frame trace: %s" % path)
