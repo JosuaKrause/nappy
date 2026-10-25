@@ -431,7 +431,7 @@ func _pram_position() -> Vector2:
 ## hers, the pram's, every building, a road closure's and the map
 ## boundary's own barrier bodies, and every solid event's obstruction — plus a moving car's strike
 ## box, drawn in the field layer's own lethal colour because it is not a body
-## (`CrowdAgent._car_shadow_shape()`'s own doc: "no body for a car") but is exactly what
+## (`CarStrategy.shadow_shape()`'s own doc: "no body for a car") but is exactly what
 ## `will_be_lethal()` tests against. **Walkers and cars have no body; nothing is invented for
 ## them.**
 func _draw_bodies() -> void:

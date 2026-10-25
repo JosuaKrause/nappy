@@ -16,7 +16,7 @@ extends Node2D
 ## **The mover has no picture, no excitement and no halo.** `CrowdAgent` is the crowd member built on
 ## it: it adds the field it contributes to the baby's meter, the halo and caret that warn of it, and
 ## the drawing, and answers the hooks at the foot of this file (`restart_the_picture()`,
-## `advance_the_picture()`, `_dress()`, `_tick_the_member()`, `_refresh_the_picture()`,
+## `advance_the_picture()`, `_dress()`, `_tick_the_member()`, `_redraw_if_the_picture_changed()`,
 ## `_entry_picture_clearance()`), which do nothing here.
 
 enum Kind { WALKER, CAR }
@@ -46,6 +46,7 @@ var kind := Kind.WALKER:
 			return
 		kind = value
 		_install(CarStrategy.new(self) if value == Kind.CAR else WalkerStrategy.new(self))
+		_kind_installed()
 ## What only this agent's kind does on the lanes — `WalkerStrategy` or `CarStrategy`, installed by
 ## `kind`. Everything here that differs between a walker and a car asks it. See `LaneStrategy`.
 var strategy: LaneStrategy
@@ -452,7 +453,7 @@ func _process(delta: float) -> void:
 	# It also ends the frame for a body held where it stands — a walker inside a checkpoint hut, a
 	# car a pocket has caught — recycled, if it has to be, by the kind's own rule.
 	if strategy.begin_frame(delta):
-		_refresh_the_picture()
+		_redraw_if_the_picture_changed()
 		return
 	var stood_on := _map.world_to_tile(position)
 	_set_along(_along() + strategy.paced(_speed) * _direction * delta)
@@ -462,7 +463,7 @@ func _process(delta: float) -> void:
 	_look_ahead()
 	if field.has_stretch() and _walks_off_the_stretch() and _out_of_view():
 		_recycle()
-		_refresh_the_picture()
+		_redraw_if_the_picture_changed()
 		return
 	if _blocked_in <= _acts_within:
 		strategy.divert(delta)
@@ -471,7 +472,7 @@ func _process(delta: float) -> void:
 	# junction — see `LaneStrategy.nowhere_to_turn`.
 	if _has_left_the_field() or (strategy.nowhere_to_turn and _out_of_view()):
 		_recycle()
-	_refresh_the_picture()
+	_redraw_if_the_picture_changed()
 
 ## Keeps an agent's own centre out of a tile it may not stand on, when the step it has just taken
 ## would have carried it in. `stood_on` is the tile it was on before that step.
@@ -1181,6 +1182,10 @@ func _entry_band_fits() -> bool:
 # What a mover leaves to the crowd member built on it: the picture it keeps, the clocks only a crowd
 # member has, and what it wears. Each does nothing here.
 
+## Takes up whatever else depends on the kind, once `kind` has installed its strategy.
+func _kind_installed() -> void:
+	pass
+
 ## Starts the picture's own state afresh for a placement: a walker's stride at rest.
 func restart_the_picture() -> void:
 	pass
@@ -1199,5 +1204,5 @@ func _tick_the_member(_delta: float) -> void:
 	pass
 
 ## Redraws what changed in the picture; true when it asked for a redraw. Ends every frame.
-func _refresh_the_picture() -> bool:
+func _redraw_if_the_picture_changed() -> bool:
 	return false

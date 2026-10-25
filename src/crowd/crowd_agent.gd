@@ -12,101 +12,6 @@ extends LaneMover
 ## and the projections of it (`contribution_at()` and its siblings), the halo and the caret, the
 ## jolt a contact or a horn leaves, and the drawing.
 
-## The walker's five authored views, keyed by name rather than by sector — `WALKER_VIEW_BY_SECTOR`
-## below does the sector-to-view lookup, so drawing never repeats an eight-way if-chain of its
-## own to get here. All five share one 18x38 canvas and one (9, 38) feet anchor (see
-## `docs/evidence/svg-people-2026-09-10/PEOPLE-MATRIX.md`); body is tinted per walker, trim is
-## drawn untinted above it — see `_draw_body()`.
-##
-## Paths rather than `preload()`d textures: the milestone's whole point is that a picture baked
-## into `assets/atlases/baked/crowd.png` is not also resident as its own loaded resource.
-## `_region_of()` is what turns one of these into the name `AtlasLibrary.region()` and
-## `native_size()` actually take.
-const WALKER_BODY_BY_VIEW := {
-	"front": "crowd/walker_front_body",
-	"back": "crowd/walker_back_body",
-	"side": "crowd/walker_side_body",
-	"front_diagonal": "crowd/walker_front_diagonal_body",
-	"back_diagonal": "crowd/walker_back_diagonal_body",
-}
-const WALKER_TRIM_BY_VIEW := {
-	"front": "crowd/walker_front_trim",
-	"back": "crowd/walker_back_trim",
-	"side": "crowd/walker_side_trim",
-	"front_diagonal": "crowd/walker_front_diagonal_trim",
-	"back_diagonal": "crowd/walker_back_diagonal_trim",
-}
-## The walker's second gait frame, feet passing — the mother's own `_b` pose for each view. Only
-## the legs and shoes differ from the tables above; the coat stays put in the three-quarter views
-## and lifts a pixel in front/back/side, exactly the correction the mother's own frames needed
-## (`docs/DECISIONS.md`, "Eight-direction style transfer"). Kept as separate `_b`-suffixed files
-## beside the unsuffixed frame-a sources rather than renaming those into `_a`, so nothing that
-## already points at `walker_front_body.svg` and so on has to change.
-const WALKER_BODY_BY_VIEW_B := {
-	"front": "crowd/walker_front_body_b",
-	"back": "crowd/walker_back_body_b",
-	"side": "crowd/walker_side_body_b",
-	"front_diagonal": "crowd/walker_front_diagonal_body_b",
-	"back_diagonal": "crowd/walker_back_diagonal_body_b",
-}
-const WALKER_TRIM_BY_VIEW_B := {
-	"front": "crowd/walker_front_trim_b",
-	"back": "crowd/walker_back_trim_b",
-	"side": "crowd/walker_side_trim_b",
-	"front_diagonal": "crowd/walker_front_diagonal_trim_b",
-	"back_diagonal": "crowd/walker_back_diagonal_trim_b",
-}
-## Which authored view each of `EightDirection`'s eight sectors draws — N back, NE/NW
-## back_diagonal, E/W side, SE/SW front_diagonal, S front, the same N/NE/E/SE/S coverage the
-## mother/pram family uses. Sectors 3 (SW), 4 (W) and 5 (NW) mirror their partner here rather
-## than being separately authored — see `EightDirection.is_mirrored()`.
-const WALKER_VIEW_BY_SECTOR: Array[String] = [
-	"side", "front_diagonal", "front", "front_diagonal", "side",
-	"back_diagonal", "back", "back_diagonal",
-]
-## Which authored view each of `EightDirection`'s eight sectors draws — identical to the walker's
-## own table above, since the crowd car shares the same five projections and the same west-mirror
-## convention (`docs/evidence/svg-vehicles-2026-09-10/facings.csv`, the `car` rows).
-const CAR_VIEW_BY_SECTOR: Array[String] = [
-	"side", "front_diagonal", "front", "front_diagonal", "side",
-	"back_diagonal", "back", "back_diagonal",
-]
-## The car's five authored views, keyed by name the way the walker's own two tables are —
-## `CAR_VIEW_BY_SECTOR` above does the sector lookup. Three layers per view on one canvas and one
-## anchor: the body, tinted per car; the trim, glass and lamps, untinted above it; and the wheels,
-## untinted above both, which stay on the ground while the body and trim ride `_body_bob()` — see
-## `_draw_body()`. Front/back are 30x46, side is 52x30, the diagonals are 52x42.
-## `car_end_{body,trim}.svg`, the old two-view family's foreshortened top-down picture, is read by
-## none of the three tables — see `docs/GRAPHICS.md` for where it stands now.
-const CAR_BODY_BY_VIEW := {
-	"front": "crowd/car_front_body",
-	"back": "crowd/car_back_body",
-	"side": "crowd/car_side_body",
-	"front_diagonal": "crowd/car_front_diagonal_body",
-	"back_diagonal": "crowd/car_back_diagonal_body",
-}
-const CAR_TRIM_BY_VIEW := {
-	"front": "crowd/car_front_trim",
-	"back": "crowd/car_back_trim",
-	"side": "crowd/car_side_trim",
-	"front_diagonal": "crowd/car_front_diagonal_trim",
-	"back_diagonal": "crowd/car_back_diagonal_trim",
-}
-const CAR_WHEELS_BY_VIEW := {
-	"front": "crowd/car_front_wheels",
-	"back": "crowd/car_back_wheels",
-	"side": "crowd/car_side_wheels",
-	"front_diagonal": "crowd/car_front_diagonal_wheels",
-	"back_diagonal": "crowd/car_back_diagonal_wheels",
-}
-
-## `WALKER_BODY_BY_VIEW`'s (and its five sibling tables') own entry as the `StringName` that
-## `AtlasLibrary.region()`/`native_size()` take. The tables hold plain `String`s because a `const`
-## `Dictionary` cannot hold a `StringName` literal the type checker will keep, and this is the one
-## conversion between the two.
-static func _region_of(name: String) -> StringName:
-	return StringName(name)
-
 ## Where a car's own caret sits, and how big it is. Matched to `EventInstance`'s so the two carets
 ## are the same cue rather than two similar ones, but lower, because a car is 26px of sprite
 ## against a standing figure's 46.
@@ -256,27 +161,9 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 ## rest of its run in that lane, since nothing about the quantised picture ever changes again. The
 ## rim does not go with it: `EntityHalo` re-traces the body every frame it is drawn, so the halo
 ## stands where the car should be and the car does not. That is exactly what the player saw.
-func _refresh_the_picture() -> bool:
-	var third: int
-	var view: int
-	if kind == Kind.WALKER:
-		# One `velocity()` serves the gait and the sector: the same value `_walker_gait_frame()` and
-		# `_walker_heading()` would each have computed, nothing between them moves it.
-		var along := velocity()
-		third = _walker_gait_frame_at(along)
-		_walker_view = EightDirection.update(_walker_view, _walker_heading_at(along),
-				WALKER_IDLE_SPEED)
-		view = _walker_view
-	else:
-		# One `velocity()` serves the bob and the sector, the same value `_body_bob()` and
-		# `_update_car_view()` would each have computed.
-		var moving := velocity()
-		third = roundi(WheelBob.lift(_car_travelled, moving.length() / CAR_BOB_FULL_SPEED)
-				* CAR_BOB_STEPS_PER_PX)
-		_car_view = EightDirection.update(_car_view, moving, CAR_IDLE_SPEED)
-		view = _car_view
-	var picture := Vector3i(view, 1 if _flipped() else 0, third)
-	var drawn_heading := _drawn_heading_key()
+func _redraw_if_the_picture_changed() -> bool:
+	var picture := _look.picture(velocity())
+	var drawn_heading := _look.heading_key()
 	var changed := picture != _picture or drawn_heading != _drawn_heading
 	_picture = picture
 	_drawn_heading = drawn_heading
@@ -290,55 +177,21 @@ func _refresh_the_picture() -> bool:
 		_picture_is_stale = false
 		# What this redraw puts up is the mark as it stands now — the same answer `_draw()` asks
 		# for, cached against the clock — so a mark that drops on the next frame is taken off.
-		_was_marked = kind == Kind.CAR and _caret_strength() > 0
+		_was_marked = _carets and _caret_strength() > 0
 		queue_redraw()
 		return true
 	# A marked car draws a caret that can breathe with its own horn, and a projected approach
 	# can change its strength frame to frame with nothing else about the picture moving. The
 	# one frame after the mark comes down is what takes the caret off again.
-	if kind == Kind.CAR and (_caret_strength() > 0 or _was_marked):
+	if _carets and (_caret_strength() > 0 or _was_marked):
 		_was_marked = _caret_strength() > 0
 		queue_redraw()
 		return true
 	return false
 
-## A walker's stride starts at rest for a placement.
-func restart_the_picture() -> void:
-	_walker_gait_phase = 0.0
-
-func advance_the_picture(delta: float) -> void:
-	if kind == Kind.CAR:
-		_advance_car_bob(delta)
-	else:
-		_advance_walker_gait(delta)
-
-func _dress() -> void:
-	colour = _colour()
-
 func _tick_the_member(delta: float) -> void:
 	_clock += delta
 	_jolt = maxf(0.0, _jolt - delta)
-
-## How finely the redraw key reads a car's own live heading: each component of the unit vector to
-## the nearest hundred-and-twenty-eighth. That is at most 1/256 of error per component, so the
-## anchor it decides — `26·|heading.y| + 14·|heading.x|`, whose steepest term is the 26 —
-## can be held back by at most `(26 + 14) / 256`, about a sixth of a world pixel, and the shadow
-## capsule's own axis by about a quarter of a degree. Nothing a screen can show at any zoom the game
-## uses is ever frozen waiting for a step.
-##
-## **A car in a lane costs nothing for it.** `heading()` there is exactly `(±1, 0)` or `(0, ±1)` —
-## built from `_direction` rather than integrated from a float — so the key is the same value every
-## tick and no redraw is asked for, which is the whole of what the gate is for. Only the seconds a
-## car is actually on an arc pay, and that is a handful of cars on the busiest street.
-const CAR_HEADING_STEPS := 128.0
-
-## The continuous half of the redraw key — see `_redraw_if_the_picture_changed()`. A walker answers
-## `Vector2i.ZERO` and means it: nothing in the walker branch of `_draw_body()` reads a heading, so
-## there is no continuous term for its own key to carry.
-func _drawn_heading_key() -> Vector2i:
-	if kind != Kind.CAR:
-		return Vector2i.ZERO
-	return Vector2i((heading() * CAR_HEADING_STEPS).round())
 
 ## Excitement per second this agent contributes at a point. Same falloff as an event, so
 ## the crowd and the events are the same kind of quantity to the baby — and the same kernel too:
@@ -621,33 +474,6 @@ func release_halo() -> void:
 		EntityHalo.release(_halo)
 		_halo = null
 
-## The lift this agent's body rides right now, the `bob()` `EntityHalo` asks every owner for: a
-## walker's is zero, since its stride is two frames rather than a lift; a car's is `WheelBob.lift()`
-## over the ground it has covered, at full height from `CAR_BOB_FULL_SPEED` up and fading to
-## nothing as it slows, so a car braking to a light settles onto its wheels rather than freezing
-## mid-rise, and a stopped car sits still. `_draw()` lifts the whole drawing by it and
-## `_draw_body()` draws the wheels and the shadow back down by it, which is what lets the halo's
-## ring ride the same lift and trace the body where it is drawn.
-func _body_bob() -> float:
-	if kind != Kind.CAR:
-		return 0.0
-	return WheelBob.lift(_car_travelled, velocity().length() / CAR_BOB_FULL_SPEED)
-
-## The speed a car's bob reaches its full height at: a car in a turn and every car cruising down a
-## lane bob fully, and only a car braking below it settles.
-const CAR_BOB_FULL_SPEED := Tuning.CAR_TURN_SPEED
-
-## How finely the redraw key reads a car's bob: a quarter of a world pixel, half a screen pixel at
-## the camera's zoom. A car in a lane changes nothing else about its picture from one frame to the
-## next, so this is the step it redraws on while it is moving, and a stopped one never does.
-const CAR_BOB_STEPS_PER_PX := 4.0
-
-## Advances `_car_travelled` by the ground this car covered this tick. Called once from
-## `_process()`, never from the drawing, which a halo ring calls several times a frame — the same
-## rule `_advance_walker_gait()` states for the walker's stride.
-func _advance_car_bob(delta: float) -> void:
-	_car_travelled = wrapf(_car_travelled + velocity().length() * delta, 0.0, WheelBob.WAVELENGTH)
-
 ## This car has hit another one in a junction. It stops dead and sounds off, and then pulls away
 ## again on its own — `_cruise` is untouched, so recovery is the ordinary acceleration.
 ##
@@ -664,127 +490,53 @@ func crashed_into() -> void:
 
 # ---------------------------------------------------------------- drawing ---
 
-## The sector each kind is currently drawn in — `EightDirection`'s own indexing, clockwise from
-## east — persisted across frames so `_update_walker_view()`/`_update_car_view()` can hold it
-## through the boundary and hysteresis `EightDirection.update()` applies. A walker and a car keep
-## separate fields because they read different headings: a walker's is `_walker_heading()`'s
-## along-plus-cross blend, a car's is `velocity()` alone.
-var _walker_view := 2
-var _car_view := 2
+## How this agent is drawn, installed with `kind`: a `WalkerLook` or a `CarLook`. Everything the
+## drawing differs on between the two kinds asks it.
+var _look: AgentLook
 
-## A walker's stride, in the same units `Stroller._walk_phase` uses: wrapped 0..TAU, advanced by
-## distance actually covered (`_advance_walker_gait()`) rather than by time, so it stays in step
-## at any speed the way the mother's own does. Cars have no gait; only a walker reads this.
-var _walker_gait_phase := 0.0
+## Whether this agent's look is marked by a caret, kept here by `_kind_installed()` as a plain
+## member because the redraw gate reads it every frame of every agent.
+var _carets := false
 
-## How much ground this car has covered, wrapped to one `WheelBob.WAVELENGTH`, which is the phase
-## of the rise and fall its body rides over its wheels. Advanced by distance actually covered
-## (`_advance_car_bob()`), once per tick, the same way `_walker_gait_phase` is. A walker never
-## reads it.
-var _car_travelled := 0.0
+func _init() -> void:
+	_look = WalkerLook.new(self)
 
-## Radians of gait per pixel walked. `Stroller._physics_process()` advances `_walk_phase` at the
-## identical rate, so the crowd and the player share one stride length per pixel covered — and
-## `_stride_seconds()` reads it back to price a stride as a distance.
-const WALKER_GAIT_RATE := 0.09
+## A new kind brings its look; a walker's stride and a car's travelled ground start afresh with it.
+func _kind_installed() -> void:
+	_look = CarLook.new(self) if kind == Kind.CAR else WalkerLook.new(self)
+	_carets = _look.carets()
 
-## Below this speed a walker's own applied heading (`_walker_heading()`) is too close to zero to
-## mean a facing, so it holds whatever it was last drawn as rather than chattering on the residual
-## few px/s `WalkerStrategy._yield_factor()` and float noise can still leave in it. Well under
-## `Tuning.PEDESTRIAN_SPEED`'s own floor (46px/s), so only an actually-stopped walker — a give-way,
-## a queue, a halt — ever reads as idle.
-const WALKER_IDLE_SPEED := 5.0
+func restart_the_picture() -> void:
+	_look.restart()
 
-## The same hold for a car. `velocity()` is `heading()` — always unit length, cardinal in a lane or
-## the tangent of an arc mid-turn — times the actual speed, so a car braked to a stop reads as a
-## zero heading rather than whatever axis it last pointed along. Well under
-## `Tuning.CAR_STRIKE_MIN_SPEED` (20px/s, the floor below which a car cannot strike anybody) and far
-## under `Tuning.CAR_SPEED.x` (130px/s), so only a car actually stopped — a light, a gate, a
-## give-way — ever reads as idle.
-const CAR_IDLE_SPEED := 5.0
+func advance_the_picture(delta: float) -> void:
+	_look.advance(delta)
 
-## Which of `EightDirection`'s eight sectors the agent is showing, advanced here for whichever kind
-## it is — `_process()` already calls `_frame()` once every physics tick, so this is where the
-## hold actually runs rather than in a second per-frame hook. Calling it again — `_draw_body()`'s
-## own call, and every halo ring atop that — is safe: asking `EightDirection.update()` twice with
-## the same starting sector and the same heading always answers the same way.
-func _frame() -> int:
-	if kind == Kind.CAR:
-		_update_car_view()
-		return _car_view
-	_update_walker_view()
-	return _walker_view
+## The coat, or the paintwork. Authored near-white and multiplied, the same trick the buildings use,
+## so a crowd is not one silhouette in one colour ninety times over.
+func _dress() -> void:
+	var palette := _look.palette()
+	colour = palette[_rng.randi_range(0, palette.size() - 1)]
 
-func _flipped() -> bool:
-	return EightDirection.is_mirrored(_car_view if kind == Kind.CAR else _walker_view)
+func _entry_picture_clearance() -> float:
+	return _look.entry_clearance(_vertical)
 
-## The walker's own instantaneous heading this frame: its along-lane velocity (`velocity()`, the
-## actual-motion quantity M111's own turning work already reads elsewhere) plus whatever its
-## steering is doing across the lane right now — the term `_frame()`'s old lane-axis-only version
-## never had, and the one that swings a walker rounding a corner, or nudged aside by
-## `step_aside()`, onto a diagonal view a moment before its lane assignment itself turns. The
-## cross term is `_set_cross()`'s own target (`_lane_centre + _detour`) minus where it actually is,
-## signed and capped at `STEER_SPEED` — the rate `_process()`'s own `move_toward` steers at while
-## it has not yet arrived. Zero once it has arrived with no detour running, which a stopped walker
-## (give-way, queue, halted) always has, since `WalkerStrategy._yield_factor()` also zeroes the along term then.
-func _walker_heading() -> Vector2:
-	return _walker_heading_at(velocity())
+## Draws this agent's own body onto `canvas`: `EntityHalo` calls this once per ring offset to trace
+## whichever silhouette the sprite actually is, and the ordinary frame draws it once at self.
+func _draw_body(canvas: CanvasItem) -> void:
+	_look.draw_body(canvas)
 
-## `_walker_heading()` for a `velocity()` the caller already holds.
-func _walker_heading_at(along: Vector2) -> Vector2:
-	var cross_gap := _lane_centre + _detour - _cross()
-	if is_zero_approx(cross_gap):
-		return along
-	var cross_speed := signf(cross_gap) * STEER_SPEED
-	return along + (Vector2(cross_speed, 0.0) if _vertical else Vector2(0.0, cross_speed))
+## The lift this agent's body rides right now, the `bob()` `EntityHalo` asks every owner for.
+func _body_bob() -> float:
+	return _look.bob()
 
-## Advances `_walker_view` for this frame. `setup()` and `_recycle()` place a walker with no
-## cross-lane steering yet running (`_set_cross(_lane_centre)`, `_forget_the_detour()`), so
-## `_walker_heading()` right after either is always exactly along the new lane axis — a sector
-## centre 45° clear of its neighbours, twice the hold's own 27.5° reach — and the ordinary test
-## below already replaces whatever sector was drawn before without a special reset call into
-## either function. Both are owned by the concurrent lane-turning work on this file (see the class
-## doc), which is the other reason this reaches for the plain hold here rather than a call added
-## to either placement.
-func _update_walker_view() -> void:
-	_walker_view = EightDirection.update(_walker_view, _walker_heading(), WALKER_IDLE_SPEED)
-
-## Advances the walker's stride by how far it actually travelled this tick — `velocity()`, the
-## along-lane speed the crowd already stops to zero at a give-way, a queue or a light, the same
-## quantity `_current_reach()` and `contribution_at()` read. Called once from `_process()` rather
-## than from `_draw_body()`/`_walker_gait_frame()`, which a halo ring calls several times a frame:
-## unlike the sector hold above, adding a distance is not idempotent, so it must run once per tick
-## or a walker with three halo rings would stride three times as fast as one with none.
-## `Stroller._physics_process()`'s own `_walk_phase` uses the identical 0.09 rate, so the crowd and
-## the player share one stride length per pixel walked.
-func _advance_walker_gait(delta: float) -> void:
-	_walker_gait_phase = wrapf(_walker_gait_phase + velocity().length() * delta * WALKER_GAIT_RATE,
-			0.0, TAU)
-
-## Which of the walker's two gait frames to draw right now: frame 1 (feet passing) for half of
-## every stride while actually moving, frame 0 (the rest pose) otherwise — `Stroller._draw_mother()`'s
-## own `stepping` test, read here off `WALKER_IDLE_SPEED` instead of the mother's own small gait
-## floor, since a walker already has that threshold for exactly "is this body actually moving".
-func _walker_gait_frame() -> int:
-	return _walker_gait_frame_at(velocity())
-
-## `_walker_gait_frame()` for a `velocity()` the caller already holds.
-func _walker_gait_frame_at(along: Vector2) -> int:
-	if along.length() <= WALKER_IDLE_SPEED:
-		return 0
-	return 1 if sin(_walker_gait_phase * 2.0) > 0.0 else 0
-
-## Advances `_car_view` for this frame. **There is no cross term the way a walker has one**: a
-## car's own `velocity()` already is its instantaneous line of travel — cardinal in a lane, the
-## tangent of its own arc mid-turn (`heading()`) — so the sector runs through the diagonal for
-## exactly the length of a turn and holds at whichever cardinal or diagonal it last pointed while
-## the car is at or under `CAR_IDLE_SPEED`. `setup()` and `_recycle()` place a car with no turn
-## running and its heading exactly on a lane axis — a sector centre 45° clear of its neighbours,
-## twice the hold's own reach — so the ordinary update below already replaces whatever sector was
-## drawn before, the same "no reset call needed" property `_update_walker_view()` documents for the
-## walker.
-func _update_car_view() -> void:
-	_car_view = EightDirection.update(_car_view, velocity(), CAR_IDLE_SPEED)
+## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
+## `EventInstance._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
+## and a cue for what is charging her right now has nothing to say about it.
+func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2) -> void:
+	if canvas == _halo:
+		return
+	shape.draw_shadow(canvas, at, axis)
 
 func _draw() -> void:
 	if FrameRecord.on:
@@ -799,151 +551,22 @@ func _draw() -> void:
 	# Told to `Sprites` as well as to the canvas, for the reason `EventInstance._draw()` gives: the
 	# mirror inside `draw_standing()` sets an absolute matrix, so a west-facing car not handed the
 	# lift would drop it.
-	var bob := _body_bob()
+	var bob := _look.bob()
 	var lift := Transform2D(0.0, Vector2(0.0, bob))
 	Sprites.set_base_transform(lift)
 	draw_set_transform_matrix(lift)
-	_draw_body(self)
+	_look.draw_body(self)
 	Sprites.set_base_transform(Transform2D.IDENTITY)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	if kind == Kind.CAR:
+	if _carets:
 		_draw_mark()
 
-## Draws this agent's own body onto `canvas`. `EntityHalo` calls this once per ring offset to
-## trace whichever silhouette the sprite actually is; the ordinary frame draws it once at self.
-##
-## **Both callers have already lifted the canvas by `_body_bob()`**, so what stays on the ground —
-## a car's wheels and its shadow — is drawn back down by the same amount here, and the body and the
-## trim are drawn where the lift puts them. That split is the whole of the bob: the wheels never
-## move, the paint and the glass above them rise and fall about a pixel.
-##
-## **Reads `AtlasLibrary.region()`, which is null with an engine error the moment `crowd` is not
-## acquired.** `Crowd.start_day()` acquires it before an agent exists to draw and `Crowd.clear()`
-## releases it once every agent is freed, so nothing here has a lifetime of its own to manage —
-## see the class doc on `Crowd` for why the owner holds one reference for the whole day rather
-## than every agent acquiring for itself.
-func _draw_body(canvas: CanvasItem) -> void:
-	var frame := _frame()
-	var flip := _flipped()
-	if kind == Kind.CAR:
-		var forward := _travel_axis()
-		var grounded := Vector2(0.0, -_body_bob())
-		_draw_shape_shadow(canvas, shape, grounded, forward)
-		var view: String = CAR_VIEW_BY_SECTOR[frame]
-		# The same heading the shadow above and the debug view's bounding box are drawn on, so the
-		# picture cannot register against a car that is not there — see `_car_body_anchor()`.
-		var anchor := _car_body_anchor(view, forward)
-		var body := AtlasLibrary.region(_region_of(CAR_BODY_BY_VIEW[view]))
-		var trim := AtlasLibrary.region(_region_of(CAR_TRIM_BY_VIEW[view]))
-		var wheels := AtlasLibrary.region(_region_of(CAR_WHEELS_BY_VIEW[view]))
-		Sprites.draw_standing(canvas, body, anchor, Vector2.ZERO, flip, colour)
-		Sprites.draw_standing(canvas, trim, anchor, Vector2.ZERO, flip)
-		# Last, as they were when they were part of the trim: each tyre is drawn over the paint.
-		Sprites.draw_standing(canvas, wheels, anchor + grounded, Vector2.ZERO, flip)
-		return
-	_draw_shape_shadow(canvas, shape, Vector2.ZERO, Vector2.RIGHT)
-	var view: String = WALKER_VIEW_BY_SECTOR[frame]
-	# One lookup decides both layers, so the coat and the legs can never show two different
-	# instants of the same stride.
-	var stepping := _walker_gait_frame() == 1
-	var body_paths: Dictionary = WALKER_BODY_BY_VIEW_B if stepping else WALKER_BODY_BY_VIEW
-	var trim_paths: Dictionary = WALKER_TRIM_BY_VIEW_B if stepping else WALKER_TRIM_BY_VIEW
-	var body := AtlasLibrary.region(_region_of(body_paths[view]))
-	var trim := AtlasLibrary.region(_region_of(trim_paths[view]))
-	# The body is tinted per agent (`colour`, `_colour()`'s "authored near-white and multiplied");
-	# the trim above it draws at `Sprites.draw_standing()`'s own default `Color.WHITE` — the split
-	# that keeps a crowd from reading as one silhouette in one colour. Two separate baked regions
-	# rather than one, so tinting one never touches the other's own pixels.
-	Sprites.draw_standing(canvas, body, Vector2.ZERO, Vector2.ZERO, flip, colour)
-	Sprites.draw_standing(canvas, trim, Vector2.ZERO, Vector2.ZERO, flip)
-
-## How much empty canvas each authored view leaves below its own drawn content, in px — read off
-## `facings.csv`'s alpha bounds (`docs/evidence/svg-vehicles-2026-09-10/facings.csv`, the `car`
-## rows): the two diagonals draw to y40 of a 42-tall canvas and front/back to y44 of a 46-tall one,
-## while the side view's own content touches the bottom row. The anchor below adds it back, so what
-## lands on the ground line is the drawn corner rather than the empty edge above it.
-const CAR_CANVAS_BOTTOM_MARGIN := {
-	"front": 2.0,
-	"back": 2.0,
-	"side": 0.0,
-	"front_diagonal": 2.0,
-	"back_diagonal": 2.0,
-}
-
-## Where a car's own body texture is anchored for `Sprites.draw_standing`. `draw_standing` always
-## bottom-centres a texture at the point it is given, and every one of the five authored views is a
-## standing elevation whose bottom row is the car's **nearest ground contact** — the part of its
-## footprint closest to the camera. So there is one registration rule for the whole family, and it
-## is stated over the heading rather than per view:
-##
-## > the drawn content's bottom edge lands on the southernmost point of the car's body.
-##
-## That body is `Tuning.CAR_STRIKE_HALF_LENGTH` (26) by `CAR_STRIKE_HALF_WIDTH` (14), centred on the
-## node and rotated onto the heading, so its southern reach is `26·|heading.y| + 14·|heading.x|` —
-## 26 pointed along a vertical lane, 14 along a horizontal one, `(26 + 14)/sqrt(2)` ≈ 28.28 at
-## exactly 45 degrees, and every value between while a car is on an arc.
-##
-## **Read off the live heading rather than off the quantised view, because a turn is continuous and
-## the eight views are not.** `EightDirection` swaps the texture at a sector boundary; if the anchor
-## swapped with it the body would jump the whole difference between two views' ground lines in one
-## frame, which is what a turning car was doing — and the same arithmetic keeps the shadow capsule,
-## the debug view's bounding box and the picture travelling together for the whole manoeuvre
-## instead of the first two rotating while the third sat still and then leapt. A standing car's
-## heading is exactly cardinal, so this is an exact value there and nothing about a car in a lane
-## depends on a texture's own axis.
-##
-## **Because it is read off the heading, the redraw gate has to read the heading too.** This is one
-## of the two continuous terms `_redraw_if_the_picture_changed()`'s key carries; keyed on the
-## quantised view alone, a car that has turned keeps the anchor it had at the last sector boundary
-## and its picture sits south of its own body for the rest of its run.
-func _car_body_anchor(view: String, forward: Vector2) -> Vector2:
-	var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH * absf(forward.y) \
-			+ Tuning.CAR_STRIKE_HALF_WIDTH * absf(forward.x)
-	return Vector2(0.0, south_reach + float(CAR_CANVAS_BOTTOM_MARGIN[view]))
-
-## The car's own along-track length and across-track width for the shadow capsule below — fixed
-## constants rather than read off a texture. This used to take the side view's own width for the
-## along measurement and the end view's for the across one straight off `CAR_BODY[1]`/`CAR_BODY[0]`;
-## the side view (`car_side_body.svg`) is still 52px wide and still that same along-track
-## measurement, and 30px is the same across-track measurement the old end view carried, now pinned
-## here directly. Reading it off a texture again would mean reading it off one of the five standing
-## views' own width, which no longer has to agree with this number the way the old two-slot table's
-## did by construction — pinning it is what stops a binding a picture cannot resize.
-const CAR_SHADOW_ALONG := 52.0
-const CAR_SHADOW_ACROSS := 30.0
-
-## A car's own shadow shape — a capsule along its travel axis, sized from `CAR_SHADOW_ALONG`/
-## `CAR_SHADOW_ACROSS` rather than a hand-picked radius: `radius` is half the across measurement and
-## `half_length` is what is left of half the along once the two end caps are accounted for.
-##
-## **No body for a car.** A car's lethality is `TrafficIndex`'s, not a field's, and a `StaticBody2D`
-## here would change the crowd's own collision rules rather than only how it looks — see
-## docs/EVENTS.md and the **crowd-traffic** skill on why separation between bodies is positional,
-## never a shape a car could get pinned against. This shape exists for the shadow alone.
-static func _car_shadow_shape() -> GroundShape:
-	var radius := CAR_SHADOW_ACROSS * 0.5
-	return GroundShape.segment(CAR_SHADOW_ALONG * 0.5 - radius, radius)
-
 ## Which way this car is travelling, on the ground plane — the axis its shadow's capsule sweeps
-## along. `heading()` is already continuous — cardinal in a lane, the tangent of its own arc
-## mid-turn — so the capsule, and through `travel_axis()` below the debug view's own shadow layer,
-## rotates with the turn instead of snapping between two axes at the moment one starts or ends.
-func _travel_axis() -> Vector2:
-	return heading()
-
-## `_travel_axis()`, read by `DebugLayers` so its shadow layer rotates a car's capsule the same way
-## `_draw_body()` already does, rather than a second guess at which axis this agent is travelling
-## along.
+## along, and what `DebugLayers` rotates its shadow layer by. `heading()` is continuous — cardinal in
+## a lane, the tangent of the arc mid-turn — so the capsule rotates with the turn instead of
+## snapping between two axes at the moment one starts or ends.
 func travel_axis() -> Vector2:
-	return _travel_axis()
-
-## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
-## `EventInstance._draw_shape_shadow` has, for the same reason: the shadow is the ground under the
-## thing, not the thing, and a cue for what is charging her right now has nothing to say about it.
-func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2, axis: Vector2) -> void:
-	if canvas == _halo:
-		return
-	shape.draw_shadow(canvas, at, axis)
+	return heading()
 
 ## The caret's own answer for this car, 0 (none), 1 (amber) or 2 (doubled red), cached against
 ## `_clock` for the same reason `EventInstance._caret_strength()` caches against `age`: `_draw()`
@@ -996,40 +619,3 @@ func _draw_mark() -> void:
 	if strength == 2:
 		Sprites.draw_caret(self, at - Vector2(0.0, MARK_WIDTH * scale * 0.85),
 				MARK_WIDTH * scale, colour)
-
-## The coat, or the paintwork. Authored near-white and multiplied, the same trick the
-## buildings use, so a crowd is not one silhouette in one colour ninety times over.
-func _colour() -> Color:
-	var palette := Palette.CAR_PAINT if kind == Kind.CAR else Palette.COATS
-	return palette[_rng.randi_range(0, palette.size() - 1)]
-
-## How far this kind's own drawn picture reaches past `_along()`, along this axis, in the
-## direction a plain edge lies — read off the baked region's own native size and the same anchor
-## arithmetic `_draw_body()`/`_car_body_anchor()` use, not a guessed number, because "the whole
-## picture inside the map" means exactly what `_draw_body()` puts on screen. `native_size()`
-## answers from the region table with nothing acquired, which matters here: a placement roll in
-## `setup()` asks this before `Crowd.start_day()`'s own acquire needs to have happened.
-##
-## **`entry_room()` grants room past the true edge; this grants none, and states what "none" has
-## to mean instead.** A walker or an off-spine car's `entry_room()` is 0.0 — no room *past* the
-## line — but a centre sitting exactly on the line still has a picture straddling it, since
-## `Sprites.draw_standing` anchors a walker's whole canvas bottom-centred on its own position: the
-## height rises entirely to the north of it and nothing at all to the south, so a walker's picture
-## overhangs a north edge by its full canvas height and a south edge by nothing. A car's canvas is
-## anchored south of its own position by `_car_body_anchor()`'s own reach, so both overhangs are
-## real and unequal there too. **The larger of the two is kept for both edges of the axis**, so one
-## number clears whichever edge this placement is beside without the caller having to say which —
-## conservative on the edge that needed less, never short on the one that needed more. Only the
-## cardinal (`front`, `side`) views are asked, since a fresh entry never lands mid-turn.
-func _entry_picture_clearance() -> float:
-	if kind == Kind.CAR:
-		if _vertical:
-			var body := AtlasLibrary.native_size(_region_of(CAR_BODY_BY_VIEW["front"]))
-			var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH \
-					+ float(CAR_CANVAS_BOTTOM_MARGIN["front"])
-			return maxf(south_reach, float(body.y) - south_reach)
-		var side := AtlasLibrary.native_size(_region_of(CAR_BODY_BY_VIEW["side"]))
-		return float(side.x) * 0.5
-	var walker := AtlasLibrary.native_size(_region_of(WALKER_BODY_BY_VIEW["front"]))
-	return float(walker.y) if _vertical else float(walker.x) * 0.5
-

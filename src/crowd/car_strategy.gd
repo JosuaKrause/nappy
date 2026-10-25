@@ -79,8 +79,27 @@ func _init(mover: LaneMover) -> void:
 
 # -------------------------------------------------- the mover's questions ---
 
+## The car's along-track length and across-track width for the shadow capsule — fixed constants
+## rather than read off a texture, so a picture cannot resize the shadow.
+const SHADOW_ALONG := 52.0
+const SHADOW_ACROSS := 30.0
+
+## A car's ground shape — a capsule along its travel axis, sized from `SHADOW_ALONG` and
+## `SHADOW_ACROSS`: `radius` is half the across measurement and `half_length` is what is left of
+## half the along once the two end caps are accounted for.
+##
+## **No body for a car.** A car's lethality is `TrafficIndex`'s, not a field's, and a `StaticBody2D`
+## here would change the crowd's own collision rules rather than only how it looks — see
+## docs/EVENTS.md and the **crowd-traffic** skill on why separation between bodies is positional,
+## never a shape a car could get pinned against. This shape is the shadow's and the debug view's;
+## the lethal rectangle is `will_be_lethal()`'s strike box (`Tuning.CAR_STRIKE_HALF_LENGTH` and
+## `CAR_STRIKE_HALF_WIDTH`).
+static func shadow_shape() -> GroundShape:
+	var radius := SHADOW_ACROSS * 0.5
+	return GroundShape.segment(SHADOW_ALONG * 0.5 - radius, radius)
+
 func ground_shape() -> GroundShape:
-	return CrowdAgent._car_shadow_shape()
+	return shadow_shape()
 
 func lane_offsets_at(_along_tile: int) -> Array[int]:
 	return CrowdLanes.ROAD_OFFSETS

@@ -163,7 +163,7 @@ func on_new_scan(here: Vector2i) -> void:
 	_step_around_a_body(here)
 
 func stride_length() -> float:
-	return PI / CrowdAgent.WALKER_GAIT_RATE
+	return PI / WalkerLook.GAIT_RATE
 
 ## **A walker splits its axis evenly**, deliberately — a pavement has no hierarchy for it to follow
 ## (a precinct is a *place*, not an axis), and the alternating roll from `Crowd._populate` is what

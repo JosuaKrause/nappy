@@ -25,8 +25,8 @@ func run(t) -> void:
 	var rows := []
 	for view in VIEWS:
 		rows.append(_row(view, [
-			_entry(CrowdAgent.WALKER_BODY_BY_VIEW[view], CrowdAgent.WALKER_TRIM_BY_VIEW[view]),
-			_entry(CrowdAgent.WALKER_BODY_BY_VIEW_B[view], CrowdAgent.WALKER_TRIM_BY_VIEW_B[view]),
+			_entry(WalkerLook.BODY_BY_VIEW[view], WalkerLook.TRIM_BY_VIEW[view]),
+			_entry(WalkerLook.BODY_BY_VIEW_B[view], WalkerLook.TRIM_BY_VIEW_B[view]),
 		]))
 	_render_sheet("walker-stride-native.png", "walker-stride-3x.png", rows)
 	for row in rows:

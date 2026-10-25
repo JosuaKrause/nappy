@@ -317,7 +317,7 @@ func _test_a_built_building_carries_its_own_footprint_as_its_body(t) -> void:
 ## to, or a car would read (and cast a shadow) smaller than the box that actually kills. If this
 ## fails, the strike box is not this commit's to change — report it instead.
 func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t) -> void:
-	var shape: GroundShape = CrowdAgent._car_shadow_shape()
+	var shape: GroundShape = CarStrategy.shadow_shape()
 	t.check(shape.reach() >= Tuning.CAR_STRIKE_HALF_LENGTH,
 			"a car's noise shape reaches at least as far as its strike box's half-length (%.1f >= %.1f)"
 			% [shape.reach(), Tuning.CAR_STRIKE_HALF_LENGTH])

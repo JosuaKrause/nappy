@@ -39,12 +39,12 @@ func _car(t) -> CrowdAgent:
 	agent.kind = CrowdAgent.Kind.CAR
 	return agent
 
-## `CrowdAgent.CAR_VIEW_BY_SECTOR` is authored identically to `WALKER_VIEW_BY_SECTOR` — the same
+## `CarLook.VIEW_BY_SECTOR` is authored identically to `WALKER_VIEW_BY_SECTOR` — the same
 ## five projections, the same west-mirror convention — and this is what stops the two silently
 ## drifting apart if one is ever hand-edited without the other.
 func _test_car_view_by_sector_matches_the_walker_convention(t) -> void:
 	for sector in range(8):
-		t.check(CrowdAgent.CAR_VIEW_BY_SECTOR[sector] == EXPECTED_VIEW[sector],
+		t.check(CarLook.VIEW_BY_SECTOR[sector] == EXPECTED_VIEW[sector],
 				"sector %d draws the %s view" % [sector, EXPECTED_VIEW[sector]])
 		t.check(EightDirection.is_mirrored(sector) == EXPECTED_MIRRORED[sector],
 				"sector %d mirror matches the west-mirror convention" % sector)
@@ -55,21 +55,21 @@ func _test_car_view_by_sector_matches_the_walker_convention(t) -> void:
 ## two distinct baked regions, or tinting the body (`_draw_body()`'s own `colour` argument) would
 ## tint the trim drawn over it as well.
 func _test_body_and_trim_can_never_disagree(t) -> void:
-	var body_views := CrowdAgent.CAR_BODY_BY_VIEW.keys()
-	var trim_views := CrowdAgent.CAR_TRIM_BY_VIEW.keys()
+	var body_views := CarLook.BODY_BY_VIEW.keys()
+	var trim_views := CarLook.TRIM_BY_VIEW.keys()
 	t.check(body_views.size() == trim_views.size() and body_views.size() == 5,
 			"the car family has exactly five authored views, body and trim alike")
 	for view in body_views:
-		t.check(CrowdAgent.CAR_TRIM_BY_VIEW.has(view),
+		t.check(CarLook.TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
-		var body_region := StringName(CrowdAgent.CAR_BODY_BY_VIEW[view])
-		var trim_region := StringName(CrowdAgent.CAR_TRIM_BY_VIEW[view])
+		var body_region := StringName(CarLook.BODY_BY_VIEW[view])
+		var trim_region := StringName(CarLook.TRIM_BY_VIEW[view])
 		t.check(AtlasLibrary.has_region(body_region) and AtlasLibrary.has_region(trim_region),
 				"both regions for %s are actually baked" % view)
 		t.check(body_region != trim_region,
 				"body and trim for %s are two separate regions, so tinting one leaves the other" % view)
 	for sector in range(8):
-		t.check(body_views.has(CrowdAgent.CAR_VIEW_BY_SECTOR[sector]),
+		t.check(body_views.has(CarLook.VIEW_BY_SECTOR[sector]),
 				"sector %d names a view the tables actually carry" % sector)
 
 ## The four cardinal/side sectors a car reaches without ever being on an arc: no `_turn` running,
@@ -87,11 +87,11 @@ func _test_cardinal_headings_select_the_expected_view(t) -> void:
 		agent._turn = null
 		# Started from the opposite sector every time, so the assertion below never passes because
 		# the previous iteration's hold happened to already agree.
-		agent._car_view = (sector + 4) % 8
-		var frame := agent._frame()
+		agent._look.view = (sector + 4) % 8
+		var frame := agent._look.sector()
 		t.check(frame == sector, "heading %d degrees selects sector %d (got %d)"
 				% [sector * 45, sector, frame])
-		t.check(agent._flipped() == EXPECTED_MIRRORED[sector],
+		t.check(agent._look.flipped() == EXPECTED_MIRRORED[sector],
 				"sector %d mirror flag matches the west-mirror convention" % sector)
 	agent.free()
 
@@ -121,15 +121,15 @@ func _test_a_turn_sweeps_through_the_diagonal_views(t) -> void:
 		agent._turn = _turn_facing(sector)
 		agent._turn_run_up = 0.0
 		agent._speed = Tuning.CAR_TURN_SPEED
-		agent._car_view = (sector + 4) % 8
+		agent._look.view = (sector + 4) % 8
 		var heading := agent.heading()
 		t.check(is_equal_approx(rad_to_deg(heading.angle()) + 360.0 if heading.angle() < 0.0 \
 				else rad_to_deg(heading.angle()), float(sector) * 45.0),
 				"the synthetic turn's own tangent lands on sector %d's centre angle" % sector)
-		var frame := agent._frame()
+		var frame := agent._look.sector()
 		t.check(frame == sector, "mid-turn heading selects diagonal sector %d (got %d)"
 				% [sector, frame])
-		t.check(CrowdAgent.CAR_VIEW_BY_SECTOR[frame] in ["front_diagonal", "back_diagonal"],
+		t.check(CarLook.VIEW_BY_SECTOR[frame] in ["front_diagonal", "back_diagonal"],
 				"sector %d draws one of the two diagonal views" % sector)
 	agent.free()
 
@@ -142,13 +142,13 @@ func _test_a_stopped_car_keeps_its_view(t) -> void:
 	agent._direction = 1.0
 	agent._speed = 130.0
 	agent._turn = null
-	agent._car_view = 6  # start from the opposite sector so the frame below cannot pass by luck
-	var moving_frame := agent._frame()
+	agent._look.view = 6  # start from the opposite sector so the frame below cannot pass by luck
+	var moving_frame := agent._look.sector()
 	t.check(moving_frame == 0, "driving east settles on the east view first")
 
 	agent._speed = 0.0
 	t.check(agent.velocity() == Vector2.ZERO, "a stopped car's own velocity is exactly zero")
-	var stopped_frame := agent._frame()
+	var stopped_frame := agent._look.sector()
 	t.check(stopped_frame == moving_frame,
 			"a stopped car keeps the view it was last drawn with (%d, still %d)"
 			% [moving_frame, stopped_frame])
@@ -164,14 +164,14 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 	agent._vertical = false
 	agent._direction = 1.0
 	agent._speed = 130.0
-	agent._car_view = 0
-	t.check(agent._frame() == 0, "settled on east before the placement")
+	agent._look.view = 0
+	t.check(agent._look.sector() == 0, "settled on east before the placement")
 
 	# A fresh `_choose_lane()` result: a new axis and direction, no turn running.
 	agent._vertical = true
 	agent._direction = -1.0
-	t.check(agent._frame() == 6,
-			"the new north heading already wins over the stale east view (got %d)" % agent._frame())
+	t.check(agent._look.sector() == 6,
+			"the new north heading already wins over the stale east view (got %d)" % agent._look.sector())
 	agent.free()
 
 ## The pin the M110 footprint test made for the old two-view end/side family, generalised to all
@@ -188,11 +188,11 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 func _test_every_sector_picture_agrees_with_the_strike_box(t) -> void:
 	var agent := _car(t)
 	for sector in range(8):
-		var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[sector]
+		var view: String = CarLook.VIEW_BY_SECTOR[sector]
 		var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
-		var anchor := agent._car_body_anchor(view, heading)
+		var anchor := CarLook.body_anchor(view, heading)
 		var extent := Vector2(AtlasLibrary.native_size(
-				StringName(CrowdAgent.CAR_BODY_BY_VIEW[view])))
+				StringName(CarLook.BODY_BY_VIEW[view])))
 		var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
 		# The node always falls inside the drawn footprint rather than sitting at its own edge —
 		# `Sprites.draw_standing` builds a rect that runs from `anchor.y - extent.y` to `anchor.y`.
@@ -205,7 +205,7 @@ func _test_every_sector_picture_agrees_with_the_strike_box(t) -> void:
 		# its own alpha content, so it is the drawn corner that lands on the box rather than the edge.
 		var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH * absf(heading.y) \
 				+ Tuning.CAR_STRIKE_HALF_WIDTH * absf(heading.x)
-		var margin: float = CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN[view]
+		var margin: float = CarLook.CANVAS_BOTTOM_MARGIN[view]
 		t.check(is_equal_approx(anchor.y, south_reach + margin),
 				("sector %d's %s anchor sits the rotated strike box's own south point, plus that "
 				+ "canvas's own alpha margin, south of the node (%.2f)") % [sector, view, anchor.y])
@@ -235,9 +235,9 @@ func _test_the_registration_is_continuous_across_a_sector_boundary(t) -> void:
 		for side in [-step, step]:
 			var heading := Vector2.from_angle(deg_to_rad(angle + side))
 			var sector := EightDirection.nearest(heading)
-			var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[sector]
-			var anchor := agent._car_body_anchor(view, heading)
-			ground.append(anchor.y - float(CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN[view]))
+			var view: String = CarLook.VIEW_BY_SECTOR[sector]
+			var anchor := CarLook.body_anchor(view, heading)
+			ground.append(anchor.y - float(CarLook.CANVAS_BOTTOM_MARGIN[view]))
 		var moved: float = absf(ground[1] - ground[0])
 		t.check(moved < 0.5,
 				("crossing the %.1f degree boundary moves the drawn ground line by %.3fpx, which is "
@@ -268,7 +268,7 @@ func _test_the_rim_is_re_traced_under_a_steady_glow(t) -> void:
 	agent._direction = 1.0
 	agent._speed = 130.0
 	agent._turn = null
-	agent._car_view = 4
+	agent._look.view = 4
 	var standing := _silhouette(agent)
 	agent._turn = _turn_facing(1)
 	agent._turn_run_up = 0.0
@@ -287,8 +287,8 @@ func _test_the_rim_is_re_traced_under_a_steady_glow(t) -> void:
 ## looks up, whether it is mirrored, and where it is anchored. `_draw_body()` reads exactly these
 ## three and nothing else, so two different answers here are two different silhouettes.
 func _silhouette(agent: CrowdAgent) -> Array:
-	var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[agent._frame()]
-	return [view, agent._flipped(), agent._car_body_anchor(view, agent.heading())]
+	var view: String = CarLook.VIEW_BY_SECTOR[agent._look.sector()]
+	return [view, agent._look.flipped(), CarLook.body_anchor(view, agent.heading())]
 
 ## `EntityHalo` traces whichever silhouette `_draw_body()` currently draws, once per ring offset —
 ## `set_halo_strength()` builds it with that exact bound method, so per-view halo geometry follows
@@ -312,11 +312,11 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 ## bottom-centred on `_car_body_anchor()`'s answer. At rest, which is where these cars stand: the
 ## three layers share one anchor until the body rides a bob.
 func _drawn_picture(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
-	var anchor := agent._car_body_anchor(view, heading)
+	var anchor := CarLook.body_anchor(view, heading)
 	var drawn := Rect2()
 	var merged := false
-	for path in [CrowdAgent.CAR_BODY_BY_VIEW[view], CrowdAgent.CAR_TRIM_BY_VIEW[view],
-			CrowdAgent.CAR_WHEELS_BY_VIEW[view]]:
+	for path in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
+			CarLook.WHEELS_BY_VIEW[view]]:
 		var extent := Vector2(AtlasLibrary.native_size(StringName(path)))
 		var layer := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
 		drawn = drawn.merge(layer) if merged else layer
@@ -356,7 +356,7 @@ func _test_the_rim_and_the_picture_share_one_footprint(t) -> void:
 	var agent := _car(t)
 	var margin := EntityHalo.HALO_MARGIN
 	for sector in range(8):
-		var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[sector]
+		var view: String = CarLook.VIEW_BY_SECTOR[sector]
 		var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
 		var picture := _drawn_picture(agent, view, heading)
 		var rim := _traced_rim(agent, view, heading)
@@ -407,8 +407,8 @@ func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
 		var degrees := float(sample) * 5.0
 		agent._turn = _turn_at(degrees)
 		agent._turn_run_up = 0.0
-		var view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[agent._frame()]
-		var anchor := agent._car_body_anchor(view, agent.heading()).y
+		var view: String = CarLook.VIEW_BY_SECTOR[agent._look.sector()]
+		var anchor := CarLook.body_anchor(view, agent.heading()).y
 		agent._redraw_if_the_picture_changed()
 		var key := [agent._picture, agent._drawn_heading]
 		if previous_anchor != INF and absf(anchor - previous_anchor) >= 0.5:
@@ -434,18 +434,18 @@ func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
 	# Already showing the side view, which is where a car really is at twenty degrees: the sector
 	# flipped at the boundary a couple of degrees back and the rest of the arc changes nothing about
 	# it. Set rather than swept in, because the sweep above left the hold on the diagonal.
-	agent._car_view = 0
+	agent._look.view = 0
 	agent._turn = _turn_at(20.0)
 	agent._turn_run_up = 0.0
-	var turning_view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[agent._frame()]
-	var turning := agent._car_body_anchor(turning_view, agent.heading()).y
+	var turning_view: String = CarLook.VIEW_BY_SECTOR[agent._look.sector()]
+	var turning := CarLook.body_anchor(turning_view, agent.heading()).y
 	agent._redraw_if_the_picture_changed()
 	var mid_turn := [agent._picture, agent._drawn_heading]
 	agent._turn = null
 	agent._vertical = false
 	agent._direction = 1.0
-	var landed_view: String = CrowdAgent.CAR_VIEW_BY_SECTOR[agent._frame()]
-	var landed := agent._car_body_anchor(landed_view, agent.heading()).y
+	var landed_view: String = CarLook.VIEW_BY_SECTOR[agent._look.sector()]
+	var landed := CarLook.body_anchor(landed_view, agent.heading()).y
 	agent._redraw_if_the_picture_changed()
 	t.check(landed_view == turning_view and agent._picture == mid_turn[0],
 			"the car draws the same %s view either side of the landing, so nothing quantised changed"
@@ -463,13 +463,13 @@ func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
 ## size `Sprites.draw_standing()` bottom-centres all three layers by. A wheels picture of another
 ## size would stand its tyres somewhere under the car other than where they were drawn.
 func _test_wheels_share_the_body_canvas(t) -> void:
-	t.check(CrowdAgent.CAR_WHEELS_BY_VIEW.keys().size() == CrowdAgent.CAR_BODY_BY_VIEW.keys().size(),
+	t.check(CarLook.WHEELS_BY_VIEW.keys().size() == CarLook.BODY_BY_VIEW.keys().size(),
 			"every body view has a wheels view and nothing else does")
-	for view in CrowdAgent.CAR_BODY_BY_VIEW.keys():
-		t.check(CrowdAgent.CAR_WHEELS_BY_VIEW.has(view), "the %s view has wheels" % view)
-		var wheels := StringName(CrowdAgent.CAR_WHEELS_BY_VIEW[view])
-		var body := StringName(CrowdAgent.CAR_BODY_BY_VIEW[view])
-		var trim := StringName(CrowdAgent.CAR_TRIM_BY_VIEW[view])
+	for view in CarLook.BODY_BY_VIEW.keys():
+		t.check(CarLook.WHEELS_BY_VIEW.has(view), "the %s view has wheels" % view)
+		var wheels := StringName(CarLook.WHEELS_BY_VIEW[view])
+		var body := StringName(CarLook.BODY_BY_VIEW[view])
+		var trim := StringName(CarLook.TRIM_BY_VIEW[view])
 		t.check(AtlasLibrary.has_region(wheels), "the %s wheels are baked" % view)
 		t.check(wheels != body and wheels != trim,
 				"the %s wheels are a region of their own, so the tint never reaches them" % view)
@@ -499,24 +499,24 @@ func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t) -> void:
 	var ticks := int(ceil(1.5 * WheelBob.WAVELENGTH / (Tuning.CAR_SPEED.x * step)))
 	var highest_travelled := 0.0
 	for i in ticks:
-		agent._advance_car_bob(step)
+		agent._look.advance(step)
 		var bob := agent._body_bob()
 		t.check(bob <= 0.0 and bob >= -WheelBob.HEIGHT - 0.001,
 				"tick %d's bob %.3f stays between the wheels and one height above them" % [i, bob])
 		if bob < lowest:
 			lowest = bob
-			highest_travelled = agent._car_travelled
+			highest_travelled = agent._look.travelled
 		highest = maxf(highest, bob)
 	t.check(lowest < -0.9 * WheelBob.HEIGHT,
 			"a cruising car's body reaches the top of its rise (%.3f)" % lowest)
 	t.check(highest > -0.1 * WheelBob.HEIGHT,
 			"and comes back down onto its wheels (%.3f)" % highest)
 	# Stopped at the top of the rise: the phase stays where it was, the body does not.
-	agent._car_travelled = highest_travelled
+	agent._look.travelled = highest_travelled
 	agent._speed = 0.0
 	t.check(agent._body_bob() == 0.0, "a stopped car sits on its wheels (%.3f)" % agent._body_bob())
-	agent._advance_car_bob(step)
-	t.check(is_equal_approx(agent._car_travelled, highest_travelled),
+	agent._look.advance(step)
+	t.check(is_equal_approx(agent._look.travelled, highest_travelled),
 			"and a tick that covers no ground does not move its phase")
 	agent.free()
 
@@ -526,8 +526,8 @@ func _test_the_bob_is_driven_by_ground_covered(t) -> void:
 	var slow := _cruising_car(t, Tuning.CAR_SPEED.x)
 	var fast := _cruising_car(t, Tuning.CAR_SPEED.y)
 	var distance := WheelBob.WAVELENGTH * 0.4
-	slow._advance_car_bob(distance / Tuning.CAR_SPEED.x)
-	fast._advance_car_bob(distance / Tuning.CAR_SPEED.y)
+	slow._look.advance(distance / Tuning.CAR_SPEED.x)
+	fast._look.advance(distance / Tuning.CAR_SPEED.y)
 	t.check(is_equal_approx(slow._body_bob(), fast._body_bob()),
 			"two cars that covered %.0fpx ride the same lift (%.3f and %.3f)"
 			% [distance, slow._body_bob(), fast._body_bob()])
@@ -540,7 +540,7 @@ func _test_the_bob_is_driven_by_ground_covered(t) -> void:
 ## rim rises with it rather than sliding off it.
 func _test_the_halo_rides_the_bob(t) -> void:
 	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
-	agent._advance_car_bob(WheelBob.WAVELENGTH * 0.5 / Tuning.CAR_SPEED.x)
+	agent._look.advance(WheelBob.WAVELENGTH * 0.5 / Tuning.CAR_SPEED.x)
 	agent.set_halo_strength(1.0, Color.RED)
 	t.check(agent._halo._bob == agent._body_bob,
 			"the halo reads this car's own bob rather than a flat zero")
@@ -564,9 +564,9 @@ func _test_the_redraw_gate_follows_the_bob(t) -> void:
 	var keys := {}
 	var ticks := int(ceil(WheelBob.WAVELENGTH / (Tuning.CAR_SPEED.x * step)))
 	for i in ticks:
-		agent._advance_car_bob(step)
+		agent._look.advance(step)
 		agent._redraw_if_the_picture_changed()
-		t.check(agent._picture.z == roundi(agent._body_bob() * CrowdAgent.CAR_BOB_STEPS_PER_PX),
+		t.check(agent._picture.z == roundi(agent._body_bob() * CarLook.BOB_STEPS_PER_PX),
 				"tick %d's key carries the bob it would draw" % i)
 		keys[agent._picture] = true
 	t.check(keys.size() > 2,
@@ -576,7 +576,7 @@ func _test_the_redraw_gate_follows_the_bob(t) -> void:
 	agent._redraw_if_the_picture_changed()
 	var parked := agent._picture
 	for i in 30:
-		agent._advance_car_bob(step)
+		agent._look.advance(step)
 		agent._redraw_if_the_picture_changed()
 	t.check(agent._picture == parked and parked.z == 0,
 			"a stopped car's key rests at zero and stays there")

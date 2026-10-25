@@ -86,16 +86,16 @@ func _test_a_car_reach_holds_everything_it_draws(t) -> void:
 	car.kind = CrowdAgent.Kind.CAR
 	for i in 16:
 		var heading := Vector2.RIGHT.rotated(TAU * float(i) / 16.0)
-		for view in CrowdAgent.CAR_BODY_BY_VIEW:
-			var anchor := car._car_body_anchor(view, heading)
-			for path in [CrowdAgent.CAR_BODY_BY_VIEW[view], CrowdAgent.CAR_TRIM_BY_VIEW[view],
-					CrowdAgent.CAR_WHEELS_BY_VIEW[view]]:
+		for view in CarLook.BODY_BY_VIEW:
+			var anchor := CarLook.body_anchor(view, heading)
+			for path in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
+					CarLook.WHEELS_BY_VIEW[view]]:
 				var extent := Vector2(AtlasLibrary.native_size(StringName(path)))
 				var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent) \
 						.grow(1.0 + EntityHalo.HALO_MARGIN)
 				t.check(reach.encloses(drawn),
 						"the reach holds a car's %s drawn at %s (%s)" % [path, heading, drawn])
-	var shadow := CrowdAgent.CAR_SHADOW_ALONG * 0.5 + 1.0
+	var shadow := CarStrategy.SHADOW_ALONG * 0.5 + 1.0
 	t.check(reach.encloses(Rect2(-shadow, -shadow, shadow * 2.0, shadow * 2.0)),
 			"and its shadow capsule turned any way")
 	var width := CrowdAgent.MARK_WIDTH
@@ -106,9 +106,9 @@ func _test_a_car_reach_holds_everything_it_draws(t) -> void:
 			.grow(1.0)
 	t.check(reach.encloses(caret), "and its doubled caret at full swell (%s)" % caret)
 	car.free()
-	for view in CrowdAgent.WALKER_BODY_BY_VIEW:
-		for paths: Dictionary in [CrowdAgent.WALKER_BODY_BY_VIEW, CrowdAgent.WALKER_BODY_BY_VIEW_B,
-				CrowdAgent.WALKER_TRIM_BY_VIEW, CrowdAgent.WALKER_TRIM_BY_VIEW_B]:
+	for view in WalkerLook.BODY_BY_VIEW:
+		for paths: Dictionary in [WalkerLook.BODY_BY_VIEW, WalkerLook.BODY_BY_VIEW_B,
+				WalkerLook.TRIM_BY_VIEW, WalkerLook.TRIM_BY_VIEW_B]:
 			var extent := Vector2(AtlasLibrary.native_size(StringName(paths[view])))
 			var drawn := Rect2(-extent.x * 0.5, -extent.y, extent.x, extent.y) \
 					.grow(EntityHalo.HALO_MARGIN)
