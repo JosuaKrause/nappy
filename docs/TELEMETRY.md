@@ -542,7 +542,8 @@ reason, so no capture from such a run is mistaken for one where a loss meant any
 ### `--no-focus-pause`
 
 The game pauses itself, the same way the `pause` action does, the moment
-`NOTIFICATION_APPLICATION_FOCUS_OUT` or `NOTIFICATION_APPLICATION_PAUSED` reaches `main.gd` — the
+`NOTIFICATION_APPLICATION_FOCUS_OUT` or `NOTIFICATION_APPLICATION_PAUSED` reaches the game
+(`ReturnWindow`, `src/ui/return_window.gd`, which hands it to `main`'s pause) — the
 window losing focus, a browser tab backgrounding, or a phone sending the app away. A rig's window
 usually opens with no focus to lose in the first place, so left alone this would hand every rig a
 picture of the pause screen rather than the day it was sent to capture.
@@ -1175,12 +1176,12 @@ build has nothing in `project.godot` to reach:
   colour, because it is not a body but is exactly what ends the day on contact. Walkers and cars
   have no body of their own, and none is invented for them.
 - **`4` the readout** — the seed, the meter breakdown and what the frame cost, drawn top right by
-  `main.gd` and toggleable like the other three in a debug build: off, the string is not
+  `DebugReadout` (`src/dev/debug_readout.gd`) and toggleable like the other three in a debug build: off, the string is not
   assembled, not merely hidden behind an invisible label. **A release build carries it too when
   the page's own `?debug=1` (or the command line's `--debug`) holds** — `DevFlags.readout_requested()`,
-  parsed straight off the page's query string and not gated behind `enabled()`. `main._add_debug_layers()`
-  and `main._add_route_lines()` build the geometry layers (`1`-`3`, `5`) under that same `_debug or
-  _readout_requested` gate now too, so a release page's own `?debug=1&layers=1,3,5` has somewhere
+  parsed straight off the page's query string and not gated behind `enabled()`. The readout builds
+  the geometry layers (`1`-`3`, `5`, `DebugReadout.show_the_world()` and `draw_routes()`) under that
+  same `_debug or _readout_requested` gate too, so a release page's own `?debug=1&layers=1,3,5` has somewhere
   to draw (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags") — only the `1`/`2`/`3`
   key presses that toggle one by hand stay debug-build only, since a release page sends no such
   keypress on its own. Whenever `readout_requested()`
@@ -1265,7 +1266,7 @@ build has nothing in `project.godot` to reach:
   off by default, `true` at boot when `--spikes` (`DevFlags.spikes_requested()`) was given or
   `--layers` names `6`, and flipped by the `6` key from there, whatever `4` does to the readout
   beside it. **Fed only while its own layer is on, and emptied the moment it goes off**
-  (`FrameGraph.clear()`, called from `main._toggle_debug_layer()`) — *(2026-09-15, the player:
+  (`FrameGraph.clear()`, called from `DebugReadout._toggle_debug_layer()`) — *(2026-09-15, the player:
   "spike recording should only be on while the layer is on. that means toggling the layer twice
   will lead to a blank frame array".)* — so `6` twice leaves a blank graph that fills again only
   from that moment rather than a window that silently skipped the time it spent off. The run log's

@@ -20,15 +20,14 @@ extends RefCounted
 ## by nothing at all. `QuitOption.available()` and `hud._debug` follow the same pattern for their
 ## own platform questions.
 ##
-## `--touch` forces this true, gated the same way every other dev-only capability in this project
-## is (a debug build, `OS.is_debug_build()`) — nothing
-## on the machine that runs `tools/test.sh` or an exported build has a real touchscreen, so without
-## this a touch-only screen could be edited, reviewed and merged for milestones without ever once
-## being rendered. `tools/shot.sh out.png 3 --touch --walk north` is how M60's touch HUD elements
-## (the pause button, the top-anchored meter column) were actually looked at rather than only
-## reasoned about.
-static func available() -> bool:
-	if OS.is_debug_build() and "--touch" in OS.get_cmdline_user_args():
+## `--touch` forces this true (`RunConfig.touch_forced`, a debug build's flag like every other dev
+## flag): nothing on the machine that runs `tools/test.sh` or an exported build has a real
+## touchscreen, so without it a touch-only screen could never be rendered, and
+## `tools/shot.sh out.png 3 --touch --walk north` is how the touch HUD is looked at. The run's
+## configuration is handed in, so nothing here reads the command line; with none handed in (a
+## screen built outside a boot) the answer is the hardware's alone.
+static func available(config: RunConfig = null) -> bool:
+	if config != null and config.touch_forced:
 		return true
 	return DisplayServer.is_touchscreen_available()
 

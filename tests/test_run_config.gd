@@ -21,6 +21,7 @@ func run(t) -> void:
 	_test_main_hands_the_baby_and_the_city_plain_values(t)
 	_test_the_city_hands_each_value_to_its_part(t)
 	_test_the_escape_clock_takes_its_length_and_invincible(t)
+	_test_touch_and_web_are_the_runs_answers(t)
 
 ## The errors raised while it is attached (`OS.add_logger()`).
 class RefusedWrites extends Logger:
@@ -236,3 +237,25 @@ func _test_the_escape_clock_takes_its_length_and_invincible(t) -> void:
 	clock._process(5.0)
 	t.check(is_equal_approx(clock.time_remaining, 25.0), "and stands still when invincible")
 	clock.free()
+
+## `--touch` and `--web` are the run's configuration like every other flag, a debug build's alone,
+## and reach the two platform questions through it: `TouchInput.available()` and
+## `QuitOption.available()` read nothing off the command line, and `main` hands the answers to the
+## screens it builds.
+func _test_touch_and_web_are_the_runs_answers(t) -> void:
+	var words := _words(["--touch", "--web"])
+	var debug := RunConfig.parse(words, "", true)
+	var release := RunConfig.parse(words, "", false)
+	t.check(debug.touch_forced and debug.web_preview, "a debug build reads --touch and --web")
+	t.check(not release.touch_forced and not release.web_preview, "a release build reads neither")
+	t.check(TouchInput.available(debug), "--touch answers the touch question yes")
+	t.check(not QuitOption.available(debug), "--web answers the quit question as the web does")
+	t.check(TouchInput.available(release) == DisplayServer.is_touchscreen_available()
+			and QuitOption.available(release),
+			"with neither, the platform answers (this test process: no touch, quitting works)")
+	var main: Node2D = MAIN_SCRIPT.new()
+	main.configure(debug)
+	main._add_touch_controls()
+	t.check(main._touch_available and main._touch_controls._touch,
+			"main reads the run's answer once and hands it to the touch controls it builds")
+	main.free()

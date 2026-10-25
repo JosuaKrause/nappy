@@ -47,6 +47,12 @@ func configure(debug: bool, invincible: bool) -> void:
 ## names a key any more — but still drives `_reposition_meters_for_touch()` below.
 var _touch := TouchInput.available()
 
+## Hands the screen the run's answer to the touch question (`TouchInput.available(config)`), which
+## `--touch` can force. Called by `main` before the screen enters the tree; a screen built anywhere
+## else keeps the hardware's own answer.
+func use_touch(touch: bool) -> void:
+	_touch = touch
+
 var _baby: Baby
 var _contact_step := 0
 var _announcement := ""

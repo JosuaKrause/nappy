@@ -20,7 +20,7 @@ func _ready() -> void:
 		"renderer": RenderingServer.get_current_rendering_method(),
 		"adapter": RenderingServer.get_video_adapter_name(),
 		"render_on_main_thread": RenderingServer.is_on_render_thread(),
-		"readout": main.get("_layer_readout_on"), "graph": main.get("_layer_graph_on"),
+		"readout": main.get("_readout").readout_on(), "graph": main.get("_readout").graph_on(),
 		"telemetry": Telemetry.is_active(), "physics_hz": Engine.physics_ticks_per_second,
 		"profiler_max_functions": ProjectSettings.get_setting("debug/settings/profiler/max_functions"),
 		"viewport": [get_viewport().get_visible_rect().size.x,

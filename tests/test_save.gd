@@ -853,8 +853,8 @@ const _PAUSE_SCENE := preload("res://scenes/ui/pause_screen.tscn")
 const _SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const _TITLE_SCENE := preload("res://scenes/ui/title_screen.tscn")
 
-## A script-only `main`, the same shape `tests/test_main.gd`'s own focus-loss rig builds — a bare
-## `DayController` stands in for a live one, since all `_notification()` asks of it is `.phase`.
+## A script-only `main`, the same shape `tests/test_main.gd`'s own focus-loss rig builds, with its
+## `ReturnWindow`, whose departures open the pause — a bare `DayController` stands in for a live one.
 func _build_bare_main(t) -> Node2D:
 	var main: Node2D = _MAIN_SCRIPT.new()
 	main._summary = _SUMMARY_SCENE.instantiate()
@@ -864,6 +864,7 @@ func _build_bare_main(t) -> Node2D:
 	main._title = _TITLE_SCENE.instantiate()
 	t.add_child(main._title)
 	main._no_focus_pause = false
+	main._add_the_return_window(t.get_viewport())
 	main._day = DayController.new()
 	main._day.phase = GameEnums.DayPhase.WALKING
 	return main
@@ -886,7 +887,7 @@ func _test_focus_loss_never_charges_a_nerve(t) -> void:
 	var nerves := GameState.nerves
 	t.get_tree().paused = false
 
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(main._pause.is_open(), "focus loss still opens the pause, exactly as before this milestone")
 	t.check(GameState.day == day and GameState.nerves == nerves,
 			"and neither the day nor the nerve count moved — a focus loss alone never spends one")
@@ -894,7 +895,7 @@ func _test_focus_loss_never_charges_a_nerve(t) -> void:
 
 	_free_bare_main(t, main)
 
-## **`main._notification()` stops calling `_save_now()` on either notification.** Losing focus
+## **Neither focus loss nor a window close calls `_save_now()`.** Losing focus
 ## still opens the pause (asserted above) and a window close still ends the telemetry log, but
 ## neither touches the save any more — only a day starting, or its own brief or end-of-day message
 ## coming up, changes what a save holds (docs/MECHANICS.md, "Saving and resuming"). Forced through
@@ -909,7 +910,7 @@ func _test_focus_loss_and_window_close_write_nothing(t) -> void:
 		var main := _build_bare_main(t)
 		t.get_tree().paused = false
 
-		main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+		main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 		t.check(main._pause.is_open(), "focus loss still opens the pause")
 		t.check(not GameSave.has_save(), "but writes nothing")
 		main._pause.close()

@@ -3,12 +3,10 @@ extends RefCounted
 ## `GroundShape.shadow_outline()`, which `draw_shadow()` now draws from directly, and
 ## `DevFlags.parse_layers()`, the `--layers`/`?layers=` parsing.
 ##
-## The tree-presence and key-toggle tests build `main` the way `tests/test_main.gd` already does
-## for the readout — a script-only instance, `_ready()` never run, its handful of dependencies
-## wired up by hand — because `main._ready()` boots a whole city and none of these questions need
-## one.
+## The tree-presence and key-toggle tests build a `DebugReadout` the way `tests/test_main.gd` does
+## for the readout — on its own, its handful of dependencies handed in by hand — because
+## `main._ready()` boots a whole city and none of these questions need one.
 
-const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 func run(t) -> void:
@@ -156,16 +154,17 @@ func _test_apply_initial_state_sets_only_the_listed_layers(t) -> void:
 # ------------------------------------------------------------------ tree presence ---
 
 func _test_no_layer_node_exists_outside_a_debug_build(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = false
-	main._city = City.new()
-	main._player = Stroller.new()
-	main._add_debug_layers()
-	t.check(main._debug_layers == null,
+	var readout := DebugReadout.new()
+	readout._debug = false
+	var city := City.new()
+	var player := Stroller.new()
+	readout.watch(player, null, null)
+	readout.show_the_world(city.events, city.crowd, city, city.map, city)
+	t.check(readout._debug_layers == null,
 			"a release build never builds the layer node at all, not merely leaves it invisible")
-	main._city.free()
-	main._player.free()
-	main.free()
+	city.free()
+	player.free()
+	readout.free()
 
 ## M193, "the live page's ?debug=1 reaches the debug flags": `?debug=1` alone (`_readout_requested`,
 ## with no `?layers=` in the same query) builds the node the same way a debug build does, since a
@@ -173,37 +172,39 @@ func _test_no_layer_node_exists_outside_a_debug_build(t) -> void:
 ## still starts off, exactly as an unflagged debug run's own default, because `layers_override()`
 ## itself answers nothing without `?layers=` named.
 func _test_the_readout_flag_alone_builds_the_node_with_every_layer_off(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = false
-	main._readout_requested = true
-	main._city = City.new()
-	main._player = Stroller.new()
-	main._add_debug_layers()
-	t.check(main._debug_layers != null,
+	var readout := DebugReadout.new()
+	readout._debug = false
+	readout._readout_requested = true
+	var city := City.new()
+	var player := Stroller.new()
+	readout.watch(player, null, null)
+	readout.show_the_world(city.events, city.crowd, city, city.map, city)
+	t.check(readout._debug_layers != null,
 			"?debug=1 builds the layer node so a release page's own ?layers= has somewhere to draw")
-	t.check(not main._debug_layers.layer_on(1) and not main._debug_layers.layer_on(2)
-			and not main._debug_layers.layer_on(3),
+	t.check(not readout._debug_layers.layer_on(1) and not readout._debug_layers.layer_on(2)
+			and not readout._debug_layers.layer_on(3),
 			"and every geometry layer starts off, since ?layers= itself named none")
-	main._debug_layers.free()
-	main._city.free()
-	main._player.free()
-	main.free()
+	readout._debug_layers.free()
+	city.free()
+	player.free()
+	readout.free()
 
 func _test_a_debug_build_builds_the_layers_off_by_default(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = true
-	main._city = City.new()
-	main._player = Stroller.new()
-	main._add_debug_layers()
-	t.check(main._debug_layers != null and main._debug_layers.get_parent() == main,
-			"a debug build adds the one node, parented under main")
-	t.check(not main._debug_layers.layer_on(1) and not main._debug_layers.layer_on(2)
-			and not main._debug_layers.layer_on(3),
+	var readout := DebugReadout.new()
+	readout._debug = true
+	var city := City.new()
+	var player := Stroller.new()
+	readout.watch(player, null, null)
+	readout.show_the_world(city.events, city.crowd, city, city.map, city)
+	t.check(readout._debug_layers != null and readout._debug_layers.get_parent() == readout,
+			"a debug build adds the one node, parented under the readout")
+	t.check(not readout._debug_layers.layer_on(1) and not readout._debug_layers.layer_on(2)
+			and not readout._debug_layers.layer_on(3),
 			"and the three geometry layers start off, so an unflagged debug run looks like today's")
-	main._debug_layers.free()
-	main._city.free()
-	main._player.free()
-	main.free()
+	readout._debug_layers.free()
+	city.free()
+	player.free()
+	readout.free()
 
 # ------------------------------------------------------------------ key toggles ---
 
@@ -216,74 +217,76 @@ func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 
 ## `_debug_layer_key()` resolved directly, the way `test_burst_capture.gd` already drives
 ## `_debug_snapshot_action()` — both are pulled out to a pure function of the event for exactly
-## this reason, since `main._unhandled_input()` itself reaches `get_viewport()`, which is null on
+## this reason, since `DebugReadout._unhandled_input()` itself reaches `get_viewport()`, which is null on
 ## the script-only instance this whole suite uses (see this file's own class doc).
 func _test_the_layer_keys_resolve_to_their_own_index(t) -> void:
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_1)) == 1, "1 is fields")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_2)) == 2, "2 is shadows")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_3)) == 3, "3 is bounding boxes")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_4)) == 4, "4 is the readout")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_5)) == 5, "5 is the route lines")
-	# 6 (the frame graph, `tests/test_main.gd`'s own key) is the last one taken — M153, "the spike
+	t.check(DebugReadout._debug_layer_key(_key(KEY_1)) == 1, "1 is fields")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_2)) == 2, "2 is shadows")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_3)) == 3, "3 is bounding boxes")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_4)) == 4, "4 is the readout")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_5)) == 5, "5 is the route lines")
+	# 6 (the frame graph, `tests/test_readout.gd`'s own key) is the last one taken — M153, "the spike
 	# view is its own debug layer" — so a seventh key is the one that still answers nothing.
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6)) == 6, "6 is the frame graph")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_7)) == 0, "a seventh key answers nothing")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_1, false)) == 0, "a release, not a press, does nothing")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_1, true, true)) == 0,
+	t.check(DebugReadout._debug_layer_key(_key(KEY_6)) == 6, "6 is the frame graph")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_7)) == 0, "a seventh key answers nothing")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_1, false)) == 0, "a release, not a press, does nothing")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_1, true, true)) == 0,
 			"an echo does nothing — a held key is one request, not a flood of them")
 
 func _test_number_keys_toggle_their_own_layer(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = true
-	main._status = Label.new()
-	main._city = City.new()
-	main._player = Stroller.new()
-	main._add_debug_layers()
+	var readout := DebugReadout.new()
+	readout._debug = true
+	readout._status = Label.new()
+	var city := City.new()
+	var player := Stroller.new()
+	readout.watch(player, null, null)
+	readout.show_the_world(city.events, city.crowd, city, city.map, city)
 
-	t.check(not main._debug_layers.layer_on(1), "fields starts off")
-	main._toggle_debug_layer(1)
-	t.check(main._debug_layers.layer_on(1), "1 turns fields on")
-	main._toggle_debug_layer(1)
-	t.check(not main._debug_layers.layer_on(1), "and back off again")
+	t.check(not readout._debug_layers.layer_on(1), "fields starts off")
+	readout._toggle_debug_layer(1)
+	t.check(readout._debug_layers.layer_on(1), "1 turns fields on")
+	readout._toggle_debug_layer(1)
+	t.check(not readout._debug_layers.layer_on(1), "and back off again")
 
-	main._toggle_debug_layer(2)
-	main._toggle_debug_layer(3)
-	t.check(main._debug_layers.layer_on(2) and main._debug_layers.layer_on(3),
+	readout._toggle_debug_layer(2)
+	readout._toggle_debug_layer(3)
+	t.check(readout._debug_layers.layer_on(2) and readout._debug_layers.layer_on(3),
 			"2 and 3 toggle shadows and bounding boxes independently of fields")
 
-	t.check(main._layer_readout_on and main._status.visible, "the readout starts on, as today")
-	main._toggle_debug_layer(4)
-	t.check(not main._layer_readout_on and not main._status.visible,
+	t.check(readout._layer_readout_on and readout._status.visible, "the readout starts on, as today")
+	readout._toggle_debug_layer(4)
+	t.check(not readout._layer_readout_on and not readout._status.visible,
 			"4 turns the readout off and hides the label — not merely leaves it assembled and hidden")
-	main._toggle_debug_layer(4)
-	t.check(main._layer_readout_on and main._status.visible, "and 4 again turns it back on")
+	readout._toggle_debug_layer(4)
+	t.check(readout._layer_readout_on and readout._status.visible, "and 4 again turns it back on")
 
-	main._status.free()
-	main._debug_layers.free()
-	main._city.free()
-	main._player.free()
-	main.free()
+	readout._status.free()
+	readout._debug_layers.free()
+	city.free()
+	player.free()
+	readout.free()
 
 func _test_layer_keys_do_nothing_outside_a_debug_build(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = false
-	main._status = Label.new()
-	main._city = City.new()
-	main._player = Stroller.new()
-	main._add_debug_layers()
-	t.check(main._debug_layers == null, "no layer node in a release build")
+	var readout := DebugReadout.new()
+	readout._debug = false
+	readout._status = Label.new()
+	var city := City.new()
+	var player := Stroller.new()
+	readout.watch(player, null, null)
+	readout.show_the_world(city.events, city.crowd, city, city.map, city)
+	t.check(readout._debug_layers == null, "no layer node in a release build")
 
-	# `main._unhandled_input()` itself never reaches `_toggle_debug_layer()` at all here: the whole
+	# `DebugReadout._unhandled_input()` itself never reaches `_toggle_debug_layer()` at all here: the whole
 	# branch is behind `if _debug`, so a release build's `_debug_layers` stays null without this
 	# suite needing a live viewport to prove it — see `_test_the_layer_keys_resolve_to_their_own_index`
 	# for the part of the gate that *is* driven through a real event.
-	main._toggle_debug_layer(1)
-	t.check(main._debug_layers == null, "and calling the toggle by hand still builds nothing")
+	readout._toggle_debug_layer(1)
+	t.check(readout._debug_layers == null, "and calling the toggle by hand still builds nothing")
 
-	main._status.free()
-	main._city.free()
-	main._player.free()
-	main.free()
+	readout._status.free()
+	city.free()
+	player.free()
+	readout.free()
 
 # ------------------------------------------------------------- bounding boxes ---
 
