@@ -76,7 +76,7 @@ func _test_plain_pose_with_no_objective(t) -> void:
 func _build_city(t) -> void:
 	if _city != null:
 		_city.free()
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
@@ -93,19 +93,19 @@ func _rng(day: int) -> RandomNumberGenerator:
 	return rng
 
 func _with_clean_run(action: Callable) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_package := GameState.resistance_carrying_package
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
-	GameState.resistance_carrying_package = false
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_package := GameState.resistance.carrying_package
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
+	GameState.resistance.carrying_package = false
 	action.call()
-	GameState.completed_resistance_steps = saved_completed
-	GameState.failed_resistance_steps = saved_failed
-	GameState.resistance_progress = saved_progress
-	GameState.resistance_carrying_package = saved_package
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.failed_steps = saved_failed
+	GameState.resistance.progress = saved_progress
+	GameState.resistance.carrying_package = saved_package
 
 ## *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for
 ## that.")* A pickup gives `ResistanceDirector.pointable_objective()` nothing to hand back.

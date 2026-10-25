@@ -14,7 +14,7 @@ func _view(at: Vector2) -> Rect2:
 
 func _test_city(t, seed_value: int) -> void:
 	GameState.start_run(seed_value)
-	var city: City = CITY.instantiate()
+	var city: City = RunCity.of_the_run(CITY)
 	t.add_child(city)
 	var map := CityGenerator.generate(seed_value)
 	city.build(map)

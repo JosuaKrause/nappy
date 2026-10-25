@@ -21,7 +21,7 @@ func run(t) -> void:
 
 func _rig(t, day: int) -> Array:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	city.events._day = day

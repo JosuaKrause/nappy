@@ -30,7 +30,7 @@ func run(t) -> void:
 ## Answers whether a second van was put on her route in this city.
 func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var size := Tuning.VAN_WITHIN_THE_NEXT
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()
@@ -39,16 +39,16 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var consumed: Array[String] = []
 	city.events.start_day(DAY, _rng(seed_value, "events"), consumed)
 
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	GameState.completed_resistance_steps.assign(done)
-	GameState.failed_resistance_steps.assign([])
-	GameState.resistance_progress = 0
+	GameState.resistance.completed_steps.assign(done)
+	GameState.resistance.failed_steps.assign([])
+	GameState.resistance.progress = 0
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
@@ -178,9 +178,9 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	player.free()
 	resistance.free()
 	city.free()
-	GameState.completed_resistance_steps.assign(saved_completed)
-	GameState.failed_resistance_steps.assign(saved_failed)
-	GameState.resistance_progress = saved_progress
+	GameState.resistance.completed_steps.assign(saved_completed)
+	GameState.resistance.failed_steps.assign(saved_failed)
+	GameState.resistance.progress = saved_progress
 	return placed.size() == 1
 
 ## **No part of the route van is in the camera's view the frame it is created** ("Nothing may be
@@ -190,7 +190,7 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 ## `Stroller.CAMERA_LOOK_AHEAD` along her heading as the camera leads her.
 func _test_the_van_is_sited_wholly_out_of_the_camera_view(t) -> void:
 	var seed_value: int = SEEDS[0]
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()

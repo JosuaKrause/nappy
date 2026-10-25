@@ -8,7 +8,7 @@ const STEP := 1.0 / 30.0
 const BATCH := 32
 
 func run(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	var reports: Array = []

@@ -241,7 +241,7 @@ const EXCITEMENT_DECAY_BASEMENT_MULTIPLIER := 0.0
 const CALM_ZONE_DENIAL_RATE := 7.7
 
 ## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
-## package is picked up (`GameState.resistance_carrying_package`) — the one cost in the subquest
+## package is picked up (`GameState.resistance.carrying_package`) — the one cost in the subquest
 ## that is deferred and total rather than local, so it changes the afternoon's routing rather than
 ## one minute of it. Chosen on the same severity as a main road's own 0.6, on the harsher side of
 ## it: this is a decision she made, not ground she has to cross.

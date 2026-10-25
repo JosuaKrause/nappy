@@ -370,7 +370,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	var row: PackedInt64Array = ledger.rows().back()
 	t.check(row[FrameLedger.FIRST_COUNTER + FrameLedger.CROWD_AGENTS]
 				== main._city.crowd.agent_count()
-			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == GameState.day,
+			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == GameState.header.day,
 			"with the world's counters read at the end of its process step")
 	t.check(main._readout._frame_record_lines().size() == 1, "the readout carries the record's line")
 	_check_the_agents_are_timed_once(t, main._city.crowd.agents())
@@ -499,22 +499,22 @@ func _event(t, def: EventDef) -> EventInstance:
 func _save_game_state() -> Dictionary:
 	return {
 		"snapshot": GameState.save_snapshot(),
-		"escape_section": GameState.escape_section,
+		"escape_section": GameState.facts.escape_section,
 		"posters": GameState.posters.to_data(),
 		"pelican": GameState.pelican.to_data(),
-		"fenced_park": GameState.fenced_park,
-		"fenced_park_act": GameState.fenced_park_act,
-		"alley_tiles": GameState.completed_resistance_alley_tiles.duplicate(),
+		"fenced_park": GameState.facts.fenced_park,
+		"fenced_park_act": GameState.facts.fenced_park_act,
+		"alley_tiles": GameState.facts.completed_resistance_alley_tiles.duplicate(),
 	}
 
 func _restore_game_state(saved: Dictionary) -> void:
 	GameState.restore_snapshot(saved["snapshot"])
-	GameState.escape_section = saved["escape_section"]
+	GameState.facts.escape_section = saved["escape_section"]
 	GameState.posters.restore(saved["posters"])
 	GameState.pelican.restore(saved["pelican"])
-	GameState.fenced_park = saved["fenced_park"]
-	GameState.fenced_park_act = saved["fenced_park_act"]
-	GameState.completed_resistance_alley_tiles.assign(saved["alley_tiles"])
+	GameState.facts.fenced_park = saved["fenced_park"]
+	GameState.facts.fenced_park_act = saved["fenced_park_act"]
+	GameState.facts.completed_resistance_alley_tiles.assign(saved["alley_tiles"])
 
 ## One kept frame starting at `start` and lasting `length`, of which `spent` went to `bucket`.
 func _drive(ledger: FrameLedger, start: int, length: int, bucket: int, spent: int) -> void:

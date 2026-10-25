@@ -310,7 +310,7 @@ func _test_the_three_rows_validate_and_are_never_rolled(t) -> void:
 func _test_the_manager_actually_places_the_door_structure(t) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	# No player in this rig, so nothing would ever stream in on its own — see
@@ -1720,7 +1720,7 @@ func _test_the_chatting_mother_still_detains_once(t) -> void:
 ## stop duration and the pass, per the milestone's own request.
 func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	var rng := RandomNumberGenerator.new()
@@ -1829,7 +1829,7 @@ func _test_the_boom_never_inspects_her(t) -> void:
 ## and lowers it the moment the road and she are both clear.
 func _test_the_arm_never_comes_down_on_her(t) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	var stroller := _real_stroller(t)
@@ -1901,7 +1901,7 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t) -> void:
 func _street_door_rig(t) -> Dictionary:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	_repaint_for(map, day)

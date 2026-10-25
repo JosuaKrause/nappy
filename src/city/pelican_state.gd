@@ -1,8 +1,9 @@
 class_name PelicanState
-extends RefCounted
+extends RunSubState
 ## How many cyclists this run has drawn from its pelican bag: how far into the bag the next cyclist
-## draws. Run-scoped, owned by `GameState.pelican`, and the whole state of the bag — it is rebuilt
-## from the run's seed and `MarbleBag.skip()`ped to this count, the way the poster tears' bag is
+## draws. Run-scoped, a registered part of the run (`RunSubState`) held as `GameState.pelican`, and
+## the whole state of the bag — it is rebuilt from the run's seed and `MarbleBag.skip()`ped to this
+## count, the way the poster tears' bag is
 ## (`PosterState.tears`). *(pebbly-ibis, inbox #575 in feathery-lynx: "let's do a bag per run but
 ## save it in the standard save file to reset the bag to the beginning of the day on a lost day".)*
 ##
@@ -14,6 +15,12 @@ extends RefCounted
 var draws := 0
 
 var _dawn := 0
+
+func slot() -> Slot:
+	return Slot.NESTED
+
+func save_key() -> String:
+	return "pelican"
 
 func reset() -> void:
 	draws = 0

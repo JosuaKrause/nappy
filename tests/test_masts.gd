@@ -148,7 +148,7 @@ func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t) -> voi
 # -------------------------------------------------------------- the broadcast ---
 
 func _build_city(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(_map)
 	# No player in this rig, so nothing streams on its own — `EventManager._physics_process()`

@@ -84,7 +84,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	if target.begins_with("closure"):
 		var closures := city.closures()
 		if closures.is_empty():
-			push_warning("no streets are closed on day %d" % GameState.day)
+			push_warning("no streets are closed on day %d" % GameState.header.day)
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, closures.size() - 1)
 		var mouth: Vector2 = closures[which].mouth_centres(city.map)[0]
@@ -203,7 +203,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		# answers wherever it currently is, not wherever this call found it.
 		var contact := resistance.contact_position()
 		if contact == Vector2.INF:
-			push_warning("no resistance contact on day %d" % GameState.day)
+			push_warning("no resistance contact on day %d" % GameState.header.day)
 			return city.map.home_world_position()
 		# Off to one side, so the chalk mark is not hidden under the pram.
 		return contact + Vector2(70.0, 30.0)
@@ -222,7 +222,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 					huts.append(body)
 		if huts.is_empty():
 			push_warning("no region-wall checkpoint on day %d (doors start on day %d)"
-					% [GameState.day, Tuning.REGION_WALL_FIRST_DAY])
+					% [GameState.header.day, Tuning.REGION_WALL_FIRST_DAY])
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, huts.size() - 1)
 		var hut: EventScheduler.Planned = huts[which]

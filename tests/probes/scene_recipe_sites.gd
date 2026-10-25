@@ -11,7 +11,7 @@ func run(_t) -> void:
 	print("MAIN_ROAD ", map.main_road, " north lane=", CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, -1)))
 	for day: int in [1, 13]:
 		GameState.start_run(11)
-		GameState.day = day
+		GameState.header.day = day
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
@@ -40,7 +40,7 @@ func run(_t) -> void:
 			accepted += 1
 			if accepted >= 5:
 				break
-	GameState.day = 14
+	GameState.header.day = 14
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 14)
 	map.repaint(state)

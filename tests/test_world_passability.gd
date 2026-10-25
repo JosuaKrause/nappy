@@ -261,11 +261,11 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t) -> void:
 
 ## Seed 4242's day 9, its closures, seals and bodies put down.
 func _a_day(t) -> City:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, WALK_DAY)
 	city.start_day(state, WALK_DAY, _rng("closures"))
 	city.events.start_day(WALK_DAY, _rng("events"), [], city.map.doorstep_world_position())
@@ -429,7 +429,7 @@ func _test_a_departure_leaves_round_a_building(t, city: City) -> void:
 ## guard it sends off, enters ground its mover may not.
 func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 	var map := city.map
-	var saved_scars := GameState.scars.duplicate()
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var walked := 0
 	var steps := 0
 	var bad: Array[String] = []
@@ -482,7 +482,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 				and instance.global_position.distance_to(left_from) < TILE:
 			stalled.append(def.id)
 		city.events.retire(instance)
-	GameState.scars.assign(saved_scars)
+	GameState.attempt_spend.scars.assign(saved_scars)
 	# What the remeasuring step reads: a departure that a solid holds within a tile of where it
 	# began, which the contract that nothing vanishes in her view keeps standing there.
 	print("WALKER day %d seed %d: %d rows, %d steps asked, departures held within a tile: %s"

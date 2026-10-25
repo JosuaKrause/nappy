@@ -46,7 +46,7 @@ func _measure(t, row_id: String, day: int, mark_step_index: int) -> void:
 	var no_clear_run := 0
 	var no_legal_start := 0
 	for seed_value in range(1, SEEDS_TO_SWEEP + 1):
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		var director := ResistanceDirector.new()

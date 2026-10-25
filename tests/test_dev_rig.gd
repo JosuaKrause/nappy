@@ -49,7 +49,7 @@ func _rng(stream: String) -> RandomNumberGenerator:
 ## `_with_clean_run()` does, so day 4 always selects step 1 regardless of what an earlier suite
 ## left behind in the shared autoload.
 func _build_day(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_city.events.stream_radius = INF
@@ -60,14 +60,14 @@ func _build_day(t) -> void:
 	var consumed: Array[String] = []
 	_city.events.start_day(DAY, _rng("events"), consumed)
 
-	_saved_completed = GameState.completed_resistance_steps.duplicate()
-	_saved_failed = GameState.failed_resistance_steps.duplicate()
-	_saved_progress = GameState.resistance_progress
-	_saved_package = GameState.resistance_carrying_package
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
-	GameState.resistance_carrying_package = false
+	_saved_completed = GameState.resistance.completed_steps.duplicate()
+	_saved_failed = GameState.resistance.failed_steps.duplicate()
+	_saved_progress = GameState.resistance.progress
+	_saved_package = GameState.resistance.carrying_package
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
+	GameState.resistance.carrying_package = false
 
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
@@ -76,10 +76,10 @@ func _build_day(t) -> void:
 	_resistance.start_day(DAY, _rng("resistance"), 300.0)
 
 func _teardown(t) -> void:
-	GameState.completed_resistance_steps = _saved_completed
-	GameState.failed_resistance_steps = _saved_failed
-	GameState.resistance_progress = _saved_progress
-	GameState.resistance_carrying_package = _saved_package
+	GameState.resistance.completed_steps = _saved_completed
+	GameState.resistance.failed_steps = _saved_failed
+	GameState.resistance.progress = _saved_progress
+	GameState.resistance.carrying_package = _saved_package
 	_resistance.free()
 	_city.free()
 
@@ -216,7 +216,7 @@ func _test_no_door_before_the_region_wall_starts(t) -> void:
 func _test_door_target_lands_on_the_approach_side_of_a_hut(t) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(_CHECKPOINT_SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	city.events.stream_radius = INF

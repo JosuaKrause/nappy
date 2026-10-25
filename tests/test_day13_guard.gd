@@ -40,7 +40,7 @@ var _streams := "day13-guard:"
 
 func run(t) -> void:
 	# Each day here starts from no read mark's alley remembered (`_start_the_day()`).
-	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
+	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	_test_the_guard_follows_her_to_the_roadblock_she_approaches(t)
 	_test_set_on_her_inside_his_stand_off_he_holds(t)
 	_test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t)
@@ -56,21 +56,21 @@ func run(t) -> void:
 	_test_the_guard_walks_round_a_building_to_her(t)
 	for seed_value in PLACEMENT_SEEDS:
 		_test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value)
-	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
+	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
 
 func _in_view(at: Vector2) -> bool:
 	return _view.has_area() and _view.has_point(at)
 
 func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director.contact_position())
 	_view = Rect2(player.global_position - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
@@ -250,15 +250,15 @@ func _guard_in_view(feet: Vector2) -> bool:
 ## range without coming within his notice — asked by the test's own flood fill — and he stands on
 ## the far side of the roadblock from her far more often than on hers.
 func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, seed_value)
 	var player := _rig_player(t, director.contact_position())
 	_view = Rect2()
@@ -347,15 +347,15 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 ## on it, added after the director's reachability first ran, is not her side, as it is not open to
 ## the fill.
 func _test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director.contact_position())
 	var map := director._map
@@ -402,15 +402,15 @@ func _test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t) -> void:
 ## already noticed her at the task's own before she touches it, and is warning her by sight in her
 ## view: the task's own second of warning replaces his.
 func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: bool) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director.contact_position())
 	_view = Rect2()
@@ -507,15 +507,15 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 ## (`ResistanceDirector._send_at_her()`): the screen-edge badge alone for `Tuning.WARNING_ALONE_MAX`,
 ## then he arrives charging (`EventCatalogue.task_guard_sent()`).
 func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director.contact_position())
 	_view = Rect2()
@@ -553,15 +553,15 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
 ## radius and outside his stand-off along a clear line, so he warns; the task is done; she walks
 ## straight away from him, and he still charges.
 func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director.contact_position())
 	var mark := director.current_step()
@@ -617,15 +617,15 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 ## could walk to from him — and he reaches her stand-off within the time his walk to her takes
 ## at his speed, his notice and a margin on top.
 func _test_the_guard_walks_round_a_building_to_her(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director.contact_position())
 	_view = Rect2()
@@ -729,15 +729,15 @@ static func _beside(map: CityMap, body: Vector2, reach: float) -> Vector2:
 ## **Day 13's own roadblock is placed under the day's rules, close by.** She reads the mark where it
 ## stands, with the 640x360 view round her answering what is on screen.
 func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, seed_value)
 	var player := _rig_player(t, director.contact_position())
 	var her := player.global_position
@@ -831,12 +831,12 @@ func _start_the_day(t, city: City, seed_value: int) -> ResistanceDirector:
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	GameState.completed_resistance_steps = done
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
-	GameState.completed_resistance_alley_tiles.assign([])
+	GameState.resistance.completed_steps = done
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
+	GameState.facts.completed_resistance_alley_tiles.assign([])
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	city.events.start_day(DAY, _rng(seed_value, "events"), [], city.map.doorstep_world_position())
@@ -871,8 +871,8 @@ func _tear_down(player: Stroller, director: ResistanceDirector, city: City) -> v
 
 func _restore(completed: Array, failed: Array, progress: int, scars: Array,
 		state: CityState) -> void:
-	GameState.completed_resistance_steps.assign(completed)
-	GameState.failed_resistance_steps.assign(failed)
-	GameState.resistance_progress = progress
-	GameState.scars.assign(scars)
-	GameState.city_state = state
+	GameState.resistance.completed_steps.assign(completed)
+	GameState.resistance.failed_steps.assign(failed)
+	GameState.resistance.progress = progress
+	GameState.attempt_spend.scars.assign(scars)
+	GameState.attempt_spend.city_state = state

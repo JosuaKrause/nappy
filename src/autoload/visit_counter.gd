@@ -340,7 +340,7 @@ var _day := 0
 ## The day what happens now is counted under: the one `day_started` announced, or, before any has
 ## been heard on this page — a suite driving the counter by hand — the run's own day.
 func _counted_day() -> int:
-	return _day if _day > 0 else GameState.day
+	return _day if _day > 0 else GameState.header.day
 
 func _on_day_started(day: int) -> void:
 	_day = day
@@ -360,7 +360,7 @@ func _on_went_back_to_a_checkpoint(checkpoint_day: int, lost_day: int) -> void:
 
 ## Which day offered a step is on offer, kept only long enough to say whether the day it belongs
 ## to ended with the step done or without it — `step index -> day`. A retry re-offers the same
-## index for the same day (`GameState._give_the_resistance_back()` restores the step lists a lost
+## index for the same day (`GameState._give_the_attempt_back()` restores the step lists a lost
 ## attempt spent), which simply overwrites the entry with the day it already named.
 var _open_tasks := {}
 

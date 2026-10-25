@@ -41,11 +41,11 @@ const POSITIONS := 10
 const STEP := 0.1
 
 func run(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
 	var fields := ClassDB.class_exists("ArrowField") or ResourceLoader.exists(
 			"res://src/resistance/arrow_field.gd")
 	for day in DAYS:
@@ -56,10 +56,10 @@ func run(t) -> void:
 		var unreached := 0
 		var targets := 0
 		for seed_value in SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city: City = RunCity.of_the_run(CITY_SCENE)
 			t.add_child(city)
 			city.build(CityGenerator.generate(seed_value))
-			GameState.scars = []
+			GameState.attempt_spend.scars = []
 			var director := _read_the_mark(t, city, day, seed_value)
 			var player := _rig_player(t, director.contact_position())
 			_walk_the_rigged_bag(city, player)
@@ -110,11 +110,11 @@ func run(t) -> void:
 			line += " | frames to finish a sweep worst %d" % _worst_count(frames)
 			line += " | whole sweep at once mean %.2f ms worst %.2f ms" % [_mean(whole), _worst(whole)]
 		print(line + " | no length from her %d" % unreached)
-	GameState.completed_resistance_steps = saved_completed
-	GameState.failed_resistance_steps = saved_failed
-	GameState.resistance_progress = saved_progress
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.failed_steps = saved_failed
+	GameState.resistance.progress = saved_progress
+	GameState.attempt_spend.scars = saved_scars
+	GameState.attempt_spend.city_state = saved_state
 
 ## Whether no target had a walking length from `at`: on the fields, her tile read in the field of
 ## every target; on the walk, every length it returned.
@@ -153,11 +153,11 @@ func _read_the_mark(t, city: City, day: int, seed_value: int) -> ResistanceDirec
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	GameState.completed_resistance_steps = done
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
+	GameState.resistance.completed_steps = done
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	city.events.start_day(day, _rng(seed_value, day, "events"), [],

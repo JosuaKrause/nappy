@@ -83,11 +83,11 @@ func _test_the_indicators_share_the_ui_page(t) -> void:
 ## reloads the scene into the same process and rerolls the choice: without it one process that
 ## restarted once would be holding both, which is the waste the split exists to remove.
 func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
-	var saved := GameState.player_is_male
+	var saved := GameState.header.player_is_male
 	var main: Node2D = MAIN_SCRIPT.new()
 	AtlasLibrary.reset_for_tests()
 	for male in [false, true]:
-		GameState.player_is_male = male
+		GameState.header.player_is_male = male
 		main._hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP,
 				MAIN_SCRIPT.NO_FURTHER_GROUPS)
 		var mine := Stroller.parent_atlas(male)
@@ -110,7 +110,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 	t.check(not AtlasLibrary.is_acquired(Stroller.MOTHER_ATLAS),
 			"a second boot that rerolled the choice gave the first run's parent back")
 	main.free()
-	GameState.player_is_male = saved
+	GameState.header.player_is_male = saved
 	AtlasLibrary.reset_for_tests()
 
 # -------------------------------------------------------------------- the rule ---
@@ -170,8 +170,8 @@ func _test_a_page_may_only_be_read_in_a_window(t) -> void:
 ## look identical from the outside and would have cost a blocking read from disk in between.
 func _test_two_days_never_reload_a_page(t) -> void:
 	AtlasLibrary.reset_for_tests()
-	var saved := GameState.player_is_male
-	GameState.player_is_male = false
+	var saved := GameState.header.player_is_male
+	GameState.header.player_is_male = false
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP, MAIN_SCRIPT.NO_FURTHER_GROUPS)
 	main.free()
@@ -205,7 +205,7 @@ func _test_two_days_never_reload_a_page(t) -> void:
 	rig_tomorrow.free()
 	tomorrow.crowd.clear()
 	tomorrow.free()
-	GameState.player_is_male = saved
+	GameState.header.player_is_male = saved
 	AtlasLibrary.reset_for_tests()
 
 # ------------------------------------------------------------------- the rigs ---
@@ -216,7 +216,7 @@ func _rng(tag: String) -> RandomNumberGenerator:
 	return rng
 
 func _city(t) -> City:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	return city

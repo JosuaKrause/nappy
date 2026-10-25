@@ -30,7 +30,7 @@ func _measure(t, seed_value: int, trial: int) -> void:
 	var started := Time.get_ticks_usec()
 	var map := CityGenerator.generate(seed_value)
 	var generation_ms := (Time.get_ticks_usec() - started) / 1000.0
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	city.set_script(TIMED_CITY)
 	t.add_child(city)
 	var memory_before := OS.get_static_memory_usage()
@@ -47,7 +47,7 @@ func _measure(t, seed_value: int, trial: int) -> void:
 		_counterfactual(city, t)
 	var state := CityState.new()
 	for day: int in [1, 8, 14]:
-		GameState.day = day
+		GameState.header.day = day
 		state.begin_day(map.block_plans, day)
 		city.set("spans", {})
 		started = Time.get_ticks_usec()

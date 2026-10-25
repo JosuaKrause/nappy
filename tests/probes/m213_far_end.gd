@@ -39,22 +39,22 @@ func run(t) -> void:
 ## The guard the guarded task (day 13's roadblock) stands at its contact, placed the instant she
 ## reads the mark: how often none is placed, and how often he shows on her screen.
 func _task_guards(t) -> void:
-	var saved := GameState.completed_resistance_steps.duplicate()
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+	var saved := GameState.resistance.completed_steps.duplicate()
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	var placed := 0
 	var unguarded := 0
 	var seen := 0
 	for seed_value in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in [13]:
-			GameState.completed_resistance_alley_tiles = []
+			GameState.facts.completed_resistance_alley_tiles = []
 			var done: Array[int] = []
 			done.assign(range(1, 2 * (day - 6) + 1))
-			GameState.completed_resistance_steps = done
+			GameState.resistance.completed_steps = done
 			var state := CityState.new()
-			GameState.city_state = state
+			GameState.attempt_spend.city_state = state
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			city.events.start_day(day, _rng(seed_value, day, "events"), [],
@@ -92,8 +92,8 @@ func _task_guards(t) -> void:
 			player.free()
 			director.free()
 		city.free()
-	GameState.completed_resistance_steps = saved
-	GameState.completed_resistance_alley_tiles = saved_tiles
+	GameState.resistance.completed_steps = saved
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 	print("[m213] guarded tasks %d: unguarded %d, guard body on screen %d" % [placed, unguarded,
 			seen])
 	t.check(true, "probe ran")
@@ -168,8 +168,8 @@ func _reachability(t) -> void:
 	t.check(true, "probe ran")
 
 func _on_screen(t) -> void:
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-	GameState.completed_resistance_alley_tiles = []
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+	GameState.facts.completed_resistance_alley_tiles = []
 	var marks_seen := 0
 	var guards_seen := 0
 	var guards_centre_seen := 0
@@ -207,7 +207,7 @@ func _on_screen(t) -> void:
 				guards_seen += 1
 			var _unused := robbery
 		director.free()
-	GameState.completed_resistance_alley_tiles = saved_tiles
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 	print("[m213] relocations %d: mark picture on screen %d, guard centre on screen %d, guard body on screen %d, unguarded %d"
 			% [relocations, marks_seen, guards_centre_seen, guards_seen, unguarded])
 	t.check(true, "probe ran")

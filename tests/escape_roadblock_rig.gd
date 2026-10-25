@@ -27,8 +27,8 @@ const LANE_SCAN := 4.0
 ## The finale's plan for a seed, built the way `tests/test_finale.gd` builds it.
 static func plan_for(seed_value: int) -> Dictionary:
 	var map := CityGenerator.generate(seed_value)
-	GameState.city_state.begin_day(map.block_plans, 1)
-	map.repaint(GameState.city_state)
+	GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+	map.repaint(GameState.attempt_spend.city_state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	return {"map": map, "plan": FinalePlanner.plan(map, rng, _city_spec())}

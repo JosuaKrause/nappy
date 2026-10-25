@@ -19,7 +19,7 @@ const SCREEN := Vector2(640.0, 360.0)
 
 func run(t) -> void:
 	for city_seed in [4242, 5551212]:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))
 		var day := 1

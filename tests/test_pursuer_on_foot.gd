@@ -41,7 +41,7 @@ func run(t) -> void:
 ## a sidewalk beside a building, returned as `[city, her]`.
 func _city_with_her(t, day: int, seed_value := SEED) -> Array:
 	var map := CityGenerator.generate(seed_value)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	city.events._day = day

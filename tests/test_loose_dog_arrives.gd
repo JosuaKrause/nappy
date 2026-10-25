@@ -17,7 +17,7 @@ var _city: City
 var _rig: Stroller
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(4242))
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS

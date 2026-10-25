@@ -66,7 +66,7 @@ func _busker_never_fills_the_day(t) -> void:
 		return
 	var map: CityMap = found["map"]
 	var block: Vector2i = found["block"]
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 
@@ -314,7 +314,7 @@ func _playground_settles(t) -> void:
 	print("\n== a one-block park with a playground in it: can she settle at its own centre? ==")
 	var step := 1.0 / 60.0
 	for city_seed in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))
 		var consumed: Array[String] = []

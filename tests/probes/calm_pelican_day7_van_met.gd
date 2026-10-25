@@ -31,23 +31,23 @@ const SEEDS: Array[int] = [4242, 90210, 1234567, 7, 31337, 2024, 555, 8080, 99, 
 		314159]
 
 func run(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	for case: Array in CASES:
 		var tally := {}
 		for seed_value in SEEDS:
 			var outcome := _walk_a_day(t, seed_value, case[0], case[1])
 			tally[outcome] = int(tally.get(outcome, 0)) + 1
 		print("DAY7_VAN day %d %s, %d walks: %s" % [case[0], case[1], SEEDS.size(), tally])
-	GameState.completed_resistance_steps.assign(saved_completed)
-	GameState.failed_resistance_steps.assign(saved_failed)
-	GameState.resistance_progress = saved_progress
-	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
+	GameState.resistance.completed_steps.assign(saved_completed)
+	GameState.resistance.failed_steps.assign(saved_failed)
+	GameState.resistance.progress = saved_progress
+	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
 
 func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()
@@ -59,11 +59,11 @@ func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	GameState.completed_resistance_steps.assign(done)
-	GameState.failed_resistance_steps.assign([])
-	GameState.resistance_progress = 0
+	GameState.resistance.completed_steps.assign(done)
+	GameState.resistance.failed_steps.assign([])
+	GameState.resistance.progress = 0
 	# A read mark's alley is remembered and never chosen again; each walk starts from none.
-	GameState.completed_resistance_alley_tiles.assign([])
+	GameState.facts.completed_resistance_alley_tiles.assign([])
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)

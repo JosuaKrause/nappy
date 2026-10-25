@@ -193,7 +193,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 
 ## What the city is handed reaches the part it belongs to, and the crowd's agents get theirs.
 func _test_the_city_hands_each_value_to_its_part(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	city.ground_mode = SceneryGround.Mode.STEPPED
 	city.scenery_frame_locked = true
 	city.skip_shadows = true

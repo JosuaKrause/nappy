@@ -46,7 +46,7 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	# standing at day 12's dawn, is the way a test gives it, and is read back through the scratch
 	# file this suite points `GameSave` at.
 	GameState.start_run(seed_value)
-	GameState.day = ResistanceSteps.swing_day()
+	GameState.header.day = ResistanceSteps.swing_day()
 	GameSave._write_now(true)
 	GameSave._uses_save_override = true
 	var main: Node2D = MAIN_SCENE.instantiate()
@@ -59,13 +59,13 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	main._on_title_start(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.RIGHT)
 	t.check(main._city.map.seed_used == seed_value, "seed %d is the city under test (%d)"
 			% [seed_value, main._city.map.seed_used])
-	t.check(GameState.day == ResistanceSteps.swing_day(), "booted at day %d (day %d)"
-			% [ResistanceSteps.swing_day(), GameState.day])
+	t.check(GameState.header.day == ResistanceSteps.swing_day(), "booted at day %d (day %d)"
+			% [ResistanceSteps.swing_day(), GameState.header.day])
 	# A resumed run opens on the day's brief; leaving it is what puts her on the street.
 	if main._resume_gate_open:
 		main._on_summary_continued()
 	t.check(main._day.is_running() and not main._summary.is_showing(),
-			"seed %d: day %d is under way" % [seed_value, GameState.day])
+			"seed %d: day %d is under way" % [seed_value, GameState.header.day])
 	var director: ResistanceDirector = main._resistance
 	var mark := director.current_step()
 	director._on_contact_completed(mark.index if mark else -1)
@@ -127,9 +127,9 @@ func _check_the_next_morning(t, main: Node2D, label: String) -> void:
 	t.check(main._summary.is_showing(), "%s: the won day's summary is up" % label)
 	var map: CityMap = main._city.map
 	main._on_summary_continued()
-	t.check(GameState.day == ResistanceSteps.swing_day() + 1,
+	t.check(GameState.header.day == ResistanceSteps.swing_day() + 1,
 			"%s: leaving the summary starts day %d (day %d)"
-			% [label, ResistanceSteps.swing_day() + 1, GameState.day])
+			% [label, ResistanceSteps.swing_day() + 1, GameState.header.day])
 	t.check(not main._summary.is_showing() and not t.get_tree().paused,
 			"%s: with the summary gone and the tree running" % label)
 	t.check(main._day.is_running() and main._day.phase == GameEnums.DayPhase.WALKING,
@@ -219,11 +219,11 @@ func _test_shut_in_with_the_baby_asleep(t, seed_value: int) -> void:
 			and main._day.hard_fail_reason == ParkCordon.TRAPPED,
 			"%s: shut in, the day is lost to the cordon (%s)" % [label, results])
 	t.check(main._summary.is_showing(), "%s: the lost day's summary is up" % label)
-	var day := GameState.day
+	var day := GameState.header.day
 	main._on_summary_continued()
-	t.check(GameState.day == day and not main._summary.is_showing()
+	t.check(GameState.header.day == day and not main._summary.is_showing()
 			and not t.get_tree().paused,
-			"%s: leaving it plays day %d again (day %d)" % [label, day, GameState.day])
+			"%s: leaving it plays day %d again (day %d)" % [label, day, GameState.header.day])
 	t.check(main._day.is_running() and main._day.phase == GameEnums.DayPhase.WALKING
 			and main._baby.state == GameEnums.BabyState.AWAKE,
 			"%s: the retry runs with the baby awake" % label)

@@ -25,15 +25,15 @@ const ACCIDENT_SHARE := 0.10
 const PURSUIT_PER_TEAR := 0.1
 
 func run(t) -> void:
-	var saved_seed := GameState.run_seed
+	var saved_seed := GameState.header.run_seed
 	var saved_posters := GameState.posters.to_data()
 	var rows := {}
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
-		GameState.run_seed = seed_value
+		GameState.header.run_seed = seed_value
 		GameState.posters.reset()
 		var state := CityState.new()
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -65,7 +65,7 @@ func run(t) -> void:
 				100.0 * float(r["empty"]) / maxi(1, int(r["cells"])), sum / maxi(1, routes.size()),
 				worst, 100.0 * bare / maxi(1, routes.size())])
 	t.check(rows.size() > 0, "measured")
-	GameState.run_seed = saved_seed
+	GameState.header.run_seed = saved_seed
 	GameState.posters.restore(saved_posters)
 
 func _measure(city: City, map: CityMap, day: int, rows: Dictionary) -> void:

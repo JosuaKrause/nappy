@@ -468,7 +468,7 @@ var _city: City
 func _build_city(t, seed_value := SEED) -> void:
 	if _city != null:
 		_city.free()
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(seed_value))
 
@@ -1880,7 +1880,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
 	_with_clean_run(func() -> void:
 		var seed_value := 291862120
 		var day := 7
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		city.events.stream_radius = INF
@@ -1983,7 +1983,7 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 	_with_clean_run(func() -> void:
 		var seed_value := 2199579682
 		var day := Tuning.REGION_WALL_FIRST_DAY
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 
@@ -3035,11 +3035,11 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
 func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> void:
 	var saved_seed := GameState.run_seed
 	var saved_day := GameState.day
-	var saved_nerves := GameState.nerves
+	var saved_nerves := GameState.header.nerves
 	_with_clean_run(func() -> void:
 		GameState.run_seed = SEED
 		GameState.day = 6
-		GameState.nerves = Tuning.STARTING_NERVES
+		GameState.header.nerves = Tuning.STARTING_NERVES
 		GameState.begin_day()
 
 		var attempt := _director(t)
@@ -3077,7 +3077,7 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 
 	GameState.run_seed = saved_seed
 	GameState.day = saved_day
-	GameState.nerves = saved_nerves
+	GameState.header.nerves = saved_nerves
 
 ## The sabotage is what puts the city's power out, and the masts go with it. Not at the door she
 ## touched: the hand-over takes minutes, so every mast is still speaking until the blackout, which
@@ -3564,7 +3564,7 @@ func _test_the_door_task_never_borders_the_home_block(t) -> void:
 	var draws := 20
 	var checked := 0
 	for seed_value: int in seeds.slice(0, RULE_SEEDS):
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		var closure_state := CityState.new()
@@ -3977,7 +3977,7 @@ func _test_the_raid_seals_her_street_door(t) -> void:
 func _test_the_sealed_door_stands_after_a_reload(t) -> void:
 	var saved_scars := GameState.scars.duplicate(true)
 	GameState.scars = [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}]
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	t.check(city._home_door.texture == AtlasLibrary.region(City.SEALED_DOOR_TEXTURE),
@@ -3985,7 +3985,7 @@ func _test_the_sealed_door_stands_after_a_reload(t) -> void:
 	city.free()
 	GameState.scars = saved_scars
 
-## A lost day 10 gives the scar back (`GameState._give_back_what_the_attempt_spent()`) and the
+## A lost day 10 gives the scar back (`GameState.run_parts.give_back()`) and the
 ## next dawn's own `_sync_home_door()` puts the ordinary door back, exactly the restore every
 ## other scar already gets.
 func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
@@ -4005,7 +4005,7 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 	for instance in happenings.raid:
 		_city.events.retire(instance)
 	# The loss: the attempt's own scar is given back, the same way
-	# `GameState._give_back_what_the_attempt_spent()` restores every scar a lost day left.
+	# `GameState.run_parts.give_back()` restores every scar a lost day left.
 	GameState.scars.clear()
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, ResistanceHappenings.NEIGHBOR_DAY)
@@ -4043,7 +4043,7 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	happenings.start_day(ResistanceHappenings.MARKET_DAY + 3)
 	t.check(building.neighbor_window_col == col, "the same cell on every later day")
 
-	var reloaded: City = CITY_SCENE.instantiate()
+	var reloaded: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(reloaded)
 	reloaded.build(CityGenerator.generate(SEED))
 	reloaded.board_neighbor_window()
@@ -5597,7 +5597,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 		var saved_scars := GameState.scars.duplicate()
 		var checked := 0
 		for seed_value in REACHABILITY_SWEEP_SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city: City = RunCity.of_the_run(CITY_SCENE)
 			t.add_child(city)
 			city.build(CityGenerator.generate(seed_value))
 			for day in REACHABILITY_SWEEP_DAYS:
@@ -5685,7 +5685,7 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
 		var checked := 0
 		for seed_value in MARK_REACHABILITY_SWEEP_SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city: City = RunCity.of_the_run(CITY_SCENE)
 			t.add_child(city)
 			city.build(CityGenerator.generate(seed_value))
 			for day in REACHABILITY_SWEEP_DAYS:
@@ -5752,7 +5752,7 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 	var seeds: Array[int] = [4242, 2295276695]
 	var checked := 0
 	for seed_value in seeds:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in REACHABILITY_SWEEP_DAYS:
@@ -5836,7 +5836,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 	_with_clean_run(func() -> void:
 		var checked := 0
 		for seed_value in NARROW_TARGET_SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city: City = RunCity.of_the_run(CITY_SCENE)
 			t.add_child(city)
 			city.build(CityGenerator.generate(seed_value))
 			for day: int in [9, 12, Tuning.RUN_LENGTH_DAYS]:

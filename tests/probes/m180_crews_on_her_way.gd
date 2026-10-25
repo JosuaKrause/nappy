@@ -19,7 +19,7 @@ const PAST_THE_FORK := 6
 func run(t) -> void:
 	print("seed   day walk          crews  sited  met  first sited  sheets pasted  waited on")
 	for seed_value: int in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -30,7 +30,7 @@ func run(t) -> void:
 	t.check(true, "m180_crews_on_her_way probe ran")
 
 func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> void:
-	GameState.run_seed = seed_value
+	GameState.header.run_seed = seed_value
 	GameState.posters.reset()
 	var tree := RouteTree.for_day(city.map, day)
 	city.poster_walls().start_day(day, tree)
