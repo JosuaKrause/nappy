@@ -71,7 +71,7 @@ nested exactly like this, the layout the player set on the board:
 
 **No question is put to the player as a modal dialog in the chat** (inbox #830): a dialog stops
 the session and the player cannot scroll back while it is open, so they lose the context they need
-to answer. The board is where a question goes. **A blocking question still blocks** (inbox #830):
+to answer. The board is where a question goes, apart from one about an inbox note, which may go on its issue (**inbox**). **A blocking question still blocks** (inbox #830):
 the work it names stops until it is answered, and other work goes on. A question that does not
 block runs on My pick; work built on a pick changes to the player's answer before it merges, if the
 answer differs.
