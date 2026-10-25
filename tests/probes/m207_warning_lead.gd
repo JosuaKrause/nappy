@@ -166,7 +166,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 		created.came_under_a_warning = true
 		# Created as `EventManager.spawn_warned()` creates it: one that arrives chasing (the
 		# resistance's sent robber and guard) with its telegraph spent.
-		if def.arrives_chasing:
+		if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 			created.resume(EventManager.age_when_warned(def), 0.0)
 		made.append(created)
 		return true
@@ -247,13 +247,13 @@ static func encounters() -> Array[Dictionary]:
 				"path": PackedVector2Array([centre - across, centre + across]),
 				"her": Vector2.ZERO, "heading": heading, "warm": 0.0})
 
-	# `alley_mouse`: waits in an alley until she is within `pursues_within`, then dashes across it.
+	# `alley_mouse`: waits in an alley until she is within `EventDef.notice`, then dashes across it.
 	# With no map its path is the flat 64px crossing `EventInstance._alley_crossing_path()` falls
 	# back to, across X — so she walks up the alley along Y.
 	var mouse := EventCatalogue.by_id("alley_mouse")
 	list.append({"def": mouse, "how": "waits in an alley, dashes across it",
 			"path": PackedVector2Array(), "spawn": Vector2.ZERO,
-			"her": Vector2(0.0, mouse.pursues_within + 200.0), "heading": up, "warm": 0.0})
+			"her": Vector2(0.0, mouse.notice_within() + 200.0), "heading": up, "warm": 0.0})
 
 	# `military_convoy` as a `MAP` mover: streamed in at `EVENT_STREAM_RADIUS` and driving straight
 	# down her street — the closest the city can bring one at her. Its lead is `DangerEdge.LEAD_TIME`
@@ -309,10 +309,10 @@ static func encounters() -> Array[Dictionary]:
 		return PackedVector2Array([place, place + Vector2(0.0, 4000.0)])
 	list.append(_warned(column, "day 13's column, warned in its lane", lane_where, lane_route, up))
 
-	# `pigeon_flock`: waits, quiet, until she is within `pursues_within`, then goes up.
+	# `pigeon_flock`: waits, quiet, until she is within `EventDef.notice`, then goes up.
 	var flock := EventCatalogue.by_id("pigeon_flock")
 	list.append({"def": flock, "how": "waits on the sidewalk", "path": PackedVector2Array(),
-			"spawn": Vector2.ZERO, "her": Vector2(0.0, flock.pursues_within + 200.0),
+			"spawn": Vector2.ZERO, "her": Vector2(0.0, flock.notice_within() + 200.0),
 			"heading": up, "warm": 0.0})
 
 	# `charging_dog`: day 3's own, sent by the director down her heading and warned first
@@ -329,7 +329,7 @@ static func encounters() -> Array[Dictionary]:
 				dog_where, dog_route, heading))
 	var later_dog := EventScheduler._for_day(dog, Tuning.RUN_TAUGHT_DAY + 1)
 	list.append({"def": later_dog, "how": "day 4 on, waits for her", "path": PackedVector2Array(),
-			"spawn": Vector2.ZERO, "her": Vector2(0.0, later_dog.pursues_within + 200.0),
+			"spawn": Vector2.ZERO, "her": Vector2(0.0, later_dog.notice_within() + 200.0),
 			"heading": up, "warm": 0.0})
 
 	# `police_patrol` on the return leg: `EventDirector._toward_her_on_the_road()` — the plain
@@ -356,10 +356,10 @@ static func encounters() -> Array[Dictionary]:
 			"path": PackedVector2Array(), "spawn": guard_at, "her": Vector2(1.0, 0.0),
 			"heading": (guard_at - Vector2(1.0, 0.0)).normalized(), "warm": 0.0})
 
-	# `alley_robbery`: waits in the alley until she is within `pursues_within`.
+	# `alley_robbery`: waits in the alley until she is within `EventDef.notice`.
 	var robber := EventCatalogue.by_id("alley_robbery")
 	list.append({"def": robber, "how": "waits in an alley", "path": PackedVector2Array(),
-			"spawn": Vector2.ZERO, "her": Vector2(0.0, robber.pursues_within + 200.0),
+			"spawn": Vector2.ZERO, "her": Vector2(0.0, robber.notice_within() + 200.0),
 			"heading": up, "warm": 0.0})
 
 	# `masked_pursuer`: waits at the foot of the stairwell until she is in it, stands out his
@@ -367,7 +367,7 @@ static func encounters() -> Array[Dictionary]:
 	var masked := EventCatalogue.by_id("masked_pursuer")
 	list.append({"def": masked, "how": "waits at the foot of the stairwell",
 			"path": PackedVector2Array([Vector2.ZERO, Vector2(0.0, -1600.0)]),
-			"her": Vector2(0.0, -(masked.pursues_within + 100.0)), "heading": Vector2.DOWN,
+			"her": Vector2(0.0, -(masked.notice_within() + 100.0)), "heading": Vector2.DOWN,
 			"warm": 0.0})
 	return list
 
@@ -458,7 +458,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
 		instance.came_under_a_warning = true
-		if not def.pursues:
+		if def.pursuit == null:
 			instance.resume(EventManager.age_when_warned(def), 0.0)
 		created.append(instance)
 		return true

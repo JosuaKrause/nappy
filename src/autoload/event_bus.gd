@@ -122,7 +122,7 @@ signal event_lit_unmet(id: String)
 ## waiting charger noticing her (`EventInstance.warns_by_radius()`), the masked man's raised hand,
 ## the raised hand of the man a vehicle lets out and of day 13's guard in her view — once per
 ## instance — and a checkpoint hut's or post's guard raising his hand from her crossing of its
-## door's line (`EventManager._warn_at_the_doors()`, `door_guard`), each time he does.
+## door's line (`CheckpointController.warn_at_the_doors()`, `door_guard`), each time he does.
 signal pursuit_warned(id: String)
 ## `EventInstance._chase()`'s own moment a pursuer comes for her: its charge, never its warning — a
 ## waiting charger when its warning has run with her still inside its radius, the man a vehicle lets out and day 13's guard in
@@ -203,8 +203,8 @@ signal resistance_contact_available(step: int)
 ## noticed — within `SEEN_DISTANCE` and on screen for `SEEN_DWELL_SECONDS`. `step` is the mark's own
 ## step index. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal resistance_mark_seen(step: int)
-## `EventManager._check_detentions()`'s own catch — `chatting_mother`, or a checkpoint's hut or
-## post — named by the catching row's own `def.id`; `VisitCounter` turns that into `chat` or
+## `CheckpointController.check_detentions()`'s own catch — `chatting_mother`, or a checkpoint's
+## hut or post — named by the catching row's own `def.id`; `VisitCounter` turns that into `chat` or
 ## `checkpoint`. Listen-only — see docs/TELEMETRY.md, "The page counts visits".
 signal player_detained(id: String)
 ## `PosterWalls._tear()`'s own moment a sheet actually tears (never a tear that missed, which

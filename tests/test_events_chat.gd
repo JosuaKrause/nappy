@@ -2,9 +2,10 @@ extends RefCounted
 ## The one row whose whole mechanic is time under compulsion rather than a field: entering
 ## `detain_radius` locks the player's own movement input, and what she is charged while it holds
 ## depends on the baby's state rather than on anything the def can see. An `EventManager` is built
-## by hand -- nothing here needs a real `City` -- and its trigger (`_check_detentions()`) and its
-## per-frame handoff (`_tell_them_where_she_is()`) are driven directly, the same shape
-## `test_danger.gd` drives `_warn_about_the_ground_she_is_on()` in.
+## by hand -- nothing here needs a real `City` -- and its trigger
+## (`CheckpointController.check_detentions()`) and its per-frame handoff
+## (`_tell_them_where_she_is()`) are driven directly, the same shape `test_danger.gd` drives
+## `_warn_about_the_ground_she_is_on()` in.
 ##
 ## Plus the van: `abduction` draws its own scripted victim rather than touching a real `CrowdAgent`
 ## (docs/TODO.md, M56) -- drawing and telemetry only, so a data-level rig can drive the whole scene
@@ -42,10 +43,11 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 # The one row whose whole mechanic is time under compulsion rather than a field: entering
 # `detain_radius` locks the player's own movement input, and what she is charged while it holds
 # depends on the baby's state rather than on anything the def can see. An `EventManager` is built
-# by hand — nothing here needs a real `City` — and its trigger (`_check_detentions()`) and its
-# per-frame handoff (`_tell_them_where_she_is()`) are driven directly, the same shape
-# `test_danger.gd` drives `_warn_about_the_ground_she_is_on()` in: a per-frame method with no
-# signal of its own to trigger from outside.
+# by hand — nothing here needs a real `City` — and its trigger
+# (`CheckpointController.check_detentions()`) and its per-frame handoff
+# (`_tell_them_where_she_is()`) are driven directly, the same shape `test_danger.gd` drives
+# `_warn_about_the_ground_she_is_on()` in: a per-frame method with no signal of its own to
+# trigger from outside.
 
 ## A `WorldContext` whose `excitement_sources_at`/`total_excitement_at` read straight off a
 ## hand-built `EventManager`, the same questions `City` answers for real. Lets a real `Baby` be
@@ -59,8 +61,9 @@ class _ChatWorld extends WorldContext:
 	func total_excitement_at(world_position: Vector2) -> float:
 		return manager.total_excitement_at(world_position)
 
-## A manager with nothing in it but the map arithmetic `_check_detentions()`'s own telemetry line
-## needs — see `TelemetryObserver._blocked_rig()` in `tests/test_telemetry.gd` for the same trick.
+## A manager with nothing in it but the map arithmetic
+## `CheckpointController.check_detentions()`'s own telemetry line needs — see
+## `TelemetryObserver._blocked_rig()` in `tests/test_telemetry.gd` for the same trick.
 func _chat_manager() -> EventManager:
 	var manager := EventManager.new()
 	manager._map = CityMap.new()
@@ -90,7 +93,7 @@ func _test_a_conversation_locks_her_and_releases(t) -> void:
 	stroller.global_position = at
 	stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	manager._tell_them_where_she_is()
-	manager._check_detentions()
+	manager.checkpoints.check_detentions()
 	t.check(stroller.is_detained(), "entering detain_radius locks her input")
 	t.check(mother.is_chatting(), "and starts the instance's one conversation")
 
@@ -154,7 +157,7 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		var starting_excitement := baby.excitement
 
 		manager._tell_them_where_she_is()
-		manager._check_detentions()
+		manager.checkpoints.check_detentions()
 		t.check(stroller.is_detained(), "a capture starts whether she is awake or asleep")
 
 		for i in int(round(def.detain_seconds / STEP)) + 5:
@@ -204,7 +207,7 @@ func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 	far_manager._player = far_stroller
 	far_stroller.global_position = at + Vector2(0.0, Tuning.TILE_SIZE)
 	far_manager._tell_them_where_she_is()
-	far_manager._check_detentions()
+	far_manager.checkpoints.check_detentions()
 	t.check(far_stroller.is_detained(),
 			"the far lane of a two-tile pavement now starts a conversation too")
 	far_lane.free()
@@ -224,7 +227,7 @@ func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 			% [def.detain_distance(), def.inner_radius])
 	stroller.global_position = at + Vector2(0.0, def.detain_distance() + 0.5)
 	manager._tell_them_where_she_is()
-	manager._check_detentions()
+	manager.checkpoints.check_detentions()
 	t.check(not stroller.is_detained(),
 			"just outside the capture, no conversation starts")
 	t.check(not mother.is_chatting() and not mother.has_chatted(),
@@ -245,7 +248,7 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 	stroller.global_position = at
 
 	manager._tell_them_where_she_is()
-	manager._check_detentions()
+	manager.checkpoints.check_detentions()
 	t.check(mother.is_chatting(), "the first approach starts the conversation")
 
 	_advance(mother, def.detain_seconds + 0.1)
@@ -256,7 +259,7 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 	# cleared by hand to ask the real question: does *this* call detain her again.
 	stroller._detained_for = 0.0
 	manager._tell_them_where_she_is()
-	manager._check_detentions()
+	manager.checkpoints.check_detentions()
 	t.check(not stroller.is_detained(), "a second approach to the same instance never re-triggers")
 	mother.free()
 	stroller.free()
@@ -291,7 +294,7 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 		world.free()
 		return
 	manager._tell_them_where_she_is()
-	manager._check_detentions()
+	manager.checkpoints.check_detentions()
 	t.check(mother.is_chatting(), "the first approach starts the conversation")
 	_advance(mother, def.detain_seconds + 0.1)
 	t.check(mother.is_leaving, "it ends with her leaving")
@@ -306,7 +309,7 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 	stroller._detained_for = 0.0
 	manager.stream_around(at)
 	manager._tell_them_where_she_is()
-	manager._check_detentions()
+	manager.checkpoints.check_detentions()
 	t.check(plan.live == null and not stroller.is_detained(),
 			"and walking back past her place brings no second conversation")
 	stroller.free()
@@ -373,12 +376,12 @@ func _test_a_hunting_van_draws_no_victim(t) -> void:
 	instance.trace = RunTrace.recording(lines)
 	# Inside the field but outside the trigger, so it is only waiting — the take may begin exactly
 	# as it would for a cold van.
-	instance.player_at = Vector2(hot.pursues_within + 20.0, 0.0)
+	instance.player_at = Vector2(hot.notice_within() + 20.0, 0.0)
 	instance._process(STEP)
 	t.check(instance.is_taking_a_victim(), "waiting, it takes a bystander exactly like a cold van")
 
 	# Now she comes inside the trigger: it notices her and stops waiting, in the same frame.
-	instance.player_at = Vector2(hot.pursues_within - 10.0, 0.0)
+	instance.player_at = Vector2(hot.notice_within() - 10.0, 0.0)
 	instance._process(STEP)
 	t.check(not instance.is_waiting(), "she is inside the trigger, so it turns and notices her")
 	t.check(not instance.is_taking_a_victim(), "and the take it was running is abandoned")
@@ -395,7 +398,7 @@ func _test_a_hunting_van_stays_solid_once_it_notices_her(t) -> void:
 	var instance := _instance(t, hot, Vector2.ZERO)
 	t.check(instance.is_solid(), "a hunting van still parked is solid, exactly like a cold one")
 
-	instance.player_at = Vector2(hot.pursues_within - 10.0, 0.0)
+	instance.player_at = Vector2(hot.notice_within() - 10.0, 0.0)
 	instance._process(STEP)
 	t.check(not instance.is_waiting(), "she is inside the trigger, so it stops waiting")
 	t.check(instance.is_solid() and instance.officers_owed() == 2,

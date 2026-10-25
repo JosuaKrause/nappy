@@ -405,11 +405,12 @@ func is_alley(world_position: Vector2) -> bool:
 ## it there, which is what lets an event's and a crowd body's colour come from the same place.
 ##
 ## **Inside a region door the crowd is off too, and that is the same sentence as the events half.**
-## `EventManager.door_holding_her_at()` answers whether this point is inside a running hold; she is
-## in the hut for those two seconds, not on the pavement, so the queue outside it charges her no
-## more than the street does. Without this the toll would still be the toll plus however busy the
-## door happened to be. The events half already answers with the hold's own flat rate alone — see
-## `EventManager.excitement_sources_at()` — so all this adds is skipping the concatenation.
+## `CheckpointController.door_holding_her_at()` answers whether this point is inside a running
+## hold; she is in the hut for those two seconds, not on the pavement, so the queue outside it
+## charges her no more than the street does. Without this the toll would still be the toll plus
+## however busy the door happened to be. The events half already answers with the hold's own
+## flat rate alone — see `EventManager.excitement_sources_at()` — so all this adds is skipping
+## the concatenation.
 func excitement_sources_at(world_position: Vector2) -> Array:
 	var sources: Array = []
 	if events:

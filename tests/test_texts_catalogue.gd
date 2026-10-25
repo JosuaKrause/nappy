@@ -38,6 +38,7 @@ const _ALLOWED_FILES := {
 	"res://src/visuals/ground_layers.gd": "atlas and ground-layer errors reported to a developer",
 	"res://src/events/event_scheduler.gd": "placement reasons written to the run log",
 	"res://src/events/event_manager.gd": "log notes about placement",
+	"res://src/events/checkpoint_controller.gd": "log notes about the doors' crossings",
 	"res://src/resistance/resistance_director.gd": "the director's own log lines and setup errors",
 	"res://src/player/baby.gd": "the debug HUD's reason a baby is not settling",
 }

@@ -263,9 +263,9 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ## neighbouring unrecognised-target case already carries. `--follow <id>` tracks such a row once
 ## it exists.
 ##
-## **A row that waits for her** (`pursues_within` — a `pigeon_flock`, an `alley_robbery`) is stood
+## **A row that waits for her** (`EventDef.notice` — a `pigeon_flock`, an `alley_robbery`) is stood
 ## just *outside* its own trigger rather than inside it: the offset below is measured against
-## whichever is larger of `outer_radius` and `pursues_within`, plus a tile's width of clearance,
+## whichever is larger of `outer_radius` and `EventDef.notice`, plus a tile's width of clearance,
 ## so a rig can photograph the silence before it notices her rather than always finding it already
 ## noticing.
 static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
@@ -279,8 +279,8 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 				continue
 		elif plan.def.kind == GameEnums.EventKind.AMBIENT:
 			continue
-		if plan.def.pursues_within > 0.0:
-			var clearance := maxf(plan.def.outer_radius, plan.def.pursues_within) + Tuning.TILE_SIZE
+		if plan.def.notice_within() > 0.0:
+			var clearance := maxf(plan.def.outer_radius, plan.def.notice_within()) + Tuning.TILE_SIZE
 			var stand_off := pavement_offset(city.map, plan.position, clearance, 1.0)
 			return nearest_walkable(city.map, plan.position + stand_off)
 		var offset := pavement_offset(city.map, plan.position, plan.def.outer_radius)
@@ -307,7 +307,7 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 ##
 ## `scale` defaults to 0.6 — comfortably clear of an ordinary event's own `radius` without
 ## wandering off toward the next thing down the street. `first_event_position()` passes `1.0` for
-## a row that waits (`pursues_within`), where `radius` already carries its own margin and the step
+## a row that waits (`EventDef.notice`), where `radius` already carries its own margin and the step
 ## has to reach the full distance rather than a fraction of it.
 static func pavement_offset(map: CityMap, at: Vector2, radius: float, scale: float = 0.6) -> Vector2:
 	var vertical := EventInstance._spread_is_vertical(map, at)

@@ -153,9 +153,9 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 func _test_a_flock_goes_up_when_she_reaches_the_birds(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var touch := def.flock_spread + Tuning.PLAYER_BODY_RADIUS
-	t.check(touch < def.pursues_within,
+	t.check(touch < def.notice_within(),
 			"she is inside the trigger (%.0fpx) well before she is among the birds (%.0fpx)"
-			% [def.pursues_within, touch])
+			% [def.notice_within(), touch])
 
 	var straight_in := _flock_flushes_at(t, def, 0.0)
 	t.check(not is_inf(straight_in), "a flock walked straight into goes up at all")
@@ -221,15 +221,15 @@ func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t) ->
 ## - **And it is on the ground, quiet, until she walks up to it.** A flock that streamed in already
 ##   bursting would have spent its whole event two screens away; one that emitted its full 42/s
 ##   while pecking would be a place nobody can walk past. The birds leave the ground only once she
-##   is inside `pursues_within`, which is the telegraph contract paid in geometry.
+##   is inside `EventDef.notice`, which is the telegraph contract paid in geometry.
 func _test_a_flock_is_a_place_she_can_see(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		t.check(def.spawn_mode_on(day) == EventDef.SpawnMode.MAP,
 				"day %d sites a flock on a tile rather than in front of her" % day)
-	t.check(def.pursues_within > 0.0 and def.pursues_within < def.outer_radius,
+	t.check(def.notice_within() > 0.0 and def.notice_within() < def.outer_radius,
 			"it waits for her inside its own %.0fpx field (trigger %.0fpx)"
-			% [def.outer_radius, def.pursues_within])
+			% [def.outer_radius, def.notice_within()])
 
 	var planned_flocks := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -261,7 +261,7 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 			"and pecking costs a fraction of what going up does", 0.1)
 
 	# She comes inside the trigger: the notice starts here rather than at dawn.
-	instance.player_at = Vector2(def.pursues_within - 10.0, 0.0)
+	instance.player_at = Vector2(def.notice_within() - 10.0, 0.0)
 	instance._process(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(),
 			"walking up to it is what starts it")

@@ -234,14 +234,14 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
 ## The review finding on M100, a mouse in the alley: `alley_mouse` is `MAP`-placed at dawn,
 ## `Tuning.EVENT_STREAM_RADIUS` (900px) outside the view and far past `Tuning.VIEW_HALF_EXTENT`, so
 ## a row that started telegraphing the moment it existed dashed and finished off screen before she
-## ever walked into the alley — nothing happened, from where she was standing. `pursues_within`
-## without `pursues` (`EventDef.pursues_within`'s own note, `EventInstance._check_for_notice()`) is
+## ever walked into the alley — nothing happened, from where she was standing. `EventDef.notice`
+## without `EventDef.pursuit` (`EventDef.notice`'s own note, `EventInstance._check_for_notice()`) is
 ## the fix: this holds the whole sequence end to end, on a real generated alley, rather than only
 ## the crossing axis `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in
 ## isolation.
 func _test_the_mouse_waits_until_she_is_near(t) -> void:
 	var def := EventCatalogue.by_id("alley_mouse")
-	t.check(def.pursues_within > 0.0 and not def.pursues,
+	t.check(def.notice_within() > 0.0 and def.pursuit == null,
 			"alley_mouse waits like a pursuer without becoming one")
 
 	var map: CityMap
@@ -264,7 +264,7 @@ func _test_the_mouse_waits_until_she_is_near(t) -> void:
 
 	# Far away — well past the trigger, and past where `EventManager` actually streams a `MAP` row
 	# in from (`EVENT_STREAM_RADIUS`, 900px).
-	instance.player_at = at + Vector2(def.pursues_within + 400.0, 0.0)
+	instance.player_at = at + Vector2(def.notice_within() + 400.0, 0.0)
 	_advance(instance, 5.0)
 	t.check(instance.is_waiting(), "far away, it is still only waiting several seconds later")
 	t.check(not instance.is_telegraphing(), "and has not started telegraphing")
@@ -272,7 +272,7 @@ func _test_the_mouse_waits_until_she_is_near(t) -> void:
 	t.check(not instance.is_finished, "and has not finished")
 
 	# She steps inside the trigger: the notice, and the clock, start now.
-	instance.player_at = at + Vector2(def.pursues_within - 10.0, 0.0)
+	instance.player_at = at + Vector2(def.notice_within() - 10.0, 0.0)
 	instance._process(STEP)
 	t.check(not instance.is_waiting(), "she notices it")
 	t.check(instance.is_telegraphing(), "and it starts telegraphing from the notice, not from dawn")

@@ -1042,7 +1042,7 @@ func _watch_what_is_near(here: Vector2) -> void:
 ## the duration and the outcome are the finding, and neither exists until it is over.
 ##
 ## **A warning is not a chase.** A pursuer that waited for her warns inside its one radius for its
-## `warns_for` and charges only if she is still inside once that has run
+## `PursuitSpec.warns_for` and charges only if she is still inside once that has run
 ## (`EventInstance.warns_by_radius()`; inbox #788 in minty-lemur: leave the radius and nothing happens). So its warning is its own span (`_watch_the_warning()`): one line when
 ## it starts and one when it ends, saying whether she walked out of it or it charged, and the chase
 ## span starts at the charge.
@@ -1053,7 +1053,7 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 		# A pursuer that has not noticed her is not a chase, it is scenery with teeth. The span
 		# starts the moment it comes for her, which for a robbery is the whole finding; for one that
 		# warns by radius, that is its charge rather than its warning.
-		if not instance.def.pursues or instance.is_finished or instance.is_waiting() \
+		if instance.def.pursuit == null or instance.is_finished or instance.is_waiting() \
 				or _is_warning(instance):
 			continue
 		var id := instance.get_instance_id()
@@ -1107,7 +1107,7 @@ var _warnings := {}
 
 ## Whether `instance` is warning her by radius right now, rather than chasing or waiting.
 static func _is_warning(instance: EventInstance) -> bool:
-	return instance.def.pursues and not instance.is_finished and not instance.is_waiting() \
+	return instance.def.pursuit != null and not instance.is_finished and not instance.is_waiting() \
 			and instance.warns_by_radius() and instance.is_telegraphing()
 
 ## The warning span of a pursuer that warns by radius: a line when it starts warning her, and a line
@@ -1122,7 +1122,7 @@ func _watch_the_warning(here: Vector2) -> void:
 		if not _is_warning(instance):
 			if _warnings.has(id) and instance.is_waiting():
 				waits_again[id] = true
-			elif _warnings.has(id) and instance.def.pursues and not instance.is_finished:
+			elif _warnings.has(id) and instance.def.pursuit != null and not instance.is_finished:
 				charged[id] = true
 			continue
 		seen[id] = true

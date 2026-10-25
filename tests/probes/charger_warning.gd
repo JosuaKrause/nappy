@@ -27,7 +27,8 @@ func run(t) -> void:
 			var copy := def.duplicate() as EventDef
 			copy.shape = def.shape
 			copy.solid_parts = def.solid_parts
-			copy.warns_for = warns_for
+			copy.pursuit = def.pursuit.duplicate() as PursuitSpec
+			copy.pursuit.warns_for = warns_for
 			var said: Array[String] = []
 			for walk in ["back", "stand", "bait", "on"]:
 				var r := _walk(t, copy, walk)
@@ -36,7 +37,7 @@ func run(t) -> void:
 						else "never charged"),
 						", closest %.0fpx" % r["closest"] if r["charged"] else ""])
 			print("WARNING %s (radius %.0fpx, catch %.0fpx) warns %.1fs | %s" % [def.id,
-					def.pursues_within, def.lethal_reach(), warns_for, " | ".join(said)])
+					def.notice_within(), def.lethal_reach(), warns_for, " | ".join(said)])
 
 ## Every row that waits for her, warns by its one radius and pursues her, once each.
 static func _waiting_chargers() -> Array[EventDef]:
@@ -46,10 +47,10 @@ static func _waiting_chargers() -> Array[EventDef]:
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 				var def := EventScheduler._for_day(EventCatalogue.heated(row, level), day)
-				if not def.pursues or def.pursues_within <= 0.0 or def.sets_off_beside_her \
-						or def.arrives_chasing:
+				if def.pursuit == null or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
+						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 					continue
-				var key := "%s|%.2f|%.2f" % [def.id, def.pursues_within, def.pursue_speed]
+				var key := "%s|%.2f|%.2f" % [def.id, def.notice_within(), def.chase_speed()]
 				if not seen.has(key):
 					seen[key] = true
 					rows.append(def)
@@ -62,7 +63,7 @@ static func _walk(t, def: EventDef, walk: String) -> Dictionary:
 	t.add_child(instance)
 	instance.set_process(false)
 	instance._attach_the_band()
-	var her := Vector2(0.0, def.pursues_within + 20.0)
+	var her := Vector2(0.0, def.notice_within() + 20.0)
 	# Positive is away from him, along +y.
 	var speed := -Tuning.WALK_SPEED
 	var warned_at := INF
@@ -99,7 +100,7 @@ static func _walk(t, def: EventDef, walk: String) -> Dictionary:
 		if instance.is_lethal_at(her):
 			result["caught"] = true
 			break
-		if walk == "back" and warned_at != INF and instance.is_waiting() and her.y > def.pursues_within + 60.0:
+		if walk == "back" and warned_at != INF and instance.is_waiting() and her.y > def.notice_within() + 60.0:
 			break
 	instance.free()
 	return result

@@ -410,7 +410,8 @@ const HEAT_INVESTIGATES_LEVEL := 3
 ## policeman gets out, in px — "close" in the player's "it should stop if close to her" (merry-stork).
 ## **Inside the patrol's own 185px outer radius**, so it decides about her only once she can feel it,
 ## and wider than the man's stand-off (116px), so he usually gets out with room to hold his ground
-## and the notice he owes her (`EventDef.sets_off_beside_her` covers him when she is nearer).
+## and the notice he owes her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER` covers him when she is
+## nearer).
 const HEAT_INVESTIGATE_WITHIN := 150.0
 ## **What it costs when the man an investigating car let out reaches her**, in points of the
 ## excitement meter, landed on her standing beside him: he stops her, and his own field charges this
@@ -999,7 +1000,7 @@ const CHECKPOINT_DETAIN_REACH := 48.0
 ## 'just spawned' that only resets once she leaves the area. that way she can't accidentally go back
 ## and we don't need to place her far away".)* `ReleaseLatch` is what stops the trigger firing on
 ## her there. Purely a spatial clearance, so it does not move with `CHECKPOINT_DETAIN_SECONDS`. See
-## `EventManager._release_finished_door_detentions()`.
+## `CheckpointController.release_finished_holds()`.
 const CHECKPOINT_RELEASE_MARGIN := 8.0
 
 ## How much clear ground a region door keeps around each of its own bodies — a hut, a boom or an
@@ -2034,8 +2035,8 @@ const WARNING_ALONE_MAX := 1.0
 ## is owed is the indicator that it is about to, for at least the off-screen charger's
 ## `OFFSCREEN_WARNING_MIN` (inbox #764 in minty-lemur). A checkpoint's guard owes none of his own: his warning came
 ## before he was set on her, a hut's guard's raised hand from her crossing for `CROSSING_WARNING`
-## (`EventDef.charges_at_once`). A pursuer that waited for her warns on its own clock inside its one
-## radius (`EventDef.warns_for`), so this floor bounds nothing it does.
+## (`PursuitSpec.Start.CHARGES_AT_ONCE`). A pursuer that waited for her warns on its own clock
+## inside its one radius (`PursuitSpec.warns_for`), so this floor bounds nothing it does.
 const PURSUIT_MIN_NOTICE := 1.5
 
 ## How long she is allowed to take to answer the lunge, at the speed the gap is actually closing.
@@ -2110,19 +2111,20 @@ func pursuit_standoff(pursue_speed: float, inner: float) -> float:
 	return inner + pursue_speed * PURSUIT_REACTION
 
 ## **How long a charger that waits for her warns before he charges**, in seconds, while she stays
-## inside his one radius (`EventDef.warns_for`, `EventInstance.warns_by_radius()`). *(Inbox #788 in minty-lemur, the
-## player: "We should do one radius and warn inside it for 2s. If the player leaves the radius
-## nothing happens and the warning stops. If they stay within the charge starts.")* The row reads it
-## as its own `warns_for`, and the measurement that keeps it fair is per row
-## (`tests/probes/charger_warning.gd`): a walker who turns back the moment his warning starts is out
-## of his radius before it runs out, and one who stands in it is caught.
+## inside his one radius (`PursuitSpec.warns_for`, `EventInstance.warns_by_radius()`). *(Inbox
+## #788 in minty-lemur, the player: "We should do one radius and warn inside it for 2s. If the
+## player leaves the radius nothing happens and the warning stops. If they stay within the
+## charge starts.")* The row reads it as its own `PursuitSpec.warns_for`, and the measurement
+## that keeps it fair is per row (`tests/probes/charger_warning.gd`): a walker who turns back
+## the moment his warning starts is out of his radius before it runs out, and one who stands in
+## it is caught.
 const CHARGER_WARNING := 2.0
 
 ## **How long a door's guard warns once she has crossed its line**, in seconds (`door_guard` and its
-## alley copy, `EventManager._watch_the_door_lines()`). *(Inbox #788 in minty-lemur, the player: "The actual crossing
-## will start the timer and if the player goes back no charge happens but if they stay crossed the
-## charge will start. Warning starts when the player is crossing".)* Measured the same way as
-## `CHARGER_WARNING` (`tests/test_checkpoints.gd`).
+## alley copy, `CheckpointController.watch_the_door_lines()`). *(Inbox #788 in minty-lemur, the
+## player: "The actual crossing will start the timer and if the player goes back no charge
+## happens but if they stay crossed the charge will start. Warning starts when the player is
+## crossing".)* Measured the same way as `CHARGER_WARNING` (`tests/test_checkpoints.gd`).
 const CROSSING_WARNING := 2.0
 
 ## The pursuit fairness contract, and the one place it is stated.
@@ -2143,24 +2145,26 @@ const CROSSING_WARNING := 2.0
 ## - **Running has to open more than the radius that ends the day**, over the whole chase. Otherwise
 ##   running is the correct answer and still not enough.
 ## - **An ordinary pursuer's notice is the sight of it coming**, at least `PURSUIT_MIN_NOTICE`.
-##   A sent pursuer (`arrives_chasing`) has its badge alone, checked by `EventDef.validate()`,
-##   and running may shake it off while it is still offscreen. One that sets off beside her
-##   (`sets_off_beside_her`) stands with its warning up for its notice and is owed the badge's
-##   heads-up, `OFFSCREEN_WARNING_MIN`, rather than an approach she never sees.
-## - **A pursuer that waited for her warns inside its one radius for its `warns_for` and charges if
-##   she is still inside once that has run** (`EventInstance.warns_by_radius()`; inbox #788 in minty-lemur). Leaving
-##   the radius first is never charged, and once charged walking loses and running wins by the speed
-##   clauses above. `tests/test_events_pursuit.gd` walks it.
+##   A sent pursuer (`PursuitSpec.Start.ARRIVES_CHASING`) has its badge alone, checked by
+##   `EventDef.validate()`, and running may shake it off while it is still offscreen. One that
+##   sets off beside her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`) stands with its warning up
+##   for its notice and is owed the badge's heads-up, `OFFSCREEN_WARNING_MIN`, rather than an
+##   approach she never sees.
+## - **A pursuer that waited for her warns inside its one radius for its `PursuitSpec.warns_for`
+##   and charges if she is still inside once that has run** (`EventInstance.warns_by_radius()`;
+##   inbox #788 in minty-lemur). Leaving the radius first is never charged, and once charged
+##   walking loses and running wins by the speed clauses above. `tests/test_events_pursuit.gd`
+##   walks it.
 ## - **It stands off inside its own field.** A pursuer holding a stand-off outside `outer_radius`
 ##   emits nothing at her for the whole of the phase that is supposed to *be* the warning: no meter,
 ##   no `!` over her head, and a telemetry entry that cannot say what raised the mark. This one was
 ##   found by walking a rig rather than by reading it.
 ## - **It notices her from outside its own stand-off**, or the notice is spent somewhere it was
-##   never going to move from and the telegraph is a formality. (`pursues_within` only.)
+##   never going to move from and the telegraph is a formality. (`EventDef.notice` only.)
 ## - **It cannot notice her from outside its own field.** What she is owed before a lethal thing
 ##   starts making decisions about her is the chance to have felt it: the meter is the only thing
 ##   that says a stranger in an alley is worth crossing the road for, and it says nothing at all
-##   past `outer_radius`. (`pursues_within` only.)
+##   past `outer_radius`. (`EventDef.notice` only.)
 ##
 ## **Two clauses that used to be here are gone, and their absence is the design.** The chase used to
 ## end at a *distance*, so the contract needed "walking cannot reach it inside the chase" and
@@ -2667,9 +2671,9 @@ const FINALE_DISTANT_FLASH_SHAPE_B := 12.343
 ## **Stated against what one run costs her rather than against a feeling.** A shaft is three floors
 ## of eight tiles (768px) and he runs it at `HEAT_HUNTS_SPEED` (130px/s), so a run is about six
 ## seconds, and before it he stands at the foot with his hand raised until she comes within
-## `masked_pursuer.charges_within` of him. Six seconds of nothing between his runs is long enough
-## that stepping out of a door and straight back in is a real answer, short enough that waiting one
-## out and strolling down is not. It is a first number and the one to move if the
+## `masked_pursuer.notice.runs_within` of him. Six seconds of nothing between his runs is long
+## enough that stepping out of a door and straight back in is a real answer, short enough that
+## waiting one out and strolling down is not. It is a first number and the one to move if the
 ## shaft reads as either a corridor with a man in it or a corridor with a man near it.
 const FINALE_PURSUER_RESPAWN_SECONDS := 6.0
 

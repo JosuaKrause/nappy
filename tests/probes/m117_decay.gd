@@ -241,7 +241,7 @@ func _cost_table() -> void:
 		rows.append({"id": def.id, "walk": def.walk_through_cost(),
 				"run": _run_through_cost(def),
 				"hard_fail": def.hard_fail, "flock": def.flock_size > 1,
-				"pursues": def.pursues, "emission": def.mean_emission_along_the_line(),
+				"pursues": def.pursuit != null, "emission": def.mean_emission_along_the_line(),
 				"intensity": def.intensity, "outer": def.outer_radius})
 	rows.sort_custom(func(a, b): return a["walk"] < b["walk"])
 	print("| Event | walk through | run through |")

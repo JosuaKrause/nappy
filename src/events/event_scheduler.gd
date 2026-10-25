@@ -102,10 +102,11 @@ class Planned extends RefCounted:
 	## **resumes** it rather than rewinding it. See `EventManager._stream_in`.
 	var age := 0.0
 	var travelled := 0.0
-	## The `_noticed_at` a `pursues_within` instance held when it was last streamed out, or `INF` if
-	## it had not yet noticed her — the third thing a stream-out has to carry beside `age` and
-	## `travelled`, or a row streamed out mid-chase comes back `is_waiting()`, having forgotten it.
-	## See `EventManager._stream_out()` and `_stream_in()`, and `EventInstance.resume()`.
+	## Where on its clock an instance with an `EventDef.notice` had noticed her when it was last
+	## streamed out (`EventInstance.noticed_at()`), or `INF` if it had not yet noticed her — the
+	## third thing a stream-out has to carry beside `age` and `travelled`, or a row streamed out
+	## mid-chase comes back `is_waiting()`, having forgotten it. See
+	## `EventManager._stream_out()` and `_stream_in()`, and `EventInstance.resume()`.
 	var noticed_at := INF
 	## Whether the guard who set off from this roadblock's barrier was spent (or leaving) when it was
 	## last streamed out, and which side's post he left empty: what `EventInstance.
@@ -483,7 +484,7 @@ static var _kept_ground_stamp: Array = []
 static var _kept_ground_answers := {}
 
 ## **One waiting guard at a time** (`DaySpec.one_notice_at_a_time`). A candidate that waits to
-## notice her (`EventDef.pursues_within`: the escape's roadblock, whose guard notices her within
+## notice her (`EventDef.notice`: the escape's roadblock, whose guard notices her within
 ## 180px of his band) is refused when the ground it notices her from meets the ground another placed
 ## one notices her from: the two notice discs, each centred where its band stands, may not overlap,
 ## so two of the escape's roadblocks stand at least twice that, 360px, apart, on one street or on
@@ -509,14 +510,14 @@ static var _kept_ground_answers := {}
 ## side are drawn over him.
 static func _keeps_its_notice_to_itself(map: CityMap, candidate: Planned,
 		planned: Array[Planned]) -> bool:
-	var reach := candidate.def.pursues_within
+	var reach := candidate.def.notice_within()
 	if reach <= 0.0:
 		return true
 	var at := _stands_at(map, candidate)
 	for plan in planned:
-		if plan.def.pursues_within <= 0.0 or not plan.is_placed():
+		if plan.def.notice_within() <= 0.0 or not plan.is_placed():
 			continue
-		if at.distance_to(_stands_at(map, plan)) < reach + plan.def.pursues_within:
+		if at.distance_to(_stands_at(map, plan)) < reach + plan.def.notice_within():
 			return false
 	return true
 
@@ -622,25 +623,20 @@ static func _clearance_around_her(def: EventDef) -> float:
 		return 0.0
 	return reach + Tuning.TILE_SIZE * 0.5
 
-## A `MAP` placement's own answer to `EventDef.pursues_within_on(day)` — a derived copy for the same
-## reason `at_heat()`'s is one: the catalogue's rows are shared by every day of the run and validated
-## once at boot, so a placement past `spawn_mode_switches_after_day` cannot set `pursues_within` on
-## the shared resource itself without changing what every other day's placement of the row sees.
-##
-## Almost every row's `pursues_within_on(day)` agrees with its own `pursues_within` — the check
-## below is `def` unchanged for all of them — because almost nothing sets
-## `spawn_mode_switches_after_day` at all. `charging_dog` past `Tuning.RUN_TAUGHT_DAY` is the row
-## that does not: `EventInstance.is_waiting()` and `_chase()` read `pursues_within` off whichever
-## `EventDef` an instance was actually handed, so the day answer has to arrive as a different def
-## rather than as a fact this function keeps to itself.
+## A `MAP` placement's own answer to `EventDef.notice_on(day)` — a derived copy for the same reason
+## `at_heat()`'s is one: the catalogue's rows are shared by every day of the run, so a placement
+## past `EventDef.from_day_after` cannot set the shared row's `notice` without changing what
+## every other day sees. An instance reads `EventDef.notice` off the def it was handed, so the
+## day's answer arrives as a different def. `def` itself for every row whose notice does not
+## change by day.
 static func _for_day(def: EventDef, day: int) -> EventDef:
-	var within := def.pursues_within_on(day)
-	if is_equal_approx(within, def.pursues_within):
+	var notice := def.notice_on(day)
+	if notice == def.notice:
 		return def
 	var variant: EventDef = def.duplicate()
 	variant.shape = def.shape
 	variant.solid_parts = def.solid_parts
-	variant.pursues_within = within
+	variant.notice = notice
 	return variant
 
 ## What the day is placing a row **for**, which is the only thing that makes *wall* and *friction*
@@ -658,7 +654,7 @@ static func _for_day(def: EventDef, day: int) -> EventDef:
 ## through the legend. `TOWARD_PLAYER` is sited by the same director for the same reason and gets
 ## the same answer. `spawn_mode_on(day)` is what this asks rather than `spawn_mode` alone, since a
 ## row like `charging_dog` answers `NONE` on `Tuning.RUN_TAUGHT_DAY` — a director moment, exactly
-## like the cat — and `WALL` every day after, once it is `spawn_mode_after_first_day`'s `MAP`
+## like the cat — and `WALL` every day after, once it is `EventDef.from_day_after`'s `MAP`
 ## placement and the scheduler has chosen it a tile like any other lethal row.
 ##
 ## **A wall is not only the lethal rows.** The ground off the routes *ranges from very costly to
@@ -749,10 +745,10 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 	if day != Tuning.RUN_TAUGHT_DAY:
 		return
 	for plan in planned:
-		if plan.def.pursues:
+		if plan.def.pursuit != null:
 			return
 	for def in EventCatalogue.available_on(day, heat):
-		if not def.pursues or def.spawn_mode != EventDef.SpawnMode.AHEAD_OF_PLAYER:
+		if def.pursuit == null or def.spawn_mode != EventDef.SpawnMode.AHEAD_OF_PLAYER:
 			continue
 		planned.append(Planned.new(def, Vector2.INF))
 		_note(trace, "plan", "day %d bought no pursuit, so the run lesson is added: %s"
@@ -2684,12 +2680,12 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 ## from there, placed and `hard_fail` the same way) are both exempt without this line doing
 ## anything. On `RUN_TAUGHT_DAY` itself `charging_dog` is never placed at all — it is
 ## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about — which is
-## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursues` rather than
+## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursuit` rather than
 ## leaving the exemption to follow from the `WALL` classification is what makes it survive a future
 ## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
 ## say, which `_role_for` would classify ahead of the `hard_fail` check.
 static func _keeps_its_field_clear(plan: Planned) -> bool:
-	return plan.def.hard_fail and plan.role != GameEnums.BlockerRole.WALL and not plan.def.pursues
+	return plan.def.hard_fail and plan.role != GameEnums.BlockerRole.WALL and plan.def.pursuit == null
 
 ## The closest endpoint-to-route distance between two events.
 ##
@@ -2774,7 +2770,7 @@ static func _counts_against_the_line(plan: Planned) -> bool:
 ## poster crew closes nothing, and it is placed at dawn and judged exactly as it always was before
 ## its position is handed to her walk (`_hand_to_her_walk`).
 static func _a_line_has_to_avoid(def: EventDef) -> bool:
-	if def.scenery or def.pursues or def.id.begins_with(_DOOR_ID_PREFIX):
+	if def.scenery or def.pursuit != null or def.id.begins_with(_DOOR_ID_PREFIX):
 		return false
 	if def.sited_on_her_way and def.kind == GameEnums.EventKind.ONE_SHOT:
 		return false

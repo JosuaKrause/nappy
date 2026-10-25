@@ -154,17 +154,17 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 					+ "if that has stopped being true, take it off the list rather than keeping it")
 					% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
 			continue
-		if def.pursues:
+		if def.pursuit != null:
 			pursuers += 1
 			# Walking loses ground and running gains it. Everything else about a pursuit follows
 			# from this one line, including why it is the only place running can be correct.
-			t.check(def.pursue_speed > Tuning.WALK_SPEED,
+			t.check(def.chase_speed() > Tuning.WALK_SPEED,
 					"'%s' catches somebody who walks away from it" % def.id)
-			t.check(def.pursue_speed < Tuning.RUN_SPEED,
+			t.check(def.chase_speed() < Tuning.RUN_SPEED,
 					"'%s' does not catch somebody who runs" % def.id)
 			t.check(def.hard_fail,
 					"'%s' has to be lethal, or running from it is just an expensive walk" % def.id)
-			t.check((Tuning.RUN_SPEED - def.pursue_speed) * def.duration >= def.inner_radius,
+			t.check((Tuning.RUN_SPEED - def.chase_speed()) * def.duration >= def.inner_radius,
 					"'%s' can be outrun by more than the radius that ends the day" % def.id)
 			t.check(def.duration <= Tuning.PURSUIT_TIME,
 					"'%s' gives up before the run costs more than the day it saves" % def.id)
@@ -209,11 +209,11 @@ func _test_the_cyclist_costs_what_he_did(t) -> void:
 func _test_nothing_chases_her_before_the_run_is_taught(t) -> void:
 	for day in range(1, Tuning.RUN_TAUGHT_DAY):
 		for def in EventCatalogue.available_on(day):
-			t.check(not def.pursues,
+			t.check(def.pursuit == null,
 					"day %d has nothing that has to be outrun ('%s')" % [day, def.id])
 	var chasers := 0
 	for def in EventCatalogue.available_on(Tuning.RUN_TAUGHT_DAY):
-		chasers += 1 if def.pursues else 0
+		chasers += 1 if def.pursuit != null else 0
 	t.check(chasers > 0, "and the day the run is taught has something to teach it with")
 
 ## The measured failure playtest 02 found and M19 fixes: at intensity 7 the dog walker cost
@@ -453,28 +453,28 @@ func _test_nothing_happens_inside_a_lethal_field(t) -> void:
 	t.check(exempt > 0, "a run places lethal walls, which are the exempt ones (%d)" % exempt)
 	t.check(lethal_days >= 0, "and the rest are checked (%d)" % lethal_days)
 
-## **The third case of the clearance rule, pinned over `pursues` rather than over either row that
-## carries it today.** A lethal field that follows her is neither on the corridor nor off it, so
-## placement cannot keep it clear of anything — `charging_dog` never reaches `_room_around` at all
-## on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER` and sited with no tile, and
-## `alley_robbery` (and `charging_dog` again, past the teaching day, once `spawn_mode_on()` answers
-## `MAP`) is exempt only because `hard_fail` always classifies a `MAP`-placed `RECURRING`/`SCRIPTED`
-## row `WALL` before `_role_for` ever asks whether it pursues. Forcing the role off `WALL` here is
-## what tells the two reasons apart, and it is why a third pursuer — one a future `_role_for` change
-## routes through `SET_PIECE` or `FRICTION` instead — inherits the exemption without anybody adding
-## a case for it.
+## **The third case of the clearance rule, pinned over `EventDef.pursuit` rather than over
+## either row that carries it today.** A lethal field that follows her is neither on the
+## corridor nor off it, so placement cannot keep it clear of anything — `charging_dog` never
+## reaches `_room_around` at all on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER`
+## and sited with no tile, and `alley_robbery` (and `charging_dog` again, past the teaching day,
+## once `spawn_mode_on()` answers `MAP`) is exempt only because `hard_fail` always classifies a
+## `MAP`-placed `RECURRING`/`SCRIPTED` row `WALL` before `_role_for` ever asks whether it
+## pursues. Forcing the role off `WALL` here is what tells the two reasons apart, and it is why
+## a third pursuer — one a future `_role_for` change routes through `SET_PIECE` or `FRICTION`
+## instead — inherits the exemption without anybody adding a case for it.
 func _test_a_pursuer_keeps_no_field_clear(t) -> void:
 	var pursuer := EventCatalogue.by_id("alley_robbery")
-	t.check(pursuer.hard_fail and pursuer.pursues, "alley_robbery is lethal and pursues")
+	t.check(pursuer.hard_fail and pursuer.pursuit != null, "alley_robbery is lethal and pursues")
 	var off_wall := EventScheduler.Planned.new(pursuer, Vector2.ZERO)
 	off_wall.role = GameEnums.BlockerRole.FRICTION
 	t.check(not EventScheduler._keeps_its_field_clear(off_wall),
 			"a lethal pursuer keeps nothing clear even when it is not classified a wall")
 
 	# The control: an otherwise identical lethal row that does not pursue still owes the rule off
-	# the `WALL` role — the exemption is `pursues`, not "the role happens not to be WALL".
+	# the `WALL` role — the exemption is `EventDef.pursuit`, not "the role happens not to be WALL".
 	var stationary := EventCatalogue.by_id("reversing_lorry")
-	t.check(stationary.hard_fail and not stationary.pursues,
+	t.check(stationary.hard_fail and stationary.pursuit == null,
 			"reversing_lorry is lethal and does not pursue, the contrast this needs")
 	var off_wall_stationary := EventScheduler.Planned.new(stationary, Vector2.ZERO)
 	off_wall_stationary.role = GameEnums.BlockerRole.FRICTION
