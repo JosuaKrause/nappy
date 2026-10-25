@@ -6,6 +6,10 @@ extends RefCounted
 ## The behaviours an event of `row` is made of, attached to `event`, in the order `step()` runs
 ## them each tick. `event`'s typed fields (`hold`, `flock`, ...) are set to the same objects, so
 ## the event can answer for each.
+##
+## **The order is load-bearing**: a flock's birds move before its flush can put them up, a
+## pursuer's chase runs before its man's stop is looked for, and a row that runs nothing else walks
+## its route. A vehicle that investigates is never also a pursuer (`EventDef.validate()`).
 static func compose(event: EventInstance, row: EventDef) -> Array[EventBehaviour]:
 	var out: Array[EventBehaviour] = []
 	event.departure = EventDeparture.new()
@@ -13,15 +17,22 @@ static func compose(event: EventInstance, row: EventDef) -> Array[EventBehaviour
 	if row.mobile:
 		event.route = EventRouteWalk.new()
 		event.route.attach(event)
+	if row.flock_size > 0:
+		event.flock = EventFlock.new()
+		_add(out, event, event.flock)
 	if row.investigates:
 		event.investigation = EventInvestigation.new()
 		_add(out, event, event.investigation)
 	if row.pursuit != null:
+		event.pursuit = EventPursuit.new()
+		_add(out, event, event.pursuit)
 		event.on_foot = EventOfficer.new()
 		_add(out, event, event.on_foot)
-	if row.flock_size > 0:
-		event.flock = EventFlock.new()
-		_add(out, event, event.flock)
+	if row.notice != null and row.pursuit == null and not row.investigates:
+		event.notice_run = EventNoticeRun.new()
+		_add(out, event, event.notice_run)
+	if row.mobile and not row.investigates and row.pursuit == null and row.notice == null:
+		_add(out, event, event.route)
 	if row.detain_seconds > 0.0:
 		event.hold = EventHold.new()
 		_add(out, event, event.hold)
