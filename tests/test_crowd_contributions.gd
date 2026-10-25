@@ -17,8 +17,10 @@ func run(t) -> void:
 		for pace in [0.0, 74.0, 185.0, 700.0]:
 			agent._speed = pace
 			for hurry in [false, true]:
-				agent._yield_left = 1.0 if hurry else 0.0
-				agent._yield_hurry = hurry
+				# A yield is a walker's: a car has no hurry or wait to be in.
+				if kind == CrowdAgent.Kind.WALKER:
+					agent.strategy._yield_left = 1.0 if hurry else 0.0
+					agent.strategy._yield_hurry = hurry
 				for jolt_radius in [0.0, Tuning.CAR_HORN_OUTER_RADIUS, 400.0]:
 					agent._jolt = 0.0
 					if jolt_radius > 0.0:

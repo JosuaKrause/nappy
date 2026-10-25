@@ -325,7 +325,7 @@ func is_shut(tile: Vector2i) -> bool:
 ## on the home block".
 ##
 ## **Two readers, and the docstring is for both.** `EventScheduler._open_ground_for` refuses any
-## candidate tile on a held segment, the fix this exists for. `CrowdAgent._cannot_go_on()` (M110,
+## candidate tile on a held segment, the fix this exists for. `CarStrategy.cannot_go_on()` (M110,
 ## "The crowd goes round a seal") wants the identical fact for the same reason a car should not
 ## queue across a seal it cannot see through — read it with `is_held`/`is_held_at` rather than
 ## reaching into this dictionary directly.

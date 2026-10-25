@@ -12,31 +12,15 @@ extends Node2D
 ## time, advances along it, and steers toward the lane's centre rather than being pinned to
 ## it — which is what lets a walker round a corner without teleporting a half-tile sideways
 ## when it changes lane.
+##
+## **A walker and a car are one mover with two strategies.** What both kinds share — the lane
+## state, the look-ahead, the held step, placement and recycling, the junction and queue questions,
+## the heading and the velocity — is here, and never asks which kind it is; what only one kind does
+## is its `strategy`, a `WalkerStrategy` or a `CarStrategy` that `kind` installs (`LaneStrategy`
+## says what it is asked). The per-frame inputs `Crowd` writes for the cars and for the walkers at a
+## door stay here, as fields of the agent the crowd hands them to.
 
 enum Kind { WALKER, CAR }
-
-## What this walker does when the street it is on crosses a region wall at a door — drawn once, in
-## `_draw_the_door_answer()`, at the moment it is placed. *(Playtest 58: "Held at the hut like her";
-## "a small fraction can do that"; "others can turn back".)*
-##
-## **Drawn at placement rather than at the door**, so a walker's answer cannot change halfway down
-## the street it is walking: a person who turns back at the sight of a checkpoint decided that
-## before they got there, and one who is rolled again every frame would dither on the pavement.
-## Cars have no answer here — a car queues for the boom, which is `Crowd._stop_for_gates()`.
-enum DoorAnswer { HELD, PASSES, TURNS_BACK }
-
-## Where a held walker is in its crossing of a door — the player's own four states, *("four states
-## walking -> waiting -> inspection -> emerging on the other side (with cooldown to not go back
-## again) -> walking")*. Everything but `WALKING` belongs to one particular hut, the one in
-## `_door_hold`.
-##
-## - **WALKING** — on its way, or not crossing a door at all. Every car is permanently here.
-## - **WAITING** — stopped on its own lane beside the hut, in its last facing, the way a stopped
-##   walker already stands. It shuffles forward as the line in front of it goes in.
-## - **INSPECTION** — inside the hut and not drawn, for `Tuning.WALKER_DOOR_HOLD_SECONDS`.
-## - **EMERGING** — back on the far side of the door and walking again, but carrying the cooldown
-##   that keeps the same hut from taking it a second time until it has left the hut's area.
-enum DoorState { WALKING, WAITING, INSPECTION, EMERGING }
 
 ## The walker's five authored views, keyed by name rather than by sector — `WALKER_VIEW_BY_SECTOR`
 ## below does the sector-to-view lookup, so drawing never repeats an eight-way if-chain of its
@@ -144,7 +128,7 @@ const STEER_SPEED := 90.0
 ## *across* the new one — so turning at the far edge drops a car onto the pavement band and it
 ## spends the next three tiles steering back to its lane. Rare with a handful of closures a day;
 ## constant once every calm zone has four dead-end arms on it. Seeing it a street early and turning
-## in the middle of the junction is what `_can_turn_here` is for.
+## in the middle of the junction is what `WalkerStrategy._can_turn_here` is for.
 const LOOKAHEAD := (Tuning.STREET_WIDTH + 1) * Tuning.TILE_SIZE
 ## The same distance in tiles, for the scans that walk rather than probe. See `_way_is_blocked`.
 const LOOKAHEAD_TILES := Tuning.STREET_WIDTH + 1
@@ -154,7 +138,19 @@ const LOOKAHEAD_TILES := Tuning.STREET_WIDTH + 1
 const MARK_HEIGHT := 30.0
 const MARK_WIDTH := 15.0
 
-var kind := Kind.WALKER
+## Which kind of agent this is. Setting it installs that kind's `strategy`, at construction or on a
+## hand-built agent afterwards, so the agent has that kind's rules from then on. Setting the kind
+## it already has changes nothing: a fresh strategy would drop a walker's hold on a hut without
+## letting go of it.
+var kind := Kind.WALKER:
+	set(value):
+		if value == kind and strategy:
+			return
+		kind = value
+		_install(CarStrategy.new(self) if value == Kind.CAR else WalkerStrategy.new(self))
+## What only this agent's kind does on the lanes — `WalkerStrategy` or `CarStrategy`, installed by
+## `kind`. Everything here that differs between a walker and a car asks it. See `LaneStrategy`.
+var strategy: LaneStrategy
 var colour := Color.WHITE
 
 ## `--skip crowd`, handed in by the `Crowd` that makes this agent: `_draw()` returns before
@@ -187,11 +183,11 @@ var traffic: TrafficIndex
 ## Today's region-door segment keys (`StreetNetwork.Segment.key()` -> `true`), held by reference
 ## and rebuilt once a day by `Crowd.start_day()` from `City.region_plan().doors`. Empty for an
 ## agent built by hand in a test or for a rig with no city behind it, which then treats every held
-## segment as wall the way `_cannot_go_on` already would. The one carve-out `CityMap.is_held_at`
+## segment as wall the way `cannot_go_on` already would. The one carve-out `CityMap.is_held_at`
 ## does not make on its own: a wall segment and a hard seal's segment are shut outright, but a
 ## door is a crossing the day's structure means to keep open — a car brakes and queues for the
 ## gate (`Crowd._stop_for_gates()`) rather than being turned away at the last junction, and a
-## walker crosses unless its own `DoorAnswer` is to turn back.
+## walker crosses unless its own `WalkerStrategy.DoorAnswer` is to turn back.
 var door_segments := {}
 
 ## The segments bordering the home block, the second carve-out `is_held_at` cannot make on its
@@ -231,7 +227,7 @@ var junction_hold := INF
 
 ## Distance to the stop line of a checkpoint gate this car has to give way at, or `INF` when there
 ## is none ahead or it is raised. Written once per physics frame by `Crowd._stop_for_gates()`,
-## the same shape `junction_hold` already is — see `_give_way()` for why the two, and the zebra's
+## the same shape `junction_hold` already is — see `CarStrategy._give_way()` for why the two, and the zebra's
 ## own stop line, all compose by taking the lowest speed rather than each owning a brake.
 var gate_hold := INF
 
@@ -275,10 +271,6 @@ func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: fl
 func set_expected_total_gross(total: float) -> void:
 	player_expected_total_gross = total
 
-## This walker's own answer at a door, from `DoorAnswer` — see that enum for why it is drawn once
-## per placement. Always `HELD` for a car, which never reads it.
-var _door_answer := DoorAnswer.HELD
-
 ## The checkpoint hut standing in front of this walker right now, or `null` for none — written once
 ## per frame by `Crowd._hold_walkers_at_doors()`, which owns the geometry, the same shape
 ## `gate_hold` already is for a car. Null for a car, for an agent built by hand in a test, and on
@@ -288,23 +280,6 @@ var door_ahead: WalkerDoorHold = null
 ## And how far along this walker's own line of travel that hut is, or `INF` for none. Written
 ## beside `door_ahead` and only ever read together with it.
 var door_ahead_along := INF
-
-## Where this walker is in a crossing, from `DoorState`, and the hut it is doing it at. `_door_hold`
-## outlives the wait itself: it is what the cooldown is measured from while the walker is
-## `EMERGING`, and it is only let go once the walker is clear of the hut's own area.
-var _door_state := DoorState.WALKING
-var _door_hold: WalkerDoorHold = null
-## Seconds left of the inspection inside the hut.
-var _inspection_left := 0.0
-
-## The hut this walker has decided against because the line at it was already as long as a line is
-## allowed to get, and that door's own segment key — which is what `_segment_is_shut` reads, so a
-## refusal turns this walker away at the last junction exactly the way a wall does. Both are
-## dropped again once that hut is out of sight, since a later approach is a later decision.
-## `NO_DOOR` is "no refusal", and is a key no segment can have.
-const NO_DOOR := Vector3i(-9999, -9999, -9999)
-var _refused_hut: WalkerDoorHold = null
-var _refused_door_key := NO_DOOR
 
 var _map: CityMap
 ## Its own RNG, seeded from the day and its own index. Per-agent rather than shared so a
@@ -335,42 +310,6 @@ var _turn: CarTurn = null
 ## this much and then curves, so the approach is ordinary travel with every ordinary rule on it.
 var _turn_run_up := 0.0
 
-## Why each arc `_plan_a_turn()` tried on its last run was refused, one `TurnRefusal` per
-## `TurnCandidate` slot — the planner's own record of a decision that otherwise leaves no trace.
-##
-## **A refusal that is never written down is a manoeuvre nobody can account for.** Every entry in
-## `_plan_a_turn()`'s list of places to turn either fits or is turned away by exactly one check, and
-## which check it was is the difference between *wait, this will clear* and *this can never fit
-## here* — the distinction the planner itself acts on and the one a measurement of the traffic needs
-## to read back. Four ints written where the decision is taken, and `tests/probes/m152_car_jumps.gd`
-## is what reads them.
-var turn_refusals := PackedInt32Array()
-## Which of `_plan_a_turn()`'s two ways out reversed this car where it stood, or `NONE` when the
-## last run of the planner did not. Reset at the top of every `_plan_a_turn()`.
-var turn_round_cause := TurnRoundCause.NONE
-## Whether this car has already committed to an arc since the last time the road in front of it was
-## clear — what tells a turn that was planned and taken apart from one that was never found. Cleared
-## by `_look_ahead()` the moment nothing is blocking the lane any more.
-var turned_on_this_approach := false
-
-## Seconds this car has stood at a barrier with an arc that fits everywhere but in the lane it would
-## land in. Runs while it waits and is put back to zero the moment anything about the situation
-## changes — a turn taken, the road ahead clear again, or a refusal that waiting cannot mend. See
-## `TURN_WAIT_SECONDS`.
-var _waited_to_turn := 0.0
-
-## True while this car has run out of road in **both** directions — less than a half turn's worth
-## ahead of it and less than a half turn's worth in the lane it would reverse into.
-##
-## **It is a pocket one scale down.** A junction with all four arms shut catches a body between
-## walls and `CrowdPockets` is what names that; a lane can be caught the same way between a
-## precinct's paving and a solid body parked on it, which is a stretch of road too short to turn
-## round in and is not a junction at all, so nothing above the lane can see it. What a body with
-## nowhere to go does is settled — it stands where it is, and it leaves the way anybody else leaves
-## the field, once nobody can see it go. Cleared by `_look_ahead()` the moment the road in front of
-## it is clear again, so a seal that lifts puts the car back on the road rather than leaving it
-## marked for the rest of the day.
-var _nowhere_to_turn := false
 ## The sector, flip and third term currently drawn, so a redraw only happens when one of them
 ## changes. The third is the gait frame for a walker and the body's bob for a car, quantised by
 ## `CAR_BOB_STEPS_PER_PX` — the two things each kind draws that move without the sector moving.
@@ -441,29 +380,12 @@ var _clock := 0.0
 ## long is left on it. See `step_aside()`.
 ## The way ahead, and the state it was worked out for. See `_look_ahead`.
 var _scan_at := Vector2i(-9999, -9999)
-## The answer of `_precinct_way_is_shut_cached()` and what it was asked for; dropped when a new
-## look-ahead scan starts, since the bodies on the map can change under a walker that stands still.
-var _way_shut_known := false
-var _way_shut := false
-var _way_shut_at := Vector2i.ZERO
-var _way_shut_vertical := false
-var _way_shut_direction := 0.0
 var _scan_vertical := false
 var _scan_direction := 0.0
 ## Tiles to the first thing this agent cannot pass, or `LOOKAHEAD_TILES + 1` for a clear road.
 var _blocked_in := LOOKAHEAD_TILES + 1
 
 var _detour := 0.0
-var _detour_left := 0.0
-## True while `_detour` is a walker going round a solid body rather than a walker getting out of
-## her way. **Held rather than timed**: a bump is over in a couple of seconds whatever else happens,
-## and a body is over when the walker is past it, which no number of seconds knows. See
-## `_step_around_a_body()`.
-var _body_detour_held := false
-## And the same for somebody *crossing* her path rather than sharing it, who has no sidestep to
-## make: whether it is hurrying across or waiting, and how long is left on it.
-var _yield_hurry := false
-var _yield_left := 0.0
 
 ## Seconds this agent has left of the stride it owes its last about-face. See `_turn_round()`.
 var _turn_back_hold := 0.0
@@ -476,16 +398,35 @@ var _turn_back_hold := 0.0
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 
+func _init() -> void:
+	_install(WalkerStrategy.new(self))
+
+## Takes up a kind's strategy, and the three fixed facts of it the crowd reads every frame of every
+## agent — the nose, the distance a barrier is acted on at and where the look-ahead is asked from —
+## as plain members of this node, since a member read is several times cheaper than asking another
+## object.
+func _install(rules: LaneStrategy) -> void:
+	strategy = rules
+	_nose = rules.nose
+	_acts_within = rules.acts_within
+	_scans_from_its_lane = rules.scans_from_its_lane
+
+## `strategy.nose`, `strategy.acts_within` and `strategy.scans_from_its_lane`, kept here by
+## `_install()`.
+var _nose := 0.0
+var _acts_within := 1
+var _scans_from_its_lane := false
+
 ## Constructs a pinned actor through the same initial lane eligibility as a rolled morning.
 ## The cross coordinate must already be the lane center; authoring never snaps a placement.
 func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		at: Vector2, direction: Vector2, speed: float) -> String:
 	kind = agent_kind as Kind
-	shape = GroundShape.point(7.0) if kind == Kind.WALKER else _car_shadow_shape()
+	shape = strategy.ground_shape()
 	_map = map
 	field = crowd_field
 	_rng.seed = seed_value
-	_draw_the_door_answer()
+	strategy.draw_the_door_answer()
 	_vertical = direction.x == 0.0
 	_direction = direction.y if _vertical else direction.x
 	position = at
@@ -493,24 +434,23 @@ func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value
 	if _corridor < 0:
 		return "actor is outside a street corridor"
 	_lane = CityMap.corridor_offset(floori(_cross() / Tuning.TILE_SIZE))
-	var offsets := CrowdLanes.ROAD_OFFSETS if kind == Kind.CAR else \
-			CrowdLanes.walkable_offsets(map, _vertical, _corridor,
-			floori(_along() / Tuning.TILE_SIZE))
+	var offsets := strategy.lane_offsets_at(floori(_along() / Tuning.TILE_SIZE))
 	if not _lane in offsets:
 		return "actor lane is not available to its kind"
-	if kind == Kind.CAR and _direction != CrowdLanes.road_direction(_vertical, _lane):
-		return "car direction contradicts right-hand traffic"
+	var problem := strategy.placement_problem()
+	if not problem.is_empty():
+		return problem
 	_lane_centre = _lane_centre_here()
 	if not is_equal_approx(_cross(), _lane_centre):
 		return "actor must start exactly at lane center %.3f" % _lane_centre
-	var range_of_speed := Tuning.CAR_SPEED if kind == Kind.CAR else Tuning.PEDESTRIAN_SPEED
+	var range_of_speed := strategy.speed_range()
 	_speed = speed if speed >= 0.0 else _rng.randf_range(range_of_speed.x, range_of_speed.y)
 	if _speed < range_of_speed.x or _speed > range_of_speed.y:
 		return "actor speed is outside its ordinary generation range"
 	_cruise = _speed
 	if not _stands_on_a_street() or not _within_the_map_with_room_for_its_picture():
 		return "actor placement fails ordinary street/body clearance"
-	if _is_in_a_pocket():
+	if strategy.is_in_a_pocket():
 		return "car placement is in a closed traffic pocket"
 	_settle_junction()
 	colour = _colour()
@@ -519,7 +459,7 @@ func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value
 func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		axis_roll: float) -> void:
 	kind = agent_kind
-	shape = GroundShape.point(7.0) if kind == Kind.WALKER else _car_shadow_shape()
+	shape = strategy.ground_shape()
 	_map = map
 	field = crowd_field
 	_rng.seed = seed_value
@@ -528,7 +468,7 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	# as it takes to notice — but resetting it is free and keeps a placement deterministic for a
 	# given seed, the same reason `Stroller.reset_at()` zeroes `_walk_phase` for a new day.
 	_walker_gait_phase = 0.0
-	_draw_the_door_answer()
+	strategy.draw_the_door_answer()
 	# Start somewhere along the field rather than at its edge, or the whole crowd arrives from
 	# one side in a wave on the first morning. Re-rolled if it lands somewhere it could not have
 	# walked to: behind a barrier, which reads as the barrier being fake, or in the middle of a
@@ -569,7 +509,7 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 			# true edge on the very first morning. See `_entry_picture_clearance()`.
 			if not _within_the_map_with_room_for_its_picture():
 				continue
-			if not _is_in_a_pocket():
+			if not strategy.is_in_a_pocket():
 				placed = true
 				break
 			if pocketed.is_empty():
@@ -584,27 +524,6 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 		_take_the_placement(pocketed)
 	_settle_junction()
 	colour = _colour()
-
-## Rolls what this walker does at a region door, off its own RNG stream so a seed reproduces a
-## day's crowd answer for answer.
-##
-## **Drawn before the position is, and that ordering is load-bearing.** `_stands_on_a_street()`
-## refuses to place anybody on ground they treat as shut, and a walker that turns back at doors
-## treats a door's whole segment as shut — so an answer drawn *after* the placement loop can land
-## somebody inside a street they will not walk, where they pace between its two ends for the rest of
-## the day. That is the exact trap the refusal exists to prevent; a car does not draw at all, since
-## the boom is `Crowd._stop_for_gates()`'s business and a car spending a number here would turn
-## differently at every junction it has ever turned at correctly.
-func _draw_the_door_answer() -> void:
-	if kind != Kind.WALKER:
-		return
-	var roll := _rng.randf()
-	if roll < Tuning.WALKER_DOOR_PASS_FRACTION:
-		_door_answer = DoorAnswer.PASSES
-	elif roll < Tuning.WALKER_DOOR_PASS_FRACTION + Tuning.WALKER_DOOR_TURN_BACK_FRACTION:
-		_door_answer = DoorAnswer.TURNS_BACK
-	else:
-		_door_answer = DoorAnswer.HELD
 
 ## Marks the junction this agent is standing in, if it is standing in one, so that it does not
 ## roll a turn on its very first frame.
@@ -621,7 +540,7 @@ func _settle_junction() -> void:
 ## Whether this agent is standing somewhere it could have got to on its own: an open street, or
 ## — for a car on the spine, leaving by the tunnel or the bridge — the one place an entry band may
 ## legitimately begin outside the map. Everywhere else outside the map is refused, the same
-## exception `_cannot_go_on` makes: a walker placed out there would find every direction blocked
+## exception `cannot_go_on()` makes: a walker placed out there would find every direction blocked
 ## and go nowhere, which is worse than the retry `_recycle` already has to make anyway.
 func _stands_on_a_street() -> bool:
 	var tile := _map.world_to_tile(position)
@@ -632,45 +551,14 @@ func _stands_on_a_street() -> bool:
 	# footway it happens to be on: an agent placed inside one is a body standing in a café, and the
 	# sidestep that carries a walker round a body it is *approaching* has nothing to open a gap it
 	# is already in — separation between bodies is positional and never a force.
-	if not _map.passable(tile, _walker_today if kind == Kind.WALKER else _car_today):
+	if not _map.passable(tile, strategy.today):
 		return false
 	if not _map.in_bounds(tile):
-		return kind == Kind.CAR and _map.is_main_road(_vertical, _corridor) \
-				and (tile.y < 0 or tile.y >= _map.size.y)
-	# A precinct is paved end to end, so every tile of it says "street" and a car placed there
-	# would look perfectly settled right up to the moment it drove off down the paving. Asked
-	# here rather than at lane-choosing time because it is a question about a *place*, and the
-	# place is not decided until the along position is rolled.
-	if kind == Kind.CAR and not _map.is_driveable_at(_vertical, tile):
-		return false
-	# And a walker is never placed in a carriageway. It matters because a precinct's lanes run the
-	# whole width of the corridor, and a lane is chosen before the along position that decides
-	# whether this stretch is a precinct at all — so the re-roll is what keeps the two in step
-	# rather than an ordering assumption that would be wrong once in ten.
-	if kind == Kind.WALKER and _map.tile_at(tile) == GameEnums.TileType.ROAD:
+		return strategy.may_stand_off_the_map(tile)
+	# And this kind's own clause: no precinct paving for a car, no carriageway for a walker.
+	if not strategy.may_be_placed_on(tile):
 		return false
 	return _map.is_street(tile)
-
-## Whether this **car** is standing on carriageway today's seals have shut in — a junction with all
-## four arms held, and whatever stub of lane is sealed in with it. See `CrowdPockets`.
-##
-## **A walker is never in one, and that is the record's own rule rather than a shortcut here.**
-## Sealed-in ground is ground a person can walk the whole of, turning round at the barrier on the
-## end of each stub, so there is nothing to keep walkers out of and nothing to stand still about. A
-## car cannot turn round against a barrier, which is the whole difference.
-##
-## **Asked beside `_stands_on_a_street()` at a placement rather than folded into it**, because the
-## two questions have different answers for a car that is already standing somewhere. Ground it
-## may not stand on is a state to get out of *now*, which is what `_plan_a_turn()` does about it;
-## a pocket is legal ground it simply cannot leave, and the answer to that is to stand where the
-## seal caught it and go when nobody is looking, rather than to turn on the spot at all. Folding it
-## in would turn the whole pocket into a wall and give every car in one a reason to steer at it
-## every frame, which is exactly the state `_process()` avoids by asking this question ahead of the
-## step instead: nothing below it runs while this is true.
-func _is_in_a_pocket() -> bool:
-	if kind != Kind.CAR or pockets == null:
-		return false
-	return pockets.holds(_map.world_to_tile(position))
 
 ## Whether this agent is far enough from the camera that taking it away cannot be seen.
 ##
@@ -732,209 +620,21 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 ## a rig with no city, or before the wall itself stands), which is a harmless no-op: nothing is held
 ## then either.
 ##
-## **A hold shuts a street to a car and not to a walker, and the asymmetry is the manoeuvre rather
-## than a policy.** *(2026-09-19: "pedestrians should only avoid the area if they cannot reach it
-## physically … they should only give up if they touch an impassable wall".)* Every held segment has
-## something standing across the whole of it somewhere along its length — a hard seal, a region
-## wall, a closure's barriers — and a car has to be turned away *before* it reaches that, because it
-## cannot turn round against a barrier and one stopped nose to a wall holds the junction behind it.
-## A walker turns in a stride wherever it is standing, so it needs no warning at all: it walks the
-## street until it meets the body, which `CityMap.obstructed_tiles` records like any other, and
-## turns there. The hold is what a car reads and the body is what a walker reads.
-##
-## **The door's carve-out is per walker**, which is the one thing here that is not a fact about the
-## day: a walker whose own answer is `TURNS_BACK` gets no carve-out at all, so a door reads to it
-## exactly like a wall and it turns away at the last junction with the machinery that already does
-## that — the one thing a walker still turns early for, because turning back at a door is a decision
-## about the door rather than about the ground. And a walker that has decided against one particular
-## door's queue (`_refuse_the_door`) is the same sentence for one segment rather than for all of
-## them.
+## Whether a hold shuts the street is the kind's (`LaneStrategy.shut_by_a_hold`): a car is turned
+## away a junction before the body that stands across it, a walker walks up to the body itself. A
+## door's carve-out is per walker (`WalkerStrategy.door_is_shut()`).
 func _segment_is_shut(tile: Vector2i) -> bool:
 	if not _map.is_held_at(tile):
 		return false
 	var segment := StreetNetwork.segment_containing(tile)
 	if segment == null:
-		return kind == Kind.CAR
+		return strategy.shut_by_a_hold
 	var key := segment.key()
 	if home_segments.has(key):
 		return false
 	if door_segments.has(key):
-		return _door_answer == DoorAnswer.TURNS_BACK or key == _refused_door_key
-	return kind == Kind.CAR
-
-# -------------------------------------------------------- checkpoint doors ---
-# A walker crossing a region door is held at the hut on its own sidewalk the way she is, in the
-# player's own four states — *("four states walking -> waiting -> inspection -> emerging on the
-# other side (with cooldown to not go back again) -> walking")*. See `DoorState` for what each one
-# is and `Crowd._hold_walkers_at_doors()` for the geometry that feeds them.
-#
-# **None of this is her detention.** `EventInstance`/`EventManager` hide her, ease the camera onto
-# the door, charge her meter and teleport her out past the body's own `detain_radius`; a walker is
-# not the one being looked for and shares only the shape of the wait. What a hut is to the crowd is
-# `WalkerDoorHold` — a point, somebody inside, and a line — and nothing here reads a catalogue row.
-
-## One frame of this walker's own crossing. Called by `Crowd._hold_walkers_at_doors()` the moment
-## after it has written `door_ahead`/`door_ahead_along`, so a state is always decided on this
-## frame's geometry rather than on the previous one's.
-func advance_the_door_hold(delta: float) -> void:
-	match _door_state:
-		DoorState.INSPECTION:
-			_inspection_left -= delta
-			if _inspection_left <= 0.0:
-				_emerge_from_the_hut()
-		DoorState.EMERGING:
-			# The cooldown, and it is a *distance* rather than a clock on purpose: what it has to
-			# rule out is this walker being turned round by the crowd's own steering a few pixels
-			# past the door and inspected all over again, and how long that takes is not something
-			# a number of seconds can know.
-			if not _door_hold or global_position.distance_to(_door_hold.position) \
-					> Tuning.WALKER_DOOR_COOLDOWN_RADIUS:
-				_door_hold = null
-				_door_state = DoorState.WALKING
-		DoorState.WAITING:
-			if _door_hold != door_ahead:
-				# The hut is no longer in front of it: it turned off at the junction, was turned
-				# round by a barrier, or was moved. Standing in a queue for a door it is no longer
-				# walking to would hold that door's line shut against everybody behind it.
-				_let_go_of_the_hut()
-			elif _door_hold.admit(self):
-				_enter_the_hut()
-		DoorState.WALKING:
-			_consider_the_hut_ahead()
-
-## The walking state's own decision: commit to the hut in front, and stop once this walker has
-## reached its own place in the line.
-##
-## **It joins the line at first sight, seven tiles off**, rather than on arrival at the hut. That
-## is where the lookahead sees a shut street too, and it is the only place a walker can still
-## decide against a door and turn at a junction — walking up to a full line and then about-facing
-## on the sidewalk is not a move a walker has.
-func _consider_the_hut_ahead() -> void:
-	if _refused_hut and _refused_hut != door_ahead:
-		# Out of sight of the door it turned away from — a fresh approach is a fresh decision.
-		_forget_the_refusal()
-	if _door_answer != DoorAnswer.HELD or door_ahead == null:
-		if _door_hold:
-			_let_go_of_the_hut()
-		return
-	if _refused_hut == door_ahead:
-		return
-	if _door_hold != door_ahead:
-		_let_go_of_the_hut()
-		if door_ahead.committed() > Tuning.WALKER_DOOR_QUEUE_MAX:
-			_refuse_the_door(door_ahead)
-			return
-		_door_hold = door_ahead
-		_door_hold.join(self)
-	if door_ahead_along <= _door_stop_distance():
-		_door_state = DoorState.WAITING
-
-## Decides against a door whose line is already as long as it is allowed to get — the player's
-## *"don't want a queue that is long"* — and does it by shutting that door's own **segment** to this
-## walker, which is exactly what turning back at a door already means (`_segment_is_shut`).
-##
-## **Nothing here waits at the hut and then gives up.** The decision is taken where the lookahead
-## first sees the door and the turn is the one a wall gets, so the ordinary case is a walker that
-## takes the junction rather than one that walks up to a queue and about-faces on the sidewalk.
-## Where there is no junction left between it and the door — it is already inside the door's own
-## street, because seven tiles is all anybody in the crowd sees a wall from either — it turns round
-## where it stands, immediately rather than at the hut, the same move a cul-de-sac gets.
-func _refuse_the_door(hold: WalkerDoorHold) -> void:
-	_refused_hut = hold
-	_refused_door_key = NO_DOOR
-	var segment := StreetNetwork.segment_containing(_map.world_to_tile(hold.position))
-	if segment:
-		_refused_door_key = segment.key()
-	# The lookahead is cached per tile and was worked out before this walker decided anything.
-	_scan_at = Vector2i(-9999, -9999)
-
-func _forget_the_refusal() -> void:
-	_refused_hut = null
-	_refused_door_key = NO_DOOR
-	_scan_at = Vector2i(-9999, -9999)
-
-## Where this walker stops short of the hut, in px along its own line of travel: beside the hut if
-## it is at the front of the line, and one spacing further back for everybody behind it. Recomputed
-## every frame rather than fixed on arrival, which is what makes a line *shuffle forward* when the
-## walker at the front is let in.
-func _door_stop_distance() -> float:
-	var place := _door_hold.place_of(self) if _door_hold else 0
-	return Tuning.WALKER_DOOR_STOP_DISTANCE \
-			+ float(maxi(0, place)) * Tuning.WALKER_DOOR_QUEUE_SPACING
-
-## Inside, and not drawn. **Standing on the hut's own ground point rather than hidden where it
-## stopped**: the hut's solid body keeps her further from that point than a contact can ever fire
-## from, so a walker in there cannot be walked into by somebody who cannot see it. It goes on
-## making its ordinary noise, the way her own meters keep running while she is inside — the body is
-## still there whether or not the player can see it.
-func _enter_the_hut() -> void:
-	_door_state = DoorState.INSPECTION
-	_inspection_left = Tuning.WALKER_DOOR_HOLD_SECONDS
-	visible = false
-	_set_along(_door_hold.position.y if _vertical else _door_hold.position.x)
-	_set_cross(_door_hold.position.x if _vertical else _door_hold.position.y)
-
-## Out again on the far side of the door, back on its own lane, just past the hut's body — the same
-## `WALKER_DOOR_STOP_DISTANCE` it waited at on the way in, so the two sides of a door are
-## symmetric. It keeps hold of the hut for the cooldown; `EMERGING` above is what lets go.
-func _emerge_from_the_hut() -> void:
-	_inspection_left = 0.0
-	visible = true
-	_door_state = DoorState.EMERGING
-	if not _door_hold:
-		_door_state = DoorState.WALKING
-		return
-	_door_hold.release(self)
-	var door_along: float = _door_hold.position.y if _vertical else _door_hold.position.x
-	_set_along(door_along + Tuning.WALKER_DOOR_STOP_DISTANCE * _direction)
-	_set_cross(_lane_centre)
-	# The lookahead is a cached answer about the tile it was standing on, and it is not standing
-	# there any more.
-	_scan_at = Vector2i(-9999, -9999)
-	door_ahead = null
-	door_ahead_along = INF
-
-## Gives up whatever claim this walker has on a hut and goes back to walking. **Every way a walker
-## can stop being where it was goes through here** — recycling at the edge of the field, being
-## streamed out, turning away — because a hut left occupied by somebody who no longer exists never
-## takes anybody again, and nothing about a walker that has gone would say so.
-func _let_go_of_the_hut() -> void:
-	if _door_hold:
-		_door_hold.release(self)
-	_door_hold = null
-	_door_state = DoorState.WALKING
-	_inspection_left = 0.0
-	visible = true
-
-## How fast this walker is going as a fraction of its own pace while a door has hold of it: nothing
-## at all inside the hut or standing in its line, and its ordinary speed otherwise.
-##
-## A factor beside `_yield_factor()` rather than a write to `_speed`, for the reason that one is:
-## nothing has to remember what the speed used to be, and a walker asked to stand still for a
-## second does not ratchet itself to a standstill it never recovers from.
-func _hold_factor() -> float:
-	if _door_state == DoorState.INSPECTION:
-		return 0.0
-	if _door_state == DoorState.WAITING and door_ahead_along <= _door_stop_distance():
-		return 0.0
-	return 1.0
-
-## True while this walker is being held at a door and is not walking anywhere — read by `_process`,
-## which has nothing to steer, look ahead for or turn at a junction while it is inside a hut.
-func _is_inside_a_hut() -> bool:
-	return _door_state == DoorState.INSPECTION
-
-## How fast this car is going as a fraction of its own pace while a pocket has caught it: nothing at
-## all while it is standing where the seal caught it, its ordinary pace otherwise. Always one for a
-## walker, which is never in a pocket.
-##
-## A factor beside `_hold_factor()` and `_yield_factor()` for the same reason those two are: nothing
-## has to remember what the speed used to be. And it is what makes the stopped picture free —
-## everything that draws or predicts a body reads `velocity()` rather than this agent's own step,
-## so a car whose step simply stopped advancing would still be drawn and predicted as travelling.
-## Reading `velocity()` down to zero here is the same trick a door hold already relies on.
-func _pocket_factor() -> float:
-	return 0.0 if _is_in_a_pocket() else 1.0
+		return strategy.door_is_shut(key)
+	return strategy.shut_by_a_hold
 
 ## Whether the frame record (`FrameRecord`) was running when this agent was made, read once here
 ## so that, with the record off, `_process()` pays one member read rather than a static read and a
@@ -962,69 +662,33 @@ func _process(delta: float) -> void:
 	if skip_motion:
 		return
 	_clock += delta
-	var before_position := position
 	_jolt = maxf(0.0, _jolt - delta)
-	if _detour_left > 0.0:
-		_detour_left = maxf(0.0, _detour_left - delta)
-		# A bump's own sidestep runs out on its clock; one taken to get round a body does not, since
-		# what ends it is being past the body. `_stop_going_round_a_body()` is what ends that one.
-		if _detour_left <= 0.0 and not _body_detour_held:
-			_detour = 0.0
-	_yield_left = maxf(0.0, _yield_left - delta)
 	# The stride an about-face owes its new heading, run down here rather than where it is spent, so
 	# that a body held at a gate or stopped behind a queue works it off too. See `_turn_round()`.
 	_turn_back_hold = maxf(0.0, _turn_back_hold - delta)
-	if kind == Kind.CAR:
-		_advance_car_bob(delta)
-		_give_way(delta)
-		# A car in a turn is following a path that was checked before it started, so none of the
-		# lane steering, lookahead or diverting below applies to it: the only thing left to decide
-		# is how far along the curve it has come. It is not recycled mid-turn either — a recycle is
-		# a teleport, and half a turn is the one place in a car's life where that would be seen.
-		if _turn:
-			_follow_the_turn(delta)
-			_claim_the_turn()
-			_redraw_if_the_picture_changed()
-			return
-	# Inside a checkpoint hut there is no lane to steer to, no junction to turn at and no way ahead
-	# to look down — but the crowd's field still moves with the player, so a walker held at a door
-	# she has walked away from still has to be recycled like anybody else. That is the whole of what
-	# happens to it this frame. See `DoorState`.
-	if _is_inside_a_hut():
-		if _has_left_the_field():
-			_recycle()
-		_redraw_if_the_picture_changed()
-		return
-	# A car sealed in — the one case a placement cannot prevent (`setup()` already refuses to put one
-	# in a pocket). It stands where the seal caught it, since it cannot turn round against a barrier:
-	# `_pocket_factor()` reads `velocity()` down to zero, which is where the stopped picture comes
-	# from for free. Make-way and bump still land from outside, since a standing body still has to be
-	# got round. It leaves the way anybody else leaves the field, once nobody can see it go. A walker
-	# is never in a pocket — it walks the sealed-in ground and turns at the end of each stub, which
-	# is what `CrowdPockets` no longer has a walker half for.
-	if _is_in_a_pocket():
-		if _out_of_view():
-			_recycle()
+	# The kind's own start of the frame: a walker's sidestep and yield clocks; a car's bob, its
+	# give-way, and the arc it may be following, which is the whole of its frame while it is on one.
+	# It also ends the frame for a body held where it stands — a walker inside a checkpoint hut, a
+	# car a pocket has caught — recycled, if it has to be, by the kind's own rule.
+	if strategy.begin_frame(delta):
 		_redraw_if_the_picture_changed()
 		return
 	var stood_on := _map.world_to_tile(position)
-	_set_along(_along() + _speed * _yield_factor() * _hold_factor() * _direction * delta)
+	_set_along(_along() + strategy.paced(_speed) * _direction * delta)
 	_set_cross(move_toward(_cross(), _lane_centre + _detour, STEER_SPEED * delta))
 	_keep_out_of_a_body(stood_on)
-	if kind == Kind.WALKER:
-		_consider_turning()
-		_advance_walker_gait(delta)
+	strategy.after_the_step(delta)
 	_look_ahead()
 	if field.has_stretch() and _walks_off_the_stretch() and _out_of_view():
 		_recycle()
 		_redraw_if_the_picture_changed()
 		return
-	if _blocked_in <= _acts_on_a_barrier_within():
-		_divert(delta)
+	if _blocked_in <= _acts_within:
+		strategy.divert(delta)
 	# A car with no road either way goes when nobody is looking, which is the rule a body a pocket
-	# has caught already follows a few lines above. It is the same situation read off the lane
-	# instead of off the junction — see `_nowhere_to_turn`.
-	if _has_left_the_field() or (_nowhere_to_turn and _out_of_view()):
+	# has caught already follows. It is the same situation read off the lane instead of off the
+	# junction — see `LaneStrategy.nowhere_to_turn`.
+	if _has_left_the_field() or (strategy.nowhere_to_turn and _out_of_view()):
 		_recycle()
 	_redraw_if_the_picture_changed()
 
@@ -1046,27 +710,12 @@ func _process(delta: float) -> void:
 ## standing somewhere it may not be is left alone, since there is nothing there to preserve.
 func _keep_out_of_a_body(stood_on: Vector2i) -> void:
 	var now := _map.world_to_tile(position)
-	if now == stood_on or _may_stand_on(now) or not _may_stand_on(stood_on):
+	if now == stood_on or strategy.may_stand_on(now) or not strategy.may_stand_on(stood_on):
 		return
 	_hold_inside_the_tile(stood_on, false)
-	if _may_stand_on(_map.world_to_tile(position)):
+	if strategy.may_stand_on(_map.world_to_tile(position)):
 		return
 	_hold_inside_the_tile(stood_on, true)
-
-## Whether this agent's own centre may be on a tile. A car's answer is `_cannot_go_on`, the same
-## predicate its lookahead and its turns use; a walker's is the per-lane one, because a walker's
-## `_cannot_go_on` is about a whole footway being taken and this is about a body under its feet.
-##
-## **A shut segment is added to the walker's half rather than left to the turn.** For a walker that
-## is a door it has decided to turn back from and nothing else, since a held street is a car's
-## warning rather than a walker's — but a walker committed to the heading it has just turned into
-## (`_turn_round()`) cannot turn again for a stride, and the one thing that must not buy is a
-## person standing in a doorway it refused. What keeps a walker out of a hard seal or a region wall
-## is the first half: their bodies are in `CityMap.obstructed_tiles` like any other body.
-func _may_stand_on(tile: Vector2i) -> bool:
-	if kind == Kind.CAR:
-		return not _cannot_go_on(_vertical, tile)
-	return _walker_lane_is_open(tile) and not _segment_is_shut(tile)
 
 ## Pulls one axis back inside the tile band this agent started the frame in. A pixel short of the
 ## far edge, the same fencepost `_recycle` gives up so a clamp cannot land exactly on the line and
@@ -1120,8 +769,13 @@ func _redraw_if_the_picture_changed() -> bool:
 				WALKER_IDLE_SPEED)
 		view = _walker_view
 	else:
-		third = roundi(_body_bob() * CAR_BOB_STEPS_PER_PX)
-		view = _frame()
+		# One `velocity()` serves the bob and the sector, the same value `_body_bob()` and
+		# `_update_car_view()` would each have computed.
+		var moving := velocity()
+		third = roundi(WheelBob.lift(_car_travelled, moving.length() / CAR_BOB_FULL_SPEED)
+				* CAR_BOB_STEPS_PER_PX)
+		_car_view = EightDirection.update(_car_view, moving, CAR_IDLE_SPEED)
+		view = _car_view
 	var picture := Vector3i(view, 1 if _flipped() else 0, third)
 	var drawn_heading := _drawn_heading_key()
 	var changed := picture != _picture or drawn_heading != _drawn_heading
@@ -1504,14 +1158,11 @@ func speed() -> float:
 ## walker standing in a door's line holds its last facing and frame a the way every stopped walker
 ## in the crowd already does, and its own field stops being stretched forward by `field_scale()`.
 ##
-## **A body a pocket has caught reads the same way**, through `_pocket_factor()`: it is not going
+## **A body a pocket has caught reads the same way**, through `CarStrategy._pocket_factor()`: it is not going
 ## anywhere either, so its field is a plain falloff rather than one stretched forward, and its
 ## projected impact and expected approach both answer "nowhere" the way a stopped body's should.
 func velocity() -> Vector2:
-	var moving := heading() * _speed * _yield_factor() * _hold_factor()
-	# A walker is never in a pocket, so its factor is exactly one and multiplying by it changes no
-	# bit; only a car pays for the pocket lookup.
-	return moving * _pocket_factor() if kind == Kind.CAR else moving
+	return strategy.paced_velocity(heading() * _speed)
 
 ## True while travelling along a vertical corridor. What decides whether two cars at the same
 ## junction are crossing each other's path or merely queueing behind one another.
@@ -1535,11 +1186,6 @@ func travelling_vertically() -> bool:
 # every frame, which is why a suite full of "no two cars are inside each other" assertions cannot
 # see it. **Look before committing.**
 
-## Half the length of the body along its own line of travel, which is what actually enters a box
-## first and leaves it last. Zero for a walker, who is not what a box is rationed between.
-func _nose() -> float:
-	return Tuning.CAR_STRIKE_HALF_LENGTH if kind == Kind.CAR else 0.0
-
 ## The junction this agent's **body** is standing in, or `(-1, -1)`. Nose and tail, not the
 ## centre: a car is 52px long against a 192px box, so half a length of it is still in the way
 ## after its middle has left.
@@ -1548,7 +1194,7 @@ func _nose() -> float:
 ## rather than looped over, since `Crowd.give_way_at_junctions()` asks every car this once a
 ## physics tick and a loop over the pair would build an array to walk every time.
 func junction_occupied() -> Vector2i:
-	var half := _nose()
+	var half := _nose
 	var along := _along()
 	var tile_along := floori((along - half) / float(Tuning.TILE_SIZE))
 	if CityMap.corridor_offset(tile_along) < 0:
@@ -1569,7 +1215,7 @@ func distance_to_junction() -> float:
 	var low := float(index * CityMap.period() * Tuning.TILE_SIZE)
 	var near := low if _direction > 0.0 \
 			else low + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
-	return (near - _along()) * _direction - _nose()
+	return (near - _along()) * _direction - _nose
 
 ## Which corridor band along its own axis the agent is in or heading for. Inside one, that is the
 ## one it is in; in the block band between two, it is whichever lies the way it is pointing.
@@ -1638,7 +1284,7 @@ func queue_position() -> float:
 ## **Never past ground it could not have driven onto itself.** This is pure spacing arithmetic with
 ## no notion of the map underneath it, so unguarded it can shove the rearmost car of a queue back
 ## across a junction and into whatever borders it on the far side — measured as a car grazing a big
-## building's own footprint by one tile. `_cannot_go_on` is the same predicate `_look_ahead` already
+## building's own footprint by one tile. `cannot_go_on` is the same predicate `_look_ahead` already
 ## trusts for the *forward* direction, asked here for the backward one, tile by tile from the car's
 ## own — **walked rather than sampled at the target**, since a nudge of a car's length is two tiles
 ## and a probe at its end looks straight past a one-tile barrier between.
@@ -1662,13 +1308,13 @@ func nudge_back(distance: float) -> void:
 	_set_along(_furthest_back_towards(_along() - distance * _direction))
 
 ## How far back down its own lane toward `target` this car may slide without its centre crossing
-## onto a tile `_cannot_go_on` refuses — `target` itself when every tile on the way is road, a
+## onto a tile `cannot_go_on` refuses — `target` itself when every tile on the way is road, a
 ## pixel short of the first blocked one otherwise, and where it already stands when the tile it is
 ## on is refused too, since an agent already standing somewhere it may not be is left alone rather
 ## than dragged further through it.
 func _furthest_back_towards(target: float) -> float:
 	var here := _map.world_to_tile(position)
-	if _cannot_go_on(_vertical, here):
+	if strategy.cannot_go_on(_vertical, here):
 		return _along()
 	var probe := Vector2(_cross(), target) if _vertical else Vector2(target, _cross())
 	var goal := _map.world_to_tile(probe)
@@ -1677,7 +1323,7 @@ func _furthest_back_towards(target: float) -> float:
 	var tile := here
 	while tile != goal:
 		var next := tile + step
-		if _cannot_go_on(_vertical, next):
+		if strategy.cannot_go_on(_vertical, next):
 			# The edge of the last good tile on the side the car is sliding toward.
 			var band := tile.y if _vertical else tile.x
 			var low := float(band * Tuning.TILE_SIZE)
@@ -1685,90 +1331,16 @@ func _furthest_back_towards(target: float) -> float:
 		tile = next
 	return target
 
-## Somebody she walked into gets out of her way.
-##
-## **A positional separation alone is undone on the very next frame** by this agent steering back to
-## `_lane_centre`, which is where she is standing — so the bump resolves and re-forms for as long as
-## she stays there, with a fresh jolt each time. That is being stuck to somebody, and it loses days.
-##
-## What moves is the agent's own **steering target**, not the player: it aims a lane over for a
-## couple of seconds and then comes back. That keeps the invariant intact — separation between
-## bodies is positional, never a force — and it is also just what a person does when you walk into
-## them.
-##
-## `away` is in world space; only the component across this agent's own corridor means anything to
-## it, and the result is clamped inside the pavement band, because a walker that yields into the
-## carriageway is a walker under a car.
+## Somebody she walked into gets out of her way — a walker's answer (`WalkerStrategy.step_aside()`);
+## a car does not get out of anybody's way, since the carriageway is hers to stay off.
 func step_aside(away: Vector2, distance: float, seconds: float) -> void:
-	if kind == Kind.CAR:
-		# A car does not get out of anybody's way. The carriageway is hers to stay off.
-		return
-	var across := away.x if _vertical else away.y
-	var along := away.y if _vertical else away.x
-	if absf(across) >= absf(along):
-		var band := _pavement_band()
-		_detour = clampf(_lane_centre + _detour + signf(across) * distance, band.x, band.y) \
-				- _lane_centre
-		_detour_left = maxf(_detour_left, seconds)
-		return
-
-	# **The direction she needs is this walker's own line of travel**, so there is nothing to
-	# steer: it is crossing her path rather than sharing it. Measured, nine to eleven of every
-	# twelve contacts on a forty-second walk are with somebody **crossing**, which is why this
-	# branch exists at all — a sidestep alone leaves the contact count exactly where it found it.
-	#
-	# What a person does at a corner is hurry across or wait, and which one depends only on
-	# whether carrying on takes them further from her line. Both are a speed for a moment; neither
-	# touches the lane, the corridor or the path, so a walker that yields is still going exactly
-	# where it was going.
-	_yield_hurry = signf(along) == signf(_direction)
-	_yield_left = maxf(_yield_left, seconds)
-
-## The stretch of cross-axis coordinate this walker's own pavement covers, as `(low, high)`.
-##
-## Clamped against the **band**, not against a symmetric distance from the lane centre, because
-## the pavement is not symmetric about a lane: offsets 0 and 1 are one footway and 4 and 5 are the
-## other, with the carriageway in between. A walker on the kerbside lane that is asked to move
-## kerbwards must stop at the kerb — the first version clamped by distance and would happily have
-## put somebody 48px into the road to get out of her way, which is a pedestrian under a car.
-func _pavement_band() -> Vector2:
-	var offsets := CrowdLanes.walkable_offsets(_map, _vertical, _corridor,
-			floori(_along() / float(Tuning.TILE_SIZE)))
-	# A precinct has one footway and it is the whole street, so there is no far side to be on.
-	if offsets.size() > 4:
-		var slack_all := float(Tuning.TILE_SIZE) * 0.5
-		return Vector2(CrowdLanes.lane_centre(_corridor, offsets[0]) - slack_all,
-				CrowdLanes.lane_centre(_corridor, offsets[offsets.size() - 1]) + slack_all)
-	var near_side: bool = _lane <= offsets[1]
-	var low := CrowdLanes.lane_centre(_corridor, offsets[0] if near_side else offsets[2])
-	var high := CrowdLanes.lane_centre(_corridor, offsets[1] if near_side else offsets[3])
-	# Half a tile of slack at each end: a lane centre is the middle of a tile, and the footway
-	# reaches to that tile's edge.
-	var slack := float(Tuning.TILE_SIZE) * 0.5
-	return Vector2(low - slack, high + slack)
-
-## How fast this walker is going right now as a fraction of its own pace: hurrying across in front
-## of her, waiting for her to pass, or simply walking. See `step_aside()`.
-##
-## A factor rather than a write to `_speed`, so nothing has to remember what the speed used to be
-## — and so a walker that is being asked to yield every frame while she approaches does not ratchet
-## itself to a standstill it never recovers from.
-func _yield_factor() -> float:
-	if _yield_left <= 0.0:
-		return 1.0
-	return YIELD_HURRY if _yield_hurry else 0.0
-
-## How much faster somebody crossing in front of her walks to get out of the way. Enough to clear
-## her line inside the notice distance and not so much that a pavement breaks into a jog.
-const YIELD_HURRY := 1.7
+	strategy.step_aside(away, distance, seconds)
 
 ## Drops any sidestep. A detour is a distance across *this* corridor, so it means nothing once the
 ## agent has changed corridor, changed lane, or swapped its axes at a junction.
 func _forget_the_detour() -> void:
 	_detour = 0.0
-	_detour_left = 0.0
-	_yield_left = 0.0
-	_body_detour_held = false
+	strategy.forget_the_detour()
 
 # ------------------------------------------------------------------ lanes ---
 
@@ -1790,40 +1362,14 @@ func _set_cross(value: float) -> void:
 	else:
 		position.y = value
 
-## Picks a corridor, a lane in it and a direction. `roll` decides the axis, so a caller can
-## spread a crowd evenly across both instead of letting one axis win by chance.
-##
-## **A car picks its axis by weight, and a walker still splits it evenly.** An even split applied to
-## both silently caps the main road: the axis is decided *before* the corridor, so `busyness` can
-## only redistribute cars **within** an axis, and no weight — 5.0, 50, any number — can put more
-## than half the traffic on one north-south street. Measured that way at act I density, the spine
-## holds 11.2 cars of forty with a weight five times its neighbours'.
-##
-## So for cars the two decisions become one: pick among the corridors of **both** axes in
-## proportion to how busy each is, which is what the weight was always supposed to mean. Walkers
-## keep the even split deliberately — a pavement has no hierarchy for them to follow (a precinct
-## is a *place*, not an axis), and the alternating roll from `Crowd._populate` is what stops a
-## morning's crowd landing lopsided by chance.
+## Picks a corridor, a lane in it, a direction and a speed — the kind's own roll
+## (`LaneStrategy.choose_lane()`: a car picks its axis by weight, a walker splits it evenly, and
+## `roll` decides the axis for the even split, so a caller can spread a crowd evenly across both).
+## Only the corridors the field actually reaches: picking from the whole city and then discarding
+## what is out of view is the same crowd spread over ten thousand tiles, which is the density
+## falling to a third of what the numbers say.
 func _choose_lane(roll: float) -> void:
-	_vertical = roll < 0.5 if kind != Kind.CAR else _pick_axis_by_weight()
-	# Only the corridors the field actually reaches. Picking from the whole city and then discarding
-	# what is out of view is the same crowd spread over ten thousand tiles, which is the density
-	# falling to a third of what the numbers say.
-	_corridor = CrowdLanes.pick_corridor_in_range(_rng, _map, _vertical,
-			field.corridor_range(_vertical), kind == Kind.CAR)
-	if kind == Kind.WALKER and field.uniform_walkers:
-		var corridors := field.corridor_range(_vertical)
-		_corridor = _rng.randi_range(corridors.x, corridors.y)
-	if kind == Kind.CAR:
-		_lane = CrowdLanes.ROAD_OFFSETS[_rng.randi_range(0, 1)]
-		_direction = CrowdLanes.road_direction(_vertical, _lane)
-		_speed = _rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
-	else:
-		var offsets := CrowdLanes.walkable_offsets(_map, _vertical, _corridor,
-				floori(_along() / float(Tuning.TILE_SIZE)))
-		_lane = offsets[_rng.randi_range(0, offsets.size() - 1)]
-		_direction = 1.0 if _rng.randf() < 0.5 else -1.0
-		_speed = _rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
+	strategy.choose_lane(roll)
 	_cruise = _speed
 	_lane_centre = _lane_centre_here()
 	_junction = -1
@@ -1838,265 +1384,7 @@ func _choose_lane(roll: float) -> void:
 ## the outer edge of its own footway, which is what leaves a gap between the two lanes of a
 ## pavement worth aiming at. See `CrowdLanes.SIDEWALK_LANE_SPREAD`.
 func _lane_centre_here() -> float:
-	if kind == Kind.CAR:
-		return CrowdLanes.lane_centre(_corridor, _lane)
-	return CrowdLanes.walker_lane_centre(_corridor, _lane,
-			CrowdLanes.walkable_offsets(_map, _vertical, _corridor,
-			floori(_along() / float(Tuning.TILE_SIZE))))
-
-## Which way a car drives, weighted by the traffic each axis is carrying **inside the field**.
-##
-## Restricted to the corridors in view for the same reason `pick_corridor_in_range` is: the crowd
-## is a population of the box around her, so the question is which streets *she* can see, and a
-## spine two miles north is not competing for these cars. A field with no drivable weight in it at
-## all — every corridor in view a precinct — falls back to an even split rather than dividing by
-## nothing, exactly as the corridor pick does; the caller re-rolls anyway.
-func _pick_axis_by_weight() -> bool:
-	var vertical_weight := _axis_weight(true)
-	var horizontal_weight := _axis_weight(false)
-	var total := vertical_weight + horizontal_weight
-	if total <= 0.0:
-		return _rng.randf() < 0.5
-	return _rng.randf() * total < vertical_weight
-
-func _axis_weight(vertical: bool) -> float:
-	var span := field.corridor_range(vertical)
-	var total := 0.0
-	for index in range(span.x, span.y + 1):
-		total += CrowdLanes.busyness_for(_map, vertical, index, true)
-	return total
-
-## **A zebra is only the safe way over if the traffic honours it** — otherwise it is paint, and the
-## choice between crossing here and jaywalking there has one arm missing.
-##
-## Braking rather than stopping dead, and from `CAR_ZEBRA_SIGHT` out, because the giving way has to
-## be *visible* from the kerb: a player deciding whether to step off needs to see the car slowing,
-## not discover afterwards that it would have.
-##
-## It is also where a car decides not to drive through the one in front, waits its turn at a
-## junction, or stops for a checkpoint gate. **The four wants compose by taking the lowest**, which
-## is the whole trick: a car held at a box, a car held at a gate, and a car behind another car are
-## the same behaviour asked for by different things, and giving any one of them its own brake would
-## be a second answer to a question that already has one.
-func _give_way(delta: float) -> void:
-	var wanted := _cruise
-	if junction_hold < INF:
-		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * junction_hold))
-	if gate_hold < INF:
-		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * gate_hold))
-	# A turn it has committed to: ease toward the speed the arc is taken at over whatever run-up is
-	# left, and hold that speed for the whole curve. When the junction came into sight too late for
-	# the easing to finish — which the lookahead makes the ordinary case rather than the unlucky one
-	# — the car is still braking as it turns, which is what a driver who took a corner a little fast
-	# does. See `Tuning.CAR_TURN_SPEED`.
-	if _turn:
-		wanted = minf(wanted, sqrt(Tuning.CAR_TURN_SPEED * Tuning.CAR_TURN_SPEED
-				+ 2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * _turn_run_up))
-	# And the wall itself, for the car that has no manoeuvre that fits. Nothing used to brake for a
-	# blockage at all, because reversing on the spot was always available; refusing that has to leave
-	# the car somewhere it could have stopped.
-	var blockage := _room_to_stop_in()
-	if blockage < INF:
-		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * blockage))
-	var to_line := _distance_to_stop_line()
-	if to_line < INF:
-		# The speed that runs out exactly at the line at the *approach* rate. **Braking toward a
-		# point rather than toward zero** is the whole of it: aiming at zero stops the car wherever
-		# the curve happens to end, which is most of a block early.
-		# The gentle rate is what makes the easing start in sight of the kerb — see
-		# `CAR_ZEBRA_APPROACH_BRAKE` for what shaping it with `CAR_BRAKE` does instead.
-		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * to_line))
-	wanted = minf(wanted, _following_speed())
-	var rate := Tuning.CAR_BRAKE if wanted < _speed else Tuning.CAR_ACCELERATE
-	_speed = move_toward(_speed, wanted, rate * delta)
-
-## How far this car has to the stop line of a crossing it should give way at, or `INF` when
-## there is nothing to give way to — nobody waiting, or **it is already too late to stop**.
-##
-## The second half is the **commit rule**. A car that arrives at the paint as the player reaches the
-## kerb and brakes anyway parks on the zebra; there is only one safe thing it can do that late, and
-## it is to clear the crossing. `CAR_ZEBRA_SIGHT`
-## is nearly four times the distance a car needs to stop, so this only ever fires for somebody
-## who stepped up *after* the car had committed, and never for a player who was waiting there.
-func _distance_to_stop_line() -> float:
-	var crossing := _crossing_ahead_somebody_is_waiting_at()
-	if crossing == INF:
-		return INF
-	# Measured against the **paint**, not against the line. The setback is a comfort margin, so
-	# ending up inside it is a car stopped a little close; ending up on the zebra is the thing
-	# the rule exists to prevent. Written the other way round — commit when it cannot stop at
-	# the *line* — a car that has come to rest exactly there has a braking distance of nothing,
-	# decides it is too late, and drives off over the crossing it just stopped for.
-	if crossing < Tuning.braking_distance(_speed):
-		return INF
-	return maxf(0.0, crossing - Tuning.CAR_STOP_LINE_SETBACK)
-
-## The fastest this car may go and still keep `CAR_HEADWAY_TIME` of clear road in front of it.
-##
-## A time headway rather than a fixed distance, because a fixed one either tailgates at speed
-## or leaves a bus-length gap in a jam. `CAR_GAP_MIN` is the standstill distance underneath it:
-## without it the arithmetic asks for zero speed at zero gap, which is a car parked inside
-## another car rather than behind it.
-func _following_speed() -> float:
-	if gap_ahead == INF:
-		return _cruise
-	return maxf(0.0, (gap_ahead - Tuning.CAR_GAP_MIN) / Tuning.CAR_HEADWAY_TIME)
-
-## Distance along the street to the **near edge** of the first crossing ahead that somebody is
-## standing at, or `INF` for none.
-##
-## The near edge rather than the tile centre, because a zebra is several tiles deep and a car
-## that stops a setback short of the middle of one is standing on the first half of it.
-##
-## `pedestrian_ahead` is only ever set for the handful of cars near the player, so this probe
-## does not run for the other hundred.
-## **A main road does not give way**, and that is the whole difference between its crossings and
-## an ordinary street's. The paint is identical and what honours it is not: on an
-## ordinary street the drivers do, which makes crossing a matter of catching somebody's eye; on
-## the spine the light does, which makes it a matter of waiting for one. Take this exemption away
-## and a signal is decoration on top of a courtesy that was already enough.
-func _crossing_ahead_somebody_is_waiting_at() -> float:
-	if pedestrian_ahead == Vector2.INF:
-		return INF
-	# **A car mid-turn is inside the box and has nothing to give way at.** The scan below walks
-	# tiles down one axis from the car's own tile, which is a question about a lane the car is not
-	# in while it is on an arc — and stopping there would be stopping in the junction, which is the
-	# one thing the box rules exist to prevent. The zebras a turn crosses are at the box's own edges
-	# and the car gave way at them, or committed, on the way in.
-	if _turn and _turn_run_up <= 0.0:
-		return INF
-	if _map.street_kind_at(_vertical, _map.world_to_tile(global_position)) \
-			== GameEnums.StreetKind.MAIN:
-		return INF
-	# Somebody in the next street over is not this street's problem.
-	var lateral := absf((pedestrian_ahead.x if _vertical else pedestrian_ahead.y) - _cross())
-	if lateral > Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5:
-		return INF
-
-	# Stepped **tile by tile from the car's own tile**, not by sampling world points every 32px.
-	# The sampled version aliases, and the way it fails is the worst possible one: a car stopped
-	# at the line is a few pixels from the paint, so both samples miss the crossing, it decides
-	# there is nothing to give way to and pulls away with somebody on the zebra. Starting at
-	# zero also means a car already on the paint sees it, which is what makes the commit rule
-	# below able to tell "not yet there" from "already across".
-	var waiting_along := pedestrian_ahead.y if _vertical else pedestrian_ahead.x
-	var step_tile := Vector2i(0, signi(int(_direction))) if _vertical \
-			else Vector2i(signi(int(_direction)), 0)
-	var here := _map.world_to_tile(global_position)
-	# The first tile of the run of paint currently being walked, or -1 between runs. **A zebra is
-	# not one tile**, and the car has to stop short of the whole of it rather than short of the
-	# tile the person happens to be standing on — otherwise it parks on the near half of the same
-	# crossing and the paint stops meaning anything. Two tiles deep on an ordinary street, and
-	# *six* where a road crosses a pedestrianised one, which is where this first showed up.
-	var run_start := -1
-	for step in range(0, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
-		var tile := here + step_tile * step
-		var along_index: int = tile.y if _vertical else tile.x
-		if _map.tile_at(tile) != GameEnums.TileType.CROSSING:
-			run_start = -1
-			continue
-		if run_start < 0:
-			run_start = along_index
-		# Distance along the street, not straight-line: somebody waiting at the far kerb of a
-		# six-tile corridor is beside the crossing, not two tiles from it.
-		var crossing_along := float(along_index * Tuning.TILE_SIZE)
-		if absf(waiting_along - crossing_along) > Tuning.CAR_ZEBRA_WAIT_RADIUS:
-			continue
-		# The near edge of the run, which is its lowest coordinate going one way and its highest
-		# going the other — the scan always starts at the end nearest the car.
-		var edge_tile := run_start + (0 if _direction > 0.0 else 1)
-		return (float(edge_tile * Tuning.TILE_SIZE) - _along()) * _direction
-	return INF
-
-## A walker rounds a corner. Rolled once per junction, and the new lane is whichever
-## pavement is nearest: someone turning a corner keeps to the side they are already on
-## rather than stepping across the carriageway to do it.
-func _consider_turning() -> void:
-	var crossing := CrowdLanes.corridor_at(_along())
-	if crossing < 0:
-		_junction = -1
-		return
-	if crossing == _junction:
-		return
-	_junction = crossing
-	if _rng.randf() >= Tuning.PEDESTRIAN_TURN_CHANCE:
-		return
-
-	# A turn is the one move that commits without looking, and that is free only while the only
-	# unwalkable thing a street can turn into is a barrier, which `_divert` picks up on the next
-	# frame. It is not free here: a T-junction on the edge of a calm zone has one arm that is park,
-	# and a walker that turns into it is standing on grass before anything notices. So the direction
-	# is chosen from the arms that go somewhere, and a junction with no such arm is one this walker
-	# carries straight on through.
-	#
-	# **Ground only, never today's barriers** — see `_no_street_ahead()`. A street sealed further
-	# along is a street to walk into as far as the seal, and refusing it here is what left every
-	# offshoot of the day's route empty.
-	var turning := 1.0 if _rng.randf() < 0.5 else -1.0
-	if _no_street_ahead(not _vertical, turning, LOOKAHEAD):
-		turning = -turning
-		if _no_street_ahead(not _vertical, turning, LOOKAHEAD):
-			return
-
-	# The two axes swap roles and the position does not move: what was the distance along
-	# the old corridor is, unchanged, the distance across the new one. The lane it steers
-	# to is the nearest pavement, so a walker that turns from the middle of a junction cuts
-	# the corner instead of stepping back to the kerb first.
-	# Which lane of the new pavement it would land on, asked **before** anything is changed, because
-	# the answer may be that this arm is not one it can take: a body standing where it would land,
-	# with no room left in the junction to cross to the other lane of that footway. Nothing is
-	# blocking the street it is already walking, so it carries straight on — an unmade turn is
-	# invisible where a walker clipping a café's tables is not.
-	var lane := _sidewalk_after_a_turn(not _vertical, crossing, turning)
-	if lane < 0:
-		return
-
-	var kept := _corridor
-	_vertical = not _vertical
-	_corridor = crossing
-	_direction = turning
-	_lane = lane
-	_lane_centre = _lane_centre_here()
-	_forget_the_detour()
-	# It is now travelling through the corridor it just came down, so that is the junction
-	# it is in — otherwise it would roll a second turn before clearing the first.
-	_junction = kept
-
-## Whether the street `distance` ahead along an axis is one this agent cannot travel: shut for
-## the day, or not a street at all.
-##
-## The second half is the calm zones. A zone is painted straight over the corridors between its own
-## blocks, so a lane that would run the width of the city runs into a park instead — and those tiles
-## are perfectly walkable, which is why `is_closed` alone has nothing to say about them. Diverting
-## is the same move a barricade produces, with the same good side effect: a street with nobody on it
-## is a street that does not go through.
-##
-## Out of bounds **is** blocked, in `_cannot_go_on()` below — a body that reaches the boundary
-## pavement turns rather than walking into the mountain, and only a car on the spine leaves by the
-## tunnel or the bridge. The map edge is still what `_has_left_the_field` recycles at. **The thing
-## to watch is the pavement she is walking towards near an edge**: a body that turns round at the
-## boundary instead of recycling is one fewer arriving from that side, and whether the edge
-## streets read thinner for it is a played question rather than a tested one.
-func _blocked_ahead(vertical: bool, direction: float, distance: float,
-		from := Vector2.INF) -> bool:
-	return _cannot_go_on(vertical, _tile_ahead(vertical, direction, distance, from))
-
-## Whether the street `distance` ahead along an axis is one this agent could never travel **at all**
-## — off the map, not a street, a precinct to a car — with nothing today has placed in it counted.
-##
-## **This is what a walker asks of an arm at a junction, and it is the whole of item 4.**
-## *(2026-09-19: "they saw that a road section was closed of and never entered it. this shouldn't
-## happen. they should still go into the section until they cannot continue. this should also happen
-## from inside the path since right now we have offshoots that are clear because nobody attempts to
-## go in".)* A walker choosing where to turn weights a street with a barrier somewhere along it
-## exactly like an open one, so a side street sealed further down fills as far as its seal and the
-## walkers who reach the seal turn round and walk back out. What it still refuses is ground nothing
-## can travel: a T-junction on the edge of a calm zone has one arm that is park, and a walker that
-## turns into it is standing on grass before anything notices. A car keeps asking the whole of
-## `_cannot_go_on()` instead, because an arm it cannot get out of is a car parked there for the day.
-func _no_street_ahead(vertical: bool, direction: float, distance: float,
-		from := Vector2.INF) -> bool:
-	return _never_a_street_here(vertical, _tile_ahead(vertical, direction, distance, from))
+	return strategy.lane_centre_here()
 
 ## The tile `distance` away along an axis, from this agent or from `from`.
 func _tile_ahead(vertical: bool, direction: float, distance: float, from: Vector2) -> Vector2i:
@@ -2104,352 +1392,6 @@ func _tile_ahead(vertical: bool, direction: float, distance: float, from: Vector
 	var offset := Vector2(0.0, direction * distance) if vertical \
 			else Vector2(direction * distance, 0.0)
 	return _map.world_to_tile(origin + offset)
-
-## Whether a *tile* is somewhere this agent may be. The predicate under both of the questions
-## below, so "the way is shut" means one thing however it is asked.
-##
-## **It is two questions stacked and the order is the useful part.** `_never_a_street_here()` is the
-## city — the lattice, the map's edge, a precinct's paving — and is true of a tile on every day of
-## the run; everything after it is what *today* has placed on ground this agent could otherwise
-## travel. The two are asked together here and separately where a walker picks an arm at a junction,
-## which is the one place the difference matters. See `_no_street_ahead()`.
-func _cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
-	if _never_a_street_here(vertical, tile):
-		return true
-	if not _map.passable(tile, _closed_today):
-		return true
-	# A street held for today has a hard seal, a region wall or a closure's barriers standing across
-	# the whole of it somewhere along its length. **That is a car's warning and not a walker's** —
-	# see `_segment_is_shut`: a car has to turn at the last junction because it cannot turn round
-	# against a barrier, and a walker walks up to the body itself, which the obstruction record
-	# below knows exactly where to find. A region door is carved out for everybody but a walker
-	# that turns back at doors: it is a crossing the day means to keep open, not a wall with a
-	# picture on it.
-	if _segment_is_shut(tile):
-		return true
-	# A soft seal takes both pavements and leaves the carriageway to the cars — walkers only.
-	if kind == Kind.WALKER and not _map.passable(tile, _soft_sealed_today):
-		return true
-	# A stationary solid body standing in the street — a café, a construction band, a kerbed van.
-	# **A car has nowhere to step**: one lane per direction and the oncoming one is not an option,
-	# so a body on its own lane tile is a wall to it and it turns at the last junction the way it
-	# does for a closure. The oncoming lane is a different tile and is untouched, which is the whole
-	# difference between a body and a seal. **A walker has the other lane of its own footway** and
-	# goes round (`_step_around_a_body`), so the way is only really shut to it once *every* lane of
-	# that footway is taken at the same point along the street; the other footway and the
-	# carriageway stay open. A precinct is one footway six lanes wide, shut when no lane runs
-	# through the rows ahead (`_precinct_way_is_shut`).
-	if kind == Kind.CAR:
-		return not _map.passable(tile, _car_today)
-	return _footway_is_shut(vertical, tile)
-
-## Whether a tile is ground this kind of agent could never travel, whatever today has or has not
-## placed on it: off the map, not a street at all, or a precinct to a car.
-##
-## **Out of bounds is blocked**, with one exception: a car on the spine's own corridor
-## (`_map.main_road`) leaving by the tunnel to the north or the bridge to the south, the two edges
-## `City._spawn_spine_exits` places them at — `CityEdge` draws the carriageway going on there, and
-## nowhere else does the border carry a road. Never a walker: playtest 16, finding 3, *"only cars
-## should be able to"*. Stated over which edge and which corridor rather than over "vertical and
-## out of bounds", because the spine is the one corridor this is true of, not every vertical one.
-##
-## **And a precinct is a wall to a car and a street to everybody else.** The tile map cannot say
-## so — it is paving either way — so the street kind has to, or a car reaching the three blocks of a
-## precinct drives onto them instead of turning off.
-func _never_a_street_here(vertical: bool, tile: Vector2i) -> bool:
-	if not _map.in_bounds(tile):
-		var leaves_by_the_spine := kind == Kind.CAR and _map.is_main_road(vertical, _corridor) \
-				and (tile.y < 0 or tile.y >= _map.size.y)
-		return not leaves_by_the_spine
-	if kind == Kind.CAR and not _map.is_driveable_at(vertical, tile):
-		return true
-	return not _map.is_street(tile)
-
-# ------------------------------------------------------- going round a body ---
-# A café's tables, a construction band, a kerbed van, a stall, a skip: a stationary solid body
-# standing on one lane of a street. *("yes every solid body should do that -- not necessarily force
-# a turn around but at least avoid the solid".)* `CityMap.obstructed_tiles` is the record of where
-# they are; this is what a walker does about one.
-#
-# **The walker's answer is a sidestep and not a turn.** It has two lanes of footway, so it steers
-# into the other one for as long as the body is ahead of or beside it and steers back after — the
-# same detour a bump gives it, aimed at a lane rather than away from a person. Only when every lane
-# of its own footway is taken at one point along the street is the way actually shut (in a precinct,
-# when no lane runs through the rows ahead), and that is `_footway_is_shut()`, read through `_cannot_go_on` so the turn at the last junction is the one a
-# seal already produces.
-
-## Whether the footway `tile` belongs to is shut to this walker. On an ordinary street that is every
-## lane of the pavement being taken by a solid body at that point along the street. `vertical` is the
-## axis being travelled, so the tile's *other* coordinate is the one across the street.
-##
-## **A precinct's footway is its whole width, and it is shut when no way through is left.** It has
-## no carriageway, so "my own footway" is the street; one stall is stepped round across the six
-## lanes (`_step_around_a_body`) and leaves it open. What shuts it is what leaves this walker no way
-## past, whether one body across all six lanes or several in neighbouring rows that no lane runs
-## through: see `_precinct_way_is_shut`. It then turns round in front of it as on any other street
-## instead of slowing to a stop at the body with the walkers behind it queueing.
-func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
-	# The cheap half first: a walker's own tile is nearly always clear, and this runs per probe.
-	if _map.passable(tile, _bodies_today):
-		return false
-	var across := tile.x if vertical else tile.y
-	var offset := CityMap.corridor_offset(across)
-	if offset < 0:
-		return false
-	var along_tile := tile.y if vertical else tile.x
-	var corridor := across / CityMap.period()
-	var offsets := CrowdLanes.walkable_offsets(_map, vertical, corridor, along_tile)
-	# On an ordinary street the carriageway is not a footway; in a precinct it is paving like the
-	# rest.
-	if not offsets.has(offset):
-		return false
-	if offsets.size() != CrowdLanes.SIDEWALK_OFFSETS.size() and vertical == _vertical \
-			and corridor == _corridor:
-		return _precinct_way_is_shut_cached(vertical, corridor)
-	var base := corridor * CityMap.period()
-	for lane_offset in _footway_of(offsets, offset):
-		var lane_tile := Vector2i(base + lane_offset, along_tile) if vertical \
-				else Vector2i(along_tile, base + lane_offset)
-		if _walker_lane_is_open(lane_tile):
-			return false
-	return true
-
-## `_precinct_way_is_shut()` worked out once per look-ahead scan: the answer reads only the walker's
-## own tile, heading and the map, so every blocked tile the scan probes shares it.
-func _precinct_way_is_shut_cached(vertical: bool, corridor: int) -> bool:
-	var here := _map.world_to_tile(position)
-	if _way_shut_known and here == _way_shut_at and vertical == _way_shut_vertical \
-			and _direction == _way_shut_direction:
-		return _way_shut
-	_way_shut_known = true
-	_way_shut_at = here
-	_way_shut_vertical = vertical
-	_way_shut_direction = _direction
-	_way_shut = _precinct_way_is_shut(vertical, corridor)
-	return _way_shut
-
-## Whether a walker in a precinct has no way past what stands in the next `BODY_SCAN_TILES` rows
-## ahead of it. A precinct's lanes are 0 to 5 across, a row is one tile along the street, and a lane
-## tile is open by `_walker_lane_is_open` (bodies, closed ground and soft seals are not).
-##
-## The lanes it can be in are walked forward a row at a time: the ones it holds that are open in the
-## next row, then spread sideways through open lanes there. A lane is carried straight ahead and
-## never diagonally, since a step between two blocked corners is not a gap a body fits through. When
-## no lane is carried the way is shut; a row with no blocked lane in it past the first body, or
-## ground that is no longer a precinct, is a way out. Run only for a probe on a blocked tile, so it
-## costs nothing in a clear street.
-func _precinct_way_is_shut(vertical: bool, corridor: int) -> bool:
-	var step := signi(int(_direction))
-	var row0 := _map.world_to_tile(position)
-	var from_row := row0.y if vertical else row0.x
-	var cross_tile := row0.x if vertical else row0.y
-	var base := corridor * CityMap.period()
-	var lane := cross_tile - base
-	if lane < 0 or lane >= CrowdLanes.PRECINCT_OFFSETS.size():
-		lane = _lane
-	var reach: Array[bool] = []
-	reach.resize(CrowdLanes.PRECINCT_OFFSETS.size())
-	reach.fill(false)
-	if not _precinct_lane_open(vertical, base, from_row, lane):
-		return false
-	reach[lane] = true
-	reach = _spread_through_open_lanes(vertical, base, from_row, reach)
-	var met_a_body := false
-	for i in range(1, BODY_SCAN_TILES + 1):
-		var row := from_row + step * i
-		if CrowdLanes.walkable_offsets(_map, vertical, corridor, row).size() \
-				== CrowdLanes.SIDEWALK_OFFSETS.size():
-			return false
-		var carried: Array[bool] = []
-		carried.resize(reach.size())
-		var any_carried := false
-		var any_blocked := false
-		for l in reach.size():
-			var open := _precinct_lane_open(vertical, base, row, l)
-			any_blocked = any_blocked or not open
-			carried[l] = reach[l] and open
-			any_carried = any_carried or carried[l]
-		if not any_blocked and met_a_body:
-			return false
-		met_a_body = met_a_body or any_blocked
-		if not any_carried:
-			return true
-		reach = _spread_through_open_lanes(vertical, base, row, carried)
-	return false
-
-func _precinct_lane_open(vertical: bool, base: int, row: int, lane: int) -> bool:
-	return _walker_lane_is_open(Vector2i(base + lane, row) if vertical \
-			else Vector2i(row, base + lane))
-
-## `reach` grown sideways in one row through the open lanes next to a lane it already holds.
-func _spread_through_open_lanes(vertical: bool, base: int, row: int,
-		reach: Array[bool]) -> Array[bool]:
-	var grown := reach.duplicate()
-	for l in range(1, grown.size()):
-		if grown[l - 1] and _precinct_lane_open(vertical, base, row, l):
-			grown[l] = true
-	for l in range(grown.size() - 2, -1, -1):
-		if grown[l + 1] and _precinct_lane_open(vertical, base, row, l):
-			grown[l] = true
-	return grown
-
-## The lanes of one footway: the pair `offset` belongs to on an ordinary street, and the whole
-## width of a precinct, which has one footway and it is the street.
-static func _footway_of(offsets: Array[int], offset: int) -> Array[int]:
-	if offsets.size() != CrowdLanes.SIDEWALK_OFFSETS.size():
-		return offsets
-	if offset <= offsets[1]:
-		return [offsets[0], offsets[1]]
-	return [offsets[2], offsets[3]]
-
-## Whether one lane tile is somewhere a walker may actually be: street ground in the city that
-## nothing today has put down on — no closure, soft seal or body (`CityMap.passable()`, as
-## `_walker_today`). Deliberately **not** `_cannot_go_on`, which asks this one's own caller and
-## would come back round; the segment's own state is already decided by the time anything here runs.
-func _walker_lane_is_open(tile: Vector2i) -> bool:
-	return _map.passable(tile, _walker_today) and _map.in_bounds(tile) and _map.is_street(tile)
-
-## **What today puts down in a walker's way**, the map's blocked record as a walker of the crowd
-## reads it: closures, soft seals and bodies (`Mover.TODAY`). The ground itself is the lane's own
-## question (`_never_a_street_here()`), and a precinct's posts are not in it, since the crowd has no
-## body and walks between them (`CityMap.post_tiles()`).
-static var _walker_today := Mover.of(Mover.TODAY)
-## The same for a car, which a soft seal leaves the carriageway to.
-static var _car_today := Mover.of(Mover.CLOSED | Mover.BODIES)
-## The layers `_cannot_go_on()` asks one at a time, each before the next question it stands for.
-static var _closed_today := Mover.of(Mover.CLOSED)
-static var _soft_sealed_today := Mover.of(Mover.SOFT_SEALS)
-static var _bodies_today := Mover.of(Mover.BODIES)
-
-## How far a lane scan looks, in tiles: far enough past the distance a sidestep begins at that the
-## lane chosen is the one with more road in it rather than the one that happens to be clear for a
-## tile longer.
-const BODY_SCAN_TILES := Tuning.WALKER_BODY_SIDESTEP_TILES + LOOKAHEAD_TILES
-
-## Steers this walker into whichever lane of its own footway has the most open road in front of it,
-## so it goes round a body standing on its own lane and comes back to that lane afterwards.
-##
-## Worked out **once per tile**, off `_look_ahead`'s own cache, for the reason that one is cached:
-## it is a question about the tile an agent is standing on, its axis and its direction, over a map
-## that is fixed for the day, and a walker crosses a tile in about twenty frames.
-##
-## It writes `_detour` — the steering target `step_aside()` already owns — rather than adding a
-## second offset, so the clamp that keeps a yielding walker out of the carriageway keeps this one
-## out of it too. While a body is ahead this wins over a bump's own sidestep, which is the right way
-## round: getting out of *her* way into a café is not getting out of the way.
-##
-## **The lane it is measured from is `_lane`, never the tile it is standing on**, and that is the
-## whole of what keeps it from dithering: a detour has already carried this walker off its own lane,
-## so a scan taken from where it stands finds the clear lane it just moved into, lets go, and steers
-## it straight back into the body. `_lane` is where the walker *belongs*, the detour is how far off
-## it currently is, and a decision stated over the first is stable while the second is being acted
-## on. Ties go to `_lane` for the same reason — that is what makes "and steps back after" happen at
-## all rather than leaving a walker one lane over for the rest of the street.
-func _step_around_a_body(here: Vector2i) -> void:
-	if _map.obstructed_tiles.is_empty():
-		_stop_going_round_a_body()
-		return
-	var along_tile := here.y if _vertical else here.x
-	var offsets := CrowdLanes.walkable_offsets(_map, _vertical, _corridor, along_tile)
-	# A lane that is not one of this stretch's own is a walker that has walked out of a precinct
-	# still carrying one of its six, which on an ordinary street is the carriageway. The nearest
-	# sidewalk is the footway it is measured against then, so a stray is steered onto a pavement by
-	# the same move that takes it round a body rather than being left to walk down the road.
-	var lane := _lane if offsets.has(_lane) else CrowdLanes.nearest_sidewalk(_corridor, _cross())
-	var base := _corridor * CityMap.period()
-	var best := lane
-	var best_clear := _open_tiles_ahead(base + lane, along_tile, _vertical, _direction)
-	if best_clear > Tuning.WALKER_BODY_SIDESTEP_TILES:
-		_stop_going_round_a_body()
-		return
-	for lane_offset in _footway_of(offsets, lane):
-		if lane_offset == lane:
-			continue
-		var clear := _open_tiles_ahead(base + lane_offset, along_tile, _vertical, _direction)
-		if clear > best_clear:
-			best = lane_offset
-			best_clear = clear
-	if best == _lane:
-		# Nothing on this footway is better than the lane it is already in. Where that is because
-		# every lane is taken at one point, or in a precinct no lane runs through the rows ahead,
-		# `_footway_is_shut` has already told `_look_ahead` and `_divert` turns this walker; there is
-		# no lane left to steer to.
-		_stop_going_round_a_body()
-		return
-	var band := _pavement_band()
-	var target := CrowdLanes.walker_lane_centre(_corridor, best, offsets)
-	_detour = clampf(target, band.x, band.y) - _lane_centre
-	_body_detour_held = true
-
-## How much of its own lane a walker needs in front of it to turn into an arm at all, in tiles: the
-## room `Tuning.WALKER_BODY_SIDESTEP_TILES`'s own floor says a sidestep costs, rounded up to a tile
-## and given one more. A walker rounding a corner lands wherever its old along coordinate left it,
-## which can be a few pixels from the next street's first tile, so this is the one case where the
-## sidestep has no runway at all and the answer has to be not to turn here.
-const BODY_TURN_CLEARANCE_TILES := 3
-
-## Which lane of the new footway a walker rounding a corner takes: the pavement it is already on,
-## and whichever of that pavement's two lanes has the more road in front of it. `-1` means this arm
-## is one this walker cannot take at all, because the lane it would land on is taken within
-## `BODY_TURN_CLEARANCE_TILES` — a voluntary turn is then simply not made, and a turn forced by a
-## blockage falls back to the pavement it is nearest.
-##
-## **Which lane it lands in has to be chosen here rather than sidestepped into afterwards**, and the
-## reason is arithmetic rather than taste: a turn happens inside a junction, so the first tile of the
-## new street can be a few pixels away, while crossing to the other lane of a footway takes a good
-## half second — a walker that turns onto the lane a café is standing on has no room left to get off
-## it. Read off `_open_tiles_ahead`, the same measure the sidestep uses, so the two cannot disagree
-## about which lane is the clear one. The axis, corridor and direction must already be the new ones.
-## `vertical`, `corridor` and `direction` are the ones the walker will have **after** the turn, and
-## are passed rather than read off the fields because the answer decides whether the turn happens at
-## all. The position does not move in a turn, so the new cross and along coordinates are this
-## agent's own `position` read the other way round.
-func _sidewalk_after_a_turn(vertical: bool, corridor: int, direction: float) -> int:
-	var cross := position.x if vertical else position.y
-	var along := position.y if vertical else position.x
-	var lane := CrowdLanes.nearest_sidewalk(corridor, cross)
-	if _map.obstructed_tiles.is_empty():
-		return lane
-	var along_tile := floori(along / float(Tuning.TILE_SIZE))
-	var offsets := CrowdLanes.walkable_offsets(_map, vertical, corridor, along_tile)
-	if not offsets.has(lane):
-		return lane
-	var base := corridor * CityMap.period()
-	var best := lane
-	var best_clear := _open_tiles_ahead(base + lane, along_tile, vertical, direction)
-	if best_clear > Tuning.WALKER_BODY_SIDESTEP_TILES:
-		return lane
-	if best_clear < BODY_TURN_CLEARANCE_TILES:
-		return -1
-	for lane_offset in _footway_of(offsets, lane):
-		var clear := _open_tiles_ahead(base + lane_offset, along_tile, vertical, direction)
-		if clear > best_clear:
-			best = lane_offset
-			best_clear = clear
-	return best
-
-## How many tiles of one lane are open to a walker from `from_along` forward, counting the walker's
-## own along position as the first — `0` when it is standing on a body, `BODY_SCAN_TILES + 1` when
-## the lane is clear as far as this looks. Capped rather than run to the end of the street: the
-## answer is only ever compared with another lane's and with the distance a sidestep begins at.
-func _open_tiles_ahead(cross_tile: int, from_along: int, vertical: bool, direction: float) -> int:
-	var step := signi(int(direction))
-	for i in range(0, BODY_SCAN_TILES + 1):
-		var at_along := from_along + step * i
-		var tile := Vector2i(cross_tile, at_along) if vertical else Vector2i(at_along, cross_tile)
-		if not _walker_lane_is_open(tile):
-			return i
-	return BODY_SCAN_TILES + 1
-
-## Lets go of a sidestep taken to get round a body, immediately rather than on the timer a bump's
-## own sidestep decays over: what ends this one is being past the body, which no number of seconds
-## knows.
-func _stop_going_round_a_body() -> void:
-	if not _body_detour_held:
-		return
-	_body_detour_held = false
-	_detour = 0.0
-	_detour_left = 0.0
 
 ## How far the way ahead is clear, in tiles, worked out **once per tile** rather than once per
 ## frame. `LOOKAHEAD_TILES + 1` means nothing within reach.
@@ -2467,30 +1409,17 @@ func _stop_going_round_a_body() -> void:
 ## tile is cheaper than the one probe per frame it replaces — and the probe was the version that
 ## could not see a wall.
 ##
-## **A car's question is about its lane, so it is asked from the lane and not from the body.** The
-## two are the same tile for a car sitting on its centre line and are different tiles for one that
-## is still steering onto it, and the row either side of a carriageway lane is the *other* lane or
-## the kerb — where a solid body that this car will never meet stands, and where a precinct's paving
-## begins. A scan taken from the body's own tile therefore reports a wall two tiles ahead that is
-## not on this car's road at all, and reports it *intermittently*, as the body crosses the row
-## boundary and back. This is the same rule `_detour` already forces on a walker one section down:
-## **a lane decision is stated over the lane, never over where the body happens to be.** A walker
-## keeps asking from its body, because a walker with a detour running really is on the ground it is
-## standing on and `_step_around_a_body` is a question about that ground.
+## **Where it is asked from is the kind's** (`LaneStrategy.scans_from_its_lane`): a car asks from its
+## lane centre and a walker from its body.
 func _look_ahead() -> void:
-	var here := _map.world_to_tile(position) if kind != Kind.CAR \
-			else _map.world_to_tile(CarTurn.world(_vertical, _along(), _lane_centre))
+	var here := _map.world_to_tile(CarTurn.world(_vertical, _along(), _lane_centre)) \
+			if _scans_from_its_lane else _map.world_to_tile(position)
 	if here == _scan_at and _vertical == _scan_vertical and _direction == _scan_direction:
 		return
-	_way_shut_known = false
 	_scan_at = here
 	_scan_vertical = _vertical
 	_scan_direction = _direction
-	# Going round a body is the same kind of question and is answered off the same cache: which
-	# tile, which axis, which way. Before the walk below rather than after, because that one returns
-	# the moment it finds something.
-	if kind == Kind.WALKER:
-		_step_around_a_body(here)
+	strategy.on_new_scan(here)
 	_blocked_in = LOOKAHEAD_TILES + 1
 	var step := (Vector2i.DOWN if _vertical else Vector2i.RIGHT) * int(signf(_direction))
 	for i in range(1, LOOKAHEAD_TILES + 1):
@@ -2501,112 +1430,20 @@ func _look_ahead() -> void:
 		var ahead := here + step * i
 		if _map.is_cut_off(ahead) and _beyond_every_view(_map.tile_to_world(ahead)):
 			break
-		if _cannot_go_on(_vertical, here + step * i):
+		if strategy.cannot_go_on(_vertical, here + step * i):
 			_blocked_in = i
 			return
-	# Nothing in the way any more, so whatever this car did about the last thing that was is over
-	# and the next blockage is a fresh approach. See `turned_on_this_approach` and
-	# `_nowhere_to_turn`.
-	turned_on_this_approach = false
-	_nowhere_to_turn = false
-	_waited_to_turn = 0.0
-
-## How close the thing it cannot pass has to be before an agent does anything about it, in tiles —
-## the whole of the difference between how the two kinds meet a barrier.
-##
-## **A car acts on the whole lookahead because its answer is a junction away.** A turn is an arc
-## that needs a junction box to fit in, and reversing where it stands is the last resort with no
-## path in it, so a car that drove up to a wall would stand there nose-on and take the street behind
-## it with it. It has to decide while the last junction is still in front of it, which is what
-## `LOOKAHEAD_TILES` is measured to reach.
-##
-## **A walker acts only on the next tile, because its answer costs a stride.** *(2026-09-19:
-## "pedestrians should only avoid the area if they cannot reach it physically. right now they give
-## up if there is an event at all when they should only give up if they touch an impassable wall".)*
-## A person turns round on the spot, so nothing is bought by deciding early and a great deal is
-## lost: a street given up from a junction away is a street with nobody on it for the whole of its
-## length, which is how side streets and sealed-off blocks came to stand empty. One tile rather than
-## zero because `_look_ahead()` is cached per tile and the step that would carry a walker into the
-## thing is held (`_keep_out_of_a_body()`), so "the next tile is shut" is the last moment a decision
-## can still be taken with room to take it in.
-func _acts_on_a_barrier_within() -> int:
-	return LOOKAHEAD_TILES if kind == Kind.CAR else 1
-
-## Traffic goes round a closure, and that is half of what makes one legible: the street with
-## nobody on it is the street that is shut, which reads from a block away — further than the
-## barrier itself does.
-##
-## Turning here rather than only in `_consider_turning` is why cars divert too. A car that
-## carried on would drive through the barrier, and a car that vanished at the junction would
-## be worse: at this population something popping out of existence is very visible.
-##
-## **A walker turns where it stands and a car plans a curve** — see `_plan_a_turn`. The rest of this
-## function is the walker's own version: a person changes direction in a stride, has no lane to be
-## on the correct side of and no length to swing round, so there is nothing for a path to be
-## continuous about.
-##
-## **And that is also why the two are called at different distances** — see
-## `_acts_on_a_barrier_within()`. A walker reaches here with the barrier one tile away, so a walker
-## in a junction turns the corner it has arrived at and a walker in the street about-faces in front
-## of the thing it cannot pass.
-func _divert(delta: float) -> void:
-	if kind == Kind.CAR:
-		_plan_a_turn(delta)
-		return
-	var crossing := CrowdLanes.corridor_at(_along())
-	if crossing < 0:
-		# In the street with the thing in the very next tile and no junction to turn at: a
-		# cul-de-sac's plug, a seal standing across the road, a café taking the whole footway. It
-		# turns round in front of it, which is the whole of what a walker does about a barrier.
-		_turn_round()
-		return
-	if not _can_turn_here():
-		# Inside a junction on the wrong band to turn from — a walker on the carriageway strip, a
-		# car on a pavement one — which normally costs a tile of waiting. It costs everything when
-		# the wall is the next tile: an agent leaving a junction straight into a cul-de-sac's plug
-		# has no tile left to wait for the right band in, so it turns round instead.
-		if _blocked_in <= 1:
-			_turn_round()
-		return
-
-	var turning := _pick_an_arm(crossing, 1.0 if _rng.randf() < 0.5 else -1.0)
-	if turning == 0.0:
-		_turn_round()   # boxed in on three sides; go back the way it came
-		return
-
-	# A walker's landing lane, asked before anything moves for the reason `_consider_turning` asks
-	# it there. **A refusal is only advice here**: this turn is being made because the way ahead is
-	# shut, so there has to be a turn — it falls back to the pavement it is nearest, which is where
-	# it would have landed anyway.
-	var sidewalk := _sidewalk_after_a_turn(not _vertical, crossing, turning) \
-			if kind == Kind.WALKER else 0
-	var kept := _corridor
-	_vertical = not _vertical
-	_corridor = crossing
-	_direction = turning
-	if kind == Kind.CAR:
-		# Back onto the correct side of the road for the way it is now pointing — and it is the
-		# **new** axis that decides which side that is. Driving on the right flips with the axis.
-		_lane = CrowdLanes.road_lane(_vertical, turning)
-	else:
-		_lane = sidewalk if sidewalk >= 0 else CrowdLanes.nearest_sidewalk(_corridor, _cross())
-	_lane_centre = _lane_centre_here()
-	_forget_the_detour()
-	_junction = kept
-	_claim_the_road_here()
+	strategy.on_the_road_clear()
 
 ## Turns an agent round where it stands: a dead end, a barrier at a mouth, a precinct's paving.
 ##
-## **A car changes lane with it**, which `_direction = -_direction` on its own did not. A lane is
-## one side of a carriageway and which side depends on the way it is pointing, so a car that only
-## flipped its heading drove the wrong way down its own queue — and `space_out_the_traffic` then had
-## to resolve a head-on overlap the only way it can, by moving a body. It is the same line
-## `_divert` runs after a turn and for the same reason.
+## **A car changes lane with it** (`CarStrategy.on_turned_round()`): a lane is one side of a
+## carriageway, and which side depends on the way it is pointing.
 ##
-## **And it costs a stride, which is the whole of the second sentence here.** The decision that
-## calls this is taken again on the very next frame from the very next scan, so an agent with a seal
-## at each end of the ground it is on reverses on *every* frame: `_look_ahead()` re-scans the moment
-## the direction changes, finds the other seal, and `_divert()` turns it round again. At sixty
+## **And it costs a stride.** The decision that calls this is taken again on the very next frame
+## from the very next scan, so an agent with a seal at each end of the ground it is on reverses on
+## *every* frame: `_look_ahead()` re-scans the moment
+## the direction changes, finds the other seal, and `divert()` turns it round again. At sixty
 ## frames a second that is not pacing, it is a body facing two ways at once — the flicker playtest
 ## 66 reported, and it is a defect whether or not the agent has anywhere to go. So a reversal is
 ## refused while the last one is still being walked off (`_stride_seconds()`), and what the agent
@@ -2617,11 +1454,8 @@ func _turn_round() -> void:
 		return
 	_turn_back_hold = _stride_seconds()
 	_direction = -_direction
-	if kind == Kind.CAR:
-		_lane = CrowdLanes.road_lane(_vertical, _direction)
-		_lane_centre = _lane_centre_here()
 	_forget_the_detour()
-	_claim_the_road_here()
+	strategy.on_turned_round()
 
 ## How long one stride of this body takes at the speed it cruises at, in seconds — the unit an
 ## about-face commits its new heading for.
@@ -2637,518 +1471,11 @@ func _turn_round() -> void:
 ## usually **stopped** — nose to a seal, or braked behind one — and a hold measured in pixels covered
 ## would never expire at all for a body that is not covering any.
 func _stride_seconds() -> float:
-	var stride := 2.0 * Tuning.CAR_STRIKE_HALF_LENGTH if kind == Kind.CAR \
-			else PI / WALKER_GAIT_RATE
-	return stride / maxf(_cruise, 1.0)
+	return strategy.stride_length() / maxf(_cruise, 1.0)
 
-## Which way to turn out of `crossing`, trying `first` before the other one, or `0.0` for neither.
-##
-## Two questions and they are not the same question. **Can it go that way at all** is the tile map,
-## and an arm that fails it is not an option — never a street for a walker, and that plus shut for
-## the day for a car. **Is there room** is the other cars, and an arm that fails *that* is a bad
-## option rather than no option.
-##
-## **The second one exists because a turn is a placement.** It takes the coordinate the car had
-## along its old corridor and makes it the one it has across the new one, so the car materialises
-## somewhere in another queue — and the separation rule then resolves the overlap the only way it
-## can, by moving a body. Front-to-back, so the shortfall cascades down the queue behind it and a
-## car is jumped backwards by up to six of its own lengths in a single frame. Off screen at the
-## entry band that is exactly what it is for; at a junction the player is looking at, it is a car
-## vanishing.
-##
-## Preferring rather than requiring, because a car that refuses to turn drives into the barrier it
-## was avoiding. When both arms are full it takes the first one anyway and the resolve does what it
-## can — which makes the jump the rare case instead of the usual one.
-##
-## `from` is where the two probes are fired from, and it matters because a car asks this question
-## **before** it reaches the junction rather than from inside it: fired from where the car happens
-## to be standing, a probe across the axis lands in the block beside it and reports both arms shut.
-## It defaults to the agent's own position, which is where a walker asks from.
-func _pick_an_arm(crossing: int, first: float, from := Vector2.INF) -> float:
-	# A precinct is not an arm a car has. Neither of the two questions below would catch it: it is
-	# paved end to end, so the tile map says it is a street, and there is never a car in it to
-	# leave no room. A car with nowhere else to go turns round instead, which is what a driver
-	# meeting a bollarded street actually does.
-	if kind == Kind.CAR and not _map.is_driveable(not _vertical, crossing,
-			floori(_cross() / float(Tuning.TILE_SIZE))):
-		return 0.0
-	var open: Array[float] = []
-	for turning in [first, -first]:
-		# A walker asks only whether the arm is street at all, because it can walk in, meet whatever
-		# is down there and turn round; a car asks the whole predicate, because an arm it cannot get
-		# out of is a car parked there for the rest of the day. See `_no_street_ahead()`.
-		var shut := _no_street_ahead(not _vertical, turning, LOOKAHEAD, from) \
-				if kind == Kind.WALKER else _blocked_ahead(not _vertical, turning, LOOKAHEAD, from)
-		if not shut:
-			open.append(turning)
-	if open.is_empty():
-		return 0.0
-	for turning in open:
-		if _has_room_to_turn(crossing, turning):
-			return turning
-	return open[0]
-
-## Whether the lane this car would land in has a car's length of road to spare where it would land.
-##
-## Walkers are exempt: two people on a pavement are not two cars in a lane, `space_out_the_traffic`
-## has never looked at them, and there is nothing for this to prevent.
-func _has_room_to_turn(crossing: int, turning: float) -> bool:
-	if kind != Kind.CAR or not traffic:
-		return true
-	var vertical := not _vertical
-	var lane := CrowdLanes.road_lane(vertical, turning)
-	# After the turn the axes swap: what is currently the coordinate *across* this corridor becomes
-	# the one *along* the new one, which is where in that queue the car would appear.
-	var landing := _cross() * turning
-	return traffic.room_at(make_lane_key(vertical, crossing, lane, turning),
-			landing, Tuning.CAR_GAP_MIN)
-
-## Whether the agent is far enough into a junction to turn without landing on the wrong surface.
-##
-## A turn makes the *along* coordinate the new *across* one, and the new across coordinate is
-## the lane the agent then has to steer away from. So a walker turns while it is on one of the
-## junction's pavement bands and ends the turn a few pixels from a lane it is allowed to be in
-## rather than two tiles from one. Every walker crosses both bands on its way through a junction, so
-## waiting costs at most a tile. **Walkers only now** — a car's turn is a planned arc that lands on
-## its exit lane exactly, so where it may start from is the arc's own geometry rather than a band.
-func _can_turn_here() -> bool:
-	var offset := CityMap.corridor_offset(floori(_along() / float(Tuning.TILE_SIZE)))
-	if offset < 0:
-		return false
-	return CityMap.is_road_offset(offset) == (kind == Kind.CAR)
-
-# ------------------------------------------------------------- car turns ---
-# **A turn is a path a car has to be able to take, and both halves of that were missing.** It used
-# to swap the axis and the lane in the frame it happened: the car was carried sideways across the
-# carriageway by its own steering afterwards, and on the frame itself its heading jumped a right
-# angle — or, turning round, a straight reversal — so the strike box, the horn and the picture all
-# pointed somewhere the car had never been going. *(Playtest 53: "when a car turns or turns around
-# it should make a proper turn".)*
-#
-# So a car now plans the whole manoeuvre before it starts it. `CarTurn` is the curve; everything
-# here is the *deciding*: where the arc goes, whether the ground it sweeps is road the car may be
-# on, whether the lane it lands in has room, and what it does when the answer is no.
-#
-# **What it does when the answer is no is stop.** A car that cannot fit a turn does not take a
-# smaller one and does not fall back on the separation pass to repair it — it brakes for the
-# blockage and stands there. See `_distance_to_the_blockage`.
-
-## The places `_plan_a_turn()` looks for room, in the order it tries them, and the slots of
-## `turn_refusals`. See that function for what each one is.
-enum TurnCandidate { NEAR_ARM, FAR_ARM, BOX_ABOUT_FACE, STREET_ABOUT_FACE }
-
-## What turned one candidate arc away — the answer `_commit_to_a_turn()` gives back.
-##
-## **Read the list in two halves, and the split is the whole point of naming them.** `LANDING_TAKEN`
-## is another car standing where this one wants to stop, and another car drives away; everything
-## below it is the ground, the geometry or the map, and none of those changes while the car waits
-## where it is. So a refusal from the first half means *ask again next frame* and one from the
-## second means *this arc will never fit from here*.
-enum TurnRefusal {
-	FITS,              ## Not a refusal: the car is committed to this arc.
-	NOT_TRIED,         ## The planner stopped before this slot, or there is no such arm at all.
-	LANDING_TAKEN,     ## Somebody is parked where the arc ends. Temporary.
-	OUT_OF_SIGHT,      ## The run-up is longer than a car can see a junction from.
-	PAST_THE_BLOCKAGE, ## The run-up would drive through the thing being turned away from.
-	TOO_TIGHT,         ## What is left of the junction is a tighter arc than a car can turn.
-	SWEEP_BLOCKED,     ## The body would pass over ground a car may not drive on.
-	EXIT_PLUGGED,      ## The street the arc lands in has no room to turn round in further on.
-}
-
-## Which call reversed a car where it stood. `NONE` on a planner run that did not.
-enum TurnRoundCause {
-	NONE,
-	OFF_THE_STREET,   ## Standing on ground no arc could legally sweep from — already illegal.
-	STOPPED_NO_ROOM,  ## At rest with less than a nose's length of manoeuvring room in front.
-}
-
-## A car plans its way round the blockage ahead and commits to the whole of it before it moves.
-##
-## Called instead of the walker's `_divert` body, and it takes the same two decisions in the same
-## order: which arm of the junction (`_pick_an_arm`, unchanged, with the probes fired from the
-## junction rather than from wherever the car is standing) and, when neither arm is open, the way it
-## came. What is new is that each of those is now a *curve* that has to fit, so the order below is
-## the order of preference among places to turn rather than a single answer:
-##
-## 1. **The arm it picked**, as a quarter turn taken from the junction's own carriageway entry.
-## 2. **The other arm**, which is a wider arc — the far-side lane is three times the radius away —
-##    and so fits in some junctions where the near one does not.
-## 3. **An about-face in the middle of the junction box**, where the crossing street's own
-##    carriageway is the room a half turn needs.
-## 4. **An about-face in the street**, short of whatever is blocking it. This is the one manoeuvre
-##    in the game whose swept body crosses a kerb, and it is a fact about the city rather than a
-##    concession: the two lanes of a carriageway are 32px apart, so a half turn between them is a
-##    16px arc and a car's own corners then reach 40px from the centre of it — 8px past a kerb that
-##    is 32px away. There is no rounder way to do it, the alternative manoeuvre is a three-point
-##    turn the traffic has no reverse gear for, and refusing it outright parks a third of the
-##    traffic: measured over ninety seconds, stopped cars at the end went 10 → 33 of 34, because one
-##    car nose-to-wall in a dead end takes its whole street with it. Nothing else is relaxed — the
-##    wall, the closure, the seal and the building are all still refused.
-func _plan_a_turn(delta: float) -> void:
-	if _turn:
-		return
-	_forget_the_last_plan()
-	# Standing on ground it may not be on at all, which is a day that started behind a barrier. There
-	# is no legal space to sweep and nothing to be gained by waiting for some, so the about-face on
-	# the spot stays exactly what it was: the way out of a state that is already illegal.
-	if not _stands_on_a_street():
-		turn_round_cause = TurnRoundCause.OFF_THE_STREET
-		_turn_round()
-		return
-	var band := _junction_index()
-	if band < 0:
-		return
-	var box := junction_ahead()
-	var probe := CarTurn.world(_vertical, CarTurn.carriageway_centre(band), _cross())
-	var first := 1.0 if _rng.randf() < 0.5 else -1.0
-	var turning := _pick_an_arm(band, first, probe)
-	if turning != 0.0:
-		if _try_a_turn(TurnCandidate.NEAR_ARM, _arm_turn(band, turning, box)):
-			return
-		var other := _pick_an_arm(band, -turning, probe)
-		if other != 0.0 and other != turning \
-				and _try_a_turn(TurnCandidate.FAR_ARM, _arm_turn(band, other, box)):
-			return
-	if _try_a_turn(TurnCandidate.BOX_ABOUT_FACE, _about_face_at(CarTurn.carriageway_centre(band),
-			box)):
-		return
-	var blockage := _distance_to_the_blockage()
-	if blockage == INF:
-		return
-	# **Clamped to where the car already is, because an entry a hair behind it is not a tighter
-	# arc.** A car that has braked for the barrier has come to rest at exactly this point, give or
-	# take whatever fraction of a pixel its last frame bought, and a negative run-up sends the arc
-	# to `tighten_to`, which an about-face can never satisfy — its radius is half the distance
-	# between the two lanes and there is no other value that lands on one. Clamping makes the
-	# question the one that actually matters: from here, is the ground the body sweeps still clear.
-	if _try_a_turn(TurnCandidate.STREET_ABOUT_FACE,
-			_about_face_at(_along() + maxf(0.0, blockage - CarTurn.about_face_reach()) * _direction,
-			Vector2i(-1, -1)), true):
-		return
-	# **Nothing fits, and everything below is about the car that has run out of road to look with.** A
-	# car still rolling keeps asking and nothing else happens to it, since a few pixels further on
-	# the answer changes; one that has come to rest a half turn short of the barrier has arrived
-	# where its own brake was aiming and has nowhere left to ask from.
-	if _speed >= Tuning.CAR_STOPPED_SPEED or _room_to_stop_in() >= _nose():
-		return
-	# **But "no arc fitted this frame" is not "no arc can fit here".** The lane a half turn lands in
-	# is the other side of this carriageway, and the traffic on it is going somewhere: a car standing
-	# in the way of the landing is gone a moment later, and the arc that was refused for it fits on
-	# the frame after that. So a temporary refusal is a reason to stand still and ask again rather
-	# than a reason to give up on the manoeuvre — which is what the car is already doing anyway,
-	# stopped at its own aim point with its followers queueing behind it exactly as they queue behind
-	# any stopped car. See `TurnRefusal` for which refusals are which.
-	#
-	# **And the wait is bounded, which is the half that cannot be left out.** Waiting for a lane that
-	# never clears is a car that never moves again, and a car that never moves again holds the
-	# junction it is standing in and takes the whole street behind it: 33 of 34 cars at a standstill
-	# in ninety seconds, measured, which is the reason this manoeuvre exists at all. See
-	# `TURN_WAIT_SECONDS` for how long is long enough to tell passing traffic from a queue that is
-	# waiting on something else.
-	if _an_arc_may_yet_fit():
-		_waited_to_turn += delta
-		if _waited_to_turn < TURN_WAIT_SECONDS:
-			return
-	_waited_to_turn = 0.0
-	# **And the way back has to be a way.** Reversing into a lane whose own road runs out inside a
-	# half turn buys nothing: the car arrives in the same state pointing the other way, reverses
-	# again a stride later, and what a player sees is a car shaking its head while the ordinary
-	# cross-steer slides it between the two lane centres. A car with no road either way has nowhere
-	# to go at all, which the crowd already has an answer for — it stands, and leaves once nobody
-	# can see it go. See `_nowhere_to_turn`.
-	if _no_road_the_other_way():
-		_nowhere_to_turn = true
-		return
-	turn_round_cause = TurnRoundCause.STOPPED_NO_ROOM
-	_turn_round()
-
-## How long a car waits for the lane a half turn lands in to clear before it gives up and reverses
-## where it stands.
-##
-## **The number is what the car in the way costs, and anything longer is waiting on a queue.** What
-## is standing on the landing is almost always the car that turned round just before this one, so
-## what it has to do is clear its own minimum gap from a standing start, and the speed it does that
-## at is the speed a turn is taken at. A landing still taken after that long is taken by something
-## that is not driving away at all — and a car that waits on a stopped car is the beginning of a
-## deadlock, which is the failure this whole manoeuvre exists to avoid.
-const TURN_WAIT_SECONDS := Tuning.CAR_GAP_MIN / Tuning.CAR_TURN_SPEED
-
-## Whether any arc the planner has just tried was turned away by something that will move on its
-## own. See `TurnRefusal`: a lane that is occupied empties, and nothing else on that list does.
-func _an_arc_may_yet_fit() -> bool:
-	for slot in turn_refusals.size():
-		if turn_refusals[slot] == TurnRefusal.LANDING_TAKEN:
-			return true
-	return false
-
-## Whether the lane this car would reverse into has less road in front of it than a half turn needs,
-## measured from that lane's own centre line and in the direction the car would then be pointing.
-##
-## Asked before the reversal rather than discovered after it, because discovering it after is the
-## flicker: the reversal costs a stride (`_turn_round()`), the stride runs out, the state is
-## unchanged, and the car reverses again for ever.
-func _no_road_the_other_way() -> bool:
-	var lane := CrowdLanes.road_lane(_vertical, -_direction)
-	var centre := CrowdLanes.lane_centre(_corridor, lane)
-	var from := _map.world_to_tile(CarTurn.world(_vertical, _along(), centre))
-	var step := (Vector2i.DOWN if _vertical else Vector2i.RIGHT) * -int(signf(_direction))
-	var needed := ceili((CarTurn.about_face_reach() + _nose()) / float(Tuning.TILE_SIZE))
-	for i in range(1, needed + 1):
-		if _cannot_go_on(_vertical, from + step * i):
-			return true
-	return false
-
-## Empties the record of what the planner last decided, so that every entry in it is about the run
-## that is about to happen rather than a leftover from the approach before.
-func _forget_the_last_plan() -> void:
-	turn_round_cause = TurnRoundCause.NONE
-	# Re-established below or not at all, so a car whose way out opened again is never left carrying
-	# a reason to be recycled that stopped being true.
-	_nowhere_to_turn = false
-	if turn_refusals.size() != TurnCandidate.size():
-		turn_refusals.resize(TurnCandidate.size())
-	turn_refusals.fill(TurnRefusal.NOT_TRIED)
-
-## Tries one candidate arc, writes down what happened to it, and says whether the car took it.
-func _try_a_turn(slot: TurnCandidate, turn: CarTurn, over_the_kerb := false) -> bool:
-	var refusal := _commit_to_a_turn(turn, over_the_kerb)
-	turn_refusals[slot] = refusal
-	return refusal == TurnRefusal.FITS
-
-## The half turn back down the other lane, taken at a given point along this corridor.
-func _about_face_at(at_along: float, box: Vector2i) -> CarTurn:
-	return CarTurn.about_face(_vertical, _direction, _corridor, _lane, _cross(), at_along,
-			CrowdLanes.road_lane(_vertical, -_direction), box)
-
-## The arc into one arm of the junction ahead. The lane it lands in is the one on its own right for
-## the way it will then be pointing, which is the **new** axis's answer — driving on the right flips
-## with the axis, exactly as it did when this was a lane swap.
-func _arm_turn(band: int, turning: float, box: Vector2i) -> CarTurn:
-	return CarTurn.into_an_arm(_vertical, _direction, _corridor, _cross(), band,
-			CrowdLanes.road_lane(not _vertical, turning), turning, box)
-
-## Takes a planned turn if it fits, and says what turned it away if it does not.
-##
-## Three things have to be true, and none of them is revisited afterwards: there is a straight
-## run-up to the arc rather than the arc starting behind the car, the ground the body sweeps is road
-## it may drive on, and the lane it lands in has a car's length free. The room is then *held* for
-## every frame of the manoeuvre, run-up included, so nothing else turns or recycles into the piece of
-## road this car is already committed to.
-##
-## **Which check said no is part of the answer rather than a diagnostic afterthought**, because the
-## caller's next move depends on it: the lane the arc lands in empties by itself and the ground it
-## sweeps does not. See `TurnRefusal`.
-func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> TurnRefusal:
-	var run_up := (turn.entry_along - _along()) * _direction
-	# Further off than the car watches a junction from is further off than it can know the road is
-	# still going to be clear when it gets there.
-	if run_up > Tuning.CAR_JUNCTION_SIGHT:
-		return TurnRefusal.OUT_OF_SIGHT
-	# **The run-up is driving, and it has to be legal driving.** Only the arc's own ground is swept
-	# and checked; the straight before it is ordinary lane travel, so what says whether it is clear
-	# is the lookahead. Without this a car blocked in mid-street plans for the junction *beyond* the
-	# barrier — `_junction_index()` names the one it is heading for — and drives through the barrier
-	# to reach it.
-	if run_up > _distance_to_the_blockage():
-		return TurnRefusal.PAST_THE_BLOCKAGE
-	if run_up < 0.0:
-		# Past the entry the geometry would have chosen — a car that only found out it was turning
-		# once it was already in the box. What is left of the junction is a tighter arc, and one
-		# tighter than `Tuning.CAR_TURN_RADIUS_MIN` is refused rather than squeezed.
-		if not turn.tighten_to(_along(), _cross()):
-			return TurnRefusal.TOO_TIGHT
-		run_up = 0.0
-	if not _the_ground_a_turn_sweeps_is_clear(turn, over_the_kerb):
-		return TurnRefusal.SWEEP_BLOCKED
-	if not _the_exit_has_room_to_leave(turn):
-		return TurnRefusal.EXIT_PLUGGED
-	if not _has_room_to_land(turn):
-		return TurnRefusal.LANDING_TAKEN
-	_turn = turn
-	_turn_run_up = run_up
-	turned_on_this_approach = true
-	_waited_to_turn = 0.0
-	_claim_the_turn()
-	return TurnRefusal.FITS
-
-## Moves this car along its own planned turn: the straight run-up first, then the arc.
-##
-## **The frame that changes over from one to the other splits its travel between them**, so the car
-## covers exactly `speed × delta` on it like every other frame and starts curving from the entry
-## point rather than from wherever the last straight step happened to leave it. The same split
-## happens at the far end, where what is left over is spent going straight down the new lane.
-func _follow_the_turn(delta: float) -> void:
-	var travel := _speed * delta
-	if _turn_run_up > 0.0:
-		var straight := minf(travel, _turn_run_up)
-		_set_along(_along() + straight * _direction)
-		_set_cross(move_toward(_cross(), _lane_centre, STEER_SPEED * delta))
-		_turn_run_up -= straight
-		travel -= straight
-		if _turn_run_up > 0.0:
-			return
-		# The arc is put on the car rather than the car on the arc: whatever fraction of a pixel it
-		# is off its own lane centre is where the curve begins. A quarter turn still lands on its
-		# exit lane exactly — see `CarTurn.begin_at`.
-		_turn.begin_at(_cross())
-	_turn.travelled += travel
-	if _turn.travelled < _turn.length():
-		position = _turn.point_at(_turn.travelled)
-		return
-	var overshoot := _turn.travelled - _turn.length()
-	_land_the_turn()
-	_set_along(_along() + overshoot * _direction)
-
-## The end of a turn: the car takes up the axis, corridor, lane and direction it turned into.
-##
-## It is standing on the exit lane's own centre line, pointing along it, because that is where the
-## arc ends — so there is nothing to steer back to and nothing that has to be spaced out. The
-## lookahead is thrown away, since it is a cached answer about an axis this car no longer has.
-##
-## **The arrival stands where its own arc ended and nothing moves it off that point.** It is the
-## point `_has_room_to_land()` checked before the car committed, `_claim_the_turn()` has held in
-## `TrafficIndex` on every frame of the manoeuvre since, and `Crowd._keep_room_for_the_turning()`
-## has been braking the exit lane's nearest follower for. **The room a turn needs is checked before
-## the arc starts or the turn is not taken** — there is nothing left for the landing frame to
-## decide.
-##
-## What can still be too close when the car gets there is that **follower**, and only ever from
-## behind: a brake aims at a point and arrives late, so it settles a little inside
-## `Tuning.CAR_GAP_MIN` rather than outside it. A body too close behind the arrival is the queue's
-## business and the queue already has the rule for it —
-## `Crowd.space_out_the_traffic()` resolves front to back and moves the car *behind*, by the
-## overlap. **Sending the arrival to `_join_the_back_of_the_queue()` instead is the trap here**: it
-## drops the car a gap behind the **rearmost** car in the whole lane, which is where a recycled car
-## belongs — at the entry band, with nothing but off-screen road behind it — and is most of a street
-## behind a junction the player is watching. A car that drives a visible arc and then disappears
-## backwards past every other car in the street is a manoeuvre being repaired after the fact, which
-## is the one thing a turn may not rest on.
-##
-## The booking is handed back all the same, because `_claim_the_turn()` has been writing this car's
-## own reservation into the index every frame and nothing else would ever take it out — a lane that
-## kept it would refuse the next car to turn into that piece of road for the rest of the day. See
-## `TrafficIndex.give_back()`.
-func _land_the_turn() -> void:
-	if traffic:
-		traffic.give_back(turn_lane_key(), _turn.landing())
-	position = _turn.point_at(_turn.length())
-	_vertical = _turn.exit_vertical
-	_corridor = _turn.exit_corridor
-	_lane = _turn.exit_lane
-	_direction = _turn.exit_direction
-	_junction = _turn.entry_corridor
-	_turn = null
-	_turn_run_up = 0.0
-	_lane_centre = _lane_centre_here()
-	_forget_the_detour()
-	_scan_at = Vector2i(-9999, -9999)
-	_claim_the_road_here()
-
-## Whether every tile the car's own body passes over during the arc is road it may drive on.
-##
-## **The car's body is the datum** — the 52×28px rectangle whose front half is the strike box — swept along the
-## curve and sampled at its own corners and the points between them. It is deliberately the same
-## rectangle the game already tells the player is the dangerous part of a car, rather than a second
-## footprint nobody can see.
-##
-## What it adds to `_cannot_go_on` is the **kerb**. Going straight, a car is kept off the pavement by
-## lane arithmetic and `_cannot_go_on` never had to say so — a sidewalk tile is a perfectly good
-## street. A curve has no lane to be in the middle of, so the pavement has to be refused explicitly
-## or the first tight turn puts a car's back wheels through a bus queue.
-##
-## `over_the_kerb` is the one exemption, and it is only ever granted to the about-face of last
-## resort: see `_plan_a_turn` for why a half turn between two lanes of one carriageway cannot be
-## contained by it. Everything a car may not *be* on — a wall, a closure, a seal, a precinct's
-## paving, the ground outside the map — is refused either way.
-func _the_ground_a_turn_sweeps_is_clear(turn: CarTurn, over_the_kerb: bool) -> bool:
-	var seen := {}
-	var length := turn.length()
-	var steps := maxi(1, ceili(length / TURN_SWEEP_STEP))
-	for i in steps + 1:
-		var at := length * float(i) / float(steps)
-		var centre := turn.point_at(at)
-		var forward := turn.heading_at(at)
-		var side := Vector2(-forward.y, forward.x)
-		for a in TURN_BODY_SAMPLES.x:
-			var along := lerpf(-1.0, 1.0, float(a) / float(TURN_BODY_SAMPLES.x - 1))
-			for b in TURN_BODY_SAMPLES.y:
-				var across := lerpf(-1.0, 1.0, float(b) / float(TURN_BODY_SAMPLES.y - 1))
-				var tile := _map.world_to_tile(centre
-						+ forward * (along * Tuning.CAR_STRIKE_HALF_LENGTH)
-						+ side * (across * Tuning.CAR_STRIKE_HALF_WIDTH))
-				if seen.has(tile):
-					continue
-				seen[tile] = true
-				if _cannot_drive_over(tile, over_the_kerb):
-					return false
-	return true
-
-## How finely the swept body is sampled: a pose every `TURN_SWEEP_STEP` px of arc, and the strike
-## box itself on a grid that includes its own four corners.
-##
-## Four pixels is a seventh of the tightest arc's own quarter turn, which is fine enough that the
-## body cannot pass a whole tile between two poses. It is not free — a rejected turn is a hundred-odd
-## tile questions — but a turn is a thing a car does a few times a minute, not a thing it does every
-## frame, and the tiles are deduplicated because consecutive samples mostly land on the same one.
-const TURN_SWEEP_STEP := 4.0
-const TURN_BODY_SAMPLES := Vector2i(5, 3)
-
-## Whether a tile is carriageway this car may sweep over: open today, in bounds, not a precinct's
-## paving, and road rather than pavement. See `_the_ground_a_turn_sweeps_is_clear` for why the last
-## one is asked here and nowhere else.
-func _cannot_drive_over(tile: Vector2i, over_the_kerb: bool) -> bool:
-	if _cannot_go_on(_vertical, tile):
-		return true
-	return not over_the_kerb and not Tile.is_road(_map.tile_at(tile))
-
-## Whether there is enough road past the end of the arc for the car to have got itself out of the
-## turn — *nothing enters a junction it cannot leave*, asked of the street it is leaving into.
-##
-## **The arm a car picks is probed with a single point seven tiles out, and a single probe looks
-## straight past a two-tile plug** — the same aliasing `_look_ahead` walks tiles to avoid. That was
-## harmless while a car could reverse its heading wherever it stood: it turned into the cul-de-sac,
-## met the plug and flipped. It is not harmless now, because a car that lands nose-to-wall has no
-## room left to swing round in and stands there for the rest of the day, holding the junction it
-## came through shut and taking the whole street behind it with it — measured, that one hole put
-## 33 of 34 cars at a standstill inside ninety seconds.
-##
-## Stated over the room a *turnaround* needs rather than over some tile count: a car that can still
-## turn round is never stuck, whatever it finds later.
-func _the_exit_has_room_to_leave(turn: CarTurn) -> bool:
-	var end := turn.point_at(turn.length())
-	var forward := turn.heading_at(turn.length())
-	var step := Vector2i(roundi(forward.x), roundi(forward.y))
-	var needed := ceili((CarTurn.about_face_reach() + _nose()) / float(Tuning.TILE_SIZE))
-	var here := _map.world_to_tile(end)
-	for i in range(1, needed + 1):
-		if _cannot_drive_over(here + step * i, false):
-			return false
-	return true
-
-## Whether the lane a planned turn lands in has a car's length of road to spare where it lands.
-##
-## The landing is the arc's own end point rather than the approximation `_has_room_to_turn` makes
-## for the *preference* between two arms — those are the same question asked for different purposes,
-## one to choose between arms and this one to refuse a turn outright, and this one knows exactly
-## where the car will be standing.
-func _has_room_to_land(turn: CarTurn) -> bool:
-	if not traffic:
-		return true
-	return traffic.room_at(make_lane_key(turn.exit_vertical, turn.exit_corridor, turn.exit_lane,
-			turn.exit_direction), turn.landing(), Tuning.CAR_GAP_MIN)
-
-## Holds the piece of road a committed turn is going to land on, once a frame for as long as the
-## manoeuvre lasts.
-##
-## **Two cars can commit to the same piece of road in one frame** — the index they both read is
-## rebuilt once a frame and predates both of them — which is the same hole `TrafficIndex.claim()`
-## closes for recycling, and a turn is the case where it is worst: the reservation has to outlive
-## the whole manoeuvre rather than one frame, because the car is not in that lane yet and nothing
-## else would put it in the index. Re-made every frame, since every rebuild throws it away.
-func _claim_the_turn() -> void:
-	if not traffic or not _turn:
-		return
-	traffic.claim(turn_lane_key(), _turn.landing())
+# ----------------------------------------------------- the arc it follows ---
+# A car's turn is an arc it has planned and found room for before it starts (`CarStrategy`); the
+# arc lives here, on the mover, because the heading, the queue and the junction box all read it.
 
 ## True while this car is following a planned turn, run-up included. What tells `Crowd` to hold the
 ## junction box shut on both axes until the car is out of it.
@@ -3176,54 +1503,6 @@ func turn_lane_key() -> int:
 func turn_landing() -> float:
 	return _turn.landing() if _turn else 0.0
 
-## How far this car has to the near edge of the first thing it cannot drive past, or `INF` when the
-## road ahead is clear as far as it looks.
-##
-## **Braking for it is what makes a turnaround possible at all.** Nothing used to brake for a
-## blockage, because reversing the heading on the spot was always available however close the wall
-## was. A car that has to swing round needs road to swing into, so `_room_to_stop_in` is what the
-## brake actually aims at and this is the distance under it.
-func _distance_to_the_blockage() -> float:
-	# Nothing to answer on the arc itself: the lookahead is a cached scan down the lane the car has
-	# left, and the ground the curve covers was checked before it started.
-	if kind != Kind.CAR or _blocked_in > LOOKAHEAD_TILES:
-		return INF
-	if _turn and _turn_run_up <= 0.0:
-		return INF
-	var here := floori(_along() / float(Tuning.TILE_SIZE))
-	var tile := here + _blocked_in * signi(int(_direction))
-	var edge := float(tile * Tuning.TILE_SIZE)
-	if _direction < 0.0:
-		edge += float(Tuning.TILE_SIZE)
-	return maxf(0.0, (edge - _along()) * _direction - _nose())
-
-## Where a car braking for a blockage aims to come to rest: a half turn's worth of road short of it,
-## so that a car which has to turn round has somewhere to do it. A driver meeting a dead end stops a
-## car's length off the wall rather than nosing into it, and for the same reason.
-func _room_to_stop_in() -> float:
-	# **Not while a turn is committed**, and this is the difference between a car that turns round at
-	# a dead end and one that creeps to a halt just short of turning round: the two brakes aim at the
-	# same point, and a car easing to *zero* there never reaches the entry it was easing toward. The
-	# turn's own brake is what governs the approach once there is a turn, and the road it runs over
-	# was checked before the car committed.
-	if _turn:
-		return INF
-	var blockage := _distance_to_the_blockage()
-	if blockage == INF:
-		return INF
-	return maxf(0.0, blockage - CarTurn.about_face_reach() - TURN_ROOM_MARGIN)
-
-## How much more road than the arc needs a car aims to leave itself when it brakes for a barrier.
-##
-## **A manoeuvre that fits exactly does not fit.** The brake aims at a point and arrives a frame
-## late, the sweep is sampled rather than solved, and both of those are worth a fraction of a pixel
-## — so a car that comes to rest with precisely `CarTurn.about_face_reach()` in front of it finds
-## its own about-face refused, either as an arc starting behind the car or as a swept body clipping
-## the tile the barrier is on. Stated as the slack the geometry already has: a 28px body in a 32px
-## lane, which is the one spare distance anywhere in a turn and the same four pixels the arc's own
-## entry is offset by where it swings its tail toward its kerb.
-const TURN_ROOM_MARGIN := float(Tuning.TILE_SIZE) - 2.0 * Tuning.CAR_STRIKE_HALF_WIDTH
-
 ## Whether this agent has walked out of the patch of city that is being simulated — either off
 ## the map entirely, or out of the box that travels with the player.
 ##
@@ -3235,16 +1514,9 @@ func _has_left_the_field() -> bool:
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
 	var at := _along()
-	# Heading out, a spine car goes at the departure depth; heading in, it is still arriving and
-	# keeps the entry depth, or it would be recycled the frame after it came into existence.
-	# What `_room_beyond_the_map()` answers for both ends, asked once: a tile for everybody but a
-	# car on the spine.
-	var north_room := float(Tuning.TILE_SIZE)
-	var south_room := north_room
-	if kind == Kind.CAR and _map.is_main_road(_vertical, _corridor):
-		north_room = _entry_room(false) if _direction > 0.0 else TUNNEL_ROOM
-		south_room = BRIDGE_RUN
-	if at < -north_room or at > limit + south_room:
+	# Past the room beyond the map: a tile for everybody but a car on the spine, whose tunnel and
+	# bridge carry the road on (`has_left_the_map()`).
+	if strategy.has_left_the_map(at, limit):
 		return true
 
 	# Across the axis first: a street the box has stopped reaching at all. This is not the rare
@@ -3276,84 +1548,6 @@ func _has_left_the_field() -> bool:
 		return at > bounds.y or at < bounds.x - ENTRY_SPREAD
 	return at < bounds.x or at > bounds.y + ENTRY_SPREAD
 
-## How far past the edge of the map this agent may go before it stops existing.
-##
-## **Nothing vanishes while you are looking at it** — the rule written for events, arriving at the
-## crowd. A recycle normally happens at the edge of a box nowhere near anything the player can see;
-## the three holes in the boundary are exactly where that is not true, because a car reaching the
-## bridge is at the one place in the city that is *about* leaving.
-##
-## **A tile for everybody else, and that is not stinginess.** Outside the map is water, forest and
-## mountainside — painted ground with no road on it — so a car allowed to overrun anywhere would
-## drive into the sea. The spine is the exception because it is the only place the carriageway
-## carries on through the border: `City._paint_outside_the_map` puts road out there at the spine's
-## own width and nowhere else, and `CityEdge` is the tunnel and the bridge standing over it.
-## Walkers keep the tile for the same reason — the pavements do not carry on, only the road does.
-##
-## **And on the spine the two ends differ, because what is out there differs.** North is a tunnel:
-## a car heading out goes out of existence once its whole body is inside the mouth
-## (`TUNNEL_ROOM`), never driving on across the mountain over it. South is a bridge whose deck
-## runs `BRIDGE_RUN` out over the water, so a car stays on the deck for as long as any view could
-## show it.
-func _room_beyond_the_map(south: bool) -> float:
-	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
-		return Tuning.TILE_SIZE
-	return BRIDGE_RUN if south else TUNNEL_ROOM
-
-## How far past the map's north edge a car departing into the tunnel exists: the depth of the
-## dark opening (`CityEdge.TUNNEL_DEPTH_TILES`, opaque at its far end) plus half a car, so the
-## car's rear is inside the dark before the car stops existing.
-const TUNNEL_ROOM := float(CityEdge.TUNNEL_DEPTH_TILES * Tuning.TILE_SIZE) \
-		+ Tuning.CAR_STRIKE_HALF_LENGTH
-
-## How far past the map's south edge a car on the spine exists: the length of the bridge deck
-## (`CityEdge.BRIDGE_DECK_PX`) less a car, so it is never driving off the end of the deck.
-const BRIDGE_RUN := CityEdge.BRIDGE_DECK_PX - 2.0 * Tuning.CAR_STRIKE_HALF_LENGTH
-
-## How far past the north edge a car coming out of the tunnel may be put: the roof over the
-## portal (`CityMap.OUTSIDE_DEPTH_TILES` rows of mountain drawn over the traffic) less half a car,
-## so it exists only under the roof or in the dark, never in the open. `TUNNEL_ROOM` is how
-## shallow it may be put: front and rear already inside the opaque dark.
-const TUNNEL_ENTRY_ROOM := float(CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE) \
-		- Tuning.CAR_STRIKE_HALF_LENGTH
-
-## How far past the south edge a car coming onto the bridge is put at the least: further than
-## the player's camera reaches past the edge (half the view's height, the look-ahead and a car),
-## so a car is never put onto the deck where anybody standing at the map's edge can see it arrive.
-const BRIDGE_ENTRY_MIN := Tuning.VIEW_HALF_EXTENT.y + Stroller.CAMERA_LOOK_AHEAD \
-		+ 2.0 * Tuning.CAR_STRIKE_HALF_LENGTH + 24.0
-
-func _spine_room(south: bool) -> float:
-	return BRIDGE_RUN if south else TUNNEL_ENTRY_ROOM
-
-## Pushes a spine car that has just rolled its entry past the map's edge out of anybody's sight:
-## into the tunnel's dark and no deeper than the roof, or beyond the camera on the bridge deck.
-func _hide_the_spine_entry() -> void:
-	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
-		return
-	var extent := _map.world_size()
-	var limit: float = extent.y if _vertical else extent.x
-	var at := _along()
-	if _direction > 0.0 and at < 0.0:
-		_set_along(minf(at, -TUNNEL_ROOM))
-	elif _direction < 0.0 and at > limit:
-		_set_along(maxf(at, limit + BRIDGE_ENTRY_MIN))
-
-## How far past the true edge a **fresh** recycle may land. Departures have their own room in
-## `_room_beyond_the_map`: ordinary agents get one tile, northbound cars stop inside the dark.
-##
-## **A departure's tile of slack is never seen**: it happens at the edge of the field's own box,
-## hundreds of pixels from the camera, so the one frame it is a tile into the scree changes
-## nothing anybody is looking at. An entry is the one placement that can be the very first frame
-## on screen, and the plain boundary is exactly where a player standing at the edge of the map is
-## looking — so an ordinary walker or car may not land past it at all. A car arriving on the
-## spine instead lands beneath the tunnel roof or on the bridge deck, where the entry placement
-## can keep its complete picture out of the player's view until it moves into sight.
-func _entry_room(south: bool) -> float:
-	if kind != Kind.CAR or not _map.is_main_road(_vertical, _corridor):
-		return 0.0
-	return _spine_room(south)
-
 ## How far this kind's own drawn picture reaches past `_along()`, along this axis, in the
 ## direction a plain edge lies — read off the baked region's own native size and the same anchor
 ## arithmetic `_draw_body()`/`_car_body_anchor()` use, not a guessed number, because "the whole
@@ -3361,8 +1555,8 @@ func _entry_room(south: bool) -> float:
 ## answers from the region table with nothing acquired, which matters here: a placement roll in
 ## `setup()` asks this before `Crowd.start_day()`'s own acquire needs to have happened.
 ##
-## **`_entry_room()` grants room past the true edge; this grants none, and states what "none" has
-## to mean instead.** A walker or an off-spine car's `_entry_room()` is 0.0 — no room *past* the
+## **`entry_room()` grants room past the true edge; this grants none, and states what "none" has
+## to mean instead.** A walker or an off-spine car's `entry_room()` is 0.0 — no room *past* the
 ## line — but a centre sitting exactly on the line still has a picture straddling it, since
 ## `Sprites.draw_standing` anchors a walker's whole canvas bottom-centred on its own position: the
 ## height rises entirely to the north of it and nothing at all to the south, so a walker's picture
@@ -3385,7 +1579,7 @@ func _entry_picture_clearance() -> float:
 	return float(walker.y) if _vertical else float(walker.x) * 0.5
 
 ## Whether this agent's own coordinate leaves its picture entirely inside the map — the question
-## `_entry_band_fits()` and `_keep_within_the_room_beyond_the_map()` both ask once `_entry_room()`
+## `_entry_band_fits()` and `_keep_within_the_room_beyond_the_map()` both ask once `entry_room()`
 ## grants no room past the edge at all, and the one `setup()`'s own placement loop asks too: a
 ## morning roll lands anywhere in the field's box with no room question asked otherwise, and that
 ## box is already clamped flush to the true edge near one.
@@ -3412,7 +1606,7 @@ const ENTRY_SPREAD := 420.0
 ## off-camera when it appears and has walked a few hundred pixels of pavement by the time it
 ## is visible.
 ##
-## The band itself is kept inside this kind's own room (`_entry_room()`) rather than rolled the
+## The band itself is kept inside this kind's own room (`entry_room()`) rather than rolled the
 ## full `ENTRY_SPREAD` and hoped over: near the city wall the box hangs into nothing, and an agent
 ## rolled into that overhang would walk visibly through the boundary before it reaches the street —
 ## a walker or an off-spine car has no room out there at all, so its roll never leaves the map, and
@@ -3432,23 +1626,13 @@ const ENTRY_SPREAD := 420.0
 ## **And it has to be somewhere with a way out of it.** A spot inside a pocket — a junction whose
 ## four arms are all held — is refused exactly the way a spot with no room is, because an agent put
 ## there walks to one seal, turns, walks to the next and does that until the day ends. That is the
-## whole of *"or never spawn in the first place"*; `_is_in_a_pocket()` is the question and
+## whole of *"or never spawn in the first place"*; `is_in_a_pocket()` is the question and
 ## `CrowdPockets` is what answers it without a search per roll.
 func _recycle() -> void:
-	# See `setup()`'s own comment: resetting this cannot be wrong the way holding `_walker_view`
-	# stale would be, and doing it anyway keeps a recycled walker's stride deterministic per seed.
-	if kind == Kind.WALKER:
-		_walker_gait_phase = 0.0
-	# Whatever door had hold of this walker is at the other end of the field now, and a hut left
-	# occupied by somebody who has been recycled out of it never lets anybody else in again. A
-	# refusal goes with it: this is a fresh person walking in from the edge of the box, and the door
-	# it decided against is nowhere near the street it is about to be standing on.
-	_let_go_of_the_hut()
-	_forget_the_refusal()
-	# A recycled agent is a fresh person walking in from the edge of the box, so it draws a fresh
-	# answer — and draws it here, before the rolls below, for the reason `_draw_the_door_answer()`
-	# gives: the entry point is checked against ground this walker may actually walk.
-	_draw_the_door_answer()
+	# The look-ahead is a cached answer about where this agent was standing, and a recycle puts it
+	# somewhere else; then the kind's own fresh start (a walker's stride, door and answer).
+	_scan_at = Vector2i(-9999, -9999)
+	strategy.on_recycled()
 	if field.has_stretch():
 		# Whatever asked for the recycle — the end of a street, the edge of the field, a pocket —
 		# nothing vanishes in her view: in it the agent turns round where it is instead.
@@ -3462,13 +1646,13 @@ func _recycle() -> void:
 		_choose_lane(_rng.randf())
 		var bounds := field.along_bounds(_vertical)
 		# The roll itself is kept inside this kind's own room rather than rolled the full
-		# `ENTRY_SPREAD` and rejected afterwards — see `_entry_room()`. Beside a plain edge
+		# `ENTRY_SPREAD` and rejected afterwards — see `entry_room()`. Beside a plain edge
 		# `bounds.x`/`bounds.y` is already the field's own clamped edge, so a `reach` capped at
-		# `bounds.x + _entry_room()` (or the mirror on the other side) can never carry `back` past
+		# `bounds.x + entry_room()` (or the mirror on the other side) can never carry `back` past
 		# what this kind may stand on, and the near-`ENTRY_SPREAD` band mid-map is untouched because
 		# there the cap is never the smaller number.
 		var reach := ENTRY_SPREAD
-		var beyond := _entry_room(_direction < 0.0)
+		var beyond := strategy.entry_room(_direction < 0.0)
 		if _direction > 0.0:
 			reach = minf(reach, bounds.x + beyond)
 		else:
@@ -3477,31 +1661,31 @@ func _recycle() -> void:
 			reach = minf(reach, limit + beyond - bounds.y)
 		var back := _rng.randf() * maxf(reach, 0.0)
 		_set_along(bounds.x - back if _direction > 0.0 else bounds.y + back)
-		_hide_the_spine_entry()
+		strategy.hide_the_spine_entry()
 		_set_cross(_lane_centre)
 		if not _entry_band_fits() or not _stands_on_a_street():
 			continue
-		if not _is_in_a_pocket() and _has_room_here():
+		if not strategy.is_in_a_pocket() and strategy.has_room_here():
 			legal = []
 			break
 		if legal.is_empty():
 			legal = _placement_taken()
 	if not legal.is_empty():
 		_take_the_placement(legal)
-	_join_the_back_of_the_queue()
+	strategy.join_the_back_of_the_queue()
 	_settle_junction()
-	_claim_the_road_here()
+	strategy.claim_the_road_here()
 	gap_ahead = INF
 	junction_hold = INF
 	gate_hold = INF
 	_keep_within_the_room_beyond_the_map()
 	# The loop above only ever *tries* for `_stands_on_a_street`; six misses in a row near a true
 	# edge leave whatever the best roll was. `_keep_within_the_room_beyond_the_map` holds that to
-	# `_entry_room()` now — nothing at all for anybody but the spine's own car, which is already
+	# `entry_room()` now — nothing at all for anybody but the spine's own car, which is already
 	# standing somewhere real — so this branch is for a miss `_stands_on_a_street` refuses for a
 	# reason the room does not reach: a closed segment, a soft seal, a body already standing there.
 	# Pulled onto the map's own last row or column here, the one lane still guaranteed to exist,
-	# because `_cannot_go_on` refuses the very step that would once have drifted it back onto the
+	# because `cannot_go_on` refuses the very step that would once have drifted it back onto the
 	# street on its own.
 	if not _stands_on_a_street():
 		var extent := _map.world_size()
@@ -3547,15 +1731,8 @@ func _enter_at_a_stretch_end() -> void:
 		_corridor = end.corridor
 		_direction = end.direction
 		var along_tile: int = end.along
-		if kind == Kind.CAR:
-			_lane = CrowdLanes.road_lane(_vertical, _direction)
-			_speed = _rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
-		else:
-			var offsets := CrowdLanes.walkable_offsets(_map, _vertical, _corridor, along_tile)
-			if offsets.is_empty():
-				continue
-			_lane = offsets[_rng.randi_range(0, offsets.size() - 1)]
-			_speed = _rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
+		if not strategy.enter_at_an_end(along_tile):
+			continue
 		_cruise = _speed
 		_set_along((along_tile + 0.5) * Tuning.TILE_SIZE)
 		_lane_centre = _lane_centre_here()
@@ -3565,15 +1742,15 @@ func _enter_at_a_stretch_end() -> void:
 		_turn_run_up = 0.0
 		_turn_back_hold = 0.0
 		_forget_the_detour()
-		if not _stands_on_a_street() or _is_in_a_pocket() or not _has_room_here():
+		if not _stands_on_a_street() or strategy.is_in_a_pocket() or not strategy.has_room_here():
 			continue
-		_join_the_back_of_the_queue()
+		strategy.join_the_back_of_the_queue()
 		_settle_junction()
 		# The lane can lie nearer the picture than the street's middle, and joining a queue can
 		# move it again. Check the final placement, not merely the candidate street end.
 		if not _beyond_every_view(position) or not _stands_on_a_street():
 			continue
-		_claim_the_road_here()
+		strategy.claim_the_road_here()
 		gap_ahead = INF
 		junction_hold = INF
 		gate_hold = INF
@@ -3581,7 +1758,7 @@ func _enter_at_a_stretch_end() -> void:
 	# No accepted entry is no teleport. The original point was already off camera; turn there.
 	_take_the_placement(before)
 	_turn_round()
-	_claim_the_road_here()
+	strategy.claim_the_road_here()
 
 ## The lane and the spot one placement roll settled on, kept so that a later roll which turns out
 ## worse can be given the earlier one back.
@@ -3610,101 +1787,55 @@ func _take_the_placement(taken: Array) -> void:
 	position = at
 
 ## However the rolls above landed, an entry point may not sit further past the map's true edge
-## than `_entry_room()` allows this kind to arrive at — zero for everybody but a car on the spine —
+## than `entry_room()` allows this kind to arrive at — zero for everybody but a car on the spine —
 ## and where that is zero, it may not sit closer to the true edge than its own picture needs either.
 ##
 ## **`ENTRY_SPREAD` is a car's-length band and every kind shares it**, because the *normal* job of
 ## a spread is an off-screen buffer inside the box, which every kind wants the same amount of. The
 ## fallback below it is the trap: the roll above is already kept inside this kind's own room, but a
-## `_join_the_back_of_the_queue()` retreat or a stale `_placement_taken()` from an earlier attempt
+## `join_the_back_of_the_queue()` retreat or a stale `_placement_taken()` from an earlier attempt
 ## this frame is not, so this stays the one place that holds the final answer to it regardless of
 ## how it got there. Without this a walker can appear already standing on the crossing, which is
 ## the one thing only a car may do.
 ##
-## **A centre sitting exactly on the true edge is not far enough in**, whatever `_entry_room()`
+## **A centre sitting exactly on the true edge is not far enough in**, whatever `entry_room()`
 ## says: the picture is what a player actually sees, and `_entry_picture_clearance()` is how far
-## past the coordinate this kind's own picture reaches. So wherever `_entry_room()` grants nothing
+## past the coordinate this kind's own picture reaches. So wherever `entry_room()` grants nothing
 ## past the edge, this clamps inward to that clearance instead of out to the true edge itself.
 func _keep_within_the_room_beyond_the_map() -> void:
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
-	var north := _entry_room(false)
+	var north := strategy.entry_room(false)
 	if north <= 0.0:
 		var clearance := _entry_picture_clearance()
 		_set_along(clampf(_along(), clearance, limit - clearance))
 		return
-	_set_along(clampf(_along(), -north, limit + _entry_room(true)))
-
-## Drops a **recycled** car in behind whatever is already in its lane, when the entry point it
-## rolled is not free. Nothing at all if it landed somewhere free, which is almost always.
-##
-## **`_recycle()` is the only caller, and where a recycle happens is the whole of why this is
-## right.** An entry point is rolled six times against `TrafficIndex` and can still miss, and a car
-## standing where another one already is leaves the separation pass the one thing it can do — shunt
-## everybody *behind* it back by the overlap **plus** everything already moved in front of them,
-## which compounds front to back so that one arrival rearranges a whole queue. Behind the last car
-## is the one place in a lane that is free by construction, and moving the arrival there is the only
-## correction that touches nobody else.
-##
-## It may put the car further back than the entry band is deep, which is exactly right **here**:
-## further back is further off screen, and the alternative is a car appearing inside another one.
-## That sentence is also the whole of why a turn's landing does not come through here — see
-## `_land_the_turn()`, where further back is a junction the player is looking straight at.
-##
-## **Never past ground it could not have driven onto itself**, for the same reason `nudge_back`
-## checks it: the rearmost car's own position says nothing about what stands behind it, and a queue
-## that has backed up almost to a wall would otherwise place the newcomer inside it. Refusing the
-## move leaves the car where it already is, which is the position this fallback exists to improve on
-## rather than one it has to guarantee.
-func _join_the_back_of_the_queue() -> void:
-	if kind != Kind.CAR or not traffic or _has_room_here():
-		return
-	var last := traffic.rearmost(lane_key())
-	if last == INF:
-		return
-	var target := (last - Tuning.CAR_GAP_MIN) * _direction
-	var probe := Vector2(_cross(), target) if _vertical else Vector2(target, _cross())
-	if _cannot_go_on(_vertical, _map.world_to_tile(probe)):
-		return
-	_set_along(target)
-
-## Tells the index this car is here, so that another one recycling or turning later in the same
-## frame does not choose the same piece of road. See `TrafficIndex.claim()`.
-func _claim_the_road_here() -> void:
-	if kind != Kind.CAR or not traffic:
-		return
-	traffic.claim(lane_key(), queue_position())
-
-## Whether this car is standing in a piece of its own lane that no other car is in.
-func _has_room_here() -> bool:
-	if kind != Kind.CAR or not traffic:
-		return true
-	return traffic.room_at(lane_key(), queue_position(), Tuning.CAR_GAP_MIN)
+	_set_along(clampf(_along(), -north, limit + strategy.entry_room(true)))
 
 ## Whether the entry point the roll above landed on is ground this kind's own room reaches.
 ##
 ## **A check on the landed point, not a prediction of the band**, now that the roll itself is
-## already kept inside `_entry_room()` — see the `reach` computed in `_recycle()`'s loop, capped at
-## `bounds.x + _entry_room()` (or the mirror) rather than rolled the full `ENTRY_SPREAD` and
+## already kept inside `entry_room()` — see the `reach` computed in `_recycle()`'s loop, capped at
+## `bounds.x + entry_room()` (or the mirror) rather than rolled the full `ENTRY_SPREAD` and
 ## rejected afterwards. That makes this trivially true for anything the clip already reached, which
 ## is the point: it stays a stated invariant rather than a silent assumption, and it is still what
-## lets a car on the spine in through the tunnel or off the bridge — `_entry_room()` grants that
+## lets a car on the spine in through the tunnel or off the bridge — `entry_room()` grants that
 ## kind the tunnel's roof depth in the north and the bridge deck's length in the south, so the
 ## same roll that would refuse anybody else still lands a southbound spine lane beside the north
 ## edge inside the tunnel.
 ##
 ## **Zero room past the edge is not the same question as "does the picture fit."** A centre exactly
-## on the true edge satisfies "no room past it" trivially, so where `_entry_room()` grants nothing
+## on the true edge satisfies "no room past it" trivially, so where `entry_room()` grants nothing
 ## past the edge, the roll also has to leave room for the picture on the near side of it —
 ## `_within_the_map_with_room_for_its_picture()` is that second question.
 func _entry_band_fits() -> bool:
-	var north := _entry_room(false)
+	var north := strategy.entry_room(false)
 	if north <= 0.0:
 		return _within_the_map_with_room_for_its_picture()
 	var extent := _map.world_size()
 	var limit: float = extent.y if _vertical else extent.x
 	var at := _along()
-	return at >= -north and at <= limit + _entry_room(true)
+	return at >= -north and at <= limit + strategy.entry_room(true)
 
 # ---------------------------------------------------------------- drawing ---
 
@@ -3734,7 +1865,7 @@ const WALKER_GAIT_RATE := 0.09
 
 ## Below this speed a walker's own applied heading (`_walker_heading()`) is too close to zero to
 ## mean a facing, so it holds whatever it was last drawn as rather than chattering on the residual
-## few px/s `_yield_factor()` and float noise can still leave in it. Well under
+## few px/s `WalkerStrategy._yield_factor()` and float noise can still leave in it. Well under
 ## `Tuning.PEDESTRIAN_SPEED`'s own floor (46px/s), so only an actually-stopped walker — a give-way,
 ## a queue, a halt — ever reads as idle.
 const WALKER_IDLE_SPEED := 5.0
@@ -3770,7 +1901,7 @@ func _flipped() -> bool:
 ## cross term is `_set_cross()`'s own target (`_lane_centre + _detour`) minus where it actually is,
 ## signed and capped at `STEER_SPEED` — the rate `_process()`'s own `move_toward` steers at while
 ## it has not yet arrived. Zero once it has arrived with no detour running, which a stopped walker
-## (give-way, queue, halted) always has, since `_yield_factor()` also zeroes the along term then.
+## (give-way, queue, halted) always has, since `WalkerStrategy._yield_factor()` also zeroes the along term then.
 func _walker_heading() -> Vector2:
 	return _walker_heading_at(velocity())
 

@@ -72,7 +72,11 @@ src/
   crowd/
 	crowd.gd              owns the day's agents and the `crowd` atlas page, held for its own life
 	                      rather than released between days; sums their excitement
-	crowd_agent.gd        one walker or one car, drawn from the baked `crowd` page
+	crowd_agent.gd        one walker or one car, drawn from the baked `crowd` page: the lane mover
+	                      both kinds share, asking its kind's strategy what differs
+	lane_strategy.gd      the questions the mover asks its kind, with the neutral answers
+	walker_strategy.gd    a walker's rules: footways, sidesteps, corners, checkpoint huts
+	car_strategy.gd       a car's rules: give-way, planned turns, the spine's tunnel and bridge
 	crowd_lanes.gd        the lane geometry of the street grid
 	crowd_field.gd        the box around the player the crowd is simulated in
 	crowd_pockets.gd      the carriageway today's seals shut in, so no car is placed with nowhere to go

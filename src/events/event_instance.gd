@@ -2072,7 +2072,7 @@ func is_standing() -> bool:
 ## - **A zebra she is waiting at**, on a street whose traffic gives way (not the main road, whose
 ##   crossings the light keeps), within `Tuning.CAR_ZEBRA_SIGHT` ahead, her within half a street of
 ##   the car's line and `Tuning.CAR_ZEBRA_WAIT_RADIUS` along of the paint: the centre stops
-##   `CAR_STOP_LINE_SETBACK` short of the paint's near edge, `CrowdAgent._distance_to_stop_line()`'s
+##   `CAR_STOP_LINE_SETBACK` short of the paint's near edge, `CarStrategy._distance_to_stop_line()`'s
 ##   own arithmetic — **unless the zebra is on the far side of the junction box ahead**, where that
 ##   line would stand it inside the box: then it holds at the box's entry line, as at a red light,
 ##   and that is decided from `Tuning.CAR_JUNCTION_SIGHT` short of the box, wherever she waits along

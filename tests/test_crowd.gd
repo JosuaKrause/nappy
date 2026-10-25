@@ -120,25 +120,39 @@ const DOOR_ANSWER_TOLERANCE := 0.05
 
 func _test_a_walker_draws_its_own_answer_at_a_door(t) -> void:
 	var counts := {
-		CrowdAgent.DoorAnswer.HELD: 0,
-		CrowdAgent.DoorAnswer.PASSES: 0,
-		CrowdAgent.DoorAnswer.TURNS_BACK: 0,
+		WalkerStrategy.DoorAnswer.HELD: 0,
+		WalkerStrategy.DoorAnswer.PASSES: 0,
+		WalkerStrategy.DoorAnswer.TURNS_BACK: 0,
 	}
 	var walkers := 0
-	var cars_with_an_answer := 0
+	var cars := 0
+	var cars_that_drew := 0
+	var walkers_that_drew := 0
 	for day in [1, 2, 5, 9]:
 		_city.crowd.start_day(day, _rng(day))
 		for agent: CrowdAgent in _city.crowd.agents():
+			# Whether the moment a walker draws its answer spends a number of this agent's own
+			# stream, asked of every agent and put back afterwards so the day runs on unchanged.
+			var before := agent._rng.state
 			if agent.kind != CrowdAgent.Kind.WALKER:
-				if agent._door_answer != CrowdAgent.DoorAnswer.HELD:
-					cars_with_an_answer += 1
+				cars += 1
+				agent.strategy.draw_the_door_answer()
+				if agent._rng.state != before:
+					cars_that_drew += 1
+				agent._rng.state = before
 				continue
 			walkers += 1
-			counts[agent._door_answer] += 1
+			var answer: int = agent.strategy._door_answer
+			counts[answer] += 1
+			agent.strategy.draw_the_door_answer()
+			if agent._rng.state != before:
+				walkers_that_drew += 1
+			agent._rng.state = before
+			agent.strategy._door_answer = answer
 	t.check(walkers > 300, "there were walkers to ask (%d)" % walkers)
-	var passing := float(counts[CrowdAgent.DoorAnswer.PASSES]) / float(maxi(1, walkers))
-	var turning := float(counts[CrowdAgent.DoorAnswer.TURNS_BACK]) / float(maxi(1, walkers))
-	var held := float(counts[CrowdAgent.DoorAnswer.HELD]) / float(maxi(1, walkers))
+	var passing := float(counts[WalkerStrategy.DoorAnswer.PASSES]) / float(maxi(1, walkers))
+	var turning := float(counts[WalkerStrategy.DoorAnswer.TURNS_BACK]) / float(maxi(1, walkers))
+	var held := float(counts[WalkerStrategy.DoorAnswer.HELD]) / float(maxi(1, walkers))
 	t.check(absf(passing - Tuning.WALKER_DOOR_PASS_FRACTION) < DOOR_ANSWER_TOLERANCE,
 			"about WALKER_DOOR_PASS_FRACTION of walkers walk through a door (%.3f vs %.3f)"
 			% [passing, Tuning.WALKER_DOOR_PASS_FRACTION])
@@ -149,9 +163,13 @@ func _test_a_walker_draws_its_own_answer_at_a_door(t) -> void:
 			- Tuning.WALKER_DOOR_TURN_BACK_FRACTION)) < DOOR_ANSWER_TOLERANCE,
 			"and everybody else is held (%.3f)" % held)
 	# A car's own answer is never drawn — the boom is what stops a car, and a car that spent a
-	# number here would turn differently at every junction it has ever turned at.
-	t.check(cars_with_an_answer == 0,
-			"no car carries a door answer (%d did)" % cars_with_an_answer)
+	# number here would turn differently at every junction it has ever turned at. The walkers'
+	# count is what shows the question was asked at the right moment rather than vacuously.
+	t.check(cars > 100 and cars_that_drew == 0,
+			"no car spends a number of its own stream on a door answer (%d of %d did)"
+			% [cars_that_drew, cars])
+	t.check(walkers_that_drew == walkers,
+			"while every walker does (%d of %d)" % [walkers_that_drew, walkers])
 
 ## The point of the number, not the number: from act III there is nobody left going out, and
 ## the city becomes an easier place to put a baby to sleep. If that ever inverts, the horror
@@ -664,7 +682,7 @@ func _test_a_bump_costs_and_one_of_them_is_survivable(t) -> void:
 	t.check(clear_line >= Tuning.PLAYER_BODY_RADIUS,
 			"and it is wide enough to aim at rather than to land on (%.0fpx against a %.0fpx pram)"
 			% [clear_line, Tuning.PLAYER_BODY_RADIUS])
-	# The lanes it makes still have to be on the pavement. `CrowdAgent._pavement_band` measures the
+	# The lanes it makes still have to be on the pavement. `WalkerStrategy._pavement_band` measures the
 	# footway from the **tile** centres rather than from the lanes, so a spread of half a tile would
 	# put somebody in a shopfront or off a kerb and nothing else in the suite would object.
 	t.check(CrowdLanes.SIDEWALK_LANE_SPREAD < float(Tuning.TILE_SIZE) * 0.5,
@@ -829,7 +847,7 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		# car that in a running day would long since have driven on.
 		var pulling_away := Tuning.CAR_TURN_SPEED if agent.is_turning() \
 				else Tuning.CAR_SPEED.x * 0.5
-		var room := agent._room_to_stop_in()
+		var room: float = agent.strategy._room_to_stop_in()
 		if room < INF:
 			pulling_away = minf(pulling_away,
 					sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * room))
@@ -1441,7 +1459,7 @@ func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
 ## occupied lane the other car just disappears.")*
 ##
 ## The test above is the one that has always been here, and it passes either way: the separation
-## works, and that is the problem. `_divert()` picked an arm of a junction out of the tile map alone,
+## works, and that is the problem. `CarStrategy.divert()` picked an arm of a junction out of the tile map alone,
 ## so a car diverting round a closure materialised wherever that lane happened to be occupied — and
 ## the M27 rule that separation is positional then resolved it the only way it can, by *moving* a
 ## body. Resolving a queue front-to-back cascades, so the correction is the shortfall plus everything
@@ -1676,9 +1694,9 @@ func _test_the_arterial_is_the_busiest_street(t) -> void:
 ## broken.
 ##
 ## **Zero is the only acceptable end state, and it is the one asserted here.** `CrowdAgent.
-## nudge_back()` and `_join_the_back_of_the_queue()` are the two places a traffic queue's own
+## nudge_back()` and `CarStrategy.join_the_back_of_the_queue()` are the two places a traffic queue's own
 ## spacing arithmetic moves a car with no notion of the map underneath it, so both refuse a move
-## that would land on ground `_cannot_go_on` refuses — a car grazing a big building's own footprint
+## that would land on ground `cannot_go_on()` refuses — a car grazing a big building's own footprint
 ## by one tile was exactly that, an unguarded backward shove across a junction into whatever
 ## bordered it.
 func _test_nothing_walks_into_a_hard_blocker(t) -> void:

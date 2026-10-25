@@ -7,7 +7,7 @@ extends RefCounted
 ##     tools/test.sh probes/m156_car_turns.gd
 ##
 ## **The question is attribution, not counting.** `CrowdAgent._look_ahead()` records only *how far*
-## the way is shut; which of `_cannot_go_on`'s clauses said so, and which placed body stands behind
+## the way is shut; which of `CarStrategy.cannot_go_on()`'s clauses said so, and which placed body stands behind
 ## that clause, is nowhere in the agent. So the walk below re-asks the clauses in their own order
 ## at the tile the scan stopped on — read off the agent's own cached scan origin
 ## (`_scan_at`/`_scan_vertical`/`_scan_direction`), never off where the body has since steered to —
@@ -20,7 +20,7 @@ extends RefCounted
 ## putting them straight back is what lets the table answer *does this body cover the roadway* for
 ## a hard seal as well as for a café.
 ##
-## Two tables. **The causes** are how many car-frames each clause of `_cannot_go_on` turned a car
+## Two tables. **The causes** are how many car-frames each clause of `CarStrategy.cannot_go_on()` turned a car
 ## for. **The rows** are what stands behind them, one line per catalogue row, split three ways:
 ##
 ## - **spill** — the body stands on a *sidewalk* of the car's own street and a tile of its
@@ -98,7 +98,7 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 				continue
 			_classify(map, agent, city_seed, day, owner_of, segment_owner, bodies)
 
-## Names the first clause of `CrowdAgent._cannot_go_on` that shuts the tile this car's scan stopped
+## Names the first clause of `CarStrategy.cannot_go_on()` that shuts the tile this car's scan stopped
 ## on, and charges it to the body standing there where there is one.
 func _classify(map: CityMap, agent: CrowdAgent, city_seed: int, day: int,
 		owner_of: Dictionary, segment_owner: Dictionary, bodies: Array) -> void:

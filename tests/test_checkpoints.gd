@@ -1715,7 +1715,7 @@ func _test_the_chatting_mother_still_detains_once(t) -> void:
 
 ## A real car, a synthetic `GateState` sited directly ahead of it on its own lane — deterministic
 ## rather than searching the day's traffic for one that happens to be aligned with a real door, the
-## same way a real car still exercises the real `Crowd._stop_for_gates()`/`CrowdAgent._give_way()`
+## same way a real car still exercises the real `Crowd._stop_for_gates()`/`CarStrategy._give_way()`
 ## machinery `_test_a_car_can_always_stop_for_a_zebra_it_can_see` trusts for the zebra. Reports the
 ## stop duration and the pass, per the milestone's own request.
 func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:

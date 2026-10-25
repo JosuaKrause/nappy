@@ -579,7 +579,7 @@ shut**, readable from a block away. That was not designed, it fell out of making
 respect closures, and it is better than the thing it fell out of.
 
 **A hard seal, a region wall and a soft seal carry the same tell**, on the same predicate a
-closure does (`CrowdAgent._cannot_go_on`): a hard seal or a wall stands bodies kerb to kerb, so
+closure does (each kind's `cannot_go_on()`, `CarStrategy` and `WalkerStrategy`): a hard seal or a wall stands bodies kerb to kerb, so
 both walkers and cars turn off at the last junction the same way they do for a closure; a soft
 seal takes both pavements and leaves the carriageway, so a walker turns away while a car drives
 straight through, reading as a street quiet on foot and ordinary on the road. A region **door** is
@@ -1884,13 +1884,13 @@ is loud, and the reason a park is quiet.
   of a box nowhere near anything she can see, and the three holes in the boundary are exactly where
   that is not true. **The two ends of a journey answer differently, on purpose.** A car on the
   spine heading north goes out of existence once its whole body is inside the tunnel's dark
-  (`CrowdAgent.TUNNEL_ROOM`), heading south it stays on the deck (`CrowdAgent.BRIDGE_RUN`), and
-  everybody else keeps a tile — `CrowdAgent._room_beyond_the_map` — because a departure happens
+  (`CarStrategy.TUNNEL_ROOM`), heading south it stays on the deck (`CarStrategy.BRIDGE_RUN`), and
+  everybody else keeps a tile — `LaneStrategy.has_left_the_map()` — because a departure happens
   off-screen almost always, and a tile of slack there is never seen. A fresh arrival is not: it can be the
   very first frame on screen, at the plain boundary itself, if she is standing there. So
-  `CrowdAgent._entry_room` grants an ordinary walker or car **no** room past the true edge at all —
+  `LaneStrategy.entry_room()` grants an ordinary walker or car **no** room past the true edge at all —
   only a car on the spine keeps room, and it is put out of sight: in the tunnel's dark and under
-  its roof, or on the deck beyond the camera's reach (`CrowdAgent._hide_the_spine_entry`) — and the roll that picks where a recycle lands is
+  its roof, or on the deck beyond the camera's reach (`CarStrategy.hide_the_spine_entry()`) — and the roll that picks where a recycle lands is
   kept inside that room from the start rather than rolled the full entry band and rejected
   afterwards, so nobody appears standing on the mountain, the forest or the water and walks in.
   **No room past the edge is not the same guarantee as room for the picture on the near side of
@@ -1900,11 +1900,11 @@ is loud, and the reason a park is quiet.
   nothing below. `CrowdAgent._entry_picture_clearance` reads the real texture sizes and the anchor
   arithmetic `_draw_body` uses to say how far this kind's own picture reaches past its coordinate,
   and `_entry_band_fits`, the final placement clamp, and the morning's own `setup()` all ask for that
-  much room before accepting a spot, wherever `_entry_room` grants nothing past the edge.
+  much room before accepting a spot, wherever `entry_room()` grants nothing past the edge.
   **And the same room is what lets a car arrive by the tunnel or the bridge.** The crowd's box is
   clamped to the map, so beside the tunnel the band a southbound spine car enters through is the
   stretch past the north edge, and `CrowdAgent._entry_band_fits` accepts a band that reaches that
-  far only for the agent `_entry_room` already grants it. Refusing it for everybody would make the
+  far only for the agent `entry_room()` already grants it. Refusing it for everybody would make the
   traffic through both holes one-way — cars that only ever leave — and `tests/test_crowd.gd` stands
   at each end and counts spine cars out of bounds by which way they point, and at each plain edge
   and asserts nobody else is ever out of bounds there at all.
@@ -1922,9 +1922,9 @@ is loud, and the reason a park is quiet.
 
 - **And the same predicate covers a hard seal, a region wall and a soft seal.** `CityMap.
   held_segments` (the day's no-catalogue-row ground) and `CityMap.soft_sealed_tiles` (a soft seal's
-  own pavement tiles, kept apart because its carriageway is not held) are what `CrowdAgent.
-  _cannot_go_on` asks alongside a closure: a hard seal or a wall shuts the whole street to both
-  walkers and cars, a soft seal shuts only the pavements so a car still crosses it, and a region
+  own pavement tiles, kept apart because its carriageway is not held) are what each kind's
+  `cannot_go_on()` (`CarStrategy`, `WalkerStrategy`) asks alongside a closure: a hard seal or a
+  wall shuts the whole street to both walkers and cars, a soft seal shuts only the pavements so a car still crosses it, and a region
   door is carved out of the held check for everybody the door means to let through — a car brakes
   and queues for the gate the way it does at a light, and so does a walker unless its own answer at
   a door is to turn back, in which case it gets no carve-out and the door reads to it exactly like
