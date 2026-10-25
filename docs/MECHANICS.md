@@ -1448,7 +1448,7 @@ it is the same screen showing what a load already charged rather than what a day
 
 ## The run clock
 
-`GameState.play_seconds` is a second clock, over the whole run rather than one day: the sum of
+`GameState.header.play_seconds` is a second clock, over the whole run rather than one day: the sum of
 every second a day — a section of the escape included — spent `WALKING` or `RETURNING` with the
 tree unpaused. Not wall time, and not
 the day timer above, which resets every day — a retried day's first attempt counts toward it, and
@@ -1555,7 +1555,7 @@ Continuing from the brief is the moment she starts walking, and the section's ow
 by the HUD every time she does — a first walk, a retry and a resumed one alike.
 
 **And the brief is the checkpoint a closed game comes back to.** A save is written as each brief
-comes up, carrying which section it is (`GameState.escape_section`, written beside the day-under-
+comes up, carrying which section it is (`GameState.facts.escape_section`, written beside the day-under-
 way flag rather than inside the run snapshot, so a save from before the escape existed still
 loads), and opening the game again puts that section's brief back up with a whole clock behind it
 — the same way closing a game mid-day comes back to that day's brief. Nothing about the escape is
@@ -1565,7 +1565,7 @@ nerve is already on disk, written as its lost section's outcome screen comes up.
 **Everything around a day exists around a section too, built the same way.** `Esc`, the pause
 button and losing the window's focus open the same pause screen a day opens, with the same continue,
 the same held restart and the same quit; the held restart ends the escape in a fresh run,
-`GameState.escape_section` cleared, the same way it ends any other run. There is one boot: the
+`GameState.facts.escape_section` cleared, the same way it ends any other run. There is one boot: the
 HUD, the touch controls, the summary, the pause and the title screens, the orientation handling,
 the developer readout and the debug-mode note are built the same way for whichever day it opens on,
 and only the world the first day is walked in differs.
@@ -1935,7 +1935,7 @@ opening it again finds the same nerve count and shows the same screen, and press
 is what actually spends anything.
 
 **A save written inside the escape comes up the same way.** The escape's own boot always knows
-which section a save named — `GameState.escape_section`, restored before the section is built, is
+which section a save named — `GameState.facts.escape_section`, restored before the section is built, is
 what decides whether the building or the city is built at all, not only where she stands inside
 it — and a save closed mid-city-section reopens in the city rather than being rebuilt underneath
 her from the hallway. What is asked first is whether this boot is **reading that section off a

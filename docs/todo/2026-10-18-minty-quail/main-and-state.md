@@ -16,7 +16,7 @@
   `failed_resistance_steps`, `scars`, `city_state`, `sabotage_done`, `resistance_carrying_package`,
   `completed_resistance_alley_tiles`) for the readers in `src/events/**`, `src/resistance/**`,
   `tests/test_resistance.gd` and `tests/test_event_manager.gd`, which go when those files read the
-  parts. `GameState.` is read about a hundred times in `main`, `GameState.day` among them. The
+  parts. `GameState.` is read about a hundred times in `main`, `GameState.header.day` among them. The
   hidden globals held in statics are filed in `hidden-statics.md`.
 - **One summary screen with four hand-reset modes** (`day_summary.gd`: `show_day_brief`, `show_day`,
   `show_ending`, `show_finale`); the screen's mode is tracked in `main`'s booleans. The resistance tally and the run-standing

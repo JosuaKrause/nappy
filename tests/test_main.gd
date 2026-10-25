@@ -155,7 +155,7 @@ func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
 func _bare_readout(city: City, stroller: Stroller, baby: Baby, day: DayController) -> DebugReadout:
 	var readout := DebugReadout.new()
 	readout._status = Label.new()
-	readout._run = GameState
+	readout._run = GameState.header
 	readout.watch(stroller, baby, day)
 	readout.show_the_world(city.events, city.crowd, city, city.map, city)
 	return readout

@@ -42,7 +42,7 @@ static func build() -> void:
 	GameState.pelican.draws = 11
 	GameState.settled.settled_in[6] = Vector2i(2, 3)
 	GameState.facts.remember_fenced_park(Vector2i(2, 3), 2)
-	GameState.record_completed_alley_tile(Vector2i(77, 78))
+	GameState.facts.record_completed_alley_tile(Vector2i(77, 78))
 	GameState.facts.escape_section = 1
 
 static func _burn(block: Vector2i) -> void:

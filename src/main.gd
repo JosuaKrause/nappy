@@ -1482,7 +1482,7 @@ func _add_the_readout() -> void:
 	_readout = DebugReadout.new()
 	_readout.name = "DebugReadout"
 	add_child(_readout)
-	_readout.setup(config, _status, _status_layer, GameState, _session, _screen_name)
+	_readout.setup(config, _status, _status_layer, GameState.header, _session, _screen_name)
 
 ## What screen is up, for a snapshot's line.
 func _screen_name() -> String:
