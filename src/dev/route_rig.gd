@@ -840,10 +840,11 @@ func _door_tiles() -> Dictionary:
 	return near
 
 ## The door bodies that have just let her out and cannot take her again until she walks out of
-## their circle — the rig's copy of `EventManager._latch_everything_she_was_let_out_into()`, which
-## latches **every** door body whose trigger holds the point she is set down at. Filled by
-## `_latch_the_doors_round_her()`, keyed by plan; a body is let go by `_door_tiles()` the first time
-## it finds her outside its circle, which is when the game's own latch lets go too.
+## their circle — the rig's copy of
+## `CheckpointController._latch_everything_she_was_let_out_into()`, which latches **every** door
+## body whose trigger holds the point she is set down at. Filled by
+## `_latch_the_doors_round_her()`, keyed by plan; a body is let go by `_door_tiles()` the first
+## time it finds her outside its circle, which is when the game's own latch lets go too.
 var _latched_doors := {}
 
 func _latch_the_doors_round_her() -> void:

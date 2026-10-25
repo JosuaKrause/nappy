@@ -1543,7 +1543,8 @@ func _test_the_whole_hold_reads_as_one_move(t) -> void:
 ## **And stopped against the gate out on the carriageway, a few pixels off its centre line, nothing
 ## takes her in at all.** *(2026-09-24: "Boom shouldn't inspect her. It should block her.")* The
 ## huts' own triggers reach past the kerb into that road, so this is also the check that a hut does
-## not reach into the carriageway its own boom spans — see `EventManager._on_a_booms_carriageway()`.
+## not reach into the carriageway its own boom spans — see
+## `CheckpointController._on_a_booms_carriageway()`.
 func _test_crossing_the_street_at_the_door_still_puts_her_through_it(t) -> void:
 	var at_the_boom := _door_rig(t)
 	var boom_manager: EventManager = at_the_boom["manager"]

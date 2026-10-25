@@ -4972,11 +4972,12 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
 ## Reviews 5 and 6 of PR #781, day 9 at two doors: **a walked crossing counts only if she is still
 ## across that door's line when a guard is set on her for it.** She walks under another door A's
 ## raised boom (A's warning starts) and then, inside A's 2s, under the named door B or not, which
-## starts no warning of its own while A's runs (`EventManager._held_crossings`). Every combination is
-## walked: B not crossed, crossed and stayed across, or crossed and taken back; A then stayed across
-## or taken back before its 2s. A's guard comes exactly when she stays across A, and the task is done
-## exactly when she is across both when he comes. She steps between the two doors as a rig does
-## (`_last_seen_at` cleared), so the step is not seen as a walk across anything.
+## starts no warning of its own while A's runs (`CheckpointController._held_crossings`). Every
+## combination is walked: B not crossed, crossed and stayed across, or crossed and taken back; A
+## then stayed across or taken back before its 2s. A's guard comes exactly when she stays across
+## A, and the task is done exactly when she is across both when he comes. She steps between the
+## two doors as a rig does (`_last_seen_at` cleared), so the step is not seen as a walk across
+## anything.
 func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> void:
 	_build_city(t)
 	var saved_state := GameState.city_state

@@ -913,7 +913,7 @@ traffic fairness contract `Tuning.validate_traffic()` states for every carriagew
 **And a gatehouse never takes her in from the carriageway its own door's boom spans.** A gatehouse's trigger
 reaches a reach past its wall, which is further than the kerb, so without this the gatehouse beside the
 boom would reach out into the road and inspect her there — the boom inspecting her in all but name.
-`EventManager._on_a_booms_carriageway()` is the test, stated over the door's own geometry: on the
+`CheckpointController._on_a_booms_carriageway()` is the test, stated over the door's own geometry: on the
 boom's cross-street line and no further across it than the boom's own body reaches, which is the
 carriageway. So walking up the road to a lowered boom is walking into a wall, and walking under a
 raised one skips the toll.
