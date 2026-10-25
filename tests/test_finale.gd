@@ -616,7 +616,7 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 			"the far guard sets off from his post the frame his partner starts to leave")
 	t.check(set_off.distance_to(her) > guard.body_position().distance_to(her),
 			"and he sets off from the far post, beyond the band from her")
-	t.check(guard._far_guard != null and guard._far_guard.is_inside_tree(),
+	t.check(guard.barrier_post.far.node != null and guard.barrier_post.far.node.is_inside_tree(),
 			"and walks on his own node beside the band's")
 	# She has come back to stand beside the band, so he has a walk to make before he is out of
 	# her sight.
@@ -632,7 +632,7 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 		if now == Vector2.INF:
 			break
 		paced = paced and now.distance_to(last) <= def.chase_speed() * step + 0.01 \
-				and is_equal_approx(guard._far_guard_walked, def.chase_speed() * step * walked)
+				and is_equal_approx(guard.barrier_post.far.walked, def.chase_speed() * step * walked)
 		last = now
 	t.check(last.distance_to(her) > set_off.distance_to(her) and paced,
 			"he walks away from her at his partner's pace (%d frames)" % walked)
@@ -640,7 +640,7 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 			"and he is gone, and nobody stands at the band")
 	t.check(last.distance_to(her) > Tuning.OUT_OF_SIGHT - def.chase_speed() * step,
 			"only once he is out of her sight (%.0fpx from her)" % last.distance_to(her))
-	t.check(guard._far_guard == null, "his node goes with him")
+	t.check(guard.barrier_post.far.node == null, "his node goes with him")
 	guard.free()
 	var streamed := EventInstance.new()
 	streamed.setup(def, Vector2(400.0, 0.0))
@@ -714,7 +714,7 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 			if the_reviewed_walk:
 				her = map.tile_to_world(Vector2i(70, 50))
 				guard.departure.plan_the_rest_again()
-				guard._far_guard_way = PackedVector2Array()
+				guard.barrier_post.far.way = PackedVector2Array()
 			var far_walked := false
 			var on_ground := true
 			frames = 0

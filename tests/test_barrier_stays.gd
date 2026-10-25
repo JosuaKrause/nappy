@@ -295,8 +295,9 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		frames += 1
 	t.check(guard.is_leaving, "she shook him off and he is walking away")
 	city.events._stream_out(plan)
-	t.check(plan.guard_spent and plan.chaser_side == side,
-			"the plan carries the spent guard and the side he left")
+	var carried: Dictionary = plan.behaviours.get(&"EventBarrierPost", {})
+	t.check(bool(carried.get("spent", false)) and int(carried.get("side", 0)) == side,
+			"the plan carries the spent guard and the side he left (%s)" % [carried])
 	city.events._stream_in(plan)
 	var back: EventInstance = plan.live
 	t.check(back != null and back != guard, "a fresh instance comes back")

@@ -286,7 +286,7 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t) -> void:
 	instance.abduction.take_now()
 	t.check(not instance._victim_gait_stepping(), "the walk starts on frame a")
 	var saw_b := false
-	var steps := int(EventAbduction.VICTIM_TAKEN_OVER / STEP)
+	var steps := int(instance.def.abduction.taken_over / STEP)
 	for i in steps:
 		instance.age += STEP
 		if instance._victim_gait_stepping():

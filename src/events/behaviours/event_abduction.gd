@@ -1,13 +1,8 @@
 class_name EventAbduction
 extends EventBehaviour
-## **The unmarked van takes somebody first**: the first time she comes close enough to see it, a
-## bystander is walked to the van and taken. Drawing and telemetry only — nothing here reaches into
-## the crowd, and nothing here changes the van's field.
-
-## How long the walk to the van takes, once it starts.
-const VICTIM_TAKEN_OVER := 2.5
-## How far to the side of the van the victim stands before the walk begins.
-const VICTIM_STANDING_OFFSET := 32.0
+## **The unmarked van takes somebody first**, on the terms its row's `AbductionSpec` sets: the first
+## time she comes close enough to see it, a bystander is walked to the van and taken. Drawing and
+## telemetry only — nothing here reaches into the crowd, and nothing here changes the van's field.
 
 ## The event's age the take began at, or `INF` before it has and after a hunting van abandons one
 ## mid-walk.
@@ -17,7 +12,7 @@ var _logged := false
 
 ## Whether the walk is running right now.
 func is_taking() -> bool:
-	return _taken_at != INF and (event.age - _taken_at) < VICTIM_TAKEN_OVER
+	return _taken_at != INF and (event.age - _taken_at) < event.def.abduction.taken_over
 
 ## How far into the walk it is, in seconds, while it runs.
 func walked_for() -> float:
@@ -44,11 +39,11 @@ func step(_delta: float) -> void:
 	if _taken_at == INF:
 		if event.player_at == Vector2.INF \
 				or event.global_position.distance_to(event.player_at) > def.outer_radius \
-				or _time_left() < VICTIM_TAKEN_OVER:
+				or _time_left() < def.abduction.taken_over:
 			return
 		_taken_at = event.age
 		return
-	if _logged or event.age - _taken_at < VICTIM_TAKEN_OVER:
+	if _logged or event.age - _taken_at < def.abduction.taken_over:
 		return
 	_logged = true
 	event.trace.note("taken", "'%s' takes a bystander" % def.id)

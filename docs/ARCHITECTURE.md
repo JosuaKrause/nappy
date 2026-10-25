@@ -87,6 +87,10 @@ src/
 	notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
 	pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
 	day_switch.gd         how a row is sited and noticed from the day after its first appearance
+	on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
+	aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
+	vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
+	abduction_spec.gd     the unmarked van's take of a bystander
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
@@ -94,8 +98,9 @@ src/
 	                       every picture it draws is a region of the baked `events` page
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
-	                       line run, a route, a flock, a hold, a stop, a departure, ...; each
-	                       saves and restores its own state, which a streamed-out plan carries
+	                       line run, a route, a flock, a hold, a stop, a departure, a car's
+	                       driving, a barrier's posts, a van's take, ...; each saves and restores
+	                       its own state, which a streamed-out plan carries
 	charge_record.gd      a charger's warning, charge and the one way it ended, as counted
 	warning.gd            the one warning clock: started, held, called off or run out, read against
 	                      its owner's clock — an event's notice, a door crossing, a badge up alone

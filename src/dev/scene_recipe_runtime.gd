@@ -1163,7 +1163,7 @@ func _process(delta: float) -> void:
 			continue
 		if instance.departure.walks_a_way() \
 				or (instance.on_foot != null and instance.on_foot.walks_back()) \
-				or instance._is_a_guard_leaving_his_barrier():
+				or instance.is_a_guard_leaving_his_barrier():
 			manifest["playback_error"] = "held event %s no longer leaves in a straight line" \
 					% instance.def.id
 			manifest["stopped_tick"] = tick

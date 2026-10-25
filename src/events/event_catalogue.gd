@@ -99,7 +99,7 @@ static func heated(def: EventDef, level: int) -> EventDef:
 ## exactly as a day's at full resistance progress. *(Inbox #771 in minty-lemur: "it should be in a way that luring
 ## away the guard is enough".)* Its band costs nothing and, once the guard on her side has left his
 ## post for good, the guard at the far post walks off too, as on every day (`_roadblock()`,
-## `EventInstance._send_the_far_guard_off()`).
+## `RoadblockFarGuard`).
 static func escape_roadblock() -> EventDef:
 	return heated(by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 
@@ -549,6 +549,7 @@ static func _alley_mouse() -> EventDef:
 	def.telegraphs = false
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.MOUSE
+	def.path_mode = EventDef.PathMode.ACROSS_ITS_ALLEY
 	def.shape = GroundShape.point(4.0)
 	def.placement = [GameEnums.TileType.ALLEY]
 	# **Priced against the cat on each row's own ground, which is not the same ground.** *(2026-09-12:
@@ -2052,6 +2053,7 @@ static func _abduction() -> EventDef:
 	def.id = "abduction"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.UNMARKED_VAN
+	def.abduction = AbductionSpec.new()
 	def.first_day = 8
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.CROSSING]

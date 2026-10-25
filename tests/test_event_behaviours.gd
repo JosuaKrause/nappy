@@ -19,6 +19,8 @@ func run(t) -> void:
 	_test_the_departure_round_trips(t)
 	_test_the_unreachable_dog_round_trips(t)
 	_test_the_take_round_trips(t)
+	_test_the_barrier_post_round_trips(t)
+	_test_a_car_is_composed_of_its_vehicle(t)
 	_test_the_route_walk_has_no_state_of_its_own(t)
 	_test_a_departure_begun_on_resume_is_not_written_over(t)
 	_test_the_manager_streams_a_behaviours_state(t)
@@ -61,9 +63,18 @@ func _test_a_row_is_composed_of_what_its_data_says(t) -> void:
 			"a flock has its birds and waits for her, both")
 	var mother := _instance(t, EventCatalogue.by_id("chatting_mother"))
 	t.check(mother.hold != null and mother.pursuit == null, "a mother holds her and does not chase")
-	for one in [robber, masked, flock, mother]:
+	var band := _instance(t, EventCatalogue.by_id("roadblock"))
+	t.check(band.barrier_post != null and band.pursuit == null,
+			"a cold roadblock has its barrier post, guards standing at it, and does not chase")
+	var van := _instance(t, EventCatalogue.by_id("abduction"))
+	t.check(van.abduction != null and _instance_is_free_of_a_take(robber),
+			"the unmarked van takes a bystander, and nothing that is not given a take does")
+	for one in [robber, masked, flock, mother, band, van]:
 		t.check(one.departure != null, "%s can leave" % one.def.id)
 		one.free()
+
+func _instance_is_free_of_a_take(instance: EventInstance) -> bool:
+	return instance.abduction == null and instance.def.abduction == null
 
 # -------------------------------------------------------------------- pursuit ---
 
@@ -323,3 +334,34 @@ func _test_the_manager_streams_a_behaviours_state(t) -> void:
 			"and streamed back in, his lunge is still held")
 	manager.free()
 	world.free()
+
+# ---------------------------------------------------------------- barrier post ---
+
+## **A roadblock's spent guard and the post he left come back across a stream-out**
+## (`EventBarrierPost`), as only the barrier; a barrier whose guards both stand carries nothing.
+func _test_the_barrier_post_round_trips(t) -> void:
+	var def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.HEAT_HUNTS_LEVEL)
+	var first := _instance(t, def, Vector2.ZERO)
+	t.check(first.save_behaviours().get(&"EventBarrierPost", {}).is_empty(),
+			"both guards at their posts, there is nothing to carry")
+	first.player_at = Vector2(0.0, 120.0)
+	first.barrier_post.leave_the_body()
+	var side := first.chaser_side()
+	first.barrier_post.stand_as_the_barrier()
+	t.check(side != 0 and first.is_a_spent_guard(), "his guard set off from his post and is spent")
+	var second := _round_trip(t, first, "barrier post", &"EventBarrierPost")
+	t.check(second.is_a_spent_guard() and second.chaser_side() == side
+			and second.phase == EventInstance.Phase.SPENT and not second.has_its_far_guard_posted(),
+			"it comes back as only the barrier, his post empty and the far guard gone")
+	first.free()
+	second.free()
+
+## A row that drives is composed of a car's driving (`EventCarDriving`), made standing; nothing else
+## is.
+func _test_a_car_is_composed_of_its_vehicle(t) -> void:
+	var patrol := _instance(t, EventCatalogue.by_id("police_patrol"))
+	var robber := _instance(t, EventCatalogue.by_id("alley_robbery"))
+	t.check(patrol.car != null and patrol.is_standing() and robber.car == null,
+			"a patrol car drives, made standing; a robber does not drive")
+	patrol.free()
+	robber.free()

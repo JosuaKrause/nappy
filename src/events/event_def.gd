@@ -125,6 +125,10 @@ enum PathMode {
 	NONE,
 	CROSS_STREET,  ## Straight across the traffic, like a cat bolting.
 	ALONG_STREET,  ## Down the corridor it starts on.
+	## **Across the alley it landed in**, built by the instance itself from the alley it stands in
+	## (`EventInstance._alley_crossing_path()`), cut to the ground it fits on: `alley_mouse`, placed
+	## on the map with no route of its own (`EventScheduler._build_placement`'s default case).
+	ACROSS_ITS_ALLEY,
 }
 
 ## Where an instance comes from.
@@ -881,7 +885,7 @@ func lunge_is_inside_the_catch() -> bool:
 
 ## Which side or sides of a `Look.ROADBLOCK` band `_draw_roadblock()` posts a standing guard on —
 ## `-1`/`+1` in `_guard_post_offset()`'s own reading of `side`, the same sign `_guard_side_toward()`
-## and `_chaser_side` use. `[-1, 1]` (both) is every row's own default: the catalogue `roadblock`
+## and `EventBarrierPost.chaser_side()` use. `[-1, 1]` (both) is every row's own default: the catalogue `roadblock`
 ## and every wall body inherit it unless something here overrides it.
 ##
 ## **Two overrides today, both the region wall's own.** *(2026-09-25, PLAYTEST-135, statement 8:
@@ -918,6 +922,10 @@ enum Role {
 }
 
 @export var role := Role.NONE
+
+## **It takes a bystander first**, or null for a row that takes nobody — see `AbductionSpec`:
+## `abduction`, the unmarked van.
+@export var abduction: AbductionSpec = null
 
 ## The name its charges are counted under when it is not its own id (`EventInstance.
 ## charger_name()`): `task_guard` for the task guard sent from out of her view, whose charges are

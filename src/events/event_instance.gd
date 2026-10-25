@@ -1083,6 +1083,9 @@ var route: EventRouteWalk
 ## A car's driving: its proposed frame, its standing for her, its give-way and its strike
 ## (`EventCarDriving`). Null for anything that does not drive.
 var car: EventCarDriving
+## A barrier its guards stand at and walk out of (`EventBarrierPost`): the roadblock's. Null for
+## anything else.
+var barrier_post: EventBarrierPost
 ## A vehicle that stops for her and lets men out (`EventDef.investigates`).
 var investigation: EventInvestigation
 ## Coming after her: the notice, the stand-off and lunge, the charge, the give-up
@@ -1517,11 +1520,9 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 		_notice.start(0.0)
 		phase = Phase.WARNING
 		_settle_the_notice()
-	if definition.look == EventDef.Look.MOUSE:
-		# `alley_mouse` is `MAP`-placed rather than director-sited, so it arrives here with no
-		# route at all (`EventScheduler._build_placement`'s default case) — this is the one place
-		# its own dash gets built, from the alley it actually landed in rather than a flat offset,
-		# and cut to the ground the mouse fits on.
+	if definition.path_mode == EventDef.PathMode.ACROSS_ITS_ALLEY:
+		# Placed on the map with no route at all, so its own dash is built here, from the alley it
+		# actually landed in rather than a flat offset, and cut to the ground it fits on.
 		path = _navigator.trim(_alley_crossing_path(_map, position), _mover)
 
 ## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
@@ -1678,19 +1679,6 @@ func _update_scenery() -> void:
 		scenery.visible = shown
 		scenery.set_frame(frame_b)
 
-## Where this instance's body was left standing when its pursuer walked out of it, in world space,
-## or `Vector2.INF` while the two are still the same place. See `PursuitSpec.leaves_its_body`.
-var _body_left_at := Vector2.INF
-
-## **Two guards, one on each side of the band** *(2026-09-25: "have one guard on each side?")*,
-## and which of them set off: `0` while both hold their posts, then the side of the one on her side
-## — the only one who gives chase, "since the other one will be blocked" by his own barrier. This
-## node is the chaser from then on; the other stays drawn standing at his post, beside the band
-## left at `body_position()` until his partner starts to walk away, when he leaves too
-## (`_send_the_far_guard_off()`). See
-## `_draw_roadblock()`.
-var _chaser_side := 0
-
 ## `+1` or `-1`: which side of a band laid along `vertical`'s axis the offset `toward` falls on,
 ## across it. Level with the band's own line counts as `+1`.
 static func _guard_side_toward(vertical: bool, toward: Vector2) -> int:
@@ -1723,39 +1711,15 @@ static func _guard_post_heading(vertical: bool, side: int) -> Vector2:
 	var outward := Vector2.RIGHT if vertical else Vector2.DOWN
 	return outward * (-1.0 if side < 0 else 1.0)
 
-## Whether the barrier has been left behind — read by `_draw_roadblock()` to know whether to draw
-## the band under its own feet or back at the post, and by `tests/test_heat.gd`.
+## Whether its barrier has been left behind by the guard who set off (`EventBarrierPost`).
 func has_left_its_body_behind() -> bool:
-	return _body_left_at != Vector2.INF
+	return barrier_post != null and barrier_post.has_left_its_body()
 
-## Where that body stands, which is where the street is still shut. `global_position` while nothing
-## has been left behind, so a caller never has to ask which case it is holding.
+## Where its body stands, which is where the street is still shut: `global_position`, or where a
+## barrier's guard left it (`EventBarrierPost.body_position()`), so a caller never has to ask which
+## case it is holding.
 func body_position() -> Vector2:
-	return global_position if _body_left_at == Vector2.INF else _body_left_at
-
-## Pins the body at the place the pursuer is walking away from. Called once, the frame he stops
-## waiting.
-##
-## **The body is a child node, so it moves with him unless something holds it.** `_keep_the_body_
-## where_it_was_left()` is that something, run every frame he moves rather than reparenting: a
-## reparent mid-`_process` would change the tree under the loop that is walking it, and the body
-## has to be freed with this instance in any case, which staying a child is exactly what
-## guarantees.
-## **Records the place only once.** The branch that calls this runs on every frame he is hunting,
-## because the body is never freed — so without the guard the barrier would be re-left wherever he
-## has walked to, which is a body that follows him at exactly the speed he moves.
-##
-## **A roadblock's chaser sets off from his own post**, the one on her side of the band: this node
-## steps from the band's centre, where his notice was measured — inside the band's own field, which
-## `Tuning.validate_pursuit()` requires — out to that post the frame he notices her, and `EventPursuit`
-## walks him from there. Beside the band he is nearer her than the centre is, which costs her none
-## of his warning: he charges on its clock (`warns_by_radius()`), not at a distance from him.
-func _leave_the_body_behind() -> void:
-	if _body_left_at == Vector2.INF:
-		_body_left_at = global_position
-		if def.look == EventDef.Look.ROADBLOCK:
-			_set_off_from_the_near_post()
-	_keep_the_body_where_it_was_left()
+	return barrier_post.body_position() if barrier_post else global_position
 
 ## **Whether a waiting charger would raise his warning in her view**: the whole of his warning
 ## picture (`warning_rect()`) inside the camera's view this frame (`player_view`). *(Inbox #788 in minty-lemur, the
@@ -1773,7 +1737,7 @@ func _would_stand_in_her_view() -> bool:
 ## feet: a roadblock's guard at the post on her side of the band (`warning_guard_rect()`), anyone
 ## else where he stands.
 func warning_rect() -> Rect2:
-	if def.look == EventDef.Look.ROADBLOCK:
+	if barrier_post:
 		return warning_guard_rect(_spread_vertical, body_position(), player_at)
 	var size := _warning_picture_size(def.look)
 	return Rect2(global_position - Vector2(size.x * 0.5, size.y), size)
@@ -1808,20 +1772,6 @@ static func warning_guard_rect(vertical: bool, band_at: Vector2, her: Vector2) -
 	return Rect2(feet - Vector2(_warning_guard.x * 0.5, _warning_guard.y), _warning_guard)
 
 static var _warning_guard := Vector2.ZERO
-
-func _set_off_from_the_near_post() -> void:
-	var toward := player_at - global_position if player_at != Vector2.INF else Vector2.ZERO
-	_chaser_side = _guard_side_toward(_spread_vertical, toward)
-	# Not a step: he already stands at this post, drawn there while he waits, and the instance's
-	# own origin moves from the band he guards to his feet so his chase sets off from them.
-	global_position = global_position + _guard_post_offset(_spread_vertical, _chaser_side)
-	if player_at != Vector2.INF and not player_at.is_equal_approx(global_position):
-		_heading = (player_at - global_position).normalized()
-
-func _keep_the_body_where_it_was_left() -> void:
-	if not _obstruction or _body_left_at == Vector2.INF:
-		return
-	_obstruction.global_position = _body_left_at
 
 ## Some events are physically in the way. The body is a child so it travels with a mobile
 ## event and disappears with the instance.
@@ -2042,7 +1992,8 @@ func _tick(delta: float) -> void:
 	_age += delta
 	_hold_the_notice_clock(delta)
 	_settle_the_notice()
-	_walk_the_far_guard_off(delta)
+	if barrier_post:
+		barrier_post.far.walk_off(delta)
 	# The gait phase advances by whatever this tick actually adds to `_path_travelled` below,
 	# whichever behaviour does the adding or none of them — see `_advance_gait()`, called once at
 	# every exit from this function.
@@ -2060,7 +2011,7 @@ func _tick(delta: float) -> void:
 		if has_left_its_body_behind() and not is_finished:
 			# He walks off and the barrier does not go with him: its body stays where it was built
 			# through the departure as through the chase (its picture is its own node).
-			_keep_the_body_where_it_was_left()
+			barrier_post.keep_the_body()
 		_redraw_if_the_picture_changed()
 		return
 
@@ -2094,8 +2045,8 @@ func _tick(delta: float) -> void:
 		# a road is not the bulk of the man who was standing at it, so he walks out of it and it
 		# stays where it was built — the street he abandoned stays shut. Nothing is pinned, because
 		# nothing follows her.
-		if def.pursuit.leaves_its_body:
-			_leave_the_body_behind()
+		if barrier_post:
+			barrier_post.leave_the_body()
 		else:
 			_obstruction.queue_free()
 			_obstruction = null
@@ -2110,7 +2061,7 @@ func _tick(delta: float) -> void:
 		# The body is a child of a node that is walking away, so it is re-pinned on every frame he
 		# moves. The band's picture is its own node (`RoadblockBand`), which stands at the body and
 		# needs no redraw for it. A spent guard moves nothing, so there is nothing to re-pin.
-		_keep_the_body_where_it_was_left()
+		barrier_post.keep_the_body()
 	_move_the_band()
 	_take_the_layer_it_warns_on()
 	_redraw_if_the_picture_changed()
@@ -2707,7 +2658,7 @@ static var _NO_BIRDS: Array[EventFlock.Bird] = []
 ## True once it has stopped being an event and is only getting out of shot (`Phase.LEAVING`). It
 ## emits nothing, it cannot end the day, and it carries no cue: whatever it was, it is over. **The
 ## one exception is a guard walking away from his barrier** (`PursuitSpec.leaves_its_body`): the walk
-## ends with the instance still there as the barrier (`_stand_as_the_barrier()`, `Phase.SPENT`). The
+## ends with the instance still there as the barrier (`EventBarrierPost.stand_as_the_barrier()`, `Phase.SPENT`). The
 ## barrier costs nothing while he goes, as a roadblock's band never costs anything
 ## (`EventCatalogue._roadblock()`'s `intensity` 0).
 var is_leaving: bool:
@@ -2801,7 +2752,7 @@ func way_left() -> PackedVector2Array:
 ## True once the guard who set off from a barrier is gone for good, and this instance is only the
 ## barrier: solid and silent, for as long as the roadblock would have stood
 ## had he never set off. He does not come back for her, and **the guard who stayed at the other
-## post walks off with him** (`_send_the_far_guard_off()`), so the band stands unmanned: nothing
+## post walks off with him** (`RoadblockFarGuard`), so the band stands unmanned: nothing
 ## notices or chases from this instance again. (A choice open to overturn; the alternative is that
 ## the one who chased walks back to his post and the barrier is armed again.)
 var _guard_spent: bool:
@@ -2809,65 +2760,26 @@ var _guard_spent: bool:
 		return phase == Phase.SPENT
 
 ## Whether this is a spent guard, or one on his way out from a barrier: what a stream-out carries
-## (`EventScheduler.Planned.guard_spent`) so that a barrier streamed in again comes back as only
-## the barrier (`come_back_as_the_barrier()`), never as a guard who has forgotten and chases again.
+## (`EventBarrierPost.save()`) so that a barrier streamed in again comes back as only the barrier
+## (`come_back_as_the_barrier()`), never as a guard who has forgotten and chases again.
 func is_a_spent_guard() -> bool:
-	return _guard_spent or (is_leaving and _is_a_guard_leaving_his_barrier())
+	return _guard_spent or (is_leaving and is_a_guard_leaving_his_barrier())
 
 ## True for the man who set off from a barrier (`PursuitSpec.leaves_its_body`) once he has left it
 ## behind: what `EventDeparture.speed()`, the field and the halo ask of the departure.
-func _is_a_guard_leaving_his_barrier() -> bool:
-	return def.leaves_its_body() and has_left_its_body_behind()
-
-## The tiles under a barrier's solid body where it was left (`body_position()`), as the smallest
-## rect holding them: the ground a guard walking off from it, and the far guard, never walk through.
-func _tiles_under_the_band() -> Rect2i:
-	if def.shape == null:
-		return Rect2i()
-	var tiles := def.shape.tiles_under(body_position(), _solid_axis())
-	var low := tiles[0]
-	var high := tiles[0]
-	for tile in tiles:
-		low = Vector2i(mini(low.x, tile.x), mini(low.y, tile.y))
-		high = Vector2i(maxi(high.x, tile.x), maxi(high.y, tile.y))
-	return Rect2i(low, high - low + Vector2i.ONE)
+func is_a_guard_leaving_his_barrier() -> bool:
+	return barrier_post != null and barrier_post.is_walking_off()
 
 ## Which side's guard set off, the other half of what a stream-out carries; `0` while both stand.
 func chaser_side() -> int:
-	return _chaser_side
+	return barrier_post.chaser_side() if barrier_post else 0
 
-## **The barrier outlives its guard.** *(Playtest: "the guarded barriers disappear after shaking off
-## the pursuer. that doesn't make sense.")* A chase that ends — she shook him off, or his time ran
-## out — sends the man away (`_be_done()`), and once he is out of the picture the instance goes
-## back to being what it was before he set off: waiting, with its body and its picture where they
-## were built and the post he left empty. Nothing appears and nothing disappears.
-func _stand_as_the_barrier() -> void:
-	transition(Phase.SPENT)
-	departure.reset()
-	_notice.stop()
-	global_position = _body_left_at
-	_keep_the_body_where_it_was_left()
-	_move_the_band()
-
-## A fresh instance of a plan whose guard was already spent when it streamed out: only the barrier,
-## at the place the plan stands, waiting and solid, with the post `side` left empty. Called by
-## `EventManager._stream_in()` after `resume()`. Nothing is reported again.
+## A barrier streamed in after its guard was spent: only the barrier, the post `side` left empty
+## (`EventBarrierPost.come_back_as_the_barrier()`, which a stream-in's restore runs). Nothing for a
+## row with no barrier post.
 func come_back_as_the_barrier(side: int) -> void:
-	transition(Phase.SPENT)
-	# The walk off he was on when it streamed out is over with him, as `_stand_as_the_barrier()`'s.
-	departure.reset()
-	_chaser_side = side
-	# It comes back unmanned: the far guard left with his partner.
-	_far_guard_gone = true
-	_body_left_at = global_position
-	_notice.stop()
-	# Its charge, and the warning before it, were counted before it streamed out and are over:
-	# nothing about them is counted again, its end at the day's end included.
-	_charge.began = true
-	_charge.warned = true
-	_charge.ended = true
-	_keep_the_body_where_it_was_left()
-	_move_the_band()
+	if barrier_post:
+		barrier_post.come_back_as_the_barrier(side)
 
 func _has_expired() -> bool:
 	if is_waiting():
@@ -2987,13 +2899,8 @@ func _stop_warning() -> void:
 	transition(Phase.WAITING)
 	if pursuit:
 		pursuit.lunge_held = false
-	if def.leaves_its_body() and has_left_its_body_behind():
-		global_position = _body_left_at
-		_body_left_at = Vector2.INF
-		_chaser_side = 0
-		if _obstruction:
-			_obstruction.position = Vector2.ZERO
-		_move_the_band(true)
+	if barrier_post:
+		barrier_post.back_at_the_band()
 	_invalidate_contribution_cache()
 
 ## **Holds the notice clock for this tick** (`_notice.hold()`), run straight after `age`
@@ -3901,7 +3808,7 @@ func _victim_gait_stepping() -> bool:
 	if not is_taking_a_victim():
 		return false
 	var elapsed := abduction.walked_for()
-	var speed := EventAbduction.VICTIM_STANDING_OFFSET / EventAbduction.VICTIM_TAKEN_OVER
+	var speed := def.abduction.standing_offset / def.abduction.taken_over
 	return sin(elapsed * speed * GAIT_RATE * 2.0) > 0.0
 
 ## A deterministic 0..1 from this instance's own siting position, an index and a salt — the same
@@ -4009,7 +3916,7 @@ func set_halo_strength(strength: float, colour: Color) -> void:
 	# never holds two rims at once** (`ExcitementHalo` counts one block per instance against
 	# `EntityHalo.RIM_BUDGET`): the man's is given back on the spot as the band's is built, and the
 	# band's on the spot as the instance's own is wanted again once the barrier stands alone.
-	if is_leaving and _is_a_guard_leaving_his_barrier() and _band != null and not is_finished:
+	if is_leaving and is_a_guard_leaving_his_barrier() and _band != null and not is_finished:
 		if _halo:
 			EntityHalo.release(_halo)
 			_halo = null
@@ -4957,7 +4864,7 @@ func _robber_waiting_heading() -> Vector2:
 ##   `EventDef.guard_sides`, M200 ("a region wall has a guard on each sidewalk").
 ## - **Once the one on her side sets off** — the only one who does, "since the other one will be
 ##   blocked" — this node *is* him: it steps out to his post and `EventPursuit` walks it at her
-##   (`_leave_the_body_behind()`). The barrier he left is drawn back at `body_position()`, where
+##   (`EventBarrierPost.leave_the_body()`). The barrier he left is drawn back at `body_position()`, where
 ##   its collision body is pinned (`PursuitSpec.leaves_its_body`), and the other guard still stands
 ##   at his post beside it. `guard_alert_*`, hand raised, while he stands at that post for his
 ##   notice (`chaser_pictures()`), and `guard_lunging_*` once he is actually giving chase —
@@ -4985,7 +4892,7 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	# the instance stands on the band, only the man once he has set off (his halo would otherwise
 	# paint over the band wherever he stands south of it). A departing guard's band has a rim of its
 	# own, `_band_halo`.
-	if _chaser_side == 0 or _guard_spent or _band == null:
+	if chaser_side() == 0 or _guard_spent or _band == null:
 		_draw_the_band(canvas, _roadblock_band_at())
 	_draw_the_chaser(canvas)
 
@@ -4993,15 +4900,15 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 ## own node only the guards, its segments being its slices (`_draw_spread()`).
 func _draw_the_band(canvas: CanvasItem, band_at: Vector2) -> void:
 	_draw_the_spread(canvas, band_at)
-	if _far_guard_has_left():
+	if barrier_post == null or barrier_post.far.has_left():
 		return
 	for side: int in def.guard_sides:
-		if side != _chaser_side:
+		if side != chaser_side():
 			_draw_posted_guard(canvas, band_at, side)
 
 ## The man who set off, drawn on this node, which walks with him.
 func _draw_the_chaser(canvas: CanvasItem) -> void:
-	if _chaser_side == 0 or _guard_spent:
+	if chaser_side() == 0 or _guard_spent:
 		return
 	# His own small shadow — not the band's — so `_draw_eight_view()` below is asked not to draw
 	# one of its own; see that function's own doc comment.
@@ -5039,29 +4946,6 @@ var _band: RoadblockBand
 ## too"; then, asked whether that holds on a day as well: "Days too")* Every roadblock sends him,
 ## on a day as in the escape.
 ##
-## **His partner's departure, from his own post.** He sets off the frame his partner starts walking
-## away (`_be_done()`), at the pace his partner leaves at (`PursuitSpec.speed`,
-## `EventDeparture.speed()`'s for a guard leaving his barrier), standing as he walks, over walkable
-## ground by the way his partner walks (`EventDeparture.way_out_from()`, planned again from where he is each
-## time it runs out while she could still be watching; away from her by `Navigator.step()` only
-## where it finds none), and he is gone once she could not be watching: past `Tuning.OUT_OF_SIGHT` from her, or
-## after `EventDeparture.LEAVING_GIVES_UP` with no player to be out of sight of — the sight rule his partner's
-## departure keeps. He notices nothing, chases nothing and costs
-## nothing: the band is silent from the same frame. A band streamed back in after its guard was
-## spent comes back with neither (`come_back_as_the_barrier()`).
-##
-## **His own node** (`FarGuard`), in the world's entity layer like the band's, so he sorts at his
-## own feet as he walks rather than at the band's line.
-var _far_guard_at := Vector2.INF
-var _far_guard_heading := Vector2.ZERO
-var _far_guard_walked := 0.0
-var _far_guard_for := 0.0
-var _far_guard_gone := false
-## The way he walks, tile centres, each dropped as he reaches it; planned from where he stands
-## whenever it is empty.
-var _far_guard_way := PackedVector2Array()
-var _far_guard: FarGuard
-
 ## The far guard walking away, drawn standing, facing where he goes, on the stride his partner
 ## walks on. Freed when he is gone or with the instance.
 class FarGuard extends Node2D:
@@ -5072,94 +4956,14 @@ class FarGuard extends Node2D:
 			instance._draw_the_far_guard(self)
 
 ## Where the far guard's feet are while he walks away, in world space; `Vector2.INF` while he
-## stands at his post, and once he is gone.
+## stands at his post, once he is gone, and for anything with no band (`RoadblockFarGuard`).
 func far_guard_at() -> Vector2:
-	return _far_guard_at
+	return barrier_post.far.at if barrier_post else Vector2.INF
 
 ## Whether a guard still stands at the band's far post: the band's own drawing while both are
 ## posted, and after his partner has set off, until he leaves too.
 func has_its_far_guard_posted() -> bool:
-	return def.look == EventDef.Look.ROADBLOCK and not _far_guard_has_left() \
-			and def.guard_sides.any(func(side: int) -> bool: return side != _chaser_side)
-
-func _far_guard_has_left() -> bool:
-	return _far_guard_at != Vector2.INF or _far_guard_gone
-
-## Sends the far guard off from his post, the frame his partner starts to walk away. Nothing for a
-## band with no far post.
-func _send_the_far_guard_off() -> void:
-	if def.look != EventDef.Look.ROADBLOCK or _far_guard_has_left():
-		return
-	var far := 0
-	for side: int in def.guard_sides:
-		if side != _chaser_side:
-			far = side
-			break
-	if far == 0:
-		_far_guard_gone = true
-		return
-	_far_guard_at = body_position() + _guard_post_offset(_spread_vertical, far)
-	_far_guard_heading = _guard_post_heading(_spread_vertical, far)
-	if player_at != Vector2.INF and not player_at.is_equal_approx(_far_guard_at):
-		_far_guard_heading = (_far_guard_at - player_at).normalized()
-	_far_guard_walked = 0.0
-	_far_guard_for = 0.0
-	_far_guard_way = PackedVector2Array()
-	_far_guard = FarGuard.new()
-	_far_guard.instance = self
-	_far_guard.name = "FarGuard"
-	_far_guard.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	if is_inside_tree() and get_parent() != null:
-		_add_beside_it(_far_guard)
-	_move_the_far_guard()
-
-## One frame of the far guard's walk away, and his end once she could not be watching.
-func _walk_the_far_guard_off(delta: float) -> void:
-	if _far_guard_at == Vector2.INF:
-		return
-	var step := def.chase_speed() * delta
-	var left := step
-	if player_at != Vector2.INF:
-		if _far_guard_way.is_empty():
-			_far_guard_way = departure.way_out_from(_far_guard_at)
-		var walked := _navigator.walk(_far_guard_at, _far_guard_way, left, _mover)
-		if walked.heading != Vector2.ZERO:
-			_far_guard_heading = walked.heading
-		_far_guard_at = walked.at
-		_far_guard_way = PackedVector2Array() if walked.stopped else walked.points
-		left = walked.left
-	if left > 0.0:
-		var away := _far_guard_heading
-		if player_at != Vector2.INF and not player_at.is_equal_approx(_far_guard_at):
-			away = (_far_guard_at - player_at).normalized()
-		var moved := _navigator.step(_far_guard_at, away * left, _mover)
-		if departure.avoids().has_point(_map.world_to_tile(_far_guard_at + moved)):
-			moved = Vector2.ZERO
-		if not moved.is_zero_approx():
-			_far_guard_heading = moved.normalized()
-			_far_guard_at += moved
-	_far_guard_walked += step
-	_far_guard_for += delta
-	var gone := player_at != Vector2.INF \
-			and _far_guard_at.distance_to(player_at) > Tuning.OUT_OF_SIGHT
-	if gone or (player_at == Vector2.INF and _far_guard_for >= EventDeparture.LEAVING_GIVES_UP):
-		_far_guard_at = Vector2.INF
-		_far_guard_gone = true
-		_release_the_far_guard()
-		return
-	_move_the_far_guard()
-
-func _move_the_far_guard() -> void:
-	if _far_guard == null or not _far_guard.is_inside_tree():
-		return
-	_far_guard.global_position = _far_guard_at
-	_far_guard.visible = not (skip_draw or is_finished or is_suppressed_by_its_own_hold())
-	_far_guard.queue_redraw()
-
-func _release_the_far_guard() -> void:
-	if _far_guard != null and is_instance_valid(_far_guard):
-		_far_guard.queue_free()
-	_far_guard = null
+	return barrier_post != null and barrier_post.has_its_far_guard_posted()
 
 ## The far guard as he walks, at his node's origin: his own small shadow on the ground and his
 ## standing picture lifted by his own stride, the bob his partner's departure rides on
@@ -5167,8 +4971,9 @@ func _release_the_far_guard() -> void:
 func _draw_the_far_guard(canvas: CanvasItem) -> void:
 	_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
 	var kept := _view_sector
-	var bob := -absf(sin(_far_guard_walked * BOB_PER_PX)) * BOB_HEIGHT
-	_draw_eight_view(GUARD_STANDING_BY_VIEW, _far_guard_heading, canvas, false, {}, false,
+	var far := barrier_post.far
+	var bob := -absf(sin(far.walked * BOB_PER_PX)) * BOB_HEIGHT
+	_draw_eight_view(GUARD_STANDING_BY_VIEW, far.heading, canvas, false, {}, false,
 			Vector2(0.0, bob))
 	_view_sector = kept
 
@@ -5216,7 +5021,8 @@ func _exit_tree() -> void:
 	if _band != null and is_instance_valid(_band):
 		_band.queue_free()
 	_band = null
-	_release_the_far_guard()
+	if barrier_post:
+		barrier_post.far.release()
 	_release_the_slices()
 
 ## Where the band is drawn in this node's local space when it is drawn on this node's own canvas (the
@@ -6148,8 +5954,8 @@ func _draw_dog_walker(canvas: CanvasItem = self) -> void:
 ## anything a stale hold could get wrong.
 func _draw_abduction(canvas: CanvasItem = self) -> void:
 	if is_taking_a_victim():
-		var through := abduction.walked_for() / EventAbduction.VICTIM_TAKEN_OVER
-		var offset := EventAbduction.VICTIM_STANDING_OFFSET
+		var through := abduction.walked_for() / def.abduction.taken_over
+		var offset := def.abduction.standing_offset
 		var standing := Vector2(-offset if _heading_is_west() else offset, 0.0)
 		var at := standing.lerp(Vector2.ZERO, through)
 		_draw_shadow(canvas, at, 8.0)

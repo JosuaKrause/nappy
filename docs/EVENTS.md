@@ -32,6 +32,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `repeat_every` / `repeat_after` | Whether a planned row comes again, a fresh instance each time, on its plan's own clock (`EventManager`): `repeat_every` is seconds from one coming to the next, `repeat_after` seconds from one being done (finished, or leaving the end of its route) to the next. Both `0` for every row that comes once. A plan may carry its own period (`EventScheduler.Planned.repeat_every`), as each of the building's vents does; `masked_pursuer` waits `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` after his last run, and the explosion outside comes every `Tuning.FINALE_EXPLOSION_INTERVAL`. Only a `MAP` row has a plan to repeat on |
 | `from_outside` | Whether the row is something outside the walls of the world she is in: no wall stops its field, and the world shows it as it comes (`WorldContext.bang_outside()`; the building lights every window). The explosion outside the building alone (`EventCatalogue.explosion_outside()`) |
 | `mobile` / `speed` | Whether it moves along a path, and how fast |
+| `path_mode` | How the scheduler builds a mobile row's route: `CROSS_STREET`, `ALONG_STREET`, or `ACROSS_ITS_ALLEY`, the dash the instance builds itself from the alley it landed in (`alley_mouse`) |
 | `still_while_telegraphing` | Holds position until the telegraph is over, then goes. Default off, which is right when the telegraph *is* the approach; on when it is a posture — see the cat, below |
 | `spawn_mode` | `MAP` (sited when the day is planned) or `AHEAD_OF_PLAYER` (sited in front of her, while she walks) — see "Where an event happens" |
 | `on_her_way` | An `OnHerWay`, or null: the day budgets the row and leaves where it stands to the walk she takes, a tile of its own ground ahead of her once her heading is clear (day 3's fire, `poster_crew`). `on_her_way.at_a_front` sites it in front of a blank ground-floor cell of a building's front, facing the wall (`poster_crew`) — see "Where an event happens" |
@@ -56,6 +57,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `hard_fail` | Whether contact ends the day immediately |
 | `vehicle` | A `VehicleSpec`, or null: a **car that drives**, solid at its own `shape` in every state and lethal only in front of it while it drives its route — `police_patrol` and every copy of it, and `fire_truck`. `vehicle.field_from_its_centre` prices its field from its centre rather than its body (`fire_truck`) — see "Solid things are solid" |
 | `aftermath` | An `Aftermath`, or null: the rows this one brings after it — `scar`, left at its position for the rest of the run (a fire's `burnt_shell`); `on_finish`, spawned where it ends (a convoy's `barricade`); `on_sight`, called in the moment she first sees it (the burning building's `fire_truck`). `EventCatalogue.without_its_aftermath()` takes all three off for the escape |
+| `abduction` | An `AbductionSpec`, or null: it takes a bystander first, walked to it over `taken_over` seconds from `standing_offset` px aside (`abduction`, the unmarked van) |
 | `counts_charges_as` | The name its charges are counted under when that is not its own id: `task_guard` on day 13's task guard sent from out of her view (`EventCatalogue.task_guard_sent()`). `""` for every other row |
 | `role` | The part the row plays in a system beside the catalogue, which that system finds it by rather than by its id (`EventDef.Role`): `SCENERY` (`pigeon_flock`, exempt from the cost rule's wall and friction placement) and `MAST` (`loudspeaker`, which the masts' sites, the day's masts and the resistance's mast task ask for, `EventCatalogue.mast()`). `NONE` for every other row |
 | `redetains` | Whether a `detain_seconds` row is armed again once she is released and outside `detain_distance()`, rather than spent after one conversation. `false` for everything but the two region-door rows that inspect her, `checkpoint_hut` and `checkpoint_post` — see "Checkpoints" |
@@ -1131,7 +1133,7 @@ Four things worth keeping straight:
   exclamation mark over her head**: it waits for nobody, since he never notices her or charges
   again, and `EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard. The guard
   at the far post walks off with him, on every day as in the escape
-  (`EventInstance._send_the_far_guard_off()`; inbox #788 in minty-lemur: "Days too").
+  (`RoadblockFarGuard`; inbox #788 in minty-lemur: "Days too").
 
 **Streaming never ends a departure she could be watching.** A plan is streamed out by how far she is
 from its *route* (`Tuning.EVENT_STREAM_RADIUS` and its hysteresis), but a car that has run out of
@@ -1704,11 +1706,11 @@ standing at his. Two fields make that work and both are general rather than writ
   parked in front of his post or another band nearer her would otherwise be drawn over the man
   whose raised hand is the warning; once he charges he sorts with them again. Once he has chased, he does not come back for her, and **the guard at the
   other post walks off with him**, on every day as in the escape, so the band stands unmanned
-  (`EventInstance._send_the_far_guard_off()`; inbox #771 in minty-lemur: "He leaves too"; inbox #788 in minty-lemur: "Days
+  (`RoadblockFarGuard`; inbox #771 in minty-lemur: "He leaves too"; inbox #788 in minty-lemur: "Days
   too"). That he does not come back is a choice open to overturn; the alternative is that the one
   who chased walks back to his post and the barrier is armed again.
   A barrier streamed out and in again comes back the same way: the plan carries the spent guard
-  (`Planned.guard_spent`, `chaser_side`). *("the guarded barriers disappear after shaking off the pursuer. that doesn't make sense.")*
+  (`EventBarrierPost.save()`, the spent guard and the post he left). *("the guarded barriers disappear after shaking off the pursuer. that doesn't make sense.")*
 - **`PursuitSpec.catch_reach`**, and `lethal_reach()` is what every caller asks. The field and the
   killer are no longer the same object — the field is a street being held and is cored on the band
   at `inner_radius` 86, while what ends the day is a pair of arms at 28px, the same
@@ -2918,8 +2920,11 @@ Defs live in code, not in `.tres` files — see "Where events are defined".
    vocabulary", point 6.
 6. Run the project. `EventDef.validate()` rejects unfair geometry, a body on something sited
    ahead of the player, and a lethal radius its own body would hide, all on load.
-7. If it needs behaviour no field covers, add the **field** to `EventDef` and handle it in the
-   behaviour that owns that rule under `src/events/behaviours/`, or in a new `EventBehaviour` that
-   `EventBehaviours.compose()` adds for every row whose data asks for it, saving and restoring its
-   own state. Resist a script per event: `EventDef.pursuit`, `still_while_telegraphing` and
-   `pavement_side` are all one field each, and each one is shared or checkable.
+7. If it needs behaviour no field covers, add the **field** to `EventDef` — to the settings the
+   behaviour that reads it owns (`PursuitSpec`, `VehicleSpec`, `AbductionSpec`, ...) where there is
+   one — and handle it in the behaviour that owns that rule under `src/events/behaviours/`, or in a
+   new `EventBehaviour` that `EventBehaviours.compose()` adds for every row whose data asks for it,
+   saving and restoring its own state. **Key new behaviour on data, not on `look` or `id`**: a
+   picture is for drawing, and a part one row plays elsewhere is an `EventDef.Role`. Resist a script per event:
+   `EventDef.pursuit`, `still_while_telegraphing` and `pavement_side` are all one field each, and
+   each one is shared or checkable.

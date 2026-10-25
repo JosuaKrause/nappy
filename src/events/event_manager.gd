@@ -771,10 +771,9 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# time, not because anything coordinates them frame to frame. See `_broadcast_clock` below.
 	var resume_age := _broadcast_clock if plan.mast_id != "" else plan.age
 	plan.live.resume(resume_age, plan.travelled, plan.noticed_at)
+	# A guard spent before the stream-out comes back as only his barrier, never as a guard again
+	# (`EventBarrierPost.restore()`).
 	plan.live.restore_behaviours(plan.behaviours)
-	# A guard spent before the stream-out comes back as only his barrier, never as a guard again.
-	if plan.guard_spent:
-		plan.live.come_back_as_the_barrier(plan.chaser_side)
 	plan.live.silenced = plan.silenced
 	plan.was_live = true
 	_instances.append(plan.live)
@@ -824,9 +823,6 @@ func _stream_out(plan: EventScheduler.Planned) -> void:
 	plan.travelled = plan.live.path_travelled()
 	plan.noticed_at = plan.live.noticed_at()
 	plan.behaviours = plan.live.save_behaviours()
-	if plan.live.is_a_spent_guard():
-		plan.guard_spent = true
-		plan.chaser_side = plan.live.chaser_side()
 	# **A departure streamed out is over**, as one that finished is (`_mark_plan_spent()`): it is not
 	# rebuilt to run an ended event again. Walking back, it would be rebuilt 900px or more from her
 	# and finish out of view, so no car is seen coming back; what the spend keeps out is a person
@@ -2149,7 +2145,6 @@ func _done_for_now(plan: EventScheduler.Planned) -> void:
 	plan.age = plan.arrives_aged
 	plan.travelled = 0.0
 	plan.noticed_at = INF
-	plan.guard_spent = false
 	plan.behaviours = {}
 	if plan.repeat_after > 0.0:
 		plan.comes_in = maxf(plan.comes_in, plan.repeat_after)
