@@ -163,7 +163,7 @@ func _test_a_waiting_row_stands_outside_its_trigger(t) -> void:
 	var at := DevRig.for_spawn_target("event:pigeon_flock", _city, _resistance)
 	var dist := at.distance_to(found.position)
 	t.check(dist > found.def.notice_within(),
-			"stands outside the wait trigger, %.0fpx > pursues_within %.0fpx"
+			"stands outside the wait trigger, %.0fpx > its notice's %.0fpx"
 					% [dist, found.def.notice_within()])
 	t.check(dist > found.def.outer_radius,
 			"and outside the field itself, %.0fpx > outer_radius %.0fpx"

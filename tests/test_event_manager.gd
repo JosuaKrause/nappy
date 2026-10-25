@@ -448,7 +448,7 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> voi
 
 ## M100, small, real, and nobody's: the wiring half of "a pursuer streamed out mid-chase comes
 ## back having forgotten it." `tests/test_heat.gd` already drives `EventInstance.resume()` directly
-## and pins that its `from_noticed_at` argument restores `_noticed_at`; the gap that shipped anyway
+## and pins that its `from_noticed_at` argument restores the notice; the gap that shipped anyway
 ## was one level up — `EventScheduler.Planned` had no field to hold the notice, so
 ## `EventManager._stream_in()` always called `resume()` with the default `INF` and a
 ## `EventDef.notice` row streamed out mid-chase came back `is_waiting()`, standing where the day

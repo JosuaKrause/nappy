@@ -976,7 +976,7 @@ func _roll_interval() -> float:
 ## of it first (`EventManager._warn_down_her_heading()`, M226): its badge is up alone for its own
 ## `offscreen_notice`, pointing down the way this site lies from her, and it is then created just out
 ## of sight that way on walkable ground (`PendingWarning.along_her_heading()`), its approach still to
-## run. The lunge is still fired by **proximity** (see `EventInstance._lunged`).
+## run. The lunge is still fired by **proximity** (`EventInstance._chase()`).
 ##
 ## **This function only ever sites `charging_dog` on `Tuning.RUN_TAUGHT_DAY`.** Every day after,
 ## `EventDef.spawn_mode_on()` answers `MAP` instead of `AHEAD_OF_PLAYER` for that row, so

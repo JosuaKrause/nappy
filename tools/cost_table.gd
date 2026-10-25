@@ -109,7 +109,7 @@ func _included_rows() -> Array[EventDef]:
 ## exactly like a measured one. Dashed instead, the way `docs/EVENTS.md`'s own run-through column
 ## is already empty for every pursuer: "they follow, so there is no crossing to price."
 func _pass_excluded(def: EventDef) -> bool:
-	return def.pursues or def.pursues_within > 0.0
+	return def.pursuit != null or def.notice != null
 
 # ------------------------------------------------------------------------ asserts ---
 
@@ -168,8 +168,8 @@ func _geometry_row(def: EventDef) -> Dictionary:
 	# A pursuer's relevant speed is how fast it closes once it notices, not its cold `speed`
 	# (almost always 0 for one, since most pursuers wait rather than patrol); everything else
 	# that moves reads its own `speed`.
-	if def.pursues:
-		row["speed"] = "%.1f" % def.pursue_speed
+	if def.pursuit != null:
+		row["speed"] = "%.1f" % def.chase_speed()
 	elif def.mobile and def.speed > 0.0:
 		row["speed"] = "%.1f" % def.speed
 	else:
@@ -330,7 +330,7 @@ func _header_text() -> String:
 			"resistance heat); `core_intensity`/`core_radius` are a dash where a row has no core; " +
 			"`pulse_trough` is `intensity * 0.25`, the low point of the pulse envelope " +
 			"`current_intensity()` uses, and a dash where a row does not pulse; `speed` is a " +
-			"pursuer's `pursue_speed` (almost always faster than its own cold `speed`, which is " +
+			"pursuer's `PursuitSpec.speed` (almost always faster than its own cold `speed`, which is " +
 			"usually 0), a mobile row's own `speed`, and a dash for anything that does not move; " +
 			"`walk_through_cost()` is the field integrated along a straight line through the " +
 			"centre, less the walking decay over the same crossing.")
@@ -353,14 +353,15 @@ func _header_text() -> String:
 			"paragraphs below say otherwise. `M174Pass." +
 			"pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather " +
 			"than duplicated — `tests/test_events.gd`'s own relationship test runs the identical " +
-			"code. Dashed for a pursuer (`pursues` or `pursues_within` set: alley_mouse, " +
+			"code. Dashed for a row that pursues or waits (`EventDef.pursuit` or " +
+			"`EventDef.notice` set: alley_mouse, " +
 			"pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, " +
 			"van_guard_giving_chase, policeman_giving_chase, guardsman_giving_chase, " +
 			"masked_pursuer) — its notice " +
 			"and chase " +
 			"state is driven by where the player is, which the rig never tells it, so there is no " +
 			"pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty " +
-			"for a pursuer. The 0px column is dashed for a row with a solid, still body " +
+			"for such a row. The 0px column is dashed for a row with a solid, still body " +
 			"(`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk " +
 			"through.")
 	lines.append("")

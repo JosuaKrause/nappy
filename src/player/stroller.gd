@@ -604,8 +604,8 @@ func _reset_interpolation_if_shown() -> void:
 ## nothing else, so `CheckpointController.check_detentions()`'s `hide_for_inspection()` (called
 ## one line before `focus_camera_on()`, in a file this fence does not own) makes the camera
 ## exactly as hidden-in-tree as she is, whatever the camera's own `visible` says. A plain
-## `_camera.reset_ physics_interpolation()` here would be the identical silent no-op
-## `_reset_interpolation_if_ shown()` exists to avoid above — except there is no later call that
+## `_camera.reset_physics_interpolation()` here would be the identical silent no-op
+## `_reset_interpolation_if_shown()` exists to avoid above — except there is no later call that
 ## shows the camera again to catch it the way `show_after_inspection()` catches the body's: the
 ## world keeps being drawn through her for the whole hold, only her own body goes dark, so the
 ## reset has to land on this call or not at all.

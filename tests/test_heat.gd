@@ -32,7 +32,7 @@ func run(t) -> void:
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
 	_test_a_streamed_patrol_mid_chase(t)
 	_test_a_hot_day_places_more_patrols(t)
-	_test_every_pursues_within_row_resumes_the_notice(t)
+	_test_every_waiting_row_resumes_the_notice(t)
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -88,7 +88,7 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
 			var hot := EventCatalogue.heated(def, level)
 			var should_hunt := level >= Tuning.HEAT_HUNTS_LEVEL
 			if def.hunts_on_foot:
-				t.check(hot.investigates == should_hunt and not hot.pursuit != null
+				t.check(hot.investigates == should_hunt and hot.pursuit == null
 						and hot.hard_fail == def.hard_fail,
 						"'%s' heat %d: it lets its men out iff at or past its own threshold, never "
 						% [def.id, level] + "chasing her itself")
@@ -150,11 +150,11 @@ func _test_the_raid_hunts_past_its_own_threshold(t) -> void:
 		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
 				"heat %d: hunting moves neither population nor intensity" % level)
 		if level < Tuning.HEAT_HUNTS_LEVEL:
-			t.check(not hot.investigates and not hot.pursuit != null and not hot.hard_fail
+			t.check(not hot.investigates and hot.pursuit == null and not hot.hard_fail
 					and hot.duration == cold.duration,
 					"heat %d: below its own threshold the raid is untouched" % level)
 			continue
-		t.check(hot.investigates and hot.lets_out == 2 and not hot.pursuit != null and not hot.hard_fail,
+		t.check(hot.investigates and hot.lets_out == 2 and hot.pursuit == null and not hot.hard_fail,
 				"heat %d: at or past its threshold the raid's van lets two men out, and never "
 				% level + "chases or kills")
 
@@ -181,7 +181,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t) -> void:
 		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
 				"heat %d: hunting moves neither its population nor its intensity" % level)
 		if level < Tuning.HEAT_HUNTS_LEVEL:
-			t.check(not hot.pursuit != null and not hot.hard_fail,
+			t.check(hot.pursuit == null and not hot.hard_fail,
 					"heat %d: below its own threshold the roadblock is still just a band" % level)
 			continue
 		t.check(hot.pursuit != null and hot.hard_fail,
@@ -308,7 +308,7 @@ func _test_the_patrol_investigates_past_the_threshold(t) -> void:
 		var should_investigate := level >= Tuning.HEAT_INVESTIGATES_LEVEL
 		t.check(hot.investigates == should_investigate,
 				"heat %d: the patrol investigates iff it is at or past the threshold" % level)
-		t.check(not hot.pursuit != null, "heat %d: and the car itself never pursues her" % level)
+		t.check(hot.pursuit == null, "heat %d: and the car itself never pursues her" % level)
 		if should_investigate:
 			for day: int in [8, 9]:
 				var officer := EventCatalogue.out_of_the_car(day)
@@ -589,16 +589,16 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t) -> void:
 	second.free()
 
 ## The other half of the same question, mid-chase rather than mid-patrol. `resume()` restores
-## `age`, the travelled distance and `_noticed_at`, so a patrol streamed out after it has noticed
-## her comes back still chasing rather than `is_waiting()` again, having forgotten why it was
-## coming. Checked against `chase_age()` as well as `is_waiting()`, so the fix is that the chase's
-## own clock picks up where it left off, not only that the flag agrees — a restored `_noticed_at`
-## that disagreed with the restored `age` would still read `not is_waiting()` while timing the
-## telegraph and the duration from the wrong moment. `alley_robbery` has had the same
-## `EventDef.notice` shape since the mechanic was built, just never in a position to be streamed out
-## mid-chase, since a stationary pursuer's field never moves far enough from where the day planted
-## it — see `_test_every_pursues_within_row_resumes_the_notice` for the same restore checked
-## against that row rather than only the patrol that surfaced the gap.
+## `age`, the travelled distance and the notice (`noticed_at()`), so a patrol streamed out after
+## it has noticed her comes back still chasing rather than `is_waiting()` again, having
+## forgotten why it was coming. Checked against `chase_age()` as well as `is_waiting()`, so the
+## fix is that the chase's own clock picks up where it left off, not only that the flag agrees —
+## a restored notice that disagreed with the restored `age` would still read `not is_waiting()`
+## while timing the telegraph and the duration from the wrong moment. `alley_robbery` has had
+## the same `EventDef.notice` shape since the mechanic was built, just never in a position to be
+## streamed out mid-chase, since a stationary pursuer's field never moves far enough from where
+## the day planted it — see `_test_every_waiting_row_resumes_the_notice` for the same restore
+## checked against that row rather than only the patrol that surfaced the gap.
 func _test_a_streamed_patrol_mid_chase(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
@@ -682,7 +682,7 @@ func _count_patrols(planned: Array[EventScheduler.Planned]) -> int:
 ## `resume()`'s restored notice is not particular to the heated patrol that surfaced the gap —
 ## `alley_robbery` carries the identical `EventDef.notice` shape cold, with no heat level needed to
 ## reach it, and this is the same restore checked against that row instead.
-func _test_every_pursues_within_row_resumes_the_notice(t) -> void:
+func _test_every_waiting_row_resumes_the_notice(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	t.check(def.notice_within() > 0.0, "'alley_robbery' is a waiting pursuer, cold")
 

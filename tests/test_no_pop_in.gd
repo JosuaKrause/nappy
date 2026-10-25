@@ -56,11 +56,11 @@ static func _views(her: Vector2) -> Array[VisibleView]:
 static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 		path := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
-	if path.is_empty() and row.mobile and not row.pursuit != null:
+	if path.is_empty() and row.mobile and row.pursuit == null:
 		path = PackedVector2Array([at, her + (her - at)])
 	instance.setup(row, at, path)
 	instance.came_under_a_warning = true
-	if not row.pursuit != null or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
+	if row.pursuit == null or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.resume(EventManager.age_when_warned(row), 0.0)
 	instance.player_at = her
 	instance.player_running = false

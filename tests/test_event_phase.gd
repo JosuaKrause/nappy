@@ -12,6 +12,7 @@ func run(t) -> void:
 	_test_a_row_with_no_wait_is_in_its_telegraph_then_active(t)
 	_test_a_waiting_row_notices_warns_and_waits_again(t)
 	_test_a_departure_and_a_finish_are_phases(t)
+	_test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t)
 	_test_a_held_notice_comes_back_as_far_run(t)
 	_test_a_hunting_copy_does_not_share_its_rows_pursuit(t)
 
@@ -110,6 +111,40 @@ func _test_a_departure_and_a_finish_are_phases(t) -> void:
 	t.check(instance.phase == EventInstance.Phase.DONE and instance.is_finished
 			and not instance.is_leaving, "finished, it is done, and only done")
 	instance.free()
+
+## **A telegraph is a promise about the clock, not the phase.** The day-3 lesson dog spends its
+## 4.5s telegraph closing on her; once it is 1.5s in (`Tuning.PURSUIT_MIN_NOTICE`), running for
+## `Tuning.PURSUIT_SHAKEN_OFF` shakes it off and it trots away while its telegraph is still running.
+## It goes on answering `is_telegraphing()` until its clock runs out, as everything that reads it —
+## the alert over her head, `event_activated`, its pictures — has always seen it.
+func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t) -> void:
+	var def := EventCatalogue.by_id("charging_dog")
+	var dog := EventInstance.new()
+	dog.setup(def, Vector2.ZERO)
+	var her := Vector2(400.0, 0.0)
+	var clock := 0.0
+	while not dog.is_leaving and clock < def.telegraph_time:
+		if clock >= 1.2:
+			dog.player_running = true
+			her += Vector2(Tuning.RUN_SPEED * STEP, 0.0)
+		dog.player_at = her
+		dog._process(STEP)
+		clock += STEP
+	t.check(dog.is_leaving and dog.chase_age() < def.telegraph_time,
+			"run from 1.2s, the lesson dog gives up %.1fs into its %.1fs telegraph"
+			% [dog.chase_age(), def.telegraph_time])
+	t.check(dog.is_telegraphing(), "and is still telegraphing as it leaves")
+	# She follows it at 100px, so it stays in her sight and in the world while its clock runs.
+	while dog.chase_age() < def.telegraph_time - 2.0 * STEP and not dog.is_finished:
+		dog.player_at = dog.global_position + Vector2(100.0, 0.0)
+		dog._process(STEP)
+		t.check(dog.is_telegraphing(), "every frame until its clock runs out (%.1fs)" % dog.chase_age())
+	while dog.chase_age() < def.telegraph_time + STEP and not dog.is_finished:
+		dog.player_at = dog.global_position + Vector2(100.0, 0.0)
+		dog._process(STEP)
+	t.check(not dog.is_finished and dog.is_leaving, "still in the world, leaving")
+	t.check(not dog.is_telegraphing(), "and not once its %.1fs have run" % def.telegraph_time)
+	dog.free()
 
 ## A notice that was held for a while (a held lunge, a charger behind a wall at its warning's last
 ## moment, the masked man's wait) is carried across a stream-out held time and all, so the instance

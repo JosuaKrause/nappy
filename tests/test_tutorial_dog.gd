@@ -9,7 +9,7 @@ extends RefCounted
 ## her heading or off it. See `EventScheduler._place_one()` and `EventDirector.start_day()`.
 ##
 ## Two things past the switch, both below. **The map-placed dog waits** inside its own field for
-## her rather than announcing itself the moment it streams in — `EventDef.pursues_within_on(day)`,
+## her rather than announcing itself the moment it streams in — `EventDef.notice_on(day)`,
 ## the same day-keyed switch answered a different way, and `EventScheduler._for_day()` is where a
 ## placement past it gets a copy carrying that answer. **And the day-3 shape does not retire** —
 ## *(2026-09-13, PLAYTEST-68: "we can sprinkle the day 3 charging dog in every now and then,
@@ -23,7 +23,7 @@ func run(t) -> void:
 	_test_day_3_is_still_sited_on_her_heading(t)
 	_test_day_4_is_a_map_placement(t)
 	_test_day_4_is_never_owed_to_the_director(t)
-	_test_pursues_within_switches_after_the_teaching_day(t)
+	_test_the_notice_switches_after_the_teaching_day(t)
 	_test_day_4_dog_waits_until_she_is_in_its_field(t)
 	_test_day_3_dog_still_charges_the_moment_it_streams_in(t)
 	_test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t)
@@ -143,7 +143,7 @@ func _test_day_4_is_never_owed_to_the_director(t) -> void:
 ## The def itself, the same direct question `_test_spawn_mode_switches_after_the_teaching_day` asks
 ## of `spawn_mode_on()` — `EventDef.notice_on()` is the same day-keyed switch, read for the trigger
 ## rather than the siting.
-func _test_pursues_within_switches_after_the_teaching_day(t) -> void:
+func _test_the_notice_switches_after_the_teaching_day(t) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	t.check(def != null, "charging_dog is in the catalogue")
 	if not def:
@@ -221,8 +221,8 @@ func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
 			offered += 1
 			for queued: EventDef in director._owed:
 				t.check(queued.id == "charging_dog" and queued.notice_within() <= 0.0,
-						("seed %d: the sprinkle is charging_dog itself, pursues_within untouched " +
-								"at 0.0 — day 3's own shape, not the waiting one a MAP placement " +
+						("seed %d: the sprinkle is charging_dog itself, with no notice " +
+								"— day 3's own shape, not the waiting one a MAP placement " +
 								"past the switch would carry") % seed)
 		else:
 			not_offered += 1

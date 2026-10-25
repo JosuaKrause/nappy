@@ -8,13 +8,17 @@ extends RefCounted
 ##
 ## **Handed what it works over, never fetching it**: the live instances it reads the door bodies
 ## from (the event manager's own list, shared), the map its run-log lines name tiles on, where it
-## writes them, the player it holds and lets out, and how a guard is put in the world (`_spawn`).
+## writes them, the player it holds and lets out, how a guard is put in the world (`_spawn`), and
+## the event sink it tells the observers through (`_bus`).
 ## Its own door rules, as the player gave them, are in `docs/EVENTS.md`, "Checkpoints".
 
 ## The live instances it reads the door bodies from: the event manager's own list, shared.
 var _instances: Array[EventInstance]
 ## `func(def: EventDef, at: Vector2) -> EventInstance`: puts a guard in the world.
 var _spawn: Callable
+## Where it tells the observers what a door did — a hold begun (`player_detained`), a guard's raised
+## hand (`pursuit_warned`): `EventBus` in the game, a fake in a test.
+var _bus: Node
 ## The map the run-log lines name tiles on.
 var map: WorldMap = WorldMap.open_ground()
 ## Where its account goes in the run log; silent until handed one.
@@ -22,9 +26,10 @@ var trace := RunTrace.new()
 ## The player it holds and lets out, or null for none in the world.
 var player: Stroller = null
 
-func _init(instances: Array[EventInstance], spawn: Callable) -> void:
+func _init(instances: Array[EventInstance], spawn: Callable, bus: Node) -> void:
 	_instances = instances
 	_spawn = spawn
+	_bus = bus
 
 ## She has crossed a district door: let out on its far side after the inspection
 ## (`release_finished_holds()`, `inspected` true), or walked through its line under a
@@ -66,11 +71,11 @@ var _crossing_for := 0.0
 ## warning her, `Tuning.CROSSING_WARNING` long.
 var _crossing_warning := Warning.new()
 ## **Crossings held behind the one still warning her**: `[position, facing]` of each other door's
-## line she walked across while `_crossing` was warning her, which starts no warning of its own. Each
-## is announced (`door_crossed`) the frame that warning runs out and its guard is set on her, and
-## dropped if it is called off or she walks back across that door's line first. **The rule, once: a
-## walked crossing counts only if she is still across that door's line when a guard is set on her
-## for it** (two doors meeting at a corner).
+## line she walked across while `_crossing` was warning her, which starts no warning of its own.
+## Each is announced (`door_crossed`) the frame that warning runs out and its guard is set on
+## her, and dropped if it is called off or she walks back across that door's line first. **The
+## rule, once: a walked crossing counts only if she is still across that door's line when a
+## guard is set on her for it** (two doors meeting at a corner).
 var _held_crossings: Array = []
 
 ## One `ReleaseLatch` per redetaining instance she has been let out of — `instance -> latch`. Armed
@@ -188,7 +193,7 @@ func check_detentions() -> void:
 	body.detain(nearest.def.detain_seconds)
 	# `VisitCounter`'s own "chat"/"checkpoint" — `nearest.def.id` names which. See
 	# docs/TELEMETRY.md, "The page counts visits".
-	EventBus.player_detained.emit(nearest.def.id)
+	_bus.player_detained.emit(nearest.def.id)
 	trace.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
 		nearest.def.id, RunTrace.tile(map.world_to_tile(nearest.global_position)),
 		nearest.def.detain_seconds,
@@ -315,9 +320,10 @@ func release_finished_holds(body: Stroller) -> void:
 ## Doors stand close enough together that their reaches overlap — two doors meeting at a corner —
 ## so the ground one hut lets her out onto can be inside another door body's reach: latching only
 ## the releasing body means being let out of one and taken straight into the next, which is one
-## crossing charged twice and, to the player, the door refusing to let go. **One crossing is one toll** — *"it works in both directions with
-## the same cost each time"* — so what she has just come out of is the whole door, and every part of
-## it waits until she has walked out of its own circle.
+## crossing charged twice and, to the player, the door refusing to let go. **One crossing is one
+## toll** — *"it works in both directions with the same cost each time"* — so what she has just
+## come out of is the whole door, and every part of it waits until she has walked out of its own
+## circle.
 func _latch_everything_she_was_let_out_into(at: Vector2) -> void:
 	for instance in _instances:
 		if not instance.def.redetains or instance.is_finished or instance.is_leaving:
@@ -410,13 +416,13 @@ func watch_the_door_lines(delta := 0.0) -> void:
 	if _crossing != null and _crossing_is_on(crossed):
 		_call_off_the_crossing("she went back")
 		return
-	# **A walked crossing counts once it stands** (`door_crossed`, day 9's task): when its warning has
-	# run with her still across (`_run_the_crossing_warning()`), so a crossing she takes back counts
-	# for nothing. **One made while another door's crossing is warning her is held with it**
-	# (`_held_crossings`): counted when that warning runs out and its guard comes, dropped if it is
-	# called off or she walks back across that door first. One that starts no warning of its own otherwise — a guard already after her, a
-	# door with no hut today — has no clock to wait for and counts as it happens: the guard after
-	# her is its price.
+	# **A walked crossing counts once it stands** (`door_crossed`, day 9's task): when its
+	# warning has run with her still across (`_run_the_crossing_warning()`), so a crossing she
+	# takes back counts for nothing. **One made while another door's crossing is warning her is
+	# held with it** (`_held_crossings`): counted when that warning runs out and its guard
+	# comes, dropped if it is called off or she walks back across that door first. One that
+	# starts no warning of its own otherwise — a guard already after her, a door with no hut
+	# today — has no clock to wait for and counts as it happens: the guard after her is its price.
 	if _crossing != null:
 		# Back across a door whose crossing is held: taken back, so it is dropped, not held twice.
 		var held := _held_crossing_on(crossed)
@@ -428,14 +434,15 @@ func watch_the_door_lines(delta := 0.0) -> void:
 	if not _start_the_crossing_warning(crossed, here):
 		door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 
-## **A crossing warns first, on a clock** *(inbox #788 in minty-lemur, the player: "The actual crossing will start
-## the timer and if the player goes back no charge happens but if they stay crossed the charge will
-## start. Warning starts when the player is crossing")*: the guard at the hut across the road from
-## her (or an alley door's post) raises his hand at her (`EventInstance.guard_warns_her`, drawn by
-## `warn_at_the_doors()`) from the frame she crosses. Back across the line before
-## `Tuning.CROSSING_WARNING` has run, the crossing is called off and nothing comes; still across it
-## once it has run, a guard is set on her (`_set_a_guard_on_her()`). One crossing at a time, and
-## none while a guard is already after her. Answers whether a warning started.
+## **A crossing warns first, on a clock** *(inbox #788 in minty-lemur, the player: "The actual
+## crossing will start the timer and if the player goes back no charge happens but if they stay
+## crossed the charge will start. Warning starts when the player is crossing")*: the guard at
+## the hut across the road from her (or an alley door's post) raises his hand at her
+## (`EventInstance.guard_warns_her`, drawn by `warn_at_the_doors()`) from the frame she crosses.
+## Back across the line before `Tuning.CROSSING_WARNING` has run, the crossing is called off and
+## nothing comes; still across it once it has run, a guard is set on her
+## (`_set_a_guard_on_her()`). One crossing at a time, and none while a guard is already after
+## her. Answers whether a warning started.
 func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
 	if _crossing != null or (is_instance_valid(_guard_after_her)
 			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving):
@@ -524,16 +531,16 @@ func _call_off_the_crossing(why: String) -> void:
 ## hand at her when she crossed (`_crossing_hut`, the farther of the huts on the crossed body's own
 ## line from where she crossed) — on the side of the line she has crossed to. **The man who warned
 ## is the man who comes**: in the warning's 2.0s at a walk she can cross most of the street, which
-## can make the other hut the farther one by then, so the hut is not asked for again. *(2026-09-24: "Or guards
-## that pursue her should spawn at the huts" · "One guard is enough".)* The guards drawn at the huts
-## stay at their posts; this is another man out of the door.
+## can make the other hut the farther one by then, so the hut is not asked for again.
+## *(2026-09-24: "Or guards that pursue her should spawn at the huts" · "One guard is enough".)*
+## The guards drawn at the huts stay at their posts; this is another man out of the door.
 ##
 ## **One at a time.** A second walk under the same boom while he is still after her sets nobody else
 ## on her; once he has caught her, given up or run out his chase, the next walk under sets the next
 ## one. A crossed alley post is its own door and its own guard, so he steps out of the post.
 ##
-## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): the guard at that hut raised his hand from
-## her crossing for `Tuning.CROSSING_WARNING` (`_start_the_crossing_warning()`,
+## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): the guard at that hut raised
+## his hand from her crossing for `Tuning.CROSSING_WARNING` (`_start_the_crossing_warning()`,
 ## `warn_at_the_doors()`), which was his warning, and he is set on her only once it has run with
 ## her still across. **The hut across the road, not the nearer one**: from the nearer hut's wall
 ## (about 57px from her as she crosses the near lane, 16px if she crosses beside it) his charge
@@ -589,7 +596,7 @@ func warn_at_the_doors() -> void:
 			# `VisitCounter`'s own "door-guard-warned", each time a guard raises his hand: the
 			# warning level of the checkpoint guard, who is not in the world until she goes under.
 			if warns and not instance.guard_warns_her:
-				EventBus.pursuit_warned.emit("door_guard")
+				_bus.pursuit_warned.emit("door_guard")
 			instance.guard_warns_her = warns
 
 ## *(2026-09-24, the player, answering whether a hold should end the chase: "we can try b. if she

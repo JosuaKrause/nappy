@@ -2680,7 +2680,7 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 ## from there, placed and `hard_fail` the same way) are both exempt without this line doing
 ## anything. On `RUN_TAUGHT_DAY` itself `charging_dog` is never placed at all — it is
 ## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about — which is
-## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursues` rather than
+## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursuit` rather than
 ## leaving the exemption to follow from the `WALL` classification is what makes it survive a future
 ## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
 ## say, which `_role_for` would classify ahead of the `hard_fail` check.

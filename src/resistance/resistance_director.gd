@@ -705,14 +705,14 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ## (minty-hedgehog, statement 3), and, asked where he stands in an alley too short for two-thirds
 ## and 176px from the mark both, *"Two-thirds wins"* (quiet-yak, inbox #471). In a courtyard's passage he
 ## stands at the courtyard's inner end (`_draw_guard_position_near_far_mouth()`). The roadblock's
-## guard keeps a band between `inner_radius + reach` and `pursues_within + reach` round its own
+## guard keeps a band between `inner_radius + reach` and `notice_within() + reach` round its own
 ## contact, on a spot with a clear line to it (`_roadblock_guard_spot()`). **`reach` is the
 ## contact's own**: a roadblock is touched
 ## from any side of its body, so it is guarded from the body's centre with `_body_touch_reach()`
 ## (`_begin_step()`). The band is worked out from the reach — nearer than
 ## `inner_radius + reach` a touch from the edge of the reach can land her inside his catch, and
-## past `pursues_within + reach` no touch can wake him — so a wider reach with a narrower one's band
-## is a guard standing nearer the ground she completes from than the band means.
+## past `notice_within() + reach` no touch can wake him — so a wider reach with a narrower one's
+## band is a guard standing nearer the ground she completes from than the band means.
 ##
 ## **Retires only the guard of the same kind this replaces.** `_guard` (the mark's own) and
 ## `_task_guard` (the roadblock's, at its own contact) are separate, so reading the mark, which
@@ -795,7 +795,7 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ## **Where the roadblock's guard stands**, for a roadblock whose body is at `body`, touched from
 ## within `reach` of it (`_body_touch_reach()`): a tile's centre in the band round the body that
 ## `_maybe_set_a_trap()` describes — from `inner_radius + reach`, so no touch lands her in his
-## catch, to `pursues_within + reach`, past which no touch can wake him — with **a clear line to
+## catch, to `notice_within() + reach`, past which no touch can wake him — with **a clear line to
 ## the body** (`CityMap.clear_line()`), since he notices her only along one *(leafy-puffin, inbox
 ## #648: "yes noticing needs a clear line")* and a guard behind a building from the roadblock guards
 ## nothing.
@@ -1483,11 +1483,13 @@ func _depth_of_the_mark(at: Vector2, near: Vector2, axis: Vector2) -> float:
 ## (`_through_alley_span()`): **two-thirds of the way through it**, from the edge nearer the mark at
 ## `at` (`THROUGH_THE_ALLEY`) plus the tile the mark stands in from its mouth
 ## (`_depth_of_the_mark()`), so he is inside the alley rather than at its edge, the player's own
-## reason, and as far from the mark as when it stood on the mouth. Where that point is `pursues_within + ContactPoint.REACH` (216px) or more from the mark,
-## a touch of the mark from its own end never wakes him; in an alley too short for both — every
-## one-block alley: a mark stands one tile in from its end tile (`_mark_tiles()`), 48px in, so he
-## stands about 155px from it — he still stands two-thirds in, and reading the mark may wake him: *"Two-thirds
-## wins"* (quiet-yak, inbox #471), which overturns M213's floor of 176px for those alleys.
+## reason, and as far from the mark as when it stood on the mouth. Where that point is
+## `notice_within() + ContactPoint.REACH` (216px) or more from the mark, a touch of the mark
+## from its own end never wakes him; in an alley too short for both — every one-block alley: a
+## mark stands one tile in from its end tile (`_mark_tiles()`), 48px in, so he stands about
+## 155px from it — he still stands two-thirds in, and reading the mark may wake him:
+## *"Two-thirds wins"* (quiet-yak, inbox #471), which overturns M213's floor of 176px for those
+## alleys.
 ##
 ## **Never within `min_distance` of the mark** — `inner_radius`, his catch, plus
 ## `ContactPoint.REACH`, 62px — kept as a floor that a mark at a mouth never reaches (two-thirds of

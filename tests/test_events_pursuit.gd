@@ -339,11 +339,12 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 ##
 ## **The measured number this reports rather than asserts is the window at the lunge**, and it is
 ## the open half of finding 13. She is walking *into* the thing at that instant — it is sited in
-## front of her and holds its distance by backing off — so the gap closes at `pursue_speed +
-## WALK_SPEED` and the stand-off is worth about a third of the `PURSUIT_REACTION` it was bought
-## with. A player answers during the **telegraph**, where the dog is visible and closing for two and
-## a half seconds, and that answer is cheap; the lunge is the worst case rather than the expected
-## one. Widening it means a wider stand-off, and a wider stand-off is a dog that visibly reverses.
+## front of her and holds its distance by backing off — so the gap closes at its chase speed
+## plus `WALK_SPEED` and the stand-off is worth about a third of the `PURSUIT_REACTION` it was
+## bought with. A player answers during the **telegraph**, where the dog is visible and closing
+## for two and a half seconds, and that answer is cheap; the lunge is the worst case rather than
+## the expected one. Widening it means a wider stand-off, and a wider stand-off is a dog that
+## visibly reverses.
 func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 	for def in EventCatalogue.all():
 		# Sited beside her rather than by the director — see `_test_a_pursuer_leaves_room_to_answer`.

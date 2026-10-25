@@ -164,7 +164,7 @@ func force(row: String, interval: float) -> void:
 ## `_enter_tree()`/`_exit_tree()` rather than `_ready()`, so a manager that leaves the tree and
 ## comes back keeps the count right — the same pairing every other consumer of a page uses.
 func _init() -> void:
-	checkpoints = CheckpointController.new(_instances, _spawn_unplanned)
+	checkpoints = CheckpointController.new(_instances, _spawn_unplanned, EventBus)
 	checkpoints.map = _map
 	checkpoints.trace = trace
 	checkpoints.door_crossed.connect(func(at: Vector2, axis: Vector2, inspected: bool) -> void:

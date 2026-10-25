@@ -1047,11 +1047,11 @@ func _test_a_day_boundary_mid_hold_resets_interpolation_after_showing_her_again(
 ## a no-op too, the same as the body's ... worth either a quick visual check or a note for why it
 ## doesn't apply".)* Checked concretely rather than argued:
 ## `CheckpointController.check_detentions()` calls `hide_for_inspection()` then
-## `focus_camera_on()`, in that order, and a plain `Camera2D. reset_physics_interpolation()` at
+## `focus_camera_on()`, in that order, and a plain `Camera2D.reset_physics_interpolation()` at
 ## that point *is* a no-op — `is_visible_in_tree()` walks the real parent chain regardless of
-## `Camera2D.top_level`. `Stroller._force_reset_camera_ interpolation()` is the fix, entirely
+## `Camera2D.top_level`. `Stroller._force_reset_camera_interpolation()` is the fix, entirely
 ## inside this file: it toggles `visible` true for the one synchronous call the reset needs and
-## back, since `EventInstance`'s own call order is not this file's to change.
+## back, since the controller's own call order is not this file's to change.
 ##
 ## `tests/camera_interpolation_spy.gd` is the same hook as the body's, swapped onto the real
 ## `Camera2D` child instead.
@@ -2070,7 +2070,8 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 ## raised boom in the near lane, so the guard at the hut across the road raises his hand; through
 ## the warning she walks on across the street to the far lane, still past the line, which makes the
 ## other hut the farther one by then. Once the warning has run, the `door_guard` steps out of the
-## hut whose guard warned her (`EventManager._crossing_hut`), not out of the one now farther away.
+## hut whose guard warned her (`CheckpointController._crossing_hut`), not out of the one now
+## farther away.
 func _test_the_guard_who_warned_is_the_guard_who_comes(t) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
@@ -2260,8 +2261,8 @@ func _test_a_hold_at_the_guards_own_hut_ends_it_too(t) -> void:
 
 ## **The roadblock's hunting guard is never `_guard_after_her`, so a hold never reaches it** — it
 ## keeps chasing through a hut's hold exactly as it does today. (The escape's `masked_pursuer`
-## follows a fixed path rather than `EventInstance._chase()` and never carries `def.pursues`, so it
-## has no give-up state to reach in the first place.)
+## follows a fixed path rather than `EventInstance._chase()` and never carries a `def.pursuit`,
+## so it has no give-up state to reach in the first place.)
 func _test_a_hold_does_not_end_the_roadblock_guard(t) -> void:
 	var rig := _guard_after_her_rig(t)
 	var manager: EventManager = rig["manager"]

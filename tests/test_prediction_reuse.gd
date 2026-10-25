@@ -85,7 +85,10 @@ func _test_catalogue_and_mutations(t) -> void:
 		_event_parity(t, source, at, definition.id + " source movement")
 		source._heading = Vector2.DOWN
 		_event_parity(t, source, at, definition.id + " source heading")
-		source.transition(EventInstance.Phase.WARNING)
+		if source.def.notice:
+			source._notice_her()
+		else:
+			source.transition(EventInstance.Phase.WARNING)
 		_event_parity(t, source, at, definition.id + " noticed")
 		source.transition(EventInstance.Phase.ACTIVE)
 		_event_parity(t, source, at, definition.id + " lunged")

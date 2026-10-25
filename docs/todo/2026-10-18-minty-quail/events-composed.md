@@ -1,19 +1,20 @@
 # Events composed from behaviours on an explicit phase machine
 
-`EventInstance` (`src/events/event_instance.gd`) still holds, in one class, the sprite tables, car
+`EventInstance` (`src/events/event_instance.gd`) holds, in one class, the sprite tables, car
 driving and give-way, the chat and checkpoint hold, pursuit, investigation, pathing, the abduction,
 flocking, departure, the excitement field and about 2,300 lines of drawing, including the band and
 far guard as nested nodes. `_process` runs exactly one movement branch chosen by flag combinations,
-so a row needing two behaviours silently gets the first. What is already built toward this item — the
-stored `Phase` with one `transition()`, the pursuit settings in `PursuitSpec`, `NoticeSpec` and
-`DaySwitch`, one `Warning` clock for an event's notice, a door crossing and the badge, and the doors
-in `CheckpointController` — is minty-quail-10's.
+so a row needing two behaviours silently gets the first. This item's first step has its record in
+minty-quail-10.
 
-**The pursuit rules are still instance methods.** The phase is stored, but its transitions are
-made from inside `_chase()`, `_check_for_notice()`, `_warn_on_its_line()`, `_investigate()` and
-the flock's flush, and the four ways a charge starts (a warning's clock running out, a lunge at the
-stand-off, the masked man's run distance, a start at once) are still branches there rather than
-parts a row is composed of.
+**The pursuit rules are instance methods.** The phase's transitions are made from inside
+`_chase()`, `_check_for_notice()`, `_warn_on_its_line()`, `_investigate()` and the flock's flush, and
+the four ways a charge starts (a warning's clock running out, a lunge at the stand-off, the masked
+man's run distance, a start at once) are branches there rather than parts a row is composed of. The
+masked man's warning on his line is a counter of its own (`_warned_on_its_line_for` against
+`Tuning.WARNING_ALONE_MAX`) rather than a `Warning`, and `Warning`'s called-off and run-out half
+(`cancel_if`, `on_expired`, `tick()`) has no caller in the game yet: every warning polls `has_run()`.
+The behaviours composed per row are what call it.
 
 **Single-row flags:** `pastes_a_front`, `solid_once_it_starts`, `field_from_its_centre`,
 `stop_excitement`, `spawns_on_sight`, `lifts_for_traffic`, `body_stays_behind`,
@@ -27,10 +28,13 @@ ids decide it for `"charging_dog"` with `RUN_TAUGHT_DAY` in `EventManager._creat
 `by_id("alley_robbery")` eight times, so the task guard *is* the robber row and moving him throws
 away his state. **Two clocks:** instances, `ResistanceDirector` and `DayController` tick in
 `_process`, while `EventManager` checks catches, hard fails and detentions in `_physics_process`,
-which already caused a flicker (the chat's comment in `EventInstance._process()`). **Re-entrant
+so a door's hold ending on a drawn frame would show her at the place she went in until the next
+physics tick, which is why its release has to show her on the physics frame that moves her. **Re-entrant
 `_process`:** `_drive` and `_timed` re-run the whole frame and roll it back, which does not roll back
 any emit or spawn. **Upward coupling:** the manager fetches the player (`EventManager._find_player()`
-from the `player` group), the instance fetches the `ResistanceDirector` from a draw path, uses the
+from the `player` group), `CheckpointController` drives her and the camera directly
+(`hide_for_inspection`, `focus_camera_on`, `teleport_to`, `show_after_inspection`,
+`release_camera_focus`), the instance fetches the `ResistanceDirector` from a draw path, uses the
 red arrow's `ArrowField` as its pathfinder, and copies crowd traffic's give-way
 (`_room_to_its_line`). **Streaming** carries hand-picked fields (`Planned`: age, travelled,
 noticed_at, guard_spent, chaser_side; `resume()` restores the age, the distance and the notice).
@@ -58,7 +62,7 @@ drive, flock, let out, hold, leave) composed per catalogue row over the stored p
 restoring its own state for streaming; grouped sub-resources replace the remaining single-row flags;
 looks only draw, in a separate view; the day-3 lesson dog marked by the director that sends it and
 the task guard moved with his saved state, both keeping their row ids so GoatCounter's names and the
-loss causes do not change (minty-quail-10), and the mast a role; simulation in physics only,
+loss causes do not change (*proposed by the orchestrating session, not asked for, open to the
+player's overturn*), and the mast a role; simulation in physics only,
 `_process` draws; movement proposed, validated, then committed; intents emitted for the player and
-camera instead of calling them. `EventManager` splits into streaming, spawning, the checkpoint
-controller and warnings.
+camera instead of calling them. `EventManager` splits into streaming, spawning and warnings.

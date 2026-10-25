@@ -877,11 +877,11 @@ func _latched_door_bodies() -> Dictionary:
 ## at a waypoint — and nearer the boom than any other door body. Always blocked, in every plan
 ## (`_blocked_for_phase()`), because **the rig never goes through the boom**, raised or
 ## lowered *(2026-09-24, the player: "The bot shouldn't route through the boom either way.")*: a
-## raised boom is ground she may walk under, and the walk sets a guard on her (`EventManager.
-## _watch_the_door_lines()`), so a door is crossed at a hut or an alley post. Stated over the bodies
-## rather than over a trigger, since the boom inspects nobody. A hut stands on each sidewalk a lane's
-## width from the road, so both of its crossing lanes are nearer the hut than the boom and stay
-## open. Worked out once a day, since doors do not move.
+## raised boom is ground she may walk under, and the walk sets a guard on her
+## (`CheckpointController.watch_the_door_lines()`), so a door is crossed at a hut or an alley
+## post. Stated over the bodies rather than over a trigger, since the boom inspects nobody. A
+## hut stands on each sidewalk a lane's width from the road, so both of its crossing lanes are
+## nearer the hut than the boom and stay open. Worked out once a day, since doors do not move.
 func _gate_ground() -> Dictionary:
 	if _gate_ground_ready:
 		return _gate_ground_tiles

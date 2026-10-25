@@ -1097,6 +1097,10 @@ enum Phase {
 
 ## Where it is in its life — see `Phase`. Changed only by `transition()`.
 var phase := Phase.WARNING
+## Whether its telegraph or notice ended into `Phase.ACTIVE` — run out, or cut short by a lunge, a
+## flush or the masked man's run. A row that left, parked or stopped before that is still within
+## its telegraph's clock (`is_telegraphing()`).
+var _telegraph_ended := false
 
 ## Whether it is over and gone (`Phase.DONE`).
 var is_finished: bool:
@@ -1109,6 +1113,8 @@ var is_finished: bool:
 func transition(to: Phase) -> void:
 	if phase == to:
 		return
+	if phase == Phase.WARNING and to == Phase.ACTIVE:
+		_telegraph_ended = true
 	phase = to
 	_invalidate_contribution_cache()
 	if to == Phase.DONE:
@@ -2004,7 +2010,7 @@ func _drive(delta: float) -> void:
 	var at := position
 	var heading := _heading
 	var travelled := _path_travelled
-	var phase := _gait_phase
+	var gait_phase := _gait_phase
 	var was := _gap_to_her(at, heading)
 	var line := _room_to_its_line(at, heading)
 	# Never further than the end of a route it stops at (`_route_left()`): it never stands for her,
@@ -2040,7 +2046,7 @@ func _drive(delta: float) -> void:
 				and _gap_to_her(at, departing) >= minf(was, DRIVEN_CLEARANCE) - 0.001:
 			_heading = departing
 		_path_travelled = travelled
-		_gait_phase = phase
+		_gait_phase = gait_phase
 		_gait_moving = false
 		var strikes := into_her and on_its_route and not _standing and not turns_onto_her \
 				and not past_its_line and _meets_her(at, heading, player_at,
@@ -3138,7 +3144,9 @@ func _check_for_notice() -> void:
 ## `Tuning.validate_event()` checks is unchanged and still satisfied by the number; what changed is
 ## that a walk-in no longer has to wait for it.
 func _flush_the_flock_if_she_is_among_them() -> void:
-	if def.flock_size <= 0 or phase != Phase.WARNING or player_at == Vector2.INF:
+	if def.flock_size <= 0 or _telegraph_ended or player_at == Vector2.INF:
+		return
+	if is_waiting() or not is_telegraphing():
 		return
 	if global_position.distance_to(player_at) > def.flock_spread + Tuning.PLAYER_BODY_RADIUS:
 		return
@@ -4214,11 +4222,19 @@ func _finish() -> void:
 
 # ------------------------------------------------------------------ emission ---
 
-## True while the event is visible but has not yet reached full strength (`Phase.WARNING`). Its
-## notice ends when its clock has run (`_settle_the_notice()`) or, for a pursuer that comes for her
-## through its telegraph (the day-3 dog), when she walks up to its stand-off first (`_chase()`).
+## True while the event is visible but has not yet reached full strength: `Phase.WARNING`, ended
+## when its clock has run (`_settle_the_notice()`) or, for a pursuer that comes for her through its
+## telegraph (the day-3 dog), when she walks up to its stand-off first (`_chase()`). **A
+## telegraph is a promise about the encounter's clock, not its phase**: a row that leaves,
+## parks, stops or is done before that answers true until the clock runs out — the day-3 dog
+## shaken off at 2s into its 4.5s telegraph is still telegraphing as it trots away, to the mark,
+## the alert and its pictures.
 func is_telegraphing() -> bool:
-	return phase == Phase.WARNING
+	if phase == Phase.WARNING:
+		return true
+	if phase == Phase.ACTIVE or phase == Phase.WAITING or _telegraph_ended or is_waiting():
+		return false
+	return chase_age() < notice_time()
 
 ## True while a pursuer that noticed her stands for its notice in its alert pose rather than closing
 ## on her (`PursuitSpec.stands`): the dog that waited, the hunting roadblock's guard, the
@@ -4327,7 +4343,7 @@ func _stop_warning() -> void:
 ## end of its telegraph (`Phase.ACTIVE`), as a flock's flush is; its notice does not run out
 ## before then (`_hold_the_notice_clock()`).
 func _warn_on_its_line(delta: float) -> void:
-	if def.notice == null or def.notice.runs_within <= 0.0 or phase != Phase.WARNING \
+	if def.notice == null or def.notice.runs_within <= 0.0 or _telegraph_ended or is_waiting() \
 			or player_at == Vector2.INF:
 		return
 	var range_to_her := global_position.distance_to(player_at)
@@ -4364,7 +4380,7 @@ var _noticed_inside_its_charge := false
 ## within `NoticeSpec.runs_within`. A held clock is what a stream-out carries (`noticed_at()`),
 ## so it comes back exactly as far run.
 func _hold_the_notice_clock(delta: float) -> void:
-	if phase != Phase.WARNING:
+	if _telegraph_ended or is_waiting():
 		return
 	if def.notice and def.notice.runs_within > 0.0 and chase_age() - delta < def.telegraph_time:
 		_notice.hold(delta)
@@ -4382,7 +4398,7 @@ func _hold_the_notice_clock(delta: float) -> void:
 ## still running at the start of this tick: a chase already under way is never turned back into
 ## a notice.
 func _pause_a_held_notice(delta: float) -> void:
-	if not _lunge_held or phase != Phase.WARNING or player_at == Vector2.INF:
+	if not _lunge_held or _telegraph_ended or is_waiting() or player_at == Vector2.INF:
 		return
 	if chase_age() - delta >= notice_time():
 		return
@@ -4472,8 +4488,8 @@ static func _pulse_mean_multiplier(age: float, horizon: float, period: float) ->
 ## **The damping says *this has not started yet*, and for a waiting row that is a claim about the
 ## thing rather than about its clock.** A pursuer that waits has been standing there since she came
 ## round the corner — what has not started is the lunge, not the man — so its notice is the one
-## telegraph in the game that does not quieten what it is warning about. `EventDef.
-## quiet_until_noticed` is the opposite case and it is a real one: birds pecking on a pavement are
+## telegraph in the game that does not quieten what it is warning about. A quiet notice
+## (`NoticeSpec.quiet`) is the opposite case and it is a real one: birds pecking on a pavement are
 ## nearly nothing until they go up, so both their wait and their notice damp like an ordinary
 ## telegraph.
 func _notice_damping() -> float:

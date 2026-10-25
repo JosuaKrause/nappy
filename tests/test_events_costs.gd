@@ -474,7 +474,7 @@ func _test_a_pursuer_keeps_no_field_clear(t) -> void:
 	# The control: an otherwise identical lethal row that does not pursue still owes the rule off
 	# the `WALL` role — the exemption is `EventDef.pursuit`, not "the role happens not to be WALL".
 	var stationary := EventCatalogue.by_id("reversing_lorry")
-	t.check(stationary.hard_fail and not stationary.pursuit != null,
+	t.check(stationary.hard_fail and stationary.pursuit == null,
 			"reversing_lorry is lethal and does not pursue, the contrast this needs")
 	var off_wall_stationary := EventScheduler.Planned.new(stationary, Vector2.ZERO)
 	off_wall_stationary.role = GameEnums.BlockerRole.FRICTION

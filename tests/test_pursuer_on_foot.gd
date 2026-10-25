@@ -743,7 +743,7 @@ func _test_the_hunting_vans_hunt_on_foot(t) -> void:
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(cold, level)
 			var hunts := level >= Tuning.HEAT_HUNTS_LEVEL
-			t.check(not hot.pursuit != null and hot.hard_fail == cold.hard_fail,
+			t.check(hot.pursuit == null and hot.hard_fail == cold.hard_fail,
 					"'%s' heat %d: the van itself never chases her, and is as lethal as cold"
 					% [id, level])
 			t.check(hot.investigates == hunts, "'%s' heat %d: it lets men out iff it hunts"
