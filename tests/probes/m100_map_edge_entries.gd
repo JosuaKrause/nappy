@@ -1,7 +1,7 @@
 extends RefCounted
 ## Diagnoses PLAYTEST-69's re-report of "people still come out from outside the map" — a re-report
 ## of the finding M120 (`DECISIONS.md`) already answered once, by giving an ordinary walker or an
-## off-spine car no room past the true edge at all (`CrowdAgent._entry_room()` returns 0.0 for
+## off-spine car no room past the true edge at all (`LaneStrategy.entry_room()` returns 0.0 for
 ## them). `TODO.md`'s M100 entry, "People still come out from outside the map", names three
 ## candidates to tell apart: a `_recycle()` landing that puts the agent's own **centre** legally on
 ## the boundary line while its **picture** — the actual texture `_draw_body()` puts on screen —
@@ -68,10 +68,10 @@ func _diagnose_recycle(map: CityMap) -> void:
 					if agent._vertical != vertical or agent._direction != entering_direction:
 						continue
 					# A spine car exists past the true edge by design (M94, M120): on its way out
-					# by `CrowdAgent.TUNNEL_ROOM` (into the tunnel's dark) or `CrowdAgent.BRIDGE_RUN`
+					# by `CarStrategy.TUNNEL_ROOM` (into the tunnel's dark) or `CarStrategy.BRIDGE_RUN`
 					# (along the bridge deck), and on its way in by up to
-					# `CrowdAgent.TUNNEL_ENTRY_ROOM` (under the tunnel's roof) or at least
-					# `CrowdAgent.BRIDGE_ENTRY_MIN` (beyond the camera's reach on the deck). That is
+					# `CarStrategy.TUNNEL_ENTRY_ROOM` (under the tunnel's roof) or at least
+					# `CarStrategy.BRIDGE_ENTRY_MIN` (beyond the camera's reach on the deck). That is
 					# the tunnel and the bridge, not this defect, so it is left out of the tally
 					# rather than counted as "unsafe".
 					if kind == CrowdAgent.Kind.CAR and vertical and agent._corridor == map.main_road:

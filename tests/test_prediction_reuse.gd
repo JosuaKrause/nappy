@@ -160,21 +160,27 @@ func _test_crowd_mutations(t) -> void:
 		_crowd_parity(t, source, at, "crowd before player")
 		source.set_player_at(at, Vector2(92.0, 0.0))
 		_crowd_parity(t, source, at, "crowd player")
-		for field: String in ["_speed", "_direction", "_yield_left", "_turn_back_hold",
+		for field: String in ["_speed", "_direction", "_turn_back_hold",
 				"_jolt", "_jolt_for", "_jolt_intensity", "_jolt_inner", "_jolt_outer"]:
 			source.set(field, float(source.get(field)) + 1.25)
 			_crowd_parity(t, source, at, "crowd external " + field)
+		# A yield and a door hold are a walker's, kept by its strategy; a car has neither.
+		var walking := kind == CrowdAgent.Kind.WALKER
+		if walking:
+			source.strategy._yield_left += 1.25
+			_crowd_parity(t, source, at, "crowd external _yield_left")
 		source.startle(80.0, 2.0, 30.0, 170.0)
 		_crowd_parity(t, source, at, "crowd new horn/bump")
 		source.position += Vector2(33.0, 8.0)
 		_crowd_parity(t, source, at, "crowd external displacement")
 		source._vertical = not source._vertical
 		_crowd_parity(t, source, at, "crowd heading")
-		source._yield_left = 0.0
-		source._door_state = CrowdAgent.DoorState.INSPECTION
-		_crowd_parity(t, source, at, "crowd door hold")
-		source._door_state = CrowdAgent.DoorState.WALKING
-		_crowd_parity(t, source, at, "crowd door release")
+		if walking:
+			source.strategy._yield_left = 0.0
+			source.strategy._door_state = WalkerStrategy.DoorState.INSPECTION
+			_crowd_parity(t, source, at, "crowd door hold")
+			source.strategy._door_state = WalkerStrategy.DoorState.WALKING
+			_crowd_parity(t, source, at, "crowd door release")
 		var turn := CarTurn.new()
 		turn.radius = 16.0
 		turn.sweep = PI

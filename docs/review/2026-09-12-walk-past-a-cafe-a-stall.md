@@ -6,4 +6,4 @@ car simply not being there next time you look, does any street end up parked rat
 and does diverting at every body — the recommendation the player overturned on 2026-09-12 —
 blunt the tell a closure's own turn-away relies on? Record is `DECISIONS.md`, M110, every solid
 body; the tunables are `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles) and
-`CrowdAgent.BODY_TURN_CLEARANCE_TILES` (3 tiles), both open to overturn.
+`WalkerStrategy.BODY_TURN_CLEARANCE_TILES` (3 tiles), both open to overturn.

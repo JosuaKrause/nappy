@@ -116,7 +116,8 @@ func _walk(city: City, map: CityMap, watched: CrowdAgent, at: Vector2,
 		for agent in city.crowd.agents():
 			if map.is_obstructed(map.world_to_tile(agent.position)):
 				inside += 1
-		stepped_round = stepped_round or watched._body_detour_held
+		stepped_round = stepped_round or (watched.kind == CrowdAgent.Kind.WALKER
+				and watched.strategy._body_detour_held)
 		deepest = maxf(deepest, watched.position.y)
 		shallowest = minf(shallowest, watched.position.y)
 	return {"inside": inside, "stepped_round": stepped_round, "deepest": deepest,
@@ -181,7 +182,7 @@ func _test_a_walker_steps_round_a_one_lane_body(t, city: City, map: CityMap) -> 
 ## between a body and a seal.
 ##
 ## The predicate is asked directly as well as walked, for the reason the region-door test asks its
-## own directly: whether `_cannot_go_on` refuses the ground is the question, and whether a randomly
+## own directly: whether `cannot_go_on()` refuses the ground is the question, and whether a randomly
 ## placed crowd happens to visit one exact tile inside a short window is not.
 ##
 ## **The junction before the body is what the walk is measured against**, rather than a distance in
@@ -217,13 +218,13 @@ func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t, city: Cit
 	var base := corridor * CityMap.period()
 	var walker := _agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
 			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
-	t.check(walker._cannot_go_on(true, Vector2i(base + 0, body_at)),
+	t.check(walker.strategy.cannot_go_on(true, Vector2i(base + 0, body_at)),
 			"a taken footway is shut to a walker on it, the way a soft seal is")
-	t.check(not walker._cannot_go_on(true, Vector2i(base + 4, body_at)),
+	t.check(not walker.strategy.cannot_go_on(true, Vector2i(base + 4, body_at)),
 			"and the other footway is not — a body takes a pavement, never a street")
 	var car := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, 2,
 			float(run.y) * Tuning.TILE_SIZE, 1.0)
-	t.check(not car._cannot_go_on(true, Vector2i(base + 2, body_at)),
+	t.check(not car.strategy.cannot_go_on(true, Vector2i(base + 2, body_at)),
 			"and neither is the carriageway under it")
 	city.crowd._agents.erase(car)
 	car.queue_free()
@@ -289,9 +290,9 @@ func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, ci
 			float(run.y) * Tuning.TILE_SIZE, 1.0)
 	var oncoming := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, open_lane,
 			float(body_at + 8) * Tuning.TILE_SIZE, -1.0)
-	t.check(blocked._cannot_go_on(true, Vector2i(base + blocked_lane, body_at)),
+	t.check(blocked.strategy.cannot_go_on(true, Vector2i(base + blocked_lane, body_at)),
 			"a body in a car's lane is a wall to it")
-	t.check(not oncoming._cannot_go_on(true, Vector2i(base + open_lane, body_at)),
+	t.check(not oncoming.strategy.cannot_go_on(true, Vector2i(base + open_lane, body_at)),
 			"and the oncoming lane, which is a different tile, is untouched")
 
 	var at := map.tile_to_world(Vector2i(base + blocked_lane, body_at))
@@ -333,7 +334,7 @@ func _test_a_precinct_blocked_across_its_width_turns_walkers_round(t, city: City
 	var vertical: bool = got["vertical"]
 	var base: int = got["base"]
 	var gap := Vector2i(base + 2, wall + 2) if vertical else Vector2i(wall + 2, base + 2)
-	t.check(not walker._cannot_go_on(vertical, gap), "while the ground behind it is open")
+	t.check(not walker.strategy.cannot_go_on(vertical, gap), "while the ground behind it is open")
 
 ## The shape seed 67 day 3 stands in its east-west precinct and seed 24757 day 5 repeats, with the
 ## seal's lanes stood in by bodies here: three neighbouring rows, none of them full, that no lane runs
@@ -394,11 +395,11 @@ func _walk_at_a_precinct_wall(t, city: City, map: CityMap, rows: Array,
 	var last_lane: int = rows[rows.size() - 1][0]
 	var probe := Vector2i(base + last_lane, wall + rows.size() - 1) if vertical \
 			else Vector2i(wall + rows.size() - 1, base + last_lane)
-	t.check(walkers[0]._cannot_go_on(vertical, probe),
+	t.check(walkers[0].strategy.cannot_go_on(vertical, probe),
 			"a body %s is a wall to a walker on a precinct" % label)
 
 	var edge := Vector2i(base + rows[0][0], wall) if vertical else Vector2i(wall, base + rows[0][0])
-	t.check(walkers[0]._footway_is_shut(vertical, edge),
+	t.check(walkers[0].strategy._footway_is_shut(vertical, edge),
 			"and so is the first body's own edge lane, asked from the walker at the start")
 	var at := map.tile_to_world(probe)
 	var first_px := float(wall) * Tuning.TILE_SIZE - 1.5 * Tuning.TILE_SIZE
@@ -542,12 +543,12 @@ func _test_a_walker_passes_a_crash_on_its_pavement(t, city: City, map: CityMap) 
 	var walker := _agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
 			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
 	for offset: int in CrowdLanes.SIDEWALK_OFFSETS:
-		t.check(not walker._cannot_go_on(true, Vector2i(base + offset, body_at)),
+		t.check(not walker.strategy.cannot_go_on(true, Vector2i(base + offset, body_at)),
 				"the pavement beside it stays open to a walker at offset %d" % offset)
 	var driver := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor,
 			CrowdLanes.road_lane(true, 1.0), float(run.y) * Tuning.TILE_SIZE, 1.0)
 	for offset: int in CrowdLanes.ROAD_OFFSETS:
-		t.check(driver._cannot_go_on(true, Vector2i(base + offset, body_at)),
+		t.check(driver.strategy.cannot_go_on(true, Vector2i(base + offset, body_at)),
 				"and the carriageway under it is shut to a car at offset %d" % offset)
 	city.crowd._agents.erase(driver)
 	driver.queue_free()
@@ -617,7 +618,7 @@ func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t, city: City, map: CityM
 	var lane: int = CrowdLanes.road_lane(true, 1.0)
 	var driver := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane,
 			float(run.y) * Tuning.TILE_SIZE, 1.0)
-	t.check(not driver._cannot_go_on(true, Vector2i(base + lane, body_at)),
+	t.check(not driver.strategy.cannot_go_on(true, Vector2i(base + lane, body_at)),
 			"and the carriageway beside it is not shut to a car")
 	var at := map.tile_to_world(Vector2i(base + lane, body_at))
 	var walked := _walk(city, map, driver, at, 5.0)
@@ -653,7 +654,7 @@ func _test_a_row_across_the_whole_street_still_turns_a_car(t, city: City, map: C
 	var lane: int = CrowdLanes.road_lane(true, 1.0)
 	var driver := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane,
 			float(run.y) * Tuning.TILE_SIZE, 1.0)
-	t.check(driver._cannot_go_on(true, Vector2i(base + lane, body_at)),
+	t.check(driver.strategy.cannot_go_on(true, Vector2i(base + lane, body_at)),
 			"and it is a wall to a car on the lane under it")
 	var at := map.tile_to_world(Vector2i(base + lane, body_at))
 	var walked := _walk(city, map, driver, at, 10.0)

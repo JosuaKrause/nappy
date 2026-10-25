@@ -27,8 +27,8 @@ choosing an arm of a junction has to look before it commits:
   recycling is what happens to every car that leaves the box, and they all aim at the same entry
   band. `TrafficIndex.claim()` is the smallest thing that closes it.
 - **A retry is not a guarantee.** Re-rolls into a busy lane still all miss now and then.
-  `_join_the_back_of_the_queue()` is the fallback, because behind the last car is the one place in a
-  lane that is free by construction.
+  `CarStrategy.join_the_back_of_the_queue()` is the fallback, because behind the last car is the one
+  place in a lane that is free by construction.
 
 **The morning's resolve runs before the first frame is drawn.** `Crowd.start_day()` ends with the
 same front-to-back resolve the first physics frame would run, because a day starts from an idle
@@ -168,14 +168,14 @@ landing is taken with no room left to cross is an arm the walker does not turn i
 answer to a wall is an arc that needs a junction box to fit in, and there is no reverse gear — so it
 has to decide while the last junction is still in front of it, which is what `LOOKAHEAD_TILES` is
 measured to reach. A walker's answer costs a stride and can be taken anywhere, so it acts only when
-the barrier is the **next tile** (`CrowdAgent._acts_on_a_barrier_within()`).
+the barrier is the **next tile** (`LaneStrategy.acts_within`).
 
 **Deciding early is not free: a street a walker gives up from a junction away is a street with
 nobody on it for its whole length.** A walker gives up only where it touches an impassable wall and
 goes on into the section until it cannot continue (PLAYTEST-78). So a walker picking an arm asks
-only whether the arm is street **at all** (`_no_street_ahead()`), never what is standing down it;
-the record a walker is stopped by is the bodies themselves, while the segment-wide hold is a car's
-warning and nobody else's.
+only whether the arm is street **at all** (`WalkerStrategy._no_street_ahead()`), never what is
+standing down it; the record a walker is stopped by is the bodies themselves, while the
+segment-wide hold is a car's warning and nobody else's.
 
 **If you find yourself unifying the two, this is the entry.** The symmetric version is the one that
 reads as correct and is the defect.

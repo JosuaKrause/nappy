@@ -1238,7 +1238,7 @@ const WALKER_DOOR_LANE_TOLERANCE := 32.0
 # construction band, a kerbed van, a stall. *("yes every solid body should do that -- not
 # necessarily force a turn around but at least avoid the solid".)* It steps into the other lane of
 # its own footway and steps back after; only a body that takes **every** lane of that footway turns
-# it at the last junction, the way a seal does. See `CrowdAgent._step_around_a_body()` and
+# it at the last junction, the way a seal does. See `WalkerStrategy._step_around_a_body()` and
 # `CityMap.obstructed_tiles`.
 
 ## How far ahead a walker begins going round a body, in tiles. Four tiles is 128px, a second and
@@ -1360,7 +1360,7 @@ const BUMP_STEP_ASIDE_TIME := 2.5
 ## careful line is a **behaviour**: somebody who sees a pram coming moves over. It prices the right
 ## thing, a contact being what carelessness costs rather than what walking costs, and it stays
 ## honest three ways: they only move a lane, they cannot move into the carriageway
-## (`CrowdAgent._pavement_band`), and at `RUN_SPEED` she covers the notice distance in 0.57s against
+## (`WalkerStrategy._pavement_band`), and at `RUN_SPEED` she covers the notice distance in 0.57s against
 ## the 0.36s they need to clear a lane, so **running still hits people**.
 const CROWD_YIELD_DISTANCE := 96.0
 ## How near they have to come to her — at their **closest approach**, not right now — to bother

@@ -305,7 +305,7 @@ sees the door — the same seven tiles the crowd sees a wall from — rather tha
 walker has no about-face to make once it is standing in a queue.
 
 It is the crowd's own state throughout — `Crowd._hold_walkers_at_doors()`, `WalkerDoorHold` and
-`CrowdAgent`'s four `DoorState`s, keyed on the gatehouse body's ground point from the region plan. It
+`WalkerStrategy`'s four `DoorState`s, keyed on the gatehouse body's ground point from the region plan. It
 reads no catalogue row: not `detain_radius`, which is the reach *she* is caught at, and none of the
 detention above, which teleports her, hides her, moves the camera and charges her meter.
 
@@ -739,8 +739,8 @@ brake from cruise**, or a car cannot physically honour the gap it is keeping and
 resolves by interpenetration again however good the controller is.
 
 **The spacing correction never places a car on ground it could not have driven onto itself.**
-`CrowdAgent.nudge_back()` and `_join_the_back_of_the_queue()` are pure arithmetic with no notion
-of the map underneath them, so both ask the same `_cannot_go_on` the forward-looking lookahead
+`CrowdAgent.nudge_back()` and `CarStrategy.join_the_back_of_the_queue()` are pure arithmetic with no
+notion of the map underneath them, so both ask the same `cannot_go_on()` the forward-looking lookahead
 already trusts about blocked ground — a hard seal, a region wall or a dead end's own built-over
 footprint — rather than parking a car inside it. A recycle's merge is refused whole, since the spot
 it rolled is still somewhere to stand. **A nudge goes as far back as the ground allows and stops a
@@ -750,7 +750,7 @@ overlap is paid in one jump on whichever later frame the leader has pulled far e
 whole slide to be legal — a frame nobody chooses, so possibly one she is watching.
 
 **A hard seal, a region wall, and the closed streets a car cannot see through, all read the same
-way to the traffic.** `CrowdAgent._cannot_go_on` treats a tile on a held segment (a hard seal's own
+way to the traffic.** `CarStrategy.cannot_go_on()` treats a tile on a held segment (a hard seal's own
 ground, or a region wall's) exactly like a closed one: a car turns off at the last junction rather
 than driving into a barrier it has no physics against. A soft seal takes only the pavements, so a
 car still crosses it — the street reads quiet on foot and ordinary on the road.

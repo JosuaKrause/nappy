@@ -228,7 +228,7 @@ static func _lay_streets(map: CityMap) -> void:
 ##   somebody at the kerb, it obeys the light, so the crossing is a *timing* problem where an
 ##   ordinary one is a gap-hunting problem. A zebra there is paint promising the wrong one of those
 ##   at every junction of the one street where getting it wrong ends the day. See
-##   `CrowdAgent._give_way` and `TrafficSignals`.
+##   `CarStrategy._give_way` and `TrafficSignals`.
 ##
 ##   **The tile type does not change and that is the point.** Painting the crossing away entirely is
 ##   worse — a walker crossing a side street would then be standing on open carriageway, and the one

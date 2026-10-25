@@ -12,7 +12,7 @@ extends RefCounted
 ##
 ## - **Traffic on a main road does not give way at a zebra.** The paint is still there and it is
 ##   still where a person on that road is meant to be, but what stops the cars is the light. See
-##   `CrowdAgent._crossing_ahead_somebody_is_waiting_at`.
+##   `CarStrategy._crossing_ahead_somebody_is_waiting_at`.
 ## - **The clock is simulated, and it starts again with the day.** Running off wall time would
 ##   make a run irreproducible from its seed, and *not* resetting at dawn breaks the same thing
 ##   one step along: two attempts at the same day would find the same cars at different lights

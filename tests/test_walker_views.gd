@@ -110,7 +110,7 @@ func _face_sector(agent: CrowdAgent, sector: int) -> void:
 	agent._speed = SPEED
 	agent._lane_centre = state[2]
 	agent._detour = 0.0
-	agent._yield_left = 0.0
+	agent.strategy._yield_left = 0.0
 
 func _test_walker_headings_select_the_expected_view(t) -> void:
 	var agent := _walker(t)
@@ -152,7 +152,7 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 		t.check(body_views.has(CrowdAgent.WALKER_VIEW_BY_SECTOR[sector]),
 				"sector %d names a view the tables actually carry" % sector)
 
-## A give-way, a queue or a halt all reach the walker the same way: `_yield_factor()` zeroing
+## A give-way, a queue or a halt all reach the walker the same way: `WalkerStrategy._yield_factor()` zeroing
 ## `velocity()` while it has already arrived at its lane centre, which is exactly the "at rest"
 ## `_walker_heading()` returns `Vector2.ZERO` for.
 func _test_a_stopped_walker_keeps_its_view(t) -> void:
@@ -164,8 +164,8 @@ func _test_a_stopped_walker_keeps_its_view(t) -> void:
 
 	# Stopped: no cross-lane gap, and the along term reads zero through the same yield the crowd
 	# actually stops a walker with — not by lowering `_speed` itself, which nothing else does.
-	agent._yield_left = 1.0
-	agent._yield_hurry = false
+	agent.strategy._yield_left = 1.0
+	agent.strategy._yield_hurry = false
 	t.check(agent._walker_heading() == Vector2.ZERO, "a yielding walker's own heading is zero")
 	var stopped_frame := agent._frame()
 	t.check(stopped_frame == moving_frame,
@@ -231,14 +231,14 @@ func _test_a_moving_walker_alternates_gait_frames(t) -> void:
 	agent.free()
 
 ## The same give-way/queue/halt zeroing `_test_a_stopped_walker_keeps_its_view()` already reaches
-## the view hold with also reaches the gait: `velocity()` is `heading() * _speed * _yield_factor()`,
+## the view hold with also reaches the gait: `velocity()` is `heading() * _speed * WalkerStrategy._yield_factor()`,
 ## so a walker yielding reads zero regardless of what `_walker_gait_phase` its stride was at.
 func _test_a_stopped_walker_holds_gait_frame_a(t) -> void:
 	var agent := _walker(t)
 	agent._walker_gait_phase = PI / 4.0
 	t.check(agent._walker_gait_frame() == 1, "moving, this phase draws frame b (sanity check)")
-	agent._yield_left = 1.0
-	agent._yield_hurry = false
+	agent.strategy._yield_left = 1.0
+	agent.strategy._yield_hurry = false
 	t.check(agent._walker_gait_frame() == 0,
 			"a yielding walker holds frame a regardless of its own stride phase")
 	agent.free()
