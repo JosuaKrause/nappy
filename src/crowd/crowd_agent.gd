@@ -134,6 +134,14 @@ var _clock := 0.0
 const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDTH * 1.65 + 4.0),
 		ENTRY_PICTURE_ROOM * 2.0, MARK_HEIGHT + 10.0 + MARK_WIDTH * 1.65 + 4.0 + ENTRY_PICTURE_ROOM)
 
+## Whether any of what this agent's drawing can cover (`DRAWN_REACH`) is inside the box the screen
+## shows (`CrowdView.drawn_box()`). True for an agent with no view or out of the tree: a hand-built rig
+## has no screen to be off.
+func _is_on_the_screen() -> bool:
+	if view == null or not is_inside_tree():
+		return true
+	return view.drawn_box().intersects(Rect2(global_position + DRAWN_REACH.position, DRAWN_REACH.size))
+
 ## Asks for a redraw when what this agent is showing has actually changed, and answers whether it
 ## asked.
 ##
@@ -170,7 +178,7 @@ func _redraw_if_the_picture_changed() -> bool:
 	# Off screen nothing is redrawn and no caret is projected (`DrawnView`): the picture is left as
 	# it was, and the first frame any of it is back inside the box redraws it from what it is now,
 	# caret included, which is before the margin has let any of it onto the screen.
-	if not DrawnView.shows(self, DRAWN_REACH):
+	if not _is_on_the_screen():
 		_picture_is_stale = true
 		return false
 	if changed or _picture_is_stale:
@@ -499,6 +507,7 @@ var _look: AgentLook
 var _carets := false
 
 func _init() -> void:
+	super()
 	_look = WalkerLook.new(self)
 
 ## A new kind brings its look; a walker's stride and a car's travelled ground start afresh with it.
@@ -539,8 +548,8 @@ func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2) -> void:
 	shape.draw_shadow(canvas, at, axis)
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_CROWD)
+	if frame_timing != null and frame_timing.running():
+		frame_timing.drew()
 	# `--skip crowd`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (d)): returns
 	# before anything is drawn, so a frame under the flag differs from an ordinary one by drawing
 	# alone — the crowd's own motion, lanes and traffic negotiation keep running. `_draw_body()` is

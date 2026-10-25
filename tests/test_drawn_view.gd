@@ -125,6 +125,8 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	car._speed = 100.0
 	car.set_process(false)
 	screen.add_child(car)
+	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
+	car.view = CrowdView.new(screen)
 	var x := -700.0
 	var asked_since_off := false
 	var first_seen_asked := false
@@ -166,6 +168,8 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t) -> voi
 	walker._speed = 0.0
 	walker.set_process(false)
 	screen.add_child(walker)
+	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
+	walker.view = CrowdView.new(screen)
 	walker.position = Vector2(320.0, 180.0)
 	walker._redraw_if_the_picture_changed()
 	t.check(not walker._redraw_if_the_picture_changed(),

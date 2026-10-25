@@ -68,6 +68,11 @@ var shape: GroundShape
 ## recycles an agent — not leaving the map. See `CrowdField`.
 var field: CrowdField
 
+## What the screen shows, held by reference and handed in by `Crowd` — the camera the stretch's
+## recycling keeps out of sight of, and the box `CrowdAgent` draws within. Null for an agent built by
+## hand, which then has no camera to be out of view of and no screen to be off. See `CrowdView`.
+var view: CrowdView = null
+
 ## Where the other cars are, by lane, so a turn can look before it commits. Held by reference and
 ## refilled once a frame by `Crowd`; null for an agent built by hand in a test, which then turns
 ## the way it always did. See `TrafficIndex`.
@@ -373,20 +378,13 @@ func _out_of_view() -> bool:
 ## stretch's ends are often in the picture — the street runs into the void a few tiles from her — so
 ## the radius a played day recycles beyond is not enough: nothing may appear or vanish where she can
 ## see it *(the player's rule, PR #597)*. True when no part of a body standing at `at` (`room`
-## either side, a car's length and more by default, `ENTRY_PICTURE_ROOM`) is inside a square
-## centred where the camera looks, as wide and as tall as the larger side of the design box at the
-## camera's zoom (640x640 world pixels at zoom 2). That is stricter than the real view: both
-## presentations show the same 640x360 world, a portrait touch screen turning it a quarter
-## (`ScreenOrientation.apply_to_camera()`), so the square holds a margin above and below it. With
-## no camera — a rig that steps agents by hand — the played day's radius answers.
+## either side, a car's length and more by default, `ENTRY_PICTURE_ROOM`) is inside the square
+## `CrowdView.beyond_every_view()` describes. The camera is the crowd's `view`; with none, or with
+## the agent out of the tree — a rig that steps agents by hand — the played day's radius answers.
 func _beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
-	var camera := get_viewport().get_camera_2d() if is_inside_tree() else null
-	if not camera:
+	if view == null or not is_inside_tree():
 		return at.distance_to(field.looking_at()) > Tuning.OUT_OF_SIGHT
-	var size := Vector2(maxf(ScreenOrientation.DESIGN_SIZE.x, ScreenOrientation.ROTATED_SIZE.x),
-			maxf(ScreenOrientation.DESIGN_SIZE.y, ScreenOrientation.ROTATED_SIZE.y)) / camera.zoom
-	var offset := (at - camera.get_screen_center_position()).abs()
-	return offset.x > size.x * 0.5 + room or offset.y > size.y * 0.5 + room
+	return view.beyond_every_view(at, room, field.looking_at())
 
 ## How far past a body's centre its picture may reach, for `_beyond_every_view()`: two tiles, more than
 ## a car's half length and its shadow.
@@ -419,12 +417,14 @@ func _segment_is_shut(tile: Vector2i) -> bool:
 		return strategy.door_is_shut(key)
 	return strategy.shut_by_a_hold
 
-## Whether the frame record (`FrameRecord`) was running when this agent was made, read once here
-## so that, with the record off, `_process()` pays one member read rather than a static read and a
-## call into a second function: with two hundred or so agents a frame, that difference made every
-## player's frame measurably longer on a desktop (docs/evidence/m159-frame-record-2026-10-04/). An
-## agent is made per day, after the recorder has started, so every one made under a record is timed.
-var _timed := FrameRecord.on
+## What this agent charges its time to, handed in by the `Crowd` that makes it; none for an agent
+## built by hand, which is never timed. Handing it in copies whether the record is running into
+## `_timed`, so that with the record off `_process()` pays one member read (see `CrowdTiming`).
+var frame_timing: CrowdTiming = null:
+	set(value):
+		frame_timing = value
+		_timed = value != null and value.running()
+var _timed := false
 ## True while `_process()` runs its own body inside the record's timing, so the call it makes to
 ## itself is the body rather than another round of timing.
 var _timing := false
@@ -432,12 +432,12 @@ var _timing := false
 func _process(delta: float) -> void:
 	# The record's timing, when this agent was made under one and it is still running: the body
 	# below runs inside it through the call to itself. See `_timed`.
-	if _timed and not _timing and FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.CROWD)
+	if _timed and not _timing and frame_timing.running():
+		var outer := frame_timing.enter()
 		_timing = true
 		_process(delta)
 		_timing = false
-		FrameRecord.leave(outer)
+		frame_timing.leave(outer)
 		return
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
 	# before anything below runs, so this agent stands exactly where the day placed it — no clock,
