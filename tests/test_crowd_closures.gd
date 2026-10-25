@@ -841,7 +841,7 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 	var approach := walker.heading()
 	# Where the door let it go, measured on the frame the cooldown releases it — the release is
 	# by distance, so this is the walker clear of the hut under its own steam rather than the
-	# spot `_emerge_from_the_hut()` placed it on. Stays -INF if the release never comes inside
+	# spot `WalkerStrategy._emerge_from_the_hut()` placed it on. Stays -INF if the release never comes inside
 	# the window, which the four-states sequence check reports first.
 	var came_out_at := -INF
 

@@ -658,7 +658,7 @@ func _keep_room_for_the_turning(lanes: Dictionary) -> void:
 ##   axis, and a car only ever waits for the other one.
 ## - **A car that cannot stop is already in the box.** It is counted as occupying it rather than
 ##   asked to brake, so nobody else is waved in on top of a car that is committed. This is the
-##   zebra's commit rule (`_distance_to_stop_line`) applied to a box, and for the same reason:
+##   zebra's commit rule (`CarStrategy._distance_to_stop_line`) applied to a box, and for the same reason:
 ##   braking too late means stopping *in* the thing.
 ## - **Nearest first, and right before left when they arrive together.** Distance alone leaves a
 ##   symmetric arrival undecided, and right-before-left alone deadlocks four cars in a ring. Taken

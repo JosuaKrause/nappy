@@ -26,6 +26,17 @@ present-tense pass over the moved docstrings; one `SpawnSiting` service with reg
 and a "reaches her" query on the map's one `Navigator` (`WorldMap.navigator()`); a shared separation pass over
 every mover.
 
+**Two upward fetches go with the `LaneMover` split, the orchestrating session's carry-over from
+review of the first PR rather than the player's ask.** `CrowdAgent` reads the world around it
+twice without being handed it. `_beyond_every_view()` reaches the camera through
+`get_viewport().get_camera_2d()` (its centre and zoom, for "is this spot far enough from every view
+that a body may appear there"); it would be handed the screen's box by `Crowd` each frame, the way
+`Crowd` already hands it `field` (which answers `looking_at()` when there is no camera). And
+`_redraw_if_the_picture_changed()` and the caret projection ask `DrawnView.shows(self, DRAWN_REACH)`
+(the viewport's canvas transform, read through a static), with `FrameRecord`'s statics
+(`FrameRecord.on`, `enter`, `leave`, `drew`) timing every `_process()`; the first would be handed
+the same box, the second a timing sink the crowd owns.
+
 **Open question, the orchestrating session's carry-over from minty-quail-5 rather than the player's
 ask:** whether the crowd's lane movement goes onto the map's one `Navigator`. It is not part of the
 walker-and-car split, because a lane-following held step is a different motion model from the

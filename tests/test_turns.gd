@@ -465,7 +465,7 @@ func _test_a_queue_keeps_its_distance_behind_a_turning_car(t) -> void:
 ## the scenario choosing the arm. A car only ever turns because the way ahead is shut, so the ground
 ## *behind* a turn's landing is open road for an arm turn and is the blockage itself for an
 ## about-face — there is nowhere to stand a queue behind a half turn's landing. The code path is one
-## and the same either way: `_land_the_turn()` merges, and `Crowd._keep_room_for_the_turning()` reads
+## and the same either way: `CarStrategy._land_the_turn()` merges, and `Crowd._keep_room_for_the_turning()` reads
 ## `turn_lane_key()` without caring which manoeuvre produced it.
 func _test_a_turn_merges_into_a_lane_without_resetting_it(t) -> void:
 	_clear_the_holds()

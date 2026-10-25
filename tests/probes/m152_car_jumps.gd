@@ -227,7 +227,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			var id := agent.get_instance_id()
 			seen_ids[id] = true
 			# The numbers the planner reads, taken before the step rather than after it: a flip
-			# reverses `_direction`, so `_distance_to_the_blockage()` asked afterwards answers about
+			# reverses `_direction`, so `CarStrategy._distance_to_the_blockage()` asked afterwards answers about
 			# the road the car has just turned to face rather than the one that stopped it.
 			before[id] = [agent.position, agent.is_turning(), agent._cruise,
 					agent.strategy.is_in_a_pocket(), agent._direction, agent._vertical,
@@ -249,7 +249,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			_note_the_lane_history(agent, was, frame, entered, booked)
 			# Counted whether or not it jumped, because what the fix has to be judged on is the
 			# *share* of landings that end in a teleport rather than the raw count of teleports —
-			# see `_land_the_turn()`, which drops an arrival that finds its booked spot taken at
+			# see `CarStrategy._land_the_turn()`, which drops an arrival that finds its booked spot taken at
 			# the back of the whole exit lane.
 			if bool(was[1]) and not agent.is_turning():
 				classes["landings"] = int(classes.get("landings", 0)) + 1
@@ -575,7 +575,7 @@ func _on_screen(at: Vector2, focus: Vector2) -> bool:
 ##
 ## **`_cruise` is what names a recycle and nothing else does.** It is written only by
 ## `_choose_lane()` and `_take_the_placement()`, which is to say only by `setup()` and
-## `_recycle()`; `_give_way()` moves `_speed` every frame and leaves this alone, so a car whose
+## `_recycle()`; `CarStrategy._give_way()` moves `_speed` every frame and leaves this alone, so a car whose
 ## cruise changed between two frames is a car that was handed a fresh lane — a teleport by
 ## construction, and legal out of sight.
 func _classify(was: Array, agent: CrowdAgent) -> String:

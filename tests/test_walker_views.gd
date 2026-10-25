@@ -152,7 +152,7 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 		t.check(body_views.has(CrowdAgent.WALKER_VIEW_BY_SECTOR[sector]),
 				"sector %d names a view the tables actually carry" % sector)
 
-## A give-way, a queue or a halt all reach the walker the same way: `_yield_factor()` zeroing
+## A give-way, a queue or a halt all reach the walker the same way: `WalkerStrategy._yield_factor()` zeroing
 ## `velocity()` while it has already arrived at its lane centre, which is exactly the "at rest"
 ## `_walker_heading()` returns `Vector2.ZERO` for.
 func _test_a_stopped_walker_keeps_its_view(t) -> void:
@@ -231,7 +231,7 @@ func _test_a_moving_walker_alternates_gait_frames(t) -> void:
 	agent.free()
 
 ## The same give-way/queue/halt zeroing `_test_a_stopped_walker_keeps_its_view()` already reaches
-## the view hold with also reaches the gait: `velocity()` is `heading() * _speed * _yield_factor()`,
+## the view hold with also reaches the gait: `velocity()` is `heading() * _speed * WalkerStrategy._yield_factor()`,
 ## so a walker yielding reads zero regardless of what `_walker_gait_phase` its stride was at.
 func _test_a_stopped_walker_holds_gait_frame_a(t) -> void:
 	var agent := _walker(t)

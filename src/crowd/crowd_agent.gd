@@ -139,9 +139,13 @@ const MARK_HEIGHT := 30.0
 const MARK_WIDTH := 15.0
 
 ## Which kind of agent this is. Setting it installs that kind's `strategy`, at construction or on a
-## hand-built agent afterwards, so the agent has that kind's rules from then on.
+## hand-built agent afterwards, so the agent has that kind's rules from then on. Setting the kind
+## it already has changes nothing: a fresh strategy would drop a walker's hold on a hut without
+## letting go of it.
 var kind := Kind.WALKER:
 	set(value):
+		if value == kind and strategy:
+			return
 		kind = value
 		_install(CarStrategy.new(self) if value == Kind.CAR else WalkerStrategy.new(self))
 ## What only this agent's kind does on the lanes — `WalkerStrategy` or `CarStrategy`, installed by
