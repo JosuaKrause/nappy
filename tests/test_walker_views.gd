@@ -100,7 +100,7 @@ func _walker(t) -> CrowdAgent:
 	agent.kind = CrowdAgent.Kind.WALKER
 	return agent
 
-## Sets the state `_walker_heading()` reads so it lands exactly on `sector`'s own centre angle —
+## Sets the state `WalkerLook.heading_now()` reads so it lands exactly on `sector`'s own centre angle —
 ## see `SECTOR_STATE`'s own doc.
 func _face_sector(agent: CrowdAgent, sector: int) -> void:
 	var state: Array = SECTOR_STATE[sector]
@@ -129,10 +129,10 @@ func _test_walker_headings_select_the_expected_view(t) -> void:
 				"sector %d mirror flag matches the west-mirror convention" % sector)
 	agent.free()
 
-## `_draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
+## `AgentLook.draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
 ## invariant structurally too: nothing can add a body without its trim, or the two would be able
 ## to draw two different walkers' worth of coat and hands. And it pins the tint split at the same
-## time: body and trim have to be two distinct baked regions, or tinting the body (`_draw_body()`'s
+## time: body and trim have to be two distinct baked regions, or tinting the body (`AgentLook.draw_body()`'s
 ## own `colour` argument) would tint the trim drawn over it as well.
 func _test_body_and_trim_can_never_disagree(t) -> void:
 	var body_views := WalkerLook.BODY_BY_VIEW.keys()
@@ -154,7 +154,7 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 
 ## A give-way, a queue or a halt all reach the walker the same way: `WalkerStrategy._yield_factor()` zeroing
 ## `LaneMover.velocity()` while it has already arrived at its lane centre, which is exactly the "at rest"
-## `_walker_heading()` returns `Vector2.ZERO` for.
+## `WalkerLook.heading_now()` returns `Vector2.ZERO` for.
 func _test_a_stopped_walker_keeps_its_view(t) -> void:
 	var agent := _walker(t)
 	_face_sector(agent, 0)
@@ -243,7 +243,7 @@ func _test_a_stopped_walker_holds_gait_frame_a(t) -> void:
 			"a yielding walker holds frame a regardless of its own stride phase")
 	agent.free()
 
-## `_draw_body()`'s walker branch picks `WALKER_BODY_BY_VIEW_B`/`WALKER_TRIM_BY_VIEW_B` together off
+## `AgentLook.draw_body()`'s walker branch picks `WalkerLook.BODY_BY_VIEW_B`/`TRIM_BY_VIEW_B` together off
 ## one `stepping` boolean, so the two tables have to carry exactly the same five views the ordinary
 ## frame-a tables do, the same invariant `_test_body_and_trim_can_never_disagree()` pins for frame a.
 func _test_walker_gait_b_tables_agree_with_a(t) -> void:

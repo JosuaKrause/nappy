@@ -15,9 +15,9 @@ extends Node2D
 ##
 ## **The mover has no picture, no excitement and no halo.** `CrowdAgent` is the crowd member built on
 ## it: it adds the field it contributes to the baby's meter, the halo and caret that warn of it, and
-## the drawing, and answers the hooks at the foot of this file (`restart_the_picture()`,
-## `advance_the_picture()`, `_dress()`, `_end_the_frame()`,
-## `_entry_picture_clearance()`), which do nothing here.
+## the drawing, and answers six hooks that do nothing here: `_entry_picture_clearance()`, beside the
+## placement code that asks it, and at the foot of this file `_kind_installed()`,
+## `restart_the_picture()`, `advance_the_picture()`, `_dress()` and `_end_the_frame()`.
 
 enum Kind { WALKER, CAR }
 

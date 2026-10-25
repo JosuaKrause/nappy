@@ -39,7 +39,7 @@ func _car(t) -> CrowdAgent:
 	agent.kind = CrowdAgent.Kind.CAR
 	return agent
 
-## `CarLook.VIEW_BY_SECTOR` is authored identically to `WALKER_VIEW_BY_SECTOR` — the same
+## `CarLook.VIEW_BY_SECTOR` is authored identically to `WalkerLook.VIEW_BY_SECTOR` — the same
 ## five projections, the same west-mirror convention — and this is what stops the two silently
 ## drifting apart if one is ever hand-edited without the other.
 func _test_car_view_by_sector_matches_the_walker_convention(t) -> void:
@@ -49,10 +49,10 @@ func _test_car_view_by_sector_matches_the_walker_convention(t) -> void:
 		t.check(EightDirection.is_mirrored(sector) == EXPECTED_MIRRORED[sector],
 				"sector %d mirror matches the west-mirror convention" % sector)
 
-## `_draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
+## `AgentLook.draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
 ## invariant structurally too: nothing can add a body without its trim, or the two could draw two
 ## different cars' worth of paint and glass. And it pins the tint split: body and trim have to be
-## two distinct baked regions, or tinting the body (`_draw_body()`'s own `colour` argument) would
+## two distinct baked regions, or tinting the body (`AgentLook.draw_body()`'s own `colour` argument) would
 ## tint the trim drawn over it as well.
 func _test_body_and_trim_can_never_disagree(t) -> void:
 	var body_views := CarLook.BODY_BY_VIEW.keys()
@@ -156,7 +156,7 @@ func _test_a_stopped_car_keeps_its_view(t) -> void:
 
 ## `setup()` and `_recycle()` both call `LaneMover._choose_lane()`, which clears `_turn` and leaves the car
 ## exactly on a lane axis with a rolled speed — a sector centre 45 degrees clear of its neighbours,
-## twice the hold's own reach — so no reset call into `_car_view` is needed for the same reason
+## twice the hold's own reach — so no reset call into `CarLook.view` is needed for the same reason
 ## `WalkerLook.sector()`'s own doc gives for the walker: the ordinary update on the very next
 ## frame already replaces whatever was drawn before.
 func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
@@ -246,7 +246,7 @@ func _test_the_registration_is_continuous_across_a_sector_boundary(t) -> void:
 	agent.free()
 
 ## **A steady glow is not a steady body, and the rim has to follow the body.** The rim is traced by
-## re-running the owner's own `_draw_body()` (pinned by the test above), and `_draw()` is retained —
+## re-running the owner's own `AgentLook.draw_body()` (pinned by the test above), and `_draw()` is retained —
 ## so a rim that is only re-traced while a channel is easing keeps whatever silhouette the owner had
 ## when the glow settled. That is the player's "a turning car will have the original halo while
 ## turning". Headless never calls `_draw()`, so what is asserted here is the state the drawing reads
@@ -284,13 +284,13 @@ func _test_the_rim_is_re_traced_under_a_steady_glow(t) -> void:
 	agent.free()
 
 ## Everything about the rim `EntityHalo` would trace for this car right now — the texture pair it
-## looks up, whether it is mirrored, and where it is anchored. `_draw_body()` reads exactly these
+## looks up, whether it is mirrored, and where it is anchored. `AgentLook.draw_body()` reads exactly these
 ## three and nothing else, so two different answers here are two different silhouettes.
 func _silhouette(agent: CrowdAgent) -> Array:
 	var view: String = CarLook.VIEW_BY_SECTOR[agent._look.sector()]
 	return [view, agent._look.flipped(), CarLook.body_anchor(view, agent.heading())]
 
-## `EntityHalo` traces whichever silhouette `_draw_body()` currently draws, once per ring offset —
+## `EntityHalo` traces whichever silhouette `AgentLook.draw_body()` currently draws, once per ring offset —
 ## `set_halo_strength()` builds it with that exact bound method, so per-view halo geometry follows
 ## the ordinary picture automatically rather than needing a second lookup of its own.
 func _test_the_halo_redraws_the_same_body(t) -> void:
@@ -298,7 +298,7 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 	agent.set_halo_strength(1.0, Color.RED)
 	t.check(agent._halo != null, "a positive strength builds the halo lazily")
 	t.check(agent._halo._draw_body == agent._look.draw_body,
-			"the halo redraws exactly this agent's own `_draw_body`, so a per-sector picture change "
+			"the halo redraws exactly this agent's own look's `draw_body`, so a per-sector picture change "
 			+ "is a per-sector halo change with nothing else to wire up")
 	# Freed with the halo still attached rather than through `set_halo_strength(0.0, ...)`: with no
 	# `_process()` frame ever run to raise `_alpha` off zero, `EntityHalo.is_faded_out()` would read
@@ -306,7 +306,7 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 	# race, since it frees the still-attached child synchronously first.
 	agent.free()
 
-## The picture `_draw_body()` would actually put on the canvas for one view and heading: the body's
+## The picture `AgentLook.draw_body()` would actually put on the canvas for one view and heading: the body's
 ## rect merged with the trim's and the wheels', each built the way `Sprites.draw_standing()` builds
 ## it — the baked region's own native size, which is the authored SVG's size in every bake,
 ## bottom-centred on `CarLook.body_anchor()`'s answer. At rest, which is where these cars stand: the

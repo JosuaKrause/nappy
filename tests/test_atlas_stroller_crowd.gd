@@ -136,7 +136,7 @@ func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
 			"freeing the city mid-day releases the crowd's page too, with no clear() in between")
 
 # --------------------------------------------------------------- tint regression ---
-# `_draw_body()` tints the body layer with the agent's own `colour` and draws the trim above it
+# `AgentLook.draw_body()` tints the body layer with the agent's own `colour` and draws the trim above it
 # untinted — the split that keeps a crowd from reading as one silhouette in one colour. It only
 # holds if body and trim are two distinct baked regions; a bake that ever folded the two views of
 # one part into a single region would tint both at once the moment either drew.

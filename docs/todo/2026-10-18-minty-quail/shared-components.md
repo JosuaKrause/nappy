@@ -21,9 +21,11 @@
 **Carry-overs, the orchestrating session's rather than the player's ask.** `CrowdView` (in
 `src/crowd/`, simulation) reads the shared `DrawnView` and `ScreenOrientation`, which are view-layer;
 a cleaner version hands the crowd the drawn box and the camera square as plain values, owned by `Main`
-or `City`. And the comments in `src/events/` that name members the crowd's split moved
+or `City`; the same holds for `CrowdTiming`, which reads `FrameRecord`'s statics, and for
+`Crowd._meet_the_player()`, which finds her through the `player` group. And the comments in `src/events/` that name members the crowd's split moved
 (`CrowdAgent.WALKER_VIEW_BY_SECTOR`, `_update_walker_view()`, `_advance_walker_gait()`,
-`_walker_gait_frame()`, `CAR_CANVAS_BOTTOM_MARGIN`, `_car_body_anchor()`) are renamed to where those
+`_walker_gait_frame()`, `CAR_CANVAS_BOTTOM_MARGIN`, `_car_body_anchor()`, and the crowd's redraw gate
+named at `event_instance.gd:3907` as `CrowdAgent._redraw_if_the_picture_changed()`, now `_end_the_frame()`) are renamed to where those
 members live (`WalkerLook`, `CarLook`) once both the crowd's split and the events step that owns
 `src/events/` have merged.
 

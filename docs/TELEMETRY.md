@@ -963,8 +963,9 @@ are built with the city, before the recorder starts, so they read `FrameRecord.o
 crowd's through its `CrowdTiming`). The
 measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
 
-The game's own `_draw()` overrides each start with `if FrameRecord.on:` and one call that adds 1
-to a per-kind count, so off they pay one static read each. That is acceptable where the timing
+The game's own `_draw()` overrides each start with `if FrameRecord.on:` (a crowd agent's with
+`if frame_timing != null and frame_timing.running():`, through the `CrowdTiming` it is handed) and one
+call that adds 1 to a per-kind count, so off they pay one static read each. That is acceptable where the timing
 wrap's read was not, because of how often it runs: a frame runs about twenty `_draw()` calls (the
 retained canvas items redraw only when something changes) against some 270 timed bodies, so with
 the record off the guarded reads cost nothing the frame medians can see. The measured figures —

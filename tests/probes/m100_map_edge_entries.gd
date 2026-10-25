@@ -4,7 +4,7 @@ extends RefCounted
 ## off-spine car no room past the true edge at all (`LaneStrategy.entry_room()` returns 0.0 for
 ## them). `TODO.md`'s M100 entry, "People still come out from outside the map", names three
 ## candidates to tell apart: a `LaneMover._recycle()` landing that puts the agent's own **centre** legally on
-## the boundary line while its **picture** — the actual texture `_draw_body()` puts on screen —
+## the boundary line while its **picture** — the actual texture `AgentLook.draw_body()` puts on screen —
 ## reaches past it; a day-start placement (`Crowd.start_day()`, which places through `setup()`
 ## rather than through `LaneMover._recycle()`'s own room check) doing the same; or an agent genuinely left
 ## standing past the true edge by some other path. Not a suite — it prints counts and asserts only

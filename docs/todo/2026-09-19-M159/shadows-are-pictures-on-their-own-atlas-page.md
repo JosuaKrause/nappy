@@ -13,7 +13,7 @@ about forty draw calls and a little of `draw`; on the phone the saving is not ye
 shadow and the body") draws every shadow from the object's `GroundShape`; the shape stays the
 source, and the bake draws it once into a picture on a shadow page that the object then draws as a
 sprite, tilted and squashed by its transform as now. The crowd car's capsule
-(`CrowdAgent._car_shadow_shape()`) is two ellipses' hull rather than one ellipse and gets its own
+(`CarStrategy.shadow_shape()`) is two ellipses' hull rather than one ellipse and gets its own
 picture. **It is not M139's shadow pass**
 ([M139](../../decisions/2026-09-14-M139-one-atlas-for-the-crowd-built-the-shadow-pass-measured-and-rejected.md)):
 that drew every agent's shadow from one canvas item spanning the field, which defeated the

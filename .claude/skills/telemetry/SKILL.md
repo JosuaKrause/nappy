@@ -52,7 +52,9 @@ front of an unchanged body, and it takes one of two shapes by how often it runs,
 costs with the record off is paid by every player; the scenery queue alone has a third.
 
 A system timed **once a frame** (the crowd's and the event manager's physics steps, the sweep, the
-halo, the edge) reads `FrameRecord.on` and moves its body into a private function of its own:
+halo, the edge) reads `FrameRecord.on` and moves its body into a private function of its own (the
+crowd reads and charges through the `CrowdTiming` it owns, `_timing.running()`, `_timing.enter()`,
+`_timing.leave()`, which wraps the same statics):
 
 ```gdscript
 func _physics_process(delta: float) -> void:
@@ -65,7 +67,8 @@ func _physics_process(delta: float) -> void:
 ```
 
 A thing timed **once per body per frame** (a crowd agent, a live event) copies the switch when it
-is made and keeps its body where it is, so off it pays one member read: a static read and a second
+is made (a crowd agent when `Crowd` hands it its `CrowdTiming`) and keeps its body where it is, so
+off it pays one member read: a static read and a second
 call on each of a couple of hundred bodies made every player's frame measurably longer on a desktop
 (docs/evidence/m159-frame-record-2026-10-04/). It is made per day, after the recorder has started:
 
@@ -75,13 +78,29 @@ var _timing := false
 
 func _process(delta: float) -> void:
 	if _timed and not _timing and FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.CROWD)
+		var outer := FrameRecord.enter(FrameRecord.EVENTS)
 		_timing = true
 		_process(delta)
 		_timing = false
 		FrameRecord.leave(outer)
 		return
 	# the body, unchanged
+```
+
+A crowd agent does the same through the sink it is handed, which sets `_timed` when it is assigned
+and is never timed without one:
+
+```gdscript
+var frame_timing: CrowdTiming = null:
+	set(value):
+		frame_timing = value
+		_timed = value != null and value.running()
+var _timed := false
+
+func _process(delta: float) -> void:
+	if _timed and not _timing and frame_timing.running():
+		var outer := frame_timing.enter()
+		# ... the same call to itself, then frame_timing.leave(outer)
 ```
 
 The **scenery queue** (`SceneryResidency.update()`) is the third shape, and it is the scenery
@@ -95,8 +114,9 @@ and none of it changes what the queue does or in what order. It is not a pattern
 another system.
 
 A **`_draw()` counter** is the fourth shape, and it counts and nothing else. The first statement of
-a game `_draw()` override is `if FrameRecord.on: FrameRecord.drew(FrameLedger.DRAWS_<KIND>)`: one
-guarded static read off, one added integer on, never a time (the page's clock steps in 100µs, and a
+a game `_draw()` override is `if FrameRecord.on: FrameRecord.drew(FrameLedger.DRAWS_<KIND>)` (a
+crowd agent's is `if frame_timing != null and frame_timing.running(): frame_timing.drew()`, through
+the sink it is handed): one guarded read off, one added integer on, never a time (the page's clock steps in 100µs, and a
 `_draw()` is far shorter) and never a branch in the body. It exists because the player asked which
 kinds of node redraw each frame, the per-kind `_draw()` counts (jolly-trout #541), and a node's own
 `_draw()` is the only place that is known. A new `_draw()` override in `src/` takes the line with
