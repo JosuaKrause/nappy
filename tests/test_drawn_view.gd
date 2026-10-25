@@ -71,7 +71,7 @@ func _test_a_hand_built_agent_with_no_screen_is_always_drawn(t) -> void:
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
 	car.position = Vector2(-5000.0, -5000.0)
-	t.check(car._redraw_if_the_picture_changed(),
+	t.check(car._end_the_frame(0.0),
 			"an agent in no tree still redraws its first picture, wherever it stands")
 	car.free()
 
@@ -86,16 +86,16 @@ func _test_a_car_reach_holds_everything_it_draws(t) -> void:
 	car.kind = CrowdAgent.Kind.CAR
 	for i in 16:
 		var heading := Vector2.RIGHT.rotated(TAU * float(i) / 16.0)
-		for view in CrowdAgent.CAR_BODY_BY_VIEW:
-			var anchor := car._car_body_anchor(view, heading)
-			for path in [CrowdAgent.CAR_BODY_BY_VIEW[view], CrowdAgent.CAR_TRIM_BY_VIEW[view],
-					CrowdAgent.CAR_WHEELS_BY_VIEW[view]]:
+		for view in CarLook.BODY_BY_VIEW:
+			var anchor := CarLook.body_anchor(view, heading)
+			for path in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
+					CarLook.WHEELS_BY_VIEW[view]]:
 				var extent := Vector2(AtlasLibrary.native_size(StringName(path)))
 				var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent) \
 						.grow(1.0 + EntityHalo.HALO_MARGIN)
 				t.check(reach.encloses(drawn),
 						"the reach holds a car's %s drawn at %s (%s)" % [path, heading, drawn])
-	var shadow := CrowdAgent.CAR_SHADOW_ALONG * 0.5 + 1.0
+	var shadow := CarStrategy.SHADOW_ALONG * 0.5 + 1.0
 	t.check(reach.encloses(Rect2(-shadow, -shadow, shadow * 2.0, shadow * 2.0)),
 			"and its shadow capsule turned any way")
 	var width := CrowdAgent.MARK_WIDTH
@@ -106,9 +106,9 @@ func _test_a_car_reach_holds_everything_it_draws(t) -> void:
 			.grow(1.0)
 	t.check(reach.encloses(caret), "and its doubled caret at full swell (%s)" % caret)
 	car.free()
-	for view in CrowdAgent.WALKER_BODY_BY_VIEW:
-		for paths: Dictionary in [CrowdAgent.WALKER_BODY_BY_VIEW, CrowdAgent.WALKER_BODY_BY_VIEW_B,
-				CrowdAgent.WALKER_TRIM_BY_VIEW, CrowdAgent.WALKER_TRIM_BY_VIEW_B]:
+	for view in WalkerLook.BODY_BY_VIEW:
+		for paths: Dictionary in [WalkerLook.BODY_BY_VIEW, WalkerLook.BODY_BY_VIEW_B,
+				WalkerLook.TRIM_BY_VIEW, WalkerLook.TRIM_BY_VIEW_B]:
 			var extent := Vector2(AtlasLibrary.native_size(StringName(paths[view])))
 			var drawn := Rect2(-extent.x * 0.5, -extent.y, extent.x, extent.y) \
 					.grow(EntityHalo.HALO_MARGIN)
@@ -125,6 +125,8 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	car._speed = 100.0
 	car.set_process(false)
 	screen.add_child(car)
+	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
+	car.view = CrowdView.new(screen)
 	var x := -700.0
 	var asked_since_off := false
 	var first_seen_asked := false
@@ -136,7 +138,7 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 		car.set_player_at(car.position + Vector2(60.0, 0.0))
 		car._clock += STEP
 		var before := car._mark_strength_clock
-		var asked := car._redraw_if_the_picture_changed()
+		var asked := car._end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
 				Rect2(car.position + CrowdAgent.DRAWN_REACH.position, CrowdAgent.DRAWN_REACH.size))
 		if not in_box:
@@ -166,16 +168,18 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t) -> voi
 	walker._speed = 0.0
 	walker.set_process(false)
 	screen.add_child(walker)
+	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
+	walker.view = CrowdView.new(screen)
 	walker.position = Vector2(320.0, 180.0)
-	walker._redraw_if_the_picture_changed()
-	t.check(not walker._redraw_if_the_picture_changed(),
+	walker._end_the_frame(0.0)
+	t.check(not walker._end_the_frame(0.0),
 			"on screen, a walker whose picture did not change asks for nothing")
 	_look_from(screen, Vector2(2000.0, 0.0))
-	t.check(not walker._redraw_if_the_picture_changed(), "off screen it asks for nothing either")
+	t.check(not walker._end_the_frame(0.0), "off screen it asks for nothing either")
 	_look_from(screen, Vector2.ZERO)
-	t.check(walker._redraw_if_the_picture_changed(),
+	t.check(walker._end_the_frame(0.0),
 			"back on screen it redraws once, though nothing in its key moved")
-	t.check(not walker._redraw_if_the_picture_changed(), "and then only on a change again")
+	t.check(not walker._end_the_frame(0.0), "and then only on a change again")
 	screen.free()
 	DrawnView.forget()
 

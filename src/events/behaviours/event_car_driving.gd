@@ -233,7 +233,7 @@ func room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	var tile := float(Tuning.TILE_SIZE)
 	var nose := event.def.shape.reach()
 	var room := INF
-	# The junction box this car is coming to, as `CrowdAgent.junction_ahead()` finds it: the crossing
+	# The junction box this car is coming to, as `LaneMover.junction_ahead()` finds it: the crossing
 	# street's whole corridor, its zebras included. `to_the_box` is from the nose to its near edge.
 	var along_tile := floori(along / tile)
 	var index := CityMap.junction_index(along_tile)

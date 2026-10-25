@@ -2,7 +2,7 @@ extends RefCounted
 ## The gate that stops an event rebuilding a draw list it does not need —
 ## `EventInstance._redraw_if_the_picture_changed()`, `_picture_key()` and
 ## `_picture_never_settles()`. The crowd has had the same gate for a long time
-## (`CrowdAgent._redraw_if_the_picture_changed()`); events did not, and at about forty live
+## (`CrowdAgent._end_the_frame()`); events did not, and at about forty live
 ## instances a day that was the largest drawing cost in a frame
 ## (`docs/evidence/m124-frame-cost-2026-09-13/README.md`).
 ##

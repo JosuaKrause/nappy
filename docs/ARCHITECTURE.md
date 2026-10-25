@@ -72,8 +72,15 @@ src/
   crowd/
 	crowd.gd              owns the day's agents and the `crowd` atlas page, held for its own life
 	                      rather than released between days; sums their excitement
-	crowd_agent.gd        one walker or one car, drawn from the baked `crowd` page: the lane mover
-	                      both kinds share, asking its kind's strategy what differs
+	lane_mover.gd         the lane movement a walker and a car share — lane state, look-ahead,
+	                      held step, placement and recycling — asking its kind's strategy what differs
+	crowd_agent.gd        one walker or one car in the crowd, on the lane mover: its excitement field,
+	                      halo, caret and the redraw gate; drawn by its look from the baked `crowd` page
+	agent_look.gd         how a crowd member is drawn and what its redraw key reads
+	walker_look.gd        a walker's picture: five views in two gait frames, its stride
+	car_look.gd           a car's picture: five views in three layers, its bob over its wheels
+	crowd_view.gd         what the crowd is handed of the screen: the camera, the drawn box
+	crowd_timing.gd       the crowd's handle on the frame record
 	lane_strategy.gd      the questions the mover asks its kind, with the neutral answers
 	walker_strategy.gd    a walker's rules: footways, sidesteps, corners, checkpoint huts
 	car_strategy.gd       a car's rules: give-way, planned turns, the spine's tunnel and bridge

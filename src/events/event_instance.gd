@@ -165,7 +165,7 @@ const BURST_MAIN_SPLASH_PERIOD := 0.5
 # front_diagonal, S front, the three west sectors mirroring their east-authored partner about the
 # feet anchor (`EightDirection.is_mirrored()`). `EIGHT_VIEW_BY_SECTOR` is that same table, copied
 # rather than shared — an event and a walker have no common base to hang one array on — and
-# `_select_view()` below is `CrowdAgent._update_walker_view()`'s own shape applied generally: one
+# `_select_view()` below is `WalkerLook.sector()`'s own shape applied generally: one
 # held sector per instance, since only one `Look` is ever live on a given instance.
 const EIGHT_VIEW_BY_SECTOR: Array[String] = [
 	"side", "front_diagonal", "front", "front_diagonal", "side",
@@ -3460,7 +3460,7 @@ func will_be_lethal(player_position: Vector2) -> bool:
 ##
 ## Moving a `Node2D` does not invalidate its draw list — the transform is applied when the list is
 ## replayed — so an event only redraws when its **picture** changes, exactly the gate
-## `CrowdAgent._redraw_if_the_picture_changed()` already gives every walker and car. Most of a
+## `CrowdAgent._end_the_frame()` already gives every walker and car. Most of a
 ## day's live instances are scenery that never moves — the seals, a checkpoint's hut, a café
 ## frontage, a market stall, a barricade — and rebuilding their draw lists at the tick rate is the
 ## largest single drawing cost in a frame, for a picture that is identical every time. See
@@ -3708,7 +3708,7 @@ func _current_bob() -> float:
 
 # ------------------------------------------------------------------- the gait ---
 # The event half of "every living thing that moves has a stride" — the walker's own two-frame
-# alternation (`CrowdAgent._advance_walker_gait()`/`_walker_gait_frame()`), applied generally to
+# alternation (`WalkerLook.advance()`/`gait_frame()`), applied generally to
 # whichever family a `_draw_*` below reads it from. The bob above is unchanged and stays the cue
 # for every family that was not given a second frame this round.
 
@@ -3729,7 +3729,7 @@ const POSTER_CREW_PASTE_PERIOD := 0.8
 ## passes `_path_travelled`'s own delta, which is never negative) and records whether anything
 ## moved at all, which is the "stopped" gate `_gait_stepping()` reads. Called once per tick, at
 ## every exit from `_process()`, the same "add the distance once, however the caller reached this
-## point" shape `CrowdAgent._advance_walker_gait()` has — asking `_draw_body()` to do it would
+## point" shape `WalkerLook.advance()` has — asking `_draw_body()` to do it would
 ## double the addition once per halo ring, exactly the trap that function's own doc names.
 func _advance_gait(moved: float) -> void:
 	_gait_moving = moved > 0.0
@@ -3737,7 +3737,7 @@ func _advance_gait(moved: float) -> void:
 
 ## Which of a family's two gait frames to draw right now: frame b (mid-stride) for half of every
 ## stride while `_advance_gait()` last saw ground covered, frame a (rest) otherwise — the walker's
-## own `_walker_gait_frame()` test, `sin(phase * 2.0) > 0.0`, gated on "did anything move this
+## own `WalkerLook.gait_frame()` test, `sin(phase * 2.0) > 0.0`, gated on "did anything move this
 ## tick" instead of a speed floor, since an event's own stop states (`is_waiting()`, `is_chatting()`,
 ## `is_telegraphing_still()`) already read as zero distance covered rather than a small residual
 ## speed to floor against. A pure query on state `_process()` already settled this tick, so calling
@@ -4584,7 +4584,7 @@ static func _is_anchored_over_its_body(look: EventDef.Look) -> bool:
 ## Where a car's picture is anchored for `Sprites.draw_standing`, which bottom-centres it — a car
 ## that drives, the patrol car or the fire engine (`_is_anchored_over_its_body()`):
 ## **the drawn content's bottom edge lands on the southernmost point of its body**, the crowd car's
-## own registration rule (`CrowdAgent._car_body_anchor()`), because every view is a standing
+## own registration rule (`CarLook.body_anchor()`), because every view is a standing
 ## elevation whose bottom row is the car's nearest ground contact. The body is its `shape`, a
 ## capsule centred on the node and laid along the heading (`EventDef.vehicle`), so its southern reach
 ## is `half_length · |heading.y| + radius` — the patrol car's 12px driving east or west, 21
@@ -5944,7 +5944,7 @@ func _heading_is_west() -> bool:
 	return _heading.x < 0.0
 
 ## Advances `_view_sector` from `heading` and returns the view name to read out of whichever
-## family's own `_BY_VIEW` table is live — `CrowdAgent._update_walker_view()`'s own shape, copied
+## family's own `_BY_VIEW` table is live — `WalkerLook.sector()`'s own shape, copied
 ## rather than shared since an event and a walker have no common base to hang one field on. No
 ## idle floor of its own: every `heading` a caller below feeds in is already a unit vector that is
 ## never actually zero — a moving actor's `_heading` is only ever overwritten by an actual step or
