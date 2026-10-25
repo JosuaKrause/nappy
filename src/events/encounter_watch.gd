@@ -34,11 +34,11 @@ extends RefCounted
 ##   first. **A catch and a hold are the game's own tests, called and not copied** *(inbox #586 in olive-hedgehog, the
 ##   player: "use the real catch code")*: `EventInstance.is_lethal_at()` for the catch, so a cyclist
 ##   still only warned or waiting, a row already finished, or a pursuer within reach through a wall
-##   is no catch; and `EventManager._hold_that_would_begin()` for the hold, handed in as a callable.
-##   Both are pure reads, which start nothing and roll nothing. A pursuer chases from the moment it
-##   comes for her (`EventBus.pursuit_began`), which is before she is within its reach, so one with
-##   a wall between them still counts, through the chase. A catch on the frame a door sets her down
-##   within reach, after this frame's tick, is told by `caught_by()`.
+##   is no catch; and `CheckpointController.hold_that_would_begin()` for the hold, handed in as
+##   a callable. Both are pure reads, which start nothing and roll nothing. A pursuer chases
+##   from the moment it comes for her (`EventBus.pursuit_began`), which is before she is within
+##   its reach, so one with a wall between them still counts, through the chase. A catch on the
+##   frame a door sets her down within reach, after this frame's tick, is told by `caught_by()`.
 ##   *(Inbox #577, the player: "let's count chases and catches as influenced always".)* A row that
 ##   can do none of the three — a fallen tree, a skip — is seen and never influenced.
 ##   An influence before the encounter is seen waits: it goes out as influenced the moment the
@@ -81,8 +81,9 @@ var _frame := 0
 var _open: Array[Record] = []
 var _running := false
 var _ran_last := -INF
-## `EventManager._hold_that_would_begin()`, or empty when nothing hands one in (a rig without a
-## manager: no hold ever begins). Asked at most once a frame, when an instance first needs the answer.
+## `CheckpointController.hold_that_would_begin()`, or empty when nothing hands one in (a rig
+## without a manager: no hold ever begins). Asked at most once a frame, when an instance first
+## needs the answer.
 var _hold_source := Callable()
 var _hold_frame := -1
 var _hold: EventInstance = null

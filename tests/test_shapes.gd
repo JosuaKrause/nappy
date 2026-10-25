@@ -435,7 +435,7 @@ func _test_no_emitting_segment_row_moves(t) -> void:
 		if def.shape == null or def.shape.kind != GroundShape.Kind.SEGMENT or def.intensity <= 0.0:
 			continue
 		checked += 1
-		if not def.mobile and not def.pursues:
+		if not def.mobile and def.pursuit == null:
 			continue
 		t.check(def.shape.reach() <= def.inner_radius,
 				("'%s' emits, is a segment and moves, so its %.0fpx body must lie inside its %.0fpx "

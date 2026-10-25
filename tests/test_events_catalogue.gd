@@ -216,7 +216,7 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
 				"'%s' is warned of %.2fs before it exists, at most the %.2fs ceiling"
 				% [def.id, def.warned_for(), Tuning.WARNING_ALONE_MAX])
 		t.check(def.validate(), "and '%s' gives what it owes" % def.id)
-		if def.pursues:
+		if def.pursuit != null:
 			continue
 		var wider: EventDef = def.duplicate()
 		wider.shape = def.shape

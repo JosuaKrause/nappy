@@ -1220,7 +1220,7 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 
 ## **She has to run to the door** *(inbox #764 in minty-lemur, the player: "player should have to run to the
 ## door"; inbox #782 in minty-lemur, the player: the radius bigger, not him moved)*. He warns while she is in the
-## stairwell and runs his line once she is within `masked_pursuer.charges_within` of him
+## stairwell and runs his line once she is within `masked_pursuer.notice.runs_within` of him
 ## (`EventInstance._warn_on_its_line()`). Stepped at the game's own rhythm: the game's physics
 ## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
 ## carrying body moves with the real stair steering and collision, the building's `EventManager._physics_process()`
@@ -1429,8 +1429,8 @@ func _hold_keys(actions: Array, running: bool) -> void:
 ## Driven through the building's `EventManager._physics_process()` and each instance's own `_process()`, the two
 ## calls the running game makes every frame, with her standing on the lobby's door at the shaft's
 ## foot for the whole run — off his line, clear of his reach, and inside
-## `masked_pursuer.charges_within` of where each man appears, so every man that appears notices her,
-## warns her and runs rather than waiting at the bottom for ever.
+## `masked_pursuer.notice.runs_within` of where each man appears, so every man that appears
+## notices her, warns her and runs rather than waiting at the bottom for ever.
 ##
 ## Three contracts, and the second is what keeps the first fair:
 ##

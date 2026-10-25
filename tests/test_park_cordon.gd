@@ -538,6 +538,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 		var in_view_after := 0.0
 		var slow_in_view := 0.0
 		var through_tape := 0
+		var was_leaving := false
 		while clock < PATIENCE * 2.0 and not busker.is_finished:
 			if clock >= set_off and not way.is_empty():
 				her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
@@ -559,8 +560,9 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 						< Tuning.PARK_CLOSING_LEAVE_SPEED * STEP * 0.5:
 					slow_in_view += STEP
 			walked = walked or (busker.is_leaving and busker.way_left().is_empty())
+			was_leaving = was_leaving or busker.is_leaving
 			last = busker.global_position
-		t.check(busker.is_leaving and busker.is_finished,
+		t.check(was_leaving and busker.is_finished,
 				"setting off %.0fs after the touch down the way out: the busker walked out "
 				% set_off + "ahead of her is gone in the end (%.1fs)" % clock)
 		t.check(not ended_in_view, "and not where she can see him (%.0fpx from her)"

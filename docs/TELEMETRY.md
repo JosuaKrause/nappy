@@ -128,7 +128,7 @@ The events:
     hand at the foot of the escape's stairwell, and the raised hand of the man a vehicle lets out
     and of day 13's guard set on her in her view — each once per instance — and the checkpoint
     guard's, `door-guard-warned`, each time the guard at a hut or an alley's post raises his hand
-    from her crossing of the door's line (`EventManager._warn_at_the_doors()`).
+    from her crossing of the door's line (`CheckpointController.warn_at_the_doors()`).
   - `-chased` — its charge (`EventBus.pursuit_began`), never its warning: a waiting charger when
     its warning has run with her still inside its radius; a vehicle's man and day 13's guard in her
     view when their raised hand has been up its second; the masked man when he starts his run; the
@@ -208,7 +208,7 @@ The events:
     as influenced always")*. A catch and a hold are the game's own tests, called and not copied
     *(inbox #586 in [olive-hedgehog](playtests/2026-10-05-olive-hedgehog.md), the player: "use the real catch code")*: `EventInstance.is_lethal_at()`, so a cyclist
     or lorry still only warned or waiting, a finished row, or a pursuer within reach through a wall
-    is no catch; and `EventManager._hold_that_would_begin()`, so a hold counts the frame it would
+    is no catch; and `CheckpointController.hold_that_would_begin()`, so a hold counts the frame it would
     start and only for the one instance that would take her in. Both are pure reads. A pursuer is
     chasing from the moment it comes for her (`EventBus.pursuit_began`), which is before she is
     within its reach, and a chase counts, so a guard with a wall between them still counts as
@@ -236,7 +236,7 @@ The events:
   instead.
 - `nappy-day-N-poster-torn` / `nappy-day-N-chat` / `nappy-day-N-checkpoint` — every poster torn
   (`PosterWalls._tear()`), every mother who stops her to chat, and every time a checkpoint holds
-  her (`EventManager._check_detentions()`, once per catch).
+  her (`CheckpointController.check_detentions()`, once per catch).
 - `nappy-day-N-poster-pursuit` — a tear whose marble sends a pursuer on foot after her, beside that
   tear's own `poster-torn`, the moment his warning goes up (`EventManager.send_a_pursuer()`): one
   per pursuer sent. A marble drawn while one is still on his way or after her sends nobody and
@@ -647,7 +647,7 @@ is made as the warning goes up, so the first line already knows.
 | `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log. Followed by whether the save was kept: on the web, a line when the browser's IndexedDB copy is confirmed ("the browser kept the save") or not ("the browser did not keep the save", with the browser's own error or the timeout); anywhere, a line when the save could not be kept at all ("the save was not kept": the file could not be written, or the page's storage was refused at boot). **Deleting the save file writes the same kind** — "deleted the save" when the file was removed, then on the web "the browser dropped the deleted save" or "the browser did not drop the deleted save" (with the browser's own error or the timeout), and "the deletion was not kept" when the file could not be removed or the page's storage was refused at boot; a deletion with no file to delete writes nothing. A held restart logs its deletion's first line, because it deletes the save before the run log closes; a web deletion's later answer is logged only if a log is open when it arrives, so it may land in the next run's log after the reload |
 | `shot` | `RunSession`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
-| `still` | `StillWatch` | **`--quit-when-still` fired** — she moved once, then held within a few pixels of one spot for the given time. Excludes any frame she is detained (`Stroller.is_detained()`, every `detain_seconds` row), a checkpoint hold that outlives the input lock (`EventManager.door_holding_her_at()`), or the signalled junction nearest her among those visible on screen showing her red on the main road's own light (`StillWatch.facing_a_red_light()`) — wherever on screen she herself is standing, since a mother who is really stuck is still stuck once the light turns green and the watch catches her then. A held frame restarts the count rather than freezing it, so it cannot fire the instant she is released. Her tile and the nearest live event or vehicle, so the picture that follows has a reason attached to it rather than only a place |
+| `still` | `StillWatch` | **`--quit-when-still` fired** — she moved once, then held within a few pixels of one spot for the given time. Excludes any frame she is detained (`Stroller.is_detained()`, every `detain_seconds` row), a checkpoint hold that outlives the input lock (`CheckpointController.door_holding_her_at()`), or the signalled junction nearest her among those visible on screen showing her red on the main road's own light (`StillWatch.facing_a_red_light()`) — wherever on screen she herself is standing, since a mother who is really stuck is still stuck once the light turns green and the watch catches her then. A held frame restarts the count rather than freezing it, so it cannot fire the instant she is released. Her tile and the nearest live event or vehicle, so the picture that follows has a reason attached to it rather than only a place |
 
 ### Reading the meter breakdown
 

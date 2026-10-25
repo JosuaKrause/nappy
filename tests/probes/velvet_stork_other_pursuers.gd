@@ -43,7 +43,7 @@ func run(t) -> void:
 func _clear_line_starts(seed_value: int) -> void:
 	var map := CityGenerator.generate(seed_value)
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var standoff := Tuning.pursuit_standoff(robbery.pursue_speed, robbery.standoff_reach())
+	var standoff := Tuning.pursuit_standoff(robbery.chase_speed(), robbery.standoff_reach())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var trials := 0
@@ -78,7 +78,7 @@ func _clear_line_starts(seed_value: int) -> void:
 				reached += 1
 				break
 			him += Navigator.new(map).step(him,
-					toward.normalized() * minf(robbery.pursue_speed * STEP, toward.length()),
+					toward.normalized() * minf(robbery.chase_speed() * STEP, toward.length()),
 					Mover.on_foot(EventInstance.FIGURE_RADIUS))
 	print("VELVET_STORK seed %d clear-line starts 360px off, her walking: %d trials, a straight chase reached her stand-off within 20s in %d"
 			% [seed_value, trials, reached])
@@ -127,7 +127,7 @@ func _the_sent_robbers_starts(t, seed_value: int) -> void:
 	var player: Stroller = suite._rig_player(t, director.contact_position())
 	var map := city.map
 	var def := EventCatalogue.by_id("robber_giving_chase")
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
 	var open: Array[Vector2i] = []
 	for y in map.size.y:
 		for x in map.size.x:
@@ -160,7 +160,7 @@ func _the_sent_robbers_starts(t, seed_value: int) -> void:
 				got = true
 				break
 			him += Navigator.new(map).step(him,
-					toward.normalized() * minf(def.pursue_speed * STEP, toward.length()),
+					toward.normalized() * minf(def.chase_speed() * STEP, toward.length()),
 					Mover.on_foot(EventInstance.FIGURE_RADIUS))
 		if got:
 			row[1] += 1

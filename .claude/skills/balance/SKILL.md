@@ -121,7 +121,7 @@ exemption by id (`_RUNNING_IS_CHEAPER`) rather than skipping it, because a rule 
 *measured* breaks silently when the falloff moves. **A second name on that list is a design
 decision, not a number** — any row that has to charge fifty points inside a short field will cross
 the threshold, and the answer is either a wider quieter field or accepting that sprinting past
-saves a little. The exception is `EventDef.pursues`: walking and running give **opposite outcomes**
+saves a little. The exception is a row with an `EventDef.pursuit`: walking and running give **opposite outcomes**
 rather than the same outcome at two prices. Nothing pursues before `Tuning.RUN_TAUGHT_DAY` — day 1
 teaches the arrow keys and day 3 teaches the run, with the thing that requires it.
 

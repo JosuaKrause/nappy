@@ -40,7 +40,7 @@ func _hud(t) -> CanvasLayer:
 func _pursuer() -> EventInstance:
 	var def := EventDef.new()
 	def.id = "test_pursuer"
-	def.pursues = true
+	def.pursuit = PursuitSpec.new()
 	def.telegraph_time = 2.0
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)

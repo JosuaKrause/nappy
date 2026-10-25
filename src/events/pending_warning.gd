@@ -30,8 +30,8 @@ extends RefCounted
 ## (`down_her_line()`), a pursuer sent down her heading on anything walkable (`along_her_heading()`),
 ## the fire engine on the road on its way to the fire (`on_its_route()`), the day-13 column in its lane
 ## of the main road (`in_its_lane()`); the resistance's trap is placed by `ResistanceDirector`'s own.
-## The owner of the warning (`EventManager`) decides what "arrive" does; this class holds the place
-## and the clock.
+## The owner of the warning (`EventManager`) decides what "arrive" does; this class holds the place,
+## and its clock is the one every warning runs on (`Warning`), read against the time it has been up.
 
 ## The row the badge draws: its silhouette, its colour, and how fast it will close.
 var def: EventDef
@@ -39,10 +39,14 @@ var def: EventDef
 var place := Vector2.INF
 ## Where the badge points from her, fixed when the warning goes up (`put_up()`).
 var offset := Vector2.INF
-## Seconds of the badge alone still to run.
-var left := 0.0
-## How long the warning has been up, in seconds.
+## How long the warning has been up, in seconds: the clock `_clock` is read against.
 var shown := 0.0
+## Seconds of the badge alone still to run.
+var left: float:
+	get:
+		return _clock.left(shown)
+## The badge's clock, `EventDef.warned_for()` long from the moment it is made.
+var _clock := Warning.new()
 ## Whether it came to nothing: when its time was up its ground had no place for the thing, or the
 ## thing could not be created there, so the badge went down with nothing in the world.
 var withdrawn := false
@@ -67,7 +71,7 @@ func logged_name() -> String:
 
 func _init(row: EventDef, where: Callable, arrive: Callable) -> void:
 	def = row
-	left = row.warned_for()
+	_clock.start(0.0, row.warned_for())
 	_where = where
 	_arrive = arrive
 
@@ -87,9 +91,8 @@ func put_up(her: Vector2) -> bool:
 ## is over, either way.
 func tick(delta: float, her: Vector2) -> bool:
 	place = her + offset
-	left -= delta
 	shown += delta
-	if left > 0.0:
+	if not _clock.has_run(shown):
 		return false
 	var at: Vector2 = _where.call(her)
 	if at == Vector2.INF or not bool(_arrive.call(at, her)):

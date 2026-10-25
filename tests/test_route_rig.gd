@@ -1394,8 +1394,8 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 		for instance in city.events.instances():
 			if instance.def.redetains:
 				instance._process(STEP)
-		city.events._watch_the_door_lines()
-		city.events._check_detentions()
+		city.events.checkpoints.watch_the_door_lines()
+		city.events.checkpoints.check_detentions()
 		held = held or _stroller.is_detained()
 		elapsed += STEP
 	var crossed := (_stroller.global_position - gate.global_position).dot(axis) > 0.0
@@ -1413,9 +1413,9 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	# zero above is the rig's route and not a check that could not have counted anything.
 	var lane := gate.global_position + Vector2(-axis.y, axis.x) * 16.0
 	_stroller.reset_at(lane - axis * 20.0)
-	city.events._watch_the_door_lines()
+	city.events.checkpoints.watch_the_door_lines()
 	_stroller.global_position = lane + axis * 20.0
-	city.events._watch_the_door_lines()
+	city.events.checkpoints.watch_the_door_lines()
 	t.check(city.events.walks_under_a_boom() == 1,
 			"while walking straight along the carriageway under it is counted (%d)"
 			% city.events.walks_under_a_boom())

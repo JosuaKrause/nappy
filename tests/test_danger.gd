@@ -375,7 +375,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 
 	var dog_def := EventCatalogue.by_id("charging_dog")
 	if dog_def:
-		t.check(dog_def.hard_fail and dog_def.pursues and dog_def.pursues_within <= 0.0,
+		t.check(dog_def.hard_fail and dog_def.pursuit != null and dog_def.notice_within() <= 0.0,
 				"charging_dog is a hard-fail pursuer sited already noticing her")
 		var dog := _instance(dog_def)
 		t.check(dog.is_telegraphing() and not dog.is_waiting(),
@@ -388,7 +388,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 
 	var robber_def := EventCatalogue.by_id("alley_robbery")
 	if robber_def:
-		t.check(robber_def.pursues_within > 0.0, "alley_robbery waits for a trigger")
+		t.check(robber_def.notice_within() > 0.0, "alley_robbery waits for a trigger")
 		var robber := _instance(robber_def)
 		t.check(robber.is_waiting(), "and nobody has come near it yet")
 		robber.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
@@ -641,7 +641,7 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 func _test_a_director_sited_pursuer_earns_an_arrow(t) -> void:
 	var edge := DangerEdge.new()
 	var dog := EventCatalogue.by_id("charging_dog")
-	t.check(dog != null and dog.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and dog.pursues,
+	t.check(dog != null and dog.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and dog.pursuit != null,
 			"charging_dog is still a director-sited pursuer")
 	if dog:
 		var instance := _instance(dog)

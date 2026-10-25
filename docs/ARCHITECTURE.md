@@ -80,11 +80,18 @@ src/
 	traffic_index.gd      where the cars are, lane by lane, so a turn can check for room
   events/
 	event_def.gd          authored event data
+	notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
+	pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
+	day_switch.gd         how a row is sited and noticed from the day after its first appearance
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
-	event_instance.gd     runtime node: position, lifetime, telegraph, emission; every picture
-	                       it draws is a region of the baked `events` page, by path
+	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
+	                       emission; every picture it draws is a region of the baked `events` page
 	charge_record.gd      a charger's warning, charge and the one way it ended, as counted
+	warning.gd            the one warning clock: started, held, called off or run out, read against
+	                      its owner's clock — an event's notice, a door crossing, a badge up alone
+	checkpoint_controller.gd  the district doors as she meets them: a hold and its release, a walk
+	                      under a raised boom, the crossing's warning and the guard it sets on her
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + the day's spec: the catalogue's
 	                      day, or the escape city's streets from its marble bag

@@ -705,14 +705,14 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 ## (minty-hedgehog, statement 3), and, asked where he stands in an alley too short for two-thirds
 ## and 176px from the mark both, *"Two-thirds wins"* (quiet-yak, inbox #471). In a courtyard's passage he
 ## stands at the courtyard's inner end (`_draw_guard_position_near_far_mouth()`). The roadblock's
-## guard keeps a band between `inner_radius + reach` and `pursues_within + reach` round its own
+## guard keeps a band between `inner_radius + reach` and `notice_within() + reach` round its own
 ## contact, on a spot with a clear line to it (`_roadblock_guard_spot()`). **`reach` is the
 ## contact's own**: a roadblock is touched
 ## from any side of its body, so it is guarded from the body's centre with `_body_touch_reach()`
 ## (`_begin_step()`). The band is worked out from the reach — nearer than
 ## `inner_radius + reach` a touch from the edge of the reach can land her inside his catch, and
-## past `pursues_within + reach` no touch can wake him — so a wider reach with a narrower one's band
-## is a guard standing nearer the ground she completes from than the band means.
+## past `notice_within() + reach` no touch can wake him — so a wider reach with a narrower one's
+## band is a guard standing nearer the ground she completes from than the band means.
 ##
 ## **Retires only the guard of the same kind this replaces.** `_guard` (the mark's own) and
 ## `_task_guard` (the roadblock's, at its own contact) are separate, so reading the mark, which
@@ -778,9 +778,9 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 		return _roadblock_guard_spot(rng, at, reach, her, on_screen_matters)
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance := robbery.inner_radius + reach
-	var max_distance := robbery.pursues_within + reach
+	var max_distance := robbery.notice_within() + reach
 	var walled_alleys := _walled_alleys()
-	var her_refuse_within := robbery.pursues_within if her != Vector2.INF else 0.0
+	var her_refuse_within := robbery.notice_within() if her != Vector2.INF else 0.0
 	var span := _through_alley_span(at)
 	if not span.is_empty():
 		return _guard_two_thirds_through(at, span, min_distance, walled_alleys, her,
@@ -795,7 +795,7 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ## **Where the roadblock's guard stands**, for a roadblock whose body is at `body`, touched from
 ## within `reach` of it (`_body_touch_reach()`): a tile's centre in the band round the body that
 ## `_maybe_set_a_trap()` describes — from `inner_radius + reach`, so no touch lands her in his
-## catch, to `pursues_within + reach`, past which no touch can wake him — with **a clear line to
+## catch, to `notice_within() + reach`, past which no touch can wake him — with **a clear line to
 ## the body** (`CityMap.clear_line()`), since he notices her only along one *(leafy-puffin, inbox
 ## #648: "yes noticing needs a clear line")* and a guard behind a building from the roadblock guards
 ## nothing.
@@ -810,7 +810,7 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ## from `rng`; at most `GUARD_WAYS_ASKED` spots are asked, in that order.
 ##
 ## Refused, as every guard's ground is, where he may not stand — not walkable, closed, held, on the
-## home block, in a walled alley, or under a standing body — within `pursues_within` of `her`, and,
+## home block, in a walled alley, or under a standing body — within `EventDef.notice` of `her`, and,
 ## when `on_screen_matters`, anywhere any part of him would be on screen (`_guard_shows()`).
 ##
 ## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
@@ -830,7 +830,7 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 		on_screen_matters: bool, or_any := true) -> Vector2:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var nearest := robbery.inner_radius + reach
-	var band_edge := robbery.pursues_within + reach
+	var band_edge := robbery.notice_within() + reach
 	var walled_alleys := _walled_alleys()
 	# [far alleys, far band, near alleys, near band]
 	var pools: Array = [[], [], [], []]
@@ -848,7 +848,7 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 					or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
 					or _map.is_in_walled_alley(tile, walled_alleys):
 				continue
-			if her != Vector2.INF and spot.distance_to(her) <= robbery.pursues_within:
+			if her != Vector2.INF and spot.distance_to(her) <= robbery.notice_within():
 				continue
 			if on_screen_matters and _guard_shows(spot):
 				continue
@@ -901,7 +901,7 @@ static func _shuffle(items: Array, rng: RandomNumberGenerator) -> void:
 ## **Whether she can walk from `her` to ground she can touch the roadblock at `body` from without
 ## coming within notice of a guard at `spot`**: a flood fill out from every open tile within `reach`
 ## of the body, over the ground she can walk today (walkable, open, unsealed, no body standing on
-## it), never onto a tile whose centre is within his `pursues_within` along a clear line from him
+## it), never onto a tile whose centre is within his `EventDef.notice` along a clear line from him
 ## (`CityMap.clear_line()`), the notice `EventInstance._chase()` takes. It answers yes the moment it
 ## reaches her tile, or a tile of `her_side` — the ground she reaches without coming near the
 ## roadblock at all (`_on_her_side()`), where nothing of any guard round it stands in her way. Tile
@@ -911,7 +911,7 @@ static func _shuffle(items: Array, rng: RandomNumberGenerator) -> void:
 ## thousand tiles rather than the city.
 func _leaves_her_a_way_past(spot: Vector2, body: Vector2, reach: float, her: Vector2,
 		her_side: HerSide) -> bool:
-	var notice := EventCatalogue.by_id("alley_robbery").pursues_within
+	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
 	var bound := _guard_notice_reach() + GUARD_WAY_DETOUR
 	var her_tile := _map.world_to_tile(her)
 	var seen := {}
@@ -991,9 +991,9 @@ func _on_her_side(side: HerSide, tile: Vector2i) -> bool:
 	return _reach_grid.reaches(tile, side.blocked, side.reached)
 
 ## How far from a roadblock's body any guard round it can notice her: the farthest he stands
-## (`TASK_GUARD_FARTHEST`), his notice (`pursues_within`), and a tile.
+## (`TASK_GUARD_FARTHEST`), his notice (`EventDef.notice`), and a tile.
 static func _guard_notice_reach() -> float:
-	return TASK_GUARD_FARTHEST + EventCatalogue.by_id("alley_robbery").pursues_within \
+	return TASK_GUARD_FARTHEST + EventCatalogue.by_id("alley_robbery").notice_within() \
 			+ Tuning.TILE_SIZE
 
 ## Whether she can walk onto `tile` today (`CityMap.passable()`, `Mover.on_foot()`): walkable,
@@ -1018,7 +1018,7 @@ func _guards_the_roadblock(feet: Vector2, roadblock: EventInstance) -> bool:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var reach := _body_touch_reach(roadblock)
 	var distance := feet.distance_to(roadblock.body_position())
-	return distance >= robbery.inner_radius + reach and distance <= robbery.pursues_within + reach \
+	return distance >= robbery.inner_radius + reach and distance <= robbery.notice_within() + reach \
 			and _guards_along_a_clear_line(feet, roadblock.body_position())
 
 ## **Whether a guard standing at `feet` has a clear line to the roadblock body at `body`**: the line
@@ -1199,9 +1199,10 @@ func _view_from(her: Vector2) -> VisibleView:
 ## own street**, straight left or right just out of sight. Only when neither has a clear run does the
 ## first legal start of all of them stand in, and then he may never reach her.
 ##
-## **He arrives chasing** (`EventDef.arrives_chasing`, amendment 7 of M226), so from any start here
-## walking straight away is caught within his long `Tuning.PURSUIT_TIME` cap, as are standing still
-## and walking into him (`tools/test.sh probes/m207_warning_lead.gd` measures each answer).
+## **He arrives chasing** (`PursuitSpec.Start.ARRIVES_CHASING`, amendment 7 of M226), so from
+## any start here walking straight away is caught within his long `Tuning.PURSUIT_TIME` cap, as
+## are standing still and walking into him (`tools/test.sh probes/m207_warning_lead.gd` measures
+## each answer).
 func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: EventDef,
 		front_door := false, prefer := Vector2.ZERO) -> Array:
 	var view := _view_from(her)
@@ -1403,7 +1404,7 @@ var _chaser := Mover.on_foot(EventInstance.FIGURE_RADIUS)
 ## **Never within `her_refuse_within` of `her`, and never where `_guard_shows()` calls him seen**
 ## (brisk-wombat, "a robber also appeared out of nowhere and instakilled me"): a candidate is
 ## drawn purely from the band around `at`, with no idea where she stands or what the camera can
-## see, so both refusals are what keeps him off her — outside his own `pursues_within`, or worse
+## see, so both refusals are what keeps him off her — outside his own `EventDef.notice`, or worse
 ## his `inner_radius`, a `hard_fail` with no warning at all — and off screen, whichever contact
 ## `at` names. `her` is `Vector2.INF` and `on_screen_matters` is `false` for a caller with nothing
 ## to keep away from — the bare-map rigs in `tests/test_resistance.gd` that call this directly —
@@ -1482,11 +1483,13 @@ func _depth_of_the_mark(at: Vector2, near: Vector2, axis: Vector2) -> float:
 ## (`_through_alley_span()`): **two-thirds of the way through it**, from the edge nearer the mark at
 ## `at` (`THROUGH_THE_ALLEY`) plus the tile the mark stands in from its mouth
 ## (`_depth_of_the_mark()`), so he is inside the alley rather than at its edge, the player's own
-## reason, and as far from the mark as when it stood on the mouth. Where that point is `pursues_within + ContactPoint.REACH` (216px) or more from the mark,
-## a touch of the mark from its own end never wakes him; in an alley too short for both — every
-## one-block alley: a mark stands one tile in from its end tile (`_mark_tiles()`), 48px in, so he
-## stands about 155px from it — he still stands two-thirds in, and reading the mark may wake him: *"Two-thirds
-## wins"* (quiet-yak, inbox #471), which overturns M213's floor of 176px for those alleys.
+## reason, and as far from the mark as when it stood on the mouth. Where that point is
+## `notice_within() + ContactPoint.REACH` (216px) or more from the mark, a touch of the mark
+## from its own end never wakes him; in an alley too short for both — every one-block alley: a
+## mark stands one tile in from its end tile (`_mark_tiles()`), 48px in, so he stands about
+## 155px from it — he still stands two-thirds in, and reading the mark may wake him:
+## *"Two-thirds wins"* (quiet-yak, inbox #471), which overturns M213's floor of 176px for those
+## alleys.
 ##
 ## **Never within `min_distance` of the mark** — `inner_radius`, his catch, plus
 ## `ContactPoint.REACH`, 62px — kept as a floor that a mark at a mouth never reaches (two-thirds of
@@ -1552,7 +1555,7 @@ func _guard_spot(at: Vector2) -> Vector2:
 ## have to lure the robber out first.")* His distance from the mark is whatever the courtyard leaves.
 ##
 ## **Beyond `max_distance` of the mark wherever the courtyard is deep enough for that** —
-## `pursues_within` plus `ContactPoint.REACH`, so reading the mark leaves him asleep — drawn
+## `EventDef.notice` plus `ContactPoint.REACH`, so reading the mark leaves him asleep — drawn
 ## anywhere from the inner end up to `FAR_END_REACH_IN` in from it but never nearer the mark than
 ## that. **Where the inner end itself is nearer than that, he stands on it**: no farther place
 ## exists. An ordinary courtyard is four tiles square, so he is often inside `max_distance` and may
@@ -2141,16 +2144,16 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 ## district door" · "Should trigger on the action not on a proximity test")*: `EventManager`'s
 ## `door_crossed` — she was let out on the far side after the inspection, or walked through the
 ## door's line and stayed across while its crossing warning ran
-## (`EventManager._run_the_crossing_warning()`) — completes the task when it is the named door, in
-## either direction. A crossing of
+## (`CheckpointController._run_the_crossing_warning()`) — completes the task when it is the
+## named door, in either direction. A crossing of
 ## any other door does nothing.
 ##
-## **Only an inspected crossing sends the trap.** Walked under a raised boom (`inspected` false), the
-## door sets its own guard on her (`EventManager._set_a_guard_on_her()`), and that guard is the whole
-## of the crossing's price: no robber comes from off screen as well. *(2026-10-04, the player, asked
-## whether both should come at once: "(a)" — under the boom only the guard, the robber only after an
-## inspected crossing.)* `_walked_under_the_door` carries that into `_on_contact_completed()`, which
-## `complete_now()` calls before it returns.
+## **Only an inspected crossing sends the trap.** Walked under a raised boom (`inspected`
+## false), the door sets its own guard on her (`CheckpointController._set_a_guard_on_her()`),
+## and that guard is the whole of the crossing's price: no robber comes from off screen as well.
+## *(2026-10-04, the player, asked whether both should come at once: "(a)" — under the boom only
+## the guard, the robber only after an inspected crossing.)* `_walked_under_the_door` carries
+## that into `_on_contact_completed()`, which `complete_now()` calls before it returns.
 func _on_door_crossed(at: Vector2, axis: Vector2, inspected: bool) -> void:
 	if not _step or _step.target_kind != ResistanceSteps.TargetKind.DOOR or not _contact \
 			or _contact.is_done or _door_at == Vector2.INF:

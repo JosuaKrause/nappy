@@ -379,7 +379,7 @@ static func _block_every_standing_reach(t, map: CityMap, plan: FinalePlanner.Pla
 	var count := 0
 	for placement: EventScheduler.Planned in plan.placements:
 		var def := placement.def
-		if def.mobile or not def.hard_fail or def.pursues:
+		if def.mobile or not def.hard_fail or def.pursuit != null:
 			continue
 		var instance := EventInstance.new()
 		instance.setup(def, placement.position, placement.path, placement.facing, map)
@@ -504,7 +504,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 	var escape := EventCatalogue.escape_roadblock()
 	var day := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	t.check(escape == day, "the escape's roadblock is a day's at full resistance progress, one row")
-	t.check(escape.pursues and escape.body_stays_behind and escape.hard_fail,
+	t.check(escape.pursuit != null and escape.body_stays_behind and escape.hard_fail,
 			"the escape's roadblock is still the hunting row: its guard chases and catches")
 	t.check(EventCatalogue.by_id("roadblock").intensity == 0.0 and day.intensity == 0.0
 			and escape.intensity == 0.0, "the roadblock row, cold and hunting, has no field strength")
@@ -520,7 +520,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		guard._attach_the_band()
 		var strongest := guard.contribution_at(beside)
 		# In inside his radius: he warns.
-		guard.player_at = post + Vector2(0.0, def.pursues_within - 10.0)
+		guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
 		guard._process(step)
 		var warned := guard.is_standing_for_its_notice()
 		strongest = maxf(strongest, maxf(guard.contribution_at(beside),
@@ -528,7 +528,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		# She stays inside his radius until his warning has run: he charges. She runs; he gives up
 		# and walks away.
 		var waited := 0
-		while guard.is_telegraphing() and waited < int((def.warns_for + 1.0) / step):
+		while guard.is_telegraphing() and waited < int((def.pursuit.warns_for + 1.0) / step):
 			guard._process(step)
 			waited += 1
 		var charged := false
@@ -590,10 +590,10 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	guard.set_process(false)
 	guard._attach_the_band()
 	var posted_first := guard.has_its_far_guard_posted()
-	guard.player_at = post + Vector2(0.0, def.pursues_within - 10.0)
+	guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
 	guard._process(step)
 	var waited := 0
-	while guard.is_telegraphing() and waited < int((def.warns_for + 1.0) / step):
+	while guard.is_telegraphing() and waited < int((def.pursuit.warns_for + 1.0) / step):
 		guard._process(step)
 		waited += 1
 	var posted_through_the_chase := true
@@ -631,14 +631,14 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 		var now := guard.far_guard_at()
 		if now == Vector2.INF:
 			break
-		paced = paced and now.distance_to(last) <= def.pursue_speed * step + 0.01 \
-				and is_equal_approx(guard._far_guard_walked, def.pursue_speed * step * walked)
+		paced = paced and now.distance_to(last) <= def.chase_speed() * step + 0.01 \
+				and is_equal_approx(guard._far_guard_walked, def.chase_speed() * step * walked)
 		last = now
 	t.check(last.distance_to(her) > set_off.distance_to(her) and paced,
 			"he walks away from her at his partner's pace (%d frames)" % walked)
 	t.check(guard.far_guard_at() == Vector2.INF and not guard.has_its_far_guard_posted(),
 			"and he is gone, and nobody stands at the band")
-	t.check(last.distance_to(her) > Tuning.OUT_OF_SIGHT - def.pursue_speed * step,
+	t.check(last.distance_to(her) > Tuning.OUT_OF_SIGHT - def.chase_speed() * step,
 			"only once he is out of her sight (%.0fpx from her)" % last.distance_to(her))
 	t.check(guard._far_guard == null, "his node goes with him")
 	guard.free()
@@ -682,7 +682,7 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 			var guard: EventInstance = made[1][0]
 			var band := guard.body_position()
 			var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
-			var her := band + toward * (guard.def.pursues_within + 80.0)
+			var her := band + toward * (guard.def.notice_within() + 80.0)
 			var where := "band %s from %d°" % [map.world_to_tile(band_plan.position),
 					bearing * 360 / 16]
 			var caught := false
@@ -830,7 +830,7 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t) -> void:
 
 ## **One guard at a time, wherever the two bands stand.** No two of the escape's roadblocks stand
 ## where one's guard notices her while she deals with the other: their notices, each
-## `pursues_within` round its band, never overlap (`EventScheduler._keeps_its_notice_to_itself()`).
+## `EventDef.notice` round its band, never overlap (`EventScheduler._keeps_its_notice_to_itself()`).
 ## *(Inbox #771 in minty-lemur, 2026-10-18: "two roadblocks are right next to each other and the second guard is
 ## invisible (hidden) until it already charges".)* One a street keeps two off one street; this keeps
 ## two apart across a junction or a corner as well.
@@ -848,7 +848,7 @@ func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
 					pairs += 1
 					var gap := EventScheduler._stands_at(map, bands[i]).distance_to(
 							EventScheduler._stands_at(map, bands[j]))
-					var apart := bands[i].def.pursues_within + bands[j].def.pursues_within
+					var apart := bands[i].def.notice_within() + bands[j].def.notice_within()
 					t.check(gap >= apart, "seed %d: the roadblocks at %s and %s stand %.0fpx apart, at least the %.0fpx their two notices take"
 							% [seed_value, map.world_to_tile(bands[i].position),
 							map.world_to_tile(bands[j].position), gap, apart])
@@ -887,7 +887,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 				var guard: EventInstance = made[1][0]
 				var band := guard.body_position()
 				var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
-				var her := band + toward * (guard.def.pursues_within + 80.0)
+				var her := band + toward * (guard.def.notice_within() + 80.0)
 				var radius_alone_seen := false
 				var charged := false
 				var warned_here := false
@@ -901,7 +901,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 					if guard.is_waiting():
 						her -= toward * Tuning.WALK_SPEED * step
 					var tile := map.world_to_tile(her)
-					var inside := her.distance_to(band) <= guard.def.pursues_within
+					var inside := her.distance_to(band) <= guard.def.notice_within()
 					if not map.in_bounds(tile) or not map.is_walkable(tile):
 						open_walk = open_walk and not inside
 						continue
@@ -996,7 +996,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 			for j in range(i + 1, bands.size()):
 				t.check(EventScheduler._stands_at(map, bands[i]).distance_to(
 						EventScheduler._stands_at(map, bands[j]))
-						>= bands[i].def.pursues_within + bands[j].def.pursues_within,
+						>= bands[i].def.notice_within() + bands[j].def.notice_within(),
 						"seed %d: the bands at %s and %s notice her from no common ground"
 						% [PLAYERS_SEED, map.world_to_tile(bands[i].position),
 						map.world_to_tile(bands[j].position)])

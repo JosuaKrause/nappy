@@ -77,7 +77,7 @@ func _measure(t, seed_value: int, walks: bool) -> void:
 	player.global_position = at
 	director._on_contact_completed(step.index)
 	var route := _walk_away_from(map, at) if walks else PackedVector2Array()
-	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
+	var standoff := Tuning.pursuit_standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var start := guard.global_position.distance_to(at)
 	var times := PackedFloat64Array()
 	var sweeping := 0
