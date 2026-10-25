@@ -156,9 +156,10 @@ jobs:
         with:
           enable-cache: true
 
-      # tools/test_clip.py encodes a real burst through ffmpeg, which the runner image does not
-      # ship; without it that test skips and the converter is never actually exercised. It is a
-      # pinned static build restored from a cache keyed on its name, like Godot, rather than an
+      # tools/test_clip.py encodes a real burst through ffmpeg and reads it back with ffprobe,
+      # which the runner image does not ship; without them that test skips and the converter is
+      # never actually exercised. They are a pinned static build restored from a cache keyed on
+      # its name, like Godot, rather than an
       # apt install from Ubuntu's mirrors on every run, whose stalled fetch once failed `test`
       # with nothing wrong in the code. The download runs only on a miss, with a timeout so a
       # stalled fetch fails fast, and its SHA-256 is checked before it is unpacked.
@@ -177,9 +178,10 @@ jobs:
           curl -sSL --fail --retry 3 -o ~/ffmpeg/ffmpeg.tar.xz \
             "https://github.com/BtbN/FFmpeg-Builds/releases/download/${FFMPEG_RELEASE}/${FFMPEG_BUILD}.tar.xz"
           echo "${FFMPEG_SHA256}  $HOME/ffmpeg/ffmpeg.tar.xz" | sha256sum --check -
-          tar -xf ~/ffmpeg/ffmpeg.tar.xz -C ~/ffmpeg --strip-components=2 "${FFMPEG_BUILD}/bin/ffmpeg"
+          tar -xf ~/ffmpeg/ffmpeg.tar.xz -C ~/ffmpeg --strip-components=2 \
+            "${FFMPEG_BUILD}/bin/ffmpeg" "${FFMPEG_BUILD}/bin/ffprobe"
           rm ~/ffmpeg/ffmpeg.tar.xz
-          chmod +x ~/ffmpeg/ffmpeg
+          chmod +x ~/ffmpeg/ffmpeg ~/ffmpeg/ffprobe
 
       - name: Put ffmpeg on PATH
         run: |
