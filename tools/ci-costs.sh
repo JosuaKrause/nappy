@@ -138,7 +138,7 @@ while IFS= read -r run_id; do
         fi
         # The same line tests/run_tests.gd prints and tools/test.sh --record-costs reads, just
         # with "<job>\t<step>\t<timestamp> " ahead of it here -- matched from "-- test_" on.
-        grep -hoE -- '-- test_[a-zA-Z_]+\.gd +[0-9]+ ms' "$log_file" \
+        grep -hoE -- '-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$log_file" \
             | sed -E 's/^-- +//; s/ +ms$//' \
             | awk '{ printf "%s %s\n", $1, $2 }' \
             >> "$all_lines"
