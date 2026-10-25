@@ -1,13 +1,13 @@
 class_name CarStrategy
 extends LaneStrategy
-## How a car in the crowd moves on the lanes: the half of a `CrowdAgent` that only a car has.
+## How a car in the crowd moves on the lanes: the half of a `LaneMover` that only a car has.
 ##
 ## A car keeps to its own lane on the right of the carriageway and cannot step anywhere else, so
 ## everything it does about the road ahead is decided early and checked before it moves: it gives
 ## way by braking toward a point (a zebra somebody waits at, a junction it has no right to, a gate,
 ## the car in front), turns only along an arc it has planned and found room for, is warned off a
 ## held street a junction away, and leaves the city by the spine's tunnel or bridge. The walker's
-## half is `WalkerStrategy`; what both share is the mover, `CrowdAgent`.
+## half is `WalkerStrategy`; what both share is the mover, `LaneMover`.
 
 ## The places `_plan_a_turn()` looks for room, in the order it tries them, and the slots of
 ## `turn_refusals`. See that function for what each one is.
@@ -69,18 +69,37 @@ var _waited_to_turn := 0.0
 ## so its carriageway stays open to a car.
 static var _car_today := Mover.of(Mover.CLOSED | Mover.BODIES)
 
-func _init(mover: CrowdAgent) -> void:
+func _init(mover: LaneMover) -> void:
 	super(mover)
 	nose = Tuning.CAR_STRIKE_HALF_LENGTH
-	acts_within = CrowdAgent.LOOKAHEAD_TILES
+	acts_within = LaneMover.LOOKAHEAD_TILES
 	shut_by_a_hold = true
 	scans_from_its_lane = true
 	today = _car_today
 
 # -------------------------------------------------- the mover's questions ---
 
+## The car's along-track length and across-track width for the shadow capsule — fixed constants
+## rather than read off a texture, so a picture cannot resize the shadow.
+const SHADOW_ALONG := 52.0
+const SHADOW_ACROSS := 30.0
+
+## A car's ground shape — a capsule along its travel axis, sized from `SHADOW_ALONG` and
+## `SHADOW_ACROSS`: `radius` is half the across measurement and `half_length` is what is left of
+## half the along once the two end caps are accounted for.
+##
+## **No body for a car.** A car's lethality is `TrafficIndex`'s, not a field's, and a `StaticBody2D`
+## here would change the crowd's own collision rules rather than only how it looks — see
+## docs/EVENTS.md and the **crowd-traffic** skill on why separation between bodies is positional,
+## never a shape a car could get pinned against. This shape is the shadow's and the debug view's;
+## the lethal rectangle is `will_be_lethal()`'s strike box (`Tuning.CAR_STRIKE_HALF_LENGTH` and
+## `CAR_STRIKE_HALF_WIDTH`).
+static func shadow_shape() -> GroundShape:
+	var radius := SHADOW_ACROSS * 0.5
+	return GroundShape.segment(SHADOW_ALONG * 0.5 - radius, radius)
+
 func ground_shape() -> GroundShape:
-	return CrowdAgent._car_shadow_shape()
+	return shadow_shape()
 
 func lane_offsets_at(_along_tile: int) -> Array[int]:
 	return CrowdLanes.ROAD_OFFSETS
@@ -118,7 +137,7 @@ func may_be_placed_on(tile: Vector2i) -> bool:
 ## for free. Make-way and bump still land from outside, since a standing body still has to be got
 ## round. It leaves the way anybody else leaves the field, once nobody can see it go.
 func begin_frame(delta: float) -> bool:
-	_mover._advance_car_bob(delta)
+	_mover.advance_the_picture(delta)
 	_give_way(delta)
 	if _mover._turn:
 		_follow_the_turn(delta)
@@ -413,7 +432,7 @@ func _has_room_to_turn(crossing: int, turning: float) -> bool:
 	# After the turn the axes swap: what is currently the coordinate *across* this corridor becomes
 	# the one *along* the new one, which is where in that queue the car would appear.
 	var landing := _mover._cross() * turning
-	return _mover.traffic.room_at(CrowdAgent.make_lane_key(vertical, crossing, lane, turning),
+	return _mover.traffic.room_at(LaneMover.make_lane_key(vertical, crossing, lane, turning),
 			landing, Tuning.CAR_GAP_MIN)
 
 # -------------------------------------------------------------- car turns ---
@@ -652,7 +671,7 @@ func _follow_the_turn(delta: float) -> void:
 	if _mover._turn_run_up > 0.0:
 		var straight := minf(travel, _mover._turn_run_up)
 		_mover._set_along(_mover._along() + straight * _mover._direction)
-		_mover._set_cross(move_toward(_mover._cross(), _mover._lane_centre, CrowdAgent.STEER_SPEED * delta))
+		_mover._set_cross(move_toward(_mover._cross(), _mover._lane_centre, LaneMover.STEER_SPEED * delta))
 		_mover._turn_run_up -= straight
 		travel -= straight
 		if _mover._turn_run_up > 0.0:
@@ -805,7 +824,7 @@ func _the_exit_has_room_to_leave(turn: CarTurn) -> bool:
 func _has_room_to_land(turn: CarTurn) -> bool:
 	if not _mover.traffic:
 		return true
-	return _mover.traffic.room_at(CrowdAgent.make_lane_key(turn.exit_vertical, turn.exit_corridor, turn.exit_lane,
+	return _mover.traffic.room_at(LaneMover.make_lane_key(turn.exit_vertical, turn.exit_corridor, turn.exit_lane,
 			turn.exit_direction), turn.landing(), Tuning.CAR_GAP_MIN)
 
 ## Holds the piece of road a committed turn is going to land on, once a frame for as long as the
@@ -831,7 +850,7 @@ func _claim_the_turn() -> void:
 func _distance_to_the_blockage() -> float:
 	# Nothing to answer on the arc itself: the lookahead is a cached scan down the lane the car has
 	# left, and the ground the curve covers was checked before it started.
-	if _mover._blocked_in > CrowdAgent.LOOKAHEAD_TILES:
+	if _mover._blocked_in > LaneMover.LOOKAHEAD_TILES:
 		return INF
 	if _mover._turn and _mover._turn_run_up <= 0.0:
 		return INF
@@ -1094,7 +1113,7 @@ func _pick_an_arm(crossing: int, first: float, from := Vector2.INF) -> float:
 		return 0.0
 	var open: Array[float] = []
 	for turning: float in [first, -first]:
-		if not _blocked_ahead(not _mover._vertical, turning, CrowdAgent.LOOKAHEAD, from):
+		if not _blocked_ahead(not _mover._vertical, turning, LaneMover.LOOKAHEAD, from):
 			open.append(turning)
 	if open.is_empty():
 		return 0.0

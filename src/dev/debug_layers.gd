@@ -404,7 +404,7 @@ func _draw_shadows() -> void:
 			continue
 		_draw_shadow_outline(instance.def.shape, instance.global_position, instance.solid_axis())
 	for agent in _agents():
-		var axis := agent.travel_axis() if agent.kind == CrowdAgent.Kind.CAR else Vector2.RIGHT
+		var axis := agent.heading() if agent.kind == CrowdAgent.Kind.CAR else Vector2.RIGHT
 		_draw_shadow_outline(agent.shape, agent.global_position, axis)
 	var props: Array = (_world as City).props() if _world is City else []
 	for prop in props:
@@ -431,7 +431,7 @@ func _pram_position() -> Vector2:
 ## hers, the pram's, every building, a road closure's and the map
 ## boundary's own barrier bodies, and every solid event's obstruction — plus a moving car's strike
 ## box, drawn in the field layer's own lethal colour because it is not a body
-## (`CrowdAgent._car_shadow_shape()`'s own doc: "no body for a car") but is exactly what
+## (`CarStrategy.shadow_shape()`'s own doc: "no body for a car") but is exactly what
 ## `will_be_lethal()` tests against. **Walkers and cars have no body; nothing is invented for
 ## them.**
 func _draw_bodies() -> void:

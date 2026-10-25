@@ -75,6 +75,11 @@ var _field: CrowdField
 ## Where the cars are, by lane. Filled by `space_out_the_traffic()` out of the buckets it already
 ## sorts, and read by a car deciding which arm of a junction to turn into. See `TrafficIndex`.
 var _traffic := TrafficIndex.new()
+## What the screen shows, handed to every agent so none of them reaches for the viewport. See
+## `CrowdView`.
+var _view := CrowdView.new(self)
+## What the crowd and its agents charge their time and their draws to. See `CrowdTiming`.
+var _timing := CrowdTiming.new()
 ## The lights on the spine. Owned by `City`; the clock is advanced here because this is the class
 ## a rig steps, and a rig that runs the traffic without running the signals is running a
 ## different city — see `step()`.
@@ -267,10 +272,10 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 func set_focus(at: Vector2) -> void:
 	_field.centre = at
 
-## Exact authoring shares the live crowd's lane, pocket and junction machinery. A rejected
-## placement is never replaced by a random one.
-func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vector2,
-		speed: float, seed_value: int) -> Dictionary:
+## A new agent with everything the crowd hands every one it makes: the flags it runs under, the
+## day's traffic, doors, home segments and pockets, what the screen shows and what it charges its
+## time to.
+func _make_an_agent() -> CrowdAgent:
 	var agent := CrowdAgent.new()
 	agent.skip_draw = skip_agent_drawing
 	agent.skip_motion = skip_motion
@@ -278,6 +283,15 @@ func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vecto
 	agent.door_segments = _door_segments
 	agent.home_segments = _home_segments
 	agent.pockets = _pockets
+	agent.view = _view
+	agent.frame_timing = _timing
+	return agent
+
+## Exact authoring shares the live crowd's lane, pocket and junction machinery. A rejected
+## placement is never replaced by a random one.
+func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vector2,
+		speed: float, seed_value: int) -> Dictionary:
+	var agent := _make_an_agent()
 	var problem := agent.setup_at(kind, _map, _field, seed_value, at, heading, speed)
 	if not problem.is_empty():
 		agent.free()
@@ -389,13 +403,7 @@ func _exit_tree() -> void:
 ## north-south on a day when the coin came up that way.
 func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) -> void:
 	for i in count:
-		var agent := CrowdAgent.new()
-		agent.skip_draw = skip_agent_drawing
-		agent.skip_motion = skip_motion
-		agent.traffic = _traffic
-		agent.door_segments = _door_segments
-		agent.home_segments = _home_segments
-		agent.pockets = _pockets
+		var agent := _make_an_agent()
 		agent.setup(kind, _map, _field, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
 		_city.add_entity(agent)
 		_agents.append(agent)
@@ -421,13 +429,7 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 					var distance := (tile + 0.5) * Tuning.TILE_SIZE
 					var at := Vector2(cross, distance) if vertical else Vector2(distance, cross)
 					var heading := (Vector2.DOWN if vertical else Vector2.RIGHT) * (1 if rng.randf() < 0.5 else -1)
-					var agent := CrowdAgent.new()
-					agent.skip_draw = skip_agent_drawing
-					agent.skip_motion = skip_motion
-					agent.traffic = _traffic
-					agent.door_segments = _door_segments
-					agent.home_segments = _home_segments
-					agent.pockets = _pockets
+					var agent := _make_an_agent()
 					var problem := agent.setup_at(CrowdAgent.Kind.WALKER, _map, _field, rng.randi(), at, heading, -1)
 					if problem.is_empty():
 						candidates.append(agent)
@@ -1028,14 +1030,14 @@ func _is_to_the_right_of(a: CrowdAgent, b: CrowdAgent) -> bool:
 # shape and cost as the `total_excitement_at` the baby already runs every physics frame.
 
 func _physics_process(delta: float) -> void:
-	if FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.CROWD)
+	if _timing.running():
+		var outer := _timing.enter()
 		_tick_the_crowd(delta)
-		FrameRecord.leave(outer)
+		_timing.leave(outer)
 	else:
 		_tick_the_crowd(delta)
 
-## The crowd's own tick, timed under `FrameRecord.CROWD`.
+## The crowd's own tick, timed under the frame record's crowd bucket.
 func _tick_the_crowd(delta: float) -> void:
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
 	# before the signals advance, so nothing below runs this frame — every agent's own `_process`

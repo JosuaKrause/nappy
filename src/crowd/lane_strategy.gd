@@ -1,14 +1,14 @@
 class_name LaneStrategy
 extends RefCounted
 ## What differs between a walker and a car moving on the lattice's lanes, behind one set of
-## questions the mover asks: `WalkerStrategy` and `CarStrategy` answer them, and `CrowdAgent` — the
+## questions the mover asks: `WalkerStrategy` and `CarStrategy` answer them, and `LaneMover` — the
 ## mover — keeps everything the two kinds share (the lane it is in, its look-ahead, the held step,
 ## placement and recycling, junction and queue questions) and never asks which kind it is.
 ##
 ## **One object per agent, handed its mover once.** A strategy holds the state only its kind has (a
 ## walker's door hold and sidesteps, a car's turn planning) and reads and writes the mover's lane
 ## state directly: the two are one feature split by kind, and the lane state stays on the mover
-## because both kinds' every frame reads it. `CrowdAgent.kind` is what installs one, so setting the
+## because both kinds' every frame reads it. `LaneMover.kind` is what installs one, so setting the
 ## kind on a hand-built agent gives it that kind's rules at once.
 ##
 ## The answers below are the neutral ones — what a body with no rule of its own about the question
@@ -18,7 +18,7 @@ extends RefCounted
 static var _closed_today := Mover.of(Mover.CLOSED)
 
 ## The mover this strategy belongs to.
-var _mover: CrowdAgent
+var _mover: LaneMover
 
 ## Half the length of the body along its own line of travel, which is what actually enters a
 ## junction box first and leaves it last. Zero for a walker, who is not what a box is rationed
@@ -32,7 +32,7 @@ var nose := 0.0
 ## that needs a junction box to fit in, and reversing where it stands is the last resort with no
 ## path in it, so a car that drove up to a wall would stand there nose-on and take the street behind
 ## it with it. It has to decide while the last junction is still in front of it, which is what
-## `CrowdAgent.LOOKAHEAD_TILES` is measured to reach.
+## `LaneMover.LOOKAHEAD_TILES` is measured to reach.
 ##
 ## **A walker acts only on the next tile, because its answer costs a stride.** *(2026-09-19:
 ## "pedestrians should only avoid the area if they cannot reach it physically. right now they give
@@ -41,7 +41,7 @@ var nose := 0.0
 ## lost: a street given up from a junction away is a street with nobody on it for the whole of its
 ## length, which is how side streets and sealed-off blocks came to stand empty. One tile rather than
 ## zero because the look-ahead is cached per tile and the step that would carry a walker into the
-## thing is held (`CrowdAgent._keep_out_of_a_body()`), so "the next tile is shut" is the last moment
+## thing is held (`LaneMover._keep_out_of_a_body()`), so "the next tile is shut" is the last moment
 ## a decision can still be taken with room to take it in.
 var acts_within := 1
 
@@ -89,7 +89,7 @@ var scans_from_its_lane := false
 ## be placed and where it may stand.
 var today: Mover
 
-func _init(mover: CrowdAgent) -> void:
+func _init(mover: LaneMover) -> void:
 	_mover = mover
 
 ## This agent's own ground shape: a point for a walker, a capsule along the travel axis for a car.

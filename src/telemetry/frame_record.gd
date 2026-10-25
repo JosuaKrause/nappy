@@ -15,7 +15,7 @@ extends RefCounted
 ## **Off, it costs one read per timed entry point**, and nothing is allocated, so a release page
 ## without `?framerecord=1` never reaches the clock. The crowd's agents and the live events, timed
 ## a couple of hundred times a frame, read a copy of `on` taken when each was made
-## (`CrowdAgent._timed`, `EventInstance._timed`); the systems timed once a frame read `on` itself.
+## (`LaneMover._timed`, `EventInstance._timed`); the systems timed once a frame read `on` itself.
 
 ## What the physics steps did that no named system claims: her own movement and the physics
 ## server's step, and any `_draw()` a physics callback queued, since the engine flushes those at

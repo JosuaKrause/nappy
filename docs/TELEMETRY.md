@@ -953,16 +953,19 @@ half and four times the product (`docs/evidence/m159-frame-record-2026-10-04/`),
 subtracts the product from a phone's frames subtracts too little.
 
 **Off, it costs every player as little as the wrap can.** The crowd's agents and the live events
-are timed a couple of hundred times a frame, so each copies `FrameRecord.on` when it is made and,
-off, pays one member read before its body, which stays in its own `_process()`; a static read and
+are timed a couple of hundred times a frame, so each copies `FrameRecord.on` when it is made (an
+agent when `Crowd` hands it its `CrowdTiming`, the crowd's handle on the record) and, off, pays one
+member read before its body, which stays in its own `_process()`; a static read and
 a call into a second function there made every player's frame measurably longer on a desktop,
 with the record off. The five systems timed
 once a frame (the crowd's and the event manager's physics steps, the sweep, the halo and the edge)
-are built with the city, before the recorder starts, so they read `FrameRecord.on` each frame. The
+are built with the city, before the recorder starts, so they read `FrameRecord.on` each frame (the
+crowd's through its `CrowdTiming`). The
 measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
 
-The game's own `_draw()` overrides each start with `if FrameRecord.on:` and one call that adds 1
-to a per-kind count, so off they pay one static read each. That is acceptable where the timing
+The game's own `_draw()` overrides each start with `if FrameRecord.on:` (a crowd agent's with
+`if frame_timing != null and frame_timing.running():`, through the `CrowdTiming` it is handed) and one
+call that adds 1 to a per-kind count, so off they pay one static read each. That is acceptable where the timing
 wrap's read was not, because of how often it runs: a frame runs about twenty `_draw()` calls (the
 retained canvas items redraw only when something changes) against some 270 timed bodies, so with
 the record off the guarded reads cost nothing the frame medians can see. The measured figures —

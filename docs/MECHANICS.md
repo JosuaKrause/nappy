@@ -739,7 +739,7 @@ brake from cruise**, or a car cannot physically honour the gap it is keeping and
 resolves by interpenetration again however good the controller is.
 
 **The spacing correction never places a car on ground it could not have driven onto itself.**
-`CrowdAgent.nudge_back()` and `CarStrategy.join_the_back_of_the_queue()` are pure arithmetic with no
+`LaneMover.nudge_back()` and `CarStrategy.join_the_back_of_the_queue()` are pure arithmetic with no
 notion of the map underneath them, so both ask the same `cannot_go_on()` the forward-looking lookahead
 already trusts about blocked ground — a hard seal, a region wall or a dead end's own built-over
 footprint — rather than parking a car inside it. A recycle's merge is refused whole, since the spot

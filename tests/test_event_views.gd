@@ -18,7 +18,7 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 
 ## `EightDirection`'s own sector order (0 E .. 7 NE), and the view/mirror `docs/GRAPHICS.md`'s
-## mirror convention says each one draws — identical to `CrowdAgent.WALKER_VIEW_BY_SECTOR` and
+## mirror convention says each one draws — identical to `WalkerLook.VIEW_BY_SECTOR` and
 ## `tests/test_walker_views.gd`'s own `EXPECTED_VIEW`/`EXPECTED_MIRRORED`, since every family below
 ## shares the one table.
 const EXPECTED_VIEW: Array[String] = [
