@@ -154,6 +154,12 @@ When a pull request's reviews have come back *not ready* three times (woolly-pen
 approach is rethought, including whether the chosen solution is the right way at all. The count is
 per pull request.
 
+**Who writes it is decided case by case** (inbox #842). The orchestrating session asks the
+builder for the rethink when it judges the builder has the context and the capability for it, and
+otherwise writes it itself or starts a fresh planning agent for it; a builder on a small model
+(Haiku) is the player's example of one that may not. In a session with no orchestrator (a Codex
+session working alone), the session that owns the pull request writes it.
+
 *Proposed, not asked for, open to the player's correction:*
 
 - **What counts:** every *not ready* verdict, full reviews and reviews of a delta alike, a queue
@@ -163,12 +169,8 @@ per pull request.
   to the player. It decides *how* the open findings get fixed, never whether: the pull request still
   does not merge with a found defect open ("Is every defect already found in this change fixed
   inside it?", above).
-- **Who writes it is decided case by case** (inbox #842). The orchestrating session asks the
-  builder for the rethink when the builder has the context and a model strong enough for it, and
-  checks it against the player's words and the queue; otherwise it writes the rethink itself or starts
-  a fresh planning agent for it. A builder on a small model (Haiku) is the player's example of one
-  not to ask. In a session with no orchestrator (a Codex session working
-  alone), the session that owns the pull request writes it.
+- **A builder's rethink is checked:** the orchestrating session checks it against the player's
+  words and the queue before it stands.
 - **Where:** the rethink and what it decided go in the pull request's conversation before any
   further commit; a change of approach that touches what the player asked for goes to the player as
   a question first.
