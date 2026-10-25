@@ -720,6 +720,9 @@ func _make_player() -> Stroller:
 func _new_city() -> City:
 	var city: City = CITY.instantiate()
 	city.trace = _the_trace()
+	city.run_posters = GameState.posters
+	city.run_spend = _spend
+	city.run_resistance = GameState.resistance
 	city.ground_mode = config.ground_mode as SceneryGround.Mode
 	city.scenery_frame_locked = config.recipe_scripted
 	city.skip_shadows = config.skip_shadows

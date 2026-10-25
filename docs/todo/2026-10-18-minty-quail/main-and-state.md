@@ -9,8 +9,10 @@
 - **The registered run state reaches the save and most readers through `GameState`.** The run's
   sub-states are one list, `GameState.run_parts`, and the dawn copy, the lost day's give-back, the
   snapshot and the save walk it; `GameSave` is a static that reads that list off `GameState` rather
-  than being handed it, and `ResistanceDirector`, `EventManager`, `Happenings`, `hud.gd` and
-  `day_summary.gd` read the run's fields (`GameState.pelican`, `.scars`, `.city_state`,
+  than being handed it; `City`'s `run_posters`, `run_spend` and `run_resistance` fall back to
+  `GameState`'s parts when a city is built outside `main`; and `ResistanceDirector`,
+  `EventManager`, `Happenings`, `hud.gd`, `day_summary.gd` and the dev rigs (`scene_recipe_runtime.gd`,
+  `scene_recipe_draft.gd`, `route_rig.gd`) read the run's fields (`GameState.pelican`, `.scars`, `.city_state`,
   `.completed_resistance_steps`) through `GameState`'s forwarding properties rather than a part they
   are handed. `GameState.` is read about a hundred times in `main`, `GameState.day` among them. The
   hidden globals held in statics are filed in `hidden-statics.md`.
@@ -20,7 +22,7 @@
 
 **Build:** a `RunFlow` with an explicit mode enum and its transitions; a `DayDirector` with public
 `start_day(spec)` and `finish_day(result)` that `main` and the tests both call; a pure `LossCause`;
-the registered run sub-states handed to the save and to the readers named above rather than read
+the registered run sub-states handed to the save, to every `City` and to the readers named above rather than read
 from `GameState`; a pure `SummaryModel` the screen only renders, and `continued(mode)`.
 
 **Scene recipes become configurations of `RunFlow`.** The dev flags are one `RunConfig` read at boot

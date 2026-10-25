@@ -11,6 +11,12 @@ extends RefCounted
 ## string), loads the fixture and expects the same run back, and loses a day from the loaded run
 ## and expects the same give-back.
 ##
+## **The fixture is the old-save check and stays as it is.** It is a save written before the parts
+## existed, and what it proves is that such a save still loads and gives back the same. When the
+## save format next changes on purpose, this fixture is not regenerated from the new build (that
+## would erase what it proves): the comparisons that no longer hold are narrowed to the keys the
+## fixture holds, and a new fixture is added for the new format with its own provenance line.
+##
 ## `run()` puts back the run it found, so nothing leaks into the next suite.
 
 const SCENARIO := preload("res://tests/fixtures/run_state_scenario.gd")

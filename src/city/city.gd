@@ -168,7 +168,9 @@ var _posters: PosterWalls
 ## The parts of the run's state the city reads, held rather than reached for through `GameState`:
 ## what is pasted on the walls, the scars and block arcs a lost day gives back, and whether the
 ## pram carries the package. They default to the run's own, which is what `main` and every rig
-## that builds a city want; a test that wants a city of its own sets them before `build()`.
+## that builds a city want. `main._new_city()` hands them over explicitly; the declaration's
+## fallback is for the cities tests and rigs build outside a boot, and a test that wants a city of
+## its own sets them before `build()`.
 var run_posters: PosterState = GameState.posters
 var run_spend: AttemptSpendState = GameState.attempt_spend
 var run_resistance: ResistanceRunState = GameState.resistance
@@ -442,8 +444,8 @@ func _spawn_home() -> void:
 	var stoop := map.tile_rect_to_world(map.home_rect)
 	_home_door = HomeDoor.new()
 	# Sealed already on a boot that resumes on day 11 or later, or reloads a save written after
-	# the raid — `_door_texture_for_today()` reads `GameState.scars`, already loaded by the time
-	# `main.gd` calls `City.build()`. Day 10 itself is `seal_home_door()`'s, called live the
+	# the raid — `_door_texture_for_today()` reads the run's scars (`run_spend`), already loaded by the
+	# time `main.gd` calls `City.build()`. Day 10 itself is `seal_home_door()`'s, called live the
 	# moment the raid actually arrives.
 	_home_door.picture = _door_texture_for_today()
 	# Feet-anchored like everything else: the NODE sits on the ground plane at the back of
