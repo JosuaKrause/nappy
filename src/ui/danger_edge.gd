@@ -59,7 +59,6 @@ const MOST_AT_ONCE := BadgeModel.MOST_AT_ONCE
 ## The thresholds are `BadgeModel`'s, which decides which dangers get a badge (see there for what
 ## each means); they stay reachable here for the callers that name them.
 const CLOSING_SPEED := BadgeModel.CLOSING_SPEED
-const LEAD_TIME := BadgeModel.LEAD_TIME
 const HOLD := BadgeModel.HOLD
 const SMOOTHING := BadgeModel.SMOOTHING
 const SCREEN_MARGIN := BadgeModel.SCREEN_MARGIN

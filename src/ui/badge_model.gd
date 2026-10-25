@@ -45,9 +45,11 @@ const HOLD := 0.8
 const SMOOTHING := 6.0
 ## How far out of sight something has to be before it is worth a badge, in screen px. A thing
 ## sitting on the boundary would otherwise trade places with its own badge every frame: off screen,
-## badge up, badge draws it back into mind, on screen, badge gone. Once one is up it is kept until
-## the thing is properly in sight, which is the same hysteresis `HOLD` gives the closing test and
-## for the same reason.
+## badge up, badge draws it back into mind, on screen, badge gone. So a badge is raised only once the
+## thing is past the band, and the band is asked again every frame: **for anything not created under a
+## warning and not a charger, a badge already up is kept through the band by `HOLD` alone** (0.8 s).
+## A charger's margin is 0 from the frame it runs, and a warned arrival's until it has been seen
+## once, so both keep their badge until they are in sight.
 const SCREEN_MARGIN := 130.0
 ## At most this many at once. Three arrows is a warning; eight is wallpaper, and the day the
 ## edge of the screen becomes wallpaper is the day it stops being read.
@@ -182,10 +184,14 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 	if not state.get("charged", false) and raw > 0.0 and subject.charging:
 		approach = maxf(approach, raw)
 		state["charged"] = true
-		# **And its badge is owed from the first frame it runs, wherever it stands.** The margin is
-		# hysteresis for a badge that is already up; a charger that sets off from inside the band
-		# past the view's edge has none to keep, and held to the band it would run silently until it
-		# left it. So its margin waits until it has been in sight again.
+		# **A charger's badge is owed from the frame it runs until it is in sight, wherever it
+		# stands.** Fired once, on the first frame a pursuer's charge is on and it is moving. Held
+		# to the margin band, two things could silence it. Set off from inside the band, it was never
+		# raised and ran silently until it left it. Set off from beyond the band, its badge was up
+		# on its first frame and then, running into the band while still out of sight, only `HOLD`
+		# kept it: with her walking away (92 px/s) from him running (112 px/s) he stayed in the band
+		# past `HOLD` and it came down (the shape of CI's four stairwell failures, "first up 0
+		# frames in, down on N"). So its margin is 0 until it has been in sight again.
 		state["seen"] = false
 	var distance := at.distance_to(here)
 	# The gap to its *field*, not to its centre: an event reaches her when its outer radius
@@ -194,7 +200,8 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 	var hold: float = state["hold"]
 	# The margin is hysteresis on the *screen edge*, and it is the other half of the flicker:
 	# without it a thing hovering on the boundary trades places with its own badge every frame. It
-	# has to be well outside the view to raise one, and keeps it until it is properly in view.
+	# has to be well outside the view to raise one; once up, the margin keeps it only through
+	# `HOLD`, except for a charger and a warned arrival, whose margin is 0 until they have been seen.
 	if subject.shown:
 		state["seen"] = true
 	var margin: float = SCREEN_MARGIN if state["seen"] else 0.0

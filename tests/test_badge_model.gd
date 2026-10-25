@@ -14,6 +14,7 @@ func run(t) -> void:
 	_test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t)
 	_test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t)
 	_test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_view(t)
+	_test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_past_the_hold(t)
 	_test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t)
 	_test_a_pending_warning_is_announced_for_its_whole_warning(t)
 	_test_three_at_once_soonest_arrival_first(t)
@@ -152,6 +153,50 @@ func _test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_vi
 		t.check(first == 0 and dropped == 0,
 				"a masked man running from %.0fpx past the view: badge from frame 0, down on %d frames (first up %d)"
 				% [start, dropped, first])
+
+## **CI's shape.** The badge is up on his first frame (he starts beyond the margin band), and then he
+## runs into the band while still out of sight: she walks away at 92 px/s, he runs at 112, so the
+## view recedes from him at nearly his own pace and he stays in the band for longer than `HOLD`
+## (0.8s). Held to the band, only `HOLD` kept the badge and it came down ("first up 0 frames in, down
+## on N"); a charger's margin is 0 until he is in sight, so it stays. The view moves with her.
+func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_past_the_hold(t) -> void:
+	var model := BadgeModel.new()
+	var here := Vector2.ZERO
+	var man := _vehicle(1, Vector2(VIEW.end.x + 100.0, 0.0), 112.0)
+	man.logged_name = "masked_pursuer"
+	# A lambda captures by value, so the view reads her position from a holder it shares.
+	var her := {"at": Vector2.ZERO}
+	var in_view := func(p: Vector2, m: float) -> bool: return VIEW.grow(m * 0.5).has_point(p - her["at"])
+	for i in 10:
+		man.shown = VIEW.has_point(man.position - here)
+		model.step(STEP, here, [man], in_view, Tuning.WALK_SPEED)
+	man.charging = true
+	var first := -1
+	var dropped := 0
+	var frame := 0
+	var in_band_frames := 0
+	while frame < 1500:
+		man.position.x -= 112.0 * STEP
+		here.x -= 92.0 * STEP
+		her["at"] = here
+		man.shown = VIEW.has_point(man.position - here)
+		model.step(STEP, here, [man], in_view, Tuning.WALK_SPEED)
+		if man.shown:
+			break
+		var rel := man.position.x - here.x
+		if rel < VIEW.end.x + 65.0:
+			in_band_frames += 1
+		if _up(model, "masked_pursuer"):
+			if first < 0:
+				first = frame
+		else:
+			dropped += 1
+		frame += 1
+	t.check(in_band_frames * STEP > BadgeModel.HOLD,
+			"he is out of sight in the band for longer than HOLD (%.2fs)" % (in_band_frames * STEP))
+	t.check(first == 0 and dropped == 0,
+			"and the badge is up from the frame he runs until he is in view (first up %d, down on %d of %d frames)"
+			% [first, dropped, frame])
 
 func _test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t) -> void:
 	var model := BadgeModel.new()
