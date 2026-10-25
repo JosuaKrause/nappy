@@ -1237,10 +1237,11 @@ func validate() -> bool:
 			return false
 	# **A row that hunts as a pursuer says how** (`hunts_as`), and only such a row does.
 	var hunts_as_a_pursuer := heat_response == HeatResponse.HUNTS and not hunts_on_foot
-	if hunts_as_a_pursuer != (hunts_as != null):
-		var why := "hunts without saying how it pursues (hunts_as)" if hunts_as_a_pursuer \
-				else "says how it hunts (hunts_as) but never hunts as a pursuer"
-		push_error("event '%s' %s" % [id, why])
+	if hunts_as_a_pursuer and hunts_as == null:
+		push_error("event '%s' hunts as a pursuer without saying how it pursues (hunts_as)" % id)
+		return false
+	if hunts_as and not hunts_as_a_pursuer:
+		push_error("event '%s' says how it hunts (hunts_as) but never hunts as a pursuer" % id)
 		return false
 	var waits_on_some_day := notice != null \
 			or (from_day_after != null and from_day_after.notice != null)
