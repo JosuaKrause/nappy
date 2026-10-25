@@ -703,8 +703,6 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 			"the same distance at 40px/s is twenty seconds away and is not")
 	t.check(not DangerEdge.announces(DangerEdge.CLOSING_SPEED - 1.0, 0.0),
 			"and nothing slower than a stroll is announced at any distance")
-	t.check(DangerEdge.HOLD > 0.0,
-			"a raised badge is held, so a rate hovering on the threshold cannot strobe")
 
 	# And the same thing through the real measurement, because the defect was in the plumbing
 	# rather than in the arithmetic: what the two static functions above are *given*.

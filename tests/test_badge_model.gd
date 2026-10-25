@@ -10,11 +10,13 @@ const VIEW := Rect2(-320.0, -180.0, 640.0, 360.0)
 func run(t) -> void:
 	_test_a_danger_closing_from_off_screen_gets_its_badge_at_the_announce_line(t)
 	_test_a_danger_walking_away_or_too_slow_gets_none(t)
-	_test_the_badge_holds_after_the_condition_lapses_and_not_longer(t)
+	_test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(t)
+	_test_a_raised_badge_ends_when_its_danger_leaves_the_world(t)
+	_test_a_fourth_kept_badge_waits_for_a_slot(t)
 	_test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t)
 	_test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t)
 	_test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_view(t)
-	_test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_past_the_hold(t)
+	_test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_the_way(t)
 	_test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t)
 	_test_a_pending_warning_is_announced_for_its_whole_warning(t)
 	_test_three_at_once_soonest_arrival_first(t)
@@ -77,20 +79,70 @@ func _test_a_danger_walking_away_or_too_slow_gets_none(t) -> void:
 		_step(model, [away, slow])
 	t.check(model.coming.is_empty(), "a thing going away, and one closing slower than 20px/s, get no badge")
 
-func _test_the_badge_holds_after_the_condition_lapses_and_not_longer(t) -> void:
+## A badge, once up, stays up until its danger is in sight or gone: standing still, turning away,
+## she walking away from it. For a lethal vehicle and for a cyclist (mobile, faster than a walk, not
+## lethal) alike; no timer ends it.
+func _test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(t) -> void:
+	for kind: String in ["lethal vehicle", "cyclist"]:
+		var model := BadgeModel.new()
+		var thing := _vehicle(1, Vector2(1000.0 if kind == "lethal vehicle" else 560.0, 0.0),
+				190.0 if kind == "lethal vehicle" else 120.0)
+		thing.hard_fail = kind == "lethal vehicle"
+		thing.logged_name = "thing"
+		for i in 30:
+			thing.position.x -= thing.speed * STEP
+			_step(model, [thing])
+		t.check(_up(model, "thing"), "%s: up while closing" % kind)
+		var down := 0
+		for i in 120:
+			_step(model, [thing])  # standing still: far longer than the old 0.8s hold
+			down += 0 if _up(model, "thing") else 1
+		t.check(down == 0, "%s: still up after two seconds standing still (down on %d)" % [kind, down])
+		for i in 120:
+			thing.position.x += thing.speed * STEP  # turned away, running off
+			_step(model, [thing])
+			down += 0 if _up(model, "thing") else 1
+		t.check(down == 0, "%s: and while it runs away (down on %d)" % [kind, down])
+		thing.position = Vector2(100.0, 0.0)
+		_step(model, [thing])
+		t.check(not _up(model, "thing"), "%s: dropped the frame it is in sight" % kind)
+
+func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t) -> void:
+	for finished in [true, false]:
+		var model := BadgeModel.new()
+		var truck := _vehicle(1, Vector2(1000.0, 0.0))
+		truck.logged_name = "truck"
+		for i in 30:
+			truck.position.x -= truck.speed * STEP
+			_step(model, [truck])
+		t.check(_up(model, "truck"), "up while closing")
+		truck.finished = finished
+		_step(model, [truck] if finished else [])
+		t.check(not _up(model, "truck"),
+				"a danger that is finished (%s) or no longer handed over ends its badge" % finished)
+
+## A fourth kept badge over the cap of three is not drawn; it stays up in the model, and takes a slot
+## (soonest arrival first) when one frees.
+func _test_a_fourth_kept_badge_waits_for_a_slot(t) -> void:
 	var model := BadgeModel.new()
-	var truck := _vehicle(1, Vector2(1000.0, 0.0))
-	truck.logged_name = "truck"
-	for i in 30:
-		truck.position.x -= truck.speed * STEP
-		_step(model, [truck])
-	t.check(_up(model, "truck"), "up while closing")
-	var held := 0
-	while _up(model, "truck") and held < 200:
-		_step(model, [truck])
-		held += 1
-	t.check(absf(held * STEP - BadgeModel.HOLD) < 0.05,
-			"standing still it holds for HOLD (%.2fs), then comes down" % (held * STEP))
+	var subjects: Array = []
+	for i in 4:
+		var v := _vehicle(i + 1, Vector2(500.0 + 100.0 * i, 0.0))
+		v.logged_name = "v%d" % i
+		subjects.append(v)
+	for f in 20:
+		for v: BadgeModel.Subject in subjects:
+			v.position.x -= v.speed * STEP
+		_step(model, subjects)
+	t.check(model.announcing().size() == 3 and model.coming.size() >= 3, "three drawn at most")
+	var fourth := subjects[3] as BadgeModel.Subject
+	t.check(model.watch[fourth.key]["up"], "the fourth is up in the model although it is not drawn")
+	subjects.remove_at(0)
+	_step(model, subjects)
+	var names := []
+	for b in model.announcing():
+		names.append(b["id"])
+	t.check(names.has("v3"), "and takes a slot when one frees (%s)" % str(names))
 
 func _test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t) -> void:
 	# Seen, then out past the edge but inside the margin band: the band is the hysteresis for a
@@ -156,10 +208,10 @@ func _test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_vi
 
 ## **CI's shape.** The badge is up on his first frame (he starts beyond the margin band), and then he
 ## runs into the band while still out of sight: she walks away at 92 px/s, he runs at 112, so the
-## view recedes from him at nearly his own pace and he stays in the band for longer than `HOLD`
-## (0.8s). Held to the band, only `HOLD` kept the badge and it came down ("first up 0 frames in, down
-## on N"); a charger's margin is 0 until he is in sight, so it stays. The view moves with her.
-func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_past_the_hold(t) -> void:
+## view recedes from him at nearly his own pace and he stays in the band for a long while. The
+## badge is kept until he is in sight ("first up 0 frames in, down on N" was the old drop). The view
+## moves with her.
+func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_the_way(t) -> void:
 	var model := BadgeModel.new()
 	var here := Vector2.ZERO
 	var man := _vehicle(1, Vector2(VIEW.end.x + 100.0, 0.0), 112.0)
@@ -192,8 +244,8 @@ func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_past
 		else:
 			dropped += 1
 		frame += 1
-	t.check(in_band_frames * STEP > BadgeModel.HOLD,
-			"he is out of sight in the band for longer than HOLD (%.2fs)" % (in_band_frames * STEP))
+	t.check(in_band_frames * STEP > 0.8,
+			"he is out of sight in the band for longer than the old 0.8s hold (%.2fs)" % (in_band_frames * STEP))
 	t.check(first == 0 and dropped == 0,
 			"and the badge is up from the frame he runs until he is in view (first up %d, down on %d of %d frames)"
 			% [first, dropped, frame])

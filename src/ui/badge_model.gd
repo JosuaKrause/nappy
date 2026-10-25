@@ -13,7 +13,7 @@ extends RefCounted
 ## `PendingWarning`, `VisibleView` or a node.
 ##
 ## The thresholds are the badge's: see each constant. The reasons for the rules (its own approach
-## rather than the gap's, a hold against flicker, a margin on the screen edge) are written beside
+## rather than the gap's, a margin on the screen edge for raising, and a badge kept until its danger is in sight) are written beside
 ## them below.
 
 ## How fast something has to be closing before it is worth an arrow, in px/s — **its own
@@ -35,21 +35,16 @@ const CLOSING_SPEED := 20.0
 ## cyclist's pace about half of it, and a 60px/s mover has to be within 300px. It is the same
 ## quantity the fairness contract is written in — how long she has to get out of the way.
 const LEAD_TIME := 5.0
-## Once raised, a badge stays up this long after its condition lapses. The test is a derivative
-## against a threshold, and anything hovering near the threshold toggles every frame without a
-## hysteresis.
-const HOLD := 0.8
 ## How fast the measured approach follows the raw frame-to-frame one, per second. A single
 ## frame's difference is mostly noise at these distances; this is the same smoothing the badge
 ## would otherwise need three of.
 const SMOOTHING := 6.0
-## How far out of sight something has to be before it is worth a badge, in screen px. A thing
-## sitting on the boundary would otherwise trade places with its own badge every frame: off screen,
-## badge up, badge draws it back into mind, on screen, badge gone. So a badge is raised only once the
-## thing is past the band, and the band is asked again every frame: **for anything not created under a
-## warning and not a charger, a badge already up is kept through the band by `HOLD` alone** (0.8 s).
-## A charger's margin is 0 from the frame it runs, and a warned arrival's until it has been seen
-## once, so both keep their badge until they are in sight.
+## How far out of sight something has to be before it is raised a badge, in screen px. A thing
+## sitting on the boundary would otherwise trade places with its own badge every frame. **It only
+## decides whether a badge goes up.** Once up, a badge stays up until its danger is in sight (the
+## view proper, no margin) or leaves the world; the margin plays no part in keeping it. A charger's
+## margin is 0 from the frame it runs, and a warned arrival's until it has been seen once, so each is
+## raised from outside the view proper.
 const SCREEN_MARGIN := 130.0
 ## At most this many at once. Three arrows is a warning; eight is wallpaper, and the day the
 ## edge of the screen becomes wallpaper is the day it stops being read.
@@ -170,7 +165,7 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 		# seen once.
 		var own_speed := subject.chase_speed if subject.pursues else subject.speed
 		state = {"was": at, "approach": own_speed if subject.warned else 0.0,
-				"hold": HOLD if subject.warned else 0.0, "seen": not subject.warned}
+				"up": subject.warned, "seen": not subject.warned}
 		watch[subject.key] = state
 	# The event's own approach: how much closer *it* got to where she is standing now. Both
 	# distances are measured to the same point, so her own walking cancels out of it.
@@ -184,39 +179,31 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 	if not state.get("charged", false) and raw > 0.0 and subject.charging:
 		approach = maxf(approach, raw)
 		state["charged"] = true
-		# **A charger's badge is owed from the frame it runs until it is in sight, wherever it
-		# stands.** Fired once, on the first frame a pursuer's charge is on and it is moving. Held
-		# to the margin band, two things could silence it. Set off from inside the band, it was never
-		# raised and ran silently until it left it. Set off from beyond the band, its badge was up
-		# on its first frame and then, running into the band while still out of sight, only `HOLD`
-		# kept it: with her walking away (92 px/s) from him running (112 px/s) he stayed in the band
-		# past `HOLD` and it came down (the shape of CI's four stairwell failures, "first up 0
-		# frames in, down on N"). So its margin is 0 until it has been in sight again.
+		# **A charger is raised from outside the view proper, wherever it stands.** Fired once, on
+		# the first frame a pursuer's charge is on and it is moving. Held to the margin band, a
+		# charger that set off from inside the band was never raised (the masked man's start on the
+		# stairs). Its margin is 0 until it has been in sight again.
 		state["seen"] = false
 	var distance := at.distance_to(here)
 	# The gap to its *field*, not to its centre: an event reaches her when its outer radius
 	# does, and for a fire engine that is a third of a block earlier.
 	var gap := maxf(0.0, distance - subject.outer_radius)
-	var hold: float = state["hold"]
-	# The margin is hysteresis on the *screen edge*, and it is the other half of the flicker:
-	# without it a thing hovering on the boundary trades places with its own badge every frame. It
-	# has to be well outside the view to raise one; once up, the margin keeps it only through
-	# `HOLD`, except for a charger and a warned arrival, whose margin is 0 until they have been seen.
+	# **A badge, once up, stays up until the danger is in sight or gone** *(the player: "a badge
+	# shouldn't disappear before the entity is visible")*: no timer ends it and neither does turning
+	# away, slowing, or the approach test lapsing. It is raised only for what announces and is outside
+	# the margin band (or the view proper, for a charger and a warned arrival). Coming into sight ends
+	# it: that is the badge's job done by the thing itself. A danger that leaves the world is no longer
+	# handed over, which prunes it below.
 	if subject.shown:
 		state["seen"] = true
-	var margin: float = SCREEN_MARGIN if state["seen"] else 0.0
-	if subject.worth_an_arrow(walk_speed) and announces(approach, gap) \
-			and not sees.call(at, margin):
-		hold = HOLD
-	else:
-		hold = maxf(0.0, hold - delta)
+		state["up"] = false
+	elif subject.worth_an_arrow(walk_speed) and announces(approach, gap) \
+			and not sees.call(at, SCREEN_MARGIN if state["seen"] else 0.0):
+		state["up"] = true
 	state["was"] = at
 	state["approach"] = approach
-	state["hold"] = hold
 	state["generation"] = _generation
-	# Coming on screen is not a lapse in the condition to be held through — it is the badge's job
-	# being done by the thing itself — so it is filtered here, after the hold and not inside it.
-	if hold > 0.0 and not subject.shown:
+	if state["up"]:
 		# Sorted by *when it arrives* rather than by how near it is, because that is what
 		# `MOST_AT_ONCE` is choosing between: the one worth keeping is the one that gets here first,
 		# which a slow thing standing closer is not.

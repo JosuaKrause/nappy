@@ -427,7 +427,7 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 		var in_view := _in_view(at - her, 0.0)
 		if edge._is_worth_an_arrow(instance) and DangerEdge.announces(approach, gap) \
 				and not _in_view(at - her, DangerEdge.SCREEN_MARGIN / ZOOM):
-			hold = DangerEdge.HOLD
+			hold = 0.8  # the retired DangerEdge.HOLD: this probe still copies the pre-BadgeModel rule
 		else:
 			hold = maxf(0.0, hold - STEP)
 		var badge := hold > 0.0 and not in_view
