@@ -2910,6 +2910,8 @@ Defs live in code, not in `.tres` files — see "Where events are defined".
    vocabulary", point 6.
 6. Run the project. `EventDef.validate()` rejects unfair geometry, a body on something sited
    ahead of the player, and a lethal radius its own body would hide, all on load.
-7. If it needs behaviour no field covers, add the **field** to `EventDef` and handle it in
-   `EventInstance`. Resist a script per event: `EventDef.pursuit`, `still_while_telegraphing` and
+7. If it needs behaviour no field covers, add the **field** to `EventDef` and handle it in the
+   behaviour that owns that rule under `src/events/behaviours/`, or in a new `EventBehaviour` that
+   `EventBehaviours.compose()` adds for every row whose data asks for it, saving and restoring its
+   own state. Resist a script per event: `EventDef.pursuit`, `still_while_telegraphing` and
    `pavement_side` are all one field each, and each one is shared or checkable.
