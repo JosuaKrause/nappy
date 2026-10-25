@@ -3,7 +3,7 @@ extends RefCounted
 ## Where the cars are, lane by lane, so that one of them can ask whether there is room in a lane
 ## before it turns into it.
 ##
-## **A turn is a placement, and a placement nothing checks is how a car disappears.** `_divert()`
+## **A turn is a placement, and a placement nothing checks is how a car disappears.** `divert()`
 ## picks an arm at a junction out of the tile map alone, so a car diverting round a closure lands
 ## wherever the lane happens to be occupied — and separation between bodies is positional, so it is
 ## resolved by *moving* one of them. Resolving a queue front-to-back cascades, so the car
@@ -67,7 +67,7 @@ func claim(key: int, at: float) -> void:
 ## it has already booked a place in.
 ##
 ## **A turning car's own reservation is indistinguishable from somebody else's car**, so the booking
-## and the body that takes it up may never both stand in the lane: `CrowdAgent._land_the_turn()`
+## and the body that takes it up may never both stand in the lane: `CarStrategy._land_the_turn()`
 ## hands the booking back on the frame it arrives and claims its real position instead, which is the
 ## same piece of road counted once rather than twice. Left in, it is a phantom standing on the spot
 ## the car is really on, and every other car that looks at that lane for the rest of the frame reads

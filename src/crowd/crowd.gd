@@ -95,7 +95,7 @@ var skip_agent_drawing := false
 var _gates: Array[RegionPlanner.GateState] = []
 
 ## Today's region-door segment keys, handed to every agent as `CrowdAgent.door_segments` — the
-## carve-out `_cannot_go_on` needs to tell a door from a wall or a hard seal, both of which
+## carve-out `cannot_go_on` needs to tell a door from a wall or a hard seal, both of which
 ## `CityMap.held_segments` holds the same way. Rebuilt every `start_day` from `_city.region_plan()`,
 ## which is already valid by the time this runs the same way it already is by the time `main.gd`
 ## calls `set_gates()` — `City.start_day()` builds it before `Crowd.start_day()` is ever called.
@@ -103,7 +103,7 @@ var _gates: Array[RegionPlanner.GateState] = []
 var _door_segments := {}
 
 ## The segments bordering the home block, handed to every agent as `CrowdAgent.home_segments` —
-## the second carve-out `_cannot_go_on` needs, since `EventManager.start_day` holds those segments
+## the second carve-out `cannot_go_on` needs, since `EventManager.start_day` holds those segments
 ## too (`StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE))`, the identical set),
 ## but only so no catalogue row lands on the home block's own street, never because a body stands
 ## across it. Rebuilt every `start_day` beside `_door_segments`: the home block never moves, but
@@ -524,7 +524,7 @@ func space_out_the_traffic(delta: float) -> void:
 ## queue it came from — that is where its body is, and that is who has to keep a gap behind it —
 ## so nothing in the queue's resolve knows about the lane it is on its way into, and a second car
 ## would happily turn or recycle into the piece of it the first one is already committed to. See
-## `CrowdAgent._claim_the_turn()`; put into the index's rebuild rather than left to the claim alone
+## `CarStrategy._claim_the_turn()`; put into the index's rebuild rather than left to the claim alone
 ## so the reservation is visible to every car for the whole frame rather than only to the ones that
 ## happen to move after the turning one.
 func _book_the_turns() -> void:
@@ -737,7 +737,7 @@ func give_way_at_junctions() -> void:
 				agent.junction_hold = maxf(0.0, distance_of[i] - Tuning.CAR_STOP_LINE_SETBACK)
 
 ## Cars stop at a checkpoint gate exactly the way they stop at a red light: a hold computed here
-## and consumed by `CrowdAgent._give_way()` alongside `junction_hold` and the zebra's own stop
+## and consumed by `CarStrategy._give_way()` alongside `junction_hold` and the zebra's own stop
 ## line, composing by the lowest speed the same way those two already do. *(2026-09-02, the
 ## player: "cars need to slow down to a full stop before the gate opens and they can go ahead
 ## again.")*

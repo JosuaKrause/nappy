@@ -17,7 +17,7 @@ extends RefCounted
 ## about-face is the same statement with no choice left in it at all: the two lanes of one
 ## carriageway are 32px apart, so the semicircle joining them has a 16px radius and nothing else.
 ##
-## Nothing here knows about the map. **Whether an arc fits is `CrowdAgent`'s question**, asked of the
+## Nothing here knows about the map. **Whether an arc fits is `CarStrategy`'s question**, asked of the
 ## swept body before the car commits to it, because the answer is about ground rather than
 ## about geometry.
 
@@ -98,7 +98,7 @@ static func into_an_arm(vertical: bool, direction: float, corridor: int, cross: 
 ## **The radius has no slack in it at all**: the two lanes are 32px apart, so the semicircle joining
 ## them is 16px and there is no other value that both starts on one lane and ends on the other. That
 ## is what makes where it is taken the only question — see `about_face_reach()` for how much road it
-## swallows, and `CrowdAgent._plan_a_turn` for the order the places are tried in. This only says
+## swallows, and `CarStrategy._plan_a_turn` for the order the places are tried in. This only says
 ## where the arc goes.
 static func about_face(vertical: bool, direction: float, corridor: int, from_lane: int,
 		cross: float, at_along: float, lane: int, box: Vector2i) -> CarTurn:

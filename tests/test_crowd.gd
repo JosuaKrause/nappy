@@ -120,9 +120,9 @@ const DOOR_ANSWER_TOLERANCE := 0.05
 
 func _test_a_walker_draws_its_own_answer_at_a_door(t) -> void:
 	var counts := {
-		CrowdAgent.DoorAnswer.HELD: 0,
-		CrowdAgent.DoorAnswer.PASSES: 0,
-		CrowdAgent.DoorAnswer.TURNS_BACK: 0,
+		WalkerStrategy.DoorAnswer.HELD: 0,
+		WalkerStrategy.DoorAnswer.PASSES: 0,
+		WalkerStrategy.DoorAnswer.TURNS_BACK: 0,
 	}
 	var walkers := 0
 	var cars_with_an_answer := 0
@@ -130,15 +130,15 @@ func _test_a_walker_draws_its_own_answer_at_a_door(t) -> void:
 		_city.crowd.start_day(day, _rng(day))
 		for agent: CrowdAgent in _city.crowd.agents():
 			if agent.kind != CrowdAgent.Kind.WALKER:
-				if agent._door_answer != CrowdAgent.DoorAnswer.HELD:
+				if "_door_answer" in agent.strategy:
 					cars_with_an_answer += 1
 				continue
 			walkers += 1
-			counts[agent._door_answer] += 1
+			counts[agent.strategy._door_answer] += 1
 	t.check(walkers > 300, "there were walkers to ask (%d)" % walkers)
-	var passing := float(counts[CrowdAgent.DoorAnswer.PASSES]) / float(maxi(1, walkers))
-	var turning := float(counts[CrowdAgent.DoorAnswer.TURNS_BACK]) / float(maxi(1, walkers))
-	var held := float(counts[CrowdAgent.DoorAnswer.HELD]) / float(maxi(1, walkers))
+	var passing := float(counts[WalkerStrategy.DoorAnswer.PASSES]) / float(maxi(1, walkers))
+	var turning := float(counts[WalkerStrategy.DoorAnswer.TURNS_BACK]) / float(maxi(1, walkers))
+	var held := float(counts[WalkerStrategy.DoorAnswer.HELD]) / float(maxi(1, walkers))
 	t.check(absf(passing - Tuning.WALKER_DOOR_PASS_FRACTION) < DOOR_ANSWER_TOLERANCE,
 			"about WALKER_DOOR_PASS_FRACTION of walkers walk through a door (%.3f vs %.3f)"
 			% [passing, Tuning.WALKER_DOOR_PASS_FRACTION])
@@ -148,8 +148,8 @@ func _test_a_walker_draws_its_own_answer_at_a_door(t) -> void:
 	t.check(absf(held - (1.0 - Tuning.WALKER_DOOR_PASS_FRACTION
 			- Tuning.WALKER_DOOR_TURN_BACK_FRACTION)) < DOOR_ANSWER_TOLERANCE,
 			"and everybody else is held (%.3f)" % held)
-	# A car's own answer is never drawn — the boom is what stops a car, and a car that spent a
-	# number here would turn differently at every junction it has ever turned at.
+	# A car has no answer to draw — the boom is what stops a car, and a car that spent a number
+	# here would turn differently at every junction it has ever turned at.
 	t.check(cars_with_an_answer == 0,
 			"no car carries a door answer (%d did)" % cars_with_an_answer)
 
@@ -829,7 +829,7 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		# car that in a running day would long since have driven on.
 		var pulling_away := Tuning.CAR_TURN_SPEED if agent.is_turning() \
 				else Tuning.CAR_SPEED.x * 0.5
-		var room := agent._room_to_stop_in()
+		var room: float = agent.strategy._room_to_stop_in()
 		if room < INF:
 			pulling_away = minf(pulling_away,
 					sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * room))

@@ -62,7 +62,7 @@ const TUNNEL_DEPTH_TILES := 2
 
 ## How far the bridge deck runs south of the map, in px: a view that asks for the water beyond
 ## the border still sees the deck carrying on between its parapets, and a car on the spine
-## stays on it (`CrowdAgent.BRIDGE_RUN`) for as long as any view could show it.
+## stays on it (`CarStrategy.BRIDGE_RUN`) for as long as any view could show it.
 const BRIDGE_DECK_PX := 1280.0
 
 ## The height of one step of the darkening ramp, in px. A quarter of a tile, so the road goes
@@ -154,7 +154,7 @@ func _swallow_the_road() -> void:
 ##
 ## The ground already paints mountain there — `City._border_source` stops the road at the
 ## opening — but the ground is *under* the traffic, and a car coming out of the tunnel is put
-## inside the dark and under this roof (`CrowdAgent.TUNNEL_ENTRY_ROOM`), further than the portal
+## inside the dark and under this roof (`CarStrategy.TUNNEL_ENTRY_ROOM`), further than the portal
 ## is tall. This is the lid: the same tile the border uses, blitted on the tile grid so it is
 ## indistinguishable from the ground around it, in the y-sorted layer where a car that far past
 ## the edge sorts behind it. Without it the car is dark inside the mouth and then bright on top

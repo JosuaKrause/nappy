@@ -81,7 +81,7 @@ func _walk(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			if agent.kind == CrowdAgent.Kind.WALKER:
 				walker_frames += 1
 				inside_walkers += 1 if caught else 0
-				sidestepping += 1 if agent._body_detour_held else 0
+				sidestepping += 1 if agent.strategy._body_detour_held else 0
 			else:
 				car_frames += 1
 				inside_cars += 1 if caught else 0

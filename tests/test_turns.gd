@@ -198,7 +198,7 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 	# carriageway and not along it.
 	var barrier := float(_junction.y * CityMap.period() * Tuning.TILE_SIZE)
 	var rests_at := barrier - Tuning.CAR_STRIKE_HALF_LENGTH - CarTurn.about_face_reach() \
-			- CrowdAgent.TURN_ROOM_MARGIN
+			- CarStrategy.TURN_ROOM_MARGIN
 	var blocker := _place_a_car(true, -1.0)
 	var landing_lane := CrowdAgent.make_lane_key(true, blocker._corridor,
 			CrowdLanes.road_lane(true, -1.0), -1.0)
@@ -227,7 +227,7 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 		if car.is_turning():
 			turned = true
 			break
-		if not waited and car._waited_to_turn > 0.0:
+		if not waited and car.strategy._waited_to_turn > 0.0:
 			# It is stopped at its aim point with the landing taken and it has not reversed. That is
 			# the whole assertion; now let the lane clear and watch it take the arc it was refused.
 			waited = true
@@ -289,7 +289,7 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> voi
 	t.check(car._direction == facing and car._lane == lane_before and not turned,
 			"it keeps the heading and the lane it had, so nothing slides it across the carriageway")
 	t.check(swings < 1.0, "and it does not drift across its own street (%.1fpx in a frame)" % swings)
-	t.check(car._nowhere_to_turn, "the planner knows why, rather than the car merely being stuck")
+	t.check(car.strategy.nowhere_to_turn, "the planner knows why, rather than the car merely being stuck")
 	for tile in closed:
 		_city.map.closed_tiles.erase(tile)
 	# Guards against a scenario that proved nothing: the stub really was short at both ends.

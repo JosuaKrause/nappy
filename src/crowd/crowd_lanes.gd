@@ -78,7 +78,7 @@ static func corridor_count(axis_blocks: int) -> int:
 ##
 ## The tile centre, which is where a **car** drives and where a footway's own edges are measured
 ## from. A walker stands `SIDEWALK_LANE_SPREAD` off it — see `walker_lane_centre`, and note that
-## `CrowdAgent._pavement_band` deliberately keeps using this one, because the band is the extent
+## `WalkerStrategy._pavement_band` deliberately keeps using this one, because the band is the extent
 ## of the pavement rather than the extent of the lanes on it.
 static func lane_centre(index: int, offset: int) -> float:
 	return (index * CityMap.period() + offset + 0.5) * Tuning.TILE_SIZE

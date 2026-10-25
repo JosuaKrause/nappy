@@ -602,8 +602,8 @@ func _nearest_in_field_toward_home(field: PackedInt32Array, home_field: PackedIn
 ## — see `_cheapest()`.
 ##
 ## **A soft seal (`skip`/`scaffolding`, `moving_van`) shuts its pavement to a walker in every plan,
-## not only while `sidewalk_only`.** `CrowdAgent._cannot_go_on()` refuses
-## `CityMap.is_soft_sealed(tile)` for `Kind.WALKER` — "a soft seal takes both pavements and leaves
+## not only while `sidewalk_only`.** `WalkerStrategy.cannot_go_on()` refuses
+## `CityMap.is_soft_sealed(tile)` — "a soft seal takes both pavements and leaves
 ## the carriageway to the cars" — and the ground either side of a soft seal's own body reads as
 ## open, unobstructed ground (the seal shuts the whole *pavement*, not only the body's own
 ## footprint), so a plan that did not ask would aim her down a lane the day has closed to her

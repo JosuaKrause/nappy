@@ -19,7 +19,7 @@ extends RefCounted
 ## of: it goes down each stub to the barrier at the end of it, about-faces there, and walks the next
 ## one — which is a person exploring a blocked-off block and not a person with nowhere to go. What
 ## produced the pacing was the lookahead giving a street up from a junction away, and
-## `CrowdAgent._acts_on_a_barrier_within()` is where that was fixed; emptying the ground of walkers
+## `LaneStrategy.acts_within` is where that was fixed; emptying the ground of walkers
 ## was answering the symptom.
 ##
 ## **It is a property of the day's map rather than a search an agent runs.** The inputs are the ones
