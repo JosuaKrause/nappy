@@ -2618,14 +2618,16 @@ func give_up_the_chase() -> void:
 ## and from then on he is an ordinary pursuer, closing only to his stand-off while his notice runs
 ## and lunging only along a clear line; noticed inside his stand-off, his lunge is held
 ## (`EventPursuit.lunge_held`). A guard already warning her by sight is set on her the same way,
-## since she could walk out of his warning and he would never come. Nothing for a pursuer already
-## charging or done, or for a `her` of `Vector2.INF`.
+## since she could walk out of his warning and he would never come. Nothing for a row that does
+## not pursue, a pursuer already charging or done, or a `her` of `Vector2.INF`.
 ##
 ## `notice` replaces the row's `telegraph_time` for this notice when it is not negative, and `stand`
 ## has him stand still in his warning for it (`is_standing_for_its_notice()`): in her view, day
 ## 13's guard raises his warning for a second and then charges (inbox #764 in minty-lemur). From
 ## here he walks round buildings toward her (`_paths_to_her`), since he may start a city away.
 func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
+	if pursuit == null:
+		return
 	if not (is_waiting() or (is_telegraphing() and warns_by_radius())) or her == Vector2.INF \
 			or is_finished:
 		return

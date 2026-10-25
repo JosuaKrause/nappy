@@ -20,6 +20,7 @@ func run(t) -> void:
 	_test_the_unreachable_dog_round_trips(t)
 	_test_the_take_round_trips(t)
 	_test_the_route_walk_has_no_state_of_its_own(t)
+	_test_a_departure_begun_on_resume_is_not_written_over(t)
 	_test_the_manager_streams_a_behaviours_state(t)
 
 ## An instance of `def` out of the tree, stepped by hand: nothing here draws.
@@ -139,12 +140,24 @@ func _test_the_hold_round_trips(t) -> void:
 
 # ---------------------------------------------------------------------- flock ---
 
+## Built by hand on both, as `_ready()` builds them in the tree, and once they have flown: a
+## restore that put nothing back leaves the second flock where `build()` scattered it.
 func _test_the_flock_round_trips(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var first := _instance(t, def)
+	first.flock.build()
+	t.check(first.flock.birds.size() == def.flock_size, "the flock has its %d birds" % def.flock_size)
+	var scattered := first.flock.offsets()
 	first.player_at = Vector2(def.notice.within - 10.0, 0.0)
 	_advance(first, def.telegraph_time + 1.0)
-	var second := _round_trip(t, first, "flock")
+	t.check(first.flock.offsets() != scattered, "and they have moved from where they were built")
+	var state := first.save_behaviours()
+	var second := _instance(t, def, first.global_position, first.path)
+	second.flock.build()
+	t.check(second.flock.offsets() == scattered, "a fresh flock stands where the first was built")
+	second.resume(first.age, first.path_travelled(), first.noticed_at())
+	second.restore_behaviours(state)
+	t.check(second.save_behaviours() == state, "flock: streamed back in, its state is what was saved")
 	t.check(second.flock.offsets() == first.flock.offsets(), "every bird comes back where it was")
 	t.check(second.flock.velocities() == first.flock.velocities(), "and going the way it was")
 	first.free()
@@ -156,11 +169,12 @@ func _test_the_investigation_round_trips(t) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
 	var first := _instance(t, hot)
 	first.age = 2.0
-	first.investigation._seen_her = true
-	first.investigation._investigated = true
-	first.investigation._officers_owed = 1
+	var state := {"seen_her": true, "officers_owed": 1, "investigated": true, "left_her_once": true}
+	first.investigation.restore(state)
 	var second := _round_trip(t, first, "investigation")
-	t.check(second.officers_owed() == 1, "the man it still owes comes back with it")
+	t.check(second.investigation.save() == state, "every field of its state survives the trip")
+	t.check(second.investigation.has_seen_her() and second.investigation.has_investigated()
+			and second.officers_owed() == 1, "it has seen her, is done, and still owes its man")
 	first.free()
 	second.free()
 
@@ -169,9 +183,11 @@ func _test_the_investigation_round_trips(t) -> void:
 func _test_the_officer_round_trips(t) -> void:
 	var first := _instance(t, EventCatalogue.by_id("policeman_giving_chase"))
 	first.age = 3.0
-	first.on_foot.trail = PackedVector2Array([Vector2(10.0, 0.0), Vector2(20.0, 0.0)])
-	first.on_foot._stopped_her_at = 2.0
+	var state := {"trail": PackedVector2Array([Vector2(10.0, 0.0), Vector2(20.0, 0.0)]),
+			"stopped_ago": 1.0}
+	first.on_foot.restore(state)
 	var second := _round_trip(t, first, "officer")
+	t.check(second.on_foot.save() == state, "every field of its state survives the trip")
 	t.check(second.on_foot.trail == first.on_foot.trail, "his trail back comes back")
 	t.check(second.has_stopped_her() and is_equal_approx(second.on_foot.stopped_for(), 1.0),
 			"and so does his stop, as far into it")
@@ -199,10 +215,11 @@ func _test_the_unreachable_dog_round_trips(t) -> void:
 	var first := _instance(t, def)
 	t.check(first.unreachable != null, "the loose dog is retired once it cannot reach her")
 	first.player_at = Vector2(Tuning.OUT_OF_SIGHT + 400.0, 0.0)
-	first.unreachable._look_clock = 0.3
-	first.unreachable._gap_looked_at = Tuning.OUT_OF_SIGHT + 380.0
-	first.unreachable._not_closing_for = 1.0
+	var state := {"gap_looked_at": Tuning.OUT_OF_SIGHT + 380.0, "look_clock": 0.3,
+			"not_closing_for": 1.0}
+	first.unreachable.restore(state)
 	var second := _round_trip(t, first, "unreachable")
+	t.check(second.unreachable.save() == state, "every field of its state survives the trip")
 	first.free()
 	second.free()
 
@@ -233,6 +250,32 @@ func _test_the_route_walk_has_no_state_of_its_own(t) -> void:
 	second.resume(first.age, first.path_travelled(), first.noticed_at())
 	t.check(second.global_position.is_equal_approx(first.global_position),
 			"resumed, it stands where it had walked to")
+	first.free()
+	second.free()
+
+## **A departure that never began carries nothing**, so a stream-in's restore cannot write over one
+## its own `resume()` began: a route cut since by something solid ends there (`EventRouteWalk.
+## _keep_to()`), and a car that leaves is held to her sight (`EventDeparture.begin()`). The car
+## streamed out was not leaving, so what it saved must not put that back to the fresh default.
+func _test_a_departure_begun_on_resume_is_not_written_over(t) -> void:
+	var def := EventCatalogue.by_id("police_patrol")
+	var path := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
+	var first := _instance(t, def, Vector2.ZERO, path)
+	first.player_at = Vector2(0.0, 400.0)
+	_advance(first, 0.5)
+	t.check(not first.is_leaving, "the car is driving its route, not leaving")
+	var state := first.save_behaviours()
+	t.check(not state.has(&"EventDeparture"), "a departure that never began saves nothing")
+	var second := _instance(t, def, Vector2.ZERO, path)
+	second.player_at = first.player_at
+	second.resume(first.age, first.path_travelled(), first.noticed_at())
+	# Standing in for a route cut on resume: its end, as `_keep_to()` reaches it.
+	second._be_done(false)
+	t.check(second.is_leaving and second.departure.save().get("must_clear_sight", false),
+			"the resumed car is leaving, held to her sight")
+	second.restore_behaviours(state)
+	t.check(second.departure.save().get("must_clear_sight", false),
+			"and the stream-in's restore leaves its departure as it began")
 	first.free()
 	second.free()
 

@@ -29,6 +29,11 @@ func start() -> void:
 	_has_chatted = true
 	_seconds_left = event.def.detain_seconds
 
+## Ends a running hold where it is, without the departure or the release its clock running out
+## would bring: for a rig that sets the hold by hand.
+func stop() -> void:
+	_seconds_left = 0.0
+
 ## One tick of a running hold: only its clock runs. **A door's body stays where it is when its hold
 ## ends**, still solid and ready to be armed again the instant she is released and clear; a
 ## mother's conversation ending is what starts her departure. **Nothing here shows her again**:

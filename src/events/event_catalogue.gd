@@ -1241,7 +1241,7 @@ static func _leaf_blower() -> EventDef:
 ## geometric, so neither `walk_through_cost()` nor `docs/COSTS.md` prices this row — the table
 ## dashes its pass columns for exactly that reason. **And the instance has to be in the tree**: a
 ## bare `EventInstance.new()` never gets `_ready()`, so `EventFlock.build()` never runs, its birds
-## stays empty and `contribution_at()` falls back to the modelled ring on this def — which reads
+## stay empty and `contribution_at()` falls back to the modelled ring on this def — which reads
 ## far higher than eleven birds actually charge. `tests/test_events.gd` walks it in the tree, and
 ## that is the figure the intensity was set against.
 ##

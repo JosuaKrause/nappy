@@ -17,7 +17,9 @@ borrow — `tests/test_events.gd` fails the build if two rows share a picture.
 
 If it needs behaviour no field covers, add the field to `EventDef` and handle it in the behaviour
 that owns that rule under `src/events/behaviours/`, or in a new `EventBehaviour` that
-`EventBehaviours.compose()` adds for the rows whose data ask for it.
+`EventBehaviours.compose()` adds for the rows whose data ask for it. A behaviour that keeps
+state saves and restores it (`save()`, `restore()`), or a streamed-out event comes back with it
+fresh and nothing says so.
 
 ## The fields that are decisions, and the ones that are not
 
@@ -301,7 +303,8 @@ it was written from. The traps:
   view hands it one (`tests/escape_roadblock_rig.gd`, `view_round()`). **The masked man is the one
   exception**: he runs a line rather than pursuing, so neither his notice nor his run asks the
   clear line, his notice asks no view, and he runs the moment she comes within his
-  `NoticeSpec.runs_within`, with no warning clock (`EventNoticeRun`; inbox #788 in minty-lemur): in the stairwell his warning is off screen, which the player
+  `NoticeSpec.runs_within` from outside it, with no warning clock; one who noticed her already
+  inside it warns for `Tuning.WARNING_ALONE_MAX` first (`EventNoticeRun`; inbox #788 in minty-lemur): in the stairwell his warning is off screen, which the player
   accepted (inbox #782 in minty-lemur), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
   (inbox #764 in minty-lemur, inbox #788 in minty-lemur). His warning comes before he exists — from the frame she crosses a
@@ -372,7 +375,7 @@ of the *plan*. `EventScheduler.build_day()` plans the entire map at dawn. What s
 - **A spent plan stays spent, and a running one resumes.** Streaming may take a running event away
   and give it back; it may never rewind one that has finished, and the bookkeeping an event does
   once — a scar, a block arc — happens on its first instantiation and never again. `Planned.age` and
-  `Planned.travelled` carry it over. It **resumes** rather than catching up on lost time.
+  `Planned.travelled` carry it over, and `Planned.behaviours` each behaviour's own state. It **resumes** rather than catching up on lost time.
 
 **Do not move a guarantee out of `build_day` and into the streaming.** If something has to be true
 of a day, it has to be decided where the day is.

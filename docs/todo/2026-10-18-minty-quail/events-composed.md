@@ -7,7 +7,10 @@ tables, car driving and its give-way, the excitement field and the drawing, incl
 far guard as nested nodes; a car runs its frame in `_drive()` rather than as a behaviour. The four
 ways a charge starts (a warning's clock running out, a lunge at the stand-off, the masked man's run
 distance, a start at once) are branches inside `EventPursuit` and `EventNoticeRun` rather than parts
-a row is composed of.
+a row is composed of. `EventInstance.notice_her_at()`, which sets a waiting pursuer on her, can
+bring a row that left before it ever noticed her back to `WARNING`, since such a row still answers
+`is_waiting()`; nothing calls it on a leaving row, and the guard against it belongs to the behaviour
+that makes that reachable, the task guard moved with his saved state.
 
 **Single-row flags:** `pastes_a_front`, `solid_once_it_starts`, `field_from_its_centre`,
 `stop_excitement`, `spawns_on_sight`, `lifts_for_traffic`, `body_stays_behind`,

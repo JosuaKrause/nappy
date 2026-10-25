@@ -624,7 +624,7 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 			officer = car.its_officer()
 		var out_of_reach := car.global_position.distance_to(her.global_position) \
 				> hot.outer_radius + hot.shape.reach()
-		if car.is_finished or car.is_leaving or (car.investigation._investigated and out_of_reach):
+		if car.is_finished or car.is_leaving or (car.investigation.has_investigated() and out_of_reach):
 			break
 	var finished := officer != null and (not is_instance_valid(officer) or officer.is_finished)
 	for instance in events.instances().duplicate():
@@ -709,7 +709,7 @@ func _drive_until_it_stops(t, hot: EventDef, route: PackedVector2Array, map: Cit
 		car.player_at = her
 		car._process(STEP)
 		elapsed += STEP
-		if car.investigation._seen_her and car.is_waiting():
+		if car.investigation.has_seen_her() and car.is_waiting():
 			saw_in_a_box = true
 	if car.is_waiting() or car.is_leaving or car.is_finished:
 		car.free()

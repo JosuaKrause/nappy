@@ -713,7 +713,7 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 					and bearing == 4
 			if the_reviewed_walk:
 				her = map.tile_to_world(Vector2i(70, 50))
-				guard.departure._way_on = PackedVector2Array()
+				guard.departure.plan_the_rest_again()
 				guard._far_guard_way = PackedVector2Array()
 			var far_walked := false
 			var on_ground := true

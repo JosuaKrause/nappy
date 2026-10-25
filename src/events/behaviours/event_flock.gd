@@ -203,8 +203,8 @@ func save() -> Dictionary:
 				bird.climb, bird.beat, bird.phase, bird.view_sector])
 	return {"birds": out}
 
-## Puts back what `save()` gave; a flock not yet built is built first, so the birds a plan carried
-## replace the ones its position would scatter.
+## Puts back what `save()` gave: the birds a plan carried replace the ones `build()` scattered from
+## its position, which `EventInstance._ready()` has run by the time a plan streams back in.
 func restore(state: Dictionary) -> void:
 	var saved: Array = state.get("birds", [])
 	if saved.is_empty():

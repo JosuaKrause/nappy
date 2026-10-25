@@ -31,6 +31,9 @@ var _way_on := PackedVector2Array()
 var _way_avoids := Rect2i()
 var _walks_a_way := false
 var _way_speed := 0.0
+## Whether this departure has begun (`begin()`, `for_a_completed_task()`, `along()`) and not been
+## cleared since (`reset()`): what `save()` carries only then.
+var _begun := false
 
 func _init() -> void:
 	steps_each_tick = false
@@ -39,6 +42,7 @@ func _init() -> void:
 ## something on a route carries on the way it was going, anything else goes away from her — the
 ## only direction a flushed flock or a dog that has lost interest can mean.
 func begin() -> void:
+	_begun = true
 	_leaving_for = 0.0
 	var def: EventDef = event.def
 	var her: Vector2 = event.player_at
@@ -72,6 +76,7 @@ func begin() -> void:
 ## standing right next to it when it starts, so it is held to her sight, and it turns away from her
 ## whichever way a beat it was pacing happened to be walking.
 func for_a_completed_task() -> void:
+	_begun = true
 	_must_clear_sight = true
 	var her: Vector2 = event.player_at
 	if her != Vector2.INF and not event.global_position.is_equal_approx(her):
@@ -102,7 +107,18 @@ func along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
 	_way_avoids = avoid
 	_walks_a_way = true
 	_must_clear_sight = true
+	_begun = true
 	return true
+
+## Whether it walks a way rather than straight on: one `along()` gave, or a guard's walk off his
+## barrier.
+func walks_a_way() -> bool:
+	return _walks_a_way
+
+## Drops the way planned on past the end of its given way, so the next tick plans it again from
+## where she is then.
+func plan_the_rest_again() -> void:
+	_way_on = PackedVector2Array()
 
 ## What is left of the way `along()` gave, in order; empty once it is walked, or for any other
 ## departure. The way planned on from its end is not part of it.
@@ -154,6 +170,7 @@ func leave(delta: float) -> void:
 
 ## Clears a departure that has ended in its event standing again (a guard back as his barrier).
 func reset() -> void:
+	_begun = false
 	_walks_a_way = false
 	_way_avoids = Rect2i()
 	_leaving_for = 0.0
@@ -236,12 +253,20 @@ func _walk_points(planned: bool, step: float) -> float:
 		_way = walked.points
 	return walked.left
 
+## Its state once it has begun, and nothing before: **a departure that never began is never written
+## over**, since `EventInstance.resume()` can begin one (a route cut since by something solid ends
+## there) before `EventManager._stream_in()` restores what was saved.
 func save() -> Dictionary:
+	if not _begun:
+		return {}
 	return {"leaving_for": _leaving_for, "must_clear_sight": _must_clear_sight, "way": _way,
 			"way_on": _way_on, "way_avoids": _way_avoids, "walks_a_way": _walks_a_way,
 			"way_speed": _way_speed}
 
 func restore(state: Dictionary) -> void:
+	if state.is_empty():
+		return
+	_begun = true
 	_leaving_for = float(state.get("leaving_for", 0.0))
 	_must_clear_sight = bool(state.get("must_clear_sight", false))
 	_way = state.get("way", PackedVector2Array())

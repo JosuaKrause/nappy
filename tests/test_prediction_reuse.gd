@@ -103,12 +103,12 @@ func _test_catalogue_and_mutations(t) -> void:
 		_event_parity(t, source, at, definition.id + " silence")
 		source.silenced = false
 		if source.def.detain_seconds > 0.0:
-			source.hold._seconds_left = 1.0
+			source.hold.start()
 			_event_parity(t, source, at, definition.id + " chatting")
 		source.baby_awake = false
 		_event_parity(t, source, at, definition.id + " sleep")
 		if source.hold:
-			source.hold._seconds_left = 0.0
+			source.hold.stop()
 		source.outranked_by_a_stronger_barrier = true
 		_event_parity(t, source, at, definition.id + " outranked")
 		source.outranked_by_a_stronger_barrier = false

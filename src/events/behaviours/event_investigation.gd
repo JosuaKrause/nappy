@@ -27,6 +27,14 @@ var _investigated := false
 ## car from then on (`is_quiet_for_its_man()`). Latched once a tick, so the field stays a query.
 var _left_her_once := false
 
+## Whether it has noticed her along a clear line.
+func has_seen_her() -> bool:
+	return _seen_her
+
+## Whether every man it let out is back in, so it does not stop for her again.
+func has_investigated() -> bool:
+	return _investigated
+
 ## One tick: notice, stop and owe its men; wait for them; then drive its route again.
 func step(delta: float) -> void:
 	_investigate()
