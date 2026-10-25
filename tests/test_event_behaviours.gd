@@ -257,23 +257,31 @@ func _test_the_route_walk_has_no_state_of_its_own(t) -> void:
 ## **A departure that never began carries nothing**, so a stream-in's restore cannot write over one
 ## its own `resume()` began: a route cut since by something solid ends there (`EventRouteWalk.
 ## _keep_to()`), and a car that leaves is held to her sight (`EventDeparture.begin()`). The car
-## streamed out was not leaving, so what it saved must not put that back to the fresh default.
+## streamed out was not leaving, so what it saved must not put that back to the fresh default. The
+## cut is a body put down on its road behind where it had got to, on the map both cars drive, as
+## `tests/test_world_passability.gd` puts one down, so `resume()` itself is what begins the departure.
 func _test_a_departure_begun_on_resume_is_not_written_over(t) -> void:
 	var def := EventCatalogue.by_id("police_patrol")
-	var path := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
-	var first := _instance(t, def, Vector2.ZERO, path)
+	var tile := float(Tuning.TILE_SIZE)
+	var map := CityMap.new(Vector2i(24, 3))
+	map.fill_rect(Rect2i(0, 0, 24, 3), GameEnums.TileType.ROAD)
+	var path := PackedVector2Array([Vector2(0.5, 1.5) * tile, Vector2(20.5, 1.5) * tile])
+	var first := EventInstance.new()
+	first.setup(def, path[0], path, Vector2.RIGHT, map)
 	first.player_at = Vector2(0.0, 400.0)
-	_advance(first, 0.5)
-	t.check(not first.is_leaving, "the car is driving its route, not leaving")
+	_advance(first, 1.5)
+	t.check(not first.is_leaving and first.path_travelled() > 2.0 * tile,
+			"the car is driving its route, not leaving (%.0fpx along it)" % first.path_travelled())
 	var state := first.save_behaviours()
 	t.check(not state.has(&"EventDeparture"), "a departure that never began saves nothing")
-	var second := _instance(t, def, Vector2.ZERO, path)
+	var behind: Array[Vector2i] = [Vector2i(1, 1)]
+	map.obstruct_tiles(1, behind)
+	var second := EventInstance.new()
+	second.setup(def, path[0], path, Vector2.RIGHT, map)
 	second.player_at = first.player_at
 	second.resume(first.age, first.path_travelled(), first.noticed_at())
-	# Standing in for a route cut on resume: its end, as `_keep_to()` reaches it.
-	second._be_done(false)
 	t.check(second.is_leaving and second.departure.save().get("must_clear_sight", false),
-			"the resumed car is leaving, held to her sight")
+			"resumed with its road cut behind where it had got to, the car is leaving, held to her sight")
 	second.restore_behaviours(state)
 	t.check(second.departure.save().get("must_clear_sight", false),
 			"and the stream-in's restore leaves its departure as it began")

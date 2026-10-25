@@ -306,6 +306,8 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		t.check(back.is_solid() and back.body_position().is_equal_approx(post),
 				"solid where it was built")
 		t.check(back.chaser_side() == side, "with his post still empty")
+		t.check(back.departure.save().is_empty() and not back.departure.walks_a_way(),
+				"and with nothing of the walk he was on when it streamed out")
 		# She walks up to it: nobody notices.
 		back.player_at = post + Vector2(0.0, 20.0)
 		for i in 120:

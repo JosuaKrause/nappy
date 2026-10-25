@@ -3152,6 +3152,8 @@ func _stand_as_the_barrier() -> void:
 ## `EventManager._stream_in()` after `resume()`. Nothing is reported again.
 func come_back_as_the_barrier(side: int) -> void:
 	transition(Phase.SPENT)
+	# The walk off he was on when it streamed out is over with him, as `_stand_as_the_barrier()`'s.
+	departure.reset()
 	_chaser_side = side
 	# It comes back unmanned: the far guard left with his partner.
 	_far_guard_gone = true
