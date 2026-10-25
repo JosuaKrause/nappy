@@ -9,7 +9,9 @@ extends RefCounted
 ## is taped with her standing at the swing, the margin between the two beyond the walk, whether
 ## the gap's outside reaches home and the day's other calm ground with the park blocked and stands
 ## clear of the day's bodies and fields, and whether setting off at a walk a second after first
-## sight gets her out. Run it again after changing any `PARK_CLOSING_*` constant.
+## sight gets her out. Then, for each spot the suite stands a busker at (`PLACES`), when the
+## cordon closed with him walked out and the close it said, and how often an officer's walk was laid
+## again or walked straight. Run it again after changing any `PARK_CLOSING_*` constant.
 
 const SWEEP := preload("res://tests/test_park_cordon_seeds.gd")
 
@@ -39,6 +41,12 @@ func run(t) -> void:
 				+ "closed %4.1fs standing, %.1fs beyond the walk; " % [m.closed_at, margin]
 				+ "gap reaches home %s, other calm %s, clear %s (%s); walked out %s" % [
 				m.gap_reaches_home, m.other_calm_reached, m.gap_clear, m.gap_blocker, m.walked_out])
+		for run: Dictionary in m.people_runs:
+			if not run.person_placed:
+				print("            busker at %s: not placed" % run.place)
+				continue
+			print("            busker at %s: closed %5.1fs (said %4.1fs), relaid %d, straight %d"
+					% [run.place, run.closed_at, run.deadline, run.relaid, run.walked_straight])
 	if not margins.is_empty():
 		print("over %d seeds: walk %.1f to %.1fs, closed %.1f to %.1fs, " % [margins.size(),
 				_least(walks), _most(walks), _least(closes), _most(closes)]

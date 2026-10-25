@@ -385,7 +385,8 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 			# Outside she faces in; inside she faces out: the pram toward the line either way.
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
-			var cordon := ParkCordon.new(_city.map, _city, fixture.park, director._reach_blocked)
+			var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park,
+					director._reach_blocked)
 			var waited := 0.0
 			while not cordon.is_closed() and waited < PATIENCE:
 				cordon.tick(STEP, her, Callable())

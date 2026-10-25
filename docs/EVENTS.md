@@ -701,12 +701,18 @@ departure that meets a solid straight ahead leaves by a way out of her sight
 (`Navigator.way_out()`); a man walking back to his vehicle goes round what was put across his trail
 (`Navigator.path()`); and a pursuer's notice, lunge and catch are along a line a figure on foot
 could walk (`CityMap.clear_line()`), which sees out of a band he stands in and never hides her behind
-the tile she stands on. Two exceptions: the flock's birds, since they fly (their flock's own ground
-point leaves as everything does); and day 12's cordon officers and escorts (`ParkCordon`), whose
-walk in and round the park's edge are laid straight at a fixed offset outside it and timed over
-those straight walks, so a body the day stands beside the park stops them or makes the close late
-until the cordon plans its walks round the bodies. Their way out of her sight is searched over
-ground they may stand on.
+the tile she stands on. One exception: the flock's birds, since they fly (their flock's own ground
+point leaves as everything does). Day 12's cordon officers and escorts (`ParkCordon`) walk through
+the navigator too, and their walks are laid round the day's bodies before they set off
+(`Navigator.path()`), since the close is timed and each taper paced over the walk he will take: a
+way round a body is part of the walk the deadline is solved over, not a delay added to it. Where a
+solid cuts the sidewalk and the street from the park's edge outward, a taper cuts along the park's
+own edge row ahead of his tape. A stretch any officer still has to step on goes up only once nobody
+does, while its taper walks on: a taper never waits for a taper, and an escort never waits for a
+taper, so no wait cycle can form, though a taper does stand for an escort beside the stretch he is
+about to tape, as for her and the park's people. A taper's round ends outside the park, and an
+officer whose walk cannot be laid again for half a second walks the rest of it straight, which the
+run log notes.
 
 **The catalogue is not the only thing carrying this datum.** A building's collision is a rectangle
 built from `shape.collision_shape()` on `GroundShape.rect(footprint * 0.5)` — `src/city/building.gd`

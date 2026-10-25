@@ -249,7 +249,7 @@ func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	if city and city.events and not city.events.door_crossed.is_connected(_on_door_crossed):
 		city.events.door_crossed.connect(_on_door_crossed)
 	_happenings.trace = trace
-	_happenings.setup(city, map)
+	_happenings.setup(city, map, _navigator)
 
 ## Hands the director the day's two answers about her view: `sees`, whether she can see a world
 ## point (the notice dwell's), and `on_screen`, whether a world point is anywhere in the camera's

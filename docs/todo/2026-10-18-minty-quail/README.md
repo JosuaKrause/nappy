@@ -54,12 +54,11 @@ parity**: every existing test passes, changed only as far as the code it reaches
 early to injected fakes and public APIs (`tests-public-seams.md`); nothing is remeasured per step. The player: "let's do remeasuring at the very end and not get blocked by it
 during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
-1. `world-passability.md`: what is left of the world layer's passability.
-2. `events-composed.md` and `shared-components.md`.
-3. `main-and-state.md` and `tuning.md`, alongside the extractions they serve.
-4. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
-5. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs.
-6. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
+1. `events-composed.md` and `shared-components.md`.
+2. `main-and-state.md` and `tuning.md`, alongside the extractions they serve.
+3. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
+4. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs.
+5. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
    step's record lists what its change needs remeasured.
