@@ -664,7 +664,7 @@ func _test_a_bump_costs_and_one_of_them_is_survivable(t) -> void:
 	t.check(clear_line >= Tuning.PLAYER_BODY_RADIUS,
 			"and it is wide enough to aim at rather than to land on (%.0fpx against a %.0fpx pram)"
 			% [clear_line, Tuning.PLAYER_BODY_RADIUS])
-	# The lanes it makes still have to be on the pavement. `CrowdAgent._pavement_band` measures the
+	# The lanes it makes still have to be on the pavement. `WalkerStrategy._pavement_band` measures the
 	# footway from the **tile** centres rather than from the lanes, so a spread of half a tile would
 	# put somebody in a shopfront or off a kerb and nothing else in the suite would object.
 	t.check(CrowdLanes.SIDEWALK_LANE_SPREAD < float(Tuning.TILE_SIZE) * 0.5,

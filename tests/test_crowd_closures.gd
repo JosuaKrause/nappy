@@ -468,7 +468,7 @@ func _on_screen(at: Vector2, focus: Vector2) -> bool:
 ## **What this is for is the end of a turn.** A landing whose booked spot has been closed up on from
 ## behind used to be dropped a gap behind the *rearmost* car in the whole exit lane — the merge a
 ## recycled car makes at the entry band, where further back is more off-screen road, applied at a
-## junction where further back is most of a street. See `CrowdAgent._land_the_turn()`.
+## junction where further back is most of a street. See `CarStrategy._land_the_turn()`.
 ##
 ## **Every landing in the window is contended, and waiting for one is what does not work.** The
 ## follower that closes up on a booked landing is rare — it needs a brake that has undershot by a
@@ -1220,8 +1220,8 @@ func _test_only_cars_go_over_the_bridge(t) -> void:
 			% worst_car)
 
 ## M53: **the crowd has to agree with the drawing.** A T-junction the paint knows about and
-## `CrowdAgent._divert` does not is the same bug in the other direction — so this checks the
-## crowd's own notion of a street (`CityMap.is_street`, which is what `_cannot_go_on` reads) against
+## `WalkerStrategy.divert()` does not is the same bug in the other direction — so this checks the
+## crowd's own notion of a street (`CityMap.is_street`, which is what `cannot_go_on()` reads) against
 ## a calm zone's absorbed corridor the same way `tests/test_generator.gd` checks the paint.
 ##
 ## A car never belongs on a zone's absorbed corridor — `is_street()` is false there, park or not,
@@ -1457,7 +1457,7 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t) -> void:
 				% [name, inbound, outbound])
 
 ## M120: **entry is where exit is.** A recycled walker or off-spine car may not land past the true
-## edge at all — `CrowdAgent._entry_room()` grants it none, where `_room_beyond_the_map()` still
+## edge at all — `LaneStrategy.entry_room()` grants it none, where `has_left_the_map()` still
 ## grants a departing one a tile so it does not blip out exactly on the kerb. Stood at all four
 ## plain edges (north, south, east and west, each away from the spine so the tunnel and the bridge
 ## are not what is being asked about here — `_test_cars_come_out_of_the_tunnel_and_off_the_bridge`

@@ -98,7 +98,7 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 				continue
 			_classify(map, agent, city_seed, day, owner_of, segment_owner, bodies)
 
-## Names the first clause of `CrowdAgent._cannot_go_on` that shuts the tile this car's scan stopped
+## Names the first clause of `CarStrategy.cannot_go_on()` that shuts the tile this car's scan stopped
 ## on, and charges it to the body standing there where there is one.
 func _classify(map: CityMap, agent: CrowdAgent, city_seed: int, day: int,
 		owner_of: Dictionary, segment_owner: Dictionary, bodies: Array) -> void:

@@ -711,7 +711,7 @@ func _check_the_path(t, watched: Manoeuvre, name: String) -> void:
 ## Runs the whole crowd with this car in it, watching the one manoeuvre it makes.
 ##
 ## `over_the_kerb` is the about-face's own exemption — see
-## `CrowdAgent._the_ground_a_turn_sweeps_is_clear`. Everything else still has to be ground the car
+## `CarStrategy._the_ground_a_turn_sweeps_is_clear`. Everything else still has to be ground the car
 ## may stand on.
 func _watch(car: CrowdAgent, seconds: float, over_the_kerb := false) -> Manoeuvre:
 	var watched := Manoeuvre.new()
