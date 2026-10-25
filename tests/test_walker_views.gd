@@ -208,12 +208,12 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 func _test_advancing_the_gait_tracks_distance_not_time(t) -> void:
 	var agent := _walker(t)
 	agent._look.gait_phase = 0.0
-	agent._look.advance(1.0 / 60.0)
+	agent._look.advance(agent.velocity(), 1.0 / 60.0)
 	t.check(agent._look.gait_phase > 0.0, "a moving walker's stride phase actually advances")
 
 	agent._speed = 0.0
 	agent._look.gait_phase = 0.0
-	agent._look.advance(1.0 / 60.0)
+	agent._look.advance(agent.velocity(), 1.0 / 60.0)
 	t.check(agent._look.gait_phase == 0.0,
 			"a walker covering no distance advances no stride at all")
 	agent.free()

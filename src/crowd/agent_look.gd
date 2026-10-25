@@ -33,9 +33,9 @@ static func region_of(name: String) -> StringName:
 func restart() -> void:
 	pass
 
-## Advances what the picture keeps by the ground this tick covered. Called once per tick by the
-## mover's strategy, never from the drawing.
-func advance(_delta: float) -> void:
+## Advances what the picture keeps by the ground this tick covered at `moving`, the agent's
+## `velocity()`. Called once per tick by the mover's strategy, never from the drawing.
+func advance(_moving: Vector2, _delta: float) -> void:
 	pass
 
 ## The sector this look draws in now, advanced from the agent's heading first.

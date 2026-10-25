@@ -76,8 +76,8 @@ func restart() -> void:
 ## Adds the ground this tick covered, `velocity()` being the along-lane speed the crowd already
 ## stops to zero at a give-way, a queue or a light. Not idempotent, so it runs once per tick rather
 ## than from the drawing, which a halo ring calls several times a frame.
-func advance(delta: float) -> void:
-	gait_phase = wrapf(gait_phase + _agent.velocity().length() * delta * GAIT_RATE, 0.0, TAU)
+func advance(moving: Vector2, delta: float) -> void:
+	gait_phase = wrapf(gait_phase + moving.length() * delta * GAIT_RATE, 0.0, TAU)
 
 ## Which of the two gait frames to draw: frame 1 (feet passing) for half of every stride while
 ## moving, frame 0 (the rest pose) otherwise — `Stroller._draw_mother()`'s own `stepping` test,
@@ -103,7 +103,8 @@ func heading_now() -> Vector2:
 
 ## `heading_now()` for a `velocity()` the caller already holds.
 func heading_at(along: Vector2) -> Vector2:
-	var cross_gap := _agent._lane_centre + _agent._detour - _agent._cross()
+	var at: Vector2 = _agent.position
+	var cross_gap: float = _agent._lane_centre + _agent._detour - (at.x if _agent._vertical else at.y)
 	if is_zero_approx(cross_gap):
 		return along
 	var cross_speed := signf(cross_gap) * LaneMover.STEER_SPEED

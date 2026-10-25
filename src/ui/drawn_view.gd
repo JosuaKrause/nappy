@@ -9,7 +9,7 @@ extends RefCounted
 ## costs her, its timing — and only its picture is left as it was last drawn. A retained canvas item
 ## keeps its last draw list and moving its node still moves it, so a thing that comes back into the
 ## box redraws once from its current state on that frame, before the margin has let any of it onto
-## the screen. `CrowdAgent` and `EventInstance` are the two callers.
+## the screen. `CrowdView` (for the crowd's agents) and `EventInstance` are the two callers.
 ##
 ## **Not `VisibleView`, and the two are not to be merged.** That one answers "has she seen it", with
 ## the controls' covered corners taken out; this one answers "can any of it be on the screen", and a

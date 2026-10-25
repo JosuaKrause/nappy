@@ -499,7 +499,7 @@ func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t) -> void:
 	var ticks := int(ceil(1.5 * WheelBob.WAVELENGTH / (Tuning.CAR_SPEED.x * step)))
 	var highest_travelled := 0.0
 	for i in ticks:
-		agent._look.advance(step)
+		agent._look.advance(agent.velocity(), step)
 		var bob := agent._body_bob()
 		t.check(bob <= 0.0 and bob >= -WheelBob.HEIGHT - 0.001,
 				"tick %d's bob %.3f stays between the wheels and one height above them" % [i, bob])
@@ -515,7 +515,7 @@ func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t) -> void:
 	agent._look.travelled = highest_travelled
 	agent._speed = 0.0
 	t.check(agent._body_bob() == 0.0, "a stopped car sits on its wheels (%.3f)" % agent._body_bob())
-	agent._look.advance(step)
+	agent._look.advance(agent.velocity(), step)
 	t.check(is_equal_approx(agent._look.travelled, highest_travelled),
 			"and a tick that covers no ground does not move its phase")
 	agent.free()
@@ -526,8 +526,8 @@ func _test_the_bob_is_driven_by_ground_covered(t) -> void:
 	var slow := _cruising_car(t, Tuning.CAR_SPEED.x)
 	var fast := _cruising_car(t, Tuning.CAR_SPEED.y)
 	var distance := WheelBob.WAVELENGTH * 0.4
-	slow._look.advance(distance / Tuning.CAR_SPEED.x)
-	fast._look.advance(distance / Tuning.CAR_SPEED.y)
+	slow._look.advance(slow.velocity(), distance / Tuning.CAR_SPEED.x)
+	fast._look.advance(fast.velocity(), distance / Tuning.CAR_SPEED.y)
 	t.check(is_equal_approx(slow._body_bob(), fast._body_bob()),
 			"two cars that covered %.0fpx ride the same lift (%.3f and %.3f)"
 			% [distance, slow._body_bob(), fast._body_bob()])
@@ -540,7 +540,7 @@ func _test_the_bob_is_driven_by_ground_covered(t) -> void:
 ## rim rises with it rather than sliding off it.
 func _test_the_halo_rides_the_bob(t) -> void:
 	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
-	agent._look.advance(WheelBob.WAVELENGTH * 0.5 / Tuning.CAR_SPEED.x)
+	agent._look.advance(agent.velocity(), WheelBob.WAVELENGTH * 0.5 / Tuning.CAR_SPEED.x)
 	agent.set_halo_strength(1.0, Color.RED)
 	t.check(agent._halo._bob == agent._body_bob,
 			"the halo reads this car's own bob rather than a flat zero")
@@ -564,7 +564,7 @@ func _test_the_redraw_gate_follows_the_bob(t) -> void:
 	var keys := {}
 	var ticks := int(ceil(WheelBob.WAVELENGTH / (Tuning.CAR_SPEED.x * step)))
 	for i in ticks:
-		agent._look.advance(step)
+		agent._look.advance(agent.velocity(), step)
 		agent._redraw_if_the_picture_changed()
 		t.check(agent._picture.z == roundi(agent._body_bob() * CarLook.BOB_STEPS_PER_PX),
 				"tick %d's key carries the bob it would draw" % i)
@@ -576,7 +576,7 @@ func _test_the_redraw_gate_follows_the_bob(t) -> void:
 	agent._redraw_if_the_picture_changed()
 	var parked := agent._picture
 	for i in 30:
-		agent._look.advance(step)
+		agent._look.advance(agent.velocity(), step)
 		agent._redraw_if_the_picture_changed()
 	t.check(agent._picture == parked and parked.z == 0,
 			"a stopped car's key rests at zero and stays there")

@@ -134,14 +134,6 @@ var _clock := 0.0
 const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDTH * 1.65 + 4.0),
 		ENTRY_PICTURE_ROOM * 2.0, MARK_HEIGHT + 10.0 + MARK_WIDTH * 1.65 + 4.0 + ENTRY_PICTURE_ROOM)
 
-## Whether any of what this agent's drawing can cover (`DRAWN_REACH`) is inside the box the screen
-## shows (`CrowdView.drawn_box()`). True for an agent with no view or out of the tree: a hand-built rig
-## has no screen to be off.
-func _is_on_the_screen() -> bool:
-	if view == null or not is_inside_tree():
-		return true
-	return view.drawn_box().intersects(Rect2(global_position + DRAWN_REACH.position, DRAWN_REACH.size))
-
 ## Asks for a redraw when what this agent is showing has actually changed, and answers whether it
 ## asked.
 ##
@@ -168,16 +160,23 @@ func _is_on_the_screen() -> bool:
 ## had at a sector boundary — up to 22.5 degrees back, which lands an east- or west-bound car's
 ## picture about nine pixels south of its own body for the rest of its run in that lane — while
 ## `EntityHalo`, which re-traces the body every frame it is drawn, stands where the car belongs.
-func _redraw_if_the_picture_changed() -> bool:
+func _end_the_frame(delta: float) -> bool:
+	# The clocks only a crowd member keeps: its simulation clock, and the seconds of agitation a
+	# contact or a horn left, run down here because every frame that is not skipped ends here.
+	_clock += delta
+	_jolt = maxf(0.0, _jolt - delta)
 	var picture := _look.picture(velocity())
 	var drawn_heading := _look.heading_key()
 	var changed := picture != _picture or drawn_heading != _drawn_heading
 	_picture = picture
 	_drawn_heading = drawn_heading
-	# Off screen nothing is redrawn and no caret is projected (`CrowdView.drawn_box()`): the picture is left as
-	# it was, and the first frame any of it is back inside the box redraws it from what it is now,
-	# caret included, which is before the margin has let any of it onto the screen.
-	if not _is_on_the_screen():
+	# Off screen nothing is redrawn and no caret is projected: the picture is left as it was, and
+	# the first frame any of it (`DRAWN_REACH`) is back inside the box the screen shows
+	# (`CrowdView.drawn_box()`) redraws it from what it is now, caret included, which is before the
+	# margin has let any of it onto the screen. An agent with no view, or out of the tree, is always
+	# drawn: a hand-built rig has no screen to be off.
+	if view != null and is_inside_tree() \
+			and not view.drawn_box().intersects(Rect2(global_position + DRAWN_REACH.position, DRAWN_REACH.size)):
 		_picture_is_stale = true
 		return false
 	if changed or _picture_is_stale:
@@ -196,9 +195,10 @@ func _redraw_if_the_picture_changed() -> bool:
 		return true
 	return false
 
-func _tick_the_member(delta: float) -> void:
-	_clock += delta
-	_jolt = maxf(0.0, _jolt - delta)
+## `_end_the_frame()`'s redraw question without a frame to end: no time passes. A rig that steps an
+## agent's picture by hand asks it.
+func _redraw_if_the_picture_changed() -> bool:
+	return _end_the_frame(0.0)
 
 ## Excitement per second this agent contributes at a point. Same falloff as an event, so
 ## the crowd and the events are the same kind of quantity to the baby — and the same kernel too:
@@ -518,7 +518,7 @@ func restart_the_picture() -> void:
 	_look.restart()
 
 func advance_the_picture(delta: float) -> void:
-	_look.advance(delta)
+	_look.advance(velocity(), delta)
 
 ## The coat, or the paintwork. Authored near-white and multiplied, the same trick the buildings use,
 ## so a crowd is not one silhouette in one colour ninety times over.

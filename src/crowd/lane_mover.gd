@@ -16,7 +16,7 @@ extends Node2D
 ## **The mover has no picture, no excitement and no halo.** `CrowdAgent` is the crowd member built on
 ## it: it adds the field it contributes to the baby's meter, the halo and caret that warn of it, and
 ## the drawing, and answers the hooks at the foot of this file (`restart_the_picture()`,
-## `advance_the_picture()`, `_dress()`, `_tick_the_member()`, `_redraw_if_the_picture_changed()`,
+## `advance_the_picture()`, `_dress()`, `_end_the_frame()`,
 ## `_entry_picture_clearance()`), which do nothing here.
 
 enum Kind { WALKER, CAR }
@@ -440,7 +440,6 @@ func _process(delta: float) -> void:
 	# steering, lookahead, turn, gait or recycle. It is still drawn; see `_draw()`'s own `skip_draw`.
 	if skip_motion:
 		return
-	_tick_the_member(delta)
 	# The stride an about-face owes its new heading, run down here rather than where it is spent, so
 	# that a body held at a gate or stopped behind a queue works it off too. See `_turn_round()`.
 	_turn_back_hold = maxf(0.0, _turn_back_hold - delta)
@@ -449,7 +448,7 @@ func _process(delta: float) -> void:
 	# It also ends the frame for a body held where it stands — a walker inside a checkpoint hut, a
 	# car a pocket has caught — recycled, if it has to be, by the kind's own rule.
 	if strategy.begin_frame(delta):
-		_redraw_if_the_picture_changed()
+		_end_the_frame(delta)
 		return
 	var stood_on := _map.world_to_tile(position)
 	_set_along(_along() + strategy.paced(_speed) * _direction * delta)
@@ -459,7 +458,7 @@ func _process(delta: float) -> void:
 	_look_ahead()
 	if field.has_stretch() and _walks_off_the_stretch() and _out_of_view():
 		_recycle()
-		_redraw_if_the_picture_changed()
+		_end_the_frame(delta)
 		return
 	if _blocked_in <= _acts_within:
 		strategy.divert(delta)
@@ -468,7 +467,7 @@ func _process(delta: float) -> void:
 	# junction — see `LaneStrategy.nowhere_to_turn`.
 	if _has_left_the_field() or (strategy.nowhere_to_turn and _out_of_view()):
 		_recycle()
-	_redraw_if_the_picture_changed()
+	_end_the_frame(delta)
 
 ## Keeps an agent's own centre out of a tile it may not stand on, when the step it has just taken
 ## would have carried it in. `stood_on` is the tile it was on before that step.
@@ -1195,10 +1194,8 @@ func advance_the_picture(_delta: float) -> void:
 func _dress() -> void:
 	pass
 
-## The clocks only a crowd member keeps, run down at the start of a frame that is not skipped.
-func _tick_the_member(_delta: float) -> void:
-	pass
-
-## Redraws what changed in the picture; true when it asked for a redraw. Ends every frame.
-func _redraw_if_the_picture_changed() -> bool:
+## Ends every frame that is not skipped, once: the crowd member runs its clocks down by `delta` and
+## redraws what changed in its picture, answering whether it asked for a redraw. A hook rather than
+## two, because each hook is a call every agent pays every frame.
+func _end_the_frame(_delta: float) -> bool:
 	return false

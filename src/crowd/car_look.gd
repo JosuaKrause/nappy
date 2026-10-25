@@ -89,8 +89,8 @@ var travelled := 0.0
 
 ## Adds the ground this tick covered. Called once per tick, never from the drawing, which a halo
 ## ring calls several times a frame.
-func advance(delta: float) -> void:
-	travelled = wrapf(travelled + _agent.velocity().length() * delta, 0.0, WheelBob.WAVELENGTH)
+func advance(moving: Vector2, delta: float) -> void:
+	travelled = wrapf(travelled + moving.length() * delta, 0.0, WheelBob.WAVELENGTH)
 
 ## The lift this car's body rides right now, the `bob()` `EntityHalo` asks every owner for:
 ## `WheelBob.lift()` over the ground it has covered, at full height from `BOB_FULL_SPEED` up and
