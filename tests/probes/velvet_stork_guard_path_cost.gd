@@ -48,7 +48,7 @@ func _measure(t, seed_value: int, walks: bool) -> void:
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
 	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
-	var city: City = SUITE.CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(SUITE.CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.scars = []

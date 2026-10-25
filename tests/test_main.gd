@@ -110,7 +110,7 @@ func _check_boot_camera_handoff(t) -> void:
 ## reason `hud._debug` exists. Checked both ways: nothing is drawn when it is off, and the
 ## ordinary debug readout still appears when it is on, so the gate is not just "always empty".
 func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 
@@ -165,7 +165,7 @@ func _bare_readout(city: City, stroller: Stroller, baby: Baby, day: DayControlle
 ## (`_debug == false`) still assembles the readout the moment this holds. Same rig as the test
 ## above, with the two flags' roles swapped.
 func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 
@@ -714,7 +714,7 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	GameState.start_run(SEED)
 	t.check(is_zero_approx(GameState.header.play_seconds), "start_run() zeroes the clock with the rest of the run")
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 
@@ -809,7 +809,7 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 ## steps. The check reads the actual static `TileMapLayer` cells plus the independently drawn
 ## south-water cells rather than re-deriving what should be there.
 func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 
@@ -852,7 +852,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 ## west columns are forest, while the north and south bands own their corners and the bridge's
 ## road carries on to any depth.
 func _test_the_overview_is_landscape_to_every_edge(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 
@@ -1151,7 +1151,7 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	var baseline := GameState.save_snapshot()
 	var saved_paused: bool = t.get_tree().paused
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	# The camera and the baby are named by hand for the reason the **verify** skill names: a

@@ -110,7 +110,7 @@ func _day(t, day: int) -> Array:
 	var state := CityState.new()
 	GameState.attempt_spend.city_state = state
 	state.begin_day(map.block_plans, day)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	city.start_recipe_day(state, day, GameState.day_rng(day, "closures"))

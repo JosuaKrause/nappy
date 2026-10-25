@@ -1419,7 +1419,7 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 ## crowd as the section's spec says (`DaySpec.crowd_density`, through `main._start_the_crowd()`)
 ## leaves it empty rather than that it started that way.
 func _test_the_finale_city_has_nobody_in_it(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
@@ -1454,7 +1454,7 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	var saved_section := GameState.facts.escape_section
 	var day := GameState.header.day
 	var main: Node2D = MAIN_SCRIPT.new()
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	main._city = city
 	city.build(CityGenerator.generate(SEEDS[0]))
@@ -1574,7 +1574,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 
 	# And the wiring: a burst that has run its course is replaced by a crater standing where it
 	# was, through the same `spawns_on_finish` mechanism a convoy leaves a barricade through.
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.events.setup(city, city.map)
@@ -1873,7 +1873,7 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 	bare.owe_the_return(an_act_iv_day, 0)
 	t.check(bare.owed() > 0, "a day's own director owes %d rows to the return" % bare.owed())
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.events.setup(city, city.map)
@@ -1894,7 +1894,7 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 ## spec the run flow hands over (`EventManager.use_the_spec()`), never a branch in the manager.
 func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
 	var an_act_iv_day := 13
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.events.setup(city, city.map)
@@ -1983,7 +1983,7 @@ func _test_finale_entities_stop_when_the_tree_pauses(t) -> void:
 	t.add_child(interior)
 	interior.process_mode = Node.PROCESS_MODE_PAUSABLE
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.process_mode = Node.PROCESS_MODE_PAUSABLE

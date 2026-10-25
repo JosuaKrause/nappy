@@ -526,7 +526,7 @@ func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t) -> voi
 ## The real `City` stands one static body behind every fence line, where `ParkClosure` says: the
 ## one fenced park has a body across every way in, the same body a closed street's mouth has.
 func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(BASE_SEED))
 	var day := 9

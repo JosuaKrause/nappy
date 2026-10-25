@@ -17,7 +17,7 @@ func run(t) -> void:
 	var saved_section := GameState.facts.escape_section
 	GameState.resistance.sabotage_done = false
 	GameState.facts.escape_section = DaySpec.Section.NONE
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_start_the_last_day()
@@ -244,7 +244,7 @@ func _spine_traffic(powered: bool) -> Vector2:
 ## dark before its first frame.
 func _test_the_escape_is_dark_from_its_first_frame(t) -> void:
 	GameState.resistance.sabotage_done = true
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	city.dark_from_the_start = DaySpec.for_section(DaySpec.Section.CITY, 180.0).dark_from_the_start
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))

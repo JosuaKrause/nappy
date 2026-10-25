@@ -52,7 +52,7 @@ func run(t) -> void:
 	print("  %6s %4s %6s %8s   %-26s   %-26s" % ["seed", "day", "routes", "seconds",
 			"events", "crowd"])
 	for city_seed in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))
 		for day in DAYS:

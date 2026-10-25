@@ -105,7 +105,7 @@ func run(t) -> void:
 ## A day 13 on `seed_value` with the mark read from where it stands: `{city, director, player,
 ## step, mark}`, or empty when the day offers no roadblock task.
 func _read_the_mark(t, seed_value: int) -> Dictionary:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.scars = []

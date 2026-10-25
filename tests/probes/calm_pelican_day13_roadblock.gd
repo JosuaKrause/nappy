@@ -59,7 +59,7 @@ func _measure(t, fallback: bool) -> void:
 	var live_counts: Array[int] = []
 	var reading: Array[float] = []
 	for seed_value in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		GameState.attempt_spend.scars = []

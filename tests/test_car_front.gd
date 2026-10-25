@@ -14,7 +14,7 @@ const STEP := 1.0 / 60.0
 var _city: City
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_city.crowd.start_day(1, _rng())

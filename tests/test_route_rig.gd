@@ -83,7 +83,7 @@ func _rng(stream: String) -> RandomNumberGenerator:
 ## needs `move_and_slide()` to actually move it, which only the real scene does (see the verify
 ## skill).
 func _build_day(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_city.events.stream_radius = INF
@@ -750,7 +750,7 @@ func _test_resolve_target_unknown_word_warns_and_answers_inf(t) -> void:
 ## `Tuning.RESISTANCE_GOAL` for the last night's own finale test, which needs `sabotage_available()`
 ## to hold before the step is on offer at all.
 func _build_target_shape_fixture(t, day: int, progress_at_dawn: int = 0) -> Dictionary:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	city.events.stream_radius = INF
@@ -1322,7 +1322,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	const STEP := 1.0 / 30.0
 	const MAX_SECONDS := 60.0
 	var door_day := Tuning.REGION_WALL_FIRST_DAY
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	city.events.stream_radius = INF

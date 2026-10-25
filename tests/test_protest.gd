@@ -76,7 +76,7 @@ func _test_plain_pose_with_no_objective(t) -> void:
 func _build_city(t) -> void:
 	if _city != null:
 		_city.free()
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 

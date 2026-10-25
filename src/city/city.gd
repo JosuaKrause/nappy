@@ -167,13 +167,11 @@ var _buildings: Array[Building] = []
 var _posters: PosterWalls
 ## The parts of the run's state the city reads, held rather than reached for through `GameState`:
 ## what is pasted on the walls, the scars and block arcs a lost day gives back, and whether the
-## pram carries the package. They default to the run's own, which is what `main` and every rig
-## that builds a city want. `main._new_city()` hands them over explicitly; the declaration's
-## fallback is for the cities tests and rigs build outside a boot, and a test that wants a city of
-## its own sets them before `build()`.
-var run_posters: PosterState = GameState.posters
-var run_spend: AttemptSpendState = GameState.attempt_spend
-var run_resistance: ResistanceRunState = GameState.resistance
+## pram carries the package. Whoever builds the city hands them over before `build()`
+## (`main._new_city()`, or `RunCity` in a test); `build()` refuses a city without them.
+var run_posters: PosterState = null
+var run_spend: AttemptSpendState = null
+var run_resistance: ResistanceRunState = null
 ## Fixed for the run, from `StreetTrees.planted()` — unlike `_props`, never rebuilt daily: a
 ## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
 ## becomes.
@@ -233,6 +231,9 @@ func _ready() -> void:
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
+	if run_posters == null or run_spend == null or run_resistance == null:
+		push_error("City.build(): the run's parts (run_posters, run_spend, run_resistance) must be handed in first")
+		return
 	map = city_map
 	# The city draws this map: what is added to the world through it comes here.
 	map.world = self

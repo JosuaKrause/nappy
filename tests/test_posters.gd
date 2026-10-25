@@ -103,7 +103,7 @@ func _test_the_state_survives_a_round_trip_and_a_lost_day(t) -> void:
 func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		var walls := city.poster_walls()
@@ -263,7 +263,7 @@ func _test_the_marble_bag_is_exact_and_reproducible(t) -> void:
 ## scheme with the same view.
 func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
 	var map := CityGenerator.generate(SEEDS[0])
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	GameState.header.run_seed = SEEDS[0]
@@ -296,7 +296,7 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
 
 func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 	var map := CityGenerator.generate(SEEDS[0])
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	GameState.header.run_seed = SEEDS[0]
@@ -413,7 +413,7 @@ func _forget_the_pursuer(events: EventManager) -> void:
 ## torn draws its own marble.
 func _test_a_held_push_tears_every_sheet_she_slides_past(t) -> void:
 	var map := CityGenerator.generate(SEEDS[0])
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	GameState.header.run_seed = SEEDS[0]
@@ -518,7 +518,7 @@ func _test_a_held_push_tears_every_sheet_she_slides_past(t) -> void:
 ## the fix the slide resets on the door's tile and the third cell, slid past in 0.35s, is not torn.
 func _test_a_door_in_the_wall_does_not_end_the_slide(t) -> void:
 	var map := CityGenerator.generate(SEEDS[0])
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	GameState.header.run_seed = SEEDS[0]

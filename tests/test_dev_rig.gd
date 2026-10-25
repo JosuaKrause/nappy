@@ -49,7 +49,7 @@ func _rng(stream: String) -> RandomNumberGenerator:
 ## `_with_clean_run()` does, so day 4 always selects step 1 regardless of what an earlier suite
 ## left behind in the shared autoload.
 func _build_day(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_city.events.stream_radius = INF
@@ -216,7 +216,7 @@ func _test_no_door_before_the_region_wall_starts(t) -> void:
 func _test_door_target_lands_on_the_approach_side_of_a_hut(t) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(_CHECKPOINT_SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	city.events.stream_radius = INF

@@ -310,7 +310,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	player.global_position = scene.start_world_position()
 	observer.start_section(true)
 
-	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	var city: City = RunCity.of_the_run(preload("res://scenes/world/city.tscn"))
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	player.global_position = city.map.home_world_position()
@@ -600,7 +600,7 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 	var saved_day := GameState.header.day
 	GameState.header.day = 1
 	var map := CityGenerator.generate(4242)
-	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	var city: City = RunCity.of_the_run(preload("res://scenes/world/city.tscn"))
 	t.add_child(city)
 	city.build(map)
 	# Not added to the tree: a bare `Stroller.new()` has no `Camera2D` child, which only the scene
@@ -634,7 +634,7 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 ## her something ever reach her — or a day that met eight of forty events would read as forty.
 func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -> void:
 	var map := CityGenerator.generate(4242)
-	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	var city: City = RunCity.of_the_run(preload("res://scenes/world/city.tscn"))
 	t.add_child(city)
 	city.build(map)
 	var consumed: Array[String] = []
@@ -687,7 +687,7 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -
 ## did reached `map`, `city.events` or a `day_rng()` stream.
 func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 	var map := CityGenerator.generate(4242)
-	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	var city: City = RunCity.of_the_run(preload("res://scenes/world/city.tscn"))
 	t.add_child(city)
 	city.build(map)
 	var consumed: Array[String] = []
@@ -1284,7 +1284,7 @@ func _test_the_escape_observer_is_handed_the_spikes_flag(t) -> void:
 ## without crashing. `spikes_on` is set directly here; `main` hands it in through `setup()`.
 func _spike_rig(t) -> TelemetryObserver:
 	var map := CityGenerator.generate(9001)
-	var city: City = preload("res://scenes/world/city.tscn").instantiate()
+	var city: City = RunCity.of_the_run(preload("res://scenes/world/city.tscn"))
 	t.add_child(city)
 	city.build(map)
 	var observer := TelemetryObserver.new()

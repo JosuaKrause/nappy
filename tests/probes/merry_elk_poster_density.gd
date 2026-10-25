@@ -30,7 +30,7 @@ func run(t) -> void:
 	var rows := {}
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		GameState.header.run_seed = seed_value

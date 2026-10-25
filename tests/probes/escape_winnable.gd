@@ -118,7 +118,7 @@ func _mixes() -> Array[Dictionary]:
 func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionary]:
 	GameState.start_run(seed_value)
 	var day := GameState.header.day
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(GameState.header.run_seed))
 	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)

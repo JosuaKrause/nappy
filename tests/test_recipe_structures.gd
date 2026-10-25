@@ -15,7 +15,7 @@ func run(t) -> void:
 	var built := RecipeCityBuilder.build(data)
 	built.data = data
 	var packed: PackedScene = load("res://scenes/world/city.tscn")
-	var city: City = packed.instantiate()
+	var city: City = RunCity.of_the_run(packed)
 	t.add_child(city)
 	city.build(built.map)
 	var state := CityState.new()

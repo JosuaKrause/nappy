@@ -44,7 +44,7 @@ func run(t) -> void:
 
 ## "seen", "sited, never in view", "never sited", or "no mark".
 func _walk(t, seed_value: int) -> String:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()

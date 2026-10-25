@@ -67,7 +67,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	var saved_progress := GameState.resistance.progress
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
@@ -255,7 +255,7 @@ func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
 	var saved_progress := GameState.resistance.progress
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.scars = []
@@ -352,7 +352,7 @@ func _test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t) -> void:
 	var saved_progress := GameState.resistance.progress
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
@@ -407,7 +407,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	var saved_progress := GameState.resistance.progress
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
@@ -512,7 +512,7 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
 	var saved_progress := GameState.resistance.progress
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
@@ -558,7 +558,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 	var saved_progress := GameState.resistance.progress
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
@@ -622,7 +622,7 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 	var saved_progress := GameState.resistance.progress
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
@@ -734,7 +734,7 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 	var saved_progress := GameState.resistance.progress
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.scars = []

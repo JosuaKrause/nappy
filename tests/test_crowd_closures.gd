@@ -18,7 +18,7 @@ const STEP := 1.0 / 60.0
 var _city: City
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
@@ -631,7 +631,7 @@ func _a_junction_to_seal(t) -> Dictionary:
 ## its own boundary at least once.
 func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 
@@ -738,7 +738,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 ## runs first, because that is what builds the day's huts out of the region plan.
 func _open_a_door_day(t) -> Dictionary:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	var door: StreetNetwork.Segment = null
@@ -1131,7 +1131,7 @@ func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
 ## non-empty around the home block for this to test anything rather than pass vacuously.
 func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 
@@ -1605,7 +1605,7 @@ func _test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t) -> voi
 ## above uses a fresh map: the shared `_city` carries closures and seals other tests left behind.
 func _test_day_start_keeps_room_for_its_own_picture(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	var size := map.world_size()

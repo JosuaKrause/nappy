@@ -21,7 +21,7 @@ var _city: City
 var _swing_now := Vector2.ZERO
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t)

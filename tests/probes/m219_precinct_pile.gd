@@ -19,7 +19,7 @@ func run(t) -> void:
 		GameState.start_run(seed_value)
 		GameState.header.day = day
 		var map := CityGenerator.generate(seed_value)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		GameState.attempt_spend.city_state.begin_day(map.block_plans, day)

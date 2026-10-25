@@ -22,7 +22,7 @@ func _play_a_run(t, seed_value: int) -> void:
 	var saved := _save_game_state()
 	GameState.start_run(seed_value)
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(GameState.header.run_seed))
 	# No player walks this run, so nothing would ever come within streaming reach. This suite is

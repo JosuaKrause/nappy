@@ -198,7 +198,7 @@ func _test_park_trees_keep_their_distance(t) -> void:
 	var checked_any_pair := false
 	for seed_value in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		var state := CityState.new()
@@ -368,7 +368,7 @@ func _test_a_pit_is_never_on_a_junction_or_a_mouth(t) -> void:
 ## tree, built by a real `City`, has to carry exactly the shape the planners assumed.
 func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	var checked := 0
@@ -387,7 +387,7 @@ func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t) -> void:
 ## covering the stroller while preserving the tree's ordinary sorting behavior.
 func _test_street_tree_beds_are_ground_decals(t) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	var decals: CityDecals = city.get_node("Decals")

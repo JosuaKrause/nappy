@@ -37,7 +37,7 @@ func run(t) -> void:
 	_test_the_dev_flag_makes_every_cyclist_a_pelican(t)
 	_test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t)
 	_test_the_pelican_never_becomes_a_png(t)
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_city.events.start_day(Tuning.RUN_TAUGHT_DAY, _day_rng(), [] as Array[String])

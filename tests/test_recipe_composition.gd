@@ -14,7 +14,7 @@ func run(t) -> void:
 	for tree in StreetTrees.planted(built.map):
 		pits[tree.tile] = tree
 	t.check(not pits.has(source) and pits.has(destination), "planning moves the original tree pit across the road")
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(built.map)
 	t.check(not city._street_tree_pits.has(source) and city._street_tree_pits.has(destination),

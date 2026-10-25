@@ -121,7 +121,7 @@ func _check(t, seed_value: int, m: Dictionary) -> void:
 ## and once walking out through the last gap `REACTION` after an officer first comes into view.
 ## Answers what was measured, or `{}` when the day has no swing park.
 func measure(t, seed_value: int) -> Dictionary:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var saved := {

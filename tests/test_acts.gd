@@ -122,7 +122,7 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 	GameState.header.day = 4
 	GameState.attempt_spend.scars = []
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 

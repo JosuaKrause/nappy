@@ -261,7 +261,7 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t) -> void:
 
 ## Seed 4242's day 9, its closures, seals and bodies put down.
 func _a_day(t) -> City:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var state := CityState.new()

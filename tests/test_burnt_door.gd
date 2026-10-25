@@ -17,7 +17,7 @@ const DAY := 8
 func run(t) -> void:
 	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
 	var saved_state := GameState.attempt_spend.city_state
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var fronts := EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),

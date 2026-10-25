@@ -239,7 +239,7 @@ func _test_heat_installs_the_heated_row(t) -> void:
 	const CITY_SCENE := preload("res://scenes/world/city.tscn")
 	var saved_day := GameState.header.day
 	GameState.header.day = 6
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	var state := CityState.new()

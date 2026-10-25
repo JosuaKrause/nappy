@@ -47,7 +47,7 @@ func run(t) -> void:
 	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
 
 func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()

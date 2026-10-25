@@ -423,7 +423,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 			% [siting.asked, walked])
 
 func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var state := CityState.new()

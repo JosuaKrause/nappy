@@ -102,7 +102,7 @@ func run(t) -> void:
 	for rig: Array in rig_days():
 		var city_seed: int = rig[0]
 		var map := CityGenerator.generate(city_seed)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		for day: int in rig[1]:

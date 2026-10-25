@@ -35,7 +35,7 @@ func run(t) -> void:
 	_teardown()
 
 func _build_city(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	# There is no player in this rig, so nothing would ever come within streaming reach. This

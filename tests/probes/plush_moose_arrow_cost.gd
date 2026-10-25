@@ -56,7 +56,7 @@ func run(t) -> void:
 		var unreached := 0
 		var targets := 0
 		for seed_value in SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city: City = RunCity.of_the_run(CITY_SCENE)
 			t.add_child(city)
 			city.build(CityGenerator.generate(seed_value))
 			GameState.attempt_spend.scars = []

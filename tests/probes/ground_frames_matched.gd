@@ -140,7 +140,7 @@ func _run() -> void:
 	for spec: Array in [["south60", 60, Vector2.DOWN], ["south15", 15, Vector2.DOWN],
 			["diagonal15", 15, Vector2.ONE.normalized()]]:
 		GameState.start_run(4242)
-		_city = CITY.instantiate()
+		_city = RunCity.of_the_run(CITY)
 		add_child(_city)
 		_city.build(CityGenerator.generate(4242))
 		_city.scenery.set_process(false)

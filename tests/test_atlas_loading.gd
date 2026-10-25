@@ -216,7 +216,7 @@ func _rng(tag: String) -> RandomNumberGenerator:
 	return rng
 
 func _city(t) -> City:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	return city

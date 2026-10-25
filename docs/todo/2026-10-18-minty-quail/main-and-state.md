@@ -9,8 +9,7 @@
 - **The registered run state reaches the save and every reader through `GameState`.** The run's
   sub-states are one list, `GameState.run_parts`, and the dawn copy, the lost day's give-back, the
   snapshot and the save walk it; `GameSave` is a static that reads that list off `GameState` rather
-  than being handed it; `City`'s `run_posters`, `run_spend` and `run_resistance` fall back to
-  `GameState`'s parts when a city is built outside `main`; every other reader takes a part off the
+  than being handed it; every other reader takes a part off the
   `GameState` global (`GameState.header.day`, `GameState.attempt_spend.scars`) rather than being
   handed it; and `GameState` keeps eleven forwarding properties (`run_seed`, `day`,
   `resistance_progress`, `consumed_one_shots`, `completed_resistance_steps`,

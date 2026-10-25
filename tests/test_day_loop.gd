@@ -415,7 +415,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 	var saved_paused: bool = t.get_tree().paused
 	GameState.start_run(SEED)
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 
@@ -749,7 +749,7 @@ func _test_the_retry_meets_the_same_mark_in_the_same_alley(t) -> void:
 	GameState.start_run(SEED)
 	GameState.header.day = 6
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 

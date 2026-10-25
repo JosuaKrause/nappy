@@ -228,7 +228,7 @@ func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 		map.repaint(state)
 		t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK,
 				"authored ground survives dawn repaint")
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		city.start_day(state, 7, RandomNumberGenerator.new(),
@@ -275,7 +275,7 @@ func _test_authored_building_values_drive_live_joins(t, day_seven: Dictionary) -
 	var built := RecipeCityBuilder.build(edited)
 	t.check(built.errors.is_empty(), "the adjacent-height edit builds: %s" % [built.errors])
 	if built.errors.is_empty():
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(built.map)
 		var back: Building = null
@@ -312,7 +312,7 @@ func _test_authored_partial_courtyard_controls_live_tint(t) -> void:
 	var built := RecipeCityBuilder.build(edited)
 	t.check(built.errors.is_empty(), "the partial-courtyard edit builds: %s" % [built.errors])
 	if built.errors.is_empty():
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(built.map)
 		var tint_source: Building = null
@@ -417,7 +417,7 @@ func _test_the_route_bag(t, map: CityMap, data: Dictionary) -> void:
 			"a crowd observation asks about the picture round her")
 
 func _test_the_city_draws_the_stretch_alone(t, map: CityMap) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	t.check(city.buildings().size() == map.stretch_buildings.size(),

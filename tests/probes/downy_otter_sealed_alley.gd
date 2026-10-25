@@ -25,7 +25,7 @@ func run(t) -> void:
 	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	var totals := {"dawn": [0, 0, 0], "moved": [0, 0, 0]}
 	for seed_value in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in range(6, 14):

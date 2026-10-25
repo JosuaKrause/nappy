@@ -30,7 +30,7 @@ func _process(_delta: float) -> void:
 
 func _run() -> void:
 	GameState.start_run(4242)
-	_city = CITY.instantiate()
+	_city = RunCity.of_the_run(CITY)
 	add_child(_city)
 	_city.build(CityGenerator.generate(4242))
 	_city.scenery.set_process(false)

@@ -95,7 +95,7 @@ func _test_every_task_days_destination_draws_no_mark(t) -> void:
 func _build_city(t) -> void:
 	if _city != null:
 		_city.free()
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 

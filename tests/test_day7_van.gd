@@ -30,7 +30,7 @@ func run(t) -> void:
 ## Answers whether a second van was put on her route in this city.
 func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var size := Tuning.VAN_WITHIN_THE_NEXT
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()
@@ -190,7 +190,7 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 ## `Stroller.CAMERA_LOOK_AHEAD` along her heading as the camera leads her.
 func _test_the_van_is_sited_wholly_out_of_the_camera_view(t) -> void:
 	var seed_value: int = SEEDS[0]
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()
