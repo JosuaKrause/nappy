@@ -35,10 +35,11 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 		instance._process(STEP)
 
 ## A fresh instance of `first`'s row and path, put back where `first` had got to as
-## `EventManager._stream_in()` does; checks its saved state comes back whole.
-func _round_trip(t, first: EventInstance, what: String) -> EventInstance:
+## `EventManager._stream_in()` does; checks the state names the behaviour under test (`behaviour`,
+## its class name) and comes back whole.
+func _round_trip(t, first: EventInstance, what: String, behaviour: StringName) -> EventInstance:
 	var state := first.save_behaviours()
-	t.check(not state.is_empty(), "%s: there is state to carry" % what)
+	t.check(state.has(behaviour), "%s: there is state to carry" % what)
 	var second := _instance(t, first.def, first.global_position, first.path)
 	second.resume(first.age, first.path_travelled(), first.noticed_at())
 	second.restore_behaviours(state)
@@ -74,7 +75,7 @@ func _test_the_pursuit_round_trips(t) -> void:
 	t.check(first.phase == EventInstance.Phase.WARNING, "the robber has noticed her")
 	first.pursuit.lunge_held = true
 	first.pursuit.outrun_for = 0.4
-	var second := _round_trip(t, first, "pursuit")
+	var second := _round_trip(t, first, "pursuit", &"EventPursuit")
 	t.check(second.pursuit.lunge_held and is_equal_approx(second.pursuit.outrun_for, 0.4),
 			"his held lunge and his running clock come back")
 	t.check(second.phase == EventInstance.Phase.WARNING, "and he is still warning")
@@ -91,7 +92,7 @@ func _test_the_masked_mans_warning_round_trips(t) -> void:
 	first.player_at = her
 	_advance(first, 0.5)
 	t.check(first.phase == EventInstance.Phase.WARNING, "inside his run distance, he warns first")
-	var second := _round_trip(t, first, "the masked man's warning")
+	var second := _round_trip(t, first, "the masked man's warning", &"EventNoticeRun")
 	second.player_at = her
 	var first_ran := -1
 	var second_ran := -1
@@ -133,7 +134,7 @@ func _test_the_hold_round_trips(t) -> void:
 	first.start_chat()
 	_advance(first, 0.5)
 	t.check(first.is_chatting() and first.has_chatted(), "the conversation is under way")
-	var second := _round_trip(t, first, "hold")
+	var second := _round_trip(t, first, "hold", &"EventHold")
 	t.check(second.has_chatted(), "streamed back in, she has already held her")
 	first.free()
 	second.free()
@@ -171,7 +172,7 @@ func _test_the_investigation_round_trips(t) -> void:
 	first.age = 2.0
 	var state := {"seen_her": true, "officers_owed": 1, "investigated": true, "left_her_once": true}
 	first.investigation.restore(state)
-	var second := _round_trip(t, first, "investigation")
+	var second := _round_trip(t, first, "investigation", &"EventInvestigation")
 	t.check(second.investigation.save() == state, "every field of its state survives the trip")
 	t.check(second.investigation.has_seen_her() and second.investigation.has_investigated()
 			and second.officers_owed() == 1, "it has seen her, is done, and still owes its man")
@@ -186,7 +187,7 @@ func _test_the_officer_round_trips(t) -> void:
 	var state := {"trail": PackedVector2Array([Vector2(10.0, 0.0), Vector2(20.0, 0.0)]),
 			"stopped_ago": 1.0}
 	first.on_foot.restore(state)
-	var second := _round_trip(t, first, "officer")
+	var second := _round_trip(t, first, "officer", &"EventOfficer")
 	t.check(second.on_foot.save() == state, "every field of its state survives the trip")
 	t.check(second.on_foot.trail == first.on_foot.trail, "his trail back comes back")
 	t.check(second.has_stopped_her() and is_equal_approx(second.on_foot.stopped_for(), 1.0),
@@ -204,7 +205,7 @@ func _test_the_departure_round_trips(t) -> void:
 	first.give_up_the_chase()
 	t.check(first.is_leaving, "given up, the dog leaves")
 	_advance(first, 0.5)
-	var second := _round_trip(t, first, "departure")
+	var second := _round_trip(t, first, "departure", &"EventDeparture")
 	first.free()
 	second.free()
 
@@ -218,7 +219,7 @@ func _test_the_unreachable_dog_round_trips(t) -> void:
 	var state := {"gap_looked_at": Tuning.OUT_OF_SIGHT + 380.0, "look_clock": 0.3,
 			"not_closing_for": 1.0}
 	first.unreachable.restore(state)
-	var second := _round_trip(t, first, "unreachable")
+	var second := _round_trip(t, first, "unreachable", &"EventUnreachable")
 	t.check(second.unreachable.save() == state, "every field of its state survives the trip")
 	first.free()
 	second.free()
@@ -231,7 +232,7 @@ func _test_the_take_round_trips(t) -> void:
 	first.player_at = Vector2(def.outer_radius - 20.0, 0.0)
 	_advance(first, 0.5)
 	t.check(first.is_taking_a_victim(), "she is close, and the take is under way")
-	var second := _round_trip(t, first, "take")
+	var second := _round_trip(t, first, "take", &"EventAbduction")
 	t.check(second.is_taking_a_victim(), "streamed back in, it is still under way")
 	first.free()
 	second.free()
