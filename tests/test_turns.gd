@@ -37,7 +37,7 @@ class Manoeuvre extends RefCounted:
 	var worst_drift := 0.0
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_junction = _plain_junction()

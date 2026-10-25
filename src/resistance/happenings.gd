@@ -236,7 +236,7 @@ func _maybe_the_market(delta: float, her: Vector2) -> void:
 	if _look_in > 0.0:
 		return
 	_look_in = EventDirector.ON_HER_WAY_LOOK
-	var candidates := market_candidates(_map, GameState.city_state)
+	var candidates := market_candidates(_map, GameState.attempt_spend.city_state)
 	if candidates.is_empty():
 		_market_owed = false
 		trace.note("contact", "no block is waiting to board up, so there is no market to lose")
@@ -298,7 +298,7 @@ func _market_out_of_her_sight(her: Vector2, candidates: Array[Vector2i]) -> Vect
 ## Boards `block` up now and takes its market away: the arc's own next step, taken today, the
 ## buildings shown shuttered, and the stalls at its frontage gone from the day's plan.
 func board_up(block: Vector2i) -> bool:
-	var state := GameState.city_state
+	var state := GameState.attempt_spend.city_state
 	if not state or not state.advance_now(_map.block_plans, block, _day,
 			GameEnums.BlockPurpose.BOARDED_UP, GameEnums.BlockCause.SCHEDULED):
 		return false
@@ -341,7 +341,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	if not _map:
 		return false
 	var park := CityGenerator.swing_park(_map)
-	var state := GameState.city_state
+	var state := GameState.attempt_spend.city_state
 	if park.x < 0 or not state or not state.take(_map.block_plans, park, _day):
 		return false
 	_map.recompute_calm(state)

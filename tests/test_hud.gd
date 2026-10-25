@@ -52,8 +52,8 @@ func _pursuer() -> EventInstance:
 ## the whole run allowed to say anything: a second pursuit the same day is not a second lesson, and
 ## `hud._taught_run` is what stops it from reading as one.
 func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
-	var saved_day := GameState.day
-	GameState.day = Tuning.RUN_TAUGHT_DAY
+	var saved_day := GameState.header.day
+	GameState.header.day = Tuning.RUN_TAUGHT_DAY
 	var hud := _hud(t)
 
 	var first := _pursuer()
@@ -72,7 +72,7 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 	first.free()
 	second.free()
 	hud.free()
-	GameState.day = saved_day
+	GameState.header.day = saved_day
 
 ## **The lesson names the control on every device, not only a touch one.** *(Filed from a phone
 ## play of the deployed build: "the run tutorial says hold 'SHIFT' on mobile", then confirmed by
@@ -80,8 +80,8 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 ## used to choose between this wording and "Hold SHIFT to run"; now both flag values produce the
 ## same line, since the double-tap wording is the only one left.
 func _test_the_run_hint_names_a_double_tap_on_a_touch_device(t) -> void:
-	var saved_day := GameState.day
-	GameState.day = Tuning.RUN_TAUGHT_DAY
+	var saved_day := GameState.header.day
+	GameState.header.day = Tuning.RUN_TAUGHT_DAY
 	var hud := _hud(t)
 	hud._touch = false
 
@@ -92,7 +92,7 @@ func _test_the_run_hint_names_a_double_tap_on_a_touch_device(t) -> void:
 
 	first.free()
 	hud.free()
-	GameState.day = saved_day
+	GameState.header.day = saved_day
 
 ## **The day-1 walk lesson has the same defect the run lesson had, and the same fix.** *(Playtest
 ## 29 finding 4.)* `hud._touch` used to choose between "Tap to walk, double tap to run" and
@@ -115,8 +115,8 @@ func _test_the_walk_hint_names_a_tap_on_a_touch_device(t) -> void:
 ## `RUN_TAUGHT_DAY` is already marked taught by an attempt the player never got to finish — and
 ## every attempt after that stays silent. The flag has to belong to the attempt on this one day.
 func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
-	var saved_day := GameState.day
-	GameState.day = Tuning.RUN_TAUGHT_DAY
+	var saved_day := GameState.header.day
+	GameState.header.day = Tuning.RUN_TAUGHT_DAY
 	var hud := _hud(t)
 
 	var first := _pursuer()
@@ -142,7 +142,7 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
 	second.free()
 	third.free()
 	hud.free()
-	GameState.day = saved_day
+	GameState.header.day = saved_day
 
 ## **The meters move to the top on a touch build, so a walking thumb never rests on the one
 ## reading that may never be occluded.** *(2026-09-02: "let's also move the progress bars to the
@@ -244,11 +244,11 @@ func _test_the_pause_hint_waits_out_a_detention(t) -> void:
 ## `alley_robbery` from day 8 pursues exactly like `charging_dog` does, and none of it is a
 ## keybinding reminder.
 func _test_the_run_hint_never_fires_off_the_teaching_day(t) -> void:
-	var saved_day := GameState.day
+	var saved_day := GameState.header.day
 
 	# Before the day the run is taught: nothing has been taught yet, so there is nothing to repeat
 	# either — the hint still must not fire, because it belongs to one specific day.
-	GameState.day = Tuning.RUN_TAUGHT_DAY - 1
+	GameState.header.day = Tuning.RUN_TAUGHT_DAY - 1
 	var hud_before := _hud(t)
 	var early := _pursuer()
 	hud_before._on_event_telegraphed(early)
@@ -259,7 +259,7 @@ func _test_the_run_hint_never_fires_off_the_teaching_day(t) -> void:
 	# After it: the lesson already happened on an earlier day, and a fresh HUD (a new day started)
 	# has never taught this run, but the pursuit is not on the teaching day, so it still says
 	# nothing — the gate is the day, not just "has this run seen the hint yet".
-	GameState.day = Tuning.RUN_TAUGHT_DAY + 5
+	GameState.header.day = Tuning.RUN_TAUGHT_DAY + 5
 	var hud_after := _hud(t)
 	var late := _pursuer()
 	hud_after._on_event_telegraphed(late)
@@ -267,7 +267,7 @@ func _test_the_run_hint_never_fires_off_the_teaching_day(t) -> void:
 	late.free()
 	hud_after.free()
 
-	GameState.day = saved_day
+	GameState.header.day = saved_day
 
 ## Day, act and nerves are all read between days already; during the day the release build says
 ## none of it. `_debug` starts true in this process (the suite is itself a debug build), so the
@@ -365,18 +365,18 @@ func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t) -> vo
 ## Playtest 19 finding 5, verbatim: *"the first chalk mark is written in the status when it
 ## should not be"* — seen as `resistance ....   out there: a chalk mark` before
 ## anything had been found. `CLAUDE.md`'s own rule is that the first encounter comes with no
-## hint at all, so the goal title is silent until `GameState.completed_resistance_steps` is
+## hint at all, so the goal title is silent until `GameState.resistance.completed_steps` is
 ## non-empty — which happens the instant the first mark is *touched*, not once its perform
 ## half is done a day later, because `complete_resistance_step` records a pickup too even
 ## though a pickup grants no progress. `has_joined_resistance()` (`progress > 0`) would still
 ## be zero at that point, which is why it is not the test here.
 func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
 
 	var hud := _hud(t)
 
@@ -409,9 +409,9 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 			"a debug build keeps the progress dots the rigs were built against, instruction and all")
 
 	hud.free()
-	GameState.completed_resistance_steps = saved_completed
-	GameState.failed_resistance_steps = saved_failed
-	GameState.resistance_progress = saved_progress
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.failed_steps = saved_failed
+	GameState.resistance.progress = saved_progress
 
 ## The small HUD task line is the short version and always one line: every step's own line fits
 ## the width the HUD gives the label (the Meters column, 280px) at its 12px font, so it never wraps.
@@ -453,7 +453,7 @@ func _test_a_touched_marks_message_breaks_between_sentences(t) -> void:
 			t.check(w <= width or single,
 					"step %d's line '%s' fits the width or is one sentence" % [step.index, line])
 
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
 	var step := ResistanceSteps.by_index(3)
 	var saved_brief := step.brief
 	step.brief = "A van is waiting on the sidewalk by the old market. Do not come home empty-handed tonight."
@@ -462,16 +462,16 @@ func _test_a_touched_marks_message_breaks_between_sentences(t) -> void:
 			+ "Do not come home empty-handed tonight.",
 			"a touched mark's long message breaks after its first sentence, got '%s'" % hud._teach.line)
 	step.brief = saved_brief
-	GameState.completed_resistance_steps = saved_completed
+	GameState.resistance.completed_steps = saved_completed
 	hud.free()
 
 ## The wording rule holds for every task, not only the first: every perform step
 ## names `Step.header` — the associated mark's own words, cut to fit — never `Step.title`, which
 ## stays unused by the header and is reserved for the progress dots.
 func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	GameState.failed_resistance_steps = []
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	GameState.resistance.failed_steps = []
 
 	var hud := _hud(t)
 	hud._debug = false
@@ -480,7 +480,7 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 			continue
 		t.check(step.header != "", "perform step %d has its own header phrase" % step.index)
 		# Non-empty so the HUD's own "already touched a mark" gate is open.
-		GameState.completed_resistance_steps = [step.index - 1]
+		GameState.resistance.completed_steps = [step.index - 1]
 		hud._on_contact_available(step.index)
 		t.check(hud._resistance_label.text == "out there: %s" % step.header.to_lower(),
 				"step %d's header names the instruction ('%s')"
@@ -489,8 +489,8 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 				"step %d's header never falls back to naming the title" % step.index)
 
 	hud.free()
-	GameState.completed_resistance_steps = saved_completed
-	GameState.failed_resistance_steps = saved_failed
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.failed_steps = saved_failed
 
 ## *"no onscreen text for acknowledgements like this"* (PLAYTEST-117): a **finished** resistance
 ## step is shown by the world — the mark's touched picture, the man shouting walking away — and
@@ -520,14 +520,14 @@ func _test_a_completed_step_puts_no_text_on_screen(t) -> void:
 ## ever overwrites `_resistance_label`'s "out there:" line on its own, and clearing
 ## `_contact_step` here is what stops it naming an already-finished task for the rest of the day.
 func _test_the_task_line_clears_when_the_task_is_done(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
 	# Day 6 already behind her, so the "first mark is never named" gate — the goal has been
 	# joined — is open for day 7's own mark (index 3) and perform (index 4) below.
-	GameState.completed_resistance_steps = [1, 2]
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 1
+	GameState.resistance.completed_steps = [1, 2]
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 1
 
 	var hud := _hud(t)
 	hud._debug = false
@@ -551,9 +551,9 @@ func _test_the_task_line_clears_when_the_task_is_done(t) -> void:
 			"completing the task clears the line, with no further contact to overwrite it")
 
 	hud.free()
-	GameState.completed_resistance_steps = saved_completed
-	GameState.failed_resistance_steps = saved_failed
-	GameState.resistance_progress = saved_progress
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.failed_steps = saved_failed
+	GameState.resistance.progress = saved_progress
 
 ## *(Playtest 25 finding 1, verified against the engine rather than inferred: `"%3.0f" % value`
 ## rounds to nearest, so 99.5 and everything above it already printed `100` while the day was
@@ -587,8 +587,8 @@ func _test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t) -> void:
 ## tap scheme draws no run button, so it keeps "double tap to run"; a `TouchControls` in the tree
 ## set to `JOYSTICK` is what the HUD asks.
 func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
-	var saved_day := GameState.day
-	GameState.day = Tuning.RUN_TAUGHT_DAY
+	var saved_day := GameState.header.day
+	GameState.header.day = Tuning.RUN_TAUGHT_DAY
 	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
 	t.add_child(controls)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
@@ -620,7 +620,7 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
 
 	# The title chooses the scheme after day 1 began, and `main` emits the choice before it sets
 	# the scheme on `TouchControls`, which still answers TAP here.
-	GameState.day = 1
+	GameState.header.day = 1
 	EventBus.controls_chosen.emit(true, false)
 	t.check(hud._teach.line == "Tap to walk, hold {run} or double tap to run",
 			"choosing joystick on the title says day 1's line in the joystick wording")
@@ -633,6 +633,6 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
 	p1.free()
 	p2.free()
 
-	GameState.day = saved_day
+	GameState.header.day = saved_day
 	controls.free()
 	hud.free()

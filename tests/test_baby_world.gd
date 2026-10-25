@@ -42,10 +42,10 @@ func _test_a_baby_answers_for_the_world_she_is_handed(t) -> void:
 	world.free()
 
 func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
-	var saved_section := GameState.escape_section
+	var saved_section := GameState.facts.escape_section
 	GameState.start_run(SEED)
-	GameState.day = DAY
-	GameState.escape_section = DaySpec.Section.BUILDING
+	GameState.header.day = DAY
+	GameState.facts.escape_section = DaySpec.Section.BUILDING
 	var main: Node2D = MAIN_SCENE.instantiate()
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
@@ -66,7 +66,7 @@ func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
-	GameState.escape_section = saved_section
+	GameState.facts.escape_section = saved_section
 
 ## Stands her on a city event that charges the ground under it, steps her meter once, and reads
 ## what the meter was fed -- the city's own answer, not the building's.
@@ -124,10 +124,10 @@ func _test_an_ordinary_boot_hands_her_the_city(t) -> void:
 	_boot_and_check(t, DaySpec.Section.NONE, "an ordinary day's boot")
 
 func _boot_and_check(t, section: int, what: String) -> void:
-	var saved_section := GameState.escape_section
+	var saved_section := GameState.facts.escape_section
 	GameState.start_run(SEED)
-	GameState.day = DAY
-	GameState.escape_section = section
+	GameState.header.day = DAY
+	GameState.facts.escape_section = section
 	var main: Node2D = MAIN_SCENE.instantiate()
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
@@ -137,4 +137,4 @@ func _boot_and_check(t, section: int, what: String) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
-	GameState.escape_section = saved_section
+	GameState.facts.escape_section = saved_section

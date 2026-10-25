@@ -14,7 +14,7 @@ func run(t) -> void:
 	for tree in StreetTrees.planted(built.map):
 		pits[tree.tile] = tree
 	t.check(not pits.has(source) and pits.has(destination), "planning moves the original tree pit across the road")
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(built.map)
 	t.check(not city._street_tree_pits.has(source) and city._street_tree_pits.has(destination),
@@ -71,10 +71,10 @@ func run(t) -> void:
 	t.check(not city.crowd.field().uniform_walkers
 			and city.crowd.agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
 			"ordinary day restores its density and street hierarchy")
-	var prior_day := GameState.day
-	var prior_seed := GameState.run_seed
-	GameState.day = 1
-	GameState.run_seed = 11
+	var prior_day := GameState.header.day
+	var prior_seed := GameState.header.run_seed
+	GameState.header.day = 1
+	GameState.header.run_seed = 11
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
 	city.start_recipe_day(state, 1, GameState.day_rng())
@@ -87,14 +87,14 @@ func run(t) -> void:
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)
-	var errors := runtime.install(city, player, player.get_node("Baby"), DaySpec.for_day(GameState.day, Tuning.DAY_LENGTH_SECONDS))
+	var errors := runtime.install(city, player, player.get_node("Baby"), DaySpec.for_day(GameState.header.day, Tuning.DAY_LENGTH_SECONDS))
 	t.check("\n".join(errors).contains("too few eligible sidewalk positions"),
 			"oversized city-wide uniform population rejects instead of silently truncating")
 	runtime.free()
 	player.free()
 	city.free()
-	GameState.day = prior_day
-	GameState.run_seed = prior_seed
+	GameState.header.day = prior_day
+	GameState.header.run_seed = prior_seed
 	for target in [[50, 73], [51, 71]]:
 		var invalid: Dictionary = recipe.duplicate(true)
 		invalid.city.tree_moves[0].to = target

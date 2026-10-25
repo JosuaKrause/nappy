@@ -1,0 +1,425 @@
+{
+	"after_a_loss": {
+		"build": "v0.29.2-29-ge1cc7c7f-dirty (e1cc7c7f)",
+		"checkpoint": {
+			"completed_resistance_alley_tiles": [],
+			"escape_section": 0.0,
+			"fenced_park": {
+				"x": -1.0,
+				"y": -1.0
+			},
+			"fenced_park_act": 0.0,
+			"pelican": {
+				"dawn": 0.0,
+				"draws": 0.0
+			},
+			"posters": {
+				"cells": [],
+				"dawn": {
+					"cells": [],
+					"pasted_through": 0.0,
+					"tears": 0.0
+				},
+				"pasted_through": 0.0,
+				"tears": 0.0
+			},
+			"state": {
+				"_dawn_carrying_package": false,
+				"_dawn_city_state": {
+					"changed_on": [],
+					"stage": []
+				},
+				"_dawn_completed_steps": [],
+				"_dawn_consumed_one_shots": [],
+				"_dawn_failed_steps": [],
+				"_dawn_progress": 0.0,
+				"_dawn_sabotage_done": false,
+				"_dawn_scars": [],
+				"city_state": {
+					"changed_on": [],
+					"stage": []
+				},
+				"completed_resistance_steps": [],
+				"consumed_one_shots": [],
+				"day": 4.0,
+				"ending": 0.0,
+				"failed_resistance_steps": [],
+				"nerves": 5.0,
+				"play_seconds": 0.0,
+				"player_is_male": true,
+				"resistance_carrying_package": false,
+				"resistance_progress": 0.0,
+				"run_seed": 20261025.0,
+				"sabotage_done": false,
+				"scars": [],
+				"settled_in": []
+			}
+		},
+		"completed_resistance_alley_tiles": [
+			{
+				"x": 77.0,
+				"y": 78.0
+			}
+		],
+		"day_under_way": false,
+		"escape_section": 1.0,
+		"fenced_park": {
+			"x": 2.0,
+			"y": 3.0
+		},
+		"fenced_park_act": 2.0,
+		"format_version": 1.0,
+		"hard_mode": false,
+		"pelican": {
+			"dawn": 3.0,
+			"draws": 3.0
+		},
+		"posters": {
+			"cells": [
+				{
+					"k": 0.0,
+					"s": 1.0,
+					"t": -1.0,
+					"u": -1.0,
+					"ut": -1.0,
+					"x": 4.0,
+					"y": 5.0
+				}
+			],
+			"dawn": {
+				"cells": [
+					{
+						"k": 0.0,
+						"s": 1.0,
+						"t": -1.0,
+						"u": -1.0,
+						"ut": -1.0,
+						"x": 4.0,
+						"y": 5.0
+					}
+				],
+				"pasted_through": 5.0,
+				"tears": 1.0
+			},
+			"pasted_through": 5.0,
+			"tears": 1.0
+		},
+		"state": {
+			"_dawn_carrying_package": false,
+			"_dawn_city_state": {
+				"changed_on": [
+					{
+						"v": 6.0,
+						"x": 30.0,
+						"y": 30.0
+					}
+				],
+				"stage": [
+					{
+						"v": 1.0,
+						"x": 30.0,
+						"y": 30.0
+					}
+				]
+			},
+			"_dawn_completed_steps": [
+				0.0,
+				1.0
+			],
+			"_dawn_consumed_one_shots": [
+				"spent_before_the_dawn"
+			],
+			"_dawn_failed_steps": [
+				2.0
+			],
+			"_dawn_progress": 2.0,
+			"_dawn_sabotage_done": false,
+			"_dawn_scars": [
+				{
+					"id": "scarred_before_the_dawn",
+					"since_day": 6.0,
+					"x": 10.5,
+					"y": 20.25
+				}
+			],
+			"city_state": {
+				"changed_on": [
+					{
+						"v": 6.0,
+						"x": 30.0,
+						"y": 30.0
+					}
+				],
+				"stage": [
+					{
+						"v": 1.0,
+						"x": 30.0,
+						"y": 30.0
+					}
+				]
+			},
+			"completed_resistance_steps": [
+				0.0,
+				1.0
+			],
+			"consumed_one_shots": [
+				"spent_before_the_dawn"
+			],
+			"day": 6.0,
+			"ending": 0.0,
+			"failed_resistance_steps": [
+				2.0
+			],
+			"nerves": 2.0,
+			"play_seconds": 321.5,
+			"player_is_male": true,
+			"resistance_carrying_package": false,
+			"resistance_progress": 2.0,
+			"run_seed": 20261025.0,
+			"sabotage_done": false,
+			"scars": [
+				{
+					"id": "scarred_before_the_dawn",
+					"since_day": 6.0,
+					"x": 10.5,
+					"y": 20.25
+				}
+			],
+			"settled_in": [
+				{
+					"day": 5.0,
+					"x": 7.0,
+					"y": 8.0
+				}
+			]
+		}
+	},
+	"written": {
+		"build": "v0.29.2-29-ge1cc7c7f-dirty (e1cc7c7f)",
+		"checkpoint": {
+			"completed_resistance_alley_tiles": [],
+			"escape_section": 0.0,
+			"fenced_park": {
+				"x": -1.0,
+				"y": -1.0
+			},
+			"fenced_park_act": 0.0,
+			"pelican": {
+				"dawn": 0.0,
+				"draws": 0.0
+			},
+			"posters": {
+				"cells": [],
+				"dawn": {
+					"cells": [],
+					"pasted_through": 0.0,
+					"tears": 0.0
+				},
+				"pasted_through": 0.0,
+				"tears": 0.0
+			},
+			"state": {
+				"_dawn_carrying_package": false,
+				"_dawn_city_state": {
+					"changed_on": [],
+					"stage": []
+				},
+				"_dawn_completed_steps": [],
+				"_dawn_consumed_one_shots": [],
+				"_dawn_failed_steps": [],
+				"_dawn_progress": 0.0,
+				"_dawn_sabotage_done": false,
+				"_dawn_scars": [],
+				"city_state": {
+					"changed_on": [],
+					"stage": []
+				},
+				"completed_resistance_steps": [],
+				"consumed_one_shots": [],
+				"day": 4.0,
+				"ending": 0.0,
+				"failed_resistance_steps": [],
+				"nerves": 5.0,
+				"play_seconds": 0.0,
+				"player_is_male": true,
+				"resistance_carrying_package": false,
+				"resistance_progress": 0.0,
+				"run_seed": 20261025.0,
+				"sabotage_done": false,
+				"scars": [],
+				"settled_in": []
+			}
+		},
+		"completed_resistance_alley_tiles": [
+			{
+				"x": 77.0,
+				"y": 78.0
+			}
+		],
+		"day_under_way": true,
+		"escape_section": 1.0,
+		"fenced_park": {
+			"x": 2.0,
+			"y": 3.0
+		},
+		"fenced_park_act": 2.0,
+		"format_version": 1.0,
+		"hard_mode": false,
+		"pelican": {
+			"dawn": 3.0,
+			"draws": 11.0
+		},
+		"posters": {
+			"cells": [
+				{
+					"k": 0.0,
+					"s": 1.0,
+					"t": -1.0,
+					"u": -1.0,
+					"ut": -1.0,
+					"x": 4.0,
+					"y": 5.0
+				},
+				{
+					"k": 1.0,
+					"s": -1.0,
+					"t": -1.0,
+					"u": -1.0,
+					"ut": -1.0,
+					"x": 9.0,
+					"y": 9.0
+				}
+			],
+			"dawn": {
+				"cells": [
+					{
+						"k": 0.0,
+						"s": 1.0,
+						"t": -1.0,
+						"u": -1.0,
+						"ut": -1.0,
+						"x": 4.0,
+						"y": 5.0
+					}
+				],
+				"pasted_through": 5.0,
+				"tears": 1.0
+			},
+			"pasted_through": 6.0,
+			"tears": 1.0
+		},
+		"state": {
+			"_dawn_carrying_package": false,
+			"_dawn_city_state": {
+				"changed_on": [
+					{
+						"v": 6.0,
+						"x": 30.0,
+						"y": 30.0
+					}
+				],
+				"stage": [
+					{
+						"v": 1.0,
+						"x": 30.0,
+						"y": 30.0
+					}
+				]
+			},
+			"_dawn_completed_steps": [
+				0.0,
+				1.0
+			],
+			"_dawn_consumed_one_shots": [
+				"spent_before_the_dawn"
+			],
+			"_dawn_failed_steps": [
+				2.0
+			],
+			"_dawn_progress": 2.0,
+			"_dawn_sabotage_done": false,
+			"_dawn_scars": [
+				{
+					"id": "scarred_before_the_dawn",
+					"since_day": 6.0,
+					"x": 10.5,
+					"y": 20.25
+				}
+			],
+			"city_state": {
+				"changed_on": [
+					{
+						"v": 6.0,
+						"x": 30.0,
+						"y": 30.0
+					},
+					{
+						"v": 6.0,
+						"x": 31.0,
+						"y": 31.0
+					}
+				],
+				"stage": [
+					{
+						"v": 1.0,
+						"x": 30.0,
+						"y": 30.0
+					},
+					{
+						"v": 1.0,
+						"x": 31.0,
+						"y": 31.0
+					}
+				]
+			},
+			"completed_resistance_steps": [
+				0.0,
+				1.0,
+				3.0
+			],
+			"consumed_one_shots": [
+				"spent_before_the_dawn",
+				"spent_after_the_dawn"
+			],
+			"day": 6.0,
+			"ending": 0.0,
+			"failed_resistance_steps": [
+				2.0,
+				4.0
+			],
+			"nerves": 3.0,
+			"play_seconds": 321.5,
+			"player_is_male": true,
+			"resistance_carrying_package": true,
+			"resistance_progress": 3.0,
+			"run_seed": 20261025.0,
+			"sabotage_done": true,
+			"scars": [
+				{
+					"id": "scarred_before_the_dawn",
+					"since_day": 6.0,
+					"x": 10.5,
+					"y": 20.25
+				},
+				{
+					"id": "scarred_after_the_dawn",
+					"since_day": 6.0,
+					"x": 120.0,
+					"y": 80.0
+				}
+			],
+			"settled_in": [
+				{
+					"day": 5.0,
+					"x": 7.0,
+					"y": 8.0
+				},
+				{
+					"day": 6.0,
+					"x": 2.0,
+					"y": 3.0
+				}
+			]
+		}
+	}
+}

@@ -19,7 +19,7 @@ const STEP := 1.0 / 60.0
 
 func run(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 
@@ -695,7 +695,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
 	var cars_seen := 0
 	for city_seed: int in [4242, 24757, 91117]:
 		var map := CityGenerator.generate(city_seed)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		for day: int in [1, 6]:

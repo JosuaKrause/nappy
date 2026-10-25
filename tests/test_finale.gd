@@ -82,8 +82,8 @@ func run(t) -> void:
 
 static func _plan_for(seed_value: int) -> Dictionary:
 	var map := CityGenerator.generate(seed_value)
-	GameState.city_state.begin_day(map.block_plans, 1)
-	map.repaint(GameState.city_state)
+	GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+	map.repaint(GameState.attempt_spend.city_state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	return {"map": map, "plan": FinalePlanner.plan(map, rng, _city_spec())}
@@ -343,8 +343,8 @@ func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t) -> void:
 	var vans := 0
 	for seed_value in VAN_STREET_SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.city_state)
+		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.attempt_spend.city_state)
 		var bare := _bare_plan(map, seed_value)
 		var placed := _escape_rows_on(map, bare,
 				EventScheduler.street_bag({"abduction": 1}, seed_value), 2)
@@ -966,10 +966,10 @@ static func _escape_roadblocks(plan: FinalePlanner.Plan) -> Array[EventScheduler
 ## the city starts with, walking straight past a posted guard is caught while luring him off and
 ## walking on is not, and costs nothing.
 func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
-	var saved_section := GameState.escape_section
+	var saved_section := GameState.facts.escape_section
 	GameState.start_run(PLAYERS_SEED)
-	GameState.day = 1
-	GameState.escape_section = DaySpec.Section.BUILDING
+	GameState.header.day = 1
+	GameState.facts.escape_section = DaySpec.Section.BUILDING
 	var main: Node2D = MAIN_SCENE.instantiate()
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
@@ -981,7 +981,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 			"seed %d: the service door puts her in the city" % PLAYERS_SEED)
 	if main._city != null:
 		var map: CityMap = main._city.map
-		var plan := FinalePlanner.plan(map, GameState.day_rng(GameState.day, "finale"), _city_spec())
+		var plan := FinalePlanner.plan(map, GameState.day_rng(GameState.header.day, "finale"), _city_spec())
 		var bands := _escape_roadblocks(plan)
 		var hers := StreetNetwork.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
@@ -1045,7 +1045,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
-	GameState.escape_section = saved_section
+	GameState.facts.escape_section = saved_section
 
 # ------------------------------------------------------- the day's own rules ---
 
@@ -1147,8 +1147,8 @@ func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
 ## ground did change — a tile closed — is read again rather than answered from the kept copy.
 func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 	var map := CityGenerator.generate(SEEDS[0])
-	GameState.city_state.begin_day(map.block_plans, 1)
-	map.repaint(GameState.city_state)
+	GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+	map.repaint(GameState.attempt_spend.city_state)
 	var plans: Array[FinalePlanner.Plan] = []
 	var kept: Array[Dictionary] = []
 	for attempt in 2:
@@ -1209,8 +1209,8 @@ func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
 	var unmet := 0
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.city_state)
+		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.attempt_spend.city_state)
 		var bare := _bare_plan(map, seed_value)
 		var streets: Array[StreetNetwork.Segment] = bare["streets"]
 		for slots in [1, 2]:
@@ -1300,8 +1300,8 @@ static func _escape_rows_on(map: CityMap, bare: Dictionary, bag: MarbleBag,
 func _test_the_service_exit_is_beside_the_home_block(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.city_state)
+		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.attempt_spend.city_state)
 		var tile := FinalePlanner.service_exit_tile(map)
 		t.check(map.is_walkable(tile), "seed %d: the service exit is walkable" % seed_value)
 		var lot := CityMap.blocks_tile_rect(map.lot_blocks(map.home_block))
@@ -1342,8 +1342,8 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 	var on_her := 0
 	for seed_value in SPAWN_SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.city_state)
+		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.attempt_spend.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var plan := FinalePlanner.plan(map, rng, _city_spec())
@@ -1390,8 +1390,8 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 	var over_her := 0
 	for seed_value in SPAWN_SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.city_state)
+		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.attempt_spend.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var plan := FinalePlanner.plan(map, rng, _city_spec())
@@ -1419,14 +1419,14 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 ## crowd as the section's spec says (`DaySpec.crowd_density`, through `main._start_the_crowd()`)
 ## leaves it empty rather than that it started that way.
 func _test_the_finale_city_has_nobody_in_it(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
-	GameState.city_state.begin_day(city.map.block_plans, 1)
+	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
 	city.crowd.start_day(1, GameState.day_rng(1, "crowd"), city.map.doorstep_world_position())
 	t.check(city.crowd.agent_count() > 0, "a day's crowd is a crowd")
 	var spec := _section(DaySpec.Section.CITY)
-	city.start_day(GameState.city_state, 1, GameState.day_rng(1, "closures"), spec)
+	city.start_day(GameState.attempt_spend.city_state, 1, GameState.day_rng(1, "closures"), spec)
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._city = city
 	main._spec = spec
@@ -1451,10 +1451,10 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 ## `restarted` set, which is what a lost section's outcome screen continues into. The tint is wiped
 ## between the two, so the restart is checked painting it rather than inheriting it.
 func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -> void:
-	var saved_section := GameState.escape_section
-	var day := GameState.day
+	var saved_section := GameState.facts.escape_section
+	var day := GameState.header.day
 	var main: Node2D = MAIN_SCRIPT.new()
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	main._city = city
 	city.build(CityGenerator.generate(SEEDS[0]))
@@ -1521,7 +1521,7 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	city.free()
 	main.free()
 	t.get_tree().paused = false
-	GameState.escape_section = saved_section
+	GameState.facts.escape_section = saved_section
 
 ## Every tile of `city` whose plain ground source is a kerb a route can tint.
 static func _kerb_tiles(city: City, day: int) -> Array[Vector2i]:
@@ -1574,7 +1574,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 
 	# And the wiring: a burst that has run its course is replaced by a crater standing where it
 	# was, through the same `aftermath.on_finish` mechanism a convoy leaves a barricade through.
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.events.setup(city, city.map)
@@ -1641,7 +1641,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 	for section: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
 		var main := _boot_the_escape(t, section)
 		var words := _section(section).title
-		var nerves := GameState.nerves
+		var nerves := GameState.header.nerves
 		var length: float = main._spec.length
 		var title: Label = main._summary.get_node("Root/Center/Lines/Title")
 		var body: Label = main._summary.get_node("Root/Center/Lines/Body")
@@ -1675,7 +1675,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 		t.check(body.text.contains(words) and body.text.contains(NerveDisplay.stars(nerves)),
 				"section %d: under the section's own words, the nerves unchanged ('%s')"
 				% [section, body.text])
-		t.check(GameState.nerves == nerves,
+		t.check(GameState.header.nerves == nerves,
 				"section %d: since a normal run's lost section spends none" % section)
 
 		teach.text = ""
@@ -1709,18 +1709,18 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 		_free_the_escape(t, main)
 
 ## **The escape is counted like a day** *(minty-lemur #785: "telemetry should work the same also in
-## escape both apartment and city")*: the run's played time (`GameState.play_seconds`, which the
+## escape both apartment and city")*: the run's played time (`GameState.header.play_seconds`, which the
 ## ending screen shows) runs while a section is walked, and a charge still running when she gets
 ## out of the city is closed for the page's counter as cut short, before the section's own end is
 ## counted — through the day's own finish path, as a day's are.
 func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 	var main := _boot_the_escape(t, DaySpec.Section.CITY)
 	main._on_summary_continued()
-	var played := GameState.play_seconds
+	var played := GameState.header.play_seconds
 	main._process(0.5)
-	t.check(is_equal_approx(GameState.play_seconds, played + 0.5),
+	t.check(is_equal_approx(GameState.header.play_seconds, played + 0.5),
 			"walking the city section counts toward the run's played time (%.2f, then %.2f)"
-			% [played, GameState.play_seconds])
+			% [played, GameState.header.play_seconds])
 
 	var heard: Array[String] = []
 	var on_cut_short := func(id: String) -> void:
@@ -1753,10 +1753,10 @@ static func _section(section: int) -> DaySpec:
 ## last day — the way a won day 14's handover and a game closed in a section both reach the boot —
 ## and returns it with its first screen up. `_free_the_escape()` puts the run back.
 func _boot_the_escape(t, section: int) -> Node2D:
-	_saved_section = GameState.escape_section
+	_saved_section = GameState.facts.escape_section
 	GameState.start_run(SEEDS[0])
-	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.escape_section = section
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.facts.escape_section = section
 	var main: Node2D = MAIN_SCENE.instantiate()
 	main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry"]), "", true))
 	t.add_child(main)
@@ -1769,7 +1769,7 @@ var _saved_section := 0
 func _free_the_escape(t, main: Node2D) -> void:
 	t.get_tree().paused = false
 	main.free()
-	GameState.escape_section = _saved_section
+	GameState.facts.escape_section = _saved_section
 	GameState.start_run(SEEDS[0])
 
 ## The two names the briefs carry — *"something along 'Escape the building' and ... 'Escape the
@@ -1796,24 +1796,24 @@ func _test_only_a_won_last_day_with_every_task_done_hands_over(t) -> void:
 	var baseline := GameState.save_snapshot()
 	GameState.start_run(9182)
 
-	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
-	GameState.sabotage_done = true
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+	GameState.resistance.sabotage_done = true
 	t.check(main._hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"a won day 14 with every task complete hands over to the escape")
 	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.LOST_CRYING),
 			"a lost day 14 does not, however much was done")
 
-	GameState.sabotage_done = false
+	GameState.resistance.sabotage_done = false
 	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"nor a won day 14 with the errands run and the last night skipped")
-	GameState.sabotage_done = true
-	GameState.resistance_progress = Tuning.RESISTANCE_GOAL - 1
+	GameState.resistance.sabotage_done = true
+	GameState.resistance.progress = Tuning.RESISTANCE_GOAL - 1
 	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"nor one short of the goal")
 
-	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
-	GameState.day = Tuning.RUN_LENGTH_DAYS - 1
+	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS - 1
 	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"and nor does a won day before the last one")
 
@@ -1873,19 +1873,19 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 	bare.owe_the_return(an_act_iv_day, 0)
 	t.check(bare.owed() > 0, "a day's own director owes %d rows to the return" % bare.owed())
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.events.setup(city, city.map)
-	var was_the_day := GameState.day
-	GameState.day = an_act_iv_day
+	var was_the_day := GameState.header.day
+	GameState.header.day = an_act_iv_day
 	city.events.start_planned(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS),
 			[] as Array[EventScheduler.Planned])
 	EventBus.return_phase_started.emit()
 	t.check(city.events.owed_ahead() == 0,
 			"and the escape owes nothing to a return it does not have (got %d)"
 					% city.events.owed_ahead())
-	GameState.day = was_the_day
+	GameState.header.day = was_the_day
 	city.free()
 
 ## **The walk's settings are the spec's, handed in, not the manager's own**: on the same act IV day
@@ -1894,12 +1894,12 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 ## spec the run flow hands over (`EventManager.use_the_spec()`), never a branch in the manager.
 func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
 	var an_act_iv_day := 13
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.events.setup(city, city.map)
-	var was_the_day := GameState.day
-	GameState.day = an_act_iv_day
+	var was_the_day := GameState.header.day
+	GameState.header.day = an_act_iv_day
 	var owed := {}
 	for owes: bool in [true, false]:
 		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
@@ -1913,7 +1913,7 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
 	t.check(int(owed[true]) > 0, "a day's spec owes its return rows (%d)" % owed[true])
 	t.check(int(owed[false]) == 0,
 			"and a spec that owes none is owed none on the same day (%d)" % owed[false])
-	GameState.day = was_the_day
+	GameState.header.day = was_the_day
 	city.free()
 
 ## **A tree and an event never share ground** (`docs/CITY.md`, "Street trees"), and the escape's
@@ -1983,7 +1983,7 @@ func _test_finale_entities_stop_when_the_tree_pauses(t) -> void:
 	t.add_child(interior)
 	interior.process_mode = Node.PROCESS_MODE_PAUSABLE
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -2124,7 +2124,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 # ------------------------------------------------------ a resumed escape, and a handover ---
 
 ## `_escape_section_came_from_the_file()` is the boot policy with the two live
-## `GameState.escape_section` reads taken out of it, so every combination can be driven directly.
+## `GameState.facts.escape_section` reads taken out of it, so every combination can be driven directly.
 func _test_escape_section_came_from_the_file(t) -> void:
 	var none := DaySpec.Section.NONE
 	var building := DaySpec.Section.BUILDING
@@ -2144,16 +2144,16 @@ func _test_escape_section_came_from_the_file(t) -> void:
 ## `_ready()`'s own decision — `_escape_section_came_from_the_file()` read at the boot and handed to
 ## `_open_the_first_screen_of_the_escape()` — not a screen this test opened by hand.
 func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void:
-	_saved_section = GameState.escape_section
+	_saved_section = GameState.facts.escape_section
 	GameSave.set_path_override(_SCRATCH_SAVE)
 	GameSave._uses_save_override = true
 	GameState.start_run(SEEDS[0])
-	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.escape_section = DaySpec.Section.BUILDING
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.facts.escape_section = DaySpec.Section.BUILDING
 	t.check(GameSave.write(false) == GameSave.Result.CONFIRMED,
 			"a save closed inside the building is on disk")
 	# A fresh page: nothing of the escape on the autoload, only in the file.
-	GameState.escape_section = DaySpec.Section.NONE
+	GameState.facts.escape_section = DaySpec.Section.NONE
 	var main: Node2D = MAIN_SCENE.instantiate()
 	main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry"]), "", true))
 	t.add_child(main)
@@ -2190,7 +2190,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	_free_the_escape(t, main)
 
 ## The handover reload from a won day 14 reaches the boot with `escape_resumed_from_disk` false —
-## true only when `GameState.escape_section` was `NONE` before `try_resume()` ran, which a
+## true only when `GameState.facts.escape_section` was `NONE` before `try_resume()` ran, which a
 ## handover's own value already isn't, since it was written to the autoload before the reload — so
 ## it opens straight on the building's own brief, with no title in front of it and the section's
 ## clock standing still behind the brief. Booted for real.
@@ -2210,11 +2210,11 @@ func _test_a_handover_does_not_open_on_the_title(t) -> void:
 ## `tests/test_pause.gd`'s own note gives for never calling it directly. What is checked instead is
 ## the wiring that reaches it (both of the escape's own screens, the same as a day's two) and the one
 ## fact of its own body that answers "a fresh run" for the escape specifically —
-## `GameState.escape_section = DaySpec.Section.NONE`; its `GameSave.clear()` is exercised
+## `GameState.facts.escape_section = DaySpec.Section.NONE`; its `GameSave.clear()` is exercised
 ## safely, behind a path override, by `tests/test_save.gd` and is not repeated here.
 func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
-	var saved_section := GameState.escape_section
-	GameState.escape_section = DaySpec.Section.CITY
+	var saved_section := GameState.facts.escape_section
+	GameState.facts.escape_section = DaySpec.Section.CITY
 
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._pause = PAUSE_SCREEN_SCENE.instantiate()
@@ -2225,14 +2225,14 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
 	t.check(main._summary.restart_requested.is_connected(main._restart_run),
 			"and so does the section brief's own restart button — the same DaySummary a day uses")
 
-	GameState.escape_section = DaySpec.Section.NONE
-	t.check(GameState.escape_section == DaySpec.Section.NONE,
+	GameState.facts.escape_section = DaySpec.Section.NONE
+	t.check(GameState.facts.escape_section == DaySpec.Section.NONE,
 			"a fresh run has no escape section — the run `_restart_run()` reloads into is a fresh one")
 
 	main._pause.queue_free()
 	main._summary.queue_free()
 	main.free()
-	GameState.escape_section = saved_section
+	GameState.facts.escape_section = saved_section
 
 ## The escape city's section spec, the one the run flow walks the city under.
 static func _city_spec() -> DaySpec:

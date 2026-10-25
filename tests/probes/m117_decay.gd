@@ -51,7 +51,7 @@ func _ground_rates(t) -> void:
 		print("  %-16s %8s %8s %8s %10s %8s  %s"
 				% ["ground", "crowd/s", "ground/s", "net/s", "clears in", "×", "seed"])
 		for city_seed in SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city: City = RunCity.of_the_run(CITY_SCENE)
 			t.add_child(city)
 			city.build(CityGenerator.generate(city_seed))
 			for row in _legs(city):

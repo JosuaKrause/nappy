@@ -109,7 +109,7 @@ func at_process_end() -> void:
 		ledger.set_counter(FrameLedger.LIVE_EVENTS, _city.events.active_count())
 		ledger.set_counter(FrameLedger.PLAYER_X, roundi(here.x))
 		ledger.set_counter(FrameLedger.PLAYER_Y, roundi(here.y))
-		ledger.set_counter(FrameLedger.DAY, GameState.day)
+		ledger.set_counter(FrameLedger.DAY, GameState.header.day)
 		ledger.set_counter(FrameLedger.PROCESS_FRAME, Engine.get_process_frames())
 	ledger.process_end(Time.get_ticks_usec())
 
@@ -228,7 +228,7 @@ func report_text() -> String:
 			+ "counts, not times"
 	var metadata := _metadata.duplicate()
 	metadata["build"] = BuildInfo.build_text()
-	metadata["run_seed"] = GameState.run_seed
+	metadata["run_seed"] = GameState.header.run_seed
 	# The mode the city was handed, or a city's default for a recorder that watches none.
 	metadata["ground_mode"] = int(_city.ground_mode if _city else SceneryGround.Mode.ONE)
 	metadata["scenery_budget_usec"] = SceneryResidency.BUDGET_USEC
@@ -254,13 +254,13 @@ func save() -> String:
 	var text := report_text()
 	ledger.keep = false
 	if OS.get_name() == "Web":
-		var file_name := "nappy-frames-seed%d-%s.json" % [GameState.run_seed,
+		var file_name := "nappy-frames-seed%d-%s.json" % [GameState.header.run_seed,
 			Time.get_datetime_string_from_system().replace(":", "-")]
 		JavaScriptBridge.download_buffer(text.to_utf8_buffer(), file_name, "application/json")
 		return file_name
 	if _native_path == "":
 		_native_path = "user://frame-records/record-%s-seed%d.json" % [
-			Time.get_datetime_string_from_system().replace(":", "-"), GameState.run_seed]
+			Time.get_datetime_string_from_system().replace(":", "-"), GameState.header.run_seed]
 	if DirAccess.make_dir_recursive_absolute(_native_path.get_base_dir()) != OK:
 		push_error("Cannot create the frame record directory")
 		return ""

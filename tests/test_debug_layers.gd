@@ -299,7 +299,7 @@ func _test_layer_keys_do_nothing_outside_a_debug_build(t) -> void:
 ## ever reaches `Tuning.CAR_STRIKE_MIN_SPEED` and the strike box this layer also draws contributes
 ## zero on both sides of the count, by construction rather than by luck.
 func _test_the_bounding_box_layer_draws_every_enabled_body(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(5551212))
 

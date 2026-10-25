@@ -527,7 +527,7 @@ func _test_runs_less_than_the_gap_apart_are_one_bout(t) -> void:
 ## everything should follow this (and treat it depending on the input mode)")*.
 func _test_the_manager_reads_the_controls_scheme(t) -> void:
 	_clear()
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()
@@ -583,7 +583,7 @@ func _test_the_manager_reads_the_controls_scheme(t) -> void:
 ## under the day it was started for — and tells nothing while she is stood aside for the title.
 func _test_the_manager_watches_only_while_she_is_playing(t) -> void:
 	_clear()
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()

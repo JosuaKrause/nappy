@@ -5,7 +5,7 @@ extends Node
 ## **Everything, in one frame, once she is far enough away.** *(The player, 2026-09-20: "just wait
 ## until a certain distance away -- then everything is off at once. the player wouldn't be able to
 ## see a rolling blackout anyway"; "yes all lights should go out".)* Once the sabotage is done
-## (`GameState.sabotage_done`) and she is `Tuning.BLACKOUT_DISTANCE` from the power station, one
+## (`GameState.resistance.sabotage_done`) and she is `Tuning.BLACKOUT_DISTANCE` from the power station, one
 ## call to `go_dark()` puts out every lit window and the station's own hall (`Building.powered`),
 ## every traffic light (`TrafficSignals.powered`), and every loudspeaker mast
 ## (`EventManager.silence_all_masts()`), because the masts have no power of their own. The
@@ -103,4 +103,4 @@ func restore() -> void:
 		_city.signals.powered = true
 
 func _sabotaged() -> bool:
-	return GameState.sabotage_done or forced
+	return _city.run_resistance.sabotage_done or forced

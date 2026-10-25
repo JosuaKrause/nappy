@@ -437,7 +437,7 @@ func _test_a_walker_brushing_past_is_unmarked(t) -> void:
 ## one amber caret over the whole of it.
 func _test_the_arterial_at_ordinary_density_marks_nobody(t) -> void:
 	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
-	var city: City = city_scene.instantiate()
+	var city: City = RunCity.of_the_run(city_scene)
 	t.add_child(city)
 	city.build(CityGenerator.generate(9137))
 	var standing_at := CrowdLanes.arterial_pavement(city.map)

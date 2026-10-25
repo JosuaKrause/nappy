@@ -853,7 +853,7 @@ guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pai
 faces and `power_station_door_position()` the point she stands on to reach it.
 
 **The station is where the city's power comes from, and the last night takes it away.** Once the
-sabotage is done (`GameState.sabotage_done`) and she is `Tuning.BLACKOUT_DISTANCE` (512px) from the
+sabotage is done (`GameState.resistance.sabotage_done`) and she is `Tuning.BLACKOUT_DISTANCE` (512px) from the
 station's lot — far enough that no part of it, stacks included, is on screen whichever way she
 leaves — `Blackout` puts out everything that runs on it in one frame: every lit window
 (`Building.powered`), every traffic light on the spine (`TrafficSignals.powered`, see "Traffic

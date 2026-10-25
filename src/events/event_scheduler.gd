@@ -198,7 +198,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## none to hand on a day grows the same tree, since `RouteTree.for_day` is a pure function of the
 ## city's seed and the day number and touches no gameplay stream.
 ##
-## `heat` is `GameState.resistance_progress`, and it is threaded through rather than read off the
+## `heat` is `GameState.resistance.progress`, and it is threaded through rather than read off the
 ## autoload so that a day is a pure function of its arguments: a rig that plans day 9 twice gets the
 ## same day twice whatever a run happens to have done. Every def below arrives already in the shape
 ## that heat puts it in — see `EventCatalogue.heated()` — so nothing in this file tests for it.

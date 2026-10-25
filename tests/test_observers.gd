@@ -122,8 +122,8 @@ func _check_the_observer_runs_after(t, main: Node, world: Array, boot: String) -
 func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	var saved_paused: bool = t.get_tree().paused
 	GameState.start_run(SEED)
-	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.escape_section = DaySpec.Section.BUILDING
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.facts.escape_section = DaySpec.Section.BUILDING
 	var counter := RecordingCounter.new()
 	t.add_child(counter)
 	t.get_tree().paused = true
@@ -176,7 +176,7 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	t.remove_child(main)
 	main.free()
 	counter.free()
-	GameState.escape_section = DaySpec.Section.NONE
+	GameState.facts.escape_section = DaySpec.Section.NONE
 	t.get_tree().paused = saved_paused
 	return lines
 
@@ -236,24 +236,24 @@ func _test_endings_and_checkpoints(t) -> void:
 	t.add_child(counter)
 
 	GameState.start_run(SEED)
-	GameState.day = 6
-	GameState.nerves = 1
+	GameState.header.day = 6
+	GameState.header.nerves = 1
 	GameState.finish_day(GameEnums.DayResult.LOST_CRYING)
 
 	GameState.start_run(SEED)
 	GameState.choose_mode(true)
-	GameState.day = 3
-	GameState.nerves = 1
+	GameState.header.day = 3
+	GameState.header.nerves = 1
 	GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 
 	GameState.start_run(SEED)
-	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
-	GameState.sabotage_done = true
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+	GameState.resistance.sabotage_done = true
 	GameState.finish_day(GameEnums.DayResult.WON)
 
 	GameState.start_run(SEED)
-	GameState.day = Tuning.RUN_LENGTH_DAYS
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.finish_day(GameEnums.DayResult.WON)
 
 	t.check(counter.sent == ["nappy-checkpoint-1-from-day-6", "nappy-ending-bad",

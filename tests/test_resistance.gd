@@ -468,7 +468,7 @@ var _city: City
 func _build_city(t, seed_value := SEED) -> void:
 	if _city != null:
 		_city.free()
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(seed_value))
 
@@ -485,19 +485,19 @@ func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator
 	return rng
 
 func _with_clean_run(action: Callable) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_package := GameState.resistance_carrying_package
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
-	GameState.resistance_carrying_package = false
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_package := GameState.resistance.carrying_package
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
+	GameState.resistance.carrying_package = false
 	action.call()
-	GameState.completed_resistance_steps = saved_completed
-	GameState.failed_resistance_steps = saved_failed
-	GameState.resistance_progress = saved_progress
-	GameState.resistance_carrying_package = saved_package
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.failed_steps = saved_failed
+	GameState.resistance.progress = saved_progress
+	GameState.resistance.carrying_package = saved_package
 
 ## The perform step on `day` — named by its day rather than by its index, so a task added earlier
 ## in the calendar does not renumber every test after it.
@@ -541,11 +541,11 @@ func _director_on_the_van_perform(t) -> ResistanceDirector:
 func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
-		var saved_progress := GameState.resistance_progress
-		var saved_sabotage := GameState.sabotage_done
-		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-		GameState.resistance_progress = Tuning.RESISTANCE_GOAL
-		GameState.sabotage_done = false
+		var saved_progress := GameState.resistance.progress
+		var saved_sabotage := GameState.resistance.sabotage_done
+		var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+		GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+		GameState.resistance.sabotage_done = false
 		for day in [9, 13, Tuning.RUN_LENGTH_DAYS]:
 			var first := _attempt_the_day(t, day, _city.map.doorstep_world_position(), false)
 			var retry := _attempt_the_day(t, day, first[0], true)
@@ -563,9 +563,9 @@ func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t) -> void:
 				t.check(first[i].distance_to(retry[i]) < 0.5 or first[i] == retry[i],
 						"day %d: draw %d comes out the same wherever the last attempt left her (%s, %s)"
 						% [day, i, first[i], retry[i]])
-		GameState.completed_resistance_alley_tiles = saved_tiles
-		GameState.resistance_progress = saved_progress
-		GameState.sabotage_done = saved_sabotage)
+		GameState.facts.completed_resistance_alley_tiles = saved_tiles
+		GameState.resistance.progress = saved_progress
+		GameState.resistance.sabotage_done = saved_sabotage)
 
 ## One attempt at `day` for the test above, with her standing at `her` and both of the director's
 ## tests about her view (`ResistanceDirector.set_sight()`) answering `seen` for every point when the
@@ -573,13 +573,13 @@ func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t) -> void:
 ## `[task contact, task guard]` once she reads it from the mark's own spot with nothing on screen.
 ## `Vector2.INF` for a guard that was not placed.
 func _attempt_the_day(t, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
-	GameState.completed_resistance_steps = _completed_through(2 * (day - 6)) \
+	GameState.resistance.completed_steps = _completed_through(2 * (day - 6)) \
 			if day < Tuning.RUN_LENGTH_DAYS else _all_but_the_finale()
 	# A lost day gives back what the attempt recorded (`GameState.begin_day()`), the alley it read
 	# its mark in included.
-	GameState.completed_resistance_alley_tiles = []
+	GameState.facts.completed_resistance_alley_tiles = []
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
@@ -665,7 +665,7 @@ func _test_the_guard_is_seeded(t) -> void:
 		var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 
 		for day in [6, 7, 8, 9]:
-			GameState.completed_resistance_steps = _completed_through(2 * (day - 6))
+			GameState.resistance.completed_steps = _completed_through(2 * (day - 6))
 			var director := _director(t)
 			director.start_day(day, _rng(day, "resistance"), 300.0)
 			var at := director.contact_position()
@@ -923,8 +923,8 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 ## Every box is measured here from the screen's own edges rather than through the director's
 ## `_box_shows()`, so the test does not ask the code whether the code is right.
 func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-	GameState.completed_resistance_alley_tiles = []
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+	GameState.facts.completed_resistance_alley_tiles = []
 	var relocations := 0
 	var tasks := 0
 	for seed_value in [4242, 555555]:
@@ -963,7 +963,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
 						her), "seed %d: a task's guard at %s is not on screen from %s"
 						% [seed_value, map.world_to_tile(task_guard), through[i]])
 		director.free()
-	GameState.completed_resistance_alley_tiles = saved_tiles
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 	t.check(relocations > 0 and tasks > 0,
 			"marks were relocated (%d) and task guards drawn (%d)" % [relocations, tasks])
 
@@ -1093,10 +1093,10 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 ##   the car's picture at the start of its beat reaches up into it, so the raid does not arrive yet;
 ##   it arrives once the camera is off all of it.
 func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void:
-	var saved_scars := GameState.scars.duplicate(true)
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
 	for joystick: bool in [false, true]:
 		var scheme := "joystick" if joystick else "tap"
-		GameState.scars.clear()
+		GameState.attempt_spend.scars.clear()
 		_build_city(t)
 		_with_clean_run(func() -> void:
 			var events := _city.events
@@ -1131,8 +1131,8 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 						"%s scheme: once the camera is off them, they are taken" % scheme)
 			late.free()
 
-			GameState.completed_resistance_steps = []
-			GameState.failed_resistance_steps = []
+			GameState.resistance.completed_steps = []
+			GameState.resistance.failed_steps = []
 			var director := _director_on_the_neighbor(t)
 			director.set_sight(events.sees, events.on_screen)
 			var happenings := director._happenings
@@ -1166,7 +1166,7 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 					_city.events.retire(instance)
 			player.free()
 			director.free())
-	GameState.scars = saved_scars
+	GameState.attempt_spend.scars = saved_scars
 
 ## The other half of the same rule: near enough, for long enough, that walking away is a choice.
 func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> void:
@@ -1212,16 +1212,16 @@ func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> v
 func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
-		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-		GameState.completed_resistance_alley_tiles.clear()
+		var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+		GameState.facts.completed_resistance_alley_tiles.clear()
 
 		var first := _director(t)
 		first.start_day(6, _rng(6, "resistance"), 300.0)
 		var used_tile := _city.map.world_to_tile(first.contact_position())
 		first.free()
 
-		GameState.completed_resistance_alley_tiles.append(used_tile)
-		GameState.completed_resistance_steps = _completed_through(2)
+		GameState.facts.completed_resistance_alley_tiles.append(used_tile)
+		GameState.resistance.completed_steps = _completed_through(2)
 		var second := _director(t)
 		second.start_day(7, _rng(7, "resistance"), 300.0)
 		t.check(second.current_step() != null and second.current_step().index == 3,
@@ -1231,7 +1231,7 @@ func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 				"a fresh mark avoids the alley a completed step used, another being in reach")
 		second.free()
 
-		GameState.completed_resistance_alley_tiles = saved_tiles)
+		GameState.facts.completed_resistance_alley_tiles = saved_tiles)
 
 ## The two through-alley tiles closest together in the built test city — `[player_at, nearer,
 ## other]`, `player_at` sitting exactly on `nearer` so it is always the globally nearest one to
@@ -1261,9 +1261,9 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 		var player_at: Vector2 = pair[0]
 		var nearer_tile: Vector2i = pair[1]
 
-		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-		GameState.completed_resistance_alley_tiles.clear()
-		GameState.completed_resistance_alley_tiles.append(nearer_tile)
+		var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+		GameState.facts.completed_resistance_alley_tiles.clear()
+		GameState.facts.completed_resistance_alley_tiles.append(nearer_tile)
 
 		var director := _director(t)
 		director.start_day(6, _rng(6, "resistance"), 300.0)
@@ -1280,7 +1280,7 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 
 		player.free()
 		director.free()
-		GameState.completed_resistance_alley_tiles = saved_tiles)
+		GameState.facts.completed_resistance_alley_tiles = saved_tiles)
 
 ## M213, "the robber guarding a chalk mark always spawns at the alley's other end from the mark":
 ## a relocated mark's fresh guard follows the same rule as the dawn draw, standing at the far
@@ -1443,8 +1443,8 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 ## of the director — a through-alley's end tile along its long axis, or a passage tile beside ground
 ## that is neither alley nor courtyard — and never on the mouth itself.
 func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t) -> void:
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-	GameState.completed_resistance_alley_tiles = []
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+	GameState.facts.completed_resistance_alley_tiles = []
 	var mark_step := ResistanceSteps.by_index(1)
 	var drawn := 0
 	var drawn_at_a_mouth := 0
@@ -1475,7 +1475,7 @@ func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t) -> void:
 				if _is_one_in_from_a_mouth(map, map.world_to_tile(to)):
 					moved_to_a_mouth += 1
 		director.free()
-	GameState.completed_resistance_alley_tiles = saved_tiles
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 	t.check(drawn > 0 and drawn_at_a_mouth == drawn,
 			"every dawn mark is drawn one tile in from an alley's mouth (%d of %d)"
 			% [drawn_at_a_mouth, drawn])
@@ -1691,8 +1691,8 @@ func _test_reading_a_mark_never_lands_her_in_his_catch(t) -> void:
 ## `ContactPoint.REACH` around it. He may still wake as she reads it. Both the dawn draw and the
 ## relocation reach passage tiles, so the sweep is not vacuous.
 func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void:
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-	GameState.completed_resistance_alley_tiles = []
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+	GameState.facts.completed_resistance_alley_tiles = []
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
@@ -1748,7 +1748,7 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void
 			if at != Vector2.INF and map.world_to_tile(at) not in through:
 				drawn_in_a_passage += 1
 		director.free()
-	GameState.completed_resistance_alley_tiles = saved_tiles
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 	t.check(passages > 0 and guarded == passages,
 			"every courtyard passage mark is guarded (%d of %d)" % [guarded, passages])
 	t.check(drawn_in_a_passage > 0 and relocated_to_a_passage > 0,
@@ -1880,7 +1880,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
 	_with_clean_run(func() -> void:
 		var seed_value := 291862120
 		var day := 7
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		city.events.stream_radius = INF
@@ -1983,7 +1983,7 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 	_with_clean_run(func() -> void:
 		var seed_value := 2199579682
 		var day := Tuning.REGION_WALL_FIRST_DAY
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 
@@ -2266,21 +2266,21 @@ func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
 func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 	for day: int in [8, 9, 11, 12, Tuning.RUN_LENGTH_DAYS]:
 		_build_city(t)
-		var saved_scars := GameState.scars.duplicate(true)
-		var saved_day := GameState.day
-		var saved_state := GameState.city_state
-		var saved_sabotage := GameState.sabotage_done
-		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-		GameState.scars.clear()
-		GameState.day = day
+		var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+		var saved_day := GameState.header.day
+		var saved_state := GameState.attempt_spend.city_state
+		var saved_sabotage := GameState.resistance.sabotage_done
+		var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+		GameState.attempt_spend.scars.clear()
+		GameState.header.day = day
 		_with_clean_run(func() -> void:
 			var finale := day == Tuning.RUN_LENGTH_DAYS
-			GameState.completed_resistance_steps = _all_but_the_finale() if finale \
+			GameState.resistance.completed_steps = _all_but_the_finale() if finale \
 					else _completed_through(2 * (day - 6))
-			GameState.resistance_progress = Tuning.RESISTANCE_GOAL if finale else 0
-			GameState.sabotage_done = false
+			GameState.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
+			GameState.resistance.sabotage_done = false
 			var state := CityState.new()
-			GameState.city_state = state
+			GameState.attempt_spend.city_state = state
 			state.begin_day(_city.map.block_plans, day)
 			_city.start_day(state, day, _rng(day, "closures"))
 			_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
@@ -2327,11 +2327,11 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 					"day %d" % day, front_door)
 			player.free()
 			director.free())
-		GameState.scars = saved_scars
-		GameState.day = saved_day
-		GameState.city_state = saved_state
-		GameState.sabotage_done = saved_sabotage
-		GameState.completed_resistance_alley_tiles = saved_tiles
+		GameState.attempt_spend.scars = saved_scars
+		GameState.header.day = saved_day
+		GameState.attempt_spend.city_state = saved_state
+		GameState.resistance.sabotage_done = saved_sabotage
+		GameState.facts.completed_resistance_alley_tiles = saved_tiles
 
 ## Day 9 let through the named door: she stands where the inspection sets her down — the gatehouse
 ## the arrow names, `obstructs_radius + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) along
@@ -2410,11 +2410,11 @@ func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
 ## Camera smoothing can move the view while she stands still through a badge. The actual
 ## warning callback must place the entire drawing outside that new view in either input scheme.
 func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	for joystick: bool in [false, true]:
-		GameState.completed_resistance_steps = []
-		GameState.completed_resistance_alley_tiles = saved_tiles.duplicate()
+		GameState.resistance.completed_steps = []
+		GameState.facts.completed_resistance_alley_tiles = saved_tiles.duplicate()
 		_build_city(t)
 		var director := _director(t)
 		director.start_day(6, _rng(6, "resistance"), 300.0)
@@ -2453,8 +2453,8 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 						"the trap keeps the badge's bearing when the camera moves")
 		player.free()
 		director.free()
-	GameState.completed_resistance_steps = saved_completed
-	GameState.completed_resistance_alley_tiles = saved_tiles
+	GameState.resistance.completed_steps = saved_completed
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 
 ## A view test answering the unrotated 640x360 screen round `her`, handed to the director for
 ## both `_sight` and `_on_screen`: in the tap scheme the visible area is the whole view.
@@ -2595,10 +2595,10 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
 		# The mark's own alley is recorded as used when it is touched, and a used alley is avoided
 		# on the next draw — so each attempt starts from the same record, or the replay is a
 		# different day.
-		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+		var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
 		for attempt in 2:
 			_build_city(t, seed_value)
-			GameState.completed_resistance_alley_tiles = saved_tiles.duplicate()
+			GameState.facts.completed_resistance_alley_tiles = saved_tiles.duplicate()
 			_with_clean_run(func() -> void:
 				var director := _director_on_the_yeller_perform(t, seed_value)
 				var rider: EventInstance = director._rider
@@ -2623,7 +2623,7 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
 						% seed_value)
 				player.free()
 				director.free())
-		GameState.completed_resistance_alley_tiles = saved_tiles
+		GameState.facts.completed_resistance_alley_tiles = saved_tiles
 
 ## Mirrors `_test_the_handover_sets_a_robber_on_her_from_off_screen` for the van: handing the
 ## package over puts up one `van_guard_giving_chase`'s warning and then sets him on her, on the same
@@ -2632,10 +2632,10 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
 ## name.
 func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 	var starts: Array[Vector2] = []
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	for attempt in 2:
 		_build_city(t)
-		GameState.completed_resistance_alley_tiles = saved_tiles.duplicate()
+		GameState.facts.completed_resistance_alley_tiles = saved_tiles.duplicate()
 		_with_clean_run(func() -> void:
 			var director := _director_on_the_van_perform(t)
 			var her := director.contact_position()
@@ -2652,7 +2652,7 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 				starts.append(start)
 			player.free()
 			director.free())
-	GameState.completed_resistance_alley_tiles = saved_tiles
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 
 ## **He is warned of before he exists, the warning is short, and he arrives chasing.** *(Amendment 7
 ## of M226, the player: "why would the robber walk towards her when it spawns as pursuing robber? the
@@ -2827,7 +2827,7 @@ func _test_a_perform_step_expires_when_its_rider_is_gone(t) -> void:
 		rider._finish()
 		director._process(0.1)
 		t.check(director.current_step() == null, "and it is gone once the rider is")
-		t.check(2 in GameState.failed_resistance_steps, "recorded as failed for the run")
+		t.check(2 in GameState.resistance.failed_steps, "recorded as failed for the run")
 		director.free())
 
 ## No task built this slice carries a deadline — the two that do, warning the neighbor and
@@ -2854,11 +2854,11 @@ func _test_a_timed_step_expires(t) -> void:
 
 		director._process(100.0 * timed.deadline_fraction * 0.5)
 		t.check(director.current_step() != null, "on offer before the deadline")
-		t.check(9001 not in GameState.failed_resistance_steps, "nothing has failed yet")
+		t.check(9001 not in GameState.resistance.failed_steps, "nothing has failed yet")
 
 		director._process(100.0 * timed.deadline_fraction)
 		t.check(director.current_step() == null, "past the deadline it is gone")
-		t.check(9001 in GameState.failed_resistance_steps, "and recorded as failed for the run")
+		t.check(9001 in GameState.resistance.failed_steps, "and recorded as failed for the run")
 		director.free())
 
 ## Step 4's cost is deferred and total rather than local: picking the package up does not cost the
@@ -2870,7 +2870,7 @@ func _test_completing_the_package_makes_the_pram_heavier(t) -> void:
 
 		var director := _director(t)
 		director._on_contact_completed(4)
-		t.check(GameState.resistance_carrying_package, "picking up the package sets the flag")
+		t.check(GameState.resistance.carrying_package, "picking up the package sets the flag")
 
 		var after := _city.decay_multiplier(somewhere)
 		t.close_to(after, before * Tuning.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
@@ -2879,10 +2879,10 @@ func _test_completing_the_package_makes_the_pram_heavier(t) -> void:
 
 func _test_starting_a_day_resets_the_package_flag(t) -> void:
 	_with_clean_run(func() -> void:
-		GameState.resistance_carrying_package = true
+		GameState.resistance.carrying_package = true
 		var director := _director(t)
 		director.start_day(1, _rng(1, "resistance"), 300.0)
-		t.check(not GameState.resistance_carrying_package,
+		t.check(not GameState.resistance.carrying_package,
 				"a fresh attempt at a day has not picked it up yet")
 		director.free())
 
@@ -3033,13 +3033,13 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
 ## task: a task is one day, so there is no dawn shortcut into the middle of it the way the old
 ## two-beat design had.
 func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> void:
-	var saved_seed := GameState.run_seed
-	var saved_day := GameState.day
-	var saved_nerves := GameState.nerves
+	var saved_seed := GameState.header.run_seed
+	var saved_day := GameState.header.day
+	var saved_nerves := GameState.header.nerves
 	_with_clean_run(func() -> void:
-		GameState.run_seed = SEED
-		GameState.day = 6
-		GameState.nerves = Tuning.STARTING_NERVES
+		GameState.header.run_seed = SEED
+		GameState.header.day = 6
+		GameState.header.nerves = Tuning.STARTING_NERVES
 		GameState.begin_day()
 
 		var attempt := _director(t)
@@ -3060,10 +3060,10 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 
 		t.check(GameState.finish_day(GameEnums.DayResult.LOST_CRYING),
 				"losing the day continues the run")
-		t.check(1 not in GameState.completed_resistance_steps
-				and 2 not in GameState.completed_resistance_steps,
+		t.check(1 not in GameState.resistance.completed_steps
+				and 2 not in GameState.resistance.completed_steps,
 				"and gives both halves of the day's task back")
-		t.check(GameState.day == 6, "and the retry is the same day")
+		t.check(GameState.header.day == 6, "and the retry is the same day")
 
 		var retry := _director(t)
 		retry.start_day(6, _rng(6, "resistance"), 300.0)
@@ -3075,9 +3075,9 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 		t.check(not retry._rider.is_leaving, "and it is shouting, not leaving")
 		retry.free())
 
-	GameState.run_seed = saved_seed
-	GameState.day = saved_day
-	GameState.nerves = saved_nerves
+	GameState.header.run_seed = saved_seed
+	GameState.header.day = saved_day
+	GameState.header.nerves = saved_nerves
 
 ## The sabotage is what puts the city's power out, and the masts go with it. Not at the door she
 ## touched: the hand-over takes minutes, so every mast is still speaking until the blackout, which
@@ -3086,9 +3086,9 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 ## edge like any other row's, so what stops is everywhere a mast actually stands, not the whole map.
 func _test_the_sabotage_silences_the_city(t) -> void:
 	_with_clean_run(func() -> void:
-		GameState.completed_resistance_steps = _completed_through(8)
-		GameState.resistance_progress = Tuning.RESISTANCE_GOAL
-		GameState.sabotage_done = false
+		GameState.resistance.completed_steps = _completed_through(8)
+		GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+		GameState.resistance.sabotage_done = false
 		t.check(GameState.sabotage_available(), "the finale is on offer")
 
 		# A live mast, the way day 5 onwards leaves one — planned for real, at one of
@@ -3135,7 +3135,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 				"and the red arrow points at it")
 		director._on_contact_completed(finale.index if finale else -1)
 
-		t.check(GameState.sabotage_done, "completing it does the sabotage")
+		t.check(GameState.resistance.sabotage_done, "completing it does the sabotage")
 		t.check(quiet.is_empty() and not mast.silenced,
 				"and the masts are still speaking at the door: they stop with the power")
 		var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))
@@ -3145,7 +3145,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		t.check(mast.silenced, "the mast is marked silenced")
 		t.close_to(mast.contribution_at(nearby), 0.0,
 				"the mast contributes nothing afterwards")
-		GameState.sabotage_done = false
+		GameState.resistance.sabotage_done = false
 		_city.blackout.update(Vector2(lot.get_center().x, lot.end.y))
 
 		EventBus.city_went_quiet.disconnect(handler)
@@ -3185,10 +3185,10 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
 ## the arrow and the contact on the door of the building behind it.
 func _ride_a_recorded_scar(t, site: Vector2i, label: String) -> void:
 	_with_clean_run(func() -> void:
-		var saved_scars := GameState.scars.duplicate()
+		var saved_scars := GameState.attempt_spend.scars.duplicate()
 		var doorstep := _city.map.doorstep_world_position()
 		var scar_at := _city.map.tile_to_world(site)
-		GameState.scars = [{"id": "burnt_shell", "position": scar_at, "since_day": 3}]
+		GameState.attempt_spend.scars = [{"id": "burnt_shell", "position": scar_at, "since_day": 3}]
 		# `_place_scars()` plans a `burnt_shell` at `scar_at` for the day; it is in the world only
 		# if `scar_at` is inside the streaming radius of the doorstep.
 		_city.events.start_day(8, _rng(8, "events"), [], doorstep)
@@ -3202,12 +3202,12 @@ func _ride_a_recorded_scar(t, site: Vector2i, label: String) -> void:
 				"%s: riding a burnt_shell instance" % label)
 		if director._rider == null:
 			director.free()
-			GameState.scars = saved_scars
+			GameState.attempt_spend.scars = saved_scars
 			return
 		t.check(director._rider.global_position.distance_to(scar_at) < 1.0,
 				"%s: the one standing at the run's own recorded scar" % label)
-		t.check(GameState.scars.size() == 1,
-				"%s: and no second scar is recorded for the task (%s)" % [label, GameState.scars])
+		t.check(GameState.attempt_spend.scars.size() == 1,
+				"%s: and no second scar is recorded for the task (%s)" % [label, GameState.attempt_spend.scars])
 		_check_the_task_is_at_the_burnt_buildings_door(t, director)
 
 		# She walks off across the city: the shell stays under its contact.
@@ -3229,7 +3229,7 @@ func _ride_a_recorded_scar(t, site: Vector2i, label: String) -> void:
 		_check_a_touch_from_the_near_half_of_the_sidewalk(t, director)
 
 		director.free()
-		GameState.scars = saved_scars)
+		GameState.attempt_spend.scars = saved_scars)
 
 ## Day 8's red arrow ends on the burnt building's door, and the task's contact stands there too:
 ## *"or better to the door but the acceptance radius centered at the door should have a large
@@ -3356,8 +3356,8 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
 func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
-		var saved_scars := GameState.scars.duplicate()
-		GameState.scars.clear()
+		var saved_scars := GameState.attempt_spend.scars.duplicate()
+		GameState.attempt_spend.scars.clear()
 		var burnt_before := 0
 		var conditions: Array[int] = []
 		for building in _city._buildings:
@@ -3367,7 +3367,7 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 
 		var director := _director(t)
 		director.start_day(8, _rng(8, "resistance"), 300.0)
-		t.check(GameState.scars.is_empty(), "nothing is burnt for the task before her mark is read")
+		t.check(GameState.attempt_spend.scars.is_empty(), "nothing is burnt for the task before her mark is read")
 		director._on_contact_completed(5)
 		t.check(director.current_step() != null and director.current_step().index == 6,
 				"touching day 8's mark still activates the burnt-shell perform")
@@ -3376,7 +3376,7 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 		t.check(director.contact_position() != Vector2.INF, "somewhere reachable")
 		if director._rider == null:
 			director.free()
-			GameState.scars = saved_scars
+			GameState.attempt_spend.scars = saved_scars
 			return
 
 		var shell := director._rider.global_position
@@ -3386,13 +3386,13 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 		t.check(shell_tile in fronts,
 				"the shell stands at %s, a front day 3's fire could have caught on" % shell_tile)
 		var recorded := 0
-		for scar: Dictionary in GameState.scars:
+		for scar: Dictionary in GameState.attempt_spend.scars:
 			if String(scar["id"]) == "burnt_shell" \
 					and (scar["position"] as Vector2).distance_to(shell) < 1.0:
 				recorded += 1
-		t.check(GameState.scars.size() == 1 and recorded == 1,
+		t.check(GameState.attempt_spend.scars.size() == 1 and recorded == 1,
 				"the scar is recorded where the shell stands, and nothing else (%s)"
-				% [GameState.scars])
+				% [GameState.attempt_spend.scars])
 		var behind: Building = null
 		var burnt_now := 0
 		for building in _city._buildings:
@@ -3410,7 +3410,7 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 		director.free()
 		for i in _city._buildings.size():
 			_city._buildings[i].condition = conditions[i] as Building.Condition
-		GameState.scars = saved_scars)
+		GameState.attempt_spend.scars = saved_scars)
 
 ## Mirrors the real day order (`main._start_day()`: city, events, resistance) rather than
 ## skipping the middle step. `EventManager.start_day()` is what holds every door segment for the
@@ -3564,7 +3564,7 @@ func _test_the_door_task_never_borders_the_home_block(t) -> void:
 	var draws := 20
 	var checked := 0
 	for seed_value: int in seeds.slice(0, RULE_SEEDS):
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		var closure_state := CityState.new()
@@ -3687,10 +3687,10 @@ func _test_day_twelves_park_is_forced_open_whatever_its_state(t) -> void:
 ## real day order, since the masts are the day's own plans.
 func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 	_build_city(t)
-	var saved_scars := GameState.scars.duplicate(true)
-	var saved_day := GameState.day
-	GameState.scars.clear()
-	GameState.day = 11
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	var saved_day := GameState.header.day
+	GameState.attempt_spend.scars.clear()
+	GameState.header.day = 11
 	_with_clean_run(func() -> void:
 		var day := 11
 		var state := CityState.new()
@@ -3727,7 +3727,7 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 
 		# The next morning, planned from the run's own scars.
 		var tomorrow := EventScheduler._place_masts(day + 1, _city.map, 0,
-				PackedVector2Array(), GameState.scars)
+				PackedVector2Array(), GameState.attempt_spend.scars)
 		var quiet_tomorrow := false
 		var live_tomorrow := false
 		for plan in tomorrow:
@@ -3738,8 +3738,8 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 		t.check(quiet_tomorrow, "it is still silenced the next day")
 		t.check(live_tomorrow, "while the others speak")
 		director.free())
-	GameState.scars = saved_scars
-	GameState.day = saved_day
+	GameState.attempt_spend.scars = saved_scars
+	GameState.header.day = saved_day
 
 ## `_weighted_mast_index()` is the draw `_place_at_a_mast()` makes among the masts already found
 ## reachable, so this reaches the weighting rule directly, over two tiles at fixed, known
@@ -3848,7 +3848,7 @@ func _director_on_the_neighbor(t) -> ResistanceDirector:
 ## is failed, and from the next day the wanted notice crosses their face out.
 func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
 	_build_city(t)
-	var saved_day := GameState.day
+	var saved_day := GameState.header.day
 	_with_clean_run(func() -> void:
 		var director := _director_on_the_neighbor(t)
 		var task := director.current_step()
@@ -3875,14 +3875,14 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
 					"and the red arrow points at them")
 		director._on_contact_completed(task.index if task else -1)
 		t.check(neighbor != null and neighbor.is_leaving, "warned, the neighbor runs")
-		t.check(task != null and task.index in GameState.completed_resistance_steps,
+		t.check(task != null and task.index in GameState.resistance.completed_steps,
 				"and the task counts")
-		GameState.day = ResistanceHappenings.NEIGHBOR_DAY + 1
+		GameState.header.day = ResistanceHappenings.NEIGHBOR_DAY + 1
 		t.check(not GameState.neighbor_was_taken(), "a warned neighbor is not taken")
-		GameState.day = ResistanceHappenings.NEIGHBOR_DAY
+		GameState.header.day = ResistanceHappenings.NEIGHBOR_DAY
 		director.free()
 
-		GameState.completed_resistance_steps = []
+		GameState.resistance.completed_steps = []
 		var late := _director_on_the_neighbor(t)
 		var walker := late._rider
 		t.check(walker != null, "the neighbor is walking home again on the retry")
@@ -3890,20 +3890,20 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
 			walker.transition(EventInstance.Phase.PARKED)
 		late._process(STEP)
 		var warning := ResistanceSteps.warning_step()
-		t.check(warning.index in GameState.failed_resistance_steps,
+		t.check(warning.index in GameState.resistance.failed_steps,
 				"reaching the door first, the neighbor is taken and the task is lost")
 		t.check(late.current_step() == null and late.red_arrow_target() == Vector2.INF,
 				"and nothing points anywhere any more")
-		GameState.day = ResistanceHappenings.NEIGHBOR_DAY + 1
+		GameState.header.day = ResistanceHappenings.NEIGHBOR_DAY + 1
 		t.check(GameState.neighbor_was_taken(), "from the next day the neighbor is taken")
 		late.free())
-	GameState.day = saved_day
+	GameState.header.day = saved_day
 
 ## Day 10's raid: vans at her building and a patrol, arriving only once she is out of sight of her
 ## door, and never on her own sidewalk — the doorstep stays reachable along it.
 func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
-	var saved_scars := GameState.scars.duplicate(true)
-	GameState.scars.clear()
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	GameState.attempt_spend.scars.clear()
 	_build_city(t)
 	var happenings := ResistanceHappenings.new()
 	happenings.setup(_city, _city.map)
@@ -3938,17 +3938,17 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
 			Callable())
 	t.check(happenings.raid.is_empty(), "and only on day 10")
-	GameState.scars = saved_scars
+	GameState.attempt_spend.scars = saved_scars
 
 ## Her street door: ordinary at day 10's start, sealed live the moment the raid actually arrives
 ## (PLAYTEST-131), and the scar it leaves is what every later day and a reloaded save read it
 ## from (`City._sync_home_door()`, `_test_the_sealed_door_stands_after_a_reload()` below).
 func _test_the_raid_seals_her_street_door(t) -> void:
-	var saved_scars := GameState.scars.duplicate(true)
-	var saved_day := GameState.day
-	GameState.scars.clear()
-	GameState.day = ResistanceHappenings.NEIGHBOR_DAY
-	# After `GameState.scars` is cleared: `_build_city()`'s own `City.build()` reads it once, at
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	var saved_day := GameState.header.day
+	GameState.attempt_spend.scars.clear()
+	GameState.header.day = ResistanceHappenings.NEIGHBOR_DAY
+	# After `GameState.attempt_spend.scars` is cleared: `_build_city()`'s own `City.build()` reads it once, at
 	# boot, exactly as a resumed run's own boot does (`_door_texture_for_today()`'s own doc).
 	_build_city(t)
 	var happenings := ResistanceHappenings.new()
@@ -3962,37 +3962,37 @@ func _test_the_raid_seals_her_street_door(t) -> void:
 	t.check(_city._home_door.texture == AtlasLibrary.region(City.SEALED_DOOR_TEXTURE),
 			"and sealed the moment the raid arrives, out of her sight")
 	var sealed := false
-	for scar in GameState.scars:
+	for scar in GameState.attempt_spend.scars:
 		if String(scar["id"]) == City.SEALED_DOOR_SCAR:
 			sealed = true
 	t.check(sealed, "which leaves a scar for every later day to read")
 	for instance in happenings.raid:
 		_city.events.retire(instance)
-	GameState.scars = saved_scars
-	GameState.day = saved_day
+	GameState.attempt_spend.scars = saved_scars
+	GameState.header.day = saved_day
 
-## Sealed on day 11 and after a save/load: `City.build()` reads `GameState.scars` once, at boot,
+## Sealed on day 11 and after a save/load: `City.build()` reads `GameState.attempt_spend.scars` once, at boot,
 ## which is what a resumed or reloaded run's own boot does — see `main.gd`'s two `_city.build()`
 ## call sites, both after `GameState` has already loaded.
 func _test_the_sealed_door_stands_after_a_reload(t) -> void:
-	var saved_scars := GameState.scars.duplicate(true)
-	GameState.scars = [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}]
-	var city: City = CITY_SCENE.instantiate()
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	GameState.attempt_spend.scars = [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}]
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	t.check(city._home_door.texture == AtlasLibrary.region(City.SEALED_DOOR_TEXTURE),
 			"a boot whose scars already carry the seal starts the door sealed")
 	city.free()
-	GameState.scars = saved_scars
+	GameState.attempt_spend.scars = saved_scars
 
-## A lost day 10 gives the scar back (`GameState._give_back_what_the_attempt_spent()`) and the
+## A lost day 10 gives the scar back (`GameState.run_parts.give_back()`) and the
 ## next dawn's own `_sync_home_door()` puts the ordinary door back, exactly the restore every
 ## other scar already gets.
 func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
-	var saved_scars := GameState.scars.duplicate(true)
-	var saved_day := GameState.day
-	GameState.scars.clear()
-	GameState.day = ResistanceHappenings.NEIGHBOR_DAY
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	var saved_day := GameState.header.day
+	GameState.attempt_spend.scars.clear()
+	GameState.header.day = ResistanceHappenings.NEIGHBOR_DAY
 	_build_city(t)
 	var happenings := ResistanceHappenings.new()
 	happenings.setup(_city, _city.map)
@@ -4005,16 +4005,16 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 	for instance in happenings.raid:
 		_city.events.retire(instance)
 	# The loss: the attempt's own scar is given back, the same way
-	# `GameState._give_back_what_the_attempt_spent()` restores every scar a lost day left.
-	GameState.scars.clear()
+	# `GameState.run_parts.give_back()` restores every scar a lost day left.
+	GameState.attempt_spend.scars.clear()
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, ResistanceHappenings.NEIGHBOR_DAY)
 	_city.start_day(state, ResistanceHappenings.NEIGHBOR_DAY,
 			_rng(ResistanceHappenings.NEIGHBOR_DAY, "closures"))
 	t.check(_city._home_door.texture == AtlasLibrary.region(City.DOOR_TEXTURE),
 			"a lost day 10 restores the ordinary door")
-	GameState.scars = saved_scars
-	GameState.day = saved_day
+	GameState.attempt_spend.scars = saved_scars
+	GameState.header.day = saved_day
 
 ## The neighbor's boarded window: absent before day 11, set on the one home-block building the
 ## door notch stands in front of from day 11's morning on — the third floor nearest the door,
@@ -4043,7 +4043,7 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	happenings.start_day(ResistanceHappenings.MARKET_DAY + 3)
 	t.check(building.neighbor_window_col == col, "the same cell on every later day")
 
-	var reloaded: City = CITY_SCENE.instantiate()
+	var reloaded: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(reloaded)
 	reloaded.build(CityGenerator.generate(SEED))
 	reloaded.board_neighbor_window()
@@ -4052,9 +4052,9 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	reloaded.free()
 
 ## Plans `day` on the test city through the real day order with `state` as the run's own
-## `GameState.city_state`, which the happenings read, and hands back a director for it.
+## `GameState.attempt_spend.city_state`, which the happenings read, and hands back a director for it.
 func _director_on_day(t, day: int, state: CityState) -> ResistanceDirector:
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
@@ -4068,9 +4068,9 @@ func _director_on_day(t, day: int, state: CityState) -> ResistanceDirector:
 ## `Tuning.MARKET_GONE_BY`, the nearest block she cannot see goes.
 func _test_the_market_is_found_gone(t) -> void:
 	_build_city(t)
-	var saved_state := GameState.city_state
-	var saved_day := GameState.day
-	GameState.day = ResistanceHappenings.MARKET_DAY
+	var saved_state := GameState.attempt_spend.city_state
+	var saved_day := GameState.header.day
+	GameState.header.day = ResistanceHappenings.MARKET_DAY
 	_with_clean_run(func() -> void:
 		var state := CityState.new()
 		var director := _director_on_day(t, ResistanceHappenings.MARKET_DAY, state)
@@ -4109,8 +4109,8 @@ func _test_the_market_is_found_gone(t) -> void:
 		happenings.tick(STEP, door, Vector2.ZERO, Callable())
 		t.check(happenings.market_block == block, "and the market is gone once")
 		director.free())
-	GameState.city_state = saved_state
-	GameState.day = saved_day
+	GameState.attempt_spend.city_state = saved_state
+	GameState.header.day = saved_day
 
 ## Day 13: the column. The convoys start that morning; the column is `Tuning.COLUMN_TRUCKS` trucks
 ## in one lane of the main road, warned of first: its badge goes up with no truck in the world, its
@@ -4124,9 +4124,9 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 	t.check(convoy.first_day == ResistanceHappenings.COLUMN_DAY,
 			"the convoys start on day 13 (%d)" % convoy.first_day)
 	_build_city(t)
-	var saved_state := GameState.city_state
-	var saved_day := GameState.day
-	GameState.day = ResistanceHappenings.COLUMN_DAY
+	var saved_state := GameState.attempt_spend.city_state
+	var saved_day := GameState.header.day
+	GameState.header.day = ResistanceHappenings.COLUMN_DAY
 	_with_clean_run(func() -> void:
 		var state := CityState.new()
 		var director := _director_on_day(t, ResistanceHappenings.COLUMN_DAY, state)
@@ -4220,8 +4220,8 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 		for truck in happenings.column:
 			_city.events.retire(truck)
 		director.free())
-	GameState.city_state = saved_state
-	GameState.day = saved_day
+	GameState.attempt_spend.city_state = saved_state
+	GameState.header.day = saved_day
 
 ## The warning `events` has up for the row `id`, or null.
 func _warning_for(events: EventManager, id: String) -> PendingWarning:
@@ -4248,7 +4248,7 @@ func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t) -> void:
 				"the yeller is any instance and earns the arrow too, on the man shouting")
 		yeller.free()
 
-		GameState.completed_resistance_steps = _completed_through(2)
+		GameState.resistance.completed_steps = _completed_through(2)
 		var van := _director(t)
 		van.start_day(7, _rng(7, "resistance"), 300.0)
 		van._on_contact_completed(3)
@@ -4268,17 +4268,17 @@ func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t) -> void:
 ## plush-moose: an arrow exists on every task day, the any-instance days (6 and 13) and day 11's
 ## masts included, from the moment the mark is read, and the last night's from dawn.
 func _test_an_arrow_exists_on_every_task_day(t) -> void:
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var saved_progress := GameState.resistance_progress
-	var saved_sabotage := GameState.sabotage_done
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var saved_progress := GameState.resistance.progress
+	var saved_sabotage := GameState.resistance.sabotage_done
 	_build_city(t)
 	_with_clean_run(func() -> void:
 		for day: int in range(6, Tuning.RUN_LENGTH_DAYS + 1):
-			GameState.scars = []
-			GameState.resistance_progress = Tuning.RESISTANCE_GOAL \
+			GameState.attempt_spend.scars = []
+			GameState.resistance.progress = Tuning.RESISTANCE_GOAL \
 					if day == Tuning.RUN_LENGTH_DAYS else 0
-			GameState.sabotage_done = false
+			GameState.resistance.sabotage_done = false
 			var read := _read_the_mark_on(t, day, SEED) if day != Tuning.RUN_LENGTH_DAYS \
 					else _start_the_finale(t, SEED)
 			var director: ResistanceDirector = read[0]
@@ -4289,10 +4289,10 @@ func _test_an_arrow_exists_on_every_task_day(t) -> void:
 					"day %d: and it has the red arrow" % day)
 			(read[2] as Stroller).free()
 			director.free())
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
-	GameState.resistance_progress = saved_progress
-	GameState.sabotage_done = saved_sabotage
+	GameState.attempt_spend.scars = saved_scars
+	GameState.attempt_spend.city_state = saved_state
+	GameState.resistance.progress = saved_progress
+	GameState.resistance.sabotage_done = saved_sabotage
 
 ## A tile with a straight run of walkable tiles that nothing blocks today — no closure, no soft
 ## seal, no body standing — `before` tiles to its left and `after` to its right, for building a
@@ -4555,8 +4555,8 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 ## the walk asks, `WalkSiting.ahead_of()` from points along the longest route, without walking, which
 ## keeps six cities as cheap as one. A city that fails fails here rather than being skipped.
 func _test_day_eleven_answers_at_any_live_mast(t) -> void:
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
 	var routed_on := [-1]
 	var missed: Array[int] = []
 	for seed_value: int in DAY_ELEVEN_SEEDS:
@@ -4567,7 +4567,7 @@ func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 				missed.append(seed_value)
 			continue
 		_with_clean_run(func() -> void:
-			GameState.scars = []
+			GameState.attempt_spend.scars = []
 			var read := _read_the_mark_on(t, 11, seed_value)
 			if not _a_mast_can_be_sited_along_her_route():
 				missed.append(seed_value)
@@ -4575,8 +4575,8 @@ func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 			(read[0] as ResistanceDirector).free())
 	t.check(missed.is_empty(), "the rigged mast has a place on her route in every city of %s (not in %s)"
 			% [DAY_ELEVEN_SEEDS, missed])
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
+	GameState.attempt_spend.scars = saved_scars
+	GameState.attempt_spend.city_state = saved_state
 
 ## Whether `WalkSiting.ahead_of()` finds the routed mast a place from some point along the day's
 ## longest route, heading along it: the question `_walk_until_the_route_mast()` answers by walking.
@@ -4602,7 +4602,7 @@ const DAY_ELEVEN_SEEDS: Array[int] = [SEED, 90210, 1234567, 314159, 555555, 8675
 ## One city's half of `_test_day_eleven_answers_at_any_live_mast`; sets `routed_on[0]` to the seed
 ## once its walk has put the routed mast down, and checks the rest only then.
 func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -> void:
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var read := _read_the_mark_on(t, 11, seed_value)
 	var director: ResistanceDirector = read[0]
 	var player: Stroller = read[2]
@@ -4649,7 +4649,7 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 			and director._mast_id == third,
 			"following her between masts moves the task to the one she actually touches")
 	director._contact._physics_process(STEP)
-	t.check(step.index in GameState.completed_resistance_steps,
+	t.check(step.index in GameState.resistance.completed_steps,
 			"touching the third mast completes the task")
 	var silenced := {}
 	for plan in _city.events.plans():
@@ -4659,7 +4659,7 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 			and not silenced.get(routed, true),
 			"and silences the mast she touched, not the near or the routed one (%s)" % silenced)
 	var scarred := []
-	for scar: Dictionary in GameState.scars:
+	for scar: Dictionary in GameState.attempt_spend.scars:
 		if String(scar["id"]) == EventScheduler.SILENCED_MAST:
 			scarred.append(scar["position"])
 	t.check(scarred.size() == 1 and (scarred[0] as Vector2).distance_to(third_foot) < 1.0,
@@ -4671,7 +4671,7 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 func _test_a_single_target_arrow_stays_on_its_contact(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
-		GameState.completed_resistance_steps = _completed_through(2)
+		GameState.resistance.completed_steps = _completed_through(2)
 		var van := _director(t)
 		van.start_day(7, _rng(7, "resistance"), 300.0)
 		van._on_contact_completed(3)
@@ -4692,19 +4692,19 @@ func _test_a_single_target_arrow_stays_on_its_contact(t) -> void:
 ## below). Before, the arrow ended beside the mast (32px), on the swing's tile centre, on a pavement
 ## tile in front of the station door and on the middle of the district door's street.
 func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t) -> void:
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var saved_progress := GameState.resistance_progress
-	var saved_sabotage := GameState.sabotage_done
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
+	var saved_progress := GameState.resistance.progress
+	var saved_sabotage := GameState.resistance.sabotage_done
 	var checked := [0]
 	for seed_value: int in [SEED, 90210, 1234567]:
 		_build_city(t, seed_value)
 		_with_clean_run(func() -> void:
 			for day: int in [7, 9, 11, 12, Tuning.RUN_LENGTH_DAYS]:
-				GameState.scars = []
-				GameState.resistance_progress = Tuning.RESISTANCE_GOAL \
+				GameState.attempt_spend.scars = []
+				GameState.resistance.progress = Tuning.RESISTANCE_GOAL \
 						if day == Tuning.RUN_LENGTH_DAYS else 0
-				GameState.sabotage_done = false
+				GameState.resistance.sabotage_done = false
 				var read := _read_the_mark_on(t, day, seed_value) if day != Tuning.RUN_LENGTH_DAYS \
 						else _start_the_finale(t, seed_value)
 				var director: ResistanceDirector = read[0]
@@ -4726,20 +4726,20 @@ func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t) -> void:
 								% [seed_value, day])
 				player.free()
 				director.free())
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
-	GameState.resistance_progress = saved_progress
-	GameState.sabotage_done = saved_sabotage
+	GameState.attempt_spend.scars = saved_scars
+	GameState.attempt_spend.city_state = saved_state
+	GameState.resistance.progress = saved_progress
+	GameState.resistance.sabotage_done = saved_sabotage
 	t.check(checked[0] > 0, "some task was put on offer (%d)" % checked[0])
 
 ## The finale on the test city in the real day order, the goal met: `[director, Vector2.INF, her
 ## rig]`, the shape `_read_the_mark_on()` answers, the finale having no mark.
 func _start_the_finale(t, seed_value: int) -> Array:
 	var day := Tuning.RUN_LENGTH_DAYS
-	GameState.completed_resistance_steps = _all_but_the_finale()
-	GameState.completed_resistance_alley_tiles = []
+	GameState.resistance.completed_steps = _all_but_the_finale()
+	GameState.facts.completed_resistance_alley_tiles = []
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	_city.events.start_day(day, _rng(day, "events", seed_value), [],
@@ -4834,7 +4834,7 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 ## guard, the robber only after an inspected crossing.)*
 func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> void:
 	_build_city(t)
-	var saved_state := GameState.city_state
+	var saved_state := GameState.attempt_spend.city_state
 	_with_clean_run(func() -> void:
 		var crossings := 0
 		var gatehouse := Vector2.INF
@@ -4909,7 +4909,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 				"walking through the named door completes the task, in either direction (%d of 2)"
 				% crossings)
 		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
-	GameState.city_state = saved_state
+	GameState.attempt_spend.city_state = saved_state
 
 ## Review 4 of PR #781, day 9: **a walked crossing counts only once it stands.** Under the named
 ## door's raised boom the crossing starts its warning
@@ -4920,7 +4920,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 ## door then does the task, with its guard after her.
 func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
 	_build_city(t)
-	var saved_state := GameState.city_state
+	var saved_state := GameState.attempt_spend.city_state
 	_with_clean_run(func() -> void:
 		for direction: float in [1.0, -1.0]:
 			_city.events.stream_radius = INF
@@ -4967,7 +4967,7 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
 			player.free()
 			director.free()
 		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
-	GameState.city_state = saved_state
+	GameState.attempt_spend.city_state = saved_state
 
 ## Reviews 5 and 6 of PR #781, day 9 at two doors: **a walked crossing counts only if she is still
 ## across that door's line when a guard is set on her for it.** She walks under another door A's
@@ -4980,7 +4980,7 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
 ## anything.
 func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> void:
 	_build_city(t)
-	var saved_state := GameState.city_state
+	var saved_state := GameState.attempt_spend.city_state
 	_with_clean_run(func() -> void:
 		for a_stays: bool in [true, false]:
 			for b_walk: String in ["none", "stays", "back"]:
@@ -5044,7 +5044,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 				player.free()
 				director.free()
 		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
-	GameState.city_state = saved_state
+	GameState.attempt_spend.city_state = saved_state
 
 ## lilac-marmot (inbox #651), day 9's walk under the named boom and then a hut: *"Let's not send the
 ## robber in that case and stop the chase. It's a fair cheat getting through the barrier is hard
@@ -5055,7 +5055,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 ## warned of or set on her, no second guard.
 func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 	_build_city(t)
-	var saved_state := GameState.city_state
+	var saved_state := GameState.attempt_spend.city_state
 	_with_clean_run(func() -> void:
 		for direction: float in [1.0, -1.0]:
 			_city.events.stream_radius = INF
@@ -5134,7 +5134,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 			player.free()
 			director.free()
 		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
-	GameState.city_state = saved_state
+	GameState.attempt_spend.city_state = saved_state
 
 ## feathery-marmot, day 9 let through after the inspection — the ordinary way through a door
 ## (`CheckpointController.release_finished_holds()`, which puts her down on the far side of the
@@ -5144,7 +5144,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 ## either side, and sends the robber after her from where she was let out, never through the door.
 func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) -> void:
 	_build_city(t)
-	var saved_state := GameState.city_state
+	var saved_state := GameState.attempt_spend.city_state
 	_with_clean_run(func() -> void:
 		var crossings := 0
 		var elsewhere := 0
@@ -5208,7 +5208,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 				"being let through the named door after the inspection completes it, from either side (%d of 2)"
 				% crossings)
 		_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS)
-	GameState.city_state = saved_state
+	GameState.attempt_spend.city_state = saved_state
 
 ## Walks her across a door's line at `at`, along `axis` in `direction`, in one step the way
 ## `CheckpointController.watch_the_door_lines()` reads a frame: from 40px on one side to 40px on
@@ -5247,15 +5247,15 @@ func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Strolle
 ## radius of the desired distance -- then follow the path until it reaches the edge of the
 ## circle".)* Before, it was drawn anywhere within 576px as the crow flies.
 func _test_a_task_is_placed_near_its_mark(t) -> void:
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
 	var checked := [0]
 	var fell_back := [0]
 	for seed_value: int in [SEED, 90210, 1234567]:
 		_build_city(t, seed_value)
 		_with_clean_run(func() -> void:
 			for day: int in [6, 7, 8, 11, 13]:
-				GameState.scars = []
+				GameState.attempt_spend.scars = []
 				var read := _read_the_mark_on(t, day, seed_value)
 				var director: ResistanceDirector = read[0]
 				var mark: Vector2 = read[1]
@@ -5293,8 +5293,8 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 								% [seed_value, day])
 				player.free()
 				director.free())
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
+	GameState.attempt_spend.scars = saved_scars
+	GameState.attempt_spend.city_state = saved_state
 	t.check(checked[0] > 0 and fell_back[0] * 3 < checked[0],
 			"tasks were placed (%d), most on the edge rather than by the fallback (%d)"
 			% [checked[0], fell_back[0]])
@@ -5335,13 +5335,13 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 ## from the scars, stand it again at its own foot, silenced. Before, the task went to the nearest of
 ## the city's six masts, 1,377px and 3,948px away on two of these cities.
 func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
 	var added := [0]
 	for seed_value: int in [SEED, 90210, 1234567]:
 		_build_city(t, seed_value)
 		_with_clean_run(func() -> void:
-			GameState.scars = []
+			GameState.attempt_spend.scars = []
 			var read := _read_the_mark_on(t, 11, seed_value)
 			var director: ResistanceDirector = read[0]
 			var mark: Vector2 = read[1]
@@ -5375,7 +5375,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 						func(plan: EventScheduler.Planned) -> bool: return plan.mast_id != "").size()
 				director._on_contact_completed(12)
 				var scarred := false
-				for scar: Dictionary in GameState.scars:
+				for scar: Dictionary in GameState.attempt_spend.scars:
 					if String(scar["id"]) == EventScheduler.SILENCED_MAST \
 							and (scar["position"] as Vector2).distance_to(foot) < 1.0:
 						scarred = true
@@ -5394,7 +5394,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 					t.check(added_plan.silenced,
 							"seed %d: day 14's sabotage puts out the queued mast too" % seed_value)
 				var day_14 := EventScheduler._place_masts(14, _city.map, 0, PackedVector2Array(),
-						GameState.scars)
+						GameState.attempt_spend.scars)
 				var on_day_14 := false
 				for plan in day_14:
 					if plan.mast_id == director._mast_id and plan.silenced:
@@ -5402,7 +5402,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 				t.check(on_day_14, "seed %d: and the last night plans it, silenced, from its scar"
 						% seed_value)
 				var day_12 := EventScheduler._place_masts(12, _city.map, 0, PackedVector2Array(),
-						GameState.scars)
+						GameState.attempt_spend.scars)
 				var stands_again := false
 				for plan in day_12:
 					if plan.mast_id == director._mast_id and plan.silenced \
@@ -5418,8 +5418,8 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 						% [seed_value, director._mast_id])
 			player.free()
 			director.free())
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
+	GameState.attempt_spend.scars = saved_scars
+	GameState.attempt_spend.city_state = saved_state
 	t.check(added[0] > 0, "some city had no mast near its day-11 mark, so one was put up (%d)"
 			% added[0])
 
@@ -5433,7 +5433,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 ## director pointed, as before, fails the first half.
 func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
 	_build_city(t)
-	var saved_state := GameState.city_state
+	var saved_state := GameState.attempt_spend.city_state
 	_with_clean_run(func() -> void:
 		var read := _read_the_mark_on(t, 11, SEED)
 		var director: ResistanceDirector = read[0]
@@ -5478,16 +5478,16 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
 					"and it has room by the scheduler's own spacing")
 		player.free()
 		director.free())
-	GameState.city_state = saved_state
+	GameState.attempt_spend.city_state = saved_state
 
 ## Plans `day` on the test city in the real day order (closures, events, resistance) for
 ## `seed_value`, and reads the day's mark standing on it with her screen the view around her:
 ## `[director with the task active, the mark's position, her rig]`.
 func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
-	GameState.completed_resistance_steps = _completed_through(2 * (day - 6))
-	GameState.completed_resistance_alley_tiles = []
+	GameState.resistance.completed_steps = _completed_through(2 * (day - 6))
+	GameState.facts.completed_resistance_alley_tiles = []
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	_city.events.start_day(day, _rng(day, "events", seed_value), [],
@@ -5508,7 +5508,7 @@ func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
 const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 const REACHABILITY_SWEEP_DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
 
-## `GameState.day_rng()`'s own hash, built without touching the `GameState.run_seed` global this
+## `GameState.day_rng()`'s own hash, built without touching the `GameState.header.run_seed` global this
 ## sweep has no other use for — same stream a played day actually draws from, for a seed and a day
 ## this test chooses rather than the run's own.
 func _production_rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
@@ -5576,7 +5576,7 @@ func _day_reachability(city: City) -> Array:
 ## rig's real cases at all.
 ##
 ## **Each day is asked fresh**, the same "no history, just this day" state `--day N`
-## (`DevFlags.day_override()`) boots into — `GameState.start_run()` runs before `GameState.day` is
+## (`DevFlags.day_override()`) boots into — `GameState.start_run()` runs before `GameState.header.day` is
 ## set, so a rig timing day 9 alone never played days 6-8 first — matching every other single-day
 ## placement test in this file (`_test_the_door_task_sits_at_a_region_door` and others call
 ## `director.start_day()` for one chosen day with no days before it either).
@@ -5593,20 +5593,20 @@ func _day_reachability(city: City) -> Array:
 ## everything else rather than as a separate case.
 func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> void:
 	_with_clean_run(func() -> void:
-		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-		var saved_scars := GameState.scars.duplicate()
+		var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+		var saved_scars := GameState.attempt_spend.scars.duplicate()
 		var checked := 0
 		for seed_value in REACHABILITY_SWEEP_SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city: City = RunCity.of_the_run(CITY_SCENE)
 			t.add_child(city)
 			city.build(CityGenerator.generate(seed_value))
 			for day in REACHABILITY_SWEEP_DAYS:
-				GameState.completed_resistance_steps = []
-				GameState.failed_resistance_steps = []
-				GameState.completed_resistance_alley_tiles.clear()
+				GameState.resistance.completed_steps = []
+				GameState.resistance.failed_steps = []
+				GameState.facts.completed_resistance_alley_tiles.clear()
 				# No history, like `--day N`: day 8 with no recorded scar records one for its
 				# task, and a scar from another seed's city must not stand in this one's.
-				GameState.scars = []
+				GameState.attempt_spend.scars = []
 				var closure_state := CityState.new()
 				closure_state.begin_day(city.map.block_plans, day)
 				city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
@@ -5664,8 +5664,8 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 				player.free()
 				director.free()
 			city.free()
-		GameState.completed_resistance_alley_tiles = saved_tiles
-		GameState.scars = saved_scars
+		GameState.facts.completed_resistance_alley_tiles = saved_tiles
+		GameState.attempt_spend.scars = saved_scars
 		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
 
 ## downy-otter, "a mark should never be placed in an alley that is not reachable (ie sealed off)"
@@ -5682,16 +5682,16 @@ const MARK_REACHABILITY_SWEEP_SEEDS: Array[int] = [2295276695, 291862120, 314159
 
 func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 	_with_clean_run(func() -> void:
-		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+		var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
 		var checked := 0
 		for seed_value in MARK_REACHABILITY_SWEEP_SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city: City = RunCity.of_the_run(CITY_SCENE)
 			t.add_child(city)
 			city.build(CityGenerator.generate(seed_value))
 			for day in REACHABILITY_SWEEP_DAYS:
-				GameState.completed_resistance_steps = []
-				GameState.failed_resistance_steps = []
-				GameState.completed_resistance_alley_tiles.clear()
+				GameState.resistance.completed_steps = []
+				GameState.resistance.failed_steps = []
+				GameState.facts.completed_resistance_alley_tiles.clear()
 				var closure_state := CityState.new()
 				closure_state.begin_day(city.map.block_plans, day)
 				city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
@@ -5729,7 +5729,7 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 				player.free()
 				director.free()
 			city.free()
-		GameState.completed_resistance_alley_tiles = saved_tiles
+		GameState.facts.completed_resistance_alley_tiles = saved_tiles
 		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
 
 ## downy-otter, "a mark is never placed in an alley she cannot reach" (*"also a mark should never
@@ -5752,7 +5752,7 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 	var seeds: Array[int] = [4242, 2295276695]
 	var checked := 0
 	for seed_value in seeds:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in REACHABILITY_SWEEP_DAYS:
@@ -5836,7 +5836,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 	_with_clean_run(func() -> void:
 		var checked := 0
 		for seed_value in NARROW_TARGET_SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city: City = RunCity.of_the_run(CITY_SCENE)
 			t.add_child(city)
 			city.build(CityGenerator.generate(seed_value))
 			for day: int in [9, 12, Tuning.RUN_LENGTH_DAYS]:
@@ -5844,7 +5844,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 				t.check(step != null, "day %d has a narrow resistance target" % day)
 				if not step:
 					continue
-				GameState.resistance_progress = Tuning.RESISTANCE_GOAL if step.needs_goal else 0
+				GameState.resistance.progress = Tuning.RESISTANCE_GOAL if step.needs_goal else 0
 				var state := CityState.new()
 				state.begin_day(city.map.block_plans, day)
 				city.start_day(state, day, _production_rng(seed_value, day, "closures"))
@@ -5942,8 +5942,8 @@ func _test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t) -
 	_with_clean_run(func() -> void:
 		# Neither candidate this test picks may already be "used" (M177) — an unrelated leftover
 		# would shrink the pool below the two entries every check below assumes.
-		var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-		GameState.completed_resistance_alley_tiles.clear()
+		var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+		GameState.facts.completed_resistance_alley_tiles.clear()
 
 		var legal: Array[Vector2i] = []
 		for tile in _city.map.tiles_of_type(GameEnums.TileType.ALLEY):
@@ -5954,7 +5954,7 @@ func _test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t) -
 				break
 		t.check(legal.size() >= 2, "the test city has at least two legal alley candidates")
 		if legal.size() < 2:
-			GameState.completed_resistance_alley_tiles = saved_tiles
+			GameState.facts.completed_resistance_alley_tiles = saved_tiles
 			return
 
 		var candidate_a: Vector2i = legal[0]
@@ -5984,5 +5984,5 @@ func _test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t) -
 				"unmoved by an obstruction on the other one")
 
 		_city.map.release_obstruction(self.get_instance_id())
-		GameState.completed_resistance_alley_tiles = saved_tiles
+		GameState.facts.completed_resistance_alley_tiles = saved_tiles
 		director.free())

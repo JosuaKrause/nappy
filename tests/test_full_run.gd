@@ -22,9 +22,9 @@ func _play_a_run(t, seed_value: int) -> void:
 	var saved := _save_game_state()
 	GameState.start_run(seed_value)
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
-	city.build(CityGenerator.generate(GameState.run_seed))
+	city.build(CityGenerator.generate(GameState.header.run_seed))
 	# No player walks this run, so nothing would ever come within streaming reach. This suite is
 	# about a run's whole chain — one-shots, successors, scars — which is a property of the
 	# fourteen *plans*, so it puts every day in the world at once. See `EventManager`.
@@ -39,15 +39,15 @@ func _play_a_run(t, seed_value: int) -> void:
 	var contacts_offered := 0
 
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		GameState.day = day
+		GameState.header.day = day
 		# The city becomes today's city before anything is placed in it — the real day opens
 		# the same way (`main._start_day()`), and this is where the day's region plan is built,
 		# which is what the day-9 crossing task asks for when its mark is touched.
-		GameState.city_state.begin_day(city.map.block_plans, day)
-		city.start_day(GameState.city_state, day, GameState.day_rng(day, "closures"))
+		GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
+		city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"))
 
 		city.set_act(GameState.current_act())
-		city.events.start_day(day, GameState.day_rng(day), GameState.consumed_one_shots)
+		city.events.start_day(day, GameState.day_rng(day), GameState.attempt_spend.consumed_one_shots)
 		director.start_day(day, GameState.day_rng(day, "resistance"), Tuning.day_length(day))
 
 		t.check(city.events.active_count() > 0, "seed %d day %d has events" % [seed_value, day])
@@ -93,9 +93,9 @@ func _play_a_run(t, seed_value: int) -> void:
 	t.check(contacts_offered >= Tuning.RESISTANCE_GOAL,
 			"seed %d offers at least %d contacts over a run (%d)"
 			% [seed_value, Tuning.RESISTANCE_GOAL, contacts_offered])
-	t.check(GameState.ending == GameEnums.Ending.GOOD,
+	t.check(GameState.header.ending == GameEnums.Ending.GOOD,
 			"seed %d: doing every errand and the sabotage earns the good ending" % seed_value)
-	t.check(GameState.scars.size() > 0,
+	t.check(GameState.attempt_spend.scars.size() > 0,
 			"seed %d: the run left marks on the city" % seed_value)
 
 	director.free()
@@ -114,22 +114,22 @@ func _simulate(city: City, seconds: float) -> void:
 
 func _save_game_state() -> Dictionary:
 	return {
-		"seed": GameState.run_seed, "day": GameState.day, "nerves": GameState.nerves,
-		"progress": GameState.resistance_progress, "ending": GameState.ending,
-		"one_shots": GameState.consumed_one_shots.duplicate(),
-		"completed": GameState.completed_resistance_steps.duplicate(),
-		"failed": GameState.failed_resistance_steps.duplicate(),
-		"scars": GameState.scars.duplicate(true), "sabotage": GameState.sabotage_done,
+		"seed": GameState.header.run_seed, "day": GameState.header.day, "nerves": GameState.header.nerves,
+		"progress": GameState.resistance.progress, "ending": GameState.header.ending,
+		"one_shots": GameState.attempt_spend.consumed_one_shots.duplicate(),
+		"completed": GameState.resistance.completed_steps.duplicate(),
+		"failed": GameState.resistance.failed_steps.duplicate(),
+		"scars": GameState.attempt_spend.scars.duplicate(true), "sabotage": GameState.resistance.sabotage_done,
 	}
 
 func _restore_game_state(saved: Dictionary) -> void:
-	GameState.run_seed = saved["seed"]
-	GameState.day = saved["day"]
-	GameState.nerves = saved["nerves"]
-	GameState.resistance_progress = saved["progress"]
-	GameState.ending = saved["ending"]
-	GameState.consumed_one_shots.assign(saved["one_shots"])
-	GameState.completed_resistance_steps.assign(saved["completed"])
-	GameState.failed_resistance_steps.assign(saved["failed"])
-	GameState.scars.assign(saved["scars"])
-	GameState.sabotage_done = saved["sabotage"]
+	GameState.header.run_seed = saved["seed"]
+	GameState.header.day = saved["day"]
+	GameState.header.nerves = saved["nerves"]
+	GameState.resistance.progress = saved["progress"]
+	GameState.header.ending = saved["ending"]
+	GameState.attempt_spend.consumed_one_shots.assign(saved["one_shots"])
+	GameState.resistance.completed_steps.assign(saved["completed"])
+	GameState.resistance.failed_steps.assign(saved["failed"])
+	GameState.attempt_spend.scars.assign(saved["scars"])
+	GameState.resistance.sabotage_done = saved["sabotage"]

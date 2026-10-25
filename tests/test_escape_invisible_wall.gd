@@ -28,10 +28,10 @@ const DAY := 1
 const WHERE_SHE_STOOD := Vector2i(74, 27)
 
 func run(t) -> void:
-	var saved_section := GameState.escape_section
+	var saved_section := GameState.facts.escape_section
 	GameState.start_run(SEED)
-	GameState.day = DAY
-	GameState.escape_section = DaySpec.Section.BUILDING
+	GameState.header.day = DAY
+	GameState.facts.escape_section = DaySpec.Section.BUILDING
 	var main: Node2D = MAIN_SCENE.instantiate()
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
@@ -54,7 +54,7 @@ func run(t) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
-	GameState.escape_section = saved_section
+	GameState.facts.escape_section = saved_section
 
 ## The player's own moment: on the sidewalk at 74,27, with the street open ahead of her, a step
 ## north is not stopped.
@@ -77,7 +77,7 @@ func _test_she_can_walk_north_from_where_the_player_stood(t, main: Node2D) -> vo
 func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) -> void:
 	var city: City = main._city
 	var player: Stroller = main._player
-	var plan := FinalePlanner.plan(city.map, GameState.day_rng(GameState.day, "finale"), _city_spec(), false)
+	var plan := FinalePlanner.plan(city.map, GameState.day_rng(GameState.header.day, "finale"), _city_spec(), false)
 	var space := city.get_world_2d().direct_space_state
 	var query := PhysicsShapeQueryParameters2D.new()
 	var circle := CircleShape2D.new()

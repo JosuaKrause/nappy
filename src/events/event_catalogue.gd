@@ -1733,7 +1733,7 @@ static func _charging_dog() -> EventDef:
 ## front of it, while it drives its route, with her on the carriageway.
 ##
 ## **The patrol rung of the resistance's ladder.** `heat_response = PRESSES`: past
-## `GameState.resistance_progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
+## `GameState.resistance.progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
 ## it stops merely patrolling and starts investigating: it stops on its road once she is close and
 ## a policeman gets out and pursues her (`EventDef.investigates`, `out_of_the_car()`), whose catch
 ## costs her and never ends the day by itself. The car never gains `hard_fail`, whatever the heat,
@@ -3081,7 +3081,7 @@ static func _finale_explosion() -> EventDef:
 ##
 ## **No `aftermath.scar`.** A scar is how the *run* remembers a fire on day 3; the escape is the last
 ## thing that happens in a run, so a crater has nothing left to persist into and recording one
-## would only put an entry in `GameState.scars` that no later day ever reads.
+## would only put an entry in `GameState.attempt_spend.scars` that no later day ever reads.
 static func _impact_crater() -> EventDef:
 	var def := EventDef.new()
 	def.id = "impact_crater"

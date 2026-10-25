@@ -10,7 +10,7 @@ func _ready() -> void:
 	var city: City = main.get("_city")
 	if not runtime or not city or runtime.manifest.get("setup_failed", false):
 		return
-	var act := Tuning.act_for_day(GameState.day)
+	var act := Tuning.act_for_day(GameState.header.day)
 	var multiplier: float = runtime.data.setup.get("background", {}).get("walker_multiplier", 1)
 	var pins: Array = runtime.data.setup.get("actors", [])
 	if city.crowd.agent_count() != roundi(Tuning.crowd_pedestrians(act) * multiplier) + Tuning.crowd_cars(act) + pins.size():

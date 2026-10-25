@@ -138,7 +138,7 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ## director would separately site a second one in front of her, from the one `EventDef` both read.
 ##
 ## `heat` is the shape the route bag's rows are put in (`EventCatalogue.heated()`), the same
-## `GameState.resistance_progress` the day's own placements were planned at.
+## `GameState.resistance.progress` the day's own placements were planned at.
 func start_day(day: int, plans: Array[EventScheduler.Planned],
 		rng: RandomNumberGenerator, siting: EventScheduler.WalkSiting = null,
 		heat: int = 0) -> void:

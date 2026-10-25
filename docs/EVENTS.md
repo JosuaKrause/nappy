@@ -1598,7 +1598,7 @@ follow rather than sit; that is queued in `docs/TODO.md`.
 also the difficulty dial, so the price of pursuing it is that the place you are pushing a pram
 through starts paying attention to you.
 
-`GameState.resistance_progress` is the number — an integer from 0 to `Tuning.RESISTANCE_GOAL`, the
+`GameState.resistance.progress` is the number — an integer from 0 to `Tuning.RESISTANCE_GOAL`, the
 four completed tasks that qualify for the good ending — and `EventDef.heat_response` is the whole of
 how a row says whether it cares. `EventCatalogue.heated()` turns a row and a level into a **derived
 copy** with its numbers moved, so nothing downstream of the day's plan has to know heat exists: an
@@ -2065,7 +2065,7 @@ routes through its corridor's own rules instead.
 
 ## Permanent marks
 
-`aftermath.scar` records an event's position in `GameState.scars`, and the scheduler places that
+`aftermath.scar` records an event's position in `GameState.attempt_spend.scars`, and the scheduler places that
 event again on every **later day of the run**. The building the day-3 fire caught is still
 drawn burnt on that corner on day 12, never repaired; barricades from Act IV
 convoys accumulate. This is most of how the escalation is told — the city remembers, and

@@ -232,7 +232,7 @@ func setup_world(map: WorldMap) -> void:
 func _owe_the_return() -> void:
 	if not _owes_a_return or _recipe_plan or _director == null:
 		return
-	_director.owe_the_return(_day, GameState.resistance_progress)
+	_director.owe_the_return(_day, GameState.resistance.progress)
 
 # --------------------------------------------------------- the pursuer on foot ---
 # *(Inbox #591 in olive-hedgehog, the player: "the poster pursuit should not be placed! it should
@@ -274,7 +274,7 @@ func send_a_pursuer() -> void:
 	if not def:
 		return
 	var her := _player.global_position
-	var first_up := posmod(hash("%d:%d:tear-pursuer" % [GameState.run_seed,
+	var first_up := posmod(hash("%d:%d:tear-pursuer" % [GameState.header.run_seed,
 			GameState.posters.tears]), 2) == 0
 	var first := _where_the_sent_pursuer_starts(def, her, Vector2.ZERO, first_up)
 	if first[0] == Vector2.INF:
@@ -534,8 +534,8 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	var standing: Array[EventScheduler.Planned] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
-	_plans = EventScheduler.build_day(spec, rng, _city_map, consumed_one_shots, GameState.scars,
-			GameState.settled_this_act(), tree, GameState.resistance_progress, doors,
+	_plans = EventScheduler.build_day(spec, rng, _city_map, consumed_one_shots, GameState.attempt_spend.scars,
+			GameState.settled_this_act(), tree, GameState.resistance.progress, doors,
 			ResistanceDirector.target_ground(_city_map, day, region_plan), standing, trace)
 	_plans.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
@@ -578,7 +578,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 			# The first attempt's one-time scans, done here rather than mid-walk. See `prepare()`.
 			_siting.prepare(plan.def, _everything_but(plan))
 	_director.start_day(day, _plans, GameState.day_rng(day, "ahead"), _siting,
-			GameState.resistance_progress)
+			GameState.resistance.progress)
 	stream_around(focus)
 
 ## Clears whatever was here and takes a walk's whole plan as given, under `spec`'s settings
@@ -603,7 +603,7 @@ func start_planned(spec: DaySpec, plans: Array[EventScheduler.Planned],
 	set_physics_process(true)
 	_hard_failed = false
 	_struck_by = ""
-	_day = GameState.day
+	_day = GameState.header.day
 	_encounters.day = spec.number
 	use_the_spec(spec)
 	# Nothing is held: a hold keeps the catalogue's own roll off ground something else has taken,
@@ -742,7 +742,7 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	plan.live = _create(plan.def, plan.position, plan.path, first_time, plan.facing)
 	# **A set piece the day owed her walk is spent here rather than at dawn**, because here is where
 	# it becomes something that happened — see `EventScheduler._place_one_shots`. The list is the
-	# one `start_day` was handed, which in a played game is `GameState.consumed_one_shots` and in a
+	# one `start_day` was handed, which in a played game is `GameState.attempt_spend.consumed_one_shots` and in a
 	# rig is the rig's own.
 	if first_time and plan.def.on_her_way != null and plan.def.kind == GameEnums.EventKind.ONE_SHOT \
 			and not plan.def.id in _consumed:
@@ -980,7 +980,7 @@ func rolls_a_pelican(def: EventDef) -> bool:
 ## run would have drawn. Rebuilt whenever the run, or the count a save or a lost day put back,
 ## disagrees with the bag.
 func _the_pelican_bag() -> MarbleBag:
-	var seed_value := hash("%d:%s" % [GameState.run_seed, PELICAN_STREAM])
+	var seed_value := hash("%d:%s" % [GameState.header.run_seed, PELICAN_STREAM])
 	if _pelican_bag == null or _pelican_bag_seed != seed_value \
 			or _pelican_bag.drawn != GameState.pelican.draws:
 		var marbles := []
@@ -1134,8 +1134,8 @@ func _mark_the_block(scar_id: String, at: Vector2) -> void:
 		return
 	if not _city_map:
 		return
-	GameState.city_state.apply_cause(_city_map.block_plans, _city_map.block_at(at),
-			cause as GameEnums.BlockCause, GameState.day)
+	GameState.attempt_spend.city_state.apply_cause(_city_map.block_plans, _city_map.block_at(at),
+			cause as GameEnums.BlockCause, GameState.header.day)
 
 ## Which scars move a block along its arc. Keyed by scar id rather than by event id, because
 ## what matters to a block is what was left behind, not which siren left it.
@@ -1209,7 +1209,7 @@ func mast_foot(mast_id: String) -> Vector2:
 ## close by" · inbox #503 in quiet-yak: "no events are dynamically created as you walk around -- if there is a
 ## mast queued up that will be the next event to be generated".)* So it is not put down where the
 ## director points: it is generated the way every row the day plans is, a `loudspeaker` heated like
-## the day's own (`GameState.resistance_progress`) placed by `EventScheduler._best_of()` among
+## the day's own (`GameState.resistance.progress`) placed by `EventScheduler._best_of()` among
 ## `offered` — the tiles the director found near her and out of her view — against the whole of the
 ## day's plan: `_room_around()`'s spacing, so it never stands inside anything else or inside a lethal
 ## row's field, the region doors' clear ground and the calm she has not used; a mast is exempt from
@@ -1224,7 +1224,7 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	if offered.is_empty():
 		return null
 	var def := EventCatalogue.heated(EventCatalogue.mast(),
-			GameState.resistance_progress)
+			GameState.resistance.progress)
 	var siting := _siting if _siting else EventScheduler.WalkSiting.new(_day, _city_map, _day_tree,
 			GameState.settled_this_act(), _day_doors)
 	var plan := siting.among(def, rng, _plans, offered)
@@ -1832,7 +1832,7 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 				else RouteTree.for_day(_city_map, _day), GameState.settled_this_act(), _day_doors)
 		if _city and _city.poster_walls():
 			_siting.fronts = _city.poster_walls().fronts()
-	var rigged := _director.rig_her_route(ids, size, GameState.resistance_progress, _siting)
+	var rigged := _director.rig_her_route(ids, size, GameState.resistance.progress, _siting)
 	for id in ids:
 		var row := _director.route_row(id)
 		if row and row.spawn_mode_on(_day) == EventDef.SpawnMode.MAP:
@@ -2240,5 +2240,5 @@ func _check_hard_fails() -> void:
 func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: float) -> int:
 	_recipe_plan = false
 	_director.start_recipe_route(marbles, pre_bag, owed, first_after,
-			GameState.resistance_progress)
+			GameState.resistance.progress)
 	return _director.owed() if _director else 0

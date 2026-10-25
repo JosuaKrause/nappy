@@ -343,7 +343,7 @@ func start_section(restarted: bool) -> void:
 ## first thing under the header that the player is responsible for.
 func start_day() -> void:
 	_forget_the_walk()
-	_tree = RouteTree.for_day(_map, GameState.day)
+	_tree = RouteTree.for_day(_map, GameState.header.day)
 	_corridor = Corridor.of(_tree)
 	Telemetry.note("start", "doorstep %s, facing %s" % [
 		RunTrace.tile(_map.world_to_tile(_player.global_position)),
@@ -705,7 +705,7 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 	if calm != _was_calm:
 		var block := _map.block_at(here)
 		var what := RunTrace.purpose(
-				GameState.city_state.purpose_of(_map.block_plans, block))
+				_city.run_spend.city_state.purpose_of(_map.block_plans, block))
 		Telemetry.note("calm" if calm else "left", "%s %s %s, sleep %.0f" % [
 			"entered" if calm else "left", what, RunTrace.tile(block),
 			_baby.sleepiness])

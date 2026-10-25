@@ -47,7 +47,3 @@ design below is a direction, not a prescription, and the PR says which shape was
 keyed by data; simulation in physics only, `_process` draws; movement proposed, validated, then
 committed for every mover, as a car's frame is; intents emitted for the player and camera instead of
 calling them. `EventManager` splits into streaming, spawning and warnings.
-
-**Left in other owners' files by the second PR** (minty-quail-17): `src/city/city.gd:191` names
-`burning_building`'s `scar_id`, which is `aftermath.scar`; whichever of the run-state PR (#853) and
-#858 merges second fixes it.

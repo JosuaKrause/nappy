@@ -238,7 +238,7 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 ## A heated roadblock streamed through `EventManager` itself, the only place the plan carries what
 ## the instance forgets: shaken off and streamed out, it comes back as only the barrier.
 func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	city.events.stream_radius = INF

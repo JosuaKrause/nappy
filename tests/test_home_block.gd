@@ -48,7 +48,7 @@ func run(t) -> void:
 
 static func _city_for(t, seed_value: int) -> City:
 	var map := CityGenerator.generate(seed_value)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	return city

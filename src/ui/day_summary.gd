@@ -149,15 +149,15 @@ func show_day_brief(day: int, nerves: int, lost_note: String = "", title := "") 
 ## **Everything but the one line about the day that ended is the coming day's.** The morning a
 ## player reads this screen for is the one about to start, not the one just walked, so `_title`
 ## carries only the one exception — the clock the day ended on, worded by `_elapsed_line()` below
-## — while `_body` and `_brief` both read `GameState.day` rather than a `finished_day` argument,
-## which this function no longer takes: a win has already moved `GameState.day` on by the time
+## — while `_body` and `_brief` both read `GameState.header.day` rather than a `finished_day` argument,
+## which this function no longer takes: a win has already moved `GameState.header.day` on by the time
 ## this runs (`main._on_day_finished()` calls `GameState.finish_day()` before this), and a loss
 ## leaves it exactly on the day being retried, so nothing this screen shows still needs the day
-## that ended passed in separately from `GameState.day` — `_elapsed_line()` below reads only
+## that ended passed in separately from `GameState.header.day` — `_elapsed_line()` below reads only
 ## `result` and `reason`, neither of which is a day number.
 ##
 ## **`back_to_checkpoint` is a normal run's last nerve**: `GameState.finish_day()` has already put
-## the run back at its checkpoint's dawn with every nerve, so `GameState.day` is the day she goes
+## the run back at its checkpoint's dawn with every nerve, so `GameState.header.day` is the day she goes
 ## back to and `nerves` is five. The line that says she tries the day again says that instead —
 ## *(gentle-osprey, the player's own example: "Back to day 8")* — and the continue under it carries
 ## on into that day.
@@ -180,7 +180,7 @@ func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 	_title.text = SentenceLines.break_for_label(
 			_elapsed_line(result, reason, GameState.format_clock_seconds(elapsed_seconds)), _title)
 	var retrying := result != GameEnums.DayResult.WON and nerves > 0 and title == ""
-	var lines: Array[String] = [Texts.SUMMARY_DAY % [GameState.day, Tuning.RUN_LENGTH_DAYS]
+	var lines: Array[String] = [Texts.SUMMARY_DAY % [GameState.header.day, Tuning.RUN_LENGTH_DAYS]
 			if title == "" else title]
 	lines.append("")
 	# The state she carries into the coming day, shown on a win as much as a loss, and drawn as
@@ -190,16 +190,16 @@ func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
 	# to notice tomorrow that it is still today — or, when the last nerve sent a normal run back,
 	# which day it went back to, and why every star is there again.
 	if back_to_checkpoint:
-		lines.append(back_to_line(GameState.day))
+		lines.append(back_to_line(GameState.header.day))
 	elif retrying:
-		lines.append(Texts.SUMMARY_TRY_AGAIN % GameState.day)
+		lines.append(Texts.SUMMARY_TRY_AGAIN % GameState.header.day)
 	# The tally is the only place the subquest is ever spelled out. In the world it is chalk on
 	# a wall.
 	if GameState.has_joined_resistance() and title == "":
 		lines.append("")
 		lines.append(_resistance_tally_line())
 	_body.text = "\n".join(lines)
-	var brief_text: String = Texts.DAY_BRIEF.get(GameState.day, "") if title == "" else ""
+	var brief_text: String = Texts.DAY_BRIEF.get(GameState.header.day, "") if title == "" else ""
 	_brief.text = SentenceLines.break_for_label(brief_text, _brief)
 	_brief.visible = brief_text != ""
 	# Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still
@@ -246,8 +246,8 @@ static func back_to_line(day: int) -> String:
 func _resistance_tally_line() -> String:
 	if GameState.sabotage_available():
 		return Texts.SUMMARY_TALLY_DONE
-	var done := GameState.resistance_progress
-	var lost := GameState.failed_resistance_steps.size()
+	var done := GameState.resistance.progress
+	var lost := GameState.resistance.failed_steps.size()
 	var line := Texts.SUMMARY_TALLY % [done, Tuning.RESISTANCE_GOAL]
 	if lost > 0:
 		line += Texts.SUMMARY_TALLY_LOST_ONE if lost == 1 else Texts.SUMMARY_TALLY_LOST % lost
@@ -264,20 +264,20 @@ func _resistance_tally_line() -> String:
 ## `day` is the last day played, not the last day completed — a hard run that loses its last nerve
 ## on day 1 names day 1, not 0. It is shown only on the `BAD` ending — a hard run's, and the only one
 ## that can end mid-day: `NEUTRAL` and `GOOD` are reached by finishing day 14, and every caller already has the
-## number this needs, since `GameState.day` is never advanced past the day a run ends on
+## number this needs, since `GameState.header.day` is never advanced past the day a run ends on
 ## (`GameState.finish_day()` ends the run before it would move the calendar) or past the day a
 ## load spent the last nerve on.
 func show_ending(ending: GameEnums.Ending, day: int) -> void:
 	_heading.text = Texts.ENDING_HEADING.get(ending, Texts.ENDING_HEADING_DEFAULT)
 	_heading.show()
 	_title.text = Texts.ENDING_TITLE.get(ending, Texts.ENDING_TITLE_DEFAULT)
-	# The one place `GameState.play_seconds` is ever shown — never during play, on every ending
+	# The one place `GameState.header.play_seconds` is ever shown — never during play, on every ending
 	# alike. `GameState.format_clock()` is the shared formatter so this line and the finale's own
 	# clock, once that is built, never carry two copies of the same format string.
 	var day_line := Texts.ENDING_DAY_REACHED % day if ending == GameEnums.Ending.BAD else ""
 	var ending_body := SentenceLines.break_for_label(Texts.ENDING_BODY.get(ending, ""), _body)
 	_body.text = Texts.ENDING_PLAYED \
-			% [ending_body, GameState.format_clock(GameState.play_seconds), day_line]
+			% [ending_body, GameState.format_clock(GameState.header.play_seconds), day_line]
 	_hint.text = ""
 	# The ending is not a day summary and has no morning line of its own to show.
 	_brief.visible = false
@@ -293,7 +293,7 @@ func show_ending(ending: GameEnums.Ending, day: int) -> void:
 ## took it on to the millisecond — the only number this screen carries, and the reason the finale's
 ## clock reads that way at all.
 ##
-## Not a fourth `GameEnums.Ending`: an ending is a *run's* outcome and `GameState.ending` picks one
+## Not a fourth `GameEnums.Ending`: an ending is a *run's* outcome and `GameState.header.ending` picks one
 ## of three from the nerves and the sabotage. This is the last screen of a sequence that the run
 ## hands over to, so it is its own entry point on the same screen — the smallest thing that keeps
 ## `show_ending()`'s own table saying exactly what it says now.

@@ -32,13 +32,13 @@ enum Goal {
 }
 
 ## The escape's two sections, and `NONE` for every one of the fourteen days. **The values are the
-## save's**: `GameState.escape_section` holds one as a plain `int` and `GameSave` writes it, so a
+## save's**: `GameState.facts.escape_section` holds one as a plain `int` and `GameSave` writes it, so a
 ## save written before this enum moved here reads the same.
 enum Section { NONE, BUILDING, CITY }
 
 ## The day number every counter, loss line and run log header names: 1 to 14 for the days, and
 ## `BUILDING_DAY` and `CITY_DAY` for the escape's two sections. **Not the calendar**:
-## `GameState.day` stays on the last day while the escape is walked, since the run has not moved
+## `GameState.header.day` stays on the last day while the escape is walked, since the run has not moved
 ## past it — its plan's random streams and its save are keyed by it.
 var number := 1
 ## The day's own words where "Day N of 14" stands, on its brief and its outcome screen, and the
@@ -190,7 +190,7 @@ static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpe
 
 ## One of the escape's two sections, `section_length` seconds long, titled `section_title` — its own
 ## words, handed in by whoever builds it (`main.escape_section_spec()`). `which` is a `Section`
-## passed as an `int`, the way `GameState.escape_section` holds it.
+## passed as an `int`, the way `GameState.facts.escape_section` holds it.
 static func for_section(which: int, section_length: float, section_title := "") -> DaySpec:
 	var spec := DaySpec.new()
 	spec.section = which
