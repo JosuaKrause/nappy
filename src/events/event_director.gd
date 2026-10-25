@@ -178,7 +178,7 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 			_on_her_way.append(plan)
 		var mode := plan.def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
-			if plan.def.pursues and not lesson:
+			if plan.def.pursuit != null and not lesson:
 				lesson = plan.def
 			# The dawn decides how many the route is owed; the bag decides which each one is.
 			_owed.append(null if _route_rows.has(plan.def.id) else plan.def)
@@ -298,7 +298,7 @@ func _bag_the_next(count: int) -> void:
 ## off her heading, already noticing her.
 ##
 ## **The row itself, untouched.** `EventCatalogue.by_id()` returns the shared, cold `EventDef` —
-## `pursues_within` still its authored 0.0 — so nothing here has to build a copy the way
+## `EventDef.notice` still its authored 0.0 — so nothing here has to build a copy the way
 ## `EventScheduler._for_day()` does for the waiting one: a director-sited dog is met exactly as
 ## day 3's is, charging the moment it streams in, because both are already-noticing encounters
 ## rather than places she is routed into. No tip and no guarantee are the whole of what changes —
@@ -322,11 +322,11 @@ func _bag_the_next(count: int) -> void:
 ## it. Pushing to the front only decides which of today's `AHEAD_OF_PLAYER` encounters is met
 ## *first* when one has been rolled at all; it never adds a second roll on top of the first.
 ##
-## Asked over the def's own `spawn_mode_switches_after_day` rather than `Tuning.RUN_TAUGHT_DAY`
+## Asked over the def's own `EventDef.from_day_after` rather than `Tuning.RUN_TAUGHT_DAY`
 ## directly, so this stays in step with whichever day the row's siting actually changes on.
 func _owe_the_sprinkled_dog(day: int) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
-	if not dog or day <= dog.spawn_mode_switches_after_day:
+	if not dog or day <= (dog.from_day_after.after_day if dog.from_day_after else 0):
 		return
 	if _rng.randf() < Tuning.CHARGING_DOG_SPRINKLE_CHANCE:
 		_owed.push_front(dog)
@@ -994,15 +994,15 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## an empty path).
 func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = null) -> Array:
 	var none := [PackedVector2Array(), 0.0, Vector2.ZERO]
-	var lead := Tuning.offscreen_lead(heading, def.pursue_speed + Tuning.WALK_SPEED,
+	var lead := Tuning.offscreen_lead(heading, def.chase_speed() + Tuning.WALK_SPEED,
 				def.offscreen_notice) \
-			if def and def.pursues \
+			if def and def.pursuit != null \
 			else (def.ahead_of_player_lead() if def else Tuning.AHEAD_LEAD_DISTANCE)
 	var centre := at + heading * lead
 	var mover := EventInstance.mover_for(def) if def else Mover.on_foot()
 	if not _navigator.passable_at(centre, mover):
 		return none
-	if def and def.pursues:
+	if def and def.pursuit != null:
 		return [PackedVector2Array([centre]), 0.0, centre]
 	var across := Vector2(-heading.y, heading.x) * float(CROSSING_REACH_TILES * Tuning.TILE_SIZE)
 	# The side it comes from is a coin flip, so a player cannot learn to watch one shoulder.

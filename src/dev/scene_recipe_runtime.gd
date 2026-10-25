@@ -909,7 +909,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 			var director := EventDirector.new(map)
 			var heading: Vector2 = DIRECTIONS[setup.get("player", {}).get("facing", "south")]
 			var route := director._crossing_ahead_of(player_at, heading, def)
-			if not def.available_on(GameState.day) or not def.pursues or route.is_empty() \
+			if not def.available_on(GameState.day) or def.pursuit == null or route.is_empty() \
 					or not route[0].is_equal_approx(at) \
 					or not EventScheduler.clear_of_the_doors(at, route, doors, def.field_reach()):
 				errors.append("event %s fails its ordinary director siting" % entry.name)
@@ -1088,7 +1088,7 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 ## walk straight away from her that a pursuer on foot leaves by, so every row whose departure is
 ## anything else is refused, each with its own reason.
 static func hold_refusal(def: EventDef) -> String:
-	if not def.pursues:
+	if def.pursuit == null:
 		return "does not pursue her, so it has no straight walk away to hold"
 	if def.drives:
 		return "drives, and a car leaves by its own rules"
@@ -1103,14 +1103,14 @@ static func hold_refusal(def: EventDef) -> String:
 	return ""
 
 ## Why `charging` is refused for a row, or "" when it may charge from the first frame. `charging: true`
-## has a pursuer that waits for her (`pursues_within`) start the scene already set on her, as the guard
+## has a pursuer that waits for her (`EventDef.notice`) start the scene already set on her, as the guard
 ## a task sends is (`EventInstance.notice_her_at()`), its notice spent: the recording shows the charge
 ## rather than waiting for her to walk into its radius. A row that does not wait has no radius to skip,
 ## and one that sets off beside her or runs its own line does not charge by that rule.
 static func charging_refusal(def: EventDef) -> String:
-	if not def.pursues or def.pursues_within <= 0.0:
+	if def.pursuit == null or def.notice_within() <= 0.0:
 		return "does not wait for her, so it has no radius to skip"
-	if def.sets_off_beside_her:
+	if def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
 		return "sets off beside her, on its own clock"
 	return ""
 
@@ -1118,7 +1118,7 @@ static func charging_refusal(def: EventDef) -> String:
 ## pursuer from giving up because she ran (`_keep_the_pursuers_coming()`), so a row that does not
 ## pursue her has nothing to keep.
 static func relentless_refusal(def: EventDef) -> String:
-	if not def.pursues:
+	if def.pursuit == null:
 		return "does not pursue her, so it has no chase to keep going"
 	return ""
 
@@ -1309,7 +1309,7 @@ func snapshot() -> Dictionary:
 		elif actor is EventInstance:
 			result[label]["row"] = actor.def.id
 			result[label]["telegraphing"] = actor.is_telegraphing()
-			result[label]["pursuing"] = actor.def.pursues and not actor.is_waiting() \
+			result[label]["pursuing"] = actor.def.pursuit != null and not actor.is_waiting() \
 					and not actor.is_telegraphing() and not actor.is_finished and not actor.is_leaving
 	return result
 
@@ -1350,7 +1350,7 @@ func _observe() -> void:
 					passed = baby != null and (baby.state == GameEnums.BabyState.ASLEEP) \
 							== (check.condition == "asleep")
 				"pursuing":
-					passed = actor is EventInstance and actor.def.pursues \
+					passed = actor is EventInstance and actor.def.pursuit != null \
 							and not actor.is_telegraphing() and not actor.is_waiting() \
 							and not actor.is_finished and not actor.is_leaving
 				"near_player":

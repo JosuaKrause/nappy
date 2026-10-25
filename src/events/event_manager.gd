@@ -271,7 +271,7 @@ var _sent_warning: PendingWarning = null
 ## warned and placed as a task's robber is (`ResistanceDirector._set_the_trap_on_her()`): the
 ## screen-edge badge goes up alone at once for his half second (`EventDef.warned_for()`), pointing
 ## where he will start (`_where_the_sent_pursuer_starts()`), and then he is created just out of sight
-## that way from where she is by then, already chasing (`spawn_warned()`, `EventDef.arrives_chasing`).
+## that way from where she is by then, already chasing (`spawn_warned()`, `PursuitSpec.Start.ARRIVES_CHASING`).
 ## No wait for a heading or a street: the tear is the moment.
 ##
 ## **Outside the day's own plan, queue and streams.** He is not the scheduler's or the director's:
@@ -338,7 +338,7 @@ func send_a_pursuer() -> void:
 ## hers is not ground he may stand on (`Navigator.passable_at()`), or at the vehicle itself where
 ## neither is. They appear in her view, so
 ## there is no badge: their notice is the sight of them, standing with a hand raised
-## (`EventDef.sets_off_beside_her`, `stands_for_its_notice`). Outside the day's plan, like everything put down after dawn by
+## (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`, `PursuitSpec.stands`). Outside the day's plan, like everything put down after dawn by
 ## a director.
 func _let_the_officers_out() -> void:
 	for vehicle: EventInstance in _instances.duplicate():
@@ -789,7 +789,7 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# would put back exactly the thing streaming exists to fix — a twenty-second event that is over
 	# before anybody could reach it.
 	#
-	# `plan.noticed_at` carries the same resume for a `pursues_within` row: without it a pursuer
+	# `plan.noticed_at` carries the same resume for a `EventDef.notice` row: without it a pursuer
 	# streamed out mid-chase forgets she was ever noticed and comes back `is_waiting()`, standing
 	# where the day planted it rather than still coming for her.
 	#
@@ -1425,7 +1425,7 @@ func warn_first(def: EventDef, her: Vector2, where: Callable,
 ## `hard_fail` row, and at its own intensity for a loud one. **A pursuer is created with its
 ## telegraph still to run**, since a pursuer's telegraph is its approach, the sight of it closing that
 ## she is owed (`Tuning.PURSUIT_MIN_NOTICE`), and its warning was only the badge before it
-## (`EventDef.warned_for()`, its `offscreen_notice`) — unless it `arrives_chasing` (the resistance's
+## (`EventDef.warned_for()`, its `offscreen_notice`) — unless it `PursuitSpec.Start.ARRIVES_CHASING` (the resistance's
 ## sent robber and guard), which is created with its telegraph spent, chasing from its first frame.
 ##
 ## **`came_under_a_warning` is set before `resume()`**, which reads it: a resume otherwise restores
@@ -1437,7 +1437,7 @@ func warn_first(def: EventDef, her: Vector2, where: Callable,
 func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> EventInstance:
 	var instance := _spawn_unplanned(as_warned(def), path[0], path)
 	instance.came_under_a_warning = true
-	if not def.pursues or def.arrives_chasing:
+	if def.pursuit == null or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.resume(age_when_warned(def), 0.0)
 	if pelican and def.look == EventDef.Look.CYCLIST:
 		_ride_as_a_pelican(instance)
@@ -1833,7 +1833,7 @@ func _place_what_is_owed_ahead(delta: float) -> void:
 	if def.comes_down_her_line():
 		_send_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
 		return
-	if def.pursues:
+	if def.pursuit != null:
 		_warn_down_her_heading(def, body.global_position, path[0])
 		return
 	var crossing := _spawn_unplanned(def, path[0], path)
@@ -2656,7 +2656,7 @@ func _call_off_the_crossing(why: String) -> void:
 ## on her; once he has caught her, given up or run out his chase, the next walk under sets the next
 ## one. A crossed alley post is its own door and its own guard, so he steps out of the post.
 ##
-## **He charges at once** (`EventDef.charges_at_once`): the guard at that hut raised his hand from
+## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): the guard at that hut raised his hand from
 ## her crossing for `Tuning.CROSSING_WARNING` (`_start_the_crossing_warning()`,
 ## `_warn_at_the_doors()`), which was his warning, and he is set on her only once it has run with
 ## her still across. **The hut across the road, not the nearer one**: from the nearer hut's wall
