@@ -95,6 +95,12 @@ var title_requested := false:
 	set(value): title_requested = _write(title_requested, value)
 var no_title_requested := false:
 	set(value): no_title_requested = _write(no_title_requested, value)
+## `--touch`: the touch hardware question answers yes (`TouchInput.available()`).
+var touch_forced := false:
+	set(value): touch_forced = _write(touch_forced, value)
+## `--web`: the quit question answers as the web export does (`QuitOption.available()`).
+var web_preview := false:
+	set(value): web_preview = _write(web_preview, value)
 
 # ------------------------------------------------------------- what is placed ---
 
@@ -236,6 +242,8 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 	config.no_focus_pause = flags.no_focus_pause()
 	config.title_requested = flags.title_requested()
 	config.no_title_requested = flags.no_title_requested()
+	config.touch_forced = flags.touch_forced()
+	config.web_preview = flags.web_preview()
 
 	config.spawn_target = flags.spawn_target()
 	config.meters_override = flags.meters_override()

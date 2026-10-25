@@ -2006,18 +2006,18 @@ func _test_finale_entities_stop_when_the_tree_pauses(t) -> void:
 
 ## `Esc`, the pause button's own action and a window losing focus all reach the pause screen during
 ## a section exactly as they do during a day: the same continue, the same held restart, the same
-## quit, and the same stashed heading through `TouchControls`. Driven through `main.notification()`
-## and `main._unhandled_input()`'s own guards, against a section's day with no world built behind
-## it, since putting her down is not what this is about.
+## quit, and the same stashed heading through `TouchControls`. Driven through the return window's
+## `notification()` and `main._unhandled_input()`'s own guards, against a section's day with no
+## world built behind it, since putting her down is not what this is about.
 ##
 ## **Esc's own successful open is proven through focus loss, not through `_unhandled_input()`
 ## itself.** Both reach `_pause.open()` behind the same two guards (`_pause`/`_title` not already
 ## open, and — the escape's own addition — `_summary` not showing a brief or the epilogue); past
 ## those, `_unhandled_input()` also calls `get_viewport().set_input_as_handled()`, which is null for
 ## every `main` in this suite (see this file's own class doc on why `main` is never added to the
-## tree) and would crash rather than prove anything `_toggle_debug_layer()`'s own tests do not
-## already establish the pattern for: call the guarded action directly, not the input handler that
-## wraps it. So this exercises `_unhandled_input()` for its two *refusals* (guard coverage no
+## tree) and would crash rather than prove anything the readout's key tests do not already
+## establish the pattern for: call the guarded action directly, not the input handler that wraps
+## it. So this exercises `_unhandled_input()` for its two *refusals* (guard coverage no
 ## different from `_pause_on_focus_lost()`'s own), and `notification()` for the one open it can
 ## prove end to end.
 func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
@@ -2036,6 +2036,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	main._pause.set_touch_controls(main._touch_controls)
 	main._connect_summary_and_pause_signals()
 	main._no_focus_pause = false
+	main._add_the_return_window(t.get_viewport())
 
 	var clock := DayController.new()
 	t.add_child(clock)
@@ -2053,7 +2054,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	t.check(main._pause._touch_controls == main._touch_controls,
 			"the pause screen can stash and restore her heading through the same touch controls")
 
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(main._pause.is_open(), "losing the window's focus opens the same pause a day's does")
 	t.check(t.get_tree().paused, "and pauses the tree behind it")
 	# `Esc` never opens a second time over the screen focus loss just opened — the same refusal
@@ -2064,7 +2065,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	t.get_tree().paused = false
 
 	main._no_focus_pause = true
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "--no-focus-pause suppresses that during the escape too")
 
 	main._summary.free()
@@ -2090,14 +2091,14 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	t.check(main._summary.is_showing() and main._resume_gate_open, "the section's brief is up")
 	main._unhandled_input(_action("pause"))
 	t.check(not main._pause.is_open(), "Esc does not open the pause over a section's brief")
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "and neither does losing focus")
 
 	main._on_summary_continued()
 	EventBus.hard_fail_triggered.emit("abduction")
 	t.check(main._summary.is_showing() and not main._resume_gate_open,
 			"a lost section's outcome screen is up")
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "losing focus does not open the pause over it")
 	main._unhandled_input(_action("pause"))
 	t.check(main._pause.is_open(), "Esc does, as over a lost day's outcome screen")
@@ -2116,15 +2117,14 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	t.check(main._summary.is_showing_the_epilogue(), "out of the city, the epilogue is up")
 	main._unhandled_input(_action("pause"))
 	t.check(not main._pause.is_open(), "Esc does not open the pause over the epilogue")
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "and neither does losing focus")
 	_free_the_escape(t, main)
 
 # ------------------------------------------------------ a resumed escape, and a handover ---
 
 ## `_escape_section_came_from_the_file()` is the boot policy with the two live
-## `GameState.escape_section` reads taken out of it, the same split `main._graph_starts_on()` makes
-## for its own two flags.
+## `GameState.escape_section` reads taken out of it, so every combination can be driven directly.
 func _test_escape_section_came_from_the_file(t) -> void:
 	var none := DaySpec.Section.NONE
 	var building := DaySpec.Section.BUILDING

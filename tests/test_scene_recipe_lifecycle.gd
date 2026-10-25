@@ -45,7 +45,7 @@ func _ready() -> void:
 		get_tree().quit()
 		return
 	var start := player.global_position
-	if recipe.get("_active") or main.get("_rig_quit_deadline_msec") != 0 or main.get("_rig_quit_game_seconds") != 0:
+	if recipe.get("_active") or (main.get("_rig_lock") as RigLock).has_a_deadline():
 		fail("free play has a scripted capture or rig deadline")
 		return
 	var duration := float(recipe.data.get("playback", {}).get("duration", 0))

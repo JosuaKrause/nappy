@@ -542,7 +542,8 @@ reason, so no capture from such a run is mistaken for one where a loss meant any
 ### `--no-focus-pause`
 
 The game pauses itself, the same way the `pause` action does, the moment
-`NOTIFICATION_APPLICATION_FOCUS_OUT` or `NOTIFICATION_APPLICATION_PAUSED` reaches `main.gd` — the
+`NOTIFICATION_APPLICATION_FOCUS_OUT` or `NOTIFICATION_APPLICATION_PAUSED` reaches the game
+(`ReturnWindow`, `src/ui/return_window.gd`, which hands it to `main`'s pause) — the
 window losing focus, a browser tab backgrounding, or a phone sending the app away. A rig's window
 usually opens with no focus to lose in the first place, so left alone this would hand every rig a
 picture of the pause screen rather than the day it was sent to capture.
@@ -975,8 +976,8 @@ what its callbacks took, as `frame/work`, then its largest costs under short nam
 `slow 41.2/39.0 ms  crowd 12.3  draw 9.8  proc 6.1` — or `outside callbacks` in their place. Three
 costs are shown when they fit the readout's width at its font, fewer when they do not.
 
-**The readout's text is re-set four times a second** (`Main.READOUT_INTERVAL`), not every frame:
-setting about thirty lines of text each frame added draw calls and drawing work to every record
+**The readout's text is re-set four times a second** (`DebugReadout.READOUT_INTERVAL`), not every
+frame: setting about thirty lines of text each frame added draw calls and drawing work to every record
 taken under `?debug=1`, which the record then measured as the game's. A slow frame is not lost to
 it: the ledger keeps the last slow frame and the readout names the latest one at each refresh, the
 record keeps every one, and the spike view is fed every frame. Turning the readout on shows it at
@@ -1107,11 +1108,11 @@ two seconds would otherwise write a hundred and twenty frames, and **somebody pr
 already decided this frame is worth keeping**. A cap that silently swallows the seventh press is a
 tool that lies about having worked.
 
-Two things about it that are not obvious. It answers **before** the pause guard in
-`Main._unhandled_input`, so it works on the pause and title screens too — the frames worth
-photographing by hand are disproportionately the ones where something looks wrong and the player
-has just stopped the game to look at it. And the context string is assembled in `main.gd` rather
-than here, for the reason everything in this file takes what it needs as an argument: **the
+Two things about it that are not obvious. It answers **before** the pause guard, in
+`DebugReadout._unhandled_input()` (`src/dev/debug_readout.gd`), so it works on the pause and title
+screens too — the frames worth photographing by hand are disproportionately the ones where
+something looks wrong and the player has just stopped the game to look at it. And the context
+string is assembled in `DebugReadout` rather than here, for the reason everything in this file takes what it needs as an argument: **the
 telemetry asks the world no questions, so it can never be the thing that changed one.**
 
 ### Animation bursts
@@ -1143,8 +1144,8 @@ outlines from what they answer; nothing about how any of them draws itself chang
 game currently thinks is true this frame, but what it planned at the start of the day — and reads
 `City.route_tree()` once rather than querying anything live. `FrameGraph` (`src/ui/frame_graph.gd`),
 the sixth layer below, answers a third question again — not the ground truth and not the day's
-plan, but what the last 240 frames actually cost — and reads `main._process`'s own `delta` each
-frame it is on rather than querying the world at all.
+plan, but what the last 240 frames actually cost — and reads `DebugReadout._process()`'s own
+`delta` each frame it is on rather than querying the world at all.
 
 Six layers, each a number key, read as a raw keycode rather than an input-map action so a release
 build has nothing in `project.godot` to reach:
@@ -1175,12 +1176,12 @@ build has nothing in `project.godot` to reach:
   colour, because it is not a body but is exactly what ends the day on contact. Walkers and cars
   have no body of their own, and none is invented for them.
 - **`4` the readout** — the seed, the meter breakdown and what the frame cost, drawn top right by
-  `main.gd` and toggleable like the other three in a debug build: off, the string is not
+  `DebugReadout` (`src/dev/debug_readout.gd`) and toggleable like the other three in a debug build: off, the string is not
   assembled, not merely hidden behind an invisible label. **A release build carries it too when
   the page's own `?debug=1` (or the command line's `--debug`) holds** — `DevFlags.readout_requested()`,
-  parsed straight off the page's query string and not gated behind `enabled()`. `main._add_debug_layers()`
-  and `main._add_route_lines()` build the geometry layers (`1`-`3`, `5`) under that same `_debug or
-  _readout_requested` gate now too, so a release page's own `?debug=1&layers=1,3,5` has somewhere
+  parsed straight off the page's query string and not gated behind `enabled()`. The readout builds
+  the geometry layers (`1`-`3`, `5`, `DebugReadout.show_the_world()` and `draw_routes()`) under that
+  same `_debug or _readout_requested` gate too, so a release page's own `?debug=1&layers=1,3,5` has somewhere
   to draw (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags") — only the `1`/`2`/`3`
   key presses that toggle one by hand stay debug-build only, since a release page sends no such
   keypress on its own. Whenever `readout_requested()`
@@ -1247,8 +1248,8 @@ build has nothing in `project.godot` to reach:
   `src/ui/frame_graph.gd`), sat directly under the readout's own block: what `process` and
   `physics` above cannot show, since both are the engine's own once-a-second worst (M138, above)
   and cannot say *which* frame in that second was the long one, or what the fourteen ordinary
-  frames around it looked like. Fed from `main._process`'s own `delta`, not from `FrameCost`,
-  because a number that already discarded 239 of the last 240 readings cannot be un-discarded. One
+  frames around it looked like. Fed from `DebugReadout._process()`'s own `delta`, not from
+  `FrameCost`, because a number that already discarded 239 of the last 240 readings cannot be un-discarded. One
   bar per frame, one design pixel wide, newest at the right, in a 240 by 48 design-pixel box: height
   scaled so a 33.3ms (30fps) frame reaches the top and anything longer clips, with two thin
   reference lines at 16.7ms (labelled `60`) and 33.3ms (labelled `30`) and a third, unlabelled
@@ -1265,7 +1266,7 @@ build has nothing in `project.godot` to reach:
   off by default, `true` at boot when `--spikes` (`DevFlags.spikes_requested()`) was given or
   `--layers` names `6`, and flipped by the `6` key from there, whatever `4` does to the readout
   beside it. **Fed only while its own layer is on, and emptied the moment it goes off**
-  (`FrameGraph.clear()`, called from `main._toggle_debug_layer()`) — *(2026-09-15, the player:
+  (`FrameGraph.clear()`, called from `DebugReadout._toggle_debug_layer()`) — *(2026-09-15, the player:
   "spike recording should only be on while the layer is on. that means toggling the layer twice
   will lead to a blank frame array".)* — so `6` twice leaves a blank graph that fills again only
   from that moment rather than a window that silently skipped the time it spent off. The run log's

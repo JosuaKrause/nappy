@@ -2,12 +2,9 @@ extends RefCounted
 ## `RouteLines` (M135, "the day's routes drawn as a debug layer") and the `--layers`/`?layers=`
 ## parsing that reaches its own key, `5`.
 ##
-## The tree-presence and key-toggle tests build `main` the way `tests/test_debug_layers.gd` and
-## `tests/test_main.gd` already do — a script-only instance, `_ready()` never run, its handful of
-## dependencies wired up by hand — because `main._ready()` boots a whole city and none of these
-## questions need one.
-
-const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
+## The tree-presence and key-toggle tests build a `DebugReadout` the way `tests/test_debug_layers.gd`
+## and `tests/test_main.gd` do — on its own, its handful of dependencies handed in by hand — because
+## `main._ready()` boots a whole city and none of these questions need one.
 
 const SEEDS := 6
 const BASE_SEED := 5300
@@ -37,44 +34,44 @@ func _test_parse_layers_accepts_five_and_still_rejects_four(t) -> void:
 # ------------------------------------------------------------------ tree presence ---
 
 func _test_no_route_lines_node_exists_outside_a_debug_build(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = false
-	main._city = City.new()
-	main._add_route_lines()
-	t.check(main._route_lines == null,
+	var readout := DebugReadout.new()
+	readout._debug = false
+	var city := City.new()
+	readout.draw_routes(city.map)
+	t.check(readout._route_lines == null,
 			"a release build never builds the route-lines node, not merely leaves it invisible")
-	main._city.free()
-	main.free()
+	city.free()
+	readout.free()
 
 ## M193, "the live page's ?debug=1 reaches the debug flags": `?debug=1` alone builds the node —
 ## the same shape `test_debug_layers.gd`'s own readout-flag-alone case pins — since a release
 ## page's own `?debug=1&layers=5` needs somewhere to draw into, still off until `?layers=` names it.
 func _test_the_readout_flag_alone_builds_the_node_off(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = false
-	main._readout_requested = true
-	main._city = City.new()
-	main._add_route_lines()
-	t.check(main._route_lines != null,
+	var readout := DebugReadout.new()
+	readout._debug = false
+	readout._readout_requested = true
+	var city := City.new()
+	readout.draw_routes(city.map)
+	t.check(readout._route_lines != null,
 			"?debug=1 builds the route-lines node so a release page's own ?layers=5 has somewhere "
 			+ "to draw")
-	t.check(not main._route_lines.visible, "and it starts off, since ?layers= itself named none")
-	main._route_lines.free()
-	main._city.free()
-	main.free()
+	t.check(not readout._route_lines.visible, "and it starts off, since ?layers= itself named none")
+	readout._route_lines.free()
+	city.free()
+	readout.free()
 
 func _test_a_debug_build_builds_the_node_off_by_default(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = true
-	main._city = City.new()
-	main._add_route_lines()
-	t.check(main._route_lines != null and main._route_lines.get_parent() == main,
-			"a debug build adds the one node, parented under main")
-	t.check(not main._route_lines.visible,
+	var readout := DebugReadout.new()
+	readout._debug = true
+	var city := City.new()
+	readout.draw_routes(city.map)
+	t.check(readout._route_lines != null and readout._route_lines.get_parent() == readout,
+			"a debug build adds the one node, parented under the readout")
+	t.check(not readout._route_lines.visible,
 			"and it starts off, so an unflagged debug run looks like today's")
-	main._route_lines.free()
-	main._city.free()
-	main.free()
+	readout._route_lines.free()
+	city.free()
+	readout.free()
 
 # ------------------------------------------------------------------ key toggle ---
 
@@ -86,26 +83,26 @@ func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 	return event
 
 func _test_key_five_resolves_to_the_route_lines_layer(t) -> void:
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_5)) == 5, "5 is the day's routes")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_5, false)) == 0, "a release, not a press, does nothing")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_5, true, true)) == 0,
+	t.check(DebugReadout._debug_layer_key(_key(KEY_5)) == 5, "5 is the day's routes")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_5, false)) == 0, "a release, not a press, does nothing")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_5, true, true)) == 0,
 			"an echo does nothing — a held key is one request, not a flood of them")
 
 func _test_key_five_toggles_visibility(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = true
-	main._city = City.new()
-	main._add_route_lines()
+	var readout := DebugReadout.new()
+	readout._debug = true
+	var city := City.new()
+	readout.draw_routes(city.map)
 
-	t.check(not main._route_lines.visible, "the layer starts off")
-	main._toggle_debug_layer(5)
-	t.check(main._route_lines.visible, "5 turns it on")
-	main._toggle_debug_layer(5)
-	t.check(not main._route_lines.visible, "and back off again")
+	t.check(not readout._route_lines.visible, "the layer starts off")
+	readout._toggle_debug_layer(5)
+	t.check(readout._route_lines.visible, "5 turns it on")
+	readout._toggle_debug_layer(5)
+	t.check(not readout._route_lines.visible, "and back off again")
 
-	main._route_lines.free()
-	main._city.free()
-	main.free()
+	readout._route_lines.free()
+	city.free()
+	readout.free()
 
 # ------------------------------------------------------------------ the picture ---
 

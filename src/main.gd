@@ -6,13 +6,10 @@ extends Node2D
 ## config itself, and to the world, the day and the baby as the plain values each needs out of it
 ## — a day's length, whether the clock stands still, how the ground is scheduled.
 ##
-## The right-hand overlay is a developer readout, not part of the game's UI. It runs whenever
-## `_debug` (a debug build) or `_readout_requested` (the page's own `?debug=1`) holds — see
-## `_readout_requested`'s own doc. `_debug_layers` and `_route_lines` are built under that same
-## `_debug or _readout_requested` gate, so a release page's own `?debug=1&layers=1,3,5` can ask
-## for a picture; every other piece of developer furniture (the snapshot key, every other dev
-## flag) stays gated behind `_debug` alone, except the release-safe bundle `config.live_debug`
-## opens.
+## The developer's furniture — the right-hand readout, the frame graph, the debug view's overlays,
+## the routes and their keys — is `DebugReadout`'s (`src/dev/debug_readout.gd`), handed what it reads
+## from here. A rig's lock-out is `RigLock`'s (`src/dev/rig_lock.gd`), and the half second of ignored
+## input after the game gets focus back is `ReturnWindow`'s (`src/ui/return_window.gd`).
 
 const CITY := preload("res://scenes/world/city.tscn")
 const STROLLER := preload("res://scenes/player/stroller.tscn")
@@ -58,13 +55,7 @@ const ESCAPE_ONLY_GROUPS: Array[StringName] = [&"interior"]
 ## below that are read from it.
 var config: RunConfig
 
-## Whether the developer readout runs at all: a debug build. A member rather than a read of
-## `config` inside `_process()`, so a test can set it and check the release shape, the way
-## `hud._debug` does for the HUD's own gate.
-var _debug := false
-
-## `--start-escape`, kept in a member for the same reason `_debug` is: so a test can set it
-## directly and check the release shape.
+## `--start-escape`, kept in a member so a test can set it directly and check the release shape.
 var _escape_scene_requested := false
 
 ## Whether this boot reached the escape as **a run's own ending** rather than through the flag —
@@ -77,75 +68,17 @@ var _escape_scene_requested := false
 ## out settles nothing.
 var _escape_from_a_run := false
 
-## `--no-focus-pause`, kept in a member for the same reason `_debug` is: so a test can set it
-## directly and check the release shape.
+## `--no-focus-pause`, kept in a member so a test can set it directly and check the release shape.
 var _no_focus_pause := false
 
-## How long every input is ignored after the game gets focus back (`NOTIFICATION_APPLICATION_
-## FOCUS_IN` or `_RESUMED`). *(2026-10-04, inbox #534: "When returning to the game all inputs should
-## be ignored for 500ms this is to prevent the game from immediately starting when returning to the
-## page. The player should see the day brief or pause screen".)* The tap or click that brings the
-## page back is also an event the game reads, and without this it resumes the pause screen or
-## starts the day from its brief before the player has seen either.
-const RETURN_INPUT_IGNORED_MSEC := 500
-## The `Time.get_ticks_msec()` reading at which the window ends, or `0` for no window; `_process()`
-## ends it (`_end_the_return_window()`) the first frame it has passed. Real OS time rather than
-## accumulated `delta`, and `_process()` rather than a timer: this node is `PROCESS_MODE_ALWAYS`, so
-## it runs behind the pause screen too, and a `SceneTreeTimer` can fire before its time (its first
-## frame's delta includes the time before it was made), which left input off for good. Never armed
-## for a rig (`_rig_locked_out`) or under `_no_focus_pause`, which must never be slowed by this.
-var _input_ignored_until_msec := 0
-
-## Whether `_lock_out_a_rig()` found `config.is_rig` true for this run — a member for the same
-## reason `_no_focus_pause` is, so a test can set it directly.
-var _rig_locked_out := false
-## The `Time.get_ticks_msec()` reading a rig quits itself at, or `0` for "no deadline" — a person's
-## own `tools/run.sh` session, or a test that never calls `_lock_out_a_rig()` at all. `0` is safe
-## as the sentinel because `Time.get_ticks_msec()` only grows from the process's own start, so it
-## can never legitimately equal the deadline of a rig that armed one.
-##
-## **Real OS time, not accumulated frame `delta`, and that is load-bearing.** The stall a covered,
-## unfocused window can fall into (`--disable-vsync` in `tools/shot.sh`/`tools/run.sh` is the fix —
-## see docs/DECISIONS.md, M195) collapses how *often* `_process()` runs without necessarily
-## collapsing what each call reports as its own `delta`, so a deadline kept by summing `delta` can
-## lag the wall clock by exactly the amount the stall itself hides. Reading `Time.get_ticks_msec()`
-## fresh every `_process()` call instead means the very next call to actually happen — however late
-## it is — reads the true time and quits right then, rather than trusting a running total that the
-## same stall could already have thrown off.
-var _rig_quit_deadline_msec := 0
-## **Under Godot's movie writer (`config.recording`), the same deadline in game seconds
-## instead**, or `0.0` for none. A recording runs frame-locked and saves every frame before drawing
-## the next, so its wall clock runs several times slower than its game clock, and a wall-clock
-## deadline would end a legitimate recording partway; `delta` is exact there by construction, the
-## one case the doc above does not have to distrust it. What stops a recording that has stopped
-## running at all is the recording script's own outside kill (`tools/lib_dev_flags.sh`,
-## `rig_kill_after_movie_seconds`).
-var _rig_quit_game_seconds := 0.0
-
-## How often the readout's text is re-set, in seconds. Re-setting some thirty lines of text every
-## frame adds draw calls and drawing work to every phone record taken under `?debug=1`, so the
-## text is built a few times a second instead. Nothing the readout shows is lost by it: `FrameCost`
-## hands its numbers over once a second, the frame record keeps every slow frame and the readout
-## names the latest one at each refresh, and the spike view (`_frame_graph`) is fed every frame.
-const READOUT_INTERVAL := 0.25
-## Seconds until the readout's text is next rebuilt; 0 or less means the next frame rebuilds it.
-var _readout_wait := 0.0
-
-## Whether the readout was asked for by the page's own `?debug=1` (or the command line's
-## `--debug`), kept in a member for the same reason `_debug` is. `_status.visible` and the text
-## assembly in `_process()` read `_debug or _readout_requested`, and so do `_add_debug_layers()`
-## and `_add_route_lines()` (M133, the readout on the live page; M193, the live page's ?debug=1
-## reaches the debug flags). The snapshot key and the layer-toggle keys read `_debug` alone: a
-## release page can ask `?layers=` for a picture already drawn a particular way, never toggle one
-## by hand with no keyboard event the page itself sent.
-var _readout_requested := false
-## The validated `--skip` words, for the readout's own `skip` line; empty whenever
-## `_readout_requested` is false.
-var _skip_words: Array[String] = []
-## The readout's first line, `BuildInfo.build_text()` — `git describe`'s form and the commit —
-## read on the first frame that assembles the readout and kept, since a working tree pays two
-## `git` spawns for the answer and a release page with neither flag never pays them at all.
-var _build_text := ""
+## The developer's furniture over the run — see `DebugReadout`. Built in `_ready()`; null for a
+## script-only `main` a test drives with no boot behind it.
+var _readout: DebugReadout
+## A rig's lock-out — see `RigLock`. Built first thing in `_ready()`.
+var _rig_lock: RigLock
+## The half second of ignored input after the game gets focus back — see `ReturnWindow`. Built in
+## `_ready()`; its departures open the pause through `_pause_on_focus_lost()`.
+var _return_window: ReturnWindow
 
 var _city: City
 ## The escape's building. In the escape it is built first and `_city` follows when she walks out of
@@ -183,46 +116,9 @@ var _edge_layer: CanvasLayer
 ## What is currently charging the meter, drawn under the world rather than over it — see
 ## `_add_excitement_halo()`.
 var _halo: ExcitementHalo
-## The fields, shadows and bounding-box overlays — `null` unless `_debug or _readout_requested`
-## holds, so "is a layer node in the tree" is a release-page test's own question rather than one
-## this class has to remember to ask of either flag separately. See `_add_debug_layers()`.
-var _debug_layers: DebugLayers
-## The day's planned routes, drawn as purple polylines — `null` on the same "absent, not merely
-## hidden" terms `_debug_layers` uses. See `_add_route_lines()`.
-var _route_lines: RouteLines
-## Set by `_add_debug_mode_note()`, or left `null` when `_readout_requested` is `false` — a test's
-## own way to check the release shape without a live tree search for the node.
-var _debug_mode_note: DebugModeNote
-## The rolling bar graph of the last frames' own lengths, under `_status`. Set by
-## `_add_frame_graph()`, or left `null` on the same "absent, not merely hidden" terms
-## `_debug_mode_note` is — a release page nobody asked `?debug=1` of never builds it. **Built where
-## the readout is, but shown independently of it**: the player asked the graph's own switch to be
-## `6`, not `4`, which is a different question from whether the title screen is up — the title
-## still hides everything about a player who is not there, this included. So `_frame_graph.visible`
-## is `_layer_graph_on and not _in_the_title` in effect, kept true by three call sites rather than
-## one: `_toggle_debug_layer()`'s own `6` case, and `_open_the_title()`/`_on_title_start()` setting
-## it directly, since `_set_readout_visible()` does not touch it. `if _frame_graph:` at each site,
-## since it is null on exactly the builds that never build one.
-var _frame_graph: FrameGraph
-## Whether the developer readout (`_status`) is showing, independent of `_debug`: the fourth
-## layer `_toggle_debug_layer()` owns, on `_status`'s own pre-existing `CanvasLayer` rather than
-## under `_debug_layers`, which is not a `CanvasLayer` this label could join. Starts `true`, so an
-## unflagged debug run shows it — and `false` under `--player-view` unless `--debug` asks for it,
-## since that frame is the one a player sees.
-var _layer_readout_on := true
-## Whether the frame-time graph (`_frame_graph`) is showing — its own debug layer, key `6` in
-## `_debug_layer_key()`/`_toggle_debug_layer()`, independent of `_layer_readout_on`'s own `4`:
-## *(2026-09-15, the player: "spike view should be independent of debug layer 4 it should be its
-## own debug layer and turned off by default unless --spikes is set".)* Starts `false` — unlike
-## `_layer_readout_on`, which starts `true` — and `_add_frame_graph()` sets it `true` at boot
-## instead when `--spikes` was given or `--layers` names `6`, the same way `--layers`
-## naming `5` starts `_route_lines` on. Toggling it off also empties `_frame_graph`'s own ring
-## (`FrameGraph.clear()`), so a graph switched off and back on again starts from blank rather than
-## picking up wherever the window it was not fed during happened to leave off.
-var _layer_graph_on := false
 ## Every frame's time by system, under `--frame-record`/`?framerecord=1`, or `null`. The readout
-## carries its line, the last slow frame's
-## three largest costs, so a stutter caught on a phone shows as caught.
+## carries its line, the last slow frame's three largest costs, so a stutter caught on a phone shows
+## as caught.
 var _frame_recorder: FrameRecorder
 ## The pointer controls, on their own layer for the same reason the danger edge is: they have to
 ## sit above the world they are drawn over. Built in `_ready()`, alongside `_touch_layer`.
@@ -304,10 +200,9 @@ var _resume_gate_open := false
 ## day brief carries. A hard run's last nerve is `_run_over` instead.
 var _resume_went_back := false
 
-## Read once — a run's own touch hardware does not change — the same pattern `TouchControls._touch`
-## and `hud._touch` already follow, and what lets `_process()` ask `ScreenOrientation.wants_rotation`
-## every frame without also repeating `TouchInput.available()`'s own `OS.get_cmdline_user_args()`
-## call sixty times a second.
+## Read once, in `configure()` — a run's touch hardware does not change, and `--touch` is the run's
+## configuration — and handed to every screen that asks (`use_touch()`, `use_platform()`), so
+## `_process()` can ask `ScreenOrientation.wants_rotation` every frame without asking the platform.
 var _touch_available := TouchInput.available()
 ## The rotation `_apply_orientation()` last actually applied, so `_process()` can ask the same
 ## question every frame and reapply only on change — see that function's own doc for why a signal
@@ -326,12 +221,9 @@ func _init() -> void:
 ## recipe's boot hands it the same run with the recipe on top.
 func configure(run_config: RunConfig) -> void:
 	config = run_config
-	_debug = config.debug_build
-	_readout_requested = config.readout_requested
 	_escape_scene_requested = config.start_escape
 	_no_focus_pause = config.no_focus_pause
-	_skip_words = config.skip_words
-	_layer_readout_on = not config.player_view_requested or config.readout_requested
+	_touch_available = TouchInput.available(config)
 
 func _ready() -> void:
 	if not config.recipe_path.is_empty():
@@ -362,16 +254,13 @@ func _ready() -> void:
 	# `get_tree().paused` while the player walks, the crowd drives and the resistance deadline
 	# runs out behind a screen saying the day is over.
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	# As early as this scene's own script can act — see `_lock_out_a_rig()`'s own doc for why
-	# nothing earlier is reachable from GDScript at all.
-	_lock_out_a_rig()
+	# As early as this scene's own script can act — see `RigLock`'s own doc for why nothing earlier
+	# is reachable from GDScript at all.
+	_add_the_rig_lock()
 	WebDisplay.apply(config)
-	_return_viewport = get_viewport()
-	_end_the_return_window(true)
-	_return_viewport.set_disable_input(false)
-	_listen_for_a_web_return()
+	_add_the_return_window(get_viewport())
 	# A recording's own real wall clock runs several times slower than its game clock (saving one
-	# frame costs far longer than the 1/60s it represents) — see `_rig_quit_game_seconds`'s own doc.
+	# frame costs far longer than the 1/60s it represents) — see `RigLock._quit_game_seconds`'s doc.
 	# Physics interpolation blends a rendered frame between two physics ticks by how far the
 	# frame's own real presentation time sits between them, so under that mismatch the blend never
 	# advances: every recorded frame reads as the same tick, and her camera, the crowd and the
@@ -380,19 +269,9 @@ func _ready() -> void:
 	# smoothing `--fixed-fps` never runs under.
 	if config.recording:
 		get_tree().physics_interpolation = false
-	# This is the one thing `?debug=1` adds on top of the readout, on whichever day the boot opens.
-	# Gates itself on `_readout_requested` rather than being gated at the call site, the same shape
-	# `_add_debug_layers()` gates itself on `_debug`. See `_add_debug_mode_note()`'s own doc for why
-	# nothing afterwards may remove it.
-	_add_debug_mode_note()
-	# Same reason and the same gate as the note above. See `_add_frame_graph()`'s own doc.
-	_add_frame_graph()
-	# Starts in the shape it should have on this build rather than trusting the scene file's own
-	# default (`true`): every later flip of it is relative to whichever screen is up, and a boot
-	# path that never reaches one of them should still open with the right answer.
-	# `_layer_readout_on` defaults `true`, so this is `_debug or _readout_requested` alone on an
-	# unflagged run — the fourth debug layer starts on, the same as it always has.
-	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
+	# The developer's furniture, on whichever day the boot opens — see `DebugReadout`. It starts in
+	# the shape it should have on this build rather than trusting the scene file's own default.
+	_add_the_readout()
 	# Read before `try_resume()` touches it, so `escape_resumed_from_disk` below can tell a save
 	# that already carried a section on the autoload (a handover reload) from one that only got
 	# there because the line just after this read it off the file.
@@ -508,6 +387,8 @@ func _ready() -> void:
 	_day.setup(_city.map if _city else null, _player)
 	_day.day_finished.connect(_on_day_finished)
 	_session.watch_the_clock(_day)
+	if _readout:
+		_readout.watch(_player, _baby, _day)
 
 	if walks_a_day:
 		_session.watch_day(_city, _player, _baby, _day, _resistance, _edge)
@@ -516,14 +397,14 @@ func _ready() -> void:
 		var trace := FrameTrace.new()
 		trace.name = "FrameTrace"
 		add_child(trace)
-		trace.setup(in_the_title, func() -> bool: return _layer_readout_on,
-				func() -> bool: return _layer_graph_on, _city, _player, _day,
+		trace.setup(in_the_title, _readout.readout_on, _readout.graph_on, _city, _player, _day,
 				Array(config.active_args))
 
 	if walks_a_day and config.frame_record_requested:
 		_frame_recorder = FrameRecorder.new()
 		add_child(_frame_recorder)
 		_frame_recorder.setup(in_the_title, _city, _player, _day)
+		_readout.watch_frames(_frame_recorder)
 
 	# Built before `_start_day()`, which calls `_route_rig.start_day()` once the day it is meant
 	# to walk actually exists — see `src/dev/route_rig.gd`.
@@ -724,6 +605,7 @@ static func escape_section_spec(section: int, length: float) -> DaySpec:
 func _build_the_screens() -> void:
 	_hud = HUD.instantiate()
 	_configure_the_hud()
+	_hud.use_touch(_touch_available)
 	add_child(_hud)
 	if _player:
 		_add_danger_edge()
@@ -732,11 +614,13 @@ func _build_the_screens() -> void:
 		_add_route_lines()
 	_add_touch_controls()
 	_summary = DAY_SUMMARY.instantiate()
+	_summary.use_touch(_touch_available)
 	add_child(_summary)
 
 	# Deliberately not `_pauses_with_the_game`: a pause screen that pauses with the game cannot
 	# unpause it. It inherits ALWAYS from this node, which is what it wants.
 	_pause = PAUSE_SCREEN.instantiate()
+	_pause.use_platform(_touch_available, QuitOption.available(config))
 	add_child(_pause)
 	# So `_pause.open()`/`close()` can stash and restore the heading she carried into an ordinary
 	# Esc-pause — see `PauseScreen._touch_controls`'s own doc. `_add_touch_controls()` already ran
@@ -747,6 +631,7 @@ func _build_the_screens() -> void:
 
 	# Same reasoning, one screen further out. See `TitleScreen`.
 	_title = TITLE_SCREEN.instantiate()
+	_title.use_platform(_touch_available, QuitOption.available(config))
 	add_child(_title)
 	_title.start_requested.connect(_on_title_start)
 	_title.quit_requested.connect(_quit)
@@ -754,9 +639,8 @@ func _build_the_screens() -> void:
 ## Whether `escape_section` arrived from a file `GameSave.try_resume()` just read, rather than
 ## surviving on the autoload from a handover reload earlier in this same process — see `_ready()`'s
 ## `escape_resumed_from_disk` for why the two need telling apart at all. Pulled out, the
-## two live reads of `GameState.escape_section` taken out of it, the same split `_graph_starts_on()`
-## makes for its own two flags: a test can drive every combination directly rather than only
-## through a real save on disk.
+## two live reads of `GameState.escape_section` taken out of it, so a test can drive every
+## combination directly rather than only through a real save on disk.
 static func _escape_section_came_from_the_file(before_resume: int, after_resume: int) -> bool:
 	return before_resume == DaySpec.Section.NONE and after_resume != DaySpec.Section.NONE
 
@@ -890,6 +774,8 @@ var _escape_watched := false
 func _put_her_in(map: WorldMap) -> void:
 	_player.set_map(map)
 	_baby.set_world(map.world)
+	if _readout:
+		_readout.watch(_player, _baby, _day)
 
 ## The map of the world the current spec is walked in — the building's in the escape's first
 ## section, the city's otherwise — the one the run flow hands down to her and asks each walking
@@ -1217,12 +1103,9 @@ func _show_an_ending_for_a_rig() -> bool:
 ##   her out of the `player` group and with it every way the world can touch her. See
 ##   `Stroller.stand_aside()`.
 ##
-## The HUD, the screen-edge badge and the developer readout all come off, because every one of them
-## is a statement about a player who is not there. The frame graph comes off with them too — it is
-## independent of `4` (see `_layer_graph_on`'s own doc), not of the title, so this hides it directly
-## rather than through `_set_readout_visible()`, which no longer reaches it. **The ring itself is
-## untouched**: only a `6` toggle-off clears it (`_toggle_debug_layer()`), so a graph that was
-## recording keeps what it already has across the trip through this screen.
+## The HUD, the screen-edge badge, the developer readout and the frame graph all come off, because
+## every one of them is a statement about a player who is not there
+## (`DebugReadout.open_the_title()`, which keeps the graph's ring).
 ##
 ## **Re-asks `_apply_orientation()` right here, as a safeguard.** In the running game it finds
 ## nothing to change: `_ready()` asked a moment earlier in the same uninterrupted stretch, with no
@@ -1250,9 +1133,8 @@ func _open_the_title() -> void:
 		_player.stand_aside()
 	_hud.visible = false
 	_edge_layer.visible = false
-	_set_readout_visible(false)
-	if _frame_graph:
-		_frame_graph.visible = false
+	if _readout:
+		_readout.open_the_title()
 	_title.open(_ending_shown, _resume.is_empty(), not _resume.is_empty())
 
 ## The title screen has been pressed, which is also the start: hand the city back to the day it
@@ -1286,6 +1168,8 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 	_touch_controls.set_mode(mode, side)
 	ControlsMode.remember(mode, side)
 	_in_the_title = false
+	if _readout:
+		_readout.close_the_title()
 	# A new game's mode is the title's Hard Mode checkbox, read as the title is dismissed — the
 	# checkbox shows only for a new game (`_open_the_title()`), and a resumed run keeps the mode
 	# its save carries.
@@ -1358,16 +1242,8 @@ func _engage_the_day() -> void:
 		_pauses_with_the_game(_city)
 	_hud.visible = true
 	_edge_layer.visible = true
-	# Not an unconditional `true`: this is the one place the readout was coming back regardless
-	# of build, since `_open_the_title()` always turns it off and this was the only place that
-	# turned it back on. `and _layer_readout_on` so a `4`-toggled-off readout stays off across a
-	# trip through the title rather than snapping back on underneath it.
-	_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
-	# The graph's own answer to the same question, off `_layer_graph_on` rather than
-	# `_layer_readout_on` — a `6`-toggled-on graph reappears here with whatever the ring already
-	# held, since `_open_the_title()` only hid it and never cleared it.
-	if _frame_graph:
-		_frame_graph.visible = _layer_graph_on
+	if _readout:
+		_readout.show_for_the_walk()
 	if is_inside_tree():
 		get_tree().paused = false
 	if _spec.title != "":
@@ -1540,8 +1416,6 @@ func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -
 ## given back: the reloaded boot wants exactly the same pages and giving them up here would be a
 ## reload of every one of them, which is the thing the residency exists to prevent.
 func _exit_tree() -> void:
-	_end_the_return_window(true)
-	_stop_listening_for_a_web_return()
 	AtlasLibrary.release_the_loading_moments()
 
 ## Gets the Compatibility renderer to compile the halo and shoreline shader programs before their
@@ -1594,107 +1468,54 @@ func _warm_the_canvas_shaders(ground: Vector2) -> void:
 	halo_probe.queue_free()
 	water_probe.queue_free()
 
-## The one thing `?debug=1` (or `--debug`) adds beyond the readout itself: a fixed note, for the
-## whole session, that nothing removes — not the `4` key, not a press, not `_open_the_title()`
-## hiding `_status` around it. **Absent from the tree when `_readout_requested` is `false`**, the
-## same "gated rather than merely hidden" shape `_add_debug_layers()` uses for `_debug`: an
-## ordinary debug build shows the readout without this note, since nobody running one needs
-## telling it is one. `DebugModeNote` is its own small node (`src/dev/debug_mode_note.gd`) added
-## here rather than through `scenes/ui/hud.tscn`/`src/ui/hud.gd`, which this milestone leaves
-## untouched; nothing here ever sets its `visible` to `false` or frees it.
-func _add_debug_mode_note() -> void:
-	if not _readout_requested:
-		return
-	_debug_mode_note = DebugModeNote.new()
-	_debug_mode_note.name = "DebugModeNote"
-	add_child(_debug_mode_note)
+## The developer's furniture over the run — see `DebugReadout`, which is handed the run's
+## configuration, the readout's label and layer from this scene, the run, the session its snapshots
+## go to and what screen is up. A child of this node, so it keeps running through a pause.
+func _add_the_readout() -> void:
+	_readout = DebugReadout.new()
+	_readout.name = "DebugReadout"
+	add_child(_readout)
+	_readout.setup(config, _status, _status_layer, GameState, _session, _screen_name)
 
-## The rolling bar graph of the last frames' own lengths — see `FrameGraph`. **Absent from the tree
-## when neither `_debug` nor `_readout_requested` holds**, the same "gated rather than merely
-## hidden" shape `_add_debug_mode_note()` uses: a release page nobody asked `?debug=1` of never
-## builds it, so it never pays for a ring nobody can see. Parented under `_status`'s own
-## `CanvasLayer` rather than under `_debug_layers` — it lives beside the readout, on the readout's
-## own key, not among the four `_debug_layers` keys `1`-`3` and `5` toggle.
-##
-## Left-aligned with `_status` (`offset_left`, 960px in the design box) and placed a fixed 646px
-## below its own top (`offset_top`, 14px): the readout's block gains its 32nd line only under
-## `--skip`, and 32 lines at this label's own font size (17px tall, 3px between lines — measured
-## off a headless `Label`, since neither number is exposed as a theme constant) reach about 637px
-## from the block's own top, so a fixed offset clears both shapes with a few pixels to spare
-## instead of re-measuring `_status`'s rendered height every frame for a difference that never
-## exceeds one line. **Below the block, not above it**, because the joystick focus ring `docs/
-## DECISIONS.md` (M139, "the phone reading") already finds under the readout's own lines — a 48px
-## ring centred at y=480 in the same design box reaches no further down than y=528 — comfortably
-## above this box's own top at y=660, so the graph clears the ring by placement rather than by
-## being moved out of its way.
-func _add_frame_graph() -> void:
-	if not (_debug or _readout_requested):
-		return
-	_frame_graph = FrameGraph.new()
-	_frame_graph.name = "FrameGraph"
-	_frame_graph.text_colour = _status.get_theme_color("font_color")
-	_frame_graph.position = Vector2(_status.offset_left, 660.0)
-	_layer_graph_on = _graph_starts_on(config.spikes_requested, config.layers_override)
-	_frame_graph.visible = _layer_graph_on
-	_status_layer.add_child(_frame_graph)
+## What screen is up, for a snapshot's line.
+func _screen_name() -> String:
+	if _title and _title.is_open():
+		return "title"
+	if _pause and _pause.is_open():
+		return "paused"
+	return "playing"
 
-## Whether `_layer_graph_on` starts `true`, pure in the two flags so a test can drive the policy.
-## `--spikes` already means somebody is chasing a stutter, and `--layers` naming `6` is the same
-## "reproducible without a keypress" request `5` answers for `_route_lines`.
-static func _graph_starts_on(spikes_requested: bool, layers: Array[int]) -> bool:
-	return spikes_requested or 6 in layers
-
-## The fields, shadows and bounding-box overlays — see `DebugLayers`. **Absent from the tree
-## unless `_debug or _readout_requested` holds**, not merely built and left invisible:
-## `_debug_layers` stays `null`, so nothing here is queried, nothing is drawn and an ordinary
-## release page pays for none of it.
-##
-## It draws on the debug layer (`DrawLayer.Layer.DEBUG`), above everything else in the world, unlike
-## the halo, because a bounding box drawn under the thing it outlines would be the one cue in the
-## game nobody could read.
-## Every layer starts off, unless `-- --layers 1,3` (or the page's own `?layers=1,3`, which also
-## reaches a release page behind `?debug=1` — docs/DECISIONS.md, M193, "the live page's ?debug=1
-## reaches the debug flags") says otherwise — see `_toggle_debug_layer()` for the number key that
-## turns one on by hand, a debug build only.
-##
-## Called once per world, the way `_add_danger_edge()` is, so the escape's building gets the
-## same three layers and walking out of the service door points them at the city with whatever
-## `1`–`3` had switched on still on.
+## Shows the debug furniture the world she is walking: its overlays are built the first time and
+## pointed at the city when the escape walks out of the building, with whatever `1`–`3` had on
+## still on. Called once per world, the way `_add_danger_edge()` is.
 func _add_debug_layers() -> void:
-	if not (_debug or _readout_requested):
+	if not _readout:
 		return
-	if _debug_layers:
-		_debug_layers.setup(_event_source(), _crowd_now(), _world_now(), _player)
-		return
-	_debug_layers = DebugLayers.new()
-	_debug_layers.name = "DebugLayers"
-	DrawLayer.draw_on(_debug_layers, DrawLayer.Layer.DEBUG)
-	_debug_layers.setup(_event_source(), _crowd_now(), _world_now(), _player)
-	_debug_layers.apply_initial_state(config.layers_override)
-	add_child(_debug_layers)
-	_pauses_with_the_game(_debug_layers)
-	print("[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes")
+	_readout.show_the_world(_event_source(), _crowd_now(), _world_now(), _world_map(),
+			_city)
 
-## The day's planned routes — see `RouteLines`. **Absent from the tree unless `_debug or
-## _readout_requested` holds**, the same "null, not merely invisible" shape `_add_debug_layers()`
-## uses. A sibling of `_debug_layers` rather than a fourth case on it: that class queries the live
-## geometry every frame it is asked to draw, and this one draws a fixed plan that only changes once
-## a day, at `_start_day()`'s own call to `refresh()` — so it earns no `_process()` and no place
-## inside a class built around one.
-##
-## Parented under `Main` directly rather than under `_debug_layers` — the two are independent
-## layers with independent lifetimes, and nesting one inside the other would make "toggle routes
-## off" and "toggle every geometry layer off" the same tree edit for no reason.
+## The day's planned routes over the city — see `DebugReadout.draw_routes()`.
 func _add_route_lines() -> void:
-	if not (_debug or _readout_requested):
-		return
-	_route_lines = RouteLines.new()
-	_route_lines.name = "RouteLines"
-	DrawLayer.draw_on(_route_lines, DrawLayer.Layer.DEBUG)
-	_route_lines.setup(_city.map)
-	_route_lines.apply_initial_state(config.layers_override)
-	add_child(_route_lines)
-	_pauses_with_the_game(_route_lines)
+	if _readout:
+		_readout.draw_routes(_city.map)
+
+## A rig's lock-out — see `RigLock` — as early as this scene's script can act.
+func _add_the_rig_lock() -> void:
+	_rig_lock = RigLock.new()
+	_rig_lock.name = "RigLock"
+	add_child(_rig_lock)
+	_rig_lock.setup(config)
+
+## The half second of ignored input after the game gets focus back — see `ReturnWindow`. Its
+## departures open the pause (`_pause_on_focus_lost()`); a rig and `--no-focus-pause` are never
+## slowed by it.
+func _add_the_return_window(viewport: Viewport) -> void:
+	_return_window = ReturnWindow.new()
+	_return_window.name = "ReturnWindow"
+	add_child(_return_window)
+	_return_window.left_the_game.connect(_pause_on_focus_lost)
+	_return_window.setup(viewport, _no_focus_pause,
+			_rig_lock != null and _rig_lock.locked_out)
 
 ## The one control scheme, in its own layer for the same reason the danger edge gets one: it has to
 ## sit above the world it overlays. One node goes into the tree rather than a choice between two —
@@ -1721,6 +1542,7 @@ func _add_touch_controls() -> void:
 	_touch_layer = layer
 	add_child(layer)
 	_touch_controls = TOUCH_CONTROLS.instantiate()
+	_touch_controls.use_touch(_touch_available)
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
 	if (_escape_from_a_run or _carried_from_a_checkpoint) and ControlsMode.has_remembered():
@@ -1868,10 +1690,10 @@ func _start_day() -> void:
 	# but that must not erase the history and allow tomorrow to choose another one.
 	GameState.remember_fenced_park(_city.map.fenced_park, _city.map.fenced_park_act)
 	# The tree `_city.start_day()` just grew is today's whole plan, so the picture only has to be
-	# rebuilt here — once a day — rather than read fresh every frame the way `_debug_layers` reads
+	# rebuilt here — once a day — rather than read fresh every frame the way the debug overlays read
 	# the live geometry state. See `RouteLines.refresh()`.
-	if _route_lines:
-		_route_lines.refresh(_city.route_tree())
+	if _readout:
+		_readout.refresh_routes(_city.route_tree())
 	# The day is planned around the doorstep first, because `--spawn event` needs a plan to
 	# find an event in. The plan is the whole day and the *world* is only what is within
 	# reach, so where she actually starts decides what exists on the first frame —
@@ -1938,6 +1760,8 @@ func _use_the_day(spec: DaySpec) -> void:
 	_spec = spec
 	if _day:
 		_day.spec = spec
+	if _readout:
+		_readout.use_the_day(spec)
 	if _hud:
 		_hud.set_clock_hundredths(spec.clock_hundredths)
 
@@ -2425,25 +2249,6 @@ func _tree_is_paused() -> bool:
 	return loop is SceneTree and (loop as SceneTree).paused
 
 func _process(delta: float) -> void:
-	_end_the_return_window()
-	# M195, always closes: the outer half of the guarantee `_lock_out_a_rig()` starts — see
-	# `_rig_quit_deadline_msec`'s own doc for why this reads `Time.get_ticks_msec()` fresh rather
-	# than trusting `delta` to have summed correctly. Ahead of every other line in this function on
-	# purpose: whatever screen is up when the deadline passes, a rig still quits from here.
-	# `tools/shot.sh` (and a rig-flagged `tools/run.sh`) is the outside backstop for the case this
-	# line itself never runs again.
-	if _rig_quit_deadline_msec != 0 and Time.get_ticks_msec() >= _rig_quit_deadline_msec:
-		printerr("[Main] a rig's own wall-clock limit (%.1fs) passed with the run still going; quitting"
-				% config.rig_quit_seconds())
-		get_tree().quit(1)
-		return
-	if _rig_quit_game_seconds > 0.0:
-		_rig_quit_game_seconds -= delta
-		if _rig_quit_game_seconds <= 0.0:
-			printerr("[Main] a recorded rig's own limit (%.1f game seconds) passed with the run still "
-					% config.rig_quit_seconds() + "going; quitting")
-			get_tree().quit(1)
-			return
 	_dev_rig.update_follow_camera(_city)
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
@@ -2490,141 +2295,10 @@ func _process(delta: float) -> void:
 	# whether today's task is on offer with its mark already touched, and which of the places
 	# that answer it the arrow points at, so this is only ever a read of it, never a placement
 	# or a move of its own — and asking it is a read too: the director chooses in its own
-	# `_process()`. `_resistance` can be null here —
-	# several `tests/test_main.gd` rigs drive `_process()` with a script-only `main` that never
-	# builds one, the same reason `_dev_rig` and `_frame_graph` are checked below rather than
-	# assumed.
+	# `_process()`. `_resistance` can be null here: several `tests/test_main.gd` rigs drive
+	# `_process()` with a script-only `main` that never builds one.
 	var task_at := _resistance.red_arrow_target() if _resistance else Vector2.INF
 	_hud.set_task_guidance(task_at != Vector2.INF, task_at)
-	# The bar graph's own ring, fed `delta` itself — `FrameCost` below already discards which frame
-	# in a second was the long one, and the graph exists to answer exactly that. Answered here,
-	# ahead of the readout's own early return below, because `_layer_graph_on` is this layer's own
-	# `6` key and must keep feeding (or stay silent) whatever `4` did to the readout — a
-	# `4`-toggled-off readout must not also silence a `6`-toggled-on graph. `push()` itself is a
-	# no-op unless `_frame_graph.visible` holds, which `_toggle_debug_layer()` keeps in step with
-	# `_layer_graph_on`, so nothing further needs asking here. `if _frame_graph:` because it is
-	# `null` under the same release-page terms `_add_frame_graph()` documents, and because a test
-	# that drives `_process()` directly (`tests/test_main.gd`) without also calling `_ready()` has
-	# never built one either.
-	if _frame_graph:
-		_frame_graph.push(delta)
-	# The developer readout, gated rather than merely hidden: it is a seed, a meter breakdown and
-	# what the frame cost (`FrameCost.readout_lines()` — fps, draw calls, objects, primitives and
-	# the two loop times, the same six quantities the run log's own `frame` entry carries), which a
-	# released build with neither `_debug` nor `_readout_requested` has no business assembling
-	# every frame even behind a label nobody can see — and `_nearest_event_text()` below is a scan
-	# of every live event.
-	# `_layer_readout_on` is this layer's own `4` key: off, the string is not assembled either,
-	# the same "gated rather than merely hidden" rule holds.
-	if not (_debug or _readout_requested) or not _layer_readout_on:
-		_readout_wait = 0.0
-		return
-	if not _readout_due(delta):
-		return
-	if _build_text == "":
-		_build_text = BuildInfo.build_text()
-	# The `skip` line names what `_skip_words` is off, directly beneath the seed line, so a
-	# screenshot taken under `--skip` says what it measured — absent when nothing is skipped, the
-	# ordinary case, so an unflagged readout carries no empty line where this one would go.
-	var header := [
-		"build %s" % _build_text,
-		"seed  %d   day %d%s" % [GameState.run_seed,
-			GameState.day if _spec.section == DaySpec.Section.NONE else _spec.number,
-			"" if _spec.title == "" else "   " + _spec.title.to_lower()],
-	]
-	if not _skip_words.is_empty():
-		header.append("skip  %s" % ", ".join(_skip_words))
-	_status.text = "\n".join(header + [
-		"phase %s  %.0fs left" % [
-			GameEnums.DayPhase.keys()[_day.phase].to_lower(), _day.time_remaining],
-	] + _where_she_is_lines() + [
-		"",
-		"speed       %6.1f" % _player.current_speed(),
-		"run excess  %6.2f" % _player.run_excess_ratio(),
-		"",
-	] + _what_is_out_lines() + [
-		"nearest     %s" % _nearest_event_text(),
-		"",
-	] + FrameCost.readout_lines() + FrameRecorder.view_lines() + _frame_record_lines() + [
-		"",
-		"incoming    %6.2f /s" % _baby.last_incoming,
-		"decay       %6.2f /s" % _baby.last_decay,
-		"net         %6.2f /s" % (_baby.last_incoming - _baby.last_decay),
-		"",
-		"arrows/WASD walk",
-		"shift       run",
-		"esc         pause  (r restart, q quit)",
-	])
-
-## The readout's ground under her: the city's tile and whether it is calm or an alley, or the
-## escape building's own tile, which has neither.
-func _where_she_is_lines() -> Array:
-	var here := _player.global_position
-	if _city:
-		var tile := _city.map.world_to_tile(here)
-		return [
-			"tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(_city.map.tile_at(tile))],
-			"calm  %s    alley  %s" % [
-				"yes" if _city.is_calm_zone(here) else "no",
-				"yes" if _city.is_alley(here) else "no"],
-		]
-	if _interior:
-		var tile := _interior.map.world_to_tile(here)
-		return ["tile  %d, %d  (building)" % [tile.x, tile.y]]
-	return []
-
-## The readout's count of what is out: the city's events, live against planned, what the director
-## still owes ahead of her and the crowd — or, in the escape's building, its events alone.
-func _what_is_out_lines() -> Array:
-	if _city:
-		return [
-			"events      %6d live of %d" % [
-				_city.events.active_count(), _city.events.planned_count()],
-			"ahead owed  %6d" % _city.events.owed_ahead(),
-			"crowd       %6d" % _city.crowd.agent_count(),
-		]
-	var source := _event_source()
-	return ["events      %6d live" % (source.instances().size() if source else 0)]
-
-## Whether this frame rebuilds the readout's text: the first frame after it is switched on, and then
-## every `READOUT_INTERVAL`. Counts the frames' own `delta`, so a slow frame does not shorten the wait.
-func _readout_due(delta: float) -> bool:
-	_readout_wait -= delta
-	if _readout_wait > 0.0:
-		return false
-	_readout_wait = READOUT_INTERVAL
-	return true
-
-## The frame record's readout line, beneath the frame block, or nothing when no record runs.
-func _frame_record_lines() -> Array[String]:
-	if _frame_recorder == null:
-		return []
-	return [_frame_recorder.readout_line()]
-
-## The closest live event and what it is currently doing — the readout that says whether a
-## telegraph actually ended when it should have. Asked of `_event_source()`, so the escape's
-## building answers it too.
-func _nearest_event_text() -> String:
-	var nearest: EventInstance = null
-	var best := INF
-	var source := _event_source()
-	if not source:
-		return "none"
-	for instance: EventInstance in source.instances():
-		var distance := instance.global_position.distance_to(_player.global_position)
-		if distance < best:
-			best = distance
-			nearest = instance
-	if not nearest:
-		return "none"
-	return "%s %s age=%.1f/%.1f %.0fpx i=%.1f" % [
-		nearest.def.id,
-		"telegraph" if nearest.is_telegraphing() else "active",
-		nearest.age, nearest.def.telegraph_time,
-		best, nearest.current_intensity()]
-
-func _tile_name(type: GameEnums.TileType) -> String:
-	return GameEnums.TileType.keys()[type].to_lower()
 
 ## Whether a **person** is at the controls, which is what decides if this run's log is a playtest.
 ##
@@ -2674,190 +2348,9 @@ func _somebody_is_playing() -> bool:
 ## it does over a lost day's (minty-lemur #785, nothing should be different). Asked of the day being
 ## walked (`_spec`), so the guard never reaches a day's own summary.
 ##
-## **Runs in the `_input` phase, ahead of this one.** Godot finishes calling every node's `_input()`
-## before it starts the `_unhandled_input` phase at all, so marking a real event handled here keeps
-## it from ever reaching this function's own guards below, the pause and title screens' `KEY_R`/
-## `KEY_Q` (read as raw keycodes rather than actions, so `InputMap` cannot gate them — see
-## `_erase_real_input_for_a_rig()`'s own doc for what does), and `_debug_snapshot_action()`/
-## `_debug_layer_key()` just above. **Does not reach `TouchControls`' own `_input()`** — a sibling
-## handler in the same phase, which nothing can pre-empt, since `set_input_as_handled()` only
-## silences the phases *after* `_input`. A real mouse drag against the on-screen joystick is
-## outside this fix's reach; the realistic threat the playtest actually named — a stray key typed
-## into a window that has taken the focus while the operator works elsewhere — is a keyboard one,
-## and `WINDOW_FLAG_NO_FOCUS` (`_lock_out_a_rig()`) is what stops the window from taking that focus
-## in the first place, so a pointer event over it is already the unlikelier half of the risk.
-##
-## **A rig's own `--press` gets through by a tag on the event, not by its class.** `AutoScreenshot.
-## _tap()` sets `event.device = InputEvent.DEVICE_ID_EMULATION` (Godot's own constant, `-1`, distinct
-## from `DEVICE_ID_KEYBOARD` (`16`) and `DEVICE_ID_MOUSE` (`32`)) before handing each event to
-## `Input.parse_input_event()`, and `_is_the_rigs_own_press()` below is the one check that reads it
-## rather than marking handled. Gating on the event's class instead would open the exact hole this
-## function exists to close: `key:` presses are `InputEventKey`, the same class a real key already
-## is, and a real `InputEventAction` can reach a window too — an on-screen back button delivers one
-## — so "let every `InputEventAction` through" would let that through as well. The device tag is
-## what `Input.parse_input_event()` itself leaves untouched between the script that built the event
-## and every handler downstream, so it is the one thing on the event a rig controls and nothing
-## external does.
-func _input(event: InputEvent) -> void:
-	if _rig_locked_out and not _is_the_rigs_own_press(event):
-		get_viewport().set_input_as_handled()
-
-## Whether the half second after getting focus back (`_arm_the_return_window()`) is still running.
-func _ignoring_input_after_a_return() -> bool:
-	return Time.get_ticks_msec() < _input_ignored_until_msec
-
-## Whether the game has lost focus or been hidden since the window last opened. **A return needs a
-## departure:** the page's own first focus at load is not a return, and a player's first tap in the
-## half second after the page loads must reach the game (the browser check's Space does). Set by
-## `_note_leaving_the_game()`, cleared by `_arm_the_return_window()` when it opens the window.
-var _has_left_the_game := false
-
-## Marks that the game has been left (focus out, paused, the page hidden or blurred).
-func _note_leaving_the_game() -> void:
-	_has_left_the_game = true
-
-## The viewport whose input is switched off for the window; `_ready()` sets it, a test sets its own.
-var _return_viewport: Viewport = null
-
-## Getting focus back starts the window, and **`Viewport.set_disable_input(true)` is how it is
-## enforced**, not a mark in `_input()`: a disabled viewport delivers nothing to any `_input()`,
-## the GUI or `_unhandled_input()`, so `TouchControls._input()` (a sibling that no handler here can
-## pre-empt) and the pause and day-brief screens are all deaf together. A gate in `main._input()`
-## cannot promise that, since `_input()` runs on children before their parents.
-## It stops *events* only: `Input`'s own held state still follows the keyboard, so a key held
-## through the return is still pressed for polling afterwards, and one released inside the window is
-## released. **Nothing can leave input off:** the end is read off the wall clock by `_process()`
-## (`_end_the_return_window()`), which runs under a pause, and `_exit_tree()` and `_ready()` clear
-## it too, because the root viewport outlives a scene reload. A no-op without a departure first
-## (`_has_left_the_game`), which the arming spends, so a second trigger inside the window does
-## nothing unless the game was left again in between. A no-op for a rig (`_rig_locked_out`: any of
-## `--screenshot`, `--walk`, `--flee`, `--press`, `--tap`, `--route`, a recording or a scripted
-## recipe — `config.is_rig`) and under `_no_focus_pause` (`--no-focus-pause`), so a rig is
-## never slowed.
-func _arm_the_return_window() -> void:
-	if not _has_left_the_game or _no_focus_pause or _rig_locked_out or _return_viewport == null:
-		return
-	_has_left_the_game = false
-	_input_ignored_until_msec = Time.get_ticks_msec() + RETURN_INPUT_IGNORED_MSEC
-	_return_viewport.set_disable_input(true)
-
-## Called every frame, and by `_exit_tree()`/`_ready()` with `force`: puts input back once the
-## window has passed.
-func _end_the_return_window(force := false) -> void:
-	if _input_ignored_until_msec == 0 or (not force and _ignoring_input_after_a_return()):
-		return
-	_input_ignored_until_msec = 0
-	if _return_viewport != null and is_instance_valid(_return_viewport):
-		_return_viewport.set_disable_input(false)
-
-## The web page is where "returning" was seen, and the engine's FOCUS_IN on a tab return is not
-## confirmed there, so a second trigger comes straight from the browser: the page becoming visible
-## again (`visibilitychange`) and the window getting focus (`focus`); the departures are the page
-## going hidden and the window losing focus (`blur`). Whichever return arrives first opens the
-## window; later ones inside it find the departure already spent. Web builds only.
-var _web_return_callback: JavaScriptObject = null
-func _listen_for_a_web_return() -> void:
-	if not OS.has_feature("web"):
-		return
-	_web_return_callback = JavaScriptBridge.create_callback(_on_web_return)
-	var document := JavaScriptBridge.get_interface("document")
-	var window := JavaScriptBridge.get_interface("window")
-	document.addEventListener("visibilitychange", _web_return_callback)
-	window.addEventListener("focus", _web_return_callback)
-	window.addEventListener("blur", _web_return_callback)
-
-## Removes what `_listen_for_a_web_return()` added, so a scene reload does not pile up listeners.
-func _stop_listening_for_a_web_return() -> void:
-	if _web_return_callback == null:
-		return
-	JavaScriptBridge.get_interface("document").removeEventListener("visibilitychange", _web_return_callback)
-	JavaScriptBridge.get_interface("window").removeEventListener("focus", _web_return_callback)
-	JavaScriptBridge.get_interface("window").removeEventListener("blur", _web_return_callback)
-	_web_return_callback = null
-
-func _on_web_return(args: Array) -> void:
-	var event: JavaScriptObject = args[0] if args.size() > 0 else null
-	var kind := str(event.type) if event != null else ""
-	_on_web_event(kind, str(JavaScriptBridge.get_interface("document").visibilityState))
-
-## The decision half of the web callback, with the browser's answers passed in so a test can drive
-## it: a `blur`, or a `visibilitychange` to anything but "visible", is a departure; a `focus`, or a
-## `visibilitychange` to "visible", is a return.
-func _on_web_event(kind: String, visibility: String) -> void:
-	if kind == "blur" or (kind == "visibilitychange" and visibility != "visible"):
-		_note_leaving_the_game()
-	elif kind == "focus" or kind == "visibilitychange":
-		_arm_the_return_window()
-
-## A static, pure predicate for the same reason `_debug_snapshot_action()` and `_debug_layer_key()`
-## are static — a test can ask it directly without booting a `main` (`_ready()` starts a whole run),
-## the seam `tests/test_main.gd`'s own class doc explains for every other case here.
-static func _is_the_rigs_own_press(event: InputEvent) -> bool:
-	return event.device == InputEvent.DEVICE_ID_EMULATION
-
-## PLAYTEST-133, M195: a rig's window takes no OS focus, hears no real key or pointer press, and
-## quits itself on a wall-clock deadline — three defences for the one thing the player named
-## ("it takes the focus away from what I'm doing every time" · "if I click somewhere else they
-## stay open"). Called once, first thing in `_ready()`, ahead of the escape's own boot branch so
-## either path gets all three; a no-op the instant `config.is_rig` is false, which is every
-## plain `tools/run.sh` session a person is actually playing.
-##
-## **The window flag is applied as early as this scene's own script can run, not "before the
-## window shows."** Godot creates the OS window as part of engine start-up, well before any scene
-## script exists to ask it anything — there is no earlier hook this file can reach without an
-## autoload, which is outside this milestone's own scope fence — so this is the earliest a rig's
-## own boot can still strip it.
-##
-## **Two defences, not one, because a real key reaches the game two different ways.** `_input()`
-## above closes the event-dispatch half (the pause action, the title's Space, the pause/title
-## screens' raw `KEY_R`/`KEY_Q`, this file's own debug snapshot and layer keys). Erasing every
-## action's own `InputMap` bindings closes the *polled* half instead — `Stroller._physics_process()`
-## reads `Input.get_vector()` every tick, never an event, so a real WASD press would still move her
-## even with every event marked handled. `Input.action_press()`/`action_release()` (what
-## `AutoScreenshot`'s own `_walk`/`_flee`/`_press` drive her through) do not go through `InputMap`
-## matching at all, so erasing these bindings leaves the rig's own synthetic presses working exactly
-## as before while a real key with nothing left to map it to can no longer move, run or pause
-## anything.
-func _lock_out_a_rig() -> void:
-	if not config.is_rig:
-		return
-	_rig_locked_out = true
-	if DisplayServer.get_name() != "headless":
-		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
-	_erase_real_input_for_a_rig()
-	if config.recording:
-		_rig_quit_game_seconds = config.rig_quit_seconds()
-	else:
-		_rig_quit_deadline_msec = Time.get_ticks_msec() + int(config.rig_quit_seconds() * 1000.0)
-
-## Every action `project.godot`'s own `[input]` table defines — read live off `InputMap` rather
-## than spelled out by hand, so a binding added there is covered without a second list to keep in
-## step — but Godot's own built-in `ui_*` actions (`ui_accept`, `ui_cancel` and the rest), which
-## nothing in this game reads and which stripping would cost the engine's own debugging shortcuts
-## for nothing this milestone asked for.
-func _erase_real_input_for_a_rig() -> void:
-	for action in InputMap.get_actions():
-		if not String(action).begins_with("ui_"):
-			InputMap.action_erase_events(action)
-
+## A rig's run never reaches this with a real key: `RigLock` marks every real event handled in the
+## `_input` phase, ahead of this one. The debug keys are `DebugReadout`'s own.
 func _unhandled_input(event: InputEvent) -> void:
-	var snapshot_action := _debug_snapshot_action(event) if _debug else &""
-	if snapshot_action == &"snapshot_burst":
-		get_viewport().set_input_as_handled()
-		_start_burst()
-		return
-	if snapshot_action == &"snapshot":
-		get_viewport().set_input_as_handled()
-		_snapshot_now()
-		return
-	# `1`..`4` toggle the debug view's own four layers — raw keycodes rather than input-map
-	# actions, the same choice `KEY_R`/`KEY_Q` make on the pause and title screens, so
-	# `project.godot` carries no binding a release build could ever reach anyway.
-	var layer_key := _debug_layer_key(event) if _debug else 0
-	if layer_key > 0:
-		get_viewport().set_input_as_handled()
-		_toggle_debug_layer(layer_key)
-		return
 	if not event.is_action_pressed("pause"):
 		return
 	# Defensive rather than load-bearing: every real boot builds one, but a bare script-only `main`
@@ -2876,8 +2369,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## The window losing focus — Alt-Tabbing or clicking away from it, a browser tab going to the
 ## background — or a phone sending the app away opens the same screen `_pause.open()` above does,
-## through the same call: one pause rather than a second kind of it. `_notification()` is the
-## caller, on `NOTIFICATION_APPLICATION_FOCUS_OUT` and `NOTIFICATION_APPLICATION_PAUSED`.
+## through the same call: one pause rather than a second kind of it. `ReturnWindow` is the caller:
+## its `left_the_game`, on `NOTIFICATION_APPLICATION_FOCUS_OUT` and `NOTIFICATION_APPLICATION_PAUSED`,
+## is connected here in `_add_the_return_window()`.
 ##
 ## **Unlike Esc, this does not open over the day summary or the ending.** Both live behind
 ## `_summary.is_showing()`, which `_unhandled_input()`'s own Esc guard above does not even ask —
@@ -2937,141 +2431,7 @@ func _raise_save_indicator() -> void:
 func _save_now(day_under_way: bool) -> void:
 	GameSave.write(day_under_way)
 
-## Resolves the two developer capture controls before input dispatch. Key echoes do not make a
-## second capture: a held shortcut is one request, not a sequence of separate user decisions.
-static func _debug_snapshot_action(event: InputEvent) -> StringName:
-	if event is InputEventKey and (event as InputEventKey).echo:
-		return &""
-	if event.is_action_pressed("snapshot_burst"):
-		return &"snapshot_burst"
-	if event.is_action_pressed("snapshot"):
-		return &"snapshot"
-	return &""
-
-## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout, `5` the day's routes, `6` the
-## frame-time graph — or `0` for anything else. The same echo guard `_debug_snapshot_action()`
-## carries, for the same reason: a held key is one request, not a flood of toggles for as long as
-## it stays down.
-static func _debug_layer_key(event: InputEvent) -> int:
-	if not (event is InputEventKey and (event as InputEventKey).pressed):
-		return 0
-	if (event as InputEventKey).echo:
-		return 0
-	match (event as InputEventKey).keycode:
-		KEY_1: return 1
-		KEY_2: return 2
-		KEY_3: return 3
-		KEY_4: return 4
-		KEY_5: return 5
-		KEY_6: return 6
-		_: return 0
-
-## `4` is the readout's own key, answered here rather than on `_debug_layers` because the readout
-## lives on `_status`'s pre-existing `CanvasLayer` rather than under that node — see
-## `_layer_readout_on`'s own doc. `5` is `_route_lines`' own key, forwarded the same way `1`-`3`
-## reach `_debug_layers` — a plain `visible` flip rather than a `set_layer` call, since that node
-## draws one thing rather than three. `6` is `_frame_graph`'s own key, on the same terms as `5` but
-## answered without going through `_set_readout_visible()` — see `_layer_graph_on`'s own doc for why
-## it no longer shares `4`'s switch. Turning it off also empties the ring
-## (`FrameGraph.clear()`), so `6` twice leaves a blank graph that only fills again from that moment
-## — *(2026-09-15, the player: "spike recording should only be on while the layer is on. that means
-## toggling the layer twice will lead to a blank frame array".)*
-func _toggle_debug_layer(layer: int) -> void:
-	if layer == 4:
-		_layer_readout_on = not _layer_readout_on
-		_set_readout_visible((_debug or _readout_requested) and _layer_readout_on)
-		return
-	if layer == 5:
-		if _route_lines:
-			_route_lines.visible = not _route_lines.visible
-		return
-	if layer == 6:
-		_layer_graph_on = not _layer_graph_on
-		if _frame_graph:
-			# `and not _in_the_title` so pressing `6` while the title is open (`_unhandled_input()`
-			# still reaches this — `main` stays `PROCESS_MODE_ALWAYS` for Esc's own sake) never draws
-			# the graph over it; `_on_title_start()` reads `_layer_graph_on` on the way out and shows
-			# it then if this left it `true`.
-			_frame_graph.visible = _layer_graph_on and not _in_the_title
-			if not _layer_graph_on:
-				_frame_graph.clear()
-		return
-	if _debug_layers:
-		_debug_layers.set_layer(layer, not _debug_layers.layer_on(layer))
-
-## The one place `_status.visible` is actually assigned — every other spot in this file calls this
-## instead, so the readout's own visibility can never fall out of step between the boot, the escape
-## boot, the title screen hiding it and `_on_title_start()` bringing it back. **Does not touch
-## `_frame_graph`** — the player asked the graph's own switch to be `6`, not `4`, so toggling `4`
-## alone leaves it exactly where `_layer_graph_on` already had it. The title screen is a different
-## question from `4` (it hides everything about a player who is not there) and still reaches the
-## graph, just through its own two call sites (`_open_the_title()`/`_on_title_start()`) rather than
-## through this setter, since a title trip must hide it without clearing the ring the way a `6`
-## toggle-off does.
-func _set_readout_visible(shown: bool) -> void:
-	_status.visible = shown
-
-## `P` (or `F9`) writes a screenshot into the telemetry folder and a line of trace beside it. It is
-## a debugging aid rather than a game feature.
-##
-## **It works on every screen, including the pause and the title**, which is why it is answered
-## before the pause guard rather than after it: the frames worth photographing by hand are
-## disproportionately the ones where something looks wrong and the player has just stopped the game
-## to look at it.
-##
-## The context is assembled here rather than in `Telemetry`, for the reason the whole of that file
-## is written that way: the telemetry asks the world no questions, so it can never be the thing
-## that changed one. It is the three things a picture cannot carry and a reader always wants —
-## where she is in tiles, what the meters read, and which screen is up — and it takes nothing that
-## is not already on screen.
-## Every field is guarded, because the one screen this is most likely to be pressed on is the one
-## where the world is least finished — a title screen, or a boot that went wrong. Shared by
-## `_snapshot_now()` and `_start_burst()` (`B`), which differ only in which `Telemetry` call and
-## which noun the trace line names.
-func _capture_context() -> String:
-	var where := Vector2i.ZERO
-	if _city and _player:
-		where = _city.map.world_to_tile(_player.global_position)
-	var meters := "no baby yet"
-	if _baby:
-		meters = "exc %d, sleep %d" % [roundi(_baby.excitement), roundi(_baby.sleepiness)]
-	var screen := "playing"
-	if _title and _title.is_open():
-		screen = "title"
-	elif _pause and _pause.is_open():
-		screen = "paused"
-	return "(%d,%d) | %s | %s" % [where.x, where.y, meters, screen]
-
-func _snapshot_now() -> void:
-	if _session:
-		_session.picture(_capture_context())
-
-func _start_burst() -> void:
-	if _session:
-		_session.burst(_capture_context())
-
 func _quit() -> void:
 	if _session:
 		_session.close()
 	get_tree().quit()
-
-## Closing the window is the other way a run ends, and the run session closes the log for it
-## (`RunSession._notification()`).
-##
-## `NOTIFICATION_APPLICATION_FOCUS_OUT` is the one this game has exactly one window to lose: it
-## fires whenever the OS gives focus to a different application, which is the whole of "Alt-Tabbing
-## away" on a single-window desktop app, a browser tab going to the background, or a click on
-## another window on the same machine. `NOTIFICATION_WM_WINDOW_FOCUS_OUT` is a **per-`Window`**
-## signal instead — the one a game with more than one of its own windows would need to tell which
-## of them lost focus, including to another window of the *same* game — and this project never
-## builds a second one, so it is not read here.
-## `NOTIFICATION_APPLICATION_PAUSED` is a phone sending the whole app to the background. Getting
-## focus back (`NOTIFICATION_APPLICATION_FOCUS_IN`/`NOTIFICATION_APPLICATION_RESUMED`) does not
-## resume (see `_pause_on_focus_lost()`'s own doc) and starts the 500ms during which the viewport
-## delivers no input at all (`RETURN_INPUT_IGNORED_MSEC`, `_arm_the_return_window()`).
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
-		_note_leaving_the_game()
-		_pause_on_focus_lost()
-	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
-		_arm_the_return_window()

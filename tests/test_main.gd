@@ -1,12 +1,12 @@
 extends RefCounted
-## The developer readout is furniture, and `main._process()` is the one place that draws it.
+## The developer readout is furniture, and `DebugReadout._process()` is the one place that draws it.
 ##
 ## *(2026-09-02, playtest of the deployed web build: "the debug info on the right side of the
 ## screen (fps, seed, etc.) is still showing.")* `main.gd` is never instantiated as a scene
 ## anywhere else in the suite — its `_ready()` boots a whole run, city and all — so this reaches
 ## past `_ready()` the way `tests/test_pause.gd` already reaches past it for `_unhandled_input()`:
 ## a script-only instance, its handful of world dependencies wired up by hand, and `_process()`
-## called directly.
+## called directly. The readout itself is built on its own, handed what it reads.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
@@ -105,7 +105,7 @@ func _check_boot_camera_handoff(t) -> void:
 	player.free()
 	main.free()
 
-## `main._debug` is read once from the run's configuration rather than asked of the OS inside
+## `_debug` is read once from the run's configuration rather than asked of the OS inside
 ## `_process()`, precisely so this can set it directly and check the release shape — the same
 ## reason `hud._debug` exists. Checked both ways: nothing is drawn when it is off, and the
 ## ordinary debug readout still appears when it is on, so the gate is not just "always empty".
@@ -131,40 +131,34 @@ func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
 	day.set_process(false)
 	day.setup(city.map, stroller)
 
-	var hud: CanvasLayer = HUD_SCENE.instantiate()
-	t.add_child(hud)
-	hud.set_process(false)
+	var readout := _bare_readout(city, stroller, baby, day)
 
-	# `_ready()` never runs on a script-only instance, so `@onready var _status` is never
-	# populated — set by hand, the way every other member below is.
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._status = Label.new()
-	main._city = city
-	main._player = stroller
-	main._baby = baby
-	main._day = day
-	main._hud = hud
-	main._in_the_title = false
-
-	main._debug = false
-	main._readout_requested = false
-	main._process(0.016)
-	t.check(main._status.text == "",
+	readout._debug = false
+	readout._readout_requested = false
+	readout._process(0.016)
+	t.check(readout._status.text == "",
 			"the release shape never assembles the readout, not even into a hidden label")
 
-	main._debug = true
-	main._process(0.016)
-	t.check("seed" in main._status.text and "fps" in main._status.text,
+	readout._debug = true
+	readout._process(0.016)
+	t.check("seed" in readout._status.text and "fps" in readout._status.text,
 			"a debug build still builds the readout the rigs and tools/shot.sh read")
 
-	# `_status` was never added under `main` as a child — it stands in for the `@onready` label
-	# `_ready()` would otherwise have wired up — so freeing `main` does not reach it.
-	main._status.free()
-	main.free()
-	hud.free()
+	readout._status.free()
+	readout.free()
 	day.free()
 	stroller.free()
 	city.free()
+
+## A readout handed the world by hand, with a label of its own standing in for `main`'s scene
+## label and neither gate open, so nothing is built that a test did not ask for.
+func _bare_readout(city: City, stroller: Stroller, baby: Baby, day: DayController) -> DebugReadout:
+	var readout := DebugReadout.new()
+	readout._status = Label.new()
+	readout._run = GameState
+	readout.watch(stroller, baby, day)
+	readout.show_the_world(city.events, city.crowd, city, city.map, city)
+	return readout
 
 ## `_readout_requested` (`DevFlags.readout_requested()`, the page's own `?debug=1` or `--debug`) is
 ## read independently of `_debug` — M133, "the readout on the live page" — so a release build
@@ -192,67 +186,55 @@ func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
 	day.set_process(false)
 	day.setup(city.map, stroller)
 
-	var hud: CanvasLayer = HUD_SCENE.instantiate()
-	t.add_child(hud)
-	hud.set_process(false)
+	var readout := _bare_readout(city, stroller, baby, day)
 
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._status = Label.new()
-	main._city = city
-	main._player = stroller
-	main._baby = baby
-	main._day = day
-	main._hud = hud
-	main._in_the_title = false
-
-	main._debug = false
-	main._readout_requested = true
-	main._process(0.016)
-	t.check("seed" in main._status.text and "fps" in main._status.text,
+	readout._debug = false
+	readout._readout_requested = true
+	readout._process(0.016)
+	t.check("seed" in readout._status.text and "fps" in readout._status.text,
 			"?debug=1 on a release build assembles the same readout a debug build gets")
 
 	# The text is re-set a few times a second, not every frame: a changed seed line shows only once
 	# the interval has run out, and the first frame after the layer is switched on shows at once.
-	var first: String = main._status.text
+	var first: String = readout._status.text
 	GameState.run_seed += 1
-	main._process(0.016)
-	t.check(main._status.text == first, "a frame inside the interval leaves the readout's text alone")
-	main._process(MAIN_SCRIPT.READOUT_INTERVAL)
-	t.check(main._status.text != first, "the interval's end rebuilds it")
+	readout._process(0.016)
+	t.check(readout._status.text == first, "a frame inside the interval leaves the readout's text alone")
+	readout._process(DebugReadout.READOUT_INTERVAL)
+	t.check(readout._status.text != first, "the interval's end rebuilds it")
 	GameState.run_seed -= 1
-	main._layer_readout_on = false
-	main._process(0.016)
-	main._layer_readout_on = true
-	main._status.text = ""
-	main._process(0.016)
-	t.check(main._status.text != "", "switching the layer back on rebuilds it at once")
+	readout._layer_readout_on = false
+	readout._process(0.016)
+	readout._layer_readout_on = true
+	readout._status.text = ""
+	readout._process(0.016)
+	t.check(readout._status.text != "", "switching the layer back on rebuilds it at once")
 
-	main._status.free()
-	main.free()
-	hud.free()
+	readout._status.free()
+	readout.free()
 	day.free()
 	stroller.free()
 	city.free()
 
-## `_add_debug_mode_note()` gates itself on `_readout_requested` the same shape
-## `_add_debug_layers()` gates itself on `_debug` — see that function's own doc — so the note built
+## `DebugReadout._add_debug_mode_note()` gates itself on `_readout_requested` the same shape
+## `show_the_world()` gates the overlays on `_debug` — so the note built
 ## for a release build carrying `?debug=1` exists only when the flag actually holds, and an
 ## ordinary debug build without it (`_readout_requested == false`) gets none.
 func _test_the_debug_mode_note_only_exists_when_requested(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._readout_requested = false
-	main._add_debug_mode_note()
-	t.check(main._debug_mode_note == null,
+	var readout := DebugReadout.new()
+	readout._readout_requested = false
+	readout._add_debug_mode_note()
+	t.check(readout._debug_mode_note == null,
 			"no note is built at all when the flag was not asked for")
-	main.free()
+	readout.free()
 
-	main = MAIN_SCRIPT.new()
-	main._readout_requested = true
-	main._add_debug_mode_note()
-	t.check(main._debug_mode_note != null and main._debug_mode_note.get_parent() == main,
-			"the flag builds the note and parents it under main")
-	main._debug_mode_note.free()
-	main.free()
+	readout = DebugReadout.new()
+	readout._readout_requested = true
+	readout._add_debug_mode_note()
+	t.check(readout._debug_mode_note != null and readout._debug_mode_note.get_parent() == readout,
+			"the flag builds the note and parents it under the readout")
+	readout._debug_mode_note.free()
+	readout.free()
 
 ## `_add_frame_graph()` gates itself on `_debug or _readout_requested`, the same shape
 ## `_add_debug_mode_note()` gates itself on `_readout_requested` alone — see that function's own
@@ -264,34 +246,34 @@ func _test_the_debug_mode_note_only_exists_when_requested(t) -> void:
 ## sets `--spikes` or names `6` in `--layers`, so a debug build that asked for the readout still
 ## gets a graph nobody has turned on yet.
 func _test_the_frame_graph_only_exists_when_requested(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._status = Label.new()
-	main._status_layer = CanvasLayer.new()
-	main._debug = false
-	main._readout_requested = false
-	main._add_frame_graph()
-	t.check(main._frame_graph == null,
+	var readout := DebugReadout.new()
+	readout._status = Label.new()
+	readout._status_layer = CanvasLayer.new()
+	readout._debug = false
+	readout._readout_requested = false
+	readout._add_frame_graph()
+	t.check(readout._frame_graph == null,
 			"no graph is built at all when neither flag was asked for")
-	main._status.free()
-	main._status_layer.free()
-	main.free()
+	readout._status.free()
+	readout._status_layer.free()
+	readout.free()
 
-	main = MAIN_SCRIPT.new()
-	main._status = Label.new()
-	main._status_layer = CanvasLayer.new()
-	main._debug = false
-	main._readout_requested = true
-	main._add_frame_graph()
-	t.check(main._frame_graph != null and main._frame_graph.get_parent() == main._status_layer,
+	readout = DebugReadout.new()
+	readout._status = Label.new()
+	readout._status_layer = CanvasLayer.new()
+	readout._debug = false
+	readout._readout_requested = true
+	readout._add_frame_graph()
+	t.check(readout._frame_graph != null and readout._frame_graph.get_parent() == readout._status_layer,
 			"the flag builds the graph and parents it under the readout's own CanvasLayer")
-	t.check(not main._layer_graph_on and not main._frame_graph.visible,
+	t.check(not readout._layer_graph_on and not readout._frame_graph.visible,
 			"but it starts off, unlike the readout it sits under — neither --spikes nor --layers 6 was given")
-	main._frame_graph.free()
-	main._status.free()
-	main._status_layer.free()
-	main.free()
+	readout._frame_graph.free()
+	readout._status.free()
+	readout._status_layer.free()
+	readout.free()
 
-## `MAIN_SCRIPT._graph_starts_on()` is the boot policy with the command line taken out of it, the
+## `DebugReadout._graph_starts_on()` is the boot policy with the command line taken out of it, the
 ## same split `escape_part_for()` makes for `DevFlags.start_escape_at()` — this drives it directly
 ## rather than through a real `--spikes` or `--layers 6` on this process's own argv, neither of
 ## which this suite's own command line carries.
@@ -299,21 +281,21 @@ func _test_graph_starts_on_under_spikes_or_layers_six(t) -> void:
 	var none: Array[int] = []
 	var six: Array[int] = [6]
 	var others: Array[int] = [1, 5]
-	t.check(MAIN_SCRIPT._graph_starts_on(true, none), "--spikes alone starts the graph on")
-	t.check(MAIN_SCRIPT._graph_starts_on(false, six),
+	t.check(DebugReadout._graph_starts_on(true, none), "--spikes alone starts the graph on")
+	t.check(DebugReadout._graph_starts_on(false, six),
 			"--layers naming 6 starts it on the same way, without --spikes")
-	t.check(not MAIN_SCRIPT._graph_starts_on(false, none),
+	t.check(not DebugReadout._graph_starts_on(false, none),
 			"neither flag given leaves it off, the default")
-	t.check(not MAIN_SCRIPT._graph_starts_on(false, others),
+	t.check(not DebugReadout._graph_starts_on(false, others),
 			"--layers naming other layers does not turn this one on")
 
 ## What starts the graph on is `_graph_starts_on()` above, driven through a configured `main` in
 ## `_test_the_run_configuration_starts_the_graph()`. This test drives the surface a player reaches,
 ## `_toggle_debug_layer()` and the key.
 func _test_key_six_resolves_to_the_frame_graph_layer(t) -> void:
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6)) == 6, "6 is the spike view")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6, false)) == 0, "a release, not a press, does nothing")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6, true, true)) == 0,
+	t.check(DebugReadout._debug_layer_key(_key(KEY_6)) == 6, "6 is the spike view")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_6, false)) == 0, "a release, not a press, does nothing")
+	t.check(DebugReadout._debug_layer_key(_key(KEY_6, true, true)) == 0,
 			"an echo does nothing — a held key is one request, not a flood of them")
 
 func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
@@ -328,74 +310,74 @@ func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 ## Pressing `4` first proves the two do not share a switch; pressing `6` then proves it has one of
 ## its own.
 func _test_key_six_toggles_the_graph_independent_of_four(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._status = Label.new()
-	main._status_layer = CanvasLayer.new()
-	main._debug = true
-	main._readout_requested = false
-	main._add_frame_graph()
+	var readout := DebugReadout.new()
+	readout._status = Label.new()
+	readout._status_layer = CanvasLayer.new()
+	readout._debug = true
+	readout._readout_requested = false
+	readout._add_frame_graph()
 
-	t.check(not main._frame_graph.visible, "the graph starts off")
+	t.check(not readout._frame_graph.visible, "the graph starts off")
 	# `_status` is a fresh `Label` (default `visible == true`) and `_layer_readout_on` starts
 	# `true`, so this first toggle is the readout's `4`-key answer to "turn off what started on".
-	main._toggle_debug_layer(4)
-	t.check(not main._status.visible and not main._frame_graph.visible,
+	readout._toggle_debug_layer(4)
+	t.check(not readout._status.visible and not readout._frame_graph.visible,
 			"4 turns the readout off and leaves the graph exactly where it was")
-	main._toggle_debug_layer(6)
-	t.check(main._frame_graph.visible, "6 turns the graph on")
-	main._toggle_debug_layer(4)
-	t.check(main._status.visible and main._frame_graph.visible,
+	readout._toggle_debug_layer(6)
+	t.check(readout._frame_graph.visible, "6 turns the graph on")
+	readout._toggle_debug_layer(4)
+	t.check(readout._status.visible and readout._frame_graph.visible,
 			"4 turns the readout back on and still leaves the graph alone")
-	main._toggle_debug_layer(6)
-	t.check(not main._frame_graph.visible, "6 turns the graph back off")
+	readout._toggle_debug_layer(6)
+	t.check(not readout._frame_graph.visible, "6 turns the graph back off")
 
-	main._frame_graph.free()
-	main._status.free()
-	main._status_layer.free()
-	main.free()
+	readout._frame_graph.free()
+	readout._status.free()
+	readout._status_layer.free()
+	readout.free()
 
 ## A `main` handed `--spikes` or `--layers 6` through `configure()` builds the graph already on;
 ## one handed neither builds it off.
 func _test_the_run_configuration_starts_the_graph(t) -> void:
 	for case in [[["--spikes"], true], [["--layers", "6"], true], [[], false]]:
-		var main: Node2D = MAIN_SCRIPT.new()
-		main.configure(RunConfig.parse(PackedStringArray(case[0]), "", true))
-		main._status = Label.new()
-		main._status_layer = CanvasLayer.new()
-		main._add_frame_graph()
-		t.check(main._frame_graph.visible == case[1],
+		var readout := DebugReadout.new()
+		readout.configure(RunConfig.parse(PackedStringArray(case[0]), "", true))
+		readout._status = Label.new()
+		readout._status_layer = CanvasLayer.new()
+		readout._add_frame_graph()
+		t.check(readout._frame_graph.visible == case[1],
 				"the graph starts %s for %s" % ["on" if case[1] else "off", str(case[0])])
-		main._frame_graph.free()
-		main._status.free()
-		main._status_layer.free()
-		main.free()
+		readout._frame_graph.free()
+		readout._status.free()
+		readout._status_layer.free()
+		readout.free()
 
 ## The player's own follow-on, said a minute after the first ask: pressing `6` twice must leave the
 ## ring empty rather than merely hidden, so a graph turned back on fills from that moment instead of
 ## picking up a stale window. *(2026-09-15: "spike recording should only be on while the layer is
 ## on. that means toggling the layer twice will lead to a blank frame array".)*
 func _test_key_six_twice_empties_the_ring(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._status = Label.new()
-	main._status_layer = CanvasLayer.new()
-	main._debug = true
-	main._readout_requested = false
-	main._add_frame_graph()
+	var readout := DebugReadout.new()
+	readout._status = Label.new()
+	readout._status_layer = CanvasLayer.new()
+	readout._debug = true
+	readout._readout_requested = false
+	readout._add_frame_graph()
 
-	main._toggle_debug_layer(6)
+	readout._toggle_debug_layer(6)
 	for i in range(10):
-		main._frame_graph.push(0.010)
-	t.check(main._frame_graph.frames().size() == 10, "the ring holds what was pushed while the layer was on")
-	main._toggle_debug_layer(6)
-	t.check(main._frame_graph.frames().is_empty(), "turning the layer back off empties the ring")
-	main._toggle_debug_layer(6)
-	t.check(main._frame_graph.frames().is_empty(),
+		readout._frame_graph.push(0.010)
+	t.check(readout._frame_graph.frames().size() == 10, "the ring holds what was pushed while the layer was on")
+	readout._toggle_debug_layer(6)
+	t.check(readout._frame_graph.frames().is_empty(), "turning the layer back off empties the ring")
+	readout._toggle_debug_layer(6)
+	t.check(readout._frame_graph.frames().is_empty(),
 			"and turning it back on again starts from empty, not from what the ring held before")
 
-	main._frame_graph.free()
-	main._status.free()
-	main._status_layer.free()
-	main.free()
+	readout._frame_graph.free()
+	readout._status.free()
+	readout._status_layer.free()
+	readout.free()
 
 ## **One node goes into the tree, not a choice between two.** `TouchControls` is the whole of the
 ## pointer scheme regardless of which aiming mode is chosen — `_add_touch_controls()` builds the
@@ -557,32 +539,37 @@ func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
 	# and needs the scene's children to exist.
 	main._title = TITLE_SCREEN_SCENE.instantiate()
 	t.add_child(main._title)
-	main._debug = true
-	main._readout_requested = false
-	main._add_frame_graph()
+	var readout := DebugReadout.new()
+	readout._status = main._status
+	readout._status_layer = main._status_layer
+	readout._debug = true
+	readout._readout_requested = false
+	readout._add_frame_graph()
+	main._readout = readout
 
-	main._toggle_debug_layer(6)
-	main._frame_graph.push(0.010)
-	main._frame_graph.push(0.020)
-	t.check(main._frame_graph.visible and main._frame_graph.frames().size() == 2,
+	readout._toggle_debug_layer(6)
+	readout._frame_graph.push(0.010)
+	readout._frame_graph.push(0.020)
+	t.check(readout._frame_graph.visible and readout._frame_graph.frames().size() == 2,
 			"the graph is on and holds two frames before the title opens")
 
 	main._open_the_title()
-	t.check(not main._frame_graph.visible, "opening the title hides the graph")
-	t.check(main._frame_graph.frames().size() == 2,
+	t.check(not readout._frame_graph.visible, "opening the title hides the graph")
+	t.check(readout._frame_graph.frames().size() == 2,
 			"but does not clear the ring — only a 6 toggle-off does that")
 
-	main._toggle_debug_layer(4)
-	t.check(not main._frame_graph.visible, "4 does not move the graph while the title is open")
+	readout._toggle_debug_layer(4)
+	t.check(not readout._frame_graph.visible, "4 does not move the graph while the title is open")
 
 	main._on_title_start(ControlsMode.Mode.TAP)
-	t.check(main._frame_graph.visible, "closing the title shows the graph again")
-	t.check(main._frame_graph.frames().size() == 2, "with the ring exactly as it was left")
+	t.check(readout._frame_graph.visible, "closing the title shows the graph again")
+	t.check(readout._frame_graph.frames().size() == 2, "with the ring exactly as it was left")
 
-	main._toggle_debug_layer(4)
-	t.check(main._frame_graph.visible, "and 4 still does not move it once the title is closed again")
+	readout._toggle_debug_layer(4)
+	t.check(readout._frame_graph.visible, "and 4 still does not move it once the title is closed again")
 
-	main._frame_graph.free()
+	readout._frame_graph.free()
+	readout.free()
 	main._status.free()
 	main._status_layer.free()
 	main._title.free()
@@ -761,7 +748,6 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	main._day = day
 	main._hud = hud
 	main._in_the_title = false
-	main._debug = false
 
 	const DELTA := 0.1
 
@@ -944,6 +930,7 @@ func _build_focus_pause_main(t) -> Node2D:
 	main._title = TITLE_SCREEN_SCENE.instantiate()
 	t.add_child(main._title)
 	main._no_focus_pause = false
+	main._add_the_return_window(t.get_viewport())
 	return main
 
 func _teardown_focus_pause_main(t, main: Node2D) -> void:
@@ -960,18 +947,18 @@ func _teardown_focus_pause_main(t, main: Node2D) -> void:
 func _test_focus_lost_opens_the_pause_during_a_played_day(t) -> void:
 	var main := _build_focus_pause_main(t)
 	t.get_tree().paused = false
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(main._pause.is_open(),
 			"losing focus opens the same pause screen the pause action does")
 	t.check(t.get_tree().paused, "and pauses the tree behind it, exactly as that action leaves it")
 	_teardown_focus_pause_main(t, main)
 
 ## A phone sending the app away reaches the same call through the other notification
-## `main._notification()` listens for.
+## `ReturnWindow._notification()` listens for.
 func _test_application_paused_also_opens_the_pause(t) -> void:
 	var main := _build_focus_pause_main(t)
 	t.get_tree().paused = false
-	main.notification(Node.NOTIFICATION_APPLICATION_PAUSED)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_PAUSED)
 	t.check(main._pause.is_open(), "a phone sending the app away pauses a played day the same way")
 	_teardown_focus_pause_main(t, main)
 
@@ -981,7 +968,7 @@ func _test_focus_lost_does_nothing_on_the_title(t) -> void:
 	var main := _build_focus_pause_main(t)
 	main._title.open(false)
 	t.get_tree().paused = false
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "the title screen has nothing behind it to pause")
 	t.check(not t.get_tree().paused, "so the tree keeps running")
 	_teardown_focus_pause_main(t, main)
@@ -993,7 +980,7 @@ func _test_focus_lost_does_nothing_over_the_day_summary(t) -> void:
 	var main := _build_focus_pause_main(t)
 	main._summary.show_day(GameEnums.DayResult.WON, "", 3)
 	t.check(main._summary.is_showing(), "the day summary is up")
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(),
 			"focus loss does not open a second screen over the day summary, unlike the pause action")
 	_teardown_focus_pause_main(t, main)
@@ -1004,14 +991,14 @@ func _test_focus_lost_does_nothing_over_the_ending(t) -> void:
 	var main := _build_focus_pause_main(t)
 	main._summary.show_ending(GameEnums.Ending.GOOD, GameState.day)
 	t.check(main._summary.is_showing(), "the ending screen is up")
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "focus loss does not open a second screen over the ending")
 	_teardown_focus_pause_main(t, main)
 
 func _test_focus_lost_does_nothing_when_the_pause_is_already_open(t) -> void:
 	var main := _build_focus_pause_main(t)
 	main._pause.open()
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(main._pause.is_open(), "the pause stays exactly as it was — open, not toggled")
 	_teardown_focus_pause_main(t, main)
 
@@ -1020,9 +1007,9 @@ func _test_focus_lost_does_nothing_when_the_pause_is_already_open(t) -> void:
 func _test_focus_gained_does_not_resume(t) -> void:
 	var main := _build_focus_pause_main(t)
 	t.get_tree().paused = false
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(main._pause.is_open() and t.get_tree().paused, "focus loss opened and paused it")
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	t.check(main._pause.is_open() and t.get_tree().paused,
 			"getting focus back does not resume — the player continues when they are back")
 	_teardown_focus_pause_main(t, main)
@@ -1035,13 +1022,13 @@ func _test_focus_lost_does_nothing_under_the_override(t) -> void:
 	var main := _build_focus_pause_main(t)
 	main._no_focus_pause = true
 	t.get_tree().paused = false
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "--no-focus-pause turns off the notification's own pause")
 	t.check(not t.get_tree().paused, "and the tree keeps running")
 	_teardown_focus_pause_main(t, main)
 
-## Inbox #534: for `RETURN_INPUT_IGNORED_MSEC` after `FOCUS_IN` or `RESUMED` the viewport delivers
-## nothing (`_arm_the_return_window()` calls `set_disable_input(true)`), so the press that brings
+## Inbox #534: for `ReturnWindow.IGNORED_MSEC` after `FOCUS_IN` or `RESUMED` the viewport delivers
+## nothing (`ReturnWindow._arm()` calls `set_disable_input(true)`), so the press that brings
 ## the page back cannot resume the pause screen or start the day brief. Real events are pushed
 ## through the suite's own viewport; the window's end is moved into the past rather than waited out
 ## (by choice: a real wait would cost the suite half a second for nothing it checks).
@@ -1052,19 +1039,18 @@ func _press_accept(t) -> void:
 	t.get_viewport().push_input(press)
 
 func _test_return_ignores_input_for_half_a_second(t) -> void:
-	t.check(MAIN_SCRIPT.RETURN_INPUT_IGNORED_MSEC == 500, "the window is 500ms")
+	t.check(ReturnWindow.IGNORED_MSEC == 500, "the window is 500ms")
 	for what in [Node.NOTIFICATION_APPLICATION_FOCUS_IN, Node.NOTIFICATION_APPLICATION_RESUMED]:
 		# The pause screen.
 		var main := _build_focus_pause_main(t)
-		main._return_viewport = t.get_viewport()
 		t.get_tree().paused = false
-		main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-		main.notification(what)
+		main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+		main._return_window.notification(what)
 		t.check(t.get_viewport().is_input_disabled(), "a return switches the viewport's input off")
 		_press_accept(t)
 		t.check(main._pause.is_open(), "a press inside the window does not resume the pause (%d)" % what)
-		main._input_ignored_until_msec = Time.get_ticks_msec() - 1
-		main._end_the_return_window()
+		main._return_window._ignored_until_msec = Time.get_ticks_msec() - 1
+		main._return_window.end()
 		t.check(not t.get_viewport().is_input_disabled(), "the window's end switches it back on")
 		_press_accept(t)
 		t.check(not main._pause.is_open(), "the same press after the window resumes")
@@ -1072,12 +1058,12 @@ func _test_return_ignores_input_for_half_a_second(t) -> void:
 		var starts := [0]
 		main._summary.continued.connect(func(): starts[0] += 1)
 		main._summary.show_day_brief(3, 3)
-		main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-		main.notification(what)
+		main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+		main._return_window.notification(what)
 		_press_accept(t)
 		t.check(starts[0] == 0, "a press inside the window does not start the day from the brief")
-		main._input_ignored_until_msec = Time.get_ticks_msec() - 1
-		main._end_the_return_window()
+		main._return_window._ignored_until_msec = Time.get_ticks_msec() - 1
+		main._return_window.end()
 		_press_accept(t)
 		t.check(starts[0] == 1, "the same press after the window starts it")
 		t.get_viewport().set_disable_input(false)
@@ -1090,18 +1076,17 @@ func _test_return_ignores_input_for_half_a_second(t) -> void:
 ## because the root viewport outlives the scene.
 func _test_return_window_always_ends(t) -> void:
 	var main := _build_focus_pause_main(t)
-	main._return_viewport = t.get_viewport()
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
-	main._arm_the_return_window()
-	main._process(0.0)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	main._return_window._arm()
+	main._return_window._process(0.0)
 	t.check(t.get_viewport().is_input_disabled(), "a frame inside the window leaves it running")
-	main._input_ignored_until_msec = Time.get_ticks_msec() - 1
-	main._process(0.0)
+	main._return_window._ignored_until_msec = Time.get_ticks_msec() - 1
+	main._return_window._process(0.0)
 	t.check(not t.get_viewport().is_input_disabled(), "the first frame after it puts input back")
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
-	main._exit_tree()
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	main._return_window._exit_tree()
 	t.check(not t.get_viewport().is_input_disabled(),
 			"a scene reload inside the window does not leave the new scene deaf")
 	_teardown_focus_pause_main(t, main)
@@ -1111,26 +1096,25 @@ func _test_return_window_always_ends(t) -> void:
 ## focus-in does, and the web's `blur`/`visibilitychange`/`focus` decide the same way.
 func _test_return_window_needs_a_departure(t) -> void:
 	var main := _build_focus_pause_main(t)
-	main._return_viewport = t.get_viewport()
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
-	t.check(not t.get_viewport().is_input_disabled() and main._input_ignored_until_msec == 0,
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	t.check(not t.get_viewport().is_input_disabled() and main._return_window._ignored_until_msec == 0,
 			"a focus-in with no loss before it (the page's own focus at load) does not arm")
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	t.check(t.get_viewport().is_input_disabled(), "a loss then a focus-in arms")
-	main._end_the_return_window(true)
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	main._return_window.end(true)
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	t.check(not t.get_viewport().is_input_disabled(), "the departure is spent: a second focus-in does not arm")
 	# The web path.
-	main._on_web_event("focus", "visible")
+	main._return_window.on_web_event("focus", "visible")
 	t.check(not t.get_viewport().is_input_disabled(), "web: a focus with no blur before it does not arm")
-	main._on_web_event("blur", "visible")
-	main._on_web_event("focus", "visible")
+	main._return_window.on_web_event("blur", "visible")
+	main._return_window.on_web_event("focus", "visible")
 	t.check(t.get_viewport().is_input_disabled(), "web: a blur then a focus arms")
-	main._end_the_return_window(true)
-	main._on_web_event("visibilitychange", "hidden")
+	main._return_window.end(true)
+	main._return_window.on_web_event("visibilitychange", "hidden")
 	t.check(not t.get_viewport().is_input_disabled(), "web: the page going hidden does not arm")
-	main._on_web_event("visibilitychange", "visible")
+	main._return_window.on_web_event("visibilitychange", "visible")
 	t.check(t.get_viewport().is_input_disabled(), "web: hidden then visible arms")
 	t.get_viewport().set_disable_input(false)
 	_teardown_focus_pause_main(t, main)
@@ -1138,16 +1122,15 @@ func _test_return_window_needs_a_departure(t) -> void:
 ## A rig (`--no-focus-pause`, `--screenshot`) is never slowed by the window.
 func _test_return_window_is_off_under_the_override(t) -> void:
 	var main := _build_focus_pause_main(t)
-	main._return_viewport = t.get_viewport()
-	main._no_focus_pause = true
-	main._has_left_the_game = true
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	main._return_window._no_focus_pause = true
+	main._return_window._has_left_the_game = true
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	t.check(not t.get_viewport().is_input_disabled(),
 			"under the override a return does not start the window")
-	main._no_focus_pause = false
-	main._rig_locked_out = true
-	main._has_left_the_game = true
-	main.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	main._return_window._no_focus_pause = false
+	main._return_window._rig = true
+	main._return_window._has_left_the_game = true
+	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	t.check(not t.get_viewport().is_input_disabled(), "nor does a rig run (--walk, --press ...)")
 	_teardown_focus_pause_main(t, main)
 
@@ -1257,8 +1240,8 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 # ------------------------------------------------------------------ a rig's own lockdown ---
 ## M195: the rig list, through `DevFlags`' own pure inner function — the same seam
 ## `_no_focus_pause_from_args()` above is for its flag.
-## This is also the exact set `main._input()`'s own gate (`_rig_locked_out`) and
-## `_lock_out_a_rig()`'s window-flag/`InputMap`-erasure both key off, so a case proven here holds
+## This is also the exact set `RigLock._input()`'s own gate (`locked_out`) and
+## `RigLock.setup()`'s window-flag/`InputMap`-erasure both key off, so a case proven here holds
 ## for all three without a live window to check them against.
 func _test_is_rig_from_args(t) -> void:
 	t.check(not DevFlags._is_rig_from_args(PackedStringArray()),
@@ -1271,7 +1254,7 @@ func _test_is_rig_from_args(t) -> void:
 	t.check(DevFlags._is_rig_from_args(PackedStringArray(["--seed", "1", "--walk", "north"])),
 			"a rig flag among others still counts")
 
-## `rig_quit_seconds_from(after, day_length)` — the pure formula both `main._process()`'s own
+## `rig_quit_seconds_from(after, day_length)` — the pure formula both `RigLock._process()`'s own
 ## timer and `tools/lib_dev_flags.sh`'s `rig_kill_after_seconds()` are built on (that one mirrors
 ## this exact arithmetic against the same `RIG_QUIT_SECONDS` marker block this file's constants
 ## come from — see `tests/test_cli_help.sh` for the shell side).

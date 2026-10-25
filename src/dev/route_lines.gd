@@ -4,8 +4,8 @@ extends Node2D
 ## area — the fifth debug layer, key `5` and `--layers 5`/`?layers=5`. See docs/TELEMETRY.md, "The
 ## debug view", and `RouteTree`'s own class doc for what a route is.
 ##
-## **A sibling of `DebugLayers`, not a fourth case inside it.** `main._add_debug_layers()` gates
-## that class on `_debug` and this one is gated the same way by its own `main._add_route_lines()` —
+## **A sibling of `DebugLayers`, not a fourth case inside it.** `DebugReadout.show_the_world()` gates
+## that class on the readout's gate and this one is gated the same way by `draw_routes()` —
 ## the two answer independent questions (the live geometry state a frame is actually drawing, in
 ## `DebugLayers`' case, against the day's own fixed plan here), so nothing beyond the on/off
 ## pattern is shared.

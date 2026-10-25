@@ -203,9 +203,11 @@ src/
 	mode_button.gd        a circular icon-only button, drawn from a StyleBox and an icon
 	touch_controls.gd     the pointer scheme in its two modes, and the pause button
 	controls_mode.gd      which aiming origin a press is measured from
-	touch_input.gd        whether this device has a touchscreen, answered once
+	touch_input.gd        whether this device has a touchscreen, answered once, `--touch` handed in
 	screen_orientation.gd the one rotation applied when the window is portrait
 	quit_option.gd        whether the game can quit itself, answered once
+	return_window.gd      the half second of ignored input after the game gets focus back, and the
+	                      departures and returns that open it
   visuals/                the one loader; see the illustrated-png skill
 	atlas_library.gd      the baked atlas pages, by region name: a group's page is loaded on
 	                       the first acquire() and dropped on the last release(), a region's
@@ -227,7 +229,10 @@ src/
 	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/tunnel/
 	                       bridge/spawn:<name>) along a real, kerb-preferring path, through the
 	                       ordinary input path
+	debug_readout.gd      the developer's furniture: the right-hand readout, the frame graph, the
+	                      debug overlays and routes, their keys and the snapshot keys
 	debug_layers.gd       the fields, shadows and bounding-box overlays, one number key apiece
+	rig_lock.gd           a rig's window takes no focus, hears no real press and quits on a deadline
   palette.gd              colours the code still chooses; the art's own are in the SVGs
   sprites.gd              feet-anchored draw helpers (standing sprite, contact shadow)
   ground_shape.gd         one ground shape per object (point, segment or rectangle); the shadow, the body and the excitement field are all derived from it
@@ -335,7 +340,7 @@ handed, and the manifest of every flag the shell tools validate against. Its com
 `--seed`, `--day`, `--spawn`, `--follow`, `--meters`, `--overview`, `--day-length`, `--ending`,
 `--controls`, `--layers`, `--blackout`, `--start-escape` and the rest — answers only on a debug
 build: `OS.is_debug_build()` is `false` for an exported release template, so none of this
-furniture, nor the snapshot key `main.gd` reads directly, is reachable from a public build's
+furniture, nor the snapshot key `DebugReadout` reads directly, is reachable from a public build's
 command line, which a visitor has no way to set regardless. `--start-escape` takes an optional value — `stairwell:left`,
 `stairwell:right`, `lobby`, `basement` or `floor:2`/`floor:1` — that teleports straight to that
 part of the escape scene's one building-wide map instead of starting at her own door on the third
@@ -362,12 +367,14 @@ player's own save the moment a release page's query actually used one of the fla
 holds (`RunConfig.active_args`, empty on a release build), so none of it has a release-page door.
 One rig list decides what a rig is — `DevFlags`' `RIG_FLAGS`, `--tap` included, plus a movie
 recording and a scripted recipe (`RunConfig.is_rig`) — for the window lockdown, the wall-clock
-quit and whether the run log is a playtest. `--no-telemetry`
+quit and whether the run log is a playtest; `RigLock` (`src/dev/rig_lock.gd`) applies the
+lockdown and the quit from inside the game. `--no-telemetry`
 is not part of this: it is a documented player-facing opt-out (see docs/TELEMETRY.md), not
-developer furniture, and stays live in every build. `main.gd`'s own right-hand readout (seed, frame
-rate, the meter's incoming/decay/net arithmetic) is gated on `_debug or _readout_requested` rather
-than asked of the OS inside `_process()` every frame, so the string is never assembled unless one
-of the two holds, rather than merely hidden behind an invisible label.
+developer furniture, and stays live in every build. The right-hand readout (`DebugReadout`,
+`src/dev/debug_readout.gd`: seed, frame rate, the meter's incoming/decay/net arithmetic) is gated
+on `_debug or _readout_requested` rather than asked of the OS inside `_process()` every frame, so
+the string is never assembled unless one of the two holds, rather than merely hidden behind an
+invisible label.
 
 ### The debug view
 
@@ -377,8 +384,8 @@ every collision body's own outline — read from `EventInstance`, `CrowdAgent`, 
 and `Stroller` rather than drawn by any of them. `RouteLines` (`src/dev/route_lines.gd`), a sibling
 node rather than a fourth case on that class, draws a fourth: the day's own `RouteTree` as one
 purple polyline per route. Each of those four, plus the readout, is a numbered layer (`1`-`5`, `4`
-is the readout) `main._unhandled_input()` toggles on raw keycodes rather than an input-map action,
-so `project.godot` carries no binding a release build could ever reach. `DevFlags.layers_override()`
+is the readout) `DebugReadout._unhandled_input()` toggles on raw keycodes rather than an input-map
+action, so `project.godot` carries no binding a release build could ever reach. `DevFlags.layers_override()`
 (`--layers 1,3` or the page's own `?layers=1,3,5`, also open to a release page behind `?debug=1`)
 sets which of the four non-readout layers start on; the readout defaults on regardless, so an
 unflagged debug run looks exactly as it always has.
@@ -392,9 +399,11 @@ platform axis rather than the build one, since a debug Web build has the same de
 release one — the same axis `Telemetry.begin_run()` already uses to stay silent on the web.
 `TitleScreen` and `PauseScreen` each read it once into their own `_can_quit`, so their hint text
 and their `Q` handler always agree, and so a test — never itself a web export — can set the member
-and drive both platform shapes. A debug build can preview the web shape without a real export:
-`--web` forces `QuitOption.available()` false, the same role `TouchInput`'s own `--touch` plays
-for its platform fact.
+and drive both platform shapes; `main` hands each screen its answer (`use_platform()`) before it
+enters the tree. A debug build can preview the web shape without a real export: `--web`
+(`RunConfig.web_preview`, handed in as `QuitOption.available(config)`) forces the answer false, the
+same role `TouchInput`'s own `--touch` (`RunConfig.touch_forced`) plays for its platform fact;
+neither class reads the command line.
 
 ### Playing on a touch device
 

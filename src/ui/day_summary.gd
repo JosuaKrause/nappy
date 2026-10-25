@@ -55,6 +55,12 @@ signal restart_requested()
 ## `_handle_restart_touch()` below.
 var _touch := TouchInput.available()
 
+## Hands the screen the run's answer to the touch question (`TouchInput.available(config)`), which
+## `--touch` can force. Called by `main` before the screen enters the tree; a screen built anywhere
+## else keeps the hardware's own answer.
+func use_touch(touch: bool) -> void:
+	_touch = touch
+
 func _ready() -> void:
 	# The summary has to keep running while it pauses everything behind it.
 	process_mode = Node.PROCESS_MODE_ALWAYS

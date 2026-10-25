@@ -449,9 +449,9 @@ func _process(delta: float) -> void:
 ## keycodes, the way a screen's own shortcuts usually are. Without `key:`, a rig can reach no screen
 ## whose shortcuts are keycodes, which is the pause screen entirely.
 ##
-## **Tagged with `InputEvent.DEVICE_ID_EMULATION` so a locked-out rig still hears it.** `main.
-## _input()` marks every event handled while `_rig_locked_out`, except one carrying this exact
-## device id — see that function's own doc for why a tag on the event and not its class.
+## **Tagged with `InputEvent.DEVICE_ID_EMULATION` so a locked-out rig still hears it.**
+## `RigLock._input()` marks every event handled while `locked_out`, except one carrying this exact
+## device id — see `RigLock.is_the_rigs_own_press()` for why a tag on the event and not its class.
 func _tap(what: String) -> void:
 	for pressed in [true, false]:
 		var event: InputEvent

@@ -124,6 +124,13 @@ var _can_quit := QuitOption.available()
 ## click from the same finger, and without the gate a single press on a button would be read twice.
 var _touch := TouchInput.available()
 
+## Hands the screen the run's answers to the touch and quit questions (`TouchInput.available(config)`,
+## `QuitOption.available(config)`), which `--touch` and `--web` can force. Called by `main` before
+## the screen enters the tree; a screen built anywhere else keeps the platform's own answers.
+func use_platform(touch: bool, can_quit: bool) -> void:
+	_touch = touch
+	_can_quit = can_quit
+
 
 func _ready() -> void:
 	# **The title has a colour of its own**, or the screen is four labels in one warm off-white and

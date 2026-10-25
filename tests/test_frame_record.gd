@@ -333,6 +333,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	main.add_child(recorder)
 	recorder.setup(main.in_the_title, main._city, main._player, main._day)
 	main._frame_recorder = recorder
+	main._readout.watch_frames(recorder)
 	t.check(FrameRecord.on and FrameRecord.ledger == recorder.ledger
 			and recorder.ledger == restarted,
 			"setting up the recorder switches the timing on, keeping the record a restart left")
@@ -371,7 +372,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 				== main._city.crowd.agent_count()
 			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == GameState.day,
 			"with the world's counters read at the end of its process step")
-	t.check(main._frame_record_lines().size() == 1, "the readout carries the record's line")
+	t.check(main._readout._frame_record_lines().size() == 1, "the readout carries the record's line")
 	_check_the_agents_are_timed_once(t, main._city.crowd.agents())
 	FrameRecord.start(ledger)
 	Telemetry.end_run()

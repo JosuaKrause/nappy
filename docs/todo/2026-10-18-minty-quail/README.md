@@ -57,7 +57,9 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 1. `events-composed.md` and `shared-components.md`.
 2. `main-and-state.md` and `tuning.md`, alongside the extractions they serve.
 3. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
-4. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs.
+4. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs;
+   `hidden-statics.md` beside it, since the tests that patch a static and put it back are the ones
+   that move to an injected fake once its owner holds the state instead.
 5. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
