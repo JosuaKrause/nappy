@@ -45,6 +45,13 @@ var _can_quit := QuitOption.available()
 ## `_handle_restart_touch()`) even though it no longer chooses between two bodies or two hints.
 var _touch := TouchInput.available()
 
+## Hands the screen the run's answers to the touch and quit questions (`TouchInput.available(config)`,
+## `QuitOption.available(config)`), which `--touch` and `--web` can force. Called by `main` before
+## the screen enters the tree; a screen built anywhere else keeps the platform's own answers.
+func use_platform(touch: bool, can_quit: bool) -> void:
+	_touch = touch
+	_can_quit = can_quit
+
 ## Set once by `main._ready()`, the same way `_connect_summary_and_pause_signals()` wires the
 ## signals this screen fires — null in a test that builds a bare `PauseScreen`, which is why every
 ## use below is guarded. *"Pause can keep the last direction just don't overwrite it from the

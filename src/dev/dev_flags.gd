@@ -633,7 +633,7 @@ static func _invincible_from_query(query: String) -> bool:
 	return false
 
 ## `--no-focus-pause` (or `?nofocuspause=1`, a debug web build only) turns off the pause the window
-## losing focus opens — see `main._notification()`. **`--screenshot` implies it**: a screenshot
+## losing focus opens — see `ReturnWindow` and `main._pause_on_focus_lost()`. **`--screenshot` implies it**: a screenshot
 ## rig's window opens behind whatever the operator is doing, so a game that paused on that would
 ## photograph the pause screen rather than the day it was asked to capture. Whether the game can be
 ## walked away from behind another window stays a developer question, so this is the debug build's
@@ -718,6 +718,17 @@ func quit_when_still_seconds() -> float:
 	return _QUIT_WHEN_STILL_DEFAULT
 
 const _QUIT_WHEN_STILL_DEFAULT := 1.0
+
+## `--touch` answers the touch hardware question yes on a debug build (`TouchInput.available()`),
+## so a touch-only screen can be photographed on a machine with no touchscreen.
+func touch_forced() -> bool:
+	return "--touch" in active_args()
+
+## `--web` answers the quit question as the web export does (`QuitOption.available()`) on a debug
+## build, so the hidden-`Q` shape can be looked at without exporting. It changes what a screen
+## shows, never what quitting does.
+func web_preview() -> bool:
+	return "--web" in active_args()
 
 ## `--title` photographs the title screen; `--no-title` skips it for a run that drives nothing.
 func title_requested() -> bool:
@@ -893,7 +904,7 @@ const RIG_QUIT_CEILING_SECONDS := 240.0
 const RIG_KILL_GRACE_SECONDS := 15.0
 ## How many wall-clock seconds a recorded game second may take before `tools/record.sh` and
 ## `tools/trailer.sh` kill Godot from outside. Under the movie writer the game counts its own
-## deadline in game seconds (`main._process()`), so a wall-clock limit is only the outside backstop
+## deadline in game seconds (`RigLock._process()`), so a wall-clock limit is only the outside backstop
 ## for a process that stopped running; this factor stretches the game-second deadline into one,
 ## generous against the slowest measured recording (a frame-by-frame PNG at 60fps records a game
 ## second in about four).

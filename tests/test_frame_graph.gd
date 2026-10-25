@@ -96,7 +96,7 @@ func _test_a_bars_class_is_fixed_when_it_is_pushed(t) -> void:
 			% [graph.classes().size(), graph.frames().size()])
 	graph.free()
 
-## `clear()` is what `main._toggle_debug_layer()` calls when the `6` key turns the layer off — the
+## `clear()` is what `DebugReadout._toggle_debug_layer()` calls when the `6` key turns the layer off — the
 ## player's own follow-on to M153: *(2026-09-15: "spike recording should only be on while the layer
 ## is on. that means toggling the layer twice will lead to a blank frame array".)* So a graph with
 ## a full window empties both arrays on `clear()`, and a push right after starts a fresh window of

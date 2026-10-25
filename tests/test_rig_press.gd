@@ -1,32 +1,21 @@
 extends RefCounted
-## M202, a rig's own presses reach the game: since M195, `main._input()` marks every event handled
-## while `_rig_locked_out`, which is exactly the state every `--press` run is in — `--press` is one
-## of `DevFlags._RIG_FLAGS`, so the lockout and the flag are never apart — and that swallowed the
-## rig's own injected presses along with a real key or pointer, so `--press pause 3` paused nothing
-## and `AutoScreenshot._debug_snapshot_action()` never saw `snapshot_burst` either.
+## M202, a rig's own presses reach the game: a rig's lock-out (`RigLock._input()`) marks every
+## event handled while `locked_out`, which is exactly the state every `--press` run is in —
+## `--press` is one of `DevFlags._RIG_FLAGS`, so the lockout and the flag are never apart — and a
+## gate that swallowed every event would swallow the rig's own injected presses along with a real
+## key or pointer, so `--press pause 3` would pause nothing and `snapshot_burst` would never arrive.
 ##
-## `main._is_the_rigs_own_press()` is what `_input()` now reads instead of marking every event
+## `RigLock.is_the_rigs_own_press()` is what `_input()` reads instead of marking every event
 ## handled outright: whether `event.device` carries `InputEvent.DEVICE_ID_EMULATION`, the constant
-## `AutoScreenshot._tap()` tags its own events with before handing them to `Input.parse_input_event
-## ()`. A test cannot boot a real `main` to prove `_input()` itself — `tests/test_main.gd`'s own
-## class doc says why: `_ready()` starts a whole run — so `Gate` below is `_input()`'s one line,
-## copied rather than boots, reading the same static predicate `main._input()` reads; if that
-## predicate answers wrong, this suite and the real gate are wrong the same way.
+## `AutoScreenshot._tap()` tags its own events with before handing them to
+## `Input.parse_input_event()`. The gate tests drive a real `RigLock` with `locked_out` set by hand,
+## never `setup()`, which would also erase this process's `InputMap` bindings.
 
-const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const AUTO_SCREENSHOT: GDScript = preload("res://src/dev/auto_screenshot.gd")
 
-## `main._input()`'s own gate, copied rather than driven through a booted `main` — see this file's
-## own class doc. `locked_out` stands in for `_rig_locked_out`.
-class Gate extends Node:
-	var locked_out := false
-	func _input(event: InputEvent) -> void:
-		if locked_out and not MAIN_SCRIPT._is_the_rigs_own_press(event):
-			get_viewport().set_input_as_handled()
-
-## Stands in for `main._unhandled_input()`'s own guards (the pause action, the debug snapshot keys):
-## anything that reaches this has cleared `Gate` above, the same way reaching `main._unhandled_input
-## ()` means `main._input()` did not mark the event handled first.
+## Stands in for the unhandled-phase handlers (`main`'s pause action, the readout's snapshot keys):
+## anything that reaches this has cleared the `RigLock`, the same way reaching them means the lock
+## did not mark the event handled first.
 class Catcher extends Node:
 	var seen: Array[InputEvent] = []
 	func _unhandled_input(event: InputEvent) -> void:
@@ -47,35 +36,35 @@ func run(t) -> void:
 func _test_is_the_rigs_own_press(t) -> void:
 	var untagged_action := InputEventAction.new()
 	untagged_action.action = &"pause"
-	t.check(not MAIN_SCRIPT._is_the_rigs_own_press(untagged_action),
+	t.check(not RigLock.is_the_rigs_own_press(untagged_action),
 			"a freshly-built action event, device left at its default, is not the rig's own")
 
 	var untagged_key := InputEventKey.new()
 	untagged_key.keycode = KEY_R
-	t.check(not MAIN_SCRIPT._is_the_rigs_own_press(untagged_key),
+	t.check(not RigLock.is_the_rigs_own_press(untagged_key),
 			"a freshly-built key event, device left at its default, is not the rig's own")
 
 	var keyboard_key := InputEventKey.new()
 	keyboard_key.keycode = KEY_R
 	keyboard_key.device = InputEvent.DEVICE_ID_KEYBOARD
-	t.check(not MAIN_SCRIPT._is_the_rigs_own_press(keyboard_key),
+	t.check(not RigLock.is_the_rigs_own_press(keyboard_key),
 			"a key tagged as real keyboard hardware is not the rig's own")
 
 	var mouse_click := InputEventMouseButton.new()
 	mouse_click.device = InputEvent.DEVICE_ID_MOUSE
-	t.check(not MAIN_SCRIPT._is_the_rigs_own_press(mouse_click),
+	t.check(not RigLock.is_the_rigs_own_press(mouse_click),
 			"a click tagged as a real mouse is not the rig's own")
 
 	var tagged_action := InputEventAction.new()
 	tagged_action.action = &"pause"
 	tagged_action.device = InputEvent.DEVICE_ID_EMULATION
-	t.check(MAIN_SCRIPT._is_the_rigs_own_press(tagged_action),
+	t.check(RigLock.is_the_rigs_own_press(tagged_action),
 			"an action event tagged DEVICE_ID_EMULATION is the rig's own")
 
 	var tagged_key := InputEventKey.new()
 	tagged_key.keycode = KEY_R
 	tagged_key.device = InputEvent.DEVICE_ID_EMULATION
-	t.check(MAIN_SCRIPT._is_the_rigs_own_press(tagged_key),
+	t.check(RigLock.is_the_rigs_own_press(tagged_key),
 			"a key event tagged DEVICE_ID_EMULATION is the rig's own")
 
 # ---------------------------------------------------------------------- gate ---
@@ -85,7 +74,7 @@ func _test_is_the_rigs_own_press(t) -> void:
 ## is what makes `Input.parse_input_event()` dispatch synchronously rather than queue for a frame
 ## this suite never runs.
 func _test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t) -> void:
-	var gate := Gate.new()
+	var gate := RigLock.new()
 	t.add_child(gate)
 	var catcher := Catcher.new()
 	t.add_child(catcher)
@@ -112,7 +101,7 @@ func _test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t) -> voi
 ## keycode (`key:r`) — driven through the real `_tap()` rather than a hand-built stand-in, so a
 ## regression in the tagging itself, not only in this suite's idea of it, would fail here.
 func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t) -> void:
-	var gate := Gate.new()
+	var gate := RigLock.new()
 	t.add_child(gate)
 	var catcher := Catcher.new()
 	t.add_child(catcher)
@@ -146,7 +135,7 @@ func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out
 ## the rig's own, already reaches the unhandled phase, so this is what says the two tests above are
 ## about the lockout and not about `Catcher` catching everything regardless.
 func _test_the_gate_does_nothing_once_the_rig_unlocks(t) -> void:
-	var gate := Gate.new()
+	var gate := RigLock.new()
 	t.add_child(gate)
 	var catcher := Catcher.new()
 	t.add_child(catcher)

@@ -1,7 +1,6 @@
 extends RefCounted
 ## The capture control and manifest lifecycle that remain observable without a renderer.
 
-const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 func run(t) -> void:
 	_test_b_and_the_rig_action_choose_the_burst(t)
@@ -22,19 +21,19 @@ func _test_b_and_the_rig_action_choose_the_burst(t) -> void:
 	rig_action.action = &"snapshot_burst"
 	rig_action.pressed = true
 
-	t.check(MAIN_SCRIPT._debug_snapshot_action(single) == &"snapshot",
+	t.check(DebugReadout._debug_snapshot_action(single) == &"snapshot",
 			"an unmodified physical P remains the single-snapshot action")
-	t.check(MAIN_SCRIPT._debug_snapshot_action(old_burst) == &"snapshot",
+	t.check(DebugReadout._debug_snapshot_action(old_burst) == &"snapshot",
 			"Shift+P stays a single snapshot and no longer starts a burst")
-	t.check(MAIN_SCRIPT._debug_snapshot_action(burst) == &"snapshot_burst",
+	t.check(DebugReadout._debug_snapshot_action(burst) == &"snapshot_burst",
 			"an unmodified physical B selects the burst action")
-	t.check(MAIN_SCRIPT._debug_snapshot_action(shifted_burst) == &"snapshot_burst",
+	t.check(DebugReadout._debug_snapshot_action(shifted_burst) == &"snapshot_burst",
 			"Shift+B also selects the burst action")
 	t.check(not burst.is_action_pressed("run"),
 			"the burst key is not the run action")
-	t.check(MAIN_SCRIPT._debug_snapshot_action(echo) == &"",
+	t.check(DebugReadout._debug_snapshot_action(echo) == &"",
 			"a held B echo cannot make another capture")
-	t.check(MAIN_SCRIPT._debug_snapshot_action(rig_action) == &"snapshot_burst",
+	t.check(DebugReadout._debug_snapshot_action(rig_action) == &"snapshot_burst",
 			"the named action used by the scripted rig follows the burst branch")
 
 func _test_headless_and_overlapping_requests_refuse_before_a_capture_wait(t) -> void:

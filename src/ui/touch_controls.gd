@@ -156,6 +156,12 @@ const _FOCUS_KNOB_OFFSET := 36.0
 ## it is asked, since a headless test process is never a touch device.
 var _touch := TouchInput.available()
 
+## Hands the screen the run's answer to the touch question (`TouchInput.available(config)`), which
+## `--touch` can force. Called by `main` before the screen enters the tree; a screen built anywhere
+## else keeps the hardware's own answer.
+func use_touch(touch: bool) -> void:
+	_touch = touch
+
 ## The player's own choice of aiming origin — see the class doc and `ControlsMode`. Defaults to
 ## `TAP`, the same default `ControlsMode.from_word()` falls back to, so a test or a rig that never
 ## calls `set_mode()` gets the mode every existing screenshot and `--walk` script was taken under.

@@ -156,7 +156,7 @@ fi
 # closes" for the reproduction this fixes.
 #
 # The external kill below is the outer half of the "always closes" guarantee -- the game's own
-# wall-clock timer (`RunConfig.rig_quit_seconds()`, `main._process()`) is the inner half, and this
+# wall-clock timer (`RunConfig.rig_quit_seconds()`, `RigLock._process()`) is the inner half, and this
 # is what fires if that one somehow does not.
 KILL_AFTER="$(rig_kill_after_seconds --after "$SECONDS_TO_WAIT" "$@")"
 rm -f "$OUT"

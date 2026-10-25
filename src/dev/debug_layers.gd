@@ -24,9 +24,9 @@ extends Node2D
 ##
 ## **One node, three booleans, not three nodes.** Godot skips `_draw()` on an invisible `CanvasItem`
 ## entirely, so a plain `visible` flag per section already buys "no work happens while a layer is
-## off" without a second node per layer to manage — `main.gd` owns the fourth layer (the developer
-## readout) on its own pre-existing `CanvasLayer`, which is not a `CanvasItem` this class could
-## parent anyway.
+## off" without a second node per layer to manage — `DebugReadout` owns the fourth layer (the
+## developer readout) on `main`'s own pre-existing `CanvasLayer`, which is not a `CanvasItem` this
+## class could parent anyway.
 ##
 ## **Every field is the real level set**, not a circle standing in for it —
 ## `GroundShape.field_outline()` and `field_outline_at()`, the same effective-distance arithmetic
@@ -94,7 +94,7 @@ func _agents() -> Array[CrowdAgent]:
 	return _crowd.agents()
 
 ## Sets which layers start on — `1` fields, `2` shadows, `3` bounding boxes — from
-## `RunConfig.layers_override`. Pulled out from `main._add_debug_layers()` so a test can drive it
+## `RunConfig.layers_override`. Pulled out from `DebugReadout.show_the_world()` so a test can drive it
 ## with the indices it wants: see `DevFlags.parse_layers()` for the same split.
 func apply_initial_state(indices: Array[int]) -> void:
 	fields_on = 1 in indices
