@@ -6,20 +6,21 @@
   to outcomes decided by `_recipe`, the day's `_spec`, `_resume_gate_open`, `_run_over`, `_went_back`
   and `_ending_shown`, and whether a run stands behind the escape is `main`'s `_escape_from_a_run`. `tests/test_resistance.gd` (near
   3414) copies `_start_day`'s order because it lives only in a private method.
-- **Run state is kept by hand in up to six places per field:** `save_snapshot`, `restore_snapshot`,
-  `snapshot_is_complete` (`game_state.gd` near 680-777), the `_dawn_*` copies and the lost day's
-  give-back (near 158-180, 561-595), and the save's riders in `GameSave.run_data`/`restore_run_data`
-  (`game_save.gd` near 515-566); a field missed in one is silently not given back or not saved.
-  `PosterState` and `PelicanState` already have the right shape (`reset`, `photograph`, `give_back`,
-  `to_data`, `restore`). `GameState.` is read over a hundred times in `main` alone. The hidden
-  globals held in statics are filed in `hidden-statics.md`.
+- **The registered run state reaches the save and most readers through `GameState`.** The run's
+  sub-states are one list, `GameState.run_parts`, and the dawn copy, the lost day's give-back, the
+  snapshot and the save walk it; `GameSave` is a static that reads that list off `GameState` rather
+  than being handed it, and `ResistanceDirector`, `EventManager`, `Happenings`, `hud.gd` and
+  `day_summary.gd` read the run's fields (`GameState.pelican`, `.scars`, `.city_state`,
+  `.completed_resistance_steps`) through `GameState`'s forwarding properties rather than a part they
+  are handed. `GameState.` is read about a hundred times in `main`, `GameState.day` among them. The
+  hidden globals held in statics are filed in `hidden-statics.md`.
 - **One summary screen with four hand-reset modes** (`day_summary.gd`: `show_day_brief`, `show_day`,
   `show_ending`, `show_finale`); the screen's mode is tracked in `main`'s booleans. The resistance tally and the run-standing
   line are each formatted in two places.
 
 **Build:** a `RunFlow` with an explicit mode enum and its transitions; a `DayDirector` with public
 `start_day(spec)` and `finish_day(result)` that `main` and the tests both call; a pure `LossCause`;
-one registered list of run sub-states with the `PosterState` interface, injected rather than read
+the registered run sub-states handed to the save and to the readers named above rather than read
 from `GameState`; a pure `SummaryModel` the screen only renders, and `continued(mode)`.
 
 **Scene recipes become configurations of `RunFlow`.** The dev flags are one `RunConfig` read at boot
