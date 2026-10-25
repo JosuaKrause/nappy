@@ -265,11 +265,10 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 	stroller.free()
 	manager.free()
 
-## **No second conversation across streaming**, though the chat is kept on the instance and not on
-## its plan (`EventScheduler.Planned` carries no hold state): a conversation ends with her
-## leaving (`EventInstance._be_done()`), and a plan streamed out while its instance is leaving is
-## spent (`EventManager._stream_out()`), so walking away past the stream radius and back brings no
-## second mother to stop her. Driven through the manager's own streaming on a plan, the way a day
+## **No second conversation across streaming**: a conversation ends with her leaving
+## (`EventInstance._be_done()`), and a plan streamed out while its instance is leaving is spent
+## (`EventManager._stream_out()`), so walking away past the stream radius and back brings no second
+## mother to stop her. Driven through the manager's own streaming on a plan, the way a day
 ## puts her in the world.
 func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")

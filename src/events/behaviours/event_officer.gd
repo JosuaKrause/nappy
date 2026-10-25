@@ -40,9 +40,10 @@ func stand_with_her() -> void:
 
 ## After his chase's step (`EventPursuit`): **his catch, made a stop** — chasing, within his
 ## catch's own reach of her and along a clear line, the very test a catch that ends the day asks —
-## and the next point of his trail; once he has stopped her, standing with her instead. **A man who would stop her waits outside a door's hold** (`EventInstance.she_is_held`): a
-## stop is a cost on the meter, and inside a hold nothing but the door's toll reaches her, so he
-## keeps after her and stops her once she is let out. *Chosen while building, open to overturn.*
+## and the next point of his trail; once he has stopped her, standing with her instead. **A man
+## who would stop her waits outside a door's hold** (`EventInstance.she_is_held`): a stop is a cost
+## on the meter, and inside a hold nothing but the door's toll reaches her, so he keeps after her
+## and stops her once she is let out. *Chosen while building, open to overturn.*
 func step(_delta: float) -> void:
 	if has_stopped_her():
 		stand_with_her()

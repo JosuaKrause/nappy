@@ -2597,42 +2597,32 @@ var she_is_held := false
 func has_stopped_her() -> bool:
 	return on_foot != null and on_foot.has_stopped_her()
 
-## Ends this chase from outside `EventPursuit`'s own loop, in the one state `EventPursuit` reaches when she
-## has outrun it: `gave_up` set, `_be_done()` called — the same departure, the same drawing and the
-## same `TelemetryObserver._watch_the_chase()` "gave up" line as an ordinary shake-off, because
-## it is that give-up and not a second kind. See
-## `CheckpointController._end_the_guard_for_a_hold()` — *(2026-09-24, the player: "if she
-## voluntarily goes to a hut the whole pursuit has been accomplished")* — a checkpoint hut's
-## hold has just done what the chase was for, whatever `EventPursuit` itself was doing when it
-## happened, a telegraph still running included.
-##
-## `_be_done()`'s own guard makes a second call, or one on anything already finished or leaving, a
-## no-op rather than a double departure.
+## **Ends this chase from outside it**, in the state `EventPursuit` leaves a pursuer she has outrun:
+## `gave_up` set and `_be_done()` called, so the same departure, drawing and "gave up" line as an
+## ordinary shake-off. A checkpoint hut's hold has done what the chase was for, whatever the chase
+## was doing, a telegraph still running included (`CheckpointController.
+## _end_the_guard_for_a_hold()`, 2026-09-24). A second call, or one on anything finished or
+## leaving, is a no-op.
 func give_up_the_chase() -> void:
 	if is_finished or is_leaving:
 		return
 	gave_up = true
 	_be_done()
 
-## **Notices her now, wherever she is**: a waiting pursuer told to come after her by what she did
-## rather than by what it saw — day 13's waiting guard, the moment she has done the roadblock's task,
-## from wherever he stands (`ResistanceDirector._set_the_task_guard_on_her()`; inbox #651 follow-up,
-## the player: "as long as he starts pursuing when you hit the task it's fine"). The notice
-## `EventPursuit` makes, without its range and its clear line: the clock starts, he turns to her, and
-## from then on he is an ordinary pursuer — his notice runs before he may lunge, he closes only to
-## his stand-off while it runs, and he lunges only along a clear line. Noticed already inside his
-## stand-off, which only a wall between them allows here, the lunge is held as `EventPursuit` holds it
-## (`pursuit.lunge_held`). **A guard already warning her by sight is set on her the same way**, his own
-## warning giving way to this notice, since she could walk out of a warning and he would never come.
-## Nothing for a pursuer already charging or done, or for a `her` of `Vector2.INF`.
+## **Notices her now, wherever she is**: a waiting pursuer set on her by what she did rather than
+## by what it saw — day 13's waiting guard the moment she has done the roadblock's task
+## (`ResistanceDirector._set_the_task_guard_on_her()`, curly-gecko). It is
+## `EventPursuit`'s notice without its range and its clear line: the clock starts, he turns to her,
+## and from then on he is an ordinary pursuer, closing only to his stand-off while his notice runs
+## and lunging only along a clear line; noticed inside his stand-off, his lunge is held
+## (`EventPursuit.lunge_held`). A guard already warning her by sight is set on her the same way,
+## since she could walk out of his warning and he would never come. Nothing for a pursuer already
+## charging or done, or for a `her` of `Vector2.INF`.
 ##
 ## `notice` replaces the row's `telegraph_time` for this notice when it is not negative, and `stand`
-## has him stand still in his warning for it (`is_standing_for_its_notice()`): day 13's guard, in her
-## view, raises his warning for a second and then charges *(inbox #764 in minty-lemur, the player: "yes, we can do
-## a 1s on screen and 1s off-screen warning if they were not visible")*.
-##
-## **From here he walks round buildings toward her** (`_paths_to_her`): set on her from wherever he
-## stands, he may start a city away with blocks between them.
+## has him stand still in his warning for it (`is_standing_for_its_notice()`): in her view, day
+## 13's guard raises his warning for a second and then charges (inbox #764 in minty-lemur). From
+## here he walks round buildings toward her (`_paths_to_her`), since he may start a city away.
 func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	if not (is_waiting() or (is_telegraphing() and warns_by_radius())) or her == Vector2.INF \
 			or is_finished:
@@ -3321,7 +3311,8 @@ func _hold_the_notice_clock(delta: float) -> void:
 ## still running at the start of this tick: a chase already under way is never turned back into
 ## a notice.
 func _pause_a_held_notice(delta: float) -> void:
-	if pursuit == null or not pursuit.lunge_held or _telegraph_ended or is_waiting() or player_at == Vector2.INF:
+	if pursuit == null or not pursuit.lunge_held or _telegraph_ended or is_waiting() \
+			or player_at == Vector2.INF:
 		return
 	if chase_age() - delta >= notice_time():
 		return

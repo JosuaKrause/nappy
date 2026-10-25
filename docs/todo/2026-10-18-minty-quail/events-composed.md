@@ -4,8 +4,7 @@
 driving and give-way, the chat and checkpoint hold, pursuit, investigation, pathing, the abduction,
 flocking, departure, the excitement field and about 2,300 lines of drawing, including the band and
 far guard as nested nodes. `_process` runs exactly one movement branch chosen by flag combinations,
-so a row needing two behaviours silently gets the first. This item's first step has its record in
-minty-quail-10.
+so a row needing two behaviours silently gets the first.
 
 **The pursuit rules are instance methods.** The phase's transitions are made from inside
 `_chase()`, `_check_for_notice()`, `_warn_on_its_line()`, `_investigate()` and the flock's flush, and

@@ -401,8 +401,7 @@ sets what the warning is:
    `player_view`), on a day as in the escape, and the warning's clock starts from the frame its
    whole warning picture is in view. An instance stepped with no view handed to it (a rig that
    steps an `EventInstance` directly) notices her by its radius alone. **So does the masked man**,
-   who runs a line rather than pursuing her (`EventInstance._check_for_notice()`,
-   `_warn_on_its_line()`): neither his notice nor his run asks a clear line, his notice asks no
+   who runs a line rather than pursuing her (`EventNoticeRun`): neither his notice nor his run asks a clear line, his notice asks no
    view, and in the stairwell his warning is off screen (below).
 2. **A charger that exists only to charge her but does not arrive charging** — the man an
    investigating patrol car or a hunting van lets out, and day 13's task guard set on her in her

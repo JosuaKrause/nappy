@@ -10,7 +10,7 @@ extends EventBehaviour
 ## walk. **But it closes to a stand-off and holds it** rather than arriving, since a pursuer that
 ## arrives early stands inside its own lethal radius for the rest of a telegraph and kills her from
 ## a standing start the moment it may. **A pursuer that waited for her and stands for its notice**
-## (`PursuitSpec.stands`) closes nothing while it warns (inbox #748 in minty-lemur); what keeps it a
+## (`PursuitSpec.stands`) closes nothing while it warns (woolly-penguin #748); what keeps it a
 ## chase is the charge once its warning has run with her still inside its radius.
 ##
 ## **A pursuer that waited for her warns inside its one radius, on a clock** (`warns_by_radius()`,
@@ -25,7 +25,7 @@ extends EventBehaviour
 
 ## **True once a wall has held its lunge back**: she came inside its stand-off with no clear line
 ## between them, or it first noticed her already inside it, which only a wall between them can do.
-## **The lunge needs a clear line** (mossy-beaver, inbox #650), and a lunge merely deferred until the
+## **The lunge needs a clear line** (mossy-beaver #650), and a lunge merely deferred until the
 ## line clears is the events skill's trap: at an alley mouth the line clears with her already inside
 ## the stand-off, and it would lunge from a fraction of it. So a held pursuer holds its position
 ## while she is nearer than the stand-off, follows at the stand-off once she is further, and lunges
@@ -99,7 +99,7 @@ func _chase(delta: float) -> void:
 	# Ground covered, not ground gained: sliding along a wall is still moving.
 	event._path_travelled += moved.length()
 
-## **It notices her only along a clear line** (leafy-puffin, inbox #648), within `EventDef.notice`,
+## **It notices her only along a clear line** (leafy-puffin #648), within `EventDef.notice`,
 ## and a charger that waits for her only once his warning would stand in her view. It turns to face
 ## her on the frame it notices. Noticed already inside the stand-off, which only a wall can do since
 ## the notice is wider than the stand-off on every row, the wall held the lunge back too.
