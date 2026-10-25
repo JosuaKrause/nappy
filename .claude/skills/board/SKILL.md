@@ -32,7 +32,12 @@ Top to bottom, every part present even when empty:
 
 1. The title, the date and the player's mention, and one line: comment on any block to steer it.
 2. `## Waiting on you`: the open questions, each as below, or the one line "Nothing is waiting on
-   you right now."
+   you right now." **A heads-up the player may want to act on goes here too, not only into a chat
+   report** (inbox #850), since a line in a report is read once and scrolled away: a review thread
+   resolved by mistake, a finding that slipped past a merge. *Proposed, not asked for, open to the
+   player's correction:* it is written as a question, its My pick saying what happens if they leave
+   it, and it stays until they answer it; a choice an agent made where the design was silent stays
+   in its report and the pull request's description rather than coming here.
 3. `## Settled`: answered questions, kept until they are filed into the queue, each as below.
 4. `## Running`: a table `Item | What it is | State | Next`, one row per piece of work in flight —
    a refactor step, a fix, inbox notes waiting to be filed. A PR is a link in the State cell. Under
