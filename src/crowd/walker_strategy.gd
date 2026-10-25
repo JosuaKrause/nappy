@@ -1,13 +1,13 @@
 class_name WalkerStrategy
 extends LaneStrategy
-## How a person in the crowd moves on the lanes: the half of a `CrowdAgent` that only a walker has.
+## How a person in the crowd moves on the lanes: the half of a `LaneMover` that only a walker has.
 ##
 ## A walker travels the footway, a lane either side of the carriageway or the whole width of a
 ## precinct, and answers everything it meets in a stride: it steps round a body on its own lane,
 ## gets out of her way, rounds a corner where it stands, turns round in front of a wall, and queues
 ## at a checkpoint hut the way she is held there. None of that needs warning or a path, so a walker
 ## acts on a barrier only when it is the next tile and reads the bodies themselves rather than a
-## street's hold. The car's half is `CarStrategy`; what both share is the mover, `CrowdAgent`.
+## street's hold. The car's half is `CarStrategy`; what both share is the mover, `LaneMover`.
 
 ## What this walker does when the street it is on crosses a region wall at a door — drawn once, in
 ## `draw_the_door_answer()`, at the moment it is placed. *(Playtest 58: "Held at the hut like her";
@@ -83,7 +83,7 @@ static var _walker_today := Mover.of(Mover.TODAY)
 static var _soft_sealed_today := Mover.of(Mover.SOFT_SEALS)
 static var _bodies_today := Mover.of(Mover.BODIES)
 
-func _init(mover: CrowdAgent) -> void:
+func _init(mover: LaneMover) -> void:
 	super(mover)
 	acts_within = 1
 	today = _walker_today
@@ -153,7 +153,7 @@ func paced_velocity(moving: Vector2) -> Vector2:
 
 func after_the_step(delta: float) -> void:
 	_consider_turning()
-	_mover._advance_walker_gait(delta)
+	_mover.advance_the_picture(delta)
 
 ## Going round a body is the same kind of question as the look-ahead and is answered off the same
 ## cache: which tile, which axis, which way. Asked before the look-ahead's own walk, because that one
@@ -202,7 +202,7 @@ func forget_the_detour() -> void:
 ## be standing on. And it draws a fresh answer, here, before the placement's rolls, for the reason
 ## `draw_the_door_answer()` gives: the entry point is checked against ground this walker may walk.
 func on_recycled() -> void:
-	_mover._walker_gait_phase = 0.0
+	_mover.restart_the_picture()
 	_let_go_of_the_hut()
 	_forget_the_refusal()
 	draw_the_door_answer()
@@ -498,9 +498,9 @@ func _consider_turning() -> void:
 	# along is a street to walk into as far as the seal, and refusing it here is what left every
 	# offshoot of the day's route empty.
 	var turning := 1.0 if _mover._rng.randf() < 0.5 else -1.0
-	if _no_street_ahead(not _mover._vertical, turning, CrowdAgent.LOOKAHEAD):
+	if _no_street_ahead(not _mover._vertical, turning, LaneMover.LOOKAHEAD):
 		turning = -turning
-		if _no_street_ahead(not _mover._vertical, turning, CrowdAgent.LOOKAHEAD):
+		if _no_street_ahead(not _mover._vertical, turning, LaneMover.LOOKAHEAD):
 			return
 
 	# The two axes swap roles and the position does not move: what was the distance along
@@ -691,7 +691,7 @@ func _walker_lane_is_open(tile: Vector2i) -> bool:
 ## How far a lane scan looks, in tiles: far enough past the distance a sidestep begins at that the
 ## lane chosen is the one with more road in it rather than the one that happens to be clear for a
 ## tile longer.
-const BODY_SCAN_TILES := Tuning.WALKER_BODY_SIDESTEP_TILES + CrowdAgent.LOOKAHEAD_TILES
+const BODY_SCAN_TILES := Tuning.WALKER_BODY_SIDESTEP_TILES + LaneMover.LOOKAHEAD_TILES
 
 ## Steers this walker into whichever lane of its own footway has the most open road in front of it,
 ## so it goes round a body standing on its own lane and comes back to that lane afterwards.
@@ -931,6 +931,6 @@ func divert(_delta: float) -> void:
 ## down there and turn round (`_no_street_ahead()`), and it asks from where it stands.
 func _pick_an_arm(crossing: int, first: float) -> float:
 	for turning: float in [first, -first]:
-		if not _no_street_ahead(not _mover._vertical, turning, CrowdAgent.LOOKAHEAD):
+		if not _no_street_ahead(not _mover._vertical, turning, LaneMover.LOOKAHEAD):
 			return turning
 	return 0.0
