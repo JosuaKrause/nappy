@@ -103,8 +103,8 @@ func _first_difference(a: Dictionary, b: Dictionary) -> String:
 ## Every part `GameState` declares is on its registry.
 func _test_the_registry_lists_every_part_the_state_declares(t) -> void:
 	var missing := RunStateRegistry.unregistered_in(GameState, GameState.run_parts)
-	t.check(missing.is_empty(), "every run sub-state GameState declares is registered (%s)" % missing)
-	t.check(GameState.run_parts.parts().size() >= 7, "and the list holds the seven parts")
+	t.check(missing.is_empty(), "every run sub-state GameState declares is registered (%s)" % [missing])
+	t.check(GameState.run_parts.parts().size() == 7, "and the list holds the seven parts")
 
 func _test_a_part_left_off_the_list_is_caught(t) -> void:
 	var owner := FakeOwner.new()
