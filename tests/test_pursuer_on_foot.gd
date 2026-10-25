@@ -88,14 +88,14 @@ func _test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t) -> void:
 		if not def:
 			continue
 		t.check(def.look == looks[id], "'%s' draws its own look" % id)
-		t.check(def.warned_first and def.arrives_chasing and def.telegraph_time == 0.0,
+		t.check(def.warned_first and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) and def.telegraph_time == 0.0,
 				"'%s' is warned of before it exists and arrives chasing, with no closing in" % id)
 		t.check(is_equal_approx(def.offscreen_notice, robber.offscreen_notice)
 				and def.offscreen_notice <= Tuning.WARNING_ALONE_MAX,
 				"'%s' has the robber's %.1fs badge" % [id, robber.offscreen_notice])
 		t.check(is_equal_approx(def.duration, Tuning.PURSUIT_TIME),
 				"'%s' chases for the %.0fs cap" % [id, Tuning.PURSUIT_TIME])
-		t.check(def.pursues and is_equal_approx(def.pursue_speed, robber.pursue_speed)
+		t.check(def.pursuit != null and is_equal_approx(def.chase_speed(), robber.chase_speed())
 				and is_equal_approx(def.lethal_reach(), robber.lethal_reach())
 				and is_equal_approx(def.standoff_reach(), robber.standoff_reach())
 				and is_equal_approx(def.intensity, robber.intensity)
@@ -306,9 +306,9 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 				Tuning.OFFICER_STOP_EXCITEMENT),
 				"day %d: and his catch is a stop of %.0f points, never the end of the day"
 				% [day, out.stop_excitement])
-		t.check(not out.warns_before_it_exists() and not out.arrives_chasing,
+		t.check(not out.warns_before_it_exists() and not out.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 				"day %d: he gets out in her view, with no off-screen badge" % day)
-		t.check(out.sets_off_beside_her and out.stands_for_its_notice
+		t.check(out.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and out.pursuit.stands
 				and is_equal_approx(out.telegraph_time, Tuning.WARNING_ALONE_MAX)
 				and out.telegraph_time >= Tuning.OFFSCREEN_WARNING_MIN,
 				"day %d: he stands with his hand raised for a %.1fs heads-up before he chases"
@@ -502,7 +502,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) ->
 		t.check(off_its_lane < 0.01, "day %d: the car kept to its lane (%.2fpx off it)"
 				% [day, off_its_lane])
 		t.check(stopped_at != Vector2.INF
-				and stopped_at.distance_to(her.global_position) <= hot.pursues_within + 0.5,
+				and stopped_at.distance_to(her.global_position) <= hot.notice_within() + 0.5,
 				"day %d: it stopped once close to her (%.0fpx)"
 				% [day, stopped_at.distance_to(her.global_position)])
 		t.check(officer != null and is_instance_valid(officer) and officer.def.id == expected,
@@ -743,7 +743,7 @@ func _test_the_hunting_vans_hunt_on_foot(t) -> void:
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(cold, level)
 			var hunts := level >= Tuning.HEAT_HUNTS_LEVEL
-			t.check(not hot.pursues and hot.hard_fail == cold.hard_fail,
+			t.check(not hot.pursuit != null and hot.hard_fail == cold.hard_fail,
 					"'%s' heat %d: the van itself never chases her, and is as lethal as cold"
 					% [id, level])
 			t.check(hot.investigates == hunts, "'%s' heat %d: it lets men out iff it hunts"
@@ -765,7 +765,7 @@ func _test_no_vehicle_pursues_her(t) -> void:
 			continue
 		vehicles += 1
 		for level in EventCatalogue.heat_levels():
-			t.check(not EventCatalogue.heated(def, level).pursues,
+			t.check(not EventCatalogue.heated(def, level).pursuit != null,
 					"'%s' at heat %d never pursues her" % [def.id, level])
 	t.check(vehicles >= 3, "checked %d vehicle rows" % vehicles)
 
@@ -779,7 +779,7 @@ func _test_a_hunting_van_waits_for_its_men(t) -> void:
 	van.setup(hot, Vector2.ZERO)
 	t.add_child(van)
 	van.set_process(false)
-	var far := Vector2(hot.pursues_within - 10.0, 0.0)
+	var far := Vector2(hot.notice_within() - 10.0, 0.0)
 	van.player_at = far
 	van._process(STEP)
 	t.check(van.officers_owed() == 2, "it notices her and owes two men")
@@ -867,7 +867,7 @@ func _test_a_hunting_van_stops_and_lets_men_out(t) -> void:
 func _test_the_car_does_not_notice_her_through_a_building(t) -> void:
 	var map := CityGenerator.generate(SEED)
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
-	var found := _a_hidden_spot(map, hot.pursues_within)
+	var found := _a_hidden_spot(map, hot.notice_within())
 	t.check(found.size() == 2, "found walkable ground in its reach behind a building")
 	if found.size() != 2:
 		return

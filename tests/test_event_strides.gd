@@ -126,7 +126,7 @@ func _test_waiting_robber_holds_frame_a(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	# Well outside `pursues_within`, so he stays `is_waiting()` for the whole run.
+	# Well outside `EventDef.notice`, so he stays `is_waiting()` for the whole run.
 	instance.player_at = Vector2(9999.0, 9999.0)
 	for i in 120:
 		instance._process(STEP)

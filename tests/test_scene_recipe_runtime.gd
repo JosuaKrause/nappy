@@ -132,7 +132,7 @@ func _test_hold_is_for_a_straight_departure(t) -> void:
 				"%s is refused" % row)
 	var flock := ""
 	for def: EventDef in EventCatalogue.all():
-		if def.flock_size > 0 and not def.pursues:
+		if def.flock_size > 0 and def.pursuit == null:
 			flock = SceneRecipeRuntime.hold_refusal(def)
 	t.check(flock.contains("does not pursue"), "a flock is refused for not pursuing: %s" % flock)
 	var message := SceneRecipeRuntime.hold_refusal_message("post", EventCatalogue.by_id("roadblock"))
@@ -262,10 +262,10 @@ func _test_heat_installs_the_heated_row(t) -> void:
 		runtime.free()
 	var cold: EventDef = installed.get(null)
 	var hot: EventDef = installed.get(Tuning.HEAT_INVESTIGATES_LEVEL)
-	t.check(cold != null and not cold.investigates and is_zero_approx(cold.pursues_within),
+	t.check(cold != null and not cold.investigates and is_zero_approx(cold.notice_within()),
 			"with no heat the recipe installs the cold patrol, no trigger")
 	t.check(hot != null and hot.investigates
-			and is_equal_approx(hot.pursues_within, Tuning.HEAT_INVESTIGATE_WITHIN),
+			and is_equal_approx(hot.notice_within(), Tuning.HEAT_INVESTIGATE_WITHIN),
 			"at the investigating level it installs the copy that stops for her from %.0fpx"
 			% Tuning.HEAT_INVESTIGATE_WITHIN)
 	city.free()

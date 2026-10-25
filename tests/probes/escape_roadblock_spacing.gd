@@ -8,7 +8,7 @@ extends RefCounted
 ## The plan is `FinalePlanner.plan()` on seeds 1 to 40, built the way `tests/test_finale.gd` builds
 ## it, and each band stands where `EventScheduler._stands_at()` puts it, which is where its guard
 ## notices her from. "Under" counts the pairs nearer than the two guards' notices together
-## (`pursues_within` each), the ground on which both can come for her at once.
+## (`EventDef.notice` each), the ground on which both can come for her at once.
 
 const SEEDS := 40
 
@@ -35,7 +35,7 @@ func run(t) -> void:
 				var gap := EventScheduler._stands_at(map, bands[i]).distance_to(
 						EventScheduler._stands_at(map, bands[j]))
 				pairs += 1
-				if gap < bands[i].def.pursues_within + bands[j].def.pursues_within:
+				if gap < bands[i].def.notice_within() + bands[j].def.notice_within():
 					under += 1
 				if gap < nearest:
 					nearest = gap

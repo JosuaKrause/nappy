@@ -102,10 +102,11 @@ class Planned extends RefCounted:
 	## **resumes** it rather than rewinding it. See `EventManager._stream_in`.
 	var age := 0.0
 	var travelled := 0.0
-	## The `_noticed_at` a `EventDef.notice` instance held when it was last streamed out, or `INF` if
-	## it had not yet noticed her — the third thing a stream-out has to carry beside `age` and
-	## `travelled`, or a row streamed out mid-chase comes back `is_waiting()`, having forgotten it.
-	## See `EventManager._stream_out()` and `_stream_in()`, and `EventInstance.resume()`.
+	## Where on its clock an instance with an `EventDef.notice` had noticed her when it was last
+	## streamed out (`EventInstance.noticed_at()`), or `INF` if it had not yet noticed her — the
+	## third thing a stream-out has to carry beside `age` and `travelled`, or a row streamed out
+	## mid-chase comes back `is_waiting()`, having forgotten it. See
+	## `EventManager._stream_out()` and `_stream_in()`, and `EventInstance.resume()`.
 	var noticed_at := INF
 	## Whether the guard who set off from this roadblock's barrier was spent (or leaving) when it was
 	## last streamed out, and which side's post he left empty: what `EventInstance.
@@ -623,10 +624,11 @@ static func _clearance_around_her(def: EventDef) -> float:
 	return reach + Tuning.TILE_SIZE * 0.5
 
 ## A `MAP` placement's own answer to `EventDef.notice_on(day)` — a derived copy for the same reason
-## `at_heat()`'s is one: the catalogue's rows are shared by every day of the run, so a placement past
-## `EventDef.from_day_after` cannot set the shared row's `notice` without changing what every other
-## day sees. An instance reads `EventDef.notice` off the def it was handed, so the day's answer
-## arrives as a different def. `def` itself for every row whose notice does not change by day.
+## `at_heat()`'s is one: the catalogue's rows are shared by every day of the run, so a placement
+## past `EventDef.from_day_after` cannot set the shared row's `notice` without changing what
+## every other day sees. An instance reads `EventDef.notice` off the def it was handed, so the
+## day's answer arrives as a different def. `def` itself for every row whose notice does not
+## change by day.
 static func _for_day(def: EventDef, day: int) -> EventDef:
 	var notice := def.notice_on(day)
 	if notice == def.notice:

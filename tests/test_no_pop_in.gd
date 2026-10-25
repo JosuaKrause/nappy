@@ -56,11 +56,11 @@ static func _views(her: Vector2) -> Array[VisibleView]:
 static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 		path := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
-	if path.is_empty() and row.mobile and not row.pursues:
+	if path.is_empty() and row.mobile and not row.pursuit != null:
 		path = PackedVector2Array([at, her + (her - at)])
 	instance.setup(row, at, path)
 	instance.came_under_a_warning = true
-	if not row.pursues or row.arrives_chasing:
+	if not row.pursuit != null or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.resume(EventManager.age_when_warned(row), 0.0)
 	instance.player_at = her
 	instance.player_running = false
@@ -85,7 +85,7 @@ func _test_open_ground_over_every_bearing_and_camera(t) -> void:
 						PendingWarning.seen_from(view, her), row, her, way)]
 				if row.comes_down_her_line():
 					places.append(PendingWarning.down_her_line(null, row, her, way, view))
-				if row.pursues:
+				if row.pursuit != null:
 					places.append(PendingWarning.along_her_heading(null, row, her, way, view))
 				for at in places:
 					var instance := _arrival(row, at, her)

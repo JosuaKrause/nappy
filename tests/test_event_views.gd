@@ -470,7 +470,7 @@ func _test_setup_resets_the_view_to_the_exact_siting(t) -> void:
 
 ## "A stationary actor whose action has a target faces that target": the waiting robber has not
 ## noticed her yet (`is_waiting()` stays true — `_chase()` only turns `_heading` toward her once
-## she is inside `pursues_within`), but a man only watching the street is worth nothing next to a
+## she is inside `EventDef.notice`), but a man only watching the street is worth nothing next to a
 ## man watching *her*, so `_robber_waiting_heading()` reads `player_at` directly.
 func _test_robber_waiting_faces_her(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
@@ -478,9 +478,9 @@ func _test_robber_waiting_faces_her(t) -> void:
 	instance.setup(def, Vector2.ZERO)
 	t.check(instance.is_waiting(), "nobody has come near him yet")
 	for sector in range(8):
-		# Well outside `pursues_within` (180px), so he never actually notices her — this is the
+		# Well outside `EventDef.notice` (180px), so he never actually notices her — this is the
 		# waiting posture's own facing, not the notice turning `_heading` for it.
-		instance.player_at = _heading_for_sector(sector) * (def.pursues_within + 40.0)
+		instance.player_at = _heading_for_sector(sector) * (def.notice_within() + 40.0)
 		var heading := instance._robber_waiting_heading()
 		t.check(instance.is_waiting(), "still only waiting at sector %d" % sector)
 		var view := instance._select_view(heading)
@@ -505,9 +505,9 @@ func _test_robber_lunging_faces_her_through_the_chase(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	# Southeast of him and inside `pursues_within`, so one `_chase()` step notices her and turns to
+	# Southeast of him and inside `EventDef.notice`, so one `_chase()` step notices her and turns to
 	# face her.
-	var her := _heading_for_sector(1) * (def.pursues_within - 10.0)
+	var her := _heading_for_sector(1) * (def.notice_within() - 10.0)
 	instance.player_at = her
 	instance._process(STEP)
 	t.check(not instance.is_waiting(), "he has noticed her")
@@ -550,9 +550,9 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	t.check(instance.is_waiting() and instance._stands_still_now()
 			and instance.masked_pursuer_pictures() == EventInstance.GUARD_STANDING_BY_VIEW,
 			"waiting at the foot of the shaft he is drawn standing")
-	# Inside `pursues_within` (900px), outside `charges_within`: one step notices her, and he warns
-	# for as long as she stays there, longer than his `telegraph_time`.
-	instance.player_at = Vector2(0.0, def.charges_within + 100.0)
+	# Inside `EventDef.notice` (900px), outside `NoticeSpec.runs_within`: one step notices her,
+	# and he warns for as long as she stays there, longer than his `telegraph_time`.
+	instance.player_at = Vector2(0.0, def.notice.runs_within + 100.0)
 	instance._process(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
 	var alert := true
@@ -561,7 +561,7 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 				and instance.masked_pursuer_pictures() == EventInstance.GUARD_ALERT_BY_VIEW
 		instance._process(STEP)
 	t.check(alert, "and stands with his hand raised for as long as she stays out of his reach")
-	instance.player_at = Vector2(0.0, def.charges_within - 10.0)
+	instance.player_at = Vector2(0.0, def.notice.runs_within - 10.0)
 	for i in int(round(0.1 / STEP)):
 		instance._process(STEP)
 	t.check(not instance.is_telegraphing() and not instance._stands_still_now()
@@ -589,19 +589,19 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 			Tuning.RUN_TAUGHT_DAY + 1)
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	_hold(instance, Vector2(def.pursues_within + 60.0, 0.0), 1.0)
+	_hold(instance, Vector2(def.notice_within() + 60.0, 0.0), 1.0)
 	var pictures := instance.charging_dog_pictures()
 	t.check(instance.is_waiting() and pictures[0] == EventInstance.CHARGING_DOG_RESTING_BY_VIEW
 			and pictures[1].is_empty(), "waiting for her, the dog sits, with no stride frame")
 	# Inside its radius, where she stands through its warning.
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
-	var her := Vector2((def.pursues_within + standoff) * 0.5, 0.0)
+	var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
+	var her := Vector2((def.notice_within() + standoff) * 0.5, 0.0)
 	_hold(instance, her, STEP)
 	t.check(instance.is_standing_for_its_notice(), "it notices her and stands for its notice")
 	t.check(instance._heading.is_equal_approx(her.normalized()), "turned to face her")
 	var still := true
 	var alert := true
-	for i in int(round(def.warns_for / STEP)) - 3:
+	for i in int(round(def.pursuit.warns_for / STEP)) - 3:
 		instance._process(STEP)
 		still = still and instance.global_position.is_equal_approx(Vector2.ZERO) \
 				and not instance._gait_stepping()
@@ -611,14 +611,14 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 	t.check(alert, "its alert, a still picture, through its warning")
 	t.check(still, "and it does not move toward her while it warns")
 	# Back out of its radius it sits again, and warns again when she comes back.
-	_hold(instance, Vector2(def.pursues_within + 10.0, 0.0), STEP)
+	_hold(instance, Vector2(def.notice_within() + 10.0, 0.0), STEP)
 	pictures = instance.charging_dog_pictures()
 	t.check(instance.is_waiting() and pictures[0] == EventInstance.CHARGING_DOG_RESTING_BY_VIEW,
 			"out of its radius again, it sits")
 	_hold(instance, her, STEP)
 	t.check(instance.charging_dog_pictures()[0] == EventInstance.CHARGING_DOG_ALERT_BY_VIEW,
 			"and back inside, it warns again")
-	_hold(instance, her, def.warns_for + 0.2)
+	_hold(instance, her, def.pursuit.warns_for + 0.2)
 	pictures = instance.charging_dog_pictures()
 	t.check(not instance.is_telegraphing() and pictures[0] == EventInstance.CHARGING_DOG_BY_VIEW
 			and pictures[1] == EventInstance.CHARGING_DOG_BY_VIEW_B,
@@ -629,7 +629,7 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 ## never stands: the same row handed to the director with no trigger to have waited behind.
 func _test_the_day_3_dog_gallops_through_its_approach(t) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
-	t.check(def.pursues_within <= 0.0, "on the teaching day the dog does not wait")
+	t.check(def.notice_within() <= 0.0, "on the teaching day the dog does not wait")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	_hold(instance, Vector2(400.0, 0.0), 1.0)
@@ -645,10 +645,10 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	_hold(instance, Vector2(def.pursues_within + 40.0, 0.0), 0.5)
+	_hold(instance, Vector2(def.notice_within() + 40.0, 0.0), 0.5)
 	t.check(instance.is_waiting() and instance.robber_pictures() == EventInstance.ROBBER_WAITING_BY_VIEW,
 			"waiting, hood up and hands in his coat")
-	var her := Vector2(def.pursues_within - 4.0, 0.0)
+	var her := Vector2(def.notice_within() - 4.0, 0.0)
 	_hold(instance, her, STEP)
 	t.check(instance.is_telegraphing() and not instance.is_standing_for_its_notice(),
 			"he notices her, and he does not stand for it")
@@ -689,13 +689,13 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 	var stopped_at := walker.global_position
 	t.check(walker.is_telegraphing() and stopped_at.x > 10.0,
 			"he has walked %.1fpx at her" % stopped_at.x)
-	var out := stopped_at + Vector2(def.pursues_within + 4.0, 0.0)
+	var out := stopped_at + Vector2(def.notice_within() + 4.0, 0.0)
 	_hold(walker, out, 1.0)
 	t.check(walker.is_waiting() and walker.robber_pictures() == EventInstance.ROBBER_WAITING_BY_VIEW,
 			"out of his radius he waits again, hood up")
 	t.close_to(walker.global_position.distance_to(stopped_at), 0.0,
 			"where he had walked to, not back at his post", 0.5)
-	_hold(walker, stopped_at + Vector2(def.pursues_within - 4.0, 0.0), STEP)
+	_hold(walker, stopped_at + Vector2(def.notice_within() - 4.0, 0.0), STEP)
 	t.check(walker.is_telegraphing() and walker.robber_pictures() == EventInstance.ROBBER_ALERT_BY_VIEW,
 			"and back inside it he warns again")
 	walker.free()
@@ -714,18 +714,18 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 	t.add_child(guard)
 	guard.set_process(false)
 	guard._attach_the_band()
-	var her := Vector2(0.0, hot.pursues_within - 10.0)
+	var her := Vector2(0.0, hot.notice_within() - 10.0)
 	_hold(guard, her, STEP)
 	t.check(guard.chaser_side() != 0 and guard.is_standing_for_its_notice(),
 			"the guard on her side has noticed her and stands for his notice")
 	t.check(guard.chaser_pictures() == EventInstance.GUARD_ALERT_BY_VIEW, "hand raised")
 	var post := guard.global_position
-	_hold(guard, her, hot.warns_for - 0.2)
+	_hold(guard, her, hot.pursuit.warns_for - 0.2)
 	t.check(guard.global_position.is_equal_approx(post)
 			and guard.chaser_pictures() == EventInstance.GUARD_ALERT_BY_VIEW,
 			"at his post, hand raised, through his warning")
 	# Out of his radius he is back at the band, and both guards stand at their posts again.
-	_hold(guard, Vector2(0.0, hot.pursues_within + 10.0), STEP)
+	_hold(guard, Vector2(0.0, hot.notice_within() + 10.0), STEP)
 	t.check(guard.is_waiting() and guard.chaser_side() == 0 and not guard.has_left_its_body_behind()
 			and guard.global_position.is_equal_approx(Vector2.ZERO),
 			"out of his radius he stands at the band again, its body under him")
@@ -733,7 +733,7 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 	t.check(guard.is_standing_for_its_notice()
 			and guard.chaser_pictures() == EventInstance.GUARD_ALERT_BY_VIEW,
 			"and back inside it he raises his hand again")
-	_hold(guard, her, hot.warns_for + 0.2)
+	_hold(guard, her, hot.pursuit.warns_for + 0.2)
 	t.check(not guard.is_telegraphing()
 			and guard.chaser_pictures() == EventInstance.GUARD_LUNGING_BY_VIEW,
 			"then, his warning run with her still inside his radius, he lunges")
@@ -741,11 +741,11 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 
 func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> void:
 	# The warning is the hut's guard's, drawn from her crossing of the door's line
-	# (`EventInstance.guard_warns_her`, set by `EventManager._warn_at_the_doors()`); the man set on
-	# her once it has run with her still across charges from his first frame
-	# (`EventDef.charges_at_once`).
+	# (`EventInstance.guard_warns_her`, set by `CheckpointController.warn_at_the_doors()`); the
+	# man set on her once it has run with her still across charges from his first frame
+	# (`PursuitSpec.Start.CHARGES_AT_ONCE`).
 	var def := EventCatalogue.by_id("door_guard")
-	t.check(def.charges_at_once and is_zero_approx(def.telegraph_time),
+	t.check(def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE) and is_zero_approx(def.telegraph_time),
 			"the door guard owes no notice of his own")
 	var guard := EventInstance.new()
 	guard.setup(def, Vector2(32.0, 80.0))
@@ -776,7 +776,7 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t) -> void:
 		for stops: bool in [true, false]:
 			var def := EventCatalogue.out_of_the_car(day_of[id], stops)
 			var name := "%s out of %s" % [id, "a patrol car" if stops else "a hunting van"]
-			t.check(def.stands_for_its_notice and def.sets_off_beside_her
+			t.check(def.pursuit.stands and def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER)
 					and is_equal_approx(def.telegraph_time, Tuning.WARNING_ALONE_MAX),
 					"%s stands for a %.1fs heads-up" % [name, def.telegraph_time])
 			var alert_pictures := EventInstance.POLICEMAN_ALERT_BY_VIEW \
@@ -810,7 +810,7 @@ func _pictures_of(man: EventInstance) -> Dictionary:
 func _test_no_guard_who_arrives_charging_takes_the_alert(t) -> void:
 	for id: String in ["van_guard_giving_chase", "policeman_giving_chase", "guardsman_giving_chase"]:
 		var def := EventCatalogue.by_id(id)
-		t.check(def.arrives_chasing and not def.stands_for_its_notice,
+		t.check(def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) and not def.pursuit.stands,
 				"'%s' arrives charging and does not stand for a notice" % id)
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)

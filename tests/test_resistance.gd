@@ -880,14 +880,14 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t) -> void:
 ## brisk-wombat's other half: *"a robber also appeared out of nowhere and instakilled me."* A
 ## guard's own band is drawn relative to the mark alone, with no idea where she is standing, so a
 ## mark relocating right up to where she stands (or a dawn placement near a wandering player)
-## could put him inside his own `pursues_within`, or worse `inner_radius` (a `hard_fail` with no
+## could put him inside his own `EventDef.notice`, or worse `inner_radius` (a `hard_fail` with no
 ## warning), of wherever she actually is unless the draw is also asked to refuse that. Checked
 ## directly against `_draw_guard_position()`, the draw the roadblock's guard uses, with
 ## `her` forced onto the mark itself — the closest a real guard's own band ever gets to her.
 func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var checked := 0
 	for seed_value in [4242, 90210, 2295276695, 314159, 271828, 555555]:
 		var map := CityGenerator.generate(seed_value)
@@ -902,10 +902,10 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 			for _attempt in 3:
 				checked += 1
 				var guard_at := director._draw_guard_position(rng, mark, Vector2.INF,
-						min_distance, max_distance, [], mark, robbery.pursues_within)
+						min_distance, max_distance, [], mark, robbery.notice_within())
 				if guard_at == Vector2.INF:
 					continue
-				t.check(guard_at.distance_to(mark) > robbery.pursues_within,
+				t.check(guard_at.distance_to(mark) > robbery.notice_within(),
 						"seed %d: the guard for the mark at %s never lands within his own reach of her"
 						% [seed_value, tile])
 		director.free()
@@ -1062,7 +1062,7 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 		var walker := late._rider
 		t.check(walker != null, "the neighbor is walking home")
 		if walker:
-			walker.is_parked = true
+			walker.transition(EventInstance.Phase.PARKED)
 			late._process(STEP)
 			t.check(late._taken_neighbor == walker, "reaching the door first, they are to be taken")
 			var at := walker.global_position
@@ -1109,7 +1109,7 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 			var walker := late._rider
 			t.check(walker != null, "%s scheme: the neighbor is walking home" % scheme)
 			if walker:
-				walker.is_parked = true
+				walker.transition(EventInstance.Phase.PARKED)
 				away.call()
 				late._process(STEP)
 				t.check(late._taken_neighbor == walker,
@@ -1348,13 +1348,13 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
 
 		var nothing := func(_p: Vector2) -> bool: return false
 		director.set_sight(nothing, nothing)
-		guard._noticed_at = 0.0
+		guard._notice_her()
 		director._process(STEP)
 		t.check(director.contact_position().distance_to(old_at) < 0.5,
 				"off her screen but awake, the mark still stays where it is")
 		t.check(not guard.is_finished, "and he is not retired out of his chase")
 
-		guard._noticed_at = INF
+		guard._stop_warning()
 		director._process(STEP)
 		t.check(director.contact_position().distance_to(old_at) > 0.5,
 				"asleep and out of her sight, the mark moves")
@@ -1372,7 +1372,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
 func _test_the_guard_never_lands_inside_a_building(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var checked := 0
 	var unguarded := 0
 	for seed_value in [4242, 90210, 2295276695, 314159, 271828, 555555]:
@@ -1527,13 +1527,13 @@ static func _is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 ## two-thirds of its length from the edge nearer the mark — or, where that point is within 62px of
 ## the mark (his catch and the touch reach), 62px past the mark. Every alley here is one block
 ## long, so this is the short case on every mark: he stands two-thirds in although that is under
-## 216px from the mark (his `pursues_within` and the touch reach), which the test counts so it is
+## 216px from the mark (his `EventDef.notice` and the touch reach), which the test counts so it is
 ## not vacuous. Before, he stood at the far end
 ## tile or up to three tiles in from it, at least 176px from the mark where the alley allowed.
 func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var checked := 0
 	var under_the_trigger := 0
 	var distances: Array[float] = []
@@ -1592,14 +1592,14 @@ func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
 			"the guard's own distance from the mark still varies from mark to mark")
 
 ## The long case of the same rule: where an alley is long enough for its two-thirds point to be
-## 216px or more from the mark (his 180px `pursues_within` and `ContactPoint.REACH`), he stands
+## 216px or more from the mark (his 180px `EventDef.notice` and `ContactPoint.REACH`), he stands
 ## there, and walking in from the mark's own end to read it and back out never wakes him. No city
 ## has an alley that long — every one is a block, 8 tiles — so the test carves one, 16 tiles, into a
 ## generated map's own grid and registers it as a through-alley, and reads a mark on its first
 ## tile.
 func _test_a_long_alleys_robber_stands_two_thirds_in_past_his_trigger(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var map := CityGenerator.generate(13)
 	var rect := Rect2i()
 	for x in range(4, map.size.x - 6):
@@ -1695,7 +1695,7 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void
 	GameState.completed_resistance_alley_tiles = []
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var passages := 0
 	var guarded := 0
 	var drawn_in_a_passage := 0
@@ -1808,7 +1808,7 @@ func _stays_asleep_walking_in_and_out(robbery: EventDef, guard_at: Vector2, near
 func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var reach: float = robbery.inner_radius + min_distance
 	var checked := 0
 	var seeds: Array[int] = [4242, 90210, 2295276695, 291862120, 314159, 555555]
@@ -2004,7 +2004,7 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 
 		var robbery := EventCatalogue.by_id("alley_robbery")
 		var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-		var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+		var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 
 		var attempts := 0
 		for step in ResistanceSteps.all():
@@ -2260,7 +2260,7 @@ func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
 ## never runs through a district door, awake from his first frame, and catching her where she stands
 ## if she does nothing. Day 9's is measured from where the inspection lets her out, 54px past the
 ## door's line beside the gatehouse that held her, on each side in turn
-## (`EventManager._release_finished_door_detentions()`), since that is where she stands when it
+## (`CheckpointController.release_finished_holds()`), since that is where she stands when it
 ## sends him. Planned through the real day order (`City.start_day()`, then the events), since the
 ## door, the mast and the station's door are today's own plans.
 func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
@@ -2471,13 +2471,14 @@ func _the_screen_round(her: Vector2) -> Callable:
 ## front door from across the street, below her — on legal ground, never waiting, already chasing
 ## (amendment 7: "the proximity rule is only for standing robbers"), and coming at her from his first
 ## frame. **His run at her never crosses a
-## district door's line**, asked here of each door body the way `EventManager._watch_the_door_lines()`
-## asks it of her own steps (`EventManager.where_she_crossed()`), not through the director's own
-## refusal. **A straight walkable run at her is a preference, not a guarantee**
-## (`_draw_arrival_position()`'s own doc: with none from any start, the first legal one stands in):
-## so with one — or from across the street, with his own walk at her (`_his_walk_reaches_her()`) — he
-## catches her where she stands, and without one none of the fixed starts (`_fixed_starts()`) had one
-## on legal ground either, so the director passed over no clear start it could have taken. Measured
+## district door's line**, asked here of each door body the way
+## `CheckpointController.watch_the_door_lines()` asks it of her own steps
+## (`CheckpointController.where_she_crossed()`), not through the director's own refusal. **A
+## straight walkable run at her is a preference, not a guarantee** (`_draw_arrival_position()`'s
+## own doc: with none from any start, the first legal one stands in): so with one — or from
+## across the street, with his own walk at her (`_his_walk_reaches_her()`) — he catches her
+## where she stands, and without one none of the fixed starts (`_fixed_starts()`) had one on
+## legal ground either, so the director passed over no clear start it could have taken. Measured
 ## per target by `tests/probes/grassy_goose_target_traps.gd`. Returns where he started, or `INF`.
 func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her: Vector2,
 		row_id: String, label: String, front_door := false) -> Vector2:
@@ -2512,7 +2513,7 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 	var through_a_door := false
 	var plan := _city.region_plan()
 	for body: EventScheduler.Planned in plan.door_bodies if plan else []:
-		if EventManager.where_she_crossed(body.position, body.facing, body.def.obstructs_radius,
+		if CheckpointController.where_she_crossed(body.position, body.facing, body.def.obstructs_radius,
 				start, her) != Vector2.INF:
 			through_a_door = true
 	t.check(not through_a_door,
@@ -2533,7 +2534,7 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 	chaser.player_at = her
 	chaser._process(STEP)
 	var closed := start.distance_to(her) - chaser.global_position.distance_to(her)
-	t.check(closed > chaser.def.pursue_speed * STEP * 0.9 or (across and closed > 0.0),
+	t.check(closed > chaser.def.chase_speed() * STEP * 0.9 or (across and closed > 0.0),
 			"%s: and coming at her%s from his first frame" % [label,
 			"" if across else " at his own speed"])
 	if not clear and not across:
@@ -2684,7 +2685,7 @@ func _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t) -> vo
 func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> void:
 	var def := EventCatalogue.by_id(id)
 	t.check(def.warns_before_it_exists() and def.warned_for() <= Tuning.WARNING_ALONE_MAX
-			and def.arrives_chasing,
+			and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 			"he is warned of before he exists, for %.2fs alone, and arrives chasing" % def.warned_for())
 	var her := Vector2.ZERO
 	var view_on_her := VisibleView.around(her)
@@ -2736,7 +2737,7 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 	var robber := EventInstance.new()
 	robber.setup(def, start)
 	robber.came_under_a_warning = true
-	if def.arrives_chasing:
+	if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		robber.resume(EventManager.age_when_warned(def), 0.0)
 	var stroller := Stroller.new()
 	var baby := Baby.new()
@@ -3886,7 +3887,7 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
 		var walker := late._rider
 		t.check(walker != null, "the neighbor is walking home again on the retry")
 		if walker:
-			walker.is_parked = true
+			walker.transition(EventInstance.Phase.PARKED)
 		late._process(STEP)
 		var warning := ResistanceSteps.warning_step()
 		t.check(warning.index in GameState.failed_resistance_steps,
@@ -3921,7 +3922,7 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	for instance in happenings.raid:
 		if instance.def.id == "night_raid":
 			vans += 1
-			t.check(not instance.def.pursues, "a van at her door does not hunt")
+			t.check(instance.def.pursuit == null, "a van at her door does not hunt")
 			for tile in EventManager.obstructed_footprint(_city.map, instance.def,
 					instance.global_position, Vector2.RIGHT):
 				t.check(tile.y > door_tile.y + Tuning.SIDEWALK_WIDTH - 1,
@@ -4826,9 +4827,9 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 ## proximity test"* · *"No it should choose one"*. On the test city's day 9, its mark read: the
 ## arrow ends on one of the named door's gatehouses, the same one every time the day is replayed;
 ## standing at that gatehouse, or on the door's line under the boom, completes nothing; walking
-## through the door's line (`EventManager._watch_the_door_lines()`, its `door_crossed`) completes
-## it, in either direction; and walking through another door's line does not. Walked under the
-## boom, the crossing sends no robber from off screen: the door's own guard is its price.
+## through the door's line (`CheckpointController.watch_the_door_lines()`, its `door_crossed`)
+## completes it, in either direction; and walking through another door's line does not. Walked
+## under the boom, the crossing sends no robber from off screen: the door's own guard is its price.
 ## *(2026-10-04, the player, asked whether both should come at once: "(a)" — under the boom only the
 ## guard, the robber only after an inspected crossing.)*
 func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> void:
@@ -4878,7 +4879,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 			# on her: left alone, the named crossing below spawns nobody and the check on a guard
 			# after her passes on this first one. So he is finished first and the named crossing
 			# has to set a guard of its own.
-			var first_guard := _city.events._guard_after_her
+			var first_guard := _city.events.checkpoints._guard_after_her
 			t.check(first_guard != null and first_guard.def.id == "door_guard",
 					"the other door's walk under set its own guard on her")
 			if first_guard:
@@ -4889,7 +4890,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 			t.check(director._trap == null
 					and _warning_for(_city.events, "robber_giving_chase") == null,
 					"walking under the named door's boom sends no robber after her, nor warns of one")
-			var guard := _city.events._guard_after_her
+			var guard := _city.events.checkpoints._guard_after_her
 			t.check(guard != null and guard != first_guard and guard.def.id == "door_guard"
 					and not guard.is_finished and not guard.is_leaving,
 					"the named door's own, new guard is after her instead")
@@ -4911,11 +4912,12 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 	GameState.city_state = saved_state
 
 ## Review 4 of PR #781, day 9: **a walked crossing counts only once it stands.** Under the named
-## door's raised boom the crossing starts its warning (`EventManager._start_the_crossing_warning()`,
-## `Tuning.CROSSING_WARNING`); she steps back across the line halfway through it, so the crossing is
-## called off and no guard comes, and the task is not done either, however long she then waits:
-## `door_crossed` is sent only when the warning has run with her still across. Walked through and
-## staying across, the same door then does the task, with its guard after her.
+## door's raised boom the crossing starts its warning
+## (`CheckpointController._start_the_crossing_warning()`, `Tuning.CROSSING_WARNING`); she steps
+## back across the line halfway through it, so the crossing is called off and no guard comes,
+## and the task is not done either, however long she then waits: `door_crossed` is sent only
+## when the warning has run with her still across. Walked through and staying across, the same
+## door then does the task, with its guard after her.
 func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
 	_build_city(t)
 	var saved_state := GameState.city_state
@@ -4932,31 +4934,31 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
 				director.free()
 				continue
 			events._player = player
-			if is_instance_valid(events._guard_after_her):
-				events._guard_after_her.give_up_the_chase()
+			if is_instance_valid(events.checkpoints._guard_after_her):
+				events.checkpoints._guard_after_her.give_up_the_chase()
 			var at := director._door_at
 			var axis := director._door_axis
 			player.global_position = at - axis * 40.0 * direction
-			events._last_seen_at = Vector2.INF
-			events._watch_the_door_lines()
+			events.checkpoints._last_seen_at = Vector2.INF
+			events.checkpoints.watch_the_door_lines()
 			player.global_position = at + axis * 40.0 * direction
-			events._watch_the_door_lines()
-			t.check(events._crossing != null, "walking under the named boom starts its warning")
+			events.checkpoints.watch_the_door_lines()
+			t.check(events.checkpoints._crossing != null, "walking under the named boom starts its warning")
 			for i in int(round(Tuning.CROSSING_WARNING * 0.5 / STEP)):
-				events._watch_the_door_lines(STEP)
+				events.checkpoints.watch_the_door_lines(STEP)
 			t.check(not director._contact.is_done,
 					"halfway through the crossing's warning the task is not done yet")
 			player.global_position = at - axis * 40.0 * direction
-			events._watch_the_door_lines(STEP)
-			t.check(events._crossing == null, "stepping back across calls the crossing off")
+			events.checkpoints.watch_the_door_lines(STEP)
+			t.check(events.checkpoints._crossing == null, "stepping back across calls the crossing off")
 			for i in int(ceil(Tuning.CROSSING_WARNING * 2.0 / STEP)):
-				events._watch_the_door_lines(STEP)
-			var guard_before := events._guard_after_her
+				events.checkpoints.watch_the_door_lines(STEP)
+			var guard_before := events.checkpoints._guard_after_her
 			t.check(not director._contact.is_done and (not is_instance_valid(guard_before)
 					or guard_before.is_finished or guard_before.is_leaving),
 					"a crossing taken back does not do the task, and sets no guard on her")
 			_walk_through(at, axis, direction, player)
-			var guard := events._guard_after_her
+			var guard := events.checkpoints._guard_after_her
 			t.check(director._contact.is_done and guard != null and guard != guard_before
 					and not guard.is_finished and not guard.is_leaving,
 					"walked through and staying across, the same door does the task, its guard after her")
@@ -4987,8 +4989,8 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 				var player: Stroller = read[2]
 				var events := _city.events
 				events._player = player
-				if is_instance_valid(events._guard_after_her):
-					events._guard_after_her.give_up_the_chase()
+				if is_instance_valid(events.checkpoints._guard_after_her):
+					events.checkpoints._guard_after_her.give_up_the_chase()
 				var b_at := director._door_at
 				var b_axis := director._door_axis
 				var a_at := Vector2.INF
@@ -5013,11 +5015,11 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 				var step_to := func(at: Vector2, jump := false) -> void:
 					player.global_position = at
 					if jump:
-						events._last_seen_at = Vector2.INF
-					events._watch_the_door_lines(STEP)
+						events.checkpoints._last_seen_at = Vector2.INF
+					events.checkpoints.watch_the_door_lines(STEP)
 				step_to.call(a_at - a_axis * 40.0 * a_dir, true)
 				step_to.call(a_at + a_axis * 40.0 * a_dir)
-				t.check(events._crossing != null, "%s: walking under A's boom starts its warning" % name)
+				t.check(events.checkpoints._crossing != null, "%s: walking under A's boom starts its warning" % name)
 				if b_walk != "none":
 					step_to.call(b_at - b_axis * 40.0, true)
 					step_to.call(b_at + b_axis * 40.0)
@@ -5029,8 +5031,8 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 					step_to.call(a_at + a_axis * 40.0 * a_dir, true)
 					step_to.call(a_at - a_axis * 40.0 * a_dir)
 				for i in int(ceil(Tuning.CROSSING_WARNING * 2.0 / STEP)):
-					events._watch_the_door_lines(STEP)
-				var guard := events._guard_after_her
+					events.checkpoints.watch_the_door_lines(STEP)
+				var guard := events.checkpoints._guard_after_her
 				var chased := is_instance_valid(guard) and not guard.is_finished and not guard.is_leaving
 				var done_expected := a_stays and b_walk == "stays"
 				t.check(chased == a_stays and director._contact.is_done == done_expected,
@@ -5047,8 +5049,9 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 ## robber in that case and stop the chase. It's a fair cheat getting through the barrier is hard
 ## enough. Well earned if the player pulls it off."* She walks under the named door's raised boom
 ## (the task is done, one `door_guard` steps out of the hut nearer to her), then steps into a hut of
-## that door: the hold ends the guard's chase (`EventManager._end_the_guard_for_a_hold()`), and
-## nobody else is sent — no robber warned of or set on her, no second guard.
+## that door: the hold ends the guard's chase
+## (`CheckpointController._end_the_guard_for_a_hold()`), and nobody else is sent — no robber
+## warned of or set on her, no second guard.
 func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 	_build_city(t)
 	var saved_state := GameState.city_state
@@ -5068,7 +5071,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 			events.stream_around(player.global_position)
 			_walk_through(director._door_at, director._door_axis, direction, player)
 			t.check(director._contact.is_done, "walking under the named boom does the task")
-			var guard := events._guard_after_her
+			var guard := events.checkpoints._guard_after_her
 			t.check(guard != null and guard.def.id == "door_guard" and not guard.is_finished
 					and not guard.is_leaving and not guard.gave_up,
 					"and sets the door's guard after her")
@@ -5085,7 +5088,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 			t.check(hut != null, "the named door has a hut to step into")
 			if guard and hut:
 				player.global_position = hut.global_position
-				events._check_detentions()
+				events.checkpoints.check_detentions()
 				t.check(hut.is_chatting(), "stepping into the hut is a hold")
 				t.check(guard.gave_up and (guard.is_leaving or guard.is_finished),
 						"the hold ends the walk under's guard: he gives up")
@@ -5096,14 +5099,15 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 					if instance.def.id == "door_guard" and not instance.is_finished \
 							and not instance.is_leaving:
 						pursuers += 1
-				t.check(pursuers == 0 and events._guard_after_her == guard,
+				t.check(pursuers == 0 and events.checkpoints._guard_after_her == guard,
 						"and nobody else is sent: no second guard is after her")
 				t.check(director._contact.is_done, "the task stays done")
-				# **The moment day 9 sends the robber is the end of the hold**: the inspection lets her
-				# through (`_release_finished_door_detentions()`, `door_crossed(…, true)`), which
-				# completes the crossing for a task done under the boom only if the director's early
-				# return in `_on_door_crossed()` lets it. So the hold is run out, she is released,
-				# and the warning a robber would send is run out before anything is counted.
+				# **The moment day 9 sends the robber is the end of the hold**: the inspection
+				# lets her through (`CheckpointController.release_finished_holds()`,
+				# `door_crossed(…, true)`), which completes the crossing for a task done under
+				# the boom only if the director's early return in `_on_door_crossed()` lets it.
+				# So the hold is run out, she is released, and the warning a robber would send
+				# is run out before anything is counted.
 				var before := player.global_position
 				var guard_steps := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
 				while hut.is_chatting() and guard_steps > 0:
@@ -5111,7 +5115,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 					for instance in events.instances():
 						instance._process(STEP)
 				t.check(not hut.is_chatting() and guard_steps > 0, "the hold runs its clock out")
-				events._release_finished_door_detentions(player)
+				events.checkpoints.release_finished_holds(player)
 				# She stood at the hut's own centre, so which side she is put down on is not measured
 				# here; only the release moves her, so being moved is being let through.
 				t.check(player.global_position.distance_to(before) > 1.0,
@@ -5132,7 +5136,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 	GameState.city_state = saved_state
 
 ## feathery-marmot, day 9 let through after the inspection — the ordinary way through a door
-## (`EventManager._release_finished_door_detentions()`, which puts her down on the far side of the
+## (`CheckpointController.release_finished_holds()`, which puts her down on the far side of the
 ## gatehouse that held her and announces `door_crossed` with that gatehouse's position). On the test
 ## city's day 9, its mark read: being held at another door's gatehouse and let out completes nothing;
 ## being held at a gatehouse of the named door and let out on its far side completes the task, from
@@ -5174,8 +5178,8 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 				for instance: EventInstance in [other, named]:
 					player.global_position = instance.global_position \
 							- instance.facing_now() * 60.0 * entry_side
-					events._door_entry_side[instance] = -entry_side
-					events._release_finished_door_detentions(player)
+					events.checkpoints._door_entry_side[instance] = -entry_side
+					events.checkpoints.release_finished_holds(player)
 					if instance == other:
 						if not director._contact.is_done:
 							elsewhere += 1
@@ -5190,7 +5194,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 						"the inspected crossing sends the robber after her")
 				if trap:
 					for body in _city.region_plan().door_bodies:
-						t.check(EventManager.where_she_crossed(body.position, body.facing,
+						t.check(CheckpointController.where_she_crossed(body.position, body.facing,
 								body.def.obstructs_radius, trap.global_position,
 								player.global_position) == Vector2.INF,
 								"his run at her from %s never crosses a district door's line"
@@ -5206,20 +5210,20 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 	GameState.city_state = saved_state
 
 ## Walks her across a door's line at `at`, along `axis` in `direction`, in one step the way
-## `EventManager._watch_the_door_lines()` reads a frame: from 40px on one side to 40px on the other,
-## and stands there while the crossing's warning runs.
+## `CheckpointController.watch_the_door_lines()` reads a frame: from 40px on one side to 40px on
+## the other, and stands there while the crossing's warning runs.
 func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Stroller) -> void:
 	var events := _city.events
 	events._player = player
 	player.global_position = at - axis * 40.0 * direction
-	events._last_seen_at = Vector2.INF
-	events._watch_the_door_lines()
+	events.checkpoints._last_seen_at = Vector2.INF
+	events.checkpoints.watch_the_door_lines()
 	player.global_position = at + axis * 40.0 * direction
-	events._watch_the_door_lines()
+	events.checkpoints.watch_the_door_lines()
 	# And stays across while the crossing's warning runs (`Tuning.CROSSING_WARNING`), so a crossing
 	# that sets a guard on her has set him by the time this returns.
 	for i in int(ceil(Tuning.CROSSING_WARNING / STEP)) + 1:
-		events._watch_the_door_lines(STEP)
+		events.checkpoints.watch_the_door_lines(STEP)
 
 # ------------------------------------------------------ M188: reachable targets ---
 # A mark and every contact stand on ground clear of a solid body, or on the item itself, and are

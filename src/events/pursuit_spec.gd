@@ -44,8 +44,8 @@ enum Start {
 ## does not stand: he walks at her through his notice.
 @export var stands := false
 
-## How fast it **walks at her through its notice**, in px/s, when that is slower than its chase, or 0
-## to close at `speed` (the alley robber's slow alert walk, so it can be seen).
+## How fast it **walks at her through its notice**, in px/s, when that is slower than its chase,
+## or 0 to close at `speed` (the alley robber's slow alert walk, so it can be seen).
 @export var walk_speed := 0.0
 
 ## Where its lunge is measured from when that is not its catch, in px, or 0 for its catch: the

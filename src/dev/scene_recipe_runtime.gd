@@ -1103,10 +1103,11 @@ static func hold_refusal(def: EventDef) -> String:
 	return ""
 
 ## Why `charging` is refused for a row, or "" when it may charge from the first frame. `charging: true`
-## has a pursuer that waits for her (`EventDef.notice`) start the scene already set on her, as the guard
-## a task sends is (`EventInstance.notice_her_at()`), its notice spent: the recording shows the charge
-## rather than waiting for her to walk into its radius. A row that does not wait has no radius to skip,
-## and one that sets off beside her or runs its own line does not charge by that rule.
+## has a pursuer that waits for her (`EventDef.notice`) start the scene already set on her, as
+## the guard a task sends is (`EventInstance.notice_her_at()`), its notice spent: the recording
+## shows the charge rather than waiting for her to walk into its radius. A row that does not
+## wait has no radius to skip, and one that sets off beside her or runs its own line does not
+## charge by that rule.
 static func charging_refusal(def: EventDef) -> String:
 	if def.pursuit == null or def.notice_within() <= 0.0:
 		return "does not wait for her, so it has no radius to skip"

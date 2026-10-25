@@ -245,7 +245,7 @@ one hold. The escape scene's own doors reuse the same class.
 frozen in the street — `Stroller.hide_for_inspection()` and `EventInstance.is_its_guard_inside()`
 stop drawing the two of them the moment the hold starts, and both are back the moment it ends, her
 on the far side of the door so being let out reads as being let through
-(`EventManager._release_finished_door_detentions()`).
+(`CheckpointController.release_finished_holds()`).
 
 **Going in and coming out are owned by different halves, and that asymmetry is the whole of why
 she reappears where she is let out.** Hiding her happens on the frame `start_chat()` fires, which
@@ -273,7 +273,7 @@ is one mechanism for every `redetains` hold: the street doors' gatehouses and th
 **The hold charges its toll and nothing else.** While she is inside a door — inside the trigger of
 a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
 flat `Tuning.CHAT_EXCITEMENT` (25) over `Tuning.CHECKPOINT_DETAIN_SECONDS`. Every other event field
-and the whole crowd are off: `EventManager.door_holding_her_at()` is the one question both halves
+and the whole crowd are off: `CheckpointController.door_holding_her_at()` is the one question both halves
 of `City.excitement_sources_at()` ask. She is in the gatehouse for those two seconds, not on the
 pavement, so what happens to stand beside that particular door is not part of what the crossing
 costs — *"it works in both directions with the same cost each time"*. Nothing gives back either,
@@ -1014,7 +1014,7 @@ accident to be tuned away — an event that merely emits is a *place*, and the a
 a route.
 
 The exception is the one kind of thing a route cannot answer: something that **follows**.
-`EventDef.pursues` marks it, and three properties make walking and running give *opposite
+`EventDef.pursuit` marks it, and three properties make walking and running give *opposite
 outcomes* rather than the same outcome at two prices:
 
 | | |
@@ -1028,7 +1028,7 @@ telegraphs. One sent at her from off screen is warned of first like everything t
 screen, its badge alone its own half second (`EventDef.offscreen_notice`): the day-3 dog is then
 placed just off screen with the whole approach still to run, where a non-pursuer warned first (the
 fire engine) spends its telegraph as the badge, with nothing in the world; the resistance's robber
-and guard arrive already chasing (`EventDef.arrives_chasing`: "the proximity rule is only for
+and guard arrive already chasing (`PursuitSpec.Start.ARRIVES_CHASING`: "the proximity rule is only for
 standing robbers"). Running while a sent pursuer is offscreen counts toward the same
 `PURSUIT_SHAKEN_OFF` timer; he need not become visible before she can shake him off. A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
@@ -1059,18 +1059,18 @@ a pursuer asks — every other `hard_fail` row's catch is still the straight-lin
 
 **Nor does it notice or lunge through them.** *(leafy-puffin, inbox #648: "yes noticing needs a
 clear line"; mossy-beaver, inbox #650: "how can it pursue without noticing? obviously it needs a
-clear line".)* A waiting pursuer notices her within `pursues_within` only along the same clear line,
+clear line".)* A waiting pursuer notices her within `EventDef.notice` only along the same clear line,
 and its charge asks for it too: a waiting charger whose warning runs out with a wall between them
 goes on warning until the line clears or she leaves its radius. For a pursuer that comes for her, a
 lunge the wall holds back is not simply deferred
 until the line clears, which would clamp the approach at zero — at an alley mouth the line clears
 with her already well inside the stand-off, and it would fire from a fraction of it. Instead the
-pursuer holds the ground a pursuer that sets off beside her holds (`EventDef.sets_off_beside_her`):
+pursuer holds the ground a pursuer that sets off beside her holds (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`):
 it stands while she is nearer than the stand-off, follows at the stand-off once she is further, and
 lunges the moment she is back at the full stand-off with the line clear. One held while it stands
 for its notice (day 13's task guard set on her in her view, `EventInstance.notice_her_at()`)
 follows nowhere: it stands where it is and lunges the same way. **A pursuer that
-waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `warns_for`), so a
+waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`), so a
 late notice at an alley mouth is answered by the warning's whole length to leave in, and where the wall
 keeps the line from clearing until she is out of its radius, it never charges and waits again. **The timed notice of a guard a task sets on her does not run out while a
 held lunge has her inside the stand-off** (`_pause_a_held_notice()`), since a notice ending there
@@ -1093,7 +1093,7 @@ after the first second.
 Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
 - **`Tuning.pursuit_standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
-  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `lunge_reach`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
+  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `PursuitSpec.lunge_reach`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
   front of her and forward is where she was going. Clamping the approach at zero instead leaves the
   contract true of the dog and false of the encounter — it stands politely still while she closes
   the gap herself.
@@ -1139,7 +1139,7 @@ about a tenth of the meter, and hesitating costs the day. What reacting sooner b
 against 45 — rather than a discount.
 
 **The open question is the window at the lunge**, which the table puts between 0.1s and 0.2s. She is
-walking *into* the thing at that instant, so the gap closes at `pursue_speed + WALK_SPEED` and the
+walking *into* the thing at that instant, so the gap closes at its chase speed plus `WALK_SPEED` and the
 stand-off is worth about a third of the `PURSUIT_REACTION` it was bought with; reversing a walk into
 a run costs another 0.37s on top. A player answers during the **telegraph**, where the dog is
 visible and closing for two and a half seconds, so the lunge is the worst case rather than the
@@ -1150,21 +1150,21 @@ own telegraph, which a player has watched and called nonsense. See `docs/playtes
 ### A pursuer can be a place before it is a moment
 
 `charging_dog` is a **moment**: the director sites it in front of her and the chase is the whole of
-it. `EventDef.pursues_within` is the other shape — a thing that is **somewhere**, that you can see
+it. `EventDef.notice` is the other shape — a thing that is **somewhere**, that you can see
 and price and route around, and that becomes a chase if you do not. Three states rather than two:
 
 | | it emits | it can kill | it moves |
 | --- | --- | --- | --- |
 | **waiting** | at full strength | no | no |
-| **warning** (for its `warns_for` while she is inside `pursues_within`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`EventDef.notice_walk_speed`) and stops where he is if she walks out of his radius; the others stand (`EventDef.stands_for_its_notice`: the waiting dog, the hunting roadblock's guard) |
+| **warning** (for its `PursuitSpec.warns_for` while she is inside `EventDef.notice`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`PursuitSpec.walk_speed`) and stops where he is if she walks out of his radius; the others stand (`PursuitSpec.stands`: the waiting dog, the hunting roadblock's guard) |
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
 Two things are deliberately not the same as an ordinary telegraph. **The warning is one radius
 and a clock inside it** *(inbox #764 in minty-lemur: a warning happens when she comes close; she can turn around;
 inbox #788 in minty-lemur: "We should do one radius and warn inside it for 2s. If the player leaves the radius
 nothing happens and the warning stops. If they stay within the charge starts")*: it starts when she
-comes inside `pursues_within` along a clear line and with its warning picture in the camera's view,
-not when the day put it there; leaving the radius before its `warns_for` has run stops it, and it
+comes inside `EventDef.notice` along a clear line and with its warning picture in the camera's view,
+not when the day put it there; leaving the radius before its `PursuitSpec.warns_for` has run stops it, and it
 waits again; still inside when it has run, it charges (`EventInstance.warns_by_radius()`). Standing
 in it and running 0.3s after the charge gets away (`docs/EVENTS.md`, "Every charger that does not
 arrive charging warns first"). A guard a task sets
@@ -1175,7 +1175,7 @@ sent at her under a badge of the same second. And its warning does **not** damp 
 that alley since she came round the corner has started. What has not started is the lunge.
 
 **The second of those flips for a row whose waiting state is the harmless one**, and
-`EventDef.quiet_until_noticed` is where a row says so. `pigeon_flock` waits the same way without
+`NoticeSpec.quiet` is where a row says so. `pigeon_flock` waits the same way without
 being a pursuer at all — birds pecking on a pavement, priced and walked around from down the
 street — and there the damping is telling the truth: what is standing there is nearly nothing and
 the event is the flock going up. With the flag, the top two rows of the table above read *at
@@ -1391,7 +1391,7 @@ in reach. Its guard moves with it, to two-thirds of the way through that alley f
 nearer wherever the mark lands, plus the tile the mark stands in from that end so he keeps the
 distance from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end, for a
 courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
-his own `pursues_within` of her or in view when he is placed — so where that spot is 216px or
+his own `EventDef.notice` of her or in view when he is placed — so where that spot is 216px or
 more from the mark (his 180px notice and her 36px reach), entering the alley from the mark's own end, reading it and leaving the same way
 never wakes him, and in a shorter alley reading it may. The mark does not move while its guard is awake or any part of him
 is on her screen, since the move retires him and he would vanish in front of her or out of a chase;

@@ -1199,9 +1199,10 @@ func _view_from(her: Vector2) -> VisibleView:
 ## own street**, straight left or right just out of sight. Only when neither has a clear run does the
 ## first legal start of all of them stand in, and then he may never reach her.
 ##
-## **He arrives chasing** (`PursuitSpec.Start.ARRIVES_CHASING`, amendment 7 of M226), so from any start here
-## walking straight away is caught within his long `Tuning.PURSUIT_TIME` cap, as are standing still
-## and walking into him (`tools/test.sh probes/m207_warning_lead.gd` measures each answer).
+## **He arrives chasing** (`PursuitSpec.Start.ARRIVES_CHASING`, amendment 7 of M226), so from
+## any start here walking straight away is caught within his long `Tuning.PURSUIT_TIME` cap, as
+## are standing still and walking into him (`tools/test.sh probes/m207_warning_lead.gd` measures
+## each answer).
 func _draw_arrival_position(rng: RandomNumberGenerator, her: Vector2, def: EventDef,
 		front_door := false, prefer := Vector2.ZERO) -> Array:
 	var view := _view_from(her)
@@ -2141,16 +2142,16 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 ## district door" · "Should trigger on the action not on a proximity test")*: `EventManager`'s
 ## `door_crossed` — she was let out on the far side after the inspection, or walked through the
 ## door's line and stayed across while its crossing warning ran
-## (`EventManager._run_the_crossing_warning()`) — completes the task when it is the named door, in
-## either direction. A crossing of
+## (`CheckpointController._run_the_crossing_warning()`) — completes the task when it is the
+## named door, in either direction. A crossing of
 ## any other door does nothing.
 ##
-## **Only an inspected crossing sends the trap.** Walked under a raised boom (`inspected` false), the
-## door sets its own guard on her (`EventManager._set_a_guard_on_her()`), and that guard is the whole
-## of the crossing's price: no robber comes from off screen as well. *(2026-10-04, the player, asked
-## whether both should come at once: "(a)" — under the boom only the guard, the robber only after an
-## inspected crossing.)* `_walked_under_the_door` carries that into `_on_contact_completed()`, which
-## `complete_now()` calls before it returns.
+## **Only an inspected crossing sends the trap.** Walked under a raised boom (`inspected`
+## false), the door sets its own guard on her (`CheckpointController._set_a_guard_on_her()`),
+## and that guard is the whole of the crossing's price: no robber comes from off screen as well.
+## *(2026-10-04, the player, asked whether both should come at once: "(a)" — under the boom only
+## the guard, the robber only after an inspected crossing.)* `_walked_under_the_door` carries
+## that into `_on_contact_completed()`, which `complete_now()` calls before it returns.
 func _on_door_crossed(at: Vector2, axis: Vector2, inspected: bool) -> void:
 	if not _step or _step.target_kind != ResistanceSteps.TargetKind.DOOR or not _contact \
 			or _contact.is_done or _door_at == Vector2.INF:

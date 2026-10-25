@@ -63,7 +63,7 @@ func _once(t, s: int, route: String, pace: String) -> void:
 		if instance.def.id == "masked_pursuer":
 			man = instance
 	if OS.get_environment("CHARGES_WITHIN") != "":
-		man.def.charges_within = float(OS.get_environment("CHARGES_WITHIN"))
+		man.def.notice.runs_within = float(OS.get_environment("CHARGES_WITHIN"))
 	var origin: Vector2i = f.waypoints["stairwell_right"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	var door_tile: Vector2i = (f.doors["stairwell_right:landing_first"] as InteriorMapPlan.Door).tile
 	var second_door: Vector2i = (f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile

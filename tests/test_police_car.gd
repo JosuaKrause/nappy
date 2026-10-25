@@ -416,7 +416,7 @@ func _test_an_investigating_car_never_leaves_the_carriageway(t) -> void:
 			moved_after = maxf(moved_after, car.global_position.distance_to(stopped_at))
 	t.check(stopped_at != Vector2.INF, "the heated car noticed her")
 	t.check(off_the_road == 0, "and it was on the carriageway every frame (%d off it)" % off_the_road)
-	t.check(stopped_at != Vector2.INF and stopped_at.distance_to(at) <= hot.pursues_within + 0.5,
+	t.check(stopped_at != Vector2.INF and stopped_at.distance_to(at) <= hot.notice_within() + 0.5,
 			"it stopped once close to her (%.0fpx)" % stopped_at.distance_to(at))
 	t.check(moved_after < 0.01, "and never came over to her (%.2fpx)" % moved_after)
 	var freest := 0.0
@@ -561,7 +561,7 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t) -> void:
 					<= Tuning.OUT_OF_SIGHT
 			break
 	t.check(stopped_at != Vector2.INF
-			and stopped_at.distance_to(Vector2.ZERO) <= hot.pursues_within + 0.5,
+			and stopped_at.distance_to(Vector2.ZERO) <= hot.notice_within() + 0.5,
 			"the investigating car stopped close to her (%.0fpx)" % stopped_at.length())
 	t.check(stood_for_her >= 2.0 and crept < 0.01,
 			"with her in its lane ahead once he was back in, it stood rather than pulling away into "

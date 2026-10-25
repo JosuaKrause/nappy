@@ -461,15 +461,16 @@ static func _cat_dash() -> EventDef:
 ## tile at dawn, well outside `Tuning.EVENT_STREAM_RADIUS` (900px) — far past
 ## `Tuning.VIEW_HALF_EXTENT` — so a row that started telegraphing on arrival dashed and finished off
 ## screen before she was anywhere near the alley, which read as nothing happening at all: the review
-## finding this field exists to answer. `EventDef.notice` is not only for a pursuer any more — see its
-## own docstring — so this row sets it (150px) without `EventDef.pursuit`: `EventInstance._check_for_notice()`
-## holds it `is_waiting()`, emitting nothing above the ordinary field and not yet on the clock, until
-## she is within 150px, and only then does the telegraph start and the path run. 150px is inside
-## `VIEW_HALF_EXTENT.y` (180, the shorter axis, so this holds whichever way she is facing) with room
-## to spare, and past the field's own `outer_radius` (60px), so the telegraph is always already on
-## screen by the time she could feel it. `EventDef.validate()`'s ordinary `Tuning.validate_event()`
-## check is unaffected — it is stated over `telegraph_time` against the field's own geometry, not
-## over when the clock starts — and still passes at the same numbers as before this field existed.
+## finding this field exists to answer. `EventDef.notice` is not only for a pursuer any more —
+## see its own docstring — so this row sets it (150px) without `EventDef.pursuit`:
+## `EventInstance._check_for_notice()` holds it `is_waiting()`, emitting nothing above the
+## ordinary field and not yet on the clock, until she is within 150px, and only then does the
+## telegraph start and the path run. 150px is inside `VIEW_HALF_EXTENT.y` (180, the shorter
+## axis, so this holds whichever way she is facing) with room to spare, and past the field's own
+## `outer_radius` (60px), so the telegraph is always already on screen by the time she could
+## feel it. `EventDef.validate()`'s ordinary `Tuning.validate_event()` check is unaffected — it
+## is stated over `telegraph_time` against the field's own geometry, not over when the clock
+## starts — and still passes at the same numbers as before this field existed.
 ##
 ## **The dash crosses the alley's own short axis by construction, not by luck.** `EventInstance`
 ## reads `map.alley_rects` for the rect this instance landed in and lays its two-point path across
@@ -1023,9 +1024,10 @@ static func _burnt_shell() -> EventDef:
 ##
 ## `TOWARD_PLAYER`, sited by `EventDirector` on her own line when she gets close rather than on a
 ## street the day chose at dawn — a dog sited before the day knows where she walks is a dog she may
-## never pass, and the whole content of the row is meeting it. It is not `EventDef.pursuit`: it does not
-## adjust to her or stop at a stand-off, it is a straight line down the pavement that she answers by
-## crossing the street or turning, the same way a real dog running loose does not know she is there.
+## never pass, and the whole content of the row is meeting it. It is not `EventDef.pursuit`: it
+## does not adjust to her or stop at a stand-off, it is a straight line down the pavement that
+## she answers by crossing the street or turning, the same way a real dog running loose does not
+## know she is there.
 ##
 ## Not lethal, deliberately. Act I gets exactly two things that end the day and this is not one
 ## of them: a loose dog is loud and it is chaos, and the day it ruins is ruined through the
@@ -1304,7 +1306,8 @@ static func _pigeon_flock() -> EventDef:
 	# this only has to be comfortably outside; nothing is visible at this distance, since
 	# its quiet notice damps the wait and the telegraph by exactly the same fraction. Birds on a
 	# pavement are nearly nothing; the event is them going up, so the wait is quiet
-	# (`NoticeSpec.quiet`), or a flock nobody has walked up to would be a place she cannot walk past.
+	# (`NoticeSpec.quiet`), or a flock nobody has walked up to would be a place she cannot walk
+	# past.
 	def.notice = NoticeSpec.at(150.0)
 	def.notice.quiet = true
 	def.intensity = 42.0
@@ -1619,9 +1622,10 @@ static func _charging_dog() -> EventDef:
 	# give it (`tests/test_events.gd` refuses two rows sharing one), and `spawn_mode_on()` is the
 	# field that lets one row answer two days without ever mutating the shared resource.
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
-	# From the day after the lesson it is a place on the map that waits for her inside its one radius,
-	# 130px, inside its 150px field, the bigger of the two radii it had before (inbox #788 in
-	# minty-lemur). `EventScheduler._for_day()` hands a placement past the switch a copy carrying it.
+	# From the day after the lesson it is a place on the map that waits for her inside its one
+	# radius, 130px, inside its 150px field, the bigger of the two radii it had before (inbox
+	# #788 in minty-lemur). `EventScheduler._for_day()` hands a placement past the switch a copy
+	# carrying it.
 	def.from_day_after = DaySwitch.new()
 	def.from_day_after.after_day = Tuning.RUN_TAUGHT_DAY
 	def.from_day_after.spawn_mode = EventDef.SpawnMode.MAP
@@ -2040,13 +2044,14 @@ static func _abduction() -> EventDef:
 ##   the inner radius means the kill can never fire.
 ## - **Get close and he comes at you.** `EventDef.notice` 180, his one radius: inside that he stands
 ##   up, turns to face her and walks at her slowly, at 40px/s (`PursuitSpec.walk_speed`),
-##   holding at his 116px stand-off, for his 2.0s warning (`PursuitSpec.warns_for`; inbox #788 in minty-lemur), and if she is
-##   still inside his radius once it has run he lunges, and chases at 130px/s
-##   until she has shaken him off. **Turning round from his warning is an answer**: she outwalks his
-##   slow walk, and once she is outside his radius he stops where he is and waits there *(inbox
-##   #764 in minty-lemur, the player: the robber walking slowly stops if she gets out of the radius)*. Once he has
-##   lunged, walking away does not work and running away does, which is exactly `charging_dog`'s
-##   contract arriving in act III as a *place* rather than a moment.
+##   holding at his 116px stand-off, for his 2.0s warning (`PursuitSpec.warns_for`; inbox #788
+##   in minty-lemur), and if she is still inside his radius once it has run he lunges, and
+##   chases at 130px/s until she has shaken him off. **Turning round from his warning is an
+##   answer**: she outwalks his slow walk, and once she is outside his radius he stops where he
+##   is and waits there *(inbox #764 in minty-lemur, the player: the robber walking slowly stops
+##   if she gets out of the radius)*. Once he has lunged, walking away does not work and running
+##   away does, which is exactly `charging_dog`'s contract arriving in act III as a *place*
+##   rather than a moment.
 ##
 ## The alley is the warning, and it is not the only one.
 static func _alley_robbery() -> EventDef:
@@ -2060,19 +2065,20 @@ static func _alley_robbery() -> EventDef:
 	def.placement = [GameEnums.TileType.ALLEY]
 	def.intensity = 16.0
 	def.inner_radius = 26.0
-	# **The lunge is further out than the catch**: 38px + 130px/s × `PURSUIT_REACTION` = 116px, while
-	# the catch is 26px. The stand-off is stated over `PursuitSpec.lunge_reach` rather than the catch, so the room
-	# between his lunge and his catch is 116 − 26 = 90px rather than the 78 it would be if the lunge
-	# followed the catch. *(Azure-tapir, inbox #526: asked whether to keep the stand-off, lengthen the
-	# lunge or shrink the catch, "116px, keep every rule" — tall-osprey's record. The rule that
-	# answer kept beside the 116px, that standing still he lunges no sooner than
-	# `Tuning.PURSUIT_MIN_NOTICE` after he appears, is a standing robber's: this one, waiting in his
-	# alley. The sent robber the resistance's trap reads off this row arrives already chasing
-	# (`_robber_giving_chase()`), so it has no closing-in for the floor to bound.)*
-	# Wider than the trigger, and that is the contract rather than a taste: he may not notice her from
-	# outside his own field, because the meter is the only thing that says a stranger in an alley is
-	# worth crossing the road for. The twenty pixels between this and his notice are the row's
-	# first sentence — **on sight** — with somewhere to happen, and his slow walk is its second.
+	# **The lunge is further out than the catch**: 38px + 130px/s × `PURSUIT_REACTION` = 116px,
+	# while the catch is 26px. The stand-off is stated over `PursuitSpec.lunge_reach` rather
+	# than the catch, so the room between his lunge and his catch is 116 − 26 = 90px rather than
+	# the 78 it would be if the lunge followed the catch. *(Azure-tapir, inbox #526: asked
+	# whether to keep the stand-off, lengthen the lunge or shrink the catch, "116px, keep every
+	# rule" — tall-osprey's record. The rule that answer kept beside the 116px, that standing
+	# still he lunges no sooner than `Tuning.PURSUIT_MIN_NOTICE` after he appears, is a standing
+	# robber's: this one, waiting in his alley. The sent robber the resistance's trap reads off
+	# this row arrives already chasing (`_robber_giving_chase()`), so it has no closing-in for
+	# the floor to bound.)* Wider than the trigger, and that is the contract rather than a
+	# taste: he may not notice her from outside his own field, because the meter is the only
+	# thing that says a stranger in an alley is worth crossing the road for. The twenty pixels
+	# between this and his notice are the row's first sentence — **on sight** — with somewhere
+	# to happen, and his slow walk is its second.
 	def.outer_radius = 200.0
 	# Read only by the pursuit contract's notice clause (`Tuning.validate_pursuit()`): no robber's
 	# notice runs on it. One who notices her by sight warns for his `PursuitSpec.warns_for`
@@ -2091,14 +2097,15 @@ static func _alley_robbery() -> EventDef:
 	# second of him walking for a walker coming in (64 / (40 + 92)) and 1.6s for one who stops at the
 	# edge, and 180px is half the view's height; he notices her only once his warning would stand in
 	# her view (`EventInstance._would_stand_in_her_view()`). 180px is his one radius, the bigger of
-	# the two he had before a charge radius was split off from his warning *(inbox #788 in minty-lemur)*: he charges
-	# if she is still inside it once his warning has run (`PursuitSpec.warns_for`, below).
+	# the two he had before a charge radius was split off from his warning *(inbox #788 in
+	# minty-lemur)*: he charges if she is still inside it once his warning has run
+	# (`PursuitSpec.warns_for`, below).
 	#
 	# The trap, and the reason this is worth a comment rather than a number: with a chase that ends
 	# at a *distance*, a trigger at or past that distance is a pursuit that loses interest the
 	# instant it starts — she is already standing where it means "it has lost her", and she can
-	# stroll away from him every time. `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a rate instead, so
-	# no trigger distance can reproduce it.
+	# stroll away from him every time. `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a rate
+	# instead, so no trigger distance can reproduce it.
 	def.notice = NoticeSpec.at(180.0)
 	# **He walks at her slowly through his notice**, a man getting up off a wall rather than a man
 	# already running: his chase is 130px/s, and closing at that from his trigger would be over in a
@@ -2107,8 +2114,8 @@ static func _alley_robbery() -> EventDef:
 	# walkers' two-frame pictures were reviewed at.
 	def.pursuit.walk_speed = 40.0
 	# **He charges once his warning has run with her still inside his radius**, on the clock every
-	# charger that waits for her keeps (inbox #788 in minty-lemur), walking at her and holding at his
-	# stand-off while he warns.
+	# charger that waits for her keeps (inbox #788 in minty-lemur), walking at her and holding
+	# at his stand-off while he warns.
 	def.pursuit.warns_for = Tuning.CHARGER_WARNING
 	# And he walks off when he has lost her, rather than being deleted where he stood.
 	def.departs_at = 100.0
@@ -2134,18 +2141,19 @@ static func _alley_robbery() -> EventDef:
 ## for the dog's half second (`offscreen_notice`), pointing where he will come from, and he is then
 ## created just off screen that way (`PendingWarning`), above or below her by preference *(M226: the
 ## resistance's own pursuers come off the "not warned first" exception, the player's "A, remove the
-## exemption")*. **And he arrives already chasing** (`PursuitSpec.Start.ARRIVES_CHASING`) *(amendment 7 of M226, the
-## player: "why would the robber walk towards her when it spawns as pursuing robber? the proximity
-## rule is only for standing robbers")*: no closing-in to a stand-off and no telegraph to spend.
+## exemption")*. **And he arrives already chasing** (`PursuitSpec.Start.ARRIVES_CHASING`)
+## *(amendment 7 of M226, the player: "why would the robber walk towards her when it spawns as
+## pursuing robber? the proximity rule is only for standing robbers")*: no closing-in to a
+## stand-off and no telegraph to spend.
 ##
 ## **The same man, read off `_alley_robbery()` rather than copied beside it**: his body, his field
-## (16 over 26–200px), his 130px/s, his 26px catch and the 116px lunge (`PursuitSpec.lunge_reach`), his
-## `hard_fail` and the way he walks off once he has lost her. What differs is the whole of the
-## request — **no trigger** (`EventDef.notice` 0), so he is never `is_waiting()` — and his timing:
-## the day-3 dog's badge and chase, read off `_charging_dog()`. His chase does not give up on a walker
-## (`Tuning.PURSUIT_TIME`, a long cap; amendment 8: "pursuers should never (or a long time) stop
-## pursuing if she walks"); running for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) shakes him off,
-## including while he is still offscreen.
+## (16 over 26–200px), his 130px/s, his 26px catch and the 116px lunge
+## (`PursuitSpec.lunge_reach`), his `hard_fail` and the way he walks off once he has lost her.
+## What differs is the whole of the request — **no trigger** (`EventDef.notice` 0), so he is
+## never `is_waiting()` — and his timing: the day-3 dog's badge and chase, read off
+## `_charging_dog()`. His chase does not give up on a walker (`Tuning.PURSUIT_TIME`, a long cap;
+## amendment 8: "pursuers should never (or a long time) stop pursuing if she walks"); running
+## for `Tuning.PURSUIT_SHAKEN_OFF` (0.35s) shakes him off, including while he is still offscreen.
 ##
 ## What that leaves her, from just off screen above her (`tests/probes/m207_warning_lead.gd`'s gold
 ## timing, counted from the badge): standing still he catches her at about 1.8s, walking into him at
@@ -2211,8 +2219,9 @@ static func _robber_giving_chase() -> EventDef:
 ##
 ## **No trigger, and the robber row's own timing**: `EventDef.notice` stays 0.0, so he is never
 ## `is_waiting()`; he is warned first for the dog's half second, arrives already chasing
-## (`PursuitSpec.Start.ARRIVES_CHASING`) and does not give up on a walker (`Tuning.PURSUIT_TIME`) — identical to
-## `robber_giving_chase`, since nothing about the timing is the picture's to change.
+## (`PursuitSpec.Start.ARRIVES_CHASING`) and does not give up on a walker
+## (`Tuning.PURSUIT_TIME`) — identical to `robber_giving_chase`, since nothing about the timing
+## is the picture's to change.
 static func _van_guard_giving_chase() -> EventDef:
 	var guard := _door_guard()
 	var alley := _alley_robbery()
@@ -2320,8 +2329,8 @@ static var _out_of_the_car: Dictionary[String, EventDef] = {}
 ##
 ## **In view, so not the badge: he stands beside her with his hand raised, and then he charges.**
 ## He is not warned of before he exists and does not arrive chasing; he gets out with the sole
-## purpose of charging her, beside her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`), so he charges whatever she
-## does, and first shows that he is
+## purpose of charging her, beside her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`), so he charges
+## whatever she does, and first shows that he is
 ## about to: he stands where he got out in his alert pose (`PursuitSpec.stands`) for
 ## `Tuning.WARNING_ALONE_MAX`, the second an off-screen charger's badge is up alone, his lunge never
 ## firing early, and then he chases under the pursuit contract (`Tuning.validate_pursuit()`, which
@@ -2906,9 +2915,10 @@ static func _checkpoint_post() -> EventDef:
 ## spawn at the huts" · "The day ends, not going through the checkpoint is a clear unlawful thing
 ## here. She gets detained/imprisoned or whatever in that case. This is independent of the
 ## resistance. She shouldn't do it. One guard is enough".)* Nothing places it but
-## `EventManager._set_a_guard_on_her()`: `SCRIPTED` on day 0 like the rest of the door's kit, so the
-## ordinary roll never reaches it, stepping out of the wall of the door's hut across the road from
-## her on the side she crossed to. The guards drawn at the huts stay at their posts, so the door stays manned.
+## `CheckpointController._set_a_guard_on_her()`: `SCRIPTED` on day 0 like the rest of the door's
+## kit, so the ordinary roll never reaches it, stepping out of the wall of the door's hut across
+## the road from her on the side she crossed to. The guards drawn at the huts stay at their
+## posts, so the door stays manned.
 ##
 ## **The roadblock's hunting guard is the pursuer copied**, and so is the man: the same eight-view
 ## `guard_standing_*`/`guard_lunging_*` pictures, `Tuning.HEAT_HUNTS_SPEED` (130px/s, between her
@@ -2919,14 +2929,15 @@ static func _checkpoint_post() -> EventDef:
 ## never a rung of the resistance's ladder. The field is `masked_pursuer`'s — 18 over a 28–120px
 ## band, the same figure coming at her.
 ##
-## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): his warning came before he was set on her. From the
-## frame she crosses the door's line, the guard at the hut across the road from her raises his hand
-## (`EventInstance.guard_warns_her`), or an alley post's guard; back across before
-## `Tuning.CROSSING_WARNING` has run, nobody comes, and still across once it has, this man steps out
-## of that hut or post and charges from his first frame. *(Inbox #788 in minty-lemur, the player: "The actual
-## crossing will start the timer and if the player goes back no charge happens but if they stay
-## crossed the charge will start. Warning starts when the player is crossing".)* The answer is the
-## warning — go back, or go on running — which `tests/test_checkpoints.gd` walks.
+## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): his warning came before he was
+## set on her. From the frame she crosses the door's line, the guard at the hut across the road
+## from her raises his hand (`EventInstance.guard_warns_her`), or an alley post's guard; back
+## across before `Tuning.CROSSING_WARNING` has run, nobody comes, and still across once it has,
+## this man steps out of that hut or post and charges from his first frame. *(Inbox #788 in
+## minty-lemur, the player: "The actual crossing will start the timer and if the player goes
+## back no charge happens but if they stay crossed the charge will start. Warning starts when
+## the player is crossing".)* The answer is the warning — go back, or go on running — which
+## `tests/test_checkpoints.gd` walks.
 static func _door_guard() -> EventDef:
 	var def := EventDef.new()
 	def.id = "door_guard"
@@ -2940,7 +2951,7 @@ static func _door_guard() -> EventDef:
 	def.inner_radius = MASKED_MAN_REACH
 	def.outer_radius = 120.0
 	# No notice of his own: his warning was the hut guard's raised hand from her crossing
-	# (`EventManager._warn_at_the_doors()`), and he charges the moment he is set on her
+	# (`CheckpointController.warn_at_the_doors()`), and he charges the moment he is set on her
 	# (`PursuitSpec.Start.CHARGES_AT_ONCE`).
 	def.telegraph_time = 0.0
 	def.duration = Tuning.PURSUIT_TIME
@@ -3034,10 +3045,10 @@ static func _impact_crater() -> EventDef:
 ## A masked man running up the stairwell. *"Some masked pursuers that run up the stairs that can be
 ## avoided by going into a corridor and letting them pass."*
 ##
-## **Mobile, not `EventDef.pursuit`, and that is the whole counterplay.** A pursuer steers at her, so the
-## only answer to one is speed; this runs a line — the shaft, bottom landing to top — and the
-## answer to it is *not being on that line*, which in a building whose stairwell doors are a fade
-## and a teleport means stepping through the nearest one and letting him go past. It is
+## **Mobile, not `EventDef.pursuit`, and that is the whole counterplay.** A pursuer steers at
+## her, so the only answer to one is speed; this runs a line — the shaft, bottom landing to top
+## — and the answer to it is *not being on that line*, which in a building whose stairwell doors
+## are a fade and a teleport means stepping through the nearest one and letting him go past. It is
 ## `loose_dog`'s contract indoors: a thing coming down the corridor you are in, answered by
 ## leaving the corridor.
 ##
@@ -3068,10 +3079,11 @@ static func _masked_pursuer() -> EventDef:
 	# **He waits at the foot of the shaft until she is in it**, rather than running his line the
 	# moment the section begins and being gone before she has come down a floor. `EventDef.notice`
 	# is the field's own name for that state and is wider than its name — a row that sets it
-	# without `EventDef.pursuit` stands unclocked until she is in range and then runs its ordinary path,
-	# which is exactly `alley_mouse`'s shape at a stairwell's scale. 900px is the shaft's own
-	# height (three floors of eight tiles is 768px) with room over it, so he notices her the moment
-	# she is anywhere in the same stairwell and never from the hallway two parts away.
+	# without `EventDef.pursuit` stands unclocked until she is in range and then runs its
+	# ordinary path, which is exactly `alley_mouse`'s shape at a stairwell's scale. 900px is the
+	# shaft's own height (three floors of eight tiles is 768px) with room over it, so he notices
+	# her the moment she is anywhere in the same stairwell and never from the hallway two parts
+	# away.
 	def.notice = NoticeSpec.at(900.0)
 	# And the warning is spent standing, not approaching: a man already running when he first
 	# becomes visible has given no notice at all.
@@ -3094,9 +3106,10 @@ static func _masked_pursuer() -> EventDef:
 	# runner who walks until he runs, then runs, turning plain left at row 11's centre, is drawn
 	# about 25px from him (24.6px at 60, 120 and 150fps) inside his 28px catch and clears it on the
 	# tick at 28.6px, by 0.6px; she is caught if she starts running 0.3s late, and a runner who
-	# runs the whole way is caught at 440px), and in the stairwell his warning is off screen, since the view reaches 180px from her
-	# and he starts about 400px below; only the edge badge shows his charge, from the frame he runs (`DangerEdge`). The player
-	# accepted both (inbox #782 in minty-lemur).
+	# runs the whole way is caught at 440px), and in the stairwell his warning is off screen,
+	# since the view reaches 180px from her and he starts about 400px below; only the edge badge
+	# shows his charge, from the frame he runs (`DangerEdge`). The player accepted both (inbox
+	# #782 in minty-lemur).
 	def.notice.runs_within = 426.0
 	def.hard_fail = true
 	# **One of him at a time, and there is always another** *(2026-09-19: "then the pursuing guy

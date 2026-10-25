@@ -88,19 +88,19 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
 			var hot := EventCatalogue.heated(def, level)
 			var should_hunt := level >= Tuning.HEAT_HUNTS_LEVEL
 			if def.hunts_on_foot:
-				t.check(hot.investigates == should_hunt and not hot.pursues
+				t.check(hot.investigates == should_hunt and not hot.pursuit != null
 						and hot.hard_fail == def.hard_fail,
 						"'%s' heat %d: it lets its men out iff at or past its own threshold, never "
 						% [def.id, level] + "chasing her itself")
 				var man := EventCatalogue.out_of_the_car(10, false)
 				t.check(man.hard_fail, "'%s': and its men's catch ends the day" % def.id)
-				var reach := Tuning.pursuit_standoff(man.pursue_speed, man.standoff_reach())
-				t.check(not should_hunt or (reach < hot.pursues_within
-						and hot.pursues_within <= hot.outer_radius),
+				var reach := Tuning.pursuit_standoff(man.chase_speed(), man.standoff_reach())
+				t.check(not should_hunt or (reach < hot.notice_within()
+						and hot.notice_within() <= hot.outer_radius),
 						"'%s' heat %d: its men's stand-off %.0f < its notice %.0f <= its field %.0f"
-						% [def.id, level, reach, hot.pursues_within, hot.outer_radius])
+						% [def.id, level, reach, hot.notice_within(), hot.outer_radius])
 				continue
-			t.check(hot.pursues == should_hunt,
+			t.check(hot.pursuit != null == should_hunt,
 					"'%s' heat %d: it hunts iff at or past its own threshold" % [def.id, level])
 			# Population and intensity are `PRESSES`'s axes, never this one's — at every level,
 			# not only below the threshold, since a `HUNTS` row has nothing else to move.
@@ -114,12 +114,12 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
 			# stand-off she is owed, then the trigger, then the edge of the field as it reaches
 			# ahead of him at his speed — each strictly inside the next, which is what
 			# `Tuning.validate_pursuit` also checks at boot.
-			var standoff := Tuning.pursuit_standoff(hot.pursue_speed, hot.inner_radius)
+			var standoff := Tuning.pursuit_standoff(hot.chase_speed(), hot.inner_radius)
 			var ahead := hot.outer_radius \
-					* Tuning.field_scale(Tuning.field_eccentricity(hot.pursue_speed))
-			t.check(standoff < hot.pursues_within and hot.pursues_within <= ahead,
+					* Tuning.field_scale(Tuning.field_eccentricity(hot.chase_speed()))
+			t.check(standoff < hot.notice_within() and hot.notice_within() <= ahead,
 					"'%s' heat %d: stand-off %.0f < trigger %.0f <= field ahead %.0f"
-					% [def.id, level, standoff, hot.pursues_within, ahead])
+					% [def.id, level, standoff, hot.notice_within(), ahead])
 	t.check(checked > 0, "and there is a HUNTS row to check")
 
 func _cold_raid() -> EventDef:
@@ -150,11 +150,11 @@ func _test_the_raid_hunts_past_its_own_threshold(t) -> void:
 		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
 				"heat %d: hunting moves neither population nor intensity" % level)
 		if level < Tuning.HEAT_HUNTS_LEVEL:
-			t.check(not hot.investigates and not hot.pursues and not hot.hard_fail
+			t.check(not hot.investigates and not hot.pursuit != null and not hot.hard_fail
 					and hot.duration == cold.duration,
 					"heat %d: below its own threshold the raid is untouched" % level)
 			continue
-		t.check(hot.investigates and hot.lets_out == 2 and not hot.pursues and not hot.hard_fail,
+		t.check(hot.investigates and hot.lets_out == 2 and not hot.pursuit != null and not hot.hard_fail,
 				"heat %d: at or past its threshold the raid's van lets two men out, and never "
 				% level + "chases or kills")
 
@@ -163,10 +163,11 @@ func _cold_roadblock() -> EventDef:
 
 ## The roadblock's own hot shape, named rather than left to the generic `HUNTS` loop above: below
 ## `Tuning.HEAT_HUNTS_LEVEL` it is the band it always was — untouched, still merely `costly` — and
-## at or above it its guards leave the post: `pursues` and `hard_fail` turn on for the same body,
-## and neither when it may appear nor its population nor its intensity moves, since heat sets what
-## a row does and never when it is allowed to. The pursuit numbers themselves are left to
-## `validate()` and to the generic loop's ordering check, for the reason given on the raid above.
+## at or above it its guards leave the post: `EventDef.pursuit` and `hard_fail` turn on for the
+## same body, and neither when it may appear nor its population nor its intensity moves, since
+## heat sets what a row does and never when it is allowed to. The pursuit numbers themselves are
+## left to `validate()` and to the generic loop's ordering check, for the reason given on the
+## raid above.
 func _test_the_roadblock_hunts_past_its_own_threshold(t) -> void:
 	var cold := _cold_roadblock()
 	t.check(cold.heat_response == EventDef.HeatResponse.HUNTS,
@@ -180,10 +181,10 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t) -> void:
 		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
 				"heat %d: hunting moves neither its population nor its intensity" % level)
 		if level < Tuning.HEAT_HUNTS_LEVEL:
-			t.check(not hot.pursues and not hot.hard_fail,
+			t.check(not hot.pursuit != null and not hot.hard_fail,
 					"heat %d: below its own threshold the roadblock is still just a band" % level)
 			continue
-		t.check(hot.pursues and hot.hard_fail,
+		t.check(hot.pursuit != null and hot.hard_fail,
 				"heat %d: at or past its threshold its guards leave the post and it kills" % level)
 		# **What kills is a man, at a man's reach**, and the band it stands at no longer has
 		# anything to do with it. Asked as the two facts that make that true rather than as the
@@ -307,15 +308,15 @@ func _test_the_patrol_investigates_past_the_threshold(t) -> void:
 		var should_investigate := level >= Tuning.HEAT_INVESTIGATES_LEVEL
 		t.check(hot.investigates == should_investigate,
 				"heat %d: the patrol investigates iff it is at or past the threshold" % level)
-		t.check(not hot.pursues, "heat %d: and the car itself never pursues her" % level)
+		t.check(not hot.pursuit != null, "heat %d: and the car itself never pursues her" % level)
 		if should_investigate:
 			for day: int in [8, 9]:
 				var officer := EventCatalogue.out_of_the_car(day)
-				var standoff := Tuning.pursuit_standoff(officer.pursue_speed,
+				var standoff := Tuning.pursuit_standoff(officer.chase_speed(),
 						officer.standoff_reach())
-				t.check(standoff < hot.pursues_within and hot.pursues_within <= hot.outer_radius,
+				t.check(standoff < hot.notice_within() and hot.notice_within() <= hot.outer_radius,
 						"heat %d: the man's stand-off %.0f < its notice %.0f <= its field %.0f"
-						% [level, standoff, hot.pursues_within, hot.outer_radius])
+						% [level, standoff, hot.notice_within(), hot.outer_radius])
 
 ## A waiting pursuer with a route runs it rather than standing at attention. Sited far from her so
 ## it is never noticed, a heated patrol has to actually cover ground along its path while
@@ -367,7 +368,7 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t) -> void:
 			"and it still leaves once it drives off the end, exactly as a plain mobile row would")
 	instance.free()
 
-## Once she comes inside `pursues_within` along a clear line it stops where it is on its road
+## Once she comes inside `EventDef.notice` along a clear line it stops where it is on its road
 ## and owes the man it lets out — it never moves toward her; it stands while he is out, still while
 ## he walks back after giving up, and once he is back in it drives on along its route the way it was
 ## going, never turned round.
@@ -378,7 +379,7 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 	instance.setup(hot, path[0], path)
 	t.add_child(instance)
 	instance.set_process(false)
-	var her := Vector2(hot.pursues_within - 10.0, -40.0)
+	var her := Vector2(hot.notice_within() - 10.0, -40.0)
 	instance.player_at = her
 	instance._process(STEP)
 	t.check(not instance.is_waiting(), "she is inside its reach, so it notices her")
@@ -407,7 +408,7 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 	t.check(officer.is_finished, "he is back in at its door")
 	var heading := instance.facing_now()
 	# She steps back from its lane, so nothing holds it.
-	her = Vector2(hot.pursues_within - 10.0, -120.0)
+	her = Vector2(hot.notice_within() - 10.0, -120.0)
 	for i in int(round(1.0 / STEP)):
 		instance.player_at = her
 		instance._process(STEP)
@@ -459,7 +460,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
 	t.check(not guard.has_left_its_body_behind(), "with its body still under its own feet")
 
-	var her := post + Vector2(hot.pursues_within - 10.0, 0.0)
+	var her := post + Vector2(hot.notice_within() - 10.0, 0.0)
 	guard.player_at = her
 	guard._process(STEP)
 	t.check(not guard.is_waiting(), "she comes inside the trigger and the guard notices her")
@@ -468,17 +469,18 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	t.check(guard.body_position().is_equal_approx(post),
 			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
 
-	# He warns, standing where she can see him, for his `warns_for` while she stays in his radius,
-	# and nothing is lethal during it (`EventInstance.warns_by_radius()`); then he charges.
+	# He warns, standing where she can see him, for his `PursuitSpec.warns_for` while she stays
+	# in his radius, and nothing is lethal during it (`EventInstance.warns_by_radius()`); then
+	# he charges.
 	var frames := 0
-	while guard.is_telegraphing() and frames < int((hot.warns_for + 1.0) / STEP):
+	while guard.is_telegraphing() and frames < int((hot.pursuit.warns_for + 1.0) / STEP):
 		t.check(not guard.is_lethal_at(guard.global_position),
 				"nothing is lethal while he warns")
 		guard.player_at = her
 		guard._process(STEP)
 		frames += 1
-	t.check(absf(frames * STEP - hot.warns_for) <= 2.0 * STEP,
-			"he warns her for %.2fs, his %.1fs warning" % [frames * STEP, hot.warns_for])
+	t.check(absf(frames * STEP - hot.pursuit.warns_for) <= 2.0 * STEP,
+			"he warns her for %.2fs, his %.1fs warning" % [frames * STEP, hot.pursuit.warns_for])
 	t.check(not guard.is_telegraphing() and not guard.is_waiting(),
 			"and then, she still inside his radius, he charges")
 
@@ -514,13 +516,13 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 ## will be blocked"* — and he sets off from his own post, beside the band, rather than from its
 ## centre. That post is nearer her than the centre where his notice is measured: she comes straight
 ## across the band, the approach that puts his post nearest her, and stands still once he has
-## noticed her. He warns for his row's `warns_for` with nothing lethal in it and charges when it has
-## run, she still inside his radius *(inbox #788 in minty-lemur: one radius, a warning inside it)*, not on the
-## frame he notices her. Both street axes, both sides.
+## noticed her. He warns for his row's `PursuitSpec.warns_for` with nothing lethal in it and
+## charges when it has run, she still inside his radius *(inbox #788 in minty-lemur: one radius,
+## a warning inside it)*, not on the frame he notices her. Both street axes, both sides.
 func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 	var hot := EventCatalogue.heated(_cold_roadblock(), Tuning.RESISTANCE_GOAL)
-	t.check(hot.warns_for >= Tuning.OFFSCREEN_WARNING_MIN,
-			"the hunting guard warns for %.1fs before he charges" % hot.warns_for)
+	t.check(hot.pursuit.warns_for >= Tuning.OFFSCREEN_WARNING_MIN,
+			"the hunting guard warns for %.1fs before he charges" % hot.pursuit.warns_for)
 	var post := Vector2(400.0, 0.0)
 	for vertical: bool in [false, true]:
 		for side: int in [-1, 1]:
@@ -531,7 +533,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 			t.add_child(guard)
 			guard.set_process(false)
 			var across := Vector2(1.0, 0.0) if vertical else Vector2(0.0, 1.0)
-			var her := post + across * side * (hot.pursues_within - 1.0)
+			var her := post + across * side * (hot.notice_within() - 1.0)
 			guard.player_at = her
 			guard._process(STEP)
 			t.check(guard.has_left_its_body_behind() and guard._chaser_side == side,
@@ -548,7 +550,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 				guard.player_at = her
 				guard._process(STEP)
 				frames += 1
-			t.check(not lethal and absf(frames * STEP - hot.warns_for) <= 2.0 * STEP,
+			t.check(not lethal and absf(frames * STEP - hot.pursuit.warns_for) <= 2.0 * STEP,
 					"%s: he warns her for %.2fs, nothing lethal in it, then charges"
 					% [what, frames * STEP])
 			t.check(guard.is_chasing(), "%s: and he charges, she still inside his radius" % what)
@@ -556,8 +558,8 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 
 ## `EventInstance.resume()` restores age and distance travelled so a streamed-out event picks up
 ## where it left off rather than rewinding — checked here because a heated patrol is the first
-## `mobile` row that is also a `pursues` one, and `resume()`'s own "if def.mobile and path.size() >
-## 1: _advance_along_path(0.0)" line does not know or care whether the def pursues.
+## `mobile` row that is also a `EventDef.pursuit` one, and `resume()`'s own "if def.mobile and
+## path.size() > 1: _advance_along_path(0.0)" line does not know or care whether the def pursues.
 func _test_a_streamed_patrol_resumes_where_it_left_off(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
@@ -593,7 +595,7 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t) -> void:
 ## own clock picks up where it left off, not only that the flag agrees — a restored `_noticed_at`
 ## that disagreed with the restored `age` would still read `not is_waiting()` while timing the
 ## telegraph and the duration from the wrong moment. `alley_robbery` has had the same
-## `pursues_within` shape since the mechanic was built, just never in a position to be streamed out
+## `EventDef.notice` shape since the mechanic was built, just never in a position to be streamed out
 ## mid-chase, since a stationary pursuer's field never moves far enough from where the day planted
 ## it — see `_test_every_pursues_within_row_resumes_the_notice` for the same restore checked
 ## against that row rather than only the patrol that surfaced the gap.
@@ -605,7 +607,7 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	first.setup(hot, path[0], path)
 	t.add_child(first)
 	first.set_process(false)
-	var her := Vector2(hot.pursues_within - 10.0, 0.0)
+	var her := Vector2(hot.notice_within() - 10.0, 0.0)
 	first.player_at = her
 	first._process(STEP)
 	t.check(not first.is_waiting(), "she is inside the trigger, so it notices her")
@@ -623,12 +625,12 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	t.add_child(second)
 	second.resume(age, travelled, noticed_at)
 	t.check(not second.is_waiting(),
-			"streamed back in after it stopped, it has still noticed her — `_noticed_at` is carried over")
+			"streamed back in after it stopped, it has still noticed her — its notice is carried over")
 	t.close_to(second.chase_age(), age - noticed_at,
 			"and the notice's clock resumes from the notice rather than restarting at it", 0.001)
 	t.check(second.officers_owed() == 0, "and it does not let a second man out")
 	var resumed_at := second.position
-	her = Vector2(hot.pursues_within - 10.0, -120.0)
+	her = Vector2(hot.notice_within() - 10.0, -120.0)
 	for i in int(round(1.0 / STEP)):
 		second.player_at = her
 		second._process(STEP)
@@ -678,17 +680,17 @@ func _count_patrols(planned: Array[EventScheduler.Planned]) -> int:
 	return count
 
 ## `resume()`'s restored notice is not particular to the heated patrol that surfaced the gap —
-## `alley_robbery` carries the identical `pursues_within` shape cold, with no heat level needed to
+## `alley_robbery` carries the identical `EventDef.notice` shape cold, with no heat level needed to
 ## reach it, and this is the same restore checked against that row instead.
 func _test_every_pursues_within_row_resumes_the_notice(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
-	t.check(def.pursues_within > 0.0, "'alley_robbery' is a waiting pursuer, cold")
+	t.check(def.notice_within() > 0.0, "'alley_robbery' is a waiting pursuer, cold")
 
 	var first := EventInstance.new()
 	first.setup(def, Vector2.ZERO)
 	t.add_child(first)
 	first.set_process(false)
-	var her := Vector2(def.pursues_within - 10.0, 0.0)
+	var her := Vector2(def.notice_within() - 10.0, 0.0)
 	first.player_at = her
 	first._process(STEP)
 	t.check(not first.is_waiting(), "she is inside the trigger, so he notices her")

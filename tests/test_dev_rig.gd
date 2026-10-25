@@ -147,8 +147,8 @@ func _test_a_queue_fed_row_refuses_by_name(t) -> void:
 			named = true
 	t.check(named, "the refusal names the row in the run log (got %s)" % [lines])
 
-## `pigeon_flock` waits (`pursues_within`) and on day 6 of seed 4242 has a copy placed whose
-## `outer_radius` (168px) sits *under* its own `pursues_within` (150px is under 168, but the old
+## `pigeon_flock` waits (`EventDef.notice`) and on day 6 of seed 4242 has a copy placed whose
+## `outer_radius` (168px) sits *under* its own `EventDef.notice` (150px is under 168, but the old
 ## `outer_radius * 0.6` = 100.8px offset was under both) — so the old offset stood her inside the
 ## trigger. The fixed offset has to clear the larger of the two plus a tile's margin.
 func _test_a_waiting_row_stands_outside_its_trigger(t) -> void:
@@ -162,9 +162,9 @@ func _test_a_waiting_row_stands_outside_its_trigger(t) -> void:
 		return
 	var at := DevRig.for_spawn_target("event:pigeon_flock", _city, _resistance)
 	var dist := at.distance_to(found.position)
-	t.check(dist > found.def.pursues_within,
+	t.check(dist > found.def.notice_within(),
 			"stands outside the wait trigger, %.0fpx > pursues_within %.0fpx"
-					% [dist, found.def.pursues_within])
+					% [dist, found.def.notice_within()])
 	t.check(dist > found.def.outer_radius,
 			"and outside the field itself, %.0fpx > outer_radius %.0fpx"
 					% [dist, found.def.outer_radius])

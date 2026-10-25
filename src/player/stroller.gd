@@ -601,14 +601,14 @@ func _reset_interpolation_if_shown() -> void:
 ##
 ## **The `Camera2D` rides under this body, and `is_visible_in_tree()` still walks the real parent
 ## chain regardless of `top_level`** — `top_level` decouples the camera's *transform* from hers and
-## nothing else, so `EventInstance._enter_inspection()`'s `hide_for_inspection()` (called one line
-## before `focus_camera_on()`, in a file this fence does not own) makes the camera exactly as
-## hidden-in-tree as she is, whatever the camera's own `visible` says. A plain `_camera.reset_
-## physics_interpolation()` here would be the identical silent no-op `_reset_interpolation_if_
-## shown()` exists to avoid above — except there is no later call that shows the camera again to
-## catch it the way `show_after_inspection()` catches the body's: the world keeps being drawn
-## through her for the whole hold, only her own body goes dark, so the reset has to land on this
-## call or not at all.
+## nothing else, so `CheckpointController.check_detentions()`'s `hide_for_inspection()` (called
+## one line before `focus_camera_on()`, in a file this fence does not own) makes the camera
+## exactly as hidden-in-tree as she is, whatever the camera's own `visible` says. A plain
+## `_camera.reset_ physics_interpolation()` here would be the identical silent no-op
+## `_reset_interpolation_if_ shown()` exists to avoid above — except there is no later call that
+## shows the camera again to catch it the way `show_after_inspection()` catches the body's: the
+## world keeps being drawn through her for the whole hold, only her own body goes dark, so the
+## reset has to land on this call or not at all.
 ##
 ## Toggling `visible` true for the one synchronous call and back is what makes it land: nothing is
 ## drawn between one call and the next frame, so the toggle is never itself seen, and
@@ -658,8 +658,8 @@ func focus_camera_on(point: Vector2) -> void:
 	_camera.global_position = drawn_from
 	# Stops a one-tick slide from the old place: `top_level` just changed how this position is
 	# computed, and without this the first interpolated frame draws from wherever the camera's
-	# transform sat under the old composition. Forced through even though `EventInstance.
-	# _enter_inspection()` — which this file does not own — has already called
+	# transform sat under the old composition. Forced through even though
+	# `CheckpointController.check_detentions()` — which this file does not own — has already called
 	# `hide_for_inspection()` by the time it calls here: see `_force_reset_camera_interpolation()`'s
 	# own doc for why a plain `_camera.reset_physics_interpolation()` would be exactly the silent
 	# no-op `_reset_interpolation_if_shown()` guards against above, one level down.
@@ -710,7 +710,7 @@ var outright_moves := 0
 ## Velocity and the shove are both zeroed, not merely left to run out: `_shove`'s own friction is
 ## keyed to wherever the last contact pushed it, and a residual one now points at the pavement she
 ## was just standing on — inside the band she is being released from — so letting it run out would
-## carry her straight back in. See `EventManager._release_finished_door_detentions()`, the only
+## carry her straight back in. See `CheckpointController.release_finished_holds()`, the only
 ## caller.
 func teleport_to(where: Vector2) -> void:
 	global_position = where

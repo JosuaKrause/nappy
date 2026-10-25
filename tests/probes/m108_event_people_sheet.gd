@@ -100,7 +100,7 @@ func _robber_waiting_row() -> Array:
 	for sector in range(8):
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)
-		instance.player_at = _sector_heading(sector) * (def.pursues_within + 40.0)
+		instance.player_at = _sector_heading(sector) * (def.notice_within() + 40.0)
 		var view := instance._select_view(instance._robber_waiting_heading())
 		row.append(_entry(EventInstance.ROBBER_WAITING_BY_VIEW[view],
 				EightDirection.is_mirrored(instance._view_sector)))

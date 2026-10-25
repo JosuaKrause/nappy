@@ -221,10 +221,10 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 		events._warn_about_the_ground_she_is_on()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._watch_the_door_lines()
+		events.checkpoints.watch_the_door_lines()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._check_detentions()
+		events.checkpoints.check_detentions()
 	stamps.append(Time.get_ticks_usec())
 	events._check_hard_fails()
 	stamps.append(Time.get_ticks_usec())

@@ -811,9 +811,10 @@ enum Pavement {
 ##
 ## **The one mechanic in the catalogue that takes the controls away rather than costing a meter.**
 ## Everything else that stops her is a choice — walk into it or do not — and this is the exception,
-## which is why `validate()` refuses it on anything `hard_fail` or with a `pursuit`: a thing that can also
-## kill her or chase her has no business also deciding she cannot move. See `Stroller.detain()` for
-## the lock itself, which runs out through the ordinary friction rather than stopping her dead.
+## which is why `validate()` refuses it on anything `hard_fail` or with a `pursuit`: a thing
+## that can also kill her or chase her has no business also deciding she cannot move. See
+## `Stroller.detain()` for the lock itself, which runs out through the ordinary friction rather
+## than stopping her dead.
 @export var detain_seconds := 0.0
 ## How close she has to come **to this row's own solid edge** before a conversation starts, in px.
 ## `detain_distance()` is the same reach as a distance between centres, which is the form every
@@ -839,8 +840,9 @@ enum Pavement {
 
 ## How close her own centre has to come to this instance's centre for the conversation to start —
 ## `detain_radius` past the solid edge she cannot walk through. The one form
-## `EventManager._check_detentions()` and `_release_finished_door_detentions()` both measure, so
-## the trigger and the distance the release has to clear can never be derived differently.
+## `CheckpointController.check_detentions()` and `CheckpointController.release_finished_holds()`
+## both measure, so the trigger and the distance the release has to clear can never be derived
+## differently.
 func detain_distance() -> float:
 	return obstructs_radius + detain_radius
 
@@ -850,7 +852,7 @@ func detain_distance() -> float:
 ## `false` is the default and is right for almost every detainer: a toll booth she can pass again
 ## either way, which is the checkpoint's whole point, needs the opposite — *"it works in both
 ## directions with the same cost each time"* — so `checkpoint_hut` and `checkpoint_post` are the
-## only two rows that set it. `EventManager._check_detentions()` is what reads it.
+## only two rows that set it. `CheckpointController.check_detentions()` is what reads it.
 @export var redetains := false
 
 ## Whether this row is a **boom** — a bar across a door's carriageway that the cars raise and lower
@@ -860,8 +862,8 @@ func detain_distance() -> float:
 ## *(2026-09-24, the player: "Boom shouldn't inspect her. It should block her." · "I didn't say it
 ## should stay solid when it's open".)* So it never detains: a lowered boom is a wall across the
 ## road and a raised one is ground she may walk under, at the price of the car that raised it and of
-## the guard a walked crossing sets on her (`EventManager._set_a_guard_on_her()`). The inspection is
-## the huts' alone, and a hut never takes her in from the carriageway its own door's
+## the guard a walked crossing sets on her (`CheckpointController._set_a_guard_on_her()`). The
+## inspection is the huts' alone, and a hut never takes her in from the carriageway its own door's
 ## boom spans — that ground is the boom's.
 ##
 ## Read in three more places, each because a boom is a door body that does not detain:
@@ -914,9 +916,9 @@ func standoff_reach() -> float:
 	return lethal_reach()
 
 ## Whether its lunge is measured from inside its own catch, which would leave her less than
-## `Tuning.PURSUIT_REACTION` of the pursuer's approach between its lunge and the moment it takes her:
-## the contract `Tuning.pursuit_standoff()` keeps. `validate()` refuses it; a predicate so a test can
-## ask without raising the error.
+## `Tuning.PURSUIT_REACTION` of the pursuer's approach between its lunge and the moment it takes
+## her: the contract `Tuning.pursuit_standoff()` keeps. `validate()` refuses it; a predicate so
+## a test can ask without raising the error.
 func lunge_is_inside_the_catch() -> bool:
 	return pursuit != null and pursuit.lunge_reach > 0.0 and pursuit.lunge_reach < lethal_reach()
 
@@ -1236,13 +1238,15 @@ func validate() -> bool:
 	# **A row that hunts as a pursuer says how** (`hunts_as`), and only such a row does.
 	var hunts_as_a_pursuer := heat_response == HeatResponse.HUNTS and not hunts_on_foot
 	if hunts_as_a_pursuer != (hunts_as != null):
-		push_error("event '%s' %s" % [id, "hunts without saying how it pursues (hunts_as)"
-				if hunts_as_a_pursuer else "says how it hunts (hunts_as) but never hunts as a pursuer"])
+		var why := "hunts without saying how it pursues (hunts_as)" if hunts_as_a_pursuer \
+				else "says how it hunts (hunts_as) but never hunts as a pursuer"
+		push_error("event '%s' %s" % [id, why])
 		return false
-	var waits_on_some_day := notice != null or (from_day_after != null and from_day_after.notice != null)
+	var waits_on_some_day := notice != null \
+			or (from_day_after != null and from_day_after.notice != null)
 	if pursuit:
-		# Standing for a notice is a decision about a pursuer that takes one: it waits for her, or it
-		# sets off beside her.
+		# Standing for a notice is a decision about a pursuer that takes one: it waits for her,
+		# or it sets off beside her.
 		if pursuit.stands and not waits_on_some_day \
 				and pursuit.start != PursuitSpec.Start.SETS_OFF_BESIDE_HER:
 			push_error("event '%s' stands for a notice it never takes: it neither waits for her nor "
@@ -1400,7 +1404,8 @@ func validate() -> bool:
 			and not Tuning.validate_pursuit(id, pursuit.speed, duration, lethal_reach(), telegraph_time,
 					from_day_after.notice.within, outer_radius, standoff_reach()):
 		return false
-	# **A pursuer that waits for her warns on a clock** (`PursuitSpec.warns_for`) inside its one radius.
+	# **A pursuer that waits for her warns on a clock** (`PursuitSpec.warns_for`) inside its one
+	# radius.
 	if pursuit and pursuit.start == PursuitSpec.Start.NOTICES and waits_on_some_day \
 			and pursuit.warns_for < Tuning.OFFSCREEN_WARNING_MIN:
 		push_error("event '%s' waits for her but warns for %.1fs, less than the %.1fs heads-up"

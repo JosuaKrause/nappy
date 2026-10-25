@@ -21,14 +21,14 @@ extends RefCounted
 ##
 ## **On arrival** the guard is counted as:
 ## - **guarding** the roadblock the arrow points at: over it, in its band (`inner_radius` plus its
-##   touch reach to `pursues_within` plus it), with a clear line to its body;
+##   touch reach to `EventDef.notice` plus it), with a clear line to its body;
 ## - **near it**: over it, outside the band, the farther out-of-view spot a move takes when every
 ##   spot of the band is in her view;
 ## - **elsewhere**: over another roadblock, with his distance from the arrow's.
 ## A guard who noticed her is not ticked in this rig, so none is.
 ##
 ## **And whether he stands on her way** (review of #659): on each step before she is within touch
-## reach of the arrow's roadblock, whether she is within his `pursues_within` along a clear line
+## reach of the arrow's roadblock, whether she is within his `EventDef.notice` along a clear line
 ## (`CityMap.clear_line()`) — her shortest walk passing his notice — and how near she comes to his
 ## feet; and, on arrival, whether any walk from the mark reaches touch range without entering his
 ## notice (a flood fill of this file's own, tile centres, around closures and standing bodies).
@@ -208,7 +208,7 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	var next_choice := STEP
 	var noticed := false
 	var nearest := INF
-	var notice := EventCatalogue.by_id("alley_robbery").pursues_within
+	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
 	for i in range(1, points.size()):
 		var from: Vector2 = points[i - 1]
 		var to: Vector2 = points[i]
@@ -245,15 +245,15 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	return result
 
 ## Whether some walk from `from` reaches ground within touch reach of the arrow's roadblock without
-## her centre coming within the guard's `pursues_within` along a clear line: a flood fill over open,
-## unobstructed walkable tiles, never onto a tile his notice reaches.
+## her centre coming within the guard's `EventDef.notice` along a clear line: a flood fill over
+## open, unobstructed walkable tiles, never onto a tile his notice reaches.
 func _a_way_past(director: ResistanceDirector, from: Vector2) -> bool:
 	var map: CityMap = director._map
 	var guard: EventInstance = director._task_guard
 	var arrow := ResistanceDirector._live_instance(director._arrow_key)
 	if guard == null or arrow == null:
 		return true
-	var notice := EventCatalogue.by_id("alley_robbery").pursues_within
+	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
 	var reach := ResistanceDirector._body_touch_reach(arrow)
 	var body := arrow.body_position()
 	var start := map.world_to_tile(from)
@@ -292,7 +292,7 @@ func _what_he_guards(director: ResistanceDirector, moves: int) -> Dictionary:
 	var over := ResistanceDirector._same_key(director._task_guard_over, director._arrow_key)
 	var kind := "elsewhere"
 	if over and from_arrow >= robbery.inner_radius + reach - 0.5 \
-			and from_arrow <= robbery.pursues_within + reach + 0.5 and clear:
+			and from_arrow <= robbery.notice_within() + reach + 0.5 and clear:
 		kind = "guarding"
 	elif over:
 		kind = "near"

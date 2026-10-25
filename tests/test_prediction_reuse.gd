@@ -85,13 +85,13 @@ func _test_catalogue_and_mutations(t) -> void:
 		_event_parity(t, source, at, definition.id + " source movement")
 		source._heading = Vector2.DOWN
 		_event_parity(t, source, at, definition.id + " source heading")
-		source._noticed_at = source.age
+		source.transition(EventInstance.Phase.WARNING)
 		_event_parity(t, source, at, definition.id + " noticed")
-		source._lunged = true
+		source.transition(EventInstance.Phase.ACTIVE)
 		_event_parity(t, source, at, definition.id + " lunged")
-		source.is_parked = true
+		source.transition(EventInstance.Phase.PARKED)
 		_event_parity(t, source, at, definition.id + " parked")
-		source.is_parked = false
+		source.transition(EventInstance.Phase.ACTIVE)
 		source.player_velocity = Vector2(43.0, 71.0)
 		_event_parity(t, source, at, definition.id + " player velocity")
 		source.player_sensitivity = 0.35
@@ -109,9 +109,12 @@ func _test_catalogue_and_mutations(t) -> void:
 		_event_parity(t, source, at, definition.id + " outranked")
 		source.outranked_by_a_stronger_barrier = false
 		for field: String in ["intensity", "inner_radius", "outer_radius", "core_intensity",
-				"core_radius", "falloff_power", "pulse_period", "speed", "pursue_speed"]:
+				"core_radius", "falloff_power", "pulse_period", "speed"]:
 			source.def.set(field, float(source.def.get(field)) + 3.0)
 			_event_parity(t, source, at, definition.id + " mutable " + field)
+		if source.def.pursuit:
+			source.def.pursuit.speed += 3.0
+			_event_parity(t, source, at, definition.id + " mutable chase speed")
 		source.def.shape = GroundShape.segment(17.0, 12.0)
 		_event_parity(t, source, at, definition.id + " shape replacement")
 		source.def.shape.half_length = 63.0
@@ -134,9 +137,9 @@ func _test_catalogue_and_mutations(t) -> void:
 			source._flock[0].speed += 10.0
 			_event_parity(t, source, at, definition.id + " bird geometry")
 			t.check(source.sampling_runs > runs, "flock always samples its mutable birds")
-		source.is_leaving = true
+		source.transition(EventInstance.Phase.LEAVING)
 		_event_parity(t, source, at, definition.id + " leaving")
-		source.is_leaving = false
+		source.transition(EventInstance.Phase.ACTIVE)
 		source._finish()
 		_event_parity(t, source, at, definition.id + " retired")
 		sampled += source.sampling_runs

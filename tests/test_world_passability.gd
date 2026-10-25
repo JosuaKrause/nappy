@@ -436,14 +436,14 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 	var stalled: Array[String] = []
 	var anchor := map.doorstep_world_position()
 	for def in EventCatalogue.all():
-		if not (def.mobile or def.pursues or def.flock_size > 0):
+		if not (def.mobile or def.pursuit != null or def.flock_size > 0):
 			continue
 		var mover := EventInstance.mover_for(def)
 		var at := _a_start_for(map, def, mover, anchor)
 		if at == Vector2.INF:
 			continue
 		var route := PackedVector2Array()
-		if def.mobile and not def.pursues:
+		if def.mobile and def.pursuit == null:
 			route = PackedVector2Array([at, at + Vector2(0.0, -12.0 * TILE)])
 		var instance := city.events.spawn_extra(def, at, route)
 		instance.set_process(false)

@@ -325,7 +325,8 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 			"reversing_lorry: her inside its reach is, with nothing landed (%d)" % _influenced.size())
 	lorry.free()
 
-	# A hold: the manager's own `_hold_that_would_begin()`, handed in as the watch is given it.
+	# A hold: the manager's own `CheckpointController.hold_that_would_begin()`, handed in as the
+	# watch is given it.
 	_clear()
 	var manager := EventManager.new()
 	manager._map = CityMap.new()
@@ -338,7 +339,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 	t.check(_seen.size() == 1 and _influenced.is_empty(),
 			"checkpoint_post: seen outside its hold is no influence (%s)" % [_influenced])
 	var held := Vector2(0.0, hold_reach - 2.0)
-	_stand(watch, [post] as Array[EventInstance], held, manager._hold_that_would_begin)
+	_stand(watch, [post] as Array[EventInstance], held, manager.checkpoints.hold_that_would_begin)
 	t.check(_influenced.size() == 1 and post.landed_ever == 0.0,
 			"checkpoint_post: her inside its hold is, with nothing landed (%d)" % _influenced.size())
 	manager._instances.clear()
@@ -365,7 +366,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 	# Created where a warning pointed, so its chase has not been reported yet: this isolates the
 	# reach, since a live pursuer that is chasing her counts by the chase arm whatever the wall.
 	guard.came_under_a_warning = true
-	guard.resume(guard.def.warns_for + 0.1, 0.0, 0.0)
+	guard.resume(guard.def.pursuit.warns_for + 0.1, 0.0, 0.0)
 	var her := Vector2(134.0, 122.0)
 	t.check(guard.def.hard_fail and not guard.is_telegraphing() and not guard.is_waiting()
 			and not guard.is_chasing()
@@ -407,7 +408,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 	mother.start_chat()
 	var at_post := Vector2(0.0, 500.0 + post.def.detain_distance() - 2.0)
 	var both: Array[EventInstance] = [mother, post]
-	_stand(_watch(), both, at_post, manager._hold_that_would_begin)
+	_stand(_watch(), both, at_post, manager.checkpoints.hold_that_would_begin)
 	t.check(_influenced.is_empty(),
 			"inside a post's reach while another hold runs is no hold (%s)" % [_influenced])
 	manager._instances.clear()

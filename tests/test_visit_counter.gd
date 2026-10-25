@@ -432,13 +432,13 @@ func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
 ## created where its warning pointed reports the chase it starts**. `EventManager.spawn_warned()`
 ## creates such a row through `EventInstance.resume()` to spend the telegraph the warning already
 ## ran, and a resume otherwise stands for an instance streamed back in, whose chase — for a row
-## like `charging_dog` that never waits (`pursues_within` 0.0) — began before it streamed out and
+## like `charging_dog` that never waits (`EventDef.notice` 0.0) — began before it streamed out and
 ## was already reported. Three arrivals of the one row: placed at once and telegraphing, created
 ## warned the way `spawn_warned()` does it (`came_under_a_warning` set, then `resume()`), and
 ## streamed back in mid-chase, which reports nothing a second time.
 func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
-	t.check(def.pursues and def.pursues_within <= 0.0,
+	t.check(def.pursuit != null and def.notice_within() <= 0.0,
 		"'charging_dog' is a pursuer that never waits, the case a resume could misread")
 	var began: Array[String] = []
 	var on_began := func(id: String) -> void: began.append(id)
@@ -496,16 +496,16 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t) -> void:
 	var listening := _listen(counter)
 	var day := GameState.day
 	var def := EventScheduler._for_day(EventCatalogue.by_id("charging_dog"), Tuning.RUN_TAUGHT_DAY + 1)
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
 	var dog := _charger(t, def)
-	_walk(dog, Vector2(def.pursues_within - 10.0, 0.0), 1.0)
+	_walk(dog, Vector2(def.notice_within() - 10.0, 0.0), 1.0)
 	t.check(counter.sent == ["nappy-day-%d-dog-warned" % day],
 		"warning her, the dog is counted warned and not chased (%s)" % [counter.sent])
-	_walk(dog, Vector2(def.pursues_within + 10.0, 0.0), 0.5)
-	_walk(dog, Vector2(def.pursues_within - 10.0, 0.0), 0.5)
+	_walk(dog, Vector2(def.notice_within() + 10.0, 0.0), 0.5)
+	_walk(dog, Vector2(def.notice_within() - 10.0, 0.0), 0.5)
 	t.check(counter.sent.size() == 1, "walked out of and back into, it is not counted again (%s)"
 		% [counter.sent])
-	_walk(dog, Vector2(standoff - 2.0, 0.0), def.warns_for + 0.2)
+	_walk(dog, Vector2(standoff - 2.0, 0.0), def.pursuit.warns_for + 0.2)
 	t.check(counter.sent == ["nappy-day-%d-dog-warned" % day, "nappy-day-%d-dog-chased" % day],
 		"its charge, once its warning has run with her still inside, is counted chased (%s)"
 		% [counter.sent])
@@ -673,9 +673,9 @@ func _test_the_masked_man_has_his_counter(t) -> void:
 	man.setup(def, Vector2.ZERO, path)
 	t.add_child(man)
 	man.set_process(false)
-	_walk(man, Vector2(0.0, -(def.charges_within + 100.0)), 0.5)
+	_walk(man, Vector2(0.0, -(def.notice.runs_within + 100.0)), 0.5)
 	t.check(counter.sent == [name + "warned"], "warning her, he is counted warned (%s)" % [counter.sent])
-	_walk(man, Vector2(0.0, -(def.charges_within - 10.0)), 1.0 / 60.0)
+	_walk(man, Vector2(0.0, -(def.notice.runs_within - 10.0)), 1.0 / 60.0)
 	t.check(counter.sent == [name + "warned", name + "chased"],
 		"his run is counted chased (%s)" % [counter.sent])
 	for i in int(round(6.0 / (1.0 / 60.0))):
@@ -691,7 +691,7 @@ func _test_the_masked_man_has_his_counter(t) -> void:
 	caught.setup(def, Vector2.ZERO, path)
 	t.add_child(caught)
 	caught.set_process(false)
-	_walk(caught, Vector2(0.0, -(def.charges_within - 10.0)), Tuning.WARNING_ALONE_MAX + 0.1)
+	_walk(caught, Vector2(0.0, -(def.notice.runs_within - 10.0)), Tuning.WARNING_ALONE_MAX + 0.1)
 	caught.report_the_catch()
 	t.check(counter.sent == [name + "warned", name + "chased", name + "caught"],
 		"a run that catches her is counted caught (%s)" % [counter.sent])

@@ -132,7 +132,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 			"a remembered failure is not searched again at once")
 	director._task_guard_found_nothing_age = ResistanceDirector.TASK_GUARD_RETRY_SECONDS
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var band_edge := robbery.pursues_within + ContactPoint.body_reach(other)
+	var band_edge := robbery.notice_within() + ContactPoint.body_reach(other)
 	var band_seen := Vector2.ONE * (band_edge + 48.0)
 	_view = Rect2(around - band_seen, band_seen * 2.0)
 	t.check(not _guard_in_view(where), "he stands out of the band's view himself")
@@ -180,12 +180,12 @@ func _check_he_guards(t, director: ResistanceDirector, roadblock: EventInstance,
 	var reach := ContactPoint.body_reach(roadblock)
 	var from_body := guard.global_position.distance_to(roadblock.body_position())
 	t.check(from_body >= robbery.inner_radius + reach - 0.5
-			and from_body <= robbery.pursues_within + reach + 0.5,
+			and from_body <= robbery.notice_within() + reach + 0.5,
 			"at %s he stands in its band, %.0fpx from its body (%.0f-%.0fpx)"
-			% [what, from_body, robbery.inner_radius + reach, robbery.pursues_within + reach])
+			% [what, from_body, robbery.inner_radius + reach, robbery.notice_within() + reach])
 	t.check(_a_clear_line(director._map, guard.global_position, roadblock.body_position()),
 			"at %s he has a clear line to its body, so he can notice her there" % what)
-	t.check(guard.global_position.distance_to(player.global_position) > robbery.pursues_within,
+	t.check(guard.global_position.distance_to(player.global_position) > robbery.notice_within(),
 			"and out of his own trigger range of her (%.0fpx)"
 			% guard.global_position.distance_to(player.global_position))
 	t.check(ResistanceDirector._same_key(director._task_guard_over, roadblock.get_instance_id())
@@ -207,11 +207,11 @@ static func _a_clear_line(map: CityMap, from: Vector2, to: Vector2) -> bool:
 	return true
 
 ## Whether some walk from `from` reaches ground within `reach` of `body` without her centre coming
-## within a guard at `guard`'s `pursues_within` along a clear line: a flood fill of the test's own over
-## open, unobstructed walkable tiles, tile centres, never onto a tile his notice reaches.
+## within a guard at `guard`'s `EventDef.notice` along a clear line: a flood fill of the test's
+## own over open, unobstructed walkable tiles, tile centres, never onto a tile his notice reaches.
 static func _a_way_past(map: CityMap, guard: Vector2, body: Vector2, reach: float,
 		from: Vector2) -> bool:
-	var notice := EventCatalogue.by_id("alley_robbery").pursues_within
+	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
 	var start := map.world_to_tile(from)
 	var seen := {start: true}
 	var queue: Array[Vector2i] = [start]
@@ -236,7 +236,7 @@ static func _a_way_past(map: CityMap, guard: Vector2, body: Vector2, reach: floa
 	return false
 
 func robbery_edge_of(roadblock: EventInstance) -> float:
-	return EventCatalogue.by_id("alley_robbery").pursues_within + ContactPoint.body_reach(roadblock)
+	return EventCatalogue.by_id("alley_robbery").notice_within() + ContactPoint.body_reach(roadblock)
 
 ## Whether any part of a waiting robber standing at `feet` (22 by 44px above his feet, a few px to
 ## spare) is in the test's view.
@@ -315,7 +315,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 	guard.setup(robbery, Vector2.ZERO, PackedVector2Array())
 	t.add_child(guard)
 	guard.set_process(false)
-	var standoff := Tuning.pursuit_standoff(robbery.pursue_speed, robbery.standoff_reach())
+	var standoff := Tuning.pursuit_standoff(robbery.chase_speed(), robbery.standoff_reach())
 	var her := Vector2(60.0, 0.0)
 	t.check(her.length() < standoff and her.length() > robbery.lethal_reach(),
 			"she stands inside his %.0fpx stand-off and outside his catch" % standoff)
@@ -326,7 +326,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 	for i in 60:
 		guard.player_at = her
 		guard._process(0.1)
-		lunged_standing = lunged_standing or guard._lunged
+		lunged_standing = lunged_standing or guard.phase == EventInstance.Phase.ACTIVE
 		lethal_standing = lethal_standing or guard.is_lethal_at(her)
 	t.check(not lunged_standing and not lethal_standing,
 			"while she stands 60px off for 6s he holds: no lunge, and he cannot end her day")
@@ -335,7 +335,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 		her += Vector2(Tuning.WALK_SPEED * 0.1, 0.0)
 		guard.player_at = her
 		guard._process(0.1)
-		if guard._lunged:
+		if guard.phase == EventInstance.Phase.ACTIVE:
 			lunged_at = guard.global_position.distance_to(her)
 			break
 	t.check(lunged_at >= standoff - Tuning.WALK_SPEED * 0.1,
@@ -443,7 +443,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 		t.check(director._task_guard == guard and guard.global_position == held
 				and guard.is_waiting()
 				and guard.global_position.distance_to(touched.body_position())
-				> EventCatalogue.by_id("alley_robbery").pursues_within
+				> EventCatalogue.by_id("alley_robbery").notice_within()
 				+ ContactPoint.body_reach(touched),
 				"(%s) the guard is still at the task's own roadblock, out of the band of the one she touches (%.0fpx from it)"
 				% [what, guard.global_position.distance_to(touched.body_position())])
@@ -483,7 +483,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 		return
 	var start := guard.global_position.distance_to(at)
-	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
+	var standoff := Tuning.pursuit_standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var nearest := start
 	var walked := 0.0
 	var lethal := false
@@ -541,7 +541,7 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
 		if pending.def.id == "robber_giving_chase":
 			warning = pending
 	t.check(warning != null and is_equal_approx(warning.def.warned_for(), Tuning.WARNING_ALONE_MAX)
-			and warning.def.arrives_chasing,
+			and warning.def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 			"and sent at her under a %.1fs badge, to arrive charging"
 			% (warning.def.warned_for() if warning else -1.0))
 	_tear_down(player, director, city)
@@ -575,7 +575,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 		return
 	var map := city.map
-	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
+	var standoff := Tuning.pursuit_standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var away := Vector2.ZERO
 	var her := Vector2.INF
 	for i in 16:
@@ -643,7 +643,7 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 	# the director's cache of it, which must equal a fresh layout of what blocks her now.
 	t.check(director._ground_for_the_arrow() == ArrowField.ground_for(map),
 			"(round a building) the red arrow's cached ground is the guard's walk's ground")
-	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
+	var standoff := Tuning.pursuit_standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var from := guard.global_position
 	# His walk to her goes round what stops a figure on foot today, as his sweep does.
 	var walk := map.walk_field(map.world_to_tile(from), map.blocked.tiles_of(Mover.TODAY))
@@ -661,7 +661,7 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 				var spot := map.tile_to_world(tile)
 				if map.clear_line(from, spot) \
 						or _a_straight_chase_reaches(map, from, spot, standoff,
-								guard.def.pursue_speed):
+								guard.def.chase_speed()):
 					continue
 				at = spot
 				tiles_to_her = map.distance_at(walk, tile)
@@ -674,7 +674,7 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 	player.global_position = at
 	guard.notice_her_at(at)
 	var allowed := guard.def.telegraph_time + tiles_to_her * Tuning.TILE_SIZE \
-			/ guard.def.pursue_speed * 1.5 + 2.0
+			/ guard.def.chase_speed() * 1.5 + 2.0
 	var start := from.distance_to(at)
 	var nearest := start
 	var walked := 0.0

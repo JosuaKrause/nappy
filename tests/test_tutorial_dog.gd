@@ -141,27 +141,27 @@ func _test_day_4_is_never_owed_to_the_director(t) -> void:
 						"rolled identically with or without it, may put the dog in the queue") % seed)
 
 ## The def itself, the same direct question `_test_spawn_mode_switches_after_the_teaching_day` asks
-## of `spawn_mode_on()` — `pursues_within_on()` is the same day-keyed switch, read for the trigger
+## of `spawn_mode_on()` — `EventDef.notice_on()` is the same day-keyed switch, read for the trigger
 ## rather than the siting.
 func _test_pursues_within_switches_after_the_teaching_day(t) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	t.check(def != null, "charging_dog is in the catalogue")
 	if not def:
 		return
-	t.check(def.pursues_within_on(Tuning.RUN_TAUGHT_DAY) <= 0.0,
+	t.check(def.notice_on(Tuning.RUN_TAUGHT_DAY) == null,
 			"on the teaching day itself it still charges the moment it streams in")
-	var waiting := def.pursues_within_on(Tuning.RUN_TAUGHT_DAY + 1)
+	var waiting: float = def.notice_on(Tuning.RUN_TAUGHT_DAY + 1).within
 	t.check(waiting > 0.0, "the day after, it waits for her to come within its own field")
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.inner_radius)
+	var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.inner_radius)
 	t.check(waiting < def.outer_radius and waiting > standoff,
 			"inside its own outer radius, an 'on sight' band before the trigger — alley_robbery's " +
 					"shape — and past the stand-off, or the notice would be spent standing still")
-	t.check(is_equal_approx(def.pursues_within_on(Tuning.RUN_TAUGHT_DAY + 11), waiting),
+	t.check(is_equal_approx(def.notice_on(Tuning.RUN_TAUGHT_DAY + 11).within, waiting),
 			"and it stays the waiting shape for every day after that")
 
 ## The waiting itself, on the copy `EventScheduler._for_day()` hands a `MAP` placement past the
 ## switch. `EventInstance` never asks a day of anybody — this is where the day answer actually has
-## to arrive: a different `EventDef`, `pursues_within` already set, never a mutation of the one
+## to arrive: a different `EventDef`, `EventDef.notice` already set, never a mutation of the one
 ## day 3's own dog reads.
 func _test_day_4_dog_waits_until_she_is_in_its_field(t) -> void:
 	var cold := EventCatalogue.by_id("charging_dog")
@@ -169,31 +169,31 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t) -> void:
 		return
 	var day := Tuning.RUN_TAUGHT_DAY + 1
 	var hot := EventScheduler._for_day(cold, day)
-	t.check(hot.pursues_within > 0.0, "the day-4 copy carries a real trigger")
+	t.check(hot.notice_within() > 0.0, "the day-4 copy carries a real trigger")
 
 	var dog := EventInstance.new()
 	dog.setup(hot, Vector2.ZERO)
-	# Inside the field (`outer_radius`) but outside the trigger (`pursues_within`) — the "on sight"
+	# Inside the field (`outer_radius`) but outside the trigger (`EventDef.notice`) — the "on sight"
 	# band alley_robbery's own shape leaves room for.
-	dog.set_player_at(Vector2((hot.outer_radius + hot.pursues_within) * 0.5, 0.0))
+	dog.set_player_at(Vector2((hot.outer_radius + hot.notice_within()) * 0.5, 0.0))
 	dog._process(STEP)
 	t.check(dog.is_waiting() and not dog.is_telegraphing(),
 			"inside its own field but outside the trigger, a day-4 dog has not noticed her yet")
 
-	dog.set_player_at(Vector2(hot.pursues_within - 10.0, 0.0))
+	dog.set_player_at(Vector2(hot.notice_within() - 10.0, 0.0))
 	dog._process(STEP)
 	t.check(not dog.is_waiting() and dog.is_telegraphing(),
 			"inside the trigger, it notices her and starts its telegraph")
 	dog.free()
 
-## Day 3's own dog, unchanged: the raw catalogue def, `pursues_within` still 0.0, so it is already
+## Day 3's own dog, unchanged: the raw catalogue def, `EventDef.notice` still 0.0, so it is already
 ## telegraphing its charge from the first frame, wherever she happens to be standing. The same fact
 ## `tests/test_danger.gd` checks from the caret's side; this is the trigger's own.
 func _test_day_3_dog_still_charges_the_moment_it_streams_in(t) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	if not def:
 		return
-	t.check(def.pursues_within <= 0.0, "day 3's own def is untouched by the switch")
+	t.check(def.notice_within() <= 0.0, "day 3's own def is untouched by the switch")
 	var dog := EventInstance.new()
 	dog.setup(def, Vector2.ZERO)
 	dog.set_player_at(Vector2(1000.0, 1000.0))
@@ -220,7 +220,7 @@ func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
 		if director.owed() > 0:
 			offered += 1
 			for queued: EventDef in director._owed:
-				t.check(queued.id == "charging_dog" and queued.pursues_within <= 0.0,
+				t.check(queued.id == "charging_dog" and queued.notice_within() <= 0.0,
 						("seed %d: the sprinkle is charging_dog itself, pursues_within untouched " +
 								"at 0.0 — day 3's own shape, not the waiting one a MAP placement " +
 								"past the switch would carry") % seed)
