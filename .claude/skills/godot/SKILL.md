@@ -66,13 +66,13 @@ if OS.has_feature("web"):
     return
 
 # Right — the platform picks the default and the flag is what the code reads.
-static func available() -> bool:
-    if OS.is_debug_build() and "--touch" in OS.get_cmdline_user_args():
+static func available(config: RunConfig = null) -> bool:
+    if config != null and config.touch_forced:
         return true
     return DisplayServer.is_touchscreen_available()
 ```
 
-`TouchInput.available()` is that second shape and is the model to copy: the platform fact and the
+`TouchInput.available(config)` is that second shape and is the model to copy: the platform fact and the
 policy built on it are separate, so `--touch` can render a touch-only screen on a machine with no
 touchscreen, and a screenshot rig can photograph it.
 
