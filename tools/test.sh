@@ -511,7 +511,7 @@ if [[ $record_costs -eq 1 ]]; then
 			printf '%s\n' "# Refresh it with \`tools/test.sh --record-costs\`, which runs the full suite and rewrites this"
 			printf '%s\n' "# file from that run's own \"-- suite  N ms\" lines -- never hand-edited, so the numbers come from"
 			printf '%s\n' "# the runner rather than from anybody's memory."
-			grep -hoE -- '-- test_[a-zA-Z_]+\.gd +[0-9]+ ms' "$work_dir"/shard-*.log \
+			grep -hoE -- '-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$work_dir"/shard-*.log \
 				| sed -E 's/^-- +//; s/ +ms$//' \
 				| awk '{ printf "%s %s\n", $1, $2 }' \
 				| sort -u
