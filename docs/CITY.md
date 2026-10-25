@@ -1903,7 +1903,7 @@ is loud, and the reason a park is quiet.
   much room before accepting a spot, wherever `entry_room()` grants nothing past the edge.
   **And the same room is what lets a car arrive by the tunnel or the bridge.** The crowd's box is
   clamped to the map, so beside the tunnel the band a southbound spine car enters through is the
-  stretch past the north edge, and `CrowdAgent._entry_band_fits` accepts a band that reaches that
+  stretch past the north edge, and `LaneMover._entry_band_fits` accepts a band that reaches that
   far only for the agent `entry_room()` already grants it. Refusing it for everybody would make the
   traffic through both holes one-way — cars that only ever leave — and `tests/test_crowd.gd` stands
   at each end and counts spine cars out of bounds by which way they point, and at each plain edge

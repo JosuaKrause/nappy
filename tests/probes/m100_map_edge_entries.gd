@@ -3,10 +3,10 @@ extends RefCounted
 ## of the finding M120 (`DECISIONS.md`) already answered once, by giving an ordinary walker or an
 ## off-spine car no room past the true edge at all (`LaneStrategy.entry_room()` returns 0.0 for
 ## them). `TODO.md`'s M100 entry, "People still come out from outside the map", names three
-## candidates to tell apart: a `_recycle()` landing that puts the agent's own **centre** legally on
+## candidates to tell apart: a `LaneMover._recycle()` landing that puts the agent's own **centre** legally on
 ## the boundary line while its **picture** — the actual texture `_draw_body()` puts on screen —
 ## reaches past it; a day-start placement (`Crowd.start_day()`, which places through `setup()`
-## rather than through `_recycle()`'s own room check) doing the same; or an agent genuinely left
+## rather than through `LaneMover._recycle()`'s own room check) doing the same; or an agent genuinely left
 ## standing past the true edge by some other path. Not a suite — it prints counts and asserts only
 ## that it ran — so it lives under `tests/probes/`, discovered by nobody, and run by name:
 ##
@@ -136,11 +136,11 @@ func _diagnose_day_start(t, map: CityMap) -> void:
 
 ## How far this kind's own drawn picture reaches, along the given axis, past whichever coordinate
 ## `_along()` reports — read off the real texture sizes and the same anchor arithmetic
-## `CrowdAgent._draw_body()`/`_car_body_anchor()` use, not a guessed number, because "the picture"
+## `CrowdAgent._draw_body()`/`CarLook.body_anchor()` use, not a guessed number, because "the picture"
 ## means exactly what gets put on screen. A walker draws bottom-anchored at its own position
 ## (`Sprites.draw_standing` called with `Vector2.ZERO`), so its whole canvas height rises to the
 ## north of it and nothing at all to the south; its width is split evenly either side. A car's
-## canvas is anchored south of its own position by `_car_body_anchor()`'s own reach, so both the
+## canvas is anchored south of its own position by `CarLook.body_anchor()`'s own reach, so both the
 ## north and south overhang are real and unequal; the larger one is kept so one number covers
 ## either edge of the axis without asking which edge this call is about. Only the cardinal (`front`,
 ## `side`) views are asked, since a fresh entry never lands mid-turn.

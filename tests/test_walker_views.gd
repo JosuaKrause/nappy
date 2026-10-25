@@ -16,7 +16,7 @@ const SPEED := 90.0
 ## that makes `CrowdAgent._look.heading_now()` land exactly on that sector's own centre angle with
 ## the agent sitting at the world origin: `_lane_centre` alone opens the cross-lane gap
 ## (`_cross()` reads `position`, held at zero throughout), and `_speed`/`_vertical`/`_direction`
-## supply the along-lane component `velocity()` reads.
+## supply the along-lane component `LaneMover.velocity()` reads.
 const SECTOR_STATE: Array = [
 	[false, 1.0, 0.0],     # 0 E
 	[true, 1.0, SPEED],    # 1 SE
@@ -153,7 +153,7 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 				"sector %d names a view the tables actually carry" % sector)
 
 ## A give-way, a queue or a halt all reach the walker the same way: `WalkerStrategy._yield_factor()` zeroing
-## `velocity()` while it has already arrived at its lane centre, which is exactly the "at rest"
+## `LaneMover.velocity()` while it has already arrived at its lane centre, which is exactly the "at rest"
 ## `_walker_heading()` returns `Vector2.ZERO` for.
 func _test_a_stopped_walker_keeps_its_view(t) -> void:
 	var agent := _walker(t)
@@ -173,8 +173,8 @@ func _test_a_stopped_walker_keeps_its_view(t) -> void:
 			% [moving_frame, stopped_frame])
 	agent.free()
 
-## `setup()` and `_recycle()` are both owned by the concurrent lane-turning work on this file (see
-## `_update_walker_view()`'s own doc), so this pins the property that stands in for a call into
+## `LaneMover.setup()` and `LaneMover._recycle()` place a walker with no cross-lane steering yet
+## running (`WalkerLook.sector()`'s own doc), so this pins the property that stands in for a call into
 ## either of them: both leave a walker's own heading exactly on a sector centre, 45 degrees clear
 ## of its neighbours — twice the hold's own 27.5 degree reach — so whatever sector was drawn
 ## before a placement or a recycle is always replaced on the very next frame, the same "no
@@ -186,8 +186,8 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 	t.check(agent._look.sector() == 1, "settled on southeast before the placement")
 
 	# A fresh placement/recycle: a new lane and direction, no detour or yield left running, sitting
-	# exactly on its own lane centre — `_choose_lane()` and `_set_cross(_lane_centre)`'s own result,
-	# reproduced here directly since building the `CityMap`/`CrowdField` `_recycle()` needs is out
+	# exactly on its own lane centre — `LaneMover._choose_lane()` and `_set_cross(_lane_centre)`'s own result,
+	# reproduced here directly since building the `CityMap`/`CrowdField` `LaneMover._recycle()` needs is out
 	# of scope for a focused view-selection rig.
 	_face_sector(agent, 6)  # north, an adjacent-ish sector to the stale one above
 	t.check(agent._look.sector() == 6,
@@ -196,14 +196,14 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 	agent.free()
 
 # ---------------------------------------------------------------------- gait ---
-# `CrowdAgent._look.advance()`/`_walker_gait_frame()`, the walker's own two-frame stride —
+# `WalkerLook.advance()`/`WalkerLook.gait_frame()`, the walker's own two-frame stride —
 # `Stroller._walk_phase`/`_draw_mother()`'s pattern, extended to the crowd (M108, "every living
-# thing that moves has a stride"). `sin(_walker_gait_phase * 2.0)` is positive on the two quarter-
+# thing that moves has a stride"). `sin(WalkerLook.gait_phase * 2.0)` is positive on the two quarter-
 # turns `(0, PI/2)` and `(PI, 3*PI/2)` of a full `TAU` cycle and negative on the other two, so a
-# fixed phase is enough to pin the frame without going through `_advance_walker_gait()`'s own rate.
+# fixed phase is enough to pin the frame without going through `WalkerLook.advance()`'s own rate.
 
 ## A fresh `_walker(t)` keeps every field at its class default, which already gives it a nonzero
-## `velocity()` (`_speed` 60, `_direction` 1, `_vertical` false, `_yield_left` 0) — the same
+## `LaneMover.velocity()` (`_speed` 60, `_direction` 1, `_vertical` false, `_yield_left` 0) — the same
 ## "moving by default" shape `_test_walker_headings_select_the_expected_view()` relies on.
 func _test_advancing_the_gait_tracks_distance_not_time(t) -> void:
 	var agent := _walker(t)
@@ -232,7 +232,7 @@ func _test_a_moving_walker_alternates_gait_frames(t) -> void:
 
 ## The same give-way/queue/halt zeroing `_test_a_stopped_walker_keeps_its_view()` already reaches
 ## the view hold with also reaches the gait: `velocity()` is `heading() * _speed * WalkerStrategy._yield_factor()`,
-## so a walker yielding reads zero regardless of what `_walker_gait_phase` its stride was at.
+## so a walker yielding reads zero regardless of what `WalkerLook.gait_phase` its stride was at.
 func _test_a_stopped_walker_holds_gait_frame_a(t) -> void:
 	var agent := _walker(t)
 	agent._look.gait_phase = PI / 4.0

@@ -56,12 +56,10 @@ var strategy: LaneStrategy
 var skip_motion := false
 
 ## This agent's own ground shape, set once in `setup()`: a point for a walker, a capsule along the
-## travel axis for a car (`_car_shadow_shape()`). Read by `_draw_body()` for the shadow; there is
-## no body for either — see `_car_shadow_shape()`'s own docstring for why a car gets none, and
-## `CAR_STRIKE_HALF_LENGTH`/`CAR_STRIKE_HALF_WIDTH` in `tuning.gd` for the lethal rectangle this
-## shape is not: *"lethal != noise"* (the player, 2026-09-10) — this datum is the noise (and the
-## shadow) a car makes, `will_be_lethal()`'s strike box (the front half of the body) is what it hits, and this commit
-## leaves the body's rectangle exactly where it stands.
+## travel axis for a car (`CarStrategy.shadow_shape()`). Read for the shadow and the debug view;
+## there is no body for either. It is the noise (and the shadow) a car makes, not what it hits:
+## `will_be_lethal()`'s strike box (the front half of the body, `Tuning.CAR_STRIKE_HALF_LENGTH` and
+## `CAR_STRIKE_HALF_WIDTH`) is the lethal rectangle, since lethal is not noise (M61).
 var shape: GroundShape
 
 ## The box this agent lives in, held by reference and moved by `Crowd`. Leaving the box is what
@@ -258,10 +256,9 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	_map = map
 	field = crowd_field
 	_rng.seed = seed_value
-	# Unlike `_walker_view` above, holding this stale on purpose would cost nothing correct — a
-	# fresh walker's stride starting mid-cycle looks the same as one starting at rest for as long
-	# as it takes to notice — but resetting it is free and keeps a placement deterministic for a
-	# given seed, the same reason `Stroller.reset_at()` zeroes `_walk_phase` for a new day.
+	# A placement starts the picture's own state afresh (a walker's stride at rest), which keeps a
+	# placement deterministic for a given seed, the same reason `Stroller.reset_at()` zeroes
+	# `_walk_phase` for a new day.
 	restart_the_picture()
 	strategy.draw_the_door_answer()
 	# Start somewhere along the field rather than at its edge, or the whole crowd arrives from
@@ -290,9 +287,8 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 		# **A held segment can swallow most of a corridor's visible stretch** — a region wall or a
 		# hard seal is kept off `held_segments` by the tile, not by a fraction of it, so a field
 		# centred close to one narrows the open ground a random draw can land on far more than a
-		# precinct's own bollards ever did. More draws is the same "retry is not a guarantee" trade
-		# the docstring above already makes, just carried far enough that the small decision keeps
-		# up with how much narrower "the small decision" can now be.
+		# precinct's own bollards ever do. More draws is the same "retry is not a guarantee" trade
+		# as above, carried far enough that the small decision keeps up with how narrow it can get.
 		for _attempt in 24:
 			_set_along(_rng.randf_range(bounds.x, bounds.y))
 			_set_cross(_lane_centre)
@@ -520,8 +516,8 @@ func speed() -> float:
 ## How fast and which way it is actually travelling, for anything predicting where it will be.
 ##
 ## **A walker held at a checkpoint is travelling at nothing**, which is what makes the stopped pose
-## come out right for free: `_walker_gait_frame()` and `_update_walker_view()` both read this, so a
-## walker standing in a door's line holds its last facing and frame a the way every stopped walker
+## come out right for free: `WalkerLook.gait_frame()` and `WalkerLook.sector()` both read this, so a
+## walker standing in a door's line holds its last facing and frame the way every stopped walker
 ## in the crowd already does, and its own field stops being stretched forward by `field_scale()`.
 ##
 ## **A body a pocket has caught reads the same way**, through `CarStrategy._pocket_factor()`: it is not going
@@ -535,7 +531,7 @@ func velocity() -> Vector2:
 ##
 ## **Read off the heading rather than off the lane while a car is in a turn**, because mid-turn
 ## there is no lane to read and the question is about the path: a car that has swung past the
-## diagonal is across the traffic it used to be queueing with. It ties to the axis it came in on,
+## diagonal is across the traffic it was queueing with. It ties to the axis it came in on,
 ## which is the half of the turn it has not yet finished.
 func travelling_vertically() -> bool:
 	if _turn and _turn_run_up <= 0.0:
@@ -827,8 +823,8 @@ func _turn_round() -> void:
 ## about-face commits its new heading for.
 ##
 ## **A stride is a distance, and each kind already has one.** A walker's is the gait's own: it draws
-## two frames and `_walker_gait_frame()` carries it through both of them over half a turn of
-## `_walker_gait_phase`, which `WALKER_GAIT_RATE` prices at 0.09 radians per pixel walked — so a
+## two frames and `WalkerLook.gait_frame()` carries it through both of them over half a turn of
+## `WalkerLook.gait_phase`, which `WalkerLook.GAIT_RATE` prices at 0.09 radians per pixel walked — so a
 ## stride is `PI / 0.09`, about 35px, and at `Tuning.PEDESTRIAN_SPEED` (46–74px/s) that is half a
 ## second or so. A car has no gait and its stride is its own length, the same 52px the body is
 ## measured over, which at `Tuning.CAR_SPEED` (130–185px/s) is about a third of a second.
@@ -902,7 +898,7 @@ func _has_left_the_field() -> bool:
 	# without it the pavement in front of her drains into a crowd standing two streets back.
 	# Past the edge of the map and still inside its allowance: it is *leaving the city*, which is
 	# what the tunnel and the bridge are for. The box's own bounds are clamped to the map, so
-	# asking them here would recycle a car on the deck of the bridge — which is the bug.
+	# asking them here would recycle a car on the deck of the bridge, which is wrong.
 	if at < 0.0 or at > limit:
 		return false
 
@@ -1022,12 +1018,12 @@ func _recycle() -> void:
 	_keep_within_the_room_beyond_the_map()
 	# The loop above only ever *tries* for `_stands_on_a_street`; six misses in a row near a true
 	# edge leave whatever the best roll was. `_keep_within_the_room_beyond_the_map` holds that to
-	# `entry_room()` now — nothing at all for anybody but the spine's own car, which is already
+	# `entry_room()` — nothing at all for anybody but the spine's own car, which is already
 	# standing somewhere real — so this branch is for a miss `_stands_on_a_street` refuses for a
 	# reason the room does not reach: a closed segment, a soft seal, a body already standing there.
 	# Pulled onto the map's own last row or column here, the one lane still guaranteed to exist,
-	# because `cannot_go_on` refuses the very step that would once have drifted it back onto the
-	# street on its own.
+	# because `cannot_go_on` refuses the very step that would drift it back onto the street on its
+	# own.
 	if not _stands_on_a_street():
 		var extent := _map.world_size()
 		var limit: float = extent.y if _vertical else extent.x
@@ -1155,11 +1151,11 @@ func _keep_within_the_room_beyond_the_map() -> void:
 
 ## Whether the entry point the roll above landed on is ground this kind's own room reaches.
 ##
-## **A check on the landed point, not a prediction of the band**, now that the roll itself is
-## already kept inside `entry_room()` — see the `reach` computed in `_recycle()`'s loop, capped at
+## **A check on the landed point, not a prediction of the band**: the roll itself is kept inside
+## `entry_room()` — see the `reach` computed in `_recycle()`'s loop, capped at
 ## `bounds.x + entry_room()` (or the mirror) rather than rolled the full `ENTRY_SPREAD` and
 ## rejected afterwards. That makes this trivially true for anything the clip already reached, which
-## is the point: it stays a stated invariant rather than a silent assumption, and it is still what
+## is the point: it is a stated invariant rather than a silent assumption, and it is what
 ## lets a car on the spine in through the tunnel or off the bridge — `entry_room()` grants that
 ## kind the tunnel's roof depth in the north and the bridge deck's length in the south, so the
 ## same roll that would refuse anybody else still lands a southbound spine lane beside the north

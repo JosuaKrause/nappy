@@ -66,19 +66,19 @@ func set_expected_total_gross(total: float) -> void:
 
 ## The sector, flip and third term currently drawn, so a redraw only happens when one of them
 ## changes. The third is the gait frame for a walker and the body's bob for a car, quantised by
-## `CAR_BOB_STEPS_PER_PX` — the two things each kind draws that move without the sector moving.
+## `CarLook.BOB_STEPS_PER_PX` — the two things each kind draws that move without the sector moving.
 ##
 ## **This is the quantised half of what the drawing reads, and a car has a continuous half too** —
 ## `_drawn_heading` below. See `_redraw_if_the_picture_changed()`.
 var _picture := Vector3i(-1, -1, -1)
-## The live heading a car's picture was last drawn at, quantised by `CAR_HEADING_STEPS` — the other
+## The live heading a car's picture was last drawn at, quantised by `CarLook.HEADING_STEPS` — the other
 ## half of the redraw key. Always `Vector2i.ZERO` for a walker, whose drawing reads no heading at
 ## all: its own picture is the sector, the mirror and the gait frame and nothing else.
 var _drawn_heading := Vector2i.ZERO
 ## Whether this car's own caret was up last frame, so it gets one redraw to come off with.
 var _was_marked := false
 ## True while what this agent shows is not being kept current because none of it can be on the
-## screen (`DrawnView`), so the first frame it is back in the box redraws it whatever the key says.
+## screen (`CrowdView.drawn_box()`), so the first frame it is back in the box redraws it whatever the key says.
 var _picture_is_stale := false
 
 ## Built lazily on this agent's own first non-zero glow, and freed once it has faded all the way
@@ -128,7 +128,7 @@ var _landed_history: Array = []
 var _clock := 0.0
 
 ## Everything this agent's own drawing can cover, relative to its position — what
-## `_redraw_if_the_picture_changed()` asks `DrawnView` about. `ENTRY_PICTURE_ROOM` either side, and
+## `_redraw_if_the_picture_changed()` asks `CrowdView.drawn_box()` about. `ENTRY_PICTURE_ROOM` either side, and
 ## above that a car's doubled caret at its tallest (`_draw_mark()`): the upper chevron's top stands
 ## `MARK_HEIGHT + 10 + 1.65 × MARK_WIDTH` above the node, about 65px, with its outline's width on top.
 const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDTH * 1.65 + 4.0),
@@ -149,33 +149,32 @@ func _is_on_the_screen() -> bool:
 ## replayed — so an agent only redraws when its picture actually changes. At this population that
 ## is the difference between five hundred redraws a frame and a handful.
 ##
-## **And only while any of it can be on the screen** (`DrawnView`, `DRAWN_REACH`). Most of the
-## crowd is off screen, and those agents were most of the redraws and every car's caret projection;
-## the key is still kept every frame, so nothing about the picture's own state depends on where the
-## camera is, and an agent coming back into the box redraws once on that frame whatever the key says.
+## **And only while any of it can be on the screen** (`CrowdView.drawn_box()`, `DRAWN_REACH`). Most
+## of the crowd is off screen, and those agents were most of the redraws and every car's caret
+## projection; the key is still kept every frame, so nothing about the picture's own state depends
+## on where the camera is, and an agent coming back into the box redraws once on that frame whatever
+## the key says.
 ##
 ## **A term missing from the key is a frozen picture rather than a crash**, the same rule
 ## `EventInstance._redraw_if_the_picture_changed()` states for the catalogue's own gate — so the key
-## has to name every time-varying thing `_draw_body()` reads and not a plausible subset. A walker's
-## drawing is the sector, the mirror and the gait frame, all three quantised and all three above. A
-## car's third term is its body's bob instead (`_body_bob()`), which moves on every frame it is
-## driving while nothing else about a car in a lane does. **A car's drawing also reads its live
-## heading, twice**: `_car_body_anchor()` registers the picture
-## `26·|heading.y| + 14·|heading.x|` south of the node, and `_draw_shape_shadow()` sweeps the
-## capsule along the same heading. Both are continuous through an arc while the sector is not, so a
-## key made only of the quantised half leaves a car that has turned wearing the anchor and the
-## shadow axis it last had at a sector boundary — up to 22.5 degrees back, which lands an east- or
-## west-bound car's picture about nine pixels south of its own body and keeps it there for the
-## rest of its run in that lane, since nothing about the quantised picture ever changes again. The
-## rim does not go with it: `EntityHalo` re-traces the body every frame it is drawn, so the halo
-## stands where the car should be and the car does not. That is exactly what the player saw.
+## has to name every time-varying thing the look draws and not a plausible subset. A walker's
+## drawing is the sector, the mirror and the gait frame, all three quantised (`AgentLook.picture()`).
+## A car's third term is its body's bob instead, which moves on every frame it is driving while
+## nothing else about a car in a lane does. **A car's drawing also reads its live heading, twice**:
+## `CarLook.body_anchor()` registers the picture `26·|heading.y| + 14·|heading.x|` south of the
+## node, and the shadow capsule sweeps along the same heading. Both are continuous through an arc
+## while the sector is not, so `CarLook.heading_key()` carries the live heading too. A key made only
+## of the quantised half leaves a car that has turned wearing the anchor and the shadow axis it last
+## had at a sector boundary — up to 22.5 degrees back, which lands an east- or west-bound car's
+## picture about nine pixels south of its own body for the rest of its run in that lane — while
+## `EntityHalo`, which re-traces the body every frame it is drawn, stands where the car belongs.
 func _redraw_if_the_picture_changed() -> bool:
 	var picture := _look.picture(velocity())
 	var drawn_heading := _look.heading_key()
 	var changed := picture != _picture or drawn_heading != _drawn_heading
 	_picture = picture
 	_drawn_heading = drawn_heading
-	# Off screen nothing is redrawn and no caret is projected (`DrawnView`): the picture is left as
+	# Off screen nothing is redrawn and no caret is projected (`CrowdView.drawn_box()`): the picture is left as
 	# it was, and the first frame any of it is back inside the box redraws it from what it is now,
 	# caret included, which is before the margin has let any of it onto the screen.
 	if not _is_on_the_screen():

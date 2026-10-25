@@ -73,7 +73,7 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 				"sector %d names a view the tables actually carry" % sector)
 
 ## The four cardinal/side sectors a car reaches without ever being on an arc: no `_turn` running,
-## `_vertical`/`_direction` set the way `_choose_lane()` leaves them.
+## `_vertical`/`_direction` set the way `LaneMover._choose_lane()` leaves them.
 func _test_cardinal_headings_select_the_expected_view(t) -> void:
 	var agent := _car(t)
 	# [vertical, direction] per sector, cardinal ones only (0 E, 2 S, 4 W, 6 N) — the diagonals are
@@ -113,7 +113,7 @@ func _turn_facing(sector: int) -> CarTurn:
 
 ## **Mid-turn the sector runs through the diagonal** — the property a walker has nothing
 ## equivalent to, since a walker's lane is always cardinal and only its cross-lane steering ever
-## goes diagonal. A car's own `heading()` reads `_turn.heading_at()` once `_turn_run_up <= 0.0`, so
+## goes diagonal. A car's own `LaneMover.heading()` reads `_turn.heading_at()` once `_turn_run_up <= 0.0`, so
 ## a car partway round an arc is exactly this state.
 func _test_a_turn_sweeps_through_the_diagonal_views(t) -> void:
 	var agent := _car(t)
@@ -133,7 +133,7 @@ func _test_a_turn_sweeps_through_the_diagonal_views(t) -> void:
 				"sector %d draws one of the two diagonal views" % sector)
 	agent.free()
 
-## A car braked to a full stop (a light, a gate, a give-way) has `_speed == 0.0`, so `velocity()`
+## A car braked to a full stop (a light, a gate, a give-way) has `_speed == 0.0`, so `LaneMover.velocity()`
 ## is the zero vector and `EightDirection.update()`'s own idle threshold holds whatever was drawn
 ## before rather than reading a facing out of a heading that no longer means one.
 func _test_a_stopped_car_keeps_its_view(t) -> void:
@@ -154,10 +154,10 @@ func _test_a_stopped_car_keeps_its_view(t) -> void:
 			% [moving_frame, stopped_frame])
 	agent.free()
 
-## `setup()` and `_recycle()` both call `_choose_lane()`, which clears `_turn` and leaves the car
+## `setup()` and `_recycle()` both call `LaneMover._choose_lane()`, which clears `_turn` and leaves the car
 ## exactly on a lane axis with a rolled speed — a sector centre 45 degrees clear of its neighbours,
 ## twice the hold's own reach — so no reset call into `_car_view` is needed for the same reason
-## `_update_walker_view()`'s own doc gives for the walker: the ordinary update on the very next
+## `WalkerLook.sector()`'s own doc gives for the walker: the ordinary update on the very next
 ## frame already replaces whatever was drawn before.
 func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 	var agent := _car(t)
@@ -167,7 +167,7 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 	agent._look.view = 0
 	t.check(agent._look.sector() == 0, "settled on east before the placement")
 
-	# A fresh `_choose_lane()` result: a new axis and direction, no turn running.
+	# A fresh `LaneMover._choose_lane()` result: a new axis and direction, no turn running.
 	agent._vertical = true
 	agent._direction = -1.0
 	t.check(agent._look.sector() == 6,
@@ -309,7 +309,7 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 ## The picture `_draw_body()` would actually put on the canvas for one view and heading: the body's
 ## rect merged with the trim's and the wheels', each built the way `Sprites.draw_standing()` builds
 ## it — the baked region's own native size, which is the authored SVG's size in every bake,
-## bottom-centred on `_car_body_anchor()`'s answer. At rest, which is where these cars stand: the
+## bottom-centred on `CarLook.body_anchor()`'s answer. At rest, which is where these cars stand: the
 ## three layers share one anchor until the body rides a bob.
 func _drawn_picture(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 	var anchor := CarLook.body_anchor(view, heading)
@@ -340,7 +340,7 @@ func _traced_rim(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 ## **The rim is the picture and nothing else, so the two can only ever be concentric.** The defect
 ## this is the pin for was reported as a car sitting south of its own halo, and the first thing that
 ## had to be ruled out was a rim with a registration of its own — so this asserts the relationship
-## rather than either position: whatever `_car_body_anchor()` answers and whichever native size the
+## rather than either position: whatever `CarLook.body_anchor()` answers and whichever native size the
 ## baked region reports, the traced rim is the drawn picture grown by `EntityHalo.HALO_MARGIN` on
 ## every side, at every sector.
 ##
@@ -383,7 +383,7 @@ func _turn_at(degrees: float) -> CarTurn:
 ## **A redraw gate is a promise about everything the drawing reads.** `_draw()` is retained and
 ## moving a `Node2D` does not invalidate its draw list, so `_redraw_if_the_picture_changed()` is
 ## what decides when a car's picture is rebuilt — and a car's picture is not only its sector and its
-## mirror: `_car_body_anchor()` registers it off the **live** heading and `_draw_shape_shadow()`
+## mirror: `CarLook.body_anchor()` registers it off the **live** heading and `CrowdAgent.draw_shadow()`
 ## sweeps the capsule along the same one. Keyed on the quantised half alone, a car that has come
 ## round an arc keeps the anchor it had at the last sector boundary, up to 22.5 degrees back, and
 ## keeps it for the rest of its run in that lane because nothing quantised ever changes again — its
@@ -478,7 +478,7 @@ func _test_wheels_share_the_body_canvas(t) -> void:
 				% [view, AtlasLibrary.native_size(wheels), AtlasLibrary.native_size(body)])
 
 ## A car in a lane, driven one tick at a time at a cruising speed. Its lane is east-west, which
-## `heading()` answers exactly, so nothing but the bob can change about its picture.
+## `LaneMover.heading()` answers exactly, so nothing but the bob can change about its picture.
 func _cruising_car(t, speed: float) -> CrowdAgent:
 	var agent := _car(t)
 	agent._vertical = false

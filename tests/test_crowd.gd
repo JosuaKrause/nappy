@@ -1693,10 +1693,10 @@ func _test_the_arterial_is_the_busiest_street(t) -> void:
 ## probe stood at the front door and reported a clean bill of health on a build that was visibly
 ## broken.
 ##
-## **Zero is the only acceptable end state, and it is the one asserted here.** `CrowdAgent.
+## **Zero is the only acceptable end state, and it is the one asserted here.** `LaneMover.
 ## nudge_back()` and `CarStrategy.join_the_back_of_the_queue()` are the two places a traffic queue's own
 ## spacing arithmetic moves a car with no notion of the map underneath it, so both refuse a move
-## that would land on ground `cannot_go_on()` refuses — a car grazing a big building's own footprint
+## that would land on ground `LaneStrategy.cannot_go_on()` refuses — a car grazing a big building's own footprint
 ## by one tile was exactly that, an unguarded backward shove across a junction into whatever
 ## bordered it.
 func _test_nothing_walks_into_a_hard_blocker(t) -> void:
