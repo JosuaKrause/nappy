@@ -177,7 +177,7 @@ static func body_anchor(view_name: String, forward: Vector2) -> Vector2:
 func draw_body(canvas: CanvasItem) -> void:
 	var frame := sector()
 	var flip := flipped()
-	var forward := _agent.travel_axis()
+	var forward := _agent.heading()
 	var grounded := Vector2(0.0, -bob())
 	_agent.draw_shadow(canvas, grounded, forward)
 	var view_name: String = VIEW_BY_SECTOR[frame]

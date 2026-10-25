@@ -297,7 +297,7 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 	var agent := _car(t)
 	agent.set_halo_strength(1.0, Color.RED)
 	t.check(agent._halo != null, "a positive strength builds the halo lazily")
-	t.check(agent._halo._draw_body == agent._draw_body,
+	t.check(agent._halo._draw_body == agent._look.draw_body,
 			"the halo redraws exactly this agent's own `_draw_body`, so a per-sector picture change "
 			+ "is a per-sector halo change with nothing else to wire up")
 	# Freed with the halo still attached rather than through `set_halo_strength(0.0, ...)`: with no
@@ -325,13 +325,13 @@ func _drawn_picture(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 
 ## And what the rim traced around it covers: the same picture re-drawn at every one of
 ## `EntityHalo.trace_offsets()`'s own ring positions, which is what `_on_draw()` does per offset.
-## A car standing still has no bob (`CrowdAgent._body_bob()` is zero at zero speed), so the ring
+## A car standing still has no bob (`CarLook.bob()` is zero at zero speed), so the ring
 ## is the plain circle.
 func _traced_rim(agent: CrowdAgent, view: String, heading: Vector2) -> Rect2:
 	var picture := _drawn_picture(agent, view, heading)
 	var rim := Rect2()
 	var merged := false
-	for offset in EntityHalo.trace_offsets(agent._body_bob()):
+	for offset in EntityHalo.trace_offsets(agent._look.bob()):
 		var copy := Rect2(picture.position + offset, picture.size)
 		rim = rim.merge(copy) if merged else copy
 		merged = true
@@ -381,7 +381,7 @@ func _turn_at(degrees: float) -> CarTurn:
 	return turn
 
 ## **A redraw gate is a promise about everything the drawing reads.** `_draw()` is retained and
-## moving a `Node2D` does not invalidate its draw list, so `_redraw_if_the_picture_changed()` is
+## moving a `Node2D` does not invalidate its draw list, so `CrowdAgent._end_the_frame()` is
 ## what decides when a car's picture is rebuilt — and a car's picture is not only its sector and its
 ## mirror: `CarLook.body_anchor()` registers it off the **live** heading and `CrowdAgent.draw_shadow()`
 ## sweeps the capsule along the same one. Keyed on the quantised half alone, a car that has come
@@ -409,7 +409,7 @@ func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
 		agent._turn_run_up = 0.0
 		var view: String = CarLook.VIEW_BY_SECTOR[agent._look.sector()]
 		var anchor := CarLook.body_anchor(view, agent.heading()).y
-		agent._redraw_if_the_picture_changed()
+		agent._end_the_frame(0.0)
 		var key := [agent._picture, agent._drawn_heading]
 		if previous_anchor != INF and absf(anchor - previous_anchor) >= 0.5:
 			moves += 1
@@ -439,14 +439,14 @@ func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
 	agent._turn_run_up = 0.0
 	var turning_view: String = CarLook.VIEW_BY_SECTOR[agent._look.sector()]
 	var turning := CarLook.body_anchor(turning_view, agent.heading()).y
-	agent._redraw_if_the_picture_changed()
+	agent._end_the_frame(0.0)
 	var mid_turn := [agent._picture, agent._drawn_heading]
 	agent._turn = null
 	agent._vertical = false
 	agent._direction = 1.0
 	var landed_view: String = CarLook.VIEW_BY_SECTOR[agent._look.sector()]
 	var landed := CarLook.body_anchor(landed_view, agent.heading()).y
-	agent._redraw_if_the_picture_changed()
+	agent._end_the_frame(0.0)
 	t.check(landed_view == turning_view and agent._picture == mid_turn[0],
 			"the car draws the same %s view either side of the landing, so nothing quantised changed"
 			% landed_view)
@@ -500,7 +500,7 @@ func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t) -> void:
 	var highest_travelled := 0.0
 	for i in ticks:
 		agent._look.advance(agent.velocity(), step)
-		var bob := agent._body_bob()
+		var bob := agent._look.bob()
 		t.check(bob <= 0.0 and bob >= -WheelBob.HEIGHT - 0.001,
 				"tick %d's bob %.3f stays between the wheels and one height above them" % [i, bob])
 		if bob < lowest:
@@ -514,7 +514,7 @@ func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t) -> void:
 	# Stopped at the top of the rise: the phase stays where it was, the body does not.
 	agent._look.travelled = highest_travelled
 	agent._speed = 0.0
-	t.check(agent._body_bob() == 0.0, "a stopped car sits on its wheels (%.3f)" % agent._body_bob())
+	t.check(agent._look.bob() == 0.0, "a stopped car sits on its wheels (%.3f)" % agent._look.bob())
 	agent._look.advance(agent.velocity(), step)
 	t.check(is_equal_approx(agent._look.travelled, highest_travelled),
 			"and a tick that covers no ground does not move its phase")
@@ -528,23 +528,23 @@ func _test_the_bob_is_driven_by_ground_covered(t) -> void:
 	var distance := WheelBob.WAVELENGTH * 0.4
 	slow._look.advance(slow.velocity(), distance / Tuning.CAR_SPEED.x)
 	fast._look.advance(fast.velocity(), distance / Tuning.CAR_SPEED.y)
-	t.check(is_equal_approx(slow._body_bob(), fast._body_bob()),
+	t.check(is_equal_approx(slow._look.bob(), fast._look.bob()),
 			"two cars that covered %.0fpx ride the same lift (%.3f and %.3f)"
-			% [distance, slow._body_bob(), fast._body_bob()])
-	t.check(not is_zero_approx(slow._body_bob()), "and it was a lift worth comparing")
+			% [distance, slow._look.bob(), fast._look.bob()])
+	t.check(not is_zero_approx(slow._look.bob()), "and it was a lift worth comparing")
 	slow.free()
 	fast.free()
 
-## **The halo traces the bob through `bob()`**: the rim is built with the car's own `_body_bob`, and
+## **The halo traces the bob through `bob()`**: the rim is built with the car's own `CarLook.bob`, and
 ## the ring `EntityHalo` traces is lifted by exactly what the body is lifted by, so a rising car's
 ## rim rises with it rather than sliding off it.
 func _test_the_halo_rides_the_bob(t) -> void:
 	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
 	agent._look.advance(agent.velocity(), WheelBob.WAVELENGTH * 0.5 / Tuning.CAR_SPEED.x)
 	agent.set_halo_strength(1.0, Color.RED)
-	t.check(agent._halo._bob == agent._body_bob,
+	t.check(agent._halo._bob == agent._look.bob,
 			"the halo reads this car's own bob rather than a flat zero")
-	var bob := agent._body_bob()
+	var bob := agent._look.bob()
 	t.check(bob < -0.5 * WheelBob.HEIGHT, "the car is well up its rise (%.3f)" % bob)
 	var flat := EntityHalo.trace_offsets(0.0)
 	var lifted := EntityHalo.trace_offsets(agent._halo._bob.call())
@@ -560,24 +560,24 @@ func _test_the_halo_rides_the_bob(t) -> void:
 func _test_the_redraw_gate_follows_the_bob(t) -> void:
 	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
 	var step := 1.0 / 60.0
-	agent._redraw_if_the_picture_changed()
+	agent._end_the_frame(0.0)
 	var keys := {}
 	var ticks := int(ceil(WheelBob.WAVELENGTH / (Tuning.CAR_SPEED.x * step)))
 	for i in ticks:
 		agent._look.advance(agent.velocity(), step)
-		agent._redraw_if_the_picture_changed()
-		t.check(agent._picture.z == roundi(agent._body_bob() * CarLook.BOB_STEPS_PER_PX),
+		agent._end_the_frame(0.0)
+		t.check(agent._picture.z == roundi(agent._look.bob() * CarLook.BOB_STEPS_PER_PX),
 				"tick %d's key carries the bob it would draw" % i)
 		keys[agent._picture] = true
 	t.check(keys.size() > 2,
 			"a car driving one wavelength asks for a redraw at several heights (%d keys)"
 			% keys.size())
 	agent._speed = 0.0
-	agent._redraw_if_the_picture_changed()
+	agent._end_the_frame(0.0)
 	var parked := agent._picture
 	for i in 30:
 		agent._look.advance(agent.velocity(), step)
-		agent._redraw_if_the_picture_changed()
+		agent._end_the_frame(0.0)
 	t.check(agent._picture == parked and parked.z == 0,
 			"a stopped car's key rests at zero and stays there")
 	agent.free()

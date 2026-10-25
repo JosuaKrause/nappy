@@ -15,7 +15,7 @@ extends RefCounted
 ## "Unsafe" below means the agent's own centre is legal by every existing bounds check
 ## (`CityMap.in_bounds`, the invariant `tests/test_crowd.gd`'s `_test_nobody_enters_across_a_
 ## plain_edge` already holds) while its picture — read off the same texture sizes and anchor
-## arithmetic `CrowdAgent._draw_body()` draws from, in `_picture_clearance()` below — still
+## arithmetic `AgentLook.draw_body()` draws from, in `_picture_clearance()` below — still
 ## reaches past the true edge, which is exactly what none of those checks can see because they all
 ## ask about the centre.
 
@@ -136,7 +136,7 @@ func _diagnose_day_start(t, map: CityMap) -> void:
 
 ## How far this kind's own drawn picture reaches, along the given axis, past whichever coordinate
 ## `_along()` reports — read off the real texture sizes and the same anchor arithmetic
-## `CrowdAgent._draw_body()`/`CarLook.body_anchor()` use, not a guessed number, because "the picture"
+## `AgentLook.draw_body()`/`CarLook.body_anchor()` use, not a guessed number, because "the picture"
 ## means exactly what gets put on screen. A walker draws bottom-anchored at its own position
 ## (`Sprites.draw_standing` called with `Vector2.ZERO`), so its whole canvas height rises to the
 ## north of it and nothing at all to the south; its width is split evenly either side. A car's

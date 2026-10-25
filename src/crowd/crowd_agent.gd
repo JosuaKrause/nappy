@@ -69,7 +69,7 @@ func set_expected_total_gross(total: float) -> void:
 ## `CarLook.BOB_STEPS_PER_PX` — the two things each kind draws that move without the sector moving.
 ##
 ## **This is the quantised half of what the drawing reads, and a car has a continuous half too** —
-## `_drawn_heading` below. See `_redraw_if_the_picture_changed()`.
+## `_drawn_heading` below. See `_end_the_frame()`.
 var _picture := Vector3i(-1, -1, -1)
 ## The live heading a car's picture was last drawn at, quantised by `CarLook.HEADING_STEPS` — the other
 ## half of the redraw key. Always `Vector2i.ZERO` for a walker, whose drawing reads no heading at
@@ -128,7 +128,7 @@ var _landed_history: Array = []
 var _clock := 0.0
 
 ## Everything this agent's own drawing can cover, relative to its position — what
-## `_redraw_if_the_picture_changed()` asks `CrowdView.drawn_box()` about. `ENTRY_PICTURE_ROOM` either side, and
+## `_end_the_frame()` asks `CrowdView.drawn_box()` about. `ENTRY_PICTURE_ROOM` either side, and
 ## above that a car's doubled caret at its tallest (`_draw_mark()`): the upper chevron's top stands
 ## `MARK_HEIGHT + 10 + 1.65 × MARK_WIDTH` above the node, about 65px, with its outline's width on top.
 const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDTH * 1.65 + 4.0),
@@ -194,11 +194,6 @@ func _end_the_frame(delta: float) -> bool:
 		queue_redraw()
 		return true
 	return false
-
-## `_end_the_frame()`'s redraw question without a frame to end: no time passes. A rig that steps an
-## agent's picture by hand asks it.
-func _redraw_if_the_picture_changed() -> bool:
-	return _end_the_frame(0.0)
 
 ## Excitement per second this agent contributes at a point. Same falloff as an event, so
 ## the crowd and the events are the same kind of quantity to the baby — and the same kernel too:
@@ -464,7 +459,7 @@ func set_halo_strength(strength: float, colour: Color) -> void:
 				release_halo()
 		return
 	if not _halo:
-		_halo = EntityHalo.new(_draw_body, _body_bob)
+		_halo = EntityHalo.new(_look.draw_body, _look.bob)
 		add_child(_halo)
 	_halo.set_glow(strength, colour)
 
@@ -529,15 +524,6 @@ func _dress() -> void:
 func _entry_picture_clearance() -> float:
 	return _look.entry_clearance(_vertical)
 
-## Draws this agent's own body onto `canvas`: `EntityHalo` calls this once per ring offset to trace
-## whichever silhouette the sprite actually is, and the ordinary frame draws it once at self.
-func _draw_body(canvas: CanvasItem) -> void:
-	_look.draw_body(canvas)
-
-## The lift this agent's body rides right now, the `bob()` `EntityHalo` asks every owner for.
-func _body_bob() -> float:
-	return _look.bob()
-
 ## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
 ## `EventInstance._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
 ## and a cue for what is charging her right now has nothing to say about it.
@@ -551,7 +537,7 @@ func _draw() -> void:
 		frame_timing.drew()
 	# `--skip crowd`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (d)): returns
 	# before anything is drawn, so a frame under the flag differs from an ordinary one by drawing
-	# alone — the crowd's own motion, lanes and traffic negotiation keep running. `_draw_body()` is
+	# alone — the crowd's own motion, lanes and traffic negotiation keep running. `AgentLook.draw_body()` is
 	# left alone rather than gated itself, since `EntityHalo` calls it too for a picked agent's own
 	# ring, which is a different drawing than the ordinary frame this flag measures.
 	if skip_draw:
@@ -568,13 +554,6 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if _carets:
 		_draw_mark()
-
-## Which way this car is travelling, on the ground plane — the axis its shadow's capsule sweeps
-## along, and what `DebugLayers` rotates its shadow layer by. `heading()` is continuous — cardinal in
-## a lane, the tangent of the arc mid-turn — so the capsule rotates with the turn instead of
-## snapping between two axes at the moment one starts or ends.
-func travel_axis() -> Vector2:
-	return heading()
 
 ## The caret's own answer for this car, 0 (none), 1 (amber) or 2 (doubled red), cached against
 ## `_clock` for the same reason `EventInstance._caret_strength()` caches against `age`: `_draw()`
