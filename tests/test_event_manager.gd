@@ -448,15 +448,16 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> voi
 
 ## M100, small, real, and nobody's: the wiring half of "a pursuer streamed out mid-chase comes
 ## back having forgotten it." `tests/test_heat.gd` already drives `EventInstance.resume()` directly
-## and pins that its `from_noticed_at` argument restores `_noticed_at`; the gap that shipped anyway
+## and pins that its `from_noticed_at` argument restores the notice; the gap that shipped anyway
 ## was one level up — `EventScheduler.Planned` had no field to hold the notice, so
-## `EventManager._stream_in()` always called `resume()` with the default `INF` and a `pursues_within`
-## row streamed out mid-chase came back `is_waiting()`, standing where the day planted it. This
-## drives the same encounter through `EventManager._stream_in()`/`_stream_out()` themselves, the
-## only place that bug could actually live — the same kind of wiring question the rest of this
-## suite exists for (see the class doc above).
+## `EventManager._stream_in()` always called `resume()` with the default `INF` and a
+## `EventDef.notice` row streamed out mid-chase came back `is_waiting()`, standing where the day
+## planted it. This drives the same encounter through
+## `EventManager._stream_in()`/`_stream_out()` themselves, the only place that bug could
+## actually live — the same kind of wiring question the rest of this suite exists for (see the
+## class doc above).
 ##
-## `alley_robbery` rather than a scheduled plan: it carries `pursues_within` cold, with no heat
+## `alley_robbery` rather than a scheduled plan: it carries `EventDef.notice` cold, with no heat
 ## level or a particular day's roll needed to reach it, and a `Planned` built by hand is
 ## deterministic where waiting for the scheduler to place one on some day would not be.
 func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
@@ -468,7 +469,7 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 	if not plan.live:
 		return
 
-	var her := plan.position + Vector2(def.pursues_within - 10.0, 0.0)
+	var her := plan.position + Vector2(def.notice_within() - 10.0, 0.0)
 	plan.live.player_at = her
 	plan.live._process(1.0 / 60.0)
 	t.check(not plan.live.is_waiting(), "she is inside the trigger, so it notices her")

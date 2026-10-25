@@ -229,7 +229,8 @@ func _measure(delta: float) -> void:
 			# pursuer's at its pursuing speed), already raised, and the margin waits until it has been
 			# seen once.
 			var warned := instance.came_under_a_warning
-			var own_speed := instance.def.pursue_speed if instance.def.pursues else instance.def.speed
+			var own_speed := instance.def.chase_speed() if instance.def.pursuit != null \
+					else instance.def.speed
 			state = {"was": at, "approach": own_speed if warned else 0.0,
 					"hold": HOLD if warned else 0.0, "seen": not warned}
 			_watch[id] = state
@@ -372,7 +373,7 @@ func _is_worth_an_arrow_for(def: EventDef) -> bool:
 	# **`TOWARD_PLAYER` is the opposite case and falls through on purpose.** It is a road, not an
 	# ambush — she is meant to see it coming and choose a side or a turn before it arrives — so the
 	# badge is exactly the warning the row is designed around rather than a spoiler of it.
-	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and not def.pursues:
+	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and def.pursuit == null:
 		return false
 	if def.hard_fail:
 		return true

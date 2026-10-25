@@ -83,7 +83,7 @@ extends RefCounted
 ##   pass and cross back without ever standing in its field, so it is left out of every reading
 ##   rather than read at its dawn position or over its whole route (PLAYTEST-71, *"the player can
 ##   cross the street, wait, then come back without ever getting excited by it"*).
-## - **A pursuer (`EventDef.pursues`) is never a block.** It follows her rather than sitting on a
+## - **A pursuer (`EventDef.pursuit`) is never a block.** It follows her rather than sitting on a
 ##   tile and pays the telegraph contract instead of the placement rules'
 ##   (`EventScheduler._a_line_has_to_avoid()`'s own doc: *"a pursuer follows her rather than
 ##   sitting on a tile, and pays the telegraph contract instead"*), so `alley_robbery` and
@@ -460,7 +460,7 @@ func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 		if not plan.is_placed() or plan.mast_id != "":
 			continue
 		var def := plan.def
-		if def.scenery or def.pursues or def.id.begins_with("checkpoint") \
+		if def.scenery or def.pursuit != null or def.id.begins_with("checkpoint") \
 				or (def.mobile and not def.paces):
 			continue
 		var emits := def.intensity > 0.0

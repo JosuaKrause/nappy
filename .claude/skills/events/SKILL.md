@@ -81,7 +81,7 @@ arrives chasing, with no approach: its notice is its badge alone. Running while 
 counts toward `PURSUIT_SHAKEN_OFF`, so it can be shaken off before it becomes visible (tall-owl).
 `EventDef.validate()` requires that badge and validates its chase without inventing an approach.
 The day-3 dog's approach keeps its separate notice floor (`Tuning.PURSUIT_MIN_NOTICE`); a pursuer
-that waited for her, a robber included, warns inside its one radius on its own clock (`warns_for`),
+that waited for her, a robber included, warns inside its one radius on its own clock (`PursuitSpec.warns_for`),
 so that floor bounds nothing it does (inbox #788 in minty-lemur). Verify escape with
 the actual Baby meter: reaching the pursuit cap after the baby cries is a lost day.
 
@@ -119,7 +119,8 @@ wholly outside the camera's whole view, corners included, never nearer than
 the day-3 dog, the road on its way to the fire for the engine, its lane for the column, the
 director's own rules for the trap. A non-pursuer is created with its telegraph spent
 (`EventManager.spawn_warned()`); **a pursuer with its telegraph still to run**, since its telegraph
-is its approach — except one that `arrives_chasing` (the resistance's sent robber and guard, and a
+is its approach — except one that arrives chasing (`PursuitSpec.Start.ARRIVES_CHASING`: the
+resistance's sent robber and guard, and a
 torn poster's pursuer on foot (olive-hedgehog #598). Where its ground has no place when the second
 is up, the warning is withdrawn; a withdrawn day-3 dog is owed again.
 
@@ -271,7 +272,7 @@ it was written from. The traps:
   the gap and dies on the first lethal frame. It closes to its stand-off
   (`Tuning.pursuit_standoff()`) and lunges the moment she reaches it, so the chase starts at the
   stand-off however she came. **A pursuer that stands still for its notice
-  (`EventDef.stands_for_its_notice`) closes nothing and keeps every lunge**, which
+  (`PursuitSpec.stands`) closes nothing and keeps every lunge**, which
   is what keeps standing from being this trap for one that comes for her (woolly-penguin #748);
   one that waited for her charges on its warning's clock instead (next trap); one that sets off
   beside her charges from where it stood once its notice has run. A wall between them that holds the lunge back is the same trap: at an
@@ -285,7 +286,7 @@ it was written from. The traps:
 - **A waiting charger has one radius and charges on a clock, never on a distance.** Charged at a
   stand-off while she walks into it, `PURSUIT_REACTION` of its approach is worth about a fifth of a
   second, too short to turn and run. So every charger that waits for her (the waiting dog, the
-  alley robber, the hunting roadblock's guard) warns for its row's `warns_for` from
+  alley robber, the hunting roadblock's guard) warns for its row's `PursuitSpec.warns_for` from
   the frame it notices her inside its one radius, and charges only if she is still inside once
   that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
   `notice_time()`; inbox #788 in minty-lemur). **Running while it warns counts for nothing**: `_chase()` adds to
@@ -298,7 +299,7 @@ it was written from. The traps:
   view hands it one (`tests/escape_roadblock_rig.gd`, `view_round()`). **The masked man is the one
   exception**: he runs a line rather than pursuing, so neither his notice nor his run asks the
   clear line, his notice asks no view, and he runs the moment she comes within his
-  `charges_within`, with no `warns_for` (`EventInstance._check_for_notice()`,
+  `NoticeSpec.runs_within`, with no warning clock (`EventInstance._check_for_notice()`,
   `_warn_on_its_line()`; inbox #788 in minty-lemur): in the stairwell his warning is off screen, which the player
   accepted (inbox #782 in minty-lemur), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
@@ -306,9 +307,9 @@ it was written from. The traps:
   door's line, the hut's guard across the road (or the post's) raises his hand for
   `Tuning.CROSSING_WARNING`; back across first, it is called off — and once it has run with her
   still across he charges from that hut or post, inside his own stand-off
-  (`EventDef.charges_at_once`: no notice of his own, telegraph 0). So his charge is not met at the
+  (`PursuitSpec.Start.CHARGES_AT_ONCE`: no notice of his own, telegraph 0). So his charge is not met at the
   stand-off: the answer is the warning — go back, or go on running — which
-  `tests/test_checkpoints.gd` walks. **No other row may carry `charges_at_once` without the player's
+  `tests/test_checkpoints.gd` walks. **No other row may start `CHARGES_AT_ONCE` without the player's
   word**: on any other pursuer it is exactly the trap above.
 - **A break-off stated as a distance needs two inequalities, and they fight.**
   `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a **rate** — the gap opening — which only running can
@@ -320,7 +321,7 @@ it was written from. The traps:
   direction she is *actually travelling*, so a `--flee` that starts early puts the pursuit in front
   of the run. It waits for the chase.
 
-Two more about the waiting state (`pursues_within`): **whatever follows it starts when it notices
+Two more about the waiting state (`EventDef.notice`): **whatever follows it starts when it notices
 her**, not at dawn — for a pursuer its warning's clock, for anything else its telegraph; and **whatever draws it asks `is_waiting()` as well as `is_telegraphing()`** — each is
 false in the other's phase, so a picture that asks only the second holds its whole wait in the
 wrong posture.

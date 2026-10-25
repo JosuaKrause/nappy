@@ -33,7 +33,7 @@ func _test_everything_that_stands_still_is_solid(t) -> void:
 	for def in EventCatalogue.all():
 		# A moving wall pins her against a building on a two-tile pavement, which is a different
 		# game from being priced out of a street. See `dog_walker`.
-		if def.mobile or def.pursues:
+		if def.mobile or def.pursuit != null:
 			continue
 		# Nothing checks that a thing sited out of where she happens to be walking leaves a route
 		# to a park, so `EventDef.validate()` refuses a body on one outright.

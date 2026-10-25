@@ -960,8 +960,8 @@ func _walks_out(live: EventInstance) -> bool:
 	if not area.has_point(live.global_position):
 		return false
 	var def := live.def
-	return def.kind != GameEnums.EventKind.AMBIENT and not def.pursues and not def.drives \
-			and not def.warned_first and not def.arrives_chasing
+	return def.kind != GameEnums.EventKind.AMBIENT and def.pursuit == null and not def.drives \
+			and not def.warned_first and not def.starts_by(PursuitSpec.Start.ARRIVES_CHASING)
 
 ## Sends one person in the park off on foot, out through the last gap and down the way out
 ## (`EventInstance.leave_along()`: no field and no cue, and gone only once she could not be

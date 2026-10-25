@@ -280,10 +280,11 @@ static func _controls_event_name(joystick: bool, by_key: bool) -> String:
 		return "nappy-controls-keys"
 	return "nappy-controls-joystick" if joystick else "nappy-controls-tap"
 
-## `EventBus.player_detained`'s own `id` (`nearest.def.id` in `EventManager._check_detentions()`),
-## named the way the day brief already tells the two kinds of stop apart: `chatting_mother` is a
-## `chat`, and every other id that can reach here (`checkpoint_hut`, `checkpoint_post` —
-## `checkpoint_gate`'s own boom never detains, see `EventCatalogue`) is a `checkpoint`.
+## `EventBus.player_detained`'s own `id` (`nearest.def.id` in
+## `CheckpointController.check_detentions()`), named the way the day brief already tells the two
+## kinds of stop apart: `chatting_mother` is a `chat`, and every other id that can reach here
+## (`checkpoint_hut`, `checkpoint_post` — `checkpoint_gate`'s own boom never detains, see
+## `EventCatalogue`) is a `checkpoint`.
 static func _detention_suffix(id: String) -> String:
 	return "chat" if id == "chatting_mother" else "checkpoint"
 
@@ -476,8 +477,8 @@ func _on_poster_torn() -> void:
 func _on_poster_pursuit_sent() -> void:
 	_send_event(_day_event_name(_counted_day(), "poster-pursuit"))
 
-## Every hold: `EventManager._check_detentions()` emits once per catch, a mother only ever chats
-## once, and a checkpoint that holds her again is a second stop she paid for.
+## Every hold: `CheckpointController.check_detentions()` emits once per catch, a mother only
+## ever chats once, and a checkpoint that holds her again is a second stop she paid for.
 func _on_player_detained(id: String) -> void:
 	_send_event(_day_event_name(_counted_day(), _detention_suffix(id)))
 

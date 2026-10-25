@@ -37,15 +37,16 @@ extends Node
 ## - **`Stroller.is_detained()`** — the one gate every `EventDef.detain_seconds` row goes through,
 ##   so this alone covers `chatting_mother` ("Another mother" and her pram, 5s) and both checkpoint
 ##   rows that inspect her (`checkpoint_hut`, `checkpoint_post`; the boom never does) for the whole
-##   of the controls-locked part of their hold. It is the single call site (`EventManager._check_detentions()`
-##   → `body.detain()`) every input-taking mechanic in the catalogue runs through, so nothing else in
-##   the game needs a query of its own.
-## - **`EventManager.door_holding_her_at()`** — only a `redetains` row (the two checkpoint ones)
-##   ever needs this on top of `is_detained()`, because a checkpoint's own hold is a clock on the
-##   instance (`EventInstance.is_chatting()`, ticked in a drawn `_process()`) and the input lock is a
-##   separate clock on `Stroller` (ticked in `_physics_process()`); see that function's own note on
-##   why a hold can still be running a frame after the input lock has already cleared. Read at her
-##   own position, which is what the function already answers for the excitement meter.
+##   of the controls-locked part of their hold. It is the single call site
+##   (`CheckpointController.check_detentions()` → `body.detain()`) every input-taking mechanic
+##   in the catalogue runs through, so nothing else in the game needs a query of its own.
+## - **`CheckpointController.door_holding_her_at()`** — only a `redetains` row (the two
+##   checkpoint ones) ever needs this on top of `is_detained()`, because a checkpoint's own hold
+##   is a clock on the instance (`EventInstance.is_chatting()`, ticked in a drawn `_process()`)
+##   and the input lock is a separate clock on `Stroller` (ticked in `_physics_process()`); see
+##   that function's own note on why a hold can still be running a frame after the input lock
+##   has already cleared. Read at her own position, which is what the function already answers
+##   for the excitement meter.
 ## - **`facing_a_red_light()`** — the signalled junction nearest her among those visible on screen
 ##   shows her red on the main road's own light, wherever on screen she herself is standing. See
 ##   that function for why the nearest one decides and why her own tile no longer matters.

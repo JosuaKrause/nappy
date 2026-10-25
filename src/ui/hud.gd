@@ -252,7 +252,7 @@ func _teach_the_pause(delta: float) -> void:
 ## run button (`_run_phrase()`): `Shift` still holds `run` on a keyboard, but nothing on screen
 ## names it — see `Texts.WALKING_LESSON_PAUSE`'s own doc.
 func _on_event_telegraphed(instance: EventInstance) -> void:
-	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
+	if _taught_run or instance.def.pursuit == null or GameState.day != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
 	var phrase := _run_phrase(HelpText.joystick_in_force(get_tree()))

@@ -106,7 +106,7 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 func _reachability(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var names := ["whole circle", "leaning bearing", "far end"]
 	var asleep := {"through": [0, 0, 0], "passage": [0, 0, 0]}
 	var counted := {"through": 0, "passage": 0}

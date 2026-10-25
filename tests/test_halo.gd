@@ -565,7 +565,7 @@ func _test_a_flock_is_selected_and_lands(t) -> void:
 	var flock := _rig_instance(t, def, Vector2.ZERO)
 	t.check(flock._flock.size() == def.flock_size,
 			"_ready() (live in the tree) built the flock, unlike a bare _instance_at()")
-	# Standing in it: a flock waits on the pavement until she is inside `pursues_within`, and both
+	# Standing in it: a flock waits on the pavement until she is inside `EventDef.notice`, and both
 	# the telegraph and the burst below are measured from the moment it notices her — which is the
 	# end of a frame, so the notice gets a frame of its own before the telegraph is stepped.
 	flock.player_at = Vector2.ZERO

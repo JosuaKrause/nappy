@@ -27,7 +27,7 @@ func _hot_roadblock() -> EventDef:
 
 ## A guard that has set off after her, her standing still beside the post: she comes inside his
 ## radius and he warns, and she stays inside it until his warning has run and he charges
-## (`EventInstance.warns_by_radius()`, `EventDef.warns_for`).
+## (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`).
 func _chasing(t, post: Vector2) -> Array:
 	var hot := _hot_roadblock()
 	var guard := EventInstance.new()
@@ -35,7 +35,7 @@ func _chasing(t, post: Vector2) -> Array:
 	t.add_child(guard)
 	guard.set_process(false)
 	guard._attach_the_band()
-	var her := post + Vector2(0.0, hot.pursues_within - 10.0)
+	var her := post + Vector2(0.0, hot.notice_within() - 10.0)
 	guard.player_at = her
 	guard._process(STEP)
 	her = _charge(guard)
@@ -46,7 +46,7 @@ func _chasing(t, post: Vector2) -> Array:
 func _charge(guard: EventInstance) -> Vector2:
 	var her := guard.player_at
 	var frames := 0
-	while guard.is_telegraphing() and frames < int((guard.def.warns_for + 1.0) / STEP):
+	while guard.is_telegraphing() and frames < int((guard.def.pursuit.warns_for + 1.0) / STEP):
 		guard.player_at = her
 		guard._process(STEP)
 		frames += 1
@@ -244,7 +244,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	city.events.stream_radius = INF
 	# A post on open street with a clear line to where she stands: the notice needs one.
 	var post := Vector2.INF
-	var reach := _hot_roadblock().pursues_within - 10.0
+	var reach := _hot_roadblock().notice_within() - 10.0
 	var home := city.map.doorstep_world_position()
 	for dy in range(-12, 13):
 		for dx in range(-12, 13):
@@ -279,7 +279,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		city.free()
 		return
 	guard._attach_the_band()
-	var her := post + Vector2(0.0, _hot_roadblock().pursues_within - 10.0)
+	var her := post + Vector2(0.0, _hot_roadblock().notice_within() - 10.0)
 	guard.player_at = her
 	guard._process(STEP)
 	her = _charge(guard)

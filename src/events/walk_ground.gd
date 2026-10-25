@@ -188,7 +188,7 @@ func stand(plan: EventScheduler.Planned) -> void:
 func held_by(plan: EventScheduler.Planned) -> Array[Solid]:
 	var found := solids_of(plan)
 	var def := plan.def
-	if def.mobile or not def.hard_fail or def.pursues:
+	if def.mobile or not def.hard_fail or def.pursuit != null:
 		return found
 	var reach := def.lethal_reach() - Tuning.PLAYER_BODY_RADIUS
 	if reach <= 0.0:
