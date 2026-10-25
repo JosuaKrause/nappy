@@ -1899,7 +1899,7 @@ is loud, and the reason a park is quiet.
   and nothing at all to the south, since `Sprites.draw_standing` anchors it bottom-centred with
   nothing below. `CrowdAgent._entry_picture_clearance` (the crowd member's answer to `LaneMover`'s, from its look's
   `entry_clearance()`) reads the real texture sizes and the anchor
-  arithmetic `CarLook.draw_body()` uses to say how far this kind's own picture reaches past its coordinate,
+  arithmetic its look's `draw_body()` uses to say how far this kind's own picture reaches past its coordinate,
   and `_entry_band_fits`, the final placement clamp, and the morning's own `setup()` all ask for that
   much room before accepting a spot, wherever `entry_room()` grants nothing past the edge.
   **And the same room is what lets a car arrive by the tunnel or the bridge.** The crowd's box is
