@@ -1,6 +1,6 @@
 ---
 name: board
-description: The Nappy board, the shared Claude Doc where the player and the orchestrator keep the open questions, the running work and the recent merges — its layout, how a question is written, answered and settled, how the player's words on it are captured, and the reads and writes that keep it cheap. Load this BEFORE reading or writing the board, and whenever the player says "doc" or "check the doc".
+description: The Nappy board, the shared Claude Doc where the player and the orchestrator keep the open questions, the running work and the recent merges — its layout, how a question is written, answered and settled, how the player's words on it are captured, and the reads and writes that keep it cheap. Load this BEFORE asking the player any question, which goes on the board rather than in a dialog, BEFORE reading or writing the board, and whenever the player says "doc" or "check the doc".
 ---
 
 # The Nappy board

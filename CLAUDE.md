@@ -116,7 +116,7 @@ rather than a place:
 | review a pull request, brief a review agent, or decide a PR is ready to merge — every PR is reviewed adversarially first | **pr-review** |
 | merge main into a PR or branch | **merging-main** |
 | build a worksheet for the player to answer the review items in | **review-answers** |
-| read or write the Nappy board, the shared doc of open questions and running work | **board** |
+| ask the player a question — it goes on the board, never in a dialog — or read or write the Nappy board, the shared doc of open questions and running work | **board** |
 | **end a session** | **session-cleanup** |
 
 **A manual sequence done a second time becomes a script** (woolly-finch 23). It follows
