@@ -48,7 +48,7 @@ func _car(t, def: EventDef, route: PackedVector2Array, map: CityMap = null) -> E
 ## in. A car is created standing (`EventInstance.setup()`) and would go on standing for her on its
 ## first frame, so a rig that asks about the warning over a driving car puts it in that state.
 func _already_driving(car: EventInstance) -> void:
-	car._standing = false
+	car.car._standing = false
 
 ## Her real rig, facing `facing`, with the pram body on her circumference as `_physics_process()`
 ## puts it.
@@ -88,7 +88,7 @@ func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
 	return walked
 
 func _gap(car: EventInstance) -> float:
-	return car._gap_to_her(car.position, car._heading)
+	return car.car.gap_to_her(car.position, car._heading)
 
 # ----------------------------------------------------------------- the row ---
 
@@ -149,7 +149,7 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
 	t.check(absf(spine.dot(Vector2.DOWN)) > 0.999,
 			"driving south, the capsule lies north-south (%s)" % spine)
 	car._heading = Vector2.RIGHT
-	car._turn_the_body()
+	car.car.turn_the_body()
 	spine = Vector2.DOWN.rotated(collision.rotation)
 	t.check(absf(spine.dot(Vector2.RIGHT)) > 0.999, "and turned east, east-west (%s)" % spine)
 	t.check(car._body_anchor("side").y == shape.radius,

@@ -17,6 +17,9 @@ static func compose(event: EventInstance, row: EventDef) -> Array[EventBehaviour
 	if row.mobile:
 		event.route = EventRouteWalk.new()
 		event.route.attach(event)
+	if row.vehicle:
+		event.car = EventCarDriving.new()
+		_add(out, event, event.car)
 	if row.flock_size > 0:
 		event.flock = EventFlock.new()
 		_add(out, event, event.flock)

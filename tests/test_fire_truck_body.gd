@@ -152,7 +152,7 @@ func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 ## nearer her than its warning reaches her (1.7s of its 190px/s past the touch, the touch counting
 ## its body and hers): up a north-south street the view is 180px to either side of her, and across
 ## an east-west one 320px. A truck driving from its first frame would strike her inside the time it
-## takes to walk off the road. A car that drives is created standing (`_drive()`'s car that has
+## takes to walk off the road. A car that drives is created standing (`EventCarDriving`'s car that has
 ## stood): it waits there while she is in its lane within its warning, and nothing strikes her.
 ## Once she is further along its lane than its warning reaches, it drives on, and the strike comes
 ## after the full warning.
@@ -241,7 +241,7 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 			lethal = lethal or engine.is_lethal_at(player.global_position)
 			if engine.is_parked:
 				break
-		var gap := engine._gap_to_her(engine.global_position, engine._heading)
+		var gap := engine.car.gap_to_her(engine.global_position, engine._heading)
 		t.check(engine.is_parked and gap > 0.0 and not lethal,
 				"%.0fpx past its kerb, it parks %.0fpx short of her and the day goes on"
 				% [past, gap])

@@ -65,7 +65,8 @@ func _investigate() -> void:
 	_officers.clear()
 	# A car that stood for its men has stood, so it pulls away only once she is out of its way —
 	# never into her.
-	event._standing = def.drives()
+	if event.car:
+		event.car.stand()
 
 ## **A car that stood for its man is quiet until it has left her: the man is the encounter**
 ## (inbox #669 in coral-lark). From the frame it stops for her, through his notice, chase, stop and

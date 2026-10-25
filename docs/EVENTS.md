@@ -770,8 +770,10 @@ registration (`EventInstance._body_anchor()`) — so where she is stopped is whe
 drawn. She walks round it whether it drives or stands.
 
 **It answers the pin the mobile exemption exists for, by never moving into her.** Each frame
-`EventInstance._drive()` takes back whatever part of it would bring the body into contact with her
-or her pram — a step along its route, a turn onto a new heading, its departure — and the car stands where it was until she moves: it stops for her rather than
+is proposed, checked and then committed or taken back (`EventCarDriving`): whatever part of it would
+bring the body into contact with her or her pram — a step along its route, a turn onto a new
+heading, its departure — is taken back, with the end of its route it would have reached there, and
+the car stands where it was until she moves: it stops for her rather than
 pushing her, so nothing ever carries her into a wall and she is never inside it. A pose that leaves
 her no nearer is always allowed, so a car she has walked up against drives on along its flank or
 away from her rather than wedging. **A car that has stood for her drives on only once she is out
@@ -783,7 +785,7 @@ rather than driving off at her: being put into her path is not her stepping into
 warning — the raid's pacing car reversing at the end of its beat with her standing behind it — is
 refused the same way, and the car stands. **It gives way where the crowd's cars do**: short of a
 zebra she is waiting at on a street whose traffic gives way, and at a red light, where
-`Crowd.give_way_at_junctions()` stops the crowd's cars (`EventInstance._room_to_its_line()`).
+`Crowd.give_way_at_junctions()` stops the crowd's cars (`EventCarDriving.room_to_its_line()`).
 For a zebra on the far side of a junction it holds at the junction's entry line, where a red light
 stops it: nothing enters a box it cannot leave, and the crossing traffic cannot see a patrol car's
 body to wait for it. That is decided before its nose reaches the box, from `Tuning.CAR_JUNCTION_SIGHT`
@@ -836,7 +838,7 @@ width plus the picture — is nearer her than its warning reaches her (1.7s of i
 touch, which counts its body and hers), so with her in its lane there it waits, created standing
 like any car, until she is out of its way; it then drives on to the kerb. **Its kerb is where it
 stops, so nothing of it reaches past**: its warning, its strike, its doubled caret and its standing
-for her end at the touch it would make parked there (`EventInstance._route_left()`), so in its lane
+for her end at the touch it would make parked there (`EventCarDriving.route_left()`), so in its lane
 beyond where its parked nose would touch her (about 43px past the kerb) she gets no mark, is never
 struck by an engine that parks short of her, and does not hold it off screen; nearer than that it
 waits for her or strikes as any car does.
