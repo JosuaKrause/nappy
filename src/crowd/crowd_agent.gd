@@ -1332,12 +1332,6 @@ func _furthest_back_towards(target: float) -> float:
 func step_aside(away: Vector2, distance: float, seconds: float) -> void:
 	strategy.step_aside(away, distance, seconds)
 
-## One frame of this agent's own crossing of a checkpoint door, called by
-## `Crowd._hold_walkers_at_doors()` once it has written `door_ahead`/`door_ahead_along`. See
-## `WalkerStrategy.advance_the_door_hold()`.
-func advance_the_door_hold(delta: float) -> void:
-	strategy.advance_the_door_hold(delta)
-
 ## Drops any sidestep. A detour is a distance across *this* corridor, so it means nothing once the
 ## agent has changed corridor, changed lane, or swapped its axes at a junction.
 func _forget_the_detour() -> void:

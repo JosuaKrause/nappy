@@ -872,7 +872,7 @@ func _near_a_line(lines: Array[Dictionary], count: int, forward: Vector2, here: 
 ##
 ## *(Playtest 58: "Held at the hut like her"; "four states walking -> waiting -> inspection ->
 ## emerging on the other side (with cooldown to not go back again) -> walking".)* **The four states
-## are the walker's own** — see `CrowdAgent.advance_the_door_hold()` — and what is decided here is
+## are the walker's own** — see `WalkerStrategy.advance_the_door_hold()` — and what is decided here is
 ## only the two facts a walker cannot work out for itself: which hut is its, and how far away.
 ##
 ## Two clauses in the filter below are load-bearing:
@@ -902,7 +902,7 @@ func _hold_walkers_at_doors(delta: float) -> void:
 		agent.door_ahead = null
 		agent.door_ahead_along = INF
 		_find_the_hut_in_front_of(agent, lines)
-		agent.advance_the_door_hold(delta)
+		agent.strategy.advance_the_door_hold(delta)
 
 func _find_the_hut_in_front_of(agent: CrowdAgent, lines: Array[Dictionary]) -> void:
 	var forward := agent.heading()
