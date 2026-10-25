@@ -98,7 +98,7 @@ signal save_deletion_settled(operation: int, kept: bool)
 signal event_telegraphed(instance)
 signal event_activated(instance)
 signal hard_fail_triggered(reason: String)
-## `EventManager._summon_what_has_been_sighted()`'s own first frame a `spawns_on_sight` row (only
+## `EventManager._summon_what_has_been_sighted()`'s own first frame an `aftermath.on_sight` row (only
 ## `burning_building` today) is actually on screen — fired once per plan whether or not the warning
 ## for the row it summons could be put up, since seeing the fire is what happened and an engine with
 ## no road off screen to wait on is a separate fact about the geometry. `id` is the seen row's own

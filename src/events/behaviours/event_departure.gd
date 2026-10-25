@@ -91,7 +91,7 @@ func for_a_completed_task() -> void:
 ## `avoid` is ground the rest planned past the way's end never enters, nor a step away from her: the
 ## cordon's park, whose grass is walkable and whose tape is a body rather than a tile. Answers
 ## whether it is now leaving along the way: not for something finished, parked, a spent guard or a
-## guard leaving his barrier, or a row that ends rather than leaving (`spawns_on_finish`).
+## guard leaving his barrier, or a row that ends rather than leaving (`aftermath.on_finish`).
 func along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
 	if event.is_finished or event.is_parked or event._guard_spent \
 			or event.barrier_post and event.barrier_post.has_left_its_body():

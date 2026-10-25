@@ -67,7 +67,7 @@ enum Start {
 
 ## Whether the row's body is **a fixture of the street the man leaves standing** when he sets off,
 ## rather than his own bulk: the roadblock, whose barrier stays shut behind its guard. The body is
-## pinned where it was left (`BarrierPost`) and drawn there, so the picture and the street agree.
+## pinned where it was left (`EventBarrierPost`) and drawn there, so the picture and the street agree.
 ## A moving pursuer otherwise drops its body the frame it stops waiting, since a moving wall pins her.
 @export var leaves_its_body := false
 

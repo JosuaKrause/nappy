@@ -65,7 +65,7 @@ extends RefCounted
 ## # What counts as a solid body
 ##
 ## Every placed row with `obstructs_radius > 0.0`, minus the two exemptions the production rule
-## and its own probe already make and for the same reasons: `scenery` (`pigeon_flock` —
+## and its own probe already make and for the same reasons: `Role.SCENERY` (`pigeon_flock` —
 ## *"basically free already"*), and a `checkpoint_hut`/
 ## `checkpoint_gate` door body (*"a region door is never a block... it costs by design"*,
 ## `docs/DECISIONS.md`; the region **wall**'s own body is not a door and still counts). A pacing

@@ -394,8 +394,8 @@ func _test_successors_resolve(t) -> void:
 				"'%s' spawns '%s', which exists in the catalogue"
 				% [def.id, def.aftermath.on_finish])
 
-## The opposite direction: `spawns_on_sight` names what arrives once a row has been seen,
-## `spawns_on_finish`'s own check above, mirrored. `burning_building` is the only row that
+## The opposite direction: `aftermath.on_sight` names what arrives once a row has been seen,
+## `aftermath.on_finish`'s own check above, mirrored. `burning_building` is the only row that
 ## carries one today.
 func _test_sighted_successors_resolve(t) -> void:
 	var checked := 0

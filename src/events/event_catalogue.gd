@@ -930,7 +930,7 @@ static func _fire_truck() -> EventDef:
 	def.look = EventDef.Look.FIRE_ENGINE
 	# **The body is the drawing's ground contact**: 58px long (`fire_engine.svg`, x 2 to 60, bumper
 	# to bumper) and 26px wide (`fire_engine_front.svg`, x 4 to 30, flank to flank), a capsule laid
-	# along its heading — the patrol car's own construction, which `drives` makes the body. It is
+	# along its heading — the patrol car's own construction, which `vehicle` makes the body. It is
 	# lethal only in front of it while it drives its route, and solid and harmless once it has
 	# parked at the kerb (`is_parked` is not driving).
 	def.shape = GroundShape.segment(16.0, 13.0)
@@ -958,7 +958,7 @@ static func _fire_truck() -> EventDef:
 	return def
 
 ## Act I's finale, and the day's own one-shot: a building alight on a sidewalk, with the engine
-## called in the moment she first sees it (`spawns_on_sight`).
+## called in the moment she first sees it (`aftermath.on_sight`).
 ##
 ## **It is on her way, because the day sites it from the walk she is taking.** `EventDef.on_her_way`
 ## leaves the plan without a position at dawn and `EventDirector.site_what_is_on_her_way()` puts it
@@ -1751,7 +1751,7 @@ static func _police_patrol() -> EventDef:
 	# **The body is its drawn ground contact** — 42px long, the side view's body from bumper to
 	# bumper (`police_car.svg`, x 2 to 44), and 24px wide, the end views' body from flank to flank
 	# (`police_car_front.svg`, x 3 to 27) — as a capsule laid along its heading, the same datum its
-	# shadow is drawn from, one shape per object. `drives` makes it the body as well.
+	# shadow is drawn from, one shape per object. `vehicle` makes it the body as well.
 	def.shape = GroundShape.segment(9.0, 12.0)
 	def.vehicle = VehicleSpec.new()
 	def.first_day = 4
@@ -3075,11 +3075,11 @@ static func _finale_explosion() -> EventDef:
 ## **The body is the picture.** `impact_crater_2x2.svg` is 64px across, so `point(32)` is exactly
 ## half of it and the ground she cannot walk on is the hole she can see — *anything that stands
 ## still is solid at the width it is drawn*, read in the one direction a hole can be read in. The
-## 32px and 96px sources stay prepared and unbound: `spawns_on_finish` names one row, a second
+## 32px and 96px sources stay prepared and unbound: `aftermath.on_finish` names one row, a second
 ## crater row would need a second explosion row to leave it, and three sizes of the same hole would
 ## be three looks that no reader could tell apart on the screen-edge badge.
 ##
-## **No `scar_id`.** A scar is how the *run* remembers a fire on day 3; the escape is the last
+## **No `aftermath.scar`.** A scar is how the *run* remembers a fire on day 3; the escape is the last
 ## thing that happens in a run, so a crater has nothing left to persist into and recording one
 ## would only put an entry in `GameState.scars` that no later day ever reads.
 static func _impact_crater() -> EventDef:

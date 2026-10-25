@@ -394,7 +394,6 @@ func notice_on(day: int) -> NoticeSpec:
 ## **Where her walk sites this row**, or null for a row the dawn places — see `OnHerWay`.
 @export var on_her_way: OnHerWay = null
 
-
 ## Seconds of notice this row gives from off screen before it can be seen — `Tuning.OFFSCREEN_NOTICE`
 ## (0.2) unless a row overrides it. Two readings, by how the row arrives:
 ##
@@ -437,7 +436,7 @@ func notice_on(day: int) -> NoticeSpec:
 ## placement, rather than exempted from them**: nothing announces its coming before she can see it,
 ## and it is met as it comes. False on `loose_dog` and `cat_dash` (the player's own), `alley_mouse`
 ## (across its alley, not at her), `pigeon_flock` (goes up where she walks in) and `police_patrol`
-## (slower than a walk; it ends the day only as a car does, warned as a car is — see `drives`). **The telegraph contract still holds its in-world
+## (slower than a walk; it ends the day only as a car does, warned as a car is — see `vehicle`). **The telegraph contract still holds its in-world
 ## telegraph** — the cat's crouch, the mouse's and the flock's wait, the patrol's approach — as it
 ## holds a standing row's (a lorry backing in, a firefight, a raid). Only the loose dog, met with its
 ## telegraph already spent, has none for the contract to hold (`validate()`).
@@ -543,13 +542,13 @@ func notice_within() -> float:
 func chase_speed() -> float:
 	return pursuit.speed if pursuit else 0.0
 
-## Whether it pursues with a chase that begins in `start`'s way.
 ## Whether its pursuer, cold or hunting, leaves its body standing when he sets off
 ## (`PursuitSpec.leaves_its_body`): the roadblock's, whose cold row carries it on `hunts_as`.
 func leaves_its_body() -> bool:
 	var chase := pursuit if pursuit else hunts_as
 	return chase != null and chase.leaves_its_body
 
+## Whether it pursues with a chase that begins in `start`'s way.
 func starts_by(start: PursuitSpec.Start) -> bool:
 	return pursuit != null and pursuit.start == start
 
@@ -578,7 +577,7 @@ enum HeatResponse {
 	## (`investigates`: it stops near her and a man on foot gets out and pursues her).
 	## The rung that does not hunt: it never gains `hard_fail`, whatever the heat, and the man it
 	## lets out costs her when he reaches her rather than ending the day (`PursuitSpec.stop_excitement`). (The
-	## patrol that carries it strikes as a car does at every heat — `drives` — which is not a rung.)
+	## patrol that carries it strikes as a car does at every heat — `vehicle` — which is not a rung.)
 	PRESSES,
 	## **It stops being a place and starts being a hunter.** The lethal rung: `roadblock`'s guard
 	## hunts her himself, and the two vans on it — `abduction` and `night_raid` — hunt on foot
@@ -676,11 +675,9 @@ enum SolidWhen {
 
 @export var solid_when := SolidWhen.ALWAYS
 
-
 ## **A car that drives**, or null for anything else — see `VehicleSpec`: `police_patrol` and every
 ## copy of it, and `fire_truck`.
 @export var vehicle: VehicleSpec = null
-
 
 ## **A vehicle that investigates: once it notices her it stops and lets men out on foot, who pursue
 ## her; the vehicle itself never chases.** *(merry-stork, the player: "an investigating police car
@@ -747,7 +744,7 @@ enum Pavement {
 ## of driving on out of sight the way everything else that runs out of route does.
 ##
 ## The fire engine is the only row that carries it, and the flag says what it means rather than
-## borrowing a mechanism that means something else: a `spawns_on_finish` would also keep it where it
+## borrowing a mechanism that means something else: an `aftermath.on_finish` would also keep it where it
 ## arrived, by finishing it and leaving a successor behind, but what it leaves would be a second row
 ## standing in for the first and nothing about that arrangement says *parks*.
 ##
@@ -814,7 +811,6 @@ func detain_distance() -> float:
 ## directions with the same cost each time"* — so `checkpoint_hut` and `checkpoint_post` are the
 ## only two rows that set it. `CheckpointController.check_detentions()` is what reads it.
 @export var redetains := false
-
 
 ## Whether this row is one of the region boundary's own structures — a street being held, however
 ## many bodies it takes to hold it. **Several of them charge the meter as one source, the strongest
@@ -922,7 +918,6 @@ enum Role {
 ## **The rows this one brings after it** — see `Aftermath`; empty for a row that brings none.
 @export var aftermath := Aftermath.new()
 
-
 ## Which act the row belongs to, narratively. No game code reads it — `first_day` is what
 ## actually decides when a row can appear — but `tests/test_acts.gd` asserts every row's
 ## `act_tag` against the act its `first_day` falls in, so it stays consistent with the
@@ -980,7 +975,7 @@ func at_heat(level: int) -> EventDef:
 				hot.notice = NoticeSpec.at(Tuning.HEAT_INVESTIGATE_WITHIN)
 			# The rung stays off the hard-fail ladder at every level. Stated rather than assumed,
 			# because only the top rung hunts her: a patrol car kills only as a car does, in front
-			# of it while it drives its route (`drives`), and never while it stands for the man it
+			# of it while it drives its route (`vehicle`), and never while it stands for the man it
 			# let out — whose catch costs her rather than ending the day (`PursuitSpec.stop_excitement`).
 			hot.hard_fail = false
 		HeatResponse.HUNTS:
@@ -1267,7 +1262,7 @@ func validate() -> bool:
 					+ ("sit inside its own field (inner %.0f <= outer %.0f)"
 					% [inner_radius, outer_radius]))
 			return false
-	# **A car that drives is a body that moves and a strike that is not the body** — see `drives`.
+	# **A car that drives is a body that moves and a strike that is not the body** — see `vehicle`.
 	# Each half-set version is a row the rules cannot read: a car with no route stands for ever and
 	# its strike never fires, a car with no shape has no body to be, one that also obstructs would be
 	# a moving closure every planner reads as standing ground, and one that is also `hard_fail` would
@@ -1508,7 +1503,7 @@ func as_warned_first() -> EventDef:
 ## *against* — see the catalogue's own docstrings) whose field is priced from that segment. This
 ## figure does not grow with speed, so for the patrol car, a segment that drives, it is the reach
 ## of its field standing.
-## A row whose field is priced from its centre (`field_from_its_centre`, the fire engine) is a
+## A row whose field is priced from its centre (`VehicleSpec.field_from_its_centre`, the fire engine) is a
 ## point for it, whatever its body. Otherwise `outer_radius ·
 ## Tuning.field_scale(e)`, `e` from whichever speed the row's own motion actually uses —
 ## its chase speed for a pursuer, `speed` for an ordinary mobile row, zero (the plain disc) for

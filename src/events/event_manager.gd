@@ -98,7 +98,7 @@ var _spec: DaySpec = null
 ## same time. Reset with the rest of the day in `clear()`.
 var _broadcast_clock := 0.0
 
-## Which planned events have already summoned the row their own `spawns_on_sight` names, so a
+## Which planned events have already summoned the row their own `aftermath.on_sight` names, so a
 ## `burning_building` streamed out and back in — a fresh `EventInstance` every time, unlike the
 ## `Planned` it comes from, see `_stream_in()` — does not hand out a second fire engine. Keyed by
 ## `Planned` rather than by instance for exactly that reason, and cleared with the rest of the
@@ -593,7 +593,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 ## the result.
 ##
 ## The streaming, the successors, the scars, the detentions and the hard fails are all the day's
-## own and are untouched: an explosion leaves its crater through exactly the `spawns_on_finish`
+## own and are untouched: an explosion leaves its crater through exactly the `aftermath.on_finish`
 ## mechanism a convoy leaves a barricade through, and a plan that comes again comes on its own
 ## clock (`_bring_back_what_repeats()`).
 func start_planned(spec: DaySpec, plans: Array[EventScheduler.Planned],
@@ -1567,7 +1567,7 @@ func _tick_the_events(delta: float) -> void:
 # *done*; this hands it something the moment a row is first *seen*. `burning_building` is what
 # it exists for — see `EventDef.aftermath.on_sight`.
 
-## Whether a live instance whose def names `spawns_on_sight` has been seen yet, and if it just
+## Whether a live instance whose def names an `aftermath.on_sight` has been seen yet, and if it just
 ## has, creates the row it names entering along its own street. Run every frame there is a
 ## player, the same as `_place_what_is_owed_ahead` beside it.
 func _summon_what_has_been_sighted() -> void:

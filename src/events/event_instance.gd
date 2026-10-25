@@ -2560,8 +2560,6 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 	if def.mobile and path.size() > 1:
 		route.advance(0.0)
 
-## **Every behaviour's own state**, keyed by its class, as plain values a plan carries while this
-## event is out of the world (`EventManager._stream_out()`, `EventScheduler.Planned.behaviours`).
 ## **Stands it at `at`, keeping everything it is in the middle of**: its phase, its notice, every
 ## behaviour's state. What setup reads off the ground it stands on is read again for the new ground
 ## (the axis of a spread, which side a parked vehicle shows, its idle phase), and its field is asked
@@ -2574,6 +2572,8 @@ func move_to(at: Vector2) -> void:
 	_invalidate_contribution_cache()
 	queue_redraw()
 
+## **Every behaviour's own state**, keyed by its class, as plain values a plan carries while this
+## event is out of the world (`EventManager._stream_out()`, `EventScheduler.Planned.behaviours`).
 func save_behaviours() -> Dictionary:
 	var out := {}
 	for behaviour in _behaviours:
@@ -2656,7 +2656,7 @@ var is_parked: bool:
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
 ##
 ## Three things never leave, and each would break something that reads the finishing position. An
-## event with a `spawns_on_finish` stops **where the thing it leaves belongs** — a convoy's
+## event with an `aftermath.on_finish` stops **where the thing it leaves belongs** — a convoy's
 ## barricade is across the street it shut, not two streets past it. Anything with no departure
 ## speed has no way to go anywhere; a café that closes has always simply been over. And a row with
 ## `EventDef.stops_where_it_arrives` **parks**: the fire engine is sent to the near kerb across from
@@ -2740,7 +2740,6 @@ func way_left() -> PackedVector2Array:
 var _guard_spent: bool:
 	get:
 		return phase == Phase.SPENT
-
 
 func _has_expired() -> bool:
 	if is_waiting():

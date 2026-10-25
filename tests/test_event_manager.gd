@@ -197,10 +197,10 @@ func _test_finished_instances_are_dropped(t) -> void:
 ## node in the array while never tracking the successor at all.
 ##
 ## `military_convoy`/`barricade` rather than the fire engine: `fire_truck` no longer sets
-## `spawns_on_finish` — the day the fire is found before the engine reversed that link, so it is
+## `aftermath.on_finish` — the day the fire is found before the engine reversed that link, so it is
 ## `burning_building` that now names something, in the opposite direction
 ## (`EventDef.aftermath.on_sight`, checked in `tests/test_events.gd`, not here). The convoy is the
-## row `spawns_on_finish` still governs, and the wiring this test exists for is the same either
+## row `aftermath.on_finish` still governs, and the wiring this test exists for is the same either
 ## way.
 func _test_successor_replaces_its_parent(t) -> void:
 	_start(12)

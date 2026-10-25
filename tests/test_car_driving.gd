@@ -1,5 +1,5 @@
 extends RefCounted
-## A car's frame is proposed, checked and then committed (`CarDriving`): what the frame decides on
+## A car's frame is proposed, checked and then committed (`EventCarDriving`): what the frame decides on
 ## the pose it would end on — parking at the end of its route, leaving off the end of it — holds
 ## only once that pose is the one it keeps. A step the check takes back takes back what was decided
 ## on it (likely-bugs.md, the car's taken-back frame).
@@ -62,7 +62,7 @@ func _test_a_last_step_taken_back_does_not_park_it_short(t) -> void:
 			% refused_at_the_end)
 	t.check(parked_short == 0, "no step taken back at its kerb parks it short (%d did)" % parked_short)
 
-## **A car carries nothing across a stream-out** (`EventCarDriving.save()`): whether it stands is
+## **A car carries nothing across a stream-out** (`EventCarDriving` saves nothing): whether it stands is
 ## decided again every frame, and a car streamed back in stands as one first made does, driving off
 ## only once she is out of its way.
 func _test_a_car_comes_back_standing(t) -> void:

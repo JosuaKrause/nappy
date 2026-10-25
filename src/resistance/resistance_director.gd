@@ -2057,8 +2057,6 @@ func _paths_reach_between(her: Vector2, near: float, far: float) -> Dictionary:
 			queue.append(next)
 	return found
 
-## The row day 13's task rides — see `_place_the_roadblock_near()`.
-
 ## Where day 9's task points: one of today's region-wall doors — a `StreetNetwork.Segment` from
 ## `City.region_plan().doors` — at its own crossing tile, chosen the same reachable-among-
 ## candidates way `_pick_reachable()` already chooses a mark's alley. `Vector2.INF` if the city

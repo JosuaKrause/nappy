@@ -372,7 +372,7 @@ func is_closing() -> bool:
 ##
 ## **What it leaves is the barricade** its rear truck stops at, out of her sight beyond where she
 ## stood — or, where nothing beyond her will do, short of her on the stretch it drives in on — the
-## row's own `spawns_on_finish`, so it is a scar and stands for the rest of the run, but only where
+## row's own `aftermath.on_finish`, so it is a scar and stands for the rest of the run, but only where
 ## she can still reach home and a calm area with it standing
 ## (`EventScheduler.WalkSiting.leaves_her_a_way()`), checked before the stop is accepted, a block
 ## further on at a time, from where she is standing when the trucks arrive. The trucks ahead of it
