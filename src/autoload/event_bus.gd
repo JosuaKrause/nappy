@@ -105,7 +105,7 @@ signal hard_fail_triggered(reason: String)
 ## `def.id`.
 ## Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal event_sighted(id: String)
-## `EventManager.light_what_she_never_met()`'s own moment a `sited_on_her_way` row (only day 3's
+## `EventManager.light_what_she_never_met()`'s own moment an `EventDef.on_her_way` row (only day 3's
 ## fire today) is lit off her path at dusk on a day she won without meeting it. `id` is the lit
 ## row's own `def.id`. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts
 ## visits".

@@ -2122,7 +2122,7 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 		for body in region_plan.door_bodies:
 			if not area.has_point(body.position):
 				continue
-			if body.def.lifts_for_traffic:
+			if body.def.is_a_boom():
 				_door_at = body.position
 				_door_axis = body.facing
 			elif body.def.redetains:

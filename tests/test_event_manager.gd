@@ -144,7 +144,7 @@ func _test_finished_instances_are_dropped(t) -> void:
 	var before := _city.events.active_count()
 	var victim: EventInstance = null
 	for instance in _city.events.instances():
-		if instance.def.spawns_on_finish == "":
+		if instance.def.spawns_on_finish() == "":
 			victim = instance
 			break
 	t.check(victim != null, "there is an event that leaves nothing behind")
@@ -163,7 +163,7 @@ func _test_finished_instances_are_dropped(t) -> void:
 ## `military_convoy`/`barricade` rather than the fire engine: `fire_truck` no longer sets
 ## `spawns_on_finish` — the day the fire is found before the engine reversed that link, so it is
 ## `burning_building` that now names something, in the opposite direction
-## (`EventDef.spawns_on_sight`, checked in `tests/test_events.gd`, not here). The convoy is the
+## (`EventDef.spawns_on_sight()`, checked in `tests/test_events.gd`, not here). The convoy is the
 ## row `spawns_on_finish` still governs, and the wiring this test exists for is the same either
 ## way.
 func _test_successor_replaces_its_parent(t) -> void:
@@ -272,7 +272,7 @@ func _test_an_event_that_has_run_does_not_run_again(t) -> void:
 	_start(1)
 	var plan: EventScheduler.Planned = null
 	for candidate in _city.events.plans():
-		if candidate.is_placed() and candidate.def.spawns_on_finish == "":
+		if candidate.is_placed() and candidate.def.spawns_on_finish() == "":
 			plan = candidate
 			break
 	if not plan:
@@ -338,7 +338,7 @@ func _test_a_running_event_comes_back_where_it_got_to(t) -> void:
 
 ## **A set piece happens in exactly one place, and there are two ways of guaranteeing that.** A
 ## one-shot planned at every site of a covering set happens at the one she reaches — the first to
-## enter the world spends the rest. A one-shot carrying `EventDef.sited_on_her_way` is one plan with
+## enter the world spends the rest. A one-shot carrying `EventDef.on_her_way` is one plan with
 ## no position at all, which cannot be in two places because there is only ever one of it, and which
 ## nothing in this rig can put anywhere: there is no player here, so no walk for it to be sited from.
 ##
@@ -494,7 +494,7 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 
 # ------------------------------------------- the fire is on her way (M179) ---
 # *"the fire should come first and be on your way guaranteed (a dynamic event dependent on the
-# route you chose that day)"* (PLAYTEST-117). Day 3's fire carries `EventDef.sited_on_her_way`, so
+# route you chose that day)"* (PLAYTEST-117). Day 3's fire carries `EventDef.on_her_way`, so
 # the day budgets it with no position and `EventDirector.site_what_is_on_her_way()` puts it on a
 # building face ahead of her once her heading for the day is clear.
 #
@@ -1098,7 +1098,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 				other.def.inner_radius if other.def.hard_fail else 0.0)
 		_block(blocked, other.position, radius)
 	_block(blocked, plan.position, plan.def.outer_radius)
-	var engine_def := EventCatalogue.by_id(plan.def.spawns_on_sight)
+	var engine_def := EventCatalogue.by_id(plan.def.spawns_on_sight())
 	var parked := EventManager.where_the_summoned_row_stops(_city.map, plan.position)
 	if engine_def and parked != Vector2.INF:
 		_block(blocked, parked, engine_def.outer_radius)

@@ -253,7 +253,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ##
 ## **A row the director sites while she walks has no position at dawn** — `cat_dash`, `cyclist`,
 ## `loose_dog`, `charging_dog` on `Tuning.RUN_TAUGHT_DAY`, and day 3's `burning_building`, which
-## the day budgets and sites from her walk (`EventDef.sited_on_her_way`) — so `event:<id>` cannot
+## the day budgets and sites from her walk (`EventDef.on_her_way`) — so `event:<id>` cannot
 ## find one. Rather than silently starting her on the doorstep as if nothing were wrong, this
 ## **refuses by name**: the row and the reason are written to the run log
 ## (`Telemetry.note("spawn", …)`) and raised with `push_warning`, so both the log a capture is

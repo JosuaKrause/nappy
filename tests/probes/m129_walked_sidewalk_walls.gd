@@ -370,7 +370,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		if not plan.is_placed():
 			continue
 		var def := plan.def
-		if def.obstructs_radius <= 0.0 or def.scenery:
+		if def.obstructs_radius <= 0.0 or def.role == EventDef.Role.SCENERY:
 			continue
 		if def.id.begins_with(_DOOR_ID_PREFIX):
 			continue

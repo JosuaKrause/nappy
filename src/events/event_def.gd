@@ -387,33 +387,16 @@ func notice_on(day: int) -> NoticeSpec:
 		return from_day_after.notice
 	return notice
 
-## Whether the day budgets this row but leaves *where* it stands to the walk she takes.
-##
-## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the
-## whole plan is stated against the day's corridor exactly as it would have been at dawn. What moves
-## is the moment: a one-shot is planned with no position (`EventScheduler._place_one_shots`), a
-## recurring row is rolled and placed at dawn exactly as any other and then handed to her walk with
-## that position dropped (`EventScheduler._hand_to_her_walk`), and
-## `EventDirector.site_what_is_on_her_way()` puts it on a tile of its own ground ahead of her (a
-## building face for the fire and the crews) once her direction for the day is clear, off screen and
-## far enough that she meets it rather than watches it appear. Until it has been in the world it may
-## be moved again, so a day she turns round is still a day it is on her way.
-##
-## **This is not `AHEAD_OF_PLAYER`**, and the difference is the whole reason it is a second field
-## rather than a fourth `SpawnMode`. A director-sited row has no tile at all, may not obstruct, and
-## is never asked the corridor's questions; this one is asked all of them, just later than dawn.
-##
-## Two rows carry it: day 3's fire, a one-shot, and `poster_crew`, recurring. **Only a one-shot is
-## spent where it becomes real and lit at dusk if she never met it** — both are about the set
-## piece a run owes, and a crew is not one.
-@export var sited_on_her_way := false
+## **Where her walk sites this row**, or null for a row the dawn places — see `OnHerWay`.
+@export var on_her_way: OnHerWay = null
 
-## Whether her walk sites this row on the sidewalk in front of a blank ground-floor cell of a
-## building's front, facing the wall, rather than on the side `pavement_side` names —
-## `poster_crew`, which pastes the wall it stands at (`PosterWalls`). Only read with
-## `sited_on_her_way`: the dawn roll still places the row by `pavement_side`, so the day's own
-## stream is spent exactly as it always was, and only the walk's siting reads this.
-@export var pastes_a_front := false
+## Whether the day leaves where this row stands to her walk (`on_her_way`).
+func sited_on_her_way() -> bool:
+	return on_her_way != null
+
+## Whether her walk sites it in front of a building's front (`OnHerWay.at_a_front`).
+func pastes_a_front() -> bool:
+	return on_her_way != null and on_her_way.at_a_front
 
 ## Seconds of notice this row gives from off screen before it can be seen — `Tuning.OFFSCREEN_NOTICE`
 ## (0.2) unless a row overrides it. Two readings, by how the row arrives:
@@ -539,7 +522,7 @@ func departure_speed() -> float:
 ## against everything that merely emits, so the only way it can be right is if the alternative is
 ## losing the day. A pursuer is lethal, faster than a walk and slower than a run, so walking away
 ## does not work and running does. One kind is a cost rather than the end of the day: the man an
-## investigating patrol car lets out, whose catch is a stop (`stop_excitement`).
+## investigating patrol car lets out, whose catch is a stop (`PursuitSpec.stop_excitement`).
 @export var pursuit: PursuitSpec = null
 
 ## **How it notices her**, or null for a row with no wait — see `NoticeSpec`. A row with none is a
@@ -564,6 +547,12 @@ func chase_speed() -> float:
 	return pursuit.speed if pursuit else 0.0
 
 ## Whether it pursues with a chase that begins in `start`'s way.
+## Whether its pursuer, cold or hunting, leaves its body standing when he sets off
+## (`PursuitSpec.leaves_its_body`): the roadblock's, whose cold row carries it on `hunts_as`.
+func leaves_its_body() -> bool:
+	var chase := pursuit if pursuit else hunts_as
+	return chase != null and chase.leaves_its_body
+
 func starts_by(start: PursuitSpec.Start) -> bool:
 	return pursuit != null and pursuit.start == start
 
@@ -591,7 +580,7 @@ enum HeatResponse {
 	## **More of them, and more expensive to stand near, and past a threshold it investigates**
 	## (`investigates`: it stops near her and a man on foot gets out and pursues her).
 	## The rung that does not hunt: it never gains `hard_fail`, whatever the heat, and the man it
-	## lets out costs her when he reaches her rather than ending the day (`stop_excitement`). (The
+	## lets out costs her when he reaches her rather than ending the day (`PursuitSpec.stop_excitement`). (The
 	## patrol that carries it strikes as a car does at every heat — `drives` — which is not a rung.)
 	PRESSES,
 	## **It stops being a place and starts being a hunter.** The lethal rung: `roadblock`'s guard
@@ -643,62 +632,68 @@ enum HeatResponse {
 ## event's body has to fit *inside* its lethal radius with her own body to spare.
 @export var obstructs_radius := 0.0
 
-## Whether the body arrives when the notice ends rather than with the instance.
-##
-## **For a row that turns on where she is already standing.** Every other solid row is a *place*:
-## it is on its tile before she gets near it, so a body from the first frame is the honest picture
-## and she can never be inside one. A vent on a timer is the opposite — the ground it closes is
-## ground she may be walking down at the moment it fires — and a body that appears around her is
-## not something a telegraph can be an answer to, however long the telegraph is.
-##
-## So the notice runs with no body at all and the body goes down at the end of it, and
-## `EventInstance` withholds it for as long as she is still inside the footprint: **a vent never
-## turns on with her in it.** That is a precondition rather than a repair — nothing is placed and
-## then moved — and it fails in the safe direction, since withholding obstruction can only leave
-## more ground reachable. It costs her the full field meanwhile, so standing in a vent to keep it
-## open is the most expensive way through it rather than a way past it.
-##
-## **A planner's own record does not know about this**, and cannot: `EventManager` rasterises a
-## row's body into `CityMap.obstructed_tiles` from the *plan*, before any instance exists, so a
-## row carrying this flag reads as solid to the crowd and to route-clearing for the whole of its
-## life. Set it on something placed where there is no lattice to clear, or accept that the ground
-## is reserved the whole time.
-@export var solid_once_it_starts := false
+## **When the row's body is solid to her.** Almost every body is a place, solid from its first frame
+## for the whole of its life; two rows are solid only part of the time, and a row is one or the
+## other, never both.
+enum SolidWhen {
+	## From the instance's first frame: every body but the two below.
+	ALWAYS,
+	## **The body arrives when the notice ends rather than with the instance.**
+	##
+	## **For a row that turns on where she is already standing.** Every other solid row is a *place*:
+	## it is on its tile before she gets near it, so a body from the first frame is the honest picture
+	## and she can never be inside one. A vent on a timer is the opposite — the ground it closes is
+	## ground she may be walking down at the moment it fires — and a body that appears around her is
+	## not something a telegraph can be an answer to, however long the telegraph is.
+	##
+	## So the notice runs with no body at all and the body goes down at the end of it, and
+	## `EventInstance` withholds it for as long as she is still inside the footprint: **a vent never
+	## turns on with her in it.** That is a precondition rather than a repair — nothing is placed and
+	## then moved — and it fails in the safe direction, since withholding obstruction can only leave
+	## more ground reachable. It costs her the full field meanwhile, so standing in a vent to keep it
+	## open is the most expensive way through it rather than a way past it.
+	##
+	## **A planner's own record does not know about this**, and cannot: `EventManager` rasterises a
+	## row's body into `CityMap.obstructed_tiles` from the *plan*, before any instance exists, so a
+	## row solid this way reads as solid to the crowd and to route-clearing for the whole of its
+	## life. Set it on something placed where there is no lattice to clear, or accept that the ground
+	## is reserved the whole time.
+	ONCE_IT_STARTS,
+	## **A boom** — a bar across a door's carriageway that the cars raise and lower
+	## (`Crowd._stop_for_gates()`, through the `RegionPlanner.GateState` its instance carries), and
+	## that is solid to her **only while it is down**. `checkpoint_gate` is the one row that sets it.
+	##
+	## *(2026-09-24, the player: "Boom shouldn't inspect her. It should block her." · "I didn't say it
+	## should stay solid when it's open".)* So it never detains: a lowered boom is a wall across the
+	## road and a raised one is ground she may walk under, at the price of the car that raised it and of
+	## the guard a walked crossing sets on her (`CheckpointController._set_a_guard_on_her()`). The
+	## inspection is the huts' alone, and a hut never takes her in from the carriageway its own door's
+	## boom spans — that ground is the boom's.
+	##
+	## Read in three more places, each because a boom is a door body that does not detain:
+	## `EventManager.obstructed_footprint()` keeps it out of the crowd's per-tile record the way it
+	## keeps the huts out (the cars' answer to it is the gate hold), `EventDirector` keeps the door's
+	## clear ground around it, and `EventInstance` lets its collision body follow the arm.
+	WHILE_LOWERED,
+}
 
-## **A car: solid at its own `shape` in every state, and lethal only in front of it while it
-## drives.** *(azure-koala, inbox #601: "police cars don't have a hitbox"; leafy-puffin, inbox
-## #648, offered "solid in every state, lethal only in front while driving": "yes to the police car
-## hitbox".)* `police_patrol` and every copy of it carry it, and so does `fire_truck`
-## *(calm-kestrel, inbox #558: "Lethal driving, solid parked")*.
-##
-## **These are the only bodies that move, and the flag answers the reason a moving thing is
-## otherwise exempt from being solid** — a moving wall pins her. `EventInstance` never moves the
-## body into her: a step or a turn that would bring it into contact with her or her pram is refused
-## and the car stands where it is until she moves, a car stopping for her rather than a wall
-## shoving her. She is stopped by it the way she is stopped by anything solid, and nothing follows
-## her into a wall.
-##
-## **`obstructs_radius` stays zero, because it closes no ground**: it drives down a carriageway she
-## walks round it on. So the planners' disc, the crowd's per-tile record and the director's refusal
-## of a director-sited body know nothing about it, and the body is `shape` itself, laid along the
-## car's heading (`EventInstance._solid_axis()`).
-##
-## **What kills is not the body**: a strike area ahead of the nose, only while it drives its route,
-## and only with her on the carriageway (`EventInstance.is_lethal_at()`) — a crowd car's own
-## contract, the painted carriageway she chooses to step onto and a warning `Tuning.CAR_HORN_TIME`
-## of its travel ahead of the strike (`EventInstance.closes_on()`), which `Tuning.validate_traffic()`
-## holds against the time it takes to walk off the carriageway. `hard_fail` stays false: every rule
-## it drives — a route wall, a field kept clear, the doubled telegraph margin — is about a place
-## that ends the day, and this is a car on a road.
-@export var drives := false
+@export var solid_when := SolidWhen.ALWAYS
 
-## **Its field is priced from its centre, a point, rather than from its body** — `shape` is the body
-## and the shadow, and by default the field's datum too (`GroundShape.field_distance()`: a standing
-## capsule's field is a stadium about its spine). Set on `fire_truck` alone, whose field
-## `docs/COSTS.md` prices as a point's: the body it is given to be solid is not a reason for the
-## street beside a parked engine to cost more, and the 340px the fire's siting check closes about
-## its kerb (`EventScheduler.WalkSiting`) is then the whole of its field.
-@export var field_from_its_centre := false
+## Whether its body goes down only when its notice ends (`SolidWhen.ONCE_IT_STARTS`).
+func solid_once_it_starts() -> bool:
+	return solid_when == SolidWhen.ONCE_IT_STARTS
+
+## Whether it is a boom, solid only while lowered (`SolidWhen.WHILE_LOWERED`).
+func is_a_boom() -> bool:
+	return solid_when == SolidWhen.WHILE_LOWERED
+
+## **A car that drives**, or null for anything else — see `VehicleSpec`: `police_patrol` and every
+## copy of it, and `fire_truck`.
+@export var vehicle: VehicleSpec = null
+
+## Whether this row is a car that drives (`vehicle`).
+func drives() -> bool:
+	return vehicle != null
 
 ## **A vehicle that investigates: once it notices her it stops and lets men out on foot, who pursue
 ## her; the vehicle itself never chases.** *(merry-stork, the player: "an investigating police car
@@ -714,7 +709,7 @@ enum HeatResponse {
 ##   stops there, since nothing stands in a box it cannot leave (sunny-finch). It lets one man out;
 ##   once he is back in, the car drives on along its route as a patrol does, and the end of its
 ##   route is where it leaves. Its man's catch costs her and never ends the day by itself
-##   (`stop_excitement`).
+##   (`PursuitSpec.stop_excitement`).
 ## - **`night_raid`'s and `abduction`'s hunting copies** (`hunts_on_foot`), vans that stand at the
 ##   kerb: they stop nowhere, since they never move, and let `lets_out` men out, whose catch ends
 ##   the day; men who give up walk back, and the van stands where it stood, as its cold row does.
@@ -739,18 +734,6 @@ enum HeatResponse {
 ## by police cars still which is just silly"). The van keeps whatever `hard_fail` it has cold.
 @export var hunts_on_foot := false
 
-## **A pursuer whose catch is a stop rather than the end of the day**, in points of the excitement
-## meter: when he reaches her — the catch's own reach and clear line (`lethal_reach()`) — he stops,
-## his own field lands this much on her standing beside him over `Tuning.OFFICER_STOP_SECONDS`,
-## and then he walks back to the vehicle that let him out. *(Inbox #669 in coral-lark, the player: "once the
-## policeman reaches her they stop and walk back to the car" · "it needs to give a substantial cost
-## but not lethal directly" · "well if the excitement meter is already high it can be lethal".)*
-## Only the man an investigating patrol car lets out carries it (`EventCatalogue.out_of_the_car()`);
-## a hunting van's men end the day. `0.0`, the default, is a pursuer whose catch is what
-## `hard_fail` says. A cost on the ordinary meter rather than a hold: `detain_seconds` is refused on
-## a pursuer, since a thing that chases her has no business also deciding she cannot move.
-@export var stop_excitement := 0.0
-
 ## Which lane of a two-tile pavement an event wants.
 ##
 ## Almost nothing cares, and `ANY` is the honest default: a café spills out of whichever frontage
@@ -767,14 +750,11 @@ enum Pavement {
 	## lot behind it — the one face of a building the city draws. Where a fire catches, so the
 	## building it burns is the one drawn burnt afterwards (`burning_building`'s own
 	## `pavement_side`), and where a poster crew pastes (`EventScheduler.WalkSiting` asks it for a
-	## row that `pastes_a_front`).
+	## row that `pastes_a_front()`).
 	AT_THE_FRONT,
 }
 
 @export var pavement_side := Pavement.ANY
-
-## Event id to spawn where this one ends. How a military convoy leaves a barricade behind it.
-@export var spawns_on_finish := ""
 
 ## Whether this row **stops where its route ends and stays there for the rest of the day**, instead
 ## of driving on out of sight the way everything else that runs out of route does.
@@ -798,13 +778,6 @@ enum Pavement {
 ## `travel_velocity()` answers zero (the screen-edge badge reads that as a closing speed, and a
 ## parked thing is not closing).
 @export var stops_where_it_arrives := false
-
-## Event id to spawn the moment this one is first seen. The opposite direction from
-## `spawns_on_finish` above: that names what a row leaves behind when it is done; this names
-## what arrives once she has found it. How the burning building calls in the fire engine —
-## `EventManager` owns the trigger, since it already owns the successor mechanism and her
-## position; see `EventManager._summon_what_has_been_sighted()`.
-@export var spawns_on_sight := ""
 
 ## Seconds the player's movement input is locked for, on first contact within `detain_distance()`.
 ## `0.0` means never — the default, and true of every row but `chatting_mother`.
@@ -855,22 +828,6 @@ func detain_distance() -> float:
 ## only two rows that set it. `CheckpointController.check_detentions()` is what reads it.
 @export var redetains := false
 
-## Whether this row is a **boom** — a bar across a door's carriageway that the cars raise and lower
-## (`Crowd._stop_for_gates()`, through the `RegionPlanner.GateState` its instance carries), and
-## that is solid to her **only while it is down**. `checkpoint_gate` is the one row that sets it.
-##
-## *(2026-09-24, the player: "Boom shouldn't inspect her. It should block her." · "I didn't say it
-## should stay solid when it's open".)* So it never detains: a lowered boom is a wall across the
-## road and a raised one is ground she may walk under, at the price of the car that raised it and of
-## the guard a walked crossing sets on her (`CheckpointController._set_a_guard_on_her()`). The
-## inspection is the huts' alone, and a hut never takes her in from the carriageway its own door's
-## boom spans — that ground is the boom's.
-##
-## Read in three more places, each because a boom is a door body that does not detain:
-## `EventManager.obstructed_footprint()` keeps it out of the crowd's per-tile record the way it
-## keeps the huts out (the cars' answer to it is the gate hold), `EventDirector` keeps the door's
-## clear ground around it, and `EventInstance` lets its collision body follow the arm.
-@export var lifts_for_traffic := false
 
 ## Whether this row is one of the region boundary's own structures — a street being held, however
 ## many bodies it takes to hold it. **Several of them charge the meter as one source, the strongest
@@ -922,27 +879,6 @@ func standoff_reach() -> float:
 func lunge_is_inside_the_catch() -> bool:
 	return pursuit != null and pursuit.lunge_reach > 0.0 and pursuit.lunge_reach < lethal_reach()
 
-## Whether this row's body is a **fixture of the street** that a pursuer leaves standing, rather
-## than the pursuer's own bulk.
-##
-## Ordinarily a pursuer's obstruction comes down the frame it stops waiting — *"a moving pursuer
-## with a body is a wall"*, and a van that kept one would pin her against a building. A roadblock
-## is the other case: the barrier is built across the road and the man who leaves it does not take
-## it with him, so the street he abandoned stays shut behind him. `EventInstance` pins the body at
-## the place it was left instead of freeing it, and draws the barrier there too, so the picture and
-## the physical street agree for the whole of the event's life.
-##
-## Only meaningful on a row that can pursue, which `validate()` requires: a fixture that never
-## chases has nothing to leave its body behind *from*.
-@export var body_stays_behind := false
-
-## Whether this pursuer is **drawn over the street's other figures while it stands for its notice**
-## (`DrawLayer.Layer.WARNING`), and sorts with them again once it charges: `roadblock`, whose guard
-## at his post sorts at his own feet, so a van parked in front of the post or another band and the
-## guard on its far side, standing nearer her, would be drawn over the man whose raised hand is the
-## warning (inbox #771 in minty-lemur). A man hidden while he warns has not warned.
-@export var warns_over_the_street := false
-
 ## Which side or sides of a `Look.ROADBLOCK` band `_draw_roadblock()` posts a standing guard on —
 ## `-1`/`+1` in `_guard_post_offset()`'s own reading of `side`, the same sign `_guard_side_toward()`
 ## and `_chaser_side` use. `[-1, 1]` (both) is every row's own default: the catalogue `roadblock`
@@ -963,22 +899,40 @@ func lunge_is_inside_the_catch() -> bool:
 ## are a value set on a fresh duplicate at placement, with no change to `_draw_roadblock()` itself.
 @export var guard_sides: Array[int] = [-1, 1]
 
-## Exempt from the cost rule's wall and friction placement — `EventScheduler._role_for` answers
-## `NONE` for it before the cost check ever runs, so `_copies_of` neither pulls it off the
-## corridor nor weights it onto one: it lands on whatever tile the roll picks, the way an
-## ambient event or a scar does. `pigeon_flock` is the row it exists for — *"flocks are basically
-## free already — don't count it as block, just count is scenery"* — because a 42-over-168px
-## field crosses `Tuning.WALL_WORTH_OF_COST` and would otherwise be pulled off every route like
-## any other expensive row.
-@export var scenery := false
+## **A part one row plays in a system beside the catalogue**, which that system finds it by rather
+## than by its id: a renamed or derived row keeps its role.
+enum Role {
+	NONE,
+	## Exempt from the cost rule's wall and friction placement — `EventScheduler._role_for` answers
+	## `NONE` for it before the cost check ever runs, so `_copies_of` neither pulls it off the
+	## corridor nor weights it onto one: it lands on whatever tile the roll picks, the way an
+	## ambient event or a scar does. `pigeon_flock` is the row it exists for — *"flocks are basically
+	## free already — don't count it as block, just count is scenery"* — because a 42-over-168px
+	## field crosses `Tuning.WALL_WORTH_OF_COST` and would otherwise be pulled off every route like
+	## any other expensive row.
+	SCENERY,
+}
+
+@export var role := Role.NONE
 
 ## Intensity multiplier reached at the end of `duration`. 1.0 holds steady; above 1.0
 ## swells (a protest gathering), below 1.0 fades.
 @export var intensity_ramp := 1.0
 
-## Event id to leave permanently at this event's position for the rest of the RUN. A fire
-## leaves a burnt-out shell; the shell is still there on day 12.
-@export var scar_id := ""
+## **The rows this one brings after it**, or null for a row that brings none — see `Aftermath`.
+@export var aftermath: Aftermath = null
+
+## The scar it leaves on the run (`Aftermath.scar`), or `""`.
+func scar_id() -> String:
+	return aftermath.scar if aftermath else ""
+
+## The row it leaves where it ends (`Aftermath.on_finish`), or `""`.
+func spawns_on_finish() -> String:
+	return aftermath.on_finish if aftermath else ""
+
+## The row it calls in once she has seen it (`Aftermath.on_sight`), or `""`.
+func spawns_on_sight() -> String:
+	return aftermath.on_sight if aftermath else ""
 
 ## Which act the row belongs to, narratively. No game code reads it — `first_day` is what
 ## actually decides when a row can appear — but `tests/test_acts.gd` asserts every row's
@@ -1038,7 +992,7 @@ func at_heat(level: int) -> EventDef:
 			# The rung stays off the hard-fail ladder at every level. Stated rather than assumed,
 			# because only the top rung hunts her: a patrol car kills only as a car does, in front
 			# of it while it drives its route (`drives`), and never while it stands for the man it
-			# let out — whose catch costs her rather than ending the day (`stop_excitement`).
+			# let out — whose catch costs her rather than ending the day (`PursuitSpec.stop_excitement`).
 			hot.hard_fail = false
 		HeatResponse.HUNTS:
 			# Below its own threshold a `HUNTS` row is untouched. Population and intensity are
@@ -1178,7 +1132,7 @@ func validate() -> bool:
 	# geometric halves are load-bearing rather than tidiness: the siting is a tile with the
 	# corridor's own questions asked of it, which a director-sited row never has, and a thing that
 	# moves has no one place for its scar to be recorded at.
-	if sited_on_her_way:
+	if on_her_way:
 		if kind != GameEnums.EventKind.ONE_SHOT and kind != GameEnums.EventKind.RECURRING:
 			push_error("event '%s' is sited from her walk and is neither a one-shot nor " % id
 					+ "recurring: nothing but EventScheduler._place_one_shots and "
@@ -1192,10 +1146,6 @@ func validate() -> bool:
 			push_error("event '%s' is sited from her walk and moves: a row that may be re-sited " % id
 					+ "until it is real needs one place to stop being re-sited at")
 			return false
-	if pastes_a_front and not sited_on_her_way:
-		push_error("event '%s' pastes a front and is not sited from her walk: only the walk's " % id
-				+ "siting reads it")
-		return false
 	# A flock is several bodies wheeling inside one disc, so there is no silhouette for a body to
 	# be half of — and being walked into is the event. See `obstructs_radius` above.
 	if flock_size > 0 and obstructs_radius > 0.0:
@@ -1210,9 +1160,9 @@ func validate() -> bool:
 			push_error("event '%s' stops where it arrives and does not move: there is no route " % id
 					+ "for it to run out of")
 			return false
-		if spawns_on_finish != "":
+		if spawns_on_finish() != "":
 			push_error("event '%s' stops where it arrives and spawns '%s' when it finishes: it "
-					% [id, spawns_on_finish] + "does one or the other, never both")
+					% [id, spawns_on_finish()] + "does one or the other, never both")
 			return false
 	# **A pursuer awake from its first frame is never the scheduler's to place.** With no notice its
 	# telegraph and its chase are clocked from the moment it exists, so a `MAP` row would spend both
@@ -1263,10 +1213,10 @@ func validate() -> bool:
 	# The same shape again, both ways round. Holding a body back through the notice means nothing
 	# on a row that has no body, and a row with no notice has nothing to hold it back through — its
 	# body would go down on the first frame anyway, which is what the flag exists to stop.
-	if solid_once_it_starts and obstructs_radius <= 0.0:
+	if solid_once_it_starts() and obstructs_radius <= 0.0:
 		push_error("event '%s' waits for its own notice to become solid and has no body" % id)
 		return false
-	if solid_once_it_starts and telegraph_time <= 0.0:
+	if solid_once_it_starts() and telegraph_time <= 0.0:
 		push_error("event '%s' waits for a notice it does not have before it becomes solid" % id)
 		return false
 	# A `TOWARD_PLAYER` row is created at least `PendingWarning.least_distance()` from her when it is
@@ -1299,7 +1249,7 @@ func validate() -> bool:
 	# **And it is a rule about a thing that stands still, which is why a pursuer is outside it
 	# rather than excepted from it.** The inference only holds while the body and the thing that
 	# kills are the same point: a pursuer's is not, because it comes to her — every one of them
-	# either drops its body the frame it starts hunting or, with `body_stays_behind`, walks out of
+	# either drops its body the frame it starts hunting or, with `PursuitSpec.leaves_its_body`, walks out of
 	# a body it leaves standing. Either way the kill fires from ground the body does not cover, so
 	# there is nothing here to check. `tests/test_heat.gd` holds that pair, so the exemption cannot
 	# quietly become a loophole for a pursuer that kept its body and carried it along.
@@ -1314,12 +1264,6 @@ func validate() -> bool:
 	if lethal_reach() > inner_radius:
 		push_error("event '%s' catches at %.0fpx, outside the %.0fpx core of its own field"
 				% [id, lethal_reach(), inner_radius])
-		return false
-	# A body left behind has to be left behind *by* somebody: a fixture that never chases has
-	# nothing to walk out of its own barrier.
-	if body_stays_behind and pursuit == null and hunts_as == null:
-		push_error("event '%s' leaves its body behind but never pursues, so nothing ever leaves it"
-				% id)
 		return false
 	# A conversation is a cost, never a threat: it takes her controls rather than her body or her
 	# distance, and a row that could also kill or chase her would be able to do both at once.
@@ -1351,12 +1295,12 @@ func validate() -> bool:
 		return false
 	# A stop is a pursuer's catch made a cost: a row that also ended the day would do both at once,
 	# and one at or over the whole meter would end a calm day by itself, which is what it is not.
-	if stop_excitement > 0.0 and (pursuit == null or hard_fail \
-			or stop_excitement >= Tuning.METER_MAX):
+	if pursuit and pursuit.stop_excitement > 0.0 and (hard_fail \
+			or pursuit.stop_excitement >= Tuning.METER_MAX):
 		push_error("event '%s' stops her for %.0f points but is not a pursuer whose catch is only "
-				% [id, stop_excitement] + "a cost under the whole meter")
+				% [id, pursuit.stop_excitement] + "a cost under the whole meter")
 		return false
-	if drives:
+	if vehicle:
 		if not mobile or speed < Tuning.CAR_STRIKE_MIN_SPEED or shape == null:
 			push_error("event '%s' drives but has no route, speed (%.0f) or shape to drive with"
 					% [id, speed])
@@ -1587,7 +1531,7 @@ func as_warned_first() -> EventDef:
 ## crosses no building — see docs/EVENTS.md, "Solid things are solid", and
 ## `EventInstance.is_lethal_at()`.
 func field_reach() -> float:
-	if shape != null and shape.kind == GroundShape.Kind.SEGMENT and not field_from_its_centre:
+	if shape != null and shape.kind == GroundShape.Kind.SEGMENT and not (vehicle and vehicle.field_from_its_centre):
 		return shape.half_length + outer_radius
 	var moving_speed := pursuit.speed if pursuit else (speed if mobile else 0.0)
 	return outer_radius * Tuning.field_scale(Tuning.field_eccentricity(moving_speed))

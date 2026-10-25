@@ -49,7 +49,7 @@ func begin() -> void:
 	if not (def.mobile and event.path.size() > 1) and her != Vector2.INF \
 			and not event.global_position.is_equal_approx(her):
 		event._heading = (event.global_position - her).normalized()
-	if def.drives:
+	if def.drives():
 		# **A car leaves the way it can, and never vanishes beside her.** Every step of a departure
 		# into her is refused, and a car that has a body she can stand against is gone only once she
 		# could not be watching. An investigating car reaches here only at the end of its route,

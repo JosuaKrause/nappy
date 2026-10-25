@@ -781,10 +781,10 @@ func _planned_position(plan: EventScheduler.Planned) -> Vector2:
 ## (`EventManager.obstructed_footprint()`): solid, and neither `mobile` — somewhere else by the time
 ## a plan gets there, the reason `_is_stationary_hazard()` gives — nor a door body, which is a
 ## crossing the day keeps open: a hut or a post (`detain_seconds`) or the boom
-## (`EventDef.lifts_for_traffic`), whose ground `_gate_ground()` keeps off instead.
+## (`EventDef.is_a_boom()`), whose ground `_gate_ground()` keeps off instead.
 func _is_planned_body(def: EventDef) -> bool:
 	return def.shape != null and def.obstructs_radius > 0.0 and not def.mobile \
-			and def.detain_seconds <= 0.0 and not def.lifts_for_traffic
+			and def.detain_seconds <= 0.0 and not def.is_a_boom()
 
 ## Every tile whose centre lies within a door's reach — `EventDef.detain_distance()` from a
 ## `checkpoint_hut` or `checkpoint_post` (the `redetains` rows, the two that inspect her), plus
@@ -943,7 +943,7 @@ func _add_door_reach(door: Vector2, facing: Vector2, reach: float, near: Diction
 
 ## A live instance `_body_clear_tiles()` keeps clear of — the same rows `_is_planned_body()` names,
 ## while the instance is solid (`EventInstance.is_solid()`: a pursuer that has stopped waiting, or
-## a `solid_once_it_starts` row still in its notice, is not).
+## a `SolidWhen.ONCE_IT_STARTS` row still in its notice, is not).
 func _is_standing_body(instance: EventInstance) -> bool:
 	return not instance.is_finished and instance.is_solid() and _is_planned_body(instance.def)
 

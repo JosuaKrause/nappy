@@ -27,7 +27,7 @@ extends RefCounted
 ##
 ## **And one thing sited here *is* a place.** `site_what_is_on_her_way()` is the second half of
 ## this class and it breaks the sentence above on purpose: a row carrying
-## `EventDef.sited_on_her_way` — day 3's burning building, and the day's poster crews after it —
+## `EventDef.on_her_way` — day 3's burning building, and the day's poster crews after it —
 ## is a place in every sense: a tile, a body, a field, and what it leaves on the city outlives the
 ## day. What it cannot be is *anywhere*: the fire is the authored beat of act I and a crew is the
 ## walls visibly changing, and either one on a street she never walks down is a silhouette spent on
@@ -96,7 +96,7 @@ var _return_pacing := false
 ## on every day before `Tuning.REGION_WALL_FIRST_DAY`.
 var _doors := PackedVector2Array()
 
-## Today's plans that the day budgeted and left for her walk to site — `EventDef.sited_on_her_way`,
+## Today's plans that the day budgeted and left for her walk to site — `EventDef.on_her_way`,
 ## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
 ## in `start_day()`; and the places a marble from her route's bag names, added the moment the marble
 ## is drawn (`_place_on_her_route()`). Emptied as each one is put in the world.
@@ -171,10 +171,10 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 		# by the plan, rather than by a second wire from the region planner to here. The huts and
 		# posts are the bodies that inspect her and the boom is the one that does not; all three
 		# keep their clear ground.
-		if (plan.def.redetains or plan.def.lifts_for_traffic) and plan.is_placed():
+		if (plan.def.redetains or plan.def.is_a_boom()) and plan.is_placed():
 			_doors.append(plan.position)
 		# A place the day budgeted and left unsited, read off the same list for the same reason.
-		if plan.def.sited_on_her_way and not plan.is_placed():
+		if plan.def.sited_on_her_way() and not plan.is_placed():
 			_on_her_way.append(plan)
 		var mode := plan.def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
@@ -1111,7 +1111,7 @@ func clear_of_the_doors(path: PackedVector2Array, def: EventDef) -> bool:
 ## `DangerEdge._is_worth_an_arrow()` gives it no badge. Under the player's rule a thing telegraphs
 ## its coming only if it goes fast, comes toward her and carries a heavy penalty (PLAYTEST-145,
 ## statements 18-23), and a patrol is not fast; its strike in front of it on the carriageway is a
-## car's, warned the way a car warns (`EventDef.drives`), not a badge from off screen.
+## car's, warned the way a car warns (`EventDef.vehicle`), not a badge from off screen.
 func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
 	if inward == Vector2i.ZERO:

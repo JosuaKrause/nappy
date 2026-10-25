@@ -119,7 +119,8 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	# handed to her walk (`EventScheduler._hand_to_her_walk`). What this asks is how the roll
 	# places, so the crews are read where the roll put them.
 	var crew := EventCatalogue.by_id("poster_crew")
-	crew.sited_on_her_way = false
+	var crew_way := crew.on_her_way
+	crew.on_her_way = null
 	var walls := 0
 	var walls_across_the_street := 0
 	var friction_on_the_route := 0
@@ -196,7 +197,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(narrow_share > 0.36,
 			"and the corridor weight still shows through the three rules that can refuse a narrow "
 			+ "row (%d of %d narrow rows on the corridor)" % [narrow_on_the_route, narrow])
-	crew.sited_on_her_way = true
+	crew.on_her_way = crew_way
 
 	# **The range, as a relationship rather than as two numbers.** *"It ranges from very costly to
 	# deadly"* is a claim about which of the two is further from the routes, so that is what is
@@ -863,9 +864,9 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 
 ## **A flock is scenery — overturned on 2026-09-13**, PLAYTEST-71: *"flocks are basically free
 ## already — don't count it as block, just count is scenery."* Under the plain cost rule a
-## 42-over-168px field crosses `Tuning.WALL_WORTH_OF_COST`, so without `EventDef.scenery`
+## 42-over-168px field crosses `Tuning.WALL_WORTH_OF_COST`, so without `EventDef.Role.SCENERY`
 ## `_role_for` would call `pigeon_flock` a `WALL` and `_copies_of` would pull it off every route
-## corridor the way any other expensive row is. `scenery` is checked first and answers `NONE`.
+## corridor the way any other expensive row is. `Role.SCENERY` is checked first and answers `NONE`.
 ##
 ## Two claims. The role is a fact about the def, checked directly on every placement the day
 ## makes. Whether one actually **lands** on the corridor is a fact about the roll rather than
@@ -875,7 +876,7 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 ## would hold whether the exemption worked or not.
 func _test_a_flock_is_scenery(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
-	t.check(def.scenery, "the flock def is marked scenery")
+	t.check(def.role == EventDef.Role.SCENERY, "the flock def is marked scenery")
 
 	var on_corridor := 0
 	var off_corridor := 0

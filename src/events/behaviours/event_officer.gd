@@ -2,7 +2,7 @@ class_name EventOfficer
 extends EventBehaviour
 ## **A man on foot who may stop her and walk back**: every pursuer is composed of one. The man an
 ## investigating vehicle lets out lays a trail from its door while he chases and walks back along
-## it to get in (`let_out_of()`); a man whose catch is a stop (`EventDef.stop_excitement`) stands with
+## it to get in (`let_out_of()`); a man whose catch is a stop (`PursuitSpec.stop_excitement`) stands with
 ## her through it instead of ending the day. Neither applies to a pursuer nothing let out and whose
 ## catch ends the day; for him this does nothing.
 
@@ -54,7 +54,8 @@ func step(_delta: float) -> void:
 func _stop_her_if_he_has_reached_her() -> void:
 	var def: EventDef = event.def
 	var her: Vector2 = event.player_at
-	if def.stop_excitement <= 0.0 or has_stopped_her() or her == Vector2.INF or event.she_is_held:
+	if def.pursuit.stop_excitement <= 0.0 or has_stopped_her() or her == Vector2.INF \
+			or event.she_is_held:
 		return
 	if event.is_finished or event.is_leaving or event.is_waiting() or event.is_telegraphing():
 		return

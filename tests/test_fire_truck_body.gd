@@ -5,7 +5,7 @@ extends RefCounted
 ## The player's words *(2026-10-04, calm-kestrel, inbox #558: "the fire truck has no collision at
 ## all -- I can walk through it without it being lethal"; asked what touching it should do: "Lethal
 ## driving, solid parked")*. The truck is built the way the patrol car is (sunny-finch,
-## `EventDef.drives`): lethal only in front of it, with a car's warning, while it drives its route.
+## `EventDef.vehicle`): lethal only in front of it, with a car's warning, while it drives its route.
 ## Her real `CharacterBody2D` rig is swept against a real `fire_truck` instance's body with the
 ## synchronous `move_and_collide()` sweep `tests/test_police_car.gd` uses, and the truck is stepped
 ## by hand, a frame at a time, told where she and her pram are the way `EventManager` tells it.
@@ -81,7 +81,7 @@ func _what_stops(player: Stroller, heading: Vector2) -> Object:
 
 func _test_the_row_is_a_car_with_the_engines_body(t) -> void:
 	var def := _truck()
-	t.check(def.drives, "fire_truck drives: solid in every state, lethal in front while driving")
+	t.check(def.drives(), "fire_truck drives: solid in every state, lethal in front while driving")
 	t.check(def.shape != null and def.shape.kind == GroundShape.Kind.SEGMENT,
 			"its body is a capsule laid along its heading")
 	t.check(is_equal_approx(def.shape.reach() * 2.0, 58.0)
@@ -343,12 +343,12 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 	engine.free()
 
 ## Parked, its field is priced from its centre as it was before it had a body
-## (`EventDef.field_from_its_centre`): along its street it reaches as far as abeam, so the 340px
+## (`VehicleSpec.field_from_its_centre`): along its street it reaches as far as abeam, so the 340px
 ## the fire's siting check closes about its kerb is the whole of it and a pass costs what
 ## `docs/COSTS.md` says.
 func _test_parked_its_field_is_a_points(t) -> void:
 	var def := _truck()
-	t.check(def.field_from_its_centre, "fire_truck's field is priced from its centre")
+	t.check(def.vehicle.field_from_its_centre, "fire_truck's field is priced from its centre")
 	var moving := def.outer_radius * Tuning.field_scale(Tuning.field_eccentricity(def.speed))
 	t.check(is_equal_approx(def.field_reach(), moving),
 			"and its field's reach is a moving point's, %.0fpx, not its body's (%.0fpx)"

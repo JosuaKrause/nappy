@@ -113,7 +113,7 @@ var _sighted: Dictionary = {}
 var _sight_reported: Dictionary = {}
 
 ## The day's placement context for a row the day left for her walk to site, or `null` on a day that
-## left none — the whole of `EventDef.sited_on_her_way`, which today is day 3's fire and nothing
+## left none — the whole of `EventDef.on_her_way`, which today is day 3's fire and nothing
 ## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
 ## `light_what_she_never_met()` places off it at dusk on a day she never met what it was for.
 var _siting: EventScheduler.WalkSiting = null
@@ -345,7 +345,7 @@ func _let_the_officers_out() -> void:
 		var who := ("a guardsman gets out" if guards else "a policeman gets out") if owed == 1 \
 				else "%d %s get out" % [owed, "guardsmen" if guards else "policemen"]
 		trace.note("ahead", "%s at %s, %.0fpx from her, and %s"
-				% ["an investigating patrol stops" if vehicle.def.drives
+				% ["an investigating patrol stops" if vehicle.def.drives()
 						else "%s, standing," % vehicle.def.id,
 				RunTrace.tile(_map.world_to_tile(vehicle.global_position)),
 				vehicle.global_position.distance_to(_player.global_position), who])
@@ -560,7 +560,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 		if plan.is_placed():
 			_record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 	# The day's placement context, kept past dawn for the one kind of plan the day budgets and
-	# leaves for her walk to site — see `EventScheduler.WalkSiting` and `EventDef.sited_on_her_way`.
+	# leaves for her walk to site — see `EventScheduler.WalkSiting` and `EventDef.on_her_way`.
 	# Built from exactly what `build_day` above was handed, so a placement made later is stated
 	# against the same corridor, the same protected calm and the same doors as every other one.
 	# Only on a day that has such a plan: the context grows a corridor and the protected-calm
@@ -569,7 +569,7 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	_day_tree = tree
 	_day_doors = doors
 	for plan in _plans:
-		if plan.def.sited_on_her_way and not plan.is_placed():
+		if plan.def.sited_on_her_way() and not plan.is_placed():
 			if not _siting:
 				_siting = EventScheduler.WalkSiting.new(day, _city_map, tree,
 						GameState.settled_this_act(), doors)
@@ -746,7 +746,7 @@ func _stream_in(plan: EventScheduler.Planned) -> void:
 	# it becomes something that happened — see `EventScheduler._place_one_shots`. The list is the
 	# one `start_day` was handed, which in a played game is `GameState.consumed_one_shots` and in a
 	# rig is the rig's own.
-	if first_time and plan.def.sited_on_her_way and plan.def.kind == GameEnums.EventKind.ONE_SHOT \
+	if first_time and plan.def.sited_on_her_way() and plan.def.kind == GameEnums.EventKind.ONE_SHOT \
 			and not plan.def.id in _consumed:
 		_consumed.append(plan.def.id)
 	# The shared boom state, for a `checkpoint_gate` plan only — `null` on every other plan, which
@@ -889,7 +889,7 @@ static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 	# door is a crossing the day means to keep open, answered for a walker by `WalkerDoorHold` at a
 	# hut or a post and for a car by `Crowd._stop_for_gates()` at the boom — which detains nobody,
 	# so it is named by its own flag rather than by `detain_seconds`.
-	if def.mobile or def.detain_seconds > 0.0 or def.lifts_for_traffic:
+	if def.mobile or def.detain_seconds > 0.0 or def.is_a_boom():
 		return nothing
 	var placed := at
 	if def.pavement_side == EventDef.Pavement.ANY:
@@ -1127,14 +1127,14 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and
 	# this is the one path every one of those comes through. See "the bodies in the street" above.
 	_record_the_body(instance.get_instance_id(), def, at, facing)
-	if def.scar_id != "" and record_scar:
+	if def.scar_id() != "" and record_scar:
 		# A scar is where the city stopped being recomputable: it exists because of what
 		# happened on an earlier day, so from day 4 onwards the map depends on run history.
 		trace.note("scar", "%s left at %s by %s" % [
-			def.scar_id, RunTrace.tile(_map.world_to_tile(instance.global_position)),
+			def.scar_id(), RunTrace.tile(_map.world_to_tile(instance.global_position)),
 			def.id])
-		GameState.add_scar(def.scar_id, instance.global_position)
-		_mark_the_block(def.scar_id, instance.global_position)
+		GameState.add_scar(def.scar_id(), instance.global_position)
+		_mark_the_block(def.scar_id(), instance.global_position)
 	return instance
 
 ## An event that leaves a scar may also move the block it happened to along its arc — if the
@@ -1568,14 +1568,14 @@ func _tick_the_events(delta: float) -> void:
 # ------------------------------------------------------- called in on sight ---
 # The opposite of a successor: `_successor_of()` hands the day something the moment a row is
 # *done*; this hands it something the moment a row is first *seen*. `burning_building` is what
-# it exists for — see `EventDef.spawns_on_sight`.
+# it exists for — see `EventDef.spawns_on_sight()`.
 
 ## Whether a live instance whose def names `spawns_on_sight` has been seen yet, and if it just
 ## has, creates the row it names entering along its own street. Run every frame there is a
 ## player, the same as `_place_what_is_owed_ahead` beside it.
 func _summon_what_has_been_sighted() -> void:
 	for plan in _plans:
-		if not plan.live or plan.def.spawns_on_sight == "" or _sighted.get(plan, false):
+		if not plan.live or plan.def.spawns_on_sight() == "" or _sighted.get(plan, false):
 			continue
 		if not _visible.sees(plan.live.global_position):
 			continue
@@ -1589,7 +1589,7 @@ func _summon_what_has_been_sighted() -> void:
 		if _summon_the_sighted_row(plan.def, plan.live.global_position, plan):
 			_sighted[plan] = true
 
-## Warns of the row `source.spawns_on_sight` names, coming along `at`'s own street to `at` — `at`
+## Warns of the row `source.spawns_on_sight()` names, coming along `at`'s own street to `at` — `at`
 ## is a sidewalk point (`burning_building` is placed `AT_THE_FRONT`), so the along-street
 ## axis is `CityMap.pavement_inward()` turned a quarter turn, the construction
 ## `EventDirector._onto_her_side()` uses for the same reason: it is the corridor's own axis, not
@@ -1605,9 +1605,9 @@ func _summon_what_has_been_sighted() -> void:
 ## sight is summoned again (`PendingWarning.on_withdrawn`).
 func _summon_the_sighted_row(source: EventDef, at: Vector2,
 		sighted_by: EventScheduler.Planned = null) -> bool:
-	var summoned := EventCatalogue.by_id(source.spawns_on_sight)
+	var summoned := EventCatalogue.by_id(source.spawns_on_sight())
 	if not summoned:
-		push_error("event '%s' summons unknown '%s' on sight" % [source.id, source.spawns_on_sight])
+		push_error("event '%s' summons unknown '%s' on sight" % [source.id, source.spawns_on_sight()])
 		return false
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
 	if inward == Vector2i.ZERO:
@@ -1678,7 +1678,7 @@ static func where_the_summoned_row_stops(map: CityMap, at: Vector2) -> Vector2:
 ## `SOON` is a lethal event still telegraphing whose radius already covers her — the thing has
 ## not happened yet and walking out is the answer, which is exactly what the fairness contract
 ## promises her time to do. `NOW` is one of them live with her inside its reach: one step left
-## between her and the end of the day. A patrol car that drives (`EventDef.drives`) raises `SOON`
+## between her and the end of the day. A patrol car that drives (`EventDef.vehicle`) raises `SOON`
 ## the way a crowd car's horn does, while it is closing on her in its lane.
 ##
 ## **Raising it for any telegraphing event whose radius reaches her is the mistake to avoid.** Most
@@ -1717,7 +1717,7 @@ func _warn_about_the_ground_she_is_on() -> void:
 		# A car that drives warns the way a crowd car's horn does: `SOON`, while it is closing on her
 		# in its lane on the carriageway (`EventInstance.closes_on()`), which is the car's own
 		# contract — `Tuning.CAR_HORN_TIME` before its strike.
-		if instance.def.drives:
+		if instance.def.drives():
 			if instance.closes_on(here):
 				body.warn(Stroller.Alert.SOON, WARNING_HOLD, WARNING_SOURCE)
 			continue
@@ -1939,7 +1939,7 @@ func _owe_pursuer_again(def: EventDef) -> void:
 
 ## The other half of the director's day: a place left unsited, put ahead of her on the branch she
 ## is walking once her heading for the day is clear — day 3's fire and the day's poster crews
-## (`EventDef.sited_on_her_way`), and a place a marble from her route's bag names, which joins the
+## (`EventDef.on_her_way`), and a place a marble from her route's bag names, which joins the
 ## day's plan here (`_put_down_on_her_route()`). See `EventDirector.site_what_is_on_her_way`.
 ##
 ## **The bookkeeping a late placement owes is the bookkeeping dawn already did for everything else.**
@@ -2000,7 +2000,7 @@ func light_what_she_never_met(at: Vector2) -> bool:
 		return false
 	for plan in _plans:
 		# The fire is the set piece a run owes; a crew she never met simply was not met.
-		if not plan.def.sited_on_her_way or plan.def.kind != GameEnums.EventKind.ONE_SHOT \
+		if not plan.def.sited_on_her_way() or plan.def.kind != GameEnums.EventKind.ONE_SHOT \
 				or plan.was_live or plan.spent:
 			continue
 		# Its own stream, so a dusk placement cannot move anything the day already rolled.
@@ -2158,12 +2158,12 @@ func _done_for_now(plan: EventScheduler.Planned) -> void:
 ## at a fire. The successor is placed at the finishing position, not at a planned tile, so
 ## the two are always consistent.
 func _successor_of(instance: EventInstance) -> EventInstance:
-	if instance.def.spawns_on_finish == "":
+	if instance.def.spawns_on_finish() == "":
 		return null
-	var def := EventCatalogue.by_id(instance.def.spawns_on_finish)
+	var def := EventCatalogue.by_id(instance.def.spawns_on_finish())
 	if not def:
 		push_error("event '%s' spawns unknown '%s'"
-				% [instance.def.id, instance.def.spawns_on_finish])
+				% [instance.def.id, instance.def.spawns_on_finish()])
 		return null
 	return _create(def, instance.global_position)
 

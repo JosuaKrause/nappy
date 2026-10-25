@@ -94,17 +94,17 @@ func _gap(car: EventInstance) -> float:
 
 func _test_the_patrol_is_a_car_at_every_heat(t) -> void:
 	var cold := _patrol()
-	t.check(cold.drives, "police_patrol drives: solid in every state, lethal in front while driving")
+	t.check(cold.drives(), "police_patrol drives: solid in every state, lethal in front while driving")
 	t.check(cold.shape != null and cold.shape.kind == GroundShape.Kind.SEGMENT,
 			"its body is a capsule laid along its heading")
 	t.check(cold.obstructs_radius == 0.0 and not cold.hard_fail,
 			"it closes no ground and is no hard fail: it kills only as a car does")
 	for level in EventCatalogue.heat_levels():
 		var hot := EventCatalogue.heated(cold, level)
-		t.check(hot.drives and hot.shape == cold.shape and not hot.hard_fail,
+		t.check(hot.drives() and hot.shape == cold.shape and not hot.hard_fail,
 				"heat %d's patrol is the same car" % level)
 	var copy: EventDef = cold.duplicate()
-	t.check(copy.drives, "a duplicated patrol (the return's, a poster's, the raid's) still drives")
+	t.check(copy.drives(), "a duplicated patrol (the return's, a poster's, the raid's) still drives")
 
 # ------------------------------------------------------------- the reproduction ---
 

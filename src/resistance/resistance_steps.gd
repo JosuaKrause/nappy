@@ -296,7 +296,7 @@ static func _build() -> Array[Step]:
 		# Day 8 · leave something at the burnt shell from day 3 — one place, red arrow. What she
 		# carries is the neighbor's drawing, left in the stroller overnight, so the words say where
 		# it is, the stroller, rather than naming an "it" nothing showed, in one short sentence. The
-		# contact rides the run's own recorded `burnt_shell` scar (`EventDef.scar_id` on
+		# contact rides the run's own recorded `burnt_shell` scar (`EventDef.scar_id()` on
 		# `burning_building`) and stands on the door of the building behind it; a run with no such
 		# scar stands the row on a reachable front the fire could have caught on, records the scar
 		# there and burns the building behind it, so the words still lead to a burnt building — see

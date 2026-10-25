@@ -216,7 +216,7 @@ func _test_a_walk_goes_round_what_was_put_down(t) -> void:
 ## its own driving would never take.
 func _test_a_car_sees_her_off_street_ground(t) -> void:
 	var patrol := EventCatalogue.by_id("police_patrol")
-	t.check(patrol.drives, "the patrol is a car that drives")
+	t.check(patrol.drives(), "the patrol is a car that drives")
 	for ground in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE, GameEnums.TileType.PARK,
 			GameEnums.TileType.SIDEWALK]:
 		var map := _yard(Vector2i(8, 8))
@@ -285,7 +285,7 @@ func _test_a_body_and_its_record_are_one_footprint(t, city: City) -> void:
 	var differ := 0
 	for plan in city.events.plans():
 		if not plan.is_placed() or plan.def.mobile or plan.def.detain_seconds > 0.0 \
-				or plan.def.lifts_for_traffic or plan.def.obstructs_radius <= 0.0:
+				or plan.def.is_a_boom() or plan.def.obstructs_radius <= 0.0:
 			continue
 		var recorded := EventManager.obstructed_footprint(map, plan.def, plan.position,
 				plan.facing)

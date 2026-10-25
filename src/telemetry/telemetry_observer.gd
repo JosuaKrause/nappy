@@ -819,7 +819,7 @@ func _where_is(id: String) -> String:
 ## What put the mark over her head, rather than what merely happened to be nearest.
 ##
 ## Exactly three things can: a `hard_fail` event whose radius covers her, a car that drives — the
-## patrol car or the fire engine — closing on her in its lane (`EventDef.drives`,
+## patrol car or the fire engine — closing on her in its lane (`EventDef.vehicle`,
 ## `EventInstance.closes_on()`), and a crowd car closing on the
 ## lane she is standing in. **`_nearest()` answers a different question and answers it misleadingly
 ## here** — it will blame an ice cream van five hundred pixels away for a car's horn, which is the
@@ -829,7 +829,7 @@ func _what_raised_the_mark() -> String:
 	for instance in _live():
 		if instance.is_finished:
 			continue
-		if instance.def.drives:
+		if instance.def.drives():
 			if instance.closes_on(here):
 				return "%s %.0fpx" % [instance.logged_name(),
 						instance.global_position.distance_to(here)]

@@ -406,7 +406,7 @@ static func _block_every_body(t, map: CityMap, plan: FinalePlanner.Plan,
 	var count := 0
 	for placement: EventScheduler.Planned in plan.placements:
 		for def: EventDef in [placement.def,
-				EventCatalogue.by_id(placement.def.spawns_on_finish)]:
+				EventCatalogue.by_id(placement.def.spawns_on_finish())]:
 			if def == null or def.mobile or def.obstructs_radius <= 0.0:
 				continue
 			var path := placement.path if def == placement.def else PackedVector2Array()
@@ -504,7 +504,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 	var escape := EventCatalogue.escape_roadblock()
 	var day := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	t.check(escape == day, "the escape's roadblock is a day's at full resistance progress, one row")
-	t.check(escape.pursuit != null and escape.body_stays_behind and escape.hard_fail,
+	t.check(escape.pursuit != null and escape.pursuit.leaves_its_body and escape.hard_fail,
 			"the escape's roadblock is still the hunting row: its guard chases and catches")
 	t.check(EventCatalogue.by_id("roadblock").intensity == 0.0 and day.intensity == 0.0
 			and escape.intensity == 0.0, "the roadblock row, cold and hunting, has no field strength")
@@ -1352,7 +1352,7 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 				"seed %d: she is put down on walkable ground" % seed_value)
 		for placement: EventScheduler.Planned in plan.placements:
 			checked += 1
-			for def in [placement.def, EventCatalogue.by_id(placement.def.spawns_on_finish)]:
+			for def in [placement.def, EventCatalogue.by_id(placement.def.spawns_on_finish())]:
 				if def == null or def.obstructs_radius <= 0.0:
 					continue
 				if placement.position.distance_to(spawn) \
@@ -1561,7 +1561,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 	var burst := EventCatalogue.by_id("finale_explosion")
 	var crater := EventCatalogue.by_id("impact_crater")
 	t.check(burst != null and crater != null, "both finale rows are in the catalogue")
-	t.check(burst.spawns_on_finish == crater.id, "the burst names the crater it leaves")
+	t.check(burst.spawns_on_finish() == crater.id, "the burst names the crater it leaves")
 	t.check(burst.look == EventDef.Look.NONE, "and draws nothing itself")
 	# The width comes from the baked region table rather than from a loaded texture — the crater's
 	# picture is a region of the `events` page now, and `AtlasLibrary.native_size()` answers the

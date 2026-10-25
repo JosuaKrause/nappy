@@ -460,7 +460,7 @@ func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 		if not plan.is_placed() or plan.mast_id != "":
 			continue
 		var def := plan.def
-		if def.scenery or def.pursuit != null or def.id.begins_with("checkpoint") \
+		if def.role == EventDef.Role.SCENERY or def.pursuit != null or def.id.begins_with("checkpoint") \
 				or (def.mobile and not def.paces):
 			continue
 		var emits := def.intensity > 0.0

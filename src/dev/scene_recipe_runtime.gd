@@ -1090,15 +1090,15 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 static func hold_refusal(def: EventDef) -> String:
 	if def.pursuit == null:
 		return "does not pursue her, so it has no straight walk away to hold"
-	if def.drives:
+	if def.drives():
 		return "drives, and a car leaves by its own rules"
 	if def.investigates:
 		return "lets men out, who walk back to it"
 	if def.stops_where_it_arrives:
 		return "parks where it arrives"
-	if def.spawns_on_finish != "":
+	if def.spawns_on_finish() != "":
 		return "hands on to another event when it finishes"
-	if def.body_stays_behind:
+	if def.leaves_its_body():
 		return "leaves a barrier standing as a guard walks off"
 	return ""
 

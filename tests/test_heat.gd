@@ -58,7 +58,7 @@ func _test_every_shape_of_every_row_is_fair(t) -> void:
 ## than over the one row that carries it, so a second `PRESSES` row added later inherits the
 ## promise. Nor does the man it lets out end the day: his catch is a stop (inbox #669 in coral-lark, "it needs to
 ## give a substantial cost but not lethal directly"). (The patrol that carries it strikes as a car
-## does at every heat, `EventDef.drives`, which is not a rung — `tests/test_police_car.gd`.)
+## does at every heat, `EventDef.vehicle`, which is not a rung — `tests/test_police_car.gd`.)
 func _test_the_ladder_has_a_top(t) -> void:
 	for def in EventCatalogue.all():
 		if def.heat_response != EventDef.HeatResponse.PRESSES:
@@ -68,7 +68,7 @@ func _test_the_ladder_has_a_top(t) -> void:
 					"'%s' presses without ever becoming hard_fail (heat %d)" % [def.id, level])
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var out := EventCatalogue.out_of_the_car(day)
-		t.check(not out.hard_fail and out.stop_excitement > 0.0,
+		t.check(not out.hard_fail and out.pursuit.stop_excitement > 0.0,
 				"day %d: the man a patrol car lets out stops her rather than ending the day" % day)
 
 ## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
@@ -198,7 +198,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t) -> void:
 				("heat %d: and well inside the %.0fpx the band's own body would have forced, "
 						+ "which is only possible because the man leaves it behind")
 				% [level, hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS])
-		t.check(hot.body_stays_behind,
+		t.check(hot.pursuit.leaves_its_body,
 				"heat %d: and the barrier he leaves stays where it was built" % level)
 		t.check(hot.lethal_reach() <= hot.inner_radius,
 				"heat %d: the catch is inside the field's own core, so it is never silent" % level)

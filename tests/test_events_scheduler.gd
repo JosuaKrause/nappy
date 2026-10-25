@@ -388,11 +388,11 @@ func _test_calm_she_has_not_used_is_left_alone(t) -> void:
 
 func _test_successors_resolve(t) -> void:
 	for def in EventCatalogue.all():
-		if def.spawns_on_finish == "":
+		if def.spawns_on_finish() == "":
 			continue
-		t.check(EventCatalogue.by_id(def.spawns_on_finish) != null,
+		t.check(EventCatalogue.by_id(def.spawns_on_finish()) != null,
 				"'%s' spawns '%s', which exists in the catalogue"
-				% [def.id, def.spawns_on_finish])
+				% [def.id, def.spawns_on_finish()])
 
 ## The opposite direction: `spawns_on_sight` names what arrives once a row has been seen,
 ## `spawns_on_finish`'s own check above, mirrored. `burning_building` is the only row that
@@ -400,16 +400,16 @@ func _test_successors_resolve(t) -> void:
 func _test_sighted_successors_resolve(t) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if def.spawns_on_sight == "":
+		if def.spawns_on_sight() == "":
 			continue
 		checked += 1
-		t.check(EventCatalogue.by_id(def.spawns_on_sight) != null,
+		t.check(EventCatalogue.by_id(def.spawns_on_sight()) != null,
 				"'%s' summons '%s' on sight, which exists in the catalogue"
-				% [def.id, def.spawns_on_sight])
+				% [def.id, def.spawns_on_sight()])
 	t.check(checked > 0, "there is at least one row with a spawns_on_sight ('burning_building')")
 
 ## It has no scheduled day at all, so nothing but `EventManager._summon_the_sighted_row()` can
-## put one in the world — see `EventDef.spawns_on_sight` on `burning_building`.
+## put one in the world — see `EventDef.spawns_on_sight()` on `burning_building`.
 func _test_fire_truck_is_never_scheduled(t) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	t.check(truck != null, "the fire engine exists")
