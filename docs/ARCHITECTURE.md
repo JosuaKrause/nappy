@@ -194,7 +194,8 @@ src/
 	                      quoted sentence anywhere else under src/
 	meter_bar.gd
 	home_arrow.gd         the one moment the game says "this way", while she carries a sleeper home
-	danger_edge.gd        the screen-edge badge: what is coming while it is still off screen
+	badge_model.gd        which dangers get a screen-edge badge and when: plain data in, badges out, no scene
+	danger_edge.gd        the screen-edge badge: builds the model's inputs each frame and draws what it decides
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
 	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo
 	title_screen.gd       the screen a run opens on and goes back to; asks which control scheme
