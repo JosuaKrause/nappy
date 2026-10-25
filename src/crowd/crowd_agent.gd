@@ -128,7 +128,7 @@ const STEER_SPEED := 90.0
 ## *across* the new one — so turning at the far edge drops a car onto the pavement band and it
 ## spends the next three tiles steering back to its lane. Rare with a handful of closures a day;
 ## constant once every calm zone has four dead-end arms on it. Seeing it a street early and turning
-## in the middle of the junction is what `_can_turn_here` is for.
+## in the middle of the junction is what `WalkerStrategy._can_turn_here` is for.
 const LOOKAHEAD := (Tuning.STREET_WIDTH + 1) * Tuning.TILE_SIZE
 ## The same distance in tiles, for the scans that walk rather than probe. See `_way_is_blocked`.
 const LOOKAHEAD_TILES := Tuning.STREET_WIDTH + 1
@@ -183,7 +183,7 @@ var traffic: TrafficIndex
 ## does not make on its own: a wall segment and a hard seal's segment are shut outright, but a
 ## door is a crossing the day's structure means to keep open — a car brakes and queues for the
 ## gate (`Crowd._stop_for_gates()`) rather than being turned away at the last junction, and a
-## walker crosses unless its own `DoorAnswer` is to turn back.
+## walker crosses unless its own `WalkerStrategy.DoorAnswer` is to turn back.
 var door_segments := {}
 
 ## The segments bordering the home block, the second carve-out `is_held_at` cannot make on its
@@ -223,7 +223,7 @@ var junction_hold := INF
 
 ## Distance to the stop line of a checkpoint gate this car has to give way at, or `INF` when there
 ## is none ahead or it is raised. Written once per physics frame by `Crowd._stop_for_gates()`,
-## the same shape `junction_hold` already is — see `_give_way()` for why the two, and the zebra's
+## the same shape `junction_hold` already is — see `CarStrategy._give_way()` for why the two, and the zebra's
 ## own stop line, all compose by taking the lowest speed rather than each owning a brake.
 var gate_hold := INF
 
@@ -1154,7 +1154,7 @@ func speed() -> float:
 ## walker standing in a door's line holds its last facing and frame a the way every stopped walker
 ## in the crowd already does, and its own field stops being stretched forward by `field_scale()`.
 ##
-## **A body a pocket has caught reads the same way**, through `_pocket_factor()`: it is not going
+## **A body a pocket has caught reads the same way**, through `CarStrategy._pocket_factor()`: it is not going
 ## anywhere either, so its field is a plain falloff rather than one stretched forward, and its
 ## projected impact and expected approach both answer "nowhere" the way a stopped body's should.
 func velocity() -> Vector2:
@@ -1644,7 +1644,7 @@ func _recycle() -> void:
 		# The roll itself is kept inside this kind's own room rather than rolled the full
 		# `ENTRY_SPREAD` and rejected afterwards — see `entry_room()`. Beside a plain edge
 		# `bounds.x`/`bounds.y` is already the field's own clamped edge, so a `reach` capped at
-		# `bounds.x + _entry_room()` (or the mirror on the other side) can never carry `back` past
+		# `bounds.x + entry_room()` (or the mirror on the other side) can never carry `back` past
 		# what this kind may stand on, and the near-`ENTRY_SPREAD` band mid-map is untouched because
 		# there the cap is never the smaller number.
 		var reach := ENTRY_SPREAD
@@ -1812,7 +1812,7 @@ func _keep_within_the_room_beyond_the_map() -> void:
 ##
 ## **A check on the landed point, not a prediction of the band**, now that the roll itself is
 ## already kept inside `entry_room()` — see the `reach` computed in `_recycle()`'s loop, capped at
-## `bounds.x + _entry_room()` (or the mirror) rather than rolled the full `ENTRY_SPREAD` and
+## `bounds.x + entry_room()` (or the mirror) rather than rolled the full `ENTRY_SPREAD` and
 ## rejected afterwards. That makes this trivially true for anything the clip already reached, which
 ## is the point: it stays a stated invariant rather than a silent assumption, and it is still what
 ## lets a car on the spine in through the tunnel or off the bridge — `entry_room()` grants that
@@ -1861,7 +1861,7 @@ const WALKER_GAIT_RATE := 0.09
 
 ## Below this speed a walker's own applied heading (`_walker_heading()`) is too close to zero to
 ## mean a facing, so it holds whatever it was last drawn as rather than chattering on the residual
-## few px/s `_yield_factor()` and float noise can still leave in it. Well under
+## few px/s `WalkerStrategy._yield_factor()` and float noise can still leave in it. Well under
 ## `Tuning.PEDESTRIAN_SPEED`'s own floor (46px/s), so only an actually-stopped walker — a give-way,
 ## a queue, a halt — ever reads as idle.
 const WALKER_IDLE_SPEED := 5.0
@@ -1897,7 +1897,7 @@ func _flipped() -> bool:
 ## cross term is `_set_cross()`'s own target (`_lane_centre + _detour`) minus where it actually is,
 ## signed and capped at `STEER_SPEED` — the rate `_process()`'s own `move_toward` steers at while
 ## it has not yet arrived. Zero once it has arrived with no detour running, which a stopped walker
-## (give-way, queue, halted) always has, since `_yield_factor()` also zeroes the along term then.
+## (give-way, queue, halted) always has, since `WalkerStrategy._yield_factor()` also zeroes the along term then.
 func _walker_heading() -> Vector2:
 	return _walker_heading_at(velocity())
 

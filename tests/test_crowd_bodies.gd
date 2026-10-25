@@ -182,7 +182,7 @@ func _test_a_walker_steps_round_a_one_lane_body(t, city: City, map: CityMap) -> 
 ## between a body and a seal.
 ##
 ## The predicate is asked directly as well as walked, for the reason the region-door test asks its
-## own directly: whether `_cannot_go_on` refuses the ground is the question, and whether a randomly
+## own directly: whether `cannot_go_on()` refuses the ground is the question, and whether a randomly
 ## placed crowd happens to visit one exact tile inside a short window is not.
 ##
 ## **The junction before the body is what the walk is measured against**, rather than a distance in

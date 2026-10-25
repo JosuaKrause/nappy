@@ -1922,9 +1922,9 @@ is loud, and the reason a park is quiet.
 
 - **And the same predicate covers a hard seal, a region wall and a soft seal.** `CityMap.
   held_segments` (the day's no-catalogue-row ground) and `CityMap.soft_sealed_tiles` (a soft seal's
-  own pavement tiles, kept apart because its carriageway is not held) are what `CrowdAgent.
-  _cannot_go_on` asks alongside a closure: a hard seal or a wall shuts the whole street to both
-  walkers and cars, a soft seal shuts only the pavements so a car still crosses it, and a region
+  own pavement tiles, kept apart because its carriageway is not held) are what each kind's
+  `cannot_go_on()` (`CarStrategy`, `WalkerStrategy`) asks alongside a closure: a hard seal or a
+  wall shuts the whole street to both walkers and cars, a soft seal shuts only the pavements so a car still crosses it, and a region
   door is carved out of the held check for everybody the door means to let through — a car brakes
   and queues for the gate the way it does at a light, and so does a walker unless its own answer at
   a door is to turn back, in which case it gets no carve-out and the door reads to it exactly like

@@ -43,7 +43,7 @@ extends RefCounted
 ## the hard seals and the pockets they make are the ones a player meets.
 ##
 ## **The focus walks to the day's barriers rather than wandering.** A car only ever turns because
-## something is in its way (`_divert()` calls `_plan_a_turn()`, and nothing else does for a car),
+## something is in its way (`CarStrategy.divert()` calls `_plan_a_turn()`, and nothing else does for a car),
 ## so the junctions at the mouth of a shut street are the only places in the city where turns and
 ## turnarounds are dense — a focus parked anywhere else watches straight traffic for a minute and
 ## reports nothing. Both kinds of barrier count: a road closure and a hard seal shut a street the
@@ -308,7 +308,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			"worst": worst_line, "causes": causes, "shunts": shunts}
 
 ## The places in this day's city a car actually has a reason to turn: the mouths of every shut
-## street, closure or hard seal, which is where a lane runs into something and `_divert()` plans an
+## street, closure or hard seal, which is where a lane runs into something and `CarStrategy.divert()` plans an
 ## arc. The doorstep is the fallback for a day that shut none, so the walk always has somewhere to
 ## go.
 ##

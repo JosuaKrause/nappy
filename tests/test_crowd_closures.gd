@@ -698,7 +698,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 
 	# The door carve-out, checked directly against the predicate rather than by waiting for a
 	# random walker or car to wander onto the exact tile inside a short simulated window — the
-	# question is whether `_cannot_go_on` refuses the door, not whether the day's population
+	# question is whether `cannot_go_on()` refuses the door, not whether the day's population
 	# happens to visit it.
 	var door_tile := door_segment.tile_rect().get_center()
 	var vertical := not door_segment.horizontal
@@ -1225,10 +1225,10 @@ func _test_only_cars_go_over_the_bridge(t) -> void:
 ## a calm zone's absorbed corridor the same way `tests/test_generator.gd` checks the paint.
 ##
 ## A car never belongs on a zone's absorbed corridor — `is_street()` is false there, park or not,
-## which is the one check `_cannot_go_on` makes that does not care *why* a tile stopped being a
+## which is the one check `cannot_go_on()` makes that does not care *why* a tile stopped being a
 ## street. A walker legitimately does: a zone is calm ground as well as a shortcut, and standing on
 ## it is correct rather than a leak. So the property is asked only of cars, over a real zone with
-## real traffic around it rather than by re-deriving what `_cannot_go_on` already computes.
+## real traffic around it rather than by re-deriving what `cannot_go_on()` already computes.
 func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t) -> void:
 	if _city.map.zone_rects.is_empty():
 		return
@@ -1537,7 +1537,7 @@ func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
 
 ## M100: **the picture, not only the centre.** PLAYTEST-69 re-reported "people still come out from
 ## outside the map" on top of M120's own fix, and this is the shape of it:
-## `_entry_room()` (M120) grants an ordinary walker or off-spine car nothing past the true edge, but
+## `LaneStrategy.entry_room()` (M120) grants an ordinary walker or off-spine car nothing past the true edge, but
 ## nothing past the line still let the roll land exactly *on* it — a legal centre by
 ## `_entry_band_fits()`'s old words — with the picture straddling the boundary regardless, since a
 ## walker's canvas rises `Sprites.draw_standing` bottom-anchored from its own position with nothing
