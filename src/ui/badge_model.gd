@@ -123,32 +123,44 @@ static func announces(approach: float, gap: float) -> bool:
 ## One frame. `here` is where she stands; `sees(point, margin_px)` is whether a world point is in
 ## sight with `margin_px` screen px past the edge counted as in sight; `walk_speed` is her walk
 ## (`Tuning.WALK_SPEED`). Replaces `coming`.
+##
+## **Two paths, and only the first is the design.** `_announce_the_warnings()` is the end state: a
+## warning is put up before its danger is placed, the badge points at where it will come from, and
+## nothing is measured. `_measure_dangers_in_the_world()` (with `watch`, `SMOOTHING`, `LEAD_TIME`,
+## `CLOSING_SPEED`, `SCREEN_MARGIN`, `announces()`, `approach_speed()` and the `Subject` fields only it
+## reads) badges dangers that are already in the world; the stairwell's masked man and the army truck
+## still need it, and it goes, as a deletion, in the follow-up that places those two after their badge.
 func step(delta: float, here: Vector2, subjects: Array, sees: Callable, walk_speed: float) -> void:
 	coming.clear()
 	if delta <= 0.0:
 		return
-	_generation += 1
-	for subject: Subject in subjects:
-		if subject.pending:
-			continue
-		if subject.finished:
-			continue
-		_measure(subject, delta, here, sees, walk_speed)
-	# A warning with nothing in the world yet is announced for the whole of its warning, on screen
-	# or off: it points at where the thing will come from, and there is nothing there to see yet.
-	# Sorted by when the thing will exist, which is the soonest it can arrive.
+	_measure_dangers_in_the_world(delta, here, subjects, sees, walk_speed)
+	_announce_the_warnings(here, subjects, walk_speed)
+	coming.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+
+## A warning with nothing in the world yet is announced for the whole of its warning, on screen or
+## off: it points at where the thing will come from, and there is nothing there to see yet. Sorted
+## by when the thing will exist, which is the soonest it can arrive.
+func _announce_the_warnings(here: Vector2, subjects: Array, walk_speed: float) -> void:
 	for subject: Subject in subjects:
 		if not subject.pending or not subject.worth_an_arrow(walk_speed):
 			continue
 		coming.append([maxf(subject.left, 0.0), subject.position.distance_to(here), subject.payload,
 				subject.position, subject.speed, subject.logged_name])
+
+## The in-the-world path: see `step()`.
+func _measure_dangers_in_the_world(delta: float, here: Vector2, subjects: Array, sees: Callable,
+		walk_speed: float) -> void:
+	_generation += 1
+	for subject: Subject in subjects:
+		if not subject.pending and not subject.finished:
+			_measure(subject, delta, here, sees, walk_speed)
 	# Only the subjects alive this frame carry state forward; a key not touched above still reads an
 	# earlier generation and is erased here, which also keeps a freshly streamed thing from
-	# flashing an arrow on the frame it appears.
+	# flashing an arrow on the frame it appears, and ends the badge of a danger that left the world.
 	for key in watch.keys():
 		if watch[key]["generation"] != _generation:
 			watch.erase(key)
-	coming.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 
 func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 		walk_speed: float) -> void:

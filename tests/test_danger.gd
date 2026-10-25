@@ -615,7 +615,7 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 		if not def:
 			continue
 		var instance := _instance(def)
-		t.check(edge._is_worth_an_arrow(instance),
+		t.check(DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
 				"'%s' is announced from off-screen: it is lethal or faster than a walk" % id)
 		instance.free()
 
@@ -624,11 +624,11 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 		if not def:
 			continue
 		var instance := _instance(def)
-		t.check(not edge._is_worth_an_arrow(instance),
+		t.check(not DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
 				"'%s' is not, because turning round and leaving is enough" % id)
 		instance.free()
 
-	t.check(DangerEdge.MOST_AT_ONCE <= 3,
+	t.check(BadgeModel.MOST_AT_ONCE <= 3,
 			"and at most a handful at once, or the edge of the screen becomes wallpaper")
 	edge.free()
 
@@ -645,7 +645,7 @@ func _test_a_director_sited_pursuer_earns_an_arrow(t) -> void:
 			"charging_dog is still a director-sited pursuer")
 	if dog:
 		var instance := _instance(dog)
-		t.check(edge._is_worth_an_arrow(instance),
+		t.check(DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
 				"the day-3 dog is announced off screen once it is sited there")
 		instance.free()
 
@@ -654,7 +654,7 @@ func _test_a_director_sited_pursuer_earns_an_arrow(t) -> void:
 	var cat := EventCatalogue.by_id("cat_dash")
 	if cat:
 		var instance := _instance(cat)
-		t.check(not edge._is_worth_an_arrow(instance),
+		t.check(not DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
 				"a three-second crossing still has nothing to announce before it arrives")
 		instance.free()
 	edge.free()
@@ -684,24 +684,24 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 	# is not coming at anybody: nothing to announce.
 	var van := Vector2(600.0, 0.0)
 	var her := Vector2(walk, 0.0)
-	t.check(is_zero_approx(DangerEdge.approach_speed(van, van, her, step)),
+	t.check(is_zero_approx(BadgeModel.approach_speed(van, van, her, step)),
 			"a stationary event has no approach speed, however fast she walks towards it")
 
 	# The same van, now driving at her while she walks the other way. Her own retreat does not
 	# subtract from what it is doing either.
 	var was := Vector2(600.0, 0.0)
 	var now := was - Vector2(Tuning.WALK_SPEED * 2.0 * step, 0.0)
-	var approach := DangerEdge.approach_speed(was, now, Vector2.ZERO, step)
+	var approach := BadgeModel.approach_speed(was, now, Vector2.ZERO, step)
 	t.check(absf(approach - Tuning.WALK_SPEED * 2.0) < 1.0,
 			"and a mover is measured at its own speed (%.0f px/s)" % approach)
 
 	# The range cap, which is a window rather than a distance: the same 900px of clear ground is
 	# a fire engine worth announcing and a dawdler that is somebody else's problem for now.
-	t.check(DangerEdge.announces(190.0, 800.0),
+	t.check(BadgeModel.announces(190.0, 800.0),
 			"something doing 190px/s at 800px is four seconds away and is announced")
-	t.check(not DangerEdge.announces(40.0, 800.0),
+	t.check(not BadgeModel.announces(40.0, 800.0),
 			"the same distance at 40px/s is twenty seconds away and is not")
-	t.check(not DangerEdge.announces(DangerEdge.CLOSING_SPEED - 1.0, 0.0),
+	t.check(not BadgeModel.announces(BadgeModel.CLOSING_SPEED - 1.0, 0.0),
 			"and nothing slower than a stroll is announced at any distance")
 
 	# And the same thing through the real measurement, because the defect was in the plumbing
@@ -724,14 +724,14 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 	for i in 60:
 		standing.global_position += Vector2(walk, 0.0)
 		edge._process(step)
-	t.check(edge._coming.is_empty(),
+	t.check(edge.model.coming.is_empty(),
 			"walking towards something lethal does not announce it at the edge of the screen")
 
 	# And a second of it driving at her while she stands still.
 	for i in 60:
 		engine.global_position -= Vector2(def.speed * step, 0.0)
 		edge._process(step)
-	t.check(edge._coming.size() == 1, "a fire engine actually coming down the street does")
+	t.check(edge.model.coming.size() == 1, "a fire engine actually coming down the street does")
 
 	edge.free()
 	standing.free()
@@ -759,16 +759,16 @@ func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
 	var id := engine.get_instance_id()
 
 	edge._process(STEP)
-	t.check(edge._watch.has(id), "a live instance gets an entry in _watch")
-	var entry: Dictionary = edge._watch[id]
+	t.check(edge.model.watch.has(id), "a live instance gets an entry in _watch")
+	var entry: Dictionary = edge.model.watch[id]
 	edge._process(STEP)
-	t.check(edge._watch[id] == entry,
+	t.check(edge.model.watch[id] == entry,
 			"the same instance's entry is the same Dictionary object next frame, mutated in " +
 			"place rather than torn down and rebuilt")
 
 	manager._instances.erase(engine)
 	edge._process(STEP)
-	t.check(not edge._watch.has(id),
+	t.check(not edge.model.watch.has(id),
 			"an instance _events.instances() no longer carries is pruned from _watch, not left " +
 			"to sit there forever")
 

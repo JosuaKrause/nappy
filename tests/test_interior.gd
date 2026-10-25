@@ -1446,7 +1446,15 @@ func _count_the_badge(edge: DangerEdge, man: EventInstance, log: Dictionary) -> 
 	if not edge:
 		return
 	edge._process(1.0 / 60.0)
-	if man.is_waiting() or man.is_telegraphing() or edge._shows(man):
+	if man.is_waiting() or man.is_telegraphing():
+		return
+	if edge._shows(man):
+		# His badge has done its job the first time he is in sight after it went up; if he leaves
+		# sight again it is raised anew, past the margin band, and that is not this check.
+		if int(log["first"]) >= 0:
+			log["done"] = true
+		return
+	if log.get("done", false):
 		return
 	var up := false
 	for b: Dictionary in edge.announcing():

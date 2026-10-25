@@ -52,16 +52,6 @@ extends Control
 const MARGIN := Vector4(104.0, 116.0, 104.0, 148.0)
 const CHEVRON := 19.0
 const ICON := 34.0
-## At most this many at once. Three arrows is a warning; eight is wallpaper, and the day the
-## edge of the screen becomes wallpaper is the day it stops being read.
-const MOST_AT_ONCE := BadgeModel.MOST_AT_ONCE
-
-## The thresholds are `BadgeModel`'s, which decides which dangers get a badge (see there for what
-## each means); they stay reachable here for the callers that name them.
-const CLOSING_SPEED := BadgeModel.CLOSING_SPEED
-const SMOOTHING := BadgeModel.SMOOTHING
-const SCREEN_MARGIN := BadgeModel.SCREEN_MARGIN
-
 ## Whether `main` has decided a portrait touch window is presenting rotated. Set from outside —
 ## see `TouchControls.rotated`'s own doc. This control is pinned to `ScreenOrientation.DESIGN_SIZE`
 ## regardless of rotation (see `main._add_danger_edge()`), so a raw canvas-space position has to
@@ -80,15 +70,6 @@ var _own_view := VisibleView.new()
 ## Which dangers get a badge, and when: handed this frame's inputs by `_measure()`, which is all
 ## this control does of it.
 var model := BadgeModel.new()
-## What `_draw` puts on the edge this frame, and the model's per-instance state: the model's own,
-## read through here.
-var _coming: Array:
-	get:
-		return model.coming
-var _watch: Dictionary:
-	get:
-		return model.watch
-
 ## `events` is anything that answers `instances() -> Array[EventInstance]`: an `EventManager`, the
 ## city's on a day and in the escape's city, the building's in the escape's building. **Called
 ## again when the escape walks out of the service door**, with the city's source in place of the
@@ -155,7 +136,7 @@ func _process(delta: float) -> void:
 ## not redraw at all.
 func _watch_the_edge(delta: float) -> bool:
 	_measure(delta)
-	var badges := not _coming.is_empty()
+	var badges := not model.coming.is_empty()
 	var asked := badges or _drew_badges
 	_drew_badges = badges
 	if asked:
@@ -188,7 +169,7 @@ func _measure(delta: float) -> void:
 
 ## The facts the model reads about a live instance.
 func _subject_of(instance: EventInstance) -> BadgeModel.Subject:
-	var subject := _subject_for_def(instance.def)
+	var subject := subject_for_def(instance.def)
 	subject.key = instance.get_instance_id()
 	subject.position = instance.global_position
 	subject.finished = instance.is_finished
@@ -200,36 +181,26 @@ func _subject_of(instance: EventInstance) -> BadgeModel.Subject:
 
 ## The facts the model reads about a warning with nothing in the world yet.
 func _subject_of_warning(warning: PendingWarning) -> BadgeModel.Subject:
-	var subject := _subject_for_def(warning.def)
+	var subject := subject_for_def(warning.def)
 	subject.pending = true
 	subject.position = warning.place
 	subject.left = warning.left
 	subject.logged_name = warning.logged_name()
 	return subject
 
-func _subject_for_def(def: EventDef) -> BadgeModel.Subject:
+static func subject_for_def(def: EventDef) -> BadgeModel.Subject:
 	var subject := BadgeModel.Subject.new()
 	subject.payload = def
 	subject.speed = def.speed
 	subject.outer_radius = def.outer_radius
 	subject.chase_speed = def.chase_speed() if def.pursuit != null else def.speed
 	subject.telegraphs = def.telegraphs
-	subject.has_icon = not _icon_for(def.look).is_empty()
+	subject.has_icon = not EventInstance.icon_for(def.look).is_empty()
 	subject.ahead_of_player = def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER
 	subject.pursues = def.pursuit != null
 	subject.hard_fail = def.hard_fail
 	subject.mobile = def.mobile
 	return subject
-
-## How fast something at `was`, now at `now`, is closing on a player standing at `player`
-## (`BadgeModel.approach_speed()`).
-static func approach_speed(was: Vector2, now: Vector2, player: Vector2, delta: float) -> float:
-	return BadgeModel.approach_speed(was, now, player, delta)
-
-## Whether something closing at `approach` px/s with `gap` px of clear ground left is worth
-## announcing (`BadgeModel.announces()`).
-static func announces(approach: float, gap: float) -> bool:
-	return BadgeModel.announces(approach, gap)
 
 ## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
 ## arrival first. For the telemetry observer, which has to be able to say what she was warned
@@ -245,17 +216,9 @@ func _draw() -> void:
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()
-	for i in mini(MOST_AT_ONCE, _coming.size()):
-		_draw_arrow(_coming[i][2] as EventDef, _coming[i][3] as Vector2, float(_coming[i][1]),
+	for i in mini(BadgeModel.MOST_AT_ONCE, model.coming.size()):
+		_draw_arrow(model.coming[i][2] as EventDef, model.coming[i][3] as Vector2, float(model.coming[i][1]),
 				transform)
-
-## Whether something off-screen deserves an arrow (`BadgeModel.Subject.worth_an_arrow()`).
-func _is_worth_an_arrow(instance: EventInstance) -> bool:
-	return _is_worth_an_arrow_for(instance.def)
-
-## `_is_worth_an_arrow()` asked of a row rather than of a live instance.
-func _is_worth_an_arrow_for(def: EventDef) -> bool:
-	return _subject_for_def(def).worth_an_arrow(Tuning.WALK_SPEED)
 
 func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 		transform: Transform2D) -> void:
@@ -283,7 +246,7 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 	# The thing itself, so the arrow says *what* rather than *something*. Scaled to fit the
 	# badge with its aspect kept: these are authored at world scale and a square box squashes a
 	# fire engine into something unrecognisable, which defeats the whole cue.
-	var picture := _icon_for(def.look)
+	var picture := EventInstance.icon_for(def.look)
 	if not picture.is_empty():
 		# The size comes from the region table rather than from the texture, so the badge's own
 		# fit is arithmetic that needs nothing loaded; the region itself is the one thing here
@@ -308,19 +271,6 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 	draw_string(font, text_at + Vector2.ONE, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
 			Palette.OUTLINE)
 	draw_string(font, text_at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, colour)
-
-## The silhouette that stands for a kind of event at icon size, as the picture's own repository
-## path — `""` for a look with nothing to draw. The badge reads it as a region of the same baked
-## `events` page the entity itself draws from, so the thing at the screen edge and the thing in the
-## street are the same pixels rather than two loads of one file.
-##
-## **The table lives on `EventInstance`, not here.** A `match` of its own is one table too many for
-## a rule that says *the entity carries its own picture*, and it goes wrong the way a second copy
-## does: a category row returns the generic van, so the badge for a fire engine, an army truck and
-## the unmarked van that takes the baby is a picture of a delivery van. An arrow that says the wrong
-## thing is worse than an arrow that can only say "something".
-func _icon_for(look: EventDef.Look) -> String:
-	return EventInstance.icon_for(look)
 
 func _draw_chevron(at: Vector2, angle: float, colour: Color) -> void:
 	var points := PackedVector2Array([

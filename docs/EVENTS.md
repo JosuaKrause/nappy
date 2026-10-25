@@ -614,7 +614,7 @@ sited against the view in the first place.
 
 **The screen-edge badge is what makes the offscreen phase worth anything.** For a warned row it *is*
 the warning: up for the whole of it, since there is nothing in the world to see yet. Once the thing
-exists just off screen, `DangerEdge._is_worth_an_arrow` keeps announcing it the way it announces
+exists just off screen, `BadgeModel.Subject.worth_an_arrow()` keeps announcing it the way it announces
 anything lethal or faster than a walk that is out of sight and closing, until she can see it.
 
 ## Solid things are solid

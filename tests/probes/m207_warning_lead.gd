@@ -32,13 +32,11 @@ extends RefCounted
 ## `MAP` mover streams in.
 ##
 ## **The first warning** is, for a warned row, the frame its warning goes up: the badge is up from
-## then (`DangerEdge._is_worth_an_arrow_for()` is asked, so a row the badge would not draw is never
+## then (`DangerEdge.subject_for_def()`'s `worth_an_arrow()` is asked, so a row the badge would not draw is never
 ## counted as warned). For any other row it is the first frame, once its own telegraph has started
 ## (for a row that waits, once it has noticed her), at which either the thing itself is inside the
 ## view — the `Tuning.VIEW_HALF_EXTENT` box about her, the camera being centred on her — or
-## `DangerEdge` would have its badge up: its own `_is_worth_an_arrow()`, its own smoothed approach
-## and `DangerEdge.announces()`, and its own `SCREEN_MARGIN` hysteresis, all called rather than
-## copied. **The earliest reach** is the first frame `EventInstance.is_lethal_at()` is true for a
+## `BadgeModel` would have its badge up: the game's own decision stepped each frame, not copied. **The earliest reach** is the first frame `EventInstance.is_lethal_at()` is true for a
 ## `hard_fail` row, and for any other row the first frame after its telegraph that its field
 ## charges her anything at all (`contribution_at()` above zero at full strength) — the moment the
 ## thing it was warning about is actually happening to her.
@@ -171,7 +169,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 		made.append(created)
 		return true
 	var warning := PendingWarning.new(def, where, arrive)
-	if not warning.put_up(her) or not edge._is_worth_an_arrow_for(def):
+	if not warning.put_up(her) or not DangerEdge.subject_for_def(def).worth_an_arrow(Tuning.WALK_SPEED):
 		result["ends"] = "no badge"
 		return result
 	var velocity := _answered(answer, heading)
@@ -256,7 +254,7 @@ static func encounters() -> Array[Dictionary]:
 			"her": Vector2(0.0, mouse.notice_within() + 200.0), "heading": up, "warm": 0.0})
 
 	# `military_convoy` as a `MAP` mover: streamed in at `EVENT_STREAM_RADIUS` and driving straight
-	# down her street — the closest the city can bring one at her. Its lead is `DangerEdge.LEAD_TIME`
+	# down her street — the closest the city can bring one at her. Its lead is `BadgeModel.LEAD_TIME`
 	# and the street, not a siting rule.
 	var convoy := EventCatalogue.by_id("military_convoy")
 	var streamed_from := Vector2(0.0, -Tuning.EVENT_STREAM_RADIUS)
@@ -405,10 +403,14 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 	var warm_steps := int(ceil(float(encounter["warm"]) / STEP))
 	for _i in warm_steps:
 		instance._process(STEP)
-	# `DangerEdge._measure()`'s own per-instance state, started the frame it is first seen.
-	var was := instance.global_position
-	var approach := 0.0
-	var hold := 0.0
+	# The game's own badge decision, stepped with this walk's view (the box about her).
+	var her_box := {"at": her}
+	var model := BadgeModel.new()
+	var subject := DangerEdge.subject_for_def(def)
+	subject.key = 1
+	subject.logged_name = def.id
+	var sees := func(point: Vector2, margin_px: float) -> bool:
+		return _in_view(point - her_box["at"], margin_px / ZOOM)
 	var elapsed := 0.0
 	while elapsed < LIMIT:
 		her += velocity * STEP
@@ -420,17 +422,14 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 			result["why"] = "it left"
 			break
 		var at := instance.global_position
-		var raw := DangerEdge.approach_speed(was, at, her, STEP)
-		approach = lerpf(approach, raw, clampf(STEP * DangerEdge.SMOOTHING, 0.0, 1.0))
-		was = at
-		var gap := maxf(0.0, at.distance_to(her) - def.outer_radius)
 		var in_view := _in_view(at - her, 0.0)
-		if edge._is_worth_an_arrow(instance) and DangerEdge.announces(approach, gap) \
-				and not _in_view(at - her, DangerEdge.SCREEN_MARGIN / ZOOM):
-			hold = 0.8  # the retired DangerEdge.HOLD: this probe still copies the pre-BadgeModel rule
-		else:
-			hold = maxf(0.0, hold - STEP)
-		var badge := hold > 0.0 and not in_view
+		her_box["at"] = her
+		subject.position = at
+		subject.shown = in_view
+		subject.charging = instance.has_charged()
+		subject.warned = instance.came_under_a_warning
+		model.step(STEP, her, [subject], sees, Tuning.WALK_SPEED)
+		var badge := not model.coming.is_empty()
 		if result["warned_at"] == INF and not instance.is_waiting() and (in_view or badge):
 			result["warned_at"] = elapsed
 			result["by"] = "sight" if in_view else "badge"
@@ -463,7 +462,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 		created.append(instance)
 		return true
 	var warning := PendingWarning.new(def, encounter["where"], arrive)
-	if not warning.put_up(her) or not edge._is_worth_an_arrow_for(def):
+	if not warning.put_up(her) or not DangerEdge.subject_for_def(def).worth_an_arrow(Tuning.WALK_SPEED):
 		result["why"] = "no badge"
 		return result
 	result["warned_at"] = 0.0

@@ -97,7 +97,7 @@ func share_of(rect: Rect2) -> float:
 
 ## Whether a world point is in sight: inside the view, and not under a covered corner. `margin`
 ## world px count as in sight as well, past the view's edge and into a corner — the badge's
-## hysteresis (`DangerEdge.SCREEN_MARGIN`), so a thing on the boundary does not trade places with its
+## hysteresis (`BadgeModel.SCREEN_MARGIN`), so a thing on the boundary does not trade places with its
 ## own badge every frame.
 func sees(point: Vector2, margin := 0.0) -> bool:
 	if not view.grow(margin).has_point(point):
