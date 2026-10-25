@@ -103,4 +103,4 @@ func restore() -> void:
 		_city.signals.powered = true
 
 func _sabotaged() -> bool:
-	return GameState.sabotage_done or forced
+	return _city.run_resistance.sabotage_done or forced

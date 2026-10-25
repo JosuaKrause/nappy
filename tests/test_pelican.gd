@@ -173,11 +173,11 @@ func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t) -> void:
 	_new_run(seed_value)
 	var yesterday := _rolls(cyclist, 7, seed_value)
 	t.check(yesterday.size() == 7 and GameState.pelican.draws == 7, "a run's earlier day draws 7")
-	GameState._snapshot_what_the_attempt_can_spend()
+	GameState.run_parts.photograph()
 	var day := _rolls(cyclist, 20, seed_value)
 	t.check(day.has(true), "the day holds the pelican (a guard that the comparisons compare one)")
 	var saved := GameState.pelican.to_data()
-	GameState._give_back_what_the_attempt_spent()
+	GameState.run_parts.give_back()
 	t.check(GameState.pelican.draws == 7, "a lost day sets the count back to the day's dawn")
 	t.check(_rolls(cyclist, 20, seed_value) == day,
 			"and the retry draws the same cyclists and pelican the day first did")

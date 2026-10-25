@@ -29,11 +29,19 @@ src/
 	tuning.gd             all balance constants           (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
 	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
-	game_state.gd         run/day/nerves/resistance       (autoload: GameState)
+	game_state.gd         the run, as a registry of its parts (autoload: GameState)
 	game_save.gd          persists a run to disk and reads one back; not an autoload, a static
 	                      namespace
 	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens
 	                                                       (autoload: VisitCounter)
+  run/                  the run's state, a domain model: one registered list of sub-states
+	run_sub_state.gd      the interface of a part: reset, photograph, give_back, to_data, restore
+	run_state_registry.gd the one list the dawn, a lost day, the snapshot and the save walk
+	run_header.gd         seed, presentation, day, nerves, ending, play time
+	resistance_run_state.gd  steps, progress, sabotage, the package; given back by a lost day
+	attempt_spend_state.gd   one-shots, scars, block arcs; given back by a lost day
+	settled_state.gd      the calm block she settled in each day
+	run_facts.gd          escape section, used alleys, fenced park: riders beside the snapshot
   player/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
@@ -535,8 +543,19 @@ requires the two plans to be identical, because that hoist is exactly the edit t
 quietly consume one extra value and break determinism for every other guarantee here.
 
 ### `GameState`
-The run. Owns `run_seed`, `day`, `nerves`, `resistance_progress`, `consumed_one_shots`.
-Handles day transitions and ending selection. Serialisable for save/continue.
+The run. Handles day transitions and ending selection, and holds the run's state as a registry
+(`run_parts`, a `RunStateRegistry`) of parts, each a `RunSubState` with one interface: `reset`,
+`photograph`, `give_back`, `to_data`, `restore`. **A field is declared once, in the part that owns
+it**, together with its dawn copy and its save shape; starting a run, the dawn photograph, a lost
+day's give-back, the snapshot and the save all walk the list, so a part on it is in all of them and
+a field cannot be missed in one. The parts are `RunHeader` (`run_seed`, `day`, `nerves`, the
+ending, play time), `ResistanceRunState`, `AttemptSpendState` (consumed one-shots, scars, block
+arcs), `SettledState`, `RunFacts`, and `PosterState` and `PelicanState`. A part says where the
+save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a save must all carry,
+beside it with a default for absence, or under a key of its own. `GameState.day`, `.scars` and the
+rest forward to the part that owns them, so a reader not handed the part reads the same value; code
+written against a part takes it as an argument. `tests/test_run_state.gd` replays a run against a
+save main wrote and checks every part is on the list.
 
 ### `VisitCounter`
 Sends anonymous GoatCounter events for how far a run gets, and what a day actually ended on and

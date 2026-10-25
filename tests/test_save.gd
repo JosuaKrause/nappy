@@ -114,7 +114,7 @@ func run(t) -> void:
 	GameState.restore_snapshot(baseline)
 	# `restore_snapshot()` writes every field the *snapshot* carries, and the escape's own section,
 	# the resistance's used alley tiles and the one fenced park are deliberately not among them —
-	# see `_SAVED_OUTSIDE_THE_SNAPSHOT` — so this suite has to put all three back by hand or the next
+	# see `RunSubState.Slot.RIDER` — so this suite has to put all three back by hand or the next
 	# one starts in the middle of an escape with somebody else's used alleys and fenced park still on.
 	GameState.escape_section = DaySpec.Section.NONE
 	GameState.completed_resistance_alley_tiles.clear()
@@ -188,54 +188,41 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 
 # ------------------------------------------------------------------- round trip ---
 
-## Every field a run holds that the save file does not carry inside its `"state"` object, and why
-## each is somewhere else instead. **One entry, and adding a second is a decision rather than a
-## convenience**: this list is the only way a field can be added to `GameState` and not be saved
-## without the check below going red, which is the whole thing that check exists for.
-##
-## `escape_section` — which half of the escape a run is in — rides at the *top* level of the save
-## beside `"day_under_way"`, because `GameState.snapshot_is_complete()` refuses a `"state"` missing
-## any field this build writes: inside the snapshot it would have made every save written before
-## the escape existed unreadable, for the sake of one int. `_test_a_save_from_before_the_escape_
-## still_loads()` is what holds that. `completed_resistance_alley_tiles` rides the same way, for
-## the same reason — `_test_a_save_from_before_the_alley_tiles_still_loads()` holds it — and so do
-## `posters`, what is pasted on the walls (`_test_the_posters_survive_a_round_trip()`), `pelican`,
-## the count of cyclists drawn from the run's pelican bag
-## (`_test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at_0()`), and
-## `fenced_park`/`fenced_park_act`, the one calm area a run may fence
-## (`_test_a_save_from_before_the_fenced_park_still_loads()`).
-const _SAVED_OUTSIDE_THE_SNAPSHOT := [
-	"escape_section", "completed_resistance_alley_tiles", "posters", "pelican",
-	"fenced_park", "fenced_park_act", "hard_mode", "checkpoint",
-]
+## `GameState`'s fields that are the file's rather than the run's: the mode (fixed for the run) and
+## the checkpoint ride at the top of the save beside `"day_under_way"`.
+const _FILE_FIELDS := ["hard_mode", "checkpoint"]
 
 ## `GameState`'s fields that are not the run's state and so are never saved: `_trace`, where the
 ## run's facts are written for the run log, handed in by whoever boots the run.
 const _NOT_RUN_STATE := ["_trace"]
 
-## The guard the brief asks for: a field added to `GameState` later and forgotten in
-## `GameState._SAVE_FIELDS` fails here rather than quietly not being saved. `PROPERTY_USAGE_
-## SCRIPT_VARIABLE` is what separates a field this script actually declares from the base `Node`
-## properties `get_property_list()` also reports (`name`, `process_mode`, and the rest).
+## The guard the brief asks for: a field declared on `GameState` and saved by nothing fails here
+## rather than quietly not being saved. A field is saved when the registered parts write a key of
+## its name (the fields that forward to a part keep the key's name), or it is a part itself, or it
+## is one of the file's or the run log's. The other way round, every key the parts write that is
+## not a dawn copy must be a field of `GameState`. `PROPERTY_USAGE_SCRIPT_VARIABLE` is what
+## separates a field this script declares from the base `Node` properties `get_property_list()`
+## also reports (`name`, `process_mode`, and the rest).
 func _test_round_trip_field_list_matches_the_property_list(t) -> void:
 	var declared: Array[String] = []
 	for property in GameState.get_property_list():
 		if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
 			declared.append(property["name"])
-	var declared_set := {}
+	var written := GameState.run_parts.state_keys()
+	written.append_array(GameState.run_parts.rider_data().keys())
 	for name in declared:
-		declared_set[name] = true
-	var listed_set := {}
-	for name in GameState._SAVE_FIELDS:
-		listed_set[name] = true
-	for name in declared:
-		if name in _SAVED_OUTSIDE_THE_SNAPSHOT or name in _NOT_RUN_STATE:
+		var value: Variant = GameState.get(name)
+		if value is RunSubState or value is RunStateRegistry:
 			continue
-		t.check(listed_set.has(name),
+		if name in _FILE_FIELDS or name in _NOT_RUN_STATE:
+			continue
+		t.check(name in written,
 				"'%s' is a GameState field the save format does not mention" % name)
-	for name in GameState._SAVE_FIELDS:
-		t.check(declared_set.has(name),
-				"'%s' is in the save field list but is not actually a GameState field" % name)
+	for name: String in written:
+		if name.begins_with("_dawn_"):
+			continue
+		t.check(name in declared,
+				"'%s' is in the save but is not actually a GameState field" % name)
 
 ## Every field, mutated to a value its default could not be mistaken for, round-tripped through
 ## the actual file — `_write_now()`/`_read_now()`, not the in-memory dictionaries, so a JSON
@@ -256,11 +243,11 @@ func _test_round_trip_preserves_every_field(t) -> void:
 			{Vector2i(3, 4): _fake_block_plan()}, Vector2i(3, 4), GameEnums.BlockCause.FIRE, 6)
 	GameState.sabotage_done = false
 	GameState.resistance_carrying_package = true
-	GameState._dawn_completed_steps = [0]
-	GameState._dawn_failed_steps = []
-	GameState._dawn_progress = 1
-	GameState._dawn_sabotage_done = false
-	GameState._dawn_carrying_package = false
+	GameState.resistance._dawn_completed_steps = [0]
+	GameState.resistance._dawn_failed_steps = []
+	GameState.resistance._dawn_progress = 1
+	GameState.resistance._dawn_sabotage_done = false
+	GameState.resistance._dawn_carrying_package = false
 	GameState.settled_in = {5: Vector2i(-2, 7), 6: Vector2i(9, 9)}
 
 	var written := GameState.save_snapshot()
@@ -285,8 +272,8 @@ func _test_round_trip_preserves_every_field(t) -> void:
 	t.check(GameState.city_state.changed_on(Vector2i(3, 4)) == 6,
 			"the city's own block-arc history survives — a fire that burned did happen")
 	t.check(GameState.resistance_carrying_package == true, "resistance_carrying_package survives")
-	t.check(GameState._dawn_completed_steps == [0], "the dawn snapshot's own steps survive")
-	t.check(GameState._dawn_progress == 1, "_dawn_progress survives")
+	t.check(GameState.resistance._dawn_completed_steps == [0], "the dawn snapshot's own steps survive")
+	t.check(GameState.resistance._dawn_progress == 1, "_dawn_progress survives")
 	t.check(GameState.settled_in.get(5) == Vector2i(-2, 7)
 			and GameState.settled_in.get(6) == Vector2i(9, 9),
 			"settled_in survives with its Vector2i values and integer day keys intact")
@@ -294,7 +281,7 @@ func _test_round_trip_preserves_every_field(t) -> void:
 			"and the whole snapshot taken before the write matches the one read back after it")
 
 ## Player, 2026-09-27: *"a won day recovers a nerve up to the max"*. `nerves` was already carried by
-## `_SAVE_FIELDS`, but the count it carries now has to be the one a win just gave back, not the one
+## the snapshot's keys, but the count it carries now has to be the one a win just gave back, not the one
 ## a save taken before the change would have written — this writes the file only after the gain and
 ## wipes the live count before reading it back, so a save that quietly dropped the regained nerve
 ## rather than the round trip itself is what would fail this.
@@ -655,7 +642,7 @@ func _test_day_under_way_load_costs_one_nerve(t) -> void:
 ## **A run closed mid-day gives back what that day burned, through the same path an ordinary loss
 ## takes.** `main._ready()` hands a save written with `day_under_way` to `GameState.finish_day()` as
 ## a hard fail, so the whole of the give-back has to survive the file: the photograph of what the
-## attempt may spend rides in `_SAVE_FIELDS` beside the resistance's, or a day 3 closed after the
+## attempt may spend rides in the snapshot beside the resistance's, or a day 3 closed after the
 ## fire burned would come back with the fire spent, a shell standing and no fire owed on the retry.
 ##
 ## The round trip is the point, so the state is written, wiped to something else, and read back

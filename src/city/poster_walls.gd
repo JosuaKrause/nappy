@@ -10,7 +10,7 @@ extends Node
 ## pasted and torn from the sidewalk tile directly in front of it. That tile is what names a cell
 ## everywhere: `PosterState` keys by it, a crew is sited on it, she pushes from it.
 ##
-## **What is on the walls is run state, and this only reads and writes it.** `GameState.posters`
+## **What is on the walls is run state, and this only reads and writes it.** the run's `PosterState` (`GameState.posters`)
 ## holds it, so it survives a save and a lost day gives it back; this node is rebuilt with the city
 ## and hands each `Building` the cells it draws (`Building.posters`). It draws nothing itself — the
 ## sheets are part of the front, drawn in the building's own `_draw()` on the Buildings layer, under
@@ -124,6 +124,8 @@ var _pressed_for := 0.0
 ## Whether the push held now has already torn a sheet, so every intact sheet she slides in front of
 ## tears at once. See `_push_to_tear()`.
 var _sliding := false
+## What is on the walls: the run's `PosterState`, handed in by `setup()`.
+var posters: PosterState = null
 ## The bag the run's tears draw from, rebuilt from `PosterState.tears` whenever it disagrees with
 ## the run — a save loaded, a lost day given back, a new run. See `_the_bag()`.
 var _bag: MarbleBag = null
@@ -131,7 +133,8 @@ var _bag_seed := 0
 
 ## Reads every building's blank ground-floor cells. Called once by `City.build()`, whose buildings
 ## are fixed for the run.
-func setup(city: City, map: CityMap) -> void:
+func setup(city: City, map: CityMap, run_posters: PosterState) -> void:
+	posters = run_posters
 	_city = city
 	_map = map
 	_walls.clear()
@@ -184,7 +187,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 	_jobs.clear()
 	_pressed_for = 0.0
 	_sliding = false
-	var state := GameState.posters
+	var state := posters
 	var corridor := Corridor.of(tree) if tree else null
 	for dawn in range(maxi(state.pasted_through + 1, FIRST_DAY), day + 1):
 		_paste_the_dawn(dawn, corridor)
@@ -205,7 +208,7 @@ func refresh() -> void:
 
 func _refresh_wall(index: int) -> void:
 	var wall := _walls[index]
-	var state := GameState.posters
+	var state := posters
 	var cells := {}
 	for i in (wall["tiles"] as Array).size():
 		var tile: Vector2i = wall["tiles"][i]
@@ -241,7 +244,7 @@ func _paste_the_dawn(day: int, corridor: Corridor) -> void:
 			_paste_one(tiles[c], kind, rng)
 		# A wall worked again is worked whole: its torn sheets go under the new paste as well.
 		for tile: Vector2i in tiles:
-			if GameState.posters.is_torn(tile):
+			if posters.is_torn(tile):
 				_paste_one(tile, kind, rng)
 
 ## One kind for a wall being worked on `day`, weighted by its act among the kinds that have
@@ -284,7 +287,7 @@ static func _sheets_for(kind: int, act: int, cells: int, rng: RandomNumberGenera
 func _paste_one(tile: Vector2i, kind: int, rng: RandomNumberGenerator) -> void:
 	var offset_roll := rng.randf()
 	var side := 1 if rng.randf() < 0.5 else -1
-	var state := GameState.posters
+	var state := posters
 	var old: Dictionary = state.cells.get(tile, {})
 	var offset := offset_roll < OVERPASTE_SHARE and not old.is_empty() \
 			and int(old["kind"]) != kind
@@ -357,7 +360,7 @@ func _job_for(tile: Vector2i) -> Dictionary:
 		if queue.size() < count:
 			queue.append(tiles[index])
 	for other: Vector2i in tiles:
-		if GameState.posters.is_torn(other) and not queue.has(other):
+		if posters.is_torn(other) and not queue.has(other):
 			queue.append(other)
 	return {"queue": queue, "kind": kind, "next_in": FIRST_PASTE_AFTER, "pasted": 0,
 			"total": queue.size(), "rng": rng}
@@ -394,7 +397,7 @@ func _push_to_tear(delta: float, at: Vector2, steering: Vector2) -> void:
 		_pressed_for = 0.0
 		_sliding = false
 		return
-	if not GameState.posters.has_intact_sheet(tile):
+	if not posters.has_intact_sheet(tile):
 		return
 	if _sliding:
 		_tear(tile)
@@ -428,7 +431,7 @@ func _presses_into_the_front(tile: Vector2i, at: Vector2, steering: Vector2) -> 
 ## foot comes after her (`EventManager.send_a_pursuer()`, at once). Which tear is a hash of the run, the cell and the count rather than a roll, so nothing
 ## draws from any stream; the marble comes from the bag's own.
 func _tear(tile: Vector2i) -> void:
-	var state := GameState.posters
+	var state := posters
 	var kind := int(state.cells[tile]["kind"])
 	var which := posmod(hash("%d:%d:%d:%d:tear" % [GameState.run_seed, tile.x, tile.y,
 			state.tears]), PosterArt.TEARS)
@@ -453,7 +456,7 @@ func _tear(tile: Vector2i) -> void:
 ## from the bag's own stream off the run's seed, so a save, a lost day's give-back and a retry all
 ## draw the same marbles the run would have drawn.
 func _the_bag() -> MarbleBag:
-	var tears := GameState.posters.tears
+	var tears := posters.tears
 	var seed_value := hash("%d:poster-tears" % GameState.run_seed)
 	if _bag == null or _bag_seed != seed_value or _bag.drawn != tears:
 		_bag = MarbleBag.new(TEAR_PRE_BAG, TEAR_BAG, seed_value)

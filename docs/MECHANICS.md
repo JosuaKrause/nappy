@@ -1900,7 +1900,7 @@ closing the window and quitting all still do what they always have — the game 
 loss (M161), the run log still closes — but none of them changes what a save holds, since a save is
 the run and the day, never the moment inside one (PLAYTEST-82).
 
-**A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
+**A save holds the run, never the moment inside a day.** The run's registered parts (`GameState.run_parts`; `GameState.save_snapshot()` is the ones in the snapshot) — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
 history has moved, where she settled each day and the run's clock — plus the facts that ride beside
 it: whether a day was under way when the file was written, which section of the escape it is in, if

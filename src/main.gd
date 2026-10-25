@@ -81,6 +81,10 @@ var _rig_lock: RigLock
 var _return_window: ReturnWindow
 
 var _city: City
+## The parts of the run's state this node reads and writes, taken from `GameState` once, here, and
+## held — the rest of the file goes through them, not back to the autoload.
+var _spend: AttemptSpendState = GameState.attempt_spend
+var _facts: RunFacts = GameState.facts
 ## The escape's building. In the escape it is built first and `_city` follows when she walks out of
 ## the service exit, so the two *are* both non-null for the whole of the city section — the
 ## building stays on its own map with nobody on it. On an ordinary run `_interior` is null and
@@ -275,7 +279,7 @@ func _ready() -> void:
 	# Read before `try_resume()` touches it, so `escape_resumed_from_disk` below can tell a save
 	# that already carried a section on the autoload (a handover reload) from one that only got
 	# there because the line just after this read it off the file.
-	var escape_section_before_resume := GameState.escape_section
+	var escape_section_before_resume := _facts.escape_section
 	if _escape_scene_requested:
 		_start_the_flags_run()
 	else:
@@ -289,7 +293,7 @@ func _ready() -> void:
 	# before this boot's own `_ready()` ever ran. A resumed escape opens on the title first, the
 	# way a resumed day does; a handover opens straight on the building's brief.
 	var escape_resumed_from_disk := _escape_from_a_run and _escape_section_came_from_the_file(
-			escape_section_before_resume, GameState.escape_section)
+			escape_section_before_resume, _facts.escape_section)
 	var first := _the_first_day()
 	# After the run seed is settled and before anything is generated, so the log opens on the
 	# seed it is a trace of. A run carried on from a checkpoint, or handed over to the escape, keeps
@@ -540,7 +544,7 @@ func _settle_the_run() -> void:
 	# reload that reaches this boot — a reload under a dev flag or in a headless rig, where
 	# `GameSave.uses_save()` refuses every read, would otherwise start a brand new run over the one
 	# that just earned its ending.
-	if _resume.is_empty() and GameState.escape_section == DaySpec.Section.NONE \
+	if _resume.is_empty() and _facts.escape_section == DaySpec.Section.NONE \
 			and not _carried_from_a_checkpoint:
 		GameState.start_run(config.seed_override)
 		_apply_the_parent_flag()
@@ -559,7 +563,7 @@ func _settle_the_run() -> void:
 		EventBus.run_begun.emit(GameState.day, not _resume.is_empty())
 	# The run's ending, played rather than announced: a won day 14 with every task complete hands
 	# over to the escape, and a game closed inside a section opens on it again.
-	_escape_from_a_run = GameState.escape_section != DaySpec.Section.NONE
+	_escape_from_a_run = _facts.escape_section != DaySpec.Section.NONE
 
 ## `--start-escape`: the escape with no run behind it, so a rig or a person can walk it on demand. A
 ## fresh run of its own, on day 1 — `--day` does not move it; a recipe's own day does — and no
@@ -578,7 +582,7 @@ func _start_the_flags_run() -> void:
 func _the_first_day() -> DaySpec:
 	if _escape_scene_requested or _escape_from_a_run:
 		var start_at_the_city := _escape_start_part() == "city" \
-				or (_escape_from_a_run and GameState.escape_section == DaySpec.Section.CITY)
+				or (_escape_from_a_run and _facts.escape_section == DaySpec.Section.CITY)
 		return escape_section_spec(DaySpec.Section.CITY if start_at_the_city
 				else DaySpec.Section.BUILDING, config.escape_section_length())
 	return day_spec(config, GameState.day)
@@ -837,8 +841,8 @@ func _build_the_finale_city() -> void:
 	_city = _new_city()
 	_city.dark_from_the_start = _spec.dark_from_the_start
 	_city.build(_city_map())
-	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
-	_city.start_day(GameState.city_state, GameState.day,
+	_spend.city_state.begin_day(_city.map.block_plans, GameState.day)
+	_city.start_day(_spend.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"), _spec)
 	_city.set_act(GameState.current_act())
 	# Night, and fixed there: the escape happens after the last day and the clock is the tension
@@ -956,7 +960,7 @@ func _start_section(spec: DaySpec, restarted: bool) -> void:
 	_use_the_day(spec)
 	# The run's own record of where it is, which is what the save carries and what the next boot
 	# reads: written here, the one place every section of every boot passes through.
-	GameState.escape_section = spec.section
+	_facts.escape_section = spec.section
 	_hud.visible = false
 	# Announced before its world is built or anything is placed in it, as a day is, so whatever
 	# the building or the city does as it is built is counted as this section's.
@@ -1674,7 +1678,7 @@ func _start_day() -> void:
 	# and so nothing spawns on top of her.
 	# The city becomes today's city before anything is placed in it: the scheduler has to
 	# see the parks that are still parks, not yesterday's.
-	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
+	_spend.city_state.begin_day(_city.map.block_plans, GameState.day)
 	# The calm areas she has used this act, handed to the repaint `_city.start_day()` opens with, so
 	# the ones that can be shut are shut before the day's route tree is grown around them. See
 	# `CityMap.set_spent_calm()`.
@@ -1682,13 +1686,13 @@ func _start_day() -> void:
 	# What `GameState` already remembers about the one park barriers ever stand around this run,
 	# handed over the same way, so a fence chosen on an earlier day of this act stands again today
 	# rather than being re-decided. See `CityMap.set_fenced_park_state()`.
-	_city.map.set_fenced_park_state(GameState.fenced_park, GameState.fenced_park_act,
+	_city.map.set_fenced_park_state(_facts.fenced_park, _facts.fenced_park_act,
 			GameState.current_act())
-	_city.start_day(GameState.city_state, GameState.day,
+	_city.start_day(_spend.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"), _spec)
 	# Remember the first choice for the run. Today's physical fence disappears after its act,
 	# but that must not erase the history and allow tomorrow to choose another one.
-	GameState.remember_fenced_park(_city.map.fenced_park, _city.map.fenced_park_act)
+	_facts.remember_fenced_park(_city.map.fenced_park, _city.map.fenced_park_act)
 	# The tree `_city.start_day()` just grew is today's whole plan, so the picture only has to be
 	# rebuilt here — once a day — rather than read fresh every frame the way the debug overlays read
 	# the live geometry state. See `RouteLines.refresh()`.
@@ -1701,7 +1705,7 @@ func _start_day() -> void:
 	# before it, and why the events are streamed a second time once it is known.
 	var doorstep := _city.map.doorstep_world_position()
 	_city.events.use_the_spec(_spec)
-	_city.events.start_day(GameState.day, GameState.day_rng(), GameState.consumed_one_shots,
+	_city.events.start_day(GameState.day, GameState.day_rng(), _spend.consumed_one_shots,
 			doorstep)
 	# The day's seals are planned inside the call above, and a `fallen_tree_seal` takes a street
 	# tree's own pit. `City.start_day` already emptied the pits its own closures took, so this is
@@ -1771,8 +1775,8 @@ func _start_recipe_day() -> void:
 	_use_the_day(day_spec(config, GameState.day))
 	GameState.begin_day()
 	EventBus.day_started.emit(GameState.day)
-	GameState.city_state.begin_day(_city.map.block_plans, GameState.day)
-	_city.start_recipe_day(GameState.city_state, GameState.day,
+	_spend.city_state.begin_day(_city.map.block_plans, GameState.day)
+	_city.start_recipe_day(_spend.city_state, GameState.day,
 			GameState.day_rng(GameState.day, "closures"))
 	_city.set_act(GameState.current_act())
 	_day.start(_spec.length)
@@ -2001,7 +2005,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 		# above). Before `show_day()` reads `GameState.nerves` a few lines down, so the summary
 		# shows the count after the gain.
 		GameState.regain_a_nerve_for_a_won_day()
-		GameState.escape_section = DaySpec.Section.BUILDING
+		_facts.escape_section = DaySpec.Section.BUILDING
 		_save_now(false)
 		_summary.show_day(result, _day.failure_reason, GameState.nerves, elapsed_seconds)
 		return
@@ -2118,7 +2122,7 @@ func _on_summary_continued() -> void:
 	# `_reload_the_scene()` carries its symbol over, so the escape's boot adopts it and the answer
 	# settles it there.
 	if _spec.section == DaySpec.Section.NONE \
-			and GameState.escape_section != DaySpec.Section.NONE:
+			and _facts.escape_section != DaySpec.Section.NONE:
 		_summary.dismiss()
 		_reload_the_scene()
 		return
@@ -2211,7 +2215,7 @@ func _restart_run() -> void:
 	# because it lives on an autoload. Left set, the fresh boot would skip its own `start_run()` and
 	# open the escape again over a run that was just thrown away. A no-op for a restart from an
 	# ordinary day and for a finished run, which `GameState._end_run()` has already cleared.
-	GameState.escape_section = DaySpec.Section.NONE
+	_facts.escape_section = DaySpec.Section.NONE
 	TitleScreen.note_restart_requested()
 	_reload_the_scene()
 

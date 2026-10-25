@@ -3985,7 +3985,7 @@ func _test_the_sealed_door_stands_after_a_reload(t) -> void:
 	city.free()
 	GameState.scars = saved_scars
 
-## A lost day 10 gives the scar back (`GameState._give_back_what_the_attempt_spent()`) and the
+## A lost day 10 gives the scar back (`GameState.run_parts.give_back()`) and the
 ## next dawn's own `_sync_home_door()` puts the ordinary door back, exactly the restore every
 ## other scar already gets.
 func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
@@ -4005,7 +4005,7 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 	for instance in happenings.raid:
 		_city.events.retire(instance)
 	# The loss: the attempt's own scar is given back, the same way
-	# `GameState._give_back_what_the_attempt_spent()` restores every scar a lost day left.
+	# `GameState.run_parts.give_back()` restores every scar a lost day left.
 	GameState.scars.clear()
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, ResistanceHappenings.NEIGHBOR_DAY)

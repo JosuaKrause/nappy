@@ -160,15 +160,15 @@ func _change_everything() -> void:
 			GameEnums.BlockCause.FIRE, 10)
 	GameState.sabotage_done = not GameState.sabotage_done
 	GameState.resistance_carrying_package = not GameState.resistance_carrying_package
-	GameState._dawn_completed_steps.append(97)
-	GameState._dawn_failed_steps.append(96)
-	GameState._dawn_progress += 2
-	GameState._dawn_sabotage_done = not GameState._dawn_sabotage_done
-	GameState._dawn_carrying_package = not GameState._dawn_carrying_package
+	GameState.resistance._dawn_completed_steps.append(97)
+	GameState.resistance._dawn_failed_steps.append(96)
+	GameState.resistance._dawn_progress += 2
+	GameState.resistance._dawn_sabotage_done = not GameState.resistance._dawn_sabotage_done
+	GameState.resistance._dawn_carrying_package = not GameState.resistance._dawn_carrying_package
 	GameState.settled_in[10] = Vector2i(5, 5)
-	GameState._dawn_consumed_one_shots.append("photographed_after_the_checkpoint")
-	GameState._dawn_scars.append({"id": "dawn_after", "position": Vector2(9.0, 9.0), "since_day": 9})
-	GameState._dawn_city_state = {"stage": [{"x": 41, "y": 41, "v": 1}]}
+	GameState.attempt_spend._dawn_consumed_one_shots.append("photographed_after_the_checkpoint")
+	GameState.attempt_spend._dawn_scars.append({"id": "dawn_after", "position": Vector2(9.0, 9.0), "since_day": 9})
+	GameState.attempt_spend._dawn_city_state = {"stage": [{"x": 41, "y": 41, "v": 1}]}
 	GameState.escape_section = DaySpec.Section.CITY
 	GameState.completed_resistance_alley_tiles.append(Vector2i(77, 77))
 	GameState.fenced_park = Vector2i(3, 3)
