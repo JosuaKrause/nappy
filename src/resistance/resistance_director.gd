@@ -902,7 +902,7 @@ static func _shuffle(items: Array, rng: RandomNumberGenerator) -> void:
 ## coming within notice of a guard at `spot`**: a flood fill out from every open tile within `reach`
 ## of the body, over the ground she can walk today (walkable, open, unsealed, no body standing on
 ## it), never onto a tile whose centre is within his `EventDef.notice` along a clear line from him
-## (`CityMap.clear_line()`), the notice `EventInstance._chase()` takes. It answers yes the moment it
+## (`CityMap.clear_line()`), the notice `EventPursuit` takes. It answers yes the moment it
 ## reaches her tile, or a tile of `her_side` — the ground she reaches without coming near the
 ## roadblock at all (`_on_her_side()`), where nothing of any guard round it stands in her way. Tile
 ## centres stand in for her: a way that passes his notice by less than half a tile counts as a way.
@@ -1191,7 +1191,7 @@ func _view_from(her: Vector2) -> VisibleView:
 ## `TRAP_DRAW_LIMIT` bearings within `ARRIVAL_CONE` of either.
 ##
 ## **A clear run at her is what decides it**, since he chases in a straight line
-## (`EventInstance._chase()`), sliding along whatever wall is in the way: a start behind a building
+## (`EventPursuit`), sliding along whatever wall is in the way: a start behind a building
 ## is a man stuck against its back wall while the badge says he is coming. Where there is no clear
 ## run from above or below — she is on a street that runs sideways, with no crossing street near
 ## enough — and at a front door with no start across the street, where the building stands straight
@@ -1314,7 +1314,7 @@ func _across_the_street(her: Vector2, def: EventDef, walled_alleys: Array[Rect2i
 ## chase's own step at 30 frames a second (130px/s, about 4.3px).
 const WALK_PROBE_STEP := Tuning.TILE_SIZE / 8.0
 
-## Whether a chase started at `from` reaches her at `her` — walked the way `EventInstance._chase()`
+## Whether a chase started at `from` reaches her at `her` — walked the way `EventPursuit`
 ## walks it, straight at her and sliding along walls, stopped by what stops her (`Navigator.step()`,
 ## a man on foot) — within `limit` px of ground, never stuck against a wall and never through a body
 ## of `boundary`. **Stuck includes creeping**: a slide along a wall he meets nearly square-on keeps

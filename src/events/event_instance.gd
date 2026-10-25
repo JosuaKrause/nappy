@@ -2575,7 +2575,9 @@ func its_officer() -> EventInstance:
 
 ## Every man this vehicle let out who is still in the world.
 func its_officers() -> Array[EventInstance]:
-	return investigation.its_officers() if investigation else [] as Array[EventInstance]
+	if investigation == null:
+		return [] as Array[EventInstance]
+	return investigation.its_officers()
 
 ## Where a man gets out: beside the body's flank on her side, clear of it by his own reach, `along`
 ## px from its middle along its length — `side` 1 for her side, -1 for the other.
@@ -2970,11 +2972,15 @@ func flock_outer_radius() -> float:
 ## Each live bird's own ground-plane offset from this instance's origin — empty for anything
 ## without a flock. What `DebugLayers` draws one pair of radii per bird from.
 func flock_offsets() -> Array[Vector2]:
-	return flock.offsets() if flock else [] as Array[Vector2]
+	if flock == null:
+		return [] as Array[Vector2]
+	return flock.offsets()
 
 ## Each live bird's own `heading * speed`, parallel to `flock_offsets()`.
 func flock_velocities() -> Array[Vector2]:
-	return flock.velocities() if flock else [] as Array[Vector2]
+	if flock == null:
+		return [] as Array[Vector2]
+	return flock.velocities()
 
 ## Its birds (`EventFlock.birds`), or none for a row that is one body.
 func _birds() -> Array[EventFlock.Bird]:
@@ -3289,7 +3295,7 @@ func _stop_warning() -> void:
 ## (`_pause_a_held_notice()`); at a waiting charger's last moment while a wall stands between
 ## them, since **his charge needs a clear line** (mossy-beaver, inbox #650), so he goes on
 ## warning until the line clears or she leaves his radius; and for every tick of a row that runs
-## its own line (`_warn_on_its_line()`, the masked man), whose run comes only from her coming
+## its own line (`EventNoticeRun`, the masked man), whose run comes only from her coming
 ## within `NoticeSpec.runs_within`. A held clock is what a stream-out carries (`noticed_at()`),
 ## so it comes back exactly as far run.
 func _hold_the_notice_clock(delta: float) -> void:

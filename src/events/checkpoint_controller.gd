@@ -603,7 +603,7 @@ func warn_at_the_doors() -> void:
 ## voluntarily goes to a hut the whole pursuit has been accomplished".)* Called from
 ## `check_detentions()` the moment any `redetains` row — a checkpoint hut or an alley post, the one
 ## `_guard_after_her` stepped out of included — starts a hold: he gives up exactly as
-## `EventInstance._chase()` has him give up when she outruns it, same state, same drawing, same
+## `EventPursuit` has him give up when she outruns it, same state, same drawing, same
 ## telemetry, through `EventInstance.give_up_the_chase()` — the smallest reading of "the whole
 ## pursuit has been accomplished" once she is inside a hut of her own accord. The
 ## roadblock's hunting guard and the escape's masked pursuer are never `_guard_after_her`, so a hold

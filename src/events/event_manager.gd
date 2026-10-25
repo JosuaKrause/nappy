@@ -815,7 +815,7 @@ func _spend_the_rest_of_the_group(chosen: EventScheduler.Planned) -> void:
 ## leaving carries on past the route's end, and a car she follows out of its street is a long way
 ## from the route while she is a few paces behind it. Streaming that one out would delete it in
 ## front of her (*nothing vanishes while you are looking at it*, "Going away" in `docs/EVENTS.md`),
-## so it stays until it is out of sight — where its own departure ends it anyway (`_leave()`).
+## so it stays until it is out of sight — where its own departure ends it anyway (`EventDeparture.leave()`).
 func _could_be_watched(instance: EventInstance, at: Vector2) -> bool:
 	return is_instance_valid(instance) \
 			and instance.global_position.distance_to(at) <= Tuning.OUT_OF_SIGHT

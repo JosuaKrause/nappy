@@ -1115,8 +1115,8 @@ Four things worth keeping straight:
   anywhere not level with the band along its street crosses the roofs beside it, and never through
   the tiles under his own band, so he goes round it by the open ground. The barrier is its own node (`RoadblockBand`) and costs nothing while he goes, as a
   roadblock's band never costs anything (its `intensity` is 0: the guard is the danger, not the
-  concrete). He is in her view as he goes, so he is held to the rule above and not to `LEAVING_GIVES_UP`'s
-  clock (`_leaving_must_clear_sight`, as for a car): the instance goes back to being only the
+  concrete). He is in her view as he goes, so he is held to the rule above and not to `EventDeparture.LEAVING_GIVES_UP`'s
+  clock (`EventDeparture._must_clear_sight`, as for a car): the instance goes back to being only the
   barrier — waiting, solid and silent — once he is out of her sight, or after
   the backstop when there is no player to be out of sight of. The exception to "it is over the
   moment it starts leaving" is the barrier, not the man. **Once he has left, the barrier raises no

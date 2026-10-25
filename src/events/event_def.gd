@@ -706,7 +706,7 @@ enum HeatResponse {
 ## pursue her"; inbox #669 in coral-lark, on the night raid's van: "Van stops, men get out (Recommended)", and on
 ## the unmarked van: "Same as the police".)* Heated copies carry it, each made by `at_heat()`, with
 ## a `notice` it notices her within — along a clear line, as every notice is
-## (`EventInstance._investigate()`):
+## (`EventInvestigation`):
 ##
 ## - **`police_patrol`'s heated copy past `Tuning.HEAT_INVESTIGATES_LEVEL`**, a car that drives: it
 ##   drives its route until it notices her, and stops on its route at once — **never inside a

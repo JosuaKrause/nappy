@@ -1131,14 +1131,15 @@ static func hold_refusal_message(event_name: String, def: EventDef) -> String:
 var _relentless: Array[EventInstance] = []
 
 ## **A relentless pursuer never gives up because she ran.** A pursuer that has seen her run for
-## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventInstance._chase()`'s `_outrun_for`), right for a played
+## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventPursuit.outrun_for`), right for a played
 ## day, and a guard who stops coming half a second into a mother's run in a trailer shot. Each physics
 ## tick this clears that running clock, so it never gets near the limit; nothing else about the
 ## chase changes, and the game's rule is untouched.
 func _keep_the_pursuers_coming() -> void:
 	for instance in _relentless:
-		if is_instance_valid(instance) and not instance.is_finished and not instance.is_leaving:
-			instance._outrun_for = 0.0
+		if is_instance_valid(instance) and not instance.is_finished and not instance.is_leaving \
+				and instance.pursuit != null:
+			instance.pursuit.outrun_for = 0.0
 
 ## The events the recipe asked to keep (`hold`), so a recording never loses one to the game's own
 ## despawn: see `_process()`.
