@@ -216,8 +216,8 @@ func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
 	stroller.free()
 	city.free()
 
-## `_add_debug_mode_note()` gates itself on `_readout_requested` the same shape
-## `_add_debug_layers()` gates itself on `_debug` — see that function's own doc — so the note built
+## `DebugReadout._add_debug_mode_note()` gates itself on `_readout_requested` the same shape
+## `show_the_world()` gates the overlays on `_debug` — so the note built
 ## for a release build carrying `?debug=1` exists only when the flag actually holds, and an
 ## ordinary debug build without it (`_readout_requested == false`) gets none.
 func _test_the_debug_mode_note_only_exists_when_requested(t) -> void:
@@ -954,7 +954,7 @@ func _test_focus_lost_opens_the_pause_during_a_played_day(t) -> void:
 	_teardown_focus_pause_main(t, main)
 
 ## A phone sending the app away reaches the same call through the other notification
-## `main._notification()` listens for.
+## `ReturnWindow._notification()` listens for.
 func _test_application_paused_also_opens_the_pause(t) -> void:
 	var main := _build_focus_pause_main(t)
 	t.get_tree().paused = false
@@ -1027,8 +1027,8 @@ func _test_focus_lost_does_nothing_under_the_override(t) -> void:
 	t.check(not t.get_tree().paused, "and the tree keeps running")
 	_teardown_focus_pause_main(t, main)
 
-## Inbox #534: for `RETURN_INPUT_IGNORED_MSEC` after `FOCUS_IN` or `RESUMED` the viewport delivers
-## nothing (`_arm_the_return_window()` calls `set_disable_input(true)`), so the press that brings
+## Inbox #534: for `ReturnWindow.IGNORED_MSEC` after `FOCUS_IN` or `RESUMED` the viewport delivers
+## nothing (`ReturnWindow._arm()` calls `set_disable_input(true)`), so the press that brings
 ## the page back cannot resume the pause screen or start the day brief. Real events are pushed
 ## through the suite's own viewport; the window's end is moved into the past rather than waited out
 ## (by choice: a real wait would cost the suite half a second for nothing it checks).
@@ -1240,8 +1240,8 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 # ------------------------------------------------------------------ a rig's own lockdown ---
 ## M195: the rig list, through `DevFlags`' own pure inner function — the same seam
 ## `_no_focus_pause_from_args()` above is for its flag.
-## This is also the exact set `main._input()`'s own gate (`_rig_locked_out`) and
-## `_lock_out_a_rig()`'s window-flag/`InputMap`-erasure both key off, so a case proven here holds
+## This is also the exact set `RigLock._input()`'s own gate (`locked_out`) and
+## `RigLock.setup()`'s window-flag/`InputMap`-erasure both key off, so a case proven here holds
 ## for all three without a live window to check them against.
 func _test_is_rig_from_args(t) -> void:
 	t.check(not DevFlags._is_rig_from_args(PackedStringArray()),
@@ -1254,7 +1254,7 @@ func _test_is_rig_from_args(t) -> void:
 	t.check(DevFlags._is_rig_from_args(PackedStringArray(["--seed", "1", "--walk", "north"])),
 			"a rig flag among others still counts")
 
-## `rig_quit_seconds_from(after, day_length)` — the pure formula both `main._process()`'s own
+## `rig_quit_seconds_from(after, day_length)` — the pure formula both `RigLock._process()`'s own
 ## timer and `tools/lib_dev_flags.sh`'s `rig_kill_after_seconds()` are built on (that one mirrors
 ## this exact arithmetic against the same `RIG_QUIT_SECONDS` marker block this file's constants
 ## come from — see `tests/test_cli_help.sh` for the shell side).

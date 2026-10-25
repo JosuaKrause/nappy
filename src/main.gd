@@ -2369,8 +2369,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## The window losing focus — Alt-Tabbing or clicking away from it, a browser tab going to the
 ## background — or a phone sending the app away opens the same screen `_pause.open()` above does,
-## through the same call: one pause rather than a second kind of it. `_notification()` is the
-## caller, on `NOTIFICATION_APPLICATION_FOCUS_OUT` and `NOTIFICATION_APPLICATION_PAUSED`.
+## through the same call: one pause rather than a second kind of it. `ReturnWindow` is the caller:
+## its `left_the_game`, on `NOTIFICATION_APPLICATION_FOCUS_OUT` and `NOTIFICATION_APPLICATION_PAUSED`,
+## is connected here in `_add_the_return_window()`.
 ##
 ## **Unlike Esc, this does not open over the day summary or the ending.** Both live behind
 ## `_summary.is_showing()`, which `_unhandled_input()`'s own Esc guard above does not even ask —

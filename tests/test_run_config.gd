@@ -241,7 +241,7 @@ func _test_the_escape_clock_takes_its_length_and_invincible(t) -> void:
 ## `--touch` and `--web` are the run's configuration like every other flag, a debug build's alone,
 ## and reach the two platform questions through it: `TouchInput.available()` and
 ## `QuitOption.available()` read nothing off the command line, and `main` hands the answers to the
-## screens it builds.
+## five screens it builds: the HUD, the day summary, the touch controls, the pause and the title.
 func _test_touch_and_web_are_the_runs_answers(t) -> void:
 	var words := _words(["--touch", "--web"])
 	var debug := RunConfig.parse(words, "", true)
@@ -253,9 +253,17 @@ func _test_touch_and_web_are_the_runs_answers(t) -> void:
 	t.check(TouchInput.available(release) == DisplayServer.is_touchscreen_available()
 			and QuitOption.available(release),
 			"with neither, the platform answers (this test process: no touch, quitting works)")
+	# Each answer below is the opposite of what this headless process's platform gives (no touch,
+	# quitting works), so each check fails if `main` stops handing that screen its answer.
 	var main: Node2D = MAIN_SCRIPT.new()
 	main.configure(debug)
-	main._add_touch_controls()
-	t.check(main._touch_available and main._touch_controls._touch,
-			"main reads the run's answer once and hands it to the touch controls it builds")
+	main._build_the_screens()
+	t.check(main._touch_available, "main reads the run's touch answer once")
+	t.check(main._hud._touch, "and hands it to the HUD")
+	t.check(main._summary._touch, "and to the day summary")
+	t.check(main._touch_controls._touch, "and to the touch controls")
+	t.check(main._pause._touch and not main._pause._can_quit,
+			"and hands the pause screen both answers")
+	t.check(main._title._touch and not main._title._can_quit,
+			"and the title screen both answers")
 	main.free()
