@@ -9,8 +9,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 
 ## Every bird, drawn where it actually is.
 ##
-## There is no `rise` term and no shared phase any more — see "the flock" above. What is left here
-## is only the picture: each bird on its own beat, each with a shadow on the pavement under it that
+## The birds' motion is the flock's (`EventFlock`); this is only the picture: each bird on its own
+## beat, each with a shadow on the pavement under it that
 ## shrinks and fades as it climbs, and the whole flock painted back to front so a bird in front
 ## overlaps the one behind rather than fighting it for the same pixel every frame.
 ##

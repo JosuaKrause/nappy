@@ -8,7 +8,7 @@ extends RefCounted
 ## exactly one reference on it for its own life.
 ##
 ## **Why the completeness sweep is over the script's constants rather than over
-## `EventInstance.family_sources()`.** `family_sources()` is read off `_draw_body()`'s arms by
+## `EventPictures.family_sources()`.** `family_sources()` is read off `draw_body()`'s arms by
 ## hand, so a picture a new branch draws and nobody added there would be missing from both the
 ## sweep and the answer — the failure would be invisible to a test that asked `family_sources()`
 ## what to check. Every picture a draw can reach is a region-name string constant on
@@ -116,7 +116,7 @@ func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t) -> void:
 					% [looks[look], picture.get_file(), EventPictures.ATLAS_GROUP])
 	t.check(checked > 0, "some look listed a picture to check (%d)" % checked)
 
-## The screen-edge badge draws `EventInstance.icon_for()`'s own silhouette as a region of the same
+## The screen-edge badge draws `EventPictures.icon_for()`'s own silhouette as a region of the same
 ## page the thing in the street draws from — `DangerEdge._draw_arrow()` reads
 ## `AtlasLibrary.native_size()` for the badge's fit and `AtlasLibrary.region()` for the picture, so
 ## a silhouette missing from the page is an arrow that says nothing on a day the row appears.

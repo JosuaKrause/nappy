@@ -67,9 +67,9 @@ func rider_pictures() -> Array[Dictionary]:
 
 ## The charging dog's two frames for this stage, `[by_view, by_view_b]`, `by_view_b` empty for a
 ## still pose: sitting while it waits (`is_waiting()`), its alert while it stands for its notice
-## (`is_standing_for_its_notice()`), and the gallop otherwise — the charge, the day-3 dog's approach,
-## and the trot away when it gives up. The one place the choice is read, so the draw, its halo and a
-## test ask the same question.
+## (`is_standing_for_its_notice()`), and the gallop otherwise — the charge, the day-3 dog's
+## approach, and the trot away when it gives up. The one place the choice is read, so the draw, its
+## halo and a test ask the same question.
 func charging_dog_pictures() -> Array[Dictionary]:
 	if event.is_waiting():
 		return [EventPictures.CHARGING_DOG_RESTING_BY_VIEW, {}]
@@ -113,18 +113,20 @@ func _draw_cat(canvas: CanvasItem) -> void:
 ## The tables, and the people at them.
 ##
 ## The hole an off-screen burst left in the road. **Flat, centred and unshadowed**, which is all
-## three of the ways it is unlike every other body in this file: the picture is ground rather than
-## an object standing on ground, so it registers on its own middle (`_CRATER_ANCHOR`) instead of on
-## its feet, and a drop shadow under a hole would read as a mound. What makes it solid anyway is
-## `def.shape` — `EventInstance._build_obstruction()` reads that and nothing here — so the circle
-## she cannot walk into is exactly half of the picture she can see.
+## three of the ways it is unlike every other body an event is drawn as: the picture is ground
+## rather than an object standing on ground, so it registers on its own middle
+## (`EventPictures.CRATER_ANCHOR`) instead of on its feet, and a drop shadow under a hole would read
+## as a mound. What makes it solid anyway is `def.shape` — `EventInstance._build_obstruction()`
+## reads that and nothing here — so the circle she cannot walk into is exactly half of the picture
+## she can see.
 func _draw_crater(canvas: CanvasItem) -> void:
 	_draw_at_anchor(canvas, EventPictures.IMPACT_CRATER, EventPictures.CRATER_ANCHOR)
 
 ## The busker's own site facing and idle strum — he never moves, so this reads `_idle_stepping()`
 ## rather than `_gait_stepping()`, the same timer the café sitters use above at a faster tempo
-## (`BUSKER_STRUM_PERIOD`). Kept as its own function rather than routed through `_draw_eight_view()`
-## because that helper's own `by_view_b` parameter is keyed to the gait, not the idle timer.
+## (`EventPictures.BUSKER_STRUM_PERIOD`). Kept as its own function rather than routed through
+## `_draw_eight_view()` because that helper's own `by_view_b` parameter is keyed to the gait, not
+## the idle timer.
 func _draw_busker(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var view := _select_view(event.facing_now())
@@ -195,7 +197,7 @@ func _draw_chatting_mother(canvas: CanvasItem) -> void:
 	var chatting := event.is_chatting()
 	var by_view := EventPictures.CHATTING_MOTHER_TALKING_BY_VIEW if chatting \
 			else EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW
-	# Talking holds still by construction — `_process()` freezes her pacing the instant a
+	# Talking holds still by construction — the event's tick freezes her pacing the instant a
 	# conversation starts — so only the walking posture gets a second frame.
 	if not chatting and _gait_stepping():
 		by_view = EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW_B

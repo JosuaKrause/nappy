@@ -107,7 +107,7 @@ func _robber_waiting_row() -> Array:
 		instance.free()
 	return row
 
-## A flock's per-bird selection lives in `EventInstance._draw_birds()` itself
+## A flock's per-bird selection lives in `FlockLook._draw_birds()` itself
 ## (`bird.view_sector = EightDirection.update(bird.view_sector, bird.heading)`), which needs a
 ## canvas to reach — so this calls the same two functions directly on a synthetic heading, which is
 ## exactly what that line reduces to for a heading already sitting on a sector's own centre.

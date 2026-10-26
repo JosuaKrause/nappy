@@ -26,9 +26,9 @@ func _draw_figure(canvas: CanvasItem) -> void:
 ##
 ## **On the screen each table and its sitter are a slice of their own** (`_slice_plan()`), standing
 ## at their share of the run's feet, so each table sorts against her and against the next table and
-## its sitter *(inbox #827 in curly-moose: "yes, slice the cafe tables")*; slice `only` draws its own sitter and
-## table from `origin`, the first also the shadow. On any other canvas, or with `only` below zero,
-## the whole frontage is drawn, every sitter before every table.
+## its sitter *(inbox #827 in curly-moose: "yes, slice the cafe tables")*; slice `only` draws its
+## own sitter and table from `origin`, the first also the shadow. On any other canvas, or with
+## `only` below zero, the whole frontage is drawn, every sitter before every table.
 func _draw_cafe(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> void:
 	if only < 0 and _drawn_by_its_slices(canvas):
 		return
@@ -55,8 +55,8 @@ func _cafe_table_count() -> int:
 	return maxi(1, ceili(half * 2.0 / along_natural))
 
 ## The sitter of table `i`, at one end of the table sprite, turned to face it. The lean is the whole
-## row's and the facing each seat's: `_idle_stepping()` is a property of this instance rather than of
-## a chair, so every sitter leans together, while the view and the mirror are picked per seat,
+## row's and the facing each seat's: `_idle_stepping()` is a property of the event rather than
+## of a chair, so every sitter leans together, while the view and the mirror are picked per seat,
 ## because a party at one table faces the table rather than sharing the frontage's own bearing.
 func _draw_cafe_sitter(canvas: CanvasItem, origin: Vector2, half: float, width: float,
 		i: int) -> void:
@@ -97,10 +97,8 @@ static func _cafe_seat_heading(spread_vertical: bool, alternate: bool) -> Vector
 
 ## A rank of placards as wide as the ground it takes.
 ##
-## The catalogue used to say of this row: *"one person's worth, because one person is what it
-## draws… the art is the fix."* This is the fix, and the body follows it rather than the other way
-## round — a protest that fills a square is the whole content of the event, and it could not have
-## one until there was a picture of one.
+## The body follows the picture rather than the other way round: a protest that fills a square is
+## the whole content of the event.
 ##
 ## Two ranks rather than one, offset, so it reads as a crowd with depth instead of a queue; the
 ## back rank is drawn first and higher up the screen. Nothing here grows with `intensity_ramp` —
@@ -134,13 +132,14 @@ func _draw_protest(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> vo
 func _protest_pose_now() -> Array:
 	var picture := EventPictures.protester_texture(event.global_position, _protest_objective())
 	var mirror := false
-	# `PROTESTER` is `_protester_texture()`'s own sentinel for "nothing to point at" — a mark step
-	# or no step at all — which is exactly a stationary actor with no target: the rank's own site
-	# facing picks its view instead, the same as `busker` or `poster_crew`. Left as a sentinel check
-	# rather than a change to `_protester_texture()` itself, so `tests/test_protest.gd`'s own
-	# contract (a plain pose is exactly `EventInstance.PROTESTER`) keeps holding: the eight
-	# `protester_point_*` poses stay exactly as M65 bound them, unmirrored, since each is its own
-	# authored direction rather than a member of the mirrored five-view family.
+	# `EventPictures.PROTESTER` is `EventPictures.protester_texture()`'s own sentinel for "nothing
+	# to point at" — a mark step or no step at all — which is exactly a stationary actor with no
+	# target: the rank's own site facing picks its view instead, the same as `busker` or
+	# `poster_crew`. Left as a sentinel check rather than a change to
+	# `EventPictures.protester_texture()` itself, so `tests/test_protest.gd`'s own contract (a plain
+	# pose is exactly `EventPictures.PROTESTER`) keeps holding: the eight `protester_point_*` poses
+	# stay unmirrored, since each is its own authored direction rather than a member of the
+	# mirrored five-view family.
 	if picture == EventPictures.PROTESTER:
 		var view := _select_view(event.facing_now())
 		var by_view := EventPictures.PROTESTER_BY_VIEW_B if _gait_stepping() \
@@ -175,9 +174,9 @@ func _protest_feet(picture: String) -> PackedVector2Array:
 ## on. Between beats there is nothing but two shapes behind sandbags, which is the point: it is a
 ## thing to time a run past, and `can_be_timed()` already says so.
 ##
-## **On the screen each half is a slice of its own** (`_slice_plan()`), standing at the middle of its
-## share of the run, and slice `only` draws its own gunman and flash from `origin`, the first also
-## the shadow. On any other canvas, or with `only` below zero, both are drawn.
+## **On the screen each half is a slice of its own** (`_slice_plan()`), standing at the middle of
+## its share of the run, and slice `only` draws its own gunman and flash from `origin`, the first
+## also the shadow. On any other canvas, or with `only` below zero, both are drawn.
 func _draw_firefight(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> void:
 	if only < 0 and _drawn_by_its_slices(canvas):
 		return

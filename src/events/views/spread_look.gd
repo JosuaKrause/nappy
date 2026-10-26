@@ -72,9 +72,9 @@ func _spread_extent(along: float, thickness: float) -> Vector2:
 ## **On the screen it is drawn in slices** (`_build_the_slices()`), one per segment, each standing
 ## at its own feet, so a run going away from the camera sorts slice by slice against her: on this
 ## node's own canvas, or the band's, nothing is drawn here. On any other canvas — a rim tracing the
-## whole picture — it is drawn whole, in the order its slices draw it.
-## `origin` moves the whole spread, its shadow included, to a local point other than this node's
-## own — which is what a body left standing while its owner walks away needs (`_draw_roadblock()`,
+## whole picture — it is drawn whole, in the order its slices draw it. `origin` moves the whole
+## spread, its shadow included, to a local point other than the event's own — which is what a body
+## left standing while its owner walks away needs (`RoadblockLook._draw_roadblock()`,
 ## `PursuitSpec.leaves_its_body`). Zero, the default, is every other caller: the spread is drawn
 ## where the instance is.
 func _draw_spread(segment_picture: String, cap: String, canvas: CanvasItem,
@@ -127,8 +127,8 @@ func _spread_run() -> PackedVector2Array:
 				Vector2.ZERO)
 	return PackedVector2Array([event.spread_at(-11.0), event.spread_at(11.0)])
 
-## The segment and the end cap (`""` for none) a spread-drawn look repeats along its run, or an empty
-## list for a look that is not drawn as a spread.
+## The segment and the end cap (`""` for none) a spread-drawn look repeats along its run, or an
+## empty list for a look that is not drawn as a spread.
 func _spread_pictures() -> PackedStringArray:
 	match event.def.look:
 		EventDef.Look.ROADWORKS:
@@ -147,7 +147,7 @@ func _spread_pictures() -> PackedStringArray:
 					EventPictures.ROADBLOCK_END])
 	return PackedStringArray()
 
-## The whole spread of this instance's look on `canvas` (`_draw_spread()`).
+## The whole spread of the event's look on `canvas` (`_draw_spread()`).
 func _draw_the_spread(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 	var pictures := _spread_pictures()
 	_draw_spread(pictures[0], pictures[1], canvas, origin)
@@ -172,7 +172,7 @@ class Slice extends Node2D:
 		if instance != null and is_instance_valid(instance):
 			(instance.look as SpreadLook)._draw_a_slice(self)
 
-## The slices this instance's picture is drawn in, far end first, and where each stands from the
+## The slices the event's picture is drawn in, far end first, and where each stands from the
 ## body (`body_position()`), index for index.
 var _slices: Array[Slice] = []
 
@@ -181,13 +181,13 @@ var _slice_feet := PackedVector2Array()
 ## Whether this look is drawn in slices, so they are built again if it re-enters the tree.
 var _sliced := false
 
-## Whether a picture drawn on `canvas` is left to the slices: on this node's own canvas, or the
+## Whether a picture drawn on `canvas` is left to the slices: on the event's own canvas, or the
 ## band's, once its slices stand.
 func _drawn_by_its_slices(canvas: CanvasItem) -> bool:
 	return not _slices.is_empty() and (canvas == event or canvas == band_node())
 
 ## Where each slice of this look's picture stands its feet, from the body, in draw order; empty for
-## a look drawn on this node alone.
+## a look drawn on the event's node alone.
 func _slice_plan() -> PackedVector2Array:
 	match event.def.look:
 		EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN:
@@ -224,8 +224,8 @@ func _wide_scene_band(index: int) -> Rect2:
 	return Rect2(run[0].x + width * index, -FAR, width, FAR * 2.0)
 
 ## Builds the slices of a look drawn in slices (`_slice_plan()`), put in beside it once it has
-## settled into the world (`_attach_the_slices()`), and the scenery behind each slice of a crash or a
-## burst main. None when nothing of it is drawn.
+## settled into the world (`_attach_the_slices()`), and the scenery behind each slice of a crash or
+## a burst main. None when nothing of it is drawn.
 func _build_the_slices() -> void:
 	var plan := _slice_plan()
 	if plan.is_empty() or event.skip_draw:
@@ -237,7 +237,8 @@ func _build_the_slices() -> void:
 		slice.instance = event
 		slice.index = i
 		slice.name = "Slice%d" % i
-		# Moved from `_process()`, so it opts out of physics interpolation like this instance does.
+		# Placed at its feet rather than moved on the physics tick, so it opts out of physics
+		# interpolation.
 		slice.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		_slices.append(slice)
 		_build_the_scenery_of(slice)
@@ -262,9 +263,9 @@ func _build_the_scenery_of(slice: Slice) -> void:
 	slice.add_child(scenery)
 	_sceneries.append(scenery)
 
-## Puts the slices into the world at their feet, each ahead of this instance in the tree, so at a
+## Puts the slices into the world at their feet, each ahead of the event in the tree, so at a
 ## tie of feet its caret is drawn over its own picture. Idempotent, so a rig that never reaches the
-## idle frame can call it itself (`_attach_the_band()`).
+## idle frame can call it itself (`RoadblockLook._attach_the_band()`).
 func _attach_the_slices() -> void:
 	if _slices.is_empty() or _slices[0].is_inside_tree() or not event.is_inside_tree() \
 			or event.get_parent() == null:
@@ -336,11 +337,11 @@ func _draw_cap(canvas: CanvasItem, cap: String, cap_size: Vector2, origin: Vecto
 
 ## Which end caps are drawn before the segments (`behind` true) and which after, as the `side` of
 ## each (−1 the start of the run, +1 its end): before the first slice's segment and after the last
-## one's (`_draw_spread_slices()`). A cap stands inside its end slice's ground, so it sorts with that
-## slice and its draw order within the slice is its only depth. Broadside, both posts stand level
-## with the board and go over it. End-on, the run goes away from the camera: the start is its far
-## end, so that post stands behind the board and is drawn first, and only the near post goes over
-## it.
+## one's (`_draw_spread_slices()`). A cap stands inside its end slice's ground, so it sorts with
+## that slice and its draw order within the slice is its only depth. Broadside, both posts stand
+## level with the board and go over it. End-on, the run goes away from the camera: the start is its
+## far end, so that post stands behind the board and is drawn first, and only the near post goes
+## over it.
 static func _cap_sides(vertical: bool, behind: bool) -> Array[float]:
 	var sides: Array[float] = []
 	if vertical:
@@ -395,10 +396,10 @@ static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
 	return Vector2(0.0, half) if vertical else Vector2.ZERO
 
 ## The along-axis offset for one end cap, inset from `±half` by half the cap's own extent on that
-## axis so its outer edge lands on the obstruction boundary rather than past it — see `_draw_spread`.
-## A pure function so a test can assert the arithmetic directly, against the same asset size and
-## `obstructs_radius` the drawing itself uses, rather than by parsing what `draw_texture_rect`
-## painted.
+## axis so its outer edge lands on the obstruction boundary rather than past it — see
+## `_draw_spread`. A pure function so a test can assert the arithmetic directly, against the same
+## asset size and `obstructs_radius` the drawing itself uses, rather than by parsing what
+## `draw_texture_rect` painted.
 static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 	return side * (half - cap_along * 0.5)
 

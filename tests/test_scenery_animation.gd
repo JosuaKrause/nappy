@@ -79,7 +79,7 @@ func _test_rotor_registration_matches_authored_crops(t) -> void:
 				"the rotor display is centered in the generated housing's circular opening")
 
 ## A crash and a burst main are drawn in slices, each holding its part's scenery
-## (`EventInstance.Slice`, `EventScenery`), so what is asked here is asked of every slice's.
+## (`SpreadLook.Slice`, `EventScenery`), so what is asked here is asked of every slice's.
 func _test_event_parts(t) -> void:
 	AtlasLibrary.acquire(&"events")
 	for id: String in ["car_accident", "burst_water_main"]:

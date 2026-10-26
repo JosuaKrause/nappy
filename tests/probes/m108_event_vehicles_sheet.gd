@@ -64,9 +64,9 @@ func _entry(picture: String, mirror: bool) -> Dictionary:
 func _row(label: String, entries: Array) -> Dictionary:
 	return {"label": label, "entries": entries}
 
-## The exact runtime selection `EventInstance._draw_eight_view()` makes, `side_faces_west` included
+## The exact runtime selection `EventLook._draw_eight_view()` makes, `side_faces_west` included
 ## — see that function's own doc comment. `setup()`'s own `face` argument is the identical
-## assignment `_draw_body()` reads (`_heading = face` for a fresh instance), so sitting a fresh
+## assignment `draw_body()` reads (`_heading = face` for a fresh instance), so sitting a fresh
 ## instance at each of the eight headings and reading `_view_sector` back is the same selection the
 ## real draw path runs, whatever heading the row would actually reach in play — the probe's job is
 ## to show the picture at every sector, not to reproduce which ones are reachable.
@@ -97,7 +97,7 @@ func _authored_svg(region_name: String) -> String:
 ## says so — `Image.flip_x()`, the same horizontal mirror `Sprites.draw_standing()` gives every
 ## mirrored sector, applied to a still image instead of a canvas transform. A vehicle that rolls on
 ## wheels of its own has them composed in at rest, under or over the body as
-## `EventInstance._draw_eight_view()` draws them.
+## `EventLook._draw_eight_view()` draws them.
 func _cell_image(entry: Dictionary, scale: float) -> Image:
 	var text := FileAccess.get_file_as_string(_authored_svg(entry["picture"]))
 	var image := Image.new()

@@ -164,12 +164,12 @@ static func _smoke_across(runs: PackedVector2Array) -> PackedVector2Array:
 	return plumes
 
 ## How far the fire's own drawing sits from where the row was sited, toward the wall it stands
-## against — `CityMap.pavement_inward()` read the same way `_hut_doorway()` reads it, since these
-## nodes' local axes never rotate. A row with no body is never moved off the centre of the tile it
-## was sited on (`setup()` centres only a body on its pavement band), and the frontage lane's tile
-## centre is half a tile from the wall, so this is that half tile, closing the gap onto the
-## frontage. `Vector2.ZERO` off a pavement (open ground, the building's stairwell): the flames stay
-## where they are drawn with no wall to reach for.
+## against — `CityMap.pavement_inward()` read the same way `CheckpointLook._hut_doorway()` reads it,
+## since these nodes' local axes never rotate. A row with no body is never moved off the centre of
+## the tile it was sited on (`setup()` centres only a body on its pavement band), and the frontage
+## lane's tile centre is half a tile from the wall, so this is that half tile, closing the gap onto
+## the frontage. `Vector2.ZERO` off a pavement (open ground, the building's stairwell): the flames
+## stay where they are drawn with no wall to reach for.
 func _wall_offset() -> Vector2:
 	var map := event.world_map()
 	var inward := map.pavement_inward(map.world_to_tile(event.global_position))

@@ -15,19 +15,19 @@ var event: EventInstance
 func _init(owner: EventInstance) -> void:
 	event = owner
 
-## The eight-view sector this instance is currently drawn in, for whichever family reads
-## `EIGHT_VIEW_BY_SECTOR` instead of a single side-mirrored picture — see `_select_view()`. Reset
-## in `setup()` to the exact nearest sector for the instance's own siting, the same "no prior-view
-## hold on a fresh placement" rule `EightDirection.nearest()`'s own doc names.
+## The eight-view sector the event is drawn in, for whichever family reads
+## `EventPictures.EIGHT_VIEW_BY_SECTOR` instead of a single side-mirrored picture — see
+## `_select_view()`. Set by `face()` to the exact nearest sector for the event's own siting, the
+## same "no prior-view hold on a fresh placement" rule `EightDirection.nearest()`'s own doc names.
 var _view_sector := 2
 
-## Everything `_draw()` reads that can change over time, as one comparable value — see
-## `_picture_key()` and `_redraw_if_the_picture_changed()`. `x` is a bit field and so is never
+## Everything `draw()` reads that can change over time, as one comparable value — see
+## `_picture_key()` and `redraw_if_the_picture_changed()`. `x` is a bit field and so is never
 ## negative, which makes this starting value one no key can ever equal: the first tick of an
-## instance's life always asks for its own draw rather than relying on a coincidence.
+## event's life always asks for its own draw rather than relying on a coincidence.
 var _picture := Vector4i(-1, 0, 0, 0)
 
-## Asks for a redraw when what this instance is showing has actually changed.
+## Asks for a redraw when what the event is showing has actually changed.
 ##
 ## Moving a `Node2D` does not invalidate its draw list — the transform is applied when the list is
 ## replayed — so an event only redraws when its **picture** changes, exactly the gate
@@ -38,7 +38,7 @@ var _picture := Vector4i(-1, 0, 0, 0)
 ## `docs/evidence/m124-frame-cost-2026-09-13/README.md`.
 ##
 ## **A term missing from the key is a frozen picture rather than a crash**, which is why the key
-## below names every time-varying thing `_draw()` and `_draw_body()` read rather than a plausible
+## below names every time-varying thing `draw()` and `draw_body()` read rather than a plausible
 ## subset, and why `_picture_never_settles()` stands beside it for the four cases whose picture is
 ## a continuous function of the clock and could not be named by a key at all.
 ##
@@ -50,8 +50,8 @@ var _picture := Vector4i(-1, 0, 0, 0)
 ## no redraw, never-settling pictures included, since most of a day's live instances are off screen
 ## and the key's caret was the projection's only caller there. The picture is left as it was, and
 ## the first tick any of it is back inside the box redraws it from what it is now, caret included,
-## before the margin has let any of it onto the screen. The band and the scenery are still moved
-## and shown as before. Answers whether it asked for a draw.
+## before the margin has let any of it onto the screen. The drawing nodes (`move_nodes()`) and the
+## scenery are still moved and shown. Answers whether it asked for a draw.
 func redraw_if_the_picture_changed() -> bool:
 	_update_scenery()
 	if not _in_the_drawn_view():
@@ -68,13 +68,14 @@ func redraw_if_the_picture_changed() -> bool:
 	move_nodes(asked)
 	return asked
 
-## True while what this instance shows is not being kept current because none of it can be on the
+## True while what the event shows is not being kept current because none of it can be on the
 ## screen, so the first tick it is back in the box redraws it whatever the key says.
 var _picture_is_stale := false
 
-## Whether anything this instance draws can be on the screen (`DrawnView`): its own picture, caret
-## and spread about its feet, or the band it left at its post (`RoadblockBand`, whose redraw rides on
-## this gate). A flock that is leaving is always drawn, since its birds fly off past any reach.
+## Whether anything the event draws can be on the screen (`DrawnView`): its own picture, caret
+## and spread about its feet, or a drawing node of its own (`_shows_its_nodes()`, the band a
+## roadblock's guard left at his post, whose redraw rides on this gate). A flock that is leaving is
+## always drawn, since its birds fly off past any reach.
 func _in_the_drawn_view() -> bool:
 	if event.is_leaving and not event.birds().is_empty():
 		return true
@@ -83,10 +84,11 @@ func _in_the_drawn_view() -> bool:
 		return true
 	return _shows_its_nodes(reach)
 
-## Everything this instance can draw about its feet: the row's whole footprint, caret included
-## (`footprint_of()`), with the run its own street gives a spread (`drawn_box()`), and the caret at
-## its tallest for a row with no picture of its own to carry one, and a street fire's whole burning
-## front and its smoke (`_fire_front_box()`). Worked out once: nothing here moves with the instance.
+## Everything the event can draw about its feet: the row's whole footprint, caret included
+## (`EventInstance.footprint_of()`), with the run its own street gives a spread (`drawn_box()`), and
+## the caret at its tallest for a row with no picture of its own to carry one, and a picture that
+## reaches past it (`_front_box()`, a street fire's whole burning front and its smoke). Worked out
+## once: nothing here moves with the event.
 func _drawn_reach() -> Rect2:
 	if not _drawn_reach_known:
 		_drawn_reach_known = true
@@ -114,10 +116,10 @@ const SWELL_STEPS := 128.0
 ## that gating it on the key at all would freeze an animation.
 ##
 ## Four, and each is a continuous function of the clock rather than a frame chosen from a set: a
-## **flock**, whose eleven birds each hold their own position, lift and wingbeat phase; a
-## **burning building** and a **firefight**, whose flames and muzzle flashes are sized off `sin(age
-## × k)` and are drawn rather than authored; and an **abduction mid-take**, whose victim slides
-## from her standing offset to the van over `AbductionSpec.taken_over` seconds. Every one of them is a
+## **flock**, whose eleven birds each hold their own position, lift and wingbeat phase; a **burning
+## building** and a **firefight**, whose flames and muzzle flashes are sized off `sin(age × k)` and
+## are drawn rather than authored; and an **abduction mid-take**, whose victim slides from her
+## standing offset to the van over `AbductionSpec.taken_over` seconds. Every one of them is a
 ## handful of instances on a day at most, and none of them was ever going to be gated.
 func _picture_never_settles() -> bool:
 	if not event.birds().is_empty():
@@ -127,11 +129,12 @@ func _picture_never_settles() -> bool:
 	return event.def.look == EventDef.Look.BURNING_BUILDING \
 			or event.def.look == EventDef.Look.FIREFIGHT
 
-## Which heading the next draw would pick this instance's eight-view sector from.
+## Which heading the next draw would pick the event's eight-view sector from.
 ##
-## Ordinarily `_heading`. Two exceptions. A robber who has not noticed her yet: `_draw_robber`
-## picks his view from `_robber_waiting_heading()` — her position, whenever anything has told this
-## instance where she is and nothing built stands between them — rather than from the alley he was
+## Ordinarily `EventInstance.facing_now()`. Two exceptions. A robber who has not noticed her yet:
+## `PursuerLook._draw_robber()` picks his view from `_robber_waiting_heading()` — her position,
+## whenever anything has told the event where she is and nothing built stands between them — rather
+## than from the alley he was
 ## sited facing, so the key has to read the same thing or the one turn in the game that happens
 ## without the body moving would never reach the screen. And a roadblock guard still standing at his
 ## band (`barrier_post`, before he has left its body), who is drawn facing out from his post.
@@ -142,18 +145,18 @@ func drawn_heading() -> Vector2:
 		return EventInstance.guard_post_heading(event.runs_vertically(), 1)
 	return event.facing_now()
 
-## Which pose `_draw_protest()` is standing its rank in: 0 for anything that is not a protest, 1
-## for the plain pose, and 2..9 for the eight `protester_point_*` bearings in `_POINTING_POSES`'
-## own order. The objective belongs to the resistance director and moves when a step is completed,
-## which is the only thing about a protest's picture that changes while nothing about the protest
-## does.
+## Which pose `RankLook._draw_protest()` is standing its rank in: 0 for anything that is not a
+## protest, 1 for the plain pose, and 2..9 for the eight `protester_point_*` bearings in
+## `EventPictures.POINTING_POSES`' own order. The objective (`_protest_objective()`) moves when a
+## task step is completed, which is the only thing about a protest's picture that changes while
+## nothing about the protest does.
 func _protest_pose() -> int:
 	if event.def.look != EventDef.Look.PROTEST:
 		return 0
 	return EventPictures.POINTING_POSES.find(EventPictures.protester_texture(event.global_position,
 			_protest_objective())) + 2
 
-## Everything `_draw()` reads that can change from one tick to the next, as one comparable value.
+## Everything `draw()` reads that can change from one tick to the next, as one comparable value.
 ##
 ## `x` is a bit field — one bit per question the drawing asks, in an order that is arbitrary and
 ## only has to be stable. `y` carries the three small integers: the eight-view sector the next draw
@@ -192,8 +195,8 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if event.is_suppressed_by_its_own_hold() else 0)
 	flags = flags * 2 + (1 if event.is_leaving else 0)
 	flags = flags * 2 + (1 if _gait_stepping() else 0)
-	# The normal dog alone tells its two steps apart (`dog_picture()`), so only its two looks carry
-	# the stride's half: every other family draws the same picture in both halves.
+	# The normal dog alone tells its two steps apart (`EventPictures.dog_picture()`), so only its
+	# two looks carry the stride's half: every other family draws the same picture in both halves.
 	var three_pose_dog := event.def.look in [EventDef.Look.DOG_WALKER, EventDef.Look.LOOSE_DOG]
 	flags = flags * 2 + (1 if three_pose_dog and _gait_second_half() else 0)
 	flags = flags * 2 + (1 if _heading_is_west() else 0)
@@ -209,9 +212,9 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if event.guard_warns_her else 0)
 	flags = flags * 2 + (1 if EventPictures.gate_runs_north_south(event.facing_now()) else 0)
 	flags = flags * 2 + (1 if flashed_off else 0)
-	# A mast's lamp and arcs (`_draw_mast()`): amber in the telegraph that opens every broadcast
-	# cycle, green with the arcs while it speaks, and neither once silenced — read off the city's
-	# broadcast clock rather than `is_telegraphing()`, which a mast passes once at creation.
+	# A mast's lamp and arcs (`FigureLook._draw_mast()`): amber in the telegraph that opens every
+	# broadcast cycle, green with the arcs while it speaks, and neither once silenced — read off the
+	# city's broadcast clock rather than `is_telegraphing()`, which a mast passes once at creation.
 	var mast := event.def.look == EventDef.Look.LOUDSPEAKER_MAST
 	flags = flags * 2 + (1 if mast and event.silenced else 0)
 	flags = flags * 2 + (1 if mast and _mast_is_telegraphing_now() else 0)
@@ -229,10 +232,9 @@ func _picture_key() -> Vector4i:
 
 ## The whole frame on the event's own canvas: the body, lifted by its bob, and the caret over it.
 func draw() -> void:
-	# `--skip events`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (e)): returns
-	# before anything below is asked for, so a frame under the flag differs from an ordinary one by
-	# drawing alone — the excitement field, the telegraph and everything else `EventInstance` does
-	# keep running.
+	# `--skip events` returns before anything below is asked for, so a frame under the flag differs
+	# from an ordinary one by drawing alone — the excitement field, the telegraph and everything
+	# else `EventInstance` does keep running.
 	if event.skip_draw:
 		return
 	if event.is_finished:
@@ -260,12 +262,13 @@ func draw() -> void:
 ## its own. Driven by **distance covered**, not by time, so it is the movement itself that shows:
 ## something stopped is still, and something fast bobs faster.
 ##
-## Pulled out of `_draw()` so `EntityHalo` can ride the same lift: a walking entity's ring of
+## Apart from `draw()` so `EntityHalo` can ride the same lift: a walking entity's ring of
 ## re-drawn bodies has to bob with it, or the outline slides off the sprite it is meant to trace.
 ##
-## **A vehicle rolls rather than strides**: a look in `WHEELS_BY_LOOK` rides `WheelBob.lift()`
-## over the ground it has covered while it is covering any, about a pixel on the body alone — see
-## `_draw_eight_view()` for the wheels it leaves on the ground — and sits still the tick it stops.
+## **A vehicle rolls rather than strides**: a look in `EventPictures.WHEELS_BY_LOOK` rides
+## `WheelBob.lift()` over the ground it has covered while it is covering any, about a pixel on the
+## body alone — see `_draw_eight_view()` for the wheels it leaves on the ground — and sits still the
+## tick it stops.
 func current_bob() -> float:
 	if EventPictures.WHEELS_BY_LOOK.has(event.def.look):
 		return WheelBob.lift(event.path_travelled()) if event.gait_is_moving() else 0.0
@@ -279,17 +282,18 @@ func current_bob() -> float:
 	return 0.0
 
 ## Which of a family's two gait frames to draw right now: frame b (mid-stride) for half of every
-## stride while `_advance_gait()` last saw ground covered, frame a (rest) otherwise — the walker's
-## own `WalkerLook.gait_frame()` test, `sin(phase * 2.0) > 0.0`, gated on "did anything move this
-## tick" instead of a speed floor, since an event's own stop states (`is_waiting()`, `is_chatting()`,
-## `is_telegraphing_still()`) already read as zero distance covered rather than a small residual
-## speed to floor against. A pure query on state `_process()` already settled this tick, so calling
-## it more than once — the main draw, then once per halo ring — always agrees with itself.
+## stride while `EventInstance._advance_gait()` last saw ground covered, frame a (rest) otherwise —
+## the walker's own `WalkerLook.gait_frame()` test, `sin(phase * 2.0) > 0.0`, gated on "did anything
+## move this tick" instead of a speed floor, since an event's own stop states (`is_waiting()`,
+## `is_chatting()`, `is_telegraphing_still()`) already read as zero distance covered rather than a
+## small residual speed to floor against. A pure query on state the event's tick already settled, so
+## calling it more than once — the main draw, then once per halo ring — always agrees with itself.
 func _gait_stepping() -> bool:
 	return event.gait_is_moving() and sin(event.gait_phase() * 2.0) > 0.0
 
 ## Whether the stride is in its second half — the half a stepping normal dog takes its opposite
-## step in (`dog_picture()`). `_gait_stepping()` is true twice per turn of `_gait_phase`, once in
+## step in (`EventPictures.dog_picture()`). `_gait_stepping()` is true twice per turn of the
+## event's `gait_phase()`, once in
 ## each half, so the two together split the turn into four equal beats: step, rest, opposite step,
 ## rest, each `PI / 2 / GAIT_RATE` (17.5px) of ground. The dog therefore changes picture exactly
 ## when the dog walker's own two frames swap, and a whole four-beat walk is 70px: a beat is 545ms
@@ -299,8 +303,8 @@ func _gait_second_half() -> bool:
 	return event.gait_phase() >= PI
 
 ## The victim's own short scripted walk to the van (`EventAbduction`) is a straight-line lerp on
-## `age` rather than anything that touches `_path_travelled`, so it gets its own derived stride
-## instead of sharing `_gait_phase` — a persistent field would have nothing to reset between takes
+## `age` rather than anything that touches the ground travelled, so it gets its own derived stride
+## instead of sharing `gait_phase()` — a persistent field would have nothing to reset between takes
 ## that the walk's own time (`EventAbduction.walked_for()`) restarting at zero does not already
 ## give it. The walk is at a constant speed by construction (linear interpolation over a fixed
 ## time), so the distance covered by moment `t` is exactly `t * (AbductionSpec.standing_offset /
@@ -315,8 +319,8 @@ func _victim_gait_stepping() -> bool:
 	return sin(elapsed * speed * EventInstance.GAIT_RATE * 2.0) > 0.0
 
 ## Whether the café sitters' or the busker's own idle frame is up right now: a plain 50/50 split of
-## `period` seconds, offset per instance by `_idle_phase_offset` so two placed the same day do not
-## swap in lockstep. Driven by `_clock` rather than `age`, the same simulated-time clock `landed()`
+## `period` seconds, offset per event by `idle_offset()` so two placed the same day do not
+## swap in lockstep. Driven by `clock()` rather than `age`, the same simulated-time clock `landed()`
 ## already measures against, so a paused game holds the frame rather than drifting it.
 func _idle_stepping(period: float) -> bool:
 	var phase := fmod(event.clock() + event.idle_offset() * period, period)
@@ -325,8 +329,8 @@ func _idle_stepping(period: float) -> bool:
 ## The drop shadow under an entity, drawn for the entity itself and skipped for its halo.
 ##
 ## *(2026-09-07, the player: "the halo should not include the shadow".)* `EntityHalo` re-runs
-## `_draw_body()` on its own canvas to trace the silhouette, and the shadow is the first thing
-## `_draw_body()` puts down — so without this the ellipse got traced too, putting a soft amber lobe
+## `draw_body()` on its own canvas to trace the silhouette, and the shadow is the first thing
+## `draw_body()` puts down — so without this the ellipse got traced too, putting a soft amber lobe
 ## on the pavement beside every glowing entity. **The shadow is not part of the thing**: it is the
 ## ground under it, and a cue that means *this is charging you* has nothing to say about the ground.
 ##
@@ -338,19 +342,20 @@ func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
 	Sprites.draw_shadow(canvas, at, radius)
 
 ## The shadow for a row read off its own `GroundShape` rather than a fixed radius — every
-## spread-drawn row (`_draw_spread`, `_draw_cafe`, `_draw_protest`, `_draw_firefight`,
-## `_draw_wide_scene`'s own fallback) and the stationary vehicles (`_draw_stationary_vehicle`).
-## Same halo guard as `_draw_shadow` above, routed through `shape.draw_shadow()` along
-## `_solid_axis()` — a point shape ignores the axis, same as `GroundShape.draw_shadow()` does.
+## spread-drawn row (`SpreadLook._draw_spread()`, `RankLook`'s café, protest and firefight,
+## `SpreadLook._draw_wide_scene()`'s own fallback) and the stationary vehicles
+## (`EventVehicleLook._draw_stationary_vehicle()`). Same halo guard as `_draw_shadow` above, routed
+## through `shape.draw_shadow()` along `EventInstance.solid_axis()` — a point shape ignores the
+## axis, same as `GroundShape.draw_shadow()` does.
 func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Vector2.ZERO) -> void:
 	if canvas == event.rim():
 		return
 	shape.draw_shadow(canvas, at, event.solid_axis())
 
 ## This row's own body shadow: one `GroundShape` shadow per solid piece, at the piece's own offset
-## along the spread axis. The single ellipse or capsule every row drew before, for anything that
-## declares no parts; two patches under two cars for the one row that does, so the ground under a
-## crash is dark where the cars are and lit where the picture leaves a way through.
+## along the spread axis: one ellipse or capsule for anything that declares no parts, and two
+## patches under two cars for the one row that does, so the ground under a crash is dark where the
+## cars are and lit where the picture leaves a way through.
 ##
 ## `def.draws_body_shadow` opts a row out entirely (its own doc names which) — leaving its
 ## body and its picture untouched: this is the one function that puts a shadow patch down, so
@@ -372,8 +377,8 @@ func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 ## a projection of this event's course against her position, so it goes stale when either moves —
 ## and the two do not move together: `player_at` is written by `EventManager` and `ExcitementHalo`
 ## once a frame, from outside, at whatever point in the frame those nodes run, while
-## `_redraw_if_the_picture_changed()` asks for the caret at the end of this instance's own
-## `_process()`. Keyed on `age` alone, the first of those to ask fixes the answer for the whole
+## `redraw_if_the_picture_changed()` asks for the caret at the end of the event's own tick. Keyed
+## on `age` alone, the first of those to ask fixes the answer for the whole
 ## tick, and a caret computed against last frame's position — or against `Vector2.INF`, before
 ## anything has said where she is at all — is the one that stands.
 var _caret_strength_age := -1.0
@@ -470,7 +475,7 @@ func _draw_mark() -> void:
 		Sprites.draw_caret(event, at - Vector2(0.0, EventPictures.MARK_WIDTH * scale * 0.85),
 				EventPictures.MARK_WIDTH * scale, mark_colour())
 
-## The rectangle, in this node's own space, the caret `_draw_mark()` would draw this frame — its one
+## The rectangle, in the event's own space, the caret `_draw_mark()` would draw this frame — its one
 ## or two chevrons at their swell, outline included — or an empty one when no mark is wanted. The
 ## same arithmetic the drawing does, so a test can ask what is actually drawn.
 func mark_rect() -> Rect2:
@@ -486,13 +491,13 @@ func mark_rect() -> Rect2:
 	return Rect2(-width - outline, top - outline, (width + outline) * 2.0,
 			at.y + width * 0.5 + outline - (top - outline))
 
-## The rectangle, in this node's own space, of what it draws this frame: its picture (the box of
+## The rectangle, in the event's own space, of what it draws this frame: its picture (the box of
 ## every picture its look can draw, since which view is drawn turns with its heading), its shadow at
 ## its feet, its danger caret as `_draw_mark()` would draw it now (`mark_rect()`, which asks the
-## instance's own projection of her), and a street fire's whole burning front and smoke
-## (`_fire_front_box()`). What `tests/test_no_pop_in.gd` checks against the view on a
-## thing's first frame: the caret is measured from the drawing's own numbers, not from
-## `footprint_of()`'s worst case, so a footprint that leaves it out fails there.
+## event's own projection of her), and a picture that reaches past its footprint (`_front_box()`, a
+## street fire's whole burning front and smoke). What `tests/test_no_pop_in.gd` checks against the
+## view on a thing's first frame: the caret is measured from the drawing's own numbers, not from
+## `EventInstance.footprint_of()`'s worst case, so a footprint that leaves it out fails there.
 func drawn_rect_now() -> Rect2:
 	var rect := event.drawn_box()
 	for picture in EventPictures.family_sources(event.def.look):
@@ -545,22 +550,22 @@ func _draw_simple(picture: String, canvas: CanvasItem,
 			_heading_is_west())
 
 ## Where a car's picture is anchored for `Sprites.draw_standing`, which bottom-centres it — a car
-## that drives, the patrol car or the fire engine (`_is_anchored_over_its_body()`):
+## that drives, the patrol car or the fire engine (`EventPictures.is_anchored_over_its_body()`):
 ## **the drawn content's bottom edge lands on the southernmost point of its body**, the crowd car's
-## own registration rule (`CarLook.body_anchor()`), because every view is a standing
-## elevation whose bottom row is the car's nearest ground contact. The body is its `shape`, a
-## capsule centred on the node and laid along the heading (`EventDef.vehicle`), so its southern reach
-## is `half_length · |heading.y| + radius` — the patrol car's 12px driving east or west, 21
-## north or south — plus the view's own canvas margin (`_canvas_margins()`), and the picture sits
-## over the body she walks into rather than standing in front of it. Read off the live heading
-## rather than the quantised view, the crowd car's reason: the body turns continuously as a car
-## rounds a corner, and a picture anchored on the view would jump at every sector boundary. The
-## caret over it is lowered by the same amount (`_picture_drop_now()`).
+## own registration rule (`CarLook.body_anchor()`), because every view is a standing elevation whose
+## bottom row is the car's nearest ground contact. The body is its `shape`, a capsule centred on the
+## node and laid along the heading (`EventDef.vehicle`), so its southern reach is `half_length ·
+## |heading.y| + radius` — the patrol car's 12px driving east or west, 21 north or south — plus the
+## view's own canvas margin (`EventPictures.canvas_margins()`), and the picture sits over the body
+## she walks into rather than standing in front of it. Read off the live heading rather than the
+## quantised view, the crowd car's reason: the body turns continuously as a car rounds a corner, and
+## a picture anchored on the view would jump at every sector boundary. The caret over it is lowered
+## by the same amount (`_picture_drop_now()`).
 func _body_anchor(view: String) -> Vector2:
 	var south := event.def.shape.half_length * absf(event.solid_axis().y) + event.def.shape.radius
 	return Vector2(0.0, south + float(EventPictures.canvas_margins(event.def.look).get(view, 0.0)))
 
-## How far below its own node this instance's picture is drawn this frame — a car's
+## How far below its own node the event's picture is drawn this frame — a car's
 ## `_body_anchor()`, zero for every other row — so the caret over it stands the same height
 ## above the picture as it does over anything else.
 func _picture_drop_now() -> float:
@@ -592,10 +597,10 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 	if not wheels.is_empty() and not behind:
 		Sprites.draw_standing(canvas, EventPictures.drawn(wheels), grounded, Vector2.ZERO, mirror)
 
-## Which way the waiting posture faces: her, whenever a caller has told this instance where she is
-## (`set_player_at()`) and **nothing built stands between them** (`_clear_line_to()`, the test his
+## Which way the waiting posture faces: her, whenever a caller has told the event where she is
+## (`set_player_at()`) and **nothing built stands between them** (`clear_line_to()`, the test his
 ## notice asks), since she is the one thing worth turning toward before he has actually noticed
-## her — `EventPursuit`'s own `is_waiting()` branch does not move `_heading` until she is inside
+## her — `EventPursuit`'s own `is_waiting()` branch does not turn the event until she is inside
 ## `EventDef.notice`, see that function's doc. With a building between them he has not seen her, so
 ## he does not visibly track her round the corner *(leafy-puffin, inbox #648: "yes noticing needs
 ## a clear line")*: he keeps the facing he was sited with, which is also the harmless default a
@@ -636,10 +641,10 @@ func _heading_is_west() -> bool:
 ## family's own `_BY_VIEW` table is live — `WalkerLook.sector()`'s own shape, copied
 ## rather than shared since an event and a walker have no common base to hang one field on. No
 ## idle floor of its own: every `heading` a caller below feeds in is already a unit vector that is
-## never actually zero — a moving actor's `_heading` is only ever overwritten by an actual step or
+## never actually zero — a moving actor's heading is only ever overwritten by an actual step or
 ## an actual notice, and a stationary one's is its own fixed siting — the same reason `Stroller`
 ## never passes one either (`EightDirection.update()`'s own doc). Safe to call more than once a
-## frame with the same heading: `EntityHalo` redraws `_draw_body()` once per ring, and asking
+## frame with the same heading: `EntityHalo` redraws `draw_body()` once per ring, and asking
 ## `EightDirection.update()` twice from the same starting sector always answers the same way.
 func _select_view(heading: Vector2) -> String:
 	_view_sector = EightDirection.update(_view_sector, heading)
@@ -657,8 +662,8 @@ func _draw_at_anchor(canvas: CanvasItem, picture: String, anchor: Vector2,
 
 # ------------------------------------------------------------- the drawing nodes ---
 # A long picture is drawn in slices that sort against her one by one, and a roadblock's band stands
-# as a node of its own (`SpreadLook`, `RoadblockLook`). The event builds, attaches, moves and lets go
-# of them through these, at the moments its own node is made, enters and leaves the tree; a look
+# as a node of its own (`SpreadLook`, `RoadblockLook`). The event builds, attaches, moves and lets
+# go of them through these, at the moments its own node is made, enters and leaves the tree; a look
 # with none does nothing.
 
 ## Faces the picture along `heading` with no hold from an earlier view, for a fresh placement.

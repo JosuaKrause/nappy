@@ -160,7 +160,7 @@ func force(row: String, interval: float) -> void:
 		_director.force(row, interval)
 
 ## Takes the one reference on the baked page every `EventInstance` draws from — the whole
-## catalogue, the checkpoint kit and the crater on one page (`EventInstance.ATLAS_GROUP`).
+## catalogue, the checkpoint kit and the crater on one page (`EventPictures.ATLAS_GROUP`).
 ##
 ## **One reference for the manager's own life, not one per family per instant.** This replaces a
 ## pass that rebuilt the wanted set of runtime-packed families from `_instances` after every change
@@ -905,7 +905,7 @@ static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 	# record has to say where the body is. It is also what keeps a crash walkable on its pavements,
 	# since a row solid in parts records its pieces and the two cars are the only pieces there are.
 	var axis := _body_axis(map, def, placed, facing)
-	# Which way round a piece's own offset is laid is `EventInstance._spread_at()`'s question, and
+	# Which way round a piece's own offset is laid is `EventInstance.spread_at()`'s question, and
 	# it is asked of the placed position for the same reason the axis is: a piece offset the wrong
 	# way is a body recorded across the street from the car it belongs to.
 	var spread_vertical := EventInstance._spread_is_vertical(map, placed)

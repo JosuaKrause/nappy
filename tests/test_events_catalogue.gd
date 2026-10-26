@@ -39,7 +39,7 @@ func run(t) -> void:
 
 
 ## The rows whose picture is drawn on the building they stand against rather than on the sidewalk
-## they are sited on: the fire on its facade (`EventInstance._draw_fire()`), and the burnt building
+## they are sited on: the fire on its facade (`FireLook._draw_fire()`), and the burnt building
 ## it leaves (`City.mark_the_burnt_frontage()`).
 const _DRAWN_ON_A_BUILDING: Array[String] = ["burning_building", "burnt_shell"]
 
@@ -503,10 +503,10 @@ func _test_a_spread_never_lands_on_a_corner(t) -> void:
 	t.check(checked > 0, "some run placed a spread to check (%d)" % checked)
 
 ## **A spread's end cap is drawn at exactly the width it obstructs, not past it.**
-## `EventInstance._draw_spread`'s own docstring is the contract; the repeated segments already meet
+## `SpreadLook._draw_spread`'s own docstring is the contract; the repeated segments already meet
 ## it, and the cap is the half that used to break it — centred at `±half`, `barrier_end.svg` (6px
 ## wide) hung 3px past each end of a `construction` barrier's 64px obstruction.
-## `EventInstance._cap_offset` and `_cap_along` are the pure arithmetic the drawing calls, so this
+## `SpreadLook._cap_offset` and `_cap_along` are the pure arithmetic the drawing calls, so this
 ## asserts the outer edge they produce against the real asset size and the real `obstructs_radius`
 ## of `construction`, broadside and end-on.
 func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
@@ -535,7 +535,7 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 			"end-on, the near post stands at the barrier's end (%.1f of %.1f), inside the last"
 			% [offset, half] + " segment's slice (from %.1f)" % last_slice_starts)
 	# A cap sorts with its end slice, so draw order within the slice is its only depth. End-on, the
-	# side drawn behind the board has to be the far end, up the screen (`_spread_at` puts side −1
+	# side drawn behind the board has to be the far end, up the screen (`spread_at` puts side −1
 	# at negative y), and the near end is the only one drawn over it; broadside, both stand level
 	# with the board.
 	var behind := SpreadLook._cap_sides(true, true)
@@ -548,7 +548,7 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 			"broadside, both posts are drawn over the board")
 
 ## **A whole-scene hard seal has to use a distinct authored picture on either axis and span its
-## obstruction at the ground point.** `EventInstance._wide_scene_texture` is the pure selector
+## obstruction at the ground point.** `EventPictures.wide_scene_texture` is the pure selector
 ## this pins: on an east-west street (`vertical` true) it returns the directional asset, while
 ## `_wide_scene_anchor` and the fitted extent keep the drawn body aligned with the obstruction.
 ## The bounds are checked against the real asset sizes and `fallen_tree`'s own obstruction radius,
@@ -583,7 +583,7 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 					% [texture.get_file(), half, half])
 
 	# The other two whole-scene rows carry the same guarantee — checked once each rather than
-	# re-running the segment arithmetic, since `_wide_scene_texture`'s own match is what could
+	# re-running the segment arithmetic, since `wide_scene_texture`'s own match is what could
 	# regress silently if a future picture forgot its vertical sibling.
 	for look in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
 		var wide := EventPictures.wide_scene_texture(look, false)
@@ -732,7 +732,7 @@ func _test_no_two_rows_draw_the_same_picture(t) -> void:
 ## And no two of those pictures are the same texture.
 ##
 ## The half a `look` field cannot enforce by itself: two looks whose `_draw_*` reach for the same
-## sprite are the old failure with more enum rows in front of it. `EventInstance.icon_for()` is
+## sprite are the old failure with more enum rows in front of it. `EventPictures.icon_for()` is
 ## the one table of what a look *is*, and it is also what the screen-edge badge draws — so this
 ## asserts the badge can never again show a delivery van for a fire engine.
 func _test_every_look_carries_its_own_silhouette(t) -> void:

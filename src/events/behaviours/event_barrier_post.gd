@@ -31,7 +31,7 @@ func attach(owner: EventInstance) -> void:
 	super.attach(owner)
 	far = RoadblockFarGuard.new(owner)
 
-## Whether the barrier has been left behind — read by `EventInstance._draw_roadblock()` to know
+## Whether the barrier has been left behind — read by `RoadblockLook._draw_roadblock()` to know
 ## whether to draw the band under its own feet or back at the post.
 func has_left_its_body() -> bool:
 	return _body_left_at != Vector2.INF

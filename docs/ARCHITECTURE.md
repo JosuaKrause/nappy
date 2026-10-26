@@ -110,7 +110,14 @@ src/
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
 	                       emission, and the behaviours it is composed of, stepped in order;
-	                       every picture it draws is a region of the baked `events` page
+	                       drawn by its look
+	views/                how an event looks, read off its public state: `EventPictures` names
+	                       every picture (each a region of the baked `events` page) and the
+	                       tables that pick one; `EventLooks.for_row()` gives each row the look
+	                       that draws its family (a figure, a vehicle, a pursuer, a spread, a
+	                       rank, the roadblock, a fire, the checkpoint kit, the flock), which
+	                       holds the redraw gate, the caret and the slices a long picture is
+	                       drawn in
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
 	                       line run, a route, a flock, a hold, a stop, a departure, a car's
@@ -680,7 +687,7 @@ kept strictly out of anything that touches the meters.
   "Rendering".
 - **A footprint longer than a tile is drawn as slices**, each a node standing at its own feet
   (`DrawLayer.slice_feet()`, `DrawLayer.add_slices()`), so a run going away from the camera sorts
-  slice by slice against her: an event's spread (`EventInstance.Slice`, the roadblock's band among
+  slice by slice against her: an event's spread (`SpreadLook.Slice`, the roadblock's band among
   them) along its solid footprint, the café one table and its sitter a slice, a protest or a firefight
 one figure a slice, a wide scene one
   tile of its run a slice, each drawing its band of the picture, a closure's barrier and a park's

@@ -8,12 +8,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.DELIVERY_VAN:
 			# Always sited facing east — `AT_THE_KERB` never overrides `EventScheduler.Planned.
-			# facing`'s own default — so `side_faces_west` now mirrors the parked van where
-			# `_draw_simple`'s old `_heading_is_west()` check never did: that check assumed every
-			# side picture faces east, and `delivery_van.svg` is one of the ones that does not (see
-			# `docs/evidence/svg-vehicles-2026-09-10/README.md`). A cosmetic change to an
-			# already-shipped picture, not a bug fix to gameplay: nothing about its shape, shadow or
-			# obstruction moves.
+			# facing`'s own default — and `delivery_van.svg` faces west, so `side_faces_west`
+			# mirrors it (see `docs/evidence/svg-vehicles-2026-09-10/README.md`).
 			_draw_eight_view(EventPictures.DELIVERY_VAN_BY_VIEW, event.facing_now(), canvas, true)
 		EventDef.Look.FIRE_ENGINE:
 			# Drawn over its own body like the patrol car (`_body_anchor()`): the body is the
@@ -24,22 +20,22 @@ func _draw_figure(canvas: CanvasItem) -> void:
 					{}, false,
 					_body_anchor(engine_view))
 		EventDef.Look.ICE_CREAM_VAN:
-			# East-authored: always sited facing east, same as `DELIVERY_VAN` above, but
-			# `ice_cream_van.svg` is one of the sources that already faces east, so no
+			# East-authored: always sited facing east, same as `DELIVERY_VAN` above,
+			# but `ice_cream_van.svg` is one of the sources that already faces east, so no
 			# `side_faces_west` override and no change to the picture it draws.
 			_draw_eight_view(EventPictures.ICE_CREAM_VAN_BY_VIEW, event.facing_now(), canvas)
 		EventDef.Look.LORRY:
 			# `reversing_lorry`'s own facing is always exactly east or west — `AGAINST_THE_BUILDING`
 			# sets it to `-pavement_inward`, which `_wants_this_side` already refuses unless it is
 			# purely horizontal — so the diagonal and front/back views this table adds are never
-			# actually reachable; the row keeps drawing exactly the side view it always did.
+			# actually reachable; the row draws its side view.
 			_draw_eight_view(EventPictures.LORRY_BY_VIEW, event.facing_now(), canvas)
 		EventDef.Look.POLICE_CAR:
-			# East-authored — see `ICE_CREAM_VAN` above — and now a real octant: `police_patrol` is
-			# mobile and turns corners along its own patrol route, so this is the first vehicle row
-			# whose diagonal views are ordinarily reachable rather than a dead branch. Drawn over
-			# its own body rather than standing on its node — see `_body_anchor()` — with the
-			# shadow, which is the body's shape, under the node on the ground.
+			# East-authored — see `ICE_CREAM_VAN` above — and a real octant: `police_patrol` is
+			# mobile and turns corners along its own patrol route, so its diagonal views are
+			# ordinarily reachable. Drawn over its own body rather than standing on its node — see
+			# `_body_anchor()` — with the shadow, which is the body's shape, under the node on the
+			# ground.
 			var view := _select_view(event.facing_now())
 			_draw_body_shadow(canvas, Vector2(0.0, -current_bob()))
 			_draw_eight_view(EventPictures.POLICE_CAR_BY_VIEW, event.facing_now(), canvas, false,
@@ -48,9 +44,9 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.UNMARKED_VAN:
 			_draw_abduction(canvas)
 		EventDef.Look.RIOT_VAN:
-			# West-authored, like `unmarked_van` and `army_truck` — see `RIOT_VAN_BY_VIEW`'s own doc
-			# comment above for why the side view needs the `side_faces_west` override to match
-			# `facings.csv` rather than M56's hand-written octant match, which had it backwards.
+			# West-authored, like `unmarked_van` and `army_truck` — see
+			# `EventPictures.RIOT_VAN_BY_VIEW`'s own doc comment for why the side view needs the
+			# `side_faces_west` override to match `facings.csv`.
 			_draw_eight_view(EventPictures.RIOT_VAN_BY_VIEW, event.facing_now(), canvas, true)
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(EventPictures.ARMY_TRUCK_BY_VIEW, event.facing_now(), canvas, true)
@@ -77,23 +73,24 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 
 ## The van, and the bystander it is taking while there is one to draw.
 ##
-## `_draw_dog_walker` above is the precedent for a second figure with its own offset; here the
-## second figure has a scene rather than a fixed span, sliding from its standing offset to the van's
-## own position over the take's length — see `EventAbduction`, the one place that starts it. Drawn first so the van's own silhouette is what she is left
-## looking at once the walk ends, the same order `_draw_cafe` draws its sitters before its tables.
+## `FigureLook._draw_dog_walker` above is the precedent for a second figure with its own offset;
+## here the second figure has a scene rather than a fixed span, sliding from its standing offset to
+## the van's own position over the take's length — see `EventAbduction`, the one place that starts
+## it. Drawn first so the van's own silhouette is what she is left looking at once the walk ends,
+## the same order `RankLook._draw_cafe` draws its sitters before its tables.
 ##
 ## The van itself goes through `_draw_eight_view` rather than `_draw_simple`: a parked van never
 ## needed more than one side-on picture, but a hunting one steers straight at her and that is not
-## always down a pavement, so it draws the full front/back/side/diagonal set the same way `police_car`
-## does once it turns off its own axis.
-## The victim and the van share one `_view_sector` field — safely, because both headings are always
-## exactly east or west by construction while they can ever be drawn together. `is_taking_a_victim()`
-## is only ever true while the van `is_waiting()` (`EventAbduction` abandons it the instant a
-## `HUNTS`-heated copy starts hunting), and idling the van's own `_heading` is `Planned.facing`'s
-## untouched default, always due east — so the van's own `_select_view(_heading)` call below, after
-## the victim's, only ever asks for exactly the sector the victim's own call left it on (both facing
-## the same way) or its exact opposite (180° apart, always past `EightDirection`'s hold), never
-## anything a stale hold could get wrong.
+## always down a pavement, so it draws the full front/back/side/diagonal set the same way
+## `police_car` does once it turns off its own axis. The victim and the van share one `_view_sector`
+## field — safely, because both headings are always exactly east or west by construction while they
+## can ever be drawn together. `is_taking_a_victim()` is only ever true while the van `is_waiting()`
+## (`EventAbduction` abandons it the instant a `HUNTS`-heated copy starts hunting), and idling the
+## van's own `EventInstance.facing_now()` is `Planned.facing`'s untouched default, always due east —
+## so the van's own `_select_view(event.facing_now())` call below, after the victim's, only ever
+## asks for exactly the sector the victim's own call left it on (both facing the same way) or its
+## exact opposite (180° apart, always past `EightDirection`'s hold), never anything a stale hold
+## could get wrong.
 func _draw_abduction(canvas: CanvasItem) -> void:
 	if event.is_taking_a_victim():
 		var through := event.abduction.walked_for() / event.def.abduction.taken_over

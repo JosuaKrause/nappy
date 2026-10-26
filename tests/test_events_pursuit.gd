@@ -1360,7 +1360,7 @@ func _a_waiting_robber(t, map: CityMap, mouth: Dictionary, back: float) -> Event
 ## 180px `EventDef.notice` in a straight line but with the building between them, and he goes on
 ## waiting and is drawn looking the way he was sited, not tracking her round the corner. She steps
 ## in front of the mouth, nearer still, the line between them clear, and on that frame he notices
-## her and is drawn facing her. What is checked is `_drawn_heading()`, the heading his picture is
+## her and is drawn facing her. What is checked is `drawn_heading()`, the heading his picture is
 ## chosen from, not only his own `_heading`.
 func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	var map := _map()
@@ -1570,7 +1570,7 @@ func _test_the_red_caret_is_measured_from_the_catch(t) -> void:
 ## the building from him, inside his catch in a straight line, and he chases: he slides along the
 ## building's face (`_step()`) and catches her only once the line between them clears the
 ## building's corner, never through it. Every frame of the chase is checked against a line sampled
-## a quarter pixel at a time, a second answer to the question `_clear_line_to()` asks, so a frame
+## a quarter pixel at a time, a second answer to the question `clear_line_to()` asks, so a frame
 ## that catches through the corner fails it wherever it falls.
 func _test_the_robber_catches_her_by_coming_round_the_corner(t) -> void:
 	var map := _map()
@@ -1610,7 +1610,7 @@ func _sampled_line_is_walkable(map: CityMap, from: Vector2, to: Vector2, per_px 
 			return false
 	return true
 
-## **`_clear_line_to()` against the sampled line, over the real map.** Seeded segments up to a
+## **`clear_line_to()` against the sampled line, over the real map.** Seeded segments up to a
 ## stand-off long from walkable ground near buildings, in every direction, each answered both by
 ## stepping tile boundaries and by sampling an eighth of a pixel at a time; the two have to agree.
 ## The guard counts how many of them crossed a building, so a sweep that only ever asked open

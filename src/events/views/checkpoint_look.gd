@@ -66,8 +66,8 @@ func _draw_checkpoint_hut(canvas: CanvasItem) -> void:
 
 ## The boom, raised or lowered from `gate_state` (`null` reads as lowered, the safe default before
 ## `Crowd` has ever touched it), over whichever axis of road `facing_now()` says this door's street
-## runs — `_heading` is the street's own along-axis here, not a direction this stationary body ever
-## turns to face, see `facing_now()`'s own doc.
+## runs — `EventInstance.facing_now()` is the street's own along-axis here, not a direction this
+## stationary body ever turns to face, see `facing_now()`'s own doc.
 func _draw_checkpoint_gate(canvas: CanvasItem) -> void:
 	var raised: bool = event.gate_state != null and event.gate_state.raised
 	var runs_north_south := EventPictures.gate_runs_north_south(event.facing_now())

@@ -7,7 +7,7 @@ extends Node2D
 ## the chase, and these men chase nobody.
 ##
 ## **A figure, not an event.** He is not in the catalogue, carries no field, no caret and no
-## badge, and is moved by `ParkCordon` rather than by anything of his own; `EventInstance.icon_for()`
+## badge, and is moved by `ParkCordon` rather than by anything of his own; `EventPictures.icon_for()`
 ## and the one-picture-per-row rule are about catalogue rows, which he is not.
 
 const WAITING_BY_VIEW := {

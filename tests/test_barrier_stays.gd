@@ -6,7 +6,7 @@ extends RefCounted
 ## Two symptoms, one cause each: `_draw()` lifts the whole canvas by the chaser's stride bob and the
 ## barrier was drawn inside the lift; and a chase that ended finished the instance, which is the
 ## barrier's body and picture as well as the man. The barrier's picture is now its own node
-## (`EventInstance.RoadblockBand`), standing at the body whatever the man does.
+## (`RoadblockLook.RoadblockBand`), standing at the body whatever the man does.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 

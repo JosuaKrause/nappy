@@ -14,7 +14,7 @@ extends RefCounted
 ## `docs/evidence/feathery-bison-pelican-2026-10-03/`. The view tables' completeness, their
 ## distinct pictures and the second pedal frame are `tests/test_event_views.gd` and
 ## `tests/test_event_strides.gd`; every picture being on the `events` page is
-## `tests/test_atlas_events.gd`, through `EventInstance.family_sources()`.
+## `tests/test_atlas_events.gd`, through `EventPictures.family_sources()`.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242

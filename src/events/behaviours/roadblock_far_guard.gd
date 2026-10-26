@@ -10,7 +10,7 @@ extends RefCounted
 ## player to be out of sight of — the sight rule his partner's departure keeps. He notices nothing,
 ## chases nothing and costs nothing: the band is silent from the same frame.
 ##
-## **His own node** (`EventInstance.FarGuard`), in the world's entity layer like the band's, so he
+## **His own node** (`RoadblockLook.FarGuard`), in the world's entity layer like the band's, so he
 ## sorts at his own feet as he walks rather than at the band's line. Not carried across a
 ## stream-out: a band streamed back in after its guard was spent comes back with neither
 ## (`EventBarrierPost.come_back_as_the_barrier()`).

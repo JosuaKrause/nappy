@@ -505,7 +505,7 @@ func _test_wall_crossing_posts_four_guards(t) -> void:
 ## one that would stand inside it. *(2026-09-25, the player, on a walled alley's own two guards
 ## per mouth: "one guard in alleys on each end.")* Checked geometrically rather than by trusting
 ## the sign convention `RegionPlanner._alley_mouth_street_side()` reads out of `at_start`: the
-## guard's own feet (`EventInstance._guard_post_offset()`, at the mouth's own `_spread_is_vertical`
+## guard's own feet (`EventInstance.guard_post_offset()`, at the mouth's own `_spread_is_vertical`
 ## reading) fall on the far side of the alley's own long-axis extent from its interior, at both
 ## mouths.
 func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
@@ -552,7 +552,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
 ## width (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE`).
 ## `RegionPlanner._alley_mouth_wall_body()` trims it to a point that draws and collides at exactly
 ## the alley's own width, so this checks the drawn extent (`2 * obstructs_radius`, what
-## `EventInstance._draw_spread` actually paints) stays within the alley's own tile rect on the
+## `SpreadLook._draw_spread` actually paints) stays within the alley's own tile rect on the
 ## across-alley axis — no tolerance needed, since the fit is exact rather than merely close.
 func _test_alley_wall_bodies_fit_their_own_mouth(t) -> void:
 	var checked := 0

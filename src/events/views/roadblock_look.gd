@@ -17,29 +17,31 @@ func _draw_figure(canvas: CanvasItem) -> void:
 ## - **Cold, or hunting but not yet noticed** (`is_waiting()`), one man stands at his post for
 ##   every side `def.guard_sides` names *(2026-09-25: "have one guard on each side?")*, in the
 ##   `guard_standing_*` family, each clear of the barrier's picture and facing out from it
-##   (`_guard_post_offset()`). `[-1, 1]` (both sides) is every row's own default — a cold roadblock
+##   (`guard_post_offset()`). `[-1, 1]` (both sides) is every row's own default — a cold roadblock
 ##   posts two, drawings with no field, no body and no cost of their own — except the region wall's
 ##   own road body, which `SealPlanner.place_hard_on()` builds with the array emptied: see
-##   `EventDef.guard_sides`, M200 ("a region wall has a guard on each sidewalk").
+##   `EventDef.guard_sides`.
 ## - **Once the one on her side sets off** — the only one who does, "since the other one will be
-##   blocked" — this node *is* him: it steps out to his post and `EventPursuit` walks it at her
-##   (`EventBarrierPost.leave_the_body()`). The barrier he left is drawn back at `body_position()`, where
-##   its collision body is pinned (`PursuitSpec.leaves_its_body`), and the other guard still stands
+## blocked" — the event's own node *is* him: it steps out to his post and `EventPursuit` walks it at
+## her
+##   (`EventBarrierPost.leave_the_body()`). The barrier he left is drawn back at `body_position()`,
+## where its collision body is pinned (`PursuitSpec.leaves_its_body`), and the other guard still
+## stands
 ##   at his post beside it. `guard_alert_*`, hand raised, while he stands at that post for his
 ##   notice (`chaser_pictures()`), and `guard_lunging_*` once he is actually giving chase —
 ##   each read from his own travel heading through `_draw_eight_view()`, so he turns to face where
-##   he is going rather than only mirroring east/west (PLAYTEST-128, M56: "the masked pursuer and
-##   the heated roadblock guard face where they are heading").
+##   he is going rather than only mirroring east/west *(PLAYTEST-128: "the masked pursuer and the
+##   heated roadblock guard face where they are heading")*.
 ##
 ## So the street he abandoned stays visibly and physically shut behind him, and what she has to get
 ## away from is a man rather than a band of concrete.
 ##
 ## **The man, the band and its slices are nodes of their own, so each sorts at its own point**: the
-## instance at the chaser's feet once he has set off, the guards posted beside the band at the band's
-## line (`RoadblockBand`), and the band's segments each at its own slice's feet (`Slice`).
+## instance at the chaser's feet once he has set off, the guards posted beside the band at the
+## band's line (`RoadblockBand`), and the band's segments each at its own slice's feet (`Slice`).
 func _draw_roadblock(canvas: CanvasItem) -> void:
-	# **The barrier never rides the chaser's stride.** `_draw()` lifts the whole canvas by
-	# `_current_bob()` for anything that pursues or leaves, and the band and the posted guard are
+	# **The barrier never rides the chaser's stride.** `draw()` lifts the whole canvas by
+	# `current_bob()` for anything that pursues or leaves, and the band and the posted guard are
 	# furniture of the street rather than part of the man who walked out of it. On the screen they
 	# are nodes of their own (`RoadblockBand`, its `Slice`s), standing at the body; the
 	# halo ring's canvas has no such node and draws them back down by the lift
@@ -66,7 +68,7 @@ func draw_the_band(canvas: CanvasItem, band_at: Vector2) -> void:
 		if side != event.barrier_post.chaser_side():
 			_draw_posted_guard(canvas, band_at, side)
 
-## The man who set off, drawn on this node, which walks with him.
+## The man who set off, drawn on the event's own node, which walks with him.
 func _draw_the_chaser(canvas: CanvasItem) -> void:
 	if event.barrier_post == null or event.barrier_post.chaser_side() == 0 \
 			or (event.phase == EventInstance.Phase.SPENT):
@@ -86,7 +88,7 @@ func chaser_pictures() -> Dictionary:
 		return EventPictures.GUARD_STANDING_BY_VIEW
 	return EventPictures.GUARD_LUNGING_BY_VIEW
 
-## **The barrier's own node.** A sibling of this instance in the world's entity layer standing at
+## **The barrier's own node.** A sibling of the event in the world's entity layer standing at
 ## `body_position()`, drawing the posted guards, so that they sort at the band's line however far
 ## the man who set off has walked from it; the band's segments are its slices (`Slice`), each at
 ## its own feet. Freed with the instance.
@@ -100,10 +102,10 @@ class RoadblockBand extends Node2D:
 var _band: RoadblockBand
 
 ## **Once the guard on her side has left his post for good, the guard at the far post walks off
-## too**, so the band stands unmanned and reads as the barrier it now is. *(Inbox #771 in minty-lemur, 2026-10-18,
-## asked whether the far guard should leave as well once his partner has been lured off: "He leaves
-## too"; then, asked whether that holds on a day as well: "Days too")* Every roadblock sends him,
-## on a day as in the escape.
+## too**, so the band stands unmanned and reads as the barrier it now is. *(Inbox #771 in
+## minty-lemur, 2026-10-18, asked whether the far guard should leave as well once his partner has
+## been lured off: "He leaves too"; then, asked whether that holds on a day as well: "Days too")*
+## Every roadblock sends him, on a day as in the escape.
 ##
 ## The far guard walking away, drawn standing, facing where he goes, on the stride his partner
 ## walks on. Freed when he is gone or with the instance.
@@ -116,7 +118,7 @@ class FarGuard extends Node2D:
 
 ## The far guard as he walks, at his node's origin: his own small shadow on the ground and his
 ## standing picture lifted by his own stride, the bob his partner's departure rides on
-## (`_current_bob()`). The view sector is put back afterwards, as `_draw_posted_guard()` puts it.
+## (`current_bob()`). The view sector is put back afterwards, as `_draw_posted_guard()` puts it.
 func _draw_the_far_guard(canvas: CanvasItem) -> void:
 	_draw_shadow(canvas, Vector2.ZERO, EventPictures.GUARD_SHADOW_RADIUS)
 	var kept := _view_sector
@@ -130,7 +132,8 @@ func _build_the_band() -> void:
 	_band = RoadblockBand.new()
 	_band.instance = event
 	_band.name = "RoadblockBand"
-	# Moved from `_process()`, so it opts out of physics interpolation like this instance does.
+	# Placed where the body is rather than moved on the physics tick, so it opts out of physics
+	# interpolation.
 	_band.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_attach_the_band.call_deferred()
 
@@ -159,15 +162,15 @@ func _move_the_band(redraw := false) -> void:
 	if redraw:
 		_band.queue_redraw()
 
-## Where the band is drawn in this node's local space when it is drawn on this node's own canvas (the
-## halo ring's): back at `body_position()`, and drawn down by the lift `_draw()` puts the whole canvas
-## through, so on the screen it stands exactly where its body does on every frame.
+## Where the band is drawn in the event's local space when it is drawn on the event's own canvas
+## (the halo ring's): back at `body_position()`, and drawn down by the lift `draw()` puts the whole
+## canvas through, so on the screen it stands exactly where its body does on every frame.
 func _roadblock_band_at() -> Vector2:
 	return event.body_position() - event.global_position + Vector2(0.0, -current_bob())
 
 ## One guard standing at his post on `side` of the band drawn at `band_at`, facing out from it.
 ## **The view sector is put back afterwards**: `_select_view()` advances `_view_sector` with
-## hysteresis for the one heading this node carries — the chaser's, once there is one — and a
+## hysteresis for the one heading the event carries — the chaser's, once there is one — and a
 ## second figure turned another way must not reset it on every draw.
 func _draw_posted_guard(canvas: CanvasItem, band_at: Vector2, side: int) -> void:
 	var feet := band_at + EventInstance.guard_post_offset(event.runs_vertically(), side)

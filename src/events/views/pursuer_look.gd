@@ -27,10 +27,11 @@ func _draw_robber(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var waiting := event.is_waiting()
 	var by_view := robber_pictures()
-	# Once he has noticed her, `EventPursuit` already keeps `_heading` pointed at her for every frame of
-	# the telegraph and the lunge alike — `_draw_body()`'s ordinary reading, `_heading`. Before that
-	# he has nothing of his own to face except the alley he was sited in, and a man only watching
-	# the street is worth nothing next to a man watching *her* — see `_robber_waiting_heading()`.
+	# Once he has noticed her, `EventPursuit` already keeps `EventInstance.facing_now()` pointed at
+	# her for every frame of the telegraph and the lunge alike — `draw_body()`'s ordinary reading,
+	# `EventInstance.facing_now()`. Before that he has nothing of his own to face except the alley
+	# he was sited in, and a man only watching the street is worth nothing next to a man watching
+	# *her* — see `_robber_waiting_heading()`.
 	var heading := _robber_waiting_heading() if waiting else event.facing_now()
 	var view := _select_view(heading)
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
@@ -38,8 +39,9 @@ func _draw_robber(canvas: CanvasItem) -> void:
 
 ## The robber's picture for this frame: waiting, his two-frame alert walk through his notice
 ## (`is_telegraphing()`, which the sent robber, arriving already chasing, never is), and the lunge
-## with its stride frame once he goes. The waiting posture holds still by construction — he has nothing to stride toward
-## yet. The one place the choice is read, so the draw, its halo and a test ask the same question.
+## with its stride frame once he goes. The waiting posture holds still by construction — he has
+## nothing to stride toward yet. The one place the choice is read, so the draw, its halo and a test
+## ask the same question.
 func robber_pictures() -> Dictionary:
 	if event.is_waiting():
 		return EventPictures.ROBBER_WAITING_BY_VIEW
@@ -49,9 +51,9 @@ func robber_pictures() -> Dictionary:
 	return EventPictures.ROBBER_LUNGING_BY_VIEW_B if _gait_stepping() \
 			else EventPictures.ROBBER_LUNGING_BY_VIEW
 
-## **The policeman on foot, drawn as the robber is.** He faces her while he is after her (`EventPursuit`
-## keeps `_heading` on her) and his vehicle's door as he walks back (`EventOfficer.walk_back()`); which picture
-## is `policeman_pictures()`.
+## **The policeman on foot, drawn as the robber is.** He faces her while he is after her
+## (`EventPursuit` keeps `EventInstance.facing_now()` on her) and his vehicle's door as he walks
+## back (`EventOfficer.walk_back()`); which picture is `policeman_pictures()`.
 func _draw_policeman(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var by_view := policeman_pictures()
@@ -86,26 +88,24 @@ func _stands_still_now() -> bool:
 ## the `guard_standing_*` family while he waits for her and through a stop (`_stands_still_now()`),
 ## `guard_alert_*` for any notice he gives (`masked_pursuer_pictures()`), as a heated roadblock's
 ## guard does at his post, and `guard_lunging_*` once he is actually on her line. Read from his own
-## travel heading
-## through `_draw_eight_view()`, the same helper every other moving family uses, so he turns to
-## face where he is going on every step of the shaft rather than only mirroring east/west
-## (PLAYTEST-128, M56). No `side_faces_west` override: `guard_lunging_side.svg`'s own comment says
-## the family is east-authored, the same as every person/animal family bound before it. Its own
-## body shadow — `def.shape`, a 9px point, at local origin — is exactly what `_draw_eight_view()`
-## draws by default, so nothing here calls `_draw_shape_shadow()` separately any more.
+## travel heading through `_draw_eight_view()`, the same helper every other moving family uses, so
+## he turns to face where he is going on every step of the shaft rather than only mirroring
+## east/west. No `side_faces_west` override: `guard_lunging_side.svg`'s own comment says the family
+## is east-authored, the same as every person/animal family. Its own body shadow — `def.shape`, a
+## 9px point, at local origin — is exactly what `_draw_eight_view()` draws by default.
 func _draw_masked_pursuer(canvas: CanvasItem) -> void:
 	_draw_eight_view(masked_pursuer_pictures(), event.facing_now(), canvas)
 
 ## The guard-drawn pursuer's picture for this frame. **The alert, hand raised, is every notice one
 ## of them gives**: the guardsman a vehicle lets out, standing for his notice
-## (`is_standing_for_its_notice()`, read off `PursuitSpec.stands`),
-## and the masked man standing at the foot of the shaft through his notice (`is_telegraphing()`
-## after his wait, which his row's `EventDef.notice` gives him and no other guard-drawn row has).
-## *(Inbox #764 in minty-lemur, the player: an event that does not spawn already charging always needs a
-## warning.)* The van's guard a task sends and the guardsman a torn poster sends arrive charging and
-## never give one, nor does the door guard, whose warning was the hut's or the post's guard's from
-## her crossing (`PursuitSpec.Start.CHARGES_AT_ONCE`). Otherwise `guard_standing_*` while
-## `_stands_still_now()` — the masked man's wait, a stop — and `guard_lunging_*` after.
+## (`is_standing_for_its_notice()`, read off `PursuitSpec.stands`), and the masked man standing at
+## the foot of the shaft through his notice (`is_telegraphing()` after his wait, which his row's
+## `EventDef.notice` gives him and no other guard-drawn row has). *(Inbox #764 in minty-lemur, the
+## player: an event that does not spawn already charging always needs a warning.)* The van's guard a
+## task sends and the guardsman a torn poster sends arrive charging and never give one, nor does the
+## door guard, whose warning was the hut's or the post's guard's from her crossing
+## (`PursuitSpec.Start.CHARGES_AT_ONCE`). Otherwise `guard_standing_*` while `_stands_still_now()` —
+## the masked man's wait, a stop — and `guard_lunging_*` after.
 func masked_pursuer_pictures() -> Dictionary:
 	if event.is_standing_for_its_notice() or (event.def.notice_within() > 0.0
 			and event.is_telegraphing()):

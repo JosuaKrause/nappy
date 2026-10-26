@@ -405,7 +405,7 @@ func meets_her(at: Vector2, heading: Vector2, her: Vector2, seconds: float) -> b
 			Stroller.PRAM_BODY_RADIUS, seconds)
 
 ## Whether `at` is on the carriageway: a road or a crossing tile (`WorldMap.is_carriageway()`),
-## anywhere on open ground, as `_clear_line_to()` is.
+## anywhere on open ground, as `clear_line_to()` is.
 func _on_the_carriageway(at: Vector2) -> bool:
 	return event._map.is_carriageway(event._map.world_to_tile(at))
 

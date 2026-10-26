@@ -1,6 +1,6 @@
 extends RefCounted
 ## The gate that stops an event rebuilding a draw list it does not need —
-## `EventInstance._redraw_if_the_picture_changed()`, `_picture_key()` and
+## `EventLook.redraw_if_the_picture_changed()`, `_picture_key()` and
 ## `_picture_never_settles()`. The crowd has had the same gate for a long time
 ## (`CrowdAgent._end_the_frame()`); events did not, and at about forty live
 ## instances a day that was the largest drawing cost in a frame
@@ -145,7 +145,7 @@ func _test_a_bobbing_event_moves_its_key(t) -> void:
 	instance.free()
 
 ## The normal dog's first and opposite steps are both `_gait_stepping()` and can sit on the same
-## bob, so the half of the stride is its own term in the key (`EventInstance.dog_picture()`): two
+## bob, so the half of the stride is its own term in the key (`EventPictures.dog_picture()`): two
 ## states that differ in nothing else still draw different pictures and must not share a key. The
 ## charging dog has one stepping picture per view, so the same two states are one key for it.
 func _test_the_normal_dogs_opposite_step_moves_its_key(t) -> void:
@@ -399,7 +399,7 @@ func _test_a_raised_boom_moves_the_gates_key(t) -> void:
 	instance.free()
 
 ## An event that is over leaves rather than vanishing, and it bobs on the way out
-## (`_current_bob()`'s own `is_leaving` branch) — so the departure is drawn rather than held on the
+## (`current_bob()`'s own `is_leaving` branch) — so the departure is drawn rather than held on the
 ## last frame the event was still an event.
 func _test_a_leaving_event_moves_its_key(t) -> void:
 	var instance := EventInstance.new()
@@ -466,7 +466,7 @@ func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t) -> void:
 
 ## The key is a pure query on state `_process()` has already settled, so asking twice inside one
 ## tick always answers the same way — the same contract `_gait_stepping()` owes the halo, which
-## re-runs `_draw_body()` a dozen times per frame of its own.
+## re-runs `draw_body()` a dozen times per frame of its own.
 func _test_the_key_is_stable_within_a_tick(t) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
 	var instance := EventInstance.new()
@@ -481,7 +481,7 @@ func _test_the_key_is_stable_within_a_tick(t) -> void:
 
 ## A mast's picture is its broadcast cycle — the amber lamp of the telegraph that opens every
 ## period, then the green lamp and the arcs while it speaks — and nothing at all on top of the pole
-## once silenced (`EventInstance._draw_mast()`). Both are clocks the ordinary key terms never see:
+## once silenced (`FigureLook._draw_mast()`). Both are clocks the ordinary key terms never see:
 ## the cycle runs on the city's broadcast clock (`_mast_is_telegraphing_now()`) long after the
 ## once-at-creation `is_telegraphing()` has gone false, and silencing flips a flag without moving
 ## anything. A key without them keeps the arcs on a mast day 11's task has just silenced.

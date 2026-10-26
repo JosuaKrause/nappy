@@ -18,7 +18,7 @@ const CAT_RUNNING := "events/cat_running"
 const MOUSE := "events/mouse"
 ## The dash's own second frame, and the `"side"` entry of `MOUSE_BY_VIEW_B` — its tail curls a
 ## little differently rather than crossing legs it has no room to draw at this scale, read off
-## `_gait_stepping()` the same way every other family's own `_b` table is.
+## `EventLook._gait_stepping()` the same way every other family's own `_b` table is.
 const MOUSE_B := "events/mouse_b"
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
@@ -34,7 +34,7 @@ const POSTER_CREW_SQUARE := "events/poster_crew_square"
 const ROBBER_WAITING := "events/robber_waiting"
 const ROBBER_LUNGING := "events/robber_lunging"
 const PROTESTER := "events/protester"
-## The eight pointing poses, one per 45° bearing sector — see `_protester_texture()`. Ordered
+## The eight pointing poses, one per 45° bearing sector — see `protester_texture()`. Ordered
 ## clockwise from north to match `RunTrace.compass()`'s own bearing convention.
 const PROTESTER_POINT_N := "events/protester_point_n"
 const PROTESTER_POINT_NE := "events/protester_point_ne"
@@ -47,10 +47,8 @@ const PROTESTER_POINT_NW := "events/protester_point_nw"
 const GUNMAN := "events/gunman"
 ## The unsuffixed source is every family's own side view — see `docs/GRAPHICS.md`'s side-facing
 ## convention, `docs/evidence/svg-vehicles-2026-09-10/facings.csv`. The four-way suffixed sets below
-## it are each family's front, back and two diagonals, bound through `_draw_eight_view()`; the old
-## `_end.svg` single foreshortened picture each of these four rows drew for *both* north and south
-## headings is superseded by the two-way `_front`/`_back` split and stays on disk unbound (see
-## `docs/GRAPHICS.md`, the events table).
+## it are each family's front, back and two diagonals, bound through `EventLook._draw_eight_view()`.
+## Each family's unbound `_end.svg` stays on disk (see `docs/GRAPHICS.md`, the events table).
 const DELIVERY_VAN := "events/delivery_van"
 const DELIVERY_VAN_FRONT := "events/delivery_van_front"
 const DELIVERY_VAN_BACK := "events/delivery_van_back"
@@ -72,8 +70,8 @@ const UNMARKED_VAN_BACK := "events/unmarked_van_back"
 const UNMARKED_VAN_FRONT_DIAGONAL := "events/unmarked_van_front_diagonal"
 const UNMARKED_VAN_BACK_DIAGONAL := "events/unmarked_van_back_diagonal"
 const VAN_VICTIM := "events/van_victim"
-## The night raid's van: `_draw_eight_view()` reads `RIOT_VAN_BY_VIEW` below through the same
-## octant/mirror convention `EightDirection` gives every other family. Its side picture is
+## The night raid's van: `EventLook._draw_eight_view()` reads `RIOT_VAN_BY_VIEW` below through the
+## same octant/mirror convention `EightDirection` gives every other family. Its side picture is
 ## authored facing west, the same as `unmarked_van` and `army_truck` below
 ## (`docs/evidence/svg-vehicles-2026-09-10/facings.csv`), so it takes the same `side_faces_west`
 ## override those two do.
@@ -143,8 +141,8 @@ const CAR_ACCIDENT_VERTICAL_SHADOW := "events/car_accident_vertical_shadow"
 const BURST_MAIN_VERTICAL := "events/burst_water_main_vertical"
 ## The crash's and the burst main's second frames, one per street axis: the same canvas and every
 ## pixel of the scene but the moving part — the crash's smoke one puff further up, the main's
-## fountain surging and splashing on the rims. `_wide_scene_texture()` picks them off
-## `_idle_stepping()`, on the two periods below, since neither scene ever moves.
+## fountain surging and splashing on the rims. `wide_scene_texture()` picks them off
+## `EventLook._idle_stepping()`, on the two periods below, since neither scene ever moves.
 const CAR_ACCIDENT_B := "events/car_accident_b"
 const CAR_ACCIDENT_VERTICAL_B := "events/car_accident_vertical_b"
 const BURST_MAIN_B := "events/burst_water_main_b"
@@ -160,7 +158,7 @@ const BURST_MAIN_SPLASH_PERIOD := 0.5
 # front_diagonal, S front, the three west sectors mirroring their east-authored partner about the
 # feet anchor (`EightDirection.is_mirrored()`). `EIGHT_VIEW_BY_SECTOR` is that same table, copied
 # rather than shared — an event and a walker have no common base to hang one array on — and
-# `_select_view()` below is `WalkerLook.sector()`'s own shape applied generally: one
+# `EventLook._select_view()` below is `WalkerLook.sector()`'s own shape applied generally: one
 # held sector per instance, since only one `Look` is ever live on a given instance.
 const EIGHT_VIEW_BY_SECTOR: Array[String] = [
 	"side", "front_diagonal", "front", "front_diagonal", "side",
@@ -176,7 +174,8 @@ const PERSON_BY_VIEW := {
 }
 ## Feet-passing companion to `PERSON_BY_VIEW`, the walker frame-authoring rule applied to the dog
 ## walker's own body: cardinal and side views lift the coat and head one pixel and cross the legs
-## and shoes, the two diagonals leave everything but the legs untouched. See `_gait_stepping()`.
+## and shoes, the two diagonals leave everything but the legs untouched. See
+## `EventLook._gait_stepping()`.
 const PERSON_BY_VIEW_B := {
 	"front": "events/person_front_b",
 	"back": "events/person_back_b",
@@ -222,9 +221,10 @@ const BUSKER_BY_VIEW := {
 	"front_diagonal": "events/busker_front_diagonal",
 	"back_diagonal": "events/busker_back_diagonal",
 }
-## The strumming hand raised — read by `_draw_busker()` off `_idle_stepping()`'s own timer rather
-## than `_gait_stepping()`'s distance, since he never moves. Everything but the hand/arm draped
-## over the guitar is byte-identical to frame a.
+## The strumming hand raised — read by `FigureLook._draw_busker()` off
+## `EventLook._idle_stepping()`'s own timer rather than `EventLook._gait_stepping()`'s distance,
+## since he never moves. Everything but the hand/arm draped over the guitar is byte-identical to
+## frame a.
 const BUSKER_BY_VIEW_B := {
 	"front": "events/busker_front_b",
 	"back": "events/busker_back_b",
@@ -268,9 +268,10 @@ const CAFE_SITTER_BY_VIEW := {
 	"front_diagonal": "events/cafe_sitter_front_diagonal",
 	"back_diagonal": "events/cafe_sitter_back_diagonal",
 }
-## A lean, not a stride: the sitters never move, so this alternates on `_idle_stepping()`'s own
-## timer rather than on `_gait_stepping()`'s distance. Everything but the lap/table-contact stays
-## put; the seated body above it leans a couple of pixels — see the SVG's own comment.
+## A lean, not a stride: the sitters never move, so this alternates on
+## `EventLook._idle_stepping()`'s own timer rather than on `EventLook._gait_stepping()`'s distance.
+## Everything but the lap/table-contact stays put; the seated body above it leans a couple of pixels
+## — see the SVG's own comment.
 const CAFE_SITTER_BY_VIEW_B := {
 	"front": "events/cafe_sitter_front_b",
 	"back": "events/cafe_sitter_back_b",
@@ -285,9 +286,9 @@ const VAN_VICTIM_BY_VIEW := {
 	"front_diagonal": "events/van_victim_front_diagonal",
 	"back_diagonal": "events/van_victim_back_diagonal",
 }
-## See `PERSON_BY_VIEW_B` for the frame-authoring rule. Read by `_draw_abduction()` off
-## `_victim_gait_stepping()`, her own short scripted walk to the van rather than the ordinary
-## distance-driven gait — see that function's doc.
+## See `PERSON_BY_VIEW_B` for the frame-authoring rule. Read by `EventVehicleLook._draw_abduction()`
+## off `EventLook._victim_gait_stepping()`, her own short scripted walk to the van rather than the
+## ordinary distance-driven gait — see that function's doc.
 const VAN_VICTIM_BY_VIEW_B := {
 	"front": "events/van_victim_front_b",
 	"back": "events/van_victim_back_b",
@@ -303,8 +304,8 @@ const PROTESTER_BY_VIEW := {
 	"back_diagonal": "events/protester_back_diagonal",
 }
 ## The plain rank's own stride — see `PERSON_BY_VIEW_B` for the rule. The eight
-## `protester_point_*` poses stay single; `_draw_protest()` only reaches this table when
-## `_protester_texture()` answers its own `PROTESTER` sentinel.
+## `protester_point_*` poses stay single; `RankLook._draw_protest()` only reaches this table when
+## `protester_texture()` answers its own `PROTESTER` sentinel.
 const PROTESTER_BY_VIEW_B := {
 	"front": "events/protester_front_b",
 	"back": "events/protester_back_b",
@@ -362,10 +363,10 @@ const ROBBER_ALERT_BY_VIEW := {
 	"front_diagonal": "events/robber_alert_front_diagonal",
 	"back_diagonal": "events/robber_alert_back_diagonal",
 }
-## The alert walk's other frame, alternated with `ROBBER_ALERT_BY_VIEW` by `_gait_stepping()` as he
-## walks at her through his notice, the way `ROBBER_LUNGING_BY_VIEW_B` is with his lunge: one walk
-## cycle, the same canvas and anchor per view. Held still (a held lunge he stands for) he shows the
-## first.
+## The alert walk's other frame, alternated with `ROBBER_ALERT_BY_VIEW` by
+## `EventLook._gait_stepping()` as he walks at her through his notice, the way
+## `ROBBER_LUNGING_BY_VIEW_B` is with his lunge: one walk cycle, the same canvas and anchor per
+## view. Held still (a held lunge he stands for) he shows the first.
 const ROBBER_ALERT_BY_VIEW_B := {
 	"front": "events/robber_alert_front_b",
 	"back": "events/robber_alert_back_b",
@@ -375,7 +376,8 @@ const ROBBER_ALERT_BY_VIEW_B := {
 }
 ## The policeman on foot (`art/events/policeman_*`): the robber's set one for one — the same
 ## canvases, anchors and postures, east-authored like the robber's — so he is drawn the way the
-## robber is (`_draw_policeman()`). The unsuffixed lunge is his badge silhouette (`icon_for()`).
+## robber is (`PursuerLook._draw_policeman()`). The unsuffixed lunge is his badge silhouette
+## (`icon_for()`).
 const POLICEMAN_LUNGING := "events/policeman_lunging"
 const POLICEMAN_WAITING_BY_VIEW := {
 	"front": "events/policeman_waiting_front",
@@ -394,9 +396,10 @@ const POLICEMAN_LUNGING_BY_VIEW := {
 ## **A policeman who is about to charge stands square-on with one hand raised, palm out**, as the
 ## guard's alert is drawn (`GUARD_ALERT_BY_VIEW`): the man an investigating patrol car or a hunting
 ## van lets out, through day 8, for the second he stands beside her before he charges
-## (`policeman_pictures()`). On the policeman's own canvases and bottom-centre anchor, sharing his
-## waiting picture's body. *(Inbox #764 in minty-lemur, the player: van guardsmen about to charge hold up their
-## hands; an event that does not spawn already charging always needs a warning.)*
+## (`PursuerLook.policeman_pictures()`). On the policeman's own canvases and bottom-centre anchor,
+## sharing his waiting picture's body. *(Inbox #764 in minty-lemur, the player: van guardsmen about
+## to charge hold up their hands; an event that does not spawn already charging always needs a
+## warning.)*
 const POLICEMAN_ALERT_BY_VIEW := {
 	"front": "events/policeman_alert_front",
 	"back": "events/policeman_alert_back",
@@ -450,7 +453,7 @@ const MOUSE_BY_VIEW := {
 }
 ## The dash's own second frame — its tail curls a little differently rather than crossing legs it
 ## has no room to draw at this scale, unlike `CAT_RUNNING_BY_VIEW_B`'s quadrupeds — alternated by
-## `_gait_stepping()` the same way every other family's own `_b` table is.
+## `EventLook._gait_stepping()` the same way every other family's own `_b` table is.
 const MOUSE_BY_VIEW_B := {
 	"front": "events/mouse_front_b",
 	"back": "events/mouse_back_b",
@@ -474,8 +477,8 @@ const CAT_RUNNING_BY_VIEW := {
 }
 ## The dash's own stride. Unlike the humanoid families (`PERSON_BY_VIEW_B`), a quadruped's low
 ## silhouette has no coat or head to lift, so every view here only shifts the leg marks — the
-## distance-driven bob (`_current_bob()`) still supplies the vertical motion cue. The crouched
-## posture stays single: it is the telegraph, held still.
+## distance-driven bob (`EventLook.current_bob()`) still supplies the vertical motion cue. The
+## crouched posture stays single: it is the telegraph, held still.
 const CAT_RUNNING_BY_VIEW_B := {
 	"front": "events/cat_running_front_b",
 	"back": "events/cat_running_back_b",
@@ -619,10 +622,10 @@ const PIGEON_DOWN_BY_VIEW := {
 ## all of them share its mirror convention: `docs/evidence/svg-vehicles-2026-09-10/README.md` — "the
 ## existing delivery van, fire engine, unmarked van, riot van, army truck and moving van side
 ## pictures visibly place the cab at the left" — so their single `"side"` picture is authored facing
-## **west**, backwards from every side picture above. `_draw_eight_view()`'s own `side_faces_west`
-## parameter is the one bit that reads, per family, from `facings.csv`'s `mirror_x` column rather
-## than being assumed; every front, back and diagonal view is unaffected; each is its own picture
-## for its own compass point regardless of which way the side view faces.
+## **west**, backwards from every side picture above. `EventLook._draw_eight_view()`'s own
+## `side_faces_west` parameter is the one bit that reads, per family, from `facings.csv`'s
+## `mirror_x` column rather than being assumed; every front, back and diagonal view is unaffected;
+## each is its own picture for its own compass point regardless of which way the side view faces.
 const DELIVERY_VAN_BY_VIEW := {
 	"front": DELIVERY_VAN_FRONT,
 	"back": DELIVERY_VAN_BACK,
@@ -675,10 +678,9 @@ const POLICE_CAR_BY_VIEW := {
 	"front_diagonal": POLICE_CAR_FRONT_DIAGONAL,
 	"back_diagonal": POLICE_CAR_BACK_DIAGONAL,
 }
-## `_draw_eight_view(RIOT_VAN_BY_VIEW, _heading, canvas, true)` — west-authored like
+## Drawn with `side_faces_west` set (`EventVehicleLook`) — west-authored like
 ## `UNMARKED_VAN_BY_VIEW` and `ARMY_TRUCK_BY_VIEW` above, see that pair's own doc comment — so the
-## side view mirrors on **east** to match `facings.csv`'s recorded `mirror_x`, corrected from M56's
-## own hand-written octant match, which had it backwards.
+## side view mirrors on **east** to match `facings.csv`'s recorded `mirror_x`.
 const RIOT_VAN_BY_VIEW := {
 	"front": RIOT_VAN_FRONT,
 	"back": RIOT_VAN_BACK,
@@ -688,11 +690,11 @@ const RIOT_VAN_BY_VIEW := {
 }
 
 ## **The vehicles that move roll on wheels that stay on the ground.** *(2026-09-11, the player:
-## "cars could bop up and down while the wheels stay in the same place".)* Each of these looks'
-## five views is drawn as its ordinary picture — the body — and a wheels picture on the same canvas
-## and anchor, which `_draw_eight_view()` draws back down by `_current_bob()` so the lift
-## `_draw()` gives the whole drawing reaches the body alone. The parked delivery and ice-cream vans
-## never move, so their pictures keep their wheels and sit still.
+## "cars could bop up and down while the wheels stay in the same place".)* Each of these looks' five
+## views is drawn as its ordinary picture — the body — and a wheels picture on the same canvas and
+## anchor, which `EventLook._draw_eight_view()` draws back down by `EventLook.current_bob()` so the
+## lift `EventLook.draw()` gives the whole drawing reaches the body alone. The parked delivery and
+## ice-cream vans never move, so their pictures keep their wheels and sit still.
 const POLICE_CAR_WHEELS_BY_VIEW := {
 	"front": "events/police_car_front_wheels",
 	"back": "events/police_car_back_wheels",
@@ -763,16 +765,16 @@ const HUT_WEST := "checkpoints/hut_west"
 ## The stationary picture beside a hut (`checkpoint_hut`) or alone (`checkpoint_post`) — a guard
 ## who never turns, since neither row ever moves. The guard who does — a heated `roadblock`'s
 ## escort and `masked_pursuer` — reads `GUARD_STANDING_BY_VIEW`/`GUARD_LUNGING_BY_VIEW` below
-## instead, through `_draw_eight_view()`.
+## instead, through `EventLook._draw_eight_view()`.
 const GUARD_STANDING := "checkpoints/guard_standing"
 const GUARD_LUNGING := "checkpoints/guard_lunging"
-## Bound through `_draw_eight_view()` for the two rows whose guard actually turns as he moves.
-## East-authored, like the person/animal families: `guard_lunging_side.svg`'s own comment —
+## Bound through `EventLook._draw_eight_view()` for the two rows whose guard actually turns as he
+## moves. East-authored, like the person/animal families: `guard_lunging_side.svg`'s own comment —
 ## "East-authored oblique views mirror about the feet" — so no `side_faces_west` override. Each
 ## view's own ground anchor (standing 22×44, anchor (11, 44); lunging 36×44, anchor (17, 44)) is
 ## within a pixel of `Sprites.draw_standing()`'s own bottom-centre assumption, same as every other
-## family bound that way — only the stationary kit's `_draw_at_anchor()` calls need `_GUARD_ANCHOR`
-## below, since those draw through `draw_texture_rect()` directly.
+## family bound that way — only the stationary kit's `EventLook._draw_at_anchor()` calls need
+## `GUARD_ANCHOR` below, since those draw through `draw_texture_rect()` directly.
 const GUARD_STANDING_BY_VIEW := {
 	"front": "checkpoints/guard_standing_front",
 	"back": "checkpoints/guard_standing_back",
@@ -790,8 +792,8 @@ const GUARD_LUNGING_BY_VIEW := {
 ## **A guard who has noticed her stands square-on with one hand raised, palm out** *(inbox #748:
 ## "guards should lift their hand in warning")*, held still for his notice: the hunting roadblock's
 ## guard at his post, the guardsman a vehicle lets out beside its door, the masked man at the foot
-## of the shaft (`masked_pursuer_pictures()`), and — the front view — a checkpoint hut's or post's
-## guard while her crossing of its door's line warns her (`guard_warns_her`). Never the
+## of the shaft (`PursuerLook.masked_pursuer_pictures()`), and — the front view — a checkpoint hut's
+## or post's guard while her crossing of its door's line warns her (`guard_warns_her`). Never the
 ## van's guard a task sends or the guardsman a torn poster sends: both arrive already charging.
 ## 22×44 front and back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
 const GUARD_ALERT_BY_VIEW := {
@@ -815,24 +817,23 @@ const STEAM := "events/steam"
 ## exactly one blow — between blows the vent's plan keeps no instance at all.
 const STEAM_B := "events/steam_b"
 const STEAM_BILLOW_PERIOD := 0.7
-## The vent's floor grate, which is **not** the blow's picture: a blow is an instance that comes
-## and goes, and a vent that is there all the time, blowing or not, is what a player can plan
-## around. So no look draws it — the building lays one at every vent for the whole escape
-## (`BuildingPlan.lay_the_grates()`), through `steam_grate()`, at floor level under everything that stands, and each blow's cloud
-## rises out of it. A ground decal on its own 32×32 canvas, centred on the vent's point, which is
-## the two cloud frames' bottom-centre anchor, so the column comes up out of the slots with no
-## offset of its own.
+## The vent's floor grate, which is **not** the blow's picture: a blow is an instance that comes and
+## goes, and a vent that is there all the time, blowing or not, is what a player can plan around. So
+## no look draws it — the building lays one at every vent for the whole escape
+## (`BuildingPlan.lay_the_grates()`), through `steam_grate()`, at floor level under everything that
+## stands, and each blow's cloud rises out of it. A ground decal on its own 32×32 canvas, centred on
+## the vent's point, which is the two cloud frames' bottom-centre anchor, so the column comes up out
+## of the slots with no offset of its own.
 const STEAM_GRATE := "events/steam_grate"
 
-## The mast — a pole and horns standing on a street — and the two overlays `_draw_mast()` puts
-## above it, never its own colour, so a lamp and a set of arcs can be tinted per state rather than
-## baked into a second picture. `MAST_LAMP` sits at the horn housing; `SOUND_PULSE` is
-## `art/events/sound_pulse.svg`, prepared unbound since M100 and bound here for the first time —
-## its own comment already names the anchor `_MAST_PULSE_AT` reads from.
+## The mast — a pole and horns standing on a street — and the two overlays `FigureLook._draw_mast()`
+## puts above it, never its own colour, so a lamp and a set of arcs can be tinted per state rather
+## than baked into a second picture. `MAST_LAMP` sits at the horn housing; `SOUND_PULSE` is
+## `art/events/sound_pulse.svg`, whose own comment names the anchor `MAST_PULSE_AT` reads from.
 const MAST := "events/mast"
 const MAST_LAMP := "events/mast_lamp"
 const SOUND_PULSE := "events/sound_pulse"
-## `mast.svg`'s own horn housing, read off the source the way `_HUT_ANCHOR` is — where the lamp
+## `mast.svg`'s own horn housing, read off the source the way `HUT_ANCHOR` is — where the lamp
 ## sits and where the arcs rise from, both measured from the mast's own bottom-centre ground point.
 const MAST_LAMP_AT := Vector2(0.0, -44.0)
 const MAST_PULSE_AT := Vector2(0.0, -48.0)
@@ -848,7 +849,7 @@ const IMPACT_CRATER := "props/impact_crater_2x2"
 const CRATER_ANCHOR := Vector2(32.0, 32.0)
 ## Each asset's own documented ground anchor, read out of the SVG's own comment rather than
 ## assumed — neither is `Sprites.draw_standing`'s bottom-centre: the hut's doorway sits a few
-## pixels short of the canvas's own bottom edge. See `_draw_at_anchor`.
+## pixels short of the canvas's own bottom edge. See `EventLook._draw_at_anchor`.
 const HUT_ANCHOR := Vector2(28.0, 52.0)
 const GUARD_ANCHOR := Vector2(11.0, 44.0)
 
@@ -871,7 +872,7 @@ const BOOM_NS_ANCHOR := (BOOM_NS_NEAR_POST + BOOM_NS_FAR_POST) * 0.5
 const BOOM_EW_ANCHOR := (BOOM_EW_NEAR_POST + BOOM_EW_FAR_POST) * 0.5
 ## The lowered arm's own extent inside each canvas — the striped bar itself, not the posts or the
 ## sockets. Only `boom_arm_span()` reads them: where the bar lands across the road is the thing a
-## test can check and `_draw()` cannot.
+## test can check and `EventLook.draw()` cannot.
 const BOOM_NS_ARM := Rect2(4.0, 43.0, 79.0, 7.0)
 const BOOM_EW_ARM := Rect2(15.0, 7.0, 9.0, 76.0)
 
@@ -935,8 +936,8 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.STEAM: return STEAM
 		EventDef.Look.LOUDSPEAKER_MAST: return MAST
 		EventDef.Look.NEIGHBOR: return NEIGHBOR
-		# The side view rather than `GUARD_LUNGING`, which is `MASKED_PURSUER`'s badge: the same man,
-		# and the one picture of his that no other look already stands for.
+		# The side view rather than `GUARD_LUNGING`, which is `MASKED_PURSUER`'s badge: the same
+		# man, and the one picture of his that no other look already stands for.
 		EventDef.Look.DOOR_GUARD: return str(GUARD_LUNGING_BY_VIEW["side"])
 		# The same reasoning for the same man: `ROBBER`'s badge is the lunge seen from the front,
 		# so the robber a handed-over task sets on her is badged by the one view of it no other
@@ -961,21 +962,23 @@ static func icon_wheels_for(look: EventDef.Look) -> String:
 	return str(wheels_by_view.get("side", ""))
 
 ## Which texture a "whole scene" seal picture (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) draws,
-## given whether the street it stands on rotates the spread onto local Y (`_spread_vertical`).
+## given whether the street it stands on rotates the spread onto local Y
+## (`EventInstance.runs_vertically()`).
 ##
 ## **A separate directional asset, not a runtime rotation of the one texture.**
 ## The spread axis remap only relabels which texture dimension is "along" the obstruction; it never
-## turns pixels. `_wide_scene_texture` therefore supplies an authored composition for each street
+## turns pixels. `wide_scene_texture` therefore supplies an authored composition for each street
 ## axis, so cars keep the right projection and people and barriers remain upright. Repeatable
 ## segments are close enough to square for the dimension swap itself. `EventDef.look` and
-## `_spread_vertical` together pick the texture, with no field on the def.
+## `EventInstance.runs_vertically()` together pick the texture, with no field on the def.
 ##
 ## `frame_b` asks for the scene's second frame where it has one — the crash's smoke and the burst
 ## main's fountain. On screen the two are `EventScenery` layers, one behind each of the scene's
-## slices (`_build_the_slices()`), and `_update_scenery()` alternates their frame off its own
-## `_idle_stepping()` call; `_draw_body()` only picks `frame_b` here when it draws the whole scene
-## itself, which happens on the halo's own canvas (`canvas != self`) or with no slices standing. The
-## fallen tree has nothing that moves and answers its one picture either way.
+## slices (`SpreadLook._build_the_slices()`), and `SpreadLook._update_scenery()` alternates their
+## frame off its own `EventLook._idle_stepping()` call; `EventLook.draw_body()` only picks `frame_b`
+## here when it draws the whole scene itself, which happens on the halo's own canvas (`canvas !=
+## self`) or with no slices standing. The fallen tree has nothing that moves and answers its one
+## picture either way.
 static func wide_scene_texture(look: EventDef.Look, vertical: bool, frame_b := false) -> String:
 	match look:
 		EventDef.Look.FALLEN_TREE: return FALLEN_TREE_VERTICAL if vertical else FALLEN_TREE
@@ -1040,9 +1043,9 @@ const BOB_PER_PX := PI / 34.0
 const BOB_HEIGHT := 2.5
 
 ## A few seconds per swap — slow enough that a café frontage reads as sitting rather than
-## fidgeting. See `_idle_stepping()`.
+## fidgeting. See `EventLook._idle_stepping()`.
 const SITTER_IDLE_PERIOD := 3.4
-## A strum's own tempo. See `_idle_stepping()`.
+## A strum's own tempo. See `EventLook._idle_stepping()`.
 const BUSKER_STRUM_PERIOD := 0.5
 ## A brush stroke's, for a poster crew pasting. See `POSTER_CREW_BY_VIEW_B`.
 const POSTER_CREW_PASTE_PERIOD := 0.8
@@ -1052,8 +1055,9 @@ const MARK_HEIGHT := 44.0
 const MARK_WIDTH := 15.0
 const MARK_FLASHES_PER_SECOND := 3.0
 
-## The largest rectangle `mark_rect()` can ever be, in a row's own space: the doubled caret at full
-## swell, outline included — what `footprint_of()` keeps off screen for a row that can be marked.
+## The largest rectangle `EventLook.mark_rect()` can ever be, in a row's own space: the doubled
+## caret at full swell, outline included — what `footprint_of()` keeps off screen for a row that can
+## be marked.
 static func largest_mark_rect() -> Rect2:
 	var top := -(MARK_HEIGHT + 10.0) - MARK_WIDTH * 0.8 - MARK_WIDTH * 0.85 - 1.0
 	var bottom := -(MARK_HEIGHT + 10.0) + MARK_WIDTH * 0.5 + 1.0
@@ -1088,8 +1092,7 @@ static func drawn(picture: String) -> AtlasTexture:
 
 ## A picture's own size, answered from the region table with nothing acquired and no texture
 ## loaded — what the layout arithmetic around a spread, a café rank, a protest rank or a badge
-## needs. `Vector2` rather than `Vector2i` so it is a drop-in for the `get_size()` these call sites
-## used to ask a texture for.
+## needs, as a `Vector2` like a texture's `get_size()`.
 static func native_size(picture: String) -> Vector2:
 	return Vector2(AtlasLibrary.native_size(StringName(picture)))
 
@@ -1102,10 +1105,10 @@ static func steam_grate() -> AtlasTexture:
 
 ## Every picture a row with this look can draw, as repository paths.
 ##
-## Read straight off `_draw_body()`'s own arms: if a branch there can reach a picture, it is here.
-## A look whose arm draws nothing in the street (`BURNT_SHELL`) lists its badge silhouette instead.
-## Not read by the live draw path, which has the path already in hand — this is the one place
-## "everything a look can draw" is enumerable, which is what a completeness check against
+## Read straight off `EventLook.draw_body()`'s own arms: if a branch there can reach a picture, it
+## is here. A look whose arm draws nothing in the street (`BURNT_SHELL`) lists its badge silhouette
+## instead. Not read by the live draw path, which has the path already in hand — this is the one
+## place "everything a look can draw" is enumerable, which is what a completeness check against
 ## `assets/atlases/membership.json` wants (`tests/test_atlas_events.gd`), the same role
 ## `Stroller.sources_by_group()` plays for the rig.
 static func family_sources(look: EventDef.Look) -> Array[String]:
@@ -1228,7 +1231,8 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			# Sent already chasing: no notice, so no alert to draw.
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.MASKED_PURSUER, EventDef.Look.GUARDSMAN_GIVING_CHASE:
-			# The masked man's notice at the foot of the shaft, and the guardsman's out of a vehicle.
+			# The masked man's notice at the foot of the shaft, and the guardsman's out of a
+			# vehicle.
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
 					GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.POLICEMAN_GIVING_CHASE:
@@ -1258,8 +1262,8 @@ static func _collect_views(sources: Dictionary, tables: Array) -> void:
 		for view in table.keys():
 			sources[str(table[view])] = true
 
-## The five-view generalisation of `_draw_simple`, for a family that has the full
-## front/back/side/diagonal set — `_select_view()` picks the view from `heading` and
+## The five-view generalisation of `EventLook._draw_simple`, for a family that has the full
+## front/back/side/diagonal set — `EventLook._select_view()` picks the view from `heading` and
 ## `EightDirection.is_mirrored()` says whether it mirrors, for every sector but one.
 ##
 ## **`side_faces_west` is the one bit `EightDirection` cannot answer, because it is a property of
@@ -1276,31 +1280,33 @@ static func _collect_views(sources: Dictionary, tables: Array) -> void:
 ## `side_faces_west` override set, the same as `delivery_van`, `fire_engine`, `unmarked_van` and
 ## `army_truck` above — see that const's own doc comment.
 ##
-## `_draw_simple` itself is untouched and keeps drawing the one row that has no directional family
-## at all: `skip`.
+## `EventLook._draw_simple` itself is untouched and keeps drawing the one row that has no
+## directional family at all: `skip`.
 ##
-## `by_view_b` is the family's own feet-passing set, read off `_gait_stepping()` when given —
-## empty for every vehicle family, which has no stride, so the lookup falls through to `by_view`.
+## `by_view_b` is the family's own feet-passing set, read off `EventLook._gait_stepping()` when
+## given — empty for every vehicle family, which has no stride, so the lookup falls through to
+## `by_view`.
 ##
 ## **A look in `WHEELS_BY_LOOK` is drawn in two layers, and its wheels and its shadow stay on the
-## ground.** `_draw()` and `EntityHalo` both lift the canvas by `_current_bob()` before calling
-## here, so the wheels picture and the shadow are drawn back down by the same amount and only the
-## body rises and falls; the wheels go over the body or, for the pictures in
+## ground.** `EventLook.draw()` and `EntityHalo` both lift the canvas by `EventLook.current_bob()`
+## before calling here, so the wheels picture and the shadow are drawn back down by the same amount
+## and only the body rises and falls; the wheels go over the body or, for the pictures in
 ## `WHEELS_BEHIND_THE_BODY`, under it.
 ##
-## **`draw_shadow` is false only for `_draw_roadblock()`'s guard.** Every other caller's own body
-## shadow — `def.parts()`'s default single piece, `def.shape` at local origin — is exactly the
-## shadow this row wants under the picture this function draws. A heated roadblock's guard is the
-## one exception: `def.shape` there is the barrier band's own shape, not his, and the band's real
-## shadow is already drawn separately, back at the post he left (`_draw_spread()`); the automatic
-## call here would draw a second, band-shaped shadow under his current position instead of his own
-## small one, so `_draw_roadblock()` draws that shadow itself and passes `false`.
+## **`draw_shadow` is false only for `RoadblockLook._draw_roadblock()`'s guard.** Every other
+## caller's own body shadow — `def.parts()`'s default single piece, `def.shape` at local origin — is
+## exactly the shadow this row wants under the picture this function draws. A heated roadblock's
+## guard is the one exception: `def.shape` there is the barrier band's own shape, not his, and the
+## band's real shadow is already drawn separately, back at the post he left
+## (`SpreadLook._draw_spread()`); the automatic call here would draw a second, band-shaped shadow
+## under his current position instead of his own small one, so `RoadblockLook._draw_roadblock()`
+## draws that shadow itself and passes `false`.
 ##
 ## `at` is where the feet stand in local space: the node's own origin for every caller but
-## `_draw_roadblock()`, whose guard stands beside his band rather than on its centre.
+## `RoadblockLook._draw_roadblock()`, whose guard stands beside his band rather than on its centre.
 ## How much empty canvas each police car view leaves below its own drawn content, in px, read off
-## the SVGs (`art/events/police_car*.svg`): the side view's tyres touch its bottom row, the front and
-## back views' bodies end two rows above theirs and the diagonals' tyres two rows above theirs —
+## the SVGs (`art/events/police_car*.svg`): the side view's tyres touch its bottom row, the front
+## and back views' bodies end two rows above theirs and the diagonals' tyres two rows above theirs —
 ## the same margins the crowd car's views leave (`CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN`).
 const POLICE_CAR_CANVAS_BOTTOM_MARGIN := {
 	"front": 2.0,
@@ -1327,12 +1333,12 @@ static func canvas_margins(look: EventDef.Look) -> Dictionary:
 	return FIRE_ENGINE_CANVAS_BOTTOM_MARGIN if look == EventDef.Look.FIRE_ENGINE \
 			else POLICE_CAR_CANVAS_BOTTOM_MARGIN
 
-## Whether `look` is a body whose picture is anchored over it by `_body_anchor()`: the patrol car's
-## and the fire engine's, the two looks of a car that drives (`EventDef.vehicle`).
+## Whether `look` is a body whose picture is anchored over it by `EventLook._body_anchor()`: the
+## patrol car's and the fire engine's, the two looks of a car that drives (`EventDef.vehicle`).
 static func is_anchored_over_its_body(look: EventDef.Look) -> bool:
 	return look == EventDef.Look.POLICE_CAR or look == EventDef.Look.FIRE_ENGINE
 
-## The eight pointing poses, in the bearing order `_protester_texture()` indexes into: north
+## The eight pointing poses, in the bearing order `protester_texture()` indexes into: north
 ## first, then clockwise. Kept beside the poses themselves rather than built in the function, so
 ## the table is one thing to read rather than eight `match` arms.
 const POINTING_POSES: Array[String] = [
@@ -1370,7 +1376,7 @@ static func gate_runs_north_south(along_axis: Vector2) -> bool:
 ## How far the lowered arm reaches to either side of the gate's own ground point, across the road
 ## it bars: `x` the near edge (negative), `y` the far edge, in pixels along the cross-street axis.
 ## This is the number the player reads as *the bar is on the road* or *the bar is on the kerb*, and
-## nothing in `_draw()` can be asserted headless — see `tests/test_checkpoints.gd`.
+## nothing in `EventLook.draw()` can be asserted headless — see `tests/test_checkpoints.gd`.
 static func boom_arm_span(runs_north_south: bool) -> Vector2:
 	if runs_north_south:
 		var ns := BOOM_NS_ARM.position.x - BOOM_NS_ANCHOR.x

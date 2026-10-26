@@ -2,13 +2,13 @@ extends RefCounted
 ## M108, eight-direction entity graphics: binding live event people, animals, riders and vehicles
 ## to `EightDirection`. `tests/test_walker_views.gd` already pins the selector itself and the crowd
 ## walker's own wiring; this suite pins the event side of the same convention —
-## `EventInstance.EIGHT_VIEW_BY_SECTOR`, `_select_view()`, each family's own `_BY_VIEW` table and
+## `EventPictures.EIGHT_VIEW_BY_SECTOR`, `_select_view()`, each family's own `_BY_VIEW` table and
 ## heading source, and — for the vehicle families at the bottom — `_draw_eight_view()`'s
 ## `side_faces_west` parameter, the one bit a family's own art rather than its geometry decides.
 ##
 ## Consistent with every other suite in this file, nothing here calls a `_draw_*` function
 ## directly — `Sprites.draw_standing()` and the raw `canvas.draw_*` calls inside them are only
-## valid from an actual draw pass, which is why `_protester_texture()` and `_cap_offset()` are the
+## valid from an actual draw pass, which is why `protester_texture()` and `_cap_offset()` are the
 ## existing model: a `_draw_*` function reads a small, directly testable query, and this suite pins
 ## the query rather than the drawing. The rendered evidence sheets under
 ## `docs/evidence/m108-event-people-2026-09-11/` and `docs/evidence/m108-event-vehicles-2026-09-11/`
@@ -102,7 +102,7 @@ const VEHICLE_SIDE_REUSE := {
 }
 
 ## Which vehicle families' `"side"` view is authored facing west rather than east — the exact
-## `side_faces_west` argument `EventInstance._draw_body()` passes to `_draw_eight_view()` for each,
+## `side_faces_west` argument `EventLook.draw_body()` passes to `_draw_eight_view()` for each,
 ## read back here so the selector test below can assert the mirror the same way the drawing does.
 ## `ice_cream_van`, `lorry` and `police_car` are the three genuinely east-authored families;
 ## `riot_van` joins `delivery_van`, `fire_engine`, `unmarked_van` and `army_truck` as west-authored
@@ -327,14 +327,14 @@ func _test_a_spread_covers_the_ground_its_body_closes(t) -> void:
 					"%s: the segments run %.1f..%.1f along the run, the body's own %.0f..%.0f"
 					% [what, from, to, -def.obstructs_radius, def.obstructs_radius])
 
-## The union of every rect `EventInstance._draw_spread()` draws a roadblock's band into, segments
+## The union of every rect `SpreadLook._draw_spread()` draws a roadblock's band into, segments
 ## and end posts, in the band's own local space — the same slice and cap arithmetic that function
 ## uses, through the same `DrawLayer.slice_along()`, `_cap_offset()` and `_cap_along()` it calls.
 func _roadblock_band_rect(vertical: bool, half: float) -> Rect2:
 	return _spread_rect(EventPictures.roadblock_segment_texture(vertical),
 			EventPictures.ROADBLOCK_END, vertical, half)
 
-## The union of every rect `EventInstance._draw_spread()` draws `segment_picture` into, capped by
+## The union of every rect `SpreadLook._draw_spread()` draws `segment_picture` into, capped by
 ## `cap_picture` at both ends unless it is empty, over a run of `-half` to `half`.
 func _spread_rect(segment_picture: String, cap_picture: String, vertical: bool,
 		half: float) -> Rect2:
@@ -824,8 +824,8 @@ func _test_no_guard_who_arrives_charging_takes_the_alert(t) -> void:
 		instance.free()
 
 # --------------------------------------------------------------- M108's vehicle item ---
-# `EventInstance._draw_eight_view()`'s `side_faces_west` parameter, and the per-family binding in
-# `_draw_body()` that decides it — see that function's own doc comment and
+# `EventLook._draw_eight_view()`'s `side_faces_west` parameter, and the per-family binding in
+# `draw_body()` that decides it — see that function's own doc comment and
 # `docs/evidence/svg-vehicles-2026-09-10/facings.csv`.
 
 ## Which catalogue row exercises each vehicle family's own heading source: `fire_truck`,

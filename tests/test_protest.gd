@@ -1,7 +1,7 @@
 extends RefCounted
 ## Protester pointing (M65): which of the eight `protester_point_*` poses a protest rank draws,
 ## and when it stays the plain `protester.svg` instead. See `docs/EVENTS.md`, the `protest` row,
-## and `EventInstance._protester_texture()`.
+## and `EventPictures.protester_texture()`.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -19,7 +19,7 @@ func run(t) -> void:
 
 # ---------------------------------------------------------------- bearing ---
 
-## The exact inverse of `_protester_texture()`'s own `atan2(toward.x, -toward.y)`, so feeding a
+## The exact inverse of `protester_texture()`'s own `atan2(toward.x, -toward.y)`, so feeding a
 ## bearing in and reading it back out is round-trip rather than a second formula to disagree with
 ## the first.
 func _at_bearing(degrees: float, distance: float) -> Vector2:

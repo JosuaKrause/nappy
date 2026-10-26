@@ -10,7 +10,7 @@ extends RefCounted
 ## **What is checked is what the instance draws, not what it was placed by.** Each place makes a real
 ## instance the way the game creates it there (`EventManager.spawn_warned()`, `_send_down_her_line()`,
 ## the trap's), told where she is, and asks it what it draws on that frame
-## (`EventInstance.drawn_rect_now()`: its pictures, its shadow, and its danger caret from the
+## (`EventLook.drawn_rect_now()`: its pictures, its shadow, and its danger caret from the
 ## caret's own drawing numbers and its own projection of her). A footprint (`footprint_of()`) that
 ## leaves anything out fails here. Asked over every bearing, cameras led every way her look-ahead can
 ## lead them, both input schemes (a corner the joystick's controls cover is not off screen for this),
