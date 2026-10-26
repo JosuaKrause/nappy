@@ -1878,7 +1878,7 @@ flagless `tools/run.sh` session asks for the same thing with.
 
 **Written `day_under_way: false` the instant a resumed run's own retry exists but has not yet been
 handed to the player, when opening the save charged a nerve** — `main._write_dawn_for_a_resumed_run()`,
-called right after `main._start_day()` builds the retry, before the title, or the title and then
+called right after `main._start_day()` (its `DayDirector`) builds the retry, before the title, or the title and then
 the day brief, is ever shown — **and written `day_under_way: true` the instant she actually starts
 playing a day**: continuing from the title on a fresh run, from the day brief a resumed one opens
 on, or from the previous day's own end-of-day message straight into the next day, which has no gate

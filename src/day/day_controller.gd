@@ -26,7 +26,7 @@ var time_total := 0.0
 ## Set when the day ends badly, for the summary screen to explain itself.
 var failure_reason := ""
 ## The raw `reason` a hard fail carried — `EventBus.hard_fail_triggered`'s own string, "car_strike"
-## or a catalogue id — kept beside `failure_reason`'s translated sentence so `main._on_day_finished()`
+## or a catalogue id — kept beside `failure_reason`'s translated sentence so `DayDirector.finish_day()`
 ## can name what ended the day for `VisitCounter` without re-deriving it from the narrative text.
 ## "" off a hard fail, and reset every `start()` — never carried from a previous attempt.
 var hard_fail_reason := ""
