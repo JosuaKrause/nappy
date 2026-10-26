@@ -591,7 +591,7 @@ events it plans), the resistance, the player, the baby and the clock; `finish_da
 the clock and the run, since the escape's building has no city, crowd or resistance, and reads the
 events, city, player and baby where there are some. The developer readout, the HUD and the route
 rig are `null` where the game runs without them. The director calls those three inline, as `main`
-did; turning them into listeners is `RunFlow`'s (`main-and-state.md`). It is handed the run, a `RunState` (the class of the `GameState`
+did; turning them into listeners is `main-and-state.md`'s (PR 4). It is handed the run, a `RunState` (the class of the `GameState`
 autoload), rather than reading the autoload by name. A scene recipe's day start stays in `main`.
 
 ### `VisitCounter`

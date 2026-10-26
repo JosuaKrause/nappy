@@ -18,6 +18,7 @@ func run(t) -> void:
 	_test_a_hard_fail_is_named_by_its_reason(t)
 	_test_a_won_day_moves_the_calendar_on(t)
 	_test_a_won_last_day_with_every_task_done_hands_over(t)
+	_test_a_won_day_with_a_player_and_no_city_ends(t)
 	_test_a_section_is_ended_but_not_settled(t)
 
 func _on_day_ended(day: int, result: int, cause: String, elapsed: float) -> void:
@@ -106,6 +107,18 @@ func _test_a_won_day_moves_the_calendar_on(t) -> void:
 	var end := director.finish_day(GameEnums.DayResult.WON)
 	t.check(not end.hands_over_to_the_escape and not end.run_over and _run.header.day == 2,
 			"a won day 1 is day 2 next")
+	_put_away(rig)
+
+## `finish_day()` requires only the clock and the run: a won day walked home with a player but no
+## city (nothing to light the unmet fire in) still ends.
+func _test_a_won_day_with_a_player_and_no_city_ends(t) -> void:
+	var rig := _rig(t)
+	var director: DayDirector = rig["director"]
+	var player := Stroller.new()
+	director.player = player
+	var end := director.finish_day(GameEnums.DayResult.WON)
+	t.check(end.finished_day == 1 and _run.header.day == 2, "the day ends and the calendar moves")
+	player.free()
 	_put_away(rig)
 
 func _test_a_won_last_day_with_every_task_done_hands_over(t) -> void:
