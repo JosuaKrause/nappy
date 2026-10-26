@@ -2166,7 +2166,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.check(main._title.is_open() and not main._summary.is_showing(),
 			"a genuinely resumed escape opens on the title first, the section's brief not yet up")
 	t.check(main._title.mode_name_shown() != "", "and names the mode, which the save already fixed")
-	t.check(main._in_the_title, "and the boot is behind its title")
+	t.check(main._flow.in_the_title(), "and the boot is behind its title")
 	t.check(t.get_tree().paused and not main._day.can_process()
 			and is_equal_approx(main._day.time_remaining, length),
 			"with the section's whole clock standing still behind the title (%.2f of %.2f)"
@@ -2179,7 +2179,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	var title_label: Label = main._summary.get_node("Root/Center/Lines/Title")
 	t.check(title_label.text == "Escape the building",
 			"titled with the section's own words ('%s')" % title_label.text)
-	t.check(not main._in_the_title, "the title is behind her")
+	t.check(not main._flow.in_the_title(), "the title is behind her")
 	t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
 			"the clock still standing still behind the brief")
 

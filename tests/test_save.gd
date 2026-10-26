@@ -1627,6 +1627,8 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	main._save_indicator = indicator
 	main._summary = _SUMMARY_SCENE.instantiate()
 	old_main_scene.add_child(main._summary)
+	# Day 14's summary after the hand-over (`DayEnd.hands_over_to_the_escape`).
+	main._flow.mode = RunFlow.Mode.INTO_ESCAPE
 	var reloads: Array[int] = []
 	main._reload_override = func() -> void: reloads.append(1)
 
