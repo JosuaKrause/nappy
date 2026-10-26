@@ -442,7 +442,7 @@ func _test_the_flock_and_the_drawn_flames_are_never_gated(t) -> void:
 	t.check(not stall._picture_never_settles(), "and a market stall is gated like any other scenery")
 	stall.free()
 
-## The van's victim slides to the van over `EventAbduction.VICTIM_TAKEN_OVER` seconds, so it is never gated while
+## The van's victim slides to the van over `AbductionSpec.taken_over` seconds, so it is never gated while
 ## the take runs — and the *end* of the take is a change the key itself has to carry, or the last
 ## frame of the walk would stay on the screen with nobody in it.
 func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t) -> void:

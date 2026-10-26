@@ -596,16 +596,15 @@ func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
 	counter.free()
 
 ## **The day-3 lesson's dog has its own set and not the dog's** *(PLAYTEST-141: "we need to record
-## like dog tutorial")*: `EventInstance.is_the_lesson`, which `EventManager._create()` sets on the
-## first dog it makes on `Tuning.RUN_TAUGHT_DAY`, names its charge `dog-tutorial-*`; a second dog
-## that day is an ordinary `dog`.
+## like dog tutorial")*: its own row, `charging_dog_tutorial`, which `EventDirector` hands out in
+## place of the first dog it sends on `Tuning.RUN_TAUGHT_DAY`, names its charge `dog-tutorial-*`;
+## the charging dog's own row is an ordinary `dog`.
 func _test_the_lesson_dog_has_its_own_set(t) -> void:
 	var counter := RecordingCounter.new()
 	var listening := _listen(counter)
 	var day := GameState.header.day
-	var def := EventCatalogue.by_id("charging_dog")
+	var def := EventCatalogue.lesson_of(EventCatalogue.by_id("charging_dog"))
 	var lesson := _charger(t, def)
-	lesson.is_the_lesson = true
 	t.check(lesson.charger_name() == "charging_dog_tutorial", "the lesson's dog is named apart")
 	_walk(lesson, Vector2(400.0, 0.0), def.telegraph_time + 0.5)
 	lesson.report_the_catch()
@@ -614,8 +613,9 @@ func _test_the_lesson_dog_has_its_own_set(t) -> void:
 		"it sends its own set, and none of the dog's (%s)" % [counter.sent])
 	lesson.free()
 	counter.sent.clear()
-	var later := _charger(t, def)
-	_walk(later, Vector2(400.0, 0.0), def.telegraph_time + 0.5)
+	var dog := EventCatalogue.by_id("charging_dog")
+	var later := _charger(t, dog)
+	_walk(later, Vector2(400.0, 0.0), dog.telegraph_time + 0.5)
 	t.check(counter.sent == ["nappy-day-%d-dog-chased" % day],
 		"a dog that is not the lesson's is an ordinary dog (%s)" % [counter.sent])
 	later.free()
@@ -645,8 +645,7 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t) -> void:
 		"his charge is counted chased (%s)" % [counter.sent])
 	man.free()
 	counter.sent.clear()
-	var guard := _charger(t, EventCatalogue.by_id("alley_robbery"))
-	guard.counted_as = "task_guard"
+	var guard := _charger(t, EventCatalogue.task_guard())
 	guard.notice_her_at(Vector2(300.0, 0.0), Tuning.WARNING_ALONE_MAX, true)
 	_walk(guard, Vector2(300.0, 0.0), 0.5)
 	t.check(counter.sent == ["nappy-day-%d-task-guard-warned" % day],

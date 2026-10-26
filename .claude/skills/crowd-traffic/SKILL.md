@@ -281,7 +281,7 @@ boot rather than only on the street** if the two stop agreeing.
 **If anything else ever becomes lethal without being in the catalogue, it needs its own stated
 contract in the same place.** A hard fail with no written contract is a bug waiting to be called a
 difficulty setting. **The patrol car and the fire engine are in the catalogue and keep this
-contract instead of a telegraph** (`EventDef.drives`): each strikes only on the carriageway, only
+contract instead of a telegraph** (`EventDef.vehicle`, `EventCarDriving`): each strikes only on the carriageway, only
 ahead of its nose, and warns anybody standing in its lane `CAR_HORN_TIME` of its own travel before
 the strike, wherever it is created, so `validate_traffic()`'s check is its check too. Each also
 gives way where the crowd's cars do — short

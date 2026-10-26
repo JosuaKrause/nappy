@@ -425,7 +425,7 @@ func _test_approaching_costs_more_than_receding(t) -> void:
 ## D2: nobody builds the general capsule-and-ellipse sum, because a moving emitter's field is priced
 ## from its centre as a point (`GroundShape.field_distance()`). That is only true to the row's own
 ## body when the body lies inside its own field's core — the patrol car's 21px capsule inside its
-## 44px core, `police_patrol` being the one emitting segment that moves (`EventDef.drives`): the
+## 44px core, `police_patrol` being the one emitting segment that moves (`EventDef.vehicle`): the
 ## core is full strength wherever the body is, and past it the point is wrong by at most the spine's
 ## half-length. A moving segment reaching past its core would quietly drop its own body from its
 ## field — this is the regression guard.

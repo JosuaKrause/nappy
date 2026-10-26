@@ -11,12 +11,7 @@
   snapshot and the save walk it; `GameSave` is a static that reads that list off `GameState` rather
   than being handed it; every other reader takes a part off the
   `GameState` global (`GameState.header.day`, `GameState.attempt_spend.scars`) rather than being
-  handed it; and `GameState` keeps eleven forwarding properties (`run_seed`, `day`,
-  `resistance_progress`, `consumed_one_shots`, `completed_resistance_steps`,
-  `failed_resistance_steps`, `scars`, `city_state`, `sabotage_done`, `resistance_carrying_package`,
-  `completed_resistance_alley_tiles`) for the readers in `src/events/**`, `src/resistance/**`,
-  `tests/test_resistance.gd` and `tests/test_event_manager.gd`, which go when those files read the
-  parts. `GameState.` is read about a hundred times in `main`, `GameState.header.day` among them. The
+  handed it. `GameState.` is read about a hundred times in `main`, `GameState.header.day` among them. The
   hidden globals held in statics are filed in `hidden-statics.md`.
 - **One summary screen with four hand-reset modes** (`day_summary.gd`: `show_day_brief`, `show_day`,
   `show_ending`, `show_finale`); the screen's mode is tracked in `main`'s booleans. The resistance tally and the run-standing

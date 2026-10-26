@@ -745,8 +745,8 @@ func _test_resolve_target_unknown_word_warns_and_answers_inf(t) -> void:
 ## One day's own city, resistance director and parked `Stroller`, isolated from the suite's shared
 ## day-6 fixture and from `GameState`'s own resistance fields — freed and restored by
 ## `_free_target_shape_fixture()`. Built the same way `_build_day()` builds day 6's, with `day` in
-## place of the module-level `DAY` constant. `progress_at_dawn` is what `GameState.
-## resistance_progress` reads as `ResistanceDirector.start_day()` runs — 0 for every ordinary day,
+## place of the module-level `DAY` constant. `progress_at_dawn` is what `GameState.resistance.
+## progress` reads as `ResistanceDirector.start_day()` runs — 0 for every ordinary day,
 ## `Tuning.RESISTANCE_GOAL` for the last night's own finale test, which needs `sabotage_available()`
 ## to hold before the step is on offer at all.
 func _build_target_shape_fixture(t, day: int, progress_at_dawn: int = 0) -> Dictionary:
@@ -1338,7 +1338,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	var gate: EventInstance = null
 	var hut: EventInstance = null
 	for instance in city.events.instances():
-		if instance.def.lifts_for_traffic and not gate:
+		if instance.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and not gate:
 			gate = instance
 	if gate:
 		var axis_of_gate := gate.facing_now()

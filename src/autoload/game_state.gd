@@ -8,13 +8,7 @@ extends Node
 ## dawn copies and their save shape once; starting a run, the dawn photograph, a lost day's
 ## give-back, the snapshot and the save all walk this list (`RunStateRegistry`). **A part declared
 ## here and not registered is caught by `tests/test_run_state.gd`**. Readers take the part
-## (`GameState.header.day`, `GameState.attempt_spend.scars`); the properties below forward to a part
-## **only for the readers in files another change owns** — `src/events/**` (`run_seed`, `day`,
-## `resistance_progress`, `consumed_one_shots`, `scars`, `city_state`), `src/resistance/**`
-## (`completed_resistance_steps`, `failed_resistance_steps`, `resistance_progress`, `scars`,
-## `city_state`, `sabotage_done`, `resistance_carrying_package`,
-## `completed_resistance_alley_tiles`), `tests/test_resistance.gd` and `tests/test_event_manager.gd` —
-## and go when those files read the parts.
+## (`GameState.header.day`, `GameState.attempt_spend.scars`), and nothing forwards to a part.
 var run_parts := RunStateRegistry.new()
 var header: RunHeader = run_parts.register(RunHeader.new())
 var resistance: ResistanceRunState = run_parts.register(ResistanceRunState.new())
@@ -30,22 +24,6 @@ var posters: PosterState = run_parts.register(PosterState.new())
 ## and given back with the rest of what an attempt spends, and a top-level save key of its own like
 ## `posters`, so a save written before it loads at 0.
 var pelican: PelicanState = run_parts.register(PelicanState.new())
-
-var run_seed: int:
-	get:
-		return header.run_seed
-	set(value):
-		header.run_seed = value
-var day: int:
-	get:
-		return header.day
-	set(value):
-		header.day = value
-var resistance_progress: int:
-	get:
-		return resistance.progress
-	set(value):
-		resistance.progress = value
 
 ## Whether this run is in hard mode, chosen once on the title's Hard Mode checkbox as a new game
 ## begins and fixed for the rest of the run. *(gentle-osprey, the player: "a "Hard Mode" checkbox on
@@ -107,42 +85,6 @@ static func format_clock_seconds(seconds: float) -> String:
 	var total_seconds := int(seconds)
 	return "%d:%02d" % [total_seconds / 60, total_seconds % 60]
 
-## One-shot event ids already consumed this run, so they never fire twice.
-var consumed_one_shots: Array[String]:
-	get:
-		return attempt_spend.consumed_one_shots
-	set(value):
-		attempt_spend.consumed_one_shots = value
-## Resistance steps completed, and steps failed beyond recovery.
-var completed_resistance_steps: Array[int]:
-	get:
-		return resistance.completed_steps
-	set(value):
-		resistance.completed_steps = value
-var failed_resistance_steps: Array[int]:
-	get:
-		return resistance.failed_steps
-	set(value):
-		resistance.failed_steps = value
-
-## Permanent marks a one-off event left on the city: `{ id, position, since_day }`.
-## The building day 3's fire caught is still drawn burnt on that corner on day 12, never
-## repaired — the city remembers, which is most of how the escalation is told.
-var scars: Array[Dictionary]:
-	get:
-		return attempt_spend.scars
-	set(value):
-		attempt_spend.scars = value
-
-## Where each block currently is along its arc. Run-scoped, like everything else here: the
-## arcs themselves belong to the CityMap and never change, this is only how far along them
-## the run has got. See docs/CITY.md, "Block purposes".
-var city_state: CityState:
-	get:
-		return attempt_spend.city_state
-	set(value):
-		attempt_spend.city_state = value
-
 ## Where the run's own facts — a nerve spent, a checkpoint kept, the mode, the ending, where she
 ## settled, a block's arc — are written down for the run log. Handed in by `use_trace()`; silent
 ## until then.
@@ -153,46 +95,6 @@ var _trace := RunTrace.new()
 func use_trace(sink: RunTrace) -> void:
 	_trace = sink
 	attempt_spend.city_state.trace = sink
-
-## Whether the day-14 sabotage actually went through. Reaching RESISTANCE_GOAL earns the
-## chance at the good ending; this is doing it.
-var sabotage_done: bool:
-	get:
-		return resistance.sabotage_done
-	set(value):
-		resistance.sabotage_done = value
-
-## True for the rest of a day once the resistance's package has been picked up. Read by
-## `City.decay_multiplier()` — the pram is heavier for every street after this one. Reset at
-## the start of every attempt at a day, including a retry, since a fresh attempt has not
-## picked it up yet.
-var resistance_carrying_package: bool:
-	get:
-		return resistance.carrying_package
-	set(value):
-		resistance.carrying_package = value
-
-## Alley tiles a completed pickup step's chalk mark stood at, this run — read by
-## `ResistanceDirector._pick_reachable()` and `_nearest_alley_within()` so a later mark never
-## relocates onto, or starts on, the same alley while another eligible one is still in reach
-## (M177). A `RunFacts` rider: its own top-level save key, so a save written before this field
-## existed still loads and reads as "nothing recorded" by absence.
-##
-## **Not given back by a lost day.** A lost day's own placement never reads
-## this list at all — the mark it is about was placed at dawn, before any tile could have been
-## recorded against it today — so leaving an undone attempt's tile in here only ever costs the
-## next placement one more alley to avoid, never a placement the guarantee needs.
-var completed_resistance_alley_tiles: Array[Vector2i]:
-	get:
-		return facts.completed_resistance_alley_tiles
-	set(value):
-		facts.completed_resistance_alley_tiles = value
-
-## Records a tile a pickup's mark stood at when its step completed, ignoring one already
-## recorded. `ResistanceDirector._on_contact_completed()` is the one caller — see its own doc for
-## why only a pickup's tile is ever worth recording here.
-func record_completed_alley_tile(tile: Vector2i) -> void:
-	facts.record_completed_alley_tile(tile)
 
 ## Where she settled yesterday, or `Vector2i(-1, -1)` if she did not settle at all.
 func settled_yesterday() -> Vector2i:
@@ -242,7 +144,7 @@ func start_run(seed_value: int = 0) -> void:
 ## Begin an attempt at today — the first try of a day, or a retry bought with a nerve.
 ##
 ## Called before anything is placed, because what is placed is decided by the state this is the
-## record of: the director asks `completed_resistance_steps` and `failed_resistance_steps` which
+## record of: the director asks `resistance.completed_steps` and `resistance.failed_steps` which
 ## step today offers, and a loss gives back exactly what is photographed here, so the retry is
 ## offered the same mark or contact the first attempt was.
 func begin_day() -> void:

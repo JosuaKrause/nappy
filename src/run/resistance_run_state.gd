@@ -8,9 +8,12 @@ extends RunSubState
 var completed_steps: Array[int] = []
 var failed_steps: Array[int] = []
 var progress: int = 0
+## Whether the day-14 sabotage actually went through. Reaching `Tuning.RESISTANCE_GOAL` earns the
+## chance at the good ending; this is doing it.
 var sabotage_done := false
-## Whether the pram is carrying the package right now. Put down at each dawn
-## (`GameState.begin_day()`) so a loss gives back a pram that is not yet heavy.
+## Whether the pram is carrying the package right now, for the rest of a day once it has been picked
+## up: `City.decay_multiplier()` reads it, since the pram is heavier for every street after. Put down
+## at each dawn (`GameState.begin_day()`) so a loss gives back a pram that is not yet heavy.
 var carrying_package := false
 
 var _dawn_completed_steps: Array[int] = []

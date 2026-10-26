@@ -213,7 +213,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 			for segment in plan.doors:
 				_door_segments[segment.key()] = true
 			# Every door body that **detains** — the hut on each sidewalk and the alley door's
-			# guard. The boom over the road detains nobody (`EventDef.lifts_for_traffic`), and it
+			# guard. The boom over the road detains nobody (`EventDef.SolidWhen.WHILE_LOWERED`), and it
 			# is the cars' in any case: `_stop_for_gates()` is its answer. Which hut a given walker
 			# can be held at is a question about that walker's own line of travel rather than about
 			# the row, and `_hold_walkers_at_doors()` answers it.
@@ -753,7 +753,7 @@ func give_way_at_junctions() -> void:
 ## between cars — then lowers and the timer resets for whoever queues next.
 ##
 ## **And it never lowers onto her.** A raised boom is ground she may walk under
-## (`EventDef.lifts_for_traffic`), and its body goes back down with the arm, so an arm that came
+## (`EventDef.SolidWhen.WHILE_LOWERED`), and its body goes back down with the arm, so an arm that came
 ## down with her beneath it would put a solid body around her — a wall she is inside rather than in
 ## front of, which no warning can be an answer to. So a raised gate stays up for as long as she is
 ## under it as well as for as long as a car is near; cars keep passing under it meanwhile, which is

@@ -196,7 +196,7 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planne
 			if is_instance_valid(instance):
 				instance._process(STEP)
 	var engine_at := EventManager.where_the_summoned_row_stops(city.map, plan.position)
-	var engine := EventCatalogue.by_id(plan.def.spawns_on_sight)
+	var engine := EventCatalogue.by_id(plan.def.aftermath.on_sight)
 	var along := Vector2.RIGHT
 	var inward := city.map.pavement_inward(city.map.world_to_tile(plan.position))
 	if inward != Vector2i.ZERO:

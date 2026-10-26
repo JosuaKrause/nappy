@@ -37,7 +37,7 @@ asserts nothing from a later act leaks into an earlier day).
 The colour cast is the quietest part of the telling: the same corner, four times, getting
 colder. Warm afternoon → drained → cold and overcast → smoke.
 
-The loudest part is that **the city remembers**. `scar_id` makes a one-off event permanent
+The loudest part is that **the city remembers**. `EventDef.aftermath`'s scar makes a one-off event permanent
 for the rest of the run: the building that burned on day 3 still stands burnt on day 12,
 its windows black under soot, and every barricade an Act IV convoy drops stays dropped. The
 route you memorised on day 2 stops existing, one closure at a time.

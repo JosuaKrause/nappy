@@ -27,7 +27,7 @@ extends RefCounted
 ##
 ## **And one thing sited here *is* a place.** `site_what_is_on_her_way()` is the second half of
 ## this class and it breaks the sentence above on purpose: a row carrying
-## `EventDef.sited_on_her_way` — day 3's burning building, and the day's poster crews after it —
+## `EventDef.on_her_way` — day 3's burning building, and the day's poster crews after it —
 ## is a place in every sense: a tile, a body, a field, and what it leaves on the city outlives the
 ## day. What it cannot be is *anywhere*: the fire is the authored beat of act I and a crew is the
 ## walls visibly changing, and either one on a street she never walks down is a silhouette spent on
@@ -96,7 +96,7 @@ var _return_pacing := false
 ## on every day before `Tuning.REGION_WALL_FIRST_DAY`.
 var _doors := PackedVector2Array()
 
-## Today's plans that the day budgeted and left for her walk to site — `EventDef.sited_on_her_way`,
+## Today's plans that the day budgeted and left for her walk to site — `EventDef.on_her_way`,
 ## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
 ## in `start_day()`; and the places a marble from her route's bag names, added the moment the marble
 ## is drawn (`_place_on_her_route()`). Emptied as each one is put in the world.
@@ -138,11 +138,12 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ## director would separately site a second one in front of her, from the one `EventDef` both read.
 ##
 ## `heat` is the shape the route bag's rows are put in (`EventCatalogue.heated()`), the same
-## `GameState.resistance_progress` the day's own placements were planned at.
+## `GameState.resistance.progress` the day's own placements were planned at.
 func start_day(day: int, plans: Array[EventScheduler.Planned],
 		rng: RandomNumberGenerator, siting: EventScheduler.WalkSiting = null,
 		heat: int = 0) -> void:
 	_owed.clear()
+	_lesson = null
 	_rng = rng
 	_day = day
 	_met_today.clear()
@@ -171,10 +172,11 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 		# by the plan, rather than by a second wire from the region planner to here. The huts and
 		# posts are the bodies that inspect her and the boom is the one that does not; all three
 		# keep their clear ground.
-		if (plan.def.redetains or plan.def.lifts_for_traffic) and plan.is_placed():
+		if (plan.def.redetains or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED) \
+				and plan.is_placed():
 			_doors.append(plan.position)
 		# A place the day budgeted and left unsited, read off the same list for the same reason.
-		if plan.def.sited_on_her_way and not plan.is_placed():
+		if plan.def.on_her_way != null and not plan.is_placed():
 			_on_her_way.append(plan)
 		var mode := plan.def.spawn_mode_on(day)
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
@@ -255,6 +257,11 @@ func _take_the_forced_row() -> void:
 ## It is *not* a scripted event, and that is deliberate: it is one of the day's own budgeted
 ## `AHEAD_OF_PLAYER` plans, so teaching the run cannot quietly make day 3 denser than the budget
 ## says. If the day happened not to buy one, there is nothing to teach and nothing happens.
+##
+## **The one it hands out is the lesson's own row** (`EventCatalogue.lesson_of()`: the charging
+## dog's is `charging_dog_tutorial`), the first of `lesson`'s row `due()` hands out, so its
+## GoatCounter counts are its own. A dog forced with `--force` is not the lesson: the forced day
+## teaches nothing.
 func _teach_the_run(day: int, lesson: EventDef) -> void:
 	if day != Tuning.RUN_TAUGHT_DAY or not lesson:
 		return
@@ -270,6 +277,11 @@ func _teach_the_run(day: int, lesson: EventDef) -> void:
 		_owed.remove_at(at)
 		_owed.push_front(lesson)
 	_next_in = LESSON_DELAY
+	_lesson = lesson
+
+## The row `_teach_the_run()` put first today, until `due()` has handed it out as the lesson's own
+## row; null on every other day and after.
+var _lesson: EventDef = null
 
 ## How far into day 3 the lesson lands. A few seconds of ordinary walking first, so that what
 ## happens reads as the day changing rather than as the day starting.
@@ -905,6 +917,9 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 		_route.draw()
 		_handed_from_the_route()
 	_met_today[handed.id] = int(_met_today.get(handed.id, 0)) + 1
+	if _lesson and handed.id == _lesson.id:
+		handed = EventCatalogue.lesson_of(handed)
+		_lesson = null
 	# Refilled rather than seeded with a hundred copies, so the queue length stays honest and
 	# `owed()` — which the HUD reads — says "one more coming" rather than a number that means
 	# nothing under this flag.
@@ -1111,7 +1126,7 @@ func clear_of_the_doors(path: PackedVector2Array, def: EventDef) -> bool:
 ## `DangerEdge._is_worth_an_arrow()` gives it no badge. Under the player's rule a thing telegraphs
 ## its coming only if it goes fast, comes toward her and carries a heavy penalty (PLAYTEST-145,
 ## statements 18-23), and a patrol is not fast; its strike in front of it on the carriageway is a
-## car's, warned the way a car warns (`EventDef.drives`), not a badge from off screen.
+## car's, warned the way a car warns (`EventDef.vehicle`), not a badge from off screen.
 func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2Array:
 	var inward := _map.pavement_inward(_map.world_to_tile(at))
 	if inward == Vector2i.ZERO:

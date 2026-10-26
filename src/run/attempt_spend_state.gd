@@ -4,10 +4,14 @@ extends RunSubState
 ## the city carries and where every block stands along its arc. The walls' tears and the pelican
 ## bag's count are spent the same way and are their own parts (`PosterState`, `PelicanState`).
 
-## The one-shot events already used this run, by id.
+## The one-shot events already used this run, by id, so they never fire twice.
 var consumed_one_shots: Array[String] = []
-## What the city carries from earlier days: `{"id", "position", "since_day"}`.
+## Permanent marks a one-off event left on the city: `{"id", "position", "since_day"}`. The building
+## day 3's fire caught is still drawn burnt on that corner on day 12, never repaired — the city
+## remembers, which is most of how the escalation is told.
 var scars: Array[Dictionary] = []
+## Where each block currently is along its arc: the arcs themselves belong to the `CityMap` and never
+## change, this is only how far along them the run has got. See docs/CITY.md, "Block purposes".
 var city_state := CityState.new()
 
 var _dawn_consumed_one_shots: Array[String] = []

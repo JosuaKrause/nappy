@@ -73,6 +73,11 @@ static func all() -> Array[EventDef]:
 			out_of_the_car(day).validate()
 			out_of_the_car(day, false).validate()
 		escape_roadblock().validate()
+		# The rows of its own a row is met as on its one occasion: the day-3 lesson's dog and day
+		# 13's task guard, waiting and sent.
+		lesson_of(by_id("charging_dog")).validate()
+		task_guard().validate()
+		task_guard_sent().validate()
 		building_fire().validate()
 		explosion_outside().validate()
 	return _all
@@ -94,7 +99,7 @@ static func heated(def: EventDef, level: int) -> EventDef:
 ## exactly as a day's at full resistance progress. *(Inbox #771 in minty-lemur: "it should be in a way that luring
 ## away the guard is enough".)* Its band costs nothing and, once the guard on her side has left his
 ## post for good, the guard at the far post walks off too, as on every day (`_roadblock()`,
-## `EventInstance._send_the_far_guard_off()`).
+## `RoadblockFarGuard`).
 static func escape_roadblock() -> EventDef:
 	return heated(by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 
@@ -111,9 +116,7 @@ static func escape_roadblock() -> EventDef:
 static func without_its_aftermath(def: EventDef) -> EventDef:
 	var variant: EventDef = def.duplicate()
 	variant.shape = def.shape
-	variant.scar_id = ""
-	variant.spawns_on_finish = ""
-	variant.spawns_on_sight = ""
+	variant.aftermath = Aftermath.new()
 	return variant
 
 ## **The fire in the building's stairwell**: `burning_building` without its aftermath, and the
@@ -132,7 +135,7 @@ static func building_fire() -> EventDef:
 		variant.intensity = 18.0
 		variant.pulse_period = 3.0
 		variant.draws_body_shadow = true
-		variant.sited_on_her_way = false
+		variant.on_her_way = null
 		_building_fire = variant
 	return _building_fire
 
@@ -157,6 +160,53 @@ static func by_id(id: String) -> EventDef:
 		if def.id == id:
 			return def
 	return null
+
+## The row that plays `role` (`EventDef.Role`), the first in catalogue order, or null.
+static func by_role(role: EventDef.Role) -> EventDef:
+	for def in all():
+		if def.role == role:
+			return def
+	return null
+
+## The loudspeaker mast (`EventDef.Role.MAST`): what the masts' sites, the day's masts and the
+## resistance's mast task are made of.
+static func mast() -> EventDef:
+	return by_role(EventDef.Role.MAST)
+
+## **The day-3 lesson's own row for `row`**: for the charging dog, `charging_dog_tutorial`, the dog
+## under an id of its own, which `EventDirector._teach_the_run()` hands out in place of the first
+## dog it sends on `Tuning.RUN_TAUGHT_DAY`, so its GoatCounter counts (`seen-charging-dog-tutorial`,
+## its `dog-tutorial-*` charges) are its own (PLAYTEST-141; inbox #849); `row` itself for any other.
+## A derived copy, built once: it shares the dog's picture and every number, and the day's roll
+## never places it.
+static func lesson_of(row: EventDef) -> EventDef:
+	if row == null or row.id != "charging_dog":
+		return row
+	if _lesson_dog == null:
+		_lesson_dog = _charging_dog()
+		_lesson_dog.id = "charging_dog_tutorial"
+	return _lesson_dog
+
+static var _lesson_dog: EventDef = null
+
+## **The alley robber who guards a chalk mark**: the alley robbery row itself, standing in the
+## mark's alley (`ResistanceDirector._maybe_set_a_trap()`).
+static func mark_guard() -> EventDef:
+	return by_id("alley_robbery")
+
+## **Day 13's task guard: the alley robber, waiting in a band round the roadblock**
+## (`ResistanceDirector._maybe_set_a_trap()`), moved with her target (`EventManager.move_extra()`)
+## and set on her when the roadblock's task is done. Every number and the picture are the alley
+## robber's; the id, `task_guard`, is his own, so GoatCounter's seen, lost-day and charge counts
+## tell him apart from the robber in an alley (inbox #849). A derived copy, built once, as the
+## catalogue's rows are never placed by the day's roll.
+static func task_guard() -> EventDef:
+	if _task_guard == null:
+		_task_guard = _alley_robbery()
+		_task_guard.id = "task_guard"
+	return _task_guard
+
+static var _task_guard: EventDef = null
 
 ## Every def that may appear on this day, in catalogue order, in the shape `heat` puts them in.
 static func available_on(day: int, heat: int = 0) -> Array[EventDef]:
@@ -499,6 +549,7 @@ static func _alley_mouse() -> EventDef:
 	def.telegraphs = false
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.MOUSE
+	def.path_mode = EventDef.PathMode.ACROSS_ITS_ALLEY
 	def.shape = GroundShape.point(4.0)
 	def.placement = [GameEnums.TileType.ALLEY]
 	# **Priced against the cat on each row's own ground, which is not the same ground.** *(2026-09-12:
@@ -864,7 +915,7 @@ static func _construction() -> EventDef:
 ## street.
 ##
 ## Never scheduled directly — a SCRIPTED def with no day, created only once the fire has been
-## seen (`EventDef.spawns_on_sight`, `EventManager._summon_what_has_been_sighted()`). The engine
+## seen (`EventDef.aftermath.on_sight`, `EventManager._summon_what_has_been_sighted()`). The engine
 ## used to be the day's own one-shot with the fire left behind wherever its route ended; the
 ## instruction reversed the two — *"the player should encounter the burning building before the
 ## fire truck ... the fire truck should spawn when the player sees the burning building not the
@@ -879,14 +930,14 @@ static func _fire_truck() -> EventDef:
 	def.look = EventDef.Look.FIRE_ENGINE
 	# **The body is the drawing's ground contact**: 58px long (`fire_engine.svg`, x 2 to 60, bumper
 	# to bumper) and 26px wide (`fire_engine_front.svg`, x 4 to 30, flank to flank), a capsule laid
-	# along its heading — the patrol car's own construction, which `drives` makes the body. It is
+	# along its heading — the patrol car's own construction, which `vehicle` makes the body. It is
 	# lethal only in front of it while it drives its route, and solid and harmless once it has
 	# parked at the kerb (`is_parked` is not driving).
 	def.shape = GroundShape.segment(16.0, 13.0)
-	def.drives = true
+	def.vehicle = VehicleSpec.new()
 	# Its field stays a point's, priced from its centre: the body is not a reason for the street
-	# beside the parked engine to cost more than it did (`EventDef.field_from_its_centre`).
-	def.field_from_its_centre = true
+	# beside the parked engine to cost more than it did (`VehicleSpec.field_from_its_centre`).
+	def.vehicle.field_from_its_centre = true
 	def.intensity = 26.0
 	def.inner_radius = 70.0
 	def.outer_radius = 340.0
@@ -907,9 +958,9 @@ static func _fire_truck() -> EventDef:
 	return def
 
 ## Act I's finale, and the day's own one-shot: a building alight on a sidewalk, with the engine
-## called in the moment she first sees it (`spawns_on_sight`).
+## called in the moment she first sees it (`aftermath.on_sight`).
 ##
-## **It is on her way, because the day sites it from the walk she is taking.** `sited_on_her_way`
+## **It is on her way, because the day sites it from the walk she is taking.** `EventDef.on_her_way`
 ## leaves the plan without a position at dawn and `EventDirector.site_what_is_on_her_way()` puts it
 ## on a building face ahead of her heading once her direction for the day is clear — *"the fire
 ## should come first and be on your way guaranteed (a dynamic event dependent on the route you
@@ -941,7 +992,7 @@ static func _fire_truck() -> EventDef:
 ## is extruded south, from its own lot's south edge (`Building`'s own class doc). `AT_THE_FRONT`,
 ## "the one face of a building the city draws" (`EventDef.Pavement`'s own doc), is a placement
 ## choice for this row rather than the crew-pasting convention it usually serves: nothing else about
-## it asks for `pastes_a_front`. A proposal, open to overturn if a fire that can also catch on the
+## it asks for `OnHerWay.at_a_front`. A proposal, open to overturn if a fire that can also catch on the
 ## un-drawn walls turns out to matter more than a burnt shell with a real facade behind it. **Never
 ## on the power station's front** (`EventScheduler._burns_its_front()`): its facade does not draw
 ## burnt, and its transformer yard has no wall to burn.
@@ -955,7 +1006,7 @@ static func _burning_building() -> EventDef:
 	def.last_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_FRONT
-	def.sited_on_her_way = true
+	def.on_her_way = OnHerWay.new()
 	def.intensity = 0.0
 	def.inner_radius = 60.0
 	def.outer_radius = 260.0
@@ -965,8 +1016,8 @@ static func _burning_building() -> EventDef:
 	# draw either — see `draws_body_shadow` below.
 	def.shape = GroundShape.point(30.0)
 	def.draws_body_shadow = false
-	def.scar_id = "burnt_shell"
-	def.spawns_on_sight = "fire_truck"
+	def.aftermath.scar = "burnt_shell"
+	def.aftermath.on_sight = "fire_truck"
 	def.cost = 4
 	return def
 
@@ -1333,9 +1384,9 @@ static func _pigeon_flock() -> EventDef:
 	# **A flock is scenery, not a block** — overturned on 2026-09-13, PLAYTEST-71: "flocks are
 	# basically free already — don't count it as block, just count is scenery." Left unset, a
 	# 42-over-168px field crosses `Tuning.WALL_WORTH_OF_COST` and `_role_for` would call this a
-	# `WALL`, pulling it off every route the way any other expensive row is; `scenery` answers
+	# `WALL`, pulling it off every route the way any other expensive row is; `Role.SCENERY` answers
 	# `NONE` first, so it lands on a route corridor exactly as it lands anywhere else.
-	def.scenery = true
+	def.role = EventDef.Role.SCENERY
 	return def
 
 ## **The first thing in the game that can end your day, and it arrives on day 2.**
@@ -1676,13 +1727,13 @@ static func _charging_dog() -> EventDef:
 ## Mobile, unhurried, and it stops. Its field is not the danger — the danger is that you start
 ## planning around it, which is the point.
 ##
-## **A car, solid and lethal the way a car is** (`EventDef.drives`): *(leafy-puffin, inbox #648,
+## **A car, solid and lethal the way a car is** (`EventDef.vehicle`): *(leafy-puffin, inbox #648,
 ## offered "solid in every state, lethal only in front while driving": "yes to the police car
 ## hitbox".)* She walks round its body whether it drives or stands, and it ends the day only in
 ## front of it, while it drives its route, with her on the carriageway.
 ##
 ## **The patrol rung of the resistance's ladder.** `heat_response = PRESSES`: past
-## `GameState.resistance_progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
+## `GameState.resistance.progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
 ## it stops merely patrolling and starts investigating: it stops on its road once she is close and
 ## a policeman gets out and pursues her (`EventDef.investigates`, `out_of_the_car()`), whose catch
 ## costs her and never ends the day by itself. The car never gains `hard_fail`, whatever the heat,
@@ -1692,7 +1743,7 @@ static func _police_patrol() -> EventDef:
 	def.id = "police_patrol"
 	# It does not telegraph its coming (`EventDef.telegraphs`): 74px/s is slower than a walk, so it
 	# is not something fast coming at her, and its strike is a car's, warned the way a car warns
-	# (`EventDef.drives`) rather than with a badge from off screen. Its copies — the return's down
+	# (`EventDef.vehicle`) rather than with a badge from off screen. Its copies — the return's down
 	# the road, the raid's pacing car and the investigating one at heat — carry it with them.
 	def.telegraphs = false
 	def.display_name = Texts.EVENT_NAMES[def.id]
@@ -1700,9 +1751,9 @@ static func _police_patrol() -> EventDef:
 	# **The body is its drawn ground contact** — 42px long, the side view's body from bumper to
 	# bumper (`police_car.svg`, x 2 to 44), and 24px wide, the end views' body from flank to flank
 	# (`police_car_front.svg`, x 3 to 27) — as a capsule laid along its heading, the same datum its
-	# shadow is drawn from, one shape per object. `drives` makes it the body as well.
+	# shadow is drawn from, one shape per object. `vehicle` makes it the body as well.
 	def.shape = GroundShape.segment(9.0, 12.0)
-	def.drives = true
+	def.vehicle = VehicleSpec.new()
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
@@ -1738,7 +1789,7 @@ static func _police_patrol() -> EventDef:
 ## `poster_crew_square` below is the square's own crew, at the column a square has instead of a
 ## wall.
 ##
-## **It works on walls along the way she walks** (`sited_on_her_way`, `pastes_a_front`). A crew
+## **It works on walls along the way she walks** (`EventDef.on_her_way`, `OnHerWay.at_a_front`). A crew
 ## placed anywhere in the city was a crew she never met — the run behind PLAYTEST-116 placed ten
 ## on day 4 and she came within the field of none of them. So the day still rolls and places its
 ## crews at dawn, by `pavement_side`, exactly as it always did, which keeps every other row the
@@ -1756,8 +1807,8 @@ static func _poster_crew() -> EventDef:
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
-	def.sited_on_her_way = true
-	def.pastes_a_front = true
+	def.on_her_way = OnHerWay.new()
+	def.on_her_way.at_a_front = true
 	def.intensity = 5.0
 	def.inner_radius = 30.0
 	def.outer_radius = 110.0
@@ -1816,6 +1867,7 @@ static func _loudspeaker() -> EventDef:
 	var def := EventDef.new()
 	def.id = "loudspeaker"
 	def.display_name = Texts.EVENT_NAMES[def.id]
+	def.role = EventDef.Role.MAST
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.LOUDSPEAKER_MAST
@@ -1895,7 +1947,7 @@ static func _curfew_announce() -> EventDef:
 ## cost of their own, all of which belong to the band. Once a heated copy notices her, **the guard
 ## on her side** is what sets off, from his own post — "only the guard on her side can chase since
 ## the other one will be blocked" — while the other stays standing at his: the instance becomes the
-## man, and `body_stays_behind` pins the barrier's body and picture where it was built for the rest
+## man, and `PursuitSpec.leaves_its_body` pins the barrier's body and picture where it was built for the rest
 ## of the event's life. Nothing appears, nothing disappears, and the street he abandoned stays shut
 ## behind him — which is the point of leaving a barrier rather than dissolving one.
 ##
@@ -1956,8 +2008,6 @@ static func _roadblock() -> EventDef:
 	def.outer_radius = 179.0
 	def.telegraph_time = 1.8
 	def.solid(GroundShape.band(60.0))
-	def.body_stays_behind = true
-	def.warns_over_the_street = true
 	# **How his hunting copy pursues** (`EventDef.hunts_as`): he catches at a man's reach, taken
 	# from `masked_pursuer` since the guard who leaves this post and the masked man are the same
 	# figure, and warns at his post with his hand raised (woolly-penguin #748) on the clock every
@@ -1966,6 +2016,8 @@ static func _roadblock() -> EventDef:
 	def.hunts_as.catch_reach = MASKED_MAN_REACH
 	def.hunts_as.stands = true
 	def.hunts_as.warns_for = Tuning.CHARGER_WARNING
+	def.hunts_as.leaves_its_body = true
+	def.hunts_as.warns_over_the_street = true
 	def.barrier_structure = true
 	def.weight = 2.0
 	def.max_per_day = 6
@@ -2000,6 +2052,7 @@ static func _abduction() -> EventDef:
 	def.id = "abduction"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.UNMARKED_VAN
+	def.abduction = AbductionSpec.new()
 	def.first_day = 8
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.CROSSING]
@@ -2318,7 +2371,7 @@ static var _out_of_the_car: Dictionary[String, EventDef] = {}
 ## unmarked van: "Same as the police".)*
 ##
 ## **Out of the patrol car (`stops`), his catch is a stop, not the end of the day**
-## (`EventDef.stop_excitement`, `Tuning.OFFICER_STOP_EXCITEMENT`): when he reaches her he stops, his
+## (`PursuitSpec.stop_excitement`, `Tuning.OFFICER_STOP_EXCITEMENT`): when he reaches her he stops, his
 ## field lands a substantial cost on her, and he and every man his vehicle let out walk back to it.
 ## *(Inbox #669 in coral-lark, the player: "once the policeman reaches her they stop and walk back to the car" ·
 ## "it needs to give a substantial cost but not lethal directly" · "well if the excitement meter is
@@ -2356,7 +2409,7 @@ static func out_of_the_car(day: int, stops := true) -> EventDef:
 		def.pursuit.stands = true
 		if stops:
 			def.hard_fail = false
-			def.stop_excitement = Tuning.OFFICER_STOP_EXCITEMENT
+			def.pursuit.stop_excitement = Tuning.OFFICER_STOP_EXCITEMENT
 		_out_of_the_car[key] = def
 	return _out_of_the_car[key]
 
@@ -2365,13 +2418,15 @@ static func out_of_the_car(day: int, stops := true) -> EventDef:
 ## the waiting guard is drawn as, warned of by the screen-edge badge alone for
 ## `Tuning.WARNING_ALONE_MAX` rather than the day-3 dog's half second, then arriving charging. *(Inbox
 ## #764 in minty-lemur, the player: "yes, we can do a 1s on screen and 1s off-screen warning if they were not
-## visible".)* A derived copy, built once.
+## visible".)* A derived copy, built once, under an id of its own, `task_guard_sent`, so GoatCounter
+## tells him apart from the robber a task sends (inbox #849); his charges count as the task
+## guard's (`EventDef.counts_charges_as`).
 static func task_guard_sent() -> EventDef:
 	if _task_guard_sent == null:
-		var robber := by_id("robber_giving_chase")
-		_task_guard_sent = robber.duplicate() as EventDef
-		_task_guard_sent.shape = robber.shape
+		_task_guard_sent = _robber_giving_chase()
+		_task_guard_sent.id = "task_guard_sent"
 		_task_guard_sent.offscreen_notice = Tuning.WARNING_ALONE_MAX
+		_task_guard_sent.counts_charges_as = "task_guard"
 	return _task_guard_sent
 
 static var _task_guard_sent: EventDef = null
@@ -2454,7 +2509,7 @@ static func _military_convoy() -> EventDef:
 	def.speed = 120.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 50
-	def.spawns_on_finish = "barricade"
+	def.aftermath.on_finish = "barricade"
 	def.weight = 2.0
 	def.cost = 4
 	return def
@@ -2478,7 +2533,7 @@ static func _barricade() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.band(62.0))
-	def.scar_id = "barricade"
+	def.aftermath.scar = "barricade"
 	return def
 
 ## Grows while it is there — `intensity_ramp` takes it to 1.9x over its duration. A protest
@@ -2856,7 +2911,7 @@ static func _checkpoint_hut() -> EventDef:
 ## The boom over the roadway between a door's two huts. **It never inspects her** *(2026-09-24,
 ## the player: "Boom shouldn't inspect her. It should block her.")*: a lowered boom is a wall
 ## across the carriageway, and a raised one is ground she may walk under *(2026-09-24: "I didn't
-## say it should stay solid when it's open")* — `lifts_for_traffic`, so its collision body follows
+## say it should stay solid when it's open")* — `EventDef.SolidWhen.WHILE_LOWERED`, so its collision body follows
 ## the arm and the cars decide the arm (`Crowd._stop_for_gates()`: up once a car has waited at it
 ## `Tuning.GATE_STOP_SECONDS`, down the moment no car is within a length of it and she is not
 ## under it). The inspection is the two huts' alone, and a hut does not take her in from the
@@ -2883,7 +2938,7 @@ static func _checkpoint_gate() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.point(32.0))
-	def.lifts_for_traffic = true
+	def.solid_when = EventDef.SolidWhen.WHILE_LOWERED
 	def.barrier_structure = true
 	return def
 
@@ -3007,7 +3062,7 @@ static func _finale_explosion() -> EventDef:
 	# Short and over: a sharp spike is a short `duration` at high `intensity`, since there is no
 	# `impulse` field and none is wanted (`CLAUDE.md`, "Things deliberately not done").
 	def.duration = 1.2
-	def.spawns_on_finish = "impact_crater"
+	def.aftermath.on_finish = "impact_crater"
 	return def
 
 ## What is left in the road afterwards, and it stays there for the rest of the sequence: `duration`
@@ -3020,13 +3075,13 @@ static func _finale_explosion() -> EventDef:
 ## **The body is the picture.** `impact_crater_2x2.svg` is 64px across, so `point(32)` is exactly
 ## half of it and the ground she cannot walk on is the hole she can see — *anything that stands
 ## still is solid at the width it is drawn*, read in the one direction a hole can be read in. The
-## 32px and 96px sources stay prepared and unbound: `spawns_on_finish` names one row, a second
+## 32px and 96px sources stay prepared and unbound: `aftermath.on_finish` names one row, a second
 ## crater row would need a second explosion row to leave it, and three sizes of the same hole would
 ## be three looks that no reader could tell apart on the screen-edge badge.
 ##
-## **No `scar_id`.** A scar is how the *run* remembers a fire on day 3; the escape is the last
+## **No `aftermath.scar`.** A scar is how the *run* remembers a fire on day 3; the escape is the last
 ## thing that happens in a run, so a crater has nothing left to persist into and recording one
-## would only put an entry in `GameState.scars` that no later day ever reads.
+## would only put an entry in `GameState.attempt_spend.scars` that no later day ever reads.
 static func _impact_crater() -> EventDef:
 	var def := EventDef.new()
 	def.id = "impact_crater"
@@ -3130,7 +3185,7 @@ static func _masked_pursuer() -> EventDef:
 ## `steam.svg`, and standing in the middle of a two-tile corridor that is already a gate with no
 ## lane beside it.
 ##
-## **What makes that fair is the notice, and `solid_once_it_starts` is what makes the notice
+## **What makes that fair is the notice, and `EventDef.SolidWhen.ONCE_IT_STARTS` is what makes the notice
 ## worth anything.** A body from the instance's first frame would close ground she might be
 ## standing on, so the body goes down at the end of the telegraph and never around her —
 ## see that field, and `EventInstance._become_solid_once_it_starts()`.
@@ -3149,7 +3204,7 @@ static func _basement_steam() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.STEAM
 	def.solid(GroundShape.point(STEAM_VENT_BODY))
-	def.solid_once_it_starts = true
+	def.solid_when = EventDef.SolidWhen.ONCE_IT_STARTS
 	def.act_tag = 4
 	# **25, so one blow costs 40 to 50 points awake** at the 30px a vent holds her out *(inbox #747,
 	# "steam should be 40 to 50")*: 44 awake, 24 asleep. At 14 it cost 25 awake. The pulse is kept,

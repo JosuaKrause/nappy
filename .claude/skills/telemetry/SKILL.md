@@ -67,28 +67,27 @@ func _physics_process(delta: float) -> void:
 ```
 
 A thing timed **once per body per frame** (a crowd agent, a live event) copies the switch when it
-is made (a crowd agent when `Crowd` hands it its `CrowdTiming`) and keeps its body where it is, so
-off it pays one member read: a static read and a second
-call on each of a couple of hundred bodies made every player's frame measurably longer on a desktop
-(docs/evidence/m159-frame-record-2026-10-04/). It is made per day, after the recorder has started:
+is made (a crowd agent when `Crowd` hands it its `CrowdTiming`), so off it pays one member read: a
+static read and a second call on each of a couple of hundred bodies made every player's frame
+measurably longer on a desktop (docs/evidence/m159-frame-record-2026-10-04/). It is made per day,
+after the recorder has started. A live event times its one frame, with no call to itself:
 
 ```gdscript
 var _timed := FrameRecord.on
-var _timing := false
 
 func _process(delta: float) -> void:
-	if _timed and not _timing and FrameRecord.on:
+	if _timed and FrameRecord.on:
 		var outer := FrameRecord.enter(FrameRecord.EVENTS)
-		_timing = true
-		_process(delta)
-		_timing = false
+		_frame(delta)
 		FrameRecord.leave(outer)
 		return
-	# the body, unchanged
+	_frame(delta)
 ```
 
-A crowd agent does the same through the sink it is handed, which sets `_timed` when it is assigned
-and is never timed without one:
+A frame that re-ran `_process` inside itself could not take back what the inner run emitted, which
+is why a car's frame is proposed and committed by its driving (`EventCarDriving`) rather than by a
+second run. A crowd agent's mover (`LaneMover`) keeps its body where it is and calls itself, through
+the sink it is handed, which sets `_timed` when it is assigned and is never timed without one:
 
 ```gdscript
 var frame_timing: CrowdTiming = null:
@@ -96,11 +95,17 @@ var frame_timing: CrowdTiming = null:
 		frame_timing = value
 		_timed = value != null and value.running()
 var _timed := false
+var _timing := false
 
 func _process(delta: float) -> void:
 	if _timed and not _timing and frame_timing.running():
 		var outer := frame_timing.enter()
-		# ... the same call to itself, then frame_timing.leave(outer)
+		_timing = true
+		_process(delta)
+		_timing = false
+		frame_timing.leave(outer)
+		return
+	# the body, unchanged
 ```
 
 The **scenery queue** (`SceneryResidency.update()`) is the third shape, and it is the scenery

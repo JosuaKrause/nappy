@@ -198,11 +198,10 @@ const _NOT_RUN_STATE := ["_trace"]
 
 ## The guard the brief asks for: a field declared on `GameState` and saved by nothing fails here
 ## rather than quietly not being saved. A field is saved when the registered parts write a key of
-## its name (the fields that forward to a part keep the key's name), or it is a part itself, or it
-## is one of the file's or the run log's. (A part's own field is saved by its part, which
-## `tests/test_run_state.gd` holds.) `PROPERTY_USAGE_SCRIPT_VARIABLE` is what
-## separates a field this script declares from the base `Node` properties `get_property_list()`
-## also reports (`name`, `process_mode`, and the rest).
+## its name, or it is a part itself, or it is one of the file's or the run log's. (A part's own
+## field is saved by its part, which `tests/test_run_state.gd` holds.)
+## `PROPERTY_USAGE_SCRIPT_VARIABLE` is what separates a field this script declares from the base
+## `Node` properties `get_property_list()` also reports (`name`, `process_mode`, and the rest).
 func _test_round_trip_field_list_matches_the_property_list(t) -> void:
 	var declared: Array[String] = []
 	for property in GameState.get_property_list():

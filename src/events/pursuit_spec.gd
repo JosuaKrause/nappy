@@ -57,6 +57,26 @@ enum Start {
 ## core. `EventDef.lethal_reach()` reads it.
 @export var catch_reach := 0.0
 
+## **A catch that is a stop rather than the end of the day**, in points of the excitement meter, or
+## 0 for a catch that is what the row's `hard_fail` says. When he reaches her he stops, his own field
+## lands this much on her standing beside him over `Tuning.OFFICER_STOP_SECONDS`, and he walks back to
+## the vehicle that let him out (inbox #669 in coral-lark). Only the man an investigating patrol car
+## lets out sets it (`EventCatalogue.out_of_the_car()`); `EventDef.validate()` holds it under the
+## whole meter and refuses it on a `hard_fail` row.
+@export var stop_excitement := 0.0
+
+## Whether the row's body is **a fixture of the street the man leaves standing** when he sets off,
+## rather than his own bulk: the roadblock, whose barrier stays shut behind its guard. The body is
+## pinned where it was left (`EventBarrierPost`) and drawn there, so the picture and the street agree.
+## A moving pursuer otherwise drops its body the frame it stops waiting, since a moving wall pins her.
+@export var leaves_its_body := false
+
+## Whether the man is **drawn over the street's other figures while he stands for his notice**
+## (`DrawLayer.Layer.WARNING`), and sorts with them again once he charges: the roadblock's guard at
+## his post, whom a van parked in front of the post would otherwise hide while his raised hand is the
+## warning (inbox #771 in minty-lemur).
+@export var warns_over_the_street := false
+
 ## A pursuer at `speed` that notices her first, the shape most rows start from.
 static func at(chase_speed: float) -> PursuitSpec:
 	var spec := PursuitSpec.new()

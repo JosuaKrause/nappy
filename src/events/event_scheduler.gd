@@ -108,13 +108,9 @@ class Planned extends RefCounted:
 	## mid-chase comes back `is_waiting()`, having forgotten it. See
 	## `EventManager._stream_out()` and `_stream_in()`, and `EventInstance.resume()`.
 	var noticed_at := INF
-	## Whether the guard who set off from this roadblock's barrier was spent (or leaving) when it was
-	## last streamed out, and which side's post he left empty: what `EventInstance.
-	## come_back_as_the_barrier()` restores, so a re-streamed barrier is only the barrier.
-	var guard_spent := false
-	var chaser_side := 0
 	## Each behaviour's own state when it was last streamed out (`EventInstance.save_behaviours()`),
-	## empty before then and once a repeating plan starts over.
+	## empty before then and once a repeating plan starts over: a roadblock's spent guard and the post
+	## he left among it (`EventBarrierPost.save()`), so a re-streamed barrier is only the barrier.
 	var behaviours := {}
 
 	## False for an event the day has budgeted but not sited.
@@ -202,7 +198,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## none to hand on a day grows the same tree, since `RouteTree.for_day` is a pure function of the
 ## city's seed and the day number and touches no gameplay stream.
 ##
-## `heat` is `GameState.resistance_progress`, and it is threaded through rather than read off the
+## `heat` is `GameState.resistance.progress`, and it is threaded through rather than read off the
 ## autoload so that a day is a pure function of its arguments: a rig that plans day 9 twice gets the
 ## same day twice whatever a run happens to have done. Every def below arrives already in the shape
 ## that heat puts it in — see `EventCatalogue.heated()` — so nothing in this file tests for it.
@@ -340,7 +336,7 @@ static func _calm_block_holding(map: CityMap, target: Array[Vector2i]) -> Vector
 const NO_CALM := Vector2i(-1, -1)
 
 ## **A recurring row sited from her walk is rolled and placed at dawn like any other, then handed to
-## her walk** — `poster_crew`, which pastes the walls she passes (`EventDef.sited_on_her_way`). The
+## her walk** — `poster_crew`, which pastes the walls she passes (`EventDef.on_her_way`). The
 ## dawn placement is what spends the day's own stream exactly as it was spent before the crew was
 ## sited from her walk, so every row the roll places after it stands where it always stood; this
 ## then drops the position, and `EventDirector.site_what_is_on_her_way()` sites it ahead of her.
@@ -352,7 +348,7 @@ const NO_CALM := Vector2i(-1, -1)
 static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 	for i in planned.size():
 		var plan := planned[i]
-		if not plan.def.sited_on_her_way or plan.def.kind != GameEnums.EventKind.RECURRING \
+		if plan.def.on_her_way == null or plan.def.kind != GameEnums.EventKind.RECURRING \
 				or not plan.is_placed():
 			continue
 		var owed := Planned.new(plan.def, Vector2.INF)
@@ -678,7 +674,7 @@ static func _for_day(def: EventDef, day: int) -> EventDef:
 ## the route, and a row aimed at the route she is meant to walk has to be one she can get past
 ## there.
 ##
-## **`EventDef.scenery` is checked before the cost is, and it answers `NONE` rather than a fifth
+## **`EventDef.Role.SCENERY` is checked before the cost is, and it answers `NONE` rather than a fifth
 ## role.** *"Flocks are basically free already — don't count it as block, just count is
 ## scenery."* `pigeon_flock`'s 42-over-168px field crosses `WALL_WORTH_OF_COST` on the plain
 ## reading, so without the exemption it would be a wall pulled off every route the way any other
@@ -688,7 +684,7 @@ static func _for_day(def: EventDef, day: int) -> EventDef:
 static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP or def.kind == GameEnums.EventKind.AMBIENT:
 		return GameEnums.BlockerRole.NONE
-	if def.scenery:
+	if def.role == EventDef.Role.SCENERY:
 		return GameEnums.BlockerRole.NONE
 	if def.kind == GameEnums.EventKind.ONE_SHOT:
 		return GameEnums.BlockerRole.SET_PIECE
@@ -1016,7 +1012,7 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0,
 	var planned: Array[Planned] = []
 	if day < Tuning.MAST_FIRST_DAY:
 		return planned
-	var loudspeaker := EventCatalogue.heated(EventCatalogue.by_id("loudspeaker"), heat)
+	var loudspeaker := EventCatalogue.heated(EventCatalogue.mast(), heat)
 	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
 			if day == Tuning.CURFEW_ANNOUNCE_DAY else null
 	var sites := MastSites.compute(map)
@@ -1126,7 +1122,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		# window was widened. It costs the day exactly what it always did — the plan is budgeted here
 		# and only its *position* is left for `EventDirector.site_what_is_on_her_way()` to choose, the
 		# same split an `AHEAD_OF_PLAYER` row is budgeted and sited under.
-		if def.sited_on_her_way:
+		if def.on_her_way != null:
 			var owed := Planned.new(def, Vector2.INF)
 			owed.role = _role_for(def, day)
 			# Tagged like any other set piece even though there is only ever one of it: a plan outside
@@ -1235,7 +1231,7 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 ## *day* and decided in `build_day` — and that is untouched here: the row is budgeted at dawn, its
 ## role is decided at dawn, and what it may stand on was decided at dawn. Only *which* of those
 ## tiles it takes waits, because on day 3 the fire has to be on the way she actually goes and
-## nothing at dawn knows which way that is. See `EventDef.sited_on_her_way`.
+## nothing at dawn knows which way that is. See `EventDef.on_her_way`.
 ##
 ## **What a late placement may not do is repair.** It cannot drop something the day already placed
 ## to make room, and `_ensure_the_city_is_still_walkable` has already run and cannot run again — so
@@ -1271,7 +1267,7 @@ class WalkSiting extends RefCounted:
 	## How many sitings had to widen past the band to the end of her branch, for the same probe.
 	var widened := 0
 	## The sidewalk tiles in front of a blank ground-floor cell, as a set — `PosterWalls.fronts()`,
-	## handed over by `EventManager` from the city it belongs to. What a row that `pastes_a_front`
+	## handed over by `EventManager` from the city it belongs to. What a row whose `OnHerWay.at_a_front` is set
 	## may stand on; empty, and so nowhere, for a rig with no city.
 	var fronts := {}
 
@@ -1353,7 +1349,7 @@ class WalkSiting extends RefCounted:
 			return _waited("the site would close her way out")
 		# A crew faces the wall it pastes, its back to the street. `_build_placement` turned it by
 		# the dawn's own side, out of a wall it was never going to stand at.
-		if def.pastes_a_front:
+		if def.on_her_way != null and def.on_her_way.at_a_front:
 			candidate.facing = Vector2.UP
 		return candidate
 
@@ -1400,8 +1396,9 @@ class WalkSiting extends RefCounted:
 	## from one place, and the last question asked is kept and given back.
 	func _offer_ahead(def: EventDef, at: Vector2, heading: Vector2, near: float,
 			far: float) -> Array:
-		var side := EventDef.Pavement.AT_THE_FRONT if def.pastes_a_front else def.pavement_side
-		var question := [def.placement, side, def.id == MAST_ROW, at, heading, near, far]
+		var at_a_front := def.on_her_way != null and def.on_her_way.at_a_front
+		var side := EventDef.Pavement.AT_THE_FRONT if at_a_front else def.pavement_side
+		var question := [def.placement, side, def.role == EventDef.Role.MAST, at, heading, near, far]
 		if question == _last_offer_question:
 			return _last_offer
 		offers_worked_out += 1
@@ -1743,7 +1740,7 @@ class WalkSiting extends RefCounted:
 	func _its_ground_on(def: EventDef, ahead: Dictionary, at: Vector2, near: float,
 			far: float) -> Array[Vector2i]:
 		var pool := _ground_as_a_set(def)
-		var a_mast := def.id == MAST_ROW
+		var a_mast := def.role == EventDef.Role.MAST
 		var offered: Array[Vector2i] = []
 		for cell: Vector2i in ahead:
 			if float(ahead[cell]) > far:
@@ -1765,9 +1762,6 @@ class WalkSiting extends RefCounted:
 						continue
 					offered.append(tile)
 		return offered
-
-	## The row a mast is, for `_its_ground_on()`.
-	const MAST_ROW := "loudspeaker"
 
 	## **A mast is offered only ground a mast site would be** (`MastSites._is_eligible()`: off the
 	## home street, its field off a calm interior and off every place a region door could stand),
@@ -1805,12 +1799,13 @@ class WalkSiting extends RefCounted:
 	## tiles in `fronts` — in front of a blank ground-floor cell, which only the city's buildings
 	## know — and nothing at all where no city handed any over.
 	func _ground_as_a_set(def: EventDef) -> Dictionary:
-		var side := EventDef.Pavement.AT_THE_FRONT if def.pastes_a_front else def.pavement_side
+		var at_a_front := def.on_her_way != null and def.on_her_way.at_a_front
+		var side := EventDef.Pavement.AT_THE_FRONT if at_a_front else def.pavement_side
 		var key := "set|%s|%d" % [def.placement, side]
 		if not _ground.has(key):
 			var found := {}
 			for tile in EventScheduler._open_ground_for(def, _map, _ground, side):
-				if not def.pastes_a_front or fronts.has(tile):
+				if not at_a_front or fronts.has(tile):
 					found[tile] = true
 			_ground[key] = found
 		return _ground[key]
@@ -1867,8 +1862,8 @@ class WalkSiting extends RefCounted:
 		var blocked := EventScheduler.blocked_by(_map, blockers)
 		EventScheduler.block_a_disc(_map, blocked, candidate.position, candidate.def.outer_radius)
 		var parked := EventManager.where_the_summoned_row_stops(_map, candidate.position)
-		var summoned := EventCatalogue.by_id(candidate.def.spawns_on_sight) \
-				if candidate.def.spawns_on_sight != "" else null
+		var summoned := EventCatalogue.by_id(candidate.def.aftermath.on_sight) \
+				if candidate.def.aftermath.on_sight != "" else null
 		if summoned and parked != Vector2.INF:
 			EventScheduler.block_a_disc(_map, blocked, parked, summoned.outer_radius)
 		if _she_can_still_get_away(her, blocked):
@@ -2525,7 +2520,7 @@ static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 ## Whether `def` leaves the building it stands against burnt (its scar is the one `City` draws as
 ## a burnt frontage), so the front it catches on has to be one that can be drawn burnt.
 static func _burns_its_front(def: EventDef) -> bool:
-	return def.scar_id == City.BURNT_FRONTAGE_SCAR
+	return def.aftermath.scar == City.BURNT_FRONTAGE_SCAR
 
 ## Whether a tile is the lane of the pavement this event wants.
 ##
@@ -2542,7 +2537,7 @@ static func _burns_its_front(def: EventDef) -> bool:
 ##
 ## `AT_THE_FRONT` is the south face's own lane, the one side a front is drawn on: `burning_building`'s
 ## own `pavement_side`, since the building it catches on is drawn burnt afterwards, and what
-## `WalkSiting` asks, through `side`, for a row that `pastes_a_front`. **The tile behind has to be
+## `WalkSiting` asks, through `side`, for a row whose `OnHerWay.at_a_front` is set. **The tile behind has to be
 ## on the map as well as read `BUILDING`**, because `CityMap.tile_at()` reads anything off the map
 ## as `BUILDING`: without the bounds check the north sidewalk of the map's northmost street, with
 ## nothing behind it but the edge of the world, passes as a front. `side` is typed `int` for the
@@ -2727,7 +2722,7 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ##   a line along her routes (`_leaves_the_route_junctions_open`, `_leaves_the_routes_sidewalk_open`
 ##   and `_leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites._is_eligible()`: off the home
 ##   street and a calm interior), door clearance, the unused calm, spacing and a way out.
-## - **`scenery`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
+## - **`Role.SCENERY`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
 ##   count it as block, just count is scenery"* — which is the same exemption `_role_for` makes.
 ## - **a pursuer** follows her rather than sitting on a tile, and pays the telegraph contract
 ##   instead; so does anything the director sites (`AHEAD_OF_PLAYER`, `TOWARD_PLAYER`), which
@@ -2752,7 +2747,7 @@ static func _gap_between(a: Planned, b: Planned) -> float:
 ## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
 ## about whether a line exists past one.
 static func _counts_against_the_line(plan: Planned) -> bool:
-	return plan.is_placed() and plan.mast_id == "" and plan.def.id != WalkSiting.MAST_ROW \
+	return plan.is_placed() and plan.mast_id == "" and plan.def.role != EventDef.Role.MAST \
 			and _a_line_has_to_avoid(plan.def)
 
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to
@@ -2773,9 +2768,9 @@ static func _counts_against_the_line(plan: Planned) -> bool:
 ## poster crew closes nothing, and it is placed at dawn and judged exactly as it always was before
 ## its position is handed to her walk (`_hand_to_her_walk`).
 static func _a_line_has_to_avoid(def: EventDef) -> bool:
-	if def.scenery or def.pursuit != null or def.id.begins_with(_DOOR_ID_PREFIX):
+	if def.role == EventDef.Role.SCENERY or def.pursuit != null or def.id.begins_with(_DOOR_ID_PREFIX):
 		return false
-	if def.sited_on_her_way and def.kind == GameEnums.EventKind.ONE_SHOT:
+	if def.on_her_way != null and def.kind == GameEnums.EventKind.ONE_SHOT:
 		return false
 	if def.mobile and not def.paces:
 		return false
@@ -2977,7 +2972,7 @@ const _DOOR_ID_PREFIX := "checkpoint"
 ## The plain disc rather than `field_reach()`'s forward-stretched ellipse, because the milestone's
 ## own wording is a radius and the two differ only for a mobile row and only ahead of it. A flock
 ## would need its own answer — its intensity is shared between bodies, so the closed form below
-## reads it far too wide — and does not have one: `pigeon_flock` is `scenery` and
+## reads it far too wide — and does not have one: `pigeon_flock` is `Role.SCENERY` and
 ## `_counts_against_the_line` is done with it before this is ever asked.
 static func _line_reach_of(def: EventDef) -> float:
 	if def.hard_fail:

@@ -195,7 +195,7 @@ const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
 ## and the moment it happens on its own day is `seal_home_door()`'s, called live.
 const SEALED_DOOR_SCAR := "sealed_door"
 ## `GameState.attempt_spend.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
-## `scar_id`), read by `mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
+## `aftermath.scar`), read by `mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
 ## `SEALED_DOOR_SCAR` above.
 const BURNT_FRONTAGE_SCAR := "burnt_shell"
 ## The street door sprite `_spawn_home()` built, kept so `seal_home_door()` can swap its texture

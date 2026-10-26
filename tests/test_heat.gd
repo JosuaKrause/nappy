@@ -58,7 +58,7 @@ func _test_every_shape_of_every_row_is_fair(t) -> void:
 ## than over the one row that carries it, so a second `PRESSES` row added later inherits the
 ## promise. Nor does the man it lets out end the day: his catch is a stop (inbox #669 in coral-lark, "it needs to
 ## give a substantial cost but not lethal directly"). (The patrol that carries it strikes as a car
-## does at every heat, `EventDef.drives`, which is not a rung — `tests/test_police_car.gd`.)
+## does at every heat, `EventDef.vehicle`, which is not a rung — `tests/test_police_car.gd`.)
 func _test_the_ladder_has_a_top(t) -> void:
 	for def in EventCatalogue.all():
 		if def.heat_response != EventDef.HeatResponse.PRESSES:
@@ -68,7 +68,7 @@ func _test_the_ladder_has_a_top(t) -> void:
 					"'%s' presses without ever becoming hard_fail (heat %d)" % [def.id, level])
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var out := EventCatalogue.out_of_the_car(day)
-		t.check(not out.hard_fail and out.stop_excitement > 0.0,
+		t.check(not out.hard_fail and out.pursuit.stop_excitement > 0.0,
 				"day %d: the man a patrol car lets out stops her rather than ending the day" % day)
 
 ## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
@@ -198,7 +198,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t) -> void:
 				("heat %d: and well inside the %.0fpx the band's own body would have forced, "
 						+ "which is only possible because the man leaves it behind")
 				% [level, hot.obstructs_radius + Tuning.PLAYER_BODY_RADIUS])
-		t.check(hot.body_stays_behind,
+		t.check(hot.pursuit.leaves_its_body,
 				"heat %d: and the barrier he leaves stays where it was built" % level)
 		t.check(hot.lethal_reach() <= hot.inner_radius,
 				"heat %d: the catch is inside the field's own core, so it is never silent" % level)
@@ -394,7 +394,7 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 		instance._process(STEP)
 	t.check(instance.position == stopped_at and not instance.is_leaving,
 			"it stands where it stopped while he is after her")
-	t.check(not instance.is_driving(), "and a standing car is not driving, so it strikes nobody")
+	t.check(not instance.car.is_driving(), "and a standing car is not driving, so it strikes nobody")
 	officer.give_up_the_chase()
 	t.check(officer.is_leaving and not officer.is_finished, "he gives up and walks back")
 	instance.player_at = her
@@ -458,13 +458,13 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	t.add_child(guard)
 	guard.set_process(false)
 	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
-	t.check(not guard.has_left_its_body_behind(), "with its body still under its own feet")
+	t.check(not guard.barrier_post.has_left_its_body(), "with its body still under its own feet")
 
 	var her := post + Vector2(hot.notice_within() - 10.0, 0.0)
 	guard.player_at = her
 	guard._process(STEP)
 	t.check(not guard.is_waiting(), "she comes inside the trigger and the guard notices her")
-	t.check(guard.is_solid() and guard.has_left_its_body_behind(),
+	t.check(guard.is_solid() and guard.barrier_post.has_left_its_body(),
 			"he sets off and the barrier stays solid behind him")
 	t.check(guard.body_position().is_equal_approx(post),
 			"exactly where it was built (%s against %s)" % [guard.body_position(), post])
@@ -536,7 +536,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 			var her := post + across * side * (hot.notice_within() - 1.0)
 			guard.player_at = her
 			guard._process(STEP)
-			t.check(guard.has_left_its_body_behind() and guard._chaser_side == side,
+			t.check(guard.barrier_post.has_left_its_body() and guard.barrier_post.chaser_side() == side,
 					"%s: the guard on her side sets off" % what)
 			var his_post := post + EventInstance._guard_post_offset(vertical, side)
 			t.check(guard.global_position.is_equal_approx(his_post),

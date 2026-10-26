@@ -877,11 +877,11 @@ func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
 		var tree := RouteTree.for_day(map, day)
 		var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree)
 		# Day 3's set piece is budgeted with no position and sited from the walk she takes
-		# (`EventDef.sited_on_her_way`), so a day's plan on its own carries no set-piece mark to
+		# (`EventDef.on_her_way`), so a day's plan on its own carries no set-piece mark to
 		# draw. The picture has to be able to draw one, and what it draws is a sited plan — so this
 		# stands in for the walk, which is nothing this test has or wants.
 		for plan in plans:
-			if plan.def.sited_on_her_way and not plan.is_placed():
+			if plan.def.on_her_way != null and not plan.is_placed():
 				plan.position = map.tile_to_world(
 						map.tiles_of_type(GameEnums.TileType.SIDEWALK)[0])
 		var plain := TelemetryMap.render(map, [], tree)

@@ -38,8 +38,8 @@ extends Node
 ##   needs no cause and a timeout's own name already says everything about a clock that ran out.
 ## - `nappy-day-N-lost-crying-<source>` / `nappy-day-N-lost-hard-fail-<what>` — a lost day's own
 ##   name, one event rather than a `lost-*` beside a second one, folding in what actually did it:
-##   `car` for the one hard fail that is not a catalogue row, otherwise a catalogue id (hyphenated,
-##   `charging-dog`); a crying loss names `crowd`, `traffic`, `self`, or a catalogue id, whichever
+##   `car` for the one hard fail that is not an event row, otherwise the row id (hyphenated,
+##   `charging-dog`); a crying loss names `crowd`, `traffic`, `self`, or the row id, whichever
 ##   landed the most on her over the crying window — the `cause` `EventBus.day_ended` carries, see
 ##   its own doc and `_loss_event_suffix()` below. A `LOST_CRYING`/`LOST_HARD_FAIL` day ended with
 ##   no cause still sends the bare `lost-crying` / `lost-hard-fail` rather than nothing.
@@ -424,7 +424,7 @@ func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
 ## (`EventInstance.charger_name()`'s `charging_dog_tutorial`), which sends its own set and not the
 ## dog's *(PLAYTEST-141: "we need to record like dog tutorial")*; every other row its id hyphenated,
 ## as the encounter events are (`alley_robbery` -> `alley-robbery`), and `task-guard` for day 13's
-## task guard once the task sets him on her (`EventInstance.counted_as`).
+## task guard, his row `task_guard`, whose sent copy counts as him (`EventDef.counts_charges_as`).
 static func charger_counter_name(id: String) -> String:
 	match id:
 		"charging_dog":

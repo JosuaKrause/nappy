@@ -1020,7 +1020,7 @@ outcomes* rather than the same outcome at two prices:
 | | |
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
-| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`EventDef.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
+| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`PursuitSpec.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
 | Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does, and for a charger that waits for her only once he has charged, never while he warns — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
@@ -1441,7 +1441,7 @@ label's own line count is the number of lines `SentenceLines` returned.
 
 **Everything below that one line is the coming day's, not the day that just ended.** The day
 number, the nerves carried into it and the morning's own line (`Texts.DAY_BRIEF`, below) all read off
-`GameState.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
+`GameState.header.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
 today again (a loss with nerves left retries the same day) — never off the day that just ended.
 The day brief a resumed run opens on (`DaySummary.show_day_brief()`) is built the same way, since
 it is the same screen showing what a load already charged rather than what a day just did.
@@ -1464,7 +1464,7 @@ the millisecond calls it rather than carrying a second copy of the string.
 **The `BAD` ending's own line names the day the run reached** — *"You made it to day %d."*,
 beside "Time played" — the last day played rather than the last day completed, so a hard run that
 loses its last nerve on day 1 reads day 1, not 0, and one that loses it in the escape reads day
-14. `GameState.day` already holds it: the calendar
+14. `GameState.header.day` already holds it: the calendar
 is never advanced past the day nerves ran out on, or past the day a load spent the last one on
 (`GameState.finish_day()` ends the run before it would move the calendar). The neutral and good
 endings say nothing about the day, since both are reached by finishing day 14.
@@ -1481,7 +1481,7 @@ clock's precision, the night it is walked in, what losing or winning it costs �
 the day's own `DayController`, so the clock, the three ways to lose, the loss and its cause, the
 outcome screen, the counters and the run log are a day's. Each is counted as a day of its own,
 **day 15** the building and **day 16** the city (`DaySpec.BUILDING_DAY`, `DaySpec.CITY_DAY`),
-while the calendar (`GameState.day`) stays on day 14, since the run has not moved past it.
+while the calendar (`GameState.header.day`) stays on day 14, since the run has not moved past it.
 
 **It is where a won run ends.** A day 14 that is won with every task complete — `GameState
 .earned_good_ending()`, `Tuning.RESISTANCE_GOAL` errands run *and* the last night's sabotage
@@ -1707,7 +1707,7 @@ barricade catches her. See `docs/EVENTS.md`, "The heat".
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
 charge. Walking in until he charges and running back until he gives up takes him off for good, and
 once he has left his post the guard at its far post walks off with him, as on every day
-(`EventInstance._send_the_far_guard_off()`), so it stands unmanned. The band itself costs nothing to walk
+(`RoadblockFarGuard`), so it stands unmanned. The band itself costs nothing to walk
 past at any time, manned or not, as every roadblock's band, a day's included
 (`EventCatalogue._roadblock()`): the guard is the danger, not the concrete. One roadblock a street means there is one guard to lure,
 not a second band's still posted beside the first, and no two bands stand where both guards can

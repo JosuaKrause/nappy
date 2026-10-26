@@ -13,6 +13,12 @@ extends RunSubState
 ## reaches the escape's own boot with the run intact, and it is the one thing the save carries about
 ## the escape, so a game closed in a section opens on that section's brief.
 var escape_section: int = 0
+## Alley tiles a completed pickup step's chalk mark stood at, this run — read by
+## `ResistanceDirector._pick_reachable()` and `_nearest_alley_within()` so a later mark never
+## relocates onto, or starts on, the same alley while another eligible one is still in reach
+## (M177). **Not given back by a lost day**: a lost day's own placement never reads this list (the
+## mark it is about was placed at dawn, before any tile could be recorded against it today), so an
+## undone attempt's tile only ever costs the next placement one more alley to avoid.
 var completed_resistance_alley_tiles: Array[Vector2i] = []
 ## The one calm area barriers ever stand around this run, once she has used it — `(-1, -1)` until
 ## one is. Chosen no earlier than act III; see docs/CITY.md, "Shutting a spent park". `Main`
@@ -32,6 +38,8 @@ func reset() -> void:
 	fenced_park = Vector2i(-1, -1)
 	fenced_park_act = 0
 
+## Records a tile a pickup's mark stood at when its step completed, ignoring one already recorded.
+## `ResistanceDirector._on_contact_completed()` is the one caller.
 func record_completed_alley_tile(tile: Vector2i) -> void:
 	if tile not in completed_resistance_alley_tiles:
 		completed_resistance_alley_tiles.append(tile)

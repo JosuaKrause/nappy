@@ -334,7 +334,8 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
 			if not due.is_empty():
 				first = (due[0] as EventDef).id
 				first_at = walked
-		t.check(first == "charging_dog", "seed %d: the first thing she meets is the lesson's dog (%s)"
+		t.check(first == "charging_dog_tutorial",
+				"seed %d: the first thing she meets is the lesson's dog, its own row (%s)"
 				% [seed_value, first])
 		t.close_to(first_at, EventDirector.LESSON_DELAY,
 				"seed %d: and she meets it at LESSON_DELAY of walking" % seed_value, STEP * 1.5)

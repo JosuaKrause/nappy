@@ -139,7 +139,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	director._move_the_task_guard_to_her_target()
 	var ringed: EventInstance = director._task_guard
 	var ring_at := ringed.global_position if ringed else Vector2.INF
-	t.check(ringed != null and ringed != first and first.is_finished
+	t.check(ringed != null and ringed == first and not first.is_finished
 			and ring_at.distance_to(around) > band_edge
 			and ring_at.distance_to(around) <= ResistanceDirector.TASK_GUARD_FARTHEST
 			and not _guard_in_view(ring_at) and _a_clear_line(director._map, ring_at, around),
@@ -166,14 +166,14 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 
 ## That the task's guard guards `roadblock`: in its band, with a clear line to its body, out of his
-## trigger range of her, and known to the director as its guard. With `before` given, he is a new
-## guard and `before` is gone.
+## trigger range of her, and known to the director as its guard. With `before` given, he is
+## `before` himself, moved with everything he was in the middle of (`EventManager.move_extra()`).
 func _check_he_guards(t, director: ResistanceDirector, roadblock: EventInstance, player: Stroller,
 		before: EventInstance, what: String) -> void:
 	var guard: EventInstance = director._task_guard
 	if before != null:
-		t.check(guard != null and guard != before and before.is_finished,
-				"the guard is re-placed at %s, and the one he was is gone" % what)
+		t.check(guard != null and guard == before and not before.is_finished,
+				"the guard is moved to %s, the same man rather than a new one" % what)
 	if guard == null:
 		return
 	var robbery := EventCatalogue.by_id("alley_robbery")
@@ -476,9 +476,9 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	if not parked:
 		t.check(guard.is_standing_for_its_notice()
 				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX)
-				and guard.counted_as == "task_guard",
+				and guard.charger_name() == "task_guard",
 				"(%s) a guard already warning her by sight is set on her with the task's second (standing %s, %.1fs, %s)"
-				% [what, guard.is_standing_for_its_notice(), guard.notice_time(), guard.counted_as])
+				% [what, guard.is_standing_for_its_notice(), guard.notice_time(), guard.charger_name()])
 		_tear_down(player, director, city)
 		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 		return
@@ -538,7 +538,7 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
 			"out of her view the waiting guard is taken out of the world")
 	var warning: PendingWarning = null
 	for pending in city.events.pending_warnings():
-		if pending.def.id == "robber_giving_chase":
+		if pending.def == EventCatalogue.task_guard_sent():
 			warning = pending
 	t.check(warning != null and is_equal_approx(warning.def.warned_for(), Tuning.WARNING_ALONE_MAX)
 			and warning.def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
