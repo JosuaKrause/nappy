@@ -11,6 +11,7 @@ extends RefCounted
 
 func run(t) -> void:
 	_test_the_rim_is_painted_before_the_scene(t)
+	_test_the_rim_is_given_back_when_the_slices_go(t)
 
 func _test_the_rim_is_painted_before_the_scene(t) -> void:
 	AtlasLibrary.acquire(&"events")
@@ -34,4 +35,25 @@ func _test_the_rim_is_painted_before_the_scene(t) -> void:
 				"the rim is painted before the cars, so it is behind them (vertical %s)" % vertical)
 		t.remove_child(instance)
 		instance.free()
+	AtlasLibrary.release(&"events")
+
+## The rim stands behind the first slice, so when the look lets go of its slices the instance gives
+## the rim back on the spot (`SpreadLook.letting_go_of_the_slices`) rather than leaving it to be
+## freed with its slice while the instance still holds it.
+func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
+	AtlasLibrary.acquire(&"events")
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO)
+	t.add_child(instance)
+	instance.look.attach_nodes()
+	instance._process(instance.def.telegraph_time + 0.01)
+	instance.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	var rim := instance.rim()
+	t.check(rim != null and rim.get_parent() is SpreadLook.Slice,
+			"a pick builds the crash's rim behind its first slice")
+	instance.look.release_nodes()
+	t.check(instance.rim() == null and not is_instance_valid(rim),
+			"letting go of the slices gives the rim back, and the instance holds none")
+	t.remove_child(instance)
+	instance.free()
 	AtlasLibrary.release(&"events")

@@ -7,10 +7,16 @@ extends RefCounted
 ## **A look reads the event and never writes it.** It holds the eight-view sector last drawn, the
 ## redraw key, the caret's cache and the drawing nodes a long picture is drawn in, draws on the
 ## event's own canvas, and reads the event's public state for everything else. What the event does
-## is its behaviours' (`src/events/behaviours/`); nothing here decides it. The calls go the other
-## way at the end of a tick: the event asks its look to redraw if the picture changed, to move its
-## drawing nodes and to hide its scenery once done, and two behaviours ask the same (a car whose
-## frame is taken back, `EventCarDriving.end_frame()`; a barrier's posts, `EventBarrierPost`).
+## is its behaviours' (`src/events/behaviours/`); nothing here decides it.
+##
+## The event calls its look. In `setup()` it faces it (`face()`), and its tree callbacks hand it the
+## drawing nodes to build, attach, rebuild and let go of (`build_nodes()`, `attach_nodes()`,
+## `enter_tree()`, `release_nodes()`), and its `_draw()` draws through it (`draw()`). From the
+## simulation the calls come in three places: at the end of a tick the event asks its look to
+## redraw if the picture changed and to move its drawing nodes; `transition()` asks it to hide its
+## scenery the moment the phase becomes DONE, which can be in the middle of a tick; and two
+## behaviours ask for the redraw or the move (a car whose frame is taken back,
+## `EventCarDriving.end_frame()`; a barrier's posts, `EventBarrierPost`).
 
 ## The event this look draws.
 var event: EventInstance

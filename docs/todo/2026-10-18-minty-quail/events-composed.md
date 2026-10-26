@@ -13,13 +13,19 @@ row by `EventLooks.for_row()`, reading its public state), and every picture is n
 lunge at the stand-off, the masked man's run distance, a start at once) are branches inside
 `EventPursuit` and `EventNoticeRun` rather than parts a row is composed of.
 
-**What is still keyed on a row's flags, picture or id:** `at_heat()` flips behaviour flags
-(`investigates`, `hard_fail`) on a copy; `def.look ==` decides behaviour for CYCLIST's pelican
-(PR 4), and, on `EventInstance`, whether the alley post's hold hides it
+**What is still keyed on a row's flags, picture or id** (every `def.look` comparison under `src/`
+outside `src/events/views/`, found by search): `at_heat()` flips behaviour flags (`investigates`,
+`hard_fail`) on a copy; `def.look ==` decides behaviour for CYCLIST's pelican (`EventManager.rolls_a_pelican()`
+and `spawn_warned()`, PR 4); whether a row is a spread is a list of pictures
+(`EventDef.has_a_spread`); on `EventInstance` it decides whether the alley post's hold hides it
 (`is_suppressed_by_its_own_hold()` on CHECKPOINT_POST), the loose dog's lead in its footprint
-(`footprint_of()` on LOOSE_DOG), a warning picture's size (`_warning_picture_size()` on
-CHARGING_DOG and ROBBER) and which way a stationary vehicle shows (`_stationary_vehicle_uses_side()`
-on BURNT_OUT_CAR); `CheckpointController` sends its guard by `by_id("door_guard")`. **Two clocks:**
+(`footprint_of()` on LOOSE_DOG), whether a rank draws and stands along its street like a spread
+(`drawn_box()` and the solid body's axis, `_solid_axis()`, on PROTEST and FIREFIGHT), a warning
+picture's size (`_warning_picture_size()` on CHARGING_DOG and ROBBER) and which way a stationary
+vehicle shows (`_stationary_vehicle_uses_side()` on BURNT_OUT_CAR); `EventManager._body_axis()`
+repeats the rank test for siting; the manager's `GUARDSMAN_GIVING_CHASE` tests choose only the run
+log's wording ("a guardsman" or "a policeman"); `CheckpointController` sends its guard by
+`by_id("door_guard")`. **Two clocks:**
 instances, `ResistanceDirector` and `DayController` tick in `_process` (the instances step once per
 drawn frame), while `EventManager` checks catches, hard fails and detentions in
 `_physics_process`, so a door's hold ending on a drawn frame would show her at the place she went in
@@ -58,8 +64,9 @@ design below is a direction, not a prescription, and the PR says which shape was
 the manager stepping its instances in a fixed order and `_process` only redrawing, with the
 instances drawn interpolated so they move as smoothly as now, and no behaviour, nor the instance's
 tick or `transition()`, calling its look (PR 3b); the picture-size geometry siting reads
-(`box_of()`, `footprint_of()`, `solid_footprint_of()`, `_warning_picture_size()`,
-`warning_guard_rect()`, the guard post's offset and heading, `_stationary_vehicle_uses_side()`) and
+(`box_of()`, `footprint_of()`, `solid_footprint_of()`, `drawn_box()`, `_solid_axis()`,
+`EventManager._body_axis()`, `_warning_picture_size()`, `warning_guard_rect()`, the guard post's
+offset and heading, `_stationary_vehicle_uses_side()`) and
 the alley post's hiding leave `EventInstance` with PR 4's spawner; movement proposed, validated,
 then committed for every mover, as a car's frame is; intents emitted for the player and camera
 instead of calling them. `EventManager` splits into streaming, spawning and warnings.
