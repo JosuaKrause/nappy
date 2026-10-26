@@ -1,7 +1,9 @@
 extends RefCounted
 ## `BadgeModel` stepped on its own: fakes for the dangers, a rectangle for the view, a number for the
 ## clock — no scene, no camera, no frame timing. Which dangers get a screen-edge badge, when it goes
-## up and when it comes down is decided there, so it is checked there.
+## up and when it comes down is decided there, so it is checked there. The one exception is the
+## drawing test, which adds a real `DangerEdge` to the tree and waits for its draw, to check that it
+## draws exactly what the model lists.
 
 const STEP := 1.0 / 60.0
 ## The camera's view about her at (0, 0): the world the badge asks "in sight?" of.
