@@ -7,6 +7,8 @@ extends RefCounted
 const SEED := 1717
 
 var _ended: Array = []
+## A fresh run for every rig, handed to the director in place of the autoload.
+var _run: RunState
 
 func run(t) -> void:
 	_test_a_timeout_costs_a_nerve_and_names_no_cause(t)
@@ -19,10 +21,10 @@ func run(t) -> void:
 func _on_day_ended(day: int, result: int, cause: String, elapsed: float) -> void:
 	_ended.append([day, result, cause, elapsed])
 
-## The director over a bare world, the run freshly started on `SEED`.
+## The director over a bare world, on a run of its own freshly started on `SEED`.
 func _rig(t, spec := DaySpec.new()) -> Dictionary:
-	var baseline := GameState.save_snapshot()
-	GameState.start_run(SEED)
+	_run = RunState.new()
+	_run.start_run(SEED)
 	var clock := DayController.new()
 	clock.set_process(false)
 	t.add_child(clock)
@@ -30,18 +32,18 @@ func _rig(t, spec := DaySpec.new()) -> Dictionary:
 	clock.time_remaining = 120.0
 	var events := EventManager.new()
 	t.add_child(events)
-	var director := DayDirector.new(GameState, RunConfig.parse(PackedStringArray(), "", true))
+	var director := DayDirector.new(_run, RunConfig.parse(PackedStringArray(), "", true))
 	director.use_the_world(null, events, null, null, null, clock)
 	director.spec = spec
 	_ended.clear()
 	EventBus.day_ended.connect(_on_day_ended)
-	return {"director": director, "nodes": [clock, events], "baseline": baseline}
+	return {"director": director, "nodes": [clock, events]}
 
 func _put_away(rig: Dictionary) -> void:
 	EventBus.day_ended.disconnect(_on_day_ended)
 	for node: Node in rig["nodes"]:
 		node.free()
-	GameState.restore_snapshot(rig["baseline"])
+	_run.free()
 
 func _test_a_timeout_costs_a_nerve_and_names_no_cause(t) -> void:
 	var rig := _rig(t)
@@ -52,7 +54,7 @@ func _test_a_timeout_costs_a_nerve_and_names_no_cause(t) -> void:
 	t.check(is_equal_approx(end.elapsed_seconds, 180.0), "and reads the clock at the instant it ended")
 	t.check(_ended == [[1, GameEnums.DayResult.LOST_TIMEOUT, "", 180.0]],
 			"and sends day_ended once, with that cause and clock (%s)" % [_ended])
-	t.check(GameState.header.nerves == Tuning.STARTING_NERVES - 1 and not end.run_over
+	t.check(_run.header.nerves == Tuning.STARTING_NERVES - 1 and not end.run_over
 			and not end.goes_back, "the nerve is spent and the run goes on")
 	_put_away(rig)
 
@@ -77,16 +79,16 @@ func _test_a_won_day_moves_the_calendar_on(t) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var end := director.finish_day(GameEnums.DayResult.WON)
-	t.check(not end.hands_over_to_the_escape and not end.run_over and GameState.header.day == 2,
+	t.check(not end.hands_over_to_the_escape and not end.run_over and _run.header.day == 2,
 			"a won day 1 is day 2 next")
 	_put_away(rig)
 
 func _test_a_won_last_day_with_every_task_done_hands_over(t) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
-	GameState.resistance.sabotage_done = true
+	_run.header.day = Tuning.RUN_LENGTH_DAYS
+	_run.resistance.progress = Tuning.RESISTANCE_GOAL
+	_run.resistance.sabotage_done = true
 	t.check(director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"a won last day with every task done hands over")
 	director.escape_follows = false
@@ -94,7 +96,7 @@ func _test_a_won_last_day_with_every_task_done_hands_over(t) -> void:
 			"a scene recipe never does")
 	director.escape_follows = true
 	var end := director.finish_day(GameEnums.DayResult.WON)
-	t.check(end.hands_over_to_the_escape and GameState.header.day == Tuning.RUN_LENGTH_DAYS
+	t.check(end.hands_over_to_the_escape and _run.header.day == Tuning.RUN_LENGTH_DAYS
 			and not end.run_over, "and the calendar is left where it was for the escape to decide")
 	_put_away(rig)
 
@@ -107,6 +109,6 @@ func _test_a_section_is_ended_but_not_settled(t) -> void:
 	var end := director.finish_day(GameEnums.DayResult.LOST_CRYING)
 	t.check(end.is_section and end.finished_day == 15 and end.cause == "self",
 			"a section sends day_ended under its own number and cause")
-	t.check(GameState.header.nerves == Tuning.STARTING_NERVES,
+	t.check(_run.header.nerves == Tuning.STARTING_NERVES,
 			"and leaves what it costs to the section's own flow")
 	_put_away(rig)

@@ -1,3 +1,4 @@
+class_name RunState
 extends Node
 ## Owns the state of a run: the seed, the calendar, nerves and resistance progress.
 ##

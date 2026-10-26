@@ -655,7 +655,7 @@ func use_the_spec(spec: DaySpec) -> void:
 	_sends_poster_pursuits = spec.poster_pursuits
 
 ## **Every charge still running ends for its counter as cut short** (`EventInstance.
-## report_the_charge_cut_short()`): asked by `main._on_day_finished()` as a day ends, before the day's
+## report_the_charge_cut_short()`): asked by `DayDirector.finish_day()` as a day ends, before the day's
 ## own end is counted, and by `clear()` for anything a section's end leaves running. A charge that
 ## caught her, or is over, has already ended and is not counted twice. Telemetry only.
 func end_the_charges_still_running() -> void:
@@ -1089,7 +1089,7 @@ func _look_through_the_camera() -> void:
 ## What the run log and the page's counter call the event whose lethal reach ended today
 ## (`EventInstance.logged_name()` — `pelican` for a pelican, otherwise its row's id), or "" when no
 ## event's reach has (a car, or nothing yet). Set by `_check_hard_fails()` with the
-## `hard_fail_triggered` it sends, read by `main._on_day_finished()` for `EventBus.day_ended`, and
+## `hard_fail_triggered` it sends, read by `DayDirector.finish_day()` for `EventBus.day_ended`, and
 ## reset with `_hard_failed` when a day starts. Telemetry only.
 func what_struck_her() -> String:
 	return _struck_by
@@ -1989,7 +1989,7 @@ func _site_what_is_on_her_way(delta: float) -> void:
 ## reused here rather than copied, because a second copy of that list is a second answer to "what
 ## does a fire do to a run".
 ##
-## Called by `main._on_day_finished()` on a won day only. A lost day gives everything back
+## Called by `DayDirector.finish_day()` on a won day only. A lost day gives everything back
 ## (`GameState.finish_day`), so lighting a fire on one would be handing the retry a shell it never
 ## earned.
 func light_what_she_never_met(at: Vector2) -> bool:

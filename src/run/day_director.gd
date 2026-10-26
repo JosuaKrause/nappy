@@ -7,13 +7,13 @@ extends RefCounted
 ## day's clock are required; the developer readout, the HUD and the route rig are `null` where the
 ## game itself runs without them (a headless boot, a run with no rig). `run` is the run's state
 ## and its calendar operations — the dawn photograph, `settled_this_act()`, `day_rng()`, a day's
-## `finish_day()` — handed in by whoever builds the director rather than reached for as a global.
+## `finish_day()` — handed in by whoever builds the director rather than reached for as a global. Its type is `RunState`, the class of the `GameState` autoload, so a test hands a fresh `RunState.new()` as the fake.
 ##
 ## It writes no save and shows no screen: `finish_day()` returns a `DayEnd` and `main` saves and
 ## shows. The scene recipes' own day start stays in `main`.
 
 ## The run: the autoload `GameState`, handed in. Untyped by necessity — an autoload has no class.
-var run: Node
+var run: RunState
 var config: RunConfig
 var city: City
 var events: EventManager
@@ -35,7 +35,7 @@ var escape_follows := true
 ## The day being walked, set by `use_the_day()`.
 var spec := DaySpec.new()
 
-func _init(the_run: Node, the_config: RunConfig) -> void:
+func _init(the_run: RunState, the_config: RunConfig) -> void:
 	run = the_run
 	config = the_config
 	facts = run.facts

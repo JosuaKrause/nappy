@@ -587,8 +587,8 @@ run's seed; `finish_day(result)` ends it: the won last night's fire, the cause (
 charges still running closed, `day_ended`, and for an ordinary day the calendar's move. It returns a
 `DayEnd`; the save and the summary screen are `main`'s. The city, the events, the resistance, the
 player, the baby and the clock are required; the developer readout, the HUD and the route rig are
-`null` where the game runs without them. It is handed the run (`GameState`) rather than reading the
-autoload by name. A scene recipe's day start stays in `main`.
+`null` where the game runs without them. It is handed the run, a `RunState` (the class of the `GameState`
+autoload), rather than reading the autoload by name. A scene recipe's day start stays in `main`.
 
 ### `VisitCounter`
 Sends anonymous GoatCounter events for how far a run gets, and what a day actually ended on and
