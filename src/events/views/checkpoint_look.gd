@@ -15,7 +15,9 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			# one body covers the whole 64px alley mouth, same as `checkpoint_hut`'s hut. See
 			# `EventCatalogue._checkpoint_post`.
 			_draw_body_shadow(canvas)
-			_draw_at_anchor(canvas, EventPictures.GUARD_ALERT_BY_VIEW["front"] if event.guard_warns_her else EventPictures.GUARD_STANDING,
+			_draw_at_anchor(canvas,
+					EventPictures.GUARD_ALERT_BY_VIEW["front"] if event.guard_warns_her \
+							else EventPictures.GUARD_STANDING,
 					EventPictures.GUARD_ANCHOR)
 
 ## The hut's own doorway direction, read off `CityMap.pavement_inward()` at the tile it actually
@@ -25,7 +27,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 ## faces the carriageway for the same reason a lorry backing into a yard faces out of the wall
 ## behind it. `Vector2i.DOWN` (south) off a pavement, the harmless default open ground gets.
 func _hut_doorway() -> Vector2i:
-	var inward := event.world_map().pavement_inward(event.world_map().world_to_tile(event.global_position))
+	var map := event.world_map()
+	var inward := map.pavement_inward(map.world_to_tile(event.global_position))
 	if inward != Vector2i.ZERO:
 		return -inward
 	return Vector2i.DOWN
@@ -56,7 +59,9 @@ func _draw_checkpoint_hut(canvas: CanvasItem) -> void:
 	# The guard's own shadow, not the row's shape — a per-part point beside the hut, same as the
 	# dog beside a dog walker.
 	_draw_shadow(canvas, beside, 8.0)
-	_draw_at_anchor(canvas, EventPictures.GUARD_ALERT_BY_VIEW["front"] if event.guard_warns_her else EventPictures.GUARD_STANDING,
+	_draw_at_anchor(canvas,
+			EventPictures.GUARD_ALERT_BY_VIEW["front"] if event.guard_warns_her \
+					else EventPictures.GUARD_STANDING,
 			EventPictures.GUARD_ANCHOR, beside)
 
 ## The boom, raised or lowered from `gate_state` (`null` reads as lowered, the safe default before
@@ -69,10 +74,12 @@ func _draw_checkpoint_gate(canvas: CanvasItem) -> void:
 	var picture: String
 	var anchor: Vector2
 	if runs_north_south:
-		picture = EventPictures.BOOM_GATE_NS_RAISED if raised else EventPictures.BOOM_GATE_NS_LOWERED
+		picture = EventPictures.BOOM_GATE_NS_RAISED if raised \
+				else EventPictures.BOOM_GATE_NS_LOWERED
 		anchor = EventPictures.BOOM_NS_ANCHOR
 	else:
-		picture = EventPictures.BOOM_GATE_EW_RAISED if raised else EventPictures.BOOM_GATE_EW_LOWERED
+		picture = EventPictures.BOOM_GATE_EW_RAISED if raised \
+				else EventPictures.BOOM_GATE_EW_LOWERED
 		anchor = EventPictures.BOOM_EW_ANCHOR
 	_draw_body_shadow(canvas)
 	_draw_at_anchor(canvas, picture, anchor)

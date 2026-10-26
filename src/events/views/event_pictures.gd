@@ -1199,7 +1199,8 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect(sources, [CAR_ACCIDENT, CAR_ACCIDENT_VERTICAL, CAR_ACCIDENT_SHADOW,
 					CAR_ACCIDENT_VERTICAL_SHADOW, CAR_ACCIDENT_B, CAR_ACCIDENT_VERTICAL_B])
 		EventDef.Look.BURST_MAIN:
-			_collect(sources, [BURST_MAIN, BURST_MAIN_VERTICAL, BURST_MAIN_B, BURST_MAIN_VERTICAL_B])
+			_collect(sources, [BURST_MAIN, BURST_MAIN_VERTICAL, BURST_MAIN_B,
+					BURST_MAIN_VERTICAL_B])
 		EventDef.Look.COLLAPSED_FRONTAGE:
 			_collect(sources, [COLLAPSED_FRONTAGE])
 		EventDef.Look.SCAFFOLDING:

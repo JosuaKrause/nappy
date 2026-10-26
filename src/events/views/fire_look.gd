@@ -52,7 +52,8 @@ func _draw_fire(canvas: CanvasItem) -> void:
 	for i in flames.size():
 		var flicker := 1.0 + 0.25 * sin(event.age * 9.0 + i * 1.7)
 		var height := (_FIRE_HEIGHT + i % 2 * _FIRE_HEIGHT_TALL) * flicker
-		Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.FLAME), against_the_wall + Vector2(flames[i].x, 0.0),
+		Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.FLAME),
+				against_the_wall + Vector2(flames[i].x, 0.0),
 				Vector2(flames[i].y, height))
 	# Neighboring plumes billow out of step, so a long front's smoke does not pulse as one.
 	var billowing := _idle_stepping(EventPictures.STEAM_BILLOW_PERIOD)
@@ -98,7 +99,8 @@ func _draw_fire_where_it_stands(canvas: CanvasItem) -> void:
 		var offset := (i - 2.0) * 11.0
 		var flicker := 1.0 + 0.25 * sin(event.age * 9.0 + i * 1.7)
 		var height := (34.0 + i % 2 * 14.0) * strength * flicker
-		Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.FLAME), Vector2(offset, 0.0), Vector2(18.0, height))
+		Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.FLAME), Vector2(offset,
+				0.0), Vector2(18.0, height))
 
 ## The facade a fire sited at `at` burns on, as the stretches of it the city draws, each as its
 ## west and east ends in local x measured from `at`: the lot (`CityMap.building_rects`, one per
@@ -169,7 +171,8 @@ static func _smoke_across(runs: PackedVector2Array) -> PackedVector2Array:
 ## frontage. `Vector2.ZERO` off a pavement (open ground, the building's stairwell): the flames stay
 ## where they are drawn with no wall to reach for.
 func _wall_offset() -> Vector2:
-	var inward := event.world_map().pavement_inward(event.world_map().world_to_tile(event.global_position))
+	var map := event.world_map()
+	var inward := map.pavement_inward(map.world_to_tile(event.global_position))
 	return Vector2(inward) * (Tuning.TILE_SIZE * 0.5)
 
 func _front_box() -> Rect2:

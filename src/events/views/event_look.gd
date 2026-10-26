@@ -90,7 +90,8 @@ func _in_the_drawn_view() -> bool:
 func _drawn_reach() -> Rect2:
 	if not _drawn_reach_known:
 		_drawn_reach_known = true
-		_drawn_reach_box = EventInstance.footprint_of(event.def).merge(event.drawn_box()).merge(EventPictures.largest_mark_rect())
+		_drawn_reach_box = EventInstance.footprint_of(event.def).merge(event.drawn_box()) \
+				.merge(EventPictures.largest_mark_rect())
 		var front := _front_box()
 		if front.has_area():
 			_drawn_reach_box = _drawn_reach_box.merge(front)
@@ -123,7 +124,8 @@ func _picture_never_settles() -> bool:
 		return true
 	if event.is_taking_a_victim():
 		return true
-	return event.def.look == EventDef.Look.BURNING_BUILDING or event.def.look == EventDef.Look.FIREFIGHT
+	return event.def.look == EventDef.Look.BURNING_BUILDING \
+			or event.def.look == EventDef.Look.FIREFIGHT
 
 ## Which heading the next draw would pick this instance's eight-view sector from.
 ##
@@ -148,7 +150,8 @@ func drawn_heading() -> Vector2:
 func _protest_pose() -> int:
 	if event.def.look != EventDef.Look.PROTEST:
 		return 0
-	return EventPictures.POINTING_POSES.find(EventPictures.protester_texture(event.global_position, _protest_objective())) + 2
+	return EventPictures.POINTING_POSES.find(EventPictures.protester_texture(event.global_position,
+			_protest_objective())) + 2
 
 ## Everything `_draw()` reads that can change from one tick to the next, as one comparable value.
 ##
@@ -168,7 +171,8 @@ func _picture_key() -> Vector4i:
 		swell = mark_swell()
 		# The flash is the mark's telegraph phase and takes it off the screen for part of every
 		# beat, so it is part of the picture rather than of the mark's size.
-		flashed_off = event.is_telegraphing() and fmod(event.age * EventPictures.MARK_FLASHES_PER_SECOND, 1.0) > 0.55
+		flashed_off = event.is_telegraphing() \
+				and fmod(event.age * EventPictures.MARK_FLASHES_PER_SECOND, 1.0) > 0.55
 	# **Only the looks that actually read an idle timer carry one.** `_idle_stepping()` is a
 	# function of the clock alone and knows nothing about the row asking, so handing it to every
 	# instance would flip every seal's key twice a second for an animation it does not have — the
@@ -215,7 +219,8 @@ func _picture_key() -> Vector4i:
 	# A car's picture is anchored on its live heading (`_body_anchor()`), and its shadow and
 	# body turn with it, so a car rounding a corner redraws as it turns rather than only when it
 	# crosses into another sector. Whole degrees, above the protest's own poses.
-	var turn := posmod(roundi(rad_to_deg(event.facing_now().angle())), 360) if event.def.vehicle != null else 0
+	var turn := posmod(roundi(rad_to_deg(event.facing_now().angle())),
+			360) if event.def.vehicle != null else 0
 	return Vector4i(
 			flags,
 			sector + 8 * caret + 32 * _protest_pose() + 320 * turn,
@@ -265,9 +270,12 @@ func current_bob() -> float:
 	if EventPictures.WHEELS_BY_LOOK.has(event.def.look):
 		return WheelBob.lift(event.path_travelled()) if event.gait_is_moving() else 0.0
 	if event.def.pursuit != null or event.is_leaving:
-		return -absf(sin(event.path_travelled() * EventPictures.BOB_PER_PX)) * EventPictures.BOB_HEIGHT
-	if event.def.mobile and event.def.speed > 0.0 and event.path.size() > 1 and not event.is_telegraphing_still():
-		return -absf(sin(event.path_travelled() * EventPictures.BOB_PER_PX)) * EventPictures.BOB_HEIGHT
+		return -absf(sin(event.path_travelled() * EventPictures.BOB_PER_PX)) \
+				* EventPictures.BOB_HEIGHT
+	if event.def.mobile and event.def.speed > 0.0 and event.path.size() > 1 \
+			and not event.is_telegraphing_still():
+		return -absf(sin(event.path_travelled() * EventPictures.BOB_PER_PX)) \
+				* EventPictures.BOB_HEIGHT
 	return 0.0
 
 ## Which of a family's two gait frames to draw right now: frame b (mid-stride) for half of every
@@ -447,7 +455,8 @@ func _draw_mark() -> void:
 	# telegraphing — *this has not happened yet* — and is steady once it has. The colour cannot do
 	# this, because a telegraph is usually over before the event is on screen; a flash is a property
 	# of the mark rather than of a moment she had to be present for.
-	if event.is_telegraphing() and fmod(event.age * EventPictures.MARK_FLASHES_PER_SECOND, 1.0) > 0.55:
+	if event.is_telegraphing() and fmod(event.age * EventPictures.MARK_FLASHES_PER_SECOND,
+			1.0) > 0.55:
 		return
 
 	var swell := mark_swell()
@@ -491,10 +500,12 @@ func drawn_rect_now() -> Rect2:
 		if size.x > 0.0 and size.y > 0.0:
 			rect = rect.merge(Rect2(-size.x * 0.5, -size.y, size.x, size.y))
 	if event.def.draws_body_shadow and event.def.shape != null:
-		var r := event.def.obstructs_radius if event.def.obstructs_radius > 0.0 else event.def.shape.radius
+		var r := event.def.obstructs_radius if event.def.obstructs_radius > 0.0 \
+				else event.def.shape.radius
 		rect = rect.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
 	if event.def.look == EventDef.Look.LOOSE_DOG:
-		var behind := EventInstance.LOOSE_LEAD_REACH if _heading_is_west() else -EventInstance.LOOSE_LEAD_REACH
+		var behind := EventInstance.LOOSE_LEAD_REACH if _heading_is_west() \
+				else -EventInstance.LOOSE_LEAD_REACH
 		rect = rect.merge(Rect2(Vector2(minf(behind, 0.0), -8.0),
 				Vector2(absf(behind), 6.0)).grow(1.0))
 	rect.position.y += current_bob()
@@ -530,7 +541,8 @@ func _draw_simple(picture: String, canvas: CanvasItem,
 		picture_b: String = "") -> void:
 	_draw_body_shadow(canvas)
 	var drawn := picture_b if not picture_b.is_empty() and _gait_stepping() else picture
-	Sprites.draw_standing(canvas, EventPictures.drawn(drawn), Vector2.ZERO, Vector2.ZERO, _heading_is_west())
+	Sprites.draw_standing(canvas, EventPictures.drawn(drawn), Vector2.ZERO, Vector2.ZERO,
+			_heading_is_west())
 
 ## Where a car's picture is anchored for `Sprites.draw_standing`, which bottom-centres it — a car
 ## that drives, the patrol car or the fire engine (`_is_anchored_over_its_body()`):
@@ -640,7 +652,8 @@ func _select_view(heading: Vector2) -> String:
 ## `Sprites.draw_standing` — nothing in the kit that draws this way ever needs to flip.
 func _draw_at_anchor(canvas: CanvasItem, picture: String, anchor: Vector2,
 		at: Vector2 = Vector2.ZERO) -> void:
-	canvas.draw_texture_rect(EventPictures.drawn(picture), Rect2(at - anchor, EventPictures.native_size(picture)), false)
+	canvas.draw_texture_rect(EventPictures.drawn(picture), Rect2(at - anchor,
+			EventPictures.native_size(picture)), false)
 
 # ------------------------------------------------------------- the drawing nodes ---
 # A long picture is drawn in slices that sort against her one by one, and a roadblock's band stands

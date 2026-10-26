@@ -241,7 +241,8 @@ static func footprint_of(row: EventDef) -> Rect2:
 	box = box.grow(EventPictures.BOB_HEIGHT + EntityHalo.HALO_MARGIN)
 	if row.intensity > 0.0 or row.hard_fail:
 		box = box.merge(_with_the_drop(row,
-				EventPictures.largest_mark_rect().grow_individual(0.0, EventPictures.BOB_HEIGHT, 0.0, 0.0)))
+				EventPictures.largest_mark_rect().grow_individual(0.0, EventPictures.BOB_HEIGHT,
+						0.0, 0.0)))
 	return box
 
 ## How far the loose dog's slack lead trails behind it, in px — `_draw_loose_dog()`'s own reach.
@@ -647,7 +648,9 @@ static func guard_post_offset(vertical: bool, side: int) -> Vector2:
 		var column := EventPictures.native_size(EventPictures.ROADBLOCK_SEGMENT_VERTICAL)
 		return Vector2(signf(side) * (column.x * 0.5 + guard.x * 0.5 + _GUARD_POST_CLEARANCE), 0.0)
 	if side < 0:
-		return Vector2(0.0, -(EventPictures.native_size(EventPictures.ROADBLOCK_SEGMENT).y + _GUARD_POST_CLEARANCE))
+		return Vector2(0.0,
+				-(EventPictures.native_size(EventPictures.ROADBLOCK_SEGMENT).y
+				+ _GUARD_POST_CLEARANCE))
 	return Vector2(0.0, guard.y + _GUARD_POST_CLEARANCE)
 
 ## Which way a posted guard faces: straight out from the barrier on his own side, towards where she
@@ -709,7 +712,8 @@ static func warning_guard_rect(vertical: bool, band_at: Vector2, her: Vector2) -
 	var feet := band_at + guard_post_offset(vertical, _guard_side_toward(vertical, her - band_at))
 	if _warning_guard == Vector2.ZERO:
 		for view: String in EventPictures.GUARD_ALERT_BY_VIEW:
-			_warning_guard = _warning_guard.max(EventPictures.native_size(EventPictures.GUARD_ALERT_BY_VIEW[view]))
+			_warning_guard = _warning_guard.max(
+					EventPictures.native_size(EventPictures.GUARD_ALERT_BY_VIEW[view]))
 	return Rect2(feet - Vector2(_warning_guard.x * 0.5, _warning_guard.y), _warning_guard)
 
 static var _warning_guard := Vector2.ZERO
@@ -1956,7 +1960,8 @@ func _notice_damping() -> float:
 func _caret_intensity_over_horizon() -> float:
 	var pulse_override := -1.0
 	if def.pulse_period > 0.0:
-		pulse_override = _pulse_mean_multiplier(age, Tuning.EXPECTED_IMPACT_HORIZON, def.pulse_period)
+		pulse_override = _pulse_mean_multiplier(age, Tuning.EXPECTED_IMPACT_HORIZON,
+				def.pulse_period)
 	return current_intensity(pulse_override) / _notice_damping()
 
 ## Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
@@ -2160,7 +2165,8 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 	var outer := flock.bird_outer()
 	var total := 0.0
 	for bird in birds():
-		var d := GroundShape.eccentric_distance(global_position + bird.at, bird.heading * bird.speed,
+		var d := GroundShape.eccentric_distance(global_position + bird.at,
+				bird.heading * bird.speed,
 				world_position)
 		total += Tuning.falloff(d, share, def.inner_radius, outer, def.falloff_power)
 	return total
@@ -2278,7 +2284,8 @@ func expected_gross_at(player_position: Vector2) -> float:
 			def.shape.half_length if def.shape else 0.0,
 			def.shape.half_extents if def.shape else Vector2.ZERO]
 		if key != _expected_landed_key:
-			_expected_landed_cache = _sample_expected_landed(player_position, velocity, live_intensity)
+			_expected_landed_cache = _sample_expected_landed(player_position, velocity,
+					live_intensity)
 			_expected_landed_key = key
 		future_integral = _expected_landed_cache
 	else:
@@ -2478,7 +2485,8 @@ func set_halo_strength(strength: float, colour: Color) -> void:
 	# never holds two rims at once** (`ExcitementHalo` counts one block per instance against
 	# `EntityHalo.RIM_BUDGET`): the man's is given back on the spot as the band's is built, and the
 	# band's on the spot as the instance's own is wanted again once the barrier stands alone.
-	if is_leaving and barrier_post and barrier_post.has_left_its_body() and look.band_node() != null \
+	if is_leaving and barrier_post and barrier_post.has_left_its_body() \
+			and look.band_node() != null \
 			and not is_finished:
 		if _halo:
 			EntityHalo.release(_halo)

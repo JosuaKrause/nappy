@@ -14,14 +14,17 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.BARRICADE:
 			_draw_the_spread(canvas)
 		EventDef.Look.FALLEN_TREE:
-			_draw_wide_scene(EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, event.runs_vertically()), canvas)
+			_draw_wide_scene(EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE,
+					event.runs_vertically()), canvas)
 		EventDef.Look.CAR_ACCIDENT:
 			if canvas != event or _slices.is_empty():
-				_draw_wide_scene(EventPictures.wide_scene_texture(EventDef.Look.CAR_ACCIDENT, event.runs_vertically(),
+				_draw_wide_scene(EventPictures.wide_scene_texture(EventDef.Look.CAR_ACCIDENT,
+						event.runs_vertically(),
 						_idle_stepping(EventPictures.CAR_ACCIDENT_SMOKE_PERIOD)), canvas)
 		EventDef.Look.BURST_MAIN:
 			if canvas != event or _slices.is_empty():
-				_draw_wide_scene(EventPictures.wide_scene_texture(EventDef.Look.BURST_MAIN, event.runs_vertically(),
+				_draw_wide_scene(EventPictures.wide_scene_texture(EventDef.Look.BURST_MAIN,
+						event.runs_vertically(),
 						_idle_stepping(EventPictures.BURST_MAIN_SPLASH_PERIOD)), canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
 			_draw_the_spread(canvas)
@@ -38,7 +41,8 @@ func _update_scenery() -> void:
 	if _sceneries.is_empty():
 		return
 	var shown := not (event.skip_draw or event.is_finished or event.is_suppressed_by_its_own_hold())
-	var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD if event.def.look == EventDef.Look.CAR_ACCIDENT \
+	var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD \
+			if event.def.look == EventDef.Look.CAR_ACCIDENT \
 			else EventPictures.BURST_MAIN_SPLASH_PERIOD
 	var frame_b := _idle_stepping(period)
 	for scenery in _sceneries:
@@ -118,7 +122,8 @@ func _spread_slice_count(segment_picture: String) -> int:
 ## covers 11px either side of its origin, as `drawn_box()` reserves.
 func _spread_run() -> PackedVector2Array:
 	if event.def.obstructs_radius > 0.0 and event.def.shape != null:
-		return DrawLayer.run_of(EventInstance.solid_footprint_of(event.def, event.spread_axis(), event.runs_vertically()),
+		return DrawLayer.run_of(EventInstance.solid_footprint_of(event.def, event.spread_axis(),
+				event.runs_vertically()),
 				Vector2.ZERO)
 	return PackedVector2Array([event.spread_at(-11.0), event.spread_at(11.0)])
 
@@ -127,7 +132,8 @@ func _spread_run() -> PackedVector2Array:
 func _spread_pictures() -> PackedStringArray:
 	match event.def.look:
 		EventDef.Look.ROADWORKS:
-			return PackedStringArray([EventPictures.roadwork_segment_texture(event.runs_vertically()), EventPictures.BARRIER_END])
+			return PackedStringArray([EventPictures.roadwork_segment_texture(event.runs_vertically()),
+					EventPictures.BARRIER_END])
 		EventDef.Look.STALL:
 			return PackedStringArray([EventPictures.STALL, ""])
 		EventDef.Look.BARRICADE:
@@ -137,7 +143,8 @@ func _spread_pictures() -> PackedStringArray:
 		EventDef.Look.SCAFFOLDING:
 			return PackedStringArray([EventPictures.SCAFFOLDING, ""])
 		EventDef.Look.ROADBLOCK:
-			return PackedStringArray([EventPictures.roadblock_segment_texture(event.runs_vertically()), EventPictures.ROADBLOCK_END])
+			return PackedStringArray([EventPictures.roadblock_segment_texture(event.runs_vertically()),
+					EventPictures.ROADBLOCK_END])
 	return PackedStringArray()
 
 ## The whole spread of this instance's look on `canvas` (`_draw_spread()`).
@@ -249,7 +256,8 @@ func _build_the_scenery_of(slice: Slice) -> void:
 	var scenery := EventScenery.new()
 	scenery.configure(picture, _spread_extent(half * 2.0, thickness),
 			_wide_scene_anchor(event.runs_vertically(), half),
-			EventPictures.wide_scene_shadow(picture) if slice.index == 0 else "", _wide_scene_band(slice.index))
+			EventPictures.wide_scene_shadow(picture) if slice.index == 0 \
+					else "", _wide_scene_band(slice.index))
 	scenery.position = -_slice_feet[slice.index]
 	slice.add_child(scenery)
 	_sceneries.append(scenery)
@@ -300,7 +308,8 @@ func _draw_a_slice(slice: Slice) -> void:
 	var origin := -_slice_feet[slice.index]
 	match event.def.look:
 		EventDef.Look.FALLEN_TREE:
-			_draw_wide_scene(EventPictures.wide_scene_texture(event.def.look, event.runs_vertically()), slice, slice.index,
+			_draw_wide_scene(EventPictures.wide_scene_texture(event.def.look,
+					event.runs_vertically()), slice, slice.index,
 					origin)
 		EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN:
 			pass

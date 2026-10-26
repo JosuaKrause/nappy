@@ -10,11 +10,14 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.CAT:
 			_draw_cat(canvas)
 		EventDef.Look.MOUSE:
-			_draw_eight_view(EventPictures.MOUSE_BY_VIEW, event.facing_now(), canvas, false, EventPictures.MOUSE_BY_VIEW_B)
+			_draw_eight_view(EventPictures.MOUSE_BY_VIEW, event.facing_now(), canvas, false,
+					EventPictures.MOUSE_BY_VIEW_B)
 		EventDef.Look.YELLER:
-			_draw_eight_view(EventPictures.YELLER_BY_VIEW, event.facing_now(), canvas, false, EventPictures.YELLER_BY_VIEW_B)
+			_draw_eight_view(EventPictures.YELLER_BY_VIEW, event.facing_now(), canvas, false,
+					EventPictures.YELLER_BY_VIEW_B)
 		EventDef.Look.NEIGHBOR:
-			_draw_eight_view(EventPictures.NEIGHBOR_BY_VIEW, event.facing_now(), canvas, false, EventPictures.NEIGHBOR_BY_VIEW_B)
+			_draw_eight_view(EventPictures.NEIGHBOR_BY_VIEW, event.facing_now(), canvas, false,
+					EventPictures.NEIGHBOR_BY_VIEW_B)
 		EventDef.Look.DOG_WALKER:
 			_draw_dog_walker(canvas)
 		EventDef.Look.BUSKER:
@@ -22,7 +25,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.LOOSE_DOG:
 			_draw_loose_dog(canvas)
 		EventDef.Look.LEAF_BLOWER:
-			_draw_eight_view(EventPictures.LEAF_BLOWER_BY_VIEW, event.facing_now(), canvas, false, EventPictures.LEAF_BLOWER_BY_VIEW_B)
+			_draw_eight_view(EventPictures.LEAF_BLOWER_BY_VIEW, event.facing_now(), canvas, false,
+					EventPictures.LEAF_BLOWER_BY_VIEW_B)
 		EventDef.Look.CYCLIST:
 			var rider := rider_pictures()
 			_draw_eight_view(rider[0], event.facing_now(), canvas, false, rider[1])
@@ -32,7 +36,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.CHATTING_MOTHER:
 			_draw_chatting_mother(canvas)
 		EventDef.Look.POSTER_CREW:
-			var crew := EventPictures.POSTER_CREW_BY_VIEW_B if _idle_stepping(EventPictures.POSTER_CREW_PASTE_PERIOD) \
+			var crew := EventPictures.POSTER_CREW_BY_VIEW_B \
+					if _idle_stepping(EventPictures.POSTER_CREW_PASTE_PERIOD) \
 					else EventPictures.POSTER_CREW_BY_VIEW
 			_draw_eight_view(crew, event.facing_now(), canvas)
 		EventDef.Look.POSTER_CREW_SQUARE:
@@ -46,7 +51,9 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.IMPACT_CRATER:
 			_draw_crater(canvas)
 		EventDef.Look.STEAM:
-			_draw_simple(EventPictures.STEAM_B if _idle_stepping(EventPictures.STEAM_BILLOW_PERIOD) else EventPictures.STEAM, canvas)
+			_draw_simple(EventPictures.STEAM_B
+					if _idle_stepping(EventPictures.STEAM_BILLOW_PERIOD) \
+							else EventPictures.STEAM, canvas)
 		EventDef.Look.LOUDSPEAKER_MAST:
 			_draw_mast(canvas)
 
@@ -76,7 +83,8 @@ func charging_dog_pictures() -> Array[Dictionary]:
 ## the span it owns and the reason to cross the street. Here the same lead trails on the ground
 ## behind one body, and the difference between the two pictures is the whole event.
 func _draw_loose_dog(canvas: CanvasItem) -> void:
-	var behind := Vector2(EventInstance.LOOSE_LEAD_REACH if _heading_is_west() else -EventInstance.LOOSE_LEAD_REACH, 0.0)
+	var behind := Vector2(EventInstance.LOOSE_LEAD_REACH if _heading_is_west()
+			else -EventInstance.LOOSE_LEAD_REACH, 0.0)
 	_draw_body_shadow(canvas)
 	# On the ground and slack, not held up at hip height. Nobody is holding it. The lead's own
 	# offset stays a plain east/west span — a composite the picture underneath it does not own,
@@ -91,7 +99,8 @@ func _draw_cat(canvas: CanvasItem) -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
 	# telegraph, so the two silhouettes have to differ at a glance, not by a scale factor.
 	var telegraphing := event.is_telegraphing()
-	var by_view := EventPictures.CAT_CROUCHED_BY_VIEW if telegraphing else EventPictures.CAT_RUNNING_BY_VIEW
+	var by_view := EventPictures.CAT_CROUCHED_BY_VIEW if telegraphing \
+			else EventPictures.CAT_RUNNING_BY_VIEW
 	# The crouch holds still by construction (`still_while_telegraphing`), so only the dash gets a
 	# second frame — a crouching cat has nothing to stride into yet.
 	if not telegraphing and _gait_stepping():
@@ -120,8 +129,10 @@ func _draw_busker(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var view := _select_view(event.facing_now())
 	var mirror := EightDirection.is_mirrored(_view_sector)
-	var by_view := EventPictures.BUSKER_BY_VIEW_B if _idle_stepping(EventPictures.BUSKER_STRUM_PERIOD) else EventPictures.BUSKER_BY_VIEW
-	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
+	var by_view := EventPictures.BUSKER_BY_VIEW_B \
+			if _idle_stepping(EventPictures.BUSKER_STRUM_PERIOD) else EventPictures.BUSKER_BY_VIEW
+	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+			mirror)
 
 ## The pole and horns stand whether the mast is live or silenced — a mast never leaves. On top of
 ## it, the lamp and the arcs say what the pole alone cannot: amber and dark during the telegraph
@@ -134,12 +145,15 @@ func _draw_mast(canvas: CanvasItem) -> void:
 	if event.silenced:
 		return
 	if _mast_is_telegraphing_now():
-		Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.MAST_LAMP), EventPictures.MAST_LAMP_AT, Vector2.ZERO, false,
+		Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.MAST_LAMP),
+				EventPictures.MAST_LAMP_AT, Vector2.ZERO, false,
 				Palette.SIGNAL_AMBER)
 		return
-	Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.MAST_LAMP), EventPictures.MAST_LAMP_AT, Vector2.ZERO, false,
+	Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.MAST_LAMP),
+			EventPictures.MAST_LAMP_AT, Vector2.ZERO, false,
 			Palette.SIGNAL_GREEN)
-	Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.SOUND_PULSE), EventPictures.MAST_PULSE_AT, Vector2.ZERO, false)
+	Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.SOUND_PULSE),
+			EventPictures.MAST_PULSE_AT, Vector2.ZERO, false)
 
 ## The person, the dog, and the lead between them.
 ##
@@ -164,9 +178,11 @@ func _draw_dog_walker(canvas: CanvasItem) -> void:
 	# One phase for the pair, so the walker's own legs and the dog's never disagree about which of
 	# them is mid-stride: the dog steps while he does and rests while he does.
 	var stepping := _gait_stepping()
-	var person_by_view := EventPictures.PERSON_BY_VIEW_B if stepping else EventPictures.PERSON_BY_VIEW
+	var person_by_view := EventPictures.PERSON_BY_VIEW_B if stepping \
+			else EventPictures.PERSON_BY_VIEW
 	var dog := EventPictures.dog_picture(view, stepping, _gait_second_half())
-	Sprites.draw_standing(canvas, EventPictures.drawn(person_by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, EventPictures.drawn(person_by_view[view]), Vector2.ZERO,
+			Vector2.ZERO, mirror)
 	Sprites.draw_standing(canvas, EventPictures.drawn(dog), to_the_dog, Vector2.ZERO, mirror)
 
 ## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
@@ -177,7 +193,8 @@ func _draw_dog_walker(canvas: CanvasItem) -> void:
 func _draw_chatting_mother(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var chatting := event.is_chatting()
-	var by_view := EventPictures.CHATTING_MOTHER_TALKING_BY_VIEW if chatting else EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW
+	var by_view := EventPictures.CHATTING_MOTHER_TALKING_BY_VIEW if chatting \
+			else EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW
 	# Talking holds still by construction — `_process()` freezes her pacing the instant a
 	# conversation starts — so only the walking posture gets a second frame.
 	if not chatting and _gait_stepping():

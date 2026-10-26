@@ -20,7 +20,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			# truck's `shape`, and the shadow, which is that shape, stays under the node.
 			var engine_view := _select_view(event.facing_now())
 			_draw_body_shadow(canvas, Vector2(0.0, -current_bob()))
-			_draw_eight_view(EventPictures.FIRE_ENGINE_BY_VIEW, event.facing_now(), canvas, true, {}, false,
+			_draw_eight_view(EventPictures.FIRE_ENGINE_BY_VIEW, event.facing_now(), canvas, true,
+					{}, false,
 					_body_anchor(engine_view))
 		EventDef.Look.ICE_CREAM_VAN:
 			# East-authored: always sited facing east, same as `DELIVERY_VAN` above, but
@@ -41,7 +42,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			# shadow, which is the body's shape, under the node on the ground.
 			var view := _select_view(event.facing_now())
 			_draw_body_shadow(canvas, Vector2(0.0, -current_bob()))
-			_draw_eight_view(EventPictures.POLICE_CAR_BY_VIEW, event.facing_now(), canvas, false, {}, false,
+			_draw_eight_view(EventPictures.POLICE_CAR_BY_VIEW, event.facing_now(), canvas, false,
+					{}, false,
 					_body_anchor(view))
 		EventDef.Look.UNMARKED_VAN:
 			_draw_abduction(canvas)
@@ -53,9 +55,11 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(EventPictures.ARMY_TRUCK_BY_VIEW, event.facing_now(), canvas, true)
 		EventDef.Look.MOVING_VAN:
-			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, event.def.obstructs_radius * 2.0, canvas)
+			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, event.def.obstructs_radius * 2.0,
+					canvas)
 		EventDef.Look.BURNT_OUT_CAR:
-			_draw_stationary_vehicle(EventDef.Look.BURNT_OUT_CAR, event.def.obstructs_radius * 2.0, canvas)
+			_draw_stationary_vehicle(EventDef.Look.BURNT_OUT_CAR,
+					event.def.obstructs_radius * 2.0, canvas)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
@@ -65,7 +69,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 		canvas: CanvasItem) -> void:
 	var picture := EventPictures.stationary_vehicle_texture(look, event.stands_side_on())
-	var extent := EventPictures.stationary_vehicle_extent(picture, event.stands_side_on(), side_width)
+	var extent := EventPictures.stationary_vehicle_extent(picture, event.stands_side_on(),
+			side_width)
 	_draw_body_shadow(canvas)
 	Sprites.draw_standing(canvas, EventPictures.drawn(picture), Vector2.ZERO, extent,
 			event.stands_side_on() and _heading_is_west())
@@ -100,7 +105,8 @@ func _draw_abduction(canvas: CanvasItem) -> void:
 		# by construction (`standing` never has a Y component), so this always resolves to the same
 		# side view `_heading_is_west()` picked before, now read off the shared table.
 		var view := _select_view(-standing)
-		var by_view := EventPictures.VAN_VICTIM_BY_VIEW_B if _victim_gait_stepping() else EventPictures.VAN_VICTIM_BY_VIEW
+		var by_view := EventPictures.VAN_VICTIM_BY_VIEW_B if _victim_gait_stepping() \
+				else EventPictures.VAN_VICTIM_BY_VIEW
 		Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), at, Vector2.ZERO,
 				EightDirection.is_mirrored(_view_sector))
 	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own

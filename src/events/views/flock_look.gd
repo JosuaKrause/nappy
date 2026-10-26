@@ -20,7 +20,8 @@ func _draw_birds(canvas: CanvasItem) -> void:
 	var order: Array[int] = []
 	for i in event.birds().size():
 		order.append(i)
-	order.sort_custom(func(a: int, b: int) -> bool: return event.birds()[a].at.y < event.birds()[b].at.y)
+	order.sort_custom(func(a: int,
+			b: int) -> bool: return event.birds()[a].at.y < event.birds()[b].at.y)
 	for i in order:
 		var bird := event.birds()[i]
 		if bird.lift < BIRD_SHADOW_CEILING:

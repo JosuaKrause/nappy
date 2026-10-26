@@ -7,7 +7,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.ROBBER, EventDef.Look.ROBBER_GIVING_CHASE:
 			_draw_robber(canvas)
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE, \
+		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, \
+				EventDef.Look.VAN_GUARD_GIVING_CHASE, \
 				EventDef.Look.GUARDSMAN_GIVING_CHASE:
 			_draw_masked_pursuer(canvas)
 		EventDef.Look.POLICEMAN_GIVING_CHASE:
@@ -43,8 +44,10 @@ func robber_pictures() -> Dictionary:
 	if event.is_waiting():
 		return EventPictures.ROBBER_WAITING_BY_VIEW
 	if event.is_telegraphing():
-		return EventPictures.ROBBER_ALERT_BY_VIEW_B if _gait_stepping() else EventPictures.ROBBER_ALERT_BY_VIEW
-	return EventPictures.ROBBER_LUNGING_BY_VIEW_B if _gait_stepping() else EventPictures.ROBBER_LUNGING_BY_VIEW
+		return EventPictures.ROBBER_ALERT_BY_VIEW_B if _gait_stepping() \
+				else EventPictures.ROBBER_ALERT_BY_VIEW
+	return EventPictures.ROBBER_LUNGING_BY_VIEW_B if _gait_stepping() \
+			else EventPictures.ROBBER_LUNGING_BY_VIEW
 
 ## **The policeman on foot, drawn as the robber is.** He faces her while he is after her (`EventPursuit`
 ## keeps `_heading` on her) and his vehicle's door as he walks back (`EventOfficer.walk_back()`); which picture
@@ -67,14 +70,16 @@ func policeman_pictures() -> Dictionary:
 		return EventPictures.POLICEMAN_ALERT_BY_VIEW
 	if _stands_still_now():
 		return EventPictures.POLICEMAN_WAITING_BY_VIEW
-	return EventPictures.POLICEMAN_LUNGING_BY_VIEW_B if _gait_stepping() else EventPictures.POLICEMAN_LUNGING_BY_VIEW
+	return EventPictures.POLICEMAN_LUNGING_BY_VIEW_B if _gait_stepping() \
+			else EventPictures.POLICEMAN_LUNGING_BY_VIEW
 
 ## Whether a man on foot is drawn standing rather than lunging: while he waits for her to come
 ## near (`is_waiting()`, which `is_telegraphing()` is false for, the masked man at the foot of the
 ## shaft being the one who does), through his notice, and through a stop he has made of his catch
 ## (`has_stopped_her()`) until he turns to walk back.
 func _stands_still_now() -> bool:
-	return event.is_waiting() or event.is_telegraphing() or (event.has_stopped_her() and not event.is_leaving)
+	return event.is_waiting() or event.is_telegraphing() or (event.has_stopped_her()
+			and not event.is_leaving)
 
 ## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
 ## its boom — the same man, and the guardsman a torn poster sends or a vehicle lets out:
@@ -102,6 +107,8 @@ func _draw_masked_pursuer(canvas: CanvasItem) -> void:
 ## her crossing (`PursuitSpec.Start.CHARGES_AT_ONCE`). Otherwise `guard_standing_*` while
 ## `_stands_still_now()` — the masked man's wait, a stop — and `guard_lunging_*` after.
 func masked_pursuer_pictures() -> Dictionary:
-	if event.is_standing_for_its_notice() or (event.def.notice_within() > 0.0 and event.is_telegraphing()):
+	if event.is_standing_for_its_notice() or (event.def.notice_within() > 0.0
+			and event.is_telegraphing()):
 		return EventPictures.GUARD_ALERT_BY_VIEW
-	return EventPictures.GUARD_STANDING_BY_VIEW if _stands_still_now() else EventPictures.GUARD_LUNGING_BY_VIEW
+	return EventPictures.GUARD_STANDING_BY_VIEW if _stands_still_now() \
+			else EventPictures.GUARD_LUNGING_BY_VIEW

@@ -51,7 +51,8 @@ func _draw_roadblock(canvas: CanvasItem) -> void:
 	# the instance stands on the band, only the man once he has set off (his halo would otherwise
 	# paint over the band wherever he stands south of it). A departing guard's band has a rim of its
 	# own, `_band_halo`.
-	if event.barrier_post == null or event.barrier_post.chaser_side() == 0 or (event.phase == EventInstance.Phase.SPENT) or _band == null:
+	if event.barrier_post == null or event.barrier_post.chaser_side() == 0 \
+			or (event.phase == EventInstance.Phase.SPENT) or _band == null:
 		draw_the_band(canvas, _roadblock_band_at())
 	_draw_the_chaser(canvas)
 
@@ -67,7 +68,8 @@ func draw_the_band(canvas: CanvasItem, band_at: Vector2) -> void:
 
 ## The man who set off, drawn on this node, which walks with him.
 func _draw_the_chaser(canvas: CanvasItem) -> void:
-	if event.barrier_post == null or event.barrier_post.chaser_side() == 0 or (event.phase == EventInstance.Phase.SPENT):
+	if event.barrier_post == null or event.barrier_post.chaser_side() == 0 \
+			or (event.phase == EventInstance.Phase.SPENT):
 		return
 	# His own small shadow — not the band's — so `_draw_eight_view()` below is asked not to draw
 	# one of its own; see that function's own doc comment.
@@ -136,7 +138,8 @@ func _build_the_band() -> void:
 ## in with it.
 func _attach_the_band() -> void:
 	_attach_the_slices()
-	if _band == null or _band.is_inside_tree() or not event.is_inside_tree() or event.get_parent() == null:
+	if _band == null or _band.is_inside_tree() or not event.is_inside_tree() \
+			or event.get_parent() == null:
 		return
 	_band.position = event.body_position()
 	event.add_beside_it(_band)
@@ -151,7 +154,8 @@ func _move_the_band(redraw := false) -> void:
 	var at := event.body_position()
 	if not _band.global_position.is_equal_approx(at):
 		_band.global_position = at
-	_band.visible = not (event.skip_draw or event.is_finished or event.is_suppressed_by_its_own_hold())
+	_band.visible = not (event.skip_draw or event.is_finished
+			or event.is_suppressed_by_its_own_hold())
 	if redraw:
 		_band.queue_redraw()
 
@@ -169,7 +173,8 @@ func _draw_posted_guard(canvas: CanvasItem, band_at: Vector2, side: int) -> void
 	var feet := band_at + EventInstance.guard_post_offset(event.runs_vertically(), side)
 	_draw_shadow(canvas, feet, EventPictures.GUARD_SHADOW_RADIUS)
 	var kept := _view_sector
-	_draw_eight_view(EventPictures.GUARD_STANDING_BY_VIEW, EventInstance.guard_post_heading(event.runs_vertically(), side), canvas,
+	_draw_eight_view(EventPictures.GUARD_STANDING_BY_VIEW,
+			EventInstance.guard_post_heading(event.runs_vertically(), side), canvas,
 			false, {}, false, feet)
 	_view_sector = kept
 

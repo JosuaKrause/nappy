@@ -60,7 +60,9 @@ func _cafe_table_count() -> int:
 ## because a party at one table faces the table rather than sharing the frontage's own bearing.
 func _draw_cafe_sitter(canvas: CanvasItem, origin: Vector2, half: float, width: float,
 		i: int) -> void:
-	var by_view := EventPictures.CAFE_SITTER_BY_VIEW_B if _idle_stepping(EventPictures.SITTER_IDLE_PERIOD) else EventPictures.CAFE_SITTER_BY_VIEW
+	var by_view := EventPictures.CAFE_SITTER_BY_VIEW_B \
+			if _idle_stepping(EventPictures.SITTER_IDLE_PERIOD) \
+					else EventPictures.CAFE_SITTER_BY_VIEW
 	var along := -half + width * (i + 0.5)
 	var alternate := i % 2 == 1
 	var chair_along := along + width * (0.26 if alternate else -0.26)
@@ -81,7 +83,8 @@ func _draw_cafe_table(canvas: CanvasItem, origin: Vector2, half: float, width: f
 	var segment := EventPictures.native_size(EventPictures.CAFE_TABLE)
 	var thickness := segment.x if event.runs_vertically() else segment.y
 	var along := -half + width * (i + 0.5)
-	Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.CAFE_TABLE), origin + event.spread_at(along),
+	Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.CAFE_TABLE),
+			origin + event.spread_at(along),
 			_spread_extent(width, thickness), i % 2 == 1)
 
 ## The bearing from an alternating café chair to its own table. This follows the chair anchor's
@@ -124,7 +127,8 @@ func _draw_protest(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> vo
 	var feet := _protest_feet(picture)
 	for i in feet.size():
 		if only < 0 or i == only:
-			Sprites.draw_standing(canvas, EventPictures.drawn(picture), origin + feet[i], Vector2.ZERO, mirror)
+			Sprites.draw_standing(canvas, EventPictures.drawn(picture), origin + feet[i],
+					Vector2.ZERO, mirror)
 
 ## The protest's picture this frame and whether it is mirrored.
 func _protest_pose_now() -> Array:
@@ -139,7 +143,8 @@ func _protest_pose_now() -> Array:
 	# authored direction rather than a member of the mirrored five-view family.
 	if picture == EventPictures.PROTESTER:
 		var view := _select_view(event.facing_now())
-		var by_view := EventPictures.PROTESTER_BY_VIEW_B if _gait_stepping() else EventPictures.PROTESTER_BY_VIEW
+		var by_view := EventPictures.PROTESTER_BY_VIEW_B if _gait_stepping() \
+				else EventPictures.PROTESTER_BY_VIEW
 		picture = by_view[view]
 		mirror = EightDirection.is_mirrored(_view_sector)
 	return [picture, mirror]
@@ -187,7 +192,8 @@ func _draw_firefight(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> 
 			continue
 		var side := -1.0 if index == 0 else 1.0
 		var at := origin + Vector2(side * half * 0.62, 0.0)
-		Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.GUNMAN), at, Vector2.ZERO, side > 0.0)
+		Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.GUNMAN), at, Vector2.ZERO,
+				side > 0.0)
 		# Sized off the current emission and jittered per side, so the two are never in step.
 		var flare := strength * (0.6 + 0.4 * sin(event.age * 17.0 + side * 2.1))
 		if flare <= 0.25:
