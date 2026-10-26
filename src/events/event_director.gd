@@ -1108,7 +1108,7 @@ func clear_of_the_doors(path: PackedVector2Array, def: EventDef) -> bool:
 ## here in the world at the ordinary `Tuning.offscreen_lead()` margin instead, and telegraphs on its
 ## way in (`telegraph_time` 1.97s) with no badge, since 74px/s is slower than a walk and it is never
 ## `hard_fail` (`EventDef.at_heat()` states it for the `PRESSES` rung) — that is why
-## `DangerEdge._is_worth_an_arrow()` gives it no badge. Under the player's rule a thing telegraphs
+## `BadgeModel.Subject.worth_an_arrow()` gives it no badge. Under the player's rule a thing telegraphs
 ## its coming only if it goes fast, comes toward her and carries a heavy penalty (PLAYTEST-145,
 ## statements 18-23), and a patrol is not fast; its strike in front of it on the carriageway is a
 ## car's, warned the way a car warns (`EventDef.drives`), not a badge from off screen.

@@ -1268,8 +1268,10 @@ func is_chasing() -> bool:
 
 ## Whether this charger's charge has begun and is still running: `EventBus.pursuit_began` sent for
 ## it (a pursuer's charge, the masked man's run up his shaft) and it has neither left, finished nor
-## had its charge end. Asked by `DangerEdge`, which meets the frame a charge starts at its true
-## approach rather than its smoothed one, so the badge is up from the frame he runs.
+## had its charge end; true for the whole charge. Handed to `BadgeModel` (as `Subject.charging`) by
+## `DangerEdge`, which on a pursuer's first moving frame meets the charge at its true approach rather
+## than its smoothed one and raises its badge from outside the view proper, so it is up from the frame
+## he runs.
 func has_charged() -> bool:
 	return _charge.began and not _charge.ended and not is_finished and not is_leaving \
 			and not is_waiting()
