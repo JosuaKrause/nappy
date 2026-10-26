@@ -12,7 +12,6 @@ extends RefCounted
 
 const STEP := 1.0 / 60.0
 const WALK := 2.0
-const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 func run(t) -> void:
 	_test_the_row_is_a_car_with_the_engines_body(t)
@@ -510,7 +509,7 @@ func _test_a_loss_to_it_names_its_own_cause(t) -> void:
 	t.check(line != Texts.HARD_FAIL_TEXT.get("police_patrol", "")
 			and line != Texts.HARD_FAIL_TEXT.get("car_strike", ""),
 			"and not the patrol car's or a crowd car's")
-	t.check(MAIN_SCRIPT._hard_fail_cause_suffix("fire_truck", "fire_truck") == "fire-truck",
+	t.check(LossCause.hard_fail_suffix("fire_truck", "fire_truck") == "fire-truck",
 			"the run log and the page's counter name the cause 'fire-truck'")
 
 # ----------------------------------------------------------------- picture ---

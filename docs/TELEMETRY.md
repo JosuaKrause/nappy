@@ -88,7 +88,7 @@ The events:
 - `nappy-day-N-lost-crying-<source>` / `nappy-day-N-lost-hard-fail-<what>` — a lost day's own name,
   one event folding in what actually did it rather than a second event beside it. The cause rides
   on the day's one end event, `EventBus.day_ended(day, result, cause, elapsed)`, which
-  `main._on_day_finished()` emits, and `VisitCounter` folds it onto the loss kind
+  `DayDirector.finish_day()` emits, and `VisitCounter` folds it onto the loss kind
   (`VisitCounter._loss_event_suffix()`); the run log's `lost` line names the same cause off the
   same event. A hard fail names the row that struck her — `car` for the
   one that is not an event row (`EventBus.hard_fail_triggered("car_strike")`,
@@ -100,7 +100,7 @@ The events:
   its row's `cyclist` (`EventManager.what_struck_her()`). A crying loss names whichever source
   landed the most on her over the halo's own window (`ExcitementHalo.WINDOW`, 5s) at the moment she
   cried: the row id of the event that landed it (`EventInstance.landed()`, grouped by
-  `EventInstance.logged_name()` in `main._group_what_events_landed()`) — a catalogue row's, or one of the three rows met on one occasion that
+  `EventInstance.logged_name()` in `LossCause.add_what_events_landed()`) — a catalogue row's, or one of the three rows met on one occasion that
   sit outside the catalogue's list, so a day cried away mostly under day 13's task guard is
   `lost-crying-task-guard`, never `lost-crying-alley-robbery`, and the lesson's dog and the task
   guard sent at her are `lost-crying-charging-dog-tutorial` and `lost-crying-task-guard-sent` —
@@ -109,7 +109,7 @@ The events:
   for her own running and
   standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
   own). Ties, and a window with nothing landed in it at all, pick the alphabetically first group
-  present, falling back to `self` when there is none (`main._crying_cause_suffix()`). A
+  present, falling back to `self` when there is none (`LossCause.crying_suffix()`). A
   `LOST_CRYING`/`LOST_HARD_FAIL` day ended with no cause still sends the bare `lost-crying` /
   `lost-hard-fail` rather than nothing.
 - `nappy-day-3-seen-fire` — the first frame the burning building is in sight, whether or not the
@@ -149,7 +149,7 @@ The events:
     (`EventInstance._be_done()`, `EventInstance.gave_up`); or `-ended`, the day or the escape's
     section ended some other way while it was still charging — the meter at its cap, another
     thing's catch, home (`EventBus.pursuit_cut_short`, `EventManager.end_the_charges_still_running()`,
-    which `main._on_day_finished()` asks of the city's or the building's events before the day's or
+    which `DayDirector.finish_day()` asks of the city's or the building's events before the day's or
     the section's own end is sent). A charger's own `ChargeRecord` (`src/events/charge_record.gd`) is the one owner
     of that rule: every ending asks it, and the first to ask is the only one sent.
 

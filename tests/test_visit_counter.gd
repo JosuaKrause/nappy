@@ -781,7 +781,7 @@ func _test_the_pelican_is_its_own_entry(t) -> void:
 	counter.free()
 
 ## A day the pelican ends folds `pelican` into its loss, never its row's `cyclist` — the cause
-## `main._hard_fail_cause_suffix()` names it by (`tests/test_day_lost_to.gd`), carried through.
+## `LossCause.hard_fail_suffix()` names it by (`tests/test_loss_cause.gd`), carried through.
 func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 	var counter := RecordingCounter.new()
 	var day := GameState.header.day

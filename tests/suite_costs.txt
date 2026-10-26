@@ -35,8 +35,8 @@ test_crowd_closures.gd 85812
 test_crowd_contributions.gd 38
 test_danger.gd 10189
 test_day_controller.gd 11
+test_day_director.gd 263
 test_day_loop.gd 1788
-test_day_lost_to.gd 14
 test_debug_layers.gd 3450
 test_dev_rig.gd 5544
 test_drawn_view.gd 82
@@ -69,6 +69,7 @@ test_home_block.gd 32201
 test_hud.gd 31
 test_interior.gd 9659
 test_invincible.gd 442
+test_loss_cause.gd 14
 test_main.gd 2386
 test_masts.gd 17604
 test_meters.gd 198

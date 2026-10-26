@@ -4,6 +4,7 @@ extends RefCounted
 ## expiring step, and the sabotage putting the city's masts out once she has walked away.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
@@ -3412,7 +3413,34 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 			_city._buildings[i].condition = conditions[i] as Building.Condition
 		GameState.attempt_spend.scars = saved_scars)
 
-## Mirrors the real day order (`main._start_day()`: city, events, resistance) rather than
+## Starts day `day` through the real `DayDirector` — the order a played day is built in (the
+## city, the events, the resistance's mark, the crowd, the player and the baby) — on the run's
+## streams, which for `SEED` are the ones `_rng()` draws. Returns what `_end_the_day()` needs to put
+## the run and the scratch nodes back.
+func _start_the_day(t, day: int, resistance: ResistanceDirector) -> Dictionary:
+	var baseline := GameState.save_snapshot()
+	GameState.start_run(SEED)
+	GameState.header.day = day
+	var config := RunConfig.parse(PackedStringArray(), "", true)
+	var player := Stroller.new()
+	var baby := Baby.new()
+	baby.name = "Baby"
+	player.add_child(baby)
+	baby._stroller = player
+	var clock := DayController.new()
+	clock.set_process(false)
+	t.add_child(clock)
+	var days := DayDirector.new(GameState, config)
+	days.use_the_world(_city, _city.events, resistance, player, baby, clock)
+	days.start_day(MAIN_SCRIPT.day_spec(config, day))
+	return {"baseline": baseline, "nodes": [player, clock]}
+
+func _end_the_day(the_day: Dictionary) -> void:
+	for node: Node in the_day["nodes"]:
+		node.free()
+	GameState.restore_snapshot(the_day["baseline"])
+
+## Runs the real day order (`DayDirector.start_day()`: city, events, resistance) rather than
 ## skipping the middle step. `EventManager.start_day()` is what holds every door segment for the
 ## day (`CityMap.held_segments`, filled from `region_plan.doors` among other things) — with it
 ## never run, a bare `_pick_reachable()` call would find the door tile reachable whether or not
@@ -3423,17 +3451,12 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 func _test_the_door_task_sits_at_a_region_door(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
-		var closure_state := CityState.new()
-		closure_state.begin_day(_city.map.block_plans, 9)
-		_city.start_day(closure_state, 9, _rng(9, "closures"))
+		var director := _director(t)
+		var the_day := _start_the_day(t, 9, director)
 		var doors := _city.region_plan().doors
 		t.check(not doors.is_empty(),
 				"day 9 (Tuning.REGION_WALL_FIRST_DAY) has at least one door, or this test "
 				+ "checks nothing")
-		_city.events.start_day(9, _rng(9, "events"), [], _city.map.doorstep_world_position())
-
-		var director := _director(t)
-		director.start_day(9, _rng(9, "resistance"), 300.0)
 		director._on_contact_completed(7)
 		t.check(director.current_step() != null and director.current_step().index == 8,
 				"touching day 9's mark activates the crossing perform")
@@ -3451,7 +3474,8 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 				break
 		t.check(on_a_door, "exactly on a gatehouse of one of today's own region doors")
 
-		director.free())
+		director.free()
+		_end_the_day(the_day))
 
 ## M221, "a failed day leaves no chalk mark behind", on a mark whose next step is placed by
 ## `_begin_step()` running a second time in the same `_on_contact_completed()` call (day 9's door,
@@ -3464,13 +3488,8 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> void:
 	_build_city(t)
 	_with_clean_run(func() -> void:
-		var closure_state := CityState.new()
-		closure_state.begin_day(_city.map.block_plans, 9)
-		_city.start_day(closure_state, 9, _rng(9, "closures"))
-		_city.events.start_day(9, _rng(9, "events"), [], _city.map.doorstep_world_position())
-
 		var director := _director(t)
-		director.start_day(9, _rng(9, "resistance"), 300.0)
+		var the_day := _start_the_day(t, 9, director)
 		var mark_contact: ContactPoint = director._contact
 		var mark_guard: EventInstance = director._guard
 		t.check(mark_contact != null, "day 9's mark has its own contact before it is touched")
@@ -3510,7 +3529,8 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 		if mark_guard:
 			t.check(director._guard != mark_guard, "and the old guard is no longer tracked as today's")
 
-		director.free())
+		director.free()
+		_end_the_day(the_day))
 
 ## velvet-plover, "a mark she has read is gone from every alley" — *"the mark now shows in all
 ## alleys -- once it is checked it shouldn't appear anywhere else."* A read mark stays, crossed

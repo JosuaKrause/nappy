@@ -10,7 +10,7 @@ extends RefCounted
 ## rider created as the pelican rides as one to the end, and that the pelican is the cyclist row in
 ## everything a player can feel — and that the telemetry tells the pelican apart from its warning to
 ## its hit, which the page's counter (`tests/test_visit_counter.gd`) and the loss cause
-## (`tests/test_day_lost_to.gd`) then name. Whether it reads as a pelican is the drawing's review sheet,
+## (`tests/test_loss_cause.gd`) then name. Whether it reads as a pelican is the drawing's review sheet,
 ## `docs/evidence/feathery-bison-pelican-2026-10-03/`. The view tables' completeness, their
 ## distinct pictures and the second pedal frame are `tests/test_event_views.gd` and
 ## `tests/test_event_strides.gd`; every picture being on the `events` page is
