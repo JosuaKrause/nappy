@@ -5,9 +5,12 @@ extends RefCounted
 ## its own (`EventLooks.for_row()` picks it by the row's picture); this base holds what they share.
 ##
 ## **A look reads the event and never writes it.** It holds the eight-view sector last drawn, the
-## redraw key, the caret's cache and the drawing nodes a long picture is drawn in, and reads the
-## event's public state for everything else. What the event does is its behaviours'
-## (`src/events/behaviours/`); nothing here decides it.
+## redraw key, the caret's cache and the drawing nodes a long picture is drawn in, draws on the
+## event's own canvas, and reads the event's public state for everything else. What the event does
+## is its behaviours' (`src/events/behaviours/`); nothing here decides it. The calls go the other
+## way at the end of a tick: the event asks its look to redraw if the picture changed, to move its
+## drawing nodes and to hide its scenery once done, and two behaviours ask the same (a car whose
+## frame is taken back, `EventCarDriving.end_frame()`; a barrier's posts, `EventBarrierPost`).
 
 ## The event this look draws.
 var event: EventInstance

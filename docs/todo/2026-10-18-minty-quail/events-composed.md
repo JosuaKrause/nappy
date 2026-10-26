@@ -7,27 +7,37 @@ streaming, with a row's settings grouped into the sub-resources its behaviours r
 car's driving is a behaviour (`EventCarDriving`), whose frame is proposed, checked and then
 committed, and a roadblock's band and posts are one (`EventBarrierPost`, with `RoadblockFarGuard`).
 `EventInstance` (`src/events/event_instance.gd`) holds, besides that list, the excitement field and
-its drawing nodes' lifecycle; how it is drawn is its look's (`src/events/views/`, picked per row by
-`EventLooks.for_row()`, reading its public state), and every picture is named in `EventPictures`
-(minty-quail-19). The four ways a
-charge starts (a warning's clock running out, a lunge at the stand-off, the masked man's run
-distance, a start at once) are branches inside `EventPursuit` and `EventNoticeRun` rather than parts
-a row is composed of.
+the lifecycle of its drawing nodes; how it is drawn is its look's (`src/events/views/`, picked per
+row by `EventLooks.for_row()`, reading its public state), and every picture is named in
+`EventPictures` (minty-quail-19). The four ways a charge starts (a warning's clock running out, a
+lunge at the stand-off, the masked man's run distance, a start at once) are branches inside
+`EventPursuit` and `EventNoticeRun` rather than parts a row is composed of.
 
 **What is still keyed on a row's flags, picture or id:** `at_heat()` flips behaviour flags
-(`investigates`, `hard_fail`) on a copy; `def.look ==` decides behaviour for CYCLIST's pelican (PR 4);
-`CheckpointController` sends its guard by `by_id("door_guard")`. **Two clocks:** instances,
-`ResistanceDirector` and `DayController` tick in `_process` (the instances step once per drawn frame), while `EventManager` checks catches,
-hard fails and detentions in `_physics_process`,
-so a door's hold ending on a drawn frame would show her at the place she went in until the next
-physics tick, which is why its release has to show her on the physics frame that moves her.
-**Upward coupling:** the manager fetches the player (`EventManager._find_player()`
-from the `player` group), `CheckpointController` drives her and the camera directly
-(`hide_for_inspection`, `focus_camera_on`, `teleport_to`, `show_after_inspection`,
-`release_camera_focus`), the instance uses the red arrow's `ArrowField` as its pathfinder, and a car's driving copies crowd traffic's give-way
-(`EventCarDriving.room_to_its_line()`), the copy shared-components' `LaneMover` takes. **Events held by the scene:** `City` and `InteriorScene` each sum their
-events for the baby rather than the manager answering it, and `BuildingPlan.lay_the_grates()`, a
-placement class, builds the grates' sprite nodes through `EventPictures.steam_grate()`. **The
+(`investigates`, `hard_fail`) on a copy; `def.look ==` decides behaviour for CYCLIST's pelican
+(PR 4), and, on `EventInstance`, whether the alley post's hold hides it
+(`is_suppressed_by_its_own_hold()` on CHECKPOINT_POST), the loose dog's lead in its footprint
+(`footprint_of()` on LOOSE_DOG), a warning picture's size (`_warning_picture_size()` on
+CHARGING_DOG and ROBBER) and which way a stationary vehicle shows (`_stationary_vehicle_uses_side()`
+on BURNT_OUT_CAR); `CheckpointController` sends its guard by `by_id("door_guard")`. **Two clocks:**
+instances, `ResistanceDirector` and `DayController` tick in `_process` (the instances step once per
+drawn frame), while `EventManager` checks catches, hard fails and detentions in
+`_physics_process`, so a door's hold ending on a drawn frame would show her at the place she went in
+until the next physics tick, which is why its release has to show her on the physics frame that
+moves her. **The simulation calls its look:** the instance's tick asks the look to redraw if the
+picture changed and to move its drawing nodes (`EventLook.redraw_if_the_picture_changed()`,
+`move_nodes()`), `transition()` tells it to hide its scenery once done (`hide_the_scenery()`), and
+two behaviours ask it the same (`EventCarDriving.end_frame()`'s redraw for a frame taken back;
+`EventBarrierPost`'s `move_nodes()` from `back_at_the_band()`, `stand_as_the_barrier()` and
+`come_back_as_the_barrier()`). **Upward coupling:** the manager fetches the player
+(`EventManager._find_player()` from the `player` group), `CheckpointController` drives her and the
+camera directly (`hide_for_inspection`, `focus_camera_on`, `teleport_to`, `show_after_inspection`,
+`release_camera_focus`), the instance uses the red arrow's `ArrowField` as its pathfinder, and a
+car's driving copies crowd traffic's give-way (`EventCarDriving.room_to_its_line()`), the copy
+shared-components' `LaneMover` takes. **Events held by the scene:** `City` and `InteriorScene` each
+sum their events for the baby rather than the manager answering it, and
+`BuildingPlan.lay_the_grates()`, a placement class, builds the grates' sprite nodes through
+`EventPictures.steam_grate()`. **The
 escape planned beside the day:** `FinalePlanner` (routes, layer 2) runs the seal planner and the
 scheduler, the escape's planning half where a day's is `EventManager.start_day`, and
 `EventManager.start_planned()` is a second entry point that hosts its result; once the manager is
@@ -46,6 +56,10 @@ design below is a direction, not a prescription, and the PR says which shape was
 
 **A direction for the build:** the pelican's behaviour keyed by data; simulation in physics only,
 the manager stepping its instances in a fixed order and `_process` only redrawing, with the
-instances drawn interpolated so they move as smoothly as now (PR 3b); movement proposed, validated, then
-committed for every mover, as a car's frame is; intents emitted for the player and camera instead of
-calling them. `EventManager` splits into streaming, spawning and warnings.
+instances drawn interpolated so they move as smoothly as now, and no behaviour, nor the instance's
+tick or `transition()`, calling its look (PR 3b); the picture-size geometry siting reads
+(`box_of()`, `footprint_of()`, `solid_footprint_of()`, `_warning_picture_size()`,
+`warning_guard_rect()`, the guard post's offset and heading, `_stationary_vehicle_uses_side()`) and
+the alley post's hiding leave `EventInstance` with PR 4's spawner; movement proposed, validated,
+then committed for every mover, as a car's frame is; intents emitted for the player and camera
+instead of calling them. `EventManager` splits into streaming, spawning and warnings.

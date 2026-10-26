@@ -2,8 +2,8 @@ extends RefCounted
 ## M108, "every living thing that moves has a stride" — the event half. `tests/test_event_views.gd`
 ## already pins each family's own five-view table and heading source; this suite pins the second
 ## frame every listed family gained beside it, and the alternation that picks between the two —
-## `EventInstance._advance_gait()`, `_gait_stepping()`, `_victim_gait_stepping()` and
-## `_idle_stepping()`.
+## `EventInstance._advance_gait()`, and the look's `EventLook._gait_stepping()`,
+## `_victim_gait_stepping()` and `_idle_stepping()`.
 ##
 ## Consistent with `test_event_views.gd`, nothing here calls a `_draw_*` function directly —
 ## `Sprites.draw_standing()` inside them is only valid from an actual draw pass. What is tested

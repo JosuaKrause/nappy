@@ -14,6 +14,8 @@ func run(t) -> void:
 	_test_plain_pose_with_no_objective(t)
 	_test_plain_pose_on_a_mark_step(t)
 	_test_pointing_pose_on_a_perform_step(t)
+	_test_a_protest_the_city_makes_points_where_its_director_does(t)
+	_test_a_protest_with_no_director_points_at_nothing(t)
 	if _city != null:
 		_city.free()
 
@@ -145,3 +147,40 @@ func _test_pointing_pose_on_a_perform_step(t) -> void:
 		t.check(texture != EventPictures.PROTESTER,
 				"a protester standing away from the objective points rather than standing plain")
 	)
+
+# ---------------------------------------------------------------- the wiring ---
+
+## A protest the city's events make asks the director it was handed (`ResistanceDirector.setup()`
+## hands `EventManager.points_at` its `pointable_objective()`), not a node it looks up: its rank
+## points where the director's objective is.
+func _test_a_protest_the_city_makes_points_where_its_director_does(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(6, _rng(6), 300.0)
+		director._on_contact_completed(1)
+		var objective := director.pointable_objective()
+		t.check(objective != Vector2.INF, "the perform step gives the protest somewhere to point")
+		var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"),
+				objective + Vector2(0.0, 300.0))
+		var look := protest.look as RankLook
+		t.check(look._protest_objective() == objective,
+				"a protest the city's events make asks the director it was handed")
+		var picture: String = look._protest_pose_now()[0]
+		t.check(picture != EventPictures.PROTESTER
+				and picture == EventPictures.protester_texture(protest.global_position, objective),
+				"and its rank points at the objective (%s)" % picture)
+	)
+
+## With no director handed in (the escape building, a bare rig) a protest has nothing to point at
+## and stands its rank plain.
+func _test_a_protest_with_no_director_points_at_nothing(t) -> void:
+	_build_city(t)
+	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"), Vector2(300.0, 300.0))
+	var look := protest.look as RankLook
+	t.check(look._protest_objective() == Vector2.INF,
+			"a protest with no director handed in has nothing to point at")
+	var picture: String = look._protest_pose_now()[0]
+	t.check(not EventPictures.POINTING_POSES.has(picture),
+			"and stands its rank plain rather than pointing (%s)" % picture)
+

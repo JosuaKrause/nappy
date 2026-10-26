@@ -190,11 +190,13 @@ func attach_nodes() -> void:
 
 func move_nodes(redraw := false) -> void:
 	_move_the_band(redraw)
+	_move_the_far_guard()
 
 func release_nodes() -> void:
 	if _band != null and is_instance_valid(_band):
 		_band.queue_free()
 	_band = null
+	_release_the_far_guard()
 	super()
 
 func band_node() -> Node2D:
@@ -215,3 +217,40 @@ func band_rim_holder() -> Node2D:
 
 func _shows_its_nodes(reach: Rect2) -> bool:
 	return _band != null and _band.is_inside_tree() and DrawnView.shows(_band, reach)
+
+## The far guard's node while he walks away (`RoadblockFarGuard.at` set), null while he stands at
+## his post and once he is gone.
+var _far_node: FarGuard
+
+## The node the far guard is drawn on while he walks, or null.
+func far_guard_node() -> Node2D:
+	return _far_node
+
+## Keeps the far guard's node at his feet while he walks, shown while the event is and redrawn: made
+## the first time he is found walking, freed once he is not.
+func _move_the_far_guard() -> void:
+	var far: RoadblockFarGuard = event.barrier_post.far if event.barrier_post else null
+	if far == null or far.at == Vector2.INF:
+		_release_the_far_guard()
+		return
+	if _far_node == null:
+		if not event.is_inside_tree() or event.get_parent() == null:
+			return
+		_far_node = FarGuard.new()
+		_far_node.instance = event
+		_far_node.name = "FarGuard"
+		# Placed at his feet each tick rather than moved on the physics tick, so it opts out of
+		# physics interpolation.
+		_far_node.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		event.add_beside_it(_far_node)
+	if not _far_node.is_inside_tree():
+		return
+	_far_node.global_position = far.at
+	_far_node.visible = not (event.skip_draw or event.is_finished
+			or event.is_suppressed_by_its_own_hold())
+	_far_node.queue_redraw()
+
+func _release_the_far_guard() -> void:
+	if _far_node != null and is_instance_valid(_far_node):
+		_far_node.queue_free()
+	_far_node = null

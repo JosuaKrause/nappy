@@ -1,8 +1,9 @@
 extends RefCounted
 ## Evidence rig for M108's "bind vehicle views" item: renders every bound event-vehicle and the
 ## police car at all eight `EightDirection` sectors from the actual runtime selection —
-## `EventInstance.setup()`, `_select_view()`, `EIGHT_VIEW_BY_SECTOR` and each family's own
-## `_BY_VIEW` table, the same calls `_draw_eight_view()` makes, `side_faces_west` included — rather
+## `EventInstance.setup()`, `EventLook._select_view()`, `EventPictures.EIGHT_VIEW_BY_SECTOR` and
+## each family's own `_BY_VIEW` table, the same calls `EventLook._draw_eight_view()` makes,
+## `side_faces_west` included — rather
 ## than a hand-assembled list of source files. Copied from `tests/probes/m108_event_people_sheet.gd`
 ## rather than shared with it: that rig's `_heading_row()` has no `side_faces_west` parameter, and
 ## every family here needs one answer or the other. Not a suite: it saves PNGs and prints a

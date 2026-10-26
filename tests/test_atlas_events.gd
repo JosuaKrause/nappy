@@ -8,11 +8,11 @@ extends RefCounted
 ## exactly one reference on it for its own life.
 ##
 ## **Why the completeness sweep is over the script's constants rather than over
-## `EventPictures.family_sources()`.** `family_sources()` is read off `draw_body()`'s arms by
-## hand, so a picture a new branch draws and nobody added there would be missing from both the
-## sweep and the answer — the failure would be invisible to a test that asked `family_sources()`
+## `EventPictures.family_sources()`.** `family_sources()` is read off the looks' `_draw_figure()`
+## arms by hand, so a picture a new branch draws and nobody added there would be missing from both
+## the sweep and the answer — the failure would be invisible to a test that asked `family_sources()`
 ## what to check. Every picture a draw can reach is a region-name string constant on
-## `event_instance.gd` or a value inside one of its tables, so walking `get_script_constant_map()`
+## `event_pictures.gd` or a value inside one of its tables, so walking `get_script_constant_map()`
 ## and recursing into the dictionaries and arrays asks the question of the file itself, and a
 ## picture added without a membership entry fails here on the next run.
 ##

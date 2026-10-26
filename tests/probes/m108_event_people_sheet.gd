@@ -1,8 +1,9 @@
 extends RefCounted
 ## Evidence rig for M108's "bind live event people, animals and riders" item: renders every bound
 ## family at all eight `EightDirection` sectors from the actual runtime selection —
-## `EventInstance.setup()`, `_select_view()`, `EIGHT_VIEW_BY_SECTOR` and each family's own
-## `_BY_VIEW` table, the same calls `_draw_eight_view()` and the other `_draw_*` functions make —
+## `EventInstance.setup()`, `EventLook._select_view()`, `EventPictures.EIGHT_VIEW_BY_SECTOR` and
+## each family's own `_BY_VIEW` table, the same calls `EventLook._draw_eight_view()` and the looks'
+## other `_draw_*` functions make —
 ## rather than a hand-assembled list of source files. Not a suite: it saves PNGs and prints a
 ## manifest rather than asserting, so it lives under `tests/probes/`, where the runner never
 ## discovers it, and runs only by name:

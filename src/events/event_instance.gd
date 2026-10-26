@@ -483,6 +483,8 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_heading = face
 	look = EventLooks.for_row(self)
 	look.face(face)
+	if look is SpreadLook:
+		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
 	_spread_vertical = _spread_is_vertical(_map, position)
 	_stationary_vehicle_side = _stationary_vehicle_uses_side(definition.look, _map, position, face)
 	# A stride never starts mid-cycle — the mother's own `reset_at()` precedent.
@@ -2544,8 +2546,8 @@ func _release_the_band_halo() -> void:
 		_band_halo = null
 
 ## Gives back the rims that stand behind a slice of the look (`SpreadLook.Slice`), on the spot,
-## before the slices are let go.
-func release_rims_on_slices() -> void:
+## when the look is about to let go of its slices (`SpreadLook.letting_go_of_the_slices`).
+func _release_rims_on_slices() -> void:
 	if _halo != null and _halo.get_parent() is SpreadLook.Slice:
 		EntityHalo.release(_halo)
 		_halo = null
@@ -2597,8 +2599,6 @@ func _enter_tree() -> void:
 
 func _exit_tree() -> void:
 	_band_halo = null
-	if barrier_post:
-		barrier_post.far.release()
 	if look:
 		look.release_nodes()
 

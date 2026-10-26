@@ -31,6 +31,10 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.SCAFFOLDING:
 			_draw_the_spread(canvas)
 
+## Told just before the slices are freed, so whatever stands behind one (the event's rim) is given
+## back first by its owner.
+signal letting_go_of_the_slices
+
 ## The scenery behind each slice of a crash or a burst main, index for index with `_slices`.
 var _sceneries: Array[EventScenery] = []
 
@@ -321,7 +325,7 @@ func _draw_a_slice(slice: Slice) -> void:
 ## Frees the slices with whatever they hold: the scenery, and a rim standing behind the first,
 ## given back on the spot as a rim always is (`EntityHalo.release()`).
 func _release_the_slices() -> void:
-	event.release_rims_on_slices()
+	letting_go_of_the_slices.emit()
 	for slice in _slices:
 		if is_instance_valid(slice):
 			slice.hide()

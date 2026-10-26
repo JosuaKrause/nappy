@@ -556,7 +556,7 @@ func _draw() -> void:
 		_draw_mark()
 
 ## The caret's own answer for this car, 0 (none), 1 (amber) or 2 (doubled red), cached against
-## `_clock` for the same reason `EventInstance._caret_strength()` caches against `age`: `_draw()`
+## `_clock` for the same reason `EventLook._caret_strength()` caches against `age`: `_draw()`
 ## and `_process()`'s own redraw-forcing check below both ask in the same frame, and each is a
 ## fresh sampling loop over `expected_impact_at()` or `will_be_lethal()` if they do not share one.
 var _mark_strength_clock := -1.0
