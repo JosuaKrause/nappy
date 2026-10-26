@@ -44,7 +44,7 @@ func run(t) -> void:
 	var worst_frame := 0.0
 	var attempt_frames: Array[float] = []
 	for seed_value: int in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -78,7 +78,7 @@ func run(t) -> void:
 
 func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 	var day := Tuning.RUN_TAUGHT_DAY
-	var scars := GameState.scars.duplicate()
+	var scars := GameState.attempt_spend.scars.duplicate()
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
@@ -129,7 +129,7 @@ func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 					% [RunTrace.tile(city.map.world_to_tile(plan.position)),
 					plan.position.distance_to(rig.global_position)])
 	rig.free()
-	GameState.scars = scars
+	GameState.attempt_spend.scars = scars
 	var out := state.duplicate()
 	out["met"] = met
 	out["never_real"] = never_real
@@ -196,7 +196,7 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planne
 			if is_instance_valid(instance):
 				instance._process(STEP)
 	var engine_at := EventManager.where_the_summoned_row_stops(city.map, plan.position)
-	var engine := EventCatalogue.by_id(plan.def.spawns_on_sight)
+	var engine := EventCatalogue.by_id(plan.def.aftermath.on_sight)
 	var along := Vector2.RIGHT
 	var inward := city.map.pavement_inward(city.map.world_to_tile(plan.position))
 	if inward != Vector2i.ZERO:

@@ -125,7 +125,7 @@ func _test_one_offer_per_look(t) -> void:
 		plans.append(EventScheduler.Planned.new(fire, Vector2.INF))
 	var owed := 0
 	for plan in plans:
-		if plan.def.sited_on_her_way and not plan.is_placed():
+		if plan.def.on_her_way != null and not plan.is_placed():
 			owed += 1
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
 			[] as Array[Vector2i], PackedVector2Array())

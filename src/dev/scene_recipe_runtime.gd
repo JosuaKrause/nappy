@@ -539,7 +539,7 @@ func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 	var background: Dictionary = setup.get("background", {})
 	_select_structures(errors)
 	var plans := _event_plans(at, errors)
-	city.events.start_recipe(plans, spec, GameState.day, at)
+	city.events.start_recipe(plans, spec, GameState.header.day, at)
 	city.refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
@@ -562,13 +562,13 @@ func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 						_held.append(plan.live)
 						# Never streamed out either, however far she runs from it.
 						plan.kept_live = true
-	city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), at,
+	city.crowd.start_day(GameState.header.day, GameState.day_rng(GameState.header.day, "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
 	if background.get("uniform_walkers", false):
 		var area_scale := map.world_size().x * map.world_size().y / pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) \
 				if background.get("crowd_scope", "player") == "city" else 1.0
-		var act := Tuning.act_for_day(GameState.day)
+		var act := Tuning.act_for_day(GameState.header.day)
 		var expected := roundi(Tuning.crowd_pedestrians(act) * area_scale * float(background.get("walker_multiplier", 1))) \
 				+ roundi(Tuning.crowd_cars(act) * area_scale)
 		if city.crowd.agent_count() != expected:
@@ -633,13 +633,13 @@ func _start_the_task() -> bool:
 		if camera:
 			camera.force_update_scroll()
 		if GameState.is_final_day():
-			GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+			GameState.resistance.progress = Tuning.RESISTANCE_GOAL
 		# The day's task is planned over the whole witness, as a played day plans it: the mark's
 		# "reachable from home" and the guard's place are questions about the city, and a stretch's
 		# void would answer every one of them no.
 		var edges := _city.map.witness_only()
-		errors = _resistance.start_recipe_task(GameState.day,
-				GameState.day_rng(GameState.day, "resistance"), _config.day_length_for(GameState.day),
+		errors = _resistance.start_recipe_task(GameState.header.day,
+				GameState.day_rng(GameState.header.day, "resistance"), _config.day_length_for(GameState.header.day),
 				mark, neighbor)
 		_city.map.restore_edges(edges)
 	if not errors.is_empty():
@@ -725,7 +725,7 @@ func _install_column(column: Dictionary, player_at: Vector2, errors: Array[Strin
 	var happening := ResistanceHappenings.new()
 	happening.trace = _city.trace
 	happening.setup(_city, map)
-	happening.start_day(GameState.day)
+	happening.start_day(GameState.header.day)
 	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, player_at,
 			lane, going, top, bottom)
 	for i in happening.column.size():
@@ -784,7 +784,7 @@ func _select_structures(errors: Array[String]) -> void:
 		if not _segment_inside_extent(segment):
 			errors.append("setup.gates: selected street leaves the authored extent")
 			continue
-		if GameState.day < Tuning.REGION_WALL_FIRST_DAY:
+		if GameState.header.day < Tuning.REGION_WALL_FIRST_DAY:
 			errors.append("setup.gates: checkpoints are not available on this day")
 			continue
 		if not region.doors.any(func(door): return door.key() == key):
@@ -800,7 +800,7 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.barriers: selected street leaves the authored extent")
 			continue
 		if not _city.map.has_street(key) or _city.route_tree().is_on_the_tree(key) \
-				or GameState.day < Tuning.REGION_WALL_FIRST_DAY:
+				or GameState.header.day < Tuning.REGION_WALL_FIRST_DAY:
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
 		selected.walls.append(segment)
@@ -843,7 +843,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 		for candidate in SealPlanner.candidates():
 			if candidate.id != entry.candidate:
 				continue
-			if not SealPlanner._eligible(candidate, GameState.day) \
+			if not SealPlanner._eligible(candidate, GameState.header.day) \
 					or (candidate.id == SealPlanner.FALLEN_TREE_SEAL_ID and not lined.has(key)):
 				errors.append("setup.seals: candidate is unavailable on this day or street")
 				continue
@@ -867,7 +867,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 	var doors := PackedVector2Array()
 	var finale: FinalePlanner.Plan
 	if data.get("kind", "city") == "escape":
-		finale = FinalePlanner.plan(map, GameState.day_rng(GameState.day, "finale"), walk_spec,
+		finale = FinalePlanner.plan(map, GameState.day_rng(GameState.header.day, "finale"), walk_spec,
 				false)
 		for chain in finale.chains:
 			if not chain.complete:
@@ -900,23 +900,23 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		if entry.has("heat"):
 			def = EventCatalogue.heated(def, int(entry.heat))
 		var plan: EventScheduler.Planned
-		if def.id == EventScheduler.WalkSiting.MAST_ROW:
+		if def.role == EventDef.Role.MAST:
 			plan = _mast_placement(def, at, plans, doors)
 		elif finale:
 			plan = _finale_placement(def, at, player_at, finale, plans,
 					int(entry.get("route_seed", 1)))
-		elif def.spawn_mode_on(GameState.day) != EventDef.SpawnMode.MAP:
+		elif def.spawn_mode_on(GameState.header.day) != EventDef.SpawnMode.MAP:
 			var director := EventDirector.new(map)
 			var heading: Vector2 = DIRECTIONS[setup.get("player", {}).get("facing", "south")]
 			var route := director._crossing_ahead_of(player_at, heading, def)
-			if not def.available_on(GameState.day) or def.pursuit == null or route.is_empty() \
+			if not def.available_on(GameState.header.day) or def.pursuit == null or route.is_empty() \
 					or not route[0].is_equal_approx(at) \
 					or not EventScheduler.clear_of_the_doors(at, route, doors, def.field_reach()):
 				errors.append("event %s fails its ordinary director siting" % entry.name)
 				continue
 			plan = EventScheduler.Planned.new(def, at, route)
 		else:
-			plan = EventScheduler.recipe_placement(def, GameState.day, map, at,
+			plan = EventScheduler.recipe_placement(def, GameState.header.day, map, at,
 					int(entry.get("route_seed", 1)), plans, corridor, doors, standing)
 		if not plan:
 			errors.append("event %s fails ordinary day/ground/route/spacing placement" % entry.name)
@@ -949,7 +949,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 			errors.append("event %s.relentless is refused: row %s %s"
 					% [entry.name, plan.def.id, relentless_refusal(plan.def)])
 		plan.set_meta("recipe_relentless", bool(entry.get("relentless", false)))
-		if def.id == EventScheduler.WalkSiting.MAST_ROW:
+		if def.role == EventDef.Role.MAST:
 			# Every mast the game stands has an id, and the director's lists and the blackout
 			# find a mast by it: a recipe's own, or the one a mast added for day 11 is named by.
 			plan.mast_id = str(entry.mast_id) if entry.has("mast_id") \
@@ -970,7 +970,7 @@ func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Pla
 		doors: PackedVector2Array) -> EventScheduler.Planned:
 	var map := _city.map
 	var tile := map.world_to_tile(at)
-	if GameState.day < Tuning.MAST_FIRST_DAY \
+	if GameState.header.day < Tuning.MAST_FIRST_DAY \
 			or not map.tile_to_world(tile).is_equal_approx(at) \
 			or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
 			or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile) \
@@ -1090,15 +1090,15 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 static func hold_refusal(def: EventDef) -> String:
 	if def.pursuit == null:
 		return "does not pursue her, so it has no straight walk away to hold"
-	if def.drives:
+	if def.vehicle != null:
 		return "drives, and a car leaves by its own rules"
 	if def.investigates:
 		return "lets men out, who walk back to it"
 	if def.stops_where_it_arrives:
 		return "parks where it arrives"
-	if def.spawns_on_finish != "":
+	if def.aftermath.on_finish != "":
 		return "hands on to another event when it finishes"
-	if def.body_stays_behind:
+	if def.leaves_its_body():
 		return "leaves a barrier standing as a guard walks off"
 	return ""
 
@@ -1163,7 +1163,7 @@ func _process(delta: float) -> void:
 			continue
 		if instance.departure.walks_a_way() \
 				or (instance.on_foot != null and instance.on_foot.walks_back()) \
-				or instance._is_a_guard_leaving_his_barrier():
+				or (instance.barrier_post and instance.barrier_post.has_left_its_body()):
 			manifest["playback_error"] = "held event %s no longer leaves in a straight line" \
 					% instance.def.id
 			manifest["stopped_tick"] = tick
@@ -1377,7 +1377,7 @@ func _observe() -> void:
 							and _resistance._contact == actor
 				"done":
 					passed = actor is ContactPoint and actor.is_done \
-							and actor.step.index in GameState.completed_resistance_steps
+							and actor.step.index in GameState.resistance.completed_steps
 				"arrowed":
 					passed = _resistance != null and _resistance.red_arrow_target() != Vector2.INF \
 							and _resistance.red_arrow_target().is_equal_approx(actor.global_position)

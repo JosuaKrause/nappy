@@ -18,7 +18,7 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 
 ## `EightDirection`'s own sector order (0 E .. 7 NE), and the view/mirror `docs/GRAPHICS.md`'s
-## mirror convention says each one draws — identical to `CrowdAgent.WALKER_VIEW_BY_SECTOR` and
+## mirror convention says each one draws — identical to `WalkerLook.VIEW_BY_SECTOR` and
 ## `tests/test_walker_views.gd`'s own `EXPECTED_VIEW`/`EXPECTED_MIRRORED`, since every family below
 ## shares the one table.
 const EXPECTED_VIEW: Array[String] = [
@@ -716,7 +716,7 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 	guard._attach_the_band()
 	var her := Vector2(0.0, hot.notice_within() - 10.0)
 	_hold(guard, her, STEP)
-	t.check(guard.chaser_side() != 0 and guard.is_standing_for_its_notice(),
+	t.check(guard.barrier_post.chaser_side() != 0 and guard.is_standing_for_its_notice(),
 			"the guard on her side has noticed her and stands for his notice")
 	t.check(guard.chaser_pictures() == EventInstance.GUARD_ALERT_BY_VIEW, "hand raised")
 	var post := guard.global_position
@@ -726,7 +726,7 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 			"at his post, hand raised, through his warning")
 	# Out of his radius he is back at the band, and both guards stand at their posts again.
 	_hold(guard, Vector2(0.0, hot.notice_within() + 10.0), STEP)
-	t.check(guard.is_waiting() and guard.chaser_side() == 0 and not guard.has_left_its_body_behind()
+	t.check(guard.is_waiting() and guard.barrier_post.chaser_side() == 0 and not guard.barrier_post.has_left_its_body()
 			and guard.global_position.is_equal_approx(Vector2.ZERO),
 			"out of his radius he stands at the band again, its body under him")
 	_hold(guard, her, STEP)

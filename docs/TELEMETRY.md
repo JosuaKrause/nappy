@@ -91,13 +91,20 @@ The events:
   `main._on_day_finished()` emits, and `VisitCounter` folds it onto the loss kind
   (`VisitCounter._loss_event_suffix()`); the run log's `lost` line names the same cause off the
   same event. A hard fail names the row that struck her — `car` for the
-  one that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
-  `Crowd._strike()`), otherwise the id off whichever row's own `is_lethal_at()` fired
+  one that is not an event row (`EventBus.hard_fail_triggered("car_strike")`,
+  `Crowd._strike()`), otherwise the row id off whichever row's own `is_lethal_at()` fired
   (`EventManager._check_hard_fails()`), hyphenated the same way every other name here is — a
-  caught `charging_dog` is `lost-hard-fail-charging-dog` — and a pelican is `pelican` rather than
+  caught `charging_dog` is `lost-hard-fail-charging-dog`, the day-3 lesson's dog
+  `lost-hard-fail-charging-dog-tutorial` and day 13's task guard `lost-hard-fail-task-guard` or,
+  sent at her, `lost-hard-fail-task-guard-sent` — and a pelican is `pelican` rather than
   its row's `cyclist` (`EventManager.what_struck_her()`). A crying loss names whichever source
   landed the most on her over the halo's own window (`ExcitementHalo.WINDOW`, 5s) at the moment she
-  cried: a catalogue id (`EventInstance.landed()`), again `pelican` for a pelican, `crowd` for
+  cried: the row id of the event that landed it (`EventInstance.landed()`, grouped by
+  `EventInstance.logged_name()` in `main._group_what_events_landed()`) — a catalogue row's, or one of the three rows met on one occasion that
+  sit outside the catalogue's list, so a day cried away mostly under day 13's task guard is
+  `lost-crying-task-guard`, never `lost-crying-alley-robbery`, and the lesson's dog and the task
+  guard sent at her are `lost-crying-charging-dog-tutorial` and `lost-crying-task-guard-sent` —
+  again `pelican` for a pelican, `crowd` for
   walkers or `traffic` for cars (`CrowdAgent.landed()`, told apart by `CrowdAgent.kind`), or `self`
   for her own running and
   standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
@@ -150,17 +157,19 @@ The events:
   `roadblock`, `door-guard`, `masked-pursuer`, `robber-giving-chase`, `van-guard-giving-chase`),
   except that `charging_dog` keeps its `dog-*` names, so `dog-chased`, `dog-shaken` and
   `dog-outlasted` count what they always counted, and **day 13's task guard counts as
-  `task-guard`** once the task sets him on her, in her view or sent from out of it
-  (`EventInstance.counted_as`), apart from every other alley robber and sent robber. A man out of a
+  `task-guard`**, waiting at his roadblock or sent from out of her view: his own rows,
+  `task_guard` (`EventCatalogue.task_guard()`) and `task_guard_sent`, whose charges count as his
+  (`EventDef.counts_charges_as`), apart from every other alley robber and sent robber. A man out of a
   patrol car or a hunting van counts under his row, `policeman-giving-chase` or
   `guardsman-giving-chase`, as the one a torn poster sends does.
   **The day-3 lesson's dog has its own set**, `nappy-day-3-dog-tutorial-chased`, `-caught`,
   `-shaken`, `-outlasted` and `-ended` *(PLAYTEST-141: "we need to record like dog tutorial")*, and
   does not also send the dog's: `charging_dog`'s `max_per_day` of 3 holds on day 3 for the dogs the
   director hands out (`EventDirector._met_today`), so day 3 can send up to three, and the lesson is
-  the first of them, the one the run tip is shown for (`EventInstance.is_the_lesson`, set by
-  `EventManager._create()` on the first dog it makes that day). It never waits, so it has no
-  `-warned`.
+  the first of them, the one the run tip is shown for: a row of its own, `charging_dog_tutorial`
+  (`EventCatalogue.lesson_of()`), which `EventDirector._teach_the_run()` hands out in place of
+  that first dog. A dog forced with `--force charging_dog` is not the lesson. It never waits, so it
+  has no `-warned`.
 - `nappy-day-N-pelican-spawned` / `nappy-day-N-pelican-seen` / `nappy-day-N-pelican-excited` /
   `nappy-day-N-pelican-hit` — the one cyclist in four hundred drawn as a pelican from the run's one shared bag (a run meets at most one), as its own
   entry *(inbox #527 in [azure-tapir](playtests/2026-10-04-azure-tapir.md), the player: "when the pelican spawns, when it's on screen, and when it's
@@ -179,7 +188,11 @@ The events:
   avoid it or ignore it *([misty-newt](playtests/2026-10-04-misty-newt.md), the player: "mostly I'm
   interested in the ratio of interacted/seen")*. `<event>` is a catalogue row's id hyphenated
   (`charging-dog`), or `pelican` for a pelican, never `cyclist`; ordinary walkers and cars send
-  none. `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
+  none. The rows met on one occasion are their own events, in all three names: the day-3 lesson's
+  dog is `seen-`, `influenced-` and `influenced-unseen-charging-dog-tutorial`, never
+  `-charging-dog`, and day 13's task guard is `-task-guard` waiting and `-task-guard-sent` sent at
+  her, never the alley robber's or the robber giving chase's (`EncounterWatch` names an encounter
+  by `EventInstance.logged_name()`, the row's id). `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
   `EventManager` while a day is played — the escape's city included, as day 16, but not behind
   the title, and not in the escape's building, whose events are not an `EventManager`'s — decides
   each:
@@ -258,7 +271,7 @@ The events:
   the charging counters (`nappy-day-15-masked-pursuer-warned`, `-chased`, and `-ended` for a
   charge still running when the section ends); both sections' encounters and runs, the
   building's events being the day's own `EventManager` as the city's are; the city's holds;
-  and `nappy-day-16-blackout` as the escape's city is built dark. `GameState.day`, the calendar,
+  and `nappy-day-16-blackout` as the escape's city is built dark. `GameState.header.day`, the calendar,
   stays on day 14 for the whole escape, so `VisitCounter` names what it counts by the day the last
   `day_started` announced rather than by the calendar.
 - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — which button began
@@ -588,7 +601,7 @@ back.
 remembers which calm block the baby actually went to sleep in and spoils it the next day — which is
 exactly what the `calm` entries say. Reading them back is the smaller change and it breaks the
 invariant in the loudest possible way: the game would play differently with `--no-telemetry`. So
-`GameState.settled_in` is its own run-scoped record, written by `DayController` at the moment she
+`GameState.settled.settled_in` is its own run-scoped record, written by `DayController` at the moment she
 settles, and the log merely *also* mentions it. **Where a trace and a rule want the same fact, the
 rule keeps its own copy.**
 
@@ -644,7 +657,7 @@ is made as the warning goes up, so the first line already knows.
 | `quiet` | observer | The blackout came and the masts went off with the power — once she was far enough from the station after the sabotage, not at its door |
 | `home` / `lost` | observer | The outcome, the margin, and what was around when it happened. A crying or hard-fail day's `lost` line names what ended it as `to <cause>`, the cause the page's counter folds into its loss event (`main._loss_cause()`). In the escape a `lost` line also names the section and a `home` line the way out — see "The escape's log" |
 | `nerve` | `GameState` | Where the nerves went — which day, which act, and in a hard run's escape; the run's mode once it is chosen; the dawn a normal run keeps as its checkpoint; and the checkpoint it went back to when its last nerve was spent, from which day |
-| `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.play_seconds`, formatted `%d:%02d.%03d` |
+| `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.header.play_seconds`, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log. Followed by whether the save was kept: on the web, a line when the browser's IndexedDB copy is confirmed ("the browser kept the save") or not ("the browser did not keep the save", with the browser's own error or the timeout); anywhere, a line when the save could not be kept at all ("the save was not kept": the file could not be written, or the page's storage was refused at boot). **Deleting the save file writes the same kind** — "deleted the save" when the file was removed, then on the web "the browser dropped the deleted save" or "the browser did not drop the deleted save" (with the browser's own error or the timeout), and "the deletion was not kept" when the file could not be removed or the page's storage was refused at boot; a deletion with no file to delete writes nothing. A held restart logs its deletion's first line, because it deletes the save before the run log closes; a web deletion's later answer is logged only if a log is open when it arrives, so it may land in the next run's log after the reload |
 | `shot` | `RunSession`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
 | `still` | `StillWatch` | **`--quit-when-still` fired** — she moved once, then held within a few pixels of one spot for the given time. Excludes any frame she is detained (`Stroller.is_detained()`, every `detain_seconds` row), a checkpoint hold that outlives the input lock (`CheckpointController.door_holding_her_at()`), or the signalled junction nearest her among those visible on screen showing her red on the main road's own light (`StillWatch.facing_a_red_light()`) — wherever on screen she herself is standing, since a mother who is really stuck is still stuck once the light turns green and the watch catches her then. A held frame restarts the count rather than freezing it, so it cannot fire the instant she is released. Her tile and the nearest live event or vehicle, so the picture that follows has a reason attached to it rather than only a place |
@@ -953,16 +966,19 @@ half and four times the product (`docs/evidence/m159-frame-record-2026-10-04/`),
 subtracts the product from a phone's frames subtracts too little.
 
 **Off, it costs every player as little as the wrap can.** The crowd's agents and the live events
-are timed a couple of hundred times a frame, so each copies `FrameRecord.on` when it is made and,
-off, pays one member read before its body, which stays in its own `_process()`; a static read and
+are timed a couple of hundred times a frame, so each copies `FrameRecord.on` when it is made (an
+agent when `Crowd` hands it its `CrowdTiming`, the crowd's handle on the record) and, off, pays one
+member read before its body, which stays in its own `_process()`; a static read and
 a call into a second function there made every player's frame measurably longer on a desktop,
 with the record off. The five systems timed
 once a frame (the crowd's and the event manager's physics steps, the sweep, the halo and the edge)
-are built with the city, before the recorder starts, so they read `FrameRecord.on` each frame. The
+are built with the city, before the recorder starts, so they read `FrameRecord.on` each frame (the
+crowd's through its `CrowdTiming`). The
 measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
 
-The game's own `_draw()` overrides each start with `if FrameRecord.on:` and one call that adds 1
-to a per-kind count, so off they pay one static read each. That is acceptable where the timing
+The game's own `_draw()` overrides each start with `if FrameRecord.on:` (a crowd agent's with
+`if frame_timing != null and frame_timing.running():`, through the `CrowdTiming` it is handed) and one
+call that adds 1 to a per-kind count, so off they pay one static read each. That is acceptable where the timing
 wrap's read was not, because of how often it runs: a frame runs about twenty `_draw()` calls (the
 retained canvas items redraw only when something changes) against some 270 timed bodies, so with
 the record off the guarded reads cost nothing the frame medians can see. The measured figures —

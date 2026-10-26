@@ -739,7 +739,7 @@ brake from cruise**, or a car cannot physically honour the gap it is keeping and
 resolves by interpenetration again however good the controller is.
 
 **The spacing correction never places a car on ground it could not have driven onto itself.**
-`CrowdAgent.nudge_back()` and `CarStrategy.join_the_back_of_the_queue()` are pure arithmetic with no
+`LaneMover.nudge_back()` and `CarStrategy.join_the_back_of_the_queue()` are pure arithmetic with no
 notion of the map underneath them, so both ask the same `cannot_go_on()` the forward-looking lookahead
 already trusts about blocked ground — a hard seal, a region wall or a dead end's own built-over
 footprint — rather than parking a car inside it. A recycle's merge is refused whole, since the spot
@@ -1020,7 +1020,7 @@ outcomes* rather than the same outcome at two prices:
 | | |
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
-| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`EventDef.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
+| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`PursuitSpec.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
 | Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does, and for a charger that waits for her only once he has charged, never while he warns — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
@@ -1441,14 +1441,14 @@ label's own line count is the number of lines `SentenceLines` returned.
 
 **Everything below that one line is the coming day's, not the day that just ended.** The day
 number, the nerves carried into it and the morning's own line (`Texts.DAY_BRIEF`, below) all read off
-`GameState.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
+`GameState.header.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
 today again (a loss with nerves left retries the same day) — never off the day that just ended.
 The day brief a resumed run opens on (`DaySummary.show_day_brief()`) is built the same way, since
 it is the same screen showing what a load already charged rather than what a day just did.
 
 ## The run clock
 
-`GameState.play_seconds` is a second clock, over the whole run rather than one day: the sum of
+`GameState.header.play_seconds` is a second clock, over the whole run rather than one day: the sum of
 every second a day — a section of the escape included — spent `WALKING` or `RETURNING` with the
 tree unpaused. Not wall time, and not
 the day timer above, which resets every day — a retried day's first attempt counts toward it, and
@@ -1464,7 +1464,7 @@ the millisecond calls it rather than carrying a second copy of the string.
 **The `BAD` ending's own line names the day the run reached** — *"You made it to day %d."*,
 beside "Time played" — the last day played rather than the last day completed, so a hard run that
 loses its last nerve on day 1 reads day 1, not 0, and one that loses it in the escape reads day
-14. `GameState.day` already holds it: the calendar
+14. `GameState.header.day` already holds it: the calendar
 is never advanced past the day nerves ran out on, or past the day a load spent the last one on
 (`GameState.finish_day()` ends the run before it would move the calendar). The neutral and good
 endings say nothing about the day, since both are reached by finishing day 14.
@@ -1481,7 +1481,7 @@ clock's precision, the night it is walked in, what losing or winning it costs �
 the day's own `DayController`, so the clock, the three ways to lose, the loss and its cause, the
 outcome screen, the counters and the run log are a day's. Each is counted as a day of its own,
 **day 15** the building and **day 16** the city (`DaySpec.BUILDING_DAY`, `DaySpec.CITY_DAY`),
-while the calendar (`GameState.day`) stays on day 14, since the run has not moved past it.
+while the calendar (`GameState.header.day`) stays on day 14, since the run has not moved past it.
 
 **It is where a won run ends.** A day 14 that is won with every task complete — `GameState
 .earned_good_ending()`, `Tuning.RESISTANCE_GOAL` errands run *and* the last night's sabotage
@@ -1555,7 +1555,7 @@ Continuing from the brief is the moment she starts walking, and the section's ow
 by the HUD every time she does — a first walk, a retry and a resumed one alike.
 
 **And the brief is the checkpoint a closed game comes back to.** A save is written as each brief
-comes up, carrying which section it is (`GameState.escape_section`, written beside the day-under-
+comes up, carrying which section it is (`GameState.facts.escape_section`, written beside the day-under-
 way flag rather than inside the run snapshot, so a save from before the escape existed still
 loads), and opening the game again puts that section's brief back up with a whole clock behind it
 — the same way closing a game mid-day comes back to that day's brief. Nothing about the escape is
@@ -1565,7 +1565,7 @@ nerve is already on disk, written as its lost section's outcome screen comes up.
 **Everything around a day exists around a section too, built the same way.** `Esc`, the pause
 button and losing the window's focus open the same pause screen a day opens, with the same continue,
 the same held restart and the same quit; the held restart ends the escape in a fresh run,
-`GameState.escape_section` cleared, the same way it ends any other run. There is one boot: the
+`GameState.facts.escape_section` cleared, the same way it ends any other run. There is one boot: the
 HUD, the touch controls, the summary, the pause and the title screens, the orientation handling,
 the developer readout and the debug-mode note are built the same way for whichever day it opens on,
 and only the world the first day is walked in differs.
@@ -1707,7 +1707,7 @@ barricade catches her. See `docs/EVENTS.md`, "The heat".
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
 charge. Walking in until he charges and running back until he gives up takes him off for good, and
 once he has left his post the guard at its far post walks off with him, as on every day
-(`EventInstance._send_the_far_guard_off()`), so it stands unmanned. The band itself costs nothing to walk
+(`RoadblockFarGuard`), so it stands unmanned. The band itself costs nothing to walk
 past at any time, manned or not, as every roadblock's band, a day's included
 (`EventCatalogue._roadblock()`): the guard is the danger, not the concrete. One roadblock a street means there is one guard to lure,
 not a second band's still posted beside the first, and no two bands stand where both guards can
@@ -1900,7 +1900,7 @@ closing the window and quitting all still do what they always have — the game 
 loss (M161), the run log still closes — but none of them changes what a save holds, since a save is
 the run and the day, never the moment inside one (PLAYTEST-82).
 
-**A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
+**A save holds the run, never the moment inside a day.** The run's registered parts (`GameState.run_parts`; `GameState.save_snapshot()` is the ones in the snapshot) — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
 history has moved, where she settled each day and the run's clock — plus the facts that ride beside
 it: whether a day was under way when the file was written, which section of the escape it is in, if
@@ -1935,7 +1935,7 @@ opening it again finds the same nerve count and shows the same screen, and press
 is what actually spends anything.
 
 **A save written inside the escape comes up the same way.** The escape's own boot always knows
-which section a save named — `GameState.escape_section`, restored before the section is built, is
+which section a save named — `GameState.facts.escape_section`, restored before the section is built, is
 what decides whether the building or the city is built at all, not only where she stands inside
 it — and a save closed mid-city-section reopens in the city rather than being rebuilt underneath
 her from the hallway. What is asked first is whether this boot is **reading that section off a

@@ -19,7 +19,7 @@ const STEP := 1.0 / 60.0
 
 func run(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 
@@ -182,7 +182,7 @@ func _test_a_walker_steps_round_a_one_lane_body(t, city: City, map: CityMap) -> 
 ## between a body and a seal.
 ##
 ## The predicate is asked directly as well as walked, for the reason the region-door test asks its
-## own directly: whether `cannot_go_on()` refuses the ground is the question, and whether a randomly
+## own directly: whether `LaneStrategy.cannot_go_on()` refuses the ground is the question, and whether a randomly
 ## placed crowd happens to visit one exact tile inside a short window is not.
 ##
 ## **The junction before the body is what the walk is measured against**, rather than a distance in
@@ -695,7 +695,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
 	var cars_seen := 0
 	for city_seed: int in [4242, 24757, 91117]:
 		var map := CityGenerator.generate(city_seed)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		for day: int in [1, 6]:

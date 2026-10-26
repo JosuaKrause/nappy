@@ -151,7 +151,7 @@ func door_holding_her_at(world_position: Vector2) -> EventInstance:
 ## **A `redetains` row is armed again once released, and what re-arms it is her leaving** — in
 ## either direction. `checkpoint_hut` and `checkpoint_post` are the two, and this is the whole of
 ## what makes a door a toll rather than a one-time gate. The boom between a street door's huts is
-## not a third: it never inspects her (`EventDef.lifts_for_traffic`).
+## not a third: it never inspects her (`EventDef.SolidWhen.WHILE_LOWERED`).
 ##
 ## **And a hut never takes her in from the carriageway its own door's boom spans.** A hut's trigger
 ## reaches a reach past its wall, which is further than the kerb, so without this a hut would reach
@@ -242,7 +242,7 @@ func hold_that_would_begin(at: Vector2) -> EventInstance:
 	return nearest
 
 ## Whether `at` is on the carriageway spanned by the boom of the door `door_body` stands in — a
-## live `lifts_for_traffic` instance on the same cross-street line (its own `facing_now()` axis),
+## live boom instance (`EventDef.SolidWhen.WHILE_LOWERED`) on the same cross-street line (its own `facing_now()` axis),
 ## with `at` no further across that line from the boom's centre than the boom's own body reaches.
 ## The boom is laid over exactly the carriageway, so its reach is the carriageway's half-width and
 ## this is "she is in the road at this door" stated over the door's own geometry rather than over
@@ -251,7 +251,7 @@ func hold_that_would_begin(at: Vector2) -> EventInstance:
 ## `false` for an alley door, which has no boom, so a post's trigger is untouched.
 func _on_a_booms_carriageway(door_body: EventInstance, at: Vector2) -> bool:
 	for instance in _instances:
-		if not instance.def.lifts_for_traffic:
+		if instance.def.solid_when != EventDef.SolidWhen.WHILE_LOWERED:
 			continue
 		var axis := instance.facing_now()
 		if absf((door_body.global_position - instance.global_position).dot(axis)) > 1.0:
@@ -395,7 +395,7 @@ func watch_the_door_lines(delta := 0.0) -> void:
 	var called_off := _run_the_crossing_warning(here, delta)
 	var crossed: EventInstance = null
 	for instance in _instances:
-		if not instance.def.redetains and not instance.def.lifts_for_traffic:
+		if not instance.def.redetains and instance.def.solid_when != EventDef.SolidWhen.WHILE_LOWERED:
 			continue
 		if where_she_crossed(instance.global_position, instance.facing_now(),
 				instance.def.obstructs_radius, was, here) != Vector2.INF:
@@ -408,7 +408,7 @@ func watch_the_door_lines(delta := 0.0) -> void:
 		crossed.def.id, RunTrace.tile(map.world_to_tile(crossed.global_position)),
 		heading_name(here - was),
 		(", the boom up" if crossed.is_raised() else ", the boom down")
-		if crossed.def.lifts_for_traffic else ""])
+		if crossed.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED else ""])
 	# Back across the line of the crossing still warning her: that crossing is called off, and the
 	# walk back starts no warning of its own.
 	if called_off:

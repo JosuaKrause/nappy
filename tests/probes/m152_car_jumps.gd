@@ -24,7 +24,7 @@ extends RefCounted
 ##   could cover, so lane travel, the cross-steer and the separation pass's ordinary few pixels
 ##   are all comfortably under it and nothing but a placement clears it;
 ## - what the car was doing at the time — following an arc, landing one, caught in a pocket, given
-##   a fresh lane by `_recycle()`, or none of those, which leaves the separation pass;
+##   a fresh lane by `LaneMover._recycle()`, or none of those, which leaves the separation pass;
 ## - every reversal on the spot (`CrowdAgent._turn_round()`), **with the reason**: which of the
 ##   planner's two ways out fired, what state the car was in, and what refused each of the four
 ##   arcs it tried on that frame. `CrowdAgent.strategy.turn_refusals` and `turn_round_cause` are the
@@ -43,7 +43,7 @@ extends RefCounted
 ## the hard seals and the pockets they make are the ones a player meets.
 ##
 ## **The focus walks to the day's barriers rather than wandering.** A car only ever turns because
-## something is in its way (`CarStrategy.divert()` calls `_plan_a_turn()`, and nothing else does for a car),
+## something is in its way (`CarStrategy.divert()` calls `CarStrategy._plan_a_turn()`, and nothing else does for a car),
 ## so the junctions at the mouth of a shut street are the only places in the city where turns and
 ## turnarounds are dense — a focus parked anywhere else watches straight traffic for a minute and
 ## reports nothing. Both kinds of barrier count: a road closure and a hard seal shut a street the
@@ -102,7 +102,7 @@ func run(t) -> void:
 	for rig: Array in rig_days():
 		var city_seed: int = rig[0]
 		var map := CityGenerator.generate(city_seed)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		for day: int in rig[1]:
@@ -255,7 +255,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 				classes["landings"] = int(classes.get("landings", 0)) + 1
 				if _on_screen(agent.position, focus):
 					classes["landings/in-view"] = int(classes.get("landings/in-view", 0)) + 1
-			# A car reversing on the spot with no arc at all: `_turn_round()`, which flips the
+			# A car reversing on the spot with no arc at all: `LaneMover._turn_round()`, which flips the
 			# heading and swaps the lane in one frame. The player's *"instead of routing a turn
 			# (or u turn) they just teleport"* is what this looks like from outside. A recycle
 			# flips a direction too and is a different thing entirely, so it is excluded by the
@@ -574,8 +574,8 @@ func _on_screen(at: Vector2, focus: Vector2) -> bool:
 ## What this car was doing over the frame it jumped in.
 ##
 ## **`_cruise` is what names a recycle and nothing else does.** It is written only by
-## `_choose_lane()` and `_take_the_placement()`, which is to say only by `setup()` and
-## `_recycle()`; `CarStrategy._give_way()` moves `_speed` every frame and leaves this alone, so a car whose
+## `LaneMover._choose_lane()` and `_take_the_placement()`, which is to say only by `setup()` and
+## `LaneMover._recycle()`; `CarStrategy._give_way()` moves `_speed` every frame and leaves this alone, so a car whose
 ## cruise changed between two frames is a car that was handed a fresh lane — a teleport by
 ## construction, and legal out of sight.
 func _classify(was: Array, agent: CrowdAgent) -> String:

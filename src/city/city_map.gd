@@ -276,7 +276,7 @@ var _fenced_tiles := {}
 ## What `set_spent_calm()` handed over, waiting for the next `repaint()` to read it.
 var _spent_for_the_next_repaint: Array[Vector2i] = []
 
-## The one calm area barriers stand around today, or `Vector2i(-1, -1)` — `GameState.fenced_park`
+## The one calm area barriers stand around today, or `Vector2i(-1, -1)` — `GameState.facts.fenced_park`
 ## as `set_fenced_park_state()` handed it over, carried unchanged for the rest of the act it was
 ## chosen in, or the first area today's `shut_calm` accepts if none has been chosen yet and today
 ## is act III or later. See docs/CITY.md, "Shutting a spent park".
@@ -983,7 +983,7 @@ func repaint(state: CityState, trace: RunTrace = null) -> void:
 ## park day 12 sends her to is never shut or fenced on its day (`CityState.is_forced_open()`): the
 ## day's own task is in it.
 ##
-## **An existing fence outlives the day that chose it.** If `GameState.fenced_park` already names a
+## **An existing fence outlives the day that chose it.** If `GameState.facts.fenced_park` already names a
 ## block fenced this act, it is protected from `calm_to_shut()`'s own candidate pass — asking the
 ## guarantees about ground already fenced would be asking twice — and carried into `shut_calm` and
 ## `_fenced_tiles` unconditionally, so the barriers stand every day of the act regardless of whether

@@ -84,7 +84,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	if target.begins_with("closure"):
 		var closures := city.closures()
 		if closures.is_empty():
-			push_warning("no streets are closed on day %d" % GameState.day)
+			push_warning("no streets are closed on day %d" % GameState.header.day)
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, closures.size() - 1)
 		var mouth: Vector2 = closures[which].mouth_centres(city.map)[0]
@@ -203,7 +203,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		# answers wherever it currently is, not wherever this call found it.
 		var contact := resistance.contact_position()
 		if contact == Vector2.INF:
-			push_warning("no resistance contact on day %d" % GameState.day)
+			push_warning("no resistance contact on day %d" % GameState.header.day)
 			return city.map.home_world_position()
 		# Off to one side, so the chalk mark is not hidden under the pram.
 		return contact + Vector2(70.0, 30.0)
@@ -222,7 +222,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 					huts.append(body)
 		if huts.is_empty():
 			push_warning("no region-wall checkpoint on day %d (doors start on day %d)"
-					% [GameState.day, Tuning.REGION_WALL_FIRST_DAY])
+					% [GameState.header.day, Tuning.REGION_WALL_FIRST_DAY])
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, huts.size() - 1)
 		var hut: EventScheduler.Planned = huts[which]
@@ -253,7 +253,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ##
 ## **A row the director sites while she walks has no position at dawn** — `cat_dash`, `cyclist`,
 ## `loose_dog`, `charging_dog` on `Tuning.RUN_TAUGHT_DAY`, and day 3's `burning_building`, which
-## the day budgets and sites from her walk (`EventDef.sited_on_her_way`) — so `event:<id>` cannot
+## the day budgets and sites from her walk (`EventDef.on_her_way`) — so `event:<id>` cannot
 ## find one. Rather than silently starting her on the doorstep as if nothing were wrong, this
 ## **refuses by name**: the row and the reason are written to the run log
 ## (`Telemetry.note("spawn", …)`) and raised with `push_warning`, so both the log a capture is

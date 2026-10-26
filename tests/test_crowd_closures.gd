@@ -18,7 +18,7 @@ const STEP := 1.0 / 60.0
 var _city: City
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
@@ -363,7 +363,7 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t) -> void:
 ## ahead **and** the way behind shut and reverses — which is the single-seal-on-open-ground case
 ## this milestone leaves standing, and the one the stride is measured against.
 ##
-## The floor is each agent's own `_stride_seconds()` rather than a number, so it survives any
+## The floor is each agent's own `LaneMover._stride_seconds()` rather than a number, so it survives any
 ## rebalancing of walking speed or of the gait — what it pins is that a reversal is worth a stride,
 ## not that a stride is 35px.
 func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
@@ -631,7 +631,7 @@ func _a_junction_to_seal(t) -> Dictionary:
 ## its own boundary at least once.
 func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 
@@ -698,7 +698,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 
 	# The door carve-out, checked directly against the predicate rather than by waiting for a
 	# random walker or car to wander onto the exact tile inside a short simulated window — the
-	# question is whether `cannot_go_on()` refuses the door, not whether the day's population
+	# question is whether `LaneStrategy.cannot_go_on()` refuses the door, not whether the day's population
 	# happens to visit it.
 	var door_tile := door_segment.tile_rect().get_center()
 	var vertical := not door_segment.horizontal
@@ -738,7 +738,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 ## runs first, because that is what builds the day's huts out of the region plan.
 func _open_a_door_day(t) -> Dictionary:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	var door: StreetNetwork.Segment = null
@@ -1131,7 +1131,7 @@ func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
 ## non-empty around the home block for this to test anything rather than pass vacuously.
 func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 
@@ -1221,14 +1221,14 @@ func _test_only_cars_go_over_the_bridge(t) -> void:
 
 ## M53: **the crowd has to agree with the drawing.** A T-junction the paint knows about and
 ## `WalkerStrategy.divert()` does not is the same bug in the other direction — so this checks the
-## crowd's own notion of a street (`CityMap.is_street`, which is what `cannot_go_on()` reads) against
+## crowd's own notion of a street (`CityMap.is_street`, which is what `LaneStrategy.cannot_go_on()` reads) against
 ## a calm zone's absorbed corridor the same way `tests/test_generator.gd` checks the paint.
 ##
 ## A car never belongs on a zone's absorbed corridor — `is_street()` is false there, park or not,
-## which is the one check `cannot_go_on()` makes that does not care *why* a tile stopped being a
+## which is the one check `LaneStrategy.cannot_go_on()` makes that does not care *why* a tile stopped being a
 ## street. A walker legitimately does: a zone is calm ground as well as a shortcut, and standing on
 ## it is correct rather than a leak. So the property is asked only of cars, over a real zone with
-## real traffic around it rather than by re-deriving what `cannot_go_on()` already computes.
+## real traffic around it rather than by re-deriving what `LaneStrategy.cannot_go_on()` already computes.
 func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t) -> void:
 	if _city.map.zone_rects.is_empty():
 		return
@@ -1457,7 +1457,7 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t) -> void:
 				% [name, inbound, outbound])
 
 ## M120: **entry is where exit is.** A recycled walker or off-spine car may not land past the true
-## edge at all — `LaneStrategy.entry_room()` grants it none, where `has_left_the_map()` still
+## edge at all — `LaneStrategy.entry_room()` grants it none, where `LaneStrategy.has_left_the_map()` still
 ## grants a departing one a tile so it does not blip out exactly on the kerb. Stood at all four
 ## plain edges (north, south, east and west, each away from the spine so the tunnel and the bridge
 ## are not what is being asked about here — `_test_cars_come_out_of_the_tunnel_and_off_the_bridge`
@@ -1492,15 +1492,15 @@ func _test_nobody_enters_across_a_plain_edge(t) -> void:
 				% [name, out_of_bounds])
 
 ## M120: **the entry roll itself, not only its final position.** A full `Crowd` never shows the
-## difference above by itself — `_stands_on_a_street()` already pulled a stray recycle back onto
+## difference above by itself — `LaneMover._stands_on_a_street()` already pulled a stray recycle back onto
 ## the map's own last row before M120, so *"nobody is ever out of bounds"* was already true and the
 ## test above cannot tell this fix from its absence. What changed is *how* a fresh entry lands there
 ## when the field's own edge (`CrowdField.along_bounds`) is already flush with the true one —
 ## `bounds.x - ENTRY_SPREAD` is then nowhere near a real street, so the un-clipped roll used to fail
-## `_entry_band_fits()` on every attempt bar the rare one that also finds a legal spot the other way
+## `LaneMover._entry_band_fits()` on every attempt bar the rare one that also finds a legal spot the other way
 ## round, and the state `_recycle()` was left holding when none did was whichever `_choose_lane()`
 ## last rolled — almost never this axis and direction at all, because the other one kept winning the
-## early exit. Driven by hand, seed by seed, straight at `_recycle()`, with the field's own edge
+## early exit. Driven by hand, seed by seed, straight at `LaneMover._recycle()`, with the field's own edge
 ## pinned 50px from the true one so an entry aimed this way has exactly that much real room and no
 ## more.
 func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
@@ -1539,7 +1539,7 @@ func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
 ## outside the map" on top of M120's own fix, and this is the shape of it:
 ## `LaneStrategy.entry_room()` (M120) grants an ordinary walker or off-spine car nothing past the true edge, but
 ## nothing past the line still let the roll land exactly *on* it — a legal centre by
-## `_entry_band_fits()`'s old words — with the picture straddling the boundary regardless, since a
+## `LaneMover._entry_band_fits()`'s old words — with the picture straddling the boundary regardless, since a
 ## walker's canvas rises `Sprites.draw_standing` bottom-anchored from its own position with nothing
 ## drawn south of it. Pinned flush with the true edge itself (`CrowdField.along_bounds`'s own clamp,
 ## not a field radius chosen to make it so), the same way `_test_nobody_enters_across_a_plain_edge`
@@ -1605,7 +1605,7 @@ func _test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t) -> voi
 ## above uses a fresh map: the shared `_city` carries closures and seals other tests left behind.
 func _test_day_start_keeps_room_for_its_own_picture(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	var size := map.world_size()

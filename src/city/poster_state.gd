@@ -1,7 +1,7 @@
 class_name PosterState
-extends RefCounted
-## What is pasted on the city's walls this run, and how many tears she has made. Run-scoped, owned
-## by `GameState.posters`, and a fact about the run rather than about the seed: a crew pastes where
+extends RunSubState
+## What is pasted on the city's walls this run, and how many tears she has made. Run-scoped, a registered
+## part of the run (`RunSubState`) held as `GameState.posters`, and a fact about the run rather than about the seed: a crew pastes where
 ## her walk sites it and a sheet tears where she pushes, so neither can be recomputed.
 ##
 ## **Keyed by the sidewalk tile in front of a wall cell**, because every blank ground-floor column
@@ -34,6 +34,12 @@ var pasted_through := 0
 var tears := 0
 
 var _dawn: Dictionary = {}
+
+func slot() -> Slot:
+	return Slot.NESTED
+
+func save_key() -> String:
+	return "posters"
 
 func reset() -> void:
 	cells.clear()

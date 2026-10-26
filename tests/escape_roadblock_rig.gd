@@ -27,8 +27,8 @@ const LANE_SCAN := 4.0
 ## The finale's plan for a seed, built the way `tests/test_finale.gd` builds it.
 static func plan_for(seed_value: int) -> Dictionary:
 	var map := CityGenerator.generate(seed_value)
-	GameState.city_state.begin_day(map.block_plans, 1)
-	map.repaint(GameState.city_state)
+	GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+	map.repaint(GameState.attempt_spend.city_state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	return {"map": map, "plan": FinalePlanner.plan(map, rng, _city_spec())}
@@ -243,7 +243,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 			break
 		meter.feed(instances, her, false, speed == 0.0)
 		for instance in instances:
-			warned = warned or (not instance.is_waiting() and not instance.is_a_spent_guard())
+			warned = warned or (not instance.is_waiting() and not instance.barrier_post.is_spent())
 		speed = move_toward(speed, 0.0 if warned else Tuning.WALK_SPEED, Tuning.ACCELERATION * STEP)
 		her += heading * speed * STEP
 		if warned:
@@ -268,7 +268,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	while not caught and frames < int(30.0 / STEP):
 		var gone := true
 		for instance: EventInstance in lured:
-			gone = gone and instance.is_a_spent_guard() and not instance.is_leaving
+			gone = gone and instance.barrier_post.is_spent() and not instance.is_leaving
 		if gone:
 			break
 		if _tick(instances, her, false, -heading):

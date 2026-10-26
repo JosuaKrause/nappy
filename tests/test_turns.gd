@@ -37,7 +37,7 @@ class Manoeuvre extends RefCounted:
 	var worst_drift := 0.0
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_junction = _plain_junction()
@@ -389,7 +389,7 @@ func _test_a_plugged_arm_is_refused_rather_than_driven_into(t) -> void:
 	for tile in plug:
 		_city.map.closed_tiles.erase(tile)
 
-## `heading()` is what everything downstream of a car reads — the strike box, the horn, the shadow
+## `LaneMover.heading()` is what everything downstream of a car reads — the strike box, the horn, the shadow
 ## and, once it is bound, the picture. So it has to be the direction the car is **actually** going,
 ## not the axis it belongs to, on every frame of a turn.
 func _test_the_heading_is_the_direction_it_is_actually_travelling(t) -> void:
@@ -466,7 +466,7 @@ func _test_a_queue_keeps_its_distance_behind_a_turning_car(t) -> void:
 ## *behind* a turn's landing is open road for an arm turn and is the blockage itself for an
 ## about-face — there is nowhere to stand a queue behind a half turn's landing. The code path is one
 ## and the same either way: `CarStrategy._land_the_turn()` merges, and `Crowd._keep_room_for_the_turning()` reads
-## `turn_lane_key()` without caring which manoeuvre produced it.
+## `LaneMover.turn_lane_key()` without caring which manoeuvre produced it.
 func _test_a_turn_merges_into_a_lane_without_resetting_it(t) -> void:
 	_clear_the_holds()
 	_hold(_ahead_of(true, 1.0))

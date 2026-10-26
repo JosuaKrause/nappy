@@ -17,6 +17,9 @@ static func compose(event: EventInstance, row: EventDef) -> Array[EventBehaviour
 	if row.mobile:
 		event.route = EventRouteWalk.new()
 		event.route.attach(event)
+	if row.vehicle:
+		event.car = EventCarDriving.new()
+		_add(out, event, event.car)
 	if row.flock_size > 0:
 		event.flock = EventFlock.new()
 		_add(out, event, event.flock)
@@ -28,6 +31,9 @@ static func compose(event: EventInstance, row: EventDef) -> Array[EventBehaviour
 		_add(out, event, event.pursuit)
 		event.on_foot = EventOfficer.new()
 		_add(out, event, event.on_foot)
+	if row.leaves_its_body():
+		event.barrier_post = EventBarrierPost.new()
+		_add(out, event, event.barrier_post)
 	if row.notice != null and row.pursuit == null and not row.investigates:
 		event.notice_run = EventNoticeRun.new()
 		_add(out, event, event.notice_run)
@@ -39,7 +45,7 @@ static func compose(event: EventInstance, row: EventDef) -> Array[EventBehaviour
 	if row.comes_down_her_line() and not row.telegraphs:
 		event.unreachable = EventUnreachable.new()
 		_add(out, event, event.unreachable)
-	if row.look == EventDef.Look.UNMARKED_VAN:
+	if row.abduction != null:
 		event.abduction = EventAbduction.new()
 		_add(out, event, event.abduction)
 	return out

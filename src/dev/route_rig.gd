@@ -222,7 +222,7 @@ var _held := false
 var _last_position := Vector2.INF
 var _teleported := false
 ## The day this rig's queue was started for, read once in `start_day()` off the day's spec
-## (`DaySpec.number`: 1 to 14, or the escape's city, 16). `GameState.day` has already moved to the
+## (`DaySpec.number`: 1 to 14, or the escape's city, 16). `GameState.header.day` has already moved to the
 ## next day by the time `DayController.day_finished` reports a win, so a line written from
 ## `_on_day_finished()` would otherwise name the wrong day.
 var _day_number := 0
@@ -781,10 +781,10 @@ func _planned_position(plan: EventScheduler.Planned) -> Vector2:
 ## (`EventManager.obstructed_footprint()`): solid, and neither `mobile` — somewhere else by the time
 ## a plan gets there, the reason `_is_stationary_hazard()` gives — nor a door body, which is a
 ## crossing the day keeps open: a hut or a post (`detain_seconds`) or the boom
-## (`EventDef.lifts_for_traffic`), whose ground `_gate_ground()` keeps off instead.
+## (`EventDef.SolidWhen.WHILE_LOWERED`), whose ground `_gate_ground()` keeps off instead.
 func _is_planned_body(def: EventDef) -> bool:
 	return def.shape != null and def.obstructs_radius > 0.0 and not def.mobile \
-			and def.detain_seconds <= 0.0 and not def.lifts_for_traffic
+			and def.detain_seconds <= 0.0 and def.solid_when != EventDef.SolidWhen.WHILE_LOWERED
 
 ## Every tile whose centre lies within a door's reach — `EventDef.detain_distance()` from a
 ## `checkpoint_hut` or `checkpoint_post` (the `redetains` rows, the two that inspect her), plus
@@ -943,7 +943,7 @@ func _add_door_reach(door: Vector2, facing: Vector2, reach: float, near: Diction
 
 ## A live instance `_body_clear_tiles()` keeps clear of — the same rows `_is_planned_body()` names,
 ## while the instance is solid (`EventInstance.is_solid()`: a pursuer that has stopped waiting, or
-## a `solid_once_it_starts` row still in its notice, is not).
+## a `SolidWhen.ONCE_IT_STARTS` row still in its notice, is not).
 func _is_standing_body(instance: EventInstance) -> bool:
 	return not instance.is_finished and instance.is_solid() and _is_planned_body(instance.def)
 
@@ -1638,7 +1638,7 @@ func _maybe_replan(delta: float) -> void:
 ## answer to whether she reached it (`ContactPoint.REACH`, 36px, or an any-instance task's wider
 ## reach), which is what the leg is timing.
 func _step_completed() -> bool:
-	return _leg_step != null and GameState.completed_resistance_steps.has(_leg_step.index)
+	return _leg_step != null and GameState.resistance.completed_steps.has(_leg_step.index)
 
 ## A `mark` or `task` target further than this from where the leg is aimed has moved: a tile, so a
 ## pacing any-instance task drifting inside its own tile does not re-plan every check.

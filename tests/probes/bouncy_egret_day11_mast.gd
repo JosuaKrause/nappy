@@ -25,8 +25,8 @@ const SEEDS: Array[int] = [4242, 90210, 1234567, 2295276695, 291862120, 314159, 
 
 func run(t) -> void:
 	var suite: Variant = load("res://tests/test_resistance.gd").new()
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
+	var saved_state := GameState.attempt_spend.city_state
 	var seeds: Array[int] = SEEDS
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds = []
@@ -38,7 +38,7 @@ func run(t) -> void:
 		suite._build_city(t, seed_value)
 		var result := [""]
 		suite._with_clean_run(func() -> void:
-			GameState.scars = []
+			GameState.attempt_spend.scars = []
 			var read: Array = suite._read_the_mark_on(t, 11, seed_value)
 			var director: ResistanceDirector = read[0]
 			var player: Stroller = read[2]
@@ -61,8 +61,8 @@ func run(t) -> void:
 		if result[0] != "":
 			put_down += 1
 	print("  put down on %d of %d" % [put_down, seeds.size()])
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
+	GameState.attempt_spend.scars = saved_scars
+	GameState.attempt_spend.city_state = saved_state
 	if suite._city:
 		suite._city.free()
 
@@ -71,7 +71,7 @@ func run(t) -> void:
 static func _where_a_mast_may_stand(city: City) -> Array:
 	var events: EventManager = city.events
 	var siting: EventScheduler.WalkSiting = events._siting
-	var def: EventDef = events._director.route_row(ResistanceDirector.MAST_ROW)
+	var def: EventDef = events._director.route_row(EventCatalogue.mast().id)
 	var map: CityMap = city.map
 	var plans: Array[EventScheduler.Planned] = events.plans()
 	var none: Array[EventScheduler.Planned] = []

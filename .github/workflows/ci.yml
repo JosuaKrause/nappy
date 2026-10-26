@@ -27,7 +27,8 @@
 #               changing.
 # The Godot tools all honour GODOT=..., which is how CI points them at the downloaded Linux
 # binary instead of the macOS default path. uv is installed in `classify` and `gates`, the jobs
-# that run the Python tooling, and in `browser` for the template compiler; ffmpeg only in `gates`;
+# that run the Python tooling, and in `browser` for the template compiler; ffmpeg only in `gates`,
+# a pinned static build restored from a cache keyed on its name (downloaded on a miss);
 # Godot is downloaded (or restored from cache) in `cost-table`, `game`, `shards` and `browser`,
 # since each boots the engine.
 name: ci
@@ -55,6 +56,14 @@ concurrency:
 
 env:
   GODOT_VERSION: 4.7.2
+  # The static ffmpeg build `gates` uses, from BtbN/FFmpeg-Builds: the release it is published in,
+  # its file name (the cache key) and that file's SHA-256, from the release's checksums.sha256.
+  # Changing any of the three fetches it again; nothing else does. The pin is a month-end build
+  # because BtbN deletes its daily autobuilds after about two weeks and keeps the month-end ones,
+  # so a cache miss months from now still finds the file.
+  FFMPEG_RELEASE: autobuild-2026-09-30-13-08
+  FFMPEG_BUILD: ffmpeg-n8.1.3-9-g29e619e767-linux64-gpl-8.1
+  FFMPEG_SHA256: 97ce978979194b5cf7e06a5e68020dbdaa7a4f3294c5452b6a1bc347100dbb79
   # tests/suite_costs.txt's longest row alone sets the floor no split can beat,
   # so this is a shard count that brings every other shard down to or under that same floor
   # rather than leaving it carrying idle neighbours -- `tools/test.sh --plan` at this count shows
@@ -149,10 +158,37 @@ jobs:
         with:
           enable-cache: true
 
-      # tools/test_clip.py encodes a real burst through ffmpeg, which the runner image does not
-      # ship; without it that test skips and the converter is never actually exercised.
-      - name: Install ffmpeg
-        run: sudo apt-get install -y --no-install-recommends ffmpeg
+      # tools/test_clip.py encodes a real burst through ffmpeg and reads it back with ffprobe,
+      # which the runner image does not ship; without them that test skips and the converter is
+      # never actually exercised. They are a pinned static build restored from a cache keyed on
+      # its name, like Godot, rather than an apt install from Ubuntu's mirrors on every run,
+      # whose stalled fetch once failed `test` with nothing wrong in the code. The download runs
+      # only on a miss, with a timeout so a stalled fetch fails fast, and its SHA-256 is checked
+      # before it is unpacked.
+      - name: Cache ffmpeg
+        id: ffmpeg-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/ffmpeg
+          key: ${{ env.FFMPEG_BUILD }}
+
+      - name: Download ffmpeg
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 5
+        run: |
+          mkdir -p ~/ffmpeg
+          curl -sSL --fail --retry 3 -o ~/ffmpeg/ffmpeg.tar.xz \
+            "https://github.com/BtbN/FFmpeg-Builds/releases/download/${FFMPEG_RELEASE}/${FFMPEG_BUILD}.tar.xz"
+          echo "${FFMPEG_SHA256}  $HOME/ffmpeg/ffmpeg.tar.xz" | sha256sum --check -
+          tar -xf ~/ffmpeg/ffmpeg.tar.xz -C ~/ffmpeg --strip-components=2 \
+            "${FFMPEG_BUILD}/bin/ffmpeg" "${FFMPEG_BUILD}/bin/ffprobe"
+          rm ~/ffmpeg/ffmpeg.tar.xz
+          chmod +x ~/ffmpeg/ffmpeg ~/ffmpeg/ffprobe
+
+      - name: Put ffmpeg on PATH
+        run: |
+          echo "$HOME/ffmpeg" >> "$GITHUB_PATH"
+          ~/ffmpeg/ffmpeg -version | head -1
 
       - name: Check the Python tools
         run: ./tools/pycheck.sh

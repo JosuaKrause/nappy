@@ -334,7 +334,8 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
 			if not due.is_empty():
 				first = (due[0] as EventDef).id
 				first_at = walked
-		t.check(first == "charging_dog", "seed %d: the first thing she meets is the lesson's dog (%s)"
+		t.check(first == "charging_dog_tutorial",
+				"seed %d: the first thing she meets is the lesson's dog, its own row (%s)"
 				% [seed_value, first])
 		t.close_to(first_at, EventDirector.LESSON_DELAY,
 				"seed %d: and she meets it at LESSON_DELAY of walking" % seed_value, STEP * 1.5)
@@ -423,7 +424,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 			% [siting.asked, walked])
 
 func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var state := CityState.new()
@@ -436,16 +437,16 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	var consumed: Array[String] = []
 	city.events.start_day(day, events_rng, consumed)
 
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	GameState.completed_resistance_steps = done
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
+	GameState.resistance.completed_steps = done
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
@@ -477,9 +478,9 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 			"day %d: reading the mark rigs her route with a bag of %d holding one %s (%s)"
 			% [day, size, row, rigged])
 	resistance.free()
-	GameState.completed_resistance_steps = saved_completed
-	GameState.failed_resistance_steps = saved_failed
-	GameState.resistance_progress = saved_progress
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.failed_steps = saved_failed
+	GameState.resistance.progress = saved_progress
 
 	var path := _the_longest_route(city)
 	var player := Stroller.new()

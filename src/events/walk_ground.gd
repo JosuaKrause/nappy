@@ -24,7 +24,7 @@ extends RefCounted
 ##
 ## **Everything is counted as it stands for the whole walk, at the body it actually has.** A van
 ## that hunts stays parked and solid until long after it has noticed her, a roadblock's band stands
-## after its guard has left (`EventInstance._stand_as_the_barrier()`), and a burst leaves its
+## after its guard has left (`EventBarrierPost.stand_as_the_barrier()`), and a burst leaves its
 ## crater where it went off for the rest of the sequence — so a row that spawns a solid successor
 ## is counted at the successor's body too (`solids_of()`). Mobile rows are traffic and close no
 ## ground. Each body is where `EventInstance.setup()` will put it — recentred on the pavement band,
@@ -213,8 +213,8 @@ func _stands_at(plan: EventScheduler.Planned) -> Vector2:
 func solids_of(plan: EventScheduler.Planned) -> Array[Solid]:
 	var found: Array[Solid] = []
 	var defs: Array[EventDef] = [plan.def]
-	if plan.def.spawns_on_finish != "":
-		var successor := EventCatalogue.by_id(plan.def.spawns_on_finish)
+	if plan.def.aftermath.on_finish != "":
+		var successor := EventCatalogue.by_id(plan.def.aftermath.on_finish)
 		if successor:
 			defs.append(successor)
 	for def in defs:

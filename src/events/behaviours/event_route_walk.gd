@@ -51,14 +51,14 @@ func advance(delta: float) -> void:
 		return
 	# A mobile event that has driven off the end of its route is done, whatever its
 	# nominal duration says — and it keeps going until it is out of sight, rather than stopping
-	# dead on the pavement she is walking down. See `EventInstance._be_done()`.
-	event._be_done()
+	# dead on the pavement she is walking down. See `EventInstance._end_its_route()`.
+	event._end_its_route()
 
 ## **Moves this figure to `on_the_route`, the point its route has reached, through the navigator**:
 ## the whole way where nothing solid stands between (`Navigator.move_to()`), which is every frame of
 ## a route checked before it was accepted. Where a solid put down since stands in the way, a figure
 ## that paces a beat holds where it is until the beat brings the point back to its side, and any
-## other has come to the end of its route there (`_be_done()`), leaving from it the way every route
+## other has come to the end of its route there (`EventInstance._end_its_route()`), leaving from it the way every route
 ## that runs out leaves. Answers whether it reached the point.
 func _keep_to(on_the_route: Vector2) -> bool:
 	var reached: Vector2 = event._navigator.move_to(event.global_position, on_the_route,
@@ -67,7 +67,7 @@ func _keep_to(on_the_route: Vector2) -> bool:
 	if reached == on_the_route:
 		return true
 	if not event.def.paces:
-		event._be_done()
+		event._end_its_route()
 	return false
 
 ## The length of the whole route, in px.

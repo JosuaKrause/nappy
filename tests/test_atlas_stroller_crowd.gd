@@ -76,7 +76,7 @@ func _rng(tag: String) -> RandomNumberGenerator:
 	return rng
 
 func _city(t) -> City:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	return city
@@ -136,22 +136,22 @@ func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
 			"freeing the city mid-day releases the crowd's page too, with no clear() in between")
 
 # --------------------------------------------------------------- tint regression ---
-# `_draw_body()` tints the body layer with the agent's own `colour` and draws the trim above it
+# `AgentLook.draw_body()` tints the body layer with the agent's own `colour` and draws the trim above it
 # untinted — the split that keeps a crowd from reading as one silhouette in one colour. It only
 # holds if body and trim are two distinct baked regions; a bake that ever folded the two views of
 # one part into a single region would tint both at once the moment either drew.
 
 func _test_walker_body_and_trim_are_separate_regions_on_every_view(t) -> void:
-	for view in CrowdAgent.WALKER_BODY_BY_VIEW.keys():
-		var body := StringName(CrowdAgent.WALKER_BODY_BY_VIEW[view])
-		var trim := StringName(CrowdAgent.WALKER_TRIM_BY_VIEW[view])
-		var body_b := StringName(CrowdAgent.WALKER_BODY_BY_VIEW_B[view])
-		var trim_b := StringName(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view])
+	for view in WalkerLook.BODY_BY_VIEW.keys():
+		var body := StringName(WalkerLook.BODY_BY_VIEW[view])
+		var trim := StringName(WalkerLook.TRIM_BY_VIEW[view])
+		var body_b := StringName(WalkerLook.BODY_BY_VIEW_B[view])
+		var trim_b := StringName(WalkerLook.TRIM_BY_VIEW_B[view])
 		t.check(body != trim, "walker %s: body and trim (gait a) are separate regions" % view)
 		t.check(body_b != trim_b, "walker %s: body and trim (gait b) are separate regions" % view)
 
 func _test_car_body_and_trim_are_separate_regions_on_every_view(t) -> void:
-	for view in CrowdAgent.CAR_BODY_BY_VIEW.keys():
-		var body := StringName(CrowdAgent.CAR_BODY_BY_VIEW[view])
-		var trim := StringName(CrowdAgent.CAR_TRIM_BY_VIEW[view])
+	for view in CarLook.BODY_BY_VIEW.keys():
+		var body := StringName(CarLook.BODY_BY_VIEW[view])
+		var trim := StringName(CarLook.TRIM_BY_VIEW[view])
 		t.check(body != trim, "car %s: body and trim are separate regions" % view)

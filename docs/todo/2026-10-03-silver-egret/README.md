@@ -17,7 +17,7 @@ body", built 2026-09-10) draws every shadow from the object's `GroundShape`
 (`src/ground_shape.gd`, `shadow_outline()`/`draw_shadow()`): "A point shadow is the same
 `2r × 0.8r` ellipse … under a Y scale of 0.4". The first way keeps that rule and changes the shapes'
 extent (and how many ovals an object casts); the second overturns it, and its PR quotes M61. The
-crowd car's capsule is `CrowdAgent._car_shadow_shape()`; the M139 record on the crowd's shadow pass
+crowd car's capsule is `CarStrategy.shadow_shape()`; the M139 record on the crowd's shadow pass
 is the cost to read before per-object pictures for walkers and cars.
 
 **This answers half a review item.** `docs/review/2026-09-10-every-shadow-is-drawn-from-a.md`

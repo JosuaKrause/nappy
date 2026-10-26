@@ -71,8 +71,8 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 		GameState.begin_day()
 		GameState.remember_where_she_settled(Vector2i(d, d))
 		GameState.finish_day(GameEnums.DayResult.WON)
-	t.check(GameState.day == 4, "three won days reach day 4")
-	GameState.nerves = 3
+	t.check(GameState.header.day == 4, "three won days reach day 4")
+	GameState.header.nerves = 3
 	GameState.begin_day()
 	var expected := GameSave.run_data()
 	t.check(GameState.checkpoint == expected, "beginning day 4 keeps its dawn as the checkpoint")
@@ -83,7 +83,7 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	GameState.begin_day()
 	GameState.finish_day(GameEnums.DayResult.WON)
 	GameState.begin_day()
-	t.check(GameState.day == 5 and GameState.checkpoint == expected,
+	t.check(GameState.header.day == 5 and GameState.checkpoint == expected,
 			"day 5 is under way and the checkpoint is still day 4's dawn")
 
 	# Through the file, so the checkpoint given back is the one a closed game would come back to.
@@ -102,7 +102,7 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 				"'%s' is changed after the checkpoint — a field this test does not change cannot "
 						% key + "show that going back gives it back; change it in _change_everything()")
 
-	GameState.nerves = 1
+	GameState.header.nerves = 1
 	t.check(GameState.a_loss_goes_back_to_the_checkpoint(), "losing now spends a normal run's last nerve")
 	t.check(GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL), "and the run goes on")
 	var after := _flatten(GameSave.file_data(false))
@@ -112,11 +112,11 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 		t.check(after[key] == wanted[key],
 				"'%s' is the checkpoint's own dawn again (%s, wanted %s)"
 						% [key, str(after[key]).left(80), str(wanted[key]).left(80)])
-	t.check(GameState.nerves == Tuning.STARTING_NERVES and GameState.day == 4,
+	t.check(GameState.header.nerves == Tuning.STARTING_NERVES and GameState.header.day == 4,
 			"back at day 4 with every nerve")
 	t.check(GameState.checkpoint_day() == 4 and not GameState.hard_mode,
 			"still a normal run, whose checkpoint is still day 4")
-	t.check(GameState.ending == GameEnums.Ending.NONE, "and a normal run has no bad ending")
+	t.check(GameState.header.ending == GameEnums.Ending.NONE, "and a normal run has no bad ending")
 
 ## Every key of the file that is the run's own state — top-level riders by name, and `"state"`'s
 ## fields as `state.<name>` — read off `GameSave.file_data()` itself.
@@ -145,34 +145,34 @@ func _flatten_run(data: Dictionary) -> Dictionary:
 
 ## Every field the save carries, moved somewhere the checkpoint's dawn could not have had it.
 func _change_everything() -> void:
-	GameState.run_seed += 1
-	GameState.player_is_male = not GameState.player_is_male
-	GameState.day = 10
-	GameState.nerves = 2
-	GameState.resistance_progress += 3
-	GameState.ending = GameEnums.Ending.NEUTRAL
-	GameState.play_seconds += 500.0
-	GameState.consumed_one_shots.append("spent_after_the_checkpoint")
-	GameState.completed_resistance_steps.append(99)
-	GameState.failed_resistance_steps.append(98)
+	GameState.header.run_seed += 1
+	GameState.header.player_is_male = not GameState.header.player_is_male
+	GameState.header.day = 10
+	GameState.header.nerves = 2
+	GameState.resistance.progress += 3
+	GameState.header.ending = GameEnums.Ending.NEUTRAL
+	GameState.header.play_seconds += 500.0
+	GameState.attempt_spend.consumed_one_shots.append("spent_after_the_checkpoint")
+	GameState.resistance.completed_steps.append(99)
+	GameState.resistance.failed_steps.append(98)
 	GameState.add_scar("scarred_after_the_checkpoint", Vector2(120.0, 80.0))
-	GameState.city_state.apply_cause({Vector2i(30, 30): _fake_block_plan()}, Vector2i(30, 30),
+	GameState.attempt_spend.city_state.apply_cause({Vector2i(30, 30): _fake_block_plan()}, Vector2i(30, 30),
 			GameEnums.BlockCause.FIRE, 10)
-	GameState.sabotage_done = not GameState.sabotage_done
-	GameState.resistance_carrying_package = not GameState.resistance_carrying_package
-	GameState._dawn_completed_steps.append(97)
-	GameState._dawn_failed_steps.append(96)
-	GameState._dawn_progress += 2
-	GameState._dawn_sabotage_done = not GameState._dawn_sabotage_done
-	GameState._dawn_carrying_package = not GameState._dawn_carrying_package
-	GameState.settled_in[10] = Vector2i(5, 5)
-	GameState._dawn_consumed_one_shots.append("photographed_after_the_checkpoint")
-	GameState._dawn_scars.append({"id": "dawn_after", "position": Vector2(9.0, 9.0), "since_day": 9})
-	GameState._dawn_city_state = {"stage": [{"x": 41, "y": 41, "v": 1}]}
-	GameState.escape_section = DaySpec.Section.CITY
-	GameState.completed_resistance_alley_tiles.append(Vector2i(77, 77))
-	GameState.fenced_park = Vector2i(3, 3)
-	GameState.fenced_park_act = 3
+	GameState.resistance.sabotage_done = not GameState.resistance.sabotage_done
+	GameState.resistance.carrying_package = not GameState.resistance.carrying_package
+	GameState.resistance._dawn_completed_steps.append(97)
+	GameState.resistance._dawn_failed_steps.append(96)
+	GameState.resistance._dawn_progress += 2
+	GameState.resistance._dawn_sabotage_done = not GameState.resistance._dawn_sabotage_done
+	GameState.resistance._dawn_carrying_package = not GameState.resistance._dawn_carrying_package
+	GameState.settled.settled_in[10] = Vector2i(5, 5)
+	GameState.attempt_spend._dawn_consumed_one_shots.append("photographed_after_the_checkpoint")
+	GameState.attempt_spend._dawn_scars.append({"id": "dawn_after", "position": Vector2(9.0, 9.0), "since_day": 9})
+	GameState.attempt_spend._dawn_city_state = {"stage": [{"x": 41, "y": 41, "v": 1}]}
+	GameState.facts.escape_section = DaySpec.Section.CITY
+	GameState.facts.completed_resistance_alley_tiles.append(Vector2i(77, 77))
+	GameState.facts.fenced_park = Vector2i(3, 3)
+	GameState.facts.fenced_park_act = 3
 	GameState.posters.paste(Vector2i(9, 9), 0, false, 1)
 	GameState.posters.tears += 1
 	GameState.posters.pasted_through += 4
@@ -193,21 +193,21 @@ func _fake_block_plan() -> BlockPlan:
 func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t) -> void:
 	GameState.start_run(_SEED)
 	t.check(GameState.checkpoint_day() == 1, "a fresh run's checkpoint is day 1")
-	GameState.day = 4
+	GameState.header.day = 4
 	GameState.begin_day()
 	var day_four := GameState.checkpoint.duplicate(true)
 	t.check(GameState.checkpoint_day() == 4, "day 4 is a checkpoint")
-	GameState.play_seconds = 77.0
+	GameState.header.play_seconds = 77.0
 	GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
 	GameState.begin_day()
 	t.check(GameState.checkpoint == day_four, "a retry of day 4 does not replace its dawn")
 	for d in range(4, 8):
 		GameState.finish_day(GameEnums.DayResult.WON)
 		GameState.begin_day()
-		if GameState.day < 8:
+		if GameState.header.day < 8:
 			t.check(GameState.checkpoint == day_four,
-					"day %d is not a checkpoint, so day 4's stands" % GameState.day)
-	t.check(GameState.day == 8 and GameState.checkpoint_day() == 8, "day 8 replaces it")
+					"day %d is not a checkpoint, so day 4's stands" % GameState.header.day)
+	t.check(GameState.header.day == 8 and GameState.checkpoint_day() == 8, "day 8 replaces it")
 	for d in [1, 4, 8, 12]:
 		t.check(GameState.is_checkpoint_day(d) == (d > 1),
 				"day %d is %s" % [d, "a stored checkpoint" if d > 1 else "checkpoint zero, never stored"])
@@ -218,22 +218,22 @@ func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t) -> void:
 ## parent pushing the pram — rather than a new run.
 func _test_checkpoint_zero_is_day_one_of_the_same_city(t) -> void:
 	GameState.start_run(_SEED)
-	GameState.player_is_male = not GameState.player_is_male
-	var parent := GameState.player_is_male
+	GameState.header.player_is_male = not GameState.header.player_is_male
+	var parent := GameState.header.player_is_male
 	GameState.finish_day(GameEnums.DayResult.WON)
 	GameState.finish_day(GameEnums.DayResult.WON)
 	GameState.begin_day()
 	GameState.complete_resistance_step(0)
-	GameState.nerves = 1
+	GameState.header.nerves = 1
 	var events := []
 	var listen := func(day: int, lost_day: int) -> void: events.append([day, lost_day])
 	EventBus.went_back_to_a_checkpoint.connect(listen)
 	t.check(GameState.finish_day(GameEnums.DayResult.LOST_CRYING), "the run goes on")
 	EventBus.went_back_to_a_checkpoint.disconnect(listen)
-	t.check(GameState.day == 1 and GameState.run_seed == _SEED, "day 1 of the same city")
-	t.check(GameState.nerves == Tuning.STARTING_NERVES and GameState.resistance_progress == 0
-			and GameState.completed_resistance_steps.is_empty(), "with every nerve and nothing done")
-	t.check(GameState.player_is_male == parent, "pushed by the same parent")
+	t.check(GameState.header.day == 1 and GameState.header.run_seed == _SEED, "day 1 of the same city")
+	t.check(GameState.header.nerves == Tuning.STARTING_NERVES and GameState.resistance.progress == 0
+			and GameState.resistance.completed_steps.is_empty(), "with every nerve and nothing done")
+	t.check(GameState.header.player_is_male == parent, "pushed by the same parent")
 	t.check(events == [[1, 3]], "and the counter hears checkpoint 1 from day 3 (%s)" % [events])
 
 ## **Going back is a boot, not a repaint.** Day 11 boards the neighbor's window on her own building
@@ -252,12 +252,12 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	# A joystick, steered from the right: what the title answered has to hold for the sitting, and
 	# the boot going back opens no title to ask again.
 	main._on_title_start(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.RIGHT)
-	GameState.day = 8
+	GameState.header.day = 8
 	main._start_day()
 	for d in range(8, 11):
 		GameState.finish_day(GameEnums.DayResult.WON)
 		main._start_day()
-	t.check(GameState.day == 11 and GameState.checkpoint_day() == 8,
+	t.check(GameState.header.day == 11 and GameState.checkpoint_day() == 8,
 			"day 11 is under way, with day 8 the checkpoint")
 	var boarded: Building = main._city._home_door_building()
 	t.check(boarded != null and boarded.neighbor_window_col >= 0,
@@ -271,9 +271,9 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	EventBus.run_begun.connect(on_begun)
 	var reloads := []
 	main._reload_override = func() -> void: reloads.append(1)
-	GameState.nerves = 1
+	GameState.header.nerves = 1
 	main._on_day_finished(GameEnums.DayResult.LOST_TIMEOUT)
-	t.check(GameState.day == 8 and main._summary.is_showing(), "the lost-day screen is up, at day 8")
+	t.check(GameState.header.day == 8 and main._summary.is_showing(), "the lost-day screen is up, at day 8")
 	main._on_summary_continued()
 
 	var playing := main
@@ -285,7 +285,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 		t.get_tree().process_frame.emit()
 		t.get_tree().process_frame.emit()
 	t.check(reloads.size() == 1, "the continue reloads the scene rather than repainting this one")
-	t.check(GameState.day == 8 and GameState.nerves == Tuning.STARTING_NERVES,
+	t.check(GameState.header.day == 8 and GameState.header.nerves == Tuning.STARTING_NERVES,
 			"she plays day 8 with every nerve")
 	var building: Building = playing._city._home_door_building()
 	t.check(building != null and building.neighbor_window_col < 0,
@@ -307,21 +307,21 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t) -> void:
 	GameState.start_run(_SEED)
 	GameState.choose_mode(true)
-	GameState.day = 8
+	GameState.header.day = 8
 	GameState.begin_day()
 	t.check(GameState.checkpoint.is_empty(), "a hard run keeps no checkpoint on day 8")
-	GameState.nerves = 1
+	GameState.header.nerves = 1
 	t.check(not GameState.a_loss_goes_back_to_the_checkpoint(), "its last nerve does not go back")
 	t.check(not GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT), "the run ends")
-	t.check(GameState.ending == GameEnums.Ending.BAD and GameState.day == 8,
+	t.check(GameState.header.ending == GameEnums.Ending.BAD and GameState.header.day == 8,
 			"with the bad ending, on the day it was lost")
-	GameState.ending = GameEnums.Ending.NONE
+	GameState.header.ending = GameEnums.Ending.NONE
 
 ## A `--day 8` boot keeps day 8's dawn behind the title before the mode is chosen; choosing hard
 ## mode on that title drops it.
 func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t) -> void:
 	GameState.start_run(_SEED)
-	GameState.day = 8
+	GameState.header.day = 8
 	GameState.begin_day()
 	t.check(GameState.checkpoint_day() == 8, "a normal run keeps day 8")
 	GameState.choose_mode(true)
@@ -337,8 +337,8 @@ func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t) -> void:
 func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	GameState.start_run(_SEED)
 	GameState.choose_mode(true)
-	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.nerves = 2
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.header.nerves = 2
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = SUMMARY_SCENE.instantiate()
 	t.add_child(main._summary)
@@ -353,7 +353,7 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	day.start(180.0)
 	EventBus.hard_fail_triggered.emit("abduction")
 	main._on_day_finished(GameEnums.DayResult.LOST_HARD_FAIL)
-	t.check(GameState.nerves == 1 and main._summary.is_showing() and not main._run_over,
+	t.check(GameState.header.nerves == 1 and main._summary.is_showing() and not main._run_over,
 			"a lost section costs a hard run a nerve, and comes up on the day's outcome screen")
 	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
 	t.check(body.text.contains("Nerves left: %s" % NerveDisplay.stars(1))
@@ -363,9 +363,9 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	day.start(180.0)
 	EventBus.hard_fail_triggered.emit("abduction")
 	main._on_day_finished(GameEnums.DayResult.LOST_HARD_FAIL)
-	t.check(GameState.nerves == 0 and main._run_over, "the last nerve does not start it again")
+	t.check(GameState.header.nerves == 0 and main._run_over, "the last nerve does not start it again")
 	main._on_summary_continued()
-	t.check(GameState.ending == GameEnums.Ending.BAD and main._ending_shown,
+	t.check(GameState.header.ending == GameEnums.Ending.BAD and main._ending_shown,
 			"it is the bad ending")
 	var heading: Label = main._summary.get_node("Root/Center/Lines/Heading")
 	t.check(heading.visible and heading.text == "GAME OVER", "on the GAME OVER screen")
@@ -376,8 +376,8 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	day.free()
 	main.free()
 	t.get_tree().paused = false
-	GameState.ending = GameEnums.Ending.NONE
-	GameState.escape_section = DaySpec.Section.NONE
+	GameState.header.ending = GameEnums.Ending.NONE
+	GameState.facts.escape_section = DaySpec.Section.NONE
 
 ## *(dotted-hawk, the player, #718: "No regain in escape either.")* A hard run handed over to the
 ## escape boots the real `main.tscn` on the building, and the service door's own `exit_requested`
@@ -386,9 +386,9 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 	GameState.start_run(_SEED)
 	GameState.choose_mode(true)
-	GameState.day = Tuning.RUN_LENGTH_DAYS
-	GameState.nerves = 3
-	GameState.escape_section = DaySpec.Section.BUILDING
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.header.nerves = 3
+	GameState.facts.escape_section = DaySpec.Section.BUILDING
 	var main: Node2D = MAIN_SCENE.instantiate()
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
@@ -399,14 +399,14 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 			"the service door is wired to the day's own goal")
 	main._on_summary_continued()
 	main._interior.exit_requested.emit()
-	t.check(GameState.nerves == 3, "leaving the building gives the hard run no nerve back")
+	t.check(GameState.header.nerves == 3, "leaving the building gives the hard run no nerve back")
 	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
 	t.check(main._summary.is_showing() and body.text.contains(NerveDisplay.stars(3)),
 			"and the city's brief shows the same count ('%s')" % body.text)
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
-	GameState.escape_section = DaySpec.Section.NONE
+	GameState.facts.escape_section = DaySpec.Section.NONE
 	GameState.hard_mode = false
 
 ## `--nerves N`'s own parsing: a whole number from 1 to five, anything else refused as not given.
@@ -422,7 +422,7 @@ func _test_parse_nerves_accepts_one_to_five_and_refuses_the_rest(t) -> void:
 ## ordinary continue button.)*
 func _test_the_lost_day_screen_says_where_she_goes_back_to(t) -> void:
 	GameState.start_run(_SEED)
-	GameState.day = 8
+	GameState.header.day = 8
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "Dusk came.", Tuning.STARTING_NERVES, 0.0,

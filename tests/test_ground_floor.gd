@@ -865,7 +865,7 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t) -
 	var ordered := 0
 	for i in SWEEP_SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 977)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		for building: Building in city.buildings():
@@ -916,7 +916,7 @@ func _test_a_column_nothing_covers_keeps_its_facade(t) -> void:
 	over_yard.covered_ground_cols = candidates
 	var pair: Array[bool] = [true, true]
 	over_nothing.covered_ground_cols = pair
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	city.map = CityMap.new()
 	var rects: Array[Rect2i] = [Rect2i(0, 0, 4, 6), Rect2i(0, 6, 8, 8), Rect2i(10, 0, 2, 6)]
 	city.map.building_rects = rects
@@ -1065,7 +1065,7 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 	var edge_fronts := 0
 	for i in SWEEP_SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 977)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		var buildings := city.buildings()
@@ -1128,7 +1128,7 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 		for block in map.block_layouts.keys():
 			if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
 				courtyard_lots.append(map.lot_rect(block))
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		var buildings := city.buildings()
@@ -1200,7 +1200,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t) -> void:
 	var on_shallow_extension := 0
 	for i in SWEEP_SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 977)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		for building: Building in city.buildings():
@@ -1267,7 +1267,7 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 	var checked_fully_covered_fronts := 0
 	for i in SWEEP_SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 977)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		for building: Building in city.buildings():

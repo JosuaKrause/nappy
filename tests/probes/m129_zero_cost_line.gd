@@ -93,9 +93,9 @@ extends RefCounted
 ## - **A region door is never a block.** It costs by design (PLAYTEST-71, *"it costs by design"*),
 ##   so `checkpoint_hut` and `checkpoint_gate` are left out of every reading; the region wall's own
 ##   body is not a door and still counts.
-## - **`pigeon_flock` is scenery, not a block.** A row with `EventDef.scenery` set is left out of
+## - **`pigeon_flock` is scenery, not a block.** A row whose role is `EventDef.Role.SCENERY` is left out of
 ##   every reading the same way a door is (PLAYTEST-71, *"flocks are basically free already --
-##   don't count it as block"*), matching `EventScheduler._role_for`, where `scenery` answers
+##   don't count it as block"*), matching `EventScheduler._role_for`, where `Role.SCENERY` answers
 ##   `NONE` before the wall/friction cost test ever runs.
 ##
 ## # What a broken route is reported as
@@ -448,7 +448,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 
 ## A row is skipped rather than read where PLAYTEST-71 says it is never a block: a mast
 ## (`plan.mast_id != ""`) is planted once, off the corridor-aware placement this guarantee is
-## stated over — see `EventScheduler._a_line_has_to_avoid()`'s own doc; `scenery` rows
+## stated over — see `EventScheduler._a_line_has_to_avoid()`'s own doc; `Role.SCENERY` rows
 ## (`pigeon_flock`) are exempt the way `EventScheduler._role_for` exempts them from the
 ## wall/friction cost test; a region door (`checkpoint_hut`, `checkpoint_gate`) costs by design;
 ## a pursuer (`alley_robbery`, `charging_dog`, `door_guard`) follows her rather than sitting on a
@@ -460,7 +460,7 @@ func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 		if not plan.is_placed() or plan.mast_id != "":
 			continue
 		var def := plan.def
-		if def.scenery or def.pursuit != null or def.id.begins_with("checkpoint") \
+		if def.role == EventDef.Role.SCENERY or def.pursuit != null or def.id.begins_with("checkpoint") \
 				or (def.mobile and not def.paces):
 			continue
 		var emits := def.intensity > 0.0

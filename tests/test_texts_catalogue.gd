@@ -32,7 +32,7 @@ const _ALLOWED_FILES := {
 	"res://src/city/recipe_city_builder.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/city/recipe_city_context.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/routes/road_closure.gd": "the closure kinds' log names",
-	"res://src/crowd/crowd_agent.gd": "placement checks reported to a developer",
+	"res://src/crowd/lane_mover.gd": "placement checks reported to a developer",
 	"res://src/crowd/car_strategy.gd": "placement checks reported to a developer",
 	"res://src/crowd/crowd.gd": "placement checks reported to a developer",
 	"res://src/visuals/atlas_library.gd": "atlas and ground-layer errors reported to a developer",

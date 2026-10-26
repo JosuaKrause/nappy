@@ -141,7 +141,7 @@ func _test_event_parts(t) -> void:
 
 func _test_water_ownership(t) -> void:
 	var packed: PackedScene = load("res://scenes/world/city.tscn")
-	var city: City = packed.instantiate()
+	var city: City = RunCity.of_the_run(packed)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	var shore_reach := float(CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)

@@ -317,7 +317,7 @@ func _test_a_built_building_carries_its_own_footprint_as_its_body(t) -> void:
 ## to, or a car would read (and cast a shadow) smaller than the box that actually kills. If this
 ## fails, the strike box is not this commit's to change — report it instead.
 func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t) -> void:
-	var shape: GroundShape = CrowdAgent._car_shadow_shape()
+	var shape: GroundShape = CarStrategy.shadow_shape()
 	t.check(shape.reach() >= Tuning.CAR_STRIKE_HALF_LENGTH,
 			"a car's noise shape reaches at least as far as its strike box's half-length (%.1f >= %.1f)"
 			% [shape.reach(), Tuning.CAR_STRIKE_HALF_LENGTH])
@@ -425,7 +425,7 @@ func _test_approaching_costs_more_than_receding(t) -> void:
 ## D2: nobody builds the general capsule-and-ellipse sum, because a moving emitter's field is priced
 ## from its centre as a point (`GroundShape.field_distance()`). That is only true to the row's own
 ## body when the body lies inside its own field's core — the patrol car's 21px capsule inside its
-## 44px core, `police_patrol` being the one emitting segment that moves (`EventDef.drives`): the
+## 44px core, `police_patrol` being the one emitting segment that moves (`EventDef.vehicle`): the
 ## core is full strength wherever the body is, and past it the point is wrong by at most the spine's
 ## half-length. A moving segment reaching past its core would quietly drop its own body from its
 ## field — this is the regression guard.

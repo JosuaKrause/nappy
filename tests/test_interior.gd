@@ -1847,7 +1847,7 @@ func _basement_reaches_the_exit_without(without: Vector2i) -> bool:
 ##
 ## Three contracts, and none of them is a number this test chose:
 ##
-## - **A blow gives its notice before it closes anything.** `solid_once_it_starts` means the body
+## - **A blow gives its notice before it closes anything.** `SolidWhen.ONCE_IT_STARTS` means the body
 ##   goes down at the end of the telegraph, and the telegraph has to be longer than walking out
 ##   from under the body takes.
 ## - **A vent's own gaps are its own period.** Measured between successive blows rather than read

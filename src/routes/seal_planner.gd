@@ -38,7 +38,7 @@ extends RefCounted
 ## obstructs nothing and a pavement with only that on it is not sealed, soft or otherwise.
 ##
 ## **A sealed street's def is never the catalogue's own row.** `sealed_variant` duplicates it and
-## strips `scar_id`: the catalogue's `barricade` leaves a permanent scar and moves a block's arc
+## strips `aftermath`: the catalogue's `barricade` leaves a permanent scar and moves a block's arc
 ## (`EventManager._mark_the_block`) because *that* barricade is the aftermath of something that
 ## happened. A seal is a fact about *today's* tree — tomorrow's may run straight down this same
 ## street — so a seal that scarred the city would seal it for the rest of the run, which is a
@@ -608,8 +608,7 @@ static func sealed_variant(def: EventDef, suppress_recenter: bool) -> EventDef:
 	# fix, wearing a passing test suite.
 	variant.shape = def.shape
 	variant.solid_parts = def.solid_parts
-	variant.scar_id = ""
-	variant.spawns_on_finish = ""
+	variant.aftermath = Aftermath.new()
 	if suppress_recenter and variant.pavement_side == EventDef.Pavement.ANY:
 		variant.pavement_side = EventDef.Pavement.AT_THE_KERB
 	return variant

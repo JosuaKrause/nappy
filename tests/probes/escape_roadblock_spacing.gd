@@ -19,8 +19,8 @@ func run(t) -> void:
 	var nearest_of_all := INF
 	for seed_value in range(1, SEEDS + 1):
 		var map := CityGenerator.generate(seed_value)
-		GameState.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.city_state)
+		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.attempt_spend.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var plan := FinalePlanner.plan(map, rng, _city_spec())

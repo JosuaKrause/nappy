@@ -2,37 +2,30 @@
 
 What an event does is a list of behaviours (`src/events/behaviours/`) that
 `EventBehaviours.compose()` builds per catalogue row, each saving and restoring its own state for
-streaming. `EventInstance` (`src/events/event_instance.gd`) holds, besides that list, the sprite
-tables, car driving and its give-way, the excitement field and the drawing, including the band and
-far guard as nested nodes; a car runs its frame in `_drive()` rather than as a behaviour. The four
-ways a charge starts (a warning's clock running out, a lunge at the stand-off, the masked man's run
+streaming, with a row's settings grouped into the sub-resources its behaviours read (`PursuitSpec`,
+`OnHerWay`, `Aftermath`, `VehicleSpec`, `AbductionSpec`, `EventDef.solid_when`, `EventDef.Role`). A
+car's driving is a behaviour (`EventCarDriving`), whose frame is proposed, checked and then
+committed, and a roadblock's band and posts are one (`EventBarrierPost`, with `RoadblockFarGuard`).
+`EventInstance` (`src/events/event_instance.gd`) holds, besides that list, the sprite tables, the
+excitement field and the drawing, including the band and far guard as nested nodes. The four ways a
+charge starts (a warning's clock running out, a lunge at the stand-off, the masked man's run
 distance, a start at once) are branches inside `EventPursuit` and `EventNoticeRun` rather than parts
-a row is composed of. `EventInstance.notice_her_at()`, which sets a waiting pursuer on her, can
-bring a row that left before it ever noticed her back to `WARNING`, since such a row still answers
-`is_waiting()`; nothing calls it on a leaving row, and the guard against it belongs to the behaviour
-that makes that reachable, the task guard moved with his saved state.
+a row is composed of.
 
-**Single-row flags:** `pastes_a_front`, `solid_once_it_starts`, `field_from_its_centre`,
-`stop_excitement`, `spawns_on_sight`, `lifts_for_traffic`, `body_stays_behind`,
-`warns_over_the_street`, `scenery`; `validate()` polices their combinations; `at_heat()` flips
-behaviour flags (`investigates`, `hard_fail`) on a copy. **Behaviour keyed on the drawing or the
-id:** `def.look ==` branches decide behaviour for ROADBLOCK (its band, its posts, its far guard),
-UNMARKED_VAN (the take), CHECKPOINT_POST, MOUSE (its dash), LOOSE_DOG and CYCLIST's pelican, and
-ids decide it for `"charging_dog"` with `RUN_TAUGHT_DAY` in `EventManager._create()`,
-`"loudspeaker"`/`MAST_ROW`, `by_id("door_guard")`, and in `ResistanceDirector` `"roadblock"`,
-`"delivery_van"`, `"robber_giving_chase"`, `"burnt_shell"`, `"homeless_yeller"`, and
-`by_id("alley_robbery")` eight times, so the task guard *is* the robber row and moving him throws
-away his state. **Two clocks:** instances, `ResistanceDirector` and `DayController` tick in
-`_process`, while `EventManager` checks catches, hard fails and detentions in `_physics_process`,
+**What is still keyed on a row's flags, picture or id:** `at_heat()` flips behaviour flags
+(`investigates`, `hard_fail`) on a copy; `def.look ==` decides what is drawn for CHECKPOINT_POST,
+LOOSE_DOG and the robber's heading, and decides behaviour for CYCLIST's pelican (PR 4);
+`CheckpointController` sends its guard by `by_id("door_guard")`. **Two clocks:** instances,
+`ResistanceDirector` and `DayController` tick in `_process`, while `EventManager` checks catches,
+hard fails and detentions in `_physics_process`,
 so a door's hold ending on a drawn frame would show her at the place she went in until the next
-physics tick, which is why its release has to show her on the physics frame that moves her. **Re-entrant
-`_process`:** `_drive` and `_timed` re-run the whole frame and roll it back, which does not roll back
-any emit or spawn. **Upward coupling:** the manager fetches the player (`EventManager._find_player()`
+physics tick, which is why its release has to show her on the physics frame that moves her.
+**Upward coupling:** the manager fetches the player (`EventManager._find_player()`
 from the `player` group), `CheckpointController` drives her and the camera directly
 (`hide_for_inspection`, `focus_camera_on`, `teleport_to`, `show_after_inspection`,
 `release_camera_focus`), the instance fetches the `ResistanceDirector` from a draw path, uses the
-red arrow's `ArrowField` as its pathfinder, and copies crowd traffic's give-way
-(`_room_to_its_line`). **Events held by the scene:** `City` and `InteriorScene` each sum their
+red arrow's `ArrowField` as its pathfinder, and a car's driving copies crowd traffic's give-way
+(`EventCarDriving.room_to_its_line()`), the copy shared-components' `LaneMover` takes. **Events held by the scene:** `City` and `InteriorScene` each sum their
 events for the baby rather than the manager answering it, and `BuildingPlan.lay_the_grates()`, a
 placement class, builds the grates' sprite nodes through `EventInstance.steam_grate()`. **The
 escape planned beside the day:** `FinalePlanner` (routes, layer 2) runs the seal planner and the
@@ -51,11 +44,7 @@ class is for here, prefers composing behaviour, and may give a component of an e
 band, its far guard, a van's scene) a class of its own rather than one class per event type; the
 design below is a direction, not a prescription, and the PR says which shape was chosen and why.
 
-**A direction for the build:** driving a behaviour of its own; grouped sub-resources replace the
-remaining single-row flags; a look's behaviour (the mouse's dash, the roadblock's band and posts,
-its far guard, the van's take) keyed by data or a class of its own, so looks only draw, in a
-separate view; the day-3 lesson dog marked by the director that sends it and the task guard moved with his saved state, both keeping their row ids so GoatCounter's names and the
-loss causes do not change (*proposed by the orchestrating session, not asked for, open to the
-player's overturn*), and the mast a role; simulation in physics only,
-`_process` draws; movement proposed, validated, then committed; intents emitted for the player and
-camera instead of calling them. `EventManager` splits into streaming, spawning and warnings.
+**A direction for the build:** looks only draw, in a separate view, and the pelican's behaviour
+keyed by data; simulation in physics only, `_process` draws; movement proposed, validated, then
+committed for every mover, as a car's frame is; intents emitted for the player and camera instead of
+calling them. `EventManager` splits into streaming, spawning and warnings.

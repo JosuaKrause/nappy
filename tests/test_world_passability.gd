@@ -216,7 +216,7 @@ func _test_a_walk_goes_round_what_was_put_down(t) -> void:
 ## its own driving would never take.
 func _test_a_car_sees_her_off_street_ground(t) -> void:
 	var patrol := EventCatalogue.by_id("police_patrol")
-	t.check(patrol.drives, "the patrol is a car that drives")
+	t.check(patrol.vehicle != null, "the patrol is a car that drives")
 	for ground in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE, GameEnums.TileType.PARK,
 			GameEnums.TileType.SIDEWALK]:
 		var map := _yard(Vector2i(8, 8))
@@ -261,11 +261,11 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t) -> void:
 
 ## Seed 4242's day 9, its closures, seals and bodies put down.
 func _a_day(t) -> City:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, WALK_DAY)
 	city.start_day(state, WALK_DAY, _rng("closures"))
 	city.events.start_day(WALK_DAY, _rng("events"), [], city.map.doorstep_world_position())
@@ -285,7 +285,7 @@ func _test_a_body_and_its_record_are_one_footprint(t, city: City) -> void:
 	var differ := 0
 	for plan in city.events.plans():
 		if not plan.is_placed() or plan.def.mobile or plan.def.detain_seconds > 0.0 \
-				or plan.def.lifts_for_traffic or plan.def.obstructs_radius <= 0.0:
+				or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED or plan.def.obstructs_radius <= 0.0:
 			continue
 		var recorded := EventManager.obstructed_footprint(map, plan.def, plan.position,
 				plan.facing)
@@ -429,7 +429,7 @@ func _test_a_departure_leaves_round_a_building(t, city: City) -> void:
 ## guard it sends off, enters ground its mover may not.
 func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 	var map := city.map
-	var saved_scars := GameState.scars.duplicate()
+	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var walked := 0
 	var steps := 0
 	var bad: Array[String] = []
@@ -471,18 +471,18 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 				if not map.step_is_clear(before, now, asked):
 					bad.append("%s %s -> %s" % [def.id, before, now])
 			before = now
-			if instance._far_guard_at != Vector2.INF:
+			if instance.barrier_post and instance.barrier_post.far.at != Vector2.INF:
 				if guard_before != Vector2.INF \
 						and map.passable(map.world_to_tile(guard_before), asked) \
-						and not map.step_is_clear(guard_before, instance._far_guard_at, asked):
+						and not map.step_is_clear(guard_before, instance.barrier_post.far.at, asked):
 					bad.append("%s's far guard %s -> %s" % [def.id, guard_before,
-							instance._far_guard_at])
-				guard_before = instance._far_guard_at
+							instance.barrier_post.far.at])
+				guard_before = instance.barrier_post.far.at
 		if left_from != Vector2.INF and not instance.is_finished \
 				and instance.global_position.distance_to(left_from) < TILE:
 			stalled.append(def.id)
 		city.events.retire(instance)
-	GameState.scars.assign(saved_scars)
+	GameState.attempt_spend.scars.assign(saved_scars)
 	# What the remeasuring step reads: a departure that a solid holds within a tile of where it
 	# began, which the contract that nothing vanishes in her view keeps standing there.
 	print("WALKER day %d seed %d: %d rows, %d steps asked, departures held within a tile: %s"

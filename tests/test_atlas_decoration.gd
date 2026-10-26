@@ -100,7 +100,7 @@ func _test_the_city_is_the_groups_only_acquire(t) -> void:
 	t.check(not AtlasLibrary.is_acquired(CityDecals.DECORATION_ATLAS),
 			"nothing holds the decoration group before any city exists")
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	t.check(AtlasLibrary.is_acquired(CityDecals.DECORATION_ATLAS),
@@ -120,7 +120,7 @@ func _test_the_city_is_the_groups_only_acquire(t) -> void:
 func _test_the_group_is_released_when_the_city_is_freed(t) -> void:
 	AtlasLibrary.reset_for_tests()
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	t.check(AtlasLibrary.is_acquired(CityDecals.DECORATION_ATLAS),

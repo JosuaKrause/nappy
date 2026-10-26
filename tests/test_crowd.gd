@@ -24,7 +24,7 @@ const STEP := 1.0 / 60.0
 var _city: City
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
@@ -592,7 +592,7 @@ func _test_the_strike_box_never_crosses_the_kerb(t) -> void:
 
 ## A car's picture is a standing elevation rather than a top-down one, so its own canvas has to be
 ## anchored at the point on it that is the car's actual ground contact — the drawn content's bottom
-## edge on the strike box's own southernmost point, which is `CrowdAgent._car_body_anchor()`'s one
+## edge on the strike box's own southernmost point, which is `CarLook.body_anchor()`'s one
 ## rule for all five views. This pins the two cardinal cases against `Crowd._strike()`'s box, the
 ## shadow and the field, all of which are centred on the node and rotated onto the heading;
 ## `tests/test_car_views.gd` pins the same property for every sector, diagonals included, and pins
@@ -606,9 +606,9 @@ func _test_the_car_picture_agrees_with_its_strike_box(t) -> void:
 	# `CAR_STRIKE_HALF_LENGTH` south of the node — exactly where the strike box's own south edge
 	# already sits for a car pointed along that axis.
 	var front_extent := Vector2(AtlasLibrary.native_size(
-			StringName(CrowdAgent.CAR_BODY_BY_VIEW["front"])))
-	var front_margin: float = CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN["front"]
-	var front_anchor: Vector2 = agent._car_body_anchor("front", Vector2.DOWN)
+			StringName(CarLook.BODY_BY_VIEW["front"])))
+	var front_margin: float = CarLook.CANVAS_BOTTOM_MARGIN["front"]
+	var front_anchor: Vector2 = CarLook.body_anchor("front", Vector2.DOWN)
 	var front_drawn := Rect2(front_anchor - Vector2(front_extent.x * 0.5, front_extent.y),
 			front_extent)
 	t.check(is_equal_approx(front_drawn.end.y - front_margin, Tuning.CAR_STRIKE_HALF_LENGTH),
@@ -624,9 +624,9 @@ func _test_the_car_picture_agrees_with_its_strike_box(t) -> void:
 	# on the node itself, or the picture and the box disagree by the whole half-width — and a car
 	# swinging from that view onto an arc swaps that disagreement for a different one mid-turn.
 	var side_extent := Vector2(AtlasLibrary.native_size(
-			StringName(CrowdAgent.CAR_BODY_BY_VIEW["side"])))
-	var side_margin: float = CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN["side"]
-	var side_anchor: Vector2 = agent._car_body_anchor("side", Vector2.RIGHT)
+			StringName(CarLook.BODY_BY_VIEW["side"])))
+	var side_margin: float = CarLook.CANVAS_BOTTOM_MARGIN["side"]
+	var side_anchor: Vector2 = CarLook.body_anchor("side", Vector2.RIGHT)
 	var side_drawn := Rect2(side_anchor - Vector2(side_extent.x * 0.5, side_extent.y), side_extent)
 	t.check(is_equal_approx(side_drawn.end.y - side_margin, Tuning.CAR_STRIKE_HALF_WIDTH),
 			("the side picture's own drawn bottom edge lands on its box's south edge too (%.1f "
@@ -1693,10 +1693,10 @@ func _test_the_arterial_is_the_busiest_street(t) -> void:
 ## probe stood at the front door and reported a clean bill of health on a build that was visibly
 ## broken.
 ##
-## **Zero is the only acceptable end state, and it is the one asserted here.** `CrowdAgent.
+## **Zero is the only acceptable end state, and it is the one asserted here.** `LaneMover.
 ## nudge_back()` and `CarStrategy.join_the_back_of_the_queue()` are the two places a traffic queue's own
 ## spacing arithmetic moves a car with no notion of the map underneath it, so both refuse a move
-## that would land on ground `cannot_go_on()` refuses — a car grazing a big building's own footprint
+## that would land on ground `LaneStrategy.cannot_go_on()` refuses — a car grazing a big building's own footprint
 ## by one tile was exactly that, an unguarded backward shove across a junction into whatever
 ## bordered it.
 func _test_nothing_walks_into_a_hard_blocker(t) -> void:

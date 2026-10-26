@@ -29,11 +29,19 @@ src/
 	tuning.gd             all balance constants           (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
 	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
-	game_state.gd         run/day/nerves/resistance       (autoload: GameState)
+	game_state.gd         the run, as a registry of its parts (autoload: GameState)
 	game_save.gd          persists a run to disk and reads one back; not an autoload, a static
 	                      namespace
 	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens
 	                                                       (autoload: VisitCounter)
+  run/                  the run's state, a domain model: one registered list of sub-states
+	run_sub_state.gd      the interface of a part: reset, photograph, give_back, to_data, restore
+	run_state_registry.gd the one list the dawn, a lost day, the snapshot and the save walk
+	run_header.gd         seed, presentation, day, nerves, ending, play time
+	resistance_run_state.gd  steps, progress, sabotage, the package; given back by a lost day
+	attempt_spend_state.gd   one-shots, scars, block arcs; given back by a lost day
+	settled_state.gd      the calm block she settled in each day
+	run_facts.gd          escape section, used alleys, fenced park: riders beside the snapshot
   player/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
@@ -72,8 +80,15 @@ src/
   crowd/
 	crowd.gd              owns the day's agents and the `crowd` atlas page, held for its own life
 	                      rather than released between days; sums their excitement
-	crowd_agent.gd        one walker or one car, drawn from the baked `crowd` page: the lane mover
-	                      both kinds share, asking its kind's strategy what differs
+	lane_mover.gd         the lane movement a walker and a car share — lane state, look-ahead,
+	                      held step, placement and recycling — asking its kind's strategy what differs
+	crowd_agent.gd        one walker or one car in the crowd, on the lane mover: its excitement field,
+	                      halo, caret and the redraw gate; drawn by its look from the baked `crowd` page
+	agent_look.gd         how a crowd member is drawn and what its redraw key reads
+	walker_look.gd        a walker's picture: five views in two gait frames, its stride
+	car_look.gd           a car's picture: five views in three layers, its bob over its wheels
+	crowd_view.gd         what the crowd is handed of the screen: the camera, the drawn box
+	crowd_timing.gd       the crowd's handle on the frame record
 	lane_strategy.gd      the questions the mover asks its kind, with the neutral answers
 	walker_strategy.gd    a walker's rules: footways, sidesteps, corners, checkpoint huts
 	car_strategy.gd       a car's rules: give-way, planned turns, the spine's tunnel and bridge
@@ -87,6 +102,10 @@ src/
 	notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
 	pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
 	day_switch.gd         how a row is sited and noticed from the day after its first appearance
+	on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
+	aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
+	vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
+	abduction_spec.gd     the unmarked van's take of a bystander
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
@@ -94,8 +113,9 @@ src/
 	                       every picture it draws is a region of the baked `events` page
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
-	                       line run, a route, a flock, a hold, a stop, a departure, ...; each
-	                       saves and restores its own state, which a streamed-out plan carries
+	                       line run, a route, a flock, a hold, a stop, a departure, a car's
+	                       driving, a barrier's posts, a van's take, ...; each saves and restores
+	                       its own state, which a streamed-out plan carries
 	charge_record.gd      a charger's warning, charge and the one way it ended, as counted
 	warning.gd            the one warning clock: started, held, called off or run out, read against
 	                      its owner's clock — an event's notice, a door crossing, a badge up alone
@@ -536,8 +556,22 @@ requires the two plans to be identical, because that hoist is exactly the edit t
 quietly consume one extra value and break determinism for every other guarantee here.
 
 ### `GameState`
-The run. Owns `run_seed`, `day`, `nerves`, `resistance_progress`, `consumed_one_shots`.
-Handles day transitions and ending selection. Serialisable for save/continue.
+The run. Handles day transitions and ending selection, and holds the run's state as a registry
+(`run_parts`, a `RunStateRegistry`) of parts, each a `RunSubState` with one interface: `reset`,
+`photograph`, `give_back`, `to_data`, `restore`. **A field is declared once, in the part that owns
+it**, together with its dawn copy and its save shape; starting a run, the dawn photograph, a lost
+day's give-back, the snapshot and the save all walk the list, so a part on the list is walked by every one
+of them and no part can be missed in one; within a part, each field is written in each of its methods,
+and `tests/test_run_state.gd` checks that every field reaches its data and that a lost day gives back
+what was photographed. The parts are `RunHeader` (`run_seed`, `day`, `nerves`, the
+ending, play time), `ResistanceRunState`, `AttemptSpendState` (consumed one-shots, scars, block
+arcs), `SettledState`, `RunFacts`, and `PosterState` and `PelicanState`. A part says where the
+save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a save must all carry,
+beside it with a default for absence, or under a key of its own. Readers use the part that owns a field
+(`GameState.header.day`, `GameState.attempt_spend.scars`); code written against a part takes it as
+an argument. `tests/test_run_state.gd` replays a run against a
+save written before the parts existed (the fixture `tests/fixtures/run_state_saved_by_main.json`, dumped
+on commit e1cc7c7f) and checks every part is on the list.
 
 ### `VisitCounter`
 Sends anonymous GoatCounter events for how far a run gets, and what a day actually ended on and

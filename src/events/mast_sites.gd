@@ -199,7 +199,7 @@ static func _too_close_to_home(at: Vector2, map: CityMap) -> bool:
 ## `loudspeaker` row's own `outer_radius` rather than a second copy of the number, so a balance
 ## pass that moves the field moves this refusal with it.
 static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
-	var reach := EventCatalogue.by_id("loudspeaker").outer_radius
+	var reach := EventCatalogue.mast().outer_radius
 	var seen := {}
 	for block in map.calm_blocks:
 		var anchor := map.anchor_of(block)
@@ -228,7 +228,7 @@ static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 ## *(2026-09-23, CI on PR 292, tests/test_checkpoints.gd: "nothing the day placed reaches inside a
 ## door's 176px gap" — the gap this had never checked at all.)*
 static func _reaches_a_possible_door(at: Vector2, door_points: PackedVector2Array) -> bool:
-	var limit := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.by_id("loudspeaker").field_reach()
+	var limit := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.mast().field_reach()
 	for position in door_points:
 		if at.distance_to(position) < limit:
 			return true

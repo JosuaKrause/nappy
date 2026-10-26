@@ -83,7 +83,7 @@ func _rng(stream: String) -> RandomNumberGenerator:
 ## needs `move_and_slide()` to actually move it, which only the real scene does (see the verify
 ## skill).
 func _build_day(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_city.events.stream_radius = INF
@@ -94,14 +94,14 @@ func _build_day(t) -> void:
 	var consumed: Array[String] = []
 	_city.events.start_day(DAY, _rng("events"), consumed)
 
-	_saved_completed = GameState.completed_resistance_steps.duplicate()
-	_saved_failed = GameState.failed_resistance_steps.duplicate()
-	_saved_progress = GameState.resistance_progress
-	_saved_package = GameState.resistance_carrying_package
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
-	GameState.resistance_carrying_package = false
+	_saved_completed = GameState.resistance.completed_steps.duplicate()
+	_saved_failed = GameState.resistance.failed_steps.duplicate()
+	_saved_progress = GameState.resistance.progress
+	_saved_package = GameState.resistance.carrying_package
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
+	GameState.resistance.carrying_package = false
 
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
@@ -115,10 +115,10 @@ func _build_day(t) -> void:
 	_stroller.global_position = _city.map.doorstep_world_position()
 
 func _teardown(t) -> void:
-	GameState.completed_resistance_steps = _saved_completed
-	GameState.failed_resistance_steps = _saved_failed
-	GameState.resistance_progress = _saved_progress
-	GameState.resistance_carrying_package = _saved_package
+	GameState.resistance.completed_steps = _saved_completed
+	GameState.resistance.failed_steps = _saved_failed
+	GameState.resistance.progress = _saved_progress
+	GameState.resistance.carrying_package = _saved_package
 	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
 	TouchControls._set_axis(&"move_up", &"move_down", 0.0)
 	_stroller.free()
@@ -745,12 +745,12 @@ func _test_resolve_target_unknown_word_warns_and_answers_inf(t) -> void:
 ## One day's own city, resistance director and parked `Stroller`, isolated from the suite's shared
 ## day-6 fixture and from `GameState`'s own resistance fields — freed and restored by
 ## `_free_target_shape_fixture()`. Built the same way `_build_day()` builds day 6's, with `day` in
-## place of the module-level `DAY` constant. `progress_at_dawn` is what `GameState.
-## resistance_progress` reads as `ResistanceDirector.start_day()` runs — 0 for every ordinary day,
+## place of the module-level `DAY` constant. `progress_at_dawn` is what `GameState.resistance.
+## progress` reads as `ResistanceDirector.start_day()` runs — 0 for every ordinary day,
 ## `Tuning.RESISTANCE_GOAL` for the last night's own finale test, which needs `sabotage_available()`
 ## to hold before the step is on offer at all.
 func _build_target_shape_fixture(t, day: int, progress_at_dawn: int = 0) -> Dictionary:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	city.events.stream_radius = INF
@@ -762,15 +762,15 @@ func _build_target_shape_fixture(t, day: int, progress_at_dawn: int = 0) -> Dict
 	city.events.start_day(day, _rng_for_day(day, "events"), consumed)
 
 	var saved := {
-		"completed": GameState.completed_resistance_steps.duplicate(),
-		"failed": GameState.failed_resistance_steps.duplicate(),
-		"progress": GameState.resistance_progress,
-		"package": GameState.resistance_carrying_package,
+		"completed": GameState.resistance.completed_steps.duplicate(),
+		"failed": GameState.resistance.failed_steps.duplicate(),
+		"progress": GameState.resistance.progress,
+		"package": GameState.resistance.carrying_package,
 	}
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = progress_at_dawn
-	GameState.resistance_carrying_package = false
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = progress_at_dawn
+	GameState.resistance.carrying_package = false
 
 	var stroller: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(stroller)
@@ -794,10 +794,10 @@ func _rng_for_day(day: int, stream: String) -> RandomNumberGenerator:
 
 func _free_target_shape_fixture(fixture: Dictionary) -> void:
 	var saved: Dictionary = fixture["saved"]
-	GameState.completed_resistance_steps = saved["completed"]
-	GameState.failed_resistance_steps = saved["failed"]
-	GameState.resistance_progress = saved["progress"]
-	GameState.resistance_carrying_package = saved["package"]
+	GameState.resistance.completed_steps = saved["completed"]
+	GameState.resistance.failed_steps = saved["failed"]
+	GameState.resistance.progress = saved["progress"]
+	GameState.resistance.carrying_package = saved["package"]
 	(fixture["stroller"] as Stroller).free()
 	(fixture["resistance"] as ResistanceDirector).free()
 	(fixture["city"] as City).free()
@@ -1205,11 +1205,11 @@ func _test_a_mark_leg_ends_when_the_director_records_the_mark(t) -> void:
 	rig._begin_leg(_resistance.contact_position())
 	t.check(not rig._waypoints.is_empty(), "the mark leg has waypoints left to walk")
 	var step := _resistance.current_step()
-	GameState.completed_resistance_steps.append(step.index)
+	GameState.resistance.completed_steps.append(step.index)
 	rig._follow(0.0)
 	t.check(rig._target_index == 1 and rig._current_word == "home",
 			"the leg ends once its step is recorded completed, and the next target begins")
-	GameState.completed_resistance_steps.erase(step.index)
+	GameState.resistance.completed_steps.erase(step.index)
 	rig.free()
 
 ## A door's hold (`Stroller.is_detained()`) is not a stall — she stands still because a checkpoint
@@ -1322,7 +1322,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	const STEP := 1.0 / 30.0
 	const MAX_SECONDS := 60.0
 	var door_day := Tuning.REGION_WALL_FIRST_DAY
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	city.events.stream_radius = INF
@@ -1338,7 +1338,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	var gate: EventInstance = null
 	var hut: EventInstance = null
 	for instance in city.events.instances():
-		if instance.def.lifts_for_traffic and not gate:
+		if instance.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and not gate:
 			gate = instance
 	if gate:
 		var axis_of_gate := gate.facing_now()

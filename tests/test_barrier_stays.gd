@@ -57,7 +57,7 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> vo
 	var made := _chasing(t, post)
 	var guard: EventInstance = made[0]
 	var her: Vector2 = made[1]
-	t.check(guard.has_left_its_body_behind(), "he has set off")
+	t.check(guard.barrier_post.has_left_its_body(), "he has set off")
 	var worst := 0.0
 	var lifted := false
 	var band: Node2D = guard._band
@@ -238,7 +238,7 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 ## A heated roadblock streamed through `EventManager` itself, the only place the plan carries what
 ## the instance forgets: shaken off and streamed out, it comes back as only the barrier.
 func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	city.events.stream_radius = INF
@@ -284,8 +284,8 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	guard._process(STEP)
 	her = _charge(guard)
 	t.check(not guard.is_telegraphing(), "she stays in his radius and he charges")
-	t.check(guard.has_left_its_body_behind() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.has_left_its_body_behind(), guard.is_waiting(), guard.global_position, guard.age])
-	var side := guard.chaser_side()
+	t.check(guard.barrier_post.has_left_its_body() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.barrier_post.has_left_its_body(), guard.is_waiting(), guard.global_position, guard.age])
+	var side := guard.barrier_post.chaser_side()
 	# Stream out in the middle of his walking away.
 	var frames := 0
 	while not guard.is_leaving and frames < int(60.0 / STEP):
@@ -295,8 +295,9 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		frames += 1
 	t.check(guard.is_leaving, "she shook him off and he is walking away")
 	city.events._stream_out(plan)
-	t.check(plan.guard_spent and plan.chaser_side == side,
-			"the plan carries the spent guard and the side he left")
+	var carried: Dictionary = plan.behaviours.get(&"EventBarrierPost", {})
+	t.check(bool(carried.get("spent", false)) and int(carried.get("side", 0)) == side,
+			"the plan carries the spent guard and the side he left (%s)" % [carried])
 	city.events._stream_in(plan)
 	var back: EventInstance = plan.live
 	t.check(back != null and back != guard, "a fresh instance comes back")
@@ -305,7 +306,9 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 				"streamed out mid-walk, it comes back as the barrier and not as a chase")
 		t.check(back.is_solid() and back.body_position().is_equal_approx(post),
 				"solid where it was built")
-		t.check(back.chaser_side() == side, "with his post still empty")
+		t.check(back.barrier_post.chaser_side() == side, "with his post still empty")
+		t.check(back.departure.save().is_empty() and not back.departure.walks_a_way(),
+				"and with nothing of the walk he was on when it streamed out")
 		# She walks up to it: nobody notices.
 		back.player_at = post + Vector2(0.0, 20.0)
 		for i in 120:
@@ -315,7 +318,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		# Streamed out once more, spent for good this time.
 		city.events._stream_out(plan)
 		city.events._stream_in(plan)
-		t.check(plan.live != null and plan.live.is_waiting() and plan.live.is_a_spent_guard(),
+		t.check(plan.live != null and plan.live.is_waiting() and plan.live.barrier_post.is_spent(),
 				"and a barrier streamed out and in again stays spent")
 		city.events.end_the_charges_still_running()
 		t.check(counted == ["warned:roadblock", "chased:roadblock", "shaken:roadblock"],

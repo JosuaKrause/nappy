@@ -7,6 +7,3 @@ it does not hold.
   people already sent off hold a stretch (`ParkCordon._in_the_way()` through `_walkers()`, which lists
   `_leaving` and the escorts; the review of PR #840);
   the straight-walking cordon did the same.
-- **An event car's re-run frame is not fully rolled back:** `_drive` (near 1928) and `_timed` (near
-  2200) re-run `_process` and restore position, heading, travelled and gait, but not an emit or a
-  spawn made inside it.

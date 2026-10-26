@@ -127,22 +127,22 @@ func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t
 ## day.
 func _save_game_state() -> Dictionary:
 	return {
-		"seed": GameState.run_seed, "day": GameState.day, "nerves": GameState.nerves,
-		"progress": GameState.resistance_progress, "ending": GameState.ending,
-		"one_shots": GameState.consumed_one_shots.duplicate(),
-		"completed": GameState.completed_resistance_steps.duplicate(),
-		"failed": GameState.failed_resistance_steps.duplicate(),
-		"scars": GameState.scars.duplicate(true), "sabotage": GameState.sabotage_done,
+		"seed": GameState.header.run_seed, "day": GameState.header.day, "nerves": GameState.header.nerves,
+		"progress": GameState.resistance.progress, "ending": GameState.header.ending,
+		"one_shots": GameState.attempt_spend.consumed_one_shots.duplicate(),
+		"completed": GameState.resistance.completed_steps.duplicate(),
+		"failed": GameState.resistance.failed_steps.duplicate(),
+		"scars": GameState.attempt_spend.scars.duplicate(true), "sabotage": GameState.resistance.sabotage_done,
 	}
 
 func _restore_game_state(saved: Dictionary) -> void:
-	GameState.run_seed = saved["seed"]
-	GameState.day = saved["day"]
-	GameState.nerves = saved["nerves"]
-	GameState.resistance_progress = saved["progress"]
-	GameState.ending = saved["ending"]
-	GameState.consumed_one_shots.assign(saved["one_shots"])
-	GameState.completed_resistance_steps.assign(saved["completed"])
-	GameState.failed_resistance_steps.assign(saved["failed"])
-	GameState.scars.assign(saved["scars"])
-	GameState.sabotage_done = saved["sabotage"]
+	GameState.header.run_seed = saved["seed"]
+	GameState.header.day = saved["day"]
+	GameState.header.nerves = saved["nerves"]
+	GameState.resistance.progress = saved["progress"]
+	GameState.header.ending = saved["ending"]
+	GameState.attempt_spend.consumed_one_shots.assign(saved["one_shots"])
+	GameState.resistance.completed_steps.assign(saved["completed"])
+	GameState.resistance.failed_steps.assign(saved["failed"])
+	GameState.attempt_spend.scars.assign(saved["scars"])
+	GameState.resistance.sabotage_done = saved["sabotage"]

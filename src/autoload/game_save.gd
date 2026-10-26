@@ -7,9 +7,10 @@ extends RefCounted
 ## symbol that announces a write — a save module is data, the symbol is presentation, and the two
 ## only meet through `EventBus`.
 ##
-## **The save is the run, never the moment inside a day.** `GameState.save_snapshot()` says what a
-## run holds; this file only adds the facts a run does not know about itself — whether a day was
-## under way when the file was written, which section of the escape it is in, and which build
+## **The save is the run, never the moment inside a day.** The run's registered parts
+## (`GameState.run_parts`) say what a run holds and where in the file each part sits; this file
+## only adds the facts a run does not know about itself — whether a day was under way when the
+## file was written, which section of the escape it is in, and which build
 ## wrote it — and turns the result into JSON. *Asked for "that exact state", the crowd included, and overturned by the player to a
 ## restart at dawn that costs a nerve* — see docs/MECHANICS.md, "Saving and resuming", for what
 ## that costs and why.
@@ -18,7 +19,7 @@ extends RefCounted
 ## top-level key like `"day_under_way"`, so a file written before the escape was a run's ending is
 ## still a complete snapshot (`GameState.snapshot_is_complete()` asks only about `"state"`) and
 ## still resumes, reading as `DaySpec.Section.NONE` by absence. Putting it in
-## `_SAVE_FIELDS` instead would have made every save on disk unreadable for the sake of one int.
+## the snapshot instead would have made every save on disk unreadable for the sake of one int.
 ## `"completed_resistance_alley_tiles"` rides the same way, for the same reason, reading as "none
 ## recorded" by absence. `"fenced_park"`/`"fenced_park_act"` ride the same way too: a save from
 ## before the one calm area a run could fence existed loads with none chosen, which is exactly what
@@ -349,7 +350,7 @@ static func _new_operation() -> int:
 
 ## Whether the run has an ending, after which nothing is written — see `_write_now()`.
 static func _run_has_ended() -> bool:
-	return GameState.ending != GameEnums.Ending.NONE
+	return GameState.header.ending != GameEnums.Ending.NONE
 
 ## Starts a web flush for `operation` and settles it through `settled` — see `_FLUSH_JS` for the
 ## page's half and `FLUSH_TIMEOUT_SECONDS` for the backstop. The operation id is the flush's token,
@@ -469,7 +470,7 @@ static func _settle(token: int, result: Result, reason: String) -> void:
 ## exercise the actual file format — pointed at a scratch path with `set_path_override()` first,
 ## never at `_DEFAULT_PATH`.
 ##
-## **Refuses once `GameState.ending` is set**, checked here rather than only in `write()` so a test
+## **Refuses once `GameState.header.ending` is set**, checked here rather than only in `write()` so a test
 ## can drive it without also having to make `uses_save()` answer `true` under the headless runner.
 ## A finished run already had its save cleared in `GameState._end_run()`; this is the second line
 ## of the same reasoning `CLAUDE.md`'s "check before accepting, never repair afterwards" asks for
@@ -520,18 +521,9 @@ const FILE_KEYS: Array[String] = [
 ## a checkpoint is — `GameState._keep_a_checkpoint_if_one_is_due()` keeps it at a checkpoint day's
 ## dawn — so the save and the checkpoint can never carry two different ideas of what a run is.
 static func run_data() -> Dictionary:
-	var alley_tiles: Array = []
-	for tile: Vector2i in GameState.completed_resistance_alley_tiles:
-		alley_tiles.append({"x": tile.x, "y": tile.y})
-	return {
-		"escape_section": GameState.escape_section,
-		"completed_resistance_alley_tiles": alley_tiles,
-		"fenced_park": {"x": GameState.fenced_park.x, "y": GameState.fenced_park.y},
-		"fenced_park_act": GameState.fenced_park_act,
-		"posters": GameState.posters.to_data(),
-		"pelican": GameState.pelican.to_data(),
-		"state": GameState.save_snapshot(),
-	}
+	var data := GameState.run_parts.rider_data()
+	data["state"] = GameState.save_snapshot()
+	return data
 
 ## The other half of `run_data()`: puts every field it carries back on `GameState`, from a save
 ## read off disk or from a checkpoint alike. `data["state"]` must already have passed
@@ -540,35 +532,11 @@ static func run_data() -> Dictionary:
 ## Leaves `hard_mode` and `checkpoint` alone: they are the file's keys, not the run's state.
 static func restore_run_data(data: Dictionary) -> void:
 	GameState.restore_snapshot(data["state"])
-	# After the snapshot, never before: `restore_snapshot()` writes every field a run holds and
-	# this one is not among them, so a save from a build that never wrote the key leaves the run in
-	# the ordinary fourteen days rather than half-way into an escape it never reached.
-	GameState.escape_section = int(data.get("escape_section", 0))
-	# Same reasoning, same shape, for the alley tiles the resistance has already used this run: a
-	# save from a build that never wrote the key leaves the list empty rather than half-restored.
-	GameState.completed_resistance_alley_tiles.clear()
-	for raw: Dictionary in data.get("completed_resistance_alley_tiles", []):
-		GameState.completed_resistance_alley_tiles.append(Vector2i(int(raw["x"]), int(raw["y"])))
-	# And the one park barriers may already stand around, the same way again: a save from before
-	# `fenced_park` existed loads with none chosen, so act III can still choose one fresh — the same
-	# state a run that has not reached act III yet is already in.
-	var fenced_park: Variant = data.get("fenced_park", null)
-	if fenced_park is Dictionary:
-		GameState.fenced_park = Vector2i(int(fenced_park.get("x", -1)), int(fenced_park.get("y", -1)))
-	else:
-		GameState.fenced_park = Vector2i(-1, -1)
-	GameState.fenced_park_act = int(data.get("fenced_park_act", 0))
-	# And the walls, the same way again: a save from before there were posters loads with none up,
-	# and the next dawn pastes the city's from `PosterWalls.FIRST_DAY` onward.
-	GameState.posters.reset()
-	var posters: Variant = data.get("posters", {})
-	if posters is Dictionary:
-		GameState.posters.restore(posters)
-	# And the pelican bag's count, the same way again: a save from before it loads at 0.
-	GameState.pelican.reset()
-	var pelican: Variant = data.get("pelican", {})
-	if pelican is Dictionary:
-		GameState.pelican.restore(pelican)
+	# After the snapshot, never before: the riders are read with a default for their absence, so a
+	# save from a build that never wrote a key leaves that part where a run that has not got that far
+	# holds it — the ordinary fourteen days with no escape, no used alleys, no fenced park, bare
+	# walls and a pelican bag at 0 — rather than half-restored.
+	GameState.run_parts.restore_riders(data)
 
 ## Tries to resume a run. Returns `{}` when there is nothing to resume — no file, a file this build
 ## cannot read, or a dev/headless run `uses_save()` already refused — and `{"day_under_way": bool}`

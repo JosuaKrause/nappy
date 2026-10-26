@@ -853,7 +853,7 @@ guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pai
 faces and `power_station_door_position()` the point she stands on to reach it.
 
 **The station is where the city's power comes from, and the last night takes it away.** Once the
-sabotage is done (`GameState.sabotage_done`) and she is `Tuning.BLACKOUT_DISTANCE` (512px) from the
+sabotage is done (`GameState.resistance.sabotage_done`) and she is `Tuning.BLACKOUT_DISTANCE` (512px) from the
 station's lot — far enough that no part of it, stacks included, is on screen whichever way she
 leaves — `Blackout` puts out everything that runs on it in one frame: every lit window
 (`Building.powered`), every traffic light on the spine (`TrafficSignals.powered`, see "Traffic
@@ -1094,7 +1094,7 @@ reason a beat answers by itself.
 branch she is walking and the engine parks across from it for the rest of the day: *"you're not
 supposed to go past it"*, *"when you see the fire the reaction should be to take a different route"*
 (PLAYTEST-119). Asking whether a line survives along that sidewalk would refuse every site the beat
-of the day is made of, so `EventScheduler._a_line_has_to_avoid` leaves a `sited_on_her_way` one-shot
+of the day is made of, so `EventScheduler._a_line_has_to_avoid` leaves an `EventDef.on_her_way` one-shot
 out of the line rules altogether. (A poster crew is sited from her walk too, and is not exempt: it
 closes nothing.) **What replaces the guarantee is stated over the day rather than over
 the street**, and it is the stronger statement of the two: a site is accepted only where, from where
@@ -1897,13 +1897,14 @@ is loud, and the reason a park is quiet.
   it.** A centre sitting exactly on the line is legal by that check alone while the drawn body still
   reaches past it — a walker's own canvas rises the whole of its height to the north of its centre
   and nothing at all to the south, since `Sprites.draw_standing` anchors it bottom-centred with
-  nothing below. `CrowdAgent._entry_picture_clearance` reads the real texture sizes and the anchor
-  arithmetic `_draw_body` uses to say how far this kind's own picture reaches past its coordinate,
+  nothing below. `CrowdAgent._entry_picture_clearance` (the crowd member's answer to `LaneMover`'s, from its look's
+  `entry_clearance()`) reads the real texture sizes and the anchor
+  arithmetic its look's `draw_body()` uses to say how far this kind's own picture reaches past its coordinate,
   and `_entry_band_fits`, the final placement clamp, and the morning's own `setup()` all ask for that
   much room before accepting a spot, wherever `entry_room()` grants nothing past the edge.
   **And the same room is what lets a car arrive by the tunnel or the bridge.** The crowd's box is
   clamped to the map, so beside the tunnel the band a southbound spine car enters through is the
-  stretch past the north edge, and `CrowdAgent._entry_band_fits` accepts a band that reaches that
+  stretch past the north edge, and `LaneMover._entry_band_fits` accepts a band that reaches that
   far only for the agent `entry_room()` already grants it. Refusing it for everybody would make the
   traffic through both holes one-way — cars that only ever leave — and `tests/test_crowd.gd` stands
   at each end and counts spine cars out of bounds by which way they point, and at each plain edge

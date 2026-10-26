@@ -4,26 +4,26 @@ extends Node
 ## Determinism contract (docs/ARCHITECTURE.md): nothing gameplay-relevant may call the
 ## global `randi()`. Layout comes from `city_rng()`, a day's events from `day_rng()`.
 
-var run_seed: int = 0
-## A run owns its presentation just as it owns its seed. Days and scene changes only read it.
-var player_is_male := false
-var day: int = 1
-var nerves: int = Tuning.STARTING_NERVES
-var resistance_progress: int = 0
-var ending: GameEnums.Ending = GameEnums.Ending.NONE
-
-## Which section of the escape this run is in, as a `DaySpec.Section` — `0` (`NONE`) for
-## every one of the fourteen days, `BUILDING` or `CITY` once a won day 14 with every task complete
-## has handed over to it. An `int` rather than the enum because a cross-script enum is not the same
-## type as itself across a script boundary (see the **godot** skill), and a field on the *run*
-## rather than on the scene for two reasons: it survives `reload_current_scene()`, which is how the
-## handover reaches the escape's own boot with the run intact, and it is the one thing the save
-## carries about the escape, so a game closed in a section opens on that section's brief.
-##
-## Deliberately **not** in `_SAVE_FIELDS`: `GameSave` writes it beside `day_under_way` rather than
-## inside the run snapshot, so a save written before the escape existed is still complete and still
-## loads (`snapshot_is_complete()`), answering `NONE` by absence.
-var escape_section: int = 0
+## The run's state is kept in registered parts (`RunSubState`), each declaring its own fields, its
+## dawn copies and their save shape once; starting a run, the dawn photograph, a lost day's
+## give-back, the snapshot and the save all walk this list (`RunStateRegistry`). **A part declared
+## here and not registered is caught by `tests/test_run_state.gd`**. Readers take the part
+## (`GameState.header.day`, `GameState.attempt_spend.scars`), and nothing forwards to a part.
+var run_parts := RunStateRegistry.new()
+var header: RunHeader = run_parts.register(RunHeader.new())
+var resistance: ResistanceRunState = run_parts.register(ResistanceRunState.new())
+var attempt_spend: AttemptSpendState = run_parts.register(AttemptSpendState.new())
+var settled: SettledState = run_parts.register(SettledState.new())
+var facts: RunFacts = run_parts.register(RunFacts.new())
+## What is pasted on the city's walls and how many sheets she has torn — see `PosterState`. A fact
+## about the run like `scars`, photographed and given back with them, so a lost day's crews and
+## tears did not happen. A top-level save key of its own, so a save written before there were
+## posters still loads, with bare walls.
+var posters: PosterState = run_parts.register(PosterState.new())
+## How many cyclists the run has drawn from its one pelican bag — see `PelicanState`. Photographed
+## and given back with the rest of what an attempt spends, and a top-level save key of its own like
+## `posters`, so a save written before it loads at 0.
+var pelican: PelicanState = run_parts.register(PelicanState.new())
 
 ## Whether this run is in hard mode, chosen once on the title's Hard Mode checkbox as a new game
 ## begins and fixed for the rest of the run. *(gentle-osprey, the player: "a "Hard Mode" checkbox on
@@ -34,7 +34,7 @@ var escape_section: int = 0
 ## bad ending**: the last nerve sends the run back to its latest checkpoint (`checkpoint`). Nothing
 ## else differs — *"hard mode doesn't affect gameplay -- only restart pacing"*.
 ##
-## Not in `_SAVE_FIELDS`: it rides beside `escape_section` as its own top-level save key, so a save
+## Not in the run snapshot: it rides beside `escape_section` as its own top-level save key, so a save
 ## written before there were two modes loads as normal mode by absence.
 var hard_mode := false
 
@@ -50,14 +50,8 @@ var hard_mode := false
 ## exactly, so nothing is stored for it — which is also what a save written before checkpoints
 ## existed reads as. Never taken in hard mode, which has none.
 ##
-## Not in `_SAVE_FIELDS`, for the same reason as `hard_mode`: a top-level save key of its own.
+## Not in the run snapshot, for the same reason as `hard_mode`: a top-level save key of its own.
 var checkpoint: Dictionary = {}
-
-## Seconds the world has actually been moving this run — advanced by exactly one owner,
-## `main._process()`'s own day-loop branch, while a day — a section of the escape included — is
-## walking or returning and the tree is not paused. Never shown during play; the ending screen is
-## the only place it is read, through `format_clock()` below.
-var play_seconds: float = 0.0
 
 ## `%d:%02d.%03d` — minutes, seconds, milliseconds — the one format a run's own length is ever
 ## shown in: the ending screens (`DaySummary.show_ending()`, the escape's own out line) and the
@@ -91,22 +85,6 @@ static func format_clock_seconds(seconds: float) -> String:
 	var total_seconds := int(seconds)
 	return "%d:%02d" % [total_seconds / 60, total_seconds % 60]
 
-## One-shot event ids already consumed this run, so they never fire twice.
-var consumed_one_shots: Array[String] = []
-## Resistance steps completed, and steps failed beyond recovery.
-var completed_resistance_steps: Array[int] = []
-var failed_resistance_steps: Array[int] = []
-
-## Permanent marks a one-off event left on the city: `{ id, position, since_day }`.
-## The building day 3's fire caught is still drawn burnt on that corner on day 12, never
-## repaired — the city remembers, which is most of how the escalation is told.
-var scars: Array[Dictionary] = []
-
-## Where each block currently is along its arc. Run-scoped, like everything else here: the
-## arcs themselves belong to the CityMap and never change, this is only how far along them
-## the run has got. See docs/CITY.md, "Block purposes".
-var city_state := CityState.new()
-
 ## Where the run's own facts — a nerve spent, a checkpoint kept, the mode, the ending, where she
 ## settled, a block's arc — are written down for the run log. Handed in by `use_trace()`; silent
 ## until then.
@@ -116,108 +94,11 @@ var _trace := RunTrace.new()
 ## run session's at every boot; the test runner hands a silent one back between suites.
 func use_trace(sink: RunTrace) -> void:
 	_trace = sink
-	city_state.trace = sink
-
-## What is pasted on the city's walls and how many sheets she has torn — see `PosterState`. A fact
-## about the run like `scars`, photographed and given back with them, so a lost day's crews and
-## tears did not happen. Not in `_SAVE_FIELDS`: it rides beside `escape_section` as its own
-## top-level save key, so a save written before there were posters still loads, with bare walls.
-var posters := PosterState.new()
-
-## How many cyclists the run has drawn from its one pelican bag — see `PelicanState`. Photographed
-## and given back with the rest of what an attempt spends, and a top-level save key of its own like
-## `posters`, so a save written before it loads at 0.
-var pelican := PelicanState.new()
-
-## Whether the day-14 sabotage actually went through. Reaching RESISTANCE_GOAL earns the
-## chance at the good ending; this is doing it.
-var sabotage_done := false
-
-## True for the rest of a day once the resistance's package has been picked up. Read by
-## `City.decay_multiplier()` — the pram is heavier for every street after this one. Reset at
-## the start of every attempt at a day, including a retry, since a fresh attempt has not
-## picked it up yet.
-var resistance_carrying_package := false
-
-## Alley tiles a completed pickup step's chalk mark stood at, this run — read by
-## `ResistanceDirector._pick_reachable()` and `_nearest_alley_within()` so a later mark never
-## relocates onto, or starts on, the same alley while another eligible one is still in reach
-## (M177). Not in `_SAVE_FIELDS`: rides beside `escape_section` as its own top-level save key, the
-## same pattern (see `GameSave`'s own class doc), so a save written before this field existed
-## still loads and reads as "nothing recorded" by absence.
-##
-## **Not given back by `_give_the_resistance_back()`.** A lost day's own placement never reads
-## this list at all — the mark it is about was placed at dawn, before any tile could have been
-## recorded against it today — so leaving an undone attempt's tile in here only ever costs the
-## next placement one more alley to avoid, never a placement the guarantee needs.
-var completed_resistance_alley_tiles: Array[Vector2i] = []
-
-## Records a tile a pickup's mark stood at when its step completed, ignoring one already
-## recorded. `ResistanceDirector._on_contact_completed()` is the one caller — see its own doc for
-## why only a pickup's tile is ever worth recording here.
-func record_completed_alley_tile(tile: Vector2i) -> void:
-	if tile not in completed_resistance_alley_tiles:
-		completed_resistance_alley_tiles.append(tile)
-
-## What the resistance had done when today's attempt began — the five run-scoped facts a lost day
-## gives back. `begin_day()` photographs them, `finish_day()` restores them on a loss and commits
-## them on a win, and nothing else writes them.
-##
-## The rule they exist for: *"a task is only complete if it is done on the day that won. but also
-## it should reset if lost so the player can try again"*. Everything else a run spends stays spent;
-## this is the part of a run the *attempt* owns rather than the run.
-var _dawn_completed_steps: Array[int] = []
-var _dawn_failed_steps: Array[int] = []
-var _dawn_progress := 0
-var _dawn_sabotage_done := false
-var _dawn_carrying_package := false
-
-## And what today's attempt has done to the *city*, photographed the same way and given back the
-## same way: the one-shots it consumed, the marks it left and how far along its arc each block it
-## touched has moved.
-##
-## The rule they exist for is older and wider than the resistance's: *"a retry always rolls new --
-## nothing that happened on the day that got retried can influence the next repeat -- that has been
-## a long standing rule"*, and *"it is the same day exactly how the player encountered it the first
-## time this run. exact same state at the beginning of the day. nothing else"*. A fire that burnt a
-## block down on a lost day did not happen, because the day did not happen.
-##
-## `city_state` is photographed **before** the dawn arc roll — `GameState.begin_day()` runs ahead of
-## `CityState.begin_day()`, which is what advances every block whose next step was waiting for the
-## calendar. So a loss gives back that roll as well, and the retry's own dawn makes it again from the
-## same seed and the same day: identical by construction rather than by nothing having touched it.
-var _dawn_consumed_one_shots: Array[String] = []
-var _dawn_scars: Array[Dictionary] = []
-var _dawn_city_state := {}
-
-## The calm block the baby actually went to sleep in, per day: `day -> Vector2i`.
-##
-## Run-scoped and gameplay-owned, deliberately *not* read out of the telemetry log even though
-## the `calm` entries say the same thing. Telemetry never touches gameplay, and a rule that
-## reads a trace to decide tomorrow's events would be that rule broken in the loudest possible
-## way — the game would play differently with `--no-telemetry`.
-var settled_in: Dictionary = {}
+	attempt_spend.city_state.trace = sink
 
 ## Where she settled yesterday, or `Vector2i(-1, -1)` if she did not settle at all.
 func settled_yesterday() -> Vector2i:
-	return settled_in.get(day - 1, Vector2i(-1, -1))
-
-## The one calm area barriers ever stand around this run, once she has used it —
-## `Vector2i(-1, -1)` until one is. Chosen no earlier than act III; see docs/CITY.md, "Shutting a
-## spent park". `Main._start_day()` hands this and `fenced_park_act` to `CityMap.
-## set_fenced_park_state()` before the repaint and remembers its first choice once it returns.
-## This history survives the act boundary even though the physical fence does not.
-var fenced_park := Vector2i(-1, -1)
-## The act `fenced_park` was chosen in, 0 until one is. It stands fenced for the rest of that act;
-## once the act has passed, nothing is ever fenced again this run.
-var fenced_park_act := 0
-
-## Receives today's physical fence after the city repaint. No active fence means its act has
-## ended or none has been selected yet; neither may erase the run's first selection.
-func remember_fenced_park(block: Vector2i, act: int) -> void:
-	if fenced_park.x < 0 and block.x >= 0:
-		fenced_park = block
-		fenced_park_act = act
+	return settled.settled_in.get(header.day - 1, Vector2i(-1, -1))
 
 ## Every calm area she has used **so far this act**, most recent first, today excluded.
 ##
@@ -230,10 +111,10 @@ func remember_fenced_park(block: Vector2i, act: int) -> void:
 ## The reset is the act's, not the calendar's: an act is where the city changes character anyway,
 ## so the parks going quiet again is the one piece of good news in a run that has none.
 func settled_this_act() -> Array[Vector2i]:
-	var start: int = Tuning.ACT_START_DAYS[Tuning.act_for_day(day) - 1]
+	var start: int = Tuning.ACT_START_DAYS[Tuning.act_for_day(header.day) - 1]
 	var used: Array[Vector2i] = []
-	for past in range(day - 1, start - 1, -1):
-		var block: Vector2i = settled_in.get(past, Vector2i(-1, -1))
+	for past in range(header.day - 1, start - 1, -1):
+		var block: Vector2i = settled.settled_in.get(past, Vector2i(-1, -1))
 		if block.x >= 0 and not used.has(block):
 			used.append(block)
 	return used
@@ -241,9 +122,9 @@ func settled_this_act() -> Array[Vector2i]:
 ## Called when the baby falls asleep, with the calm block she is standing in. The one place
 ## the city learns anything about how the player actually played.
 func remember_where_she_settled(block: Vector2i) -> void:
-	if settled_in.has(day):
+	if settled.settled_in.has(header.day):
 		return
-	settled_in[day] = block
+	settled.settled_in[header.day] = block
 	_trace.note("calm", "settled in the calm block %s; tomorrow will know"
 			% RunTrace.tile(block))
 
@@ -251,47 +132,27 @@ func remember_where_she_settled(block: Vector2i) -> void:
 
 ## Begin a fresh run. Pass a seed to reproduce a previous city, or omit for a new one.
 func start_run(seed_value: int = 0) -> void:
-	run_seed = seed_value if seed_value != 0 else _new_seed()
-	player_is_male = run_rng("player-presentation").randi_range(0, 1) == 1
-	day = 1
-	nerves = Tuning.STARTING_NERVES
-	resistance_progress = 0
-	ending = GameEnums.Ending.NONE
-	escape_section = 0
-	play_seconds = 0.0
-	consumed_one_shots.clear()
-	completed_resistance_steps.clear()
-	failed_resistance_steps.clear()
-	scars.clear()
-	city_state.reset()
-	posters.reset()
-	pelican.reset()
-	settled_in.clear()
-	fenced_park = Vector2i(-1, -1)
-	fenced_park_act = 0
-	sabotage_done = false
-	resistance_carrying_package = false
-	completed_resistance_alley_tiles.clear()
+	header.run_seed = seed_value if seed_value != 0 else _new_seed()
+	header.player_is_male = run_rng("player-presentation").randi_range(0, 1) == 1
+	run_parts.reset()
 	# A fresh run is a normal run with nothing to go back to but its own day 1 until the title says
 	# otherwise — `main._on_title_start()` sets `hard_mode` from the checkbox as the run begins.
 	hard_mode = false
 	checkpoint = {}
-	_snapshot_the_resistance()
-	print("[GameState] run started, seed=%d" % run_seed)
+	print("[GameState] run started, seed=%d" % header.run_seed)
 
 ## Begin an attempt at today — the first try of a day, or a retry bought with a nerve.
 ##
 ## Called before anything is placed, because what is placed is decided by the state this is the
-## record of: the director asks `completed_resistance_steps` and `failed_resistance_steps` which
+## record of: the director asks `resistance.completed_steps` and `resistance.failed_steps` which
 ## step today offers, and a loss gives back exactly what is photographed here, so the retry is
 ## offered the same mark or contact the first attempt was.
 func begin_day() -> void:
 	# The package is put down first, so what a loss gives back is a pram that is not yet heavy
 	# rather than whatever the last attempt ended carrying. `ResistanceDirector.start_day()` says
 	# the same thing a moment later for the rigs that drive it with no day loop around it.
-	resistance_carrying_package = false
-	_snapshot_the_resistance()
-	_snapshot_what_the_attempt_can_spend()
+	resistance.carrying_package = false
+	run_parts.photograph()
 	_keep_a_checkpoint_if_one_is_due()
 
 ## Fixes a new game's mode, from the title's checkbox as it is dismissed (`main._on_title_start()`)
@@ -323,7 +184,7 @@ func checkpoint_day() -> int:
 ## the screen that follows can say where she is going. Hard mode never goes back: its last nerve is
 ## the bad ending.
 func a_loss_goes_back_to_the_checkpoint() -> bool:
-	return not hard_mode and nerves <= 1
+	return not hard_mode and header.nerves <= 1
 
 ## Keeps today's dawn as the run's checkpoint the first time a checkpoint day is begun — after the
 ## two photographs above, so the dawn fields it carries are this dawn's, and before anything of the
@@ -332,10 +193,10 @@ func a_loss_goes_back_to_the_checkpoint() -> bool:
 ## hard mode**, which has none. The escape's sections never reach this: they begin no calendar day
 ## (`begin_day()`), since the run is still on its last one.
 func _keep_a_checkpoint_if_one_is_due() -> void:
-	if hard_mode or not is_checkpoint_day(day) or day <= checkpoint_day():
+	if hard_mode or not is_checkpoint_day(header.day) or header.day <= checkpoint_day():
 		return
 	checkpoint = GameSave.run_data()
-	_trace.note("nerve", "day %d's dawn is the checkpoint a run out of nerves goes back to" % day)
+	_trace.note("nerve", "day %d's dawn is the checkpoint a run out of nerves goes back to" % header.day)
 
 ## Record the outcome of the day. Returns true if the run continues.
 ##
@@ -387,33 +248,32 @@ func finish_day(result: GameEnums.DayResult, spec: DaySpec = null) -> bool:
 	if result != GameEnums.DayResult.WON:
 		if not rules.a_loss_costs_a_nerve(hard_mode):
 			return true
-		nerves -= 1
-		EventBus.nerves_changed.emit(nerves)
+		header.nerves -= 1
+		EventBus.nerves_changed.emit(header.nerves)
 		if rules.a_loss_gives_back_the_attempt:
 			# Given back before the entry below rather than after it, so the one line about the
 			# nerve also says whether the day took any resistance work down with it. Given back
 			# before the `nerves <= 0` branch too: an attempt that failed did not count, and a run
 			# that ends on it has no reason to be the exception — the `ending` entry then reports
 			# what actually stood.
-			var also_undone := _give_the_resistance_back()
-			_give_back_what_the_attempt_spent()
+			var also_undone := _give_the_attempt_back()
 			# Which nerve went, and on which day. The nerve economy has never been tested against
 			# a game that bites early, and this is the entry that will say whether it survives it
 			# — a question a retry sharpens rather than settles, since five nerves now buy five
 			# attempts wherever they are needed instead of five days off the calendar.
 			_trace.note("nerve", "spent a nerve on day %d (act %d); %d left%s%s"
-					% [day, current_act(), nerves,
-					"" if nerves <= 0 else " — day %d again" % day, also_undone])
+					% [header.day, current_act(), header.nerves,
+					"" if header.nerves <= 0 else " — day %d again" % header.day, also_undone])
 		else:
-			_trace.note("nerve", "spent a nerve in the escape; %d left" % nerves)
-		if nerves <= 0:
+			_trace.note("nerve", "spent a nerve in the escape; %d left" % header.nerves)
+		if header.nerves <= 0:
 			if hard_mode:
 				_end_run(GameEnums.Ending.BAD)
 				return false
 			_go_back_to_the_checkpoint()
 			return true
 		if rules.a_loss_gives_back_the_attempt:
-			settled_in.erase(day)
+			settled.settled_in.erase(header.day)
 		return true
 	# A section won that leads into the next settles nothing: the run goes on, and only the walk's
 	# own end does.
@@ -421,8 +281,7 @@ func finish_day(result: GameEnums.DayResult, spec: DaySpec = null) -> bool:
 		return true
 	# A won day commits what it did: the attempt that stood is the one the next photograph starts
 	# from, whether or not anything calls `begin_day()` before the next `finish_day()`.
-	_snapshot_the_resistance()
-	_snapshot_what_the_attempt_can_spend()
+	run_parts.photograph()
 	# Not for the escape: walking out of the city gives no nerve in either mode — a normal run's
 	# escape has none to give ("the escape doesn't have nerves", the player), and a hard run gets
 	# none back at all.
@@ -431,7 +290,7 @@ func finish_day(result: GameEnums.DayResult, spec: DaySpec = null) -> bool:
 	if is_final_day():
 		_end_run(GameEnums.Ending.GOOD if earned_good_ending() else GameEnums.Ending.NEUTRAL)
 		return false
-	day += 1
+	header.day += 1
 	return true
 
 ## Gives one nerve back, capped at `Tuning.STARTING_NERVES` (5) — the run's own maximum, so a
@@ -443,9 +302,9 @@ func finish_day(result: GameEnums.DayResult, spec: DaySpec = null) -> bool:
 ## still an ordinary day, and its win does not become the escape's just because what follows it
 ## is.
 func regain_a_nerve() -> void:
-	if nerves < Tuning.STARTING_NERVES:
-		nerves += 1
-		EventBus.nerves_changed.emit(nerves)
+	if header.nerves < Tuning.STARTING_NERVES:
+		header.nerves += 1
+		EventBus.nerves_changed.emit(header.nerves)
 
 ## **A won day gives a hard run nothing back.** *(dotted-hawk, the player: "can we make hard mode
 ## not regenerate nerves as well?")* Nerves are restart pacing, so this is where Hard Mode's
@@ -464,35 +323,35 @@ func regain_a_nerve_for_a_won_day() -> void:
 ## Checkpoint zero (`checkpoint` empty) is day 1 of the same city: `start_run()` on the run's own
 ## seed, keeping who is pushing the pram, since `--parent` may have chosen it over the seed's roll.
 func _go_back_to_the_checkpoint() -> void:
-	var lost_on := day
+	var lost_on := header.day
 	var kept := checkpoint
 	if kept.is_empty():
-		var parent_is_male := player_is_male
-		start_run(run_seed)
-		player_is_male = parent_is_male
+		var parent_is_male := header.player_is_male
+		start_run(header.run_seed)
+		header.player_is_male = parent_is_male
 	else:
 		GameSave.restore_run_data(kept)
 		checkpoint = kept
-	nerves = Tuning.STARTING_NERVES
-	EventBus.nerves_changed.emit(nerves)
-	EventBus.resistance_progress_changed.emit(resistance_progress)
+	header.nerves = Tuning.STARTING_NERVES
+	EventBus.nerves_changed.emit(header.nerves)
+	EventBus.resistance_progress_changed.emit(resistance.progress)
 	_trace.note("nerve", "out of nerves on day %d — back to day %d's dawn, with every nerve"
-			% [lost_on, day])
-	EventBus.went_back_to_a_checkpoint.emit(day, lost_on)
+			% [lost_on, header.day])
+	EventBus.went_back_to_a_checkpoint.emit(header.day, lost_on)
 
 func _end_run(which: GameEnums.Ending) -> void:
-	ending = which
+	header.ending = which
 	# A run that has ended is no longer in the escape, whether it reached one or never did. Left
 	# set, the next boot would read a finished run's leftover section and open the escape over a
 	# title screen that has nothing behind it.
-	escape_section = 0
+	facts.escape_section = 0
 	# `played` reuses the `ending` kind rather than adding a new one — how the run finished is
 	# exactly the question a run's own length answers alongside, and the telemetry skill's own
 	# "a kind reused from that table, not a synonym for one" does not want a second line for it.
 	_trace.note("ending", "%s on day %d — resistance %d/%d, sabotage %s, played %s" % [
-		GameEnums.Ending.keys()[which].to_lower(), day,
-		resistance_progress, Tuning.RESISTANCE_GOAL,
-		"done" if sabotage_done else "not done", format_clock(play_seconds)])
+		GameEnums.Ending.keys()[which].to_lower(), header.day,
+		resistance.progress, Tuning.RESISTANCE_GOAL,
+		"done" if resistance.sabotage_done else "not done", format_clock(header.play_seconds)])
 	EventBus.run_ended.emit(which)
 	# A finished run leaves no save: there is nothing left to resume, and a
 	# save that named an ended run would have to be specially refused on load rather than simply
@@ -504,40 +363,40 @@ func _end_run(which: GameEnums.Ending) -> void:
 
 ## Records a permanent mark, ignoring duplicates from the same spot.
 func add_scar(id: String, position: Vector2) -> void:
-	for scar in scars:
+	for scar in attempt_spend.scars:
 		if scar["id"] == id and scar["position"].distance_to(position) < 1.0:
 			return
-	scars.append({"id": id, "position": position, "since_day": day})
+	attempt_spend.scars.append({"id": id, "position": position, "since_day": header.day})
 
 # ------------------------------------------------------------------ queries ---
 
 func current_act() -> int:
-	return Tuning.act_for_day(day)
+	return Tuning.act_for_day(header.day)
 
 func is_final_day() -> bool:
-	return day >= Tuning.RUN_LENGTH_DAYS
+	return header.day >= Tuning.RUN_LENGTH_DAYS
 
 func has_joined_resistance() -> bool:
-	return resistance_progress > 0
+	return resistance.progress > 0
 
 ## Reaching the goal is the qualification; the sabotage is the act. Both are required, so
 ## a player who does the legwork and then skips the last night gets the neutral ending.
 func earned_good_ending() -> bool:
-	return resistance_progress >= Tuning.RESISTANCE_GOAL and sabotage_done
+	return resistance.progress >= Tuning.RESISTANCE_GOAL and resistance.sabotage_done
 
 ## Whether the neighbor was taken in day 10's raid: the raid's day is behind her and its warning is
 ## not among the steps she completed on a day she won — skipped, failed or never offered, "the same
 ## sealed door, for the worse reason". Read by the wanted notice, which crosses out the neighbor's
 ## face (`PosterArt.sheet()`). Derived rather than saved, so a lost day gives it back with the step.
 func neighbor_was_taken() -> bool:
-	if day <= ResistanceHappenings.NEIGHBOR_DAY:
+	if header.day <= ResistanceHappenings.NEIGHBOR_DAY:
 		return false
 	var warning := ResistanceSteps.warning_step()
-	return warning != null and warning.index not in completed_resistance_steps
+	return warning != null and warning.index not in resistance.completed_steps
 
 ## Whether the final sabotage is on offer at all.
 func sabotage_available() -> bool:
-	return resistance_progress >= Tuning.RESISTANCE_GOAL
+	return resistance.progress >= Tuning.RESISTANCE_GOAL
 
 # --------------------------------------------------------------- resistance ---
 
@@ -548,93 +407,45 @@ func sabotage_available() -> bool:
 ## own words are announced from there, at the mark and nowhere else, rather than queued here for
 ## a day brief to read out later (`docs/NARRATIVE.md`, "Feedback").
 func complete_resistance_step(step: int, counts_toward_goal: bool = true) -> void:
-	if step in completed_resistance_steps:
+	if step in resistance.completed_steps:
 		return
-	completed_resistance_steps.append(step)
+	resistance.completed_steps.append(step)
 	if counts_toward_goal:
-		resistance_progress += 1
-		EventBus.resistance_progress_changed.emit(resistance_progress)
+		resistance.progress += 1
+		EventBus.resistance_progress_changed.emit(resistance.progress)
 	EventBus.resistance_step_completed.emit(step)
 
 ## A timed step that expired. The contact is gone for the rest of the run.
 func fail_resistance_step(step: int) -> void:
-	if step in failed_resistance_steps:
+	if step in resistance.failed_steps:
 		return
-	failed_resistance_steps.append(step)
+	resistance.failed_steps.append(step)
 	EventBus.resistance_step_failed.emit(step)
 
 ## Being seen near a contact costs progress but never takes it below zero.
 func penalise_resistance() -> void:
-	resistance_progress = maxi(0, resistance_progress - 1)
-	EventBus.resistance_progress_changed.emit(resistance_progress)
+	resistance.progress = maxi(0, resistance.progress - 1)
+	EventBus.resistance_progress_changed.emit(resistance.progress)
 
-## Photographs the resistance's run state as the attempt about to be played found it. Taken at
-## dawn by `begin_day()` and again on a won day, which is what makes a win a commit.
-func _snapshot_the_resistance() -> void:
-	_dawn_completed_steps = completed_resistance_steps.duplicate()
-	_dawn_failed_steps = failed_resistance_steps.duplicate()
-	_dawn_progress = resistance_progress
-	_dawn_sabotage_done = sabotage_done
-	_dawn_carrying_package = resistance_carrying_package
-
-## Photographs what today's attempt is about to be allowed to spend of the city: the run's consumed
-## one-shots, its scars and every block's arc position. Taken beside `_snapshot_the_resistance()` and
-## at the same two moments, for the same reason — dawn, and again on a won day, which is what makes a
-## win a commit.
+## Puts back everything the lost day spent — the resistance's work, the one-shots, scars and block
+## arcs, the walls and the pelican bag, each by its part (`RunSubState.give_back()`) — and says so
+## for the `nerve` entry: "" when the day touched none of the resistance's, which is most days.
 ##
-## The scar array is duplicated one level deep only, and that is enough: a scar dictionary is written
-## once by `add_scar()` and never edited, so nothing can reach into the photograph through a shared
-## entry.
-func _snapshot_what_the_attempt_can_spend() -> void:
-	_dawn_consumed_one_shots = consumed_one_shots.duplicate()
-	_dawn_scars = scars.duplicate()
-	_dawn_city_state = city_state.snapshot()
-	posters.photograph()
-	pelican.photograph()
-
-## Puts the city back where the lost day found it. A one-shot the attempt spent is owed again, the
-## shell it left is gone, and the block it burned is back at the step it was on this morning.
-##
-## **Restored rather than counted back**, exactly like the resistance's step lists: those lists are
-## what the next attempt's planning reads — `EventScheduler._place_one_shots` skips a consumed row
-## and `build_day` stands a permanent body on every scar — so putting the photograph back is the
-## whole of it.
-func _give_back_what_the_attempt_spent() -> void:
-	consumed_one_shots = _dawn_consumed_one_shots.duplicate()
-	scars = _dawn_scars.duplicate()
-	city_state.restore(_dawn_city_state)
-	posters.give_back()
-	pelican.give_back()
-
-## Puts the resistance back where the lost day found it, and says so for the `nerve` entry —
-## "" when the day touched none of it, which is most days.
-##
-## **The step list is restored, not repaired**, so a step the day completed is not merely
-## uncounted: it is gone from `completed_resistance_steps`, which is the list
-## `ResistanceSteps.for_day()` reads to decide what is on offer, so the retry meets the same mark
-## again — and, once she touches it, the same task, since a task is one day rather than a mark
-## kept for tomorrow.
+## **Restored rather than counted back**: the step lists are what the next attempt's planning reads
+## (`ResistanceSteps.for_day()` decides what is on offer from them, `EventScheduler._place_one_shots`
+## skips a consumed row, `build_day` stands a permanent body on every scar), so putting the
+## photograph back is the whole of it, and the retry meets the same mark again.
 ##
 ## `resistance_progress_changed` is emitted when the number actually moves, since the HUD's dots
 ## and the summary's tally are both drawn off it. Nothing announces a step *un*-completing,
 ## because nothing needs to: the HUD rebuilds its `out there:` line from scratch on
-## `day_started` at the retry, which is the next moment either is looked at. The day brief has
-## nothing to repeat either — it is a static line for the calendar day, not a record of what an
-## attempt touched, so a lost day's own line reads exactly as it did this morning.
-func _give_the_resistance_back() -> String:
-	var progress_before := resistance_progress
-	var undone := completed_resistance_steps != _dawn_completed_steps \
-			or failed_resistance_steps != _dawn_failed_steps \
-			or resistance_progress != _dawn_progress \
-			or sabotage_done != _dawn_sabotage_done \
-			or resistance_carrying_package != _dawn_carrying_package
-	completed_resistance_steps = _dawn_completed_steps.duplicate()
-	failed_resistance_steps = _dawn_failed_steps.duplicate()
-	resistance_progress = _dawn_progress
-	sabotage_done = _dawn_sabotage_done
-	resistance_carrying_package = _dawn_carrying_package
-	if resistance_progress != progress_before:
-		EventBus.resistance_progress_changed.emit(resistance_progress)
+## `day_started` at the retry, which is the next moment either is looked at.
+func _give_the_attempt_back() -> String:
+	var progress_before := resistance.progress
+	var undone := resistance.differs_from_dawn()
+	run_parts.give_back()
+	if resistance.progress != progress_before:
+		EventBus.resistance_progress_changed.emit(resistance.progress)
 	return " — and the day's resistance work with it" if undone else ""
 
 # ---------------------------------------------------------------------- RNG ---
@@ -643,22 +454,22 @@ func _give_the_resistance_back() -> String:
 ## Keeping presentation off the city/day streams preserves every seeded gameplay layout.
 func run_rng(stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:run:%s" % [run_seed, stream])
+	rng.seed = hash("%d:run:%s" % [header.run_seed, stream])
 	return rng
 
 ## Deterministic RNG for city layout. Same seed, same city, for the whole run.
 func city_rng() -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = run_seed
+	rng.seed = header.run_seed
 	return rng
 
 ## Deterministic RNG for one day. `stream` separates independent consumers: without it,
 ## two systems asking for "the day's RNG" would both start from the same seed and their
 ## first rolls would move together, which is a correlation nobody asked for.
 func day_rng(day_index: int = -1, stream: String = "events") -> RandomNumberGenerator:
-	var d := day if day_index < 0 else day_index
+	var d := header.day if day_index < 0 else day_index
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d:%s" % [run_seed, d, stream])
+	rng.seed = hash("%d:%d:%s" % [header.run_seed, d, stream])
 	return rng
 
 func _new_seed() -> int:
@@ -668,147 +479,21 @@ func _new_seed() -> int:
 
 # ------------------------------------------------------------------- save ---
 
-## Every field a save has to carry — `GameSave` reads this to write a file and calls
-## `restore_snapshot()` to read one back. Named exactly after the script variables above
-## (including the leading underscore on the dawn fields) rather than a prettied-up copy, so
-## `tests/test_save.gd` can compare this list directly against `get_property_list()` and fail
-## loudly the moment a field is added up there and forgotten down here.
-##
-## Plain JSON-safe values only — a `Vector2i` or an int-keyed `Dictionary` cannot survive
-## `JSON.stringify()`, so `scars`, `city_state` and `settled_in` are each turned into arrays of
-## small dictionaries here rather than carried through as the shapes the rest of the game reads.
-## `city_state` delegates to `CityState.snapshot()`, since `_stage`/`_changed_on` are that class's
-## own private fields and reaching into them from here would be the same mistake the **godot**
-## skill warns against for a dictionary built by hand — one place decides the shape.
-const _SAVE_FIELDS := [
-	"run_seed", "player_is_male", "day", "nerves", "resistance_progress", "ending",
-	"play_seconds", "consumed_one_shots", "completed_resistance_steps", "failed_resistance_steps",
-	"scars", "city_state", "sabotage_done", "resistance_carrying_package",
-	"_dawn_completed_steps", "_dawn_failed_steps", "_dawn_progress",
-	"_dawn_sabotage_done", "_dawn_carrying_package", "settled_in",
-	"_dawn_consumed_one_shots", "_dawn_scars", "_dawn_city_state",
-]
-
+## The run's state as the flat dictionary a save carries under `"state"`: every part the registry
+## holds in the `STATE` slot (`RunStateRegistry.state_data()`), each writing its own keys. Plain
+## JSON-safe values only — a `Vector2i` or an int-keyed `Dictionary` cannot survive
+## `JSON.stringify()`, so each part turns its own into small dictionaries.
 func save_snapshot() -> Dictionary:
-	var scars_data := _scars_as_data(scars)
-	var settled_data: Array = []
-	for settled_day: int in settled_in:
-		var block: Vector2i = settled_in[settled_day]
-		settled_data.append({"day": settled_day, "x": block.x, "y": block.y})
-	return {
-		"run_seed": run_seed,
-		"player_is_male": player_is_male,
-		"day": day,
-		"nerves": nerves,
-		"resistance_progress": resistance_progress,
-		"ending": ending,
-		"play_seconds": play_seconds,
-		"consumed_one_shots": consumed_one_shots.duplicate(),
-		"completed_resistance_steps": completed_resistance_steps.duplicate(),
-		"failed_resistance_steps": failed_resistance_steps.duplicate(),
-		"scars": scars_data,
-		"city_state": city_state.snapshot(),
-		"sabotage_done": sabotage_done,
-		"resistance_carrying_package": resistance_carrying_package,
-		"_dawn_completed_steps": _dawn_completed_steps.duplicate(),
-		"_dawn_failed_steps": _dawn_failed_steps.duplicate(),
-		"_dawn_progress": _dawn_progress,
-		"_dawn_sabotage_done": _dawn_sabotage_done,
-		"_dawn_carrying_package": _dawn_carrying_package,
-		"settled_in": settled_data,
-		"_dawn_consumed_one_shots": _dawn_consumed_one_shots.duplicate(),
-		"_dawn_scars": _scars_as_data(_dawn_scars),
-		"_dawn_city_state": _dawn_city_state.duplicate(true),
-	}
+	return run_parts.state_data()
 
-## A scar list as the plain arrays a JSON file can hold — a `Vector2` cannot survive
-## `JSON.stringify()`. Shared by the run's own scars and by the photograph a lost day gives back,
-## so the two can never be written in two shapes.
-static func _scars_as_data(from: Array[Dictionary]) -> Array:
-	var data: Array = []
-	for scar in from:
-		var position: Vector2 = scar["position"]
-		data.append({
-			"id": scar["id"], "x": position.x, "y": position.y, "since_day": scar["since_day"],
-		})
-	return data
-
-## The other half of `_scars_as_data()`. JSON has no integer type, so every number is cast.
-static func _scars_from_data(raw: Array) -> Array[Dictionary]:
-	var found: Array[Dictionary] = []
-	for scar: Dictionary in raw:
-		found.append({
-			"id": String(scar["id"]),
-			"position": Vector2(float(scar["x"]), float(scar["y"])),
-			"since_day": int(scar["since_day"]),
-		})
-	return found
-
-## Whether `data` (a save's own `"state"` object) carries every field `save_snapshot()` writes —
-## checked before `restore_snapshot()` ever runs, so a save missing a field from a shape this
-## build no longer writes is dropped for a fresh title screen rather than partly applied.
+## Whether `data` carries every key this build's `save_snapshot()` writes — the keys come from the
+## parts, so a field a part gains is required of a save the moment it is written.
 func snapshot_is_complete(data: Dictionary) -> bool:
-	for field in _SAVE_FIELDS:
+	for field in run_parts.state_keys():
 		if not data.has(field):
 			return false
 	return true
 
-## The other half of `save_snapshot()`. JSON has no integer type, so every number `data` carries
-## is a `float` regardless of what was written — every field read back into a typed `int` or a
-## typed array below is cast explicitly rather than assigned, which is what keeps this from being
-## the silent-type-drop trap the **godot** skill warns about.
+## Puts a snapshot back, each part reading its own keys.
 func restore_snapshot(data: Dictionary) -> void:
-	run_seed = int(data["run_seed"])
-	player_is_male = bool(data["player_is_male"])
-	day = int(data["day"])
-	nerves = int(data["nerves"])
-	resistance_progress = int(data["resistance_progress"])
-	ending = int(data["ending"]) as GameEnums.Ending
-	play_seconds = float(data["play_seconds"])
-	consumed_one_shots.assign(data["consumed_one_shots"])
-	completed_resistance_steps = _to_int_array(data["completed_resistance_steps"])
-	failed_resistance_steps = _to_int_array(data["failed_resistance_steps"])
-	scars = _scars_from_data(data["scars"])
-	city_state.restore(data["city_state"])
-	sabotage_done = bool(data["sabotage_done"])
-	resistance_carrying_package = bool(data["resistance_carrying_package"])
-	_dawn_completed_steps = _to_int_array(data["_dawn_completed_steps"])
-	_dawn_failed_steps = _to_int_array(data["_dawn_failed_steps"])
-	_dawn_progress = int(data["_dawn_progress"])
-	_dawn_sabotage_done = bool(data["_dawn_sabotage_done"])
-	_dawn_carrying_package = bool(data["_dawn_carrying_package"])
-	settled_in.clear()
-	for raw: Dictionary in data["settled_in"]:
-		settled_in[int(raw["day"])] = Vector2i(int(raw["x"]), int(raw["y"]))
-	# The photograph of what the attempt may spend rides along with the rest of the dawn fields, so
-	# a run resumed mid-day gives back exactly what that day had spent when it was written — see
-	# `_snapshot_what_the_attempt_can_spend()` and `main._ready()`, which loses a day that was under
-	# way through the ordinary lost-day path.
-	_dawn_consumed_one_shots.assign(data["_dawn_consumed_one_shots"])
-	_dawn_scars = _scars_from_data(data["_dawn_scars"])
-	_dawn_city_state = _cast_dawn_city_state(data["_dawn_city_state"])
-
-## `Array[int]` from a JSON array of floats — see `restore_snapshot()`'s own doc for why every
-## number here is cast rather than assigned.
-func _to_int_array(raw: Array) -> Array[int]:
-	var result: Array[int] = []
-	for value in raw:
-		result.append(int(value))
-	return result
-
-## `_dawn_city_state` is `CityState.snapshot()`'s own shape carried as a plain Dictionary rather
-## than through a second `CityState` field, so nothing above casts its numbers back from the
-## floats a JSON round trip leaves them — the one place this function's own doc says every other
-## field avoids. **Cast key by key instead of always writing both of `CityState.snapshot()`'s
-## own keys**: a run that has not yet reached `begin_day()` leaves this field the untouched `{}`,
-## and forcing it through a real `CityState` would answer `{"stage": [], "changed_on": []}` for
-## that case instead of the `{}` a `save_snapshot()` taken right after this one would still write,
-## which is exactly the equality mismatch this exists to prevent.
-static func _cast_dawn_city_state(raw: Dictionary) -> Dictionary:
-	var cast := {}
-	for key: String in raw:
-		var cast_entries: Array = []
-		for entry: Dictionary in (raw[key] as Array):
-			cast_entries.append({"x": int(entry["x"]), "y": int(entry["y"]), "v": int(entry["v"])})
-		cast[key] = cast_entries
-	return cast
+	run_parts.restore_state(data)

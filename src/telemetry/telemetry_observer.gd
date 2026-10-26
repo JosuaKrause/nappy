@@ -343,7 +343,7 @@ func start_section(restarted: bool) -> void:
 ## first thing under the header that the player is responsible for.
 func start_day() -> void:
 	_forget_the_walk()
-	_tree = RouteTree.for_day(_map, GameState.day)
+	_tree = RouteTree.for_day(_map, GameState.header.day)
 	_corridor = Corridor.of(_tree)
 	Telemetry.note("start", "doorstep %s, facing %s" % [
 		RunTrace.tile(_map.world_to_tile(_player.global_position)),
@@ -705,7 +705,7 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 	if calm != _was_calm:
 		var block := _map.block_at(here)
 		var what := RunTrace.purpose(
-				GameState.city_state.purpose_of(_map.block_plans, block))
+				_city.run_spend.city_state.purpose_of(_map.block_plans, block))
 		Telemetry.note("calm" if calm else "left", "%s %s %s, sleep %.0f" % [
 			"entered" if calm else "left", what, RunTrace.tile(block),
 			_baby.sleepiness])
@@ -819,8 +819,8 @@ func _where_is(id: String) -> String:
 ## What put the mark over her head, rather than what merely happened to be nearest.
 ##
 ## Exactly three things can: a `hard_fail` event whose radius covers her, a car that drives — the
-## patrol car or the fire engine — closing on her in its lane (`EventDef.drives`,
-## `EventInstance.closes_on()`), and a crowd car closing on the
+## patrol car or the fire engine — closing on her in its lane (`EventDef.vehicle`,
+## `EventCarDriving.closes_on()`), and a crowd car closing on the
 ## lane she is standing in. **`_nearest()` answers a different question and answers it misleadingly
 ## here** — it will blame an ice cream van five hundred pixels away for a car's horn, which is the
 ## *"unattributable"* mark this entry exists to explain, reproduced in the log meant to settle it.
@@ -829,8 +829,8 @@ func _what_raised_the_mark() -> String:
 	for instance in _live():
 		if instance.is_finished:
 			continue
-		if instance.def.drives:
-			if instance.closes_on(here):
+		if instance.def.vehicle != null:
+			if instance.car and instance.car.closes_on(here):
 				return "%s %.0fpx" % [instance.logged_name(),
 						instance.global_position.distance_to(here)]
 			continue

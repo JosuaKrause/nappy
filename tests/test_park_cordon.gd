@@ -21,7 +21,7 @@ var _city: City
 var _swing_now := Vector2.ZERO
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t)
@@ -45,20 +45,20 @@ func run(t) -> void:
 ## the city state, with the run's state put back by `_end()`.
 func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
 	var saved := {
-		"state": GameState.city_state, "day": GameState.day,
-		"completed": GameState.completed_resistance_steps.duplicate(),
-		"failed": GameState.failed_resistance_steps.duplicate(),
-		"progress": GameState.resistance_progress,
-		"package": GameState.resistance_carrying_package,
+		"state": GameState.attempt_spend.city_state, "day": GameState.header.day,
+		"completed": GameState.resistance.completed_steps.duplicate(),
+		"failed": GameState.resistance.failed_steps.duplicate(),
+		"progress": GameState.resistance.progress,
+		"package": GameState.resistance.carrying_package,
 	}
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
-	GameState.resistance_carrying_package = false
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
+	GameState.resistance.carrying_package = false
 	var day := ResistanceSteps.swing_day()
-	GameState.day = day
+	GameState.header.day = day
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
@@ -84,12 +84,12 @@ func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
 func _end(fixture: Dictionary) -> void:
 	(fixture.director as ResistanceDirector).free()
 	var saved: Dictionary = fixture.saved
-	GameState.city_state = saved.state
-	GameState.day = saved.day
-	GameState.completed_resistance_steps = saved.completed
-	GameState.failed_resistance_steps = saved.failed
-	GameState.resistance_progress = saved.progress
-	GameState.resistance_carrying_package = saved.package
+	GameState.attempt_spend.city_state = saved.state
+	GameState.header.day = saved.day
+	GameState.resistance.completed_steps = saved.completed
+	GameState.resistance.failed_steps = saved.failed
+	GameState.resistance.progress = saved.progress
+	GameState.resistance.carrying_package = saved.package
 
 func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

@@ -237,21 +237,21 @@ func _test_schema(t) -> void:
 ## against a real city, so a field the runtime read and then ignored would fail here.
 func _test_heat_installs_the_heated_row(t) -> void:
 	const CITY_SCENE := preload("res://scenes/world/city.tscn")
-	var saved_day := GameState.day
-	GameState.day = 6
-	var city: City = CITY_SCENE.instantiate()
+	var saved_day := GameState.header.day
+	GameState.header.day = 6
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, GameState.day)
-	city.start_day(state, GameState.day, GameState.day_rng(GameState.day, "closures"))
+	state.begin_day(city.map.block_plans, GameState.header.day)
+	city.start_day(state, GameState.header.day, GameState.day_rng(GameState.header.day, "closures"))
 	var installed := {}
 	for heat: Variant in [null, Tuning.HEAT_INVESTIGATES_LEVEL]:
 		var entry := {"name": "car", "row": "police_patrol", "at": [4560, 3984]}
 		if heat != null:
 			entry["heat"] = heat
 		var runtime := SceneRecipeRuntime.new()
-		runtime.configure({"data": {"setup": {"day": GameState.day, "events": [entry]}},
+		runtime.configure({"data": {"setup": {"day": GameState.header.day, "events": [entry]}},
 				"manifest": {}, "anchors": {}, "map": city.map}, _recipe_config(false))
 		runtime._city = city
 		var errors: Array[String] = []
@@ -269,7 +269,7 @@ func _test_heat_installs_the_heated_row(t) -> void:
 			"at the investigating level it installs the copy that stops for her from %.0fpx"
 			% Tuning.HEAT_INVESTIGATE_WITHIN)
 	city.free()
-	GameState.day = saved_day
+	GameState.header.day = saved_day
 
 ## A task gone after she read the mark is one of two things. Placed and then gone, it expired as a
 ## played day's task can (day 10's neighbor home first): the manifest records the tick, `task`

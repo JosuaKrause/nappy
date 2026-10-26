@@ -13,10 +13,10 @@ extends RefCounted
 const SPEED := 90.0
 
 ## One `[vertical, direction, lane_centre]` triple per sector, `0` (east) to `7` (north-east),
-## that makes `CrowdAgent._walker_heading()` land exactly on that sector's own centre angle with
+## that makes `CrowdAgent._look.heading_now()` land exactly on that sector's own centre angle with
 ## the agent sitting at the world origin: `_lane_centre` alone opens the cross-lane gap
 ## (`_cross()` reads `position`, held at zero throughout), and `_speed`/`_vertical`/`_direction`
-## supply the along-lane component `velocity()` reads.
+## supply the along-lane component `LaneMover.velocity()` reads.
 const SECTOR_STATE: Array = [
 	[false, 1.0, 0.0],     # 0 E
 	[true, 1.0, SPEED],    # 1 SE
@@ -100,7 +100,7 @@ func _walker(t) -> CrowdAgent:
 	agent.kind = CrowdAgent.Kind.WALKER
 	return agent
 
-## Sets the state `_walker_heading()` reads so it lands exactly on `sector`'s own centre angle —
+## Sets the state `WalkerLook.heading_now()` reads so it lands exactly on `sector`'s own centre angle —
 ## see `SECTOR_STATE`'s own doc.
 func _face_sector(agent: CrowdAgent, sector: int) -> void:
 	var state: Array = SECTOR_STATE[sector]
@@ -118,63 +118,63 @@ func _test_walker_headings_select_the_expected_view(t) -> void:
 		_face_sector(agent, sector)
 		# Started from the opposite sector every time, so the assertion below is never passing
 		# because the previous iteration's hold happened to already agree.
-		agent._walker_view = (sector + 4) % 8
-		var frame := agent._frame()
+		agent._look.view = (sector + 4) % 8
+		var frame := agent._look.sector()
 		t.check(frame == sector,
 				"heading %d degrees selects sector %d (got %d)" % [sector * 45, sector, frame])
-		var view: String = CrowdAgent.WALKER_VIEW_BY_SECTOR[frame]
+		var view: String = WalkerLook.VIEW_BY_SECTOR[frame]
 		t.check(view == EXPECTED_VIEW[sector],
 				"sector %d draws the %s view" % [sector, EXPECTED_VIEW[sector]])
-		t.check(agent._flipped() == EXPECTED_MIRRORED[sector],
+		t.check(agent._look.flipped() == EXPECTED_MIRRORED[sector],
 				"sector %d mirror flag matches the west-mirror convention" % sector)
 	agent.free()
 
-## `_draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
+## `AgentLook.draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
 ## invariant structurally too: nothing can add a body without its trim, or the two would be able
 ## to draw two different walkers' worth of coat and hands. And it pins the tint split at the same
-## time: body and trim have to be two distinct baked regions, or tinting the body (`_draw_body()`'s
+## time: body and trim have to be two distinct baked regions, or tinting the body (`AgentLook.draw_body()`'s
 ## own `colour` argument) would tint the trim drawn over it as well.
 func _test_body_and_trim_can_never_disagree(t) -> void:
-	var body_views := CrowdAgent.WALKER_BODY_BY_VIEW.keys()
-	var trim_views := CrowdAgent.WALKER_TRIM_BY_VIEW.keys()
+	var body_views := WalkerLook.BODY_BY_VIEW.keys()
+	var trim_views := WalkerLook.TRIM_BY_VIEW.keys()
 	t.check(body_views.size() == trim_views.size() and body_views.size() == 5,
 			"the walker family has exactly five authored views, body and trim alike")
 	for view in body_views:
-		t.check(CrowdAgent.WALKER_TRIM_BY_VIEW.has(view),
+		t.check(WalkerLook.TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
-		var body_region := StringName(CrowdAgent.WALKER_BODY_BY_VIEW[view])
-		var trim_region := StringName(CrowdAgent.WALKER_TRIM_BY_VIEW[view])
+		var body_region := StringName(WalkerLook.BODY_BY_VIEW[view])
+		var trim_region := StringName(WalkerLook.TRIM_BY_VIEW[view])
 		t.check(AtlasLibrary.has_region(body_region) and AtlasLibrary.has_region(trim_region),
 				"both regions for %s are actually baked" % view)
 		t.check(body_region != trim_region,
 				"body and trim for %s are two separate regions, so tinting one leaves the other" % view)
 	for sector in range(8):
-		t.check(body_views.has(CrowdAgent.WALKER_VIEW_BY_SECTOR[sector]),
+		t.check(body_views.has(WalkerLook.VIEW_BY_SECTOR[sector]),
 				"sector %d names a view the tables actually carry" % sector)
 
 ## A give-way, a queue or a halt all reach the walker the same way: `WalkerStrategy._yield_factor()` zeroing
-## `velocity()` while it has already arrived at its lane centre, which is exactly the "at rest"
-## `_walker_heading()` returns `Vector2.ZERO` for.
+## `LaneMover.velocity()` while it has already arrived at its lane centre, which is exactly the "at rest"
+## `WalkerLook.heading_now()` returns `Vector2.ZERO` for.
 func _test_a_stopped_walker_keeps_its_view(t) -> void:
 	var agent := _walker(t)
 	_face_sector(agent, 0)
-	agent._walker_view = 6  # start from the opposite sector so the frame below cannot pass by luck
-	var moving_frame := agent._frame()
+	agent._look.view = 6  # start from the opposite sector so the frame below cannot pass by luck
+	var moving_frame := agent._look.sector()
 	t.check(moving_frame == 0, "walking east settles on the east view first")
 
 	# Stopped: no cross-lane gap, and the along term reads zero through the same yield the crowd
 	# actually stops a walker with — not by lowering `_speed` itself, which nothing else does.
 	agent.strategy._yield_left = 1.0
 	agent.strategy._yield_hurry = false
-	t.check(agent._walker_heading() == Vector2.ZERO, "a yielding walker's own heading is zero")
-	var stopped_frame := agent._frame()
+	t.check(agent._look.heading_now() == Vector2.ZERO, "a yielding walker's own heading is zero")
+	var stopped_frame := agent._look.sector()
 	t.check(stopped_frame == moving_frame,
 			"a stopped walker keeps the view it was last drawn with (%d, still %d)"
 			% [moving_frame, stopped_frame])
 	agent.free()
 
-## `setup()` and `_recycle()` are both owned by the concurrent lane-turning work on this file (see
-## `_update_walker_view()`'s own doc), so this pins the property that stands in for a call into
+## `LaneMover.setup()` and `LaneMover._recycle()` place a walker with no cross-lane steering yet
+## running (`WalkerLook.sector()`'s own doc), so this pins the property that stands in for a call into
 ## either of them: both leave a walker's own heading exactly on a sector centre, 45 degrees clear
 ## of its neighbours — twice the hold's own 27.5 degree reach — so whatever sector was drawn
 ## before a placement or a recycle is always replaced on the very next frame, the same "no
@@ -182,94 +182,94 @@ func _test_a_stopped_walker_keeps_its_view(t) -> void:
 func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 	var agent := _walker(t)
 	_face_sector(agent, 1)  # south-east, the kind of diagonal only real steering ever produces
-	agent._walker_view = 1
-	t.check(agent._frame() == 1, "settled on southeast before the placement")
+	agent._look.view = 1
+	t.check(agent._look.sector() == 1, "settled on southeast before the placement")
 
 	# A fresh placement/recycle: a new lane and direction, no detour or yield left running, sitting
-	# exactly on its own lane centre — `_choose_lane()` and `_set_cross(_lane_centre)`'s own result,
-	# reproduced here directly since building the `CityMap`/`CrowdField` `_recycle()` needs is out
+	# exactly on its own lane centre — `LaneMover._choose_lane()` and `_set_cross(_lane_centre)`'s own result,
+	# reproduced here directly since building the `CityMap`/`CrowdField` `LaneMover._recycle()` needs is out
 	# of scope for a focused view-selection rig.
 	_face_sector(agent, 6)  # north, an adjacent-ish sector to the stale one above
-	t.check(agent._frame() == 6,
+	t.check(agent._look.sector() == 6,
 			"the new north heading already wins over the stale southeast view (got %d)"
-			% agent._frame())
+			% agent._look.sector())
 	agent.free()
 
 # ---------------------------------------------------------------------- gait ---
-# `CrowdAgent._advance_walker_gait()`/`_walker_gait_frame()`, the walker's own two-frame stride —
+# `WalkerLook.advance()`/`WalkerLook.gait_frame()`, the walker's own two-frame stride —
 # `Stroller._walk_phase`/`_draw_mother()`'s pattern, extended to the crowd (M108, "every living
-# thing that moves has a stride"). `sin(_walker_gait_phase * 2.0)` is positive on the two quarter-
+# thing that moves has a stride"). `sin(WalkerLook.gait_phase * 2.0)` is positive on the two quarter-
 # turns `(0, PI/2)` and `(PI, 3*PI/2)` of a full `TAU` cycle and negative on the other two, so a
-# fixed phase is enough to pin the frame without going through `_advance_walker_gait()`'s own rate.
+# fixed phase is enough to pin the frame without going through `WalkerLook.advance()`'s own rate.
 
 ## A fresh `_walker(t)` keeps every field at its class default, which already gives it a nonzero
-## `velocity()` (`_speed` 60, `_direction` 1, `_vertical` false, `_yield_left` 0) — the same
+## `LaneMover.velocity()` (`_speed` 60, `_direction` 1, `_vertical` false, `_yield_left` 0) — the same
 ## "moving by default" shape `_test_walker_headings_select_the_expected_view()` relies on.
 func _test_advancing_the_gait_tracks_distance_not_time(t) -> void:
 	var agent := _walker(t)
-	agent._walker_gait_phase = 0.0
-	agent._advance_walker_gait(1.0 / 60.0)
-	t.check(agent._walker_gait_phase > 0.0, "a moving walker's stride phase actually advances")
+	agent._look.gait_phase = 0.0
+	agent._look.advance(agent.velocity(), 1.0 / 60.0)
+	t.check(agent._look.gait_phase > 0.0, "a moving walker's stride phase actually advances")
 
 	agent._speed = 0.0
-	agent._walker_gait_phase = 0.0
-	agent._advance_walker_gait(1.0 / 60.0)
-	t.check(agent._walker_gait_phase == 0.0,
+	agent._look.gait_phase = 0.0
+	agent._look.advance(agent.velocity(), 1.0 / 60.0)
+	t.check(agent._look.gait_phase == 0.0,
 			"a walker covering no distance advances no stride at all")
 	agent.free()
 
 func _test_a_moving_walker_alternates_gait_frames(t) -> void:
 	var agent := _walker(t)
-	agent._walker_gait_phase = 0.0
-	t.check(agent._walker_gait_frame() == 0, "phase zero draws the rest pose")
-	agent._walker_gait_phase = PI / 4.0
-	t.check(agent._walker_gait_frame() == 1, "a quarter into the cycle draws feet passing")
-	agent._walker_gait_phase = 3.0 * PI / 4.0
-	t.check(agent._walker_gait_frame() == 0, "past the half turn it returns to the rest pose")
-	agent._walker_gait_phase = 5.0 * PI / 4.0
-	t.check(agent._walker_gait_frame() == 1, "the second half of the cycle passes feet again")
+	agent._look.gait_phase = 0.0
+	t.check(agent._look.gait_frame() == 0, "phase zero draws the rest pose")
+	agent._look.gait_phase = PI / 4.0
+	t.check(agent._look.gait_frame() == 1, "a quarter into the cycle draws feet passing")
+	agent._look.gait_phase = 3.0 * PI / 4.0
+	t.check(agent._look.gait_frame() == 0, "past the half turn it returns to the rest pose")
+	agent._look.gait_phase = 5.0 * PI / 4.0
+	t.check(agent._look.gait_frame() == 1, "the second half of the cycle passes feet again")
 	agent.free()
 
 ## The same give-way/queue/halt zeroing `_test_a_stopped_walker_keeps_its_view()` already reaches
 ## the view hold with also reaches the gait: `velocity()` is `heading() * _speed * WalkerStrategy._yield_factor()`,
-## so a walker yielding reads zero regardless of what `_walker_gait_phase` its stride was at.
+## so a walker yielding reads zero regardless of what `WalkerLook.gait_phase` its stride was at.
 func _test_a_stopped_walker_holds_gait_frame_a(t) -> void:
 	var agent := _walker(t)
-	agent._walker_gait_phase = PI / 4.0
-	t.check(agent._walker_gait_frame() == 1, "moving, this phase draws frame b (sanity check)")
+	agent._look.gait_phase = PI / 4.0
+	t.check(agent._look.gait_frame() == 1, "moving, this phase draws frame b (sanity check)")
 	agent.strategy._yield_left = 1.0
 	agent.strategy._yield_hurry = false
-	t.check(agent._walker_gait_frame() == 0,
+	t.check(agent._look.gait_frame() == 0,
 			"a yielding walker holds frame a regardless of its own stride phase")
 	agent.free()
 
-## `_draw_body()`'s walker branch picks `WALKER_BODY_BY_VIEW_B`/`WALKER_TRIM_BY_VIEW_B` together off
+## `AgentLook.draw_body()`'s walker branch picks `WalkerLook.BODY_BY_VIEW_B`/`TRIM_BY_VIEW_B` together off
 ## one `stepping` boolean, so the two tables have to carry exactly the same five views the ordinary
 ## frame-a tables do, the same invariant `_test_body_and_trim_can_never_disagree()` pins for frame a.
 func _test_walker_gait_b_tables_agree_with_a(t) -> void:
-	var body_views_b := CrowdAgent.WALKER_BODY_BY_VIEW_B.keys()
-	var trim_views_b := CrowdAgent.WALKER_TRIM_BY_VIEW_B.keys()
+	var body_views_b := WalkerLook.BODY_BY_VIEW_B.keys()
+	var trim_views_b := WalkerLook.TRIM_BY_VIEW_B.keys()
 	t.check(body_views_b.size() == 5 and trim_views_b.size() == 5,
 			"the walker's gait-b family covers all five authored views")
-	for view in CrowdAgent.WALKER_BODY_BY_VIEW.keys():
-		t.check(CrowdAgent.WALKER_BODY_BY_VIEW_B.has(view),
+	for view in WalkerLook.BODY_BY_VIEW.keys():
+		t.check(WalkerLook.BODY_BY_VIEW_B.has(view),
 				"view %s has a gait-b body to match its gait-a body" % view)
-		t.check(CrowdAgent.WALKER_TRIM_BY_VIEW_B.has(view),
+		t.check(WalkerLook.TRIM_BY_VIEW_B.has(view),
 				"view %s has a gait-b trim to match its gait-a trim" % view)
-		t.check(AtlasLibrary.has_region(StringName(CrowdAgent.WALKER_BODY_BY_VIEW_B[view]))
-				and AtlasLibrary.has_region(StringName(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view])),
+		t.check(AtlasLibrary.has_region(StringName(WalkerLook.BODY_BY_VIEW_B[view]))
+				and AtlasLibrary.has_region(StringName(WalkerLook.TRIM_BY_VIEW_B[view])),
 				"both gait-b regions for %s are actually baked" % view)
 
 func _test_walker_gait_b_tables_cover_every_sector(t) -> void:
 	for sector in range(8):
-		var view: String = CrowdAgent.WALKER_VIEW_BY_SECTOR[sector]
-		t.check(CrowdAgent.WALKER_BODY_BY_VIEW_B.has(view) and CrowdAgent.WALKER_TRIM_BY_VIEW_B.has(view),
+		var view: String = WalkerLook.VIEW_BY_SECTOR[sector]
+		t.check(WalkerLook.BODY_BY_VIEW_B.has(view) and WalkerLook.TRIM_BY_VIEW_B.has(view),
 				"sector %d's view %s has a gait-b body and trim too" % [sector, view])
 
 func _test_every_walker_gait_b_svg_is_native_18x38(t) -> void:
-	for view in CrowdAgent.WALKER_BODY_BY_VIEW_B.keys():
-		var body := AtlasLibrary.native_size(StringName(CrowdAgent.WALKER_BODY_BY_VIEW_B[view]))
+	for view in WalkerLook.BODY_BY_VIEW_B.keys():
+		var body := AtlasLibrary.native_size(StringName(WalkerLook.BODY_BY_VIEW_B[view]))
 		t.check(body == Vector2i(18, 38), "gait-b body %s is native 18x38" % view)
-	for view in CrowdAgent.WALKER_TRIM_BY_VIEW_B.keys():
-		var trim := AtlasLibrary.native_size(StringName(CrowdAgent.WALKER_TRIM_BY_VIEW_B[view]))
+	for view in WalkerLook.TRIM_BY_VIEW_B.keys():
+		var trim := AtlasLibrary.native_size(StringName(WalkerLook.TRIM_BY_VIEW_B[view]))
 		t.check(trim == Vector2i(18, 38), "gait-b trim %s is native 18x38" % view)

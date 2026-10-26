@@ -28,8 +28,8 @@ func run(t) -> void:
 			rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
 			for plan in SealPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day), rng):
 				_count(day_rows, map, ground, plan)
-		GameState.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.city_state)
+		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.attempt_spend.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		for plan in FinalePlanner.plan(map, rng, _city_spec()).placements:
