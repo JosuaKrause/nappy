@@ -37,8 +37,8 @@ static func hard_fail_suffix(reason: String, struck_by := "") -> String:
 		return "car"
 	return (struck_by if struck_by != "" else reason).replace("_", "-")
 
-## What ended a crying day: whichever group in `landed_by_group` (see `landed_by_group()` in
-## `DayDirector`) landed the most on her over the crying window — a catalogue id (hyphenated),
+## What ended a crying day: whichever group in `landed_by_group` (read off the live world by
+## `DayDirector.landed_by_group()`) landed the most on her over the crying window — a catalogue id (hyphenated),
 ## `crowd` for walkers, `traffic` for cars, or `self` for her own running and standing in an alley.
 ##
 ## **Ties, and the window reading entirely empty, pick the alphabetically first key that is
@@ -59,14 +59,3 @@ static func crying_suffix(landed_by_group: Dictionary) -> String:
 	if best == "":
 		best = "self"
 	return String(best).replace("_", "-")
-
-## The events' share of a crying day's groups, folded into `by_group`: each live event's own
-## `landed()` under the name the logs give it (`EventInstance.logged_name()`), so a pelican's share is
-## `pelican`'s rather than added to the cyclists' *(inbox #527 in azure-tapir)*. Only positive shares
-## are kept.
-static func add_what_events_landed(instances: Array[EventInstance], by_group: Dictionary) -> void:
-	for instance in instances:
-		var points := instance.landed()
-		if points > 0.0:
-			var name := instance.logged_name()
-			by_group[name] = float(by_group.get(name, 0.0)) + points

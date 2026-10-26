@@ -3,16 +3,23 @@ extends RefCounted
 ## Starts a day and ends it: the ordered construction of one day's world, and the one place a day's
 ## outcome is decided. `main` and the tests both call `start_day(spec)` and `finish_day(result)`.
 ##
-## **Handed everything, reads nothing global.** The city, the resistance, the player, the baby and the
-## day's clock are required; the developer readout, the HUD and the route rig are `null` where the
-## game itself runs without them (a headless boot, a run with no rig). `run` is the run's state
-## and its calendar operations — the dawn photograph, `settled_this_act()`, `day_rng()`, a day's
-## `finish_day()` — handed in by whoever builds the director rather than reached for as a global. Its type is `RunState`, the class of the `GameState` autoload, so a test hands a fresh `RunState.new()` as the fake.
+## **Handed everything, reads nothing global.** What each call requires differs, because the escape's
+## building is a world with no city, no crowd and no resistance: `start_day()` builds an ordinary day
+## and requires the city (whose events it plans), the resistance, the player, the baby and the day's
+## clock; `finish_day()` ends any day, a section of the building included, and requires only the clock
+## and the run — it reads the events, the city, the player and the baby where there are some. The
+## developer readout, the HUD and the route rig are `null` where the game itself runs without them
+## (a headless boot, a run with no rig).
+##
+## `run` is the run's state and its calendar operations (the dawn photograph, `settled_this_act()`,
+## `day_rng()`, a day's `finish_day()`), handed in by whoever builds the director rather than reached
+## for as a global. It is a `RunState`, the class of the `GameState` autoload, so a test hands a fresh
+## `RunState.new()`.
 ##
 ## It writes no save and shows no screen: `finish_day()` returns a `DayEnd` and `main` saves and
 ## shows. The scene recipes' own day start stays in `main`.
 
-## The run: the autoload `GameState`, handed in. Untyped by necessity — an autoload has no class.
+## The run, handed in.
 var run: RunState
 var config: RunConfig
 var city: City
@@ -249,7 +256,14 @@ func loss_cause(result: GameEnums.DayResult) -> String:
 func landed_by_group() -> Dictionary:
 	var by_group := {}
 	if events:
-		LossCause.add_what_events_landed(events.instances(), by_group)
+		# Each live event's own `landed()` under the name the logs give it
+		# (`EventInstance.logged_name()`), so a pelican's share is `pelican`'s rather than added to
+		# the cyclists' *(inbox #527 in azure-tapir)*. Only positive shares are kept.
+		for instance in events.instances():
+			var points := instance.landed()
+			if points > 0.0:
+				var name := instance.logged_name()
+				by_group[name] = float(by_group.get(name, 0.0)) + points
 	if city and city.crowd:
 		for agent: CrowdAgent in city.crowd.agents():
 			var points := agent.landed()

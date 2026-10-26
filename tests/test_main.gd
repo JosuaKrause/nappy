@@ -1186,8 +1186,8 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
 	GameState.resistance.sabotage_done = true
 	# Below the cap (`Tuning.STARTING_NERVES`, 5) so a missing or doubled
-	# `GameState.regain_a_nerve()` call in the hand-over branch (`main.gd`'s
-	# `_hands_over_to_the_escape()` path) would show up as a wrong count rather than being masked
+	# `GameState.regain_a_nerve()` call in the hand-over branch (`DayDirector`'s
+	# `hands_over_to_the_escape()` path) would show up as a wrong count rather than being masked
 	# by the cap `GameState.start_run()` already sets `nerves` to.
 	GameState.header.nerves = 3
 	main._on_day_finished(GameEnums.DayResult.WON)

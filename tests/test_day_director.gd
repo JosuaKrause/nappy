@@ -1,8 +1,9 @@
 extends RefCounted
 ## `DayDirector.finish_day()` on a bare world: a day clock and an event manager, no city, no player.
 ## What a day's end settles — the cause `day_ended` carries, the calendar, the hand-over to the escape
-## — is decided there, so it is checked there; `DayDirector.start_day()` is exercised by every suite
-## that starts a day through it (`tests/test_resistance.gd`) and by the boot.
+## — is decided there, so it is checked there. `DayDirector.start_day()` needs a city: its order is
+## pinned in `tests/test_resistance.gd` (`_test_a_day_is_built_in_its_order`) on the light real world
+## that suite builds.
 
 const SEED := 1717
 
@@ -13,6 +14,7 @@ var _run: RunState
 func run(t) -> void:
 	_test_a_timeout_costs_a_nerve_and_names_no_cause(t)
 	_test_a_crying_day_is_named_by_what_landed_the_most(t)
+	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
 	_test_a_hard_fail_is_named_by_its_reason(t)
 	_test_a_won_day_moves_the_calendar_on(t)
 	_test_a_won_last_day_with_every_task_done_hands_over(t)
@@ -66,6 +68,29 @@ func _test_a_crying_day_is_named_by_what_landed_the_most(t) -> void:
 	t.check(director.landed_by_group().is_empty(), "the bare world landed nothing")
 	_put_away(rig)
 
+## The pelican's share of the meter is its own group, never added to the cyclists' *(inbox #527 in
+## azure-tapir)*, so a crying day it landed the most on is lost to the pelican.
+func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
+	var rig := _rig(t)
+	var director: DayDirector = rig["director"]
+	var def := EventCatalogue.by_id("cyclist")
+	var kid := EventInstance.new()
+	kid.setup(def, Vector2.ZERO)
+	var pelican := EventInstance.new()
+	pelican.setup(def, Vector2.ZERO)
+	pelican.is_pelican = true
+	kid.accumulate_landed(3.0)
+	pelican.accumulate_landed(5.0)
+	director.events._instances.assign([kid, pelican])
+	t.check(director.landed_by_group() == {"cyclist": 3.0, "pelican": 5.0},
+			"the pelican's share is its own group (%s)" % [director.landed_by_group()])
+	t.check(director.loss_cause(GameEnums.DayResult.LOST_CRYING) == "pelican",
+			"so a crying day the pelican landed the most on is lost to the pelican")
+	director.events._instances.clear()
+	kid.free()
+	pelican.free()
+	_put_away(rig)
+
 func _test_a_hard_fail_is_named_by_its_reason(t) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
@@ -95,7 +120,10 @@ func _test_a_won_last_day_with_every_task_done_hands_over(t) -> void:
 	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"a scene recipe never does")
 	director.escape_follows = true
+	_run.header.nerves = Tuning.STARTING_NERVES - 2
 	var end := director.finish_day(GameEnums.DayResult.WON)
+	t.check(_run.header.nerves == Tuning.STARTING_NERVES - 1,
+			"and the won day gives a nerve back, as every won day does")
 	t.check(end.hands_over_to_the_escape and _run.header.day == Tuning.RUN_LENGTH_DAYS
 			and not end.run_over, "and the calendar is left where it was for the escape to decide")
 	_put_away(rig)

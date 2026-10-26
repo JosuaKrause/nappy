@@ -44,8 +44,8 @@ func _test_crying_cause_suffix(t) -> void:
 		"an empty window falls back to her own unattributed share")
 
 ## The pelican is named `pelican` in the cause, never its row's `cyclist` *(inbox #527 in azure-tapir)*: a hard fail
-## through `EventManager.what_struck_her()`'s own name, and a crying loss through the events half of
-## the grouping, where a pelican's share is its own rather than added to the cyclists'.
+## through `EventManager.what_struck_her()`'s own name, and a crying loss through the grouping `DayDirector.landed_by_group()` reads, checked in
+## `tests/test_day_director.gd`.
 func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 	t.check(LossCause.hard_fail_suffix("cyclist", "pelican") == "pelican",
 		"a day the pelican's reach ended is lost to the pelican")
@@ -54,24 +54,6 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 		"and one a cyclist's ended is lost to the cyclist")
 	t.check(LossCause.hard_fail_suffix("car_strike") == "car",
 		"a car is still a car")
-	var def := EventCatalogue.by_id("cyclist")
-	var kid := EventInstance.new()
-	kid.setup(def, Vector2.ZERO)
-	var pelican := EventInstance.new()
-	pelican.setup(def, Vector2.ZERO)
-	pelican.is_pelican = true
-	kid.accumulate_landed(3.0)
-	pelican.accumulate_landed(5.0)
-	var by_group := {"crowd": 4.0}
-	var instances: Array[EventInstance] = [kid, pelican]
-	LossCause.add_what_events_landed(instances, by_group)
-	t.check(by_group == {"crowd": 4.0, "cyclist": 3.0, "pelican": 5.0},
-		"the pelican's share of the meter is its own group (%s)" % [by_group])
-	t.check(LossCause.crying_suffix(by_group) == "pelican",
-		"so a crying day the pelican landed the most on is lost to the pelican")
-	kid.free()
-	pelican.free()
-
 ## `LossCause.of()` is the one entry: a win and a timeout have no cause, a hard-fail day is named by
 ## what struck her, a crying day by what landed the most, and the inputs a result does not read
 ## are ignored.

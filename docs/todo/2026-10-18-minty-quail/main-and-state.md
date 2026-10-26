@@ -14,11 +14,16 @@
   (`GameState.header.day`, `GameState.attempt_spend.scars`), `main` among them. The hidden globals held
   in statics are filed in `hidden-statics.md`, and so is moving the calendar's operations
   (`day_rng()`, `begin_day()`, `finish_day()`) off the autoload.
+- **`DayDirector` calls the observer layer inline**: `readout.use_the_day` / `refresh_routes`,
+  `hud.set_clock_hundredths` and `route_rig.start_day()`, `main`'s shape moved; the README has
+  observers subscribe to domain events and nothing call them.
 - **One summary screen with four hand-reset modes** (`day_summary.gd`: `show_day_brief`, `show_day`,
   `show_ending`, `show_finale`); the screen's mode is tracked in `main`'s booleans. The resistance tally and the run-standing
   line are each formatted in two places.
 
-**Build:** a `RunFlow` with an explicit mode enum and its transitions; the run handed to the save and
+**Build:** a `RunFlow` with an explicit mode enum and its transitions; the readout, the HUD's clock
+precision and the route rig subscribing to `day_started` / `day_planned` (the HUD reading the
+precision off the spec it is handed) instead of being held and called by the director; the run handed to the save and
 to the remaining readers rather than read from `GameState`; a pure `SummaryModel` the screen only
 renders, and `continued(mode)`.
 

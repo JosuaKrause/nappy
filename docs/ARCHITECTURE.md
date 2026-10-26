@@ -34,7 +34,8 @@ src/
 	                      namespace
 	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens
 	                                                       (autoload: VisitCounter)
-  run/                  the run's state, a domain model: one registered list of sub-states
+  run/                  the run's state, a domain model — one registered list of sub-states —
+                        and the run flow that starts and ends its days (`day_director.gd`)
 	run_sub_state.gd      the interface of a part: reset, photograph, give_back, to_data, restore
 	run_state_registry.gd the one list the dawn, a lost day, the snapshot and the save walk
 	run_header.gd         seed, presentation, day, nerves, ending, play time
@@ -585,9 +586,12 @@ its one order — the dawn photograph, the city's closures, the events, the resi
 crowd, the player and the baby, the clock, then `day_planned` — drawing every random stream from the
 run's seed; `finish_day(result)` ends it: the won last night's fire, the cause (`LossCause`), the
 charges still running closed, `day_ended`, and for an ordinary day the calendar's move. It returns a
-`DayEnd`; the save and the summary screen are `main`'s. The city, the events, the resistance, the
-player, the baby and the clock are required; the developer readout, the HUD and the route rig are
-`null` where the game runs without them. It is handed the run, a `RunState` (the class of the `GameState`
+`DayEnd`; the save and the summary screen are `main`'s. `start_day()` requires the city (whose
+events it plans), the resistance, the player, the baby and the clock; `finish_day()` requires only
+the clock and the run, since the escape's building has no city, crowd or resistance, and reads the
+events, city, player and baby where there are some. The developer readout, the HUD and the route
+rig are `null` where the game runs without them. The director calls those three inline, as `main`
+did; turning them into listeners is `RunFlow`'s (`main-and-state.md`). It is handed the run, a `RunState` (the class of the `GameState`
 autoload), rather than reading the autoload by name. A scene recipe's day start stays in `main`.
 
 ### `VisitCounter`

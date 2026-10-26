@@ -331,7 +331,7 @@ func _test_a_lost_day_folds_its_cause_into_one_event_not_two(t) -> void:
 		"the cause and the loss kind fold into one event, not a lost-crying beside a noise-traffic")
 	counter.free()
 
-## A hard-fail day folds the same way, off `_hard_fail_cause_suffix()`'s own raw name, as the day's
+## A hard-fail day folds the same way, off `LossCause.hard_fail_suffix()`'s own raw name, as the day's
 ## end carries it.
 func _test_a_hard_fail_day_folds_its_cause_too(t) -> void:
 	var counter := RecordingCounter.new()
