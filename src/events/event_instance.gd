@@ -592,14 +592,14 @@ static func _alley_crossing_path(map: WorldMap, at: Vector2) -> PackedVector2Arr
 ## Whether a stationary vehicle is seen side-on at this point. The moving van faces along the
 ## street and the burnt car lies perpendicular to it. A junction or ground outside the lattice has
 ## no single street axis, so the vehicle's own facing supplies the coherent default.
-static func _stationary_vehicle_uses_side(look: EventDef.Look, map: WorldMap, at: Vector2,
+static func _stationary_vehicle_uses_side(row_look: EventDef.Look, map: WorldMap, at: Vector2,
 		face: Vector2) -> bool:
 	var offsets := map.corridor_offsets(map.world_to_tile(at))
 	var on_a_north_south_street := offsets.x >= 0
 	var on_an_east_west_street := offsets.y >= 0
 	if on_a_north_south_street != on_an_east_west_street:
 		var parallel_side := on_an_east_west_street
-		return not parallel_side if look == EventDef.Look.BURNT_OUT_CAR else parallel_side
+		return not parallel_side if row_look == EventDef.Look.BURNT_OUT_CAR else parallel_side
 	return absf(face.x) >= absf(face.y)
 
 func _ready() -> void:
@@ -685,19 +685,19 @@ func warning_rect() -> Rect2:
 
 ## The largest of a look's warning pictures: the dog's alert, the robber's two alert frames, and the
 ## guard's raised hand for anyone else drawn standing in a warning.
-static func _warning_picture_size(look: EventDef.Look) -> Vector2:
-	if _warning_sizes.has(look):
-		return _warning_sizes[look]
+static func _warning_picture_size(row_look: EventDef.Look) -> Vector2:
+	if _warning_sizes.has(row_look):
+		return _warning_sizes[row_look]
 	var families: Array[Dictionary] = [EventPictures.GUARD_ALERT_BY_VIEW]
-	if look == EventDef.Look.CHARGING_DOG:
+	if row_look == EventDef.Look.CHARGING_DOG:
 		families = [EventPictures.CHARGING_DOG_ALERT_BY_VIEW]
-	elif look == EventDef.Look.ROBBER:
+	elif row_look == EventDef.Look.ROBBER:
 		families = [EventPictures.ROBBER_ALERT_BY_VIEW, EventPictures.ROBBER_ALERT_BY_VIEW_B]
 	var size := Vector2.ZERO
 	for family in families:
 		for view: String in family:
 			size = size.max(EventPictures.native_size(family[view]))
-	_warning_sizes[look] = size
+	_warning_sizes[row_look] = size
 	return size
 
 static var _warning_sizes := {}

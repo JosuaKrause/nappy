@@ -171,3 +171,6 @@ static func _smoke_across(runs: PackedVector2Array) -> PackedVector2Array:
 func _wall_offset() -> Vector2:
 	var inward := event.world_map().pavement_inward(event.world_map().world_to_tile(event.global_position))
 	return Vector2(inward) * (Tuning.TILE_SIZE * 0.5)
+
+func _front_box() -> Rect2:
+	return _fire_front_box()

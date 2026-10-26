@@ -85,10 +85,10 @@ func _past_the_telegraph(t, instance: EventInstance, what: String) -> void:
 func _test_the_gate_stores_the_key_it_compared(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("barricade"), Vector2.ZERO)
-	t.check(instance._picture.x == -1,
+	t.check(instance.look._picture.x == -1,
 			"before its first tick an instance holds a key nothing can equal, so the first draw is asked for")
 	instance._process(STEP)
-	t.check(instance._picture == instance.look._picture_key(),
+	t.check(instance.look._picture == instance.look._picture_key(),
 			"after a tick the stored key is the one the gate just computed")
 	instance.free()
 
@@ -251,9 +251,9 @@ func _test_asking_for_the_key_does_not_freeze_the_caret(t) -> void:
 	# before whoever writes `player_at`.
 	for i in int(ceil(def.telegraph_time / STEP)) + 1:
 		instance._process(STEP)
-	t.check(instance._caret_strength() == 0, "with nobody to aim at there is no caret")
+	t.check(instance.look._caret_strength() == 0, "with nobody to aim at there is no caret")
 	instance.set_player_at(instance.global_position + Vector2(def.outer_radius, 0.0))
-	t.check(instance._caret_strength() == 2,
+	t.check(instance.look._caret_strength() == 2,
 			"and telling it where she is, inside the same tick, reads the doubled lethal caret")
 	instance.free()
 

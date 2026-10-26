@@ -244,7 +244,7 @@ func _test_consumer_order(t) -> void:
 		reference_car._clock = car._clock
 		cached.player_at = at
 		reference.player_at = at
-		t.check(cached._caret_strength() == reference._caret_strength(), "pre-halo event mark parity")
+		t.check(cached.look._caret_strength() == reference.look._caret_strength(), "pre-halo event mark parity")
 		t.check(car._caret_strength() == reference_car._caret_strength(), "pre-halo car mark parity")
 		for source in [cached, reference, car, reference_car]:
 			source.set_player_at(at, Vector2(-92.0, 0.0), 6.0, 0.8)
@@ -306,7 +306,7 @@ func _test_halo_and_removal(t) -> void:
 				"real halo selection/color agrees with baseline source")
 		t.check(_same_bits(_rim_target(sources[0])[1], _rim_target(sources[1])[1]),
 				"real halo strength agrees with baseline source")
-		t.check(sources[0]._caret_strength() == sources[1]._caret_strength(),
+		t.check(sources[0].look._caret_strength() == sources[1].look._caret_strength(),
 				"post-halo caret agrees with baseline source")
 		if tick == 0:
 			t.check(_rim_target(sources[0])[1] > 0.0,

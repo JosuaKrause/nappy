@@ -199,9 +199,9 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	cyclist.set_process(false)
 	screen.add_child(cyclist)
 	cyclist.set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
-	var key_before := cyclist._picture
+	var key_before := cyclist.look._picture
 	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
-	t.check(cyclist._picture == key_before and cyclist.look._caret_strength_age == -1.0,
+	t.check(cyclist.look._picture == key_before and cyclist.look._caret_strength_age == -1.0,
 			"and works out neither its key nor its caret")
 	var drawn := cyclist.look.drawn_rect_now()
 	t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,

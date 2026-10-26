@@ -1371,7 +1371,7 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
 	var instance := _a_waiting_robber(t, map, mouth, 40.0)
-	var looking := instance._drawn_heading().normalized()
+	var looking := instance.look.drawn_heading().normalized()
 	var round_the_corner := corner - d1 * 60.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	t.check(instance.global_position.distance_to(round_the_corner) < instance.def.notice_within(),
 			"round the corner she is inside his notice in a straight line (%.1fpx)"
@@ -1381,7 +1381,7 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	instance.player_at = round_the_corner
 	_advance(instance, 1.0)
 	t.check(instance.is_waiting(), "he does not notice her through the building")
-	t.check(instance._drawn_heading().normalized().is_equal_approx(looking),
+	t.check(instance.look.drawn_heading().normalized().is_equal_approx(looking),
 			"and is not drawn turned toward her")
 	var in_the_mouth := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	t.check(_sampled_line_is_walkable(map, instance.global_position, in_the_mouth),
@@ -1389,7 +1389,7 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	instance.player_at = in_the_mouth
 	instance._process(STEP)
 	t.check(not instance.is_waiting(), "and there he notices her")
-	t.check(instance._drawn_heading().normalized().is_equal_approx(
+	t.check(instance.look.drawn_heading().normalized().is_equal_approx(
 			(in_the_mouth - instance.global_position).normalized()), "and is drawn facing her")
 	instance.free()
 

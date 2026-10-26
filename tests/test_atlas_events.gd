@@ -42,7 +42,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------- the whole page ---
 
-## Every region name on `event_instance.gd` — the plain constants, the eight-view and stride
+## Every region name on `event_pictures.gd` — the plain constants, the eight-view and stride
 ## tables, the pointing poses, the checkpoint fixtures — is a region of `events`.
 ##
 ## This is the contract in the player's own words, *"all textures that are loaded in an atlas must
@@ -50,7 +50,7 @@ func run(t) -> void:
 ## a path the bake does not know is a picture that would have to be loaded on its own to be drawn,
 ## and a path baked onto some *other* group is one this page's reference does not cover.
 func _test_every_picture_the_events_can_draw_is_on_the_events_page(t) -> void:
-	var script: Script = load("res://src/events/event_instance.gd")
+	var script: Script = load("res://src/events/views/event_pictures.gd")
 	var pictures: Dictionary = {}
 	for value: Variant in script.get_script_constant_map().values():
 		_collect_paths(value, pictures)
