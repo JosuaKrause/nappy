@@ -148,7 +148,7 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 ## the key says.
 ##
 ## **A term missing from the key is a frozen picture rather than a crash**, the same rule
-## `EventInstance._redraw_if_the_picture_changed()` states for the catalogue's own gate — so the key
+## `EventLook.redraw_if_the_picture_changed()` states for the catalogue's own gate — so the key
 ## has to name every time-varying thing the look draws and not a plausible subset. A walker's
 ## drawing is the sector, the mirror and the gait frame, all three quantised (`AgentLook.picture()`).
 ## A car's third term is its body's bob instead, which moves on every frame it is driving while
@@ -525,7 +525,7 @@ func _entry_picture_clearance() -> float:
 	return _look.entry_clearance(_vertical)
 
 ## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
-## `EventInstance._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
+## `EventLook._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
 ## and a cue for what is charging her right now has nothing to say about it.
 func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2) -> void:
 	if canvas == _halo:
@@ -542,7 +542,7 @@ func _draw() -> void:
 	# ring, which is a different drawing than the ordinary frame this flag measures.
 	if skip_draw:
 		return
-	# Told to `Sprites` as well as to the canvas, for the reason `EventInstance._draw()` gives: the
+	# Told to `Sprites` as well as to the canvas, for the reason `EventLook.draw()` gives: the
 	# mirror inside `draw_standing()` sets an absolute matrix, so a west-facing car not handed the
 	# lift would drop it.
 	var bob := _look.bob()
