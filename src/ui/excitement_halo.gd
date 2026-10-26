@@ -137,7 +137,7 @@ const WINDOW := Tuning.EXPECTED_IMPACT_HORIZON
 ## any other placed row now that it stands somewhere: `docs/EVENTS.md`, "No row is `city_wide`".
 ##
 ## Pulled out as a static function so a test can hold the selection, the floor and the drop order
-## without a scene, a shader or a viewport — the same reason `DangerEdge.announces()` is static.
+## without a scene, a shader or a viewport — the same reason `BadgeModel.announces()` is static.
 static func select_sources(candidates: Array, at: Vector2) -> Array:
 	var ranked: Array = []
 	for source in candidates:

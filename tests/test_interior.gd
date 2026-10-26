@@ -34,6 +34,7 @@ func run(t) -> void:
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
 	_test_she_has_to_run_to_the_first_floor_door(t)
 	_test_the_edge_badge_points_at_the_masked_man_from_his_run(t)
+	await _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t)
 	_test_another_masked_man_comes_up_the_same_shaft(t)
 	_test_his_catch_ends_the_section_with_what_struck_her(t)
 	_test_his_run_stops_at_the_building_walls(t)
@@ -1280,6 +1281,39 @@ func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: Node) -> void
 					% [walk[3], pace] + "until he is in view (first up %d frames in, down on %d of %d)"
 					% [met["badge_first"], met["badge_dropped"], met["unseen_frames"]])
 
+## **The same checks with the camera interpolated, as the game runs it, from many places in the
+## physics tick.** The case starts after a pause of a different length each time (seeded, so the
+## list is the same every run) and a process frame, which fixes the interpolation fraction the
+## camera's view is shifted by: the fraction the game's frames take every value of, and the one a
+## slower machine took when the stairwell checks failed once on identical code. The badge must not
+## depend on it. **A probabilistic extra, not the regression check** (that is `test_badge_model`'s
+## deterministic case of this shape; the interior guard's own sensitivity is probabilistic: with the
+## charger reset taken out, at an earlier head with the old 0.8 s timer, it failed in 2 of 3 review runs):
+## it exercises the game's own interpolated camera. Walk pace is the case that failed (the masked man sets off while she is still
+## walking, from inside the out-of-sight margin band).
+func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t: Node) -> void:
+	var pauses_ms := [0, 7, 13, 19, 29, 37, 43, 53, 61, 71, 83]
+	var worst := 0
+	var failures := 0
+	var seen_fractions := {}
+	for walk: Array in _SECOND_FLIGHT_TURNS:
+		for pause: int in pauses_ms:
+			OS.delay_msec(pause)
+			await t.get_tree().process_frame
+			seen_fractions[snappedf(Engine.get_physics_interpolation_fraction(), 0.1)] = true
+			var met := _meet_the_masked_man(t, walk, "walk", true, true)
+			var ok: bool = int(met["badge_first"]) == 0 and int(met["badge_dropped"]) == 0 \
+					and int(met["unseen_frames"]) > 0
+			if not ok:
+				failures += 1
+				worst = maxi(worst, int(met["badge_dropped"]))
+	t.check(failures == 0,
+			"interpolated, from %d starts spread over the tick, the edge badge is up from the frame he runs until he is in view (%d failed, up to %d frames down)"
+			% [pauses_ms.size() * _SECOND_FLIGHT_TURNS.size(), failures, worst])
+	t.check(seen_fractions.size() >= 3,
+			"and those starts really took different interpolation fractions (%d distinct tenths)"
+			% seen_fractions.size())
+
 ## The lines onto the second flight, local to the grammar: the row of her turn, what she holds
 ## there, whether a walker is caught, and what to call it.
 const _SECOND_FLIGHT_TURNS := [
@@ -1295,7 +1329,8 @@ const _SECOND_FLIGHT_TURNS := [
 ## turn coming at its row ("walk-run"), or starting to run 0.3s after he does ("run-late"); once he runs she
 ## makes for the first floor's door. Answers whether he ran, the outcome ("through", "caught" or
 ## "neither") and how near he came.
-func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false) -> Dictionary:
+func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
+		interpolated := false) -> Dictionary:
 	const TICK := 1.0 / 30.0
 	const FRAME := 1.0 / 60.0
 	var f := InteriorMap.build()
@@ -1328,6 +1363,13 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false) ->
 	if badge:
 		camera = player.get_node("Camera2D") as Camera2D
 		camera.make_current()
+		# **Not interpolated, unless the case asks for the game's own.** With physics interpolation on
+		# (`project.godot`) the camera's view centre is shifted by `Engine.get_physics_interpolation_fraction()`,
+		# a wall-clock value fixed by when in a tick the suite happened to reach this case - up to a
+		# camera step, tens of px - and where the stairwell lies against the view's edge decided the
+		# badge. Stepped by hand as here, the view is a function of the walk alone.
+		if not interpolated:
+			camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		camera.reset_smoothing()
 		edge = DangerEdge.new()
 		t.add_child(edge)
@@ -1405,7 +1447,15 @@ func _count_the_badge(edge: DangerEdge, man: EventInstance, log: Dictionary) -> 
 	if not edge:
 		return
 	edge._process(1.0 / 60.0)
-	if man.is_waiting() or man.is_telegraphing() or edge._shows(man):
+	if man.is_waiting() or man.is_telegraphing():
+		return
+	if edge._shows(man):
+		# His badge has done its job the first time he is in sight after it went up; if he leaves
+		# sight again it is raised anew, past the margin band, and that is not this check.
+		if int(log["first"]) >= 0:
+			log["done"] = true
+		return
+	if log.get("done", false):
 		return
 	var up := false
 	for b: Dictionary in edge.announcing():

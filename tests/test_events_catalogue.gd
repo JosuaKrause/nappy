@@ -247,7 +247,7 @@ func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
 	for id: String in ["loose_dog", "cat_dash"]:
 		var def := EventCatalogue.by_id(id)
 		t.check(not def.telegraphs and not def.warns_before_it_exists()
-				and not edge._is_worth_an_arrow_for(def),
+				and not DangerEdge.subject_for_def(def).worth_an_arrow(Tuning.WALK_SPEED),
 				"'%s' does not telegraph: no warning first and no screen-edge badge" % id)
 		t.check(def.validate(), "and '%s' gives what the contract still asks of it" % id)
 	# The rows that stand until she walks in keep the contract for their in-world telegraph.
@@ -259,7 +259,7 @@ func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
 	t.check(EventCatalogue.by_id("loose_dog").comes_down_her_line(),
 			"the loose dog still comes down her own sidewalk, created at once just out of sight")
 	var truck := EventCatalogue.by_id("fire_truck")
-	t.check(truck.telegraphs and truck.warns_before_it_exists() and edge._is_worth_an_arrow_for(truck),
+	t.check(truck.telegraphs and truck.warns_before_it_exists() and DangerEdge.subject_for_def(truck).worth_an_arrow(Tuning.WALK_SPEED),
 			"the fire engine, a heavy penalty, keeps its badge and its warning first")
 	var quiet: Array[String] = []
 	for def in EventCatalogue.all():

@@ -28,7 +28,8 @@ coming* are claims about the thing's own course.
   course, her position held fixed, reaches its lethal reach; flashing while it has not started yet
 - a **badge at the screen edge** whenever something lethal or faster than a walk is out of sight
   (`VisibleView`) and closing **under its own steam**, carrying its own silhouette so it says *what*
-  is coming rather than that something is — **for the things that telegraph**: a thing telegraphs
+  is coming rather than that something is, and, once raised, staying until the thing is in sight or
+  gone — **for the things that telegraph**: a thing telegraphs
   its coming only if it goes fast, comes toward her (PLAYTEST-145 18-23), and carries a heavy
   penalty (olive-hedgehog #598), ending the day or a heavy hit. One that does not
   (`EventDef.telegraphs`) — the loose dog and the cat, the player's own — is outside the badge and

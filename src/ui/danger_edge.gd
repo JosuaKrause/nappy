@@ -8,7 +8,7 @@ extends Control
 ## their warning already spent. The fairness contract is met by the geometry and missed by the
 ## player.
 ##
-## `MARGIN`, `CHEVRON`, `ICON` and `SCREEN_MARGIN` are all screen px, and that is only fair because
+## `MARGIN`, `CHEVRON` and `ICON` (and `BadgeModel.SCREEN_MARGIN`, which decides where a badge is raised) are all screen px, and that is only fair because
 ## the window is letterboxed: `window/stretch/aspect="keep"` in `project.godot` holds the viewport
 ## at a fixed 1280×720 for every monitor, camera included, so a badge measured in screen px warns
 ## the same distance out on a 21:9 monitor as on a 4:3 one. Under `"expand"` the same margin would
@@ -52,45 +52,6 @@ extends Control
 const MARGIN := Vector4(104.0, 116.0, 104.0, 148.0)
 const CHEVRON := 19.0
 const ICON := 34.0
-## At most this many at once. Three arrows is a warning; eight is wallpaper, and the day the
-## edge of the screen becomes wallpaper is the day it stops being read.
-const MOST_AT_ONCE := 3
-
-## How fast something has to be closing before it is worth an arrow, in px/s — **its own
-## approach, with the player held still.** Anything slower she can simply walk away from, which
-## is the same line `required_telegraph_time()` draws.
-##
-## **Not the rate the *gap* is shrinking.** That is her speed plus its speed, and she walks at 92
-## against a threshold of 20 — so walking towards anything lethal raises its badge whether or not
-## the thing is coming, and *"they show events far away"*, *"they disappear when you walk towards
-## them"* and *"they flicker"* all fall out of that one line. Her own velocity is hers to control
-## and does not need announcing at the edge of the screen.
-const CLOSING_SPEED := 20.0
-## The range cap, stated as time rather than as pixels: something is announced once it would
-## reach her within this many seconds at its current approach.
-##
-## A distance would have to be wrong for something — a badge at 900px is scenery with a number
-## on it for a dog, and is exactly what the cue exists for when it is a fire engine. Stated as a
-## window it scales itself: at `fire_truck`'s 190px/s this is most of the stream radius, at a
-## cyclist's pace about half of it, and a 60px/s mover has to be within 300px. It is the same
-## quantity the fairness contract is written in — how long she has to get out of the way.
-const LEAD_TIME := 5.0
-## Once raised, a badge stays up this long after its condition lapses. The test is a derivative
-## against a threshold, and anything hovering near the threshold toggles every frame without a
-## hysteresis.
-const HOLD := 0.8
-## How fast the measured approach follows the raw frame-to-frame one, per second. A single
-## frame's difference is mostly noise at these distances; this is the same smoothing the badge
-## would otherwise need three of.
-const SMOOTHING := 6.0
-## How far out of sight something has to be before it is worth a badge, in screen px. A thing
-## sitting on the boundary would otherwise trade places with its own badge every frame: off screen,
-## badge up, badge draws it back into mind, on screen, badge gone. Once one is up it is kept until
-## the thing is properly in sight, which is the same hysteresis `HOLD` gives the closing test and
-## for the same reason. Asked of what she can see (`VisibleView.sees()`), in world px at the
-## camera's zoom: past the view's edge, and into a covered corner.
-const SCREEN_MARGIN := 130.0
-
 ## Whether `main` has decided a portrait touch window is presenting rotated. Set from outside —
 ## see `TouchControls.rotated`'s own doc. This control is pinned to `ScreenOrientation.DESIGN_SIZE`
 ## regardless of rotation (see `main._add_danger_edge()`), so a raw canvas-space position has to
@@ -106,27 +67,14 @@ var _player: Node2D
 ## visible_view()`): a stand-in source a test hands over. Looked through once a frame from her
 ## camera.
 var _own_view := VisibleView.new()
-## Per live instance: where it was last frame, its smoothed approach speed, how long its badge is
-## still owed, and the generation it was last touched on. Keyed by instance id and mutated in
-## place — see `_measure()` — so an event that streams out drops out of this the frame after it
-## stops appearing in `_events.instances()`, rather than every entry being torn down and rebuilt
-## fresh regardless of whether anything about it changed.
-var _watch := {}
-## Bumped once per `_measure()` call, so a stale entry (an id `_events.instances()` no longer
-## carries) can be told apart from one just touched this frame without a second Dictionary built
-## purely to remember who was seen.
-var _watch_generation := 0
-## What `_draw` should put on the edge this frame, soonest arrival first:
-## `[time_to_reach, distance, def, world position, approach, logged name]`. The last is for
-## `announcing()` alone — `EventInstance.logged_name()`, `pelican` for the pelican the row's own
-## silhouette is still drawn for — and nothing drawn reads it.
-var _coming: Array = []
-
+## Which dangers get a badge, and when: handed this frame's inputs by `_measure()`, which is all
+## this control does of it.
+var model := BadgeModel.new()
 ## `events` is anything that answers `instances() -> Array[EventInstance]`: an `EventManager`, the
 ## city's on a day and in the escape's city, the building's in the escape's building. **Called
 ## again when the escape walks out of the service door**, with the city's source in place of the
 ## building's, so one badge serves both sections; an id the new source no longer carries simply
-## drops out of `_watch` on the next `_measure()`.
+## drops out of `model.watch` on the next `_measure()`.
 func setup(events: Node, player: Node2D) -> void:
 	_events = events
 	_player = player
@@ -188,7 +136,7 @@ func _process(delta: float) -> void:
 ## not redraw at all.
 func _watch_the_edge(delta: float) -> bool:
 	_measure(delta)
-	var badges := not _coming.is_empty()
+	var badges := not model.coming.is_empty()
 	var asked := badges or _drew_badges
 	_drew_badges = badges
 	if asked:
@@ -199,116 +147,60 @@ func _watch_the_edge(delta: float) -> bool:
 ## redraws once to take it off.
 var _drew_badges := false
 
-## Works out what is actually coming at her, once per frame.
+## Hands the model this frame's inputs, once per frame.
 ##
-## Deliberately not in `_draw()`, where it used to be: this is a measurement over time and
-## `_draw` is a function that may be called for reasons that have nothing to do with a frame
-## elapsing. Everything below the line is drawing.
+## Deliberately not in `_draw()`: this is a measurement over time and `_draw` is a function that may
+## be called for reasons that have nothing to do with a frame elapsing. Everything below the line is
+## drawing.
 func _measure(delta: float) -> void:
-	_coming.clear()
+	model.coming.clear()
 	if not _events or not _player or delta <= 0.0:
 		return
-	var here := _player.global_position
-	_watch_generation += 1
 	if not (_events.has_method("visible_view")):
 		_own_view.look_through(_player)
-
+	var subjects: Array = []
 	for instance in _live():
-		if instance.is_finished:
-			continue
-		var id := instance.get_instance_id()
-		var at := instance.global_position
-		var state: Dictionary
-		if _watch.has(id):
-			state = _watch[id]
-		else:
-			# **A thing that arrives under its own warning keeps the badge it already had.** It is
-			# created just out of sight, inside `SCREEN_MARGIN`, where a fresh thing would not raise
-			# one; and it starts with no measured approach. Without this its badge would flicker off
-			# for the frames before it comes into view. So it starts closing at its own speed (a
-			# pursuer's at its pursuing speed), already raised, and the margin waits until it has been
-			# seen once.
-			var warned := instance.came_under_a_warning
-			var own_speed := instance.def.chase_speed() if instance.def.pursuit != null \
-					else instance.def.speed
-			state = {"was": at, "approach": own_speed if warned else 0.0,
-					"hold": HOLD if warned else 0.0, "seen": not warned}
-			_watch[id] = state
-		# The event's own approach: how much closer *it* got to where she is standing now. Both
-		# distances are measured to the same point, so her own walking cancels out of it.
-		var raw := approach_speed(state["was"], at, here, delta)
-		var approach: float = lerpf(state["approach"], raw, clampf(delta * SMOOTHING, 0.0, 1.0))
-		# **A charge is met at its true approach on its first moving frame** *(inbox #788 in minty-lemur, the
-		# player, of the stairwell's masked man, whose only heads-up is this badge once he runs:
-		# "Let's show that at least")*. The smoothing is there for a thing hovering near the
-		# threshold; a charger setting off is a step from standing to its full speed, and smoothed
-		# it would reach the badge's line about a tenth of a second after he ran.
-		if not state.get("charged", false) and raw > 0.0 and instance.has_charged():
-			approach = maxf(approach, raw)
-			state["charged"] = true
-		var distance := at.distance_to(here)
-		# The gap to its *field*, not to its centre: an event reaches her when its outer radius
-		# does, and for a fire engine that is a third of a block earlier.
-		var gap := maxf(0.0, distance - instance.def.outer_radius)
-		var hold: float = state["hold"]
-		# The margin is hysteresis on the *screen edge*, and it is the other half of the flicker:
-		# without it a thing hovering on the boundary trades places with its own badge every
-		# frame. It has to be well outside the view to raise one, and keeps it until it is
-		# properly in view.
-		if _shows(instance):
-			state["seen"] = true
-		var margin: float = SCREEN_MARGIN if state["seen"] else 0.0
-		if _is_worth_an_arrow(instance) and announces(approach, gap) \
-				and not sees(at, margin):
-			hold = HOLD
-		else:
-			hold = maxf(0.0, hold - delta)
-		# Mutated in place rather than replaced — `state` is the same `Dictionary` `_watch[id]`
-		# already holds, so this is the only write this entry needs this frame.
-		state["was"] = at
-		state["approach"] = approach
-		state["hold"] = hold
-		state["generation"] = _watch_generation
-		# Coming on screen is not a lapse in the condition to be held through — it is the badge's
-		# job being done by the thing itself — so it is filtered here, after the hold and not
-		# inside it.
-		if hold > 0.0 and not _shows(instance):
-			# Sorted by *when it arrives* rather than by how near it is, because that is what
-			# `MOST_AT_ONCE` is choosing between: three badges is a warning and the one worth
-			# keeping is the one that gets here first, which a slow thing standing closer is not.
-			_coming.append([gap / maxf(approach, 1.0), distance, instance.def, at, approach,
-					instance.logged_name()])
-	# A warning with nothing in the world yet is announced for the whole of its warning, on screen
-	# or off: it points at where the thing will come from, and there is nothing there to see yet.
-	# Sorted by when the thing will exist, which is the soonest it can arrive.
+		if not instance.is_finished:
+			subjects.append(_subject_of(instance))
 	for warning in _warnings():
-		if warning.place == Vector2.INF or not _is_worth_an_arrow_for(warning.def):
-			continue
-		_coming.append([maxf(warning.left, 0.0), warning.place.distance_to(here), warning.def,
-				warning.place, warning.def.speed, warning.logged_name()])
-	# Only the instances alive this frame carry state forward. An id the event source no
-	# longer carries was never touched above, so its `generation` still reads an earlier one and
-	# is erased here — which is also what keeps a freshly streamed event from flashing an arrow on
-	# the frame it appears: it has no `was` but its own, the same as when `_watch` used to be
-	# rebuilt whole every frame.
-	for id in _watch.keys():
-		if _watch[id]["generation"] != _watch_generation:
-			_watch.erase(id)
-	_coming.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+		if warning.place != Vector2.INF:
+			subjects.append(_subject_of_warning(warning))
+	model.step(delta, _player.global_position, subjects, sees, Tuning.WALK_SPEED)
 
-## How fast something at `was`, now at `now`, is closing on a player standing at `player`.
-##
-## Static and takes one player position on purpose: passing the same point for both distances is
-## what "with the player held still" *means*, and it is the whole of the rule above.
-static func approach_speed(was: Vector2, now: Vector2, player: Vector2, delta: float) -> float:
-	if delta <= 0.0:
-		return 0.0
-	return (was.distance_to(player) - now.distance_to(player)) / delta
+## The facts the model reads about a live instance.
+func _subject_of(instance: EventInstance) -> BadgeModel.Subject:
+	var subject := subject_for_def(instance.def)
+	subject.key = instance.get_instance_id()
+	subject.position = instance.global_position
+	subject.finished = instance.is_finished
+	subject.warned = instance.came_under_a_warning
+	subject.charging = instance.has_charged()
+	subject.shown = _shows(instance)
+	subject.logged_name = instance.logged_name()
+	return subject
 
-## Whether something closing at `approach` px/s with `gap` px of clear ground left is worth
-## announcing. Pulled out so a test can ask the question without a viewport.
-static func announces(approach: float, gap: float) -> bool:
-	return approach >= CLOSING_SPEED and gap <= approach * LEAD_TIME
+## The facts the model reads about a warning with nothing in the world yet.
+func _subject_of_warning(warning: PendingWarning) -> BadgeModel.Subject:
+	var subject := subject_for_def(warning.def)
+	subject.pending = true
+	subject.position = warning.place
+	subject.left = warning.left
+	subject.logged_name = warning.logged_name()
+	return subject
+
+static func subject_for_def(def: EventDef) -> BadgeModel.Subject:
+	var subject := BadgeModel.Subject.new()
+	subject.payload = def
+	subject.speed = def.speed
+	subject.outer_radius = def.outer_radius
+	subject.chase_speed = def.chase_speed() if def.pursuit != null else def.speed
+	subject.telegraphs = def.telegraphs
+	subject.has_icon = not EventInstance.icon_for(def.look).is_empty()
+	subject.ahead_of_player = def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER
+	subject.pursues = def.pursuit != null
+	subject.hard_fail = def.hard_fail
+	subject.mobile = def.mobile
+	return subject
 
 ## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
 ## arrival first. For the telemetry observer, which has to be able to say what she was warned
@@ -316,14 +208,7 @@ static func announces(approach: float, gap: float) -> bool:
 ## is the name the log calls the thing by (`EventInstance.logged_name()`): the row's id, or
 ## `pelican` for the pelican, from its warning on.
 func announcing() -> Array[Dictionary]:
-	var badges: Array[Dictionary] = []
-	for i in mini(MOST_AT_ONCE, _coming.size()):
-		badges.append({
-			"id": str(_coming[i][5]),
-			"distance": float(_coming[i][1]),
-			"approach": float(_coming[i][4]),
-		})
-	return badges
+	return model.announcing()
 
 func _draw() -> void:
 	if FrameRecord.on:
@@ -331,56 +216,21 @@ func _draw() -> void:
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()
-	for i in mini(MOST_AT_ONCE, _coming.size()):
-		_draw_arrow(_coming[i][2] as EventDef, _coming[i][3] as Vector2, float(_coming[i][1]),
-				transform)
+	arrows_drawn = 0
+	# Exactly the badges `announcing()` lists, farthest arrival first so the soonest lies on top where
+	# two overlap.
+	var badges := announcing()
+	for i in range(badges.size() - 1, -1, -1):
+		_draw_arrow(badges[i]["def"] as EventDef, badges[i]["position"] as Vector2,
+				float(badges[i]["distance"]), transform)
 
-## Whether something off-screen deserves an arrow.
-##
-## Lethal always, and otherwise only what she cannot outwalk: an event slower than a walk is one
-## she can turn round and leave, and it does not need to be announced from three streets away.
-## This is the same line the telegraph contract draws when it decides whether the escape
-## distance is the falloff band or the whole radius.
-func _is_worth_an_arrow(instance: EventInstance) -> bool:
-	return _is_worth_an_arrow_for(instance.def)
-
-## `_is_worth_an_arrow()` asked of a row rather than of a live instance, which is all it reads —
-## and all a warning with nothing in the world yet has to ask it about.
-func _is_worth_an_arrow_for(def: EventDef) -> bool:
-	# A thing that does not telegraph its coming (`EventDef.telegraphs`: the loose dog, the cat) is
-	# outside the badge altogether — met as it comes, not announced.
-	if not def.telegraphs:
-		return false
-	# If there is no silhouette to put in the badge there is nothing to *say*, and an arrow that
-	# only says "something" is an anxiety rather than a warning. Nothing lethal or fast is
-	# currently in that position, and this is here so that adding one is a decision.
-	if _icon_for(def.look).is_empty():
-		return false
-	# An `AHEAD_OF_PLAYER` crossing is sited across her line by the director, a fixed lead ahead of
-	# her, and its entire content is *the moment it happens to you* — three seconds of cat is not
-	# a place. Announcing it from the edge of the screen before it arrives gives a badge that
-	# appears and vanishes in the same second as the thing walks into view — and takes away the
-	# moment, which is the whole row. Its fairness is paid in geometry.
-	#
-	# **A pursuer is the exception, because it is no longer a moment once it is sent from off
-	# screen.** `charging_dog` carries `spawn_mode == AHEAD_OF_PLAYER` for the same siting the
-	# director gives every other crossing row, but it is warned of first and then placed just out
-	# of sight to close in — so its badge is exactly what this function exists to raise, and the
-	# moment it comes into view the ordinary "no badge for what is already visible" filter in
-	# `_measure()` takes over. A row sited close and gone in three seconds still has nothing to
-	# announce; a row sent from off screen and coming does.
-	#
-	# **`TOWARD_PLAYER` is the opposite case and falls through on purpose.** It is a road, not an
-	# ambush — she is meant to see it coming and choose a side or a turn before it arrives — so the
-	# badge is exactly the warning the row is designed around rather than a spoiler of it.
-	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and def.pursuit == null:
-		return false
-	if def.hard_fail:
-		return true
-	return def.mobile and def.speed > Tuning.WALK_SPEED
+## How many arrows the last `_draw()` put on the edge, for a test that the drawing shows every
+## badge the model lists.
+var arrows_drawn := 0
 
 func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 		transform: Transform2D) -> void:
+	arrows_drawn += 1
 	var centre := size * 0.5
 	var at_design := ScreenOrientation.to_design_space(transform * world_position, rotated)
 	var offset: Vector2 = at_design - centre
@@ -405,7 +255,7 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 	# The thing itself, so the arrow says *what* rather than *something*. Scaled to fit the
 	# badge with its aspect kept: these are authored at world scale and a square box squashes a
 	# fire engine into something unrecognisable, which defeats the whole cue.
-	var picture := _icon_for(def.look)
+	var picture := EventInstance.icon_for(def.look)
 	if not picture.is_empty():
 		# The size comes from the region table rather than from the texture, so the badge's own
 		# fit is arithmetic that needs nothing loaded; the region itself is the one thing here
@@ -430,19 +280,6 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 	draw_string(font, text_at + Vector2.ONE, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
 			Palette.OUTLINE)
 	draw_string(font, text_at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, colour)
-
-## The silhouette that stands for a kind of event at icon size, as the picture's own repository
-## path — `""` for a look with nothing to draw. The badge reads it as a region of the same baked
-## `events` page the entity itself draws from, so the thing at the screen edge and the thing in the
-## street are the same pixels rather than two loads of one file.
-##
-## **The table lives on `EventInstance`, not here.** A `match` of its own is one table too many for
-## a rule that says *the entity carries its own picture*, and it goes wrong the way a second copy
-## does: a category row returns the generic van, so the badge for a fire engine, an army truck and
-## the unmarked van that takes the baby is a picture of a delivery van. An arrow that says the wrong
-## thing is worse than an arrow that can only say "something".
-func _icon_for(look: EventDef.Look) -> String:
-	return EventInstance.icon_for(look)
 
 func _draw_chevron(at: Vector2, angle: float, colour: Color) -> void:
 	var points := PackedVector2Array([
