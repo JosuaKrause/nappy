@@ -14,9 +14,10 @@ a row is composed of.
 
 **What is still keyed on a row's flags, picture or id:** `at_heat()` flips behaviour flags
 (`investigates`, `hard_fail`) on a copy; `def.look ==` decides what is drawn for CHECKPOINT_POST,
-LOOSE_DOG and the robber's and roadblock's heading, and decides behaviour for CYCLIST's pelican (PR
-4); `CheckpointController` sends its guard by `by_id("door_guard")`. **Two clocks:** instances,
-`ResistanceDirector` and `DayController` tick in `_process`, while `EventManager` checks catches, hard fails and detentions in `_physics_process`,
+LOOSE_DOG and the robber's heading, and decides behaviour for CYCLIST's pelican (PR 4);
+`CheckpointController` sends its guard by `by_id("door_guard")`. **Two clocks:** instances,
+`ResistanceDirector` and `DayController` tick in `_process`, while `EventManager` checks catches,
+hard fails and detentions in `_physics_process`,
 so a door's hold ending on a drawn frame would show her at the place she went in until the next
 physics tick, which is why its release has to show her on the physics frame that moves her.
 **Upward coupling:** the manager fetches the player (`EventManager._find_player()`

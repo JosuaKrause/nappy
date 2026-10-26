@@ -91,8 +91,8 @@ The events:
   `main._on_day_finished()` emits, and `VisitCounter` folds it onto the loss kind
   (`VisitCounter._loss_event_suffix()`); the run log's `lost` line names the same cause off the
   same event. A hard fail names the row that struck her — `car` for the
-  one that is not a catalogue row (`EventBus.hard_fail_triggered("car_strike")`,
-  `Crowd._strike()`), otherwise the id off whichever row's own `is_lethal_at()` fired
+  one that is not an event row (`EventBus.hard_fail_triggered("car_strike")`,
+  `Crowd._strike()`), otherwise the row id off whichever row's own `is_lethal_at()` fired
   (`EventManager._check_hard_fails()`), hyphenated the same way every other name here is — a
   caught `charging_dog` is `lost-hard-fail-charging-dog`, the day-3 lesson's dog
   `lost-hard-fail-charging-dog-tutorial` and day 13's task guard `lost-hard-fail-task-guard` or,

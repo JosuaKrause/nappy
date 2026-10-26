@@ -3554,11 +3554,12 @@ func _picture_never_settles() -> bool:
 
 ## Which heading the next draw would pick this instance's eight-view sector from.
 ##
-## Ordinarily `_heading`. The one exception is a robber who has not noticed her yet: `_draw_robber`
+## Ordinarily `_heading`. Two exceptions. A robber who has not noticed her yet: `_draw_robber`
 ## picks his view from `_robber_waiting_heading()` — her position, whenever anything has told this
 ## instance where she is and nothing built stands between them — rather than from the alley he was
 ## sited facing, so the key has to read the same thing or the one turn in the game that happens
-## without the body moving would never reach the screen.
+## without the body moving would never reach the screen. And a roadblock guard still standing at his
+## band (`barrier_post`, before he has left its body), who is drawn facing out from his post.
 func _drawn_heading() -> Vector2:
 	if def.look == EventDef.Look.ROBBER and is_waiting():
 		return _robber_waiting_heading()

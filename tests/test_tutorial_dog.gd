@@ -29,6 +29,7 @@ func run(t) -> void:
 	_test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t)
 	_test_the_sprinkle_never_runs_on_the_teaching_day(t)
 	_test_only_the_teaching_days_first_dog_is_the_lesson(t)
+	_test_no_other_day_hands_out_the_lesson(t)
 	_test_a_sprinkled_dog_is_never_the_lesson(t)
 
 func _map() -> CityMap:
@@ -282,7 +283,32 @@ func _test_only_the_teaching_days_first_dog_is_the_lesson(t) -> void:
 	t.check(not second.is_empty() and second[0] == "charging_dog",
 			"and a second dog owed that day is the ordinary dog (%s)" % [second])
 
-## **And no other day hands the lesson out**: the dog the director sprinkles in day 3's shape past
+## **No other day hands the lesson out** (`EventDirector._teach_the_run()` asks the day before it
+## marks a lesson). Driven as day 3 is, with a dog the day owes the director, on the day after: the
+## dog is a copy of the row with its day switch taken off (`from_day_after`), so it is still
+## director-sited past day 3, the shape the sprinkle sends, and so the one row that could be made the
+## lesson there. Nothing the director hands out that day is the lesson's row.
+func _test_no_other_day_hands_out_the_lesson(t) -> void:
+	var map := _map()
+	var row := EventCatalogue.by_id("charging_dog")
+	var dog: EventDef = row.duplicate()
+	dog.shape = row.shape
+	dog.from_day_after = null
+	var day := Tuning.RUN_TAUGHT_DAY + 1
+	t.check(dog.spawn_mode_on(day) == EventDef.SpawnMode.AHEAD_OF_PLAYER,
+			"the copy is director-sited on day %d, as day 3's dog is" % day)
+	var director := EventDirector.new(map)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(dog, Vector2.INF)]
+	director.start_day(day, plans, rng)
+	var at := CrowdLanes.arterial_pavement(map)
+	at.y = map.world_size().y * 0.5
+	var ids := _handed_out(director, at, Vector2.UP, Tuning.AHEAD_INTERVAL.y * 3.0)
+	t.check(not ids.is_empty() and not ids.has("charging_dog_tutorial"),
+			"day %d hands out rows and none of them is the lesson's dog (%s)" % [day, ids])
+
+## **And a sprinkled dog is not the lesson either**: the dog the director sprinkles in day 3's shape past
 ## the teaching day (`EventDirector._owe_the_sprinkled_dog()`) is the ordinary `charging_dog`.
 func _test_a_sprinkled_dog_is_never_the_lesson(t) -> void:
 	var map := _map()

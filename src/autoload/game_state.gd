@@ -144,7 +144,7 @@ func start_run(seed_value: int = 0) -> void:
 ## Begin an attempt at today — the first try of a day, or a retry bought with a nerve.
 ##
 ## Called before anything is placed, because what is placed is decided by the state this is the
-## record of: the director asks `completed_resistance_steps` and `failed_resistance_steps` which
+## record of: the director asks `resistance.completed_steps` and `resistance.failed_steps` which
 ## step today offers, and a loss gives back exactly what is photographed here, so the retry is
 ## offered the same mark or contact the first attempt was.
 func begin_day() -> void:
