@@ -1791,32 +1791,34 @@ func _test_the_two_sections_are_named_for_the_player(t) -> void:
 ## ending and must not reach the escape, and neither must a won earlier day that happens to have
 ## finished every task early.
 func _test_only_a_won_last_day_with_every_task_done_hands_over(t) -> void:
-	var director := DayDirector.new(GameState, RunConfig.parse(PackedStringArray(), "", true))
-	var baseline := GameState.save_snapshot()
-	GameState.start_run(9182)
+	# A run of its own, so nothing of the autoload's (the state, the riders, the checkpoint, the mode)
+	# is touched, and nothing needs putting back.
+	var run := RunState.new()
+	var director := DayDirector.new(run, RunConfig.parse(PackedStringArray(), "", true))
+	run.start_run(9182)
 
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
-	GameState.resistance.sabotage_done = true
+	run.header.day = Tuning.RUN_LENGTH_DAYS
+	run.resistance.progress = Tuning.RESISTANCE_GOAL
+	run.resistance.sabotage_done = true
 	t.check(director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"a won day 14 with every task complete hands over to the escape")
 	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.LOST_CRYING),
 			"a lost day 14 does not, however much was done")
 
-	GameState.resistance.sabotage_done = false
+	run.resistance.sabotage_done = false
 	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"nor a won day 14 with the errands run and the last night skipped")
-	GameState.resistance.sabotage_done = true
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL - 1
+	run.resistance.sabotage_done = true
+	run.resistance.progress = Tuning.RESISTANCE_GOAL - 1
 	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"nor one short of the goal")
 
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS - 1
+	run.resistance.progress = Tuning.RESISTANCE_GOAL
+	run.header.day = Tuning.RUN_LENGTH_DAYS - 1
 	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"and nor does a won day before the last one")
 
-	GameState.restore_snapshot(baseline)
+	run.free()
 
 ## `--start-escape city` is the one word that is not a part of the building: it boots the second
 ## section on its own. The mapping is what a test can reach — nothing in the suite can put a word
