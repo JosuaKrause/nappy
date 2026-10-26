@@ -12,8 +12,9 @@ func run(t) -> void:
 	_test_a_danger_walking_away_or_too_slow_gets_none(t)
 	_test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(t)
 	_test_a_raised_badge_ends_when_its_danger_leaves_the_world(t)
-	_test_kept_badges_stay_drawn_while_the_cap_is_not_exceeded(t)
+	_test_kept_badges_stay_drawn_after_their_dangers_stop_or_turn_away(t)
 	_test_six_badges_at_once_are_all_drawn_and_none_drops_early(t)
+	await _test_the_drawing_shows_every_badge_the_model_lists(t)
 	_test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t)
 	_test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t)
 	_test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_view(t)
@@ -96,7 +97,7 @@ func _test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(
 		t.check(_up(model, "thing"), "%s: up while closing" % kind)
 		var down := 0
 		for i in 120:
-			_step(model, [thing])  # standing still: far longer than the old 0.8s hold
+			_step(model, [thing])  # standing still: far longer than any timer would keep it
 			down += 0 if _up(model, "thing") else 1
 		t.check(down == 0, "%s: still up after two seconds standing still (down on %d)" % [kind, down])
 		for i in 120:
@@ -125,7 +126,7 @@ func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t) -> void:
 ## Three badges raised, then their dangers stop (one turns away) and stay out of sight: all three are
 ## kept and drawn. Fails if a badge ends when its
 ## condition (the danger closing) lapses.
-func _test_kept_badges_stay_drawn_while_the_cap_is_not_exceeded(t) -> void:
+func _test_kept_badges_stay_drawn_after_their_dangers_stop_or_turn_away(t) -> void:
 	var model := BadgeModel.new()
 	var subjects: Array = []
 	for i in 3:
@@ -144,7 +145,7 @@ func _test_kept_badges_stay_drawn_while_the_cap_is_not_exceeded(t) -> void:
 		missing += 3 - model.announcing().size()
 	t.check(missing == 0, "all three kept badges stay drawn after their dangers stopped or turned away (%d missing)" % missing)
 
-## Six badges at once, all drawn, none dropped before its danger is in sight: no cap. Five are kept
+## Six badges at once, all drawn, none dropped before its danger is in sight, however many there are. Five are kept
 ## (stopped, out of sight) while a sixth keeps closing; then one comes into sight and only it goes.
 func _test_six_badges_at_once_are_all_drawn_and_none_drops_early(t) -> void:
 	var model := BadgeModel.new()
@@ -168,6 +169,41 @@ func _test_six_badges_at_once_are_all_drawn_and_none_drops_early(t) -> void:
 	_step(model, subjects)
 	t.check(not _up(model, "v0") and _up(model, "v1") and _up(model, "v4"),
 			"only the one that came into sight is dropped")
+
+## The drawing, not only the model: six warnings up at once, and after a real draw the control has put
+## six arrows on the edge. Fails if the drawing limits how many it shows.
+func _test_the_drawing_shows_every_badge_the_model_lists(t) -> void:
+	AtlasLibrary.acquire(&"events")
+	var source := _Source.new()
+	t.add_child(source)
+	var player := Node2D.new()
+	t.add_child(player)
+	for i in 6:
+		var at := Vector2(400.0 + 10.0 * i, -60.0 + 24.0 * i)
+		var warning := PendingWarning.new(EventCatalogue.by_id("fire_truck"),
+				func(_her: Vector2) -> Vector2: return at, func(_p: Vector2, _her: Vector2) -> bool: return true)
+		warning.put_up(Vector2.ZERO)
+		source.warnings.append(warning)
+	var edge := DangerEdge.new()
+	edge.size = Vector2(1280.0, 720.0)
+	t.add_child(edge)
+	edge.setup(source, player)
+	for i in 3:
+		await t.get_tree().process_frame
+	t.check(edge.announcing().size() == 6, "six badges listed (%d)" % edge.announcing().size())
+	t.check(edge.arrows_drawn == 6, "and six arrows drawn (%d)" % edge.arrows_drawn)
+	edge.free()
+	player.free()
+	source.free()
+	AtlasLibrary.release(&"events")
+
+## An event source with nothing in the world and the warnings it is given.
+class _Source extends Node:
+	var warnings: Array[PendingWarning] = []
+	func instances() -> Array[EventInstance]:
+		return []
+	func pending_warnings() -> Array[PendingWarning]:
+		return warnings
 
 func _test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t) -> void:
 	# Seen, then out past the edge but inside the margin band: the band only decides whether a badge
@@ -270,7 +306,7 @@ func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_
 			dropped += 1
 		frame += 1
 	t.check(in_band_frames * STEP > 0.8,
-			"he is out of sight in the band for longer than the old 0.8s hold (%.2fs)" % (in_band_frames * STEP))
+			"he is out of sight in the band for longer than 0.8s, which only a timer would bridge (%.2fs)" % (in_band_frames * STEP))
 	t.check(first == 0 and dropped == 0,
 			"and the badge is up from the frame he runs until he is in view (first up %d, down on %d of %d frames)"
 			% [first, dropped, frame])

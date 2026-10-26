@@ -6,7 +6,7 @@ extends RefCounted
 ## (`Subject`), where she is, how long the frame was, and a `sees` Callable that answers "is this
 ## world point in sight, counting this many screen px past the edge as in sight". `DangerEdge`
 ## builds those from the event source and the camera once a frame and draws what `announcing()` says
-## (every badge in `coming`, soonest arrival first; there is no cap).
+## (every badge in `coming`, soonest arrival first).
 ##
 ## **The seam for the event manager's warning board.** Whatever collects the live dangers and the
 ## pending warnings (`EventManager`, or the `WarningBoard` split out of it) hands this model
@@ -27,7 +27,7 @@ extends RefCounted
 ## them"* and *"they flicker"* all fall out of that one line. Her own velocity is hers to control
 ## and does not need announcing at the edge of the screen.
 const CLOSING_SPEED := 20.0
-## The range cap, stated as time rather than as pixels: something is announced once it would
+## The range limit, stated as time rather than as pixels: something is announced once it would
 ## reach her within this many seconds at its current approach.
 ##
 ## A distance would have to be wrong for something — a badge at 900px is scenery with a number
@@ -191,7 +191,7 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 		approach = maxf(approach, raw)
 		state["charged"] = true
 		# **A charger is raised from outside the view proper, wherever it stands.** Fired once, on
-		# the first frame a pursuer's charge is on and it is moving. Held to the margin band, a
+		# the first frame a pursuer's charge is on and it is moving. Judged against the margin band, a
 		# charger that set off from inside the band was never raised (the masked man's start on the
 		# stairs). Its margin is 0 until it has been in sight again.
 		state["seen"] = false
@@ -220,7 +220,9 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 		coming.append([gap / maxf(approach, 1.0), distance, subject.payload, at, approach,
 				subject.logged_name])
 
-## What is on the edge right now: `{id, distance, approach}` per badge, nearest arrival first.
+## What is on the edge right now, nearest arrival first, one entry per badge: `{id, distance,
+## approach}` for the log, and `{def, position}` (the row and where it points) for the drawing. There
+## is no cap: the list is every badge in `coming`, and what `DangerEdge` draws is exactly this list.
 func announcing() -> Array[Dictionary]:
 	var badges: Array[Dictionary] = []
 	for i in coming.size():
@@ -228,5 +230,7 @@ func announcing() -> Array[Dictionary]:
 			"id": str(coming[i][5]),
 			"distance": float(coming[i][1]),
 			"approach": float(coming[i][4]),
+			"def": coming[i][2],
+			"position": coming[i][3],
 		})
 	return badges

@@ -693,7 +693,7 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 	t.check(absf(approach - Tuning.WALK_SPEED * 2.0) < 1.0,
 			"and a mover is measured at its own speed (%.0f px/s)" % approach)
 
-	# The range cap, which is a window rather than a distance: the same 900px of clear ground is
+	# The range limit, which is a window rather than a distance: the same 900px of clear ground is
 	# a fire engine worth announcing and a dawdler that is somebody else's problem for now.
 	t.check(BadgeModel.announces(190.0, 800.0),
 			"something doing 190px/s at 800px is four seconds away and is announced")

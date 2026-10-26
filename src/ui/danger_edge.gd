@@ -216,13 +216,21 @@ func _draw() -> void:
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()
-	# Every badge is drawn, farthest arrival first so the soonest lies on top where two overlap.
-	for i in range(model.coming.size() - 1, -1, -1):
-		_draw_arrow(model.coming[i][2] as EventDef, model.coming[i][3] as Vector2, float(model.coming[i][1]),
-				transform)
+	arrows_drawn = 0
+	# Exactly the badges `announcing()` lists, farthest arrival first so the soonest lies on top where
+	# two overlap.
+	var badges := announcing()
+	for i in range(badges.size() - 1, -1, -1):
+		_draw_arrow(badges[i]["def"] as EventDef, badges[i]["position"] as Vector2,
+				float(badges[i]["distance"]), transform)
+
+## How many arrows the last `_draw()` put on the edge, for a test that the drawing shows every
+## badge the model lists.
+var arrows_drawn := 0
 
 func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 		transform: Transform2D) -> void:
+	arrows_drawn += 1
 	var centre := size * 0.5
 	var at_design := ScreenOrientation.to_design_space(transform * world_position, rotated)
 	var offset: Vector2 = at_design - centre
