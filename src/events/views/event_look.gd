@@ -11,12 +11,11 @@ extends RefCounted
 ##
 ## The event calls its look. In `setup()` it faces it (`face()`), and its tree callbacks hand it the
 ## drawing nodes to build, attach, rebuild and let go of (`build_nodes()`, `attach_nodes()`,
-## `enter_tree()`, `release_nodes()`), and its `_draw()` draws through it (`draw()`). From the
-## simulation the calls come in three places: at the end of a tick the event asks its look to
-## redraw if the picture changed and to move its drawing nodes; `transition()` asks it to hide its
-## scenery the moment the phase becomes DONE, which can be in the middle of a tick; and two
-## behaviours ask for the redraw or the move (a car whose frame is taken back,
-## `EventCarDriving.end_frame()`; a barrier's posts, `EventBarrierPost`).
+## `enter_tree()`, `release_nodes()`), its `_draw()` draws through it (`draw()`), and its
+## `_process()`, once a drawn frame, asks it to redraw if the picture changed
+## (`redraw_if_the_picture_changed()`, which also moves the drawing nodes and shows or hides the
+## scenery). Nothing that steps the event on the physics tick calls its look: the look reads on its
+## own frame what the last tick left.
 
 ## The event this look draws.
 var event: EventInstance
@@ -697,10 +696,6 @@ func move_nodes(_redraw := false) -> void:
 
 ## Lets go of every drawing node, for an event leaving the tree.
 func release_nodes() -> void:
-	pass
-
-## Hides the scenery a finished event leaves standing until it is freed.
-func hide_the_scenery() -> void:
 	pass
 
 ## The band a roadblock's barrier stands as, or null.

@@ -127,8 +127,8 @@ var is_finished: bool:
 		return phase == Phase.DONE
 
 ## **The one place its phase changes**, and with it what every phase change owes: the field it
-## answers is a function of the phase, so the contribution cache is let go, and a row that is done
-## stops showing its scenery.
+## answers is a function of the phase, so the contribution cache is let go. A row that is done stops
+## showing its scenery on the next drawn frame, when its look reads `is_finished`.
 func transition(to: Phase) -> void:
 	if phase == to:
 		return
@@ -136,8 +136,6 @@ func transition(to: Phase) -> void:
 		_telegraph_ended = true
 	phase = to
 	_invalidate_contribution_cache()
-	if to == Phase.DONE:
-		look.hide_the_scenery()
 
 ## **A telegraph or notice that has run its time is over**: asked wherever the notice clock or
 ## the age moves, so the stored phase is never behind the clock.
@@ -609,12 +607,10 @@ static func _stationary_vehicle_uses_side(row_look: EventDef.Look, map: WorldMap
 	return absf(face.x) >= absf(face.y)
 
 func _ready() -> void:
-	# Moves itself in `_process`, not on the physics tick, so physics interpolation would draw it
-	# gliding between two stale tick positions rather than where `_process` actually put it. Set
-	# on the instance itself rather than inherited from a parent: every instance is added under
-	# `City`'s shared, y-sorted `Entities` node (`City.add_entity()`), beside the player, who does
-	# want her own physics-tick motion interpolated.
-	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	# Stepped on the physics tick (`EventManager` steps it), so it is drawn interpolated between two
+	# ticks as she is, and moves as smoothly as she does. Placed here, so drawn from where it stands
+	# rather than gliding in from the origin.
+	reset_physics_interpolation()
 	EventBus.event_telegraphed.emit(self)
 	_telegraph_announced = true
 	# `EventDef.SolidWhen.ONCE_IT_STARTS` is the one row shape that does not put its body down here
@@ -900,19 +896,29 @@ func _end_its_route(may_park := true) -> void:
 ## started, so every one made under a record is timed.
 var _timed := FrameRecord.on
 
-func _process(delta: float) -> void:
-	# The record's timing, when this event was made under one and it is still running, round the
-	# one tick. See `_timed`.
+## **A drawn frame only redraws.** What the event does is stepped on the physics tick by its manager
+## (`step()`); here its look asks for a redraw if the picture changed, moves its drawing nodes and
+## hides what a finished event leaves (`EventLook.redraw_if_the_picture_changed()`), from the state
+## the last tick left. Timed under the record's events, as the step is.
+func _process(_delta: float) -> void:
+	if look == null:
+		return
 	if _timed and FrameRecord.on:
 		var outer := FrameRecord.enter(FrameRecord.EVENTS)
-		_frame(delta)
+		look.redraw_if_the_picture_changed()
 		FrameRecord.leave(outer)
 		return
-	_frame(delta)
+	look.redraw_if_the_picture_changed()
 
-## One frame: the tick, inside a car's proposed frame for a car that drives (`EventCarDriving`),
-## which commits the pose the tick ends on or takes it back.
-func _frame(delta: float) -> void:
+## Whether a hand holds it still, so its manager does not step it: a scene recipe that walks it
+## itself (`SceneRecipeRuntime`). Its drawing goes on.
+var held_by_hand := false
+
+## **One physics tick of the event**, which its manager runs in a fixed order
+## (`EventManager._step_them()`): the tick, inside a car's proposed frame for a car that drives
+## (`EventCarDriving`), which commits the pose the tick ends on or takes it back. Nothing once it is
+## finished.
+func step(delta: float) -> void:
 	if is_finished:
 		return
 	if car == null:
@@ -922,7 +928,7 @@ func _frame(delta: float) -> void:
 	_tick(delta)
 	car.end_frame()
 
-## What it does in one tick, run once a frame by `_frame()`.
+## What it does in one tick, run by `step()`.
 func _tick(delta: float) -> void:
 	_clock += delta
 	_age += delta
@@ -948,7 +954,6 @@ func _tick(delta: float) -> void:
 			# He walks off and the barrier does not go with him: its body stays where it was built
 			# through the departure as through the chase (its picture is its own node).
 			barrier_post.keep_the_body()
-		look.redraw_if_the_picture_changed()
 		return
 
 	if is_chatting():
@@ -958,7 +963,6 @@ func _tick(delta: float) -> void:
 		# Frozen, so no distance is covered — `_advance_gait(0.0)` marks the frame stopped rather
 		# than leaving `_gait_moving` at whatever it read the tick before the conversation started.
 		_advance_gait(0.0)
-		look.redraw_if_the_picture_changed()
 		return
 
 	# What it does, in the order it was composed (`EventBehaviours.compose()`): each behaviour
@@ -999,9 +1003,7 @@ func _tick(delta: float) -> void:
 		# the body and needs no redraw for it. A spent guard moves nothing, so there is nothing to
 		# re-pin.
 		barrier_post.keep_the_body()
-	look.move_nodes()
 	_take_the_layer_it_warns_on()
-	look.redraw_if_the_picture_changed()
 
 ## **A pursuer that warns over the street is drawn on the warning layer for the whole of its
 ## warning** (`PursuitSpec.warns_over_the_street`, `DrawLayer.Layer.WARNING`): the roadblock's guard,
@@ -1514,6 +1516,8 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 	_gait_moving = false
 	if def.mobile and path.size() > 1:
 		route.advance(0.0)
+	# Put back where it was, not slid there from wherever it was made.
+	reset_physics_interpolation()
 
 ## **Stands it at `at`, keeping everything it is in the middle of**: its phase, its notice, every
 ## behaviour's state. What setup reads off the ground it stands on is read again for the new ground
@@ -1525,6 +1529,7 @@ func move_to(at: Vector2) -> void:
 	_stationary_vehicle_side = _stationary_vehicle_uses_side(def.look, _map, at, _heading)
 	_idle_phase_offset = _position_roll(101)
 	_invalidate_contribution_cache()
+	reset_physics_interpolation()
 	queue_redraw()
 
 ## **Every behaviour's own state**, keyed by its class, as plain values a plan carries while this
