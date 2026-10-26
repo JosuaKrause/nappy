@@ -1690,8 +1690,8 @@ standing at his. Two fields make that work and both are general rather than writ
 
 - **`PursuitSpec.leaves_its_body`.** Every other pursuer's obstruction comes down the frame it
   stops waiting, because a moving pursuer with a body is a wall. A barrier is not the man's own
-  bulk: `EventInstance` pins it at the place it was left and draws it there for the rest of the
-  event's life, so **the street he abandoned stays shut behind him**. Nothing appears and nothing
+  bulk: `EventBarrierPost` pins it at the place it was left and its look draws it there for the
+  rest of the event's life, so **the street he abandoned stays shut behind him**. Nothing appears and nothing
   disappears. **The barrier is furniture, not part of the man**: the guards posted beside the band
   are their own node in the entity layer (`RoadblockLook.RoadblockBand`) standing at the body, and
   the band's segments slices of their own at their own feet (`SpreadLook.Slice`), so they never
