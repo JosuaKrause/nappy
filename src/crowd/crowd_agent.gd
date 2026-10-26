@@ -148,7 +148,7 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 ## the key says.
 ##
 ## **A term missing from the key is a frozen picture rather than a crash**, the same rule
-## `EventInstance._redraw_if_the_picture_changed()` states for the catalogue's own gate — so the key
+## `EventLook.redraw_if_the_picture_changed()` states for the catalogue's own gate — so the key
 ## has to name every time-varying thing the look draws and not a plausible subset. A walker's
 ## drawing is the sector, the mirror and the gait frame, all three quantised (`AgentLook.picture()`).
 ## A car's third term is its body's bob instead, which moves on every frame it is driving while
@@ -525,7 +525,7 @@ func _entry_picture_clearance() -> float:
 	return _look.entry_clearance(_vertical)
 
 ## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
-## `EventInstance._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
+## `EventLook._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
 ## and a cue for what is charging her right now has nothing to say about it.
 func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2) -> void:
 	if canvas == _halo:
@@ -542,7 +542,7 @@ func _draw() -> void:
 	# ring, which is a different drawing than the ordinary frame this flag measures.
 	if skip_draw:
 		return
-	# Told to `Sprites` as well as to the canvas, for the reason `EventInstance._draw()` gives: the
+	# Told to `Sprites` as well as to the canvas, for the reason `EventLook.draw()` gives: the
 	# mirror inside `draw_standing()` sets an absolute matrix, so a west-facing car not handed the
 	# lift would drop it.
 	var bob := _look.bob()
@@ -556,7 +556,7 @@ func _draw() -> void:
 		_draw_mark()
 
 ## The caret's own answer for this car, 0 (none), 1 (amber) or 2 (doubled red), cached against
-## `_clock` for the same reason `EventInstance._caret_strength()` caches against `age`: `_draw()`
+## `_clock` for the same reason `EventLook._caret_strength()` caches against `age`: `_draw()`
 ## and `_process()`'s own redraw-forcing check below both ask in the same frame, and each is a
 ## fresh sampling loop over `expected_impact_at()` or `will_be_lethal()` if they do not share one.
 var _mark_strength_clock := -1.0

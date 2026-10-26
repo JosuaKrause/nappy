@@ -756,12 +756,12 @@ func _test_the_hunting_vans_hunt_on_foot(t) -> void:
 
 ## **No vehicle chases her like a running man, at any heat** *(azure-koala, finding 7: "police cars
 ## chasing the player behave like running people"; inbox #664: "I was chased by police cars still
-## which is just silly")*: no row drawn as a vehicle (`EventInstance.WHEELS_BY_LOOK`) and no car
+## which is just silly")*: no row drawn as a vehicle (`EventPictures.WHEELS_BY_LOOK`) and no car
 ## that drives pursues her at any heat.
 func _test_no_vehicle_pursues_her(t) -> void:
 	var vehicles := 0
 	for def in EventCatalogue.all():
-		if not (def.vehicle != null or EventInstance.WHEELS_BY_LOOK.has(def.look)):
+		if not (def.vehicle != null or EventPictures.WHEELS_BY_LOOK.has(def.look)):
 			continue
 		vehicles += 1
 		for level in EventCatalogue.heat_levels():

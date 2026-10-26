@@ -51,7 +51,7 @@ func _investigate() -> void:
 		var her: Vector2 = event.player_at
 		if not _seen_her and her != Vector2.INF \
 				and event.global_position.distance_to(her) <= def.notice_within() \
-				and event._clear_line_to(her):
+				and event.clear_line_to(her):
 			_seen_her = true
 		if _seen_her and not _stands_in_a_junction():
 			event._notice_her()

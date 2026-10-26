@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## **The drawing** is the ground its picture is drawn over, the run of a spread or the width of a
 ## picture at its feet: a spread (`EventDef.has_a_spread`) covers `-half` to `half` of its run
-## (`EventInstance._draw_spread()`), and end-on that run goes up the screen with the picture's own
+## (`SpreadLook._draw_spread()`), and end-on that run goes up the screen with the picture's own
 ## width across it; anything else stands its picture's width at its feet. What rises above the feet
 ## is a picture standing in front of whatever is behind it, as every figure in the street does, and
 ## is not ground.

@@ -238,16 +238,15 @@ var _mark_tiles_of_mouths: Array[Vector2i] = []
 ## by — the city's own (`City.navigator`), or the map's
 ## own (`WorldMap.navigator()`) for a rig that hands none.
 func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
-	# The same self-registration `WorldContext` and `Stroller` use, so anything that needs to ask
-	# this director a read-only question — `pointable_objective()`, for a protester — finds it
-	# with `get_tree().get_first_node_in_group("resistance")` rather than being handed a reference
-	# by whoever built the scene.
-	add_to_group("resistance")
 	_city = city
 	_map = map
 	_navigator = navigator if navigator else map.navigator()
 	if city and city.events and not city.events.door_crossed.is_connected(_on_door_crossed):
 		city.events.door_crossed.connect(_on_door_crossed)
+	# A protest's placards point where this director's red arrow does (`pointable_objective()`):
+	# the city's events are handed the question rather than looking the director up.
+	if city and city.events:
+		city.events.points_at = pointable_objective
 	_happenings.trace = trace
 	_happenings.setup(city, map, _navigator)
 

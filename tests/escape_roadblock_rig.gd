@@ -122,7 +122,7 @@ static func build(t: Node, map: CityMap, group: Array[EventScheduler.Planned]) -
 		instance.setup(placement.def, placement.position, placement.path, placement.facing, map)
 		holder.add_child(instance)
 		instance.set_process(false)
-		instance._attach_the_band()
+		instance.look.attach_nodes()
 		made.append(instance)
 	return [holder, made]
 

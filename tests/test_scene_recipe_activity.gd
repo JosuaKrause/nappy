@@ -72,7 +72,7 @@ func _ready() -> void:
 		for body in city.region_plan().door_bodies:
 			if body.def.id == "checkpoint_gate" and body.position.is_equal_approx(
 					runtime.built.anchors.gate + Vector2(0, 64)):
-				found = not EventInstance.gate_runs_north_south(body.facing)
+				found = not EventPictures.gate_runs_north_south(body.facing)
 		if not found:
 			fail("the father's horizontal approach does not meet the standard vertical gate")
 			return

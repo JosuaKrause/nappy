@@ -31,7 +31,7 @@ static var _base_transform := Transform2D.IDENTITY
 ## caller's own `draw_set_transform*` call on the canvas, and always cleared back to
 ## `Transform2D.IDENTITY` when the pass ends** — the two say the same thing to two different places,
 ## and a caller that sets one without the other leaves a later mirrored sprite drawing through an
-## offset nobody asked for. `EntityHalo._on_draw()` and `EventInstance._draw()` are the two callers.
+## offset nobody asked for. `EntityHalo._on_draw()` and `EventLook.draw()` are the two callers.
 static func set_base_transform(base: Transform2D) -> void:
 	_base_transform = base
 

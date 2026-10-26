@@ -667,7 +667,7 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 ## inner one of a mouth's pair stood inside an alley walled at both ends, where she can never
 ## reach — so `EventDef.guard_sides` is set here to the one side that does, the same way
 ## `body.def.solid()` already mutates the fresh duplicate `SealPlanner.alley_mouth_wall()` hands
-## back — with no change to `EventInstance._draw_roadblock()`, which already draws one guard per
+## back — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
 ## name in the array rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 		at_start: bool) -> EventScheduler.Planned:
@@ -677,7 +677,7 @@ static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 	return body
 
 ## Which side of a mouth body's own band is the street side, in `EventDef.guard_sides`'s own `-1`/
-## `+1` reading of `EventInstance._guard_post_offset()`'s `side` — the one this mouth's alone,
+## `+1` reading of `EventInstance.guard_post_offset()`'s `side` — the one this mouth's alone,
 ## `-1` at the mouth `SealPlanner.alley_mouth_rect()` places at `rect.position` (`at_start`), `+1`
 ## at the one it places at `rect.end - 1`.
 ##
@@ -685,10 +685,10 @@ static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 ## `rect.position`.** `at_start`'s mouth sits at the low-coordinate end of whichever axis the alley
 ## runs on, so moving further negative from it leaves the rect — the street — and moving positive
 ## enters it — the alley's own inside. The mouth at `rect.end - 1` is the high-coordinate end, so
-## the same two directions swap which one is outside. `_guard_post_offset()`'s own sign convention
-## (`side < 0` is the negative axis direction on both its vertical and broadside branches) agrees
-## with this reading on both axes, so one formula answers a vertical alley's north/south mouths and
-## a horizontal alley's west/east ones alike.
+## the same two directions swap which one is outside. `EventInstance.guard_post_offset()`'s own sign
+## convention (`side < 0` is the negative axis direction on both its vertical and broadside
+## branches) agrees with this reading on both axes, so one formula answers a vertical alley's
+## north/south mouths and a horizontal alley's west/east ones alike.
 static func _alley_mouth_street_side(at_start: bool) -> int:
 	return -1 if at_start else 1
 

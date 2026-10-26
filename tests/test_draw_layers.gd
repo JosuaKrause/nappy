@@ -163,8 +163,8 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 				_open_ground_in(world))
 		instance._spread_vertical = vertical
 		world.add_entity(instance)
-		instance._attach_the_slices()
-		var slices := instance._slices
+		instance.look.attach_nodes()
+		var slices := (instance.look as SpreadLook)._slices
 		t.check(slices.size() > 1, "%s: the spread is drawn in slices (%d)" % [what, slices.size()])
 		var ahead := true
 		var on_its_layer := true
@@ -206,7 +206,7 @@ func _test_the_slices_go_with_their_event(t) -> void:
 	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0),
 			PackedVector2Array(), Vector2.RIGHT, _open_ground_in(world))
 	world.add_entity(instance)
-	instance._attach_the_slices()
+	instance.look.attach_nodes()
 	var layer := world.layers().node(DrawLayer.Layer.ENTITIES)
 	t.check(_slices_in(layer) > 1, "the event stands in its world in slices (%d)" % _slices_in(layer))
 	instance.free()
@@ -226,7 +226,7 @@ static func _open_ground_in(world: WorldContext) -> WorldMap:
 static func _slices_in(layer: Node) -> int:
 	var count := 0
 	for child in layer.get_children():
-		if child is EventInstance.Slice:
+		if child is SpreadLook.Slice:
 			count += 1
 	return count
 
@@ -249,8 +249,8 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 					Vector2.RIGHT, _open_ground_in(world))
 			instance._spread_vertical = vertical
 			world.add_entity(instance)
-			instance._attach_the_slices()
-			var slices := instance._slices
+			instance.look.attach_nodes()
+			var slices := (instance.look as SpreadLook)._slices
 			var ahead := slices.size() > 1
 			for slice in slices:
 				ahead = ahead and slice.get_parent() == instance.get_parent() \
@@ -262,7 +262,7 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 			if id in ["fallen_tree", "car_accident", "burst_water_main"]:
 				var covered := 0.0
 				for i in slices.size():
-					var band := instance._wide_scene_band(i)
+					var band := (instance.look as SpreadLook)._wide_scene_band(i)
 					covered += band.size.y if vertical else band.size.x
 				t.check(is_equal_approx(covered, instance.def.obstructs_radius * 2.0),
 						"%s: its bands cover its run, %.1f of %.1f"

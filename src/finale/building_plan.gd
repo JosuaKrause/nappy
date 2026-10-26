@@ -135,7 +135,7 @@ static func lay_the_grates(map: InteriorMapPlan) -> Array[Sprite2D]:
 	for at in map.vent_sites():
 		var grate := Sprite2D.new()
 		grate.name = "SteamGrate"
-		grate.texture = EventInstance.steam_grate()
+		grate.texture = EventPictures.steam_grate()
 		grate.centered = true
 		grate.position = at
 		map.add_entity(grate, DrawLayer.Layer.GROUND)

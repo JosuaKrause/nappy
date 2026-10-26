@@ -7,7 +7,7 @@ extends RefCounted
 ##
 ## Run explicitly in each revision's checkout and compare the `LANE_PARITY_JSON` lines run for run:
 ## `LANE_PARITY_REPS=3 tools/test.sh probes/minty_quail_lane_parity.gd`. Reads only names both
-## sides of the lane-mover split have (`_picture` and `_drawn_heading` through `get()`), so the
+## sides of the lane-mover split have (`_picture` and `drawn_heading` through `get()`), so the
 ## same file runs on either. Interleave the two revisions' runs when comparing the times.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 30.0

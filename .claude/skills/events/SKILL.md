@@ -11,8 +11,9 @@ field; resist adding a script per event.
 ## Adding a row
 
 The steps are `docs/EVENTS.md`, "Adding a new event". The one that gets skipped is **a drawing**:
-an `EventDef.Look` of its own, an SVG in `art/events/`, a `_draw_*` in `EventInstance`, and a row
-in `EventInstance.icon_for()` so the screen-edge badge has a silhouette. There is no generic to
+an `EventDef.Look` of its own, an SVG in `art/events/`, its pictures in `EventPictures`, a
+`_draw_*` in the look that draws its family (`src/events/views/`, picked by `EventLooks.for_row()`),
+and a row in `EventPictures.icon_for()` so the screen-edge badge has a silhouette. There is no generic to
 borrow — `tests/test_events.gd` fails the build if two rows share a picture.
 
 If it needs behaviour no field covers, add the field to `EventDef` and handle it in the behaviour
@@ -167,7 +168,7 @@ which is not an unfair event, it is an event that has quietly been switched off,
 
 ## Anything that stands still is solid at the width it is drawn
 
-`obstructs_radius` is **half the silhouette** and not a balance value — `EventInstance._draw_spread`
+`obstructs_radius` is **half the silhouette** and not a balance value — `SpreadLook._draw_spread`
 draws a blocking object at exactly the width it obstructs for the same reason in the other
 direction.
 

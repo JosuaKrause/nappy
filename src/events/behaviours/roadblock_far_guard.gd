@@ -10,8 +10,8 @@ extends RefCounted
 ## player to be out of sight of — the sight rule his partner's departure keeps. He notices nothing,
 ## chases nothing and costs nothing: the band is silent from the same frame.
 ##
-## **His own node** (`EventInstance.FarGuard`), in the world's entity layer like the band's, so he
-## sorts at his own feet as he walks rather than at the band's line. Not carried across a
+## What is here is his walk; he is drawn by the roadblock's look (`RoadblockLook`), on a node of his
+## own in the world's entity layer, from `at`, `heading` and `walked`. Not carried across a
 ## stream-out: a band streamed back in after its guard was spent comes back with neither
 ## (`EventBarrierPost.come_back_as_the_barrier()`).
 
@@ -31,8 +31,6 @@ var gone := false
 ## The way he walks, tile centres, each dropped as he reaches it; planned from where he stands
 ## whenever it is empty.
 var way := PackedVector2Array()
-## His node while he walks.
-var node: EventInstance.FarGuard
 
 func _init(owner: EventInstance) -> void:
 	event = owner
@@ -49,21 +47,14 @@ func send_off(side: int) -> void:
 		gone = true
 		return
 	var vertical: bool = event._spread_vertical
-	at = event.body_position() + EventInstance._guard_post_offset(vertical, side)
-	heading = EventInstance._guard_post_heading(vertical, side)
+	at = event.body_position() + EventInstance.guard_post_offset(vertical, side)
+	heading = EventInstance.guard_post_heading(vertical, side)
 	var her: Vector2 = event.player_at
 	if her != Vector2.INF and not her.is_equal_approx(at):
 		heading = (at - her).normalized()
 	walked = 0.0
 	walking_for = 0.0
 	way = PackedVector2Array()
-	node = EventInstance.FarGuard.new()
-	node.instance = event
-	node.name = "FarGuard"
-	node.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	if event.is_inside_tree() and event.get_parent() != null:
-		event._add_beside_it(node)
-	move_node()
 
 ## One frame of his walk away, and his end once she could not be watching.
 func walk_off(delta: float) -> void:
@@ -97,21 +88,3 @@ func walk_off(delta: float) -> void:
 	if out_of_sight or (her == Vector2.INF and walking_for >= EventDeparture.LEAVING_GIVES_UP):
 		at = Vector2.INF
 		gone = true
-		release()
-		return
-	move_node()
-
-## Keeps his node at his feet, shown while the event is, and redrawn.
-func move_node() -> void:
-	if node == null or not node.is_inside_tree():
-		return
-	node.global_position = at
-	node.visible = not (event.skip_draw or event.is_finished
-			or event.is_suppressed_by_its_own_hold())
-	node.queue_redraw()
-
-## Frees his node.
-func release() -> void:
-	if node != null and is_instance_valid(node):
-		node.queue_free()
-	node = null

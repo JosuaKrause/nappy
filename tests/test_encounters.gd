@@ -462,7 +462,7 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t) -> void:
 func _test_a_static_row_is_seen_and_never_influenced(t) -> void:
 	var boxless: Array[String] = []
 	for def in EventCatalogue.all():
-		if EventInstance.icon_for(def.look).is_empty():
+		if EventPictures.icon_for(def.look).is_empty():
 			continue
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)

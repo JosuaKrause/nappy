@@ -195,7 +195,7 @@ static func subject_for_def(def: EventDef) -> BadgeModel.Subject:
 	subject.outer_radius = def.outer_radius
 	subject.chase_speed = def.chase_speed() if def.pursuit != null else def.speed
 	subject.telegraphs = def.telegraphs
-	subject.has_icon = not EventInstance.icon_for(def.look).is_empty()
+	subject.has_icon = not EventPictures.icon_for(def.look).is_empty()
 	subject.ahead_of_player = def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER
 	subject.pursues = def.pursuit != null
 	subject.hard_fail = def.hard_fail
@@ -255,7 +255,7 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 	# The thing itself, so the arrow says *what* rather than *something*. Scaled to fit the
 	# badge with its aspect kept: these are authored at world scale and a square box squashes a
 	# fire engine into something unrecognisable, which defeats the whole cue.
-	var picture := EventInstance.icon_for(def.look)
+	var picture := EventPictures.icon_for(def.look)
 	if not picture.is_empty():
 		# The size comes from the region table rather than from the texture, so the badge's own
 		# fit is arithmetic that needs nothing loaded; the region itself is the one thing here
@@ -269,7 +269,7 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 		draw_texture_rect(AtlasLibrary.region(name), rect, false)
 		# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
 		# rectangle and go over the body the way the street draws them.
-		var wheels := EventInstance.icon_wheels_for(def.look)
+		var wheels := EventPictures.icon_wheels_for(def.look)
 		if not wheels.is_empty():
 			draw_texture_rect(AtlasLibrary.region(StringName(wheels)), rect, false)
 

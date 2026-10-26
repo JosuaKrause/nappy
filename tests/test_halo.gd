@@ -595,7 +595,7 @@ func _test_a_flock_is_selected_and_lands(t) -> void:
 ## now does on every frame the rim is showing at all, easing or not.
 ##
 ## Headless never calls `_draw()`, so what is asserted is the state the drawing reads: the bird
-## positions `EventInstance._draw_body()` traces really are different one frame on, and the rim over
+## positions `EventLook.draw_body()` traces really are different one frame on, and the rim over
 ## them is settled and lit — the pair the old rule threw the frame away on.
 func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")

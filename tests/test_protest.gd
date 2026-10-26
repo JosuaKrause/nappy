@@ -1,7 +1,7 @@
 extends RefCounted
 ## Protester pointing (M65): which of the eight `protester_point_*` poses a protest rank draws,
 ## and when it stays the plain `protester.svg` instead. See `docs/EVENTS.md`, the `protest` row,
-## and `EventInstance._protester_texture()`.
+## and `EventPictures.protester_texture()`.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -14,12 +14,14 @@ func run(t) -> void:
 	_test_plain_pose_with_no_objective(t)
 	_test_plain_pose_on_a_mark_step(t)
 	_test_pointing_pose_on_a_perform_step(t)
+	_test_a_protest_the_city_makes_points_where_its_director_does(t)
+	_test_a_protest_with_no_director_points_at_nothing(t)
 	if _city != null:
 		_city.free()
 
 # ---------------------------------------------------------------- bearing ---
 
-## The exact inverse of `_protester_texture()`'s own `atan2(toward.x, -toward.y)`, so feeding a
+## The exact inverse of `protester_texture()`'s own `atan2(toward.x, -toward.y)`, so feeding a
 ## bearing in and reading it back out is round-trip rather than a second formula to disagree with
 ## the first.
 func _at_bearing(degrees: float, distance: float) -> Vector2:
@@ -31,18 +33,18 @@ func _at_bearing(degrees: float, distance: float) -> Vector2:
 func _test_bearing_sectors_pick_the_matching_pose(t) -> void:
 	var from := Vector2(100.0, 100.0)
 	var sectors := [
-		[0.0, EventInstance.PROTESTER_POINT_N, "north"],
-		[45.0, EventInstance.PROTESTER_POINT_NE, "north-east"],
-		[90.0, EventInstance.PROTESTER_POINT_E, "east"],
-		[135.0, EventInstance.PROTESTER_POINT_SE, "south-east"],
-		[180.0, EventInstance.PROTESTER_POINT_S, "south"],
-		[225.0, EventInstance.PROTESTER_POINT_SW, "south-west"],
-		[270.0, EventInstance.PROTESTER_POINT_W, "west"],
-		[315.0, EventInstance.PROTESTER_POINT_NW, "north-west"],
+		[0.0, EventPictures.PROTESTER_POINT_N, "north"],
+		[45.0, EventPictures.PROTESTER_POINT_NE, "north-east"],
+		[90.0, EventPictures.PROTESTER_POINT_E, "east"],
+		[135.0, EventPictures.PROTESTER_POINT_SE, "south-east"],
+		[180.0, EventPictures.PROTESTER_POINT_S, "south"],
+		[225.0, EventPictures.PROTESTER_POINT_SW, "south-west"],
+		[270.0, EventPictures.PROTESTER_POINT_W, "west"],
+		[315.0, EventPictures.PROTESTER_POINT_NW, "north-west"],
 	]
 	for sector in sectors:
 		var objective: Vector2 = from + _at_bearing(sector[0], 200.0)
-		t.check(EventInstance._protester_texture(from, objective) == sector[1],
+		t.check(EventPictures.protester_texture(from, objective) == sector[1],
 				"bearing %.0f° points %s" % [sector[0], sector[2]])
 
 ## A bearing 20° either side of a sector's own centre is still well inside its 45°-wide band —
@@ -51,16 +53,16 @@ func _test_a_bearing_off_centre_still_rounds_to_its_sector(t) -> void:
 	var from := Vector2.ZERO
 	for offset in [-20.0, 20.0]:
 		var objective := from + _at_bearing(90.0 + offset, 150.0)
-		t.check(EventInstance._protester_texture(from, objective) == EventInstance.PROTESTER_POINT_E,
+		t.check(EventPictures.protester_texture(from, objective) == EventPictures.PROTESTER_POINT_E,
 				"%.0f° off east still rounds to the east pose" % offset)
 
 # ---------------------------------------------------------------- no objective ---
 
 func _test_plain_pose_with_no_objective(t) -> void:
-	t.check(EventInstance._protester_texture(Vector2.ZERO, Vector2.INF) == EventInstance.PROTESTER,
+	t.check(EventPictures.protester_texture(Vector2.ZERO, Vector2.INF) == EventPictures.PROTESTER,
 			"no objective at all draws the plain rank")
-	t.check(EventInstance._protester_texture(Vector2(5.0, 5.0), Vector2(5.0, 5.0))
-			== EventInstance.PROTESTER,
+	t.check(EventPictures.protester_texture(Vector2(5.0, 5.0), Vector2(5.0, 5.0))
+			== EventPictures.PROTESTER,
 			"an objective on top of the protester draws the plain rank rather than dividing by zero")
 
 # ---------------------------------------------------------------- the resistance's own steps ---
@@ -118,8 +120,8 @@ func _test_plain_pose_on_a_mark_step(t) -> void:
 		t.check(step != null and step.is_pickup, "day 6 offers the first chalk mark")
 		t.check(director.pointable_objective() == Vector2.INF,
 				"a mark step gives a protester nothing to point at")
-		t.check(EventInstance._protester_texture(Vector2.ZERO, director.pointable_objective())
-				== EventInstance.PROTESTER,
+		t.check(EventPictures.protester_texture(Vector2.ZERO, director.pointable_objective())
+				== EventPictures.PROTESTER,
 				"...so a protester anywhere in the city draws the plain rank")
 	)
 
@@ -141,7 +143,44 @@ func _test_pointing_pose_on_a_perform_step(t) -> void:
 		t.check(objective == director.contact_position(),
 				"before its first arrow choice, it is the step's own contact")
 
-		var texture := EventInstance._protester_texture(objective + Vector2(0.0, 300.0), objective)
-		t.check(texture != EventInstance.PROTESTER,
+		var texture := EventPictures.protester_texture(objective + Vector2(0.0, 300.0), objective)
+		t.check(texture != EventPictures.PROTESTER,
 				"a protester standing away from the objective points rather than standing plain")
 	)
+
+# ---------------------------------------------------------------- the wiring ---
+
+## A protest the city's events make asks the director it was handed (`ResistanceDirector.setup()`
+## hands `EventManager.points_at` its `pointable_objective()`), not a node it looks up: its rank
+## points where the director's objective is.
+func _test_a_protest_the_city_makes_points_where_its_director_does(t) -> void:
+	_build_city(t)
+	_with_clean_run(func() -> void:
+		var director := _director(t)
+		director.start_day(6, _rng(6), 300.0)
+		director._on_contact_completed(1)
+		var objective := director.pointable_objective()
+		t.check(objective != Vector2.INF, "the perform step gives the protest somewhere to point")
+		var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"),
+				objective + Vector2(0.0, 300.0))
+		var look := protest.look as RankLook
+		t.check(look._protest_objective() == objective,
+				"a protest the city's events make asks the director it was handed")
+		var picture: String = look._protest_pose_now()[0]
+		t.check(picture != EventPictures.PROTESTER
+				and picture == EventPictures.protester_texture(protest.global_position, objective),
+				"and its rank points at the objective (%s)" % picture)
+	)
+
+## With no director handed in (the escape building, a bare rig) a protest has nothing to point at
+## and stands its rank plain.
+func _test_a_protest_with_no_director_points_at_nothing(t) -> void:
+	_build_city(t)
+	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"), Vector2(300.0, 300.0))
+	var look := protest.look as RankLook
+	t.check(look._protest_objective() == Vector2.INF,
+			"a protest with no director handed in has nothing to point at")
+	var picture: String = look._protest_pose_now()[0]
+	t.check(not EventPictures.POINTING_POSES.has(picture),
+			"and stands its rank plain rather than pointing (%s)" % picture)
+

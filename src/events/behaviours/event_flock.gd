@@ -27,7 +27,8 @@ extends EventBehaviour
 
 ## One bird. Deliberately not a node: eleven Node2Ds per flock, y-sorted against a city, to draw
 ## eleven 18px sprites that are always within 60px of each other, is a great deal of tree for a
-## picture that one `_draw()` produces correctly. `RefCounted` rather than `Node` so it cannot leak.
+## picture that one `EventLook.draw()` produces correctly. `RefCounted` rather than `Node` so it
+## cannot leak.
 class Bird extends RefCounted:
 	## Where it is on the ground plane, relative to the flock's own origin.
 	var at := Vector2.ZERO
@@ -44,9 +45,9 @@ class Bird extends RefCounted:
 	var beat := 0.0
 	var phase := 0.0
 	## This bird's own held eight-view sector — one per bird rather than one shared with the
-	## instance's own `_view_sector`, since a flock is eleven bodies wheeling independently rather
-	## than one actor with one facing. See `EventInstance._select_view()`, the same hold applied
-	## per bird by `_draw_birds()`.
+	## instance's own `EventLook._view_sector`, since a flock is eleven bodies wheeling
+	## independently rather than one actor with one facing. See `EventLook._select_view()`, the same
+	## hold applied per bird by `FlockLook._draw_birds()`.
 	var view_sector := 2
 
 ## Its birds, each its own body.

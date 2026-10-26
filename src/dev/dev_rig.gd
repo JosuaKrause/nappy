@@ -301,7 +301,7 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 ## north-south corridor's width is measured across (`CityMap.corridor_offset(tile.x)`) — and only
 ## happens to clear the road on an east-west one, whose width runs the other way. `_spread_is_vertical`
 ## is the one place that already answers which axis a street's *width* is on — it is the same
-## question `EventInstance._spread_at()` asks to lay an obstruction across the carriageway it blocks
+## question `EventInstance.spread_at()` asks to lay an obstruction across the carriageway it blocks
 ## — so reusing it here is the same answer applied to the opposite side of the same obstruction,
 ## rather than a second guess about the street's orientation.
 ##

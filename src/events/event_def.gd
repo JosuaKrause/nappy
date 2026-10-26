@@ -10,11 +10,11 @@ extends Resource
 ## only in their numbers.
 ##
 ## **One look per row, and every look is a thing rather than a category.** Names like `ANIMAL`,
-## `PERSON`, `VEHICLE`, `OBJECT` and `FIRE` do the damage all by themselves: a category is
-## something you can always put one more row into, and then a man shouting, a busker, a poster
-## crew, a protest and the robbery that ends the day are one `person.svg`, while a delivery van, a
-## fire engine, a police car, a riot van, an army truck and the unmarked van that takes the baby
-## are one van.
+## `EventPictures.PERSON`, `VEHICLE`, `OBJECT` and `FIRE` do the damage all by themselves: a
+## category is something you can always put one more row into, and then a man shouting, a busker, a
+## poster crew, a protest and the robbery that ends the day are one `person.svg`, while a delivery
+## van, a fire engine, a police car, a riot van, an army truck and the unmarked van that takes the
+## baby are one van.
 ##
 ## That is not a missing art pass, it is the first row of the visual vocabulary failing — *the
 ## entity itself carries most of it* — and the cost lands on the player as *"not sure what that
@@ -87,7 +87,7 @@ enum Look {
 	STEAM,           ## A vent letting go. Nobody is in it and it is still somewhere to wait out.
 	LOUDSPEAKER_MAST, ## A pole and horns, standing on a street. `loudspeaker` and
 	                  ## `curfew_announce` are two things the same mast does, not two masts — see
-	                  ## `EventInstance._draw_mast()` for the lamp that says whether it is live and
+	                  ## `FigureLook._draw_mast()` for the lamp that says whether it is live and
 	                  ## the arcs that say it is speaking right now.
 	# ---- the story's own figure ----
 	NEIGHBOR,         ## The neighbor down the hall, in work clothes: steel-blue coveralls with a
@@ -217,10 +217,10 @@ func solid(new_shape: GroundShape) -> void:
 ## can only add reachable ground.
 ##
 ## **Two offsets, because a wide scene has two authored pictures.**
-## `EventInstance._wide_scene_texture` picks a composition per street axis rather than rotating one,
+## `EventPictures.wide_scene_texture` picks a composition per street axis rather than rotating one,
 ## so where the cars sit across the street is a fact about the picture in use. `along` is read off
 ## the north-south asset and `along_vertical` off its `_vertical` sibling, both at the scale
-## `EventInstance._draw_wide_scene` fits the picture to the street.
+## `SpreadLook._draw_wide_scene` fits the picture to the street.
 class SolidPart extends RefCounted:
 	## Offset along the spread axis, in px from the scene's own centre, on a north-south street.
 	var along := 0.0
@@ -256,10 +256,10 @@ var solid_parts: Array[SolidPart] = []
 ## carrying `shape`. The one form `EventInstance` builds its bodies, its shadows and its per-tile
 ## record from, so a row that declares nothing cannot take a different path from one that does.
 ##
-## The default is built once per def rather than per call: `_draw_body_shadow()` asks this on every
-## `_draw()` of every visible event, and a fresh `SolidPart` and array per frame per entity is a
-## cost for nothing. `shape` is never mutated in place and `solid()` drops the cache when it
-## replaces one, so the cached piece cannot go stale.
+## The default is built once per def rather than per call: `EventLook._draw_body_shadow()` asks this
+## on every `EventLook.draw()` of every visible event, and a fresh `SolidPart` and array per frame
+## per entity is a cost for nothing. `shape` is never mutated in place and `solid()` drops the cache
+## when it replaces one, so the cached piece cannot go stale.
 func parts() -> Array[SolidPart]:
 	if not solid_parts.is_empty():
 		return solid_parts
@@ -288,7 +288,7 @@ func solid_reach() -> float:
 		furthest = maxf(furthest, piece.reach())
 	return furthest
 
-## Whether `EventInstance._draw_body_shadow()` puts anything down for this row at all. `true` for
+## Whether `EventLook._draw_body_shadow()` puts anything down for this row at all. `true` for
 ## every row but three. `burst_water_main`'s picture is a crater sunk into the road rather than an
 ## object standing on it — a shadow under a hole would read as a mound. `burning_building` and
 ## `burnt_shell` are drawn on the building they stand against, so nothing stands on the sidewalk to
@@ -605,10 +605,10 @@ enum HeatResponse {
 ## conservative answer for all three.
 ##
 ## **Anything that stands still is solid at the width it is drawn.** It is a rule rather than a
-## list, because the moment it is a list a delivery van is scenery and a man standing in a
-## courtyard can be walked through. And the number is not a balance value: it is half of the
-## silhouette, because `_draw_spread` draws a blocking object at exactly the width it obstructs,
-## and anything else is a lie about where she can walk.
+## list, because the moment it is a list a delivery van is scenery and a man standing in a courtyard
+## can be walked through. And the number is not a balance value: it is half of the silhouette,
+## because `SpreadLook._draw_spread` draws a blocking object at exactly the width it obstructs, and
+## anything else is a lie about where she can walk.
 ##
 ## Four things are exempt and each for its own reason:
 ##
@@ -862,10 +862,11 @@ func standoff_reach() -> float:
 func lunge_is_inside_the_catch() -> bool:
 	return pursuit != null and pursuit.lunge_reach > 0.0 and pursuit.lunge_reach < lethal_reach()
 
-## Which side or sides of a `Look.ROADBLOCK` band `_draw_roadblock()` posts a standing guard on —
-## `-1`/`+1` in `_guard_post_offset()`'s own reading of `side`, the same sign `_guard_side_toward()`
-## and `EventBarrierPost.chaser_side()` use. `[-1, 1]` (both) is every row's own default: the catalogue `roadblock`
-## and every wall body inherit it unless something here overrides it.
+## Which side or sides of a `Look.ROADBLOCK` band `RoadblockLook._draw_roadblock()` posts a standing
+## guard on — `-1`/`+1` in `guard_post_offset()`'s own reading of `side`, the same sign
+## `_guard_side_toward()` and `EventBarrierPost.chaser_side()` use. `[-1, 1]` (both) is every row's
+## own default: the catalogue `roadblock` and every wall body inherit it unless something here
+## overrides it.
 ##
 ## **Two overrides today, both the region wall's own.** *(2026-09-25, PLAYTEST-135, statement 8:
 ## "maybe four? one on each sidewalk. would that cover everything?")* A wall crossing stands three
@@ -879,7 +880,8 @@ func lunge_is_inside_the_catch() -> bool:
 ##
 ## **Carried on the def, set on the placement, read only at draw time.** Nothing here decides
 ## *which* side is which — an empty array draws nothing at all regardless — so both overrides above
-## are a value set on a fresh duplicate at placement, with no change to `_draw_roadblock()` itself.
+## are a value set on a fresh duplicate at placement, with no change to
+## `RoadblockLook._draw_roadblock()` itself.
 @export var guard_sides: Array[int] = [-1, 1]
 
 ## **A part one row plays in a system beside the catalogue**, which that system finds it by rather
@@ -1533,8 +1535,8 @@ func field_reach() -> float:
 ## What walking straight through the middle of one costs, in points of a hundred-point meter:
 ## the field integrated along the line, less the walking decay over the same time.
 ##
-## Cached, because `EventInstance.wants_a_mark()` asks it on every `_draw()` and the answer is a
-## property of the def rather than of the moment.
+## Cached, because `EventLook.wants_a_mark()` asks it on every `EventLook.draw()` and the answer is
+## a property of the def rather than of the moment.
 func walk_through_cost() -> float:
 	if _cost_cache == INF:
 		_cost_cache = (mean_emission_along_the_line() - Tuning.EXCITEMENT_DECAY_WALKING) \

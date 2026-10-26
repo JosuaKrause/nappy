@@ -2,7 +2,7 @@ class_name EventScenery
 extends Node2D
 ## A wide scene's static vector spans and cropped moving details, in their source painter order.
 ## The event keeps its simulation clock and cues; only these small moving layers change phase.
-## One of these stands behind each slice of the scene (`EventInstance.Slice`), holding the part of
+## One of these stands behind each slice of the scene (`SpreadLook.Slice`), holding the part of
 ## every span inside its slice's band (`clip`); the first slice's also holds the contact shadow,
 ## whole, so it goes down before every other part of the scene.
 ## `EventManager` owns the events atlas page for its whole tree lifetime, including every scenery

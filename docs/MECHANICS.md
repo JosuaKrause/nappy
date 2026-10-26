@@ -1050,7 +1050,7 @@ against a building.
 
 **Nor does it reach through them: it catches her only by touching her.** *(freckled-goose, #544:
 "Only if the Robert touches the player should it end instantly".)* A pursuer's catch is its reach
-**and** a clear line — `EventInstance.is_lethal_at()` asks `_clear_line_to()` whether the straight
+**and** a clear line — `EventInstance.is_lethal_at()` asks `clear_line_to()` whether the straight
 line from it to her crosses any ground a figure on foot may not enter (`CityMap.clear_line()`),
 every tile the line enters, so within reach across a building's corner, a barrier or a café is not
 a catch. The line sees out of a band the pursuer stands in, and the tile she stands on never hides
