@@ -301,11 +301,12 @@ func say_once(line: String) -> void:
 ## addition to minutes and seconds the timer also shows milliseconds. this makes the timer appear
 ## faster than just the seconds alone which adds additional tension"*, tried as hundredths
 ## (inbox #746 in woolly-penguin) — so it is a flag on the one function that draws the clock rather
-## than a second clock or a second label. `main` hands it in as each day starts.
+## than a second clock or a second label, read off the spec of each day or section as it begins.
 var _hundredths := false
 
-func set_clock_hundredths(on: bool) -> void:
-	_hundredths = on
+## The day or section about to be walked (`RunFlow.day_started`, which `main` connects).
+func use_the_day(spec: DaySpec) -> void:
+	_hundredths = spec.clock_hundredths
 
 func _process(delta: float) -> void:
 	_teach_the_pause(delta)

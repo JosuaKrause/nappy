@@ -348,12 +348,13 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	t.add_child(day)
 	day.set_process(false)
 	main._day = day
-	main._escape_from_a_run = true
+	main._flow.opening = RunFlow.Opening.ESCAPE_HANDED_OVER
 	main._use_the_day(MAIN_SCRIPT.escape_section_spec(DaySpec.Section.BUILDING, 180.0))
 	day.start(180.0)
 	EventBus.hard_fail_triggered.emit("abduction")
 	main._on_day_finished(GameEnums.DayResult.LOST_HARD_FAIL)
-	t.check(GameState.header.nerves == 1 and main._summary.is_showing() and not main._run_over,
+	t.check(GameState.header.nerves == 1 and main._summary.is_showing()
+			and main._flow.mode == RunFlow.Mode.SECTION_LOST,
 			"a lost section costs a hard run a nerve, and comes up on the day's outcome screen")
 	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
 	t.check(body.text.contains("Nerves left: %s" % NerveDisplay.stars(1))
@@ -363,9 +364,10 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	day.start(180.0)
 	EventBus.hard_fail_triggered.emit("abduction")
 	main._on_day_finished(GameEnums.DayResult.LOST_HARD_FAIL)
-	t.check(GameState.header.nerves == 0 and main._run_over, "the last nerve does not start it again")
+	t.check(GameState.header.nerves == 0 and main._flow.mode == RunFlow.Mode.RUN_OVER,
+			"the last nerve does not start it again")
 	main._on_summary_continued()
-	t.check(GameState.header.ending == GameEnums.Ending.BAD and main._ending_shown,
+	t.check(GameState.header.ending == GameEnums.Ending.BAD and main._flow.mode == RunFlow.Mode.ENDING,
 			"it is the bad ending")
 	var heading: Label = main._summary.get_node("Root/Center/Lines/Heading")
 	t.check(heading.visible and heading.text == "GAME OVER", "on the GAME OVER screen")
@@ -462,7 +464,7 @@ func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
 ## so a change to it is a decision someone made rather than a side effect.
 ##
 ## - A boot with nothing to resume (a first visit, after an ending, after the held restart): shown,
-##   whether or not an ending was shown in this scene first (`_ending_shown`, `open()`'s `again`).
+##   whether or not an ending was shown in this scene first (`RunFlow.Mode.ENDING`, `open()`'s `again`).
 ## - A boot that resumed a saved run, its day under way or not: none.
 ## - The escape's resume gate (`open(false)`) and the `--start-escape` epilogue (`open(true)`): none.
 func _test_which_titles_show_the_checkbox_today(t) -> void:
@@ -484,7 +486,7 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 	]
 	for case: Array in cases:
 		main._resume = case[0]
-		main._ending_shown = case[1]
+		main._flow.mode = RunFlow.Mode.ENDING if case[1] else RunFlow.Mode.BOOTING
 		main._open_the_title()
 		t.check(main._title.hard_mode_shown() == case[2],
 				"%s: the box is %s" % [case[3], "shown" if case[2] else "not shown"])
@@ -500,7 +502,6 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 			"nor does the --start-escape epilogue show a box or a name")
 	main._title.close()
 	main._resume = {}
-	main._ending_shown = false
 	main._status_layer.free()
 	_free_gate_main(t, main)
 

@@ -221,7 +221,7 @@ var _held := false
 ## side always does. `Vector2.INF` before the day's first frame.
 var _last_position := Vector2.INF
 var _teleported := false
-## The day this rig's queue was started for, read once in `start_day()` off the day's spec
+## The day this rig's queue was started for, read once in `start_day()` off the spec it is handed
 ## (`DaySpec.number`: 1 to 14, or the escape's city, 16). `GameState.header.day` has already moved to the
 ## next day by the time `DayController.day_finished` reports a win, so a line written from
 ## `_on_day_finished()` would otherwise name the wrong day.
@@ -253,12 +253,12 @@ func _cache_road_tiles() -> void:
 			if _city.map.tile_at(tile) == GameEnums.TileType.ROAD:
 				_road_tiles[tile] = true
 
-## Called from `main._start_day()`, the same place `TelemetryObserver.start_day()` is — resets the
+## The day `spec` has been planned (`RunFlow.day_planned`, which `main` connects) — resets the
 ## queue for the day just built, so a run that plays more than one day under this flag (a nerve, or
 ## a probe that simply keeps going) starts the new day's targets fresh rather than chasing
 ## yesterday's mark.
-func start_day() -> void:
-	_day_number = _day.spec.number
+func start_day(spec: DaySpec) -> void:
+	_day_number = spec.number
 	_target_index = 0
 	_elapsed_seconds = 0.0
 	_waypoints.clear()

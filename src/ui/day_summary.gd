@@ -115,7 +115,7 @@ func _refresh_buttons() -> void:
 ## `lost_note` is `Texts.RESUMED_DAY_LOST` when the load itself spent a nerve, or `""` for a
 ## save that cost nothing, in which case this is exactly what a fresh day 1 skips by going
 ## straight from the title into `main._engage_the_day()` instead. Continuing from here reaches
-## that same function, through `main._on_summary_continued()`'s own `_resume_gate_open` branch —
+## that same function, through `main._on_summary_continued()` on a brief (`RunFlow.Mode.BRIEF`) —
 ## the moment the day actually starts, and the moment the save says so.
 ##
 ## **`title` is a section of the escape's own words** — *"Escape the building"* or *"Escape the

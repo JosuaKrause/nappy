@@ -1073,7 +1073,8 @@ func _test_dismissing_a_fresh_titles_start_writes_the_save_under_way(t) -> void:
 
 		t.check(not GameSave.has_save(), "nothing on disk before the title is dismissed")
 		main._on_title_start(ControlsMode.Mode.TAP)
-		t.check(not main._resume_gate_open, "no day brief for a fresh run — she is playing already")
+		t.check(main._flow.mode == RunFlow.Mode.WALKING,
+				"no day brief for a fresh run — she is playing already")
 		var saved := GameSave._read_now()
 		t.check(saved.get("day_under_way") == true,
 				"and the save on disk already says so, with nothing else run at all")
@@ -1083,8 +1084,8 @@ func _test_dismissing_a_fresh_titles_start_writes_the_save_under_way(t) -> void:
 
 ## The title→day-brief path with nothing charged: `_resume` says the save was written at a day's
 ## own summary or at an earlier day brief (`day_under_way: false`), so pressing start on the title
-## shows the day brief with no lost-day note, and continuing from it — `_on_summary_continued()`'s
-## own `_resume_gate_open` branch — is the moment the save actually says the day is under way.
+## shows the day brief with no lost-day note, and continuing from it — `_on_summary_continued()` on
+## a brief (`RunFlow.Mode.BRIEF`) — is the moment the save actually says the day is under way.
 ## Also the "second open of a nothing-played-yet save costs nothing" case: nothing here writes
 ## between the title closing and the day brief's own continue, so a kill anywhere in between finds
 ## exactly what the screen is already showing — see `_show_the_resume_gate()`'s own doc for why.
@@ -1100,13 +1101,14 @@ func _test_title_leads_to_the_day_brief_with_nothing_charged(t) -> void:
 		main._on_title_start(ControlsMode.Mode.TAP)
 		t.check(main._summary.is_showing(), "the day brief shows instead of starting the day outright")
 		t.check(not main._summary._note.visible, "no lost-day note — the load cost nothing")
-		t.check(main._resume_gate_open, "and the day brief's own continue still has to engage the day")
+		t.check(main._flow.mode == RunFlow.Mode.BRIEF,
+				"and the day brief's own continue still has to engage the day")
 		t.check(GameSave._read_now().get("day_under_way") == false,
 				"showing the day brief writes nothing new — the dawn write already said this")
 
 		main._on_summary_continued()
 		t.check(not main._summary.is_showing(), "continuing dismisses the brief")
-		t.check(not main._resume_gate_open, "and the gate is spent")
+		t.check(main._flow.mode == RunFlow.Mode.WALKING, "and the gate is spent")
 		t.check(GameSave._read_now().get("day_under_way") == true,
 				"the day is engaged, which the save now says")
 
@@ -1129,7 +1131,7 @@ func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t) -> void:
 	)
 
 ## The last-nerve case: the load's own `GameState.finish_day()` call in `_ready()` (not driven here
-## — this rig starts past it, with `_run_over` already set the way that call would have left it)
+## — this rig starts past it, with the run's ending already set the way that call would have left it)
 ## spent the run's last nerve, so pressing start on the title shows the ending directly — the same
 ## screen and the same `_on_summary_continued()` path any other run-ending reaches — rather than
 ## the day brief. `GameState.header.ending` is already set by the time this is reached, so
@@ -1139,13 +1141,13 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 	_with_forced_save(func() -> void:
 		var main := _bare_gate_main(t)
 		main._resume = {"day_under_way": true}
-		main._run_over = true
 		var ending := GameState.header.ending
 		GameState.header.ending = GameEnums.Ending.BAD
 
 		main._on_title_start(ControlsMode.Mode.TAP)
-		t.check(main._ending_shown, "the ending is shown rather than the day brief")
-		t.check(not main._resume_gate_open, "so there is no day brief for a later continue to engage")
+		t.check(main._flow.mode == RunFlow.Mode.ENDING,
+				"the ending is shown rather than the day brief, so there is no day brief for a later"
+				+ " continue to engage")
 		t.check(not GameSave.has_save(), "a run that has ended writes nothing, on this path either")
 
 		GameState.header.ending = ending

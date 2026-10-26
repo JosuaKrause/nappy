@@ -1279,7 +1279,7 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 	# resolving, planning, pressing the ordinary axes, and `_arrive()` firing for real.
 	var targets: Array[String] = ["home"]
 	rig.setup(_city, _stroller, baby, _resistance, day, targets)
-	rig.start_day()
+	rig.start_day(day.spec)
 
 	var start_position := _stroller.global_position
 	var done := false
@@ -1370,7 +1370,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	rig.set_physics_process(false)
 	var no_targets: Array[String] = []
 	rig.setup(city, _stroller, baby, null, day, no_targets)
-	rig.start_day()
+	rig.start_day(day.spec)
 	var reach := float(Tuning.TILE_SIZE) * 5.0
 	# On the carriageway either side of the boom, so the straight line — and the bare grid's
 	# shortest walk — is under it, and going through a hut is the detour the rig has to choose.
