@@ -64,6 +64,16 @@ var _navigator: Navigator
 ## The lights a car that drives stops at, the crowd's own (`EventInstance.signals`): handed over by
 ## the city; none in a world with no streets.
 var signals: TrafficSignals
+
+## What a protest points at, answering a world point or `Vector2.INF` for nothing: handed in by the
+## resistance (`ResistanceDirector.setup()`, its `pointable_objective()`) and asked on behalf of
+## every instance made here. Unset where there is no resistance, and a protest then points at
+## nothing.
+var points_at := Callable()
+
+## `points_at` asked now, so an instance made before the resistance handed it in points too.
+func _where_protests_point() -> Vector2:
+	return points_at.call() if points_at.is_valid() else Vector2.INF
 ## Where the manager, the day's planning and every instance it creates write their own account for
 ## the run log — the city's, set before `setup()`; silent until then.
 var trace := RunTrace.new():
@@ -150,7 +160,7 @@ func force(row: String, interval: float) -> void:
 		_director.force(row, interval)
 
 ## Takes the one reference on the baked page every `EventInstance` draws from — the whole
-## catalogue, the checkpoint kit and the crater on one page (`EventInstance.ATLAS_GROUP`).
+## catalogue, the checkpoint kit and the crater on one page (`EventPictures.ATLAS_GROUP`).
 ##
 ## **One reference for the manager's own life, not one per family per instant.** This replaces a
 ## pass that rebuilt the wanted set of runtime-packed families from `_instances` after every change
@@ -171,10 +181,10 @@ func _init() -> void:
 			door_crossed.emit(at, axis, inspected))
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(EventInstance.ATLAS_GROUP)
+	AtlasLibrary.acquire(EventPictures.ATLAS_GROUP)
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(EventInstance.ATLAS_GROUP)
+	AtlasLibrary.release(EventPictures.ATLAS_GROUP)
 
 ## The navigator handed in by `setup()`, or the map's own (`WorldMap.navigator()`) where none was
 ## handed for it — a rig that sets the map itself.
@@ -895,7 +905,7 @@ static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 	# record has to say where the body is. It is also what keeps a crash walkable on its pavements,
 	# since a row solid in parts records its pieces and the two cars are the only pieces there are.
 	var axis := _body_axis(map, def, placed, facing)
-	# Which way round a piece's own offset is laid is `EventInstance._spread_at()`'s question, and
+	# Which way round a piece's own offset is laid is `EventInstance.spread_at()`'s question, and
 	# it is asked of the placed position for the same reason the axis is: a piece offset the wrong
 	# way is a body recorded across the street from the car it belongs to.
 	var spread_vertical := EventInstance._spread_is_vertical(map, placed)
@@ -1107,6 +1117,7 @@ func _create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sc
 	instance.trace = trace
 	instance.setup(def, at, path, facing, _map, _the_navigator())
 	instance.signals = signals
+	instance.points_at = _where_protests_point
 	_map.add_entity(instance)
 	# Its own copy of the footprint, given back when it streams out or finishes. A planned body has
 	# already recorded the same tiles from its plan; a body placed later in the day has not, and

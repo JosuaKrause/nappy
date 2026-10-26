@@ -88,7 +88,7 @@ that bite when you are writing the code.
 
 ### The entity carries most of it, so one picture per row
 
-**No two rows share a look, no two looks share a silhouette.** `EventInstance.icon_for()` is the
+**No two rows share a look, no two looks share a silhouette.** `EventPictures.icon_for()` is the
 single table, and it is also what the badge draws. `tests/test_events.gd` holds both halves.
 
 **A *category* in an enum is a list waiting to happen.** Rows collapse into it until several are
@@ -112,7 +112,7 @@ nobody.
   lasts a few seconds, so an "amber means telegraphing" rule would only ever be seen on the rows
   sited in front of her and would read as *near*. **The flash carries the phase.**
 - **Cache the projection once a frame.** `wants_a_mark()`, `mark_colour()` and the drawing all ask
-  in the same frame; `EventInstance._caret_strength()` and `CrowdAgent._caret_strength()` compute
+  in the same frame; `EventLook._caret_strength()` and `CrowdAgent._caret_strength()` compute
   it once, keyed on the entity's own clock.
 
 ### The mark breathes
@@ -240,12 +240,12 @@ cues' own drawing:
 absolute matrix. So a caller pairs its own `draw_set_transform*` with
 `Sprites.set_base_transform()`, and clears it back to `Transform2D.IDENTITY` when the pass ends;
 `Sprites.mirrored_transform()` composes the mirror under it. `EntityHalo._on_draw()` and
-`EventInstance._draw()` are the two callers. A caller that forgets draws every mirrored halo offset
+`EventLook.draw()` are the two callers. A caller that forgets draws every mirrored halo offset
 on top of the body, with no rim.
 
-**A redraw gate is a promise about everything the drawing reads.** `EventInstance` and
-`CrowdAgent` skip the rebuild while their picture is unchanged, so the key each compares has to
-name every time-varying quantity its `_draw()` touches, **not the ones that look like the
+**A redraw gate is a promise about everything the drawing reads.** An event's look (`EventLook`)
+and `CrowdAgent` skip the rebuild while their picture is unchanged, so the key each compares has to
+name every time-varying quantity its drawing touches, **not the ones that look like the
 picture**. A term missing from the key is a frozen picture rather than a crash, and it shows only on
 the bodies that reach the missing term — a car's registration and shadow read its **continuous**
 heading while its view, mirror and gait are quantised. A traced rim makes such a freeze visible,
@@ -254,8 +254,8 @@ body does not. Sweep the continuous quantity in a test and assert the key moved 
 
 **A gate that skips off screen is a promise about everything the drawing covers, and it redraws on
 its first frame back.** `DrawnView` (`src/ui/drawn_view.gd`) is the one box, the view grown by two
-tiles, that `CrowdAgent` and `EventInstance` skip their redraw and caret projection outside of. The
-box a thing is tested against has to hold every pixel its `_draw()` can reach, not the picture at its
+tiles, that `CrowdAgent` and an event's look skip their redraw and caret projection outside of. The
+box a thing is tested against has to hold every pixel its drawing can reach, not the picture at its
 own point: a street fire's flames run the whole burning front, hundreds of pixels from where it
 stands, and a box of its point alone freezes them on screen. And it redraws on the first frame back
 whatever its key says, since nothing kept the picture current while it was away, so a caret owed on

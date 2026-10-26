@@ -6,7 +6,7 @@ extends RefCounted
 ## Two symptoms, one cause each: `_draw()` lifts the whole canvas by the chaser's stride bob and the
 ## barrier was drawn inside the lift; and a chase that ended finished the instance, which is the
 ## barrier's body and picture as well as the man. The barrier's picture is now its own node
-## (`EventInstance.RoadblockBand`), standing at the body whatever the man does.
+## (`RoadblockLook.RoadblockBand`), standing at the body whatever the man does.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
@@ -34,7 +34,7 @@ func _chasing(t, post: Vector2) -> Array:
 	guard.setup(hot, post)
 	t.add_child(guard)
 	guard.set_process(false)
-	guard._attach_the_band()
+	guard.look.attach_nodes()
 	var her := post + Vector2(0.0, hot.notice_within() - 10.0)
 	guard.player_at = her
 	guard._process(STEP)
@@ -60,14 +60,14 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> vo
 	t.check(guard.barrier_post.has_left_its_body(), "he has set off")
 	var worst := 0.0
 	var lifted := false
-	var band: Node2D = guard._band
+	var band: Node2D = (guard.look as RoadblockLook)._band
 	t.check(band != null and band.is_inside_tree() and band.get_parent() == guard.get_parent(),
 			"the band is its own node beside the guard, so it sorts at its own feet")
 	for i in int(6.0 / STEP):
 		her = guard.global_position + Vector2(0.0, 200.0) # keeps him walking, never catches her
 		guard.player_at = her
 		guard._process(STEP)
-		lifted = lifted or absf(guard._current_bob()) > 0.1
+		lifted = lifted or absf(guard.look.current_bob()) > 0.1
 		worst = maxf(worst, band.global_position.distance_to(post))
 		if guard.is_finished:
 			break
@@ -278,7 +278,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	if guard == null:
 		city.free()
 		return
-	guard._attach_the_band()
+	guard.look.attach_nodes()
 	var her := post + Vector2(0.0, _hot_roadblock().notice_within() - 10.0)
 	guard.player_at = her
 	guard._process(STEP)

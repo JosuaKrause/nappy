@@ -135,7 +135,7 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
 	t.check(is_equal_approx(shape.reach() * 2.0, 42.0) and is_equal_approx(shape.radius * 2.0, 24.0),
 			"the body is 42px long and 24px wide (%.0f by %.0f)" % [shape.reach() * 2.0,
 			shape.radius * 2.0])
-	var side := EventInstance._native_size(EventInstance.POLICE_CAR)
+	var side := EventPictures.native_size(EventPictures.POLICE_CAR)
 	t.check(shape.reach() * 2.0 <= side.x, "and no longer than the side view is drawn (%.0fpx)"
 			% side.x)
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(0.0, 400.0)])
@@ -152,7 +152,7 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
 	car.car.turn_the_body()
 	spine = Vector2.DOWN.rotated(collision.rotation)
 	t.check(absf(spine.dot(Vector2.RIGHT)) > 0.999, "and turned east, east-west (%s)" % spine)
-	t.check(car._body_anchor("side").y == shape.radius,
+	t.check(car.look._body_anchor("side").y == shape.radius,
 			"its side picture's bottom lands on its body's southern edge, %.0fpx below the node"
 			% shape.radius)
 	car.free()
@@ -672,14 +672,14 @@ func _test_its_caret_stands_over_its_picture(t) -> void:
 	var player := _her(t, Vector2(200.0, 0.0), Vector2.LEFT)
 	_tell(car, player)
 	_already_driving(car)
-	var rect := car.mark_rect()
-	var anchor := car._body_anchor("side")
+	var rect := car.look.mark_rect()
+	var anchor := car.look._body_anchor("side")
 	t.check(rect.has_area(), "the car in front of her is marked")
 	var above := anchor.y - (rect.position.y + rect.size.y)
 	# What any other row's caret clears its picture's bottom (its node) by, at the same swell.
-	var swell := car.mark_swell()
-	var width := EventInstance.MARK_WIDTH * (0.55 + 0.45 * swell)
-	var usual := EventInstance.MARK_HEIGHT + 10.0 * swell - width * 0.5 - 1.0
+	var swell := car.look.mark_swell()
+	var width := EventPictures.MARK_WIDTH * (0.55 + 0.45 * swell)
+	var usual := EventPictures.MARK_HEIGHT + 10.0 * swell - width * 0.5 - 1.0
 	t.check(absf(above - usual) < 0.01,
 			"its caret clears the picture's bottom by %.1fpx, as on any row (%.1fpx)" % [above, usual])
 	player.free()

@@ -10,7 +10,7 @@ extends RefCounted
 ## **What is checked is what the instance draws, not what it was placed by.** Each place makes a real
 ## instance the way the game creates it there (`EventManager.spawn_warned()`, `_send_down_her_line()`,
 ## the trap's), told where she is, and asks it what it draws on that frame
-## (`EventInstance.drawn_rect_now()`: its pictures, its shadow, and its danger caret from the
+## (`EventLook.drawn_rect_now()`: its pictures, its shadow, and its danger caret from the
 ## caret's own drawing numbers and its own projection of her). A footprint (`footprint_of()`) that
 ## leaves anything out fails here. Asked over every bearing, cameras led every way her look-ahead can
 ## lead them, both input schemes (a corner the joystick's controls cover is not off screen for this),
@@ -69,7 +69,7 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 ## Whether anything `instance` draws on this frame overlaps the camera's whole `view` (corners
 ## included).
 static func _drawn_in(view: VisibleView, instance: EventInstance) -> bool:
-	var rect := instance.drawn_rect_now()
+	var rect := instance.look.drawn_rect_now()
 	return Rect2(instance.global_position + rect.position, rect.size).intersects(view.view)
 
 func _test_open_ground_over_every_bearing_and_camera(t) -> void:
@@ -90,7 +90,7 @@ func _test_open_ground_over_every_bearing_and_camera(t) -> void:
 				for at in places:
 					var instance := _arrival(row, at, her)
 					placed += 1
-					if instance.wants_a_mark():
+					if instance.look.wants_a_mark():
 						marked += 1
 					if _drawn_in(view, instance) and popped.size() < 3:
 						popped.append("'%s' along %v, camera at %v%s" % [row.id, way,
@@ -214,7 +214,7 @@ func _test_a_turned_window_shows_nothing_either(t) -> void:
 				var at := PendingWarning.just_out_of_sight(PendingWarning.seen_from(view, her), row,
 						her, way)
 				var instance := _arrival(row, at, her)
-				var rect := instance.drawn_rect_now()
+				var rect := instance.look.drawn_rect_now()
 				instance.free()
 				var drawn := Rect2(at + rect.position, rect.size)
 				var corners: Array[Vector2] = []

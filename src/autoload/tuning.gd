@@ -283,7 +283,7 @@ const CHAT_EXCITEMENT := 25.0
 ## The rule is about **expected impact**, not about whether a danger changes over time or what a
 ## row is declared to cost on paper — asking either of those marks a burning building and not the
 ## fire engine that made it, or a pedestrian who never does. See `EventInstance.expected_impact_at()`
-## and `wants_a_mark()`.
+## and `EventLook.wants_a_mark()`.
 const EXPECTED_IMPACT_POINTS := METER_MAX * 0.4
 
 ## How far forward a source's own motion is projected for the caret, and — the same figure read

@@ -189,7 +189,7 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 ## *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down".)* The boom
 ## is the one body at a door whose picture is much wider than the body under it, so where the bar
 ## actually lands is a question only the drawing can answer — and a headless run never calls
-## `_draw()` (see the **verify** skill), which is why `EventInstance.boom_arm_span()` states the
+## `_draw()` (see the **verify** skill), which is why `EventPictures.boom_arm_span()` states the
 ## arm's own reach as a number the drawing and this check share.
 ##
 ## Three things about a street door, over every sampled day: the gate stands level with its two
@@ -241,8 +241,8 @@ func _test_the_boom_bars_the_carriageway(t) -> void:
 					% [map.seed_used, day] + "(%.1f in %.1f..%.1f)"
 					% [gate_across, across_low, across_high])
 
-			var span := EventInstance.boom_arm_span(
-					EventInstance.gate_runs_north_south(gate.facing))
+			var span := EventPictures.boom_arm_span(
+					EventPictures.gate_runs_north_south(gate.facing))
 			var arm_near := gate_across + span.x
 			var arm_far := gate_across + span.y
 			t.check(arm_near <= across_low and arm_far >= across_high,
@@ -1348,7 +1348,7 @@ func _test_a_stroller_stopped_against_the_hut_is_detained(t) -> void:
 
 ## M113, the inspection reads as one — *(2026-09-10, playtest 55: "both the guard and the player
 ## should disappear during the inspection ... after the inspection the player and the guard should
-## reappear".)* Neither `Stroller.visible` nor `EventInstance._draw()`'s own early return is
+## reappear".)* Neither `Stroller.visible` nor `EventLook.draw()`'s own early return is
 ## reachable from a test that never calls `_draw()` (headless runs never call it — see the
 ## **verify** skill), so the state each of them reads is asserted directly instead.
 ##
@@ -1357,7 +1357,7 @@ func _test_a_stroller_stopped_against_the_hut_is_detained(t) -> void:
 ## as the door having been taken away rather than as her having gone through it. An alley post is
 ## the one row where the two are the same thing: he is all it draws, so when he goes in there is
 ## nothing left. `is_its_guard_inside()` and `is_suppressed_by_its_own_hold()` are the two
-## conditions `_draw_checkpoint_hut()`, `_draw()` and `_draw_body()` (the halo's own re-draw entry
+## conditions `_draw_checkpoint_hut()`, `_draw()` and `draw_body()` (the halo's own re-draw entry
 ## point) gate on, so asserting them here is asserting what the halo and the picture actually do
 ## without a canvas.
 func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:

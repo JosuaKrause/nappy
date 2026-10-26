@@ -12,7 +12,7 @@ extends Node2D
 ## current vertical bob, so a walking or pacing entity's rim rides the same lift the body itself
 ## does rather than sliding off it. **The ring lifts the whole traced drawing by it, the same way
 ## the owner's own `_draw()` does**, so a part that stays on the ground while the body rises — a
-## vehicle's wheels, which `CarLook.draw_body()` and `EventInstance._draw_eight_view()` draw
+## vehicle's wheels, which `CarLook.draw_body()` and `EventLook._draw_eight_view()` draw
 ## back down by the bob — stays on the ground in the rim too, and the rim is the outline of what is
 ## actually drawn. `set_glow()` is the only thing an owner calls afterwards, once
 ## a frame, with the *target* alpha and colour `ExcitementHalo` computed for it — this node eases

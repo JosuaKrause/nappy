@@ -50,7 +50,7 @@ func _event_parity(t, source: CountedEvent, at: Vector2, label: String) -> void:
 	t.check(_same_bits(source.expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
 	t.check(_same_bits(source.expected_gross_at(at), expected), label + " repeats exactly")
-	if source._birds().is_empty():
+	if source.birds().is_empty():
 		t.check(source.sampling_runs == runs, label + " repeats without sampling")
 
 func _crowd_parity(t, source: CountedCrowd, at: Vector2, label: String) -> void:
@@ -133,12 +133,12 @@ func _test_catalogue_and_mutations(t) -> void:
 		_event_parity(t, source, at, definition.id + " no shape")
 		source.def = _copy_definition(definition)
 		_event_parity(t, source, at, definition.id + " definition replacement")
-		if not source._birds().is_empty():
+		if not source.birds().is_empty():
 			flock_queries += 1
 			var runs := source.sampling_runs
-			source._birds()[0].at += Vector2(17.0, 4.0)
-			source._birds()[0].heading = Vector2.LEFT
-			source._birds()[0].speed += 10.0
+			source.birds()[0].at += Vector2(17.0, 4.0)
+			source.birds()[0].heading = Vector2.LEFT
+			source.birds()[0].speed += 10.0
 			_event_parity(t, source, at, definition.id + " bird geometry")
 			t.check(source.sampling_runs > runs, "flock always samples its mutable birds")
 		source.transition(EventInstance.Phase.LEAVING)
@@ -244,7 +244,7 @@ func _test_consumer_order(t) -> void:
 		reference_car._clock = car._clock
 		cached.player_at = at
 		reference.player_at = at
-		t.check(cached._caret_strength() == reference._caret_strength(), "pre-halo event mark parity")
+		t.check(cached.look._caret_strength() == reference.look._caret_strength(), "pre-halo event mark parity")
 		t.check(car._caret_strength() == reference_car._caret_strength(), "pre-halo car mark parity")
 		for source in [cached, reference, car, reference_car]:
 			source.set_player_at(at, Vector2(-92.0, 0.0), 6.0, 0.8)
@@ -255,7 +255,7 @@ func _test_consumer_order(t) -> void:
 			source.set_expected_total_gross(total)
 		t.check(_same_bits(cached.expected_impact_at(at), reference.expected_impact_at(at)), "event net parity")
 		t.check(_same_bits(car.expected_impact_at(at), reference_car.expected_impact_at(at)), "car net parity")
-		t.check(cached._picture_key() == reference._picture_key(), "redraw/caret key parity")
+		t.check(cached.look._picture_key() == reference.look._picture_key(), "redraw/caret key parity")
 		t.check(car._caret_strength() == reference_car._caret_strength(), "draw car mark parity")
 		t.check(cached.will_be_lethal(at) == reference.will_be_lethal(at), "event lethal prediction parity")
 		t.check(car.will_be_lethal(at) == reference_car.will_be_lethal(at), "car lethal prediction parity")
@@ -306,7 +306,7 @@ func _test_halo_and_removal(t) -> void:
 				"real halo selection/color agrees with baseline source")
 		t.check(_same_bits(_rim_target(sources[0])[1], _rim_target(sources[1])[1]),
 				"real halo strength agrees with baseline source")
-		t.check(sources[0]._caret_strength() == sources[1]._caret_strength(),
+		t.check(sources[0].look._caret_strength() == sources[1].look._caret_strength(),
 				"post-halo caret agrees with baseline source")
 		if tick == 0:
 			t.check(_rim_target(sources[0])[1] > 0.0,

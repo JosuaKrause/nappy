@@ -1051,7 +1051,7 @@ func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
 ## again, and how long after she was back inside he charged (`INF` if never).
 func _back_inside_rig(t, def: EventDef) -> Dictionary:
 	var instance := _instance(t, def, Vector2.ZERO)
-	instance._attach_the_band()
+	instance.look.attach_nodes()
 	var result := {"first_warning": 0.0, "waited": false, "second_warning": INF}
 	var stand_at := func(off: float) -> void:
 		instance.player_at = instance.body_position() + Vector2(0.0, def.notice_within() + off)
@@ -1086,7 +1086,7 @@ func _back_inside_rig(t, def: EventDef) -> Dictionary:
 ## warned, whether he charged and whether he caught her.
 func _run_inside_the_warning_rig(t, def: EventDef) -> Dictionary:
 	var instance := _instance(t, def, Vector2.ZERO)
-	instance._attach_the_band()
+	instance.look.attach_nodes()
 	var her := Vector2(-def.notice_within() * 0.3, def.notice_within() * 0.5)
 	var speed := 0.0
 	var ran_for := 0.0
@@ -1163,7 +1163,7 @@ func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF, inside := 10.0,
 		seconds := 40.0, from := INF, then_speed := Tuning.RUN_SPEED, stop_at := -1.0) -> Dictionary:
 	var instance := _instance(t, def, Vector2.ZERO)
-	instance._attach_the_band()
+	instance.look.attach_nodes()
 	var start := from if from != INF else def.notice_within() - inside
 	var her := Vector2(0.0, start)
 	var speed := player_speed
@@ -1360,7 +1360,7 @@ func _a_waiting_robber(t, map: CityMap, mouth: Dictionary, back: float) -> Event
 ## 180px `EventDef.notice` in a straight line but with the building between them, and he goes on
 ## waiting and is drawn looking the way he was sited, not tracking her round the corner. She steps
 ## in front of the mouth, nearer still, the line between them clear, and on that frame he notices
-## her and is drawn facing her. What is checked is `_drawn_heading()`, the heading his picture is
+## her and is drawn facing her. What is checked is `drawn_heading()`, the heading his picture is
 ## chosen from, not only his own `_heading`.
 func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	var map := _map()
@@ -1371,7 +1371,7 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
 	var instance := _a_waiting_robber(t, map, mouth, 40.0)
-	var looking := instance._drawn_heading().normalized()
+	var looking := instance.look.drawn_heading().normalized()
 	var round_the_corner := corner - d1 * 60.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	t.check(instance.global_position.distance_to(round_the_corner) < instance.def.notice_within(),
 			"round the corner she is inside his notice in a straight line (%.1fpx)"
@@ -1381,7 +1381,7 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	instance.player_at = round_the_corner
 	_advance(instance, 1.0)
 	t.check(instance.is_waiting(), "he does not notice her through the building")
-	t.check(instance._drawn_heading().normalized().is_equal_approx(looking),
+	t.check(instance.look.drawn_heading().normalized().is_equal_approx(looking),
 			"and is not drawn turned toward her")
 	var in_the_mouth := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	t.check(_sampled_line_is_walkable(map, instance.global_position, in_the_mouth),
@@ -1389,7 +1389,7 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	instance.player_at = in_the_mouth
 	instance._process(STEP)
 	t.check(not instance.is_waiting(), "and there he notices her")
-	t.check(instance._drawn_heading().normalized().is_equal_approx(
+	t.check(instance.look.drawn_heading().normalized().is_equal_approx(
 			(in_the_mouth - instance.global_position).normalized()), "and is drawn facing her")
 	instance.free()
 
@@ -1570,7 +1570,7 @@ func _test_the_red_caret_is_measured_from_the_catch(t) -> void:
 ## the building from him, inside his catch in a straight line, and he chases: he slides along the
 ## building's face (`_step()`) and catches her only once the line between them clears the
 ## building's corner, never through it. Every frame of the chase is checked against a line sampled
-## a quarter pixel at a time, a second answer to the question `_clear_line_to()` asks, so a frame
+## a quarter pixel at a time, a second answer to the question `clear_line_to()` asks, so a frame
 ## that catches through the corner fails it wherever it falls.
 func _test_the_robber_catches_her_by_coming_round_the_corner(t) -> void:
 	var map := _map()
@@ -1610,7 +1610,7 @@ func _sampled_line_is_walkable(map: CityMap, from: Vector2, to: Vector2, per_px 
 			return false
 	return true
 
-## **`_clear_line_to()` against the sampled line, over the real map.** Seeded segments up to a
+## **`clear_line_to()` against the sampled line, over the real map.** Seeded segments up to a
 ## stand-off long from walkable ground near buildings, in every direction, each answered both by
 ## stepping tile boundaries and by sampling an eighth of a pixel at a time; the two have to agree.
 ## The guard counts how many of them crossed a building, so a sweep that only ever asked open
@@ -1638,7 +1638,7 @@ func _test_a_clear_line_is_every_tile_the_line_crosses(t) -> void:
 		asked += 1
 		if not sampled:
 			blocked += 1
-		if instance._clear_line_to(to) != sampled:
+		if instance.clear_line_to(to) != sampled:
 			disagreed += 1
 	t.check(blocked > 40, "the sweep crossed buildings (%d of %d)" % [blocked, asked])
 	t.check(disagreed == 0, "stepping tiles and sampling agree on every line (%d did not)" % disagreed)
@@ -1656,7 +1656,7 @@ func _clear_on(t, map: CityMap, from: Vector2, to: Vector2) -> bool:
 	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), from)
 	instance._map = map
 	instance._navigator = Navigator.new(map)
-	var clear := instance._clear_line_to(to)
+	var clear := instance.clear_line_to(to)
 	instance.free()
 	return clear
 

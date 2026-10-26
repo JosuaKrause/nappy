@@ -1179,7 +1179,7 @@ func _process(delta: float) -> void:
 		instance.position += instance._heading * step
 		instance._path_travelled += step
 		instance._advance_gait(instance._path_travelled - before)
-		instance._redraw_if_the_picture_changed()
+		instance.look.redraw_if_the_picture_changed()
 
 func _physics_process(_delta: float) -> void:
 	_keep_the_pursuers_coming()

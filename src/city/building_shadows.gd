@@ -15,7 +15,7 @@ extends Node2D
 ##
 ## Placed between `Ground` and `Buildings` in `city.tscn`, so it never sorts against anything and
 ## always lies flat under the crowd, the player and every event, the way a seal's own body shadow
-## does — see `EventInstance._draw_body_shadow()`. Building footprints are fixed for the run
+## does — see `EventLook._draw_body_shadow()`. Building footprints are fixed for the run
 ## (`docs/DECISIONS.md`, M61), while each nearby chunk's shadow geometry is prepared on demand and
 ## freed beyond the scenery retention boundary. Returning chunks are reconstructed from the same
 ## footprints.

@@ -2446,7 +2446,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 			t.check(trap != null, "the shifted camera still leaves legal ground for the trap")
 			if trap != null:
 				trap.player_at = her
-				var drawing := trap.drawn_rect_now()
+				var drawing := trap.look.drawn_rect_now()
 				t.check(view.view.intersects(Rect2(initial + drawing.position, drawing.size)),
 						"the camera moved far enough to expose a trap at the initial badge position")
 				t.check(not view.view.intersects(Rect2(trap.position + drawing.position, drawing.size)),

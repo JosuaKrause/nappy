@@ -27,8 +27,9 @@ const STEAM_VENT_BODY := 16.0
 ## and a reach is a property of a person rather than of where he happens to be standing. Stated
 ## here rather than at either row, because a second copy of it is how the two quietly drift apart.
 const MASKED_MAN_REACH := 28.0
-## The widest a `_draw_spread`-style body (`EventInstance._draw_spread`, `_draw_cafe`) may be on a
-## `SIDEWALK` tile before it draws past the pavement it stands on.
+## The widest a `SpreadLook._draw_spread`-style body (`SpreadLook._draw_spread`,
+## `RankLook._draw_cafe`) may be on a `SIDEWALK` tile before it draws past the pavement it stands
+## on.
 ##
 ## A pavement is one piece of walkable ground, `Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE` (64px)
 ## across, not two lanes a body has to fit inside one of. `EventInstance.setup()` centres a
@@ -528,18 +529,19 @@ static func _cat_dash() -> EventDef:
 ## less than an alley's length. She can only ever be walking the long axis, so the dash is always
 ## across her path and never down it. See `EventInstance._alley_crossing_path()`.
 ##
-## **The picture turns to face the crossing's own heading.** `EventInstance._draw_body()` reads
-## `MOUSE_BY_VIEW`/`MOUSE_BY_VIEW_B` through `_draw_eight_view()`, the same helper every other
-## moving family in the catalogue uses, rather than the single mirrored side picture it used to
-## draw with `_draw_simple` (PLAYTEST-128, M100: "the code comment is positive, the queue is
-## normative" — a docstring that once said this row stays out of the directional family described
-## what the code did, not what it should). `art/events/mouse_{front,back}[_diagonal].svg` supply
-## the four turned views and `mouse.svg` stays the `"side"` one; the `_b` siblings are the dash's
-## own second frame — the tail curls differently rather than crossing legs it has no room to draw
-## at this scale — alternated by `_gait_stepping()` the same way `MOUSE`/`MOUSE_B` already were.
-## The mouse still keeps no second posture for its own telegraph — it is already small and already
-## still — so only the dash itself picks a heading; `_cat_dash`'s own crouch/running swap is a
-## different axis, the posture rather than the facing.
+## **The picture turns to face the crossing's own heading.** `EventLook.draw_body()` reads
+## `EventPictures.MOUSE_BY_VIEW`/`EventPictures.MOUSE_BY_VIEW_B` through
+## `EventLook._draw_eight_view()`, the same helper every other moving family in the catalogue uses,
+## rather than the single mirrored side picture it used to draw with `EventLook._draw_simple`
+## (PLAYTEST-128, M100: "the code comment is positive, the queue is normative" — a docstring that
+## once said this row stays out of the directional family described what the code did, not what it
+## should). `art/events/mouse_{front,back}[_diagonal].svg` supply the four turned views and
+## `mouse.svg` stays the `"side"` one; the `_b` siblings are the dash's own second frame — the tail
+## curls differently rather than crossing legs it has no room to draw at this scale — alternated by
+## `EventLook._gait_stepping()` the same way `MOUSE`/`EventPictures.MOUSE_B` already were. The mouse
+## still keeps no second posture for its own telegraph — it is already small and already still — so
+## only the dash itself picks a heading; `_cat_dash`'s own crouch/running swap is a different axis,
+## the posture rather than the facing.
 static func _alley_mouse() -> EventDef:
 	var def := EventDef.new()
 	def.id = "alley_mouse"
@@ -696,7 +698,7 @@ static func _homeless_yeller() -> EventDef:
 ## Deliberately **not** given an `obstructs_radius`: a mobile static body wide enough to matter
 ## on a two-tile pavement can pin the player against a building, and being pinned by something
 ## that walks toward you is a different game from being priced out of a street. The lead is
-## drawn (see `EventInstance._draw_dog_walker`) so the span it owns is visible; what stops you
+## drawn (see `FigureLook._draw_dog_walker`) so the span it owns is visible; what stops you
 ## walking through it is the meter, and it is slower than walking, so it can always be left.
 ##
 ## **The pass, not standing beside it, is the measure.** *(2026-09-20: "what matters for
@@ -971,7 +973,7 @@ static func _fire_truck() -> EventDef:
 ## goes on the building. the challenge is the fire truck not the fire" (PLAYTEST-144, statement
 ## 12).** `intensity` is 0.0, and it carries no `obstructs_radius` either — a shape with none is the
 ## established way to say "a look that does not obstruct" (`EventDef.solid()`'s own doc) — so
-## `EventInstance._draw_fire()` paints the flames (and the smoke above them) on the facade of the
+## `FireLook._draw_fire()` paints the flames (and the smoke above them) on the facade of the
 ## building it stands against rather than leaving a body on the sidewalk, and `draws_body_shadow`
 ## is off so nothing casts a shadow at the ground point nobody is standing on either: the sidewalk
 ## in front of the fire stays clear. `inner_radius`/`outer_radius` (60/260) and the 2.2s telegraph
@@ -1342,7 +1344,7 @@ static func _pigeon_flock() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.BIRDS
 	# A flock has no single body — each bird casts its own shadow at its own faded radius (see
-	# `EventInstance._draw_birds`) — so this is a nominal point at one bird's own base radius
+	# `FlockLook._draw_birds`) — so this is a nominal point at one bird's own base radius
 	# (5.0, before the height fade), carried only to satisfy "a row with a look has a shape".
 	# Chosen where the design was silent: nothing reads this row's own `shape` elsewhere, since a
 	# flock never obstructs — `EventDef.validate()` refuses one that tries, and being walked into
@@ -1922,15 +1924,15 @@ static func _curfew_announce() -> EventDef:
 ## whether you can get through cannot share a name, and one picture per row fails at the name
 ## exactly the way it fails at a shared silhouette.
 ##
-## **Drawn as one continuous barrier, not a row of blocks.** *(2026-09-10, playtest 55: "the
-## barrier itself also doesn't read as a continuous element. is it using the texture of the other
-## orientation and concatenating that one?")* `EventInstance._draw_roadblock()` repeats one segment
-## capped by `ROADBLOCK_END` through `_draw_spread()` — the broadside `ROADBLOCK_SEGMENT`, or the
-## end-on `ROADBLOCK_SEGMENT_VERTICAL` down a north-south column — the same rail-with-caps
-## construction `roadworks` already reads as one thing rather than a stack of blocks.
-## `art/events/checkpoint_block.svg` stays bound as the badge's own icon
-## (`EventInstance.icon_for()`) — a badge is read small, and the concrete-block silhouette is still
-## the clearest single frame of "a street being held"; only the drawn body changed.
+## **Drawn as one continuous barrier, not a row of blocks.** *(2026-09-10, playtest 55: "the barrier
+## itself also doesn't read as a continuous element. is it using the texture of the other
+## orientation and concatenating that one?")* `RoadblockLook._draw_roadblock()` repeats one segment
+## capped by `EventPictures.ROADBLOCK_END` through `SpreadLook._draw_spread()` — the broadside
+## `EventPictures.ROADBLOCK_SEGMENT`, or the end-on `EventPictures.ROADBLOCK_SEGMENT_VERTICAL` down
+## a north-south column — the same rail-with-caps construction `roadworks` already reads as one
+## thing rather than a stack of blocks. `art/events/checkpoint_block.svg` stays bound as the badge's
+## own icon (`EventPictures.icon_for()`) — a badge is read small, and the concrete-block silhouette
+## is still the clearest single frame of "a street being held"; only the drawn body changed.
 ##
 ## **Radii derived from the body, not carried across.** Under M61's field — a capsule about the
 ## body's own spine rather than a disc about its centre — the along-axis reach from centre has to
@@ -2163,7 +2165,7 @@ static func _alley_robbery() -> EventDef:
 	# **He walks at her slowly through his notice**, a man getting up off a wall rather than a man
 	# already running: his chase is 130px/s, and closing at that from his trigger would be over in a
 	# tenth of a second. At 40px/s, a little over the dog walker's 32px/s stroll, a stride beat
-	# (`EventInstance._gait_stepping()`, 17.5px of ground) lasts about 0.44s, near the 450ms the
+	# (`EventLook._gait_stepping()`, 17.5px of ground) lasts about 0.44s, near the 450ms the
 	# walkers' two-frame pictures were reviewed at.
 	def.pursuit.walk_speed = 40.0
 	# **He charges once his warning has run with her still inside his radius**, on the clock every
@@ -2573,9 +2575,9 @@ static func _protest() -> EventDef:
 	def.intensity_ramp = 1.9
 	def.pulse_period = 8.0
 	# The clearest case in the catalogue of the picture deciding a gameplay number: a body may not
-	# claim ground the drawing does not, which is `_draw_spread`'s rule in the other direction — so a
-	# protest drawn as one man obstructs one man's width however much of a square it is supposed to
-	# fill. `_draw_protest` draws two ranks across exactly this width.
+	# claim ground the drawing does not, which is `SpreadLook._draw_spread`'s rule in the other
+	# direction — so a protest drawn as one man obstructs one man's width however much of a square
+	# it is supposed to fill. `RankLook._draw_protest` draws two ranks across exactly this width.
 	#
 	# Under the 39px inner radius on purpose: the loudest part of a protest is still something you
 	# stand in rather than bump into, and being stopped at the edge of it would take the choice of
@@ -2613,7 +2615,7 @@ static func _firefight() -> EventDef:
 	# hard_fail: (374-84)/92 * 2 = 6.3s.
 	def.telegraph_time = 6.5
 	def.pulse_period = 2.5
-	# The 30px band the two gunmen are drawn across (`EventInstance._draw_firefight()` stands
+	# The 30px band the two gunmen are drawn across (`RankLook._draw_firefight()` stands
 	# them at 0.62 of it either side), and far inside the 84 that ends the day.
 	def.solid(GroundShape.band(30.0))
 	def.hard_fail = true
@@ -2633,11 +2635,11 @@ static func _firefight() -> EventDef:
 # even at zero intensity, so every row below copies `barricade`'s own geometry (inner 40, outer
 # 120, telegraph 0.9) rather than inventing a new one nothing reads.
 
-## A hard seal: a tree down kerb to kerb, root plate at one end and crown at the other — one of
-## the player's own two examples for act I. `obstructs_radius` 96 is exactly half the 192px street,
-## so `SealPlanner._hard_positions` places a single copy spanning it edge to edge, and
-## `fallen_tree.svg` is authored wider than that so `_draw_spread` draws that one copy rather than
-## repeating a tree several times across the street.
+## A hard seal: a tree down kerb to kerb, root plate at one end and crown at the other — one of the
+## player's own two examples for act I. `obstructs_radius` 96 is exactly half the 192px street, so
+## `SealPlanner._hard_positions` places a single copy spanning it edge to edge, and
+## `fallen_tree.svg` is authored wider than that so `SpreadLook._draw_spread` draws that one copy
+## rather than repeating a tree several times across the street.
 static func _fallen_tree() -> EventDef:
 	var def := EventDef.new()
 	def.id = "fallen_tree"
@@ -2656,7 +2658,7 @@ static func _fallen_tree() -> EventDef:
 ## A hard seal: two cars locked together across the carriageway, debris between them and an
 ## onlooker on each pavement — the player's other own example. Same single-copy geometry as
 ## `fallen_tree`, for the same reason: one continuous scene rather than a repeated segment. Smoke
-## puffs up off the wreck over two frames (`EventInstance.CAR_ACCIDENT_B` and its vertical
+## puffs up off the wreck over two frames (`EventPictures.CAR_ACCIDENT_B` and its vertical
 ## sibling) that stand on the same contacts, so the parts below hold for both.
 ##
 ## **The one seal that is solid only in parts, and the one that emits.** *(2026-09-12: "a car crash
@@ -2699,7 +2701,7 @@ static func _car_accident() -> EventDef:
 	return def
 
 ## Where the two cars stand, read off the two authored pictures at the scale
-## `EventInstance._draw_wide_scene` fits each to the street — 192px of street over a 200px picture,
+## `SpreadLook._draw_wide_scene` fits each to the street — 192px of street over a 200px picture,
 ## so a pixel of art is 0.96px of ground and the picture's own centre is the scene's centre.
 ##
 ## `car_accident.svg` (north-south street): the cars are drawn at x 63–91 and 92–120, and
@@ -2760,7 +2762,7 @@ static func _scaffolding() -> EventDef:
 ## one that explains why the road is out too" (`docs/DECISIONS.md`, "Eight seal pictures").
 ## Single-copy geometry, same as
 ## `fallen_tree` and `car_accident`. The fountain surges and splashes over two frames
-## (`EventInstance.BURST_MAIN_B` and its vertical sibling), so the water reads as water.
+## (`EventPictures.BURST_MAIN_B` and its vertical sibling), so the water reads as water.
 static func _burst_water_main() -> EventDef:
 	var def := EventDef.new()
 	def.id = "burst_water_main"
@@ -2827,10 +2829,10 @@ static func _burnt_out_car() -> EventDef:
 	return def
 
 ## A hard seal, acts II-IV: rubble spilled frontage to frontage. Single-copy geometry like
-## `fallen_tree`, but drawn with `_draw_spread`'s ordinary repeated-segment behaviour rather than
-## one stretched picture — `collapsed_frontage.svg` is a small debris segment, styled beside
-## `rubble.svg` (`_burnt_shell`'s own picture) rather than sharing it, since a row may not draw
-## another row's picture.
+## `fallen_tree`, but drawn with `SpreadLook._draw_spread`'s ordinary repeated-segment behaviour
+## rather than one stretched picture — `collapsed_frontage.svg` is a small debris segment, styled
+## beside `rubble.svg` (`_burnt_shell`'s own picture) rather than sharing it, since a row may not
+## draw another row's picture.
 static func _collapsed_frontage() -> EventDef:
 	var def := EventDef.new()
 	def.id = "collapsed_frontage"
@@ -3195,7 +3197,7 @@ static func _masked_pursuer() -> EventDef:
 ## `Tuning.FINALE_STEAM_BLOWS_FOR`; the building sites them on the basement's narrows
 ## (`BuildingPlan`), each plan coming again on its own period (`EventScheduler.Planned.
 ## repeat_every`). What this row owns is one blow: notice, body, field, over. Its plume billows over
-## two frames (`EventInstance.STEAM_B`) for the whole blow.
+## two frames (`EventPictures.STEAM_B`) for the whole blow.
 static func _basement_steam() -> EventDef:
 	var def := EventDef.new()
 	def.id = "basement_steam"

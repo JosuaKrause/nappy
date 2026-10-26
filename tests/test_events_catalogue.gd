@@ -39,7 +39,7 @@ func run(t) -> void:
 
 
 ## The rows whose picture is drawn on the building they stand against rather than on the sidewalk
-## they are sited on: the fire on its facade (`EventInstance._draw_fire()`), and the burnt building
+## they are sited on: the fire on its facade (`FireLook._draw_fire()`), and the burnt building
 ## it leaves (`City.mark_the_burnt_frontage()`).
 const _DRAWN_ON_A_BUILDING: Array[String] = ["burning_building", "burnt_shell"]
 
@@ -458,16 +458,16 @@ func _test_stationary_vehicles_face_their_street(t) -> void:
 	for look in vehicle_looks:
 		var id := "moving_van" if look == EventDef.Look.MOVING_VAN else "burnt_out_car"
 		var def := EventCatalogue.by_id(id)
-		var side := EventInstance._stationary_vehicle_texture(look, true)
-		var end := EventInstance._stationary_vehicle_texture(look, false)
-		var side_extent := EventInstance._stationary_vehicle_extent(
+		var side := EventPictures.stationary_vehicle_texture(look, true)
+		var end := EventPictures.stationary_vehicle_texture(look, false)
+		var side_extent := EventPictures.stationary_vehicle_extent(
 				side, true, def.obstructs_radius * 2.0)
-		var end_extent := EventInstance._stationary_vehicle_extent(
+		var end_extent := EventPictures.stationary_vehicle_extent(
 				end, false, def.obstructs_radius * 2.0)
 		t.check(side != end, "'%s' has distinct side and end artwork" % def.id)
 		t.check(is_equal_approx(side_extent.x, def.obstructs_radius * 2.0),
 				"'%s' side view fits the diameter of its solid body" % def.id)
-		t.check(end_extent.is_equal_approx(EventInstance._native_size(end))
+		t.check(end_extent.is_equal_approx(EventPictures.native_size(end))
 				and end_extent.x < side_extent.x,
 				"'%s' end view keeps its narrower authored projection" % def.id)
 
@@ -503,18 +503,18 @@ func _test_a_spread_never_lands_on_a_corner(t) -> void:
 	t.check(checked > 0, "some run placed a spread to check (%d)" % checked)
 
 ## **A spread's end cap is drawn at exactly the width it obstructs, not past it.**
-## `EventInstance._draw_spread`'s own docstring is the contract; the repeated segments already meet
+## `SpreadLook._draw_spread`'s own docstring is the contract; the repeated segments already meet
 ## it, and the cap is the half that used to break it — centred at `±half`, `barrier_end.svg` (6px
 ## wide) hung 3px past each end of a `construction` barrier's 64px obstruction.
-## `EventInstance._cap_offset` and `_cap_along` are the pure arithmetic the drawing calls, so this
+## `SpreadLook._cap_offset` and `_cap_along` are the pure arithmetic the drawing calls, so this
 ## asserts the outer edge they produce against the real asset size and the real `obstructs_radius`
 ## of `construction`, broadside and end-on.
 func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 	var def := EventCatalogue.by_id("construction")
 	var half := maxf(11.0, def.obstructs_radius)
-	var cap_size := EventInstance._native_size(EventInstance.BARRIER_END)
-	var cap_along := EventInstance._cap_along(cap_size)
-	var offset := EventInstance._cap_offset(half, cap_along, 1.0)
+	var cap_size := EventPictures.native_size(EventPictures.BARRIER_END)
+	var cap_along := SpreadLook._cap_along(cap_size)
+	var offset := SpreadLook._cap_offset(half, cap_along, 1.0)
 	t.check(is_equal_approx(offset + cap_along * 0.5, half),
 			"the cap's outer edge (%.1f) lands on the %.1fpx obstruction, not past it"
 			% [offset + cap_along * 0.5, half])
@@ -524,7 +524,7 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 	# still its width. The near post's feet stand within that width of the barrier's near end —
 	# inside the last segment's own slice of ground, which ends at the end of the body — rather
 	# than half a post's height in toward the middle.
-	var segment := EventInstance._native_size(EventInstance.BARRIER_SEGMENT_VERTICAL)
+	var segment := EventPictures.native_size(EventPictures.BARRIER_SEGMENT_VERTICAL)
 	var segments := maxi(1, ceili(half * 2.0 / segment.y))
 	var width := half * 2.0 / segments
 	var last_slice_starts := DrawLayer.slice_along(-half, half, segments, segments - 1, true) - width
@@ -535,39 +535,39 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 			"end-on, the near post stands at the barrier's end (%.1f of %.1f), inside the last"
 			% [offset, half] + " segment's slice (from %.1f)" % last_slice_starts)
 	# A cap sorts with its end slice, so draw order within the slice is its only depth. End-on, the
-	# side drawn behind the board has to be the far end, up the screen (`_spread_at` puts side −1
+	# side drawn behind the board has to be the far end, up the screen (`spread_at` puts side −1
 	# at negative y), and the near end is the only one drawn over it; broadside, both stand level
 	# with the board.
-	var behind := EventInstance._cap_sides(true, true)
-	var in_front := EventInstance._cap_sides(true, false)
+	var behind := SpreadLook._cap_sides(true, true)
+	var in_front := SpreadLook._cap_sides(true, false)
 	t.check(behind.size() == 1 and behind[0] < 0.0 and in_front.size() == 1 and in_front[0] > 0.0,
 			"end-on, the far post is drawn behind the board (%s) and only the near one over it (%s)"
 			% [behind, in_front])
-	t.check(EventInstance._cap_sides(false, true).is_empty()
-			and EventInstance._cap_sides(false, false).size() == 2,
+	t.check(SpreadLook._cap_sides(false, true).is_empty()
+			and SpreadLook._cap_sides(false, false).size() == 2,
 			"broadside, both posts are drawn over the board")
 
 ## **A whole-scene hard seal has to use a distinct authored picture on either axis and span its
-## obstruction at the ground point.** `EventInstance._wide_scene_texture` is the pure selector
+## obstruction at the ground point.** `EventPictures.wide_scene_texture` is the pure selector
 ## this pins: on an east-west street (`vertical` true) it returns the directional asset, while
 ## `_wide_scene_anchor` and the fitted extent keep the drawn body aligned with the obstruction.
 ## The bounds are checked against the real asset sizes and `fallen_tree`'s own obstruction radius,
 ## so the test covers the geometry that `_draw_wide_scene` sends to `Sprites.draw_standing` without
 ## rendering a frame.
 func _test_a_wide_scene_faces_its_street(t) -> void:
-	var horizontal := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)
-	var vertical := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, true)
-	t.check(horizontal == EventInstance.FALLEN_TREE,
+	var horizontal := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, false)
+	var vertical := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, true)
+	t.check(horizontal == EventPictures.FALLEN_TREE,
 			"a north-south street draws the horizontally-composed picture")
-	t.check(vertical == EventInstance.FALLEN_TREE_VERTICAL,
+	t.check(vertical == EventPictures.FALLEN_TREE_VERTICAL,
 			"an east-west street draws its directional picture, not the same one relabelled")
 	t.check(horizontal != vertical, "and the two are not the same asset")
 
 	var half := maxf(11.0, EventCatalogue.by_id("fallen_tree").obstructs_radius)
 	for is_vertical in [false, true]:
-		var texture := EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)
-		var size := EventInstance._native_size(texture)
-		var anchor := EventInstance._wide_scene_anchor(is_vertical, half)
+		var texture := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)
+		var size := EventPictures.native_size(texture)
+		var anchor := SpreadLook._wide_scene_anchor(is_vertical, half)
 		var extent := Vector2(size.x, half * 2.0) if is_vertical \
 				else Vector2(half * 2.0, size.y)
 		var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
@@ -583,24 +583,24 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 					% [texture.get_file(), half, half])
 
 	# The other two whole-scene rows carry the same guarantee — checked once each rather than
-	# re-running the segment arithmetic, since `_wide_scene_texture`'s own match is what could
+	# re-running the segment arithmetic, since `wide_scene_texture`'s own match is what could
 	# regress silently if a future picture forgot its vertical sibling.
 	for look in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
-		var wide := EventInstance._wide_scene_texture(look, false)
-		var tall := EventInstance._wide_scene_texture(look, true)
+		var wide := EventPictures.wide_scene_texture(look, false)
+		var tall := EventPictures.wide_scene_texture(look, true)
 		t.check(not wide.is_empty() and not tall.is_empty() and wide != tall,
 				"look %d has two distinct assets, one per street orientation" % look)
 
 	# `""`, not `null`: a picture is a repository path here, and "no authored contact art" is an
 	# empty one. Asked as `is_empty()` rather than against `null`, which a `String` is never equal
 	# to — the shape that made the fallen tree's check below fail and the crash's pass vacuously.
-	var crash_wide := EventInstance._wide_scene_texture(EventDef.Look.CAR_ACCIDENT, false)
-	var crash_tall := EventInstance._wide_scene_texture(EventDef.Look.CAR_ACCIDENT, true)
-	t.check(not EventInstance._wide_scene_shadow(crash_wide).is_empty()
-			and not EventInstance._wide_scene_shadow(crash_tall).is_empty(),
+	var crash_wide := EventPictures.wide_scene_texture(EventDef.Look.CAR_ACCIDENT, false)
+	var crash_tall := EventPictures.wide_scene_texture(EventDef.Look.CAR_ACCIDENT, true)
+	t.check(not EventPictures.wide_scene_shadow(crash_wide).is_empty()
+			and not EventPictures.wide_scene_shadow(crash_tall).is_empty(),
 			"both crash directions carry contact shadows instead of a street-wide slab")
-	t.check(EventInstance._wide_scene_shadow(
-			EventInstance._wide_scene_texture(EventDef.Look.FALLEN_TREE, false)).is_empty(),
+	t.check(EventPictures.wide_scene_shadow(
+			EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, false)).is_empty(),
 			"a continuous fallen tree keeps the generic wide-scene shadow")
 
 ## **A crash is solid only where the cars are.** *(2026-09-12: "a car crash right now has a full
@@ -617,7 +617,7 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t) -> void:
 	var crash := EventCatalogue.by_id("car_accident")
 	# This fixture puts a live scenery-bearing instance in the tree without an EventManager, whose
 	# tree lifetime owns the events page in the game. Mirror that owner explicitly around the rig.
-	AtlasLibrary.acquire(EventInstance.ATLAS_GROUP)
+	AtlasLibrary.acquire(EventPictures.ATLAS_GROUP)
 	t.check(crash.solid_parts.size() == 2, "a crash is two cars, so it puts down two bodies")
 	t.check(crash.solid_reach() < crash.obstructs_radius,
 			"and it is solid to %.0fpx inside the %.0fpx of street it closes"
@@ -653,7 +653,7 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t) -> void:
 				"while the middle of the road, where the cars are, is still shut on a %s street"
 				% street)
 		instance.free()
-	AtlasLibrary.release(EventInstance.ATLAS_GROUP)
+	AtlasLibrary.release(EventPictures.ATLAS_GROUP)
 
 ## Where each of an instance's solid pieces sits along its own spread axis, in px from the scene's
 ## centre.
@@ -732,7 +732,7 @@ func _test_no_two_rows_draw_the_same_picture(t) -> void:
 ## And no two of those pictures are the same texture.
 ##
 ## The half a `look` field cannot enforce by itself: two looks whose `_draw_*` reach for the same
-## sprite are the old failure with more enum rows in front of it. `EventInstance.icon_for()` is
+## sprite are the old failure with more enum rows in front of it. `EventPictures.icon_for()` is
 ## the one table of what a look *is*, and it is also what the screen-edge badge draws — so this
 ## asserts the badge can never again show a delivery van for a fire engine.
 func _test_every_look_carries_its_own_silhouette(t) -> void:
@@ -740,7 +740,7 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 	for def in EventCatalogue.all():
 		if def.look == EventDef.Look.NONE:
 			continue
-		var icon := EventInstance.icon_for(def.look)
+		var icon := EventPictures.icon_for(def.look)
 		t.check(not icon.is_empty(), "'%s' has a silhouette a badge could draw" % def.id)
 		if icon.is_empty():
 			continue

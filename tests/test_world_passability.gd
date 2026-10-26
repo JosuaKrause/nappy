@@ -227,7 +227,7 @@ func _test_a_car_sees_her_off_street_ground(t) -> void:
 		car.setup(patrol, _centre(Vector2i(3, 1)), PackedVector2Array(), Vector2.RIGHT, map)
 		t.add_child(car)
 		var her := _centre(Vector2i(3, 3))
-		t.check(car._clear_line_to(her), "a car sees her standing on %s" % ground)
+		t.check(car.clear_line_to(her), "a car sees her standing on %s" % ground)
 		t.check(map.passable(map.world_to_tile(her), car._mover)
 				== (ground == GameEnums.TileType.SIDEWALK),
 				"and drives only where street ground is (%s)" % ground)

@@ -78,7 +78,7 @@ const SPOILED_GROUND := Color("6b6357")
 ## the amber is only ever seen on the rows sited in front of the player and reads as "near"; and two
 ## reds is a distinction a player is asked to make on a 15px caret. Phase is carried by the
 ## **flash**, which is what a flash is for, and the colour carries the only thing a colour is good
-## at: how bad. See `EventInstance.mark_colour()`.
+## at: how bad. See `EventLook.mark_colour()`.
 const MARK_COSTLY := Color("e8b64a")
 const MARK_LETHAL := Color("8f2f38")
 

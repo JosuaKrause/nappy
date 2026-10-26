@@ -165,7 +165,7 @@ func is_obstructed(tile: Vector2i) -> bool:
 ## found by stepping from one tile boundary to the next along it rather than by sampling, so a line
 ## that clips a wall's corner by a pixel is blocked however short it is, and a line through a corner
 ## point exactly asks both tiles beside it. **The line a pursuer notices her along, lunges along and
-## catches her along** (`EventInstance._clear_line_to()`), and the line day 13's waiting guard is
+## catches her along** (`EventInstance.clear_line_to()`), and the line day 13's waiting guard is
 ## placed to have from the roadblock he guards (`ResistanceDirector._roadblock_guard_spot()`) — one
 ## walk, so a spot chosen for its line is one his notice sees from (leafy-puffin, inbox #648).
 ## Stricter than `wall_between()`, which asks how deep into a wall a line runs.

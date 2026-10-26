@@ -107,7 +107,7 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 ## **The fire only catches where there is a building to burn, and burns on that building alone.**
 ## Every tile `burning_building`'s own placement (`AT_THE_FRONT`) offers has one of the city's
 ## `Building`s directly north of it — never the edge of the world, which `CityMap.tile_at()` reads
-## as `BUILDING` — and the flames drawn there (`EventInstance._flames_across()`) burn along the
+## as `BUILDING` — and the flames drawn there (`FireLook._flames_across()`) burn along the
 ## whole of that building's own facade and stay inside it, including at a site on the first or last
 ## column of its lot: every column the city draws a facade on carries a flame, and no column another
 ## building's roof covers does. *"the fire should be on the whole building not only the door"*
@@ -150,7 +150,7 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 		var facade := city.map.tile_rect_to_world(behind.lot)
 		if facade.size.x > 80.0:
 			wider_than_five += 1
-		var flames := EventInstance._flames_across(EventInstance._facade_runs_at(city.map, at))
+		var flames := FireLook._flames_across(FireLook._facade_runs_at(city.map, at))
 		for flame in flames:
 			if at.x + flame.x - flame.y * 0.5 < facade.position.x - 0.01 \
 					or at.x + flame.x + flame.y * 0.5 > facade.end.x + 0.01:
