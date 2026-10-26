@@ -222,7 +222,7 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 
 ## What is on the edge right now, nearest arrival first, one entry per badge: `{id, distance,
 ## approach}` for the log, and `{def, position}` (the row and where it points) for the drawing. There
-## is no cap: the list is every badge in `coming`, and what `DangerEdge` draws is exactly this list.
+## is nothing between `coming` and this list: every badge is in it, and `DangerEdge` draws exactly it.
 func announcing() -> Array[Dictionary]:
 	var badges: Array[Dictionary] = []
 	for i in coming.size():

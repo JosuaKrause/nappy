@@ -1288,7 +1288,7 @@ func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: Node) -> void
 ## slower machine took when the stairwell checks failed once on identical code. The badge must not
 ## depend on it. **A probabilistic extra, not the regression check** (that is `test_badge_model`'s
 ## deterministic case of this shape; the interior guard's own sensitivity is probabilistic: with the
-## charger reset taken out, at an earlier head with the old 0.8 s hold, it failed in 2 of 3 review runs):
+## charger reset taken out, at an earlier head with the old 0.8 s timer, it failed in 2 of 3 review runs):
 ## it exercises the game's own interpolated camera. Walk pace is the case that failed (the masked man sets off while she is still
 ## walking, from inside the out-of-sight margin band).
 func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t: Node) -> void:
