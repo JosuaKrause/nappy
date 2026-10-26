@@ -88,9 +88,9 @@ func _test_event_parts(t) -> void:
 			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
 			instance._spread_vertical = vertical
 			t.add_child(instance)
-			instance._attach_the_slices()
+			instance.look.attach_nodes()
 			instance._process(instance.def.telegraph_time + 0.01)
-			var sceneries := instance._sceneries.duplicate()
+			var sceneries := (instance.look as SpreadLook)._sceneries.duplicate()
 			var moving: Array[SceneryLayer] = []
 			var still: Array[SceneryLayer] = []
 			for scenery: EventScenery in sceneries:
@@ -100,10 +100,10 @@ func _test_event_parts(t) -> void:
 					"%s/%s has independently moving detail across its slices" % [id, vertical])
 			var body := instance._obstruction
 			var centers := instance.solid_part_centres()
-			var key := instance._picture_key()
+			var key := instance.look._picture_key()
 			var initial: bool = moving[0].frame_b
-			var period := EventInstance.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
-					else EventInstance.BURST_MAIN_SPLASH_PERIOD
+			var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
+					else EventPictures.BURST_MAIN_SPLASH_PERIOD
 			instance._process(period * 0.5)
 			for layer in moving:
 				t.check(layer.frame_b != initial, "the existing event clock advances each detail")
@@ -112,7 +112,7 @@ func _test_event_parts(t) -> void:
 			for layer in still:
 				for alternate in layer._alternates:
 					t.check(alternate == null, "stationary surroundings have no alternate texture")
-			t.check(instance._picture_key() == key, "animation leaves the static event key alone")
+			t.check(instance.look._picture_key() == key, "animation leaves the static event key alone")
 			t.check(instance._obstruction == body and instance.solid_part_centres() == centers,
 					"animation preserves both collision resource and placement")
 			instance._finish()
@@ -128,10 +128,10 @@ func _test_event_parts(t) -> void:
 			t.add_child(instance)
 			await t.get_tree().process_frame
 			var rebound := false
-			for scenery: EventScenery in instance._sceneries:
+			for scenery: EventScenery in (instance.look as SpreadLook)._sceneries:
 				rebound = rebound or not scenery.moving_layers.is_empty()
 			t.check(rebound, "reentry rebinds event scenery regions")
-			var again := instance._sceneries.duplicate()
+			var again := (instance.look as SpreadLook)._sceneries.duplicate()
 			instance.free()
 			await t.get_tree().process_frame
 			t.check(again.all(func(scenery: Variant) -> bool:

@@ -150,7 +150,7 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 		var facade := city.map.tile_rect_to_world(behind.lot)
 		if facade.size.x > 80.0:
 			wider_than_five += 1
-		var flames := EventInstance._flames_across(EventInstance._facade_runs_at(city.map, at))
+		var flames := FireLook._flames_across(FireLook._facade_runs_at(city.map, at))
 		for flame in flames:
 			if at.x + flame.x - flame.y * 0.5 < facade.position.x - 0.01 \
 					or at.x + flame.x + flame.y * 0.5 > facade.end.x + 0.01:

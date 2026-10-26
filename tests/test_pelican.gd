@@ -203,7 +203,7 @@ func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t) -> void:
 ## replace the drawing in the release; none may exist, for any picture the pelican draws.
 func _test_the_pelican_never_becomes_a_png(t) -> void:
 	var pictures: Array[String] = []
-	for table: Dictionary in [EventInstance.PELICAN_BY_VIEW, EventInstance.PELICAN_BY_VIEW_B]:
+	for table: Dictionary in [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B]:
 		for view: String in table:
 			pictures.append(str(table[view]))
 	var sources := 0
@@ -262,10 +262,10 @@ func _test_a_pelican_rides_as_one_to_the_end(t) -> void:
 	var events := _city.events
 	var pelican := events.spawn_warned(def, _ride(), true)
 	var kid := events.spawn_warned(def, _ride(), false)
-	t.check(pelican.is_pelican and pelican.rider_pictures()[0] == EventInstance.PELICAN_BY_VIEW
-			and pelican.rider_pictures()[1] == EventInstance.PELICAN_BY_VIEW_B,
+	t.check(pelican.is_pelican and (pelican.look as FigureLook).rider_pictures()[0] == EventPictures.PELICAN_BY_VIEW
+			and (pelican.look as FigureLook).rider_pictures()[1] == EventPictures.PELICAN_BY_VIEW_B,
 			"a rider rolled as the pelican is drawn as the pelican from its first frame")
-	t.check(not kid.is_pelican and kid.rider_pictures()[0] == EventInstance.CYCLIST_BY_VIEW,
+	t.check(not kid.is_pelican and (kid.look as FigureLook).rider_pictures()[0] == EventPictures.CYCLIST_BY_VIEW,
 			"and one rolled as the kid is drawn as the kid")
 	var travelled := 0.0
 	for _i in 600:
@@ -275,7 +275,7 @@ func _test_a_pelican_rides_as_one_to_the_end(t) -> void:
 		kid._process(STEP)
 		travelled = pelican.path_travelled()
 	t.check(travelled > 200.0, "the pelican rode %.0fpx of its 300px line" % travelled)
-	t.check(pelican.is_pelican and pelican.rider_pictures()[0] == EventInstance.PELICAN_BY_VIEW,
+	t.check(pelican.is_pelican and (pelican.look as FigureLook).rider_pictures()[0] == EventPictures.PELICAN_BY_VIEW,
 			"and is still drawn as the pelican at the end of it")
 	t.check(not kid.is_pelican, "and the kid is still the kid")
 	var dog := events.spawn_warned(EventCatalogue.by_id("loose_dog"), _ride(), true)
@@ -313,7 +313,7 @@ func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t) -> void:
 	t.check(same_reach and lethal_points > 0,
 			"and so is the reach that ends the day (%d of the points asked are inside it)"
 			% lethal_points)
-	t.check(pelican.rider_pictures() != kid.rider_pictures(), "only the picture differs")
+	t.check((pelican.look as FigureLook).rider_pictures() != (kid.look as FigureLook).rider_pictures(), "only the picture differs")
 	for instance in [pelican, kid]:
 		events.retire(instance)
 

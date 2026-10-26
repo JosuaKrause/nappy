@@ -60,7 +60,7 @@ func _stop_her_if_he_has_reached_her() -> void:
 	if event.is_finished or event.is_leaving or event.is_waiting() or event.is_telegraphing():
 		return
 	if event.global_position.distance_to(her) > def.lethal_reach() \
-			or not event._clear_line_to(her):
+			or not event.clear_line_to(her):
 		return
 	_stopped_her_at = event.age
 	event.transition(EventInstance.Phase.STOPPED)

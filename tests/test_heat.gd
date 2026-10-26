@@ -538,7 +538,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 			guard._process(STEP)
 			t.check(guard.barrier_post.has_left_its_body() and guard.barrier_post.chaser_side() == side,
 					"%s: the guard on her side sets off" % what)
-			var his_post := post + EventInstance._guard_post_offset(vertical, side)
+			var his_post := post + EventInstance.guard_post_offset(vertical, side)
 			t.check(guard.global_position.is_equal_approx(his_post),
 					"%s: from his own post (%s, the post %s)" % [what, guard.global_position, his_post])
 			t.check(guard.body_position().is_equal_approx(post),

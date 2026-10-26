@@ -517,7 +517,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		guard.setup(def, post)
 		t.add_child(guard)
 		guard.set_process(false)
-		guard._attach_the_band()
+		guard.look.attach_nodes()
 		var strongest := guard.contribution_at(beside)
 		# In inside his radius: he warns.
 		guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
@@ -588,7 +588,7 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	guard.setup(def, post)
 	t.add_child(guard)
 	guard.set_process(false)
-	guard._attach_the_band()
+	guard.look.attach_nodes()
 	var posted_first := guard.barrier_post.has_its_far_guard_posted()
 	guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
 	guard._process(step)
@@ -1566,8 +1566,8 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 	# The width comes from the baked region table rather than from a loaded texture — the crater's
 	# picture is a region of the `events` page now, and `AtlasLibrary.native_size()` answers the
 	# source picture's own size with nothing acquired.
-	var picture := EventInstance.icon_for(crater.look)
-	var drawn_width := EventInstance._native_size(picture).x
+	var picture := EventPictures.icon_for(crater.look)
+	var drawn_width := EventPictures.native_size(picture).x
 	t.check(is_equal_approx(crater.obstructs_radius, drawn_width * 0.5),
 			"the crater obstructs %.0fpx against a %.0fpx picture"
 			% [crater.obstructs_radius, drawn_width])

@@ -148,24 +148,24 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	var parts: Array[Rect2] = []
 	var def := instance.def
-	var view: String = instance._select_view(instance._heading)
-	var bob: float = instance._current_bob()
+	var view: String = instance.look._select_view(instance._heading)
+	var bob: float = instance.look.current_bob()
 	var picture := ""
 	match def.look:
 		EventDef.Look.CYCLIST:
-			var rider := instance.rider_pictures()
-			picture = rider[1 if instance._gait_stepping() else 0][view]
+			var rider := (instance.look as FigureLook).rider_pictures()
+			picture = rider[1 if instance.look._gait_stepping() else 0][view]
 		EventDef.Look.LOOSE_DOG:
-			picture = instance.dog_picture(view, instance._gait_stepping(), instance._gait_second_half())
+			picture = instance.dog_picture(view, instance.look._gait_stepping(), instance.look._gait_second_half())
 			# Both revisions' _draw_loose_dog draws this 26px trailing, 2px-wide line.
-			var behind := 26.0 if instance._heading_is_west() else -26.0
+			var behind := 26.0 if instance.look._heading_is_west() else -26.0
 			parts.append(Rect2(minf(behind, 0.0) - 1.0, -9.0 + bob, absf(behind) + 2.0, 8.0))
 		EventDef.Look.FIRE_ENGINE:
 			picture = instance.FIRE_ENGINE_BY_VIEW[view]
 		EventDef.Look.ARMY_TRUCK:
 			picture = instance.ARMY_TRUCK_BY_VIEW[view]
 		EventDef.Look.CHARGING_DOG:
-			picture = (instance.CHARGING_DOG_BY_VIEW_B if instance._gait_stepping()
+			picture = (instance.CHARGING_DOG_BY_VIEW_B if instance.look._gait_stepping()
 					else instance.CHARGING_DOG_BY_VIEW)[view]
 		_:
 			assert(false, "arrival collector has no drawing observer for this look")
@@ -181,9 +181,9 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 				shadow = shadow.expand(point)
 			shadow.position.y += 0.0 if not wheels.is_empty() else bob
 			parts.append(shadow)
-	if instance.wants_a_mark() and not (instance.is_telegraphing() \
+	if instance.look.wants_a_mark() and not (instance.is_telegraphing() \
 			and fmod(instance.age * instance.MARK_FLASHES_PER_SECOND, 1.0) > 0.55):
-		var swell: float = instance.mark_swell()
+		var swell: float = instance.look.mark_swell()
 		var width: float = instance.MARK_WIDTH * (0.55 + 0.45 * swell)
 		var at: float = -(instance.MARK_HEIGHT + 10.0 * swell)
 		for mark in (2 if instance._caret_strength() == 2 else 1):

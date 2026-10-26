@@ -25,27 +25,27 @@ func run(t) -> void:
 
 	_render_sheet("vehicles-native.png", "vehicles-3x.png", [
 		_row("delivery van (west-authored side)",
-				_heading_row("delivery_van", EventInstance.DELIVERY_VAN_BY_VIEW, true)),
+				_heading_row("delivery_van", EventPictures.DELIVERY_VAN_BY_VIEW, true)),
 		_row("fire engine (west-authored side)",
-				_heading_row("fire_truck", EventInstance.FIRE_ENGINE_BY_VIEW, true)),
+				_heading_row("fire_truck", EventPictures.FIRE_ENGINE_BY_VIEW, true)),
 		_row("ice-cream van (east-authored side)",
-				_heading_row("ice_cream_van", EventInstance.ICE_CREAM_VAN_BY_VIEW, false)),
+				_heading_row("ice_cream_van", EventPictures.ICE_CREAM_VAN_BY_VIEW, false)),
 		_row("reversing lorry (east-authored side)",
-				_heading_row("reversing_lorry", EventInstance.LORRY_BY_VIEW, false)),
+				_heading_row("reversing_lorry", EventPictures.LORRY_BY_VIEW, false)),
 	])
 
 	_render_sheet("vehicles-security-native.png", "vehicles-security-3x.png", [
 		_row("unmarked van (west-authored side)",
-				_heading_row("abduction", EventInstance.UNMARKED_VAN_BY_VIEW, true)),
+				_heading_row("abduction", EventPictures.UNMARKED_VAN_BY_VIEW, true)),
 		_row("army truck (west-authored side)",
-				_heading_row("military_convoy", EventInstance.ARMY_TRUCK_BY_VIEW, true)),
+				_heading_row("military_convoy", EventPictures.ARMY_TRUCK_BY_VIEW, true)),
 		_row("riot van (west-authored side)",
-				_heading_row("night_raid", EventInstance.RIOT_VAN_BY_VIEW, true)),
+				_heading_row("night_raid", EventPictures.RIOT_VAN_BY_VIEW, true)),
 	])
 
 	_render_sheet("police-car-native.png", "police-car-3x.png", [
 		_row("police car (east-authored side)",
-				_heading_row("police_patrol", EventInstance.POLICE_CAR_BY_VIEW, false)),
+				_heading_row("police_patrol", EventPictures.POLICE_CAR_BY_VIEW, false)),
 	])
 
 	print("m108_event_vehicles_sheet: 6 PNGs written under %s" % OUT_DIR)
@@ -76,8 +76,8 @@ func _heading_row(def_id: String, by_view: Dictionary, side_faces_west: bool) ->
 		var instance := EventInstance.new()
 		instance.setup(EventCatalogue.by_id(def_id), Vector2.ZERO, PackedVector2Array(),
 				_sector_heading(sector))
-		var view: String = EventInstance.EIGHT_VIEW_BY_SECTOR[instance._view_sector]
-		var mirror := EightDirection.is_mirrored(instance._view_sector)
+		var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[instance.look._view_sector]
+		var mirror := EightDirection.is_mirrored(instance.look._view_sector)
 		if view == "side" and side_faces_west:
 			mirror = not mirror
 		row.append(_entry(by_view[view], mirror))
@@ -109,7 +109,7 @@ func _cell_image(entry: Dictionary, scale: float) -> Image:
 		image.convert(Image.FORMAT_RGBA8)
 		wheels.convert(Image.FORMAT_RGBA8)
 		var whole := Rect2i(Vector2i.ZERO, image.get_size())
-		if wheels_name in EventInstance.WHEELS_BEHIND_THE_BODY:
+		if wheels_name in EventPictures.WHEELS_BEHIND_THE_BODY:
 			wheels.blend_rect(image, whole, Vector2i.ZERO)
 			image = wheels
 		else:

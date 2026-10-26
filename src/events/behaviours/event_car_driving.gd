@@ -160,13 +160,13 @@ func end_frame() -> void:
 		_standing = not strikes_her
 		# The end it reached on the pose taken back is taken back with it.
 		_ends_its_route = false
-		event._redraw_if_the_picture_changed()
+		event.look.redraw_if_the_picture_changed()
 	else:
 		_standing = false
 	if _ends_its_route:
 		_ends_its_route = false
 		event._be_done(_may_park)
-		event._redraw_if_the_picture_changed()
+		event.look.redraw_if_the_picture_changed()
 	turn_the_body()
 
 ## **Whether it strikes her at `her` now**: driving, with her in front of its nose on the carriageway

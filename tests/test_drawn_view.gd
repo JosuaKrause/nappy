@@ -200,11 +200,11 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	screen.add_child(cyclist)
 	cyclist.set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
 	var key_before := cyclist._picture
-	t.check(not cyclist._redraw_if_the_picture_changed(), "off screen it asks for no redraw")
-	t.check(cyclist._picture == key_before and cyclist._caret_strength_age == -1.0,
+	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
+	t.check(cyclist._picture == key_before and cyclist.look._caret_strength_age == -1.0,
 			"and works out neither its key nor its caret")
-	var drawn := cyclist.drawn_rect_now()
-	t.check(cyclist.wants_a_mark() and cyclist.mark_colour() == Palette.MARK_LETHAL,
+	var drawn := cyclist.look.drawn_rect_now()
+	t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,
 			"the caret it is owed is the doubled red")
 	var left := -2000.0
 	var asked_since_off := false
@@ -212,7 +212,7 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	var seen := false
 	while left < 320.0 and not seen:
 		_look_from(screen, Vector2(left, 0.0))
-		asked_since_off = cyclist._redraw_if_the_picture_changed() or asked_since_off
+		asked_since_off = cyclist.look.redraw_if_the_picture_changed() or asked_since_off
 		if _world_shown(Vector2(left, 0.0)).intersects(
 				Rect2(cyclist.global_position + drawn.position, drawn.size)):
 			seen = true
@@ -220,17 +220,17 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 		left += 4.0
 	t.check(seen and first_seen_asked,
 			"it asked for its redraw no later than the first frame any of it shows")
-	t.check(cyclist.wants_a_mark(), "and that redraw carries its caret")
+	t.check(cyclist.look.wants_a_mark(), "and that redraw carries its caret")
 	# The same picture off screen and back: nothing in its key moved, and it redraws all the same,
 	# since nothing kept what it shows current while it was away.
 	_look_from(screen, Vector2.ZERO)
-	cyclist._redraw_if_the_picture_changed()
-	t.check(not cyclist._redraw_if_the_picture_changed(),
+	cyclist.look.redraw_if_the_picture_changed()
+	t.check(not cyclist.look.redraw_if_the_picture_changed(),
 			"on screen and unchanged, it asks for nothing")
 	_look_from(screen, Vector2(-2000.0, 0.0))
-	cyclist._redraw_if_the_picture_changed()
+	cyclist.look.redraw_if_the_picture_changed()
 	_look_from(screen, Vector2.ZERO)
-	t.check(cyclist._redraw_if_the_picture_changed(),
+	t.check(cyclist.look.redraw_if_the_picture_changed(),
 			"back on screen with the same key, it redraws once")
 	screen.free()
 	DrawnView.forget()
@@ -252,28 +252,28 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 	var fire := EventInstance.new()
 	fire.setup(def, Vector2(0.0, 180.0))
 	fire.set_process(false)
-	fire._fire_facade = PackedVector2Array([Vector2(-40.0, 600.0)])
-	fire._fire_facade_found = true
+	(fire.look as FireLook)._fire_facade = PackedVector2Array([Vector2(-40.0, 600.0)])
+	(fire.look as FireLook)._fire_facade_found = true
 	screen.add_child(fire)
 	var drawn := Rect2()
 	var any := false
-	for flame in EventInstance._flames_across(fire._fire_facade):
-		var tallest := (EventInstance._FIRE_HEIGHT + EventInstance._FIRE_HEIGHT_TALL) * 1.25
+	for flame in FireLook._flames_across((fire.look as FireLook)._fire_facade):
+		var tallest := (FireLook._FIRE_HEIGHT + FireLook._FIRE_HEIGHT_TALL) * 1.25
 		var one := Rect2(flame.x - flame.y * 0.5, -tallest, flame.y, tallest)
 		drawn = one if not any else drawn.merge(one)
 		any = true
-	for plume in EventInstance._smoke_across(fire._fire_facade):
-		var top := -(EventInstance._FIRE_HEIGHT + EventInstance._FIRE_HEIGHT_TALL) \
-				- EventInstance._SMOKE_SIZE.y
-		drawn = drawn.merge(Rect2(plume.x - plume.y * 0.5, top, plume.y, EventInstance._SMOKE_SIZE.y))
-	t.check(fire._drawn_reach().encloses(drawn) and fire.drawn_rect_now().encloses(drawn),
+	for plume in FireLook._smoke_across((fire.look as FireLook)._fire_facade):
+		var top := -(FireLook._FIRE_HEIGHT + FireLook._FIRE_HEIGHT_TALL) \
+				- FireLook._SMOKE_SIZE.y
+		drawn = drawn.merge(Rect2(plume.x - plume.y * 0.5, top, plume.y, FireLook._SMOKE_SIZE.y))
+	t.check(fire.look._drawn_reach().encloses(drawn) and fire.look.drawn_rect_now().encloses(drawn),
 			"the reach and the drawn rect hold the whole front and its smoke (%s)" % drawn)
 	var shown_unasked := 0
 	var shown_point_outside := 0
 	var left := 1200.0
 	while left > -700.0:
 		_look_from(screen, Vector2(left, 0.0))
-		var asked := fire._redraw_if_the_picture_changed()
+		var asked := fire.look.redraw_if_the_picture_changed()
 		var on_screen := _world_shown(Vector2(left, 0.0)).intersects(
 				Rect2(fire.global_position + drawn.position, drawn.size))
 		if on_screen and not asked:

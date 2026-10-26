@@ -62,7 +62,7 @@ static func _walk(t, def: EventDef, walk: String) -> Dictionary:
 	instance.setup(def, Vector2.ZERO)
 	t.add_child(instance)
 	instance.set_process(false)
-	instance._attach_the_band()
+	instance.look.attach_nodes()
 	var her := Vector2(0.0, def.notice_within() + 20.0)
 	# Positive is away from him, along +y.
 	var speed := -Tuning.WALK_SPEED

@@ -23,40 +23,40 @@ func run(t) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 
 	_render_sheet("people-native.png", "people-3x.png", [
-		_row("dog-walker person", _heading_row("dog_walker", EventInstance.PERSON_BY_VIEW)),
-		_row("dog-walker's dog", _heading_row("dog_walker", EventInstance.DOG_BY_VIEW)),
-		_row("yeller", _heading_row("homeless_yeller", EventInstance.YELLER_BY_VIEW)),
-		_row("busker", _heading_row("busker", EventInstance.BUSKER_BY_VIEW)),
-		_row("poster crew", _heading_row("poster_crew", EventInstance.POSTER_CREW_BY_VIEW)),
+		_row("dog-walker person", _heading_row("dog_walker", EventPictures.PERSON_BY_VIEW)),
+		_row("dog-walker's dog", _heading_row("dog_walker", EventPictures.DOG_BY_VIEW)),
+		_row("yeller", _heading_row("homeless_yeller", EventPictures.YELLER_BY_VIEW)),
+		_row("busker", _heading_row("busker", EventPictures.BUSKER_BY_VIEW)),
+		_row("poster crew", _heading_row("poster_crew", EventPictures.POSTER_CREW_BY_VIEW)),
 		_row("poster crew, square",
-				_heading_row("poster_crew_square", EventInstance.POSTER_CREW_SQUARE_BY_VIEW)),
-		_row("cafe sitter", _heading_row("cafe_tables", EventInstance.CAFE_SITTER_BY_VIEW)),
-		_row("van victim", _heading_row("abduction", EventInstance.VAN_VICTIM_BY_VIEW)),
-		_row("protester (plain)", _heading_row("protest", EventInstance.PROTESTER_BY_VIEW)),
-		_row("leaf blower", _heading_row("leaf_blower", EventInstance.LEAF_BLOWER_BY_VIEW)),
+				_heading_row("poster_crew_square", EventPictures.POSTER_CREW_SQUARE_BY_VIEW)),
+		_row("cafe sitter", _heading_row("cafe_tables", EventPictures.CAFE_SITTER_BY_VIEW)),
+		_row("van victim", _heading_row("abduction", EventPictures.VAN_VICTIM_BY_VIEW)),
+		_row("protester (plain)", _heading_row("protest", EventPictures.PROTESTER_BY_VIEW)),
+		_row("leaf blower", _heading_row("leaf_blower", EventPictures.LEAF_BLOWER_BY_VIEW)),
 	])
 
 	_render_sheet("people-states-native.png", "people-states-3x.png", [
 		_row("chatting mother, walking",
-				_heading_row("chatting_mother", EventInstance.CHATTING_MOTHER_WALKING_BY_VIEW)),
+				_heading_row("chatting_mother", EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW)),
 		_row("chatting mother, talking",
-				_heading_row("chatting_mother", EventInstance.CHATTING_MOTHER_TALKING_BY_VIEW)),
+				_heading_row("chatting_mother", EventPictures.CHATTING_MOTHER_TALKING_BY_VIEW)),
 		_row("robber, waiting (faces her)", _robber_waiting_row()),
 		_row("robber, lunging (faces her lunge)",
-				_heading_row("alley_robbery", EventInstance.ROBBER_LUNGING_BY_VIEW)),
+				_heading_row("alley_robbery", EventPictures.ROBBER_LUNGING_BY_VIEW)),
 	])
 
 	_render_sheet("animals-rider-native.png", "animals-rider-3x.png", [
-		_row("cat, crouched", _heading_row("cat_dash", EventInstance.CAT_CROUCHED_BY_VIEW)),
-		_row("cat, running", _heading_row("cat_dash", EventInstance.CAT_RUNNING_BY_VIEW)),
-		_row("loose dog", _heading_row("loose_dog", EventInstance.DOG_BY_VIEW)),
-		_row("charging dog", _heading_row("charging_dog", EventInstance.CHARGING_DOG_BY_VIEW)),
-		_row("cyclist", _heading_row("cyclist", EventInstance.CYCLIST_BY_VIEW)),
+		_row("cat, crouched", _heading_row("cat_dash", EventPictures.CAT_CROUCHED_BY_VIEW)),
+		_row("cat, running", _heading_row("cat_dash", EventPictures.CAT_RUNNING_BY_VIEW)),
+		_row("loose dog", _heading_row("loose_dog", EventPictures.DOG_BY_VIEW)),
+		_row("charging dog", _heading_row("charging_dog", EventPictures.CHARGING_DOG_BY_VIEW)),
+		_row("cyclist", _heading_row("cyclist", EventPictures.CYCLIST_BY_VIEW)),
 	])
 
 	_render_sheet("birds-native.png", "birds-3x.png", [
-		_row("pigeon, wings up", _bird_row(EventInstance.PIGEON_BY_VIEW)),
-		_row("pigeon, wings down", _bird_row(EventInstance.PIGEON_DOWN_BY_VIEW)),
+		_row("pigeon, wings up", _bird_row(EventPictures.PIGEON_BY_VIEW)),
+		_row("pigeon, wings down", _bird_row(EventPictures.PIGEON_DOWN_BY_VIEW)),
 	])
 
 	print("m108_event_people_sheet: 8 PNGs written under %s" % OUT_DIR)
@@ -87,8 +87,8 @@ func _heading_row(def_id: String, by_view: Dictionary) -> Array:
 		var instance := EventInstance.new()
 		instance.setup(EventCatalogue.by_id(def_id), Vector2.ZERO, PackedVector2Array(),
 				_sector_heading(sector))
-		var view: String = EventInstance.EIGHT_VIEW_BY_SECTOR[instance._view_sector]
-		row.append(_entry(by_view[view], EightDirection.is_mirrored(instance._view_sector)))
+		var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[instance.look._view_sector]
+		row.append(_entry(by_view[view], EightDirection.is_mirrored(instance.look._view_sector)))
 		instance.free()
 	return row
 
@@ -101,9 +101,9 @@ func _robber_waiting_row() -> Array:
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)
 		instance.player_at = _sector_heading(sector) * (def.notice_within() + 40.0)
-		var view := instance._select_view(instance._robber_waiting_heading())
-		row.append(_entry(EventInstance.ROBBER_WAITING_BY_VIEW[view],
-				EightDirection.is_mirrored(instance._view_sector)))
+		var view := instance.look._select_view(instance.look._robber_waiting_heading())
+		row.append(_entry(EventPictures.ROBBER_WAITING_BY_VIEW[view],
+				EightDirection.is_mirrored(instance.look._view_sector)))
 		instance.free()
 	return row
 
@@ -115,7 +115,7 @@ func _bird_row(by_view: Dictionary) -> Array:
 	var row := []
 	for sector in range(8):
 		var s := EightDirection.nearest(_sector_heading(sector))
-		var view: String = EventInstance.EIGHT_VIEW_BY_SECTOR[s]
+		var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[s]
 		row.append(_entry(by_view[view], EightDirection.is_mirrored(s)))
 	return row
 

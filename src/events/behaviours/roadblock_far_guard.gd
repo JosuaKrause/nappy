@@ -32,7 +32,7 @@ var gone := false
 ## whenever it is empty.
 var way := PackedVector2Array()
 ## His node while he walks.
-var node: EventInstance.FarGuard
+var node: RoadblockLook.FarGuard
 
 func _init(owner: EventInstance) -> void:
 	event = owner
@@ -49,20 +49,20 @@ func send_off(side: int) -> void:
 		gone = true
 		return
 	var vertical: bool = event._spread_vertical
-	at = event.body_position() + EventInstance._guard_post_offset(vertical, side)
-	heading = EventInstance._guard_post_heading(vertical, side)
+	at = event.body_position() + EventInstance.guard_post_offset(vertical, side)
+	heading = EventInstance.guard_post_heading(vertical, side)
 	var her: Vector2 = event.player_at
 	if her != Vector2.INF and not her.is_equal_approx(at):
 		heading = (at - her).normalized()
 	walked = 0.0
 	walking_for = 0.0
 	way = PackedVector2Array()
-	node = EventInstance.FarGuard.new()
+	node = RoadblockLook.FarGuard.new()
 	node.instance = event
 	node.name = "FarGuard"
 	node.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	if event.is_inside_tree() and event.get_parent() != null:
-		event._add_beside_it(node)
+		event.add_beside_it(node)
 	move_node()
 
 ## One frame of his walk away, and his end once she could not be watching.

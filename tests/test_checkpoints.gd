@@ -241,8 +241,8 @@ func _test_the_boom_bars_the_carriageway(t) -> void:
 					% [map.seed_used, day] + "(%.1f in %.1f..%.1f)"
 					% [gate_across, across_low, across_high])
 
-			var span := EventInstance.boom_arm_span(
-					EventInstance.gate_runs_north_south(gate.facing))
+			var span := EventPictures.boom_arm_span(
+					EventPictures.gate_runs_north_south(gate.facing))
 			var arm_near := gate_across + span.x
 			var arm_far := gate_across + span.y
 			t.check(arm_near <= across_low and arm_far >= across_high,

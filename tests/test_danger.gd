@@ -73,7 +73,7 @@ func _test_a_stationary_thing_she_stands_in_is_unmarked(t) -> void:
 		return
 	var instance := _instance(def)
 	instance.set_player_at(instance.global_position)
-	t.check(not instance.wants_a_mark(),
+	t.check(not instance.look.wants_a_mark(),
 			"a café she is standing in front of carries no caret at all")
 	instance.free()
 
@@ -312,7 +312,7 @@ func _test_a_cat_dashing_at_her_is_unmarked(t) -> void:
 	# `still_while_telegraphing`, so `travel_velocity()` is zero until then.
 	_advance(instance, def.telegraph_time + STEP)
 	instance.set_player_at(Vector2(def.outer_radius, 0.0))
-	t.check(not instance.wants_a_mark(),
+	t.check(not instance.look.wants_a_mark(),
 			"a cat driving straight at a standing player still lands under the line")
 	instance.free()
 
@@ -334,7 +334,7 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	var on_course := _instance(def, route)
 	_advance(on_course, def.telegraph_time + STEP)
 	on_course.set_player_at(on_course.global_position + Vector2(def.outer_radius, 0.0))
-	t.check(on_course.wants_a_mark() and on_course.mark_colour() == Palette.MARK_LETHAL,
+	t.check(on_course.look.wants_a_mark() and on_course.look.mark_colour() == Palette.MARK_LETHAL,
 			"a cyclist whose line reaches her lethal radius is the doubled red caret")
 	on_course.free()
 
@@ -365,10 +365,10 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 				PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
 		t.check(cyclist.is_telegraphing(), "the cyclist is still telegraphing at age zero")
 		cyclist.set_player_at(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
-		t.check(cyclist.wants_a_mark() and cyclist.mark_colour() == Palette.MARK_LETHAL,
+		t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,
 				"a telegraphing cyclist on a course that reaches her lethal radius is already " +
 						"the doubled red caret")
-		t.check(cyclist.mark_swell() < 1.0,
+		t.check(cyclist.look.mark_swell() < 1.0,
 				"and the swell still reads the telegraph's own damping — the flash, not the " +
 						"colour, is what says this has not happened yet")
 		cyclist.free()
@@ -381,7 +381,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		t.check(dog.is_telegraphing() and not dog.is_waiting(),
 				"the day-3 dog has already noticed her and is still telegraphing its charge")
 		dog.set_player_at(dog.global_position + Vector2(60.0, 0.0))
-		t.check(dog.wants_a_mark() and dog.mark_colour() == Palette.MARK_LETHAL,
+		t.check(dog.look.wants_a_mark() and dog.look.mark_colour() == Palette.MARK_LETHAL,
 				"a noticed dog holding its stand-off through the telegraph is already the " +
 						"doubled red caret")
 		dog.free()
@@ -392,7 +392,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		var robber := _instance(robber_def)
 		t.check(robber.is_waiting(), "and nobody has come near it yet")
 		robber.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
-		t.check(not robber.wants_a_mark(),
+		t.check(not robber.look.wants_a_mark(),
 				"a waiting robber in an alley she is not in carries no mark at all")
 		robber.free()
 
@@ -471,8 +471,8 @@ func _test_the_mark_still_breathes(t) -> void:
 	var highest := 0.0
 	for i in int(round(def.pulse_period / STEP)):
 		instance._process(STEP)
-		lowest = minf(lowest, instance.mark_swell())
-		highest = maxf(highest, instance.mark_swell())
+		lowest = minf(lowest, instance.look.mark_swell())
+		highest = maxf(highest, instance.look.mark_swell())
 	t.check(highest > lowest * 1.5,
 			"the mark has a real swing between beats (%.2f to %.2f)" % [lowest, highest])
 	t.check(lowest > 0.0, "and never shrinks to nothing, which would read as flickering")

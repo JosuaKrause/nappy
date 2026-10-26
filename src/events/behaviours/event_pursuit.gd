@@ -105,7 +105,7 @@ func _chase(delta: float) -> void:
 ## the notice is wider than the stand-off on every row, the wall held the lunge back too.
 func _notice(toward: Vector2, standoff: float) -> void:
 	var range_to_her := toward.length()
-	if range_to_her > event.def.notice_within() or not event._clear_line_to(event.player_at) \
+	if range_to_her > event.def.notice_within() or not event.clear_line_to(event.player_at) \
 			or not event._would_stand_in_her_view():
 		return
 	event._notice_her()
@@ -154,7 +154,7 @@ func _close_through_the_telegraph(delta: float, step: float, range_to_her: float
 	var beside_her := def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER)
 	if def.pursuit.walk_speed > 0.0 and not (beside_her or lunge_held):
 		step = minf(def.pursuit.walk_speed * delta, range_to_her)
-	var clear: bool = event._clear_line_to(event.player_at)
+	var clear: bool = event.clear_line_to(event.player_at)
 	if beside_her or lunge_held:
 		step = clampf(range_to_her - standoff, 0.0, step)
 		if lunge_held and clear and range_to_her >= standoff:

@@ -2104,7 +2104,7 @@ func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
 func _test_every_vent_has_its_grate_blowing_or_not(t: Node) -> void:
 	const STEP := 1.0 / 60.0
 	const WINDOW := 12.0
-	var grate_size := AtlasLibrary.native_size(StringName(EventInstance.STEAM_GRATE))
+	var grate_size := AtlasLibrary.native_size(StringName(EventPictures.STEAM_GRATE))
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()

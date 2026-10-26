@@ -54,7 +54,7 @@ func walk(heading: Vector2, moved: float) -> void:
 
 ## The picture he is drawn with now. Kept for the tests.
 func picture() -> String:
-	return WAITING_BY_VIEW[EventInstance.EIGHT_VIEW_BY_SECTOR[_sector]]
+	return WAITING_BY_VIEW[EventPictures.EIGHT_VIEW_BY_SECTOR[_sector]]
 
 func _draw() -> void:
 	Sprites.draw_shadow(self, Vector2.ZERO, SHADOW)

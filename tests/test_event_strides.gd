@@ -19,26 +19,26 @@ const STEP := 1.0 / 60.0
 ## Neither `cafe_sitter` nor `busker` is here: their own idle-timer alternation is checked in its
 ## own section rather than folded into the distance-driven gait checks every entry here shares.
 const GAIT_FAMILY_DICTS := {
-	"person": [EventInstance.PERSON_BY_VIEW, EventInstance.PERSON_BY_VIEW_B],
-	"yeller": [EventInstance.YELLER_BY_VIEW, EventInstance.YELLER_BY_VIEW_B],
-	"robber_lunging": [EventInstance.ROBBER_LUNGING_BY_VIEW, EventInstance.ROBBER_LUNGING_BY_VIEW_B],
-	"robber_alert": [EventInstance.ROBBER_ALERT_BY_VIEW, EventInstance.ROBBER_ALERT_BY_VIEW_B],
-	"protester": [EventInstance.PROTESTER_BY_VIEW, EventInstance.PROTESTER_BY_VIEW_B],
-	"leaf_blower": [EventInstance.LEAF_BLOWER_BY_VIEW, EventInstance.LEAF_BLOWER_BY_VIEW_B],
-	"van_victim": [EventInstance.VAN_VICTIM_BY_VIEW, EventInstance.VAN_VICTIM_BY_VIEW_B],
+	"person": [EventPictures.PERSON_BY_VIEW, EventPictures.PERSON_BY_VIEW_B],
+	"yeller": [EventPictures.YELLER_BY_VIEW, EventPictures.YELLER_BY_VIEW_B],
+	"robber_lunging": [EventPictures.ROBBER_LUNGING_BY_VIEW, EventPictures.ROBBER_LUNGING_BY_VIEW_B],
+	"robber_alert": [EventPictures.ROBBER_ALERT_BY_VIEW, EventPictures.ROBBER_ALERT_BY_VIEW_B],
+	"protester": [EventPictures.PROTESTER_BY_VIEW, EventPictures.PROTESTER_BY_VIEW_B],
+	"leaf_blower": [EventPictures.LEAF_BLOWER_BY_VIEW, EventPictures.LEAF_BLOWER_BY_VIEW_B],
+	"van_victim": [EventPictures.VAN_VICTIM_BY_VIEW, EventPictures.VAN_VICTIM_BY_VIEW_B],
 	"chatting_mother_walking":
-			[EventInstance.CHATTING_MOTHER_WALKING_BY_VIEW, EventInstance.CHATTING_MOTHER_WALKING_BY_VIEW_B],
-	"cat_running": [EventInstance.CAT_RUNNING_BY_VIEW, EventInstance.CAT_RUNNING_BY_VIEW_B],
-	"dog": [EventInstance.DOG_BY_VIEW, EventInstance.DOG_BY_VIEW_B],
-	"charging_dog": [EventInstance.CHARGING_DOG_BY_VIEW, EventInstance.CHARGING_DOG_BY_VIEW_B],
-	"cyclist": [EventInstance.CYCLIST_BY_VIEW, EventInstance.CYCLIST_BY_VIEW_B],
-	"pelican_cyclist": [EventInstance.PELICAN_BY_VIEW, EventInstance.PELICAN_BY_VIEW_B],
-	"mouse": [EventInstance.MOUSE_BY_VIEW, EventInstance.MOUSE_BY_VIEW_B],
+			[EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW, EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW_B],
+	"cat_running": [EventPictures.CAT_RUNNING_BY_VIEW, EventPictures.CAT_RUNNING_BY_VIEW_B],
+	"dog": [EventPictures.DOG_BY_VIEW, EventPictures.DOG_BY_VIEW_B],
+	"charging_dog": [EventPictures.CHARGING_DOG_BY_VIEW, EventPictures.CHARGING_DOG_BY_VIEW_B],
+	"cyclist": [EventPictures.CYCLIST_BY_VIEW, EventPictures.CYCLIST_BY_VIEW_B],
+	"pelican_cyclist": [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B],
+	"mouse": [EventPictures.MOUSE_BY_VIEW, EventPictures.MOUSE_BY_VIEW_B],
 }
 
 const IDLE_FAMILY_DICTS := {
-	"cafe_sitter": [EventInstance.CAFE_SITTER_BY_VIEW, EventInstance.CAFE_SITTER_BY_VIEW_B],
-	"busker": [EventInstance.BUSKER_BY_VIEW, EventInstance.BUSKER_BY_VIEW_B],
+	"cafe_sitter": [EventPictures.CAFE_SITTER_BY_VIEW, EventPictures.CAFE_SITTER_BY_VIEW_B],
+	"busker": [EventPictures.BUSKER_BY_VIEW, EventPictures.BUSKER_BY_VIEW_B],
 }
 
 const VIEWS: Array[String] = ["front", "back", "side", "front_diagonal", "back_diagonal"]
@@ -106,12 +106,12 @@ func _test_moving_instance_alternates_gait_frames(t) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
-	t.check(not instance._gait_stepping(), "starts on frame a before it has moved at all")
+	t.check(not instance.look._gait_stepping(), "starts on frame a before it has moved at all")
 	var saw_b := false
 	var saw_a_again := false
 	for i in 400:
 		instance._process(STEP)
-		if instance._gait_stepping():
+		if instance.look._gait_stepping():
 			saw_b = true
 		elif saw_b:
 			saw_a_again = true
@@ -131,7 +131,7 @@ func _test_waiting_robber_holds_frame_a(t) -> void:
 	for i in 120:
 		instance._process(STEP)
 		t.check(instance.is_waiting(), "still only waiting at tick %d" % i)
-		t.check(not instance._gait_stepping(), "a waiting robber holds frame a (tick %d)" % i)
+		t.check(not instance.look._gait_stepping(), "a waiting robber holds frame a (tick %d)" % i)
 	instance.free()
 
 ## `chatting_mother`'s pacing beat gets a stride; her conversation freezes `_process()` entirely
@@ -147,7 +147,7 @@ func _test_chatting_mother_freezes_gait_when_talking(t) -> void:
 	t.check(instance.is_chatting(), "the conversation is running")
 	for i in 30:
 		instance._process(STEP)
-		t.check(not instance._gait_stepping(), "frozen mid-conversation holds frame a (tick %d)" % i)
+		t.check(not instance.look._gait_stepping(), "frozen mid-conversation holds frame a (tick %d)" % i)
 	instance.free()
 
 ## The crouch is the telegraph, held still by construction (`still_while_telegraphing`) — it must
@@ -162,8 +162,8 @@ func _test_crouched_cat_never_reads_the_running_b_frame(t) -> void:
 	# to prove the crouch branch never consults it.
 	instance._gait_phase = PI * 0.25
 	instance._gait_moving = true
-	t.check(instance._gait_stepping(), "the phase itself would read as stepping")
-	t.check(EventInstance.CAT_CROUCHED_BY_VIEW["side"] != EventInstance.CAT_RUNNING_BY_VIEW_B["side"],
+	t.check(instance.look._gait_stepping(), "the phase itself would read as stepping")
+	t.check(EventPictures.CAT_CROUCHED_BY_VIEW["side"] != EventPictures.CAT_RUNNING_BY_VIEW_B["side"],
 			"the crouch and the running b frame are not the same picture regardless")
 	instance.free()
 
@@ -175,15 +175,15 @@ func _test_dog_walker_and_dog_share_one_phase(t) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
-	var rest: String = EventInstance.dog_picture("side", false, false)
+	var rest: String = EventPictures.dog_picture("side", false, false)
 	var agreed := true
 	for i in 300:
 		instance._process(STEP)
-		var stepping := instance._gait_stepping()
-		var person_frame: String = EventInstance.PERSON_BY_VIEW_B["side"] if stepping \
-				else EventInstance.PERSON_BY_VIEW["side"]
-		var dog_frame := EventInstance.dog_picture("side", stepping, instance._gait_second_half())
-		if (person_frame == EventInstance.PERSON_BY_VIEW_B["side"]) == (dog_frame == rest):
+		var stepping := instance.look._gait_stepping()
+		var person_frame: String = EventPictures.PERSON_BY_VIEW_B["side"] if stepping \
+				else EventPictures.PERSON_BY_VIEW["side"]
+		var dog_frame := EventPictures.dog_picture("side", stepping, instance.look._gait_second_half())
+		if (person_frame == EventPictures.PERSON_BY_VIEW_B["side"]) == (dog_frame == rest):
 			agreed = false
 	t.check(agreed, "the walker is mid-stride exactly while the dog is on a step, never on its rest")
 	instance.free()
@@ -208,10 +208,10 @@ func _test_the_normal_dog_has_three_pictures_in_four_beats(t) -> void:
 	for view in VIEWS:
 		var beats: Array = expected[view]
 		var drawn := [
-			EventInstance.dog_picture(view, true, false),
-			EventInstance.dog_picture(view, false, false),
-			EventInstance.dog_picture(view, true, true),
-			EventInstance.dog_picture(view, false, true),
+			EventPictures.dog_picture(view, true, false),
+			EventPictures.dog_picture(view, false, false),
+			EventPictures.dog_picture(view, true, true),
+			EventPictures.dog_picture(view, false, true),
 		]
 		t.check(drawn == beats, "the %s dog walks %s (got %s)" % [view, beats, drawn])
 		var distinct := {}
@@ -233,8 +233,8 @@ func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t) -> void:
 	var changed_at: Array[float] = []
 	for i in 900:
 		instance._process(STEP)
-		var now := EventInstance.dog_picture("side", instance._gait_stepping(),
-				instance._gait_second_half())
+		var now := EventPictures.dog_picture("side", instance.look._gait_stepping(),
+				instance.look._gait_second_half())
 		if shown.is_empty() or shown[-1] != now:
 			shown.append(now)
 			changed_at.append(instance._path_travelled)
@@ -260,15 +260,15 @@ func _test_a_standing_normal_dog_rests(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	for view in VIEWS:
-		t.check(EventInstance.dog_picture(view, instance._gait_stepping(),
-				instance._gait_second_half()) == EventInstance.dog_picture(view, false, false),
+		t.check(EventPictures.dog_picture(view, instance.look._gait_stepping(),
+				instance.look._gait_second_half()) == EventPictures.dog_picture(view, false, false),
 				"a %s dog that has not moved stands in its rest pose" % view)
 	for phase in [PI * 0.25, PI * 1.25]:
 		instance._gait_phase = phase
 		instance._advance_gait(0.0)
-		t.check(not instance._gait_stepping(), "a tick with no ground covered is not a step")
-		t.check(EventInstance.dog_picture("side", instance._gait_stepping(),
-				instance._gait_second_half()) == "events/dog_b",
+		t.check(not instance.look._gait_stepping(), "a tick with no ground covered is not a step")
+		t.check(EventPictures.dog_picture("side", instance.look._gait_stepping(),
+				instance.look._gait_second_half()) == "events/dog_b",
 				"a dog stopped at phase %.2f stands in its rest pose" % phase)
 	instance.free()
 
@@ -281,15 +281,15 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	t.check(not instance._victim_gait_stepping(), "no take is running yet")
+	t.check(not instance.look._victim_gait_stepping(), "no take is running yet")
 	instance.player_at = instance.global_position
 	instance.abduction.take_now()
-	t.check(not instance._victim_gait_stepping(), "the walk starts on frame a")
+	t.check(not instance.look._victim_gait_stepping(), "the walk starts on frame a")
 	var saw_b := false
 	var steps := int(instance.def.abduction.taken_over / STEP)
 	for i in steps:
 		instance.age += STEP
-		if instance._victim_gait_stepping():
+		if instance.look._victim_gait_stepping():
 			saw_b = true
 	t.check(saw_b, "the walk steps into its own mid-stride frame before it finishes")
 	instance.free()
@@ -302,8 +302,8 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t) -> void:
 ## over a long enough run.
 func _test_idle_families_alternate_on_time_without_moving(t) -> void:
 	var periods := {
-		"cafe_tables": EventInstance.SITTER_IDLE_PERIOD,
-		"busker": EventInstance.BUSKER_STRUM_PERIOD,
+		"cafe_tables": EventPictures.SITTER_IDLE_PERIOD,
+		"busker": EventPictures.BUSKER_STRUM_PERIOD,
 	}
 	for def_id in periods:
 		var period: float = periods[def_id]
@@ -315,7 +315,7 @@ func _test_idle_families_alternate_on_time_without_moving(t) -> void:
 		var ticks := int(period / STEP) * 3 + 10
 		for i in ticks:
 			instance._process(STEP)
-			if instance._idle_stepping(period):
+			if instance.look._idle_stepping(period):
 				saw_true = true
 			else:
 				saw_false = true
@@ -366,9 +366,9 @@ func _test_gait_query_is_stable_within_a_tick(t) -> void:
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	for i in 40:
 		instance._process(STEP)
-	var first := instance._gait_stepping()
+	var first := instance.look._gait_stepping()
 	for i in 5:
-		t.check(instance._gait_stepping() == first,
+		t.check(instance.look._gait_stepping() == first,
 				"repeated calls within the same tick agree, the way a halo ring's own re-draw needs")
 	instance.free()
 

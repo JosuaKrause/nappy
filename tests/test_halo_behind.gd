@@ -19,13 +19,13 @@ func _test_the_rim_is_painted_before_the_scene(t) -> void:
 		instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO)
 		instance._spread_vertical = vertical
 		t.add_child(instance)
-		instance._attach_the_slices()
+		instance.look.attach_nodes()
 		instance._process(instance.def.telegraph_time + 0.01)
-		t.check(not instance._sceneries.is_empty(),
+		t.check(not (instance.look as SpreadLook)._sceneries.is_empty(),
 				"the crash has its scenery (vertical %s)" % vertical)
 		instance.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		t.check(instance._halo != null, "a pick builds the crash's rim (vertical %s)" % vertical)
-		var scenery := instance._sceneries[0]
+		var scenery := (instance.look as SpreadLook)._sceneries[0]
 		t.check(instance._halo.get_parent() == scenery.get_parent(),
 				"the rim and the first slice's scenery stand on the same slice")
 		t.check(instance._halo.show_behind_parent and scenery.show_behind_parent,

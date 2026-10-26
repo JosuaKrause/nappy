@@ -536,7 +536,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
 					if sides.is_empty():
 						continue
 					var spread_vertical := EventInstance._spread_is_vertical(map, body.position)
-					var offset := EventInstance._guard_post_offset(spread_vertical, sides[0])
+					var offset := EventInstance.guard_post_offset(spread_vertical, sides[0])
 					var guard_pos := body.position + offset
 					var guard_along: float = guard_pos.y if vertical else guard_pos.x
 					t.check(guard_along < low or guard_along > high,
