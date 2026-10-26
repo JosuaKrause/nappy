@@ -109,7 +109,7 @@ show all four cases and the approved water motion.
 ### Interior (the escape scene)
 
 The escape is the run's ending: a won day 14 with every task complete
-(`Main._hands_over_to_the_escape()`, the same test as the good ending) reloads the scene onto it,
+(`DayDirector.hands_over_to_the_escape()`, the same test as the good ending) reloads the scene onto it,
 and `--start-escape` boots straight into it for a rig or a person.
 `src/interior/interior_scene.gd` and `src/interior/interior_tileset.gd` own this entire family;
 see `docs/ARCHITECTURE.md`, "`src/interior/`" for how the plan, the TileSet and the scene divide

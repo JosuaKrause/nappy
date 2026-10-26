@@ -1416,7 +1416,7 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 
 ## *"No regular cars or regular people on the street."* Non-vacuous on purpose: the crowd is
 ## populated first, so what is asserted is that dressing the city for the escape and starting its
-## crowd as the section's spec says (`DaySpec.crowd_density`, through `main._start_the_crowd()`)
+## crowd as the section's spec says (`DaySpec.crowd_density`, through `DayDirector.start_the_crowd()`)
 ## leaves it empty rather than that it started that way.
 func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	var city: City = RunCity.of_the_run(CITY_SCENE)
@@ -1427,14 +1427,13 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	t.check(city.crowd.agent_count() > 0, "a day's crowd is a crowd")
 	var spec := _section(DaySpec.Section.CITY)
 	city.start_day(GameState.attempt_spend.city_state, 1, GameState.day_rng(1, "closures"), spec)
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._city = city
-	main._spec = spec
-	main._start_the_crowd(Vector2.INF)
+	var director := DayDirector.new(GameState, RunConfig.parse(PackedStringArray(), "", true))
+	director.city = city
+	director.spec = spec
+	director.start_the_crowd(Vector2.INF)
 	t.check(city.crowd.agent_count() == 0, "and the escape's city has nobody in it")
 	t.check(city.route_tree() == null and city.closures().is_empty(),
 			"the escape grows no corridor and closes no street")
-	main.free()
 	# `.free()`, not `queue_free()`, so the city is gone before the next check rather than at a
 	# frame that passes after this suite.
 	city.free()
@@ -1792,33 +1791,34 @@ func _test_the_two_sections_are_named_for_the_player(t) -> void:
 ## ending and must not reach the escape, and neither must a won earlier day that happens to have
 ## finished every task early.
 func _test_only_a_won_last_day_with_every_task_done_hands_over(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	var baseline := GameState.save_snapshot()
-	GameState.start_run(9182)
+	# A run of its own, so nothing of the autoload's (the state, the riders, the checkpoint, the mode)
+	# is touched, and nothing needs putting back.
+	var run := RunState.new()
+	var director := DayDirector.new(run, RunConfig.parse(PackedStringArray(), "", true))
+	run.start_run(9182)
 
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
-	GameState.resistance.sabotage_done = true
-	t.check(main._hands_over_to_the_escape(GameEnums.DayResult.WON),
+	run.header.day = Tuning.RUN_LENGTH_DAYS
+	run.resistance.progress = Tuning.RESISTANCE_GOAL
+	run.resistance.sabotage_done = true
+	t.check(director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"a won day 14 with every task complete hands over to the escape")
-	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.LOST_CRYING),
+	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.LOST_CRYING),
 			"a lost day 14 does not, however much was done")
 
-	GameState.resistance.sabotage_done = false
-	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.WON),
+	run.resistance.sabotage_done = false
+	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"nor a won day 14 with the errands run and the last night skipped")
-	GameState.resistance.sabotage_done = true
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL - 1
-	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.WON),
+	run.resistance.sabotage_done = true
+	run.resistance.progress = Tuning.RESISTANCE_GOAL - 1
+	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"nor one short of the goal")
 
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS - 1
-	t.check(not main._hands_over_to_the_escape(GameEnums.DayResult.WON),
+	run.resistance.progress = Tuning.RESISTANCE_GOAL
+	run.header.day = Tuning.RUN_LENGTH_DAYS - 1
+	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"and nor does a won day before the last one")
 
-	GameState.restore_snapshot(baseline)
-	main.free()
+	run.free()
 
 ## `--start-escape city` is the one word that is not a part of the building: it boots the second
 ## section on its own. The mapping is what a test can reach — nothing in the suite can put a word

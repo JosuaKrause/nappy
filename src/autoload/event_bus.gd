@@ -19,12 +19,12 @@ signal baby_state_changed(state: GameEnums.BabyState)
 ## visits".
 signal run_begun(day: int, resumed: bool)
 ## A day begins — its first attempt or a retry — before anything is placed in it, so a listener
-## clears yesterday's state first. `main._start_day()` and its recipe's are the emitters, and
+## clears yesterday's state first. `DayDirector.start_day()` and `main`'s recipe day are the emitters, and
 ## `main._start_section()` for each of the escape's two sections, a day of its own under its own
 ## number after the last (`DaySpec.number`).
 signal day_started(day: int)
 ## Everything the day holds is placed: its closures, its calm, its plan, the resistance's contact and
-## her on the doorstep — or an escape section's world and her at its start. `main._start_day()` and
+## her on the doorstep — or an escape section's world and her at its start. `DayDirector.start_day()` and
 ## `main._start_section()` are the emitters; the run log writes the day's plan lines, its dawn map
 ## and her `start` line here (`RunSession`).
 signal day_planned(day: int)
@@ -40,7 +40,7 @@ signal nerves_changed(nerves: int)
 ## day's clock at the instant it ended. The run log's `lost` line and the page's loss name both
 ## read `cause` from here, so the two name a lost day the same way.
 ##
-## Emitted by `main._on_day_finished()` once the charges still running are closed and above the
+## Emitted by `DayDirector.finish_day()` once the charges still running are closed and above the
 ## calendar move `GameState.finish_day()` makes a moment later, so a lost day's retry and a won
 ## day's next dawn are both still "day N" here. Fires once per attempt, as `day_started` does: a
 ## retry begins and ends this pair again for the day it repeats — an escape section's included,
