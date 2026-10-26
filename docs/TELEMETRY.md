@@ -99,7 +99,12 @@ The events:
   sent at her, `lost-hard-fail-task-guard-sent` — and a pelican is `pelican` rather than
   its row's `cyclist` (`EventManager.what_struck_her()`). A crying loss names whichever source
   landed the most on her over the halo's own window (`ExcitementHalo.WINDOW`, 5s) at the moment she
-  cried: a catalogue id (`EventInstance.landed()`), again `pelican` for a pelican, `crowd` for
+  cried: the row id of the event that landed it (`EventInstance.landed()`, grouped by
+  `EventInstance.logged_name()` in `main._group_what_events_landed()`) — a catalogue row's, or one of the three rows met on one occasion that
+  sit outside the catalogue's list, so a day cried away mostly under day 13's task guard is
+  `lost-crying-task-guard`, never `lost-crying-alley-robbery`, and the lesson's dog and the task
+  guard sent at her are `lost-crying-charging-dog-tutorial` and `lost-crying-task-guard-sent` —
+  again `pelican` for a pelican, `crowd` for
   walkers or `traffic` for cars (`CrowdAgent.landed()`, told apart by `CrowdAgent.kind`), or `self`
   for her own running and
   standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
@@ -183,10 +188,11 @@ The events:
   avoid it or ignore it *([misty-newt](playtests/2026-10-04-misty-newt.md), the player: "mostly I'm
   interested in the ratio of interacted/seen")*. `<event>` is a catalogue row's id hyphenated
   (`charging-dog`), or `pelican` for a pelican, never `cyclist`; ordinary walkers and cars send
-  none. The rows met on one occasion are their own events: the day-3 lesson's dog is
-  `seen-charging-dog-tutorial`, never `seen-charging-dog`, and day 13's task guard is
-  `seen-task-guard` waiting and `seen-task-guard-sent` sent at her, never the alley robber's or the
-  robber giving chase's. `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
+  none. The rows met on one occasion are their own events, in all three names: the day-3 lesson's
+  dog is `seen-`, `influenced-` and `influenced-unseen-charging-dog-tutorial`, never
+  `-charging-dog`, and day 13's task guard is `-task-guard` waiting and `-task-guard-sent` sent at
+  her, never the alley robber's or the robber giving chase's (`EncounterWatch` names an encounter
+  by `EventInstance.logged_name()`, the row's id). `EncounterWatch` (`src/events/encounter_watch.gd`), asked once a physics frame by
   `EventManager` while a day is played — the escape's city included, as day 16, but not behind
   the title, and not in the escape's building, whose events are not an `EventManager`'s — decides
   each:

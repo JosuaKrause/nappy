@@ -93,7 +93,7 @@ extends RefCounted
 ## - **A region door is never a block.** It costs by design (PLAYTEST-71, *"it costs by design"*),
 ##   so `checkpoint_hut` and `checkpoint_gate` are left out of every reading; the region wall's own
 ##   body is not a door and still counts.
-## - **`pigeon_flock` is scenery, not a block.** A row with `EventDef.scenery` set is left out of
+## - **`pigeon_flock` is scenery, not a block.** A row whose role is `EventDef.Role.SCENERY` is left out of
 ##   every reading the same way a door is (PLAYTEST-71, *"flocks are basically free already --
 ##   don't count it as block"*), matching `EventScheduler._role_for`, where `Role.SCENERY` answers
 ##   `NONE` before the wall/friction cost test ever runs.

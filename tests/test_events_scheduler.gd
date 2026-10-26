@@ -406,7 +406,7 @@ func _test_sighted_successors_resolve(t) -> void:
 		t.check(EventCatalogue.by_id(def.aftermath.on_sight) != null,
 				"'%s' summons '%s' on sight, which exists in the catalogue"
 				% [def.id, def.aftermath.on_sight])
-	t.check(checked > 0, "there is at least one row with a spawns_on_sight ('burning_building')")
+	t.check(checked > 0, "there is at least one row with an aftermath.on_sight ('burning_building')")
 
 ## It has no scheduled day at all, so nothing but `EventManager._summon_the_sighted_row()` can
 ## put one in the world — see `EventDef.aftermath.on_sight` on `burning_building`.

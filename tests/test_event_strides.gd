@@ -272,7 +272,7 @@ func _test_a_standing_normal_dog_rests(t) -> void:
 				"a dog stopped at phase %.2f stands in its rest pose" % phase)
 	instance.free()
 
-## The victim's own scripted walk to the van is a straight lerp over `EventAbduction.VICTIM_TAKEN_OVER` seconds
+## The victim's own scripted walk to the van is a straight lerp over `AbductionSpec.taken_over` seconds
 ## rather than anything that touches `_path_travelled`, so it gets its own derived query
 ## (`_victim_gait_stepping()`) instead of sharing `_gait_phase` — see that function's own doc. It
 ## must start on frame a (`sin(0) == 0`) and later step, the same shape the distance-driven gait

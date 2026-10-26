@@ -1089,13 +1089,14 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 	var def := EventCatalogue.by_id(step.trap_row)
 	if not def:
 		return
-	_send_at_her(def, is_at_a_front_door(step))
+	_send_at_her(def, is_at_a_front_door(step), step.trap_noun)
 
 ## Sends `def` at her from off screen, warned first: its badge alone along a bearing fixed now, then
 ## created just out of sight of her where its ground has a place (`_draw_arrival_position()`), as
 ## `_trap` — a task's trap, and day 13's guard set on her from out of her view (`EventCatalogue.
-## task_guard_sent()`, whose charges count as the task guard's).
-func _send_at_her(def: EventDef, front_door: bool) -> void:
+## task_guard_sent()`, whose charges count as the task guard's). `who` is how the run log names him
+## (`ResistanceSteps.Step.trap_noun` for a task's trap; the task guard is logged as a robber).
+func _send_at_her(def: EventDef, front_door: bool, who := "a robber") -> void:
 	if not _city or not _city.events:
 		return
 	var her := _player_position()
@@ -1123,22 +1124,21 @@ func _send_at_her(def: EventDef, front_door: bool) -> void:
 		return again[0]
 	var arrive := func(place: Vector2, standing: Vector2) -> bool:
 		_trap = _city.events.spawn_warned(def, PackedVector2Array([place]))
-		_note_the_trap(def, place, standing, drawn[0])
+		_note_the_trap(who, place, standing, drawn[0])
 		return true
 	_city.events.warn_first(def, her, where, arrive)
 
 ## The run log's line for the pursuer a task has just sent at her, created at `at` with her at `her`,
 ## from the `_draw_arrival_position()` answer `arrival` that placed it.
-func _note_the_trap(def: EventDef, at: Vector2, her: Vector2, arrival: Array) -> void:
+func _note_the_trap(who: String, at: Vector2, her: Vector2, arrival: Array) -> void:
 	var run := "no clear run at her"
 	if arrival[3]:
 		run = "a walk at her from across the street"
 	elif arrival[1]:
 		run = "a clear run at her along her street, beside her" if arrival[2] \
 				else "a clear run at her"
-	var sent := "a robber" if def.look == EventDef.Look.ROBBER_GIVING_CHASE else "a guard"
 	trace.note("roll", "task handed over: %s sent after her from %s, %.0fpx off (%s)"
-			% [sent, RunTrace.tile(_map.world_to_tile(at)), her.distance_to(at), run])
+			% [who, RunTrace.tile(_map.world_to_tile(at)), her.distance_to(at), run])
 
 ## What she can see this frame — the day's own view (`EventManager.visible_view()`), or, in a rig
 ## that has never looked through a camera, the tap scheme's view about her

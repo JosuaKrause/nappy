@@ -3543,7 +3543,7 @@ const SWELL_STEPS := 128.0
 ## **flock**, whose eleven birds each hold their own position, lift and wingbeat phase; a
 ## **burning building** and a **firefight**, whose flames and muzzle flashes are sized off `sin(age
 ## × k)` and are drawn rather than authored; and an **abduction mid-take**, whose victim slides
-## from her standing offset to the van over `EventAbduction.VICTIM_TAKEN_OVER` seconds. Every one of them is a
+## from her standing offset to the van over `AbductionSpec.taken_over` seconds. Every one of them is a
 ## handful of instances on a day at most, and none of them was ever going to be gated.
 func _picture_never_settles() -> bool:
 	if not _birds().is_empty():
@@ -3562,7 +3562,7 @@ func _picture_never_settles() -> bool:
 func _drawn_heading() -> Vector2:
 	if def.look == EventDef.Look.ROBBER and is_waiting():
 		return _robber_waiting_heading()
-	if def.look == EventDef.Look.ROADBLOCK and not barrier_post.has_left_its_body():
+	if barrier_post and not barrier_post.has_left_its_body():
 		return _guard_post_heading(_spread_vertical, 1)
 	return _heading
 
@@ -3760,8 +3760,8 @@ func _gait_second_half() -> bool:
 ## instead of sharing `_gait_phase` — a persistent field would have nothing to reset between takes
 ## that the walk's own time (`EventAbduction.walked_for()`) restarting at zero does not already
 ## give it. The walk is at a constant speed by construction (linear interpolation over a fixed
-## time), so the distance covered by moment `t` is exactly `t * (VICTIM_STANDING_OFFSET /
-## VICTIM_TAKEN_OVER)`, fed through the same
+## time), so the distance covered by moment `t` is exactly `t * (AbductionSpec.standing_offset /
+## AbductionSpec.taken_over)`, fed through the same
 ## `GAIT_RATE` and doubled-phase test `_gait_stepping()` uses. `sin(0) == 0`, so the walk always
 ## starts on frame a rather than mid-stride.
 func _victim_gait_stepping() -> bool:
@@ -4853,7 +4853,7 @@ func _draw_roadblock(canvas: CanvasItem = self) -> void:
 	# the instance stands on the band, only the man once he has set off (his halo would otherwise
 	# paint over the band wherever he stands south of it). A departing guard's band has a rim of its
 	# own, `_band_halo`.
-	if barrier_post.chaser_side() == 0 or _guard_spent or _band == null:
+	if barrier_post == null or barrier_post.chaser_side() == 0 or _guard_spent or _band == null:
 		_draw_the_band(canvas, _roadblock_band_at())
 	_draw_the_chaser(canvas)
 
@@ -4869,7 +4869,7 @@ func _draw_the_band(canvas: CanvasItem, band_at: Vector2) -> void:
 
 ## The man who set off, drawn on this node, which walks with him.
 func _draw_the_chaser(canvas: CanvasItem) -> void:
-	if barrier_post.chaser_side() == 0 or _guard_spent:
+	if barrier_post == null or barrier_post.chaser_side() == 0 or _guard_spent:
 		return
 	# His own small shadow — not the band's — so `_draw_eight_view()` below is asked not to draw
 	# one of its own; see that function's own doc comment.

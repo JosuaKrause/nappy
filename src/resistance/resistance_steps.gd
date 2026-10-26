@@ -92,6 +92,9 @@ class Step extends RefCounted:
 	## The row a done task sends after her from off screen (`ResistanceDirector.sets_a_trap_on_her()`):
 	## the robber, or the van's own guard for the van, whose package is what he comes for.
 	var trap_row := "robber_giving_chase"
+	## Who `trap_row` is, as the run log names him when he is sent (`ResistanceDirector.
+	## _note_the_trap()`): a robber, or a guard for the van's guard.
+	var trap_noun := "a robber"
 	## Whether the task's target is a door on a building's front, where she stands on the sidewalk
 	## below the facade (`ResistanceDirector.is_at_a_front_door()`): the burnt building's, and the
 	## power station's, which its `TargetKind.STATION_DOOR` already says.
@@ -304,6 +307,7 @@ static func _build() -> Array[Step]:
 	var the_package := _perform(4, Texts.PACKAGE_TITLE, 7, "delivery_van",
 			[GameEnums.TileType.SIDEWALK], true, TargetKind.EVENT, true, Texts.PACKAGE_HEADER)
 	the_package.trap_row = "van_guard_giving_chase"
+	the_package.trap_noun = "a guard"
 	the_package.rigs_within = Tuning.VAN_WITHIN_THE_NEXT
 	var the_burnt_shell := _perform(6, Texts.BURNT_SHELL_TITLE, 8, "burnt_shell",
 			[GameEnums.TileType.SIDEWALK], true, TargetKind.SCAR, false, Texts.BURNT_SHELL_HEADER)

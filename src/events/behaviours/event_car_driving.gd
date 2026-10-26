@@ -96,10 +96,6 @@ func is_standing() -> bool:
 func stand() -> void:
 	_standing = true
 
-## Whether a frame is open, its tick still running.
-func is_proposing() -> bool:
-	return _proposing
-
 ## Opens the frame: what it is checked against when it ends.
 func begin_frame() -> void:
 	_at = event.position
