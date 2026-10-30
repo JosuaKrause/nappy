@@ -16,8 +16,13 @@ const VISIT_COUNTER_SCRIPT = preload("res://src/autoload/visit_counter.gd")
 class RecordingCounter extends "res://src/autoload/visit_counter.gd":
 	var sent: Array[String] = []
 
+	## Counts the live run, as `main` hands the real counter the run it plays.
+	func _init() -> void:
+		configure(null, GameState)
+
 	func _send_event(name: String) -> void:
 		sent.append(name)
+
 
 func run(t) -> void:
 	_test_should_send_truth_table(t)
@@ -202,7 +207,8 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	var counter: Node = VISIT_COUNTER_SCRIPT.new()
 	t.check(not counter.should_send(),
 		"a counter handed no configuration sends nothing")
-	counter.configure(RunConfig.parse(PackedStringArray(), "", false))
+	counter.configure(RunConfig.parse(PackedStringArray(), "", false), GameState)
+
 	t.check(not counter.should_send(),
 		"a headless test process is never the web, so nothing below can reach a real page")
 	var before := _gamestate_snapshot()

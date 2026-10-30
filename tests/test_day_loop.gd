@@ -49,7 +49,7 @@ func _build(t) -> void:
 	_day = DayController.new()
 	t.add_child(_day)
 	_day.set_process(false)
-	_day.setup(_map, _player)
+	_day.setup(_map, _player, GameState)
 	_day.day_finished.connect(func(result: GameEnums.DayResult) -> void: _results.append(result))
 
 func _teardown() -> void:
@@ -424,18 +424,20 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 	var day := DayController.new()
 	t.add_child(day)
 	day.set_process(false)
-	day.setup(city.map, player)
+	day.setup(city.map, player, GameState)
 	day.start(300.0)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
 	t.check(day.failure_reason != "",
 			"the rig actually lost the day before asking the summary for anything")
 
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 
 	var session := RunSession.new()
 	t.add_child(session)
-	session.setup(Telemetry, RunConfig.parse(PackedStringArray(), "", true), EventBus)
+	session.setup(Telemetry, RunConfig.parse(PackedStringArray(), "", true), EventBus, GameState)
+
 	session._city = city
 	t.check(session.observer() == null, "the session watches with no observer, as with the log off")
 
@@ -483,6 +485,7 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 	GameState.header.day = 6
 
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 
 	var expected := SentenceLines.break_for_label(Texts.DAY_BRIEF[6], summary._brief)
@@ -512,6 +515,7 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 func _test_the_summary_shows_when_the_day_ended(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 
 	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
@@ -549,6 +553,7 @@ func _test_the_summary_shows_the_coming_days_number(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var saved_day := GameState.header.day
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 
 	GameState.header.day = 5
@@ -573,6 +578,7 @@ func _test_the_summary_shows_the_coming_days_number(t) -> void:
 func _test_nerves_are_stars_never_numbers(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 
 	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
@@ -603,6 +609,7 @@ func _test_nerves_are_stars_never_numbers(t) -> void:
 func _test_the_epilogue_carries_no_brief_note(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
 	summary.show_day_brief(GameState.header.day, 3, Texts.RESUMED_DAY_LOST)
@@ -619,6 +626,7 @@ func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var saved_day := GameState.header.day
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 
 	GameState.header.day = 7
@@ -640,6 +648,7 @@ func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
 func _test_the_bad_ending_names_the_day_it_reached(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 
 	summary.show_ending(GameEnums.Ending.BAD, 9)

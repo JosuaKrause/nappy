@@ -116,6 +116,9 @@ const BLOCKED_DRIFT := 6.0
 ## repeated, not a finding every frame.
 const BLOCKED_REPORT_INTERVAL := 3.0
 
+## The run whose calendar day a day's route tree is read for (`start_day()`), handed in by
+## `setup()`; null in the escape, which plans no route tree.
+var _run: RunState
 ## The day's city, or the escape's once she is out of the building; null inside it.
 var _city: City
 ## `_city`'s map, or null in the escape's building — which is what every street, calm-ground and
@@ -265,9 +268,10 @@ var _mark_on_road := 0.0
 var _mark_why := ""
 var _badges := {}
 
-func setup(city: City, player: Stroller, baby: Baby, day: DayController,
+func setup(run: RunState, city: City, player: Stroller, baby: Baby, day: DayController,
 		resistance: ResistanceDirector, spikes: bool, edge: DangerEdge = null) -> void:
 	spikes_on = spikes
+	_run = run
 	_city = city
 	_map = city.map
 	_world_map = city.map
@@ -343,7 +347,8 @@ func start_section(restarted: bool) -> void:
 ## first thing under the header that the player is responsible for.
 func start_day() -> void:
 	_forget_the_walk()
-	_tree = RouteTree.for_day(_map, GameState.header.day)
+	_tree = RouteTree.for_day(_map, _run.header.day)
+
 	_corridor = Corridor.of(_tree)
 	Telemetry.note("start", "doorstep %s, facing %s" % [
 		RunTrace.tile(_map.world_to_tile(_player.global_position)),

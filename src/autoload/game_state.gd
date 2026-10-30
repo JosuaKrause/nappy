@@ -9,7 +9,14 @@ extends Node
 ## dawn copies and their save shape once; starting a run, the dawn photograph, a lost day's
 ## give-back, the snapshot and the save all walk this list (`RunStateRegistry`). **A part declared
 ## here and not registered is caught by `tests/test_run_state.gd`**. Readers take the part
-## (`GameState.header.day`, `GameState.attempt_spend.scars`), and nothing forwards to a part.
+## (`run.header.day`, `run.attempt_spend.scars`), and nothing forwards to a part.
+##
+## **The `GameState` autoload is where the run lives**, since it outlives the scene reloads (the
+## held restart, the day-14 hand-over, a run carried to its checkpoint). `main`, the composition
+## root, takes it once and hands it, typed `RunState`, to `GameSave` and to every reader it builds,
+## so a test hands a reader whichever run it built; the events and the resistance (`src/events/`,
+## `src/resistance/`) still read it off the autoload.
+
 var run_parts := RunStateRegistry.new()
 var header: RunHeader = run_parts.register(RunHeader.new())
 var resistance: ResistanceRunState = run_parts.register(ResistanceRunState.new())
@@ -196,7 +203,7 @@ func a_loss_goes_back_to_the_checkpoint() -> bool:
 func _keep_a_checkpoint_if_one_is_due() -> void:
 	if hard_mode or not is_checkpoint_day(header.day) or header.day <= checkpoint_day():
 		return
-	checkpoint = GameSave.run_data()
+	checkpoint = GameSave.run_data(self)
 	_trace.note("nerve", "day %d's dawn is the checkpoint a run out of nerves goes back to" % header.day)
 
 ## Record the outcome of the day. Returns true if the run continues.
@@ -331,7 +338,7 @@ func _go_back_to_the_checkpoint() -> void:
 		start_run(header.run_seed)
 		header.player_is_male = parent_is_male
 	else:
-		GameSave.restore_run_data(kept)
+		GameSave.restore_run_data(self, kept)
 		checkpoint = kept
 	header.nerves = Tuning.STARTING_NERVES
 	EventBus.nerves_changed.emit(header.nerves)

@@ -72,12 +72,13 @@ func record(player: Node2D, city: City, neighbor: Node2D) -> void:
 		_walked[city.map.world_to_tile(neighbor.global_position)] = true
 
 ## The drafted recipe, built from `recipe` (the file as written, not `base_of()`'s copy) and the
-## world the run has left behind, `pinned` the places `setup.task` names. Fills `problems` with
+## world `run` has left behind, `pinned` the places `setup.task` names. Fills `problems` with
 ## anything the draft could not place.
-func compose(recipe: Dictionary, city: City, start: Vector2, pinned: Array[Vector2],
-		problems: Array[String]) -> Dictionary:
+
+func compose(recipe: Dictionary, run: RunState, city: City, start: Vector2,
+		pinned: Array[Vector2], problems: Array[String]) -> Dictionary:
 	var map := city.map
-	var day := GameState.header.day
+	var day := run.header.day
 	var ground := {}
 	for tile: Vector2i in _walked:
 		_add_the_ground_of(map, tile, ground)
@@ -133,12 +134,12 @@ func compose(recipe: Dictionary, city: City, start: Vector2, pinned: Array[Vecto
 	drafted["stretch"] = stretch
 	drafted["context"] = _context
 	var setup: Dictionary = drafted.get("setup", {})
-	setup["posters"] = _posters(map, ground)
-	setup["actors"] = _starting_crowd(city, ground, start, problems)
+	setup["posters"] = _posters(run, map, ground)
+	setup["actors"] = _starting_crowd(run, city, ground, start, problems)
 	# A route bag the author has already rigged is theirs: it is about what she meets, not about
 	# where the stretch runs, so drafting the stretch again keeps it.
 	if not setup.has("route_bag"):
-		var marbles := EventDirector.ordinary_route_marbles(day, GameState.resistance.progress)
+		var marbles := EventDirector.ordinary_route_marbles(day, run.resistance.progress)
 		setup["route_bag"] = {"marbles": marbles, "owed": marbles.size()}
 	var background: Dictionary = setup.get("background", {})
 	background.erase("crowd")
@@ -208,9 +209,9 @@ static func _fronts(map: CityMap, lot: Rect2i, ground: Dictionary) -> bool:
 
 ## The day's posters on the walls fronting the stretch: every sheet pasted at a front tile the
 ## stretch holds, as `setup.posters` names it.
-static func _posters(map: CityMap, ground: Dictionary) -> Array:
+static func _posters(run: RunState, map: CityMap, ground: Dictionary) -> Array:
 	var posters: Array = []
-	var cells: Dictionary = GameState.posters.cells
+	var cells: Dictionary = run.posters.cells
 	for tile: Vector2i in _sorted(ground):
 		if not cells.has(tile):
 			continue
@@ -226,15 +227,15 @@ static func _posters(map: CityMap, ground: Dictionary) -> Array:
 ## (`Tuning.VIEW_HALF_EXTENT` round `start`): a scene's first frame is not a car already bearing
 ## down on a pram that has not taken a step — the start of a played day is her doorstep, on a street
 ## no car is in yet.
-static func _starting_crowd(city: City, ground: Dictionary, start: Vector2,
+static func _starting_crowd(run: RunState, city: City, ground: Dictionary, start: Vector2,
 		problems: Array[String]) -> Array:
 	var map := city.map
-	var day := GameState.header.day
+	var day := run.header.day
 	var box := Rect2i()
 	for tile: Vector2i in ground:
 		box = Rect2i(tile, Vector2i.ONE) if not box.has_area() else box.expand(tile).expand(tile + Vector2i.ONE)
 	var centre := map.tile_rect_to_world(box).get_center()
-	city.crowd.start_day(day, GameState.day_rng(day, "crowd"), centre, true)
+	city.crowd.start_day(day, run.day_rng(day, "crowd"), centre, true)
 	var found: Array[Dictionary] = []
 	for agent in city.crowd.agents():
 		if not ground.has(map.world_to_tile(agent.position)):

@@ -29,7 +29,7 @@ class FakeOwner:
 	var part := RunHeader.new()
 
 func run(t) -> void:
-	var baseline := GameSave.file_data(false)
+	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE_PATH))
 
@@ -46,7 +46,7 @@ func run(t) -> void:
 	GameSave._clear_now()
 	GameSave.set_path_override("")
 	GameState.start_run(1)
-	GameSave.restore_run_data(baseline)
+	GameSave.restore_run_data(GameState, baseline)
 	GameState.hard_mode = false
 	GameState.checkpoint = {}
 
@@ -77,7 +77,7 @@ func _test_a_save_written_by_main_loads_and_resumes(t, fixture: Dictionary) -> v
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture["written"]))
 	file.close()
-	var resume := GameSave._read_now()
+	var resume := GameSave._read_now(GameState)
 	t.check(resume.get("day_under_way", false) == true, "main's save resumes, a day under way")
 	t.check(_without_build(SCENARIO.written()) == _without_build(fixture["written"]),
 			"and the run it gives back writes the same file again (%s)" % _first_difference(
@@ -88,7 +88,7 @@ func _test_a_lost_day_from_a_loaded_save_gives_back_what_main_gave_back(t, fixtu
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture["written"]))
 	file.close()
-	GameSave._read_now()
+	GameSave._read_now(GameState)
 	var after: Dictionary = SCENARIO.after_a_loss()
 	t.check(_without_build(after) == _without_build(fixture["after_a_loss"]),
 			"a day lost after resuming main's save gives back what main's did (%s)"
@@ -126,7 +126,7 @@ func _test_a_part_left_off_the_list_is_caught(t) -> void:
 func _test_every_part_gives_back_what_it_photographed(t) -> void:
 	SCENARIO.build()
 	GameState.run_parts.photograph()
-	var photographed := GameSave.run_data()
+	var photographed := GameSave.run_data(GameState)
 	GameState.complete_resistance_step(9)
 	GameState.fail_resistance_step(8)
 	GameState.resistance.sabotage_done = not GameState.resistance.sabotage_done
@@ -136,11 +136,11 @@ func _test_every_part_gives_back_what_it_photographed(t) -> void:
 	GameState.posters.paste(Vector2i(40, 41), 2, false, 1)
 	GameState.posters.tears += 2
 	GameState.pelican.draws += 4
-	t.check(GameSave.run_data() != photographed, "the attempt spent something of every part")
+	t.check(GameSave.run_data(GameState) != photographed, "the attempt spent something of every part")
 	GameState.run_parts.give_back()
-	t.check(GameSave.run_data() == photographed,
+	t.check(GameSave.run_data(GameState) == photographed,
 			"and giving back puts every part back (%s)"
-			% _first_difference(GameSave.run_data(), photographed))
+			% _first_difference(GameSave.run_data(GameState), photographed))
 
 ## A part's variables and its data keys correspond one to one: a field added to a part and not to
 ## its `to_data()` is the mistake the old six places made easy.

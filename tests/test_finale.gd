@@ -1491,8 +1491,10 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	t.check(_escape_tint(city, day, on_the_walk, corridor).z == first.x,
 			"wiping the tint leaves every kerb of the walk plain")
 	main._summary = SUMMARY_SCENE.instantiate()
+	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
+	main._hud.use_run(main._run)
 	t.add_child(main._hud)
 	var clock := DayController.new()
 	t.add_child(clock)
@@ -1608,6 +1610,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 ## changes, so both shapes are checked off the same signal and the same time.
 func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	hud.use_run(GameState)
 	t.add_child(hud)
 	hud.set_process(false)
 	var clock: Label = hud.get_node("Root/Clock")
@@ -2025,12 +2028,16 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = SUMMARY_SCENE.instantiate()
+	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
+	main._hud.use_run(main._run)
 	t.add_child(main._hud)
 	main._title = TITLE_SCREEN_SCENE.instantiate()
+	main._title.use_run(main._run)
 	t.add_child(main._title)
 	main._pause = PAUSE_SCREEN_SCENE.instantiate()
+	main._pause.use_run(main._run)
 	t.add_child(main._pause)
 	main._add_touch_controls()
 	# The two calls the boot's `_build_the_screens()` makes, in the same order, for every day.
@@ -2151,7 +2158,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	GameState.start_run(SEEDS[0])
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.facts.escape_section = DaySpec.Section.BUILDING
-	t.check(GameSave.write(false) == GameSave.Result.CONFIRMED,
+	t.check(GameSave.write(GameState, false) == GameSave.Result.CONFIRMED,
 			"a save closed inside the building is on disk")
 	# A fresh page: nothing of the escape on the autoload, only in the file.
 	GameState.facts.escape_section = DaySpec.Section.NONE
@@ -2220,7 +2227,9 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
 
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._pause = PAUSE_SCREEN_SCENE.instantiate()
+	main._pause.use_run(main._run)
 	main._summary = SUMMARY_SCENE.instantiate()
+	main._summary.use_run(main._run)
 	main._connect_summary_and_pause_signals()
 	t.check(main._pause.restart_requested.is_connected(main._restart_run),
 			"the escape's own pause screen reaches main._restart_run(), same as a day's")

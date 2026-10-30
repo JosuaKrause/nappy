@@ -59,6 +59,7 @@ func run(t) -> void:
 ## window defaults to a headless placeholder far smaller than `ScreenOrientation.DESIGN_SIZE`.
 func _test_the_pause_restart_survives_its_own_emulated_mouse_click(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var restarts := [0]
 	var resumed := [0]
@@ -128,6 +129,7 @@ func _test_the_pause_restart_survives_its_own_emulated_mouse_click(t) -> void:
 ## palm graze or the other hand steadying the phone can send while a thumb holds restart down.
 func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var restarts := [0]
 	var resumed := [0]
@@ -174,6 +176,7 @@ func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t) -> void:
 ## (`_acknowledge_and_continue()`) exactly the same way.
 func _test_the_summary_restart_ignores_a_second_touch_mid_hold(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	var restarts := [0]
 	var continued := [0]
@@ -212,6 +215,7 @@ func _test_the_summary_restart_ignores_a_second_touch_mid_hold(t) -> void:
 ## interrupts, on both screens the button appears on.
 func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	pause._touch = true
 	pause._refresh_buttons()
@@ -235,6 +239,7 @@ func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t) -> void:
 	pause.queue_free()
 
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	summary._touch = true
 	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
@@ -277,6 +282,7 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 	t.get_window().size = Vector2i(ScreenOrientation.DESIGN_SIZE)
 
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	pause._touch = false
 	pause._refresh_buttons()
@@ -307,6 +313,7 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 	pause.queue_free()
 
 	pause = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	pause._touch = true
 	pause._refresh_buttons()
@@ -334,6 +341,7 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 	pause.queue_free()
 
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	summary._touch = true
 	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
@@ -376,6 +384,7 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 
 	# Pause screen, a real touch hold.
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var restarts := [0]
 	var resumed := [0]
@@ -409,6 +418,7 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 
 	# Pause screen, a real mouse hold.
 	pause = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	restarts = [0]
 	resumed = [0]
@@ -442,6 +452,7 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 
 	# Day summary, a real touch hold.
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	restarts = [0]
 	var continued := [0]
@@ -472,6 +483,7 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 
 	# Day summary, a real mouse hold.
 	summary = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	restarts = [0]
 	continued = [0]

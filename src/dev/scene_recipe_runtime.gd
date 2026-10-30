@@ -21,6 +21,9 @@ var tick := 0
 ## The run's configuration with this recipe on top, handed in by `configure()`: where the manifest
 ## and a draft go, whether to validate and quit, a screenshot's tick and a day's length.
 var _config: RunConfig
+## The run the scene is staged in — its day, its streams, its resistance and its walls — handed in
+## by `configure()`.
+var _run: RunState
 var _player: Stroller
 var _city: City
 ## The recipe's `playback.walk`, pressed tick by tick (`playback.smooth` smooths its turns).
@@ -462,8 +465,9 @@ static func _position(value: Variant, where: String, errors: Array[String]) -> v
 	_number(value[0], where + "[0]", -1000000, 1000000, errors)
 	_number(value[1], where + "[1]", -1000000, 1000000, errors)
 
-func configure(result: Dictionary, config: RunConfig) -> void:
+func configure(result: Dictionary, config: RunConfig, run: RunState) -> void:
 	_config = config
+	_run = run
 	data = result.data
 	_written = result.get("written", result.data)
 	built = result
@@ -539,7 +543,7 @@ func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 	var background: Dictionary = setup.get("background", {})
 	_select_structures(errors)
 	var plans := _event_plans(at, errors)
-	city.events.start_recipe(plans, spec, GameState.header.day, at)
+	city.events.start_recipe(plans, spec, _run.header.day, at)
 	city.refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
@@ -562,13 +566,13 @@ func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 						_held.append(plan.live)
 						# Never streamed out either, however far she runs from it.
 						plan.kept_live = true
-	city.crowd.start_day(GameState.header.day, GameState.day_rng(GameState.header.day, "crowd"), at,
+	city.crowd.start_day(_run.header.day, _run.day_rng(_run.header.day, "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
 	if background.get("uniform_walkers", false):
 		var area_scale := map.world_size().x * map.world_size().y / pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) \
 				if background.get("crowd_scope", "player") == "city" else 1.0
-		var act := Tuning.act_for_day(GameState.header.day)
+		var act := Tuning.act_for_day(_run.header.day)
 		var expected := roundi(Tuning.crowd_pedestrians(act) * area_scale * float(background.get("walker_multiplier", 1))) \
 				+ roundi(Tuning.crowd_cars(act) * area_scale)
 		if city.crowd.agent_count() != expected:
@@ -632,14 +636,14 @@ func _start_the_task() -> bool:
 		var camera := get_viewport().get_camera_2d()
 		if camera:
 			camera.force_update_scroll()
-		if GameState.is_final_day():
-			GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+		if _run.is_final_day():
+			_run.resistance.progress = Tuning.RESISTANCE_GOAL
 		# The day's task is planned over the whole witness, as a played day plans it: the mark's
 		# "reachable from home" and the guard's place are questions about the city, and a stretch's
 		# void would answer every one of them no.
 		var edges := _city.map.witness_only()
-		errors = _resistance.start_recipe_task(GameState.header.day,
-				GameState.day_rng(GameState.header.day, "resistance"), _config.day_length_for(GameState.header.day),
+		errors = _resistance.start_recipe_task(_run.header.day,
+				_run.day_rng(_run.header.day, "resistance"), _config.day_length_for(_run.header.day),
 				mark, neighbor)
 		_city.map.restore_edges(edges)
 	if not errors.is_empty():
@@ -725,7 +729,7 @@ func _install_column(column: Dictionary, player_at: Vector2, errors: Array[Strin
 	var happening := ResistanceHappenings.new()
 	happening.trace = _city.trace
 	happening.setup(_city, map)
-	happening.start_day(GameState.header.day)
+	happening.start_day(_run.header.day)
 	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, player_at,
 			lane, going, top, bottom)
 	for i in happening.column.size():
@@ -746,7 +750,7 @@ func _install_posters(entries: Array, errors: Array[String]) -> void:
 			continue
 		used[tile] = true
 		var kind: int = PosterArt.Kind[str(entry.kind).to_upper()]
-		GameState.posters.paste(tile, kind, false, 1)
+		_run.posters.paste(tile, kind, false, 1)
 		recorded.append({"at": [at.x, at.y], "kind": entry.kind})
 	_city.poster_walls().refresh()
 	manifest["authored_posters"] = recorded
@@ -784,7 +788,7 @@ func _select_structures(errors: Array[String]) -> void:
 		if not _segment_inside_extent(segment):
 			errors.append("setup.gates: selected street leaves the authored extent")
 			continue
-		if GameState.header.day < Tuning.REGION_WALL_FIRST_DAY:
+		if _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
 			errors.append("setup.gates: checkpoints are not available on this day")
 			continue
 		if not region.doors.any(func(door): return door.key() == key):
@@ -800,7 +804,7 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.barriers: selected street leaves the authored extent")
 			continue
 		if not _city.map.has_street(key) or _city.route_tree().is_on_the_tree(key) \
-				or GameState.header.day < Tuning.REGION_WALL_FIRST_DAY:
+				or _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
 		selected.walls.append(segment)
@@ -843,7 +847,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 		for candidate in SealPlanner.candidates():
 			if candidate.id != entry.candidate:
 				continue
-			if not SealPlanner._eligible(candidate, GameState.header.day) \
+			if not SealPlanner._eligible(candidate, _run.header.day) \
 					or (candidate.id == SealPlanner.FALLEN_TREE_SEAL_ID and not lined.has(key)):
 				errors.append("setup.seals: candidate is unavailable on this day or street")
 				continue
@@ -867,7 +871,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 	var doors := PackedVector2Array()
 	var finale: FinalePlanner.Plan
 	if data.get("kind", "city") == "escape":
-		finale = FinalePlanner.plan(map, GameState.day_rng(GameState.header.day, "finale"), walk_spec,
+		finale = FinalePlanner.plan(map, _run.day_rng(_run.header.day, "finale"), walk_spec,
 				false)
 		for chain in finale.chains:
 			if not chain.complete:
@@ -905,18 +909,18 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		elif finale:
 			plan = _finale_placement(def, at, player_at, finale, plans,
 					int(entry.get("route_seed", 1)))
-		elif def.spawn_mode_on(GameState.header.day) != EventDef.SpawnMode.MAP:
+		elif def.spawn_mode_on(_run.header.day) != EventDef.SpawnMode.MAP:
 			var director := EventDirector.new(map)
 			var heading: Vector2 = DIRECTIONS[setup.get("player", {}).get("facing", "south")]
 			var route := director._crossing_ahead_of(player_at, heading, def)
-			if not def.available_on(GameState.header.day) or def.pursuit == null or route.is_empty() \
+			if not def.available_on(_run.header.day) or def.pursuit == null or route.is_empty() \
 					or not route[0].is_equal_approx(at) \
 					or not EventScheduler.clear_of_the_doors(at, route, doors, def.field_reach()):
 				errors.append("event %s fails its ordinary director siting" % entry.name)
 				continue
 			plan = EventScheduler.Planned.new(def, at, route)
 		else:
-			plan = EventScheduler.recipe_placement(def, GameState.header.day, map, at,
+			plan = EventScheduler.recipe_placement(def, _run.header.day, map, at,
 					int(entry.get("route_seed", 1)), plans, corridor, doors, standing)
 		if not plan:
 			errors.append("event %s fails ordinary day/ground/route/spacing placement" % entry.name)
@@ -970,7 +974,7 @@ func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Pla
 		doors: PackedVector2Array) -> EventScheduler.Planned:
 	var map := _city.map
 	var tile := map.world_to_tile(at)
-	if GameState.header.day < Tuning.MAST_FIRST_DAY \
+	if _run.header.day < Tuning.MAST_FIRST_DAY \
 			or not map.tile_to_world(tile).is_equal_approx(at) \
 			or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
 			or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile) \
@@ -1377,7 +1381,7 @@ func _observe() -> void:
 							and _resistance._contact == actor
 				"done":
 					passed = actor is ContactPoint and actor.is_done \
-							and actor.step.index in GameState.resistance.completed_steps
+							and actor.step.index in _run.resistance.completed_steps
 				"arrowed":
 					passed = _resistance != null and _resistance.red_arrow_target() != Vector2.INF \
 							and _resistance.red_arrow_target().is_equal_approx(actor.global_position)
@@ -1556,7 +1560,7 @@ func _write_the_draft() -> int:
 	var errors: Array[String] = []
 	for field: String in data.get("setup", {}).get("task", {}):
 		pinned.append(position_of(data.setup.task[field], errors))
-	var drafted := _draft.compose(_written, _city, start_position(), pinned, problems)
+	var drafted := _draft.compose(_written, _run, _city, start_position(), pinned, problems)
 	for problem in problems:
 		print("[SceneRecipe] draft: " + problem)
 	var path := _config.recipe_draft_path

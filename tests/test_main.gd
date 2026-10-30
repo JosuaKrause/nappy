@@ -129,7 +129,7 @@ func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
 	var day := DayController.new()
 	t.add_child(day)
 	day.set_process(false)
-	day.setup(city.map, stroller)
+	day.setup(city.map, stroller, GameState)
 
 	var readout := _bare_readout(city, stroller, baby, day)
 
@@ -184,7 +184,7 @@ func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
 	var day := DayController.new()
 	t.add_child(day)
 	day.set_process(false)
-	day.setup(city.map, stroller)
+	day.setup(city.map, stroller, GameState)
 
 	var readout := _bare_readout(city, stroller, baby, day)
 
@@ -489,6 +489,7 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 ## different settings; the tap button carries no mark.
 func _test_the_title_joystick_buttons_carry_l_and_r(t) -> void:
 	var title: TitleScreen = TITLE_SCREEN_SCENE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	var left := title.get_node("Root/Choice/LeftColumn/Left") as ModeButton
 	var right := title.get_node("Root/Choice/RightColumn/Right") as ModeButton
@@ -527,6 +528,7 @@ func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
 	# a method a bare layer does not have. Added to the tree for the same reason `_title` below is:
 	# its own `@onready` children have to exist before anything reads them.
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	hud.use_run(GameState)
 	t.add_child(hud)
 	hud.set_process(false)
 	main._hud = hud
@@ -538,6 +540,7 @@ func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
 	# because it only reaches `close()`; `open()` (`_open_the_title()`'s own call) writes `_name.text`
 	# and needs the scene's children to exist.
 	main._title = TITLE_SCREEN_SCENE.instantiate()
+	main._title.use_run(main._run)
 	t.add_child(main._title)
 	var readout := DebugReadout.new()
 	readout._status = main._status
@@ -609,6 +612,7 @@ func _test_opening_the_title_reasserts_the_orientation_it_finds_stale(t) -> void
 	main._player = stroller
 	main._city = City.new()
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	hud.use_run(GameState)
 	t.add_child(hud)
 	hud.set_process(false)
 	main._hud = hud
@@ -616,6 +620,7 @@ func _test_opening_the_title_reasserts_the_orientation_it_finds_stale(t) -> void
 	main._status = Label.new()
 	main._status_layer = CanvasLayer.new()
 	main._title = TITLE_SCREEN_SCENE.instantiate()
+	main._title.use_run(main._run)
 	t.add_child(main._title)
 
 	# Standing in for whatever the previous screen left behind: rotated, exactly as if
@@ -657,7 +662,9 @@ func _test_opening_the_title_reasserts_the_orientation_it_finds_stale(t) -> void
 func _test_the_summary_and_pause_restart_signals_are_both_connected(t) -> void:
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = DAY_SUMMARY_SCENE.instantiate()
+	main._summary.use_run(main._run)
 	main._pause = PAUSE_SCREEN_SCENE.instantiate()
+	main._pause.use_run(main._run)
 	main._connect_summary_and_pause_signals()
 
 	t.check(main._summary.restart_requested.is_connected(main._restart_run),
@@ -733,10 +740,11 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	var day := DayController.new()
 	t.add_child(day)
 	day.set_process(false)
-	day.setup(city.map, stroller)
+	day.setup(city.map, stroller, GameState)
 	day.phase = GameEnums.DayPhase.WALKING
 
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	hud.use_run(GameState)
 	t.add_child(hud)
 	hud.set_process(false)
 
@@ -924,10 +932,13 @@ func _test_no_focus_pause_from_query(t) -> void:
 func _build_focus_pause_main(t) -> Node2D:
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = DAY_SUMMARY_SCENE.instantiate()
+	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	main._pause = PAUSE_SCREEN_SCENE.instantiate()
+	main._pause.use_run(main._run)
 	t.add_child(main._pause)
 	main._title = TITLE_SCREEN_SCENE.instantiate()
+	main._title.use_run(main._run)
 	t.add_child(main._title)
 	main._no_focus_pause = false
 	main._add_the_return_window(t.get_viewport())
@@ -1171,8 +1182,9 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	var day := DayController.new()
 	t.add_child(day)
 	day.set_process(false)
-	day.setup(city.map, stroller)
+	day.setup(city.map, stroller, GameState)
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 
 	var main: Node2D = MAIN_SCRIPT.new()

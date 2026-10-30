@@ -24,7 +24,7 @@ const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 func run(t) -> void:
-	var baseline := GameSave.file_data(false)
+	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)
 
 	_test_going_back_restores_every_field_the_save_carries(t)
@@ -46,7 +46,7 @@ func run(t) -> void:
 
 	GameSave._clear_now()
 	GameSave.set_path_override("")
-	GameSave.restore_run_data(baseline)
+	GameSave.restore_run_data(GameState, baseline)
 	GameState.hard_mode = bool(baseline["hard_mode"])
 	GameState.checkpoint = baseline["checkpoint"]
 
@@ -74,7 +74,7 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	t.check(GameState.header.day == 4, "three won days reach day 4")
 	GameState.header.nerves = 3
 	GameState.begin_day()
-	var expected := GameSave.run_data()
+	var expected := GameSave.run_data(GameState)
 	t.check(GameState.checkpoint == expected, "beginning day 4 keeps its dawn as the checkpoint")
 
 	# On past it: a lost attempt at day 4, a won one, and into day 5.
@@ -87,16 +87,16 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 			"day 5 is under way and the checkpoint is still day 4's dawn")
 
 	# Through the file, so the checkpoint given back is the one a closed game would come back to.
-	t.check(GameSave._write_now(true), "the run is written with its checkpoint")
+	t.check(GameSave._write_now(GameState, true), "the run is written with its checkpoint")
 	GameState.start_run(_SEED + 1)
-	t.check(not GameSave._read_now().is_empty(), "and read back")
+	t.check(not GameSave._read_now(GameState).is_empty(), "and read back")
 	t.check(GameState.checkpoint_day() == 4, "with its checkpoint on day 4")
 
 	var keys := _run_keys()
 	t.check(keys.size() > 10, "there are fields to check (%d)" % keys.size())
-	var before := _flatten(GameSave.file_data(false))
+	var before := _flatten(GameSave.file_data(GameState, false))
 	_change_everything()
-	var changed := _flatten(GameSave.file_data(false))
+	var changed := _flatten(GameSave.file_data(GameState, false))
 	for key in keys:
 		t.check(changed[key] != before[key] and changed[key] != _flatten_run(expected)[key],
 				"'%s' is changed after the checkpoint — a field this test does not change cannot "
@@ -105,7 +105,7 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	GameState.header.nerves = 1
 	t.check(GameState.a_loss_goes_back_to_the_checkpoint(), "losing now spends a normal run's last nerve")
 	t.check(GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL), "and the run goes on")
-	var after := _flatten(GameSave.file_data(false))
+	var after := _flatten(GameSave.file_data(GameState, false))
 	var wanted := _flatten_run(expected)
 	wanted["state.nerves"] = Tuning.STARTING_NERVES
 	for key in keys:
@@ -122,7 +122,7 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 ## fields as `state.<name>` — read off `GameSave.file_data()` itself.
 func _run_keys() -> Array[String]:
 	var keys: Array[String] = []
-	for key: String in _flatten(GameSave.file_data(false)):
+	for key: String in _flatten(GameSave.file_data(GameState, false)):
 		if key.get_slice(".", 0) in GameSave.FILE_KEYS:
 			continue
 		keys.append(key)
@@ -341,8 +341,10 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	GameState.header.nerves = 2
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = SUMMARY_SCENE.instantiate()
+	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
+	main._hud.use_run(main._run)
 	t.add_child(main._hud)
 	var day := DayController.new()
 	t.add_child(day)
@@ -426,6 +428,7 @@ func _test_the_lost_day_screen_says_where_she_goes_back_to(t) -> void:
 	GameState.start_run(_SEED)
 	GameState.header.day = 8
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "Dusk came.", Tuning.STARTING_NERVES, 0.0,
 			true)
@@ -440,6 +443,7 @@ func _test_the_lost_day_screen_says_where_she_goes_back_to(t) -> void:
 func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
 	GameState.start_run(_SEED)
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	title.open(false, true)
 	t.check(title.hard_mode_shown() and not title.hard_mode_checked(),
@@ -473,6 +477,7 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 	# `_hud.set_rotated()`: the bare layer the gate rig carries has no such method.
 	main._hud.free()
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	hud.use_run(GameState)
 	t.add_child(hud)
 	hud.set_process(false)
 	main._hud = hud
@@ -510,6 +515,7 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 	GameState.start_run(_SEED)
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	title.set("_touch", false)
 	var started := [0]
@@ -578,6 +584,7 @@ func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> 
 		t.get_window().size = window
 		t.get_window().content_scale_size = ScreenOrientation.content_scale_size(rotate)
 		var title: TitleScreen = TITLE.instantiate()
+		title.use_run(GameState)
 		t.add_child(title)
 		title._touch = touch
 		ScreenOrientation.apply_to_layer(title, rotate)
@@ -638,6 +645,7 @@ func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> 
 ## on and is fine.
 func _test_no_control_on_the_title_stops_a_press(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	title.open(false, true)
 	var stopping: Array[String] = []
@@ -720,8 +728,10 @@ func _bare_gate_main(t) -> Node2D:
 	main._edge_layer = CanvasLayer.new()
 	main._status = Label.new()
 	main._title = TITLE.instantiate()
+	main._title.use_run(main._run)
 	t.add_child(main._title)
 	main._summary = SUMMARY_SCENE.instantiate()
+	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	return main
 

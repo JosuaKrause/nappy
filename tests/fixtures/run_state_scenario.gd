@@ -55,9 +55,9 @@ static func _burn(block: Vector2i) -> void:
 
 ## What the save file holds, as JSON-safe values (what a read back from disk is).
 static func written() -> Dictionary:
-	return JSON.parse_string(JSON.stringify(GameSave.file_data(true)))
+	return JSON.parse_string(JSON.stringify(GameSave.file_data(GameState, true)))
 
 ## What the save file holds after the day was lost: the run given back to its dawn, a nerve spent.
 static func after_a_loss() -> Dictionary:
 	GameState.finish_day(GameEnums.DayResult.LOST_CRYING)
-	return JSON.parse_string(JSON.stringify(GameSave.file_data(false)))
+	return JSON.parse_string(JSON.stringify(GameSave.file_data(GameState, false)))

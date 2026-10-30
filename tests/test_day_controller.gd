@@ -25,7 +25,7 @@ func _rig(t) -> DayController:
 	day.set_process(false)
 	# No map: `_is_home()` guards on it being null, and nothing in this suite reaches the return
 	# phase, so a real `CityMap` would only cost time nothing here asks about.
-	day.setup(null, player)
+	day.setup(null, player, GameState)
 	return day
 
 func _test_the_clock_emits_once_per_second_crossed(t) -> void:

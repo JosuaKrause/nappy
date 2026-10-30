@@ -700,7 +700,7 @@ func _test_resolve_target_spawn_reaches_devrig(t) -> void:
 	var rig := _rig(t)
 	rig._resistance = _resistance
 	var at := rig._resolve_target("spawn:park")
-	t.check(at == DevRig.for_spawn_target("park", _city, _resistance),
+	t.check(at == DevRig.for_spawn_target("park", _city, _resistance, GameState),
 			"'spawn:park' resolves exactly as DevRig.for_spawn_target('park', ...) does")
 	rig.free()
 
@@ -1266,7 +1266,7 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 
 	var day := DayController.new()
 	t.add_child(day)
-	day.setup(_city.map, _stroller)
+	day.setup(_city.map, _stroller, GameState)
 	day.set_process(false)
 	day.start(600.0)
 
@@ -1278,7 +1278,7 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 	# the dedicated tests above have not already covered — what is left to prove here is the seam:
 	# resolving, planning, pressing the ordinary axes, and `_arrive()` firing for real.
 	var targets: Array[String] = ["home"]
-	rig.setup(_city, _stroller, baby, _resistance, day, targets)
+	rig.setup(_city, _stroller, baby, _resistance, day, targets, GameState)
 	rig.start_day(day.spec)
 
 	var start_position := _stroller.global_position
@@ -1360,7 +1360,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	baby.reset()
 	var day := DayController.new()
 	t.add_child(day)
-	day.setup(city.map, _stroller)
+	day.setup(city.map, _stroller, GameState)
 	day.set_process(false)
 	day.start(600.0)
 	city.events._player = _stroller
@@ -1369,7 +1369,8 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	var no_targets: Array[String] = []
-	rig.setup(city, _stroller, baby, null, day, no_targets)
+	rig.setup(city, _stroller, baby, null, day, no_targets, GameState)
+
 	rig.start_day(day.spec)
 	var reach := float(Tuning.TILE_SIZE) * 5.0
 	# On the carriageway either side of the boom, so the straight line — and the bare grid's
