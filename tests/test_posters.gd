@@ -60,12 +60,13 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t) -> void:
 	t.check(plain != null and crossed != null, "both copies of the wanted notice are baked")
 	GameState.header.day = ResistanceHappenings.NEIGHBOR_DAY + 2
 	GameState.resistance.completed_steps = [ResistanceSteps.warning_step().index]
-	t.check(PosterArt.sheet(PosterArt.Kind.WANTED) == plain,
+	t.check(PosterArt.sheet(PosterArt.Kind.WANTED, GameState.neighbor_was_taken()) == plain,
 			"a warned neighbor's face is not crossed out")
 	GameState.resistance.completed_steps = []
-	t.check(PosterArt.sheet(PosterArt.Kind.WANTED) == crossed,
+	t.check(PosterArt.sheet(PosterArt.Kind.WANTED, GameState.neighbor_was_taken()) == crossed,
 			"a taken neighbor's face is crossed out")
-	t.check(PosterArt.sheet(PosterArt.Kind.LEADER) == AtlasLibrary.region(
+	t.check(PosterArt.sheet(PosterArt.Kind.LEADER, GameState.neighbor_was_taken()) == AtlasLibrary.region(
+
 			PosterArt.SHEETS[PosterArt.Kind.LEADER]), "and no other kind changes")
 	GameState.header.day = saved_day
 	GameState.resistance.completed_steps = saved_completed

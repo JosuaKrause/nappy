@@ -84,7 +84,8 @@ var _return_window: ReturnWindow
 var _city: City
 ## The run this boot plays, taken off the `GameState` autoload once, here: the autoload is where the
 ## run lives, since it outlives the scene reloads, and this is where it is reached — besides the
-## events, the resistance and the city's posters, which still read it off the autoload. This file
+## events and the resistance, which still read it off the autoload. This file
+
 ## reads the run through `_run` and hands it, typed `RunState`, to `GameSave` and to every reader
 ## it builds.
 
@@ -712,9 +713,8 @@ func _make_player() -> Stroller:
 func _new_city() -> City:
 	var city: City = CITY.instantiate()
 	city.trace = _the_trace()
-	city.run_posters = _run.posters
-	city.run_spend = _spend
-	city.run_resistance = _run.resistance
+	city.run = _run
+
 	city.ground_mode = config.ground_mode as SceneryGround.Mode
 	city.scenery_frame_locked = config.recipe_scripted
 	city.skip_shadows = config.skip_shadows

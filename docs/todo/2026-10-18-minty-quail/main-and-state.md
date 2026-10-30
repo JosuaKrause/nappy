@@ -9,9 +9,8 @@
   route rig hear the day from `RunFlow.day_started` / `day_planned`.
 - **The run is handed in.** `main` takes the `GameState` autoload once (`_run`) and hands it, typed
   `RunState`, to `GameSave` (a parameter of every call that reads or writes a run) and to every
-  reader it builds; `City` takes the run's parts. **`PosterWalls` and `PosterArt` still read the
-  autoload**: `City` builds the one and `Building` draws through the other, and neither was in the
-  fence of the PR that handed the rest in. The hidden globals held in statics are filed in
+  reader it builds, `City` among them, which hands it to its `PosterWalls`. The hidden globals held
+  in statics are filed in
   `hidden-statics.md`, and so is moving the calendar's operations (`day_rng()`, `begin_day()`,
   `finish_day()`) off the autoload.
 - **One summary screen with four hand-reset modes** (`day_summary.gd`: `show_day_brief`, `show_day`,
@@ -20,8 +19,8 @@
   resistance tally and the run-standing line are each formatted in two places.
 
 **Build:** a pure `SummaryModel` the screen only renders, with the screen's epilogue flag gone and
-`test_finale` reading the flow's EPILOGUE instead, and `continued(mode)` (PR 4c); `PosterWalls` and
-`PosterArt` handed the run, which reaches them only through `City` and `Building`.
+`test_finale` reading the flow's EPILOGUE instead, and `continued(mode)` (PR 4c).
+
 
 
 **Scene recipes become configurations of `RunFlow`** (PR 4c). The dev flags are one `RunConfig` read

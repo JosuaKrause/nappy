@@ -165,13 +165,13 @@ var _buildings: Array[Building] = []
 ## The posters on the fronts: which cells can carry one and what is pasted on them. Built once
 ## with the buildings, pasted each dawn. See `PosterWalls`.
 var _posters: PosterWalls
-## The parts of the run's state the city reads, held rather than reached for through `GameState`:
-## what is pasted on the walls, the scars and block arcs a lost day gives back, and whether the
-## pram carries the package. Whoever builds the city hands them over before `build()`
-## (`main._new_city()`, or `RunCity` in a test); `build()` refuses a city without them.
-var run_posters: PosterState = null
-var run_spend: AttemptSpendState = null
-var run_resistance: ResistanceRunState = null
+## The run the city stands in, handed in rather than reached for through `GameState`: what is
+## pasted on the walls (`posters`), the scars and block arcs a lost day gives back
+## (`attempt_spend`), whether the pram carries the package (`resistance`), and the seed and day
+## streams the walls are pasted from, which `PosterWalls` is handed in turn. Whoever builds the city
+## hands it over before `build()` (`main._new_city()`, or `RunCity` in a test); `build()` refuses a
+## city without it.
+var run: RunState = null
 ## Fixed for the run, from `StreetTrees.planted()` — unlike `_props`, never rebuilt daily: a
 ## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
 ## becomes.
@@ -231,8 +231,8 @@ func _ready() -> void:
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
-	if run_posters == null or run_spend == null or run_resistance == null:
-		push_error("City.build(): the run's parts (run_posters, run_spend, run_resistance) must be handed in first")
+	if run == null:
+		push_error("City.build(): the run must be handed in first")
 		return
 	map = city_map
 	# The city draws this map: what is added to the world through it comes here.
@@ -260,7 +260,7 @@ func build(city_map: CityMap) -> void:
 	_posters.name = "Posters"
 	_posters.trace = trace
 	add_child(_posters)
-	_posters.setup(self, map, run_posters)
+	_posters.setup(self, map, run)
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
 	# their geometry from this source as they become resident.
 	var shown_rects: Array[Rect2i] = []
@@ -380,7 +380,7 @@ func _sleepiness_on(tile: Vector2i) -> float:
 ## the road beside it, not the surface under her.
 func decay_multiplier(world_position: Vector2) -> float:
 	var ground := _ground_decay_multiplier(world_position)
-	if run_resistance.carrying_package:
+	if run.resistance.carrying_package:
 		# The one cost in the game that is not a field at a place: picking the package up makes
 		# every street after it dearer for the rest of the day, rather than the street it was
 		# picked up on.
@@ -445,7 +445,7 @@ func _spawn_home() -> void:
 	var stoop := map.tile_rect_to_world(map.home_rect)
 	_home_door = HomeDoor.new()
 	# Sealed already on a boot that resumes on day 11 or later, or reloads a save written after
-	# the raid — `_door_texture_for_today()` reads the run's scars (`run_spend`), already loaded by the
+	# the raid — `_door_texture_for_today()` reads the run's scars (`run.attempt_spend`), already loaded by the
 	# time `main.gd` calls `City.build()`. Day 10 itself is `seal_home_door()`'s, called live the
 	# moment the raid actually arrives.
 	_home_door.picture = _door_texture_for_today()
@@ -468,7 +468,7 @@ func _spawn_home() -> void:
 
 ## `SEALED_DOOR_TEXTURE` once the scar it leaves is on record, `DOOR_TEXTURE` before then.
 func _door_texture_for_today() -> StringName:
-	for scar in run_spend.scars:
+	for scar in run.attempt_spend.scars:
 		if String(scar["id"]) == SEALED_DOOR_SCAR:
 			return SEALED_DOOR_TEXTURE
 	return DOOR_TEXTURE
@@ -1051,7 +1051,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 	for closure in _closures:
 		_spawn_closure(closure)
 	if map.has_stretch():
-		run_posters.pasted_through = maxi(run_posters.pasted_through, day)
+		run.posters.pasted_through = maxi(run.posters.pasted_through, day)
 	_posters.start_day(day, _tree)
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
@@ -1163,7 +1163,8 @@ func calm_summary() -> String:
 	var counts := {}
 	for block in map.calm_blocks:
 		var name: String = GameEnums.BlockPurpose.keys()[
-			run_spend.city_state.purpose_of(map.block_plans, block)].to_lower()
+			run.attempt_spend.city_state.purpose_of(map.block_plans, block)].to_lower()
+
 		counts[name] = counts.get(name, 0) + 1
 	var parts: Array[String] = []
 	for name: String in counts:
@@ -1359,7 +1360,7 @@ func _dress_the_stretch() -> void:
 ## have caught on and asks for the building behind it to be burnt there and then, so *"Take what's
 ## in the stroller to the burnt building"* leads to a burnt building rather than bare sidewalk.
 func mark_the_burnt_frontage() -> void:
-	for scar in run_spend.scars:
+	for scar in run.attempt_spend.scars:
 		if String(scar["id"]) != BURNT_FRONTAGE_SCAR:
 			continue
 		var wall_tile := map.world_to_tile(scar["position"] as Vector2) + Vector2i.UP
