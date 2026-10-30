@@ -96,7 +96,7 @@ func _measure(t, seed_value: int, walks: bool) -> void:
 		guard.player_at = her
 		var before: ArrowField = guard._her_way_next
 		var t0 := Time.get_ticks_usec()
-		guard._process(FRAME)
+		guard.step(FRAME)
 		times.append((Time.get_ticks_usec() - t0) / 1000.0)
 		var after: ArrowField = guard._her_way_next
 		if before != null or after != null:

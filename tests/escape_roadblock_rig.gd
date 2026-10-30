@@ -168,7 +168,7 @@ static func _tick(instances: Array[EventInstance], her: Vector2, running: bool,
 		instance.player_view = view_round(her, heading) if heading != Vector2.ZERO else Rect2()
 		instance.player_running = running
 		instance.baby_awake = false
-		instance._process(STEP)
+		instance.step(STEP)
 	for instance in instances:
 		if instance.is_lethal_at(her):
 			return true

@@ -233,7 +233,7 @@ func _stays_asleep(robbery: EventDef, guard_at: Vector2, legs: Array[Vector2]) -
 		var steps := ceili(from.distance_to(to) / 8.0)
 		for s in steps + 1:
 			robber.player_at = from.lerp(to, float(s) / float(maxi(steps, 1)))
-			robber._process(STEP)
+			robber.step(STEP)
 			if not robber.is_waiting():
 				woke = true
 	robber.free()

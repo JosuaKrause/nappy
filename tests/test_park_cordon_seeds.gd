@@ -243,7 +243,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 			before[officer] = [officer.at, officer.phase]
 		if not _gone(busker):
 			busker.player_at = her[0]
-			busker._process(STEP)
+			busker.step(STEP)
 		cordon.tick(STEP, her[0], shows)
 		clock += STEP
 		for officer in cordon.officers:

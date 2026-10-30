@@ -351,7 +351,7 @@ func _test_a_running_event_comes_back_where_it_got_to(t) -> void:
 	t.check(plan.live != null, "she comes near it and it is there")
 	var started := plan.live.global_position
 	for i in 120:
-		plan.live._process(1.0 / 60.0)
+		plan.live.step(1.0 / 60.0)
 	var walked := plan.live.global_position
 	t.check(started.distance_to(walked) > 1.0,
 			"it covers ground while she is watching (%.0fpx in 2s)"
@@ -507,11 +507,11 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 
 	var her := plan.position + Vector2(def.notice_within() - 10.0, 0.0)
 	plan.live.player_at = her
-	plan.live._process(1.0 / 60.0)
+	plan.live.step(1.0 / 60.0)
 	t.check(not plan.live.is_waiting(), "she is inside the trigger, so it notices her")
 	for i in 60:
 		plan.live.player_at = her
-		plan.live._process(1.0 / 60.0)
+		plan.live.step(1.0 / 60.0)
 	t.check(not plan.live.is_waiting(), "and a second later it is still chasing, not patrolling")
 	var chase_age_before := plan.live.chase_age()
 
@@ -1103,7 +1103,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 			var on_her_at_once: bool = reaches.call()
 			while not reaches.call() and to_reach < 10.0:
 				arrived.player_at = her_at
-				arrived._process(WALK_STEP)
+				arrived.step(WALK_STEP)
 				to_reach += WALK_STEP
 			print("      the engine is created %.0fpx from her after %.2fs of badge, its field %s"
 					% [arrived.global_position.distance_to(her_at), warning.shown,

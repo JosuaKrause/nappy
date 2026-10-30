@@ -89,7 +89,7 @@ func _test_event_parts(t) -> void:
 			instance._spread_vertical = vertical
 			t.add_child(instance)
 			instance.look.attach_nodes()
-			instance._process(instance.def.telegraph_time + 0.01)
+			instance.step(instance.def.telegraph_time + 0.01)
 			var sceneries := (instance.look as SpreadLook)._sceneries.duplicate()
 			var moving: Array[SceneryLayer] = []
 			var still: Array[SceneryLayer] = []
@@ -104,7 +104,9 @@ func _test_event_parts(t) -> void:
 			var initial: bool = moving[0].frame_b
 			var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
 					else EventPictures.BURST_MAIN_SPLASH_PERIOD
-			instance._process(period * 0.5)
+			instance.step(period * 0.5)
+			# The look shows the step on the next drawn frame.
+			instance._process(0.0)
 			for layer in moving:
 				t.check(layer.frame_b != initial, "the existing event clock advances each detail")
 				for alternate in layer._alternates:
@@ -116,6 +118,7 @@ func _test_event_parts(t) -> void:
 			t.check(instance._obstruction == body and instance.solid_part_centres() == centers,
 					"animation preserves both collision resource and placement")
 			instance._finish()
+			instance._process(0.0)
 			t.check(sceneries.all(func(scenery: EventScenery) -> bool: return not scenery.visible),
 					"a finished event hides every scenery layer")
 			# Detached, it takes its slices and their scenery with it; back in the tree, it builds

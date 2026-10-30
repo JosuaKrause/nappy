@@ -505,7 +505,7 @@ func _free_door_rig(rig: Dictionary) -> void:
 func _advance_chat(manager: EventManager, seconds: float) -> void:
 	for i in int(round(seconds / STEP)) + 5:
 		for instance in manager._instances:
-			instance._process(STEP)
+			instance.step(STEP)
 		manager.checkpoints.check_detentions()
 
 ## The core rig: she walks into a hut, is detained for `Tuning.CHECKPOINT_DETAIN_SECONDS`, and
@@ -619,7 +619,7 @@ func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
 			for i in frames:
 				if way == "a key" and not held_through and i == 10:
 					Input.action_release(&"move_left")
-				hut._process(STEP)
+				hut.step(STEP)
 				manager.checkpoints.check_detentions()
 				stroller._physics_process(STEP)
 			t.check(not hut.is_chatting(), "%s: and let out" % label)
@@ -728,7 +728,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 		guard -= 1
 		baby._physics_process(STEP)
 		for instance in manager._instances:
-			instance._process(STEP)
+			instance.step(STEP)
 	t.check(not hut.is_chatting() and guard > 0, "and it runs its own clock out")
 	t.close_to(baby.excitement - before, Tuning.CHAT_EXCITEMENT,
 			"the whole crossing costs the toll and nothing else (%.1f against %.0f)"
@@ -911,7 +911,7 @@ func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
 	var drawn := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
 	var seen_visible_at_the_entry := false
 	for i in drawn:
-		hut._process(STEP)
+		hut.step(STEP)
 		if stroller.visible and stroller.global_position.is_equal_approx(entry):
 			seen_visible_at_the_entry = true
 	t.check(not hut.is_chatting(), "the hold's own clock runs out on a drawn frame")
@@ -1402,7 +1402,7 @@ func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
 func _advance_hold(manager: EventManager, stroller: Stroller, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		for instance in manager._instances:
-			instance._process(STEP)
+			instance.step(STEP)
 		manager.checkpoints.check_detentions()
 		stroller._update_camera(STEP)
 
@@ -1695,7 +1695,7 @@ func _test_the_chatting_mother_still_detains_once(t) -> void:
 	manager.checkpoints.check_detentions()
 	t.check(mother.is_chatting(), "the first approach starts the one conversation")
 	for i in int(round(def.detain_seconds / STEP)) + 5:
-		mother._process(STEP)
+		mother.step(STEP)
 		manager.checkpoints.check_detentions()
 	t.check(mother.has_chatted() and not mother.is_chatting(),
 			"spent as a detainer once the conversation ends")
@@ -1973,7 +1973,7 @@ func _test_a_walk_under_the_boom_is_seen(t) -> void:
 	city.events.checkpoints.check_detentions()
 	t.check(hut.is_chatting(), "walking up the sidewalk to a hut starts its inspection")
 	for i in int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 5:
-		hut._process(STEP)
+		hut.step(STEP)
 		city.events.checkpoints.watch_the_door_lines()
 		city.events.checkpoints.check_detentions()
 	var released := (rig["stroller"] as Stroller).global_position
@@ -2056,7 +2056,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 		t.check((guard.global_position - far_hut.global_position).dot(axis) > 0.0,
 				"on the side of the line she crossed to")
 		guard.player_at = lane + axis * 20.0
-		guard._process(STEP)
+		guard.step(STEP)
 		t.check(not guard.is_telegraphing() and not guard.is_waiting(), "and charging at once")
 		t.check(not far_hut.is_finished and not far_hut.is_its_guard_inside(),
 				"while the hut and its own guard stay where they are")
@@ -2169,7 +2169,7 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 		her += heading * moving * STEP
 		guard.player_at = her
 		guard.player_running = moving > Tuning.WALK_SPEED
-		guard._process(STEP)
+		guard.step(STEP)
 		elapsed += STEP
 		if guard.is_lethal_at(her):
 			result["caught"] = true
@@ -2220,7 +2220,7 @@ func _test_a_huts_hold_ends_the_door_guards_chase(t) -> void:
 
 	stroller.global_position = guard.global_position + Vector2(2000.0, 0.0)
 	manager._tell_them_where_she_is()
-	guard._process(STEP)
+	guard.step(STEP)
 	t.check(not guard.gave_up and not guard.is_leaving, "he is after her before she reaches a hut")
 
 	var axis := far_hut.facing_now()
@@ -2247,7 +2247,7 @@ func _test_a_hold_at_the_guards_own_hut_ends_it_too(t) -> void:
 
 	stroller.global_position = guard.global_position + Vector2(2000.0, 0.0)
 	manager._tell_them_where_she_is()
-	guard._process(STEP)
+	guard.step(STEP)
 	t.check(not guard.gave_up, "he is after her before the hold starts")
 
 	var axis := own_hut.facing_now()
@@ -2282,7 +2282,7 @@ func _test_a_hold_does_not_end_the_roadblock_guard(t) -> void:
 
 	stroller.global_position = road_guard.global_position + Vector2(0.0, 2000.0)
 	manager._tell_them_where_she_is()
-	road_guard._process(STEP)
+	road_guard.step(STEP)
 	t.check(not road_guard.gave_up and not road_guard.is_leaving, "he is hunting her already")
 
 	stroller.global_position = far_hut.global_position + axis * 40.0 + Vector2(0.0, 16.0)
@@ -2323,8 +2323,8 @@ func _test_a_huts_hold_does_not_end_the_robbers_chase(t) -> void:
 	var elapsed := 0.0
 	while elapsed < Tuning.CHECKPOINT_DETAIN_SECONDS and hut.is_chatting():
 		manager._tell_them_where_she_is()
-		robber._process(STEP)
-		hut._process(STEP)
+		robber.step(STEP)
+		hut.step(STEP)
 		elapsed += STEP
 		if robber.is_lethal_at(stroller.global_position):
 			caught_while_held = true
@@ -2353,7 +2353,7 @@ func _test_a_chase_with_no_hold_still_catches(t) -> void:
 	var caught := false
 	for i in int(round(6.0 / STEP)):
 		manager._tell_them_where_she_is()
-		guard._process(STEP)
+		guard.step(STEP)
 		manager.checkpoints.check_detentions()
 		if guard.is_lethal_at(stroller.global_position):
 			caught = true

@@ -11,12 +11,11 @@ extends RefCounted
 ##
 ## The event calls its look. In `setup()` it faces it (`face()`), and its tree callbacks hand it the
 ## drawing nodes to build, attach, rebuild and let go of (`build_nodes()`, `attach_nodes()`,
-## `enter_tree()`, `release_nodes()`), and its `_draw()` draws through it (`draw()`). From the
-## simulation the calls come in three places: at the end of a tick the event asks its look to
-## redraw if the picture changed and to move its drawing nodes; `transition()` asks it to hide its
-## scenery the moment the phase becomes DONE, which can be in the middle of a tick; and two
-## behaviours ask for the redraw or the move (a car whose frame is taken back,
-## `EventCarDriving.end_frame()`; a barrier's posts, `EventBarrierPost`).
+## `enter_tree()`, `release_nodes()`), its `_draw()` draws through it (`draw()`), and its
+## `_process()`, once a drawn frame, asks it to redraw if the picture changed
+## (`redraw_if_the_picture_changed()`, which also moves the drawing nodes and shows or hides the
+## scenery). Nothing that steps the event on the physics tick calls its look: the look reads on its
+## own frame what the last tick left.
 
 ## The event this look draws.
 var event: EventInstance
@@ -42,7 +41,7 @@ var _picture := Vector4i(-1, 0, 0, 0)
 ## replayed — so an event only redraws when its **picture** changes, exactly the gate
 ## `CrowdAgent._end_the_frame()` already gives every walker and car. Most of a
 ## day's live instances are scenery that never moves — the seals, a checkpoint's hut, a café
-## frontage, a market stall, a barricade — and rebuilding their draw lists at the tick rate is the
+## frontage, a market stall, a barricade — and rebuilding their draw lists every drawn frame is the
 ## largest single drawing cost in a frame, for a picture that is identical every time. See
 ## `docs/evidence/m124-frame-cost-2026-09-13/README.md`.
 ##
@@ -51,14 +50,14 @@ var _picture := Vector4i(-1, 0, 0, 0)
 ## subset, and why `_picture_never_settles()` stands beside it for the four cases whose picture is
 ## a continuous function of the clock and could not be named by a key at all.
 ##
-## The key is stored on every tick whether or not it asked for a draw, so the *transition out of*
+## The key is stored on every drawn frame whether or not it asked for a draw, so the *transition out of*
 ## a never-settling state — a van that has finished taking its victim — is still a change the
 ## comparison can see.
 ##
 ## **Off screen none of it runs** (`DrawnView`, `_drawn_reach()`): no key, no caret projection and
 ## no redraw, never-settling pictures included, since most of a day's live instances are off screen
 ## and the key's caret was the projection's only caller there. The picture is left as it was, and
-## the first tick any of it is back inside the box redraws it from what it is now, caret included,
+## the first drawn frame any of it is back inside the box redraws it from what it is now, caret included,
 ## before the margin has let any of it onto the screen. The drawing nodes (`move_nodes()`) and the
 ## scenery are still moved and shown. Answers whether it asked for a draw.
 func redraw_if_the_picture_changed() -> bool:
@@ -78,7 +77,7 @@ func redraw_if_the_picture_changed() -> bool:
 	return asked
 
 ## True while what the event shows is not being kept current because none of it can be on the
-## screen, so the first tick it is back in the box redraws it whatever the key says.
+## screen, so the first drawn frame it is back in the box redraws it whatever the key says.
 var _picture_is_stale := false
 
 ## Whether anything the event draws can be on the screen (`DrawnView`): its own picture, caret
@@ -385,8 +384,8 @@ func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 ## **Keyed on where she is as well as on the clock, and the pair is load-bearing.** The answer is
 ## a projection of this event's course against her position, so it goes stale when either moves —
 ## and the two do not move together: `player_at` is written by `EventManager` and `ExcitementHalo`
-## once a frame, from outside, at whatever point in the frame those nodes run, while
-## `redraw_if_the_picture_changed()` asks for the caret at the end of the event's own tick. Keyed
+## from outside, the manager on its physics tick and the halo once a drawn frame, while
+## `redraw_if_the_picture_changed()` asks for the caret on the event's own drawn frame. Keyed
 ## on `age` alone, the first of those to ask fixes the answer for the whole
 ## tick, and a caret computed against last frame's position — or against `Vector2.INF`, before
 ## anything has said where she is at all — is the one that stands.
@@ -697,10 +696,6 @@ func move_nodes(_redraw := false) -> void:
 
 ## Lets go of every drawing node, for an event leaving the tree.
 func release_nodes() -> void:
-	pass
-
-## Hides the scenery a finished event leaves standing until it is freed.
-func hide_the_scenery() -> void:
 	pass
 
 ## The band a roadblock's barrier stands as, or null.

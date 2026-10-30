@@ -1550,7 +1550,8 @@ func _tick_the_events(delta: float) -> void:
 	_broadcast_clock += delta
 	_retire_finished()
 	_bring_back_what_repeats(delta)
-	if _find_player():
+	var she_is_here := _find_player()
+	if she_is_here:
 		# First, so everything below asks the same view of what she can see this frame.
 		_look_through_the_camera()
 		# Before the streaming, so a plan sited this frame is in the world on the same frame it
@@ -1566,12 +1567,25 @@ func _tick_the_events(delta: float) -> void:
 		_watch_the_encounters(delta)
 		_run_the_warnings(delta, _player.global_position)
 		_tell_them_where_she_is()
+	# Then every live event takes its step, having been told where she is, with or without her.
+	_step_them(delta)
+	if she_is_here:
 		_let_the_officers_out()
 		_warn_about_the_ground_she_is_on()
 		checkpoints.warn_at_the_doors()
 		checkpoints.watch_the_door_lines(delta)
 		checkpoints.check_detentions()
+	# Last, on the same tick as the step that caught her.
 	_check_hard_fails()
+
+## **Every live event's step, once a physics tick, in the order they live in `_instances`**
+## (`EventInstance.step()`). Over a copy, so an event made during the step (a successor, an
+## officer, a summoned row) takes its first step on the next tick; one a hand holds
+## (`EventInstance.held_by_hand`) is left as it stands.
+func _step_them(delta: float) -> void:
+	for instance in _instances.duplicate():
+		if is_instance_valid(instance) and not instance.held_by_hand:
+			instance.step(delta)
 
 # ------------------------------------------------------- called in on sight ---
 # The opposite of a successor: `_successor_of()` hands the day something the moment a row is

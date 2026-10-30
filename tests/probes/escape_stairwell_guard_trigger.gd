@@ -9,13 +9,12 @@ extends RefCounted
 ##
 ## The second tries another charge distance for his row on that run alone. Her real carrying body
 ## walks with the real stair steering and collision, and the real man is driven by
-## the building's `EventManager._physics_process()`, which tells him where she is, and his own `_process()`. It
-## is stepped at the game's rhythm: a 30Hz physics tick moves her, tells him where she is and checks
-## the catch, and he moves in `_process()` on two 60fps frames between ticks. A
-## line is `TRIGGER seed <s> <route> <pace> charged at (<local tile units>) <d>px from him,
-## <outcome> at <t>s, <a>s after he ran, closest <c>px drawn, <k>px on a tick (the catch is 28px)`,
-## where <c> is the nearest he is drawn to her centre and <k> the nearest on a physics tick, the only
-## moment the catch is checked. The routes all start on the second floor's
+## the building's `EventManager._physics_process()`, which tells him where she is, steps him and
+## checks the catch. It is stepped at the game's rhythm: a 30Hz physics tick moves her, then the
+## manager's tick. A line is `TRIGGER seed <s> <route> <pace> charged at (<local tile units>) <d>px
+## from him, <outcome> at <t>s, <a>s after he ran, closest <c>px drawn, <k>px on a tick (the catch is
+## 28px)`, where <c> and <k> are both the nearest he stands to her centre on a physics tick, the only
+## moment he moves and the catch is checked (he is drawn between two ticks' places). The routes all start on the second floor's
 ## door of his shaft, the way in from the second floor's hallway:
 ##
 ## - `turn-10`, `turn-11`: down the landing, then left onto the second flight from that row of it
@@ -30,9 +29,6 @@ extends RefCounted
 
 const BuildingEvents := preload("res://tests/building_events.gd")
 const TICK := 1.0 / 30.0
-## Drawn frames between ticks: 2 is 60fps. `FRAMES_PER_TICK=4` (120fps) or `5` (150fps) in the
-## environment steps him on more, shorter frames.
-var _frames := maxi(int(OS.get_environment("FRAMES_PER_TICK")), 2)
 ## The seed events are set up with; the building itself is not seeded, so other seeds print the
 ## same lines.
 const SEEDS := [4242]
@@ -93,13 +89,9 @@ func _once(t, s: int, route: String, pace: String) -> void:
 		var her := player.global_position
 		var tile := scene.map.world_to_tile(her)
 		events._physics_process(TICK)
-		man.player_running = running
 		var caught := man.is_lethal_at(her)
 		var on_tick := man.global_position.distance_to(her)
 		var near := on_tick
-		for _i in _frames:
-			man._process(TICK / _frames)
-			near = minf(near, man.global_position.distance_to(her))
 		elapsed += TICK
 		if not turned and tile.y - origin.y >= int(ROUTES[route][0]) \
 				and her.y >= scene.map.tile_to_world(tile).y:

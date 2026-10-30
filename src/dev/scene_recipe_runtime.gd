@@ -1173,13 +1173,15 @@ func _process(delta: float) -> void:
 				_active = false
 				get_tree().quit(1)
 			return
-		instance.set_process(false)
+		# Walked here, once a drawn frame, so its manager does not step it and it is drawn where this
+		# puts it rather than interpolated between physics ticks; its look still redraws it.
+		instance.held_by_hand = true
+		instance.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		var before := instance._path_travelled
 		var step := instance.departure.speed() * delta
 		instance.position += instance._heading * step
 		instance._path_travelled += step
 		instance._advance_gait(instance._path_travelled - before)
-		instance.look.redraw_if_the_picture_changed()
 
 func _physics_process(_delta: float) -> void:
 	_keep_the_pursuers_coming()

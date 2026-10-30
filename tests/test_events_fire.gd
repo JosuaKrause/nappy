@@ -142,7 +142,7 @@ func _instance(t, def: EventDef, at := Vector2.ZERO,
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 ## Playtest 04: *"the cat is ineffective since it happens when it spawns — the cat should get
 ## spawned in in front of the player while they walk, so it happens directly in front of them
@@ -506,7 +506,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 		for i in int(round(15.0 / STEP)):
 			at += north * STEP
 			instance.player_at = at
-			instance._process(STEP)
+			instance.step(STEP)
 			closest = minf(closest, instance.global_position.distance_to(at))
 			if instance.is_finished:
 				break

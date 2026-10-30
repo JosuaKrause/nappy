@@ -455,7 +455,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 	while waited < PATIENCE and escort.phase != ParkCordon.Officer.Phase.GONE:
 		if is_instance_valid(busker) and not busker.is_finished:
 			busker.player_at = her[0]
-			busker._process(STEP)
+			busker.step(STEP)
 		var was_closed := cordon.is_closed()
 		happenings.tick(STEP, her[0], Vector2.ZERO, shows)
 		waited += STEP
@@ -545,7 +545,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 				if (her[0] as Vector2).distance_to(way[0]) < 0.5:
 					way.remove_at(0)
 			busker.player_at = her[0]
-			busker._process(STEP)
+			busker.step(STEP)
 			happenings.tick(STEP, her[0], Vector2.ZERO, shows)
 			clock += STEP
 			for stretch in happenings.cordon.stretches:
@@ -602,7 +602,7 @@ func _test_someone_already_leaving_is_walked_out_through_the_gap(t) -> void:
 			if after_the_touch >= 0.0 and clock >= after_the_touch and not busker.is_leaving:
 				_set_off_on_their_own(busker, her[0])
 			busker.player_at = her[0]
-			busker._process(STEP)
+			busker.step(STEP)
 			happenings.tick(STEP, her[0], Vector2.ZERO, shows)
 			cordon = happenings.cordon
 			clock += STEP

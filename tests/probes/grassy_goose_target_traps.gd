@@ -220,7 +220,7 @@ func _chase(t, city: City, def: EventDef, start: Vector2, her_at: Vector2, headi
 		her += _her_step(city.map, her, heading * Tuning.WALK_SPEED * STEP)
 		chaser.player_at = her
 		chaser.player_running = false
-		chaser._process(STEP)
+		chaser.step(STEP)
 		elapsed += STEP
 		if chaser.is_lethal_at(her):
 			caught = true

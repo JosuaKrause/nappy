@@ -236,7 +236,7 @@ func _walk_past_row(t, id: String) -> Dictionary:
 	# Past the telegraph, the same warm-up `M174Pass._pass_net()` gives a row met on the map.
 	var warm_steps := int(ceil((def.telegraph_time + 0.05) / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 
 	_build(t)
 	_baby.excitement = Tuning.METER_MAX
@@ -250,7 +250,7 @@ func _walk_past_row(t, id: String) -> Dictionary:
 	var elapsed := 0.0
 	for _i in steps:
 		_stroller.global_position.x += Tuning.WALK_SPEED * STEP
-		instance._process(STEP)
+		instance.step(STEP)
 		_world.noise = instance.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
@@ -271,7 +271,7 @@ func _stand_in_row(t, id: String, seconds: float) -> Dictionary:
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2.ZERO]))
 	var warm_steps := int(ceil((def.telegraph_time + 0.05) / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 
 	_build(t)
 	_baby.excitement = Tuning.METER_MAX
@@ -282,7 +282,7 @@ func _stand_in_row(t, id: String, seconds: float) -> Dictionary:
 	var steps := int(round(seconds / STEP))
 	var elapsed := 0.0
 	for _i in steps:
-		instance._process(STEP)
+		instance.step(STEP)
 		_world.noise = instance.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)

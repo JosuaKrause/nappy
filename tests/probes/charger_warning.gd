@@ -87,7 +87,7 @@ static func _walk(t, def: EventDef, walk: String) -> Dictionary:
 		her.y += speed * STEP
 		instance.player_at = her
 		instance.player_running = speed > Tuning.WALK_SPEED
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 		if warned_at == INF and not instance.is_waiting():
 			warned_at = elapsed

@@ -26,10 +26,32 @@ func _rig(t, day: int) -> Array:
 	city.build(map)
 	city.events._day = day
 	city.events._recipe_plan = true
-	var her := Node2D.new()
-	her.add_to_group("player")
+	# The lights are off, so a red one cannot hold a car where the probe wants it to run.
+	city.events.signals = null
+	var her := _Her.new()
 	t.add_child(her)
+	her.set_process(false)
+	her.set_physics_process(false)
 	return [city, her]
+
+## Her, standing where the test puts her and seeing from there, carrying the baby so no pram stands
+## out in front of her, and running while `running` says so: the manager's tick reads all three off
+## her (`VisibleView.look_through()`, `EventManager._tell_them_where_she_is()`) and tells the events
+## before it steps them.
+class _Her extends Stroller:
+	var running := false
+
+	func _init() -> void:
+		carrying = true
+		var camera := Camera2D.new()
+		camera.name = "Camera2D"
+		add_child(camera)
+
+	func camera_screen_center() -> Vector2:
+		return global_position
+
+	func run_excess_ratio() -> float:
+		return 1.0 if running else 0.0
 
 func _done(city: City, her: Node2D) -> void:
 	her.free()
@@ -74,16 +96,11 @@ func _lane_rig(t, def: EventDef) -> Array:
 	city.events._find_player()
 	return [city, her, plan, route]
 
-## One frame as the game runs it: the manager's own tick, then every instance's. The lights are off
-## so a red one cannot hold the car where the probe wants it to run.
+## One physics tick as the game runs it: the manager's own, which steps every instance, with her
+## running while `running` says so.
 func _frame(city: City, running := false) -> void:
+	(city.events._player as _Her).running = running
 	city.events._tick_the_events(STEP)
-	for instance in city.events.instances().duplicate():
-		instance.signals = null
-		# `running` stands for her running: the manager's tick has just said she is not.
-		if running:
-			instance.player_running = true
-		instance._process(STEP)
 
 ## Whether `car` is out of the world: finished, or handed to `queue_free()` by a retirement or a
 ## stream-out.

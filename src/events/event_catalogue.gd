@@ -3154,16 +3154,15 @@ static func _masked_pursuer() -> EventDef:
 	# *(inbox #782 in minty-lemur: the player wants the radius bigger to achieve that, and him not moved)*. No
 	# clock, so his `telegraph_time` above is read only by the telegraph contract. 426px is
 	# measured on the escape as built (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as
-	# the game steps, a 30Hz physics tick with the catch on it and him moving on drawn frames):
+	# the game steps, a 30Hz physics tick that moves her, then steps him and checks the catch):
 	# coming down from the second floor's door she meets it at the head of the second flight, and
-	# making for the first floor's door from there a runner gets through on every line onto the
-	# flight, while a walker is caught holding plain left from the row level with the flight's head
-	# tread or the row below it, or down-left from the landing tile between the two flights. **A
-	# walker holding plain left from that landing tile gets through**, the margins are thin (a
-	# runner who walks until he runs, then runs, turning plain left at row 11's centre, is drawn
-	# about 25px from him (24.6px at 60, 120 and 150fps) inside his 28px catch and clears it on the
-	# tick at 28.6px, by 0.6px; she is caught if she starts running 0.3s late, and a runner who
-	# runs the whole way is caught at 440px), and in the stairwell his warning is off screen,
+	# making for the first floor's door from there a runner who runs the whole way gets through on
+	# every line onto the flight, while a walker is caught holding plain left from the row level
+	# with the flight's head tread or the row below it, or down-left from the landing tile between
+	# the two flights. **A walker holding plain left from that landing tile gets through**, the
+	# margins are thin (a runner who runs the whole way is 33px from him at the closest; one who
+	# walks until he runs, then runs, turning plain left at row 11's centre, comes within 26.4px of
+	# him on the tick, inside his 28px catch, and is caught), and in the stairwell his warning is off screen,
 	# since the view reaches 180px from her and he starts about 400px below; only the edge badge
 	# shows his charge, from the frame he runs (`DangerEdge`). The player accepted both (inbox
 	# #782 in minty-lemur).
