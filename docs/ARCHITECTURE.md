@@ -583,8 +583,19 @@ ending, play time), `ResistanceRunState`, `AttemptSpendState` (consumed one-shot
 arcs), `SettledState`, `RunFacts`, and `PosterState` and `PelicanState`. A part says where the
 save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a save must all carry,
 beside it with a default for absence, or under a key of its own. Readers use the part that owns a field
-(`GameState.header.day`, `GameState.attempt_spend.scars`); code written against a part takes it as
-an argument. `tests/test_run_state.gd` replays a run against a
+(`run.header.day`, `run.attempt_spend.scars`); code written against a part takes it as
+an argument. **The autoload is where the run lives, not how it is reached**: it outlives the scene
+reloads (the held restart, the day-14 hand-over, a run carried to its checkpoint), and `main`, the
+composition root, takes it once and hands it, typed `RunState`, to every reader it builds — the HUD,
+the summary, pause and title screens, `RunSession` and its `TelemetryObserver`, the frame trace and
+recorder, `DayController`, `VisitCounter`, the route rig and the scene recipe runtime — so a test
+hands a reader whichever run it built. `GameSave` is a namespace of static functions, handed the run
+on every call that reads or writes one (`write(run, …)`, `try_resume(run)`, `load_in_memory(run)`,
+`run_data(run)`, `restore_run_data(run, …)`); `RunState` hands itself for its checkpoint. Handed per
+call rather than held, because the web flush and the operation ids outlive the scene reloads that
+free the `main` holding a run. The events, the resistance and the city's posters (`PosterWalls`,
+`PosterArt`) still read it off the autoload. `tests/test_run_state.gd` replays a run against a
+
 save written before the parts existed (the fixture `tests/fixtures/run_state_saved_by_main.json`, dumped
 on commit e1cc7c7f) and checks every part is on the list.
 

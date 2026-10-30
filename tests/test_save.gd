@@ -1428,7 +1428,8 @@ func _test_a_resumed_run_ended_by_its_charge_shows_the_symbol(t) -> void:
 func _test_main_builds_the_symbol_before_the_charge_that_can_end_the_run(t) -> void:
 	var text := FileAccess.get_file_as_string("res://src/main.gd")
 	var raised := text.find("\t_raise_save_indicator()\n\tif _resume.get(\"day_under_way\"")
-	var charged := text.find("GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)")
+	var charged := text.find("_run.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)")
+
 	t.check(raised != -1 and charged != -1 and raised < charged,
 			"the symbol is raised right before the resumed run's charge")
 

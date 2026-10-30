@@ -82,10 +82,12 @@ var _rig_lock: RigLock
 var _return_window: ReturnWindow
 
 var _city: City
-## The run this boot plays, taken off the `GameState` autoload once, here — the one place anything
-## outside the events and the resistance names it. The autoload is where the run lives, since it
-## outlives the scene reloads; this file reads the run through `_run` and hands it, typed
-## `RunState`, to `GameSave` and to every reader it builds.
+## The run this boot plays, taken off the `GameState` autoload once, here: the autoload is where the
+## run lives, since it outlives the scene reloads, and this is where it is reached — besides the
+## events, the resistance and the city's posters, which still read it off the autoload. This file
+## reads the run through `_run` and hands it, typed `RunState`, to `GameSave` and to every reader
+## it builds.
+
 var _run: RunState = GameState
 ## The parts of the run's state this node reads and writes most, taken off the run once and held.
 var _spend: AttemptSpendState = _run.attempt_spend
