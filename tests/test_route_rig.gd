@@ -125,8 +125,8 @@ func _teardown(t) -> void:
 	_resistance.free()
 	_city.free()
 
-## A bare `RouteRig` with only `_city` wired — enough for every planning-geometry method, none of
-## which reads `_player`, `_baby`, `_resistance` or `_day`. `_cache_road_tiles()` is called by hand
+## A bare `RouteRig` with only `_city` and the run wired — enough for every planning-geometry method,
+## none of which reads `_player`, `_baby`, `_resistance` or `_day`. `_cache_road_tiles()` is called by hand
 ## since `setup()` (which normally calls it) also wants a player, a baby, a resistance director and
 ## a day controller this suite has no use for here.
 func _rig(t) -> RouteRig:
@@ -134,6 +134,7 @@ func _rig(t) -> RouteRig:
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	rig._city = _city
+	rig._run = GameState
 	rig._cache_road_tiles()
 	return rig
 
@@ -809,7 +810,9 @@ func _target_shape_rig(t, fixture: Dictionary) -> RouteRig:
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	rig._city = fixture["city"]
+	rig._run = GameState
 	rig._cache_road_tiles()
+
 	rig._resistance = fixture["resistance"]
 	return rig
 
@@ -1129,6 +1132,7 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	rig._city = _city
+	rig._run = GameState
 	rig._cache_road_tiles()
 	rig._resistance = _resistance
 	_stroller.global_position = _city.map.doorstep_world_position()

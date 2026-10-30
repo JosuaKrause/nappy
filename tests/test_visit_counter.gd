@@ -270,6 +270,7 @@ func _gamestate_snapshot() -> Dictionary:
 ## `_send_event` calls themselves are silent in this process (see the test above).
 func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	counter.configure(null, GameState)
 	counter._on_task_offered(5)
 	counter._on_task_completed(5)
 	t.check(not counter._open_tasks.has(5), "a completed step is no longer open")
@@ -287,6 +288,7 @@ func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 ## not indices chosen to make a parity come out right.
 func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
 	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	counter.configure(null, GameState)
 	counter._on_task_offered(1)
 	counter._on_task_offered(2)
 	counter._on_task_completed(1)
@@ -393,6 +395,7 @@ func _test_resumed_for_report_truth_table(t) -> void:
 ## `resumed = true`, because the save it found is this page's own.
 func _test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t) -> void:
 	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	counter.configure(null, GameState)
 	t.check(not counter._reported_run_begun, "a fresh instance has not reported anything yet")
 	counter._on_run_begun(1, true)
 	t.check(counter._reported_run_begun, "the first call marks the page as having reported")
@@ -410,6 +413,7 @@ func _test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t) -
 ## the queueing logic is testable here without a real page.
 func _test_pending_events_queue_until_present_and_flush_in_order(t) -> void:
 	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	counter.configure(null, GameState)
 	var seeded: Array[String] = ["nappy-run-fresh", "nappy-day-1-began"]
 	counter._pending = seeded
 	counter._flush_pending(false)
@@ -429,6 +433,7 @@ func _test_pending_events_queue_until_present_and_flush_in_order(t) -> void:
 ## before `_pending` is ever touched.
 func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
 	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	counter.configure(null, GameState)
 	counter._send_event("nappy-run-fresh")
 	t.check(counter._pending.is_empty(),
 		"off the web, an event is refused outright rather than queued forever unsent")
