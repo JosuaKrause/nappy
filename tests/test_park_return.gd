@@ -62,7 +62,7 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	t.check(GameState.header.day == ResistanceSteps.swing_day(), "booted at day %d (day %d)"
 			% [ResistanceSteps.swing_day(), GameState.header.day])
 	# A resumed run opens on the day's brief; leaving it is what puts her on the street.
-	if main._resume_gate_open:
+	if main._flow.mode == RunFlow.Mode.BRIEF:
 		main._on_summary_continued()
 	t.check(main._day.is_running() and not main._summary.is_showing(),
 			"seed %d: day %d is under way" % [seed_value, GameState.header.day])

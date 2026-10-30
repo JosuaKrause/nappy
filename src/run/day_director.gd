@@ -7,9 +7,9 @@ extends RefCounted
 ## building is a world with no city, no crowd and no resistance: `start_day()` builds an ordinary day
 ## and requires the city (whose events it plans), the resistance, the player, the baby and the day's
 ## clock; `finish_day()` ends any day, a section of the building included, and requires only the clock
-## and the run — it reads the events, the city, the player and the baby where there are some. The
-## developer readout, the HUD and the route rig are `null` where the game itself runs without them
-## (a headless boot, a run with no rig).
+## and the run — it reads the events, the city, the player and the baby where there are some. It
+## calls no observer: the developer readout, the HUD and the route rig hear the day from `RunFlow`,
+## which announces it around `start_day()`.
 ##
 ## `run` is the run's state and its calendar operations (the dawn photograph, `settled_this_act()`,
 ## `day_rng()`, a day's `finish_day()`), handed in by whoever builds the director rather than reached
@@ -17,7 +17,7 @@ extends RefCounted
 ## `RunState.new()`.
 ##
 ## It writes no save and shows no screen: `finish_day()` returns a `DayEnd` and `main` saves and
-## shows. The scene recipes' own day start stays in `main`.
+## shows. A scene recipe's day is started by `main` itself.
 
 ## The run, handed in.
 var run: RunState
@@ -28,10 +28,6 @@ var resistance: ResistanceDirector
 var player: Stroller
 var baby: Baby
 var day: DayController
-## Optional: the developer readout, the HUD (its clock's precision), and the route rig.
-var readout: DebugReadout = null
-var hud: CanvasLayer = null
-var route_rig: RouteRig = null
 ## The facts and the spend the run holds, taken off its registered parts.
 var facts: RunFacts
 var spend: AttemptSpendState
@@ -59,14 +55,10 @@ func use_the_world(the_city: City, the_events: EventManager, the_resistance: Res
 	baby = the_baby
 	day = the_day
 
-## The day about to be walked, handed to the day's clock and to the HUD's and the readout's.
+## The day about to be walked, handed to the day's clock.
 func use_the_day(the_spec: DaySpec) -> void:
 	spec = the_spec
 	day.spec = the_spec
-	if readout:
-		readout.use_the_day(the_spec)
-	if hud:
-		hud.set_clock_hundredths(the_spec.clock_hundredths)
 
 ## Builds and starts the day `the_spec` describes; writes nothing itself. Each caller decides what,
 ## if anything, the save should say about the day this just built.
@@ -106,11 +98,6 @@ func start_day(the_spec: DaySpec) -> void:
 	# Remember the first choice for the run. Today's physical fence disappears after its act,
 	# but that must not erase the history and allow tomorrow to choose another one.
 	facts.remember_fenced_park(city.map.fenced_park, city.map.fenced_park_act)
-	# The tree `city.start_day()` just grew is today's whole plan, so the picture only has to be
-	# rebuilt here — once a day — rather than read fresh every frame the way the debug overlays read
-	# the live geometry state. See `RouteLines.refresh()`.
-	if readout:
-		readout.refresh_routes(city.route_tree())
 	# The day is planned around the doorstep first, because `--spawn event` needs a plan to
 	# find an event in. The plan is the whole day and the *world* is only what is within
 	# reach, so where she actually starts decides what exists on the first frame —
@@ -156,8 +143,6 @@ func start_day(the_spec: DaySpec) -> void:
 	# Last, because the day's shape is only true once everything has been placed: the run log
 	# writes its plan lines, its dawn picture and her `start` line here.
 	EventBus.day_planned.emit(today)
-	if route_rig:
-		route_rig.start_day()
 
 ## Today's crowd, as dense as the spec says (`DaySpec.crowd_density`), built round `at`: a day's
 ## whole crowd, or nobody at all — a cleared crowd that is never started, the escape's *"no regular

@@ -16,10 +16,10 @@ extends Node2D
 ## else — which is also what lets a test build one without a running city's worth of nodes.
 ##
 ## **Redrawn only when the day's tree changes, never every frame.** There is no `_process()` here:
-## `main._start_day()` calls `refresh(_city.route_tree())` once `City.start_day()` has grown
-## today's tree, and that is the only time the picture can have changed — a route tree is fixed
-## for the whole day and nothing about it depends on where she is standing or what the crowd is
-## doing.
+## `DebugReadout.use_the_plan()`, which hears `RunFlow.day_planned`, calls
+## `refresh(_city.route_tree())` once `City.start_day()` has grown today's tree, and that is the
+## only time the picture can have changed — a route tree is fixed for the whole day and nothing
+## about it depends on where she is standing or what the crowd is doing.
 ##
 ## **What "the centre of a route's tile" means against a tree grown on two-tile cells.**
 ## `RouteTree.Branch.routes` is `Array[Array]` of `Vector2i` **cell** coordinates, not tile

@@ -135,11 +135,11 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	main.configure(RunConfig.parse(PackedStringArray(["--no-save"]), "", true))
 	t.add_child(main)
 	var frames := 0
-	while frames < BOOT_FRAMES and not (main._spec.section != DaySpec.Section.NONE
+	while frames < BOOT_FRAMES and not (main._flow.spec.section != DaySpec.Section.NONE
 			and main._summary.is_showing()):
 		await t.get_tree().process_frame
 		frames += 1
-	t.check(main._spec.section == DaySpec.Section.BUILDING and main._summary.is_showing(),
+	t.check(main._flow.spec.section == DaySpec.Section.BUILDING and main._summary.is_showing(),
 			"the escape opened on its brief")
 
 	main._on_summary_continued()
@@ -147,19 +147,19 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 			main._building_events], "the escape")
 	t.get_tree().paused = true
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
-	t.check(main._summary.is_showing() and not main._resume_gate_open,
+	t.check(main._summary.is_showing() and main._flow.mode != RunFlow.Mode.BRIEF,
 			"a lost section comes up on the day's outcome screen")
 	main._on_summary_continued()
-	t.check(main._summary.is_showing() and main._resume_gate_open,
+	t.check(main._summary.is_showing() and main._flow.mode == RunFlow.Mode.BRIEF,
 			"and its continue on the section's brief")
 	main._on_summary_continued()
 	t.get_tree().paused = true
 	main._interior.exit_requested.emit()
-	t.check(main._spec.section == DaySpec.Section.CITY and main._summary.is_showing(),
+	t.check(main._flow.spec.section == DaySpec.Section.CITY and main._summary.is_showing(),
 			"through the service door, the city opens on its brief")
 	main._on_summary_continued()
 	t.get_tree().paused = true
-	main._player.global_position = main._spec.exits[CityEdge.Kind.TUNNEL]
+	main._player.global_position = main._flow.spec.exits[CityEdge.Kind.TUNNEL]
 	main._day._process(0.0)
 
 	var lines := _lines_kept(Telemetry.current_log().lines)
