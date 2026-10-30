@@ -500,7 +500,7 @@ func _free_door_rig(rig: Dictionary) -> void:
 	(rig["manager"] as EventManager).free()
 
 ## Steps every live instance's own clock (the hold's clock, `EventHold`, only runs down inside
-## `EventInstance._process()`) alongside the manager's own trigger, the same pairing
+## `EventInstance.step()`) alongside the manager's own trigger, the same pairing
 ## `_test_the_chatting_mother_still_detains_once` below drives by hand.
 func _advance_chat(manager: EventManager, seconds: float) -> void:
 	for i in int(round(seconds / STEP)) + 5:
@@ -720,9 +720,9 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	var before := baby.excitement
 	manager.checkpoints.check_detentions()
 	t.check(hut.is_chatting(), "walking up to the hut starts the hold")
-	# The baby's own frame before the instances', so every frame the meter takes is a frame the
-	# hold was actually running: the clock runs out inside `EventInstance._process()`, and a baby
-	# stepped after it would spend its last frame outside a hold that had just ended.
+	# The baby's own tick before the instances', so every tick the meter takes is a tick the
+	# hold was actually running: the clock runs out inside `EventInstance.step()`, and a baby
+	# stepped after it would spend its last tick outside a hold that had just ended.
 	var guard := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
 	while hut.is_chatting() and guard > 0:
 		guard -= 1
@@ -881,16 +881,14 @@ func _test_a_corner_of_two_doors_is_one_toll(t) -> void:
 ## player: "when I reappear I briefly spawn at my old location before teleporting to the new
 ## location. I should directly spawn at the new location".)*
 ##
-## The two halves ran on two clocks: a hold's own seconds run down in `EventInstance._process()`, a
-## **drawn** frame, and the teleport is in `EventManager._physics_process()`. Un-hiding her where
-## the clock ran out therefore put her back on the screen at the place she went in for every frame
-## drawn before the next physics tick — at least one, and more the faster the machine draws.
+## A hold's own seconds run down in its event's step (`EventInstance.step()`), and moving her out is
+## the release's (`CheckpointController.release_finished_holds()`, from `check_detentions()`), later
+## on the same physics tick. The hold ending must not show her: shown where its clock ran out, she
+## would be back on the screen at the place she went in until the release moved her.
 ##
-## **So the rig drives the two clocks apart, which is the only way a test can see it.** Every other
-## rig in this suite steps `_process()` and `CheckpointController.check_detentions()` together
-## in one loop, where the fault is a frame wide and invisible; here the drawn frames run alone
-## until the hold is over, and what is asserted is that no drawn frame in that gap has her
-## visible anywhere.
+## **So the rig steps the hold alone until it is over**, without the release that follows it on the
+## game's tick, and asserts that nothing in that gap has her visible anywhere; then the release
+## alone moves her and shows her.
 func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
@@ -907,16 +905,16 @@ func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
 	manager.checkpoints.check_detentions()
 	t.check(hut.is_chatting() and not stroller.visible, "she goes in for the hold")
 
-	# Drawn frames only. The hold ends inside one of these and nothing here moves her.
-	var drawn := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
+	# The hold's steps only. The hold ends inside one of these and nothing here moves her.
+	var steps := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
 	var seen_visible_at_the_entry := false
-	for i in drawn:
+	for i in steps:
 		hut.step(STEP)
 		if stroller.visible and stroller.global_position.is_equal_approx(entry):
 			seen_visible_at_the_entry = true
-	t.check(not hut.is_chatting(), "the hold's own clock runs out on a drawn frame")
+	t.check(not hut.is_chatting(), "the hold's own clock runs out in its step")
 	t.check(not seen_visible_at_the_entry,
-			"and no drawn frame between that and the release has her back at the place she went in")
+			"and nothing between that and the release has her back at the place she went in")
 	t.check(not stroller.visible, "she is still inside as far as the screen is concerned")
 	t.check(stroller.global_position.is_equal_approx(entry),
 			"and nothing has moved her yet, which is what makes the frame above worth checking")

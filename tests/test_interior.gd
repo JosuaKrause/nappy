@@ -1235,9 +1235,9 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## the two flights gets through**. A runner gets through on every line, whether she was running all
 ## along or starts running the moment he does, with the keys she already holds. **The margins are
 ## thin:** on the tightest runner's line (walking until he runs, then running, turning plain left at
-## row 11's centre) he is drawn about 25px from her centre (24.6px, at 60, 120 and 150fps), inside his
-## 28px catch, and she clears it on the tick at 28.6px, by 0.6px; **she is caught if she starts running
-## 0.3s after he does.**
+## row 11's centre) how near he comes to her centre on the tick, the only place he moves and the
+## catch is checked, is pinned against his 28px catch (`_TIGHTEST_RUNNER_CLOSEST`); **she is caught if
+## she starts running 0.3s after he does.**
 func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 	for walk: Array in _SECOND_FLIGHT_TURNS:
 		for pace: String in ["walk", "run", "walk-run", "run-late"]:
@@ -1252,14 +1252,9 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 					"%s at a %s: %s (%s, %.0fpx from him at the closest)"
 					% [walk[3], pace, expected, met["outcome"], met["closest"]])
 			if walk[0] == 11 and pace == "walk-run":
-				# The tightest line: on a drawn frame he is inside his 28px catch, and she lives
-				# only because the catch is checked on the tick.
-				t.check(met["closest"] > 20.0 and met["closest"] < 28.0,
-						"%s at a %s: he is drawn inside the catch for a frame (%.1fpx)"
-						% [walk[3], pace, met["closest"]])
-				t.check(met["on_tick"] > 28.0 and met["on_tick"] < 29.5,
-						"%s at a %s: and she clears it on the tick by under 1.5px (%.1fpx)"
-						% [walk[3], pace, met["on_tick"]])
+				t.check(absf(met["closest"] - _TIGHTEST_RUNNER_CLOSEST) < 0.5,
+						"%s at a %s: he comes %.1fpx from her centre on the tick (%.1fpx pinned, %s)"
+						% [walk[3], pace, met["closest"], _TIGHTEST_RUNNER_CLOSEST, "the catch 28px"])
 			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
 					% [walk[3], pace, met["outcome"], met["closest"]])
 
@@ -1312,6 +1307,11 @@ func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts
 	t.check(seen_fractions.size() >= 3,
 			"and those starts really took different interpolation fractions (%d distinct tenths)"
 			% seen_fractions.size())
+
+## How near the masked man comes to her centre, on the tick, on the tightest runner's line (row 11,
+## walking until he runs, then running): the margin `_test_she_has_to_run_to_the_first_floor_door`
+## pins against his 28px catch, measured on the escape as built.
+const _TIGHTEST_RUNNER_CLOSEST := 26.4
 
 ## The lines onto the second flight, local to the grammar: the row of her turn, what she holds
 ## there, whether a walker is caught, and what to call it.
@@ -1376,7 +1376,7 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 	var badge_log := {"first": -1, "dropped": 0, "unseen": 0}
 	var running := pace == "run"
 	_hold_keys(["move_down"], running)
-	var met := {"ran": false, "outcome": "neither", "closest": INF, "on_tick": INF}
+	var met := {"ran": false, "outcome": "neither", "closest": INF}
 	var turned := false
 	var elapsed := 0.0
 	var ran_at := 0.0
@@ -1389,8 +1389,6 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 		events._physics_process(TICK)
 		# The catch is the tick's: where his step put him when the tick ran.
 		var caught := man.is_lethal_at(her)
-		if met["ran"]:
-			met["on_tick"] = minf(met["on_tick"], man.global_position.distance_to(her))
 		if met["ran"]:
 			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
 		if camera:
@@ -1412,8 +1410,6 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 		if pace == "run-late" and met["ran"] and not running and elapsed - ran_at >= 0.3:
 			running = true
 			_hold_keys(walk[1] if turned else ["move_down"], true)
-		if met["ran"]:
-			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
 		if caught:
 			met["outcome"] = "caught"
 			break
@@ -1525,11 +1521,10 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 				appeared.append(at)
 				first_step_age.append(-1.0)
 				warned_at.append(INF)
-			# Made on this tick, so it takes its first step on the next.
-			if not stood.has(id):
-				continue
-			var before: Vector2 = stood[id]
-			var was_leaving: bool = was_leaving_by_id[id]
+			# One his row's repeat made on this tick, ahead of the step, has taken his first step
+			# from the foot of his line.
+			var before: Vector2 = stood.get(id, instance.path[0])
+			var was_leaving: bool = was_leaving_by_id.get(id, false)
 			var which: int = known[id]
 			if warned_at[which] == INF and not instance.is_waiting():
 				warned_at[which] = instance.age

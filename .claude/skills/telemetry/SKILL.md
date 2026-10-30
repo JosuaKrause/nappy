@@ -86,8 +86,9 @@ func _process(_delta: float) -> void:
 ```
 
 A step that re-ran itself could not take back what the inner run emitted, which is why a car's
-frame is proposed and committed by its driving (`EventCarDriving`) rather than by a second run. A crowd agent's mover (`LaneMover`) keeps its body where it is and calls itself, through
-the sink it is handed, which sets `_timed` when it is assigned and is never timed without one:
+frame is proposed and committed by its driving (`EventCarDriving`) rather than by a second run. A
+crowd agent's mover (`LaneMover`) keeps its body where it is and calls itself, through the sink it
+is handed, which sets `_timed` when it is assigned and is never timed without one:
 
 ```gdscript
 var frame_timing: CrowdTiming = null:

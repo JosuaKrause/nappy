@@ -42,8 +42,9 @@ extends Node
 ##   in the catalogue runs through, so nothing else in the game needs a query of its own.
 ## - **`CheckpointController.door_holding_her_at()`** — only a `redetains` row (the two
 ##   checkpoint ones) ever needs this on top of `is_detained()`, because a checkpoint's own hold
-##   is a clock on the instance (`EventInstance.is_chatting()`, ticked in a drawn `_process()`)
-##   and the input lock is a separate clock on `Stroller` (ticked in `_physics_process()`); see
+##   is a clock on the instance (`EventInstance.is_chatting()`, stepped on the events' physics
+##   tick) and the input lock is a separate clock on `Stroller` (ticked in its own
+##   `_physics_process()`); see
 ##   that function's own note on why a hold can still be running a frame after the input lock
 ##   has already cleared. Read at her own position, which is what the function already answers
 ##   for the excitement meter.

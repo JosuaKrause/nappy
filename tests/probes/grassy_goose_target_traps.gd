@@ -28,7 +28,7 @@ extends RefCounted
 ## (`CheckpointController.where_she_crossed()` over each door body).
 ##
 ## **Walking away.** From each start a `robber_giving_chase` is walked against her for his whole
-## notice and chase (`EventInstance._process()` at 60 frames a second): once with her standing still,
+## notice and chase (`EventInstance.step()` at 60 steps a second): once with her standing still,
 ## and once walking at `Tuning.WALK_SPEED` in each of the four street directions, sliding along
 ## walls the way a body does. "A walk escapes" counts the cases where at least one of the four walks
 ## outlasts him — the trap a player beats without running. Each such case is printed with the

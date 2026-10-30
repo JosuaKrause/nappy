@@ -1579,9 +1579,10 @@ func _tick_the_events(delta: float) -> void:
 	_check_hard_fails()
 
 ## **Every live event's step, once a physics tick, in the order they live in `_instances`**
-## (`EventInstance.step()`). Over a copy, so an event made during the step (a successor, an
-## officer, a summoned row) takes its first step on the next tick; one a hand holds
-## (`EventInstance.held_by_hand`) is left as it stands.
+## (`EventInstance.step()`). What the tick made before it (a successor, a repeat, a streamed or
+## summoned row) takes its first step on the tick it is made; what is made during or after it (an
+## officer, a door's guard, anything an event's own step sets off) takes its first on the next, since
+## the step runs over a copy. One a hand holds (`EventInstance.held_by_hand`) is left as it stands.
 func _step_them(delta: float) -> void:
 	for instance in _instances.duplicate():
 		if is_instance_valid(instance) and not instance.held_by_hand:

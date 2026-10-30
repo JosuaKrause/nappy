@@ -11,8 +11,8 @@ the lifecycle of its drawing nodes; how it is drawn is its look's (`src/events/v
 row by `EventLooks.for_row()`, reading its public state), and every picture is named in
 `EventPictures` (minty-quail-19). The manager steps its instances on the physics tick in a fixed
 order, and each is drawn interpolated between ticks by its look, which reads on its own drawn frame
-what the last tick left (minty-quail-21). The four ways a charge starts (a warning's clock running out, a
-lunge at the stand-off, the masked man's run distance, a start at once) are branches inside
+what the last tick left (minty-quail-21). The four ways a charge starts (a warning's clock running
+out, a lunge at the stand-off, the masked man's run distance, a start at once) are branches inside
 `EventPursuit` and `EventNoticeRun` rather than parts a row is composed of.
 
 **What is still keyed on a row's flags, picture or id** (every `def.look` comparison under `src/`
