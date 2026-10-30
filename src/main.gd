@@ -249,9 +249,10 @@ func _ready() -> void:
 	# The developer's furniture, on whichever day the boot opens — see `DebugReadout`. It starts in
 	# the shape it should have on this build rather than trusting the scene file's own default.
 	_add_the_readout()
-	# Read before `try_resume()` touches it, so `escape_resumed_from_disk` below can tell a save
-	# that already carried a section on the autoload (a handover reload) from one that only got
-	# there because the line just after this read it off the file.
+	# Read before `try_resume()` touches it, so the check below can tell a save that already
+	# carried a section on the autoload (a handover reload, `RunFlow.Opening.ESCAPE_HANDED_OVER`)
+	# from one that only got there because the line just after this read it off the file
+	# (`RunFlow.Opening.ESCAPE_RESUMED`).
 	var escape_section_before_resume := _facts.escape_section
 	if _escape_scene_requested:
 		_start_the_flags_run()
@@ -621,10 +622,10 @@ func _build_the_screens() -> void:
 	_title.quit_requested.connect(_quit)
 
 ## Whether `escape_section` arrived from a file `GameSave.try_resume()` just read, rather than
-## surviving on the autoload from a handover reload earlier in this same process — see `_ready()`'s
-## `escape_resumed_from_disk` for why the two need telling apart at all. Pulled out, the
-## two live reads of `GameState.facts.escape_section` taken out of it, so a test can drive every
-## combination directly rather than only through a real save on disk.
+## surviving on the autoload from a handover reload earlier in this same process — see where
+## `_ready()` sets `RunFlow.Opening.ESCAPE_RESUMED` for why the two need telling apart at all.
+## Pulled out, the two live reads of `GameState.facts.escape_section` taken out of it, so a test
+## can drive every combination directly rather than only through a real save on disk.
 static func _escape_section_came_from_the_file(before_resume: int, after_resume: int) -> bool:
 	return before_resume == DaySpec.Section.NONE and after_resume != DaySpec.Section.NONE
 
@@ -1824,8 +1825,8 @@ func _finish_the_section(result: GameEnums.DayResult, elapsed_seconds: float) ->
 			spec.title)
 
 ## The continue of every screen `_summary` shows, carried out as the flow's `RunFlow.continued()`
-## says: the screen up decides it, not a flag read here. A continue with no screen up — the second
-## of two that reached one screen, as a tap and a key inside the tap's two frames do — leads nowhere.
+## says: the screen up decides it, not a flag read here. A tap and a key that reach one screen send
+## one continue between them (`DaySummary._acknowledge_and_continue()`).
 func _on_summary_continued() -> void:
 	match _flow.continued():
 		RunFlow.Step.RELOAD_SCENE:
@@ -1931,7 +1932,8 @@ func _restart_run() -> void:
 ## (`_finish_the_section()`). A reload frees this node and the symbol under it, and a change in
 ## the save state may still be waiting for the browser — the restart's deletion, the lost day's
 ## write a checkpoint reload follows, or day 14's own save at the hand-over — so the symbol is
-## carried over first (`_carry_the_save_symbol_over()`) and the next boot adopts it. One place, so a reload added later cannot forget the symbol.
+## carried over first (`_carry_the_save_symbol_over()`) and the next boot adopts it. One place, so
+## a reload added later cannot forget the symbol, nor leave the flow in any mode but RELOADING.
 ##
 ## The tree is unpaused first: `reload_current_scene` builds the new scene into the same tree, and
 ## a paused one would open the next screen over a game that could never start. Read through
@@ -1939,6 +1941,7 @@ func _restart_run() -> void:
 ## with a `main` that is not parented, and the reload itself goes to `_reload_override` when a test
 ## has set one: a real reload would throw away the test runner's own scene.
 func _reload_the_scene() -> void:
+	_flow.reload()
 	_carry_the_save_symbol_over()
 	var tree := Engine.get_main_loop() as SceneTree
 	tree.paused = false

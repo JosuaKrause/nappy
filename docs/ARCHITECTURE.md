@@ -596,9 +596,11 @@ over to the escape, a lost section, the day that ended the run, the ending, the 
 and `continued()` answers the one continue every summary screen sends with the step it leads to
 (engage the day, start the next attempt, carry the run to its checkpoint, retry the section, show
 the ending, go back to the title, reload the scene) and the mode that leaves. A continue with no
-screen up leads nowhere, so a tap and a key reaching one screen start one day. `main` tells it each
-time a screen comes up or a day ends (`DayDirector`'s `DayEnd` picks the screen), carries out its
-steps, and records how the boot came to the run (`Opening`: fresh, resumed, carried from a
+screen up leads nowhere. `DaySummary` sends a tap's continue two frames after the tap, to show the
+continue button pressed, and drops it once the screen tapped has been dismissed or replaced since,
+so a tap and a key reaching one screen are one continue, whichever screen it is. `main` tells it
+each time a screen comes up or a day ends (`DayDirector`'s `DayEnd` picks the screen), carries out
+its steps, and records how the boot came to the run (`Opening`: fresh, resumed, carried from a
 checkpoint, the escape handed over, resumed or from the flag). **A scene recipe is a configuration
 of it** (`authored`): every continue plays the authored scene again, a lost escape section is the
 scene runtime's to retry, and a won last day hands over to nothing. It announces each day or

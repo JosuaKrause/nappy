@@ -19,7 +19,8 @@
   resistance tally and the run-standing line are each formatted in two places.
 
 **Build:** the run handed to the save and to the remaining readers rather than read from `GameState`
-(PR 4b); a pure `SummaryModel` the screen only renders, and `continued(mode)` (PR 4c).
+(PR 4b); a pure `SummaryModel` the screen only renders, with the screen's epilogue flag gone and
+`test_finale` reading the flow's EPILOGUE instead, and `continued(mode)` (PR 4c).
 
 **Scene recipes become configurations of `RunFlow`** (PR 4c). The dev flags are one `RunConfig` read
 at boot (`src/run_config.gd`), and these `_recipe` branches still run outside the flow: loading the

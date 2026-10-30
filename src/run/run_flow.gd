@@ -167,8 +167,15 @@ func section_lost(run_over: bool) -> Step:
 func escape_won() -> void:
 	mode = Mode.EPILOGUE
 
+## The scene is being reloaded, whichever way the run came to it: the held restart, a step that
+## reloads, or an authored scene that failed its own retry.
+func reload() -> void:
+	mode = Mode.RELOADING
+
 ## The continue of whatever screen is up: the step it leads to, and the mode that step leaves the
-## run in. A continue with no screen up — the second of two that reached one screen — leads nowhere.
+## run in. A continue with no screen up leads nowhere. `DaySummary` sends none (a tap's continue,
+## sent two frames late, is dropped once its screen is gone), so this is the flow's own rule, not
+## the guard against a tap and a key reaching one screen.
 func continued() -> Step:
 	var step := _step_for(mode)
 	match step:

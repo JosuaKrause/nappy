@@ -2190,9 +2190,10 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	AtlasLibrary.close_loading_window()
 	_free_the_escape(t, main)
 
-## The handover reload from a won day 14 reaches the boot with `escape_resumed_from_disk` false —
-## true only when `GameState.facts.escape_section` was `NONE` before `try_resume()` ran, which a
-## handover's own value already isn't, since it was written to the autoload before the reload — so
+## The handover reload from a won day 14 reaches the boot as `RunFlow.Opening.ESCAPE_HANDED_OVER`
+## rather than `ESCAPE_RESUMED` — the latter only when `GameState.facts.escape_section` was `NONE`
+## before `try_resume()` ran, which a handover's own value already isn't, since it was written to
+## the autoload before the reload — so
 ## it opens straight on the building's own brief, with no title in front of it and the section's
 ## clock standing still behind the brief. Booted for real.
 func _test_a_handover_does_not_open_on_the_title(t) -> void:
