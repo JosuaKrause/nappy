@@ -35,7 +35,7 @@ src/
 	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens
 	                                                       (autoload: VisitCounter)
   run/                  the run's state, a domain model — one registered list of sub-states —
-                        and the run flow that starts and ends its days (`day_director.gd`)
+                        and the run flow: its screens (`run_flow.gd`) and its days (`day_director.gd`)
 	run_sub_state.gd      the interface of a part: reset, photograph, give_back, to_data, restore
 	run_state_registry.gd the one list the dawn, a lost day, the snapshot and the save walk
 	run_header.gd         seed, presentation, day, nerves, ending, play time
@@ -46,6 +46,8 @@ src/
 	day_director.gd       starts a day (the ordered construction of its world) and ends it, handed
 	                      the world and the run; `main` and the tests both call it
 	day_end.gd            what a day's end settled: its cause, the calendar, the hand-over
+	run_flow.gd           which screen is up, what its continue leads to, and the day being walked,
+	                      announced to the readout, the HUD and the route rig
   player/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
@@ -589,6 +591,27 @@ an argument. `tests/test_run_state.gd` replays a run against a
 save written before the parts existed (the fixture `tests/fixtures/run_state_saved_by_main.json`, dumped
 on commit e1cc7c7f) and checks every part is on the list.
 
+### `RunFlow`
+Not an autoload: a `RefCounted` (`src/run/run_flow.gd`) that `main` builds once per boot, the run's
+way through its screens. Its `mode` is the screen in front of the walk — the title, a day brief, the
+walk itself, an ordinary day's end, a lost day that spent a normal run's last nerve, day 14 handing
+over to the escape, a lost section, the day that ended the run, the ending, the escape's epilogue —
+and `continued()` answers the one continue every summary screen sends with the step it leads to
+(engage the day, start the next attempt, carry the run to its checkpoint, retry the section, show
+the ending, go back to the title, reload the scene) and the mode that leaves. A continue with no
+screen up leads nowhere. `DaySummary` sends a tap's continue two frames after the tap, to show the
+continue button pressed, and drops it once the screen tapped has been dismissed or replaced since,
+so a tap and a key reaching one screen are one continue, whichever screen it is. `main` tells it
+each time a screen comes up or a day ends (`DayDirector`'s `DayEnd` picks the screen), carries out
+its steps, and records how the boot came to the run (`Opening`: fresh, resumed, carried from a
+checkpoint, the escape handed over, resumed or from the flag). **A scene recipe is a configuration
+of it** (`authored`): every continue plays the authored scene again, a lost escape section is the
+scene runtime's to retry, and a won last day hands over to nothing. It announces each day or
+section to the observers that draw it — `day_started(spec)` before anything is built and
+`day_planned(spec)` once it is placed — and `main` connects the developer readout (the day's line
+and its routes), the HUD (whether its clock reads to the hundredth) and the route rig (its targets
+for the day) to them; an authored scene's day is never planned.
+
 ### `DayDirector`
 Not an autoload: a `RefCounted` that `main` builds for the world as it stands when a day starts or
 ends, and a test builds over whatever world it has. `start_day(spec)` is a day's construction in
@@ -599,10 +622,10 @@ charges still running closed, `day_ended`, and for an ordinary day the calendar'
 `DayEnd`; the save and the summary screen are `main`'s. `start_day()` requires the city (whose
 events it plans), the resistance, the player, the baby and the clock; `finish_day()` requires only
 the clock and the run, since the escape's building has no city, crowd or resistance, and reads the
-events, city, player and baby where there are some. The developer readout, the HUD and the route
-rig are `null` where the game runs without them. The director calls those three inline, as `main`
-did; turning them into listeners is `main-and-state.md`'s (PR 4). It is handed the run, a `RunState` (the class of the `GameState`
-autoload), rather than reading the autoload by name. A scene recipe's day start stays in `main`.
+events, city, player and baby where there are some. It calls no observer: the readout, the HUD and
+the route rig hear the day from `RunFlow`. It is handed the run, a `RunState` (the class of the
+`GameState` autoload), rather than reading the autoload by name. A scene recipe's day start stays in
+`main`.
 
 ### `VisitCounter`
 Sends anonymous GoatCounter events for how far a run gets, and what a day actually ended on and

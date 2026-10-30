@@ -16,7 +16,8 @@ extends Node2D
 ## and layer from `main`'s scene, the run (its seed and calendar day), the session the snapshots go
 ## to and what screen is up (`setup()`); her, the baby and the day's clock (`watch()`); the world
 ## being walked (`show_the_world()`, again when the escape walks out of the building); the day's spec
-## (`use_the_day()`); the frame record (`watch_frames()`). It asks nothing of `main`.
+## and its plan (`use_the_day()` and `use_the_plan()`, which `main` connects to `RunFlow`'s
+## `day_started` and `day_planned`); the frame record (`watch_frames()`). It asks nothing of `main`.
 ##
 ## A `Node2D` at the origin, so the overlays under it draw in world space exactly as they would
 ## under `main`, on the debug layer (`DrawLayer.Layer.DEBUG`). It runs through a pause, inheriting
@@ -154,7 +155,7 @@ func show_the_world(events: EventManager, crowd: Crowd, world: Node2D, map: Worl
 
 ## The day's planned routes over `map`, drawn as purple polylines. A sibling of the overlays rather
 ## than a fourth case on them: those query the live geometry every frame, and this draws a fixed
-## plan that changes once a day (`refresh_routes()`).
+## plan that changes once a day (`use_the_plan()`).
 func draw_routes(map: CityMap) -> void:
 	if not _gate():
 		return
@@ -166,10 +167,11 @@ func draw_routes(map: CityMap) -> void:
 	add_child(_route_lines)
 	_route_lines.process_mode = Node.PROCESS_MODE_PAUSABLE
 
-## Today's routes, once the day's tree is grown.
-func refresh_routes(tree: RouteTree) -> void:
-	if _route_lines:
-		_route_lines.refresh(tree)
+## The day `spec` has been planned: its routes are the tree the city grew for it. A day that closes
+## no streets — the escape's sections — grows none, and its lines stay as they are.
+func use_the_plan(spec: DaySpec) -> void:
+	if _route_lines and _city and spec.closes_streets:
+		_route_lines.refresh(_city.route_tree())
 
 ## The day being walked: its number and its words name the readout's day line.
 func use_the_day(spec: DaySpec) -> void:

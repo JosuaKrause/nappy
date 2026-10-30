@@ -1254,7 +1254,7 @@ build has nothing in `project.godot` to reach:
   to calm area, over the centres of the two-tile reachability cells the tree actually grew on
   (`ReachabilityGrid`, docs/DECISIONS.md M69) rather than individual tiles — the tree keeps no
   record of which tile of a multi-tile cell a route crossed. Redrawn once at the start of a day
-  (`RouteLines.refresh()`, called from `main._start_day()`), never per frame, because the plan it
+  (`RouteLines.refresh()`, once `RunFlow` announces the day planned), never per frame, because the plan it
   draws does not change until the next one is grown. Where branches share a trunk the lines
   overlap, which is the picture rather than a defect in it — see `RouteTree`'s own class doc on
   what sharing is for. The same purple `TelemetryMap` already draws the day's corridor in on the

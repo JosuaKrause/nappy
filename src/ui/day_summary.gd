@@ -115,7 +115,7 @@ func _refresh_buttons() -> void:
 ## `lost_note` is `Texts.RESUMED_DAY_LOST` when the load itself spent a nerve, or `""` for a
 ## save that cost nothing, in which case this is exactly what a fresh day 1 skips by going
 ## straight from the title into `main._engage_the_day()` instead. Continuing from here reaches
-## that same function, through `main._on_summary_continued()`'s own `_resume_gate_open` branch —
+## that same function, through `main._on_summary_continued()` on a brief (`RunFlow.Mode.BRIEF`) —
 ## the moment the day actually starts, and the moment the save says so.
 ##
 ## **`title` is a section of the escape's own words** — *"Escape the building"* or *"Escape the
@@ -327,9 +327,11 @@ func _present() -> void:
 	_continue_button.set_hovered(false)
 	_restart_button.set_hovered(false)
 	_continuing = false
+	_screen_changes += 1
 	get_tree().paused = true
 
 func dismiss() -> void:
+	_screen_changes += 1
 	_root.hide()
 	get_tree().paused = false
 	_restart_button.cancel_hold()
@@ -412,6 +414,10 @@ const _MOUSE_HOLD_INDEX := -2
 ## as a fresh press. Without this, a fumbled double-tap starts the day twice.
 var _continuing := false
 
+## How many times a screen has been raised or dismissed: what `_acknowledge_and_continue()` compares
+## across its two frames to tell whether the screen it acknowledged is still the one up.
+var _screen_changes := 0
+
 ## Acknowledges a touch before the day it starts costs anything to look at. *(Playtest 27 finding
 ## 3: a press was not acknowledged, and the wait after it was long.)* `main._on_summary_continued()`
 ## runs `_start_day()` synchronously in response to `continued` — measured at 610-900ms — and
@@ -443,13 +449,23 @@ var _continuing := false
 ## flash, and `space` needs no frame held open for it — the keyboard branch below stays exactly as
 ## synchronous as it always was, since adding a wait with nothing new to show for it is latency
 ## this path does not need.
+##
+## **A tap continues the screen it was made on, or nothing.** A key inside the two frames
+## continues at once, and that continue dismisses this screen or raises the next one — the ending
+## after the run over, the retry's brief after a lost section — so a tap's continue emitted after
+## it would continue a screen nobody has read. So the emit is dropped once any screen has been
+## raised or dismissed since the tap, whatever did it, and a tap and a key reaching one screen are
+## one continue.
 func _acknowledge_and_continue() -> void:
 	if _continuing:
 		return
 	_continuing = true
+	var acknowledged := _screen_changes
 	_continue_button.force_pressed_look()
 	await get_tree().process_frame
 	await get_tree().process_frame
+	if _screen_changes != acknowledged:
+		return
 	_continue_button.clear_forced_press()
 	_continuing = false
 	continued.emit()

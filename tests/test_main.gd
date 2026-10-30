@@ -467,7 +467,7 @@ func _test_on_title_start_sets_the_controls_mode(t) -> void:
 ## Called by `_test_on_title_start_sets_the_controls_mode` right after a joystick-right title press.
 func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 	var escape: Node2D = MAIN_SCRIPT.new()
-	escape._escape_from_a_run = true
+	escape._flow.opening = RunFlow.Opening.ESCAPE_HANDED_OVER
 	escape._add_touch_controls()
 	t.check(escape._touch_controls.controls_mode() == ControlsMode.Mode.JOYSTICK
 			and escape._touch_controls.run_button_center() == TouchControls.FOCUS_LEFT,
@@ -747,7 +747,7 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	main._baby = baby
 	main._day = day
 	main._hud = hud
-	main._in_the_title = false
+	main._flow.mode = RunFlow.Mode.WALKING
 
 	const DELTA := 0.1
 
@@ -769,15 +769,15 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 			"the day summary (phase OVER, tree still paused) does not advance it either")
 
 	# The title screen: unpaused, so the phase/pause check alone could not explain a stopped
-	# clock here — `_in_the_title`'s own early return in `_process()` is what has to.
+	# clock here — the title's own early return in `_process()` is what has to.
 	day.phase = GameEnums.DayPhase.WALKING
 	t.get_tree().paused = false
-	main._in_the_title = true
+	main._flow.mode = RunFlow.Mode.TITLE
 	main._process(DELTA)
 	t.check(is_equal_approx(GameState.header.play_seconds, DELTA),
 			"the title screen does not advance it, even with the tree unpaused behind it")
 
-	main._in_the_title = false
+	main._flow.mode = RunFlow.Mode.WALKING
 	main._process(DELTA)
 	t.check(is_equal_approx(GameState.header.play_seconds, DELTA * 2),
 			"and a walking frame afterwards resumes rather than having latched off")
@@ -1196,7 +1196,8 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	t.check(GameState.facts.escape_section == DaySpec.Section.BUILDING,
 			"it puts the run in the building, which is where the escape starts")
 	t.check(GameState.header.day == Tuning.RUN_LENGTH_DAYS, "and leaves the calendar alone")
-	t.check(not main._run_over, "so nothing downstream thinks the run is over")
+	t.check(main._flow.mode == RunFlow.Mode.INTO_ESCAPE,
+			"so its continue reloads into the escape rather than ending the run")
 	t.check(GameState.header.nerves == 4,
 			"day 14's win still gives a nerve back, and exactly once, through the direct call")
 

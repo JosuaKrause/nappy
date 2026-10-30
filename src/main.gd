@@ -58,15 +58,16 @@ var config: RunConfig
 ## `--start-escape`, kept in a member so a test can set it directly and check the release shape.
 var _escape_scene_requested := false
 
-## Whether this boot reached the escape as **a run's own ending** rather than through the flag —
-## a won day 14 with every task complete handing over, or a game closed inside a section and opened
-## again. Set in `_ready()` off `GameState.facts.escape_section`, which is the run's own record of it.
+## The run's way through its screens — which screen is up, what its continue leads to, how this
+## boot came to the run, and the day being walked — see `RunFlow`. Its `authored` configuration is
+## set in `_ready()` when a scene recipe is loaded.
 ##
-## What it changes: the run is already there, so no `GameState.start_run()`; the save is live, so
-## the symbol that announces a write is built; and getting out of the city settles the run
-## (`GameState.finish_day()`) — the flag's run is a day-1 run that only jumped here, so its own way
-## out settles nothing.
-var _escape_from_a_run := false
+## Whether this boot reached the escape as **a run's own ending** (`RunFlow.escape_from_a_run()`)
+## rather than through the flag changes three things: the run is already there, so no
+## `GameState.start_run()`; the save is live, so the symbol that announces a write is built; and
+## getting out of the city settles the run (`GameState.finish_day()`) — the flag's run is a day-1
+## run that only jumped here, so its own way out settles nothing.
+var _flow := RunFlow.new()
 
 ## `--no-focus-pause`, kept in a member so a test can set it directly and check the release shape.
 var _no_focus_pause := false
@@ -90,10 +91,6 @@ var _facts: RunFacts = GameState.facts
 ## building stays on its own map with nobody on it. On an ordinary run `_interior` is null and
 ## `_city` is the only world there is.
 var _interior: InteriorScene
-## The day being walked: one of the fourteen, or one of the escape's two sections — see `DaySpec`.
-## Handed to `_day` as each one starts, and what everything here that differs between a day and a
-## section reads, rather than a global "are we in the escape". An ordinary day until one starts.
-var _spec := DaySpec.new()
 ## The events inside the building — the fire, the masked man, the mouse, the steam and the
 ## explosions outside — run by the day's own `EventManager` on the building's map, from the
 ## building's own placements (`BuildingPlan`).
@@ -159,15 +156,6 @@ var _route_rig: RouteRig
 ## Dev spawn and meter overrides apply to the opening day only; every later day starts on
 ## the doorstep with a fresh baby, like the game intends.
 var _first_day := true
-var _run_over := false
-var _ending_shown := false
-## Whether the title screen is up, with the city running behind it and nobody in it.
-var _in_the_title := false
-
-## The same, asked: what the frame trace and the frame record are handed, so they stop sampling
-## behind the title without reading this node's fields.
-func in_the_title() -> bool:
-	return _in_the_title
 ## `GameSave.try_resume()`'s own return: `{}` on a fresh run, or `{"day_under_way": bool}` once
 ## `GameState` already carries a resumed run's fields — set once in `_ready()` and read by
 ## `_on_title_start()`, which is the only place the title's own dismissal is not simply "start
@@ -175,7 +163,7 @@ func in_the_title() -> bool:
 ## spent a hard run's last nerve, the ending. (A normal run's last nerve spent by the load opens the
 ## brief too, on its checkpoint's day.) Empty for every dev-flag or headless boot, since
 ## `GameSave.uses_save()` already refuses all of them — see that function's own doc — and for a
-## boot that carries a run on from a checkpoint (`_carried_from_a_checkpoint`).
+## boot that carries a run on from a checkpoint (`RunFlow.Opening.CARRIED_FROM_CHECKPOINT`).
 var _resume := {}
 
 ## Set by `_carry_the_run_into_the_next_boot()` just before it reloads the scene, and read and
@@ -183,25 +171,9 @@ var _resume := {}
 ## unloads its script — the same reason `TitleScreen._restarted_at_msec` is one.
 static var _carry_the_run_over := false
 
-## Whether this boot carries a normal run on from its checkpoint, rather than starting or resuming
-## one: `GameState` already holds the run, back at the checkpoint's dawn, and this boot opens
-## straight on that day, the way the continue that asked for it would have.
-var _carried_from_a_checkpoint := false
-
-## Whether the loss `_on_day_finished()` just showed spent a normal run's last nerve, so the
-## summary's continue reloads into the checkpoint's day rather than starting it on this world.
-var _went_back := false
-## Whether a day brief is the screen currently up, in front of a day already built — a resumed
-## run's, opened by `_on_title_start()`, or the brief an escape section opens on — so
-## `_on_summary_continued()` knows a "continue" from `_summary` means *engage the day just built*
-## rather than *start the next one*: the two are the same signal (`DaySummary.continued`) on two
-## different screens this class draws with it, and this is the one member that tells them apart.
-## Cleared the instant that continue is read.
-var _resume_gate_open := false
-
 ## Whether opening the save spent a normal run's last nerve and sent it back to its checkpoint —
 ## set once in `_ready()`, before the charge, and read by `_show_the_resume_gate()` for the line the
-## day brief carries. A hard run's last nerve is `_run_over` instead.
+## day brief carries. A hard run's last nerve ends the run instead (`RunHeader.ending`).
 var _resume_went_back := false
 
 ## Read once, in `configure()` — a run's touch hardware does not change, and `--touch` is the run's
@@ -239,6 +211,7 @@ func _ready() -> void:
 		_recipe = SceneRecipeRuntime.new()
 		_recipe.configure(result, config)
 		add_child(_recipe)
+		_flow.authored = true
 	# Before anything the observers watch can happen: the run log's header, the save's gate and
 	# what the page counts all read this boot's configuration rather than the command line.
 	Telemetry.configure(config)
@@ -276,9 +249,10 @@ func _ready() -> void:
 	# The developer's furniture, on whichever day the boot opens — see `DebugReadout`. It starts in
 	# the shape it should have on this build rather than trusting the scene file's own default.
 	_add_the_readout()
-	# Read before `try_resume()` touches it, so `escape_resumed_from_disk` below can tell a save
-	# that already carried a section on the autoload (a handover reload) from one that only got
-	# there because the line just after this read it off the file.
+	# Read before `try_resume()` touches it, so the check below can tell a save that already
+	# carried a section on the autoload (a handover reload, `RunFlow.Opening.ESCAPE_HANDED_OVER`)
+	# from one that only got there because the line just after this read it off the file
+	# (`RunFlow.Opening.ESCAPE_RESUMED`).
 	var escape_section_before_resume := _facts.escape_section
 	if _escape_scene_requested:
 		_start_the_flags_run()
@@ -292,14 +266,16 @@ func _ready() -> void:
 	# since a handover already wrote it to the autoload — which a scene reload does not clear —
 	# before this boot's own `_ready()` ever ran. A resumed escape opens on the title first, the
 	# way a resumed day does; a handover opens straight on the building's brief.
-	var escape_resumed_from_disk := _escape_from_a_run and _escape_section_came_from_the_file(
-			escape_section_before_resume, _facts.escape_section)
+	if _flow.escape_from_a_run() and _escape_section_came_from_the_file(
+			escape_section_before_resume, _facts.escape_section):
+		_flow.opening = RunFlow.Opening.ESCAPE_RESUMED
 	var first := _the_first_day()
 	# After the run seed is settled and before anything is generated, so the log opens on the
 	# seed it is a trace of. A run carried on from a checkpoint, or handed over to the escape, keeps
 	# writing the log it already has — see `RunSession.open()`.
 	_session.open(GameState.header.run_seed, _somebody_is_playing(),
-			_carried_from_a_checkpoint or first.section != DaySpec.Section.NONE)
+			_flow.opening == RunFlow.Opening.CARRIED_FROM_CHECKPOINT
+					or first.section != DaySpec.Section.NONE)
 	# Before the city, before the player, before the title: every page a day can draw is on disk
 	# already and this is the last moment nobody is watching a frame. After the log is open, so
 	# the run log carries a line per page with the moment it loaded in — see `AtlasLibrary`.
@@ -318,21 +294,20 @@ func _ready() -> void:
 	# path an ordinary lost day takes — one nerve, the resistance given back, the same day again,
 	# and the last nerve doing exactly what it does there: a hard run ends, a normal one goes back
 	# to its checkpoint. Applied before anything downstream (the HUD, the city's own act) ever reads
-	# a nerve count or a resistance state that has not been charged yet. `_run_over` mirrors
-	# `_on_day_finished()`'s own variable, so the tail of this function shows the same ending screen
-	# a hard run that ends there does; `_on_title_start()` is what actually shows either screen,
-	# once the title itself has been dismissed. An escape section is never saved as under way
+	# a nerve count or a resistance state that has not been charged yet. A hard run's last nerve
+	# ends the run here (`RunHeader.ending`), and `_on_title_start()` shows that ending, or the
+	# brief, once the title itself has been dismissed. An escape section is never saved as under way
 	# (`DaySpec.saved_as_under_way`), so a resumed escape is never charged here.
 	#
 	# **The symbol exists before this charge**, because the charge can end the run and the run's
 	# end deletes the save, a change the symbol shows (`GameSave.clear()` announces it on
 	# `EventBus`, which only an indicator already built hears). The flag's escape touches the save
 	# not at all, so it gets none.
-	if first.section == DaySpec.Section.NONE or _escape_from_a_run:
+	if first.section == DaySpec.Section.NONE or _flow.escape_from_a_run():
 		_raise_save_indicator()
 	if _resume.get("day_under_way", false):
 		_resume_went_back = GameState.a_loss_goes_back_to_the_checkpoint()
-		_run_over = not GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+		GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 	# **One boot, and the first day decides its world.** A day is walked in the city, built here
 	# around her doorstep; the escape's sections build their own worlds when each begins
 	# (`_start_section()`), after the section is announced, so whatever the building or the city
@@ -401,23 +376,19 @@ func _ready() -> void:
 		var trace := FrameTrace.new()
 		trace.name = "FrameTrace"
 		add_child(trace)
-		trace.setup(in_the_title, _readout.readout_on, _readout.graph_on, _city, _player, _day,
+		trace.setup(_flow.in_the_title, _readout.readout_on, _readout.graph_on, _city, _player, _day,
 				Array(config.active_args))
 
 	if walks_a_day and config.frame_record_requested:
 		_frame_recorder = FrameRecorder.new()
 		add_child(_frame_recorder)
-		_frame_recorder.setup(in_the_title, _city, _player, _day)
+		_frame_recorder.setup(_flow.in_the_title, _city, _player, _day)
 		_readout.watch_frames(_frame_recorder)
 
-	# Built before `_start_day()`, which calls `_route_rig.start_day()` once the day it is meant
-	# to walk actually exists — see `src/dev/route_rig.gd`.
+	# Built before `_start_day()`, whose `day_planned` starts it once the day it is meant to walk
+	# actually exists — see `src/dev/route_rig.gd`.
 	if walks_a_day and not config.route_targets.is_empty():
-		_route_rig = RouteRig.new()
-		_route_rig.name = "RouteRig"
-		add_child(_route_rig)
-		_pauses_with_the_game(_route_rig)
-		_route_rig.setup(_city, _player, _baby, _resistance, _day, config.route_targets)
+		_add_the_route_rig(_resistance)
 
 	if walks_a_day:
 		_start_day()
@@ -428,7 +399,7 @@ func _ready() -> void:
 	else:
 		# `VisitCounter`'s own "the escape: begun" — the fresh handover from a won day 14 only,
 		# never a resume of one already under way, which is not the sequence beginning.
-		if _escape_from_a_run and not escape_resumed_from_disk:
+		if _flow.opening == RunFlow.Opening.ESCAPE_HANDED_OVER:
 			EventBus.escape_begun.emit()
 		_start_section(first, false)
 		# The world was built inside the call above, after the boot's own orientation pass.
@@ -448,16 +419,17 @@ func _ready() -> void:
 	elif _recipe:
 		# An escape recipe plays from its first frame, with no brief in front of it.
 		# The escape section's spec the boot started (`_the_first_day()`), the one its clock runs.
-		var problems := _recipe.install(_city, _player, _baby, _spec)
+		var problems := _recipe.install(_city, _player, _baby, _flow.spec)
 		if not problems.is_empty():
 			_recipe_failed(problems)
 			return
 		DayDirector.prepare_city_scenery(_city, _player)
 		_apply_recipe_teaching()
 		get_tree().paused = false
-		_day.start(_spec.length)
+		_day.start(_flow.spec.length)
 		_hud.visible = true
 		_recipe.begin()
+		_flow.engage()
 
 	_add_the_screenshot_rig()
 
@@ -474,7 +446,7 @@ func _ready() -> void:
 	if not walks_a_day:
 		if _recipe:
 			return
-		_open_the_first_screen_of_the_escape(escape_resumed_from_disk)
+		_open_the_first_screen_of_the_escape(_flow.opening == RunFlow.Opening.ESCAPE_RESUMED)
 		return
 	# **Except under a rig.** A screenshot tool that opened onto the title screen would photograph
 	# the title screen, which is every `tools/shot.sh` recipe quietly answering the wrong
@@ -492,12 +464,13 @@ func _ready() -> void:
 	# The continue that carried the run on here was the press that starts the checkpoint's day, so
 	# no title and no brief stand in front of it: she is playing it from this frame, and the save
 	# says so.
-	if _carried_from_a_checkpoint:
+	if _flow.opening == RunFlow.Opening.CARRIED_FROM_CHECKPOINT:
 		_engage_the_day()
 		return
 	if _show_an_ending_for_a_rig():
 		return
 	if config.skips_the_title():
+		_flow.engage()
 		return
 	_open_the_title()
 
@@ -532,9 +505,9 @@ func _settle_the_run() -> void:
 	# **A run carried on from a checkpoint reads no file**: `GameState` already holds it, and
 	# `GameSave.load_in_memory()` puts it back through the same JSON and the same `_apply()` a load
 	# does, so this boot builds on exactly what a load would give it, on any run.
-	_carried_from_a_checkpoint = _carry_the_run_over
+	var carried := _carry_the_run_over
 	_carry_the_run_over = false
-	if _carried_from_a_checkpoint:
+	if carried:
 		GameSave.load_in_memory()
 	else:
 		_resume = GameSave.try_resume()
@@ -545,7 +518,7 @@ func _settle_the_run() -> void:
 	# `GameSave.uses_save()` refuses every read, would otherwise start a brand new run over the one
 	# that just earned its ending.
 	if _resume.is_empty() and _facts.escape_section == DaySpec.Section.NONE \
-			and not _carried_from_a_checkpoint:
+			and not carried:
 		GameState.start_run(config.seed_override)
 		_apply_the_parent_flag()
 		GameState.header.day = config.day_override
@@ -559,16 +532,23 @@ func _settle_the_run() -> void:
 	# since only it can know whether *this page* has already reported a run beginning once before.
 	#
 	# Not for a run carried on from a checkpoint, which is the same run going on, not one beginning.
-	if not _carried_from_a_checkpoint:
+	if not carried:
 		EventBus.run_begun.emit(GameState.header.day, not _resume.is_empty())
 	# The run's ending, played rather than announced: a won day 14 with every task complete hands
-	# over to the escape, and a game closed inside a section opens on it again.
-	_escape_from_a_run = _facts.escape_section != DaySpec.Section.NONE
+	# over to the escape, and a game closed inside a section opens on it again — which of the two
+	# `_ready()` tells once it knows whether the section came from the file.
+	if carried:
+		_flow.opening = RunFlow.Opening.CARRIED_FROM_CHECKPOINT
+	elif _facts.escape_section != DaySpec.Section.NONE:
+		_flow.opening = RunFlow.Opening.ESCAPE_HANDED_OVER
+	elif not _resume.is_empty():
+		_flow.opening = RunFlow.Opening.RESUMED
 
 ## `--start-escape`: the escape with no run behind it, so a rig or a person can walk it on demand. A
 ## fresh run of its own, on day 1 — `--day` does not move it; a recipe's own day does — and no
 ## `run_begun`, since nothing about it is a run the page should count.
 func _start_the_flags_run() -> void:
+	_flow.opening = RunFlow.Opening.ESCAPE_BY_FLAG
 	GameState.start_run(config.seed_override)
 	_apply_the_parent_flag()
 	if config.has_recipe:
@@ -580,9 +560,9 @@ func _start_the_flags_run() -> void:
 ## closed inside the city carries), and the flag's word where there is none — `city` boots the
 ## city section on its own, with no building built at all.
 func _the_first_day() -> DaySpec:
-	if _escape_scene_requested or _escape_from_a_run:
+	if _escape_scene_requested or _flow.escape_from_a_run():
 		var start_at_the_city := _escape_start_part() == "city" \
-				or (_escape_from_a_run and _facts.escape_section == DaySpec.Section.CITY)
+				or (_flow.escape_from_a_run() and _facts.escape_section == DaySpec.Section.CITY)
 		return escape_section_spec(DaySpec.Section.CITY if start_at_the_city
 				else DaySpec.Section.BUILDING, config.escape_section_length())
 	return day_spec(config, GameState.header.day)
@@ -611,6 +591,7 @@ func _build_the_screens() -> void:
 	_configure_the_hud()
 	_hud.use_touch(_touch_available)
 	add_child(_hud)
+	_flow.day_started.connect(_hud.use_the_day)
 	if _player:
 		_add_danger_edge()
 		_add_excitement_halo()
@@ -641,10 +622,10 @@ func _build_the_screens() -> void:
 	_title.quit_requested.connect(_quit)
 
 ## Whether `escape_section` arrived from a file `GameSave.try_resume()` just read, rather than
-## surviving on the autoload from a handover reload earlier in this same process — see `_ready()`'s
-## `escape_resumed_from_disk` for why the two need telling apart at all. Pulled out, the
-## two live reads of `GameState.facts.escape_section` taken out of it, so a test can drive every
-## combination directly rather than only through a real save on disk.
+## surviving on the autoload from a handover reload earlier in this same process — see where
+## `_ready()` sets `RunFlow.Opening.ESCAPE_RESUMED` for why the two need telling apart at all.
+## Pulled out, the two live reads of `GameState.facts.escape_section` taken out of it, so a test
+## can drive every combination directly rather than only through a real save on disk.
 static func _escape_section_came_from_the_file(before_resume: int, after_resume: int) -> bool:
 	return before_resume == DaySpec.Section.NONE and after_resume != DaySpec.Section.NONE
 
@@ -788,7 +769,7 @@ func _put_her_in(map: WorldMap) -> void:
 ## section, the city's otherwise — the one the run flow hands down to her and asks each walking
 ## frame what its ground does to her.
 func _world_map() -> WorldMap:
-	if _spec.world == DaySpec.World.BUILDING and _interior:
+	if _flow.spec.world == DaySpec.World.BUILDING and _interior:
 		return _interior.map
 	return _city.map if _city else null
 
@@ -842,15 +823,15 @@ func _build_the_escape_building() -> void:
 ## at night.
 func _build_the_finale_city() -> void:
 	_city = _new_city()
-	_city.dark_from_the_start = _spec.dark_from_the_start
+	_city.dark_from_the_start = _flow.spec.dark_from_the_start
 	_city.build(_city_map())
 	_spend.city_state.begin_day(_city.map.block_plans, GameState.header.day)
 	_city.start_day(_spend.city_state, GameState.header.day,
-			GameState.day_rng(GameState.header.day, "closures"), _spec)
+			GameState.day_rng(GameState.header.day, "closures"), _flow.spec)
 	_city.set_act(GameState.current_act())
 	# Night, and fixed there: the escape happens after the last day and the clock is the tension
 	# rather than the light, so the sky does not run itself down over the sequence.
-	if not _spec.daylight_runs_down:
+	if not _flow.spec.daylight_runs_down:
 		_city.set_daylight(0.0)
 	_new_director().start_the_crowd(Vector2.INF)
 
@@ -901,8 +882,8 @@ func _plan_the_finale_city() -> void:
 	if _recipe:
 		return
 	var elapsed := Time.get_ticks_msec()
-	var plan := FinalePlanner.plan(_city.map, GameState.day_rng(GameState.header.day, "finale"), _spec)
-	_city.events.start_planned(_spec, plan.placements, _finale_start_position())
+	var plan := FinalePlanner.plan(_city.map, GameState.day_rng(GameState.header.day, "finale"), _flow.spec)
+	_city.events.start_planned(_flow.spec, plan.placements, _finale_start_position())
 	# The streets the chains run through carry the route's kerb tint, as a day's corridor does.
 	_city.tint_the_route(plan)
 	# Printed as well as logged, for the same reason `_start_day()` prints the day it just built:
@@ -1007,24 +988,28 @@ func _start_section(spec: DaySpec, restarted: bool) -> void:
 	if _interior:
 		_interior.clear_fade()
 	if spec.world == DaySpec.World.CITY:
-		_start_the_route_rig_in_the_city()
+		_add_the_route_rig_in_the_city()
+	_flow.planned()
 
-## `--route` in the escape's city (`RouteRig`, `src/dev/route_rig.gd`): the game's own walker, built
-## once the city stands — the first time a city section starts — and started afresh on every attempt,
-## with no `ResistanceDirector`, since the escape has no subquest. Its targets are the city's two ways
-## out (`tunnel`, `bridge`) as much as anything a day offers. A rig the building section was booted
-## with waits at the city's brief, since nobody presses its continue; `--start-escape city` is the
-## boot it walks from.
-func _start_the_route_rig_in_the_city() -> void:
-	if config.route_targets.is_empty() or not _city:
+## `--route`'s walker (`RouteRig`, `src/dev/route_rig.gd`) on the city as it stands, started afresh
+## by every `day_planned` from here on. `resistance` is null in the escape, which has no subquest.
+func _add_the_route_rig(resistance: ResistanceDirector) -> void:
+	_route_rig = RouteRig.new()
+	_route_rig.name = "RouteRig"
+	add_child(_route_rig)
+	_pauses_with_the_game(_route_rig)
+	_route_rig.setup(_city, _player, _baby, resistance, _day, config.route_targets)
+	_flow.day_planned.connect(_route_rig.start_day)
+
+## `--route` in the escape's city: the game's own walker, built once the city stands — the first
+## time a city section starts — and started on every attempt, with no `ResistanceDirector`. Its
+## targets are the city's two ways out (`tunnel`, `bridge`) as much as anything a day offers. A rig
+## the building section was booted with waits at the city's brief, since nobody presses its
+## continue; `--start-escape city` is the boot it walks from.
+func _add_the_route_rig_in_the_city() -> void:
+	if config.route_targets.is_empty() or not _city or _route_rig:
 		return
-	if not _route_rig:
-		_route_rig = RouteRig.new()
-		_route_rig.name = "RouteRig"
-		add_child(_route_rig)
-		_pauses_with_the_game(_route_rig)
-		_route_rig.setup(_city, _player, _baby, null, _day, config.route_targets)
-	_route_rig.start_day()
+	_add_the_route_rig(null)
 
 ## The screen a section opens on, over the world she is already standing in — *"each the apartment
 ## and escape city are treated as their own 'days' with brief and restart checkpoint"*: the day
@@ -1037,9 +1022,9 @@ func _start_the_route_rig_in_the_city() -> void:
 ## never saved as under way (`DaySpec.saved_as_under_way`): a resumed escape is not charged a nerve
 ## for it.
 func _show_the_section_brief() -> void:
-	_resume_gate_open = true
+	_flow.open_brief()
 	_save_now(false)
-	_summary.show_day_brief(GameState.header.day, GameState.header.nerves, "", _spec.title)
+	_summary.show_day_brief(GameState.header.day, GameState.header.nerves, "", _flow.spec.title)
 
 ## Where section two starts and restarts: the service exit, on the street beside the home block.
 func _finale_start_position() -> Vector2:
@@ -1085,8 +1070,7 @@ func _show_an_ending_for_a_rig() -> bool:
 	if not wanted.has(wanted_arg):
 		push_warning("unknown --ending '%s'" % wanted_arg)
 		return false
-	_run_over = true
-	_ending_shown = true
+	_flow.show_ending()
 	_summary.show_ending(wanted[wanted_arg] as GameEnums.Ending, GameState.header.day)
 	return true
 
@@ -1125,7 +1109,9 @@ func _show_an_ending_for_a_rig() -> bool:
 ## built, and the section's world stays paused with her standing in it until its brief is
 ## dismissed — the city playing on with nobody in it is a day's front door, not a section's.
 func _open_the_title() -> void:
-	_in_the_title = true
+	# The title says "again" over a run that ended on this boot.
+	var again := _flow.mode == RunFlow.Mode.ENDING or _flow.mode == RunFlow.Mode.EPILOGUE
+	_flow.open_title()
 	# Guarded the same shape `_on_title_start()`'s own final line already is, and for the same
 	# reason: `tests/test_main.gd` drives this function on a script-only `main` with no tree behind
 	# it, to reach the graph-hiding line below without the rest of this function's live-tree
@@ -1134,7 +1120,7 @@ func _open_the_title() -> void:
 	if is_inside_tree():
 		get_tree().paused = true
 	_apply_orientation()
-	if _spec.section == DaySpec.Section.NONE:
+	if _flow.spec.section == DaySpec.Section.NONE:
 		_city.process_mode = Node.PROCESS_MODE_ALWAYS
 		_player.process_mode = Node.PROCESS_MODE_PAUSABLE
 		_player.stand_aside()
@@ -1142,7 +1128,7 @@ func _open_the_title() -> void:
 	_edge_layer.visible = false
 	if _readout:
 		_readout.open_the_title()
-	_title.open(_ending_shown, _resume.is_empty(), not _resume.is_empty())
+	_title.open(again, _resume.is_empty(), not _resume.is_empty())
 
 ## The title screen has been pressed, which is also the start: hand the city back to the day it
 ## belongs to.
@@ -1164,9 +1150,8 @@ func _open_the_title() -> void:
 ##
 ## **With no resume, this is also the moment she starts playing** — `_engage_the_day()` runs
 ## immediately. **With one, it is not**: `_show_the_resume_gate()` opens instead, and it is *that*
-## screen's own continue that reaches `_engage_the_day()`, through `_on_summary_continued()`'s own
-## `_resume_gate_open` branch — see that function's own doc for why the same signal reaches two
-## different places depending on which screen raised it.
+## screen's own continue that reaches `_engage_the_day()`, through `_on_summary_continued()` with
+## the flow in `RunFlow.Mode.BRIEF`.
 func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 		side := ControlsMode.Side.LEFT) -> void:
 	# Which control scheme was picked, or that a key began the run: the HUD rewords its walking
@@ -1174,7 +1159,6 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 	EventBus.controls_chosen.emit(mode == ControlsMode.Mode.JOYSTICK, by_key)
 	_touch_controls.set_mode(mode, side)
 	ControlsMode.remember(mode, side)
-	_in_the_title = false
 	if _readout:
 		_readout.close_the_title()
 	# A new game's mode is the title's Hard Mode checkbox, read as the title is dismissed — the
@@ -1200,22 +1184,21 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 ## kill at any instant between here and the day brief's own continue finds exactly what this
 ## screen is showing, never a second charge and never a free one.
 func _show_the_resume_gate() -> void:
-	if _run_over:
+	if GameState.header.ending != GameEnums.Ending.NONE:
 		# The last nerve the load itself spent, in hard mode — same ending, same screen, as a hard
-		# run that reaches zero nerves any other way. `GameState.header.ending` is already set
-		# (`GameState.finish_day()` set it in `_ready()`), so nothing downstream can write a save
-		# naming this run again.
-		_ending_shown = true
+		# run that reaches zero nerves any other way. `GameState.finish_day()` set the ending in
+		# `_ready()`, so nothing downstream can write a save naming this run again.
+		_flow.show_ending()
 		_summary.show_ending(GameState.header.ending, GameState.header.day)
 		return
-	_resume_gate_open = true
+	_flow.open_brief()
 	# The second of the two moments a page may load in, open for as long as the brief is up and
 	# shut again by the continue that dismisses it (`_on_summary_continued()`). **Nothing loads
 	# here today** — the boot above already holds every group a day draws — and it is opened
 	# anyway because this is the screen a page the boot could not have known about belongs behind:
 	# a group whose membership depends on the day would be acquired between these two lines.
 	AtlasLibrary.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
-	_summary.show_day_brief(GameState.header.day, GameState.header.nerves, _resume_gate_note(), _spec.title)
+	_summary.show_day_brief(GameState.header.day, GameState.header.nerves, _resume_gate_note(), _flow.spec.title)
 
 ## The day brief's one line about what opening the save cost: nothing, a nerve and the same dawn,
 ## or — a normal run's last nerve — the checkpoint `GameState.finish_day()` already went back to,
@@ -1232,8 +1215,8 @@ func _resume_gate_note() -> String:
 ## player: the moment she is actually playing it, which is also the moment the save has to say so,
 ## immediately rather than leaving the next write to whichever of the day's own two other moments
 ## (a resumed run's own dawn write in `_ready()`, or the day's own end) happens to come next.
-## Called from `_on_title_start()` directly (no resume) and from `_on_summary_continued()`'s own
-## `_resume_gate_open` branch (the day brief's continue, a section's brief included) — the two, and
+## Called from `_on_title_start()` directly (no resume) and from `_on_summary_continued()` on a
+## brief (`RunFlow.Mode.BRIEF`, the day brief's continue, a section's brief included) — the two, and
 ## the only two, places a gate she has not yet dismissed stands between a built day and the day she
 ## is actually walking.
 ##
@@ -1244,6 +1227,7 @@ func _resume_gate_note() -> String:
 ## behave any different than the rest of the game".)* And it is not saved as under way
 ## (`DaySpec.saved_as_under_way`): its brief was its save.
 func _engage_the_day() -> void:
+	_flow.engage()
 	_player.step_back_in()
 	if _city:
 		_pauses_with_the_game(_city)
@@ -1253,9 +1237,9 @@ func _engage_the_day() -> void:
 		_readout.show_for_the_walk()
 	if is_inside_tree():
 		get_tree().paused = false
-	if _spec.title != "":
-		_hud.say_once(_spec.title)
-	if _spec.saved_as_under_way:
+	if _flow.spec.title != "":
+		_hud.say_once(_flow.spec.title)
+	if _flow.spec.saved_as_under_way:
 		_save_now(true)
 
 ## The screen-edge half of the danger vocabulary, in its own layer.
@@ -1477,12 +1461,15 @@ func _warm_the_canvas_shaders(ground: Vector2) -> void:
 
 ## The developer's furniture over the run — see `DebugReadout`, which is handed the run's
 ## configuration, the readout's label and layer from this scene, the run, the session its snapshots
-## go to and what screen is up. A child of this node, so it keeps running through a pause.
+## go to and what screen is up. A child of this node, so it keeps running through a pause. It hears
+## the day being walked and its plan from the flow (`RunFlow.day_started`, `day_planned`).
 func _add_the_readout() -> void:
 	_readout = DebugReadout.new()
 	_readout.name = "DebugReadout"
 	add_child(_readout)
 	_readout.setup(config, _status, _status_layer, GameState.header, _session, _screen_name)
+	_flow.day_started.connect(_readout.use_the_day)
+	_flow.day_planned.connect(_readout.use_the_plan)
 
 ## What screen is up, for a snapshot's line.
 func _screen_name() -> String:
@@ -1538,8 +1525,8 @@ func _add_the_return_window(viewport: Viewport) -> void:
 ## overrides it the moment a player actually presses one of the title screen's own buttons.
 ##
 ## **Except on the two boots that open no title of their own** while the title's answer is still in
-## this process: the day-14 hand-over to the escape (`_escape_from_a_run`) and a normal run carried
-## on from its checkpoint (`_carried_from_a_checkpoint`). Each keeps the mode and steering side the
+## this process: the day-14 hand-over to the escape (`RunFlow.escape_from_a_run()`) and a normal run
+## carried on from its checkpoint (`RunFlow.Opening.CARRIED_FROM_CHECKPOINT`). Each keeps the mode and steering side the
 ## player chose on the run's title (`ControlsMode.remember()`) rather than falling back to the rig's
 ## default — the side is "permanently for the sitting" (2026-10-10). A game closed inside a section
 ## and opened again has no answer in memory, and its title asks.
@@ -1552,7 +1539,8 @@ func _add_touch_controls() -> void:
 	_touch_controls.use_touch(_touch_available)
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
-	if (_escape_from_a_run or _carried_from_a_checkpoint) and ControlsMode.has_remembered():
+	if (_flow.escape_from_a_run() or _flow.opening == RunFlow.Opening.CARRIED_FROM_CHECKPOINT) \
+			and ControlsMode.has_remembered():
 		_touch_controls.set_mode(ControlsMode.remembered_mode(), ControlsMode.remembered_side())
 	else:
 		_touch_controls.set_mode(ControlsMode.from_word(config.controls_word),
@@ -1659,8 +1647,9 @@ func _start_day() -> void:
 		_start_recipe_day()
 		return
 	var spec := day_spec(config, GameState.header.day)
-	_spec = spec
+	_flow.begin(spec)
 	_new_director().start_day(spec)
+	_flow.planned()
 	_first_day = false
 
 ## The director for the world as it stands now: the city (none in the escape's building), whichever
@@ -1669,18 +1658,15 @@ func _start_day() -> void:
 func _new_director() -> DayDirector:
 	var director := DayDirector.new(GameState, config)
 	director.use_the_world(_city, _event_source(), _resistance, _player, _baby, _day)
-	director.readout = _readout
-	director.hud = _hud
-	director.route_rig = _route_rig
 	director.first_day = _first_day
-	director.escape_follows = _recipe == null
-	director.spec = _spec
+	director.escape_follows = _flow.escape_follows()
+	director.spec = _flow.spec
 	return director
 
-## The day about to be walked, handed to the day's clock and to the HUD's. Either may be absent
-## from a script-only `main` a test builds by hand.
+## The day or section about to be walked, announced to the observers (`RunFlow.day_started`) and
+## handed to the day's clock, which may be absent from a script-only `main` a test builds by hand.
 func _use_the_day(spec: DaySpec) -> void:
-	_spec = spec
+	_flow.begin(spec)
 	if _day:
 		_new_director().use_the_day(spec)
 
@@ -1694,9 +1680,9 @@ func _start_recipe_day() -> void:
 	_city.start_recipe_day(_spend.city_state, GameState.header.day,
 			GameState.day_rng(GameState.header.day, "closures"))
 	_city.set_act(GameState.current_act())
-	_day.start(_spec.length)
+	_day.start(_flow.spec.length)
 	# The scene's events run under the very spec the clock and the HUD were just handed.
-	var errors := _recipe.install(_city, _player, _baby, _spec, _resistance)
+	var errors := _recipe.install(_city, _player, _baby, _flow.spec, _resistance)
 	if not errors.is_empty():
 		_recipe.manifest["setup_failed"] = true
 		_recipe_failed(errors)
@@ -1761,19 +1747,18 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	if end.is_section:
 		_finish_the_section(result, end.elapsed_seconds)
 		return
+	_flow.day_ended(end)
 	if end.hands_over_to_the_escape:
 		_facts.escape_section = DaySpec.Section.BUILDING
 		_save_now(false)
 		_summary.show_day(result, _day.failure_reason, GameState.header.nerves,
 				end.elapsed_seconds)
 		return
-	_went_back = end.goes_back
-	_run_over = end.run_over
 	# The end-of-day write — one of the two moments a run is saved. Skipped when the run just
 	# ended: `GameState._end_run()` (called from inside `finish_day()` above) already cleared the
 	# save, and writing here would resurrect a file naming a run that is over. A normal run sent
 	# back to its checkpoint is written here like any other loss, already standing at that dawn.
-	if not _run_over:
+	if not end.run_over:
 		_save_now(false)
 	_summary.show_day(result, _day.failure_reason, GameState.header.nerves, end.elapsed_seconds,
 			end.goes_back)
@@ -1798,7 +1783,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 ## What the page counts of the escape under its own names (`nappy-escape-lost`, `-city`, `-out`)
 ## goes out here too, beside the day's own `day_ended`.
 func _finish_the_section(result: GameEnums.DayResult, elapsed_seconds: float) -> void:
-	var spec := _spec
+	var spec := _flow.spec
 	var won := result == GameEnums.DayResult.WON
 	if not won:
 		EventBus.escape_lost.emit(spec.section, result)
@@ -1810,9 +1795,10 @@ func _finish_the_section(result: GameEnums.DayResult, elapsed_seconds: float) ->
 		EventBus.escape_out.emit(_day.exit_reached)
 	# The flag's escape is a day-1 run that only jumped here, so getting out of it settles nothing;
 	# a lost section costs what it costs either way.
-	if not won or _escape_from_a_run:
-		_run_over = not GameState.finish_day(result, spec)
-	if not won and _recipe:
+	var run_over := false
+	if not won or _flow.escape_from_a_run():
+		run_over = not GameState.finish_day(result, spec)
+	if not won and _flow.section_lost(run_over) == RunFlow.Step.RETRY_AUTHORED:
 		# A scripted recipe fails on a lost attempt; a free one reloads every authored actor and
 		# progression field rather than taking the ordinary retry.
 		if not _recipe.lose_the_attempt():
@@ -1826,80 +1812,62 @@ func _finish_the_section(result: GameEnums.DayResult, elapsed_seconds: float) ->
 	if won:
 		# The run is over either way: for a run, `finish_day()` has just ended it, and the flag's
 		# walk has nothing after its epilogue but walking it again.
-		_run_over = true
-		_ending_shown = true
+		_flow.escape_won()
 		_hud.visible = false
 		_summary.show_finale(_day.exit_reached, elapsed_seconds)
 		return
 	# The end-of-section write, as a lost day's is, so closing the game on this screen cannot take a
 	# hard run's spent nerve back. Skipped when the run just ended, whose save `GameState._end_run()`
 	# has already cleared.
-	if not _run_over:
+	if not run_over:
 		_save_now(false)
 	_summary.show_day(result, _day.failure_reason, GameState.header.nerves, elapsed_seconds, false,
 			spec.title)
 
-## The same `DaySummary.continued` signal reaches this from every screen `_summary` can be showing,
-## told apart by `_resume_gate_open`, by the run's own escape section and by what the run has
-## come to: a day brief in front of a day already built (a resumed run's, or the brief an escape
-## section opens on), day 14's own summary on a run that has just earned the escape, the ordinary
-## end-of-day message — a lost section's included, whose continue raises the retry's brief — or an
-## ending.
-## Only the first of those is *engaging* an already-built day rather than starting a new one.
+## The continue of every screen `_summary` shows, carried out as the flow's `RunFlow.continued()`
+## says: the screen up decides it, not a flag read here. A tap and a key that reach one screen send
+## one continue between them (`DaySummary._acknowledge_and_continue()`).
 func _on_summary_continued() -> void:
-	if _recipe:
-		# A recipe describes one authored day. Keep its normal result, then start that
-		# exact setup again instead of interpreting its pins under the next day's rules.
-		_summary.dismiss()
-		_reload_the_scene()
-		return
-	# The last thing the fourteen days do. A scene reload rather than tearing this boot's city,
-	# day, resistance and observer down by hand and building a building over them — the same
-	# reasoning `_restart_run()` gives for the same call, and the next boot then reads
-	# `GameState.facts.escape_section` off the autoload that survived it and opens on the building.
-	# Day 14's own save, written as its summary appeared, may still be waiting for the browser:
-	# `_reload_the_scene()` carries its symbol over, so the escape's boot adopts it and the answer
-	# settles it there.
-	if _spec.section == DaySpec.Section.NONE \
-			and _facts.escape_section != DaySpec.Section.NONE:
-		_summary.dismiss()
-		_reload_the_scene()
-		return
-	if _resume_gate_open:
-		_resume_gate_open = false
-		# The brief's own loading window shuts with the brief: from here she is walking, and a
-		# page read from disk in a walked frame is the stutter the window exists to refuse.
-		AtlasLibrary.close_loading_window()
-		_summary.dismiss()
-		_engage_the_day()
-		return
-	if not _run_over:
-		_summary.dismiss()
-		if _went_back:
-			_went_back = false
+	match _flow.continued():
+		RunFlow.Step.RELOAD_SCENE:
+			# An authored scene played again, or the last thing the fourteen days do: a scene reload
+			# rather than tearing this boot's city, day, resistance and observer down by hand and
+			# building a building over them — the same reasoning `_restart_run()` gives for the same
+			# call. The next boot reads `GameState.facts.escape_section` off the autoload that
+			# survived it and opens on the building. Day 14's own save, written as its summary
+			# appeared, may still be waiting for the browser: `_reload_the_scene()` carries its symbol
+			# over, so the escape's boot adopts it and the answer settles it there.
+			_summary.dismiss()
+			_reload_the_scene()
+		RunFlow.Step.ENGAGE:
+			# The brief's own loading window shuts with the brief: from here she is walking, and a
+			# page read from disk in a walked frame is the stutter the window exists to refuse.
+			AtlasLibrary.close_loading_window()
+			_summary.dismiss()
+			_engage_the_day()
+		RunFlow.Step.CARRY_TO_CHECKPOINT:
+			_summary.dismiss()
 			_carry_the_run_into_the_next_boot()
-			return
-		# A lost section is tried again from its own start, behind its brief, as a lost day's
-		# continue leads to the day's morning: the outcome screen states why it was lost
-		# (minty-lemur #785), and the brief comes up before the retry for the building and the
-		# city alike, nerves unchanged or not (PLAYTEST-94 10). The brief's continue is the walk.
-		if _spec.section != DaySpec.Section.NONE:
-			_start_section(_spec, true)
+		RunFlow.Step.RETRY_SECTION:
+			# A lost section is tried again from its own start, behind its brief, as a lost day's
+			# continue leads to the day's morning: the outcome screen states why it was lost
+			# (minty-lemur #785), and the brief comes up before the retry for the building and the
+			# city alike (PLAYTEST-94 10). The brief's continue is the walk.
+			_summary.dismiss()
+			_start_section(_flow.spec, true)
 			_show_the_section_brief()
-			return
-		_start_day()
-		# No gate stands between one day's own end-of-day message and the next day's dawn, unlike
-		# the title (and, on a resumed run, the day brief behind it) a fresh day 1 opens behind —
-		# so this is already the moment she is playing the next day, and the write says so at once.
-		_save_now(true)
-		return
-	if not _ending_shown:
-		_ending_shown = true
-		_summary.show_ending(GameState.header.ending, GameState.header.day)
-		return
-	# A run that is over goes back to where a run begins, which is the title screen: an ending is
-	# not a dead end the player has to quit out of.
-	_restart_run()
+		RunFlow.Step.NEXT_DAY:
+			_summary.dismiss()
+			_start_day()
+			# No gate stands between one day's own end-of-day message and the next day's dawn, so
+			# this is already the moment she is playing the next day, and the write says so at once.
+			_save_now(true)
+		RunFlow.Step.SHOW_ENDING:
+			_summary.show_ending(GameState.header.ending, GameState.header.day)
+		RunFlow.Step.RESTART_RUN:
+			# A run that is over goes back to where a run begins, which is the title screen: an
+			# ending is not a dead end the player has to quit out of.
+			_restart_run()
 
 ## A normal run back at its checkpoint goes on in a freshly booted scene, never on this one.
 ## *(gentle-osprey, the player: "store the exact state at the checkpoint -- continuing should not
@@ -1908,7 +1876,7 @@ func _on_summary_continued() -> void:
 ## does not — day 11's boarded window over the neighbor's flat is drawn by her own building "for the
 ## rest of the run" — and a world rebuilt from scratch remembers nothing. So the continue on the
 ## lost-day screen reloads the scene, as the held restart and the escape's handover do, and the next
-## boot (`_carried_from_a_checkpoint`) builds the checkpoint's day on the run exactly as a load would
+## boot (`RunFlow.Opening.CARRIED_FROM_CHECKPOINT`) builds the checkpoint's day on the run exactly as a load would
 ## give it, then starts it. The save already says that dawn: `_on_day_finished()` wrote it as the
 ## lost-day screen came up.
 func _carry_the_run_into_the_next_boot() -> void:
@@ -1964,7 +1932,8 @@ func _restart_run() -> void:
 ## (`_finish_the_section()`). A reload frees this node and the symbol under it, and a change in
 ## the save state may still be waiting for the browser — the restart's deletion, the lost day's
 ## write a checkpoint reload follows, or day 14's own save at the hand-over — so the symbol is
-## carried over first (`_carry_the_save_symbol_over()`) and the next boot adopts it. One place, so a reload added later cannot forget the symbol.
+## carried over first (`_carry_the_save_symbol_over()`) and the next boot adopts it. One place, so
+## a reload added later cannot forget the symbol, nor leave the flow in any mode but RELOADING.
 ##
 ## The tree is unpaused first: `reload_current_scene` builds the new scene into the same tree, and
 ## a paused one would open the next screen over a game that could never start. Read through
@@ -1972,6 +1941,7 @@ func _restart_run() -> void:
 ## with a `main` that is not parented, and the reload itself goes to `_reload_override` when a test
 ## has set one: a real reload would throw away the test runner's own scene.
 func _reload_the_scene() -> void:
+	_flow.reload()
 	_carry_the_save_symbol_over()
 	var tree := Engine.get_main_loop() as SceneTree
 	tree.paused = false
@@ -2002,7 +1972,7 @@ func _process(delta: float) -> void:
 		_apply_orientation()
 	if not _player or not _baby:
 		return
-	if _in_the_title:
+	if _flow.in_the_title():
 		# `EventManager` streams around the player and there is no player, so the street outside the
 		# home would play out whatever was standing on it at dawn and then quietly empty. One call a
 		# frame keeps it stocked. Only the *streaming* is stood in for: what the director owes ahead
@@ -2029,9 +1999,9 @@ func _process(delta: float) -> void:
 	var world_map := _world_map()
 	if world_map and _player and not _tree_is_paused():
 		world_map.process_player(_player, delta)
-	if _city and _spec.daylight_runs_down:
+	if _city and _flow.spec.daylight_runs_down:
 		_city.set_daylight(_day.fraction_remaining())
-	_hud.set_home_guidance(_spec.goal == DaySpec.Goal.HOME
+	_hud.set_home_guidance(_flow.spec.goal == DaySpec.Goal.HOME
 			and _day.phase == GameEnums.DayPhase.RETURNING,
 			_city.map.home_world_position() if _city else Vector2.ZERO)
 	# The red arrow: `ResistanceDirector.red_arrow_target()` is the one place that decides
@@ -2089,7 +2059,7 @@ func _somebody_is_playing() -> bool:
 ## question nobody asked, the same reason focus loss never opens over any `_summary` at all. A lost
 ## section's outcome screen is not among them: it is the day's own screen, and Esc opens over it as
 ## it does over a lost day's (minty-lemur #785, nothing should be different). Asked of the day being
-## walked (`_spec`), so the guard never reaches a day's own summary.
+## walked (`_flow.spec`), so the guard never reaches a day's own summary.
 ##
 ## A rig's run never reaches this with a real key: `RigLock` marks every real event handled in the
 ## `_input` phase, ahead of this one. The debug keys are `DebugReadout`'s own.
@@ -2103,9 +2073,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _pause.is_open() or _title.is_open():
 		return
 	# The escape's own guard — see this function's own doc, "The escape's brief and its epilogue
-	# are the one exception". `_resume_gate_open` is a section's brief up, whichever way it came.
-	if _spec.section != DaySpec.Section.NONE and _summary and _summary.is_showing() \
-			and (_resume_gate_open or _summary.is_showing_the_epilogue()):
+	# are the one exception": a section's brief up, whichever way it came, or the epilogue.
+	if _flow.escape_screen_waits() and _summary and _summary.is_showing():
 		return
 	get_viewport().set_input_as_handled()
 	_pause.open()

@@ -45,7 +45,7 @@ func run(t) -> void:
 	t.check(after == before,
 			"walking her out into the city leaves her pages' counts as they were (%s, then %s)"
 			% [before, after])
-	t.check(main._city != null and main._spec.section == DaySpec.Section.CITY,
+	t.check(main._city != null and main._flow.spec.section == DaySpec.Section.CITY,
 			"and the service door has put her in the city")
 	if main._city != null:
 		_test_she_can_walk_north_from_where_the_player_stood(t, main)

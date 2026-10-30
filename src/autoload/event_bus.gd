@@ -229,7 +229,8 @@ signal city_gone_dark()
 # page counts visits"), and the world the run log watches each section in (`RunSession`).
 
 ## The escape sequence has just begun — the fresh handover from a won day 14, never a resume of one
-## already under way (`main._ready()`'s `escape_resumed_from_disk` tells the two apart).
+## already under way (`main._ready()` tells the two apart: `RunFlow.Opening.ESCAPE_HANDED_OVER`
+## against `ESCAPE_RESUMED`).
 signal escape_begun()
 ## A section is about to be walked, the first time or again after a loss (`restarted`). `section`
 ## is a `DaySpec.Section` passed as `int` (a cross-script enum is not the same type as itself as a

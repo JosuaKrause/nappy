@@ -981,7 +981,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 	main._on_summary_continued()
 	main._interior.exit_requested.emit()
 	main._on_summary_continued()
-	t.check(main._city != null and main._spec.section == DaySpec.Section.CITY,
+	t.check(main._city != null and main._flow.spec.section == DaySpec.Section.CITY,
 			"seed %d: the service door puts her in the city" % PLAYERS_SEED)
 	if main._city != null:
 		var map: CityMap = main._city.map
@@ -1474,8 +1474,8 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 			on_the_day += 1
 	t.check(on_the_day > 0, "the day before tints its own route's kerbs (%d)" % on_the_day)
 
-	main._spec = _section(DaySpec.Section.CITY)
-	city.start_day(state, day, rng, main._spec)
+	main._flow.spec = _section(DaySpec.Section.CITY)
+	city.start_day(state, day, rng, main._flow.spec)
 	main._plan_the_finale_city()
 	var plan := FinalePlanner.plan(city.map, GameState.day_rng(day, "finale"), _city_spec())
 	var on_the_walk := {}
@@ -1616,7 +1616,7 @@ func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 	var clock: Label = hud.get_node("Root/Clock")
 	EventBus.day_time_changed.emit(65.5, 180.0)
 	t.check(clock.text == "1:05", "a day's clock reads to the second (got '%s')" % clock.text)
-	hud.set_clock_hundredths(true)
+	hud.use_the_day(_section(DaySpec.Section.BUILDING))
 	EventBus.day_time_changed.emit(65.5, 180.0)
 	t.check(clock.text == "1:05.50",
 			"the escape's clock reads to the hundredth (got '%s')" % clock.text)
@@ -1645,10 +1645,10 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 		var main := _boot_the_escape(t, section)
 		var words := _section(section).title
 		var nerves := GameState.header.nerves
-		var length: float = main._spec.length
+		var length: float = main._flow.spec.length
 		var title: Label = main._summary.get_node("Root/Center/Lines/Title")
 		var body: Label = main._summary.get_node("Root/Center/Lines/Body")
-		t.check(main._spec.section == section and main._summary.is_showing(),
+		t.check(main._flow.spec.section == section and main._summary.is_showing(),
 				"section %d: it opens on its brief" % section)
 		t.check(title.text == words,
 				"section %d: titled with the section's own words ('%s')" % [section, title.text])
@@ -1670,7 +1670,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 
 		main._day.time_remaining -= 30.0
 		EventBus.hard_fail_triggered.emit("abduction")
-		t.check(main._summary.is_showing() and not main._resume_gate_open,
+		t.check(main._summary.is_showing() and main._flow.mode != RunFlow.Mode.BRIEF,
 				"section %d: being taken comes up on the day's outcome screen" % section)
 		t.check(title.text.replace("\n", " ").contains(Texts.HARD_FAIL_TEXT["abduction"]),
 				"section %d: which states the reason, as a lost day's does ('%s')"
@@ -1683,8 +1683,8 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 
 		teach.text = ""
 		main._on_summary_continued()
-		t.check(main._spec.section == section and main._summary.is_showing()
-				and main._resume_gate_open,
+		t.check(main._flow.spec.section == section and main._summary.is_showing()
+				and main._flow.mode == RunFlow.Mode.BRIEF,
 				"section %d: its continue is the same section again, behind its brief" % section)
 		t.check(title.text == words and body.text.contains(NerveDisplay.stars(nerves)),
 				"section %d: titled with its words and the nerves unchanged ('%s', '%s')"
@@ -1705,7 +1705,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 			# so a city that carried it across would be visibly short here.
 			main._day.time_remaining -= 20.0
 			main._interior.exit_requested.emit()
-			t.check(main._spec.section == DaySpec.Section.CITY and main._summary.is_showing(),
+			t.check(main._flow.spec.section == DaySpec.Section.CITY and main._summary.is_showing(),
 					"the service exit begins the second section, on its own brief")
 			t.check(is_equal_approx(main._day.time_remaining, length),
 					"on a full clock of its own, whatever the walk down the stairs cost")
@@ -1740,7 +1740,7 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 	guard.set_process(false)
 	main._city.events._instances.append(guard)
 	guard._charge.begin()
-	main._player.global_position = main._spec.exits[CityEdge.Kind.TUNNEL]
+	main._player.global_position = main._flow.spec.exits[CityEdge.Kind.TUNNEL]
 	main._day._process(0.0)
 	t.check(heard == ["cut short masked_pursuer", "day %d WON" % DaySpec.CITY_DAY],
 			"getting out closes the charge still running, then ends the city's day (%s)" % [heard])
@@ -2047,7 +2047,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	clock.set_process(false)
 	main._day = clock
 	main._use_the_day(_section(DaySpec.Section.BUILDING))
-	clock.start(main._spec.length)
+	clock.start(main._flow.spec.length)
 	t.check(clock.is_running(), "the section's clock is running")
 	t.check(not main._pause.is_open(), "and nothing is paused yet")
 
@@ -2092,7 +2092,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	var main := _boot_the_escape(t, DaySpec.Section.CITY)
 	main._no_focus_pause = false
 
-	t.check(main._summary.is_showing() and main._resume_gate_open, "the section's brief is up")
+	t.check(main._summary.is_showing() and main._flow.mode == RunFlow.Mode.BRIEF, "the section's brief is up")
 	main._unhandled_input(_action("pause"))
 	t.check(not main._pause.is_open(), "Esc does not open the pause over a section's brief")
 	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
@@ -2100,7 +2100,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 
 	main._on_summary_continued()
 	EventBus.hard_fail_triggered.emit("abduction")
-	t.check(main._summary.is_showing() and not main._resume_gate_open,
+	t.check(main._summary.is_showing() and main._flow.mode != RunFlow.Mode.BRIEF,
 			"a lost section's outcome screen is up")
 	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "losing focus does not open the pause over it")
@@ -2111,12 +2111,12 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 			"and closing it leaves the outcome screen up and the tree paused")
 
 	main._on_summary_continued()
-	t.check(main._summary.is_showing() and main._resume_gate_open, "the retry's brief is up")
+	t.check(main._summary.is_showing() and main._flow.mode == RunFlow.Mode.BRIEF, "the retry's brief is up")
 	main._unhandled_input(_action("pause"))
 	t.check(not main._pause.is_open(), "Esc does not open the pause over it")
 
 	main._on_summary_continued()
-	main._player.global_position = main._spec.exits[CityEdge.Kind.TUNNEL]
+	main._player.global_position = main._flow.spec.exits[CityEdge.Kind.TUNNEL]
 	main._day._process(0.0)
 	t.check(main._summary.is_showing_the_epilogue(), "out of the city, the epilogue is up")
 	main._unhandled_input(_action("pause"))
@@ -2163,14 +2163,14 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
-	var length: float = main._spec.length
+	var length: float = main._flow.spec.length
 
-	t.check(main._spec.section == DaySpec.Section.BUILDING,
+	t.check(main._flow.spec.section == DaySpec.Section.BUILDING,
 			"the boot read the section off the save")
 	t.check(main._title.is_open() and not main._summary.is_showing(),
 			"a genuinely resumed escape opens on the title first, the section's brief not yet up")
 	t.check(main._title.mode_name_shown() != "", "and names the mode, which the save already fixed")
-	t.check(main._in_the_title, "and the boot is behind its title")
+	t.check(main._flow.in_the_title(), "and the boot is behind its title")
 	t.check(t.get_tree().paused and not main._day.can_process()
 			and is_equal_approx(main._day.time_remaining, length),
 			"with the section's whole clock standing still behind the title (%.2f of %.2f)"
@@ -2178,12 +2178,12 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 
 	main._title.start_requested.emit(ControlsMode.Mode.TAP, false, ControlsMode.Side.LEFT)
 	t.check(not main._title.is_open(), "pressing start closes the title")
-	t.check(main._summary.is_showing() and main._resume_gate_open,
+	t.check(main._summary.is_showing() and main._flow.mode == RunFlow.Mode.BRIEF,
 			"and raises the section's own brief, in front of the section already built")
 	var title_label: Label = main._summary.get_node("Root/Center/Lines/Title")
 	t.check(title_label.text == "Escape the building",
 			"titled with the section's own words ('%s')" % title_label.text)
-	t.check(not main._in_the_title, "the title is behind her")
+	t.check(not main._flow.in_the_title(), "the title is behind her")
 	t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
 			"the clock still standing still behind the brief")
 
@@ -2193,18 +2193,19 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	AtlasLibrary.close_loading_window()
 	_free_the_escape(t, main)
 
-## The handover reload from a won day 14 reaches the boot with `escape_resumed_from_disk` false —
-## true only when `GameState.facts.escape_section` was `NONE` before `try_resume()` ran, which a
-## handover's own value already isn't, since it was written to the autoload before the reload — so
+## The handover reload from a won day 14 reaches the boot as `RunFlow.Opening.ESCAPE_HANDED_OVER`
+## rather than `ESCAPE_RESUMED` — the latter only when `GameState.facts.escape_section` was `NONE`
+## before `try_resume()` ran, which a handover's own value already isn't, since it was written to
+## the autoload before the reload — so
 ## it opens straight on the building's own brief, with no title in front of it and the section's
 ## clock standing still behind the brief. Booted for real.
 func _test_a_handover_does_not_open_on_the_title(t) -> void:
 	var main := _boot_the_escape(t, DaySpec.Section.BUILDING)
 	t.check(not main._title.is_open(), "a handover does not raise the title")
-	t.check(main._summary.is_showing() and main._resume_gate_open,
+	t.check(main._summary.is_showing() and main._flow.mode == RunFlow.Mode.BRIEF,
 			"it opens straight on the section's own brief")
 	t.check(t.get_tree().paused and not main._day.can_process()
-			and is_equal_approx(main._day.time_remaining, main._spec.length),
+			and is_equal_approx(main._day.time_remaining, main._flow.spec.length),
 			"with the section's whole clock standing still behind it")
 	_free_the_escape(t, main)
 
