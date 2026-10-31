@@ -378,7 +378,7 @@ static func _bucket_notes() -> Dictionary:
 			+ "preparations included, and the tile map work and first draws its jobs left to the "
 			+ "deferred flush (also counted as scenery_deferred_usec); the renderer's own work on "
 			+ "the new pictures is draw's",
-		"crowd": "the crowd's pathing: Crowd._physics_process() and every CrowdAgent._process()",
+		"crowd": "the crowd's tick: Crowd._physics_process(), every agent's step inside it (LaneMover.step())",
 		"influence": "the baby's influence sweep: Baby._physics_process()",
 		"events": "event updates: EventManager._physics_process() and every "
 			+ "EventInstance._process()",

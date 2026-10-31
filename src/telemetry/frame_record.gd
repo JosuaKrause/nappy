@@ -30,7 +30,7 @@ const PROCESS_REST := 1
 ## `FrameLedger.deferred_scenery_begins()`). What the renderer then does with the new pictures is
 ## `draw`'s.
 const SCENERY := 2
-## The crowd's pathing: `Crowd._physics_process()` and every `CrowdAgent._process()`.
+## The crowd's tick: `Crowd._physics_process()`, every agent's step inside it (`LaneMover.step()`).
 const CROWD := 3
 ## The baby's influence sweep: `Baby._physics_process()`, whose cost is `excitement_sources_at()`
 ## over every live event and walker near her, then the meter's own arithmetic.
