@@ -160,8 +160,8 @@ role named has nothing to check `status` against:
   on the merge result, and a `PARTIAL RUN` marker is expected. **Say in the brief whether this is
   one of verify's two local-full-run cases** — an agent left to judge it will run the whole thing
   to be safe. Only those two count: a change that is large or touches many files is not one by its
-  size, since CI runs the same suite on a better tree, and every local shard is a wait that
-  notifies this session and the player. A brief copied from an earlier one is checked for this
+  size, since CI runs the same suite on a better tree, and a local full run is a wait long enough
+  to go to the background, which notifies this session and the player (inbox #870). A brief copied from an earlier one is checked for this
   line, not inherited. A red PR goes back to the agent with the failing output.
 - **Headless first.** Verification lives in the test rigs, not in watching the game. Windowed runs
   (`tools/run.sh`, repeated `tools/shot.sh`) open on the player's own screen; at most one or two
