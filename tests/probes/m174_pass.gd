@@ -162,7 +162,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	var warm := 0.0 if toward_her else def.telegraph_time + 0.05 + phase_delay
 	var warm_steps := int(ceil(warm / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 
 	# "Different directions" made exact: she starts on the side the instance is currently heading
 	# toward and walks straight at it, offset in Y by the lane she is giving it.
@@ -186,7 +186,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 		var closing := def.speed + Tuning.WALK_SPEED
 		steps = int(ceil(((lead + def.field_reach()) / closing) / STEP)) + 120
 	for _i in steps:
-		instance._process(STEP)
+		instance.step(STEP)
 		her_pos += her_velocity * STEP
 		if her_pos.distance_to(instance.position) <= def.outer_radius:
 			incoming_sum += instance.contribution_at(her_pos) * sensitivity * STEP

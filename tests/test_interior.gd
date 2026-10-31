@@ -1224,9 +1224,8 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## stairwell and runs his line once she is within `masked_pursuer.notice.runs_within` of him
 ## (`EventNoticeRun`). Stepped at the game's own rhythm: the game's physics
 ## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
-## carrying body moves with the real stair steering and collision, the building's `EventManager._physics_process()`
-## tells him where she is, and the catch is checked; he moves in his own `_process()` on every drawn
-## frame, two to a tick here (60fps). She comes in at his shaft's second-floor door and down the
+## carrying body moves with the real stair steering and collision, then the building's
+## `EventManager._physics_process()` tells him where she is, steps him, and checks the catch. She comes in at his shaft's second-floor door and down the
 ## landing, and takes the second flight from each line a player turns onto it by. Once he runs she
 ## makes for the first floor's door, on along the flight and up the landing into it.
 ##
@@ -1236,9 +1235,10 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## the two flights gets through**. A runner gets through on every line, whether she was running all
 ## along or starts running the moment he does, with the keys she already holds. **The margins are
 ## thin:** on the tightest runner's line (walking until he runs, then running, turning plain left at
-## row 11's centre) he is drawn about 25px from her centre (24.6px, at 60, 120 and 150fps), inside his
-## 28px catch, and she clears it on the tick at 28.6px, by 0.6px; **she is caught if she starts running
-## 0.3s after he does.**
+## row 11's centre) how near he comes to her centre on the tick, the only place he moves and the
+## catch is checked, is pinned just outside his catch (`_TIGHTEST_RUNNER_CLOSEST` against
+## `EventCatalogue.MASKED_PURSUER_CATCH`); **she is caught if she starts running 0.3s after he
+## does.**
 func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 	for walk: Array in _SECOND_FLIGHT_TURNS:
 		for pace: String in ["walk", "run", "walk-run", "run-late"]:
@@ -1253,14 +1253,11 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 					"%s at a %s: %s (%s, %.0fpx from him at the closest)"
 					% [walk[3], pace, expected, met["outcome"], met["closest"]])
 			if walk[0] == 11 and pace == "walk-run":
-				# The tightest line: on a drawn frame he is inside his 28px catch, and she lives
-				# only because the catch is checked on the tick.
-				t.check(met["closest"] > 20.0 and met["closest"] < 28.0,
-						"%s at a %s: he is drawn inside the catch for a frame (%.1fpx)"
-						% [walk[3], pace, met["closest"]])
-				t.check(met["on_tick"] > 28.0 and met["on_tick"] < 29.5,
-						"%s at a %s: and she clears it on the tick by under 1.5px (%.1fpx)"
-						% [walk[3], pace, met["on_tick"]])
+				t.check(absf(met["closest"] - _TIGHTEST_RUNNER_CLOSEST) < 0.5
+						and met["closest"] > EventCatalogue.MASKED_PURSUER_CATCH,
+						"%s at a %s: he comes %.1fpx from her centre on the tick (%.1fpx pinned), %s"
+						% [walk[3], pace, met["closest"], _TIGHTEST_RUNNER_CLOSEST,
+						"outside his %.1fpx catch" % EventCatalogue.MASKED_PURSUER_CATCH])
 			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
 					% [walk[3], pace, met["outcome"], met["closest"]])
 
@@ -1314,6 +1311,11 @@ func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts
 			"and those starts really took different interpolation fractions (%d distinct tenths)"
 			% seen_fractions.size())
 
+## How near the masked man comes to her centre, on the tick, on the tightest runner's line (row 11,
+## walking until he runs, then running): the margin `_test_she_has_to_run_to_the_first_floor_door`
+## pins outside his catch (`EventCatalogue.MASKED_PURSUER_CATCH`), measured on the escape as built.
+const _TIGHTEST_RUNNER_CLOSEST := 24.6
+
 ## The lines onto the second flight, local to the grammar: the row of her turn, what she holds
 ## there, whether a walker is caught, and what to call it.
 const _SECOND_FLIGHT_TURNS := [
@@ -1332,7 +1334,6 @@ const _SECOND_FLIGHT_TURNS := [
 func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 		interpolated := false) -> Dictionary:
 	const TICK := 1.0 / 30.0
-	const FRAME := 1.0 / 60.0
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -1378,7 +1379,7 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 	var badge_log := {"first": -1, "dropped": 0, "unseen": 0}
 	var running := pace == "run"
 	_hold_keys(["move_down"], running)
-	var met := {"ran": false, "outcome": "neither", "closest": INF, "on_tick": INF}
+	var met := {"ran": false, "outcome": "neither", "closest": INF}
 	var turned := false
 	var elapsed := 0.0
 	var ran_at := 0.0
@@ -1387,21 +1388,16 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 		_move_real_body_one_step(player, player.velocity * TICK)
 		var her := player.global_position
 		var tile := scene.map.world_to_tile(her)
+		# The manager's tick steps him, told whether she runs off her own pace.
 		events._physics_process(TICK)
-		man.player_running = running
-		# The catch is the tick's: where he was drawn when the tick ran.
+		# The catch is the tick's: where his step put him when the tick ran.
 		var caught := man.is_lethal_at(her)
-		if met["ran"]:
-			met["on_tick"] = minf(met["on_tick"], man.global_position.distance_to(her))
 		if met["ran"]:
 			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
 		if camera:
 			camera.notification(Node.NOTIFICATION_INTERNAL_PHYSICS_PROCESS)
-		man._process(FRAME)
+		# Two drawn frames to the tick.
 		_count_the_badge(edge, man, badge_log)
-		if met["ran"]:
-			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
-		man._process(FRAME)
 		_count_the_badge(edge, man, badge_log)
 		elapsed += TICK
 		if not turned and tile.y - origin.y >= int(walk[0]) and her.y >= scene.map.tile_to_world(tile).y:
@@ -1417,8 +1413,6 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 		if pace == "run-late" and met["ran"] and not running and elapsed - ran_at >= 0.3:
 			running = true
 			_hold_keys(walk[1] if turned else ["move_down"], true)
-		if met["ran"]:
-			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
 		if caught:
 			met["outcome"] = "caught"
 			break
@@ -1512,10 +1506,16 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 	var warned_at: Array[float] = []
 	var at := 0.0
 	while at < Tuning.FINALE_LENGTH_SECONDS:
-		events._physics_process(STEP)
+		# Told where she is before the manager's tick steps them, and where each stood going in.
+		var stood := {}
+		var was_leaving_by_id := {}
 		for instance in events.instances():
 			instance.player_at = her
 			instance.baby_awake = true
+			stood[instance.get_instance_id()] = instance.global_position
+			was_leaving_by_id[instance.get_instance_id()] = instance.is_leaving
+		events._physics_process(STEP)
+		for instance in events.instances():
 			if instance.def.id != "masked_pursuer":
 				continue
 			var id := instance.get_instance_id()
@@ -1524,9 +1524,10 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 				appeared.append(at)
 				first_step_age.append(-1.0)
 				warned_at.append(INF)
-			var before := instance.global_position
-			var was_leaving := instance.is_leaving
-			instance._process(STEP)
+			# One his row's repeat made on this tick, ahead of the step, has taken his first step
+			# from the foot of his line.
+			var before: Vector2 = stood.get(id, instance.path[0])
+			var was_leaving: bool = was_leaving_by_id.get(id, false)
 			var which: int = known[id]
 			if warned_at[which] == INF and not instance.is_waiting():
 				warned_at[which] = instance.age
@@ -1595,7 +1596,6 @@ func _test_his_catch_ends_the_section_with_what_struck_her(t: Node) -> void:
 	var at := 0.0
 	while fired.is_empty() and at < 20.0:
 		events._physics_process(STEP)
-		man._process(STEP)
 		at += STEP
 	EventBus.hard_fail_triggered.disconnect(heard)
 	t.check(fired.size() == 1 and fired[0] == "masked_pursuer",
@@ -1628,7 +1628,7 @@ func _test_his_run_stops_at_the_building_walls(t: Node) -> void:
 	var at := 0.0
 	while at < 15.0 and not man.is_finished:
 		man.player_at = man.global_position + Vector2(40.0, -40.0)
-		man._process(STEP)
+		man.step(STEP)
 		if man.is_leaving:
 			leaving_frames += 1
 		if not scene.map.is_walkable(scene.map.world_to_tile(man.global_position)):
@@ -1890,7 +1890,6 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: Node) -> 
 					solid_before_the_notice += 1
 			if instance.is_solid() and instance.age < steam.telegraph_time:
 				solid_before_the_notice += 1
-			instance._process(STEP)
 		live += STEP
 	t.check(solid_before_the_notice == 0,
 			"no blow was ever solid before its notice was over (%d were)" % solid_before_the_notice)
@@ -1949,8 +1948,8 @@ func _test_a_vent_never_closes_around_her(t: Node) -> void:
 			if instance.def.id != "basement_steam" or instance.global_position != inside:
 				continue
 			blow = instance
+			# Where she stands, for the step the manager's next tick takes.
 			instance.player_at = inside
-			instance._process(STEP)
 			if instance.is_solid():
 				solid_while_she_was_in_it += 1
 			charged += instance.contribution_at(inside) * STEP
@@ -1964,7 +1963,7 @@ func _test_a_vent_never_closes_around_her(t: Node) -> void:
 	if blow and blowing:
 		# One frame with her clear of the footprint is all it takes.
 		blow.player_at = inside + Vector2(1000.0, 0.0)
-		blow._process(STEP)
+		blow.step(STEP)
 		t.check(blow.is_solid(), "and it closes the corridor the moment she steps out of it")
 	events.free()
 	scene.free()
@@ -2026,7 +2025,7 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
 	var elapsed := 0.0
 	while not blow.is_finished and elapsed < 20.0:
 		blow.player_at = Vector2(STAND_AT, 0.0)
-		blow._process(STEP)
+		blow.step(STEP)
 		cost += blow.contribution_at(Vector2(STAND_AT, 0.0)) * STEP
 		elapsed += STEP
 	print("One blow of steam, stood %.0fpx from the vent for %.2fs: %.1f points awake, %.1f asleep"
@@ -2154,7 +2153,6 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: Node) -> void:
 				continue
 			instance.player_at = far
 			blowing[instance.global_position] = instance
-			instance._process(STEP)
 		for vent: EventScheduler.Planned in BuildingEvents.vents(events):
 			var grate := _grate_at(grates, vent.position)
 			if not is_instance_valid(grate) or not grate.is_inside_tree():

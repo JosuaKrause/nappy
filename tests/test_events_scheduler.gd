@@ -38,7 +38,7 @@ func _signature(planned: Array) -> String:
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 ## Whether a plan's field reaches a rect — mirrors `EventScheduler._reaches_rect`.
 func _reaches(plan, rect: Rect2) -> bool:
@@ -273,7 +273,7 @@ func _test_the_mouse_waits_until_she_is_near(t) -> void:
 
 	# She steps inside the trigger: the notice, and the clock, start now.
 	instance.player_at = at + Vector2(def.notice_within() - 10.0, 0.0)
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(not instance.is_waiting(), "she notices it")
 	t.check(instance.is_telegraphing(), "and it starts telegraphing from the notice, not from dawn")
 
@@ -473,7 +473,7 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 		var to_reach := 0.0
 		while engine.contribution_at(her) <= 0.0 and to_reach < 10.0:
 			engine.player_at = her
-			engine._process(STEP)
+			engine.step(STEP)
 			to_reach += STEP
 		var badge_to_reach := warning.shown + to_reach
 		if badge_to_reach + 0.001 < truck.minimum_telegraph():

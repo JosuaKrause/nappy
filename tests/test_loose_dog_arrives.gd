@@ -72,7 +72,8 @@ func _send_from_behind(far: bool) -> EventInstance:
 	return null
 
 ## Steps the manager and the dog for `seconds` with her walking up at `speed`; when the dog is over,
-## when and how far from her, and how near it came. A rig has no frames, so the dog is ticked by hand.
+## when and how far from her, and how near it came. A rig has no frames, so the manager is ticked by
+## hand, and it steps the dog.
 func _run(dog: EventInstance, speed: float, seconds: float) -> Dictionary:
 	var closest := INF
 	var over_at := INF
@@ -84,7 +85,6 @@ func _run(dog: EventInstance, speed: float, seconds: float) -> Dictionary:
 		if dog.is_finished:
 			over_at = i * STEP
 			break
-		dog._process(STEP)
 		gap = dog.global_position.distance_to(_rig.global_position)
 		closest = minf(closest, gap)
 	return {"closest": closest, "over_at": over_at, "gap_when_over": gap}

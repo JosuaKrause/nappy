@@ -115,8 +115,9 @@ src/
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
-	                       emission, and the behaviours it is composed of, stepped in order;
-	                       drawn by its look
+	                       emission, and the behaviours it is composed of, stepped in order on
+	                       its manager's physics tick (`step()`); drawn by its look, which each
+	                       drawn frame redraws it if its picture changed, interpolated between ticks
 	views/                how an event looks, read off its public state: `EventPictures` names
 	                       every picture (each a region of the baked `events` page) and the
 	                       tables that pick one; `EventLooks.for_row()` gives each row the look
@@ -142,7 +143,9 @@ src/
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      owns the live instances and one reference on the `events` atlas page;
-	                       answers total_excitement_at
+	                       steps them once a physics tick in a fixed order (tells them where she
+	                       is, steps them, then the catches and hard fails); answers
+	                       total_excitement_at
 	event_director.gd     sites what the day budgeted and did not place, from her own walk:
 	                       the moments that cross her line, and day 3's fire
 	pending_warning.gd    a screen-edge warning up before its thing exists, for at most a

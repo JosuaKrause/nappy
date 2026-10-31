@@ -10,8 +10,9 @@ extends RefCounted
 ## doorstep (`EventManager.start_day()`), the crowd from a fixed RNG seed with the day's gates — and
 ## walks a player rig with a real `Baby` down from the doorstep and then along one of two walks
 ## (`WALKS`): back and forth along the street, or from tick `CHASE_FROM` from event to event.
-## One simulated thirtieth of a second is one physics tick (the crowd's, the events', the baby's,
-## in that order) followed by one drawn frame (every agent's and every live event's `_process()`).
+## One simulated thirtieth of a second is one physics tick (the crowd's, the events' with every live
+## event's step inside it, the baby's, in that order) followed by one drawn frame (every agent's
+## `_process()`).
 ## The first `WARMUP` ticks are not timed; the next `WINDOW` are.
 ##
 ## **Two modes over the same simulation.** `whole` times the real `EventManager._physics_process()`
@@ -46,7 +47,7 @@ const WARMUP := 150
 const WINDOW := 600
 ## The events' step's calls, in `EventManager._tick_the_events()`'s order.
 const EVENT_PARTS: Array[String] = ["retire", "camera", "site", "stream", "owed", "sighted",
-		"pelicans", "encounters", "warnings", "tell", "officers", "ground", "door_lines",
+		"pelicans", "encounters", "warnings", "tell", "step", "officers", "ground", "door_lines",
 		"detentions", "hard_fails"]
 ## The sweep's queries, then the baby's whole step.
 const SWEEP_PARTS: Array[String] = ["event_sources", "door", "crowd_sources", "baby"]
@@ -142,9 +143,6 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 			row.append_array(_split_sweep(city, baby, rig.global_position))
 		for agent in crowd.agents():
 			agent._process(STEP)
-		for instance in events.instances():
-			if not instance.is_finished:
-				instance._process(STEP)
 		# Wherever the step left her: a door's release sets her down somewhere else.
 		here = rig.global_position
 		chain = _chain(chain, city, rig, baby)
@@ -213,6 +211,8 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._tell_them_where_she_is()
+	stamps.append(Time.get_ticks_usec())
+	events._step_them(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._let_the_officers_out()

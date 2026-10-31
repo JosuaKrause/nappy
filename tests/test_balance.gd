@@ -93,7 +93,7 @@ func _walk_until_asleep(at: Vector2, seconds: float) -> float:
 		_city.crowd.step(STEP)
 		for instance in _city.events.instances():
 			if not instance.is_finished:
-				instance._process(STEP)
+				instance.step(STEP)
 		_baby._physics_process(STEP)
 		if _baby.state == GameEnums.BabyState.ASLEEP:
 			return i * STEP

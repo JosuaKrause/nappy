@@ -37,7 +37,7 @@ func _chasing(t, post: Vector2) -> Array:
 	guard.look.attach_nodes()
 	var her := post + Vector2(0.0, hot.notice_within() - 10.0)
 	guard.player_at = her
-	guard._process(STEP)
+	guard.step(STEP)
 	her = _charge(guard)
 	return [guard, her]
 
@@ -48,7 +48,7 @@ func _charge(guard: EventInstance) -> Vector2:
 	var frames := 0
 	while guard.is_telegraphing() and frames < int((guard.def.pursuit.warns_for + 1.0) / STEP):
 		guard.player_at = her
-		guard._process(STEP)
+		guard.step(STEP)
 		frames += 1
 	return her
 
@@ -66,7 +66,7 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> vo
 	for i in int(6.0 / STEP):
 		her = guard.global_position + Vector2(0.0, 200.0) # keeps him walking, never catches her
 		guard.player_at = her
-		guard._process(STEP)
+		guard.step(STEP)
 		lifted = lifted or absf(guard.look.current_bob()) > 0.1
 		worst = maxf(worst, band.global_position.distance_to(post))
 		if guard.is_finished:
@@ -85,7 +85,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	while not guard.gave_up and frames < int(60.0 / STEP):
 		guard.player_at = guard.global_position + Vector2(0.0, 300.0)
 		guard.player_running = true
-		guard._process(STEP)
+		guard.step(STEP)
 		frames += 1
 	t.check(guard.gave_up, "she shakes him off (%d frames)" % frames)
 	t.check(guard.is_leaving, "and he walks away")
@@ -95,7 +95,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	var stood := guard.player_at
 	while guard.is_leaving and walked < int(30.0 / STEP):
 		guard.player_at = stood # she stands still; he walks out of her sight
-		guard._process(STEP)
+		guard.step(STEP)
 		walked += 1
 		body_held = body_held and guard.is_solid() \
 				and guard._obstruction.global_position.is_equal_approx(post)
@@ -110,7 +110,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	# The day carries on: it still stands a long time later.
 	for i in int(120.0 / STEP):
 		guard.player_at = post + Vector2(0.0, 90.0)
-		guard._process(STEP)
+		guard.step(STEP)
 	t.check(not guard.is_finished and guard.is_solid(), "it is still there two minutes on")
 	guard.free()
 
@@ -123,14 +123,14 @@ func _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t) -> void:
 	# She stands still out of his reach's way so the clock, not a catch, ends it.
 	while not guard.is_leaving and not guard.is_finished and frames < int(120.0 / STEP):
 		guard.player_at = guard.global_position + Vector2(0.0, 400.0)
-		guard._process(STEP)
+		guard.step(STEP)
 		frames += 1
 	t.check(guard.is_leaving and not guard.gave_up,
 			"the clock, not her running, ends his chase (%d frames)" % frames)
 	var walked := 0
 	while guard.is_leaving and walked < int(30.0 / STEP):
 		guard.player_at = guard.global_position + Vector2(0.0, 400.0)
-		guard._process(STEP)
+		guard.step(STEP)
 		walked += 1
 	t.check(not guard.is_finished and guard.is_solid()
 			and guard.body_position().is_equal_approx(post), "the barrier stands after he goes")
@@ -144,13 +144,13 @@ func _test_a_guard_who_is_gone_does_not_come_back(t) -> void:
 	var walked := 0
 	while guard.is_leaving and walked < int(30.0 / STEP):
 		guard.player_at = post + Vector2(0.0, 500.0)
-		guard._process(STEP)
+		guard.step(STEP)
 		walked += 1
 	t.check(not guard.is_leaving and guard.is_waiting(), "he is gone and the barrier waits")
 	# She walks right up to it: nobody notices, nobody chases, nothing is lethal.
 	guard.player_at = post + Vector2(0.0, 20.0)
 	for i in 120:
-		guard._process(STEP)
+		guard.step(STEP)
 	t.check(guard.is_waiting(), "walking up to it again wakes nobody")
 	t.check(not guard.is_lethal_at(guard.player_at), "and it takes nobody (%s)"
 			% guard.is_lethal_at(guard.player_at))
@@ -174,7 +174,7 @@ func _test_the_barrier_costs_nothing_while_he_walks_away(t) -> void:
 		if guard.contribution_at(beside) > 0.0:
 			lit_frames += 1
 		leaving_frames += 1
-		guard._process(STEP)
+		guard.step(STEP)
 	t.check(leaving_frames > 60, "the departure lasts (%d frames)" % leaving_frames)
 	t.check(lit_frames == 0, "the barrier costs nothing beside it on any leaving frame (%d lit)"
 			% lit_frames)
@@ -195,7 +195,7 @@ func _test_he_is_never_removed_in_view_while_she_stays_near(t) -> void:
 	while guard.is_leaving and frames < int(8.0 / STEP):
 		guard.player_at = guard.global_position + Vector2(0.0, 250.0)
 		last_leaving_at = guard.global_position
-		guard._process(STEP)
+		guard.step(STEP)
 		frames += 1
 	t.check(frames == int(8.0 / STEP) and guard.is_leaving,
 			"he is still leaving after eight seconds with her near him (%d frames)" % frames)
@@ -229,7 +229,7 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 		# What `ExcitementHalo` does to an unpicked source in between.
 		guard.set_halo_strength(0.8, Color.RED)
 		frames += 1
-		guard._process(STEP)
+		guard.step(STEP)
 	t.check(frames > 60, "the departure lasts (%d frames)" % frames)
 	t.check(same and lit, "the band's rim is the same object and lit on every frame of it")
 	t.check(man_free, "and the instance never holds a second rim beside it")
@@ -281,7 +281,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	guard.look.attach_nodes()
 	var her := post + Vector2(0.0, _hot_roadblock().notice_within() - 10.0)
 	guard.player_at = her
-	guard._process(STEP)
+	guard.step(STEP)
 	her = _charge(guard)
 	t.check(not guard.is_telegraphing(), "she stays in his radius and he charges")
 	t.check(guard.barrier_post.has_left_its_body() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.barrier_post.has_left_its_body(), guard.is_waiting(), guard.global_position, guard.age])
@@ -291,7 +291,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	while not guard.is_leaving and frames < int(60.0 / STEP):
 		guard.player_at = guard.global_position + Vector2(0.0, 300.0)
 		guard.player_running = true
-		guard._process(STEP)
+		guard.step(STEP)
 		frames += 1
 	t.check(guard.is_leaving, "she shook him off and he is walking away")
 	city.events._stream_out(plan)
@@ -312,7 +312,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		# She walks up to it: nobody notices.
 		back.player_at = post + Vector2(0.0, 20.0)
 		for i in 120:
-			back._process(STEP)
+			back.step(STEP)
 		t.check(back.is_waiting() and not back.is_lethal_at(back.player_at),
 				"she walks up to it and nothing sets off")
 		# Streamed out once more, spent for good this time.

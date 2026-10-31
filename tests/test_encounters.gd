@@ -489,7 +489,7 @@ func _chasing_dog(t, def: EventDef) -> EventInstance:
 	dog.resume(def.telegraph_time, 0.0)
 	for _i in 3:
 		dog.player_at = Vector2.ZERO
-		dog._process(STEP)
+		dog.step(STEP)
 	return dog
 
 func _test_two_instances_are_two_encounters(t) -> void:
@@ -553,7 +553,8 @@ func _test_the_manager_reads_the_controls_scheme(t) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var pelican := events.spawn_extra(cyclist, right_corner,
 			PackedVector2Array([right_corner, right_corner + Vector2(0.0, -300.0)]))
-	pelican.set_process(false)
+	# Held where the test puts it: the manager's tick does not step it off the corner.
+	pelican.held_by_hand = true
 	events._ride_as_a_pelican(pelican)
 	pelican.global_position = right_corner - pelican.drawn_box().get_center()
 	var pelican_seen: Array[int] = [0]

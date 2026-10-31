@@ -14,7 +14,7 @@ var _has_chatted := false
 ## Seconds left in the hold running now, or 0 when none is.
 var _seconds_left := 0.0
 
-## Whether a hold is running right now. Freezes the event (`EventInstance._process()`) and
+## Whether a hold is running right now. Freezes the event (`EventInstance._tick()`) and
 ## switches a mother's posture from strolling to talking.
 func is_running() -> bool:
 	return _seconds_left > 0.0
@@ -37,8 +37,8 @@ func stop() -> void:
 ## One tick of a running hold: only its clock runs. **A door's body stays where it is when its hold
 ## ends**, still solid and ready to be armed again the instant she is released and clear; a
 ## mother's conversation ending is what starts her departure. **Nothing here shows her again**:
-## this runs on a drawn frame, and the release that moves her runs on a physics frame
-## (`CheckpointController.release_finished_holds()`), which shows her as it moves her.
+## the release that moves her (`CheckpointController.release_finished_holds()`), later on the same
+## physics tick as this step, shows her as it moves her.
 func step(delta: float) -> void:
 	_seconds_left = maxf(0.0, _seconds_left - delta)
 	if _seconds_left <= 0.0 and not event.def.redetains:

@@ -34,7 +34,7 @@ func _instance(_t, def: EventDef, at := Vector2.ZERO,
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 ## A fresh instance of `first`'s row and path, put back where `first` had got to as
 ## `EventManager._stream_in()` does; checks the state names the behaviour under test (`behaviour`,
@@ -108,8 +108,8 @@ func _test_the_masked_mans_warning_round_trips(t) -> void:
 	var first_ran := -1
 	var second_ran := -1
 	for i in int(Tuning.WARNING_ALONE_MAX / STEP) + 3:
-		first._process(STEP)
-		second._process(STEP)
+		first.step(STEP)
+		second.step(STEP)
 		if first_ran < 0 and first.phase == EventInstance.Phase.ACTIVE:
 			first_ran = i
 		if second_ran < 0 and second.phase == EventInstance.Phase.ACTIVE:
@@ -131,7 +131,7 @@ func _test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t) -
 	t.check(instance.phase == EventInstance.Phase.WARNING,
 			"outside his run distance he is still warning after his warning's length")
 	instance.player_at = Vector2(def.notice.within + 50.0, 0.0)
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
 			"she leaving his notice has him wait again")
 	instance.free()

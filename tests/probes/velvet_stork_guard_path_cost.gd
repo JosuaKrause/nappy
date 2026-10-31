@@ -16,11 +16,11 @@ extends RefCounted
 ## - **walking away**: she walks at `Tuning.WALK_SPEED` along the shortest walk to the walkable
 ##   tile farthest on foot from where she touched it, and stands once she is there.
 ##
-## Each runs at 60 frames a second of game time until he is within his stand-off of her, catches
+## Each runs at 60 steps a second of game time until he is within his stand-off of her, catches
 ## her, or `CHASE_SECONDS` have passed (his notice plus the 30s `Tuning.PURSUIT_TIME` cap).
 ##
 ## **What is timed**, in milliseconds of wall clock in the debug build the test runner uses: each
-## frame's `EventInstance._process()` — his whole frame, the chase and the sweep's slice with it.
+## step's `EventInstance.step()` — his whole tick, the chase and the sweep's slice with it.
 ## Printed: the mean, the 99th percentile and the worst frame; the share of frames on which a sweep
 ## was under way (`_her_way_next`); how many sweeps were begun; and the outcome — the nearest he
 ## came and when he reached her stand-off, if he did.
@@ -96,7 +96,7 @@ func _measure(t, seed_value: int, walks: bool) -> void:
 		guard.player_at = her
 		var before: ArrowField = guard._her_way_next
 		var t0 := Time.get_ticks_usec()
-		guard._process(FRAME)
+		guard.step(FRAME)
 		times.append((Time.get_ticks_usec() - t0) / 1000.0)
 		var after: ArrowField = guard._her_way_next
 		if before != null or after != null:

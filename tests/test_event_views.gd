@@ -509,7 +509,7 @@ func _test_robber_lunging_faces_her_through_the_chase(t) -> void:
 	# face her.
 	var her := _heading_for_sector(1) * (def.notice_within() - 10.0)
 	instance.player_at = her
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(not instance.is_waiting(), "he has noticed her")
 	var expected := (her - instance.global_position).normalized()
 	t.check(instance._heading.is_equal_approx(expected), "he turned to face her exactly")
@@ -526,7 +526,7 @@ func _test_cat_state_predicate_selects_the_telegraph_posture(t) -> void:
 	instance.setup(def, Vector2.ZERO)
 	t.check(instance.is_telegraphing(), "a cat starts in its crouch")
 	for i in int(round((def.telegraph_time + 0.05) / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 	t.check(not instance.is_telegraphing(), "and is running once the telegraph ends")
 	instance.free()
 
@@ -553,17 +553,17 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	# Inside `EventDef.notice` (900px), outside `NoticeSpec.runs_within`: one step notices her,
 	# and he warns for as long as she stays there, longer than his `telegraph_time`.
 	instance.player_at = Vector2(0.0, def.notice.runs_within + 100.0)
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
 	var alert := true
 	for i in int(round((def.telegraph_time + 2.0) / STEP)):
 		alert = alert and (instance.look as PursuerLook)._stands_still_now() \
 				and (instance.look as PursuerLook).masked_pursuer_pictures() == EventPictures.GUARD_ALERT_BY_VIEW
-		instance._process(STEP)
+		instance.step(STEP)
 	t.check(alert, "and stands with his hand raised for as long as she stays out of his reach")
 	instance.player_at = Vector2(0.0, def.notice.runs_within - 10.0)
 	for i in int(round(0.1 / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 	t.check(not instance.is_telegraphing() and not (instance.look as PursuerLook)._stands_still_now()
 			and (instance.look as PursuerLook).masked_pursuer_pictures() == EventPictures.GUARD_LUNGING_BY_VIEW,
 			"once she comes within his charge distance he is drawn lunging")
@@ -582,7 +582,7 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 func _hold(instance: EventInstance, her: Vector2, seconds: float) -> void:
 	instance.player_at = her
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 	var def := EventScheduler._for_day(EventCatalogue.by_id("charging_dog"),
@@ -602,7 +602,7 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 	var still := true
 	var alert := true
 	for i in int(round(def.pursuit.warns_for / STEP)) - 3:
-		instance._process(STEP)
+		instance.step(STEP)
 		still = still and instance.global_position.is_equal_approx(Vector2.ZERO) \
 				and not instance.look._gait_stepping()
 		pictures = (instance.look as FigureLook).charging_dog_pictures()
@@ -1047,7 +1047,7 @@ func _test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t) -
 	var moved_ticks := 0
 	var keys := {}
 	for i in 240:
-		instance._process(STEP)
+		instance.step(STEP)
 		var bob := instance.look.current_bob()
 		t.check(bob <= 0.0 and bob >= -WheelBob.HEIGHT - 0.001,
 				"tick %d's bob %.3f stays between the wheels and one height above them" % [i, bob])
@@ -1074,7 +1074,7 @@ func _test_a_walking_event_keeps_its_stride_bob(t) -> void:
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	var lowest := 0.0
 	for i in 120:
-		instance._process(STEP)
+		instance.step(STEP)
 		lowest = minf(lowest, instance.look.current_bob())
 	t.check(not EventPictures.WHEELS_BY_LOOK.has(instance.def.look), "a dog walker has no wheels")
 	t.check(lowest < -WheelBob.HEIGHT,

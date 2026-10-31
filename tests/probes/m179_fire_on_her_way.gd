@@ -188,13 +188,9 @@ const SETTLE_SECONDS := 14.0
 func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planned) -> void:
 	rig.velocity = Vector2.ZERO
 	for i in int(round(SETTLE_SECONDS / STEP)):
+		# The manager's tick steps every instance, so the engine leaves the top of its street and
+		# the fire finishes its telegraph.
 		city.events._physics_process(STEP)
-		# **The instances have to be ticked by hand.** `EventInstance` moves in `_process`, which this
-		# probe does not wait for — so an engine left to the tree never leaves the top of its
-		# street and a fire never finishes its telegraph.
-		for instance in city.events.instances().duplicate():
-			if is_instance_valid(instance):
-				instance._process(STEP)
 	var engine_at := EventManager.where_the_summoned_row_stops(city.map, plan.position)
 	var engine := EventCatalogue.by_id(plan.def.aftermath.on_sight)
 	var along := Vector2.RIGHT

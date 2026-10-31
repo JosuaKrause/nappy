@@ -264,7 +264,7 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t) -
 				at += Vector2.DOWN * speed * STEP
 				pursuer.player_at = at
 				pursuer.player_running = running
-				pursuer._process(STEP)
+				pursuer.step(STEP)
 				elapsed += STEP
 				if pursuer.is_lethal_at(at):
 					caught = elapsed
@@ -322,7 +322,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 		var elapsed := 0.0
 		while elapsed < out.telegraph_time + 4.0:
 			man.player_at = her
-			man._process(STEP)
+			man.step(STEP)
 			elapsed += STEP
 			struck = struck or man.is_lethal_at(her)
 			if man.has_stopped_her():
@@ -361,7 +361,7 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
 		var elapsed := 0.0
 		while elapsed < out.telegraph_time + 8.0 and not man.is_finished:
 			man.player_at = her
-			man._process(STEP)
+			man.step(STEP)
 			elapsed += STEP
 			if man.has_stopped_her() and not man.is_leaving:
 				landed += man.contribution_at(her) * STEP
@@ -391,14 +391,14 @@ func _test_he_waits_outside_a_hold_to_stop_her(t) -> void:
 	man.she_is_held = true
 	while elapsed < out.telegraph_time + 4.0:
 		man.player_at = her
-		man._process(STEP)
+		man.step(STEP)
 		elapsed += STEP
 	t.check(not man.has_stopped_her() and man.global_position.distance_to(her) <= out.lethal_reach(),
 			"held in a hut, he is beside her (%.0fpx) and has not stopped her"
 			% man.global_position.distance_to(her))
 	man.she_is_held = false
 	man.player_at = her
-	man._process(STEP)
+	man.step(STEP)
 	t.check(man.has_stopped_her(), "let out, she is stopped at once")
 	man.free()
 
@@ -425,7 +425,7 @@ func _tick(events: EventManager) -> void:
 	events._tell_them_where_she_is()
 	events._let_the_officers_out()
 	for instance in events.instances().duplicate():
-		instance._process(STEP)
+		instance.step(STEP)
 	events._check_hard_fails()
 
 ## **The investigating car stops on its road, the man gets out and pursues her, reaches her, stops
@@ -707,7 +707,7 @@ func _drive_until_it_stops(t, hot: EventDef, route: PackedVector2Array, map: Cit
 	var elapsed := 0.0
 	while elapsed < 60.0 and car.is_waiting() and not car.is_leaving and not car.is_finished:
 		car.player_at = her
-		car._process(STEP)
+		car.step(STEP)
 		elapsed += STEP
 		if car.investigation.has_seen_her() and car.is_waiting():
 			saw_in_a_box = true
@@ -781,7 +781,7 @@ func _test_a_hunting_van_waits_for_its_men(t) -> void:
 	van.set_process(false)
 	var far := Vector2(hot.notice_within() - 10.0, 0.0)
 	van.player_at = far
-	van._process(STEP)
+	van.step(STEP)
 	t.check(van.officers_owed() == 2, "it notices her and owes two men")
 	var men: Array[EventInstance] = []
 	for i in 2:
@@ -793,17 +793,17 @@ func _test_a_hunting_van_waits_for_its_men(t) -> void:
 	var past := hot.telegraph_time + hot.duration + 2.0
 	while elapsed < past:
 		van.player_at = Vector2(2000.0, 0.0)
-		van._process(STEP)
+		van.step(STEP)
 		elapsed += STEP
 	t.check(not van.is_finished and not van.is_leaving,
 			"%.0fs after its notice, past its own %.0fs, it still stands with its men out"
 			% [elapsed, hot.telegraph_time + hot.duration])
 	men[0]._finish()
-	van._process(STEP)
+	van.step(STEP)
 	t.check(not van.is_finished and not van.is_leaving, "with one man still out it still stands")
 	men[1]._finish()
-	van._process(STEP)
-	van._process(STEP)
+	van.step(STEP)
+	van.step(STEP)
 	t.check(van.is_finished or van.is_leaving, "once both are back in, it leaves")
 	for man in men:
 		man.free()
@@ -879,7 +879,7 @@ func _test_the_car_does_not_notice_her_through_a_building(t) -> void:
 	t.add_child(car)
 	car.set_process(false)
 	car.player_at = hidden
-	car._process(STEP)
+	car.step(STEP)
 	t.check(car.is_waiting() and car.officers_owed() == 0,
 			"with a building between them, %.0fpx off, it has not noticed her"
 			% lane.distance_to(hidden))

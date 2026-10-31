@@ -460,11 +460,17 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	player.add_to_group("player")
 	t.add_child(player)
 	player.global_position = stands
-	events._physics_process(Tuning.FINALE_EXPLOSION_INTERVAL)
+	# Ticked at the game's rate until the next bang comes: one tick of the whole interval would also
+	# step the bang through its whole life on the tick that makes it.
+	const TICK := 1.0 / 30.0
 	var burst: EventInstance = null
-	for instance in events.instances():
-		if instance.def.id == "finale_explosion":
-			burst = instance
+	var waited := 0.0
+	while burst == null and waited <= Tuning.FINALE_EXPLOSION_INTERVAL + 1.0:
+		events._physics_process(TICK)
+		waited += TICK
+		for instance in events.instances():
+			if instance.def.id == "finale_explosion":
+				burst = instance
 	t.check(burst != null and burst.global_position == stands,
 			"an explosion goes off where she stands")
 	if burst and behind != Vector2.INF:

@@ -70,24 +70,25 @@ A thing timed **once per body per frame** (a crowd agent, a live event) copies t
 is made (a crowd agent when `Crowd` hands it its `CrowdTiming`), so off it pays one member read: a
 static read and a second call on each of a couple of hundred bodies made every player's frame
 measurably longer on a desktop (docs/evidence/m159-frame-record-2026-10-04/). It is made per day,
-after the recorder has started. A live event times its one frame, with no call to itself:
+after the recorder has started. A live event times its drawn frame, its look's redraw gate, with
+no call to itself; its step runs inside the event manager's physics tick, which is timed once:
 
 ```gdscript
 var _timed := FrameRecord.on
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if _timed and FrameRecord.on:
 		var outer := FrameRecord.enter(FrameRecord.EVENTS)
-		_frame(delta)
+		look.redraw_if_the_picture_changed()
 		FrameRecord.leave(outer)
 		return
-	_frame(delta)
+	look.redraw_if_the_picture_changed()
 ```
 
-A frame that re-ran `_process` inside itself could not take back what the inner run emitted, which
-is why a car's frame is proposed and committed by its driving (`EventCarDriving`) rather than by a
-second run. A crowd agent's mover (`LaneMover`) keeps its body where it is and calls itself, through
-the sink it is handed, which sets `_timed` when it is assigned and is never timed without one:
+A step that re-ran itself could not take back what the inner run emitted, which is why a car's
+frame is proposed and committed by its driving (`EventCarDriving`) rather than by a second run. A
+crowd agent's mover (`LaneMover`) keeps its body where it is and calls itself, through the sink it
+is handed, which sets `_timed` when it is assigned and is never timed without one:
 
 ```gdscript
 var frame_timing: CrowdTiming = null:

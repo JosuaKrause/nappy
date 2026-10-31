@@ -190,7 +190,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 			continue
 		instance.player_at = her
 		instance.player_running = answer == Answer.RUN
-		instance._process(STEP)
+		instance.step(STEP)
 		var at := instance.global_position
 		var in_view := _in_view(at - her, 0.0)
 		var since := clock - warned_at
@@ -402,7 +402,7 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 	var result := _result()
 	var warm_steps := int(ceil(float(encounter["warm"]) / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 	# The game's own badge decision, stepped with this walk's view (the box about her).
 	var her_box := {"at": her}
 	var model := BadgeModel.new()
@@ -416,7 +416,7 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 		her += velocity * STEP
 		instance.player_at = her
 		instance.player_running = false
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 		if instance.is_finished or instance.is_leaving:
 			result["why"] = "it left"
@@ -481,7 +481,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 		var instance := created[0]
 		instance.player_at = her
 		instance.player_running = false
-		instance._process(STEP)
+		instance.step(STEP)
 		if instance.is_finished or instance.is_leaving:
 			result["why"] = "it left"
 			break

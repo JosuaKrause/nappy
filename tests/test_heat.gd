@@ -337,7 +337,7 @@ func _test_it_patrols_while_it_waits(t) -> void:
 	var start := instance.position
 	for i in int(round(3.0 / STEP)):
 		instance.player_at = far
-		instance._process(STEP)
+		instance.step(STEP)
 	t.check(instance.is_waiting(), "three seconds later it still has not noticed her")
 	t.check(instance.position.distance_to(start) > 150.0,
 			"and it has actually walked its route, not stood still (%.0fpx moved)"
@@ -361,7 +361,7 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t) -> void:
 	var elapsed := 0.0
 	while elapsed < 10.0 and not instance.is_leaving and not instance.is_finished:
 		instance.player_at = far
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 	t.check(instance.is_waiting(), "it never noticed her, the whole way down its route")
 	t.check(instance.is_leaving or instance.is_finished,
@@ -381,7 +381,7 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 	instance.set_process(false)
 	var her := Vector2(hot.notice_within() - 10.0, -40.0)
 	instance.player_at = her
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(not instance.is_waiting(), "she is inside its reach, so it notices her")
 	t.check(instance.officers_owed() == 1, "and owes the man it lets out")
 	var stopped_at := instance.position
@@ -391,19 +391,19 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 	instance.let_out(officer)
 	for i in int(round(3.0 / STEP)):
 		instance.player_at = her
-		instance._process(STEP)
+		instance.step(STEP)
 	t.check(instance.position == stopped_at and not instance.is_leaving,
 			"it stands where it stopped while he is after her")
 	t.check(not instance.car.is_driving(), "and a standing car is not driving, so it strikes nobody")
 	officer.give_up_the_chase()
 	t.check(officer.is_leaving and not officer.is_finished, "he gives up and walks back")
 	instance.player_at = her
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(instance.position == stopped_at, "and the car waits for him")
 	var walked := 0
 	while not officer.is_finished and walked < 600:
 		officer.player_at = her
-		officer._process(STEP)
+		officer.step(STEP)
 		walked += 1
 	t.check(officer.is_finished, "he is back in at its door")
 	var heading := instance.facing_now()
@@ -411,7 +411,7 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 	her = Vector2(hot.notice_within() - 10.0, -120.0)
 	for i in int(round(1.0 / STEP)):
 		instance.player_at = her
-		instance._process(STEP)
+		instance.step(STEP)
 	t.check(not instance.is_leaving and instance.position.x > stopped_at.x + 30.0,
 			"once he is back in, it drives on along its route (%.0fpx)"
 			% (instance.position.x - stopped_at.x))
@@ -462,7 +462,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 
 	var her := post + Vector2(hot.notice_within() - 10.0, 0.0)
 	guard.player_at = her
-	guard._process(STEP)
+	guard.step(STEP)
 	t.check(not guard.is_waiting(), "she comes inside the trigger and the guard notices her")
 	t.check(guard.is_solid() and guard.barrier_post.has_left_its_body(),
 			"he sets off and the barrier stays solid behind him")
@@ -477,7 +477,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 		t.check(not guard.is_lethal_at(guard.global_position),
 				"nothing is lethal while he warns")
 		guard.player_at = her
-		guard._process(STEP)
+		guard.step(STEP)
 		frames += 1
 	t.check(absf(frames * STEP - hot.pursuit.warns_for) <= 2.0 * STEP,
 			"he warns her for %.2fs, his %.1fs warning" % [frames * STEP, hot.pursuit.warns_for])
@@ -500,7 +500,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	var chased := 0.0
 	while chased < 2.0:
 		guard.player_at = her
-		guard._process(STEP)
+		guard.step(STEP)
 		chased += STEP
 	t.check(guard.body_position().is_equal_approx(post),
 			"the barrier has not followed him (%s)" % guard.body_position())
@@ -535,7 +535,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 			var across := Vector2(1.0, 0.0) if vertical else Vector2(0.0, 1.0)
 			var her := post + across * side * (hot.notice_within() - 1.0)
 			guard.player_at = her
-			guard._process(STEP)
+			guard.step(STEP)
 			t.check(guard.barrier_post.has_left_its_body() and guard.barrier_post.chaser_side() == side,
 					"%s: the guard on her side sets off" % what)
 			var his_post := post + EventInstance.guard_post_offset(vertical, side)
@@ -548,7 +548,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 			while guard.is_telegraphing() and frames < int(10.0 / STEP):
 				lethal = lethal or guard.is_lethal_at(her)
 				guard.player_at = her
-				guard._process(STEP)
+				guard.step(STEP)
 				frames += 1
 			t.check(not lethal and absf(frames * STEP - hot.pursuit.warns_for) <= 2.0 * STEP,
 					"%s: he warns her for %.2fs, nothing lethal in it, then charges"
@@ -571,7 +571,7 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t) -> void:
 	var far := Vector2(200000.0, 200000.0)
 	for i in int(round(3.0 / STEP)):
 		first.player_at = far
-		first._process(STEP)
+		first.step(STEP)
 	t.check(first.is_waiting(), "streamed out mid-patrol, still unnoticed")
 	var age := first.age
 	var travelled := first.path_travelled()
@@ -609,11 +609,11 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	first.set_process(false)
 	var her := Vector2(hot.notice_within() - 10.0, 0.0)
 	first.player_at = her
-	first._process(STEP)
+	first.step(STEP)
 	t.check(not first.is_waiting(), "she is inside the trigger, so it notices her")
 	for i in int(round(1.0 / STEP)):
 		first.player_at = her
-		first._process(STEP)
+		first.step(STEP)
 	t.check(not first.is_waiting(), "and a second later it has still stopped, not patrolling")
 	var age := first.age
 	var travelled := first.path_travelled()
@@ -633,7 +633,7 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	her = Vector2(hot.notice_within() - 10.0, -120.0)
 	for i in int(round(1.0 / STEP)):
 		second.player_at = her
-		second._process(STEP)
+		second.step(STEP)
 	t.check(not second.is_leaving and second.position.x > resumed_at.x + 30.0,
 			"with nobody of its own out, it drives on along its route (%.0fpx)"
 			% (second.position.x - resumed_at.x))
@@ -692,7 +692,7 @@ func _test_every_waiting_row_resumes_the_notice(t) -> void:
 	first.set_process(false)
 	var her := Vector2(def.notice_within() - 10.0, 0.0)
 	first.player_at = her
-	first._process(STEP)
+	first.step(STEP)
 	t.check(not first.is_waiting(), "she is inside the trigger, so he notices her")
 	var age := first.age
 	var travelled := first.path_travelled()

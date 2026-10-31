@@ -21,7 +21,7 @@ func _test_the_rim_is_painted_before_the_scene(t) -> void:
 		instance._spread_vertical = vertical
 		t.add_child(instance)
 		instance.look.attach_nodes()
-		instance._process(instance.def.telegraph_time + 0.01)
+		instance.step(instance.def.telegraph_time + 0.01)
 		t.check(not (instance.look as SpreadLook)._sceneries.is_empty(),
 				"the crash has its scenery (vertical %s)" % vertical)
 		instance.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
@@ -46,7 +46,7 @@ func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
 	instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO)
 	t.add_child(instance)
 	instance.look.attach_nodes()
-	instance._process(instance.def.telegraph_time + 0.01)
+	instance.step(instance.def.telegraph_time + 0.01)
 	instance.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var rim := instance.rim()
 	t.check(rim != null and rim.get_parent() is SpreadLook.Slice,

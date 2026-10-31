@@ -140,7 +140,7 @@ func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2
 	var step := 1.0 / 60.0
 	var warm_up := int(ceil((def.telegraph_time + 0.1) / step))
 	for i in warm_up:
-		instance._process(step)
+		instance.step(step)
 
 	var stroller := Stroller.new()
 	var camera := Camera2D.new()
@@ -160,7 +160,7 @@ func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2
 	var result := -1.0
 	var elapsed := 0.0
 	while elapsed < _SLEEP_CAP_SECONDS:
-		instance._process(step)
+		instance.step(step)
 		baby._physics_process(step)
 		elapsed += step
 		if baby.sleepiness >= Tuning.METER_MAX:
@@ -341,7 +341,7 @@ func _playground_settles(t) -> void:
 				city.crowd.step(step)
 				for instance in city.events.instances():
 					if not instance.is_finished:
-						instance._process(step)
+						instance.step(step)
 				baby._physics_process(step)
 				if baby.state == GameEnums.BabyState.ASLEEP:
 					settled = i * step

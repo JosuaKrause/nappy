@@ -31,7 +31,7 @@ var _moving := false
 
 func _ready() -> void:
 	# Moved from `_process` by `ParkCordon`, never from a physics tick, so there is nothing to
-	# interpolate — the same opt-out as `EventInstance` and `CrowdAgent`.
+	# interpolate — the same opt-out as `CrowdAgent`.
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 
 func _enter_tree() -> void:

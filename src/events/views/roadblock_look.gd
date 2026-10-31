@@ -112,6 +112,19 @@ var _band: RoadblockBand
 class FarGuard extends Node2D:
 	var instance: EventInstance
 
+	func _init() -> void:
+		# After the events' manager has stepped the walk this tick (`EventManager` runs at the
+		# default priority), so he stands where his walk ended it and is drawn interpolated
+		# between two ticks, as the event is.
+		process_physics_priority = 1
+
+	func _physics_process(_delta: float) -> void:
+		if instance == null or not is_instance_valid(instance) or instance.barrier_post == null:
+			return
+		var at := instance.barrier_post.far.at
+		if at != Vector2.INF:
+			global_position = at
+
 	func _draw() -> void:
 		if instance != null and is_instance_valid(instance):
 			(instance.look as RoadblockLook)._draw_the_far_guard(self)
@@ -239,13 +252,12 @@ func _move_the_far_guard() -> void:
 		_far_node = FarGuard.new()
 		_far_node.instance = event
 		_far_node.name = "FarGuard"
-		# Placed at his feet each tick rather than moved on the physics tick, so it opts out of
-		# physics interpolation.
-		_far_node.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		_far_node.position = far.at
 		event.add_beside_it(_far_node)
+		_far_node.global_position = far.at
+		_far_node.reset_physics_interpolation()
 	if not _far_node.is_inside_tree():
 		return
-	_far_node.global_position = far.at
 	_far_node.visible = not (event.skip_draw or event.is_finished
 			or event.is_suppressed_by_its_own_hold())
 	_far_node.queue_redraw()
