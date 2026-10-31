@@ -493,7 +493,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 		walked += 0.1
 		nearest = minf(nearest, guard.global_position.distance_to(at))
 		lethal = guard.is_lethal_at(at)
-	# He walks round the buildings between them (`EventInstance._paths_to_her`), so he comes all
+	# He walks round the buildings between them (`EventInstance._chase_way`), so he comes all
 	# the way to her stand-off however many blocks stood between them.
 	t.check(lethal or nearest <= standoff + 1.0,
 			"(%s) he comes from %.0fpx away to her (nearest %.0fpx, stand-off %.0fpx, caught %s, %.1fs)"
@@ -639,9 +639,9 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 		return
 	var map := city.map
-	# The red arrow shares `ArrowField.ground_for()` with the guard's walk; what is left to guard is
+	# The red arrow shares `WalkField.ground_for()` with the guard's walk; what is left to guard is
 	# the director's cache of it, which must equal a fresh layout of what blocks her now.
-	t.check(director._ground_for_the_arrow() == ArrowField.ground_for(map),
+	t.check(director._ground_for_the_arrow() == WalkField.ground_for(map),
 			"(round a building) the red arrow's cached ground is the guard's walk's ground")
 	var standoff := Tuning.pursuit_standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var from := guard.global_position

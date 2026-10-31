@@ -26,9 +26,7 @@ members live (`WalkerLook`, `CarLook`) once both the crowd's split and the event
 `src/events/` have merged.
 
 **Carry-overs from events-composed (minty-quail-26), the orchestrating session's rather than the
-player's ask:** an event instance uses the red arrow's `ArrowField` (`src/resistance/arrow_field.gd`,
-the resistance's walking-distance field) as its pathfinder, a dependency on the resistance where the
-map's one `Navigator` is the shared one; a car's driving copies crowd traffic's
+player's ask:** a car's driving copies crowd traffic's
 give-way (`EventCarDriving.room_to_its_line()`), the copy `LaneMover` takes; movement proposed,
 validated, then committed for every mover, as a car's frame is (minty-quail-17), built so far for the car
 alone.

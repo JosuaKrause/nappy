@@ -107,7 +107,7 @@ func _open(_x: int, _y: int) -> bool:
 	return true
 
 ## Every tile's ground type as one byte a tile, row by row, with `walkable_lut()` saying which bytes
-## are walkable: what a sweep over the whole map reads by index rather than by call (`ArrowField`).
+## are walkable: what a sweep over the whole map reads by index rather than by call (`WalkField`).
 ## Empty for open ground.
 func walk_tiles() -> PackedByteArray:
 	return PackedByteArray()
@@ -241,7 +241,7 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool)
 ## The ground a sweep over the whole map runs on for `mover`: each tile `UNREACHED`, or `BLOCKED`
 ## where a layer of the day's record `mover` names stands. The ground's own types are not laid out: a
 ## sweep reads them off `walk_tiles()` itself, a lookup per neighbour against a call. What the red
-## arrow's sweep and a pursuer's walk to her run on (`ArrowField`), laid out once for each state of
+## arrow's sweep and a pursuer's walk to her run on (`WalkField`), laid out once for each state of
 ## the record (`day_record_version`, `obstruction_version`). Empty for open ground.
 func ground_for(mover: Mover) -> PackedInt32Array:
 	var ground := PackedInt32Array()

@@ -22,7 +22,7 @@ extends RefCounted
 ## **What is timed**, in milliseconds of wall clock in the debug build the test runner uses:
 ##
 ## - **tick**: `retarget_the_arrow()` with her at each position — what `_process()` runs twice a
-##   second. On the per-target fields (`ArrowField`) it is a lookup, plus starting the sweep of the
+##   second. On the per-target fields (`WalkField`) it is a lookup, plus starting the sweep of the
 ##   one it now points at when it moved the arrow; on the walk it replaced, the whole walk.
 ## - **sweep slice**: one tick's `_sweep_the_arrow_fields(ARROW_SWEEP_TILES_PER_TICK)` while a
 ##   sweep is under way, over the first sweep from nothing and every sweep a tick started; and how
@@ -46,8 +46,8 @@ func run(t) -> void:
 	var saved_progress := GameState.resistance.progress
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
-	var fields := ClassDB.class_exists("ArrowField") or ResourceLoader.exists(
-			"res://src/resistance/arrow_field.gd")
+	var fields := ClassDB.class_exists("WalkField") or ResourceLoader.exists(
+			"res://src/world/walk_field.gd")
 	for day in DAYS:
 		var ticks: Array[int] = []
 		var slices: Array[int] = []
@@ -81,7 +81,7 @@ func run(t) -> void:
 				frames.append(_sweep_to_the_end(director, slices))
 				# And the same sweep at once, for scale.
 				var started := Time.get_ticks_usec()
-				var at_once: RefCounted = load("res://src/resistance/arrow_field.gd").call("start",
+				var at_once: RefCounted = load("res://src/world/walk_field.gd").call("start",
 						city.map, found,
 						Vector2i(city.map.day_record_version, city.map.obstruction_version))
 				var ground: PackedInt32Array = director.call("_ground_for_the_arrow")
