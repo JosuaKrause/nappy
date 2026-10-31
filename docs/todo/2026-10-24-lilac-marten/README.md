@@ -1,7 +1,7 @@
 priority: now
 after: 2026-10-18-minty-quail
 
-# lilac-marten — After the refactor: a fuller escape, every charger warning shorter with a larger radius, total time on the ending screens, all before v0.30.0 · filed 2026-10-24
+# lilac-marten — After the refactor: a fuller escape, every charger warning shorter with a larger radius, total time on the ending screens · filed 2026-10-24
 
 
 Said right after v0.29.1 shipped, "for after the refactor" (curly-moose #803): "the escape is
@@ -22,7 +22,8 @@ let's cut a minor release" (curly-moose #803). Asked on the board which fixes th
 (the newest playtest then was minty-lemur, whose open fix is snowy-goose, explosions in the escape
 city; this entry's three items came the same day from a note), the player: "the refactor, the escape
 fix, the day one fixes" (minty-dolphin #834). **Read as:** v0.30.0 waits for minty-quail (the
-refactor), the escape's fixes (snowy-goose's explosions and this entry's fuller escape) and
-grassy-beaver (a day one that teaches). **Open:** whether it also waits for this entry's charger
-timing and total time, which the answer does not name. The release itself is cut only on the
+refactor), the escape fix and grassy-beaver (a day one that teaches), and "the escape fix", singular
+in the player's words, is snowy-goose's explosions together with this entry's fuller escape.
+**Open:** whether "the escape fix" means both of those or only one, and whether the release also
+waits for this entry's charger timing and total time, which the answer does not name. The release itself is cut only on the
 player's go-ahead in the session that cuts it (**committing**).

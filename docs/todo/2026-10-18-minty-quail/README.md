@@ -75,7 +75,11 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 5. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
-   step's record lists what its change needs remeasured.
+   step's record lists what its change needs remeasured. That includes the crowd tick, measured
+   about 4.5% slower once the walker and the car share a mover base the crowd member extends
+   (minty-quail-16), where the player chose "let's eat the cost for now and think about optimizing
+   later" (minty-dolphin #852): the step measures it again and says whether optimizing it is
+   worth an entry of its own.
 
 The PR that closes this entry rewrites **orchestrating**'s "Code is designed by layer", whose
 proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal
