@@ -1957,17 +1957,19 @@ func _tree_is_paused() -> bool:
 ## The run's play time (`RunHeader.play_ticks`), one physics tick at a time — its one owner. **Frame
 ## locked** (inbox #866): it counts the ticks the engine stepped, never a drawn frame's length, so a
 ## frame drawn late adds only the ticks that ran in it, a lag spike past the engine's steps per frame
-## slows the game instead of adding time, and a faster machine reads no lower time. It runs while a
-## day — an escape section included — is `WALKING` or `RETURNING` and the tree is not paused: the
-## pause screen and the day summary both leave `phase` there but pause the tree, and a day that has
-## just ended has already left `phase` at `OVER` by the time either one opens, since
-## `DayController._end()` sets it before emitting the signal that shows the summary. Nothing counts
-## behind the title. This node runs through a pause (Esc), so the pause is asked rather than
-## inherited.
+## slows the game instead of adding time, and a faster machine reads no lower time. **A tick counts
+## only when the walk stepped on it** (inbox #866): the flow says she is walking (`RunFlow.Mode.
+## WALKING`, so nothing counts behind the title, a brief, a summary, the ending or a scene reload on
+## its way), the day is `WALKING` or `RETURNING` (a day that has just ended has already left `phase`
+## at `OVER`, since `DayController._end()` sets it before emitting the signal that shows the summary),
+## and the tree is not paused (the pause screen, and every screen that stands in front of the walk).
+## The catch-up ticks after a hitch did step the walk, and count. This node runs through a pause
+## (Esc), so the pause is asked rather than inherited.
 func _physics_process(_delta: float) -> void:
-	if not _player or not _baby or not _day or _flow.in_the_title():
+	if not _player or not _baby or not _day:
 		return
-	if _day.phase in [GameEnums.DayPhase.WALKING, GameEnums.DayPhase.RETURNING] \
+	if _flow.mode == RunFlow.Mode.WALKING \
+			and _day.phase in [GameEnums.DayPhase.WALKING, GameEnums.DayPhase.RETURNING] \
 			and not _tree_is_paused():
 		_run.header.play_ticks += 1
 

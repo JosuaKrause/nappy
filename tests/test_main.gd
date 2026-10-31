@@ -785,13 +785,23 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 			"the day summary (phase OVER, tree still paused) does not advance it either")
 
 	# The title screen: unpaused, so the phase/pause check alone could not explain a stopped
-	# clock here — the title's own early return in `_physics_process()` is what has to.
+	# clock here — the flow saying TITLE rather than WALKING is what has to.
 	day.phase = GameEnums.DayPhase.WALKING
 	t.get_tree().paused = false
 	main._flow.mode = RunFlow.Mode.TITLE
 	main._physics_process(TICK)
 	t.check(GameState.header.play_ticks == 1,
 			"the title screen does not advance it, even with the tree unpaused behind it")
+
+	# Every screen that stands in front of the walk, and a scene reload on its way, with the day's
+	# phase still WALKING and the tree unpaused: the walk does not step, so the tick does not count.
+	for screen: int in [RunFlow.Mode.BRIEF, RunFlow.Mode.DAY_OVER, RunFlow.Mode.ENDING,
+			RunFlow.Mode.EPILOGUE, RunFlow.Mode.RELOADING, RunFlow.Mode.BOOTING]:
+		main._flow.mode = screen
+		main._physics_process(TICK)
+	t.check(GameState.header.play_ticks == 1,
+			"no screen in front of the walk, and no reload or boot hold, adds a tick (%d)"
+			% GameState.header.play_ticks)
 
 	main._flow.mode = RunFlow.Mode.WALKING
 	main._physics_process(TICK)

@@ -1448,8 +1448,9 @@ it is the same screen showing what a load already charged rather than what a day
 ## The run clock
 
 `GameState.header.play_ticks` is a second clock, over the whole run rather than one day: the
-physics ticks a day — a section of the escape included — spent `WALKING` or `RETURNING` with the
-tree unpaused, read in seconds at the 30 Hz tick (`play_seconds()`). **Frame locked**
+physics ticks on which she walked a day — a section of the escape included — `WALKING` or
+`RETURNING`, with the tree unpaused and no screen in front of the walk and no scene reload on its
+way, read in seconds at the 30 Hz tick (`play_seconds()`). **Frame locked**
 (inbox #866): it counts the ticks the game stepped, never a drawn frame's length, so a machine that
 draws a frame late spends no extra time on the clock — a lag spike past the engine's steps per
 frame slows the game instead — and a faster machine reads no lower time. The save holds it in
