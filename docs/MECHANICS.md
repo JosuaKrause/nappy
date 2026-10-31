@@ -1417,7 +1417,9 @@ with the tree unpaused and no screen in front of the walk (`DayController.tick()
 spike past the engine's steps per frame slows the clock with the game, and a faster machine reads
 no lower time. The resistance's clocks — a task's deadline, the note's lingering rider, the mark's
 sight dwell, the red arrow's choice and its sweep, the day's happenings and the park cordon — run on
-the same tick (`ResistanceDirector.tick()`). The events step on every physics tick the city runs, which on a day includes the ticks behind the title screen, where the street plays on. The escape's clock,
+the same tick (`ResistanceDirector.tick()`), before the day's, as the tree ordered them. The events
+step on every physics tick the city runs, which on a day includes the ticks behind the title screen,
+where the street plays on. The escape's clock,
 which reads to the hundredth, is drawn between two ticks as the tick's countdown advanced by how far
 the frame is into the next one (`Engine.get_physics_interpolation_fraction()`), so its label moves
 on every drawn frame without the countdown itself moving off the tick.
