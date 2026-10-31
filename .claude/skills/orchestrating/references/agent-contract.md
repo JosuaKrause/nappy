@@ -72,7 +72,16 @@ own, otherwise report the sentence and its replacement.
 Verification is **verify**'s: `./tools/check.sh`, `./tools/lint.sh` if you touched a governed doc,
 `./tools/pycheck.sh` if you touched Python, and the suites your change touches by name. The full
 suite is CI's, on the merge result, and `PARTIAL RUN` is expected — unless the brief says this is
-one of verify's local-full-run cases. If CI goes red on your PR, fix it.
+one of verify's local-full-run cases. Once the touched suites say the change is done, push and open
+the PR, and CI's run is the full run. If CI goes red on your PR, reproduce the failing suites
+locally and fix them.
+
+**A long wait is one tracked background command.** A run that outlasts a foreground call goes to
+the background as the command itself, and you wait for its one exit notification. Never a
+detached run watched by a sleep loop, a monitor or a periodic wakeup: each time you end a turn
+while waiting, the orchestrating session is notified and the player's screen gets a line, so a
+loop that wakes every minute floods both with nothing to say. Batch what you can into one
+command, so one wait gives one notification.
 
 **Headless first.** Any game run carries a dev flag or `--no-save`, since worktrees share the
 player's save. At most one or two `tools/shot.sh` captures at the end for evidence; the brief says
