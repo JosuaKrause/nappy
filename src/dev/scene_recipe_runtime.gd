@@ -1502,7 +1502,7 @@ func subject_of(label: String) -> Node2D:
 	return null
 
 ## Whether any part of a box `half` either side of `centre` is in the picture: its centre or a
-## corner, the test `ResistanceDirector._box_shows()` puts a task's target through as it is placed.
+## corner, the test `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW` puts a task's target through as it is placed.
 func _box_on_screen(centre: Vector2, half: Vector2) -> bool:
 	var view := get_viewport().get_visible_rect()
 	var transform := get_viewport().get_canvas_transform()

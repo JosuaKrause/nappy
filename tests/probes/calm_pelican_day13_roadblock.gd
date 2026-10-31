@@ -73,10 +73,9 @@ func _measure(t, fallback: bool) -> void:
 			continue
 		var mark_at := director.contact_position()
 		player.global_position = mark_at
-		var view_round := func(at: Vector2) -> bool:
-			var off := (at - player.global_position).abs()
-			return off.x <= Tuning.VIEW_HALF_EXTENT.x and off.y <= Tuning.VIEW_HALF_EXTENT.y
-		director.set_sight(view_round, view_round)
+		city.events.visible_view().look(Rect2(player.global_position - Tuning.VIEW_HALF_EXTENT,
+				Tuning.VIEW_HALF_EXTENT * 2.0), false)
+		director.set_sight(city.events.sees)
 		var plans_before := city.events.plans().size()
 		var started := Time.get_ticks_usec()
 		director._on_contact_completed(mark.index)

@@ -134,9 +134,11 @@ var _day_length := 0.0
 var _expired := false
 var _day := 0
 
-## **Two tests, for two questions** *(olive-hedgehog, inbox #598, the player: "off screen is not
-## the same as visible -- the corners get removed for visible not for off screen")*, both injected
-## by `main` (`set_sight()`) from the day's one view, so the director holds no camera of its own.
+## **Two questions about her view** *(olive-hedgehog, inbox #598, the player: "off screen is not
+## the same as visible -- the corners get removed for visible not for off screen")*. Both come from
+## the day's one view, so the director holds no camera of its own: "has she seen it" is injected by
+## `main` (`set_sight()`), and "would it be drawn in front of her", for everything the director
+## places or removes, is the siting's (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`).
 ##
 ## `_sight` answers **"has she seen it"**, and only for a chalk mark's notice dwell
 ## (`_track_sight_and_reposition()`): `EventManager.sees()`, what she can see (`VisibleView`), the
@@ -147,16 +149,12 @@ var _day := 0
 ## simply keeps running, which is also correct: a mark nobody is watching for should never stop
 ## moving because of it.
 var _sight: Callable
-## `_on_screen` answers **"would it be drawn in front of her"**, for everything the director places
-## or removes: where a relocated mark, a waiting robber, a task target, a pursuer sent after her and
-## day 10's raid may appear, and when a waiting robber or the taken neighbor may vanish
-## (`_box_shows()`, `_drawing_shows()` and their callers; a pursuer sent after her asks the same
-## of the siting it was handed, `SpawnSiting.on_the_view()`). `EventManager.on_screen()`, the
-## camera's whole view, corners included in either scheme: a thing
-## under a covered corner is still drawn there, under the controls, so appearing or vanishing there
-## is pop-in *(the same note: "I don't want any pop in")*. A rig may leave it unset, and then
-## nothing is ever refused for being on screen.
-var _on_screen: Callable
+## **"Would it be drawn in front of her"** is the siting's, over the camera's whole view, corners
+## included in either scheme (`SpawnSiting.on_the_view()`): where a relocated mark, a waiting robber,
+## a task target, a pursuer sent after her and day 10's raid may appear, and when a waiting robber or
+## the taken neighbor may vanish. A thing under a covered corner is still drawn there, under the
+## controls, so appearing or vanishing there is pop-in *(the same note: "I don't want any pop in")*.
+## A rig whose siting has no view is never refused for being on screen.
 ## Whether the current pickup's mark has been seen this world-day. Sticky once true — see
 ## `_track_sight_and_reposition()`.
 var _seen := false
@@ -265,8 +263,11 @@ func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState 
 	# the city's events are handed the question rather than looking the director up.
 	if city and city.events:
 		city.events.points_at = pointable_objective
+	_mark_drawn = _spawn_siting.ask_of_drawing(MARK_BOX)
+	_guard_drawn = _spawn_siting.ask_of_drawing(GUARD_BOX)
+	_task_drawn = _spawn_siting.ask_of_drawing(TASK_BOX)
 	_happenings.trace = trace
-	_happenings.setup(city, map, moves_by, _run)
+	_happenings.setup(city, map, moves_by, _run, _spawn_siting)
 
 ## Hands the director the player, and the contact she touches: whose position a mark is read from,
 ## a neighbor placed out of sight of and a task's arrow pointed from.
@@ -275,13 +276,11 @@ func use_player(player: Stroller) -> void:
 	if _contact and is_instance_valid(_contact):
 		_contact.use_player(player)
 
-## Hands the director the day's two answers about her view: `sees`, whether she can see a world
-## point (the notice dwell's), and `on_screen`, whether a world point is anywhere in the camera's
-## whole view (placing and removing's). Both are asked of every caller at once, so a test of one
-## is never wired where the other belongs. See the docs on `_sight` and `_on_screen`.
-func set_sight(sees: Callable, on_screen: Callable) -> void:
+## Hands the director the day's answer about her view that is its own: `sees`, whether she can see
+## a world point (the notice dwell's). Whether a world point is anywhere in the camera's whole view
+## (placing and removing's) is the siting's. See the docs on `_sight`.
+func set_sight(sees: Callable) -> void:
 	_sight = sees
-	_on_screen = on_screen
 
 func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_clear()
@@ -393,8 +392,8 @@ func _the_pinned_mark() -> Vector2:
 		refusal = "is not a tile centre"
 	elif not is_mark_tile(_map, tile):
 		refusal = "is not one tile in from an alley mouth"
-	elif not SpawnSiting.is_legal_ground(_map, tile, _walled_alleys()) or not _open_to_her(tile) \
-			or not _reachable_from_home(tile):
+	elif not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, _spawn_siting.ask_of_ground(),
+			_pinned_mark) or not _reachable_from_home(tile):
 		refusal = "is not open ground reachable from home today"
 	if refusal != "":
 		_scene_task_errors.append("setup.task.mark %s %s" % [_pinned_mark, refusal])
@@ -528,7 +527,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	#
 	# **At dawn her position is not yet today's.** `main.gd` starts the resistance before it resets
 	# her, so `_player_position()` still answers where the previous attempt left her — often right
-	# beside this same mark, if its robber caught her — and the camera `_on_screen` asks is still
+	# beside this same mark, if its robber caught her — and the camera the siting asks is still
 	# there too. A candidate refused on either still spends its draws from `_rng`, which moves the
 	# guard and every later draw of the day, the task her reading the mark places included. So
 	# a dawn guard — only ever a mark's, since the last night's door, the one task offered at dawn,
@@ -685,7 +684,7 @@ func _ride_to_the_door(shell: EventInstance) -> void:
 ## Whether she can stand within `DOOR_REACH` of the door point `door` today: one of the three
 ## frontage-lane tiles the reach covers — the one straight below the door and the one either side of
 ## it, those whose centre lies within `DOOR_REACH` (50.6px) of the door's point — is ground every
-## contact here keeps (`SpawnSiting.is_legal_ground()`, unobstructed, reachable from home). An
+## contact here keeps (`SpawnSiting.HELD_CONTACT_GROUND`, reachable from home). An
 ## entrance door
 ## stands on a column's middle, so all three are 45px away; a storefront door stands on the seam
 ## between two tiles, where they are 35.8px, 35.8px and 57.7px away and the third is dropped.
@@ -696,11 +695,12 @@ func _ride_to_the_door(shell: EventInstance) -> void:
 ## stand several columns from the shell along the front.
 func _door_can_be_touched(door: Vector2) -> bool:
 	var frontage := _map.world_to_tile(door) + Vector2i.DOWN
-	var walled := _walled_alleys()
+	var ground := _spawn_siting.ask_of_ground()
 	for across in [0, -1, 1]:
 		var tile: Vector2i = frontage + Vector2i(across, 0)
 		if door.distance_to(_map.tile_to_world(tile)) <= DOOR_REACH \
-				and SpawnSiting.is_legal_ground(_map, tile, walled, true) and _open_to_her(tile) \
+				and _spawn_siting.allows_every(SpawnSiting.HELD_CONTACT_GROUND, ground,
+						_map.tile_to_world(tile)) \
 				and _reachable_from_home(tile):
 			return true
 	return false
@@ -805,18 +805,17 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 	var robbery := EventCatalogue.mark_guard()
 	var min_distance := robbery.inner_radius + reach
 	var max_distance := robbery.notice_within() + reach
-	var walled_alleys := _walled_alleys()
 	var her_refuse_within := robbery.notice_within() if her != Vector2.INF else 0.0
 	var span := _through_alley_span(at)
 	if not span.is_empty():
-		return _guard_two_thirds_through(at, span, min_distance, walled_alleys, her,
-				her_refuse_within, on_screen_matters)
+		return _guard_two_thirds_through(at, span, min_distance, her, her_refuse_within,
+				on_screen_matters)
 	var far := _far_alley_mouth(at)
 	if far != Vector2.INF:
 		return _draw_guard_position_near_far_mouth(rng, at, far, min_distance, max_distance,
-				walled_alleys, her, her_refuse_within, on_screen_matters)
+				her, her_refuse_within, on_screen_matters)
 	return _draw_guard_position(rng, at, Vector2.INF, min_distance, max_distance,
-			walled_alleys, her, her_refuse_within, on_screen_matters)
+			her, her_refuse_within, on_screen_matters)
 
 ## **Where the roadblock's guard stands**, for a roadblock whose body is at `body`, touched from
 ## within `reach` of it (`_body_touch_reach()`): a tile's centre in the band round the body that
@@ -835,9 +834,10 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ## Within each side an `ALLEY` tile first, as the row's own placement is, then any other, each drawn
 ## from `rng`; at most `GUARD_WAYS_ASKED` spots are asked, in that order.
 ##
-## Refused, as every guard's ground is, where he may not stand — not walkable, closed, held, on the
-## home block, in a walled alley, or under a standing body — within `EventDef.notice` of `her`, and,
-## when `on_screen_matters`, anywhere any part of him would be on screen (`_guard_shows()`).
+## Refused, as every guard's ground is, where he may not stand (`SpawnSiting.CONTACT_GROUND`: not
+## walkable, closed, held, on the home block, in a walled alley, or under a standing body) — within
+## `EventDef.notice` of `her`, and, when `on_screen_matters`, anywhere any part of him would be on
+## screen (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over `GUARD_BOX`).
 ##
 ## **Where no spot of the band passes, the ring just past it**, a tile at a time out to
 ## `TASK_GUARD_FARTHEST`, nearest ring first and the far side first in each, on the same terms: the
@@ -857,7 +857,7 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 	var robbery := EventCatalogue.task_guard()
 	var nearest := robbery.inner_radius + reach
 	var band_edge := robbery.notice_within() + reach
-	var walled_alleys := _walled_alleys()
+	var ground := _spawn_siting.ask_of_ground(GUARD_BOX)
 	# [far alleys, far band, near alleys, near band]
 	var pools: Array = [[], [], [], []]
 	var beyond := {}
@@ -870,13 +870,12 @@ func _roadblock_guard_spot(rng: RandomNumberGenerator, body: Vector2, reach: flo
 			var distance := spot.distance_to(body)
 			if distance < nearest or distance > TASK_GUARD_FARTHEST:
 				continue
-			if not _map.in_bounds(tile) or not _map.passable(tile, Mover.on_foot()) \
-					or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
-					or _map.is_in_walled_alley(tile, walled_alleys):
+			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, spot):
 				continue
 			if her != Vector2.INF and spot.distance_to(her) <= robbery.notice_within():
 				continue
-			if on_screen_matters and _guard_shows(spot):
+			if on_screen_matters and not _spawn_siting.allows(
+					SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, spot):
 				continue
 			if not _guards_along_a_clear_line(spot, body):
 				continue
@@ -948,7 +947,8 @@ func _leaves_her_a_way_past(spot: Vector2, body: Vector2, reach: float, her: Vec
 		for dx in range(-span, span + 1):
 			var tile := centre + Vector2i(dx, dy)
 			if _map.tile_to_world(tile).distance_to(body) > reach \
-					or not _open_to_her(tile) or _noticed_from(spot, tile, notice):
+					or not SpawnSiting.is_open_to(_map, tile, Mover.on_foot()) \
+					or _noticed_from(spot, tile, notice):
 				continue
 			seen[tile] = true
 			queue.append(tile)
@@ -963,7 +963,8 @@ func _leaves_her_a_way_past(spot: Vector2, body: Vector2, reach: float, her: Vec
 			if seen.has(next):
 				continue
 			seen[next] = true
-			if next == her_tile or (_open_to_her(next) and not _noticed_from(spot, next, notice)
+			if next == her_tile or (SpawnSiting.is_open_to(_map, next, Mover.on_foot())
+					and not _noticed_from(spot, next, notice)
 					and _map.tile_to_world(next).distance_to(body) <= bound):
 				queue.append(next)
 	return false
@@ -1021,11 +1022,6 @@ func _on_her_side(side: HerSide, tile: Vector2i) -> bool:
 static func _guard_notice_reach() -> float:
 	return TASK_GUARD_FARTHEST + EventCatalogue.task_guard().notice_within() \
 			+ Tuning.TILE_SIZE
-
-## Whether she can walk onto `tile` today (`CityMap.passable()`, `Mover.on_foot()`): walkable,
-## open, not sealed to walkers, no body on it.
-func _open_to_her(tile: Vector2i) -> bool:
-	return _map.in_bounds(tile) and _map.passable(tile, Mover.on_foot())
 
 ## Whether a guard at `spot` notices her standing on `tile`'s centre: within `notice` of him, along
 ## a clear line.
@@ -1261,10 +1257,7 @@ var _chaser := Mover.on_foot(EventInstance.FIGURE_RADIUS)
 ## budget runs out first. `Vector2.INF` when `TRAP_DRAW_LIMIT` draws found neither — see the
 ## caller for what that means.
 ##
-## `walled_alleys` defaults empty for the bare-map rigs several tests in `tests/test_resistance.gd`
-## drive with no `_city` — see `_walled_alleys()`, which is what the real caller passes.
-##
-## **Never within `her_refuse_within` of `her`, and never where `_guard_shows()` calls him seen**
+## **Never within `her_refuse_within` of `her`, and never where he would be drawn in her view**
 ## (brisk-wombat, "a robber also appeared out of nowhere and instakilled me"): a candidate is
 ## drawn purely from the band around `at`, with no idea where she stands or what the camera can
 ## see, so both refusals are what keeps him off her — outside his own `EventDef.notice`, or worse
@@ -1274,9 +1267,9 @@ var _chaser := Mover.on_foot(EventInstance.FIGURE_RADIUS)
 ## which never rejects anything on either count; a dawn placement passes the doorstep and `false`
 ## (`_begin_step()`).
 func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vector2,
-		min_distance: float, max_distance: float, walled_alleys: Array[Rect2i] = [],
-		her: Vector2 = Vector2.INF, her_refuse_within: float = 0.0,
-		on_screen_matters: bool = false) -> Vector2:
+		min_distance: float, max_distance: float, her: Vector2 = Vector2.INF,
+		her_refuse_within: float = 0.0, on_screen_matters: bool = false) -> Vector2:
+	var ground := _spawn_siting.ask_of_ground(GUARD_BOX)
 	var fallback := Vector2.INF
 	for _attempt in TRAP_DRAW_LIMIT:
 		# Hoisted so the draw can be written down. Which distance a mark got is the one random
@@ -1292,13 +1285,12 @@ func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vecto
 		var candidate := at + Vector2.RIGHT.rotated(angle) * distance
 		if her != Vector2.INF and candidate.distance_to(her) <= her_refuse_within:
 			continue
-		if on_screen_matters and _guard_shows(candidate):
+		if on_screen_matters and not _spawn_siting.allows(
+				SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, candidate):
 			continue
-		var tile := _map.world_to_tile(candidate)
-		if not _map.passable(tile, Mover.on_foot()) or _map.is_held_at(tile) \
-				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
+		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, candidate):
 			continue
-		if _map.tile_at(tile) == GameEnums.TileType.ALLEY:
+		if _map.tile_at(_map.world_to_tile(candidate)) == GameEnums.TileType.ALLEY:
 			return candidate
 		if fallback == Vector2.INF:
 			fallback = candidate
@@ -1365,8 +1357,8 @@ func _depth_of_the_mark(at: Vector2, near: Vector2, axis: Vector2) -> float:
 ## never past the far end tile's centre. `Vector2.INF` when none qualifies. Draws nothing from the
 ## day's RNG.
 func _guard_two_thirds_through(at: Vector2, span: Array[Vector2], min_distance: float,
-		walled_alleys: Array[Rect2i], her: Vector2, her_refuse_within: float,
-		on_screen_matters: bool) -> Vector2:
+		her: Vector2, her_refuse_within: float, on_screen_matters: bool) -> Vector2:
+	var ground := _spawn_siting.ask_of_ground(GUARD_BOX)
 	var near: Vector2 = span[0]
 	var far: Vector2 = span[1]
 	var axis := (far - near).normalized()
@@ -1388,11 +1380,10 @@ func _guard_two_thirds_through(at: Vector2, span: Array[Vector2], min_distance: 
 		var candidate := near + axis * offset
 		if her != Vector2.INF and candidate.distance_to(her) <= her_refuse_within:
 			continue
-		if on_screen_matters and _guard_shows(candidate):
+		if on_screen_matters and not _spawn_siting.allows(
+				SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, candidate):
 			continue
-		var tile := _map.world_to_tile(candidate)
-		if not _map.passable(tile, Mover.on_foot()) or _map.is_held_at(tile) \
-				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
+		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, candidate):
 			continue
 		return candidate
 	return Vector2.INF
@@ -1429,8 +1420,9 @@ func _guard_spot(at: Vector2) -> Vector2:
 ## the mark never lands her inside his catch. `Vector2.INF` then, and whenever every candidate is
 ## refused — the inner end last of all, after `TRAP_DRAW_LIMIT` draws in from it.
 func _draw_guard_position_near_far_mouth(rng: RandomNumberGenerator, at: Vector2, far: Vector2,
-		min_distance: float, max_distance: float, walled_alleys: Array[Rect2i], her: Vector2,
-		her_refuse_within: float, on_screen_matters: bool) -> Vector2:
+		min_distance: float, max_distance: float, her: Vector2, her_refuse_within: float,
+		on_screen_matters: bool) -> Vector2:
+	var ground := _spawn_siting.ask_of_ground(GUARD_BOX)
 	var span := at.distance_to(far)
 	if span < min_distance:
 		return Vector2.INF
@@ -1444,11 +1436,10 @@ func _draw_guard_position_near_far_mouth(rng: RandomNumberGenerator, at: Vector2
 	for candidate in candidates:
 		if her != Vector2.INF and candidate.distance_to(her) <= her_refuse_within:
 			continue
-		if on_screen_matters and _guard_shows(candidate):
+		if on_screen_matters and not _spawn_siting.allows(
+				SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, candidate):
 			continue
-		var tile := _map.world_to_tile(candidate)
-		if not _map.passable(tile, Mover.on_foot()) or _map.is_held_at(tile) \
-				or _map.is_on_home_block(tile) or _map.is_in_walled_alley(tile, walled_alleys):
+		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, candidate):
 			continue
 		return candidate
 	return Vector2.INF
@@ -1462,48 +1453,29 @@ const MARK_HALF_EXTENT := Vector2(16.0, 16.0)
 const GUARD_BODY_CENTRE := Vector2(0.0, -22.0)
 const GUARD_HALF_EXTENT := Vector2(14.0, 26.0)
 
-## Whether any part of a box `half` either side of `centre` is on screen right now: `_shows()`
-## asked of the centre and the four corners. The screen is the camera's whole view
-## (`_on_screen`), a rectangle far larger than either box and the same world box however the
-## window is turned (`VisibleView`'s own doc), so a box that overlaps it has a corner inside it. A
-## bare centre test is what lets a picture whose centre is one pixel past the edge show half of
-## itself. The corners are asked through `_shows()` itself rather than a margin on it, since a
-## margin grows every side of the box alike and the box is not square. A covered corner's area is
-## not left out: what is placed there is drawn there, under the controls.
-## `false` when `_on_screen` is unset: the bare-map rigs several tests in `tests/test_resistance.gd`
-## drive have no camera to ask, so nothing they place is ever refused for being on screen.
-func _box_shows(centre: Vector2, half: Vector2) -> bool:
-	if not _on_screen.is_valid():
-		return false
-	for corner: Vector2 in [centre, centre + half, centre - half, centre + Vector2(half.x, -half.y),
-			centre + Vector2(-half.x, half.y)]:
-		if _on_screen.call(corner):
-			return true
-	return false
+## The box about its feet a chalk mark's picture, a waiting robber's body and a task's rider are
+## kept out of her view by (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`): the mark's `MARK_HALF_EXTENT`
+## about its centre, the robber's `GUARD_HALF_EXTENT` about `GUARD_BODY_CENTRE` above his feet, and
+## `TASK_HALF_EXTENT` about the tile a task stands on.
+const MARK_BOX := Rect2(-MARK_HALF_EXTENT, MARK_HALF_EXTENT * 2.0)
+const GUARD_BOX := Rect2(GUARD_BODY_CENTRE - GUARD_HALF_EXTENT, GUARD_HALF_EXTENT * 2.0)
+const TASK_BOX := Rect2(-TASK_HALF_EXTENT, TASK_HALF_EXTENT * 2.0)
 
-## Whether a world point is anywhere in the camera's whole view right now (`_on_screen`), covered
-## corners included — what placing and removing ask. `false` when `_on_screen` is unset.
-func _shows(point: Vector2) -> bool:
-	return _on_screen.is_valid() and _on_screen.call(point)
+## What the siting is asked whether a mark, a robber or a task's rider would be drawn in her view
+## (`MARK_BOX`, `GUARD_BOX`, `TASK_BOX`), built with the siting in `setup()`.
+var _mark_drawn: SpawnSiting.Ask
+var _guard_drawn: SpawnSiting.Ask
+var _task_drawn: SpawnSiting.Ask
 
 ## Whether any of what `row` can draw, standing at `feet`, would be on screen right now: its
 ## footprint (`EventFootprints.footprint_of()`, every picture its look can draw, its shadow, bob and
 ## halo rim, and the caret of a row that can be marked — what `PendingWarning` places outside the
-## view by) asked through `_box_shows()`. A row that draws nothing of its own is its feet. What an
-## event the director brings in or takes away asks, so nothing of it appears or vanishes in view.
+## view by) against `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`. A row that draws nothing of its own is
+## its feet. What an event the director brings in or takes away asks, so nothing of it appears or
+## vanishes in view, and the form the park's cordon asks it in (`ResistanceHappenings.tick()`).
 func _drawing_shows(row: EventDef, feet: Vector2) -> bool:
-	var box := EventFootprints.footprint_of(row)
-	if not box.has_area():
-		return _shows(feet)
-	return _box_shows(feet + box.get_center(), box.size * 0.5)
-
-## Whether any part of a chalk mark's picture at `at` would be on screen right now.
-func _mark_shows(at: Vector2) -> bool:
-	return _box_shows(at, MARK_HALF_EXTENT)
-
-## Whether any part of a waiting robber standing at `feet` would be on screen right now.
-func _guard_shows(feet: Vector2) -> bool:
-	return _box_shows(feet + GUARD_BODY_CENTRE, GUARD_HALF_EXTENT)
+	return not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW,
+			_spawn_siting.ask_of_drawing(EventFootprints.footprint_of(row)), feet)
 
 ## The mark's own alley, as `[nearer, farther]`, or `[]` when `at` is on no `ALLEY` ground.
 ##
@@ -1797,7 +1769,8 @@ func _pick_near(candidates: Array[Vector2i], rng: RandomNumberGenerator, mark: V
 	_follow_the_paths_to_the_edge(_where_she_read_it(mark))
 	var near: Array[Vector2i] = []
 	for tile in candidates:
-		if not _circle_edge.has(tile) or _box_shows(_map.tile_to_world(tile), TASK_HALF_EXTENT):
+		if not _circle_edge.has(tile) or not _spawn_siting.allows(
+				SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _task_drawn, _map.tile_to_world(tile)):
 			continue
 		near.append(tile)
 	var at := _pick_reachable(near, rng)
@@ -1821,10 +1794,10 @@ func _where_she_read_it(mark: Vector2) -> Vector2:
 var _fell_back := false
 
 ## The tile of `candidates` nearest `mark` that every placement refusal here leaves alone — legal
-## ground (`SpawnSiting.is_legal_ground()`), no body on it, reachable from home, off her screen — or
+## ground (`SpawnSiting.CONTACT_GROUND`), reachable from home, off her screen — or
 ## `Vector2.INF` when none does. `_pick_near()`'s fallback.
 func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2:
-	var walled_alleys := _walled_alleys()
+	var ground := _spawn_siting.ask_of_ground(TASK_BOX)
 	var nearest := Vector2.INF
 	var nearest_distance := INF
 	for tile in candidates:
@@ -1832,8 +1805,9 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 		var distance := world.distance_to(mark)
 		if distance >= nearest_distance:
 			continue
-		if not SpawnSiting.is_legal_ground(_map, tile, walled_alleys) or not _open_to_her(tile) \
-				or not _reachable_from_home(tile) or _box_shows(world, TASK_HALF_EXTENT):
+		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
+				or not _reachable_from_home(tile) \
+				or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
 			continue
 		nearest_distance = distance
 		nearest = world
@@ -1887,18 +1861,19 @@ const ROADBLOCK_WIDER_REACH: Array[float] = [
 
 ## The tiles of `tiles` (`tile -> true`) day 13's roadblock may be offered: of its own row's tile
 ## types, out of her view (`TASK_HALF_EXTENT`), and passing every refusal a contact's ground passes
-## (`SpawnSiting.is_legal_ground()`, no body on it, reachable from home). In
+## (`SpawnSiting.CONTACT_GROUND`, reachable from home). In
 ## `CityMap.tiles_of_type()`'s own
 ## order, so the scheduler's draw over them is the same every time.
 func _roadblock_ground(def: EventDef, tiles: Dictionary) -> Array[Vector2i]:
-	var walled_alleys := _walled_alleys()
+	var ground := _spawn_siting.ask_of_ground(TASK_BOX)
 	var offered: Array[Vector2i] = []
 	for type in def.placement:
 		for tile in _map.tiles_of_type(type as GameEnums.TileType):
-			if not tiles.has(tile) or _box_shows(_map.tile_to_world(tile), TASK_HALF_EXTENT):
+			var world := _map.tile_to_world(tile)
+			if not tiles.has(tile) or not _spawn_siting.allows(
+					SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
 				continue
-			if not SpawnSiting.is_legal_ground(_map, tile, walled_alleys) \
-					or not _open_to_her(tile) \
+			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
 					or not _reachable_from_home(tile):
 				continue
 			offered.append(tile)
@@ -2092,7 +2067,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 	_mast_id = ""
 	if not _city or not _city.events:
 		return Vector2.INF
-	var walled_alleys := _walled_alleys()
+	var ground := _spawn_siting.ask_of_ground()
 	var offered: Array[EventScheduler.Planned] = []
 	var beside: Array[Vector2i] = []
 	for plan in _city.events.plans():
@@ -2104,8 +2079,8 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 			continue
 		for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var tile := foot + side
-			if SpawnSiting.is_legal_ground(_map, tile, walled_alleys) and _open_to_her(tile) \
-					and _reachable_from_home(tile):
+			if _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
+					_map.tile_to_world(tile)) and _reachable_from_home(tile):
 				offered.append(plan)
 				beside.append(tile)
 				break
@@ -2152,7 +2127,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 ## - where one of her paths first reaches the edge of the circle round her (`_circle_edge`), with a
 ##   tile beside it reached too, and out of her view (`TASK_HALF_EXTENT`), so it is never seen to
 ##   appear;
-## - passing every refusal a contact's ground passes (`SpawnSiting.is_legal_ground()`, no body on
+## - passing every refusal a contact's ground passes (`SpawnSiting.CONTACT_GROUND`, no body on
 ##   it, reachable
 ##   from home);
 ## - ground a site would be offered on (`MastSites._is_eligible()`: off the home street, its field
@@ -2161,21 +2136,22 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 	var added: Array[Vector2i] = []
 	if not _city or not _city.events:
 		return added
-	var walled_alleys := _walled_alleys()
+	var ground := _spawn_siting.ask_of_ground(TASK_BOX)
 	var feet: Array[Vector2i] = []
 	var beside_of := {}
 	for type: GameEnums.TileType in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]:
 		for tile in _map.tiles_of_type(type):
 			var world := _map.tile_to_world(tile)
-			if not _circle_edge.has(tile) or _box_shows(world, TASK_HALF_EXTENT):
+			if not _circle_edge.has(tile) or not _spawn_siting.allows(
+					SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
 				continue
-			if not SpawnSiting.is_legal_ground(_map, tile, walled_alleys) \
-					or not _open_to_her(tile) \
+			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
 					or not _reachable_from_home(tile) or not MastSites._is_eligible(world, _map):
 				continue
 			for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 				var next := tile + side
-				if SpawnSiting.is_legal_ground(_map, next, walled_alleys) and _open_to_her(next) \
+				if _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
+						_map.tile_to_world(next)) \
 						and _reachable_from_home(next) \
 						and (_circle_edge.has(next) or _circle_inside.has(next)):
 					feet.append(tile)
@@ -2288,7 +2264,7 @@ func _send_the_neighbor_home() -> EventInstance:
 ## from her and on ground a contact may stand on, drawn by the day's RNG — or `_NO_TILE`.
 func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
 	var her := _player.global_position if _player and is_instance_valid(_player) else Vector2.INF
-	var walled_alleys := _walled_alleys()
+	var ground := _spawn_siting.ask_of_ground()
 	var offered: Array[Vector2i] = []
 	for tile in _map.tiles_of_type(GameEnums.TileType.SIDEWALK):
 		var walk := _map.distance_at(field, tile)
@@ -2296,7 +2272,8 @@ func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
 			continue
 		if her != Vector2.INF and _map.tile_to_world(tile).distance_to(her) < NEIGHBOR_CLEAR_OF_HER:
 			continue
-		if not SpawnSiting.is_legal_ground(_map, tile, walled_alleys) or not _open_to_her(tile):
+		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
+				_map.tile_to_world(tile)):
 			continue
 		offered.append(tile)
 	if _pinned_neighbor != Vector2.INF:
@@ -2361,7 +2338,7 @@ static func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.S
 	return null
 
 ## Today's region plan, or null for the bare-map rigs several tests in `tests/test_resistance.gd`
-## build with no `_city` — the same null `_walled_alleys()` reads as "nothing walled today".
+## build with no `_city`.
 func _region_plan() -> RegionPlanner.RegionPlan:
 	return _city.region_plan() if _city else null
 
@@ -2461,11 +2438,13 @@ static func target_ground(map: CityMap, day: int,
 ## candidate reaches this function, so `allow_held` never has to carry that exemption.
 func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 		allow_held := false) -> Vector2:
-	var walled_alleys := _walled_alleys()
+	var ground := _spawn_siting.ask_of_ground()
+	var legal := SpawnSiting.Rule.GROUND_EVEN_IF_HELD if allow_held \
+			else SpawnSiting.Rule.LEGAL_GROUND
 	var reachable: Array[Vector2i] = []
 	var unused: Array[Vector2i] = []
 	for tile in candidates:
-		if not SpawnSiting.is_legal_ground(_map, tile, walled_alleys, allow_held):
+		if not _spawn_siting.allows(legal, ground, _map.tile_to_world(tile)):
 			continue
 		reachable.append(tile)
 		if tile not in _run.facts.completed_resistance_alley_tiles:
@@ -2480,11 +2459,13 @@ func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 	# times, the nearest still-legal tile in the pool standing in if every redraw lands on another
 	# one (`_nearest_legal_in_pool()`'s own doc).
 	var drawn := pool[rng.randi_range(0, pool.size() - 1)]
-	if _open_to_her(drawn) and _reachable_from_home(drawn):
+	if _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(drawn)) \
+			and _reachable_from_home(drawn):
 		return _map.tile_to_world(drawn)
 	for _attempt in PICK_REACHABLE_REDRAW_LIMIT:
 		drawn = pool[rng.randi_range(0, pool.size() - 1)]
-		if _open_to_her(drawn) and _reachable_from_home(drawn):
+		if _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(drawn)) \
+				and _reachable_from_home(drawn):
 			return _map.tile_to_world(drawn)
 	var nearest := _nearest_legal_in_pool(pool, drawn)
 	return _map.tile_to_world(nearest) if nearest != _NO_TILE else Vector2.INF
@@ -2496,27 +2477,18 @@ func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 ## `pool` fails, which `_pick_reachable` then reads the same way it reads an empty pool: nowhere to
 ## go today.
 func _nearest_legal_in_pool(pool: Array[Vector2i], from: Vector2i) -> Vector2i:
+	var ground := _spawn_siting.ask_of_ground()
 	var nearest := _NO_TILE
 	var nearest_distance := INF
 	for tile in pool:
-		if not _open_to_her(tile) or not _reachable_from_home(tile):
+		if not _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(tile)) \
+				or not _reachable_from_home(tile):
 			continue
 		var distance: float = (tile - from).length_squared()
 		if distance < nearest_distance:
 			nearest_distance = distance
 			nearest = tile
 	return nearest
-
-## Today's crossing alleys that are wall rather than door — see `CityMap.is_in_walled_alley`.
-## Read from the city's own region plan rather than tracked here, so a director never disagrees
-## with whatever wall `EventManager` actually built bodies for; empty before `Tuning.
-## REGION_WALL_FIRST_DAY`, and for the bare-map rigs (`_city == null`) several tests in
-## `tests/test_resistance.gd` build, which never wall anything.
-func _walled_alleys() -> Array[Rect2i]:
-	var region_plan: RegionPlanner.RegionPlan = _city.region_plan() if _city else null
-	if not region_plan:
-		return []
-	return region_plan.alley_walls
 
 ## Builds `_reach_grid`/`_reach_blocked`/`_reach_reached` the first time a placement in this file
 ## asks whether a tile is reachable, and never again this day. `_reach_grid` alone is the sentinel:
@@ -2543,7 +2515,7 @@ func _walled_alleys() -> Array[Rect2i]:
 ## **Without a `_city` (the bare-map rigs several tests in this file build)**, `_reach_blocked` is
 ## built from an empty blocker list — today's closures alone, which is `{}` for the same rigs since
 ## nothing ever calls `City.start_day()` on them either — so every walkable tile answers reachable
-## and this check is a silent no-op, exactly like `_walled_alleys()` above it.
+## and this check is a silent no-op.
 func _ensure_reachability() -> void:
 	if _reach_grid:
 		return
@@ -2722,7 +2694,7 @@ func _reach_distance(instance: EventInstance) -> float:
 ##   Where no spot round it leaves her a way past him, he stays where he is.
 ##
 ## **He moves only while both where he stands and where he goes are out of her view** — his whole
-## body off the camera's view (`_guard_shows()`), and a spot off it and outside his own trigger range
+## body off the camera's view (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`), and a spot off it and outside his own trigger range
 ## of her — so he is never seen to vanish or to appear. When he is in view he stays where he is, and
 ## the move is asked again on the arrow's next choice (`ARROW_RETARGET_SECONDS`) until he is out of
 ## it. *(Proposed, not asked for: the player's "offscreen" does not choose between this and moving
@@ -2756,7 +2728,8 @@ func _move_the_task_guard_to_her_target() -> void:
 		_task_guard_over = _arrow_key
 		_task_guard_in_band = true
 		return
-	if _guard_shows(_task_guard.global_position):
+	if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn,
+			_task_guard.global_position):
 		return
 	# A search that found him nowhere better is not repeated until something it read has changed.
 	var her := _player_position()
@@ -2801,7 +2774,7 @@ func _move_the_task_guard_to_her_target() -> void:
 ## a clear line. A guard already after her, or whose chase is over, is left as he is.
 ##
 ## **His warning is a second, seen or not** *(inbox #764 in minty-lemur, the player: "yes, we can do a 1s on screen
-## and 1s off-screen warning if they were not visible")*. In her view (`_guard_shows()`) he stands
+## and 1s off-screen warning if they were not visible")*. In her view (`GUARD_BOX` on the camera's view) he stands
 ## where he is with his warning up for `Tuning.WARNING_ALONE_MAX` and then charges. Out of it he is
 ## taken out of the world unseen and sent at her as a task's robber is
 ## (`_send_at_her()`, `EventCatalogue.task_guard_sent()`): the screen-edge badge alone for the same
@@ -2818,7 +2791,8 @@ func _set_the_task_guard_on_her() -> void:
 		her = _contact.global_position
 	if her == Vector2.INF:
 		return
-	if _guard_shows(_task_guard.global_position):
+	if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn,
+			_task_guard.global_position):
 		_task_guard.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
 		trace.note("roll", "the roadblock is done: the task's guard, in her view, warns her and "
 				+ "comes after her from %.0fpx away" % _task_guard.global_position.distance_to(her))
@@ -2888,7 +2862,8 @@ func _track_sight_and_reposition(delta: float) -> void:
 	# the alley and run on past `NOTICE_RADIUS` of the mark — or any part of him is on her
 	# screen, the mark stays where it is and he stays with it.
 	if _guard and is_instance_valid(_guard) \
-			and (not _guard.is_waiting() or _guard_shows(_guard.global_position)):
+			and (not _guard.is_waiting() or not _spawn_siting.allows(
+					SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn, _guard.global_position)):
 		return
 	var here := _player.global_position
 	if here.distance_to(at) <= NOTICE_RADIUS:
@@ -2932,13 +2907,13 @@ func _track_sight_and_reposition(delta: float) -> void:
 ## appear out of nowhere while I was walking through an alley and then a robber also appeared out
 ## of nowhere and instakilled me"*): the nearest reachable alley to `here` is, by construction,
 ## wherever she is standing or just beside it, which is on screen more often than not. The mark's
-## picture is asked with its own size (`_mark_shows()`), and the spot in its alley where
-## `_move_the_mark()` would stand the guard (`_guard_spot()`), with his (`_guard_shows()`), so a
+## picture is asked with its own size (`MARK_BOX`), and the spot in its alley where
+## `_move_the_mark()` would stand the guard (`_guard_spot()`), with his (`GUARD_BOX`), so a
 ## relocation never lands where its guard could only be placed in view or not at all. Both are
 ## asked only of a tile nearer than the best found so far, which keeps this cheap enough for every
 ## frame.
 func _nearest_alley_within(here: Vector2) -> Vector2:
-	var walled_alleys := _walled_alleys()
+	var ground := _spawn_siting.ask_of_ground()
 	var used := _run.facts.completed_resistance_alley_tiles
 	var nearest := Vector2.INF
 	var nearest_distance := NOTICE_RADIUS
@@ -2952,12 +2927,12 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 		# than the nearest unused one (`nearest_any_distance` is never above `nearest_distance`).
 		if distance >= nearest_any_distance and (not unused or distance >= nearest_distance):
 			continue
-		if not _map.passable(tile, Mover.on_foot()) \
-				or _map.is_held_at(tile) or _map.is_on_home_block(tile) \
-				or _map.is_in_walled_alley(tile, walled_alleys) \
+		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
 				or not _reachable_from_home(tile):
 			continue
-		if _mark_shows(world) or _guard_shows(_guard_spot(world)):
+		if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _mark_drawn, world) \
+				or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn,
+						_guard_spot(world)):
 			continue
 		if distance < nearest_any_distance:
 			nearest_any_distance = distance
@@ -3252,9 +3227,9 @@ func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 	if not _city or not _city.events or not _map:
 		return found
 	if step.target_kind == ResistanceSteps.TargetKind.MAST:
-		var walled_alleys := _walled_alleys()
+		var ground := _spawn_siting.ask_of_ground()
 		for plan in _city.events.plans():
-			if _mast_answers(plan, walled_alleys):
+			if _mast_answers(plan, ground):
 				found.append({"key": plan.mast_id, "at": plan.position, "reach": _mast_reach(),
 						"beat": PackedVector2Array()})
 		return found
@@ -3271,7 +3246,7 @@ func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 ## and every other. Live means the same offer `_place_at_a_mast()` makes: a placed, unsilenced mast
 ## off the home block whose foot has legal, unobstructed ground beside it that is reachable from
 ## home, so the arrow never moves the task onto a mast she cannot touch.
-func _mast_answers(plan: EventScheduler.Planned, walled_alleys: Array[Rect2i]) -> bool:
+func _mast_answers(plan: EventScheduler.Planned, ground: SpawnSiting.Ask) -> bool:
 	if plan.mast_id == "" or plan.def.role != EventDef.Role.MAST or plan.silenced \
 			or not plan.is_placed():
 		return false
@@ -3280,8 +3255,8 @@ func _mast_answers(plan: EventScheduler.Planned, walled_alleys: Array[Rect2i]) -
 		return false
 	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 		var tile := foot + side
-		if SpawnSiting.is_legal_ground(_map, tile, walled_alleys) and _open_to_her(tile) \
-				and _reachable_from_home(tile):
+		if _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground,
+				_map.tile_to_world(tile)) and _reachable_from_home(tile):
 			return true
 	return false
 
@@ -3456,10 +3431,10 @@ func _follow_her_between_masts() -> void:
 	var reach := _mast_reach()
 	if _contact.global_position.distance_to(here) <= reach:
 		return
-	var walled_alleys := _walled_alleys()
+	var ground := _spawn_siting.ask_of_ground()
 	for plan in _city.events.plans():
 		if plan.mast_id == _mast_id or plan.position.distance_to(here) > reach:
 			continue
-		if _mast_answers(plan, walled_alleys):
+		if _mast_answers(plan, ground):
 			_point_the_arrow_at(plan.mast_id, plan.position, _step)
 			return

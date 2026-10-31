@@ -1,14 +1,8 @@
 # Shared components instead of copies that drift
 
-- **Placement still has entry points that check their own copy of the rules**: the director's guard
-  spots, roadblock ground, door, swing, mast and neighbor starts and `_pick_reachable`; `EventsAhead`'s
-  officers' doors, down her line or along her heading, the mast and task rows; `EventSpawner`'s
-  summoned stop; `ResistanceHappenings`' day-10 raid (`_maybe_raid()`, refusing a van or a row with
-  the director's handed-in "would it show" check) and day-13 column (`send_the_column()` through
-  `PendingWarning.in_its_lane()`, with its own lead distance). Each keeps its own candidate shape and asks `SpawnSiting`'s named rules instead
-  (minty-quail-29 built the service and moved the sent pursuers onto it). Legal ground does not test
-  the map's bounds, which only a scene recipe's exterior reaches (an off-map tile reads as an alley
-  there); the poster's search tested them before minty-quail-29, the director's never did.
+- **The park cordon still checks its own copy of the placement rules**: `ParkCordon`'s officer
+  placements, and the `shows` callable `ResistanceHappenings.tick()` keeps for them alone; every other
+  placement asks `SpawnSiting`'s named rules (minty-quail-29, minty-quail-30).
 - **Movers do not see each other:** event figures pass through walkers and cars and back.
 
 **Build:** a shared separation pass over every mover. **Who gives way** (inbox #884): asked whether, when

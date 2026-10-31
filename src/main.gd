@@ -347,11 +347,11 @@ func _ready() -> void:
 		_resistance.trace = _the_trace()
 		_resistance.setup(_city, _city.map, _city.navigator, null, _city.spawn_siting)
 		_resistance.use_player(_player)
-		# The director's two questions about her view — no camera of its own, so it asks the day's
+		# The director's own question about her view — no camera of its own, so it asks the day's
 		# one view (`VisibleView`) rather than growing a second one: "has she seen this" for a
-		# mark's notice, and "is it anywhere on screen", covered corners included, for whatever it
-		# places or removes.
-		_resistance.set_sight(_city.events.sees, _city.events.on_screen)
+		# mark's notice. Whether anything it places or removes is anywhere on screen, covered
+		# corners included, is the city's siting's, over the same view.
+		_resistance.set_sight(_city.events.sees)
 
 	_day = DayController.new()
 	_day.name = "Day"

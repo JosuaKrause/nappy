@@ -380,9 +380,9 @@ func sees(world_position: Vector2, margin := 0.0) -> bool:
 
 ## Whether a world point is anywhere in the camera's whole view this frame, the corners the
 ## joystick's controls cover included: `world.visible`'s view with no corners laid on it, the view
-## `SpawnSiting.seen_from()` places against. What the resistance asks before it places or
-## removes something (`ResistanceDirector.set_sight()`, wired by `main`), since a thing under a
-## covered corner is still drawn there *(olive-hedgehog, inbox #598, the player: "off screen is not
+## `SpawnSiting.seen_from()` places against. Only tests ask it; what the resistance
+## places and removes asks `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW` of the same view, since a thing
+## under a covered corner is still drawn there *(olive-hedgehog, inbox #598, the player: "off screen is not
 ## the same as visible -- the corners get removed for visible not for off screen")*. `false` until
 ## the view has been looked through, the same as `sees()`.
 func on_screen(world_position: Vector2) -> bool:

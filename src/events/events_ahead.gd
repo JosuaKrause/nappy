@@ -202,24 +202,25 @@ func send_a_pursuer() -> void:
 ## out of the patrol car on the `PRESSES` rung his catch is a stop, out of a `HUNTS` van it ends the
 ## day) put down at its door on her side (`EventInstance.door_for_its_officer()`), spread along its
 ## flank `OFFICER_SPACING` apart when there are two, or on the other side where hers is not ground
-## he may stand on (`Navigator.passable_at()`), or at the vehicle itself where neither is. They
+## he may stand on (`SpawnSiting.Rule.OPEN_TO_IT`), or at the vehicle itself where neither is. They
 ## appear in her view, so there is no badge: their notice is the sight of them, standing with a hand
 ## raised (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`, `PursuitSpec.stands`). Outside the day's plan,
 ## like everything put down after dawn by a director.
 func let_the_officers_out() -> void:
+	var siting := _spawn_siting if _spawn_siting else SpawnSiting.over(world.city_map)
 	for vehicle: EventInstance in world.instances.duplicate():
 		var owed := vehicle.officers_owed()
 		if owed <= 0:
 			continue
 		var def := EventCatalogue.out_of_the_car(world.day,
 				vehicle.def.heat_response != EventDef.HeatResponse.HUNTS)
-		var walks := EventInstance.mover_for(def)
+		var stands := siting.ask_of_ground(Rect2(), EventInstance.mover_for(def))
 		for i in owed:
 			var along := (float(i) - float(owed - 1) * 0.5) * OFFICER_SPACING
 			var at := vehicle.door_for_its_officer(def, 1.0, along)
-			if not world.navigator().passable_at(at, walks):
+			if not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, stands, at):
 				at = vehicle.door_for_its_officer(def, -1.0, along)
-			if not world.navigator().passable_at(at, walks):
+			if not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, stands, at):
 				at = vehicle.global_position
 			var officer := _spawner.spawn(def, at)
 			officer.player_at = world.player.global_position

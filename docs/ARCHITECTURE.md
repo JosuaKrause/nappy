@@ -256,11 +256,13 @@ src/
 	                      controls cover, the one answer to "can she see it", and how far along a
 	                      bearing a drawing is wholly out of it
 	spawn_siting.gd       where something sent at her may start (`SpawnSiting`): the rules a start
-	                      is held to, each by name (legal ground, out of sight, off the camera's
-	                      whole view, clear of the region's wall and doors, a clear run, reaches
-	                      her), the one search out of her sight a caller hands its bearings, the
-	                      start across the street at a front door, and the sight geometry; built by
-	                      the city and handed to the events and the resistance
+	                      is held to, each by name (legal ground, open to the thing, out of sight,
+	                      off the camera's whole view, its whole drawing off that view, clear of
+	                      the region's wall and doors, a clear run, reaches her), the one search
+	                      out of her sight a caller hands its bearings, the start across the
+	                      street at a front door, and the sight geometry; built by the city and
+	                      handed to the events and the resistance, which place every contact,
+	                      guard, mast, neighbor and raid by the same rules
 	release_latch.gd      "she has just come through this, leave her alone until she has left it":
 	                      the flag a door arms on the way out, cleared by her walking out of its
 	                      own reach. The region doors and the building's doors share it

@@ -80,18 +80,30 @@ var trace := RunTrace.new()
 var _column_owed := false
 var column: Array[EventInstance] = []
 
+## Where the raid may put what it brings (`SpawnSiting`), or null.
+var _spawn_siting: SpawnSiting
+
 ## The run the happenings belong to (`RunState`): the day's stream they draw from, the scars they
 ## leave and the blocks they change. The city's (`City.run`), handed in with it.
 var _run: RunState
 
 ## Hands the happenings their city, the map they place on, the navigator what they send walks by —
 ## the director's own, or the map's (`WorldMap.navigator()`) for a rig that hands none — and the run
-## they belong to: `run`, or the city's (`City.run`).
-func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState = null) -> void:
+## they belong to: `run`, or the city's (`City.run`) — and the siting the raid is held to
+## (`spawn_siting`), or the city's (`City.spawn_siting`) over the same map, or none for a rig with
+## neither, where nothing the raid puts down is ever held back for being in view.
+func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState = null,
+		spawn_siting: SpawnSiting = null) -> void:
 	_city = city
 	_run = run if run else (city.run if city else null)
 	_map = map
 	_navigator = navigator if navigator else (map.navigator() if map else null)
+	if spawn_siting:
+		_spawn_siting = spawn_siting
+	elif city and city.spawn_siting and city.spawn_siting.map() == map:
+		_spawn_siting = city.spawn_siting
+	else:
+		_spawn_siting = null
 
 ## Starts the day's happenings: on the mornings before `NEIGHBOR_DAY` the neighbor walks out of
 ## her building beside her and off along her street.
@@ -135,15 +147,14 @@ func start_day(day: int, with_its_events := true) -> void:
 ## whatever the day is waiting to bring in. `her` is her
 ## position, `Vector2.INF` with no player, and `velocity` hers; `shows(row, feet)` is whether any
 ## of what `row` draws, standing at `feet`, would be in the camera's whole view, covered corners
-## included (the director's `_drawing_shows()`, since what it decides is where something appears),
-## which a rig may leave unset.
+## included, which the park's cordon asks of the officers it brings in and a rig may leave unset.
 func tick(delta: float, her: Vector2, velocity: Vector2, shows: Callable) -> void:
 	_elapsed += delta
 	if her != Vector2.INF and velocity.length() >= Tuning.AHEAD_MIN_SPEED:
 		_heading = velocity.normalized()
 		_walked += delta
 	if not _raid_vans.is_empty() and raid.is_empty():
-		_maybe_raid(her, shows)
+		_maybe_raid(her)
 	if _market_owed:
 		_maybe_the_market(delta, her)
 	if cordon:
@@ -178,12 +189,13 @@ func _plan_the_raid() -> void:
 
 ## **What she comes home to**: the raid arrives once she has left, is `Tuning.OUT_OF_SIGHT` from
 ## her door and none of it would be on screen — each van's and the patrol car's whole drawing, at
-## both ends of the car's beat, asked through `shows` — *nothing is seen to appear* — so it is
+## both ends of the car's beat (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`) — *nothing is seen to
+## appear* — so it is
 ## waiting at home rather than arriving in front of her. Cold, whatever the run's heat: a heated
 ## `night_raid` lets its men out after her at `Tuning.HEAT_HUNTS_LEVEL` (`EventDef.hunts`),
 ## and men sent after her from her own door would make the doorstep the one place she is hunted,
 ## which is the opposite of what the raid was decided as.
-func _maybe_raid(her: Vector2, shows: Callable) -> void:
+func _maybe_raid(her: Vector2) -> void:
 	if not _city or not _city.events or her == Vector2.INF:
 		return
 	var door := _map.doorstep_world_position()
@@ -191,12 +203,14 @@ func _maybe_raid(her: Vector2, shows: Callable) -> void:
 		return
 	var van := EventCatalogue.by_id("night_raid")
 	var row := EventCatalogue.by_id("police_patrol")
-	if shows.is_valid():
+	if _spawn_siting:
+		var van_box := _spawn_siting.ask_of_drawing(EventFootprints.footprint_of(van))
 		for at in _raid_vans:
-			if shows.call(van, at):
+			if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, van_box, at):
 				return
+		var car_box := _spawn_siting.ask_of_drawing(EventFootprints.footprint_of(row))
 		for at in _raid_beat:
-			if shows.call(row, at):
+			if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, car_box, at):
 				return
 	for at in _raid_vans:
 		raid.append(_city.events.spawn_extra(van, at))
@@ -409,9 +423,8 @@ func send_the_column(her: Vector2) -> PendingWarning:
 	var going := 1.0 if _rng.randf() < 0.5 else -1.0
 	var top := Tuning.TILE_SIZE * 0.5
 	var bottom := _map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
-	# About as far up the lane as the front truck is created, just out of sight: the view's half
-	# height and the truck's own picture.
-	var lead := SpawnSiting.least_distance() + EventFootprints.box_of(def).size.y
+	# About as far up the lane as the front truck is created, just out of sight.
+	var lead := SpawnSiting.lead_up_a_lane(EventFootprints.box_of(def))
 	var past := Tuning.OUT_OF_SIGHT + def.field_reach()
 	# From the end with room for its place behind her and a stop beyond her, when only one end has
 	# it; with neither, from the end with more road behind her. The spine leaves the map by a tunnel

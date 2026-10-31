@@ -77,10 +77,9 @@ func _task_guards(t) -> void:
 			city.events.use_player(player)
 			player.set_physics_process(false)
 			player.global_position = her
-			var screen := func(p: Vector2) -> bool:
-				return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
-						and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y
-			director.set_sight(screen, screen)
+			city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+					Tuning.VIEW_HALF_EXTENT * 2.0), false)
+			director.set_sight(city.events.sees)
 			director._on_contact_completed(mark.index)
 			placed += 1
 			var guard: EventInstance = director._task_guard
@@ -147,7 +146,7 @@ func _reachability(t) -> void:
 								min_distance, max_distance)
 					2:
 						guard_at = director._draw_guard_position_near_far_mouth(rngs[i], mark,
-								far, min_distance, max_distance, [], Vector2.INF, 0.0, false)
+								far, min_distance, max_distance, Vector2.INF, 0.0, false)
 				if guard_at == Vector2.INF:
 					unguarded[kind][i] += 1
 					continue
@@ -187,10 +186,9 @@ func _on_screen(t) -> void:
 		var robbery := EventCatalogue.by_id("alley_robbery")
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
 			var her := map.tile_to_world(tile)
-			var screen := func(p: Vector2) -> bool:
-				return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
-						and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y
-			director.set_sight(screen, screen)
+			city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+					Tuning.VIEW_HALF_EXTENT * 2.0), false)
+			director.set_sight(city.events.sees)
 			var mark := director._nearest_alley_within(her)
 			if mark == Vector2.INF:
 				continue
