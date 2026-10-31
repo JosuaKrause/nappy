@@ -856,7 +856,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
 	EventBus.event_sighted.connect(on_sighted)
 	# The view whose left corner holds the fire's point: the corner's middle is (-224, 108) world px
 	# off the view's centre at zoom 2.
-	var corner := VisibleView.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var corner := TouchControls.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	for joystick: bool in [true, false]:
 		var plan := EventScheduler.Planned.new(def, at)
@@ -867,7 +867,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
 		events.streaming._plans.append(plan)
 		sighted.clear()
 		var warnings_before := events.pending_warnings().size()
-		events.world.visible.look(view, joystick)
+		events.world.visible.look(view, TouchControls.covered_screen() if joystick else null)
 		events.spawner.summon_what_has_been_sighted(events.plans())
 		var summoned := events.pending_warnings().size() > warnings_before
 		t.check(sighted.has("burning_building") != joystick and summoned != joystick,

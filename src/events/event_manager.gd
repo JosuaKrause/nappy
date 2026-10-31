@@ -193,6 +193,12 @@ func use_run(run: RunState) -> void:
 func use_player(player: Node2D) -> void:
 	world.player = player
 
+## **Hands the manager what the on-screen controls cover** (`TouchControls.covering`), which the
+## day's view reads the scheme from each frame (`VisibleView.controls`); null for none, the tap
+## scheme's whole view. Handed in by `main` from the UI that owns the controls.
+func use_controls(covering: ScreenCover) -> void:
+	world.visible.controls = covering
+
 ## `--force <id> [seconds]`: the one row the director hands out from the next day on, every
 ## `interval` seconds, or "" for the ordinary day. See `EventDirector.force()`.
 func force(row: String, interval: float) -> void:

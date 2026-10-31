@@ -173,6 +173,31 @@ func use_touch(touch: bool) -> void:
 ## this node already exists.
 var _mode := ControlsMode.Mode.TAP
 
+## What these controls cover of the screen, and whether the scheme that covers it is in force: the
+## one `ScreenCover` this node keeps current as the mode changes (`set_mode()`), handed on by `main`
+## to everything that asks what she can see (`VisibleView`).
+var covering := covered_screen()
+
+## The left covered corner includes the painted ring or Run disc, never its invisible catch.
+static func covered_left() -> Rect2:
+	var top := FOCUS_LEFT.y - RUN_RADIUS
+	var right := FOCUS_LEFT.x + RUN_RADIUS
+	return Rect2(0.0, top, right, ScreenOrientation.DESIGN_SIZE.y - top)
+
+## The right covered corner mirrors the same disc footprint.
+static func covered_right() -> Rect2:
+	var top := FOCUS_RIGHT.y - RUN_RADIUS
+	var left := FOCUS_RIGHT.x - RUN_RADIUS
+	return Rect2(left, top, ScreenOrientation.DESIGN_SIZE.x - left, ScreenOrientation.DESIGN_SIZE.y - top)
+
+## The two covered corners as a `ScreenCover`, with `in_force` as given: each focus carries either a
+## steering ring or an equally sized Run disc, so the steering side the title chose does not change
+## the covered footprint.
+static func covered_screen(in_force := false) -> ScreenCover:
+	var made := ScreenCover.new(ScreenOrientation.DESIGN_SIZE, covered_left(), covered_right())
+	made.in_force = in_force
+	return made
+
 ## The focus `Mode.JOYSTICK` steers from, `FOCUS_LEFT` or `FOCUS_RIGHT`; Run is the other one. Set
 ## only by `set_mode()`, from the side the title chose, and never by a press.
 var _steering_focus := FOCUS_LEFT
@@ -191,6 +216,7 @@ func set_mode(mode: ControlsMode.Mode, side := ControlsMode.Side.LEFT) -> void:
 		_run_before_pause = false
 	_mode = mode
 	_steering_focus = focus
+	covering.in_force = mode == ControlsMode.Mode.JOYSTICK
 	if mode != ControlsMode.Mode.JOYSTICK:
 		# The buttons exist only in `JOYSTICK`; a finger still down on one must not keep running on.
 		_let_go_of_the_run_button()

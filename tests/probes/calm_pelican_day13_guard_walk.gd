@@ -119,7 +119,7 @@ func _read_the_mark(t, seed_value: int) -> Dictionary:
 	var mark_at := director.contact_position()
 	player.global_position = mark_at
 	player.facing = Vector2.DOWN
-	city.events.visible_view().look(_view_of(player), false)
+	city.events.visible_view().look(_view_of(player))
 	director.set_sight(city.events.sees)
 	director._on_contact_completed(mark.index)
 	var step := director.current_step()

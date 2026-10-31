@@ -342,11 +342,11 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
 	var crew := city.events.spawn_extra(EventCatalogue.by_id("poster_crew"), at)
 	walls._day_running = true
 	walls._day = 5
-	var corner := VisibleView.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var corner := TouchControls.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	for joystick: bool in [true, false]:
 		walls._jobs.clear()
-		city.events.visible_view().look(view, joystick)
+		city.events.visible_view().look(view, TouchControls.covered_screen() if joystick else null)
 		for i in 4:
 			walls._work_the_crews(PosterWalls.PASTE_EVERY)
 		var pasted: int = int(walls._jobs[tile]["pasted"]) if walls._jobs.has(tile) else 0

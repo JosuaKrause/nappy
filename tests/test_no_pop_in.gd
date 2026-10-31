@@ -47,7 +47,7 @@ static func _views(her: Vector2) -> Array[VisibleView]:
 		leads.append(Vector2(way.x, way.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD)
 	for lead in leads:
 		for joystick: bool in [false, true]:
-			views.append(VisibleView.around(her + lead, joystick))
+			views.append(VisibleView.around(her + lead, TouchControls.covered_screen() if joystick else null))
 	return views
 
 ## A real instance of `row` created at `at` the way the game creates one arriving from off screen,

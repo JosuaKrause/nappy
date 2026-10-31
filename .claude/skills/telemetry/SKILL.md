@@ -53,8 +53,9 @@ costs with the record off is paid by every player; the scenery queue alone has a
 
 A system timed **once a frame** (the crowd's and the event manager's physics steps, the sweep, the
 halo, the edge) reads `FrameRecord.on` and moves its body into a private function of its own (the
-crowd reads and charges through the `CrowdTiming` it owns, `_timing.running()`, `_timing.enter()`,
-`_timing.leave()`, which wraps the same statics):
+crowd reads and charges through the `CrowdTiming` sink it is handed, `timing.running()`,
+`timing.enter()`, `timing.leave()`, which `FrameRecordTiming` in `src/telemetry/` forwards to the same
+statics, so `src/crowd/` names none of the record):
 
 ```gdscript
 func _physics_process(delta: float) -> void:

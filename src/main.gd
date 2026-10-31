@@ -361,6 +361,7 @@ func _ready() -> void:
 	_day.setup(_city.map if _city else null, _player, _run)
 	_day.day_finished.connect(_on_day_finished)
 	_session.watch_the_clock(_day)
+	_hand_the_controls_cover_to_the_events()
 	if _readout:
 		_readout.watch(_player, _baby, _day)
 
@@ -759,6 +760,19 @@ func _put_her_in(map: WorldMap) -> void:
 	if _readout:
 		_readout.watch(_player, _baby, _day)
 
+## Hands each world's events what the on-screen controls cover of the screen, for their view of what
+## she can see (`VisibleView`, `EventManager.use_controls()`). Idempotent, and called wherever either
+## side comes to exist: the controls are built after a boot's first world (`_add_touch_controls()`),
+## and the building's events after the controls. Nothing to hand before the controls exist, which is
+## the tap scheme's whole view.
+func _hand_the_controls_cover_to_the_events() -> void:
+	if not _touch_controls:
+		return
+	if _city:
+		_city.events.use_controls(_touch_controls.covering)
+	if _building_events:
+		_building_events.use_controls(_touch_controls.covering)
+
 ## The map of the world the current spec is walked in — the building's in the escape's first
 ## section, the city's otherwise — the one the run flow hands down to her and asks each walking
 ## frame what its ground does to her.
@@ -796,6 +810,7 @@ func _build_the_escape_building() -> void:
 	_pauses_with_the_game(_building_events)
 	_building_events.setup_world(_interior.map, _run)
 	_building_events.use_player(_player)
+	_hand_the_controls_cover_to_the_events()
 	_interior.excitement_sources = [_building_events.sources]
 	_building_seed = _run.day_rng(_run.header.day, "finale-interior").randi()
 	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map)
@@ -1560,6 +1575,7 @@ func _add_touch_controls() -> void:
 	else:
 		_touch_controls.set_mode(ControlsMode.from_word(config.controls_word),
 				ControlsMode.side_from_word(config.controls_word))
+	_hand_the_controls_cover_to_the_events()
 
 ## Adds the final pass before raising the root render target. The engine's final root blit is a
 ## nearest sample, so a larger target alone would discard three quarters of its pixels. The shader

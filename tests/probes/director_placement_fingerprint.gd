@@ -154,7 +154,7 @@ func _the_guard_spots(city: City, director: ResistanceDirector, label: String, a
 			var rng := _rng(0, 0, "guard-spot")
 			if on_screen and her != Vector2.INF:
 				city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
-						Tuning.VIEW_HALF_EXTENT * 2.0), false)
+						Tuning.VIEW_HALF_EXTENT * 2.0))
 			var spot := director._guard_position(rng, at, for_mark, her, on_screen)
 			_print("%s %s guard spot her %s screen %s -> %s rng %d" % [label,
 					"mark" if for_mark else "roadblock", _point(her), on_screen, _point(spot),
@@ -232,7 +232,7 @@ func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label
 			beat[beat.size() - 1] if not beat.is_empty() else far]:
 		_stand(city, player, far)
 		city.events.visible_view().look(Rect2(focus - Tuning.VIEW_HALF_EXTENT * 0.5,
-				Tuning.VIEW_HALF_EXTENT), false)
+				Tuning.VIEW_HALF_EXTENT))
 		happenings.tick(STEP, far, Vector2.ZERO, director._drawing_shows)
 		_print("%s raid with her screen on %s: %d" % [label, _point(focus),
 				happenings.raid.size()])
@@ -341,7 +341,7 @@ func _guard_at(guard: EventInstance) -> String:
 func _stand(city: City, player: Stroller, at: Vector2) -> void:
 	player.global_position = at
 	city.events.visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
-			Tuning.VIEW_HALF_EXTENT * 2.0), false)
+			Tuning.VIEW_HALF_EXTENT * 2.0))
 
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order.
 func _spots(city: City) -> Array[Vector2]:

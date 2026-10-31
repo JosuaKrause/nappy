@@ -29,12 +29,13 @@ func run(t) -> void:
 ## A view looked through `rig`, with `controls` the controls it is to read the scheme from.
 static func _view_through(rig: Node2D, controls: TouchControls) -> VisibleView:
 	var made := VisibleView.new()
+	made.controls = controls.covering
 	made.look_through(rig)
 	return made
 
 ## A view of the world about `centre` that a rig chose, in the scheme `joystick` says.
 static func _view_about(centre: Vector2, joystick: bool, controls: TouchControls) -> VisibleView:
-	return VisibleView.around(centre, joystick)
+	return VisibleView.around(centre, TouchControls.covered_screen() if joystick else null)
 
 ## The crowd's view of the screen, anchored in `anchor`'s viewport.
 static func _crowd_view_of(anchor: Node) -> CrowdView:

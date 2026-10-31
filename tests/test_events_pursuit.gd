@@ -535,7 +535,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 	var edge := DangerEdge.new()
 	t.add_child(edge)
 	edge.setup(manager, player)
-	manager.visible_view().look(VisibleView.around(her).view, false)
+	manager.visible_view().look(VisibleView.around(her).view)
 	var created: Array[EventInstance] = []
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at))
@@ -574,7 +574,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		elif elapsed > 0.6 and elapsed <= 0.9:
 			step = Vector2.LEFT
 		her += step * Tuning.WALK_SPEED * STEP
-		manager.visible_view().look(VisibleView.around(her).view, false)
+		manager.visible_view().look(VisibleView.around(her).view)
 		manager.warnings.run(STEP, her)
 		elapsed += STEP
 		if not created.is_empty():

@@ -395,7 +395,7 @@ static func lead_up_a_lane(box: Rect2) -> float:
 static func seen_from(view: VisibleView, her: Vector2) -> VisibleView:
 	if view and view.view.has_area():
 		var whole := VisibleView.new()
-		whole.look(view.view, false)
+		whole.look(view.view)
 		return whole
 	return VisibleView.around(her)
 
