@@ -72,7 +72,11 @@ check (that its call-by-call tick moves every agent exactly as the real tick) ho
 
 ## 4. The crowd's numbers, and what changes for a player
 
-**At 30 frames a second nothing changes**: see section 2, 48 of 48 runs identical. **At 120 frames
+**At 30 frames a second the crowd on its own is unchanged**: see section 2, 48 of 48 runs identical.
+In the whole game, the systems that tick after the crowd (the event manager, the baby, a scene recipe's
+runtime) read it one step later than before, so a scene can play out differently from main, the same at
+every frame rate: `task-09-crossing.json`'s pinned car diverges from main's from tick 10 at
+`--fixed-fps 30`, and its trace is identical at 30, 60 and 120fps. **At 120 frames
 a second** (a desktop), the crowd now plays as it did at 30, and the differences from main's 120fps
 game are the old frame-rate effect going away: paired by city and walk, 48 runs a row,
 branch minus main (± standard error):
