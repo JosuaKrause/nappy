@@ -4,7 +4,7 @@
 drawn frame, (1) it still moves on every drawn frame at a desktop's frame rate, (2) at 30 steps a
 second it moves exactly as before, (3) what its work costs per tick and per second, and (4) what
 its own numbers (headways, box throughput, horns, box collisions, bumps, strikes) come to before and
-after. Before is `origin/main` at f784f067; after is the branch's first commit, 86f98a06. Machine:
+after. Before is `origin/main` at f784f067; after is the branch (the frames, parity and cadence runs are of its head; the cost runs, of its first commit, 86f98a06, which the later commits do not touch in the crowd's step). Machine:
 the developer's Apple Silicon Mac, Godot 4.7.2, everything run one at a time.
 
 ## 1. Smooth at 120fps — `before-after-strip.png`, `before-strip.png`, `after-strip.png`
@@ -18,14 +18,15 @@ Seed 4242, day 1, the crowd centred on the doorstep, a camera at zoom 2 on the s
 handed to the crowd as her; after 90 ticks, twelve consecutive drawn frames are read back and each
 strip is the same 240x150 crop of all twelve, round where the moving car nearest the doorstep was
 drawn in the first. `frames-before.txt` and `frames-after.txt` are each frame's line: the ticks run
-when it was drawn, the interpolation fraction, the car node's position and how many sampled pixels
-(every second pixel each way) differ from the frame before.
+when it was drawn, the interpolation fraction, the car node's position and how many of the crop's
+36,000 pixels differ from the frame before (the crop, not the screen, so nothing else that moves
+on the screen is counted).
 
 - Before, the car's node moves on every frame (it moved in `_process()`).
 - After, the car's node moves only on the frames a tick ran (every fourth at 120fps, 4.47px a time),
   and the picture still moves on all twelve: of the nine frames drawn with no tick since the one
-  before, nine differ from the frame before and none stands still. The strips show the car
-  advancing evenly in both.
+  before, nine differ from the frame before in the crop (about 2,700 to 3,000 of its pixels each)
+  and none stands still. The strips show the car advancing evenly in both.
 
 **Limits**: the two runs follow different cars, since the engine's own loop, with its real frame
 timing, ran the crowd for the warmup; the strips are a crop, not the whole screen; a window covered
@@ -65,31 +66,57 @@ costs none of the crowd. Not counted on either side: the engine's own interpolat
 agent's transform per drawn frame, which is native and not timed by the probe. The probe's split
 check (that its call-by-call tick moves every agent exactly as the real tick) holds in all 36 runs.
 
-## 4. The crowd's numbers — `cadence-before.txt`, `cadence-after.txt`
+## 4. The crowd's numbers, and what changes for a player
 
-`tools/test.sh probes/minty_quail_crowd_cadence.gd` (`CADENCE_FRAMES=1,2,4` before, `1` after).
-Each run is a minute of ticks after a five-second warmup, in the live order: before, the crowd's
-tick and then 1, 2 or 4 agent frames of a 1, ½ or ¼ tick (30, 60 or 120fps); after, the tick alone,
-which no frame rate reaches. Walks: `road`, across the carriageway nearest the doorstep and back;
-`walkers`, at the nearest walker. Mean over the eight runs (two seeds, days 1 and 9, two walks):
+**What changes for a player at 30 frames a second**: the tick runs every agent's step first and
+then the traffic, the doors and her (main ran the traffic, the doors and her first and the agents'
+step after). That is the only change there, and it shows as about one more box collision a minute
+(2.0 to 3.1), a car about two percent slower on average (102 to 100px/s), and nothing else past
+chance: horns 4.9 to 4.8, bumps 7.0 to 6.5, strikes 0.42 to 0.35 a minute. **What changes at 120
+frames a second** (a desktop): box collisions 2.9 to 3.1, horns 5.0 to 4.8, bumps 7.1 to 6.5 and
+strikes 0.52 to 0.35 a minute, so the machine no longer decides the numbers; only the strikes'
+fall is past chance, and it is a fall.
 
-| | headway p10 / median / min (px) | box entries a minute | mean car speed | horns | box collisions | bumps | strikes |
-|---|---|---|---|---|---|---|---|
-| before, 30fps | 192 / 422 / 93 | 336 | 111.0 | 5.5 | 1.25 | 6.9 | 0.12 |
-| before, 60fps | 175 / 397 / 87 | 342 | 111.5 | 4.5 | 3.12 | 7.3 | 0.38 |
-| before, 120fps | 177 / 421 / 67 | 336 | 109.7 | 5.8 | 3.62 | 7.1 | 0.50 |
-| after, any fps | 137 / 379 / 66 | 330 | 107.1 | 3.8 | 2.50 | 6.4 | 0.38 |
+`tools/test.sh probes/minty_quail_crowd_cadence.gd` (`CADENCE_FRAMES=1,4` on main, `1` on the
+branch; `CADENCE_SEEDS` names the cities). Each run is a minute of ticks after a five-second
+warmup, in the live order: on main, the crowd's tick and then 1 or 4 agent frames of a 1 or ¼ tick
+(30 or 120fps); on the branch, the tick alone, which no frame rate reaches. Walks: `road`, across
+the carriageway nearest the doorstep and back; `walkers`, at the nearest walker. **Twelve seeds,
+days 1 and 9, both walks: 48 runs a row**, `cadence12-main.txt`, `cadence12-after.txt`. The day is chaotic:
+one changed decision moves every car after it, so the spread between runs is as wide as most
+differences and a few runs tell nothing.
 
-**Reading it**: the day is chaotic — one changed decision moves every car after it — so each row is
-eight samples, and the spread between runs of one row is as wide as the differences between rows
-(`cadence-*.txt` has every run). Box throughput, mean speed and bumps sit within that spread
-everywhere. Before, box collisions (a startle no horn explains: two cars meeting in a junction box)
-came out about three times as often at 60 and 120fps as at 30fps, the decision cadence the queue
-item named; after, the rate no longer depends on the machine. Horns, collisions and strikes are a
-handful a minute, too few for a smaller difference to mean anything. Headways are snapshot gaps
-between moving cars in one lane, dominated by which streets the walk's field holds.
+Mean of the 48 runs, with the paired difference (the same city, crowd and walk on both sides;
+`paired.py`) in the last two rows as difference ± its standard error:
 
-**Limits**: a 60 or 120fps "before" here is emulated by stepping the agents several times a tick in
-a headless rig, not measured on a real display; the probe counts horns by `car_near_miss`, bumps by
+| | horns | box collisions | bumps | strikes | mean car speed | box entries a minute |
+|---|---|---|---|---|---|---|
+| main, 30fps | 4.92 | 2.00 | 6.98 | 0.42 | 101.9 | 311 |
+| main, 120fps | 5.04 | 2.85 | 7.10 | 0.52 | 100.2 | 299 |
+| branch, any fps | 4.79 | 3.10 | 6.48 | 0.35 | 99.6 | 303 |
+| branch minus main at 30fps | -0.12 ± 0.35 | **+1.10 ± 0.41** | -0.50 ± 0.47 | -0.06 ± 0.06 | **-2.3 ± 1.0** | -7.8 ± 4.4 |
+| branch minus main at 120fps | -0.25 ± 0.35 | +0.25 ± 0.61 | -0.62 ± 0.41 | **-0.17 ± 0.07** | -0.6 ± 1.1 | +3.5 ± 5.4 |
+
+Bold is past twice its error; a handful of measures out of twelve compared will show one by chance,
+so none of the three is firm. The headway median is 356px on main at 30fps, 365px at 120fps and
+348px on the branch (-8 ± 9 and -17 ± 8).
+
+**Why 30fps changed at all although the 30Hz parity chains are identical.** The parity probe's rig
+steps the agents and then the tick, the order the branch's live tick runs, so it matches the branch
+and not main's live game at 30fps. Run in main's order (`CADENCE_ORDER=old`, which runs
+`_advance_the_world()`, `_meet_the_player()` and then `_step_the_agents()` on the branch;
+`cadence12-after-in-mains-order.txt`), the branch reproduces main's 30fps row exactly: **all 48
+runs identical on every measure**. So the whole 30fps change is the order inside the tick.
+
+**Limits**: a 120fps "main" here is emulated by stepping the agents four times a tick in a headless
+rig, not measured on a real display; the probe counts horns by `car_near_miss`, bumps by
 `crowd_bumped`, strikes by the `car_strike` hard fail, and a box collision as a car's startle that
-no horn raised.
+no horn raised. `cadence-before.txt` and `cadence-after.txt` are an eight-run subset (two seeds), too few to tell a difference from the chance between runs: they read collisions 1.25 to 2.5 at 30fps and strikes 0.12 to 0.38, which the 48 runs do not bear out.
+
+## 5. What is drawn at 30 steps a second on a faster screen
+
+A car's bob over its wheels and a walker's gait are redrawn on the tick, so they step thirty times
+a second on a 120fps screen while the body between them moves smoothly. A marked car's caret, the
+danger cue, breathes with its horn on every drawn frame (a `_process` that is on only while a horn
+is running). Redrawing every car every frame would put back the per-frame cost this change took
+out of section 3.
