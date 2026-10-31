@@ -808,7 +808,8 @@ rather than driving off at her: being put into her path is not her stepping into
 warning — the raid's pacing car reversing at the end of its beat with her standing behind it — is
 refused the same way, and the car stands. **It gives way where the crowd's cars do**: short of a
 zebra she is waiting at on a street whose traffic gives way, and at a red light, where
-`Crowd.give_way_at_junctions()` stops the crowd's cars (`EventCarDriving.room_to_its_line()`).
+`Crowd.give_way_at_junctions()` stops the crowd's cars (`EventCarDriving.room_to_its_line()`,
+asking the same `GiveWay` rules the crowd's cars do).
 For a zebra on the far side of a junction it holds at the junction's entry line, where a red light
 stops it: nothing enters a box it cannot leave, and the crossing traffic cannot see a patrol car's
 body to wait for it. That is decided before its nose reaches the box, from `Tuning.CAR_JUNCTION_SIGHT`

@@ -164,6 +164,10 @@ var _tree: RouteTree = null
 ## Today's region wall and doors, grown from `_tree` — permanent partition, per-day split. See
 ## `RegionPlanner.plan_day` and `region_plan()`.
 var _region_plan: RegionPlanner.RegionPlan = null
+## The region a siting reads (`siting_region()`) and what it was built from, to hand it again while
+## the plan is unchanged.
+var _sited_region: SpawnSiting.Region = null
+var _sited_from: RegionPlanner.RegionPlan = null
 ## Today's closed streets, and the barriers and wreckage that say so. Also rebuilt daily.
 var _closures: Array[RoadClosure] = []
 var _closure_nodes: Array[Node] = []
@@ -1138,15 +1142,33 @@ func region_plan() -> RegionPlanner.RegionPlan:
 ## Today's region as a siting reads it (`SpawnSiting.Region`): the crossing alleys the wall closes,
 ## and each body of the wall and of the district doors as a disc, its centre and its
 ## `obstructs_radius`; null before `start_day` has grown a region plan.
+##
+## **Built once for the plan and handed again until the plan is another plan**: the resistance asks
+## for it for every candidate tile of a relocation (`ResistanceDirector._nearest_alley_within()`,
+## "cheap enough for every frame"), and a hundred-odd discs rebuilt on each ask were most of that
+## cost. A plan is never edited once the city holds it; whoever changes a day's wall, doors or
+## alleys builds another plan and hands it over (`set_region_plan()`).
 func siting_region() -> SpawnSiting.Region:
 	if not _region_plan:
+		_sited_region = null
+		_sited_from = null
 		return null
+	if _sited_region != null and _sited_from == _region_plan:
+		return _sited_region
 	var region := SpawnSiting.Region.new()
 	region.walled_alleys = _region_plan.alley_walls
 	for body: EventScheduler.Planned in _region_plan.wall_bodies + _region_plan.door_bodies:
 		region.centres.append(body.position)
 		region.radii.append(body.def.obstructs_radius)
+	_sited_region = region
+	_sited_from = _region_plan
 	return region
+
+## Replaces today's region plan with another one (a rig that authors the day's wall and doors). The
+## plan handed over is the city's from then on and is not edited: the siting's region is built from
+## it once (`siting_region()`).
+func set_region_plan(plan: RegionPlanner.RegionPlan) -> void:
+	_region_plan = plan
 
 # ------------------------------------------------------- the day's shape in words ---
 # For whoever reports it: the run log's `plan` lines and the console's day line read the same

@@ -24,11 +24,9 @@ named at `event_instance.gd:3907` as `CrowdAgent._redraw_if_the_picture_changed(
 members live (`WalkerLook`, `CarLook`) once both the crowd's split and the events step that owns
 `src/events/` have merged.
 
-**Carry-overs from events-composed (minty-quail-26), the orchestrating session's rather than the
-player's ask:** a car's driving copies crowd traffic's
-give-way (`EventCarDriving.room_to_its_line()`), the copy `LaneMover` takes; movement proposed,
-validated, then committed for every mover, as a car's frame is (minty-quail-17), built so far for the car
-alone.
+**Carry-over from events-composed (minty-quail-26), the orchestrating session's rather than the
+player's ask:** movement proposed, validated, then committed for every mover, as a car's frame is
+(minty-quail-17), built so far for the car alone.
 
 **Open question, the orchestrating session's carry-over from minty-quail-5 rather than the player's
 ask:** whether the crowd's lane movement goes onto the map's one `Navigator`. It is not part of the

@@ -830,13 +830,9 @@ func _select_structures(errors: Array[String]) -> void:
 		selected.walls.append(segment)
 		selected.wall_bodies.append_array(SealPlanner.place_hard_on(_city.map, segment,
 				"roadblock", entry.end == "a"))
-	region.doors = selected.doors
-	region.door_bodies = selected.door_bodies
-	region.gates = selected.gates
-	region.walls = selected.walls
-	region.wall_bodies = selected.wall_bodies
-	region.alley_doors.clear()
-	region.alley_walls.clear()
+	# The day's plan is replaced, not edited: a recipe that selects no gate or barrier stands no region
+	# wall, and the siting's region is built from the plan it is handed.
+	_city.set_region_plan(selected)
 
 func _segment_inside_extent(segment: StreetNetwork.Segment) -> bool:
 	if _city.map.has_stretch():
