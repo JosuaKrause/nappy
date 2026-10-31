@@ -45,8 +45,9 @@ extends EventBehaviour
 ##   refused and the car stands, so the zebra stays the safe way over and the light the main road's
 ##   contract.
 ##
-## **The give-way is a copy of the crowd's cars'** (`CarStrategy`'s stop lines, `Crowd`'s junction
-## holds), kept in step by hand: shared-components' `LaneMover` is where the two become one.
+## **The give-way is the crowd's cars' own** (`GiveWay`, the world's street rules): the junction
+## box, the red light, the zebra and its exemption for the main road are asked of it, and what is
+## the event car's alone stays here, the refusal of a step past the line.
 ##
 ## **It saves nothing across a stream-out**: whether it stands is decided again every frame, and a
 ## car comes into the world standing, streamed back in as when it is first made.
@@ -207,8 +208,8 @@ func will_strike(her: Vector2) -> bool:
 ## - **A zebra she is waiting at**, on a street whose traffic gives way (not the main road, whose
 ##   crossings the light keeps), within `Tuning.CAR_ZEBRA_SIGHT` ahead, her within half a street of
 ##   the car's line and `Tuning.CAR_ZEBRA_WAIT_RADIUS` along of the paint: the centre stops
-##   `CAR_STOP_LINE_SETBACK` short of the paint's near edge, `CarStrategy._distance_to_stop_line()`'s
-##   own arithmetic — **unless the zebra is on the far side of the junction box ahead**, where that
+##   `CAR_STOP_LINE_SETBACK` short of the paint's near edge (`GiveWay.stop_line()`, the crowd car's
+##   own line) — **unless the zebra is on the far side of the junction box ahead**, where that
 ##   line would stand it inside the box: then it holds at the box's entry line, as at a red light,
 ##   and that is decided from `Tuning.CAR_JUNCTION_SIGHT` short of the box, wherever she waits along
 ##   that zebra, rather than from the zebra's own sight circle.
@@ -224,78 +225,44 @@ func room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	var direction := signf(heading.y if vertical else heading.x)
 	var along := at.y if vertical else at.x
 	var cross := at.x if vertical else at.y
-	var tile := float(Tuning.TILE_SIZE)
 	var nose := event.def.shape.reach()
 	var room := INF
-	# The junction box this car is coming to, as `LaneMover.junction_ahead()` finds it: the crossing
-	# street's whole corridor, its zebras included. `to_the_box` is from the nose to its near edge.
-	var along_tile := floori(along / tile)
-	var index := CityMap.junction_index(along_tile)
-	if CityMap.corridor_offset(along_tile) < 0 and direction > 0.0:
-		index += 1
-	var low := float(index * CityMap.period()) * tile
-	var near := low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile
+	# The junction box this car is coming to: the crossing street's whole corridor, its zebras
+	# included. `to_the_box` is from the nose to its near edge.
+	var index := GiveWay.box_index(along, direction)
+	var near := GiveWay.box_near_edge(index, direction)
 	var to_the_box := (near - along) * direction - nose
-	var box_line := to_the_box - Tuning.CAR_STOP_LINE_SETBACK
+	var box_line := GiveWay.stop_line(to_the_box)
+	var within_sight_of_the_box := to_the_box >= 0.0 and to_the_box <= Tuning.CAR_JUNCTION_SIGHT
 	# The red light.
-	if event.signals != null:
-		var corridor := CityMap.junction_index(floori(cross / tile))
-		var junction := Vector2i(corridor, index) if vertical else Vector2i(index, corridor)
-		if to_the_box >= 0.0 and to_the_box <= Tuning.CAR_JUNCTION_SIGHT \
-				and event.signals.is_signalled(junction) \
-				and not event.signals.green_for(junction, vertical):
+	if within_sight_of_the_box:
+		var corridor := CityMap.junction_index(floori(cross / float(Tuning.TILE_SIZE)))
+		if GiveWay.is_red(event.signals, GiveWay.junction_at(index, corridor, vertical), vertical):
 			room = minf(room, box_line)
-	var gives_way := event.player_at != Vector2.INF \
-			and event._map.street_kind_at(vertical, event._map.world_to_tile(at)) \
-					!= GameEnums.StreetKind.MAIN \
-			and absf((event.player_at.x if vertical else event.player_at.y) - cross) \
-					<= Tuning.STREET_WIDTH * tile * 0.5
+	var gives_way := GiveWay.owes_her_way(event._map, vertical, at, event.player_at)
 	# **The zebra on the far side of the box ahead is decided at the box's entry line**, wherever
 	# she is along it rather than within a sight circle: decided any later, the nose is already in
 	# the box and the car would stand there, short of that zebra — and nothing enters a box it
 	# cannot leave (the **crowd-traffic** skill), least of all a car the crossing traffic cannot see.
 	# So from `CAR_JUNCTION_SIGHT` out, with her waiting at either tile of that zebra, it holds at the
 	# box's entry line, where a red light stops it.
-	if gives_way and to_the_box >= 0.0 and to_the_box <= Tuning.CAR_JUNCTION_SIGHT:
-		var her_along := event.player_at.y if vertical else event.player_at.x
-		var first := index * CityMap.period() \
-				+ (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH if direction > 0.0 else 0)
-		var lane_index := floori(cross / tile)
-		for k in Tuning.SIDEWALK_WIDTH:
-			var zebra := Vector2i(lane_index, first + k) if vertical \
-					else Vector2i(first + k, lane_index)
-			if event._map.is_crossing(zebra) \
-					and absf(her_along - float(first + k) * tile) <= Tuning.CAR_ZEBRA_WAIT_RADIUS:
-				room = minf(room, box_line)
-				break
+	if gives_way and within_sight_of_the_box \
+			and GiveWay.waits_past_the_box(event._map, index, direction, cross, vertical,
+					event.player_at):
+		room = minf(room, box_line)
 	# The zebra she is waiting at.
 	if gives_way and at.distance_to(event.player_at) <= Tuning.CAR_ZEBRA_SIGHT:
-		var waiting_along := event.player_at.y if vertical else event.player_at.x
-		var step := Vector2i(0, int(direction)) if vertical else Vector2i(int(direction), 0)
-		var here := event._map.world_to_tile(at)
-		var run_start := -1
-		for k in range(0, ceili(Tuning.CAR_ZEBRA_SIGHT / tile) + 1):
-			var at_tile := here + step * k
-			var along_index: int = at_tile.y if vertical else at_tile.x
-			if not event._map.is_crossing(at_tile):
-				run_start = -1
-				continue
-			if run_start < 0:
-				run_start = along_index
-			if absf(waiting_along - float(along_index) * tile) > Tuning.CAR_ZEBRA_WAIT_RADIUS:
-				continue
-			var edge := float(run_start + (0 if direction > 0.0 else 1)) * tile
+		var edge := GiveWay.zebra_edge_ahead(event._map, at, vertical, direction, event.player_at)
+		if edge < INF:
 			var to_the_paint := (edge - along) * direction
-			# **Nothing enters a box it cannot leave** (the **crowd-traffic** skill). A zebra on the
-			# far side of the box ahead would stand the car inside the box, where the crossing
-			# traffic — which cannot see a patrol car's body — drives through it; so it holds at the
-			# box's entry line instead, where a red light stops it. A car whose nose is already in
-			# the box has committed, and stands short of the paint.
-			if to_the_box >= 0.0 and (edge - near) * direction > 0.5:
+			# A zebra on the far side of the box ahead would stand the car inside the box, where the
+			# crossing traffic — which cannot see a patrol car's body — drives through it; so it holds
+			# at the box's entry line instead. A car whose nose is already in the box has committed,
+			# and stands short of the paint.
+			if to_the_box >= 0.0 and GiveWay.lies_past_the_box(edge, near, direction):
 				room = minf(room, box_line)
 			elif to_the_paint - nose >= 0.0:
-				room = minf(room, to_the_paint - Tuning.CAR_STOP_LINE_SETBACK)
-			break
+				room = minf(room, GiveWay.stop_line(to_the_paint))
 	return room
 
 ## `seconds` of the car's travel past the touch, cut to what it can cover before the line it gives

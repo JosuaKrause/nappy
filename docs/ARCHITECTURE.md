@@ -263,6 +263,11 @@ src/
 	                      street at a front door, and the sight geometry; built by the city and
 	                      handed to the events and the resistance, which place every contact,
 	                      guard, mast, neighbor and raid by the same rules
+	give_way.gd           where a car on a street gives way (`GiveWay`), stateless: the junction
+	                      box ahead, the red light, the zebra she waits at, the main road's
+	                      exemption, whether a zebra lies past the box; asked by the crowd's cars
+	                      (`CarStrategy`, `Crowd`) and the events' cars (`EventCarDriving`), each
+	                      keeping its own braking or refusal
 	release_latch.gd      "she has just come through this, leave her alone until she has left it":
 	                      the flag a door arms on the way out, cleared by her walking out of its
 	                      own reach. The region doors and the building's doors share it

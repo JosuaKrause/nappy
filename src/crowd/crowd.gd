@@ -737,10 +737,10 @@ func give_way_at_junctions() -> void:
 			var axis := 1 if vertical else 2
 			var crossing_is_in_the_box := (busy & (3 - axis)) != 0
 			var outranked := winner != null and winner_vertical != vertical
-			var red := signalled and not _signals.green_for(junction, vertical)
+			var red := GiveWay.is_red(_signals, junction, vertical)
 			if crossing_is_in_the_box or outranked or red \
 					or not _can_clear_the_box(agent, distance_of[i]):
-				agent.junction_hold = maxf(0.0, distance_of[i] - Tuning.CAR_STOP_LINE_SETBACK)
+				agent.junction_hold = maxf(0.0, GiveWay.stop_line(distance_of[i]))
 
 ## Cars stop at a checkpoint gate exactly the way they stop at a red light: a hold computed here
 ## and consumed by `CarStrategy._give_way()` alongside `junction_hold` and the zebra's own stop

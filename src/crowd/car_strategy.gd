@@ -322,7 +322,7 @@ func _distance_to_stop_line() -> float:
 	# decides it is too late, and drives off over the crossing it just stopped for.
 	if crossing < Tuning.braking_distance(_mover._speed):
 		return INF
-	return maxf(0.0, crossing - Tuning.CAR_STOP_LINE_SETBACK)
+	return maxf(0.0, GiveWay.stop_line(crossing))
 
 ## The fastest this car may go and still keep `CAR_HEADWAY_TIME` of clear road in front of it.
 ##
@@ -343,11 +343,9 @@ func _following_speed() -> float:
 ##
 ## `pedestrian_ahead` is only ever set for the handful of cars near the player, so this probe
 ## does not run for the other hundred.
-## **A main road does not give way**, and that is the whole difference between its crossings and
-## an ordinary street's. The paint is identical and what honours it is not: on an
-## ordinary street the drivers do, which makes crossing a matter of catching somebody's eye; on
-## the spine the light does, which makes it a matter of waiting for one. Take this exemption away
-## and a signal is decoration on top of a courtesy that was already enough.
+##
+## Which zebra, and whether this street gives way to her at all (**a main road does not**: its
+## crossings are the light's), is `GiveWay`'s, the one answer the event cars read too.
 func _crossing_ahead_somebody_is_waiting_at() -> float:
 	if _mover.pedestrian_ahead == Vector2.INF:
 		return INF
@@ -358,48 +356,14 @@ func _crossing_ahead_somebody_is_waiting_at() -> float:
 	# and the car gave way at them, or committed, on the way in.
 	if _mover._turn and _mover._turn_run_up <= 0.0:
 		return INF
-	if _mover._map.street_kind_at(_mover._vertical, _mover._map.world_to_tile(_mover.global_position)) \
-			== GameEnums.StreetKind.MAIN:
+	if not GiveWay.owes_her_way(_mover._map, _mover._vertical, _mover.global_position,
+			_mover.pedestrian_ahead):
 		return INF
-	# Somebody in the next street over is not this street's problem.
-	var lateral := absf((_mover.pedestrian_ahead.x if _mover._vertical else _mover.pedestrian_ahead.y) - _mover._cross())
-	if lateral > Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5:
+	var edge := GiveWay.zebra_edge_ahead(_mover._map, _mover.global_position, _mover._vertical,
+			_mover._direction, _mover.pedestrian_ahead)
+	if edge == INF:
 		return INF
-
-	# Stepped **tile by tile from the car's own tile**, not by sampling world points every 32px.
-	# The sampled version aliases, and the way it fails is the worst possible one: a car stopped
-	# at the line is a few pixels from the paint, so both samples miss the crossing, it decides
-	# there is nothing to give way to and pulls away with somebody on the zebra. Starting at
-	# zero also means a car already on the paint sees it, which is what makes the commit rule
-	# below able to tell "not yet there" from "already across".
-	var waiting_along := _mover.pedestrian_ahead.y if _mover._vertical else _mover.pedestrian_ahead.x
-	var step_tile := Vector2i(0, signi(int(_mover._direction))) if _mover._vertical \
-			else Vector2i(signi(int(_mover._direction)), 0)
-	var here := _mover._map.world_to_tile(_mover.global_position)
-	# The first tile of the run of paint currently being walked, or -1 between runs. **A zebra is
-	# not one tile**, and the car has to stop short of the whole of it rather than short of the
-	# tile the person happens to be standing on — otherwise it parks on the near half of the same
-	# crossing and the paint stops meaning anything. Two tiles deep on an ordinary street, and
-	# *six* where a road crosses a pedestrianised one, which is where this first showed up.
-	var run_start := -1
-	for step in range(0, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):
-		var tile := here + step_tile * step
-		var along_index: int = tile.y if _mover._vertical else tile.x
-		if _mover._map.tile_at(tile) != GameEnums.TileType.CROSSING:
-			run_start = -1
-			continue
-		if run_start < 0:
-			run_start = along_index
-		# Distance along the street, not straight-line: somebody waiting at the far kerb of a
-		# six-tile corridor is beside the crossing, not two tiles from it.
-		var crossing_along := float(along_index * Tuning.TILE_SIZE)
-		if absf(waiting_along - crossing_along) > Tuning.CAR_ZEBRA_WAIT_RADIUS:
-			continue
-		# The near edge of the run, which is its lowest coordinate going one way and its highest
-		# going the other — the scan always starts at the end nearest the car.
-		var edge_tile := run_start + (0 if _mover._direction > 0.0 else 1)
-		return (float(edge_tile * Tuning.TILE_SIZE) - _mover._along()) * _mover._direction
-	return INF
+	return (edge - _mover._along()) * _mover._direction
 
 ## Whether the street `distance` ahead along an axis is one this agent cannot travel: shut for
 ## the day, or not a street at all.

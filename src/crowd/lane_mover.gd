@@ -572,20 +572,12 @@ func junction_ahead() -> Vector2i:
 
 ## Distance from this agent's nose to the near edge of that box. Negative once it is inside.
 func distance_to_junction() -> float:
-	var index := _junction_index()
-	var low := float(index * CityMap.period() * Tuning.TILE_SIZE)
-	var near := low if _direction > 0.0 \
-			else low + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
-	return (near - _along()) * _direction - _nose
+	return GiveWay.distance_to_box(_along(), _direction, _nose)
 
 ## Which corridor band along its own axis the agent is in or heading for. Inside one, that is the
 ## one it is in; in the block band between two, it is whichever lies the way it is pointing.
 func _junction_index() -> int:
-	var along_tile := floori(_along() / float(Tuning.TILE_SIZE))
-	var index := CityMap.junction_index(along_tile)
-	if CityMap.corridor_offset(along_tile) < 0 and _direction > 0.0:
-		index += 1
-	return index
+	return GiveWay.box_index(_along(), _direction)
 
 ## Which way it is pointing, in world space: a unit vector along its actual line of travel,
 ## **continuous through a turn**.
