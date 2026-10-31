@@ -458,6 +458,7 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	t.check(behind != Vector2.INF, "there is open stair behind a wall from a step of the shaft")
 	var player := Node2D.new()
 	player.add_to_group("player")
+	events.use_player(player)
 	t.add_child(player)
 	player.global_position = stands
 	# Ticked at the game's rate until the next bang comes: one tick of the whole interval would also

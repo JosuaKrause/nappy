@@ -45,7 +45,7 @@ func _init(the_run: RunState, the_config: RunConfig) -> void:
 	spend = run.attempt_spend
 
 ## Hands the world the day is walked in. `events` is the events of whichever world she is in: the
-## city's, or the escape's building's.
+## city's, or the escape's building's; they and the resistance are handed her too.
 func use_the_world(the_city: City, the_events: EventManager, the_resistance: ResistanceDirector,
 		the_player: Stroller, the_baby: Baby, the_day: DayController) -> void:
 	city = the_city
@@ -54,6 +54,10 @@ func use_the_world(the_city: City, the_events: EventManager, the_resistance: Res
 	player = the_player
 	baby = the_baby
 	day = the_day
+	if events:
+		events.use_player(player)
+	if resistance:
+		resistance.use_player(player)
 
 ## The day about to be walked, handed to the day's clock.
 func use_the_day(the_spec: DaySpec) -> void:

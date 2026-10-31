@@ -48,7 +48,7 @@ func chaser_side() -> int:
 ## **Whether its guard is spent, or on his way out from the barrier**: what a stream-out carries
 ## (`save()`) so that a barrier streamed in again comes back as only the barrier, never as a guard
 ## who has forgotten and chases again, and what passes over a band that has nothing to warn of
-## (`EventManager._warn_about_the_ground_she_is_on()`).
+## (`WarningBoard.warn_about_the_ground_she_is_on()`).
 func is_spent() -> bool:
 	return event.phase == EventInstance.Phase.SPENT or (event.is_leaving and has_left_its_body())
 

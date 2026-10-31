@@ -202,9 +202,9 @@ func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t) -> void:
 
 	# `.free()`, not `queue_free()`: `Stroller._exit_tree()` removes it from the "player" group
 	# synchronously, and this suite lets no frame pass for a deferred deletion to catch up —
-	# `stroller.gd:105` puts every instance into that group, and `ContactPoint` (test_resistance.gd)
-	# looks it up by group later in the same run, so a queued deletion here is a stale Stroller
-	# another suite's lookup can pick up instead of its own.
+	# `Stroller._ready()` puts every instance into that group, and the crowd and the HUD
+	# (`Crowd`, `Hud`) look her up by group later in the same run, so a queued deletion here is a
+	# stale Stroller another suite's lookup can pick up instead of its own.
 	stroller.free()
 	hud.free()
 

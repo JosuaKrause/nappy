@@ -622,7 +622,7 @@ func _robber_waiting_heading() -> Vector2:
 
 ## Whether the mast is in the silent, amber-lamped warning that opens every broadcast cycle right
 ## now — `Tuning.MAST_FIRST_DAY`'s own "a 3s telegraph, a 22s period", read off `age` because a
-## mast's `age` **is** the city's broadcast clock (`EventManager._broadcast_clock`, carried in at
+## mast's `age` **is** the city's broadcast clock (`EventStreaming.broadcast_clock`, carried in at
 ## every `resume()`), not a per-instance clock that started whenever she happened to walk up.
 ## That is what makes the telegraph repeat every period rather than firing once at creation the way
 ## `is_telegraphing()` does for an ordinary row, and what keeps two masts met minutes apart in the

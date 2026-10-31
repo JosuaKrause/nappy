@@ -8,8 +8,8 @@ extends RefCounted
 ## **The walk** is the one `--route mark,calm,home` plays (`RouteRig`), without its hazard pricing:
 ## from the doorstep to the mark along the shortest walkable path, reading it there, then to the
 ## nearest calm tile on foot, a settle of `SETTLE_SECONDS` standing still, then home. Every step runs
-## what the manager's own tick runs for her walk (`_site_what_is_on_her_way()`,
-## `_place_what_is_owed_ahead()`, `stream_around()`), at `Tuning.WALK_SPEED`.
+## what the manager's own tick runs for her walk (`EventsAhead.site_what_is_on_her_way()`,
+## `EventsAhead.place_what_is_owed_ahead()`, `EventStreaming.stream_around()`), at `Tuning.WALK_SPEED`.
 ##
 ## **What is counted**, per seed: whether the van's marble was drawn; where the van was put — how far
 ## ahead of her, and how near her own later walk ever came to it; whether it was ever inside her view
@@ -77,7 +77,7 @@ func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()
-	city.events._find_player()
+	city.events.use_player(player)
 	var walk := Walk.new()
 	walk.city = city
 	walk.row = row
@@ -152,11 +152,11 @@ class Walk extends RefCounted:
 
 	func _tick(player: Stroller) -> void:
 		var events := city.events
-		events._site_what_is_on_her_way(STEP)
-		events._place_what_is_owed_ahead(STEP)
+		events.ahead.site_what_is_on_her_way(STEP)
+		events.ahead.place_what_is_owed_ahead(STEP)
 		events.stream_around(player.global_position)
 		if van == null:
-			for plan: EventScheduler.Planned in events._director._placed_from_the_route:
+			for plan: EventScheduler.Planned in events.ahead._director._placed_from_the_route:
 				if plan.def.id == row:
 					van = plan
 					drawn_at = walked
@@ -201,7 +201,7 @@ class Walk extends RefCounted:
 					van.position] + "sited %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when put there %s; on a route %s; on her line %s" \
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,
 					drawn_in_view_at_siting, on_a_route, on_her_line]
-		var waits: Dictionary = city.events._siting.waits if city.events._siting else {}
+		var waits: Dictionary = city.events.ahead._siting.waits if city.events.ahead._siting else {}
 		return "walked %.0fs, drawn at %.0fs (%s), sited %s | %s | waits %s | seen at %s" % [walked,
 				drawn_at, drawn_phase, sited_phase, where, waits,
 				"%.0fs" % seen_at if seen_at >= 0.0 else "never"]

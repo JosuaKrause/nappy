@@ -14,7 +14,7 @@ extends RefCounted
 ## How a perform step's contact is placed once its mark is touched.
 ## - `EVENT` rides a freshly spawned `EventInstance` of `task_event_id`, at a tile from
 ##   `placement` — the man shouting, the van, the roadblock.
-## - `SCAR` rides the run's own recorded scar for `task_event_id` (`GameState.attempt_spend.scars`), or falls
+## - `SCAR` rides the run's own recorded scar for `task_event_id` (`RunState.attempt_spend.scars`), or falls
 ##   back to `EVENT`'s own placement when the run has no such scar.
 ## - `DOOR` sits at one of today's region-wall doors, a bare point rather than a rider.
 ## - `PARK_SWING` sits at the swing of one specific park's playground, also a bare point.
@@ -131,7 +131,7 @@ static func for_day(day: int, completed: Array[int], failed: Array[int],
 		return step
 	return null
 
-## The step whose task is warning the neighbor — the one `GameState.neighbor_was_taken()` asks
+## The step whose task is warning the neighbor — the one `RunState.neighbor_was_taken()` asks
 ## about. Null on a calendar without one.
 static func warning_step() -> Step:
 	for step in all():

@@ -383,6 +383,7 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 	# her: where she is, to put his warning up against.
 	var her := Node2D.new()
 	her.add_to_group("player")
+	city.events.use_player(her)
 	t.add_child(her)
 	her.global_position = at
 
@@ -423,7 +424,7 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 		GameState.posters.paste(cell, PosterArt.Kind.RULES, false, 1)
 		_forget_the_pursuer(city.events)
 		hold.call(Vector2.UP, spot, PosterWalls.PRESS_TO_TEAR + 0.05)
-		sent.append(city.events.a_pursuer_is_after_her())
+		sent.append(city.events.ahead.a_pursuer_is_after_her())
 	t.check(GameState.posters.tears == tears, "every push tore its sheet (%d of %d)"
 			% [GameState.posters.tears, tears])
 	t.check(not sent[0], "the run's first tear sends nobody")
@@ -445,7 +446,7 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 		GameState.posters.paste(cell, PosterArt.Kind.RULES, false, 1)
 		_forget_the_pursuer(city.events)
 		hold.call(Vector2.UP, spot, PosterWalls.PRESS_TO_TEAR + 0.05)
-		sent.append(city.events.a_pursuer_is_after_her())
+		sent.append(city.events.ahead.a_pursuer_is_after_her())
 	t.check(sent == first_marbles, "a lost day gives the tears back and the retry draws the same marbles")
 	_forget_the_pursuer(city.events)
 	var folded := [0]
@@ -462,9 +463,9 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 
 ## Takes a sent pursuer's warning down, so the next tear is asked about on its own.
 func _forget_the_pursuer(events: EventManager) -> void:
-	events._pending.clear()
-	events._sent_warning = null
-	events._sent_after_her = null
+	events.warnings._pending.clear()
+	events.ahead._sent_warning = null
+	events.ahead._sent_after_her = null
 
 # ---------------------------------------------------------------- the slide ---
 

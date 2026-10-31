@@ -81,9 +81,14 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		instance.came_under_a_warning = true
 		instance.is_pelican = pelican
 		# f494956e spends telegraph_time; the current game preserves a pulsing row's beat.
-		var manager: GDScript = load("res://src/events/event_manager.gd")
-		var age: float = manager.age_when_warned(def) if manager.has_method("age_when_warned") \
-				else def.telegraph_time
+		# The beat's age lives on whichever class owns it at the commit under test.
+		var age: float = def.telegraph_time
+		for owner_path: String in ["res://src/events/event_spawner.gd",
+				"res://src/events/event_manager.gd"]:
+			var beat_owner: GDScript = load(owner_path) if ResourceLoader.exists(owner_path) else null
+			if beat_owner and beat_owner.has_method("age_when_warned"):
+				age = beat_owner.age_when_warned(def)
+				break
 		instance.resume(age, 0.0)
 		source.add_child(instance)
 		source.live.append(instance)

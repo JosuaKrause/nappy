@@ -12,7 +12,7 @@ static func events_in(parent: Node, scene: InteriorScene,
 	var events := EventManager.new()
 	events.stream_radius = INF
 	parent.add_child(events)
-	events.setup_world(scene.map)
+	events.setup_world(scene.map, GameState)
 	scene.events = events
 	events.set_meta(&"building_seed", rng.randi())
 	restart(events, scene)

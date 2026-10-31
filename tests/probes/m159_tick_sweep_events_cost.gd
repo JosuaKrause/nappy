@@ -102,7 +102,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	crowd.start_day(day, _rng("crowd", city_seed, day), start)
 	crowd.set_gates(city.region_plan().gates)
 	crowd._player = rig
-	events._player = rig
+	events.use_player(rig)
 	rig.global_position = start
 	rig.velocity = Vector2.ZERO
 	rig._alert = Stroller.Alert.NONE
@@ -181,33 +181,33 @@ func _rng(stream: String, city_seed: int, day: int) -> RandomNumberGenerator:
 ## microseconds in `EVENT_PARTS` order; a call the step skips this tick reads 0.
 func _split_events(events: EventManager, delta: float) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	events._broadcast_clock += delta
-	events._retire_finished()
+	events.streaming.broadcast_clock += delta
+	events.streaming.retire_finished()
 	stamps.append(Time.get_ticks_usec())
-	var found := events._find_player()
+	var found := events.world.has_player()
 	if found:
 		events._look_through_the_camera()
 	stamps.append(Time.get_ticks_usec())
 	if found and not events._recipe_plan:
-		events._site_what_is_on_her_way(delta)
+		events.ahead.site_what_is_on_her_way(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.stream_around(events._player.global_position)
+		events.stream_around(events.world.player.global_position)
 	stamps.append(Time.get_ticks_usec())
 	if found and not events._recipe_plan:
-		events._place_what_is_owed_ahead(delta)
+		events.ahead.place_what_is_owed_ahead(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._summon_what_has_been_sighted()
+		events.spawner.summon_what_has_been_sighted(events.plans())
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._report_the_pelicans_in_view()
+		events.spawner.report_the_pelicans_in_view()
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._watch_the_encounters(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._run_the_warnings(delta, events._player.global_position)
+		events.warnings.run(delta, events.world.player.global_position)
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._tell_them_where_she_is()
@@ -215,10 +215,10 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 	events._step_them(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._let_the_officers_out()
+		events.ahead.let_the_officers_out()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._warn_about_the_ground_she_is_on()
+		events.warnings.warn_about_the_ground_she_is_on()
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events.checkpoints.watch_the_door_lines()

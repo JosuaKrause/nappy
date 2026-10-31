@@ -409,7 +409,7 @@ func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
 # *(`docs/TODO.md`, "The log says when she is stuck": a `--walk` rig that never left the
 # doorstep currently reads as a run, because standing still emits nothing else — no crossing,
 # no turn, no contact. `TelemetryObserver._watch_blocked` is the fix, and it is exercised
-# directly, the way `test_danger.gd` drives `EventManager._warn_about_the_ground_she_is_on()`
+# directly, the way `test_danger.gd` drives `WarningBoard.warn_about_the_ground_she_is_on()`
 # by hand: it is a per-frame poll with no signal of its own to trigger from outside.)*
 
 ## A bare observer with only the one field `_watch_blocked` reads: `_map`, for the tile in the

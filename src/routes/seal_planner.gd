@@ -39,7 +39,7 @@ extends RefCounted
 ##
 ## **A sealed street's def is never the catalogue's own row.** `sealed_variant` duplicates it and
 ## strips `aftermath`: the catalogue's `barricade` leaves a permanent scar and moves a block's arc
-## (`EventManager._mark_the_block`) because *that* barricade is the aftermath of something that
+## (`EventSpawner._mark_the_block`) because *that* barricade is the aftermath of something that
 ## happened. A seal is a fact about *today's* tree — tomorrow's may run straight down this same
 ## street — so a seal that scarred the city would seal it for the rest of the run, which is a
 ## closure no `RouteTree` decided on. The same duplication also disables `EventInstance`'s

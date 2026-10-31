@@ -75,13 +75,13 @@ func _test_a_city_event_reaches_her_meter(t, main: Node2D) -> void:
 	var baby: Baby = main._baby
 	var player: Stroller = main._player
 	var spot := Vector2.INF
-	for instance in city.events._instances:
+	for instance in city.events.world.instances:
 		var at: Vector2 = instance.global_position
 		if instance.contribution_at(at) > 0.0 and not city.excitement_sources_at(at).is_empty():
 			spot = at
 			break
 	t.check(spot != Vector2.INF, "the city has an event whose field can be stood in (%d live)"
-			% city.events._instances.size())
+			% city.events.world.instances.size())
 	if spot == Vector2.INF:
 		return
 	player.global_position = spot

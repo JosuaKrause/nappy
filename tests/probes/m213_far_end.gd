@@ -74,6 +74,7 @@ func _task_guards(t) -> void:
 			camera.name = "Camera2D"
 			player.add_child(camera)
 			t.add_child(player)
+			city.events.use_player(player)
 			player.set_physics_process(false)
 			player.global_position = her
 			var screen := func(p: Vector2) -> bool:
@@ -115,7 +116,7 @@ func _reachability(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(null, map)
+		director.setup(null, map, null, GameState)
 		var rngs: Array[RandomNumberGenerator] = []
 		for i in 3:
 			var rng := RandomNumberGenerator.new()
@@ -178,7 +179,7 @@ func _on_screen(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(null, map)
+		director.setup(null, map, null, GameState)
 		director._day = 6
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-screen:%d" % seed_value)

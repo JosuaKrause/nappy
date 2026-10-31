@@ -73,7 +73,7 @@ func _walk(t, seed_value: int) -> String:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()
-	city.events._find_player()
+	city.events.use_player(player)
 	var map := city.map
 	var outcome := "no mark"
 	var mark := resistance.current_step()
@@ -81,11 +81,11 @@ func _walk(t, seed_value: int) -> String:
 		var seen := {"man": null, "in_view": false}
 		var tick := func() -> void:
 			var events := city.events
-			events._site_what_is_on_her_way(STEP)
-			events._place_what_is_owed_ahead(STEP)
+			events.ahead.site_what_is_on_her_way(STEP)
+			events.ahead.place_what_is_owed_ahead(STEP)
 			events.stream_around(player.global_position)
 			if seen["man"] == null:
-				for plan: EventScheduler.Planned in events._director._placed_from_the_route:
+				for plan: EventScheduler.Planned in events.ahead._director._placed_from_the_route:
 					if plan.def.id == ROW:
 						seen["man"] = plan
 			var man: EventScheduler.Planned = seen["man"]

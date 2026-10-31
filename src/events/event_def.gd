@@ -422,7 +422,7 @@ func notice_on(day: int) -> NoticeSpec:
 ## resistance's own `robber_giving_chase` and `van_guard_giving_chase`, and the copies
 ## `as_warned_first()` makes of a row that is otherwise placed some other way — day 13's column of
 ## `military_convoy`, and `charging_dog` sent at her down her heading — which
-## `EventManager.as_warned()` makes of any row that comes through a warning first. Read by
+## `EventSpawner.as_warned()` makes of any row that comes through a warning first. Read by
 ## `warns_before_it_exists()`, and so by the fairness contract, which holds such a row to the flat
 ## `Tuning.OFFSCREEN_WARNING_MIN` rather than to a floor worked out from its field and speed, and its
 ## badge alone to `Tuning.WARNING_ALONE_MAX`.
@@ -555,7 +555,7 @@ func starts_by(start: PursuitSpec.Start) -> bool:
 ## How this row answers to the resistance.
 ##
 ## **The city gets worse the further into the subquest you are**, and this is the whole of how a row
-## says so. `GameState.resistance.progress` is an integer 0..`Tuning.RESISTANCE_GOAL`, and
+## says so. `RunState.resistance.progress` is an integer 0..`Tuning.RESISTANCE_GOAL`, and
 ## `at_heat()` below turns a level into a **derived copy** of the row with its numbers moved — so
 ## nothing downstream of the day's plan has to know that heat exists at all. An `EventInstance`
 ## holds whichever copy the day handed it and reads `intensity`, `pursuit` and the rest exactly as
@@ -667,7 +667,7 @@ enum SolidWhen {
 	## boom spans — that ground is the boom's.
 	##
 	## Read in three more places, each because a boom is a door body that does not detain:
-	## `EventManager.obstructed_footprint()` keeps it out of the crowd's per-tile record the way it
+	## `EventSpawner.obstructed_footprint()` keeps it out of the crowd's per-tile record the way it
 	## keeps the huts out (the cars' answer to it is the gate hold), `EventDirector` keeps the door's
 	## clear ground around it, and `EventInstance` lets its collision body follow the arm.
 	WHILE_LOWERED,
@@ -949,7 +949,7 @@ func effect() -> GameEnums.BlockerEffect:
 
 ## This row as it is at a given resistance level, which is `self` for almost everything.
 ##
-## `level` is `GameState.resistance.progress`, clamped here rather than by the caller — it can reach
+## `level` is `RunState.resistance.progress`, clamped here rather than by the caller — it can reach
 ## five over the five tasks while `Tuning.RESISTANCE_GOAL` is the four that qualify, and full heat is
 ## the qualification rather than the last errand.
 ##
@@ -1359,7 +1359,7 @@ func validate() -> bool:
 	# warning first. Its in-world telegraph, where it has one, is still held by the contract: a flock
 	# or a mouse standing until she walks in owes it like the lorry does. The one row with none is
 	# the loose dog, sent down her line and met with its telegraph already spent
-	# (`EventManager._send_down_her_line()`), which has no in-world telegraph to hold.
+	# (`EventsAhead._send_down_her_line()`), which has no in-world telegraph to hold.
 	if not telegraphs and comes_down_her_line():
 		return true
 	if warns_before_it_exists():
@@ -1487,7 +1487,7 @@ func comes_down_her_line() -> bool:
 ## (`warned_first`), for a row warned of that is otherwise placed some other way — day 13's column of
 ## `military_convoy`, whose ordinary row is a `MAP` place the day plans at dawn, and `charging_dog`
 ## sent at her down her heading, whose ordinary row waits on a tile from the day after it teaches the
-## run (`EventManager.as_warned()`). Its badge alone is its own, at most
+## run (`EventSpawner.as_warned()`). Its badge alone is its own, at most
 ## `Tuning.WARNING_ALONE_MAX`: a non-pursuer's `telegraph_time` is cut to it (the column's 4.43s,
 ## which the planned convoy keeps in the world), and a pursuer keeps its `offscreen_notice`. The copy
 ## is validated as it is made, so it is held to the flat minimum a warning first owes.

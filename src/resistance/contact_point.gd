@@ -47,6 +47,7 @@ var touch_ellipse := Vector2.ZERO
 ## named district door. No distance completes it, however near she stands.
 var by_crossing := false
 
+## The player whose touch completes it, handed in by its director (`use_player()`).
 var _player: Stroller
 var _pulse := 0.0
 ## Set only for a perform step: the instance this contact rides on. The contact stands on it —
@@ -77,6 +78,10 @@ func ride(which: ResistanceSteps.Step, instance: EventInstance, offset: Vector2)
 func rider_alive() -> bool:
 	return not _rider or (is_instance_valid(_rider) and not _rider.is_finished)
 
+## Hands the contact the player whose touch completes it.
+func use_player(player: Stroller) -> void:
+	_player = player
+
 func _physics_process(delta: float) -> void:
 	if is_done:
 		return
@@ -85,10 +90,11 @@ func _physics_process(delta: float) -> void:
 		if not rider_alive():
 			return
 		global_position = _rider.global_position + _rider_offset
-	if not _player:
-		_player = get_tree().get_first_node_in_group("player") as Stroller
-		if not _player:
-			return
+	# Out of the `player` group she is stood aside for the title screen (`Stroller.stand_aside()`),
+	# and the city this contact stands in plays on behind it: nobody is playing, so nothing is
+	# touched.
+	if not _player or not is_instance_valid(_player) or not _player.is_in_group("player"):
+		return
 	if would_complete_at(_player.global_position):
 		_complete()
 	queue_redraw()

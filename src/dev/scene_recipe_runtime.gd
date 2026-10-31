@@ -550,7 +550,7 @@ func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		return errors
 	_start_the_route(setup)
 	for entry: Dictionary in setup.get("events", []):
-		for plan in city.events._plans:
+		for plan in city.events.plans():
 			if plan.get_meta("recipe_name", "") == entry.name:
 				if not plan.live:
 					errors.append("event %s is not live at its required initial position" % entry.name)
@@ -612,7 +612,7 @@ func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 	_install_posters(setup.get("posters", []), errors)
 	manifest["initial_actors"] = snapshot()
 	manifest["installed_events"] = []
-	for plan in city.events._plans:
+	for plan in city.events.plans():
 		manifest.installed_events.append({"row": plan.def.id,
 				"position": [plan.position.x, plan.position.y], "facing": [plan.facing.x, plan.facing.y]})
 	return errors

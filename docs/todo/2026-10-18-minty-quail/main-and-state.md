@@ -24,8 +24,3 @@ starts; `_recipe.begin()` in both boots and the escape boot's install block; the
 clock; `_city_map()` choosing the recipe's map; the escape boot taking its day only from a recipe;
 the early return in `_plan_the_finale_city()`; `_start_day()` branching to `_start_recipe_day()`;
 `_apply_recipe_teaching()`, which writes the HUD's private fields (a dependency pointing up a layer).
-
-**Carry-over for the events PR 4** (the events agent's files): these read the run off `GameState`
-rather than being handed it — `src/events/event_manager.gd`, `event_scheduler.gd`, `event_def.gd`,
-`event_catalogue.gd`, `event_director.gd`, and `src/resistance/resistance_director.gd`,
-`happenings.gd`, `resistance_steps.gd`.

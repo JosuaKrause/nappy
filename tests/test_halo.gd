@@ -248,14 +248,14 @@ func _test_process_reads_net_shared_by_baby_decay(t) -> void:
 	strong.setup(_def("strong_net", 40.0), Vector2.ZERO)
 	manager.add_child(strong)
 	strong.set_process(false)
-	manager._instances.append(strong)
+	manager.world.instances.append(strong)
 	strong.accumulate_landed(30.0)
 
 	var weak := EventInstance.new()
 	weak.setup(_def("weak_net", 40.0), Vector2.ZERO)
 	manager.add_child(weak)
 	weak.set_process(false)
-	manager._instances.append(weak)
+	manager.world.instances.append(weak)
 	weak.accumulate_landed(10.0)
 
 	halo._process(STEP)
@@ -431,7 +431,7 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 	strong.setup(_def("strong_halo", 30.0), Vector2.ZERO)
 	manager.add_child(strong)
 	strong.set_process(false)
-	manager._instances.append(strong)
+	manager.world.instances.append(strong)
 	# Out of reach at her position (400px against a 150px outer radius), so it clears neither the
 	# floor nor `select_sources()`'s cap -- the case the old `in` scan and the new lookup both have
 	# to answer "no" to.
@@ -439,7 +439,7 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 	weak.setup(_def("weak_halo", 20.0), Vector2(400.0, 0.0))
 	manager.add_child(weak)
 	weak.set_process(false)
-	manager._instances.append(weak)
+	manager.world.instances.append(weak)
 
 	halo._process(STEP)
 
@@ -781,7 +781,7 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 		instance.setup(_def("row_%d" % i, 20.0), Vector2(32.0 * float(i), 0.0))
 		manager.add_child(instance)
 		instance.set_process(false)
-		manager._instances.append(instance)
+		manager.world.instances.append(instance)
 
 	var ever_lit := {}
 	var waits := 0
@@ -791,10 +791,10 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 		# 96px a frame along the row: past the picked set's whole reach every couple of frames.
 		player.global_position = Vector2(fmod(96.0 * float(step), 32.0 * float(count)), 0.0)
 		halo._process(STEP)
-		for instance in manager._instances:
+		for instance in manager.world.instances:
 			if instance.holds_a_halo():
 				instance._halo._process(STEP)
-		for source in ExcitementHalo.select_sources(manager._instances, player.global_position):
+		for source in ExcitementHalo.select_sources(manager.world.instances, player.global_position):
 			ever_lit[source] = true
 			if source.holds_a_halo():
 				continue
@@ -844,7 +844,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 		instance.setup(_def("held_%d" % i, 20.0), Vector2(32.0 * float(i), 0.0))
 		manager.add_child(instance)
 		instance.set_process(false)
-		manager._instances.append(instance)
+		manager.world.instances.append(instance)
 		instance.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		for k in 6:
 			instance._halo._process(STEP)
@@ -853,15 +853,15 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	t.check(probe.held == EntityHalo.RIM_BUDGET,
 			"the budget is full of fading rims (%d held)" % probe.held)
 
-	# Retired the way `EventManager._retire_finished()` retires an event: out of the list, queued.
-	var retired: EventInstance = manager._instances[0]
-	manager._instances.erase(retired)
+	# Retired the way `EventStreaming.retire_finished()` retires an event: out of the list, queued.
+	var retired: EventInstance = manager.world.instances[0]
+	manager.world.instances.erase(retired)
 	retired.queue_free()
 	var fresh := EventInstance.new()
 	fresh.setup(_def("fresh", 20.0), Vector2(5000.0, 0.0))
 	manager.add_child(fresh)
 	fresh.set_process(false)
-	manager._instances.append(fresh)
+	manager.world.instances.append(fresh)
 	player.global_position = fresh.global_position
 	halo._process(STEP)
 	t.check(not retired.holds_a_halo(),
@@ -1141,7 +1141,7 @@ func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t
 	instance.setup(_def("dropped", 20.0), Vector2.ZERO)
 	manager.add_child(instance)
 	instance.set_process(false)
-	manager._instances.append(instance)
+	manager.world.instances.append(instance)
 	for step in int(ceil(EntityHalo.FADE_IN_SECONDS / STEP)) + 2:
 		halo._process(STEP)
 		instance._halo._process(STEP)
@@ -1149,7 +1149,7 @@ func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t
 			"picked beside her, the event holds a lit rim")
 
 	# Out of the list, but not freed and not queued for deletion.
-	manager._instances.erase(instance)
+	manager.world.instances.erase(instance)
 	halo._process(STEP)
 	t.check(instance.holds_a_halo() and is_zero_approx(instance._halo._target_alpha),
 			"no longer a candidate, it is told zero and its rim starts to fade")

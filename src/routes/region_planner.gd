@@ -97,9 +97,9 @@ class RegionPlan extends RefCounted:
 	var alley_doors: Array[Rect2i] = []
 	## The wall's own bodies, as `EventScheduler.Planned` — hard seals of the roadblock row, one
 	## tile deep at a boundary segment's mouth or an alley's two mouths. Kept as its own list,
-	## appended to `EventManager._plans` by the caller, rather than merged anywhere: a caller that
-	## only wants to know where the wall runs never has to filter it back out of the day's whole
-	## plan.
+	## appended to the day's plan (`EventManager.plans()`) by the caller, rather than merged
+	## anywhere: a caller that only wants to know where the wall runs never has to filter it back
+	## out of the day's whole plan.
 	var wall_bodies: Array[EventScheduler.Planned] = []
 	## The door structure's own bodies: two `checkpoint_hut`s and a `checkpoint_gate` at every
 	## street door's mouth, one `checkpoint_post` at each mouth of every alley door. Kept apart

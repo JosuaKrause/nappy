@@ -52,7 +52,7 @@ extends RefCounted
 ## both speeds because she is walking into it.
 ##
 ## **Such a row has no free pulse phase and is measured once rather than averaged.** It is created
-## at the age that has it reach her at the loud of its beat (`EventManager.age_when_warned()`), so how
+## at the age that has it reach her at the loud of its beat (`EventSpawner.age_when_warned()`), so how
 ## far through the beat it is when it reaches her is fixed, not by when she happened to arrive.
 ## Averaging eight phases onto it would be averaging over something the game does not vary.
 
@@ -158,7 +158,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	# Past the telegraph, plus the requested phase offset -- moved for real, nobody watching. A row
 	# that comes at her is created with its telegraph already spent and meets her from there.
 	if toward_her:
-		instance.resume(EventManager.age_when_warned(def), 0.0)
+		instance.resume(EventSpawner.age_when_warned(def), 0.0)
 	var warm := 0.0 if toward_her else def.telegraph_time + 0.05 + phase_delay
 	var warm_steps := int(ceil(warm / STEP))
 	for _i in warm_steps:

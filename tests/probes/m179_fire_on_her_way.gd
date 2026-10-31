@@ -97,13 +97,14 @@ func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 		return {}
 
 	var rig := _walker(t, route[0])
+	city.events.use_player(rig)
 	var state := {
 		"clock": 0.0, "sited_at": -1.0, "lead": 0.0, "seen_at": -1.0,
 		"refusals": {}, "worst_frame": 0.0, "attempt_frames": [] as Array[float],
 	}
 	_follow(city, rig, route, plan, state)
 
-	var siting := city.events.walk_siting()
+	var siting := city.events.ahead.walk_siting()
 	var widened := siting.widened if siting else 0
 	state["refusals"] = siting.waits.duplicate() if siting else {}
 	var met: bool = float(state["seen_at"]) >= 0.0
@@ -191,7 +192,7 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planne
 		# The manager's tick steps every instance, so the engine leaves the top of its street and
 		# the fire finishes its telegraph.
 		city.events._physics_process(STEP)
-	var engine_at := EventManager.where_the_summoned_row_stops(city.map, plan.position)
+	var engine_at := EventSpawner.where_the_summoned_row_stops(city.map, plan.position)
 	var engine := EventCatalogue.by_id(plan.def.aftermath.on_sight)
 	var along := Vector2.RIGHT
 	var inward := city.map.pavement_inward(city.map.world_to_tile(plan.position))

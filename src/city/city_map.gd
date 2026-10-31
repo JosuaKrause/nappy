@@ -420,7 +420,7 @@ func is_soft_sealed(tile: Vector2i) -> bool:
 
 # The day's stationary solid bodies are the base's record (`WorldMap.obstructed_tiles`,
 # `obstruct_tiles()`), filled by `EventManager.start_day` from the day's whole plan and by
-# `EventManager._create` for anything placed later, and read by `CrowdAgent` so the crowd goes round
+# `EventSpawner.create` for anything placed later, and read by `CrowdAgent` so the crowd goes round
 # a body instead of through it. A hard seal's own body and a region wall's are in it like any other:
 # the hold on their segment is what turns a *car* at the last junction, since a car cannot turn round
 # against a barrier, while a walker walks up to the body and turns where it stands.

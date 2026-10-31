@@ -68,6 +68,7 @@ func _once(t, s: int, route: String, pace: String) -> void:
 	player.carrying = true
 	player.set_map(scene.map)
 	scene.add_entity(player)
+	events.use_player(player)
 	player.set_physics_process(false)
 	var start := door_tile if route == "door" else second_door
 	player.global_position = scene.map.tile_to_world(start)

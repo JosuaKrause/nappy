@@ -519,7 +519,7 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 	var manager := EventManager.new()
 	t.add_child(manager)
 	var rig := _rig(t)
-	rig.add_to_group("player")
+	manager.use_player(rig)
 	rig.global_position = Vector2(1000.0, 1000.0)
 
 	# An ordinary telegraphing event, right on top of her. It costs her the meter and says so
@@ -527,7 +527,7 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 	var ordinary := _instance(EventCatalogue.by_id("dog_walker"))
 	ordinary.global_position = rig.global_position
 	manager.add_child(ordinary)
-	manager._instances.append(ordinary)
+	manager.world.instances.append(ordinary)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"a dog walker whose radius covers her raises nothing over her head")
@@ -536,7 +536,7 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 	var lethal := _instance(EventCatalogue.by_id("abduction"))
 	lethal.global_position = rig.global_position
 	manager.add_child(lethal)
-	manager._instances.append(lethal)
+	manager.world.instances.append(lethal)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.SOON,
 			"an unmarked van telegraphing over her is the flashing mark")
@@ -716,7 +716,7 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 	var engine := _instance(def)
 	engine.global_position = Vector2(700.0, 0.0)
 	manager.add_child(engine)
-	manager._instances.append(engine)
+	manager.world.instances.append(engine)
 
 	# A second of her walking straight at a stopped fire engine.
 	for i in 60:
@@ -753,7 +753,7 @@ func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
 	var engine := _instance(def)
 	engine.global_position = Vector2(700.0, 0.0)
 	manager.add_child(engine)
-	manager._instances.append(engine)
+	manager.world.instances.append(engine)
 	var id := engine.get_instance_id()
 
 	edge._process(STEP)
@@ -764,7 +764,7 @@ func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
 			"the same instance's entry is the same Dictionary object next frame, mutated in " +
 			"place rather than torn down and rebuilt")
 
-	manager._instances.erase(engine)
+	manager.world.instances.erase(engine)
 	edge._process(STEP)
 	t.check(not edge.model.watch.has(id),
 			"an instance _events.instances() no longer carries is pruned from _watch, not left " +
@@ -783,7 +783,7 @@ func _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t) -> void:
 	var rig := _rig(t)
 
 	rig.warn(Stroller.Alert.SOON, 1.4, Crowd.WARNING_SOURCE)
-	rig.stand_down(EventManager.WARNING_SOURCE)
+	rig.stand_down(WarningBoard.WARNING_SOURCE)
 	t.check(rig.alert_level() == Stroller.Alert.SOON,
 			"an event cannot take down a warning the traffic raised")
 	rig.stand_down(Crowd.WARNING_SOURCE)
@@ -793,7 +793,7 @@ func _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t) -> void:
 	# And a source that has been outbid finds nothing of its own to lower, which is what keeps
 	# this from being the setter the additive rule exists to prevent.
 	rig.warn(Stroller.Alert.SOON, 1.4, Crowd.WARNING_SOURCE)
-	rig.warn(Stroller.Alert.NOW, 0.35, EventManager.WARNING_SOURCE)
+	rig.warn(Stroller.Alert.NOW, 0.35, WarningBoard.WARNING_SOURCE)
 	rig.stand_down(Crowd.WARNING_SOURCE)
 	t.check(rig.alert_level() == Stroller.Alert.NOW,
 			"the traffic cannot clear a lethal event's mark by driving away")
@@ -942,14 +942,13 @@ func _instance(def: EventDef, route := PackedVector2Array()) -> EventInstance:
 
 ## Runs the one thing under test, rather than a whole `_physics_process`. A bare `EventManager`
 ## has no `EventDirector` — that is built when a day starts — and stepping the whole frame
-## raises a script error inside `_place_what_is_owed_ahead` before ever reaching the mark.
+## raises a script error inside `EventsAhead.place_what_is_owed_ahead()` before ever reaching the mark.
 ##
 ## Worth the note: the error did not fail the suite. GDScript aborts the erroring *function* and
 ## carries on in the caller, so the assertions afterwards ran, passed, and the only sign was
 ## four stack traces in the middle of a green run.
 func _warn_through(manager: EventManager) -> void:
-	manager._find_player()
-	manager._warn_about_the_ground_she_is_on()
+	manager.warnings.warn_about_the_ground_she_is_on()
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):

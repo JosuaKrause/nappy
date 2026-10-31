@@ -32,7 +32,7 @@ class Planned extends RefCounted:
 	var mast_id := ""
 	## Set by `EventManager.silence_mast()`/`silence_all_masts()` for the rest of the day. Carried
 	## on the plan, not only the live instance, so a mast silenced while out of reach is still
-	## silenced the next time she comes near it — see `EventManager._stream_in()`.
+	## silenced the next time she comes near it — see `EventStreaming.stream_in()`.
 	var silenced := false
 
 	## **A plan that comes again** (`repeats()`): seconds from one of its instances coming to the
@@ -91,7 +91,7 @@ class Planned extends RefCounted:
 	var role := GameEnums.BlockerRole.NONE
 	## Which set of mutually exclusive placements this one belongs to, or "" for anything that is
 	## simply itself. A set piece is planned at **every** site of a covering set and the first one
-	## she reaches is the one that happens; `EventManager._stream_in` spends the rest of the group
+	## she reaches is the one that happens; `EventStreaming.stream_in` spends the rest of the group
 	## at that moment. See `EventScheduler._place_a_set_piece`.
 	var set_piece_group := ""
 	## True once it has been in the world at least once. What it is *for* is the bookkeeping
@@ -99,14 +99,14 @@ class Planned extends RefCounted:
 	## burnt-out shell records the fire that made it the first time it is seen and never again.
 	var was_live := false
 	## How far the instance had got when it was last streamed out, so streaming it back in
-	## **resumes** it rather than rewinding it. See `EventManager._stream_in`.
+	## **resumes** it rather than rewinding it. See `EventStreaming.stream_in`.
 	var age := 0.0
 	var travelled := 0.0
 	## Where on its clock an instance with an `EventDef.notice` had noticed her when it was last
 	## streamed out (`EventInstance.noticed_at()`), or `INF` if it had not yet noticed her — the
 	## third thing a stream-out has to carry beside `age` and `travelled`, or a row streamed out
 	## mid-chase comes back `is_waiting()`, having forgotten it. See
-	## `EventManager._stream_out()` and `_stream_in()`, and `EventInstance.resume()`.
+	## `EventStreaming.stream_out()` and `stream_in()`, and `EventInstance.resume()`.
 	var noticed_at := INF
 	## Each behaviour's own state when it was last streamed out (`EventInstance.save_behaviours()`),
 	## empty before then and once a repeating plan starts over: a roadblock's spent guard and the post
@@ -190,7 +190,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## `consumed_one_shots` is read and appended to, so a one-shot fires once per run.
 ##
 ## `used_calm` is every calm area she has settled in so far this act, most recent first. See
-## `_spoil_the_park_she_used`, and `GameState.settled_this_act` for why it is an act rather than a
+## `_spoil_the_park_she_used`, and `RunState.settled_this_act` for why it is an act rather than a
 ## night.
 ## `route` is the walk every placement below is stated against (`RouteSource`): a day's tree, whose
 ## corridor (`RouteSource.corridor()`) prices and places the catalogue's rows, or the escape's chains,
@@ -198,7 +198,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## none to hand on a day grows the same tree, since `RouteTree.for_day` is a pure function of the
 ## city's seed and the day number and touches no gameplay stream.
 ##
-## `heat` is `GameState.resistance.progress`, and it is threaded through rather than read off the
+## `heat` is `RunState.resistance.progress`, and it is threaded through rather than read off the
 ## autoload so that a day is a pure function of its arguments: a rig that plans day 9 twice gets the
 ## same day twice whatever a run happens to have done. Every def below arrives already in the shape
 ## that heat puts it in — see `EventCatalogue.heated()` — so nothing in this file tests for it.
@@ -598,7 +598,7 @@ static func _open_ground_counts(def: EventDef, map: CityMap, open: Dictionary,
 ##
 ## **A lethal field is its whole `outer_radius`**, which is a different and much wider question.
 ## *(2026-09-19: "I still spawn with flashing !!! in the city.")* The doubled exclamation mark over
-## her head means *this will end your day*, and `EventManager._warn_about_the_ground_she_is_on()`
+## her head means *this will end your day*, and `WarningBoard.warn_about_the_ground_she_is_on()`
 ## raises it for any `hard_fail` row still telegraphing — or still waiting to notice her — whose
 ## **outer** radius covers her, because that radius is exactly what the fairness contract promises
 ## her time to walk out of. A row placed inside it has therefore already spent her notice before
@@ -1126,15 +1126,15 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			var owed := Planned.new(def, Vector2.INF)
 			owed.role = _role_for(def, day)
 			# Tagged like any other set piece even though there is only ever one of it: a plan outside
-			# the group system is one `EventManager._stream_in` can never spend, silently exempt from
+			# the group system is one `EventStreaming.stream_in` can never spend, silently exempt from
 			# the machinery the row is written against. See `_place_a_set_piece`'s own note.
 			owed.set_piece_group = "%s@%d" % [def.id, day]
 			planned.append(owed)
 			# **And it is not consumed here.** Every other one-shot is spent the moment the day plans
 			# it, because planning it *is* siting it; this one has no position yet, so planning it
 			# promises nothing. It is spent where it becomes real instead —
-			# `EventManager._stream_in()`. What that buys is the retry: *"what the run has spent stays
-			# spent ... a fire that burnt a block down did happen"* (`GameState.finish_day`), and a
+			# `EventStreaming.stream_in()`. What that buys is the retry: *"what the run has spent stays
+			# spent ... a fire that burnt a block down did happen"* (`RunState.finish_day`), and a
 			# fire that was never lit did not, so a lost day 3 is offered it again.
 			_note(trace, "roll", "one-shot %s: owed to her walk, sited when her heading is clear"
 					% def.id)
@@ -1182,7 +1182,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## warning.
 ##
 ## The placements are mutually exclusive rather than several fire engines: they share a
-## `set_piece_group`, and `EventManager._stream_in` spends the rest of the group the moment one of
+## `set_piece_group`, and `EventStreaming.stream_in` spends the rest of the group the moment one of
 ## them enters the world. That is also where a scar is recorded, so a run gets exactly one fire
 ## however many streets were offered.
 ##
@@ -1212,7 +1212,7 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 				NO_SITE, doors, standing, rules)
 		if anywhere:
 			# **The fallback carries the group too, and it is a group of one.** Every other
-			# one-shot placement is tagged, and `EventManager._stream_in` spends the rest of a
+			# one-shot placement is tagged, and `EventStreaming.stream_in` spends the rest of a
 			# group the moment one of it fires — so an untagged placement is a one-shot that can
 			# never be spent that way, silently exempt from the machinery the row is written
 			# against. A group of one spends nothing and costs nothing; being outside the group
@@ -1271,7 +1271,7 @@ class WalkSiting extends RefCounted:
 	## may stand on; empty, and so nowhere, for a rig with no city.
 	var fronts := {}
 
-	## `tree` is the day's corridor tree and `used_calm` is `GameState.settled_this_act()` — the two
+	## `tree` is the day's corridor tree and `used_calm` is `RunState.settled_this_act()` — the two
 	## arguments `build_day` states its own placements against, taken here rather than the finished
 	## `Corridor` and rect list so the caller passes what it already has and this stays the one place
 	## that turns them into the other. **The tree itself is kept as well as the corridor it makes**:
@@ -1840,7 +1840,7 @@ class WalkSiting extends RefCounted:
 	## **A field is closed ground here, and that is the strong reading on purpose.** `outer_radius`
 	## rather than `field_reach()`: the engine is parked, so nothing about it is stretched forward by
 	## its own speed, and the question is what ground she will not walk through rather than what the
-	## row would charge a passer-by. `EventManager.where_the_summoned_row_stops()` says where the
+	## row would charge a passer-by. `EventSpawner.where_the_summoned_row_stops()` says where the
 	## engine will be, so the check and the summons cannot disagree about it.
 	##
 	## **Checked before accepting, never repaired.** `EventScheduler._ensure_the_city_is_still_
@@ -1861,7 +1861,7 @@ class WalkSiting extends RefCounted:
 		var her := _map.world_to_tile(at)
 		var blocked := EventScheduler.blocked_by(_map, blockers)
 		EventScheduler.block_a_disc(_map, blocked, candidate.position, candidate.def.outer_radius)
-		var parked := EventManager.where_the_summoned_row_stops(_map, candidate.position)
+		var parked := EventSpawner.where_the_summoned_row_stops(_map, candidate.position)
 		var summoned := EventCatalogue.by_id(candidate.def.aftermath.on_sight) \
 				if candidate.def.aftermath.on_sight != "" else null
 		if summoned and parked != Vector2.INF:

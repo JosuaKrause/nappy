@@ -578,7 +578,7 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t) -> void:
 	var position_before := first.position
 	first.free()
 
-	# A fresh instance, exactly as `EventManager._stream_in` builds one.
+	# A fresh instance, exactly as `EventStreaming.stream_in` builds one.
 	var second := EventInstance.new()
 	second.setup(hot, path[0], path)
 	t.add_child(second)

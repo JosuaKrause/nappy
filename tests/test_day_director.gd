@@ -82,12 +82,12 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 	pelican.is_pelican = true
 	kid.accumulate_landed(3.0)
 	pelican.accumulate_landed(5.0)
-	director.events._instances.assign([kid, pelican])
+	director.events.world.instances.assign([kid, pelican])
 	t.check(director.landed_by_group() == {"cyclist": 3.0, "pelican": 5.0},
 			"the pelican's share is its own group (%s)" % [director.landed_by_group()])
 	t.check(director.loss_cause(GameEnums.DayResult.LOST_CRYING) == "pelican",
 			"so a crying day the pelican landed the most on is lost to the pelican")
-	director.events._instances.clear()
+	director.events.world.instances.clear()
 	kid.free()
 	pelican.free()
 	_put_away(rig)

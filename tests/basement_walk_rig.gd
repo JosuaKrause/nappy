@@ -112,8 +112,8 @@ func _blow_at(vent: EventScheduler.Planned) -> EventInstance:
 ## no player in the rig the bangs outside charge nothing, and the masked man, never ticked, never
 ## runs out of the shaft to come again.
 func _tick(at: Vector2, awake: bool) -> float:
-	_events._retire_finished()
-	_events._bring_back_what_repeats(STEP)
+	_events.streaming.retire_finished()
+	_events.streaming.bring_back_what_repeats(STEP)
 	var incoming := 0.0
 	for instance in _events.instances():
 		if instance.def.id != "basement_steam":

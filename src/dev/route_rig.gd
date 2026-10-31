@@ -769,7 +769,7 @@ func _planned_parts(plan: EventScheduler.Planned) -> Array:
 		var offset := piece.offset_for(vertical)
 		centres.append(at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)))
 		shapes.append(piece.shape)
-	return [centres, shapes, EventManager._body_axis(_city.map, plan.def, at, plan.facing)]
+	return [centres, shapes, EventSpawner._body_axis(_city.map, plan.def, at, plan.facing)]
 
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
@@ -782,7 +782,7 @@ func _planned_position(plan: EventScheduler.Planned) -> Vector2:
 	return at
 
 ## The planned rows `CityMap.obstructed_tiles` records a body for
-## (`EventManager.obstructed_footprint()`): solid, and neither `mobile` — somewhere else by the time
+## (`EventSpawner.obstructed_footprint()`): solid, and neither `mobile` — somewhere else by the time
 ## a plan gets there, the reason `_is_stationary_hazard()` gives — nor a door body, which is a
 ## crossing the day keeps open: a hut or a post (`detain_seconds`) or the boom
 ## (`EventDef.SolidWhen.WHILE_LOWERED`), whose ground `_gate_ground()` keeps off instead.

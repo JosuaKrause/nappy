@@ -111,7 +111,7 @@ A row that arrives from off screen under the screen-edge badge — `cyclist`, `c
 her heading, the fire engine, the resistance's own `robber_giving_chase` and
 `van_guard_giving_chase`, a torn poster's pursuer on foot (`policeman_giving_chase`,
 `guardsman_giving_chase`), day 13's column, each a row `warns_before_it_exists()` answers true for
-(flagged `warned_first` on its row, or made so by `EventManager.as_warned()`, which every warning
+(flagged `warned_first` on its row, or made so by `EventSpawner.as_warned()`, which every warning
 goes through) — is a `PendingWarning` first (`EventManager.warn_first()`; PLAYTEST-145 2): nothing
 in the world, the badge up at once for the row's own `EventDef.warned_for()`, **at most
 `Tuning.WARNING_ALONE_MAX`** (`validate()` refuses longer; busy-quail #569), its place fixed against
@@ -253,7 +253,7 @@ guard who set off from a barrier (`PursuitSpec.leaves_its_body`, `EventBarrierPo
 the instance goes back to being only the barrier: solid and silent, since a roadblock's band
 costs nothing at any time, manned or not, on a day as in the escape (its `intensity` is 0; the
 guard is the danger), and the guard at its far post walks off with him, on every day
-(`RoadblockFarGuard`). A barrier whose guard has gone raises no mark over her head (`EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard), since he
+(`RoadblockFarGuard`). A barrier whose guard has gone raises no mark over her head (`WarningBoard.warn_about_the_ground_she_is_on()` passes over a spent guard), since he
 never notices her or charges again — so "it is over the moment it starts leaving" holds for the
 man and not for the barrier he left. He is in her view as he goes, so
 he is held to the sight rule like a car (`EventDeparture._must_clear_sight`) rather than vanishing on the

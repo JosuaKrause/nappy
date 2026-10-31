@@ -309,7 +309,7 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
 	engine.setup(def, Vector2(1200.0, 0.0))
 	engine.set_process(false)
 	manager.add_child(engine)
-	manager._instances.append(engine)
+	manager.world.instances.append(engine)
 	var asked_when_up := false
 	var went_up := false
 	for i in 120:
@@ -324,7 +324,7 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
 	t.check(edge._watch_the_edge(STEP) and not edge.model.coming.is_empty(),
 			"and it is redrawn every frame it stays up, the camera moving under it")
 
-	manager._instances.erase(engine)
+	manager.world.instances.erase(engine)
 	t.check(edge._watch_the_edge(STEP), "the frame it comes down redraws once to take it off")
 	t.check(not edge._watch_the_edge(STEP), "and then the empty edge is not redrawn again")
 	edge.free()

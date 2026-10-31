@@ -14,7 +14,7 @@ extends RefCounted
 ## main road on her way**, and the barricade it stops at stays for the rest of the run.
 ##
 ## **Deterministic from the run seed and the day**, like every other placement: its own stream
-## (`GameState.day_rng(day, "happenings")`), so nothing here moves a draw the director or the
+## (`RunState.day_rng(day, "happenings")`), so nothing here moves a draw the director or the
 ## scheduler makes.
 
 ## The day the neighbor is out in the city rather than leaving at dawn, and the day of the raid.
@@ -80,10 +80,16 @@ var trace := RunTrace.new()
 var _column_owed := false
 var column: Array[EventInstance] = []
 
-## Hands the happenings their city, the map they place on and the navigator what they send walks
-## by — the director's own, or the map's (`WorldMap.navigator()`) for a rig that hands none.
-func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
+## The run the happenings belong to (`RunState`): the day's stream they draw from, the scars they
+## leave and the blocks they change. The city's (`City.run`), handed in with it.
+var _run: RunState
+
+## Hands the happenings their city, the map they place on, the navigator what they send walks by —
+## the director's own, or the map's (`WorldMap.navigator()`) for a rig that hands none — and the run
+## they belong to: `run`, or the city's (`City.run`).
+func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState = null) -> void:
 	_city = city
+	_run = run if run else (city.run if city else null)
 	_map = map
 	_navigator = navigator if navigator else (map.navigator() if map else null)
 
@@ -96,7 +102,7 @@ func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 ## 12's park is taken when its swing is reached (`take_the_park()`).
 func start_day(day: int, with_its_events := true) -> void:
 	_day = day
-	_rng = GameState.day_rng(day, "happenings")
+	_rng = _run.day_rng(day, "happenings")
 	morning_neighbor = null
 	raid.clear()
 	_raid_vans = PackedVector2Array()
@@ -206,7 +212,7 @@ func _maybe_raid(her: Vector2, shows: Callable) -> void:
 	# texture should also have changed. and then the change stays"). Live today; the scar is
 	# what every later day and a reloaded save read it from (`City._sync_home_door()`).
 	_city.seal_home_door()
-	GameState.add_scar(City.SEALED_DOOR_SCAR, door)
+	_run.add_scar(City.SEALED_DOOR_SCAR, door)
 	trace.note("contact", "the raid is at her building: %d vans and a patrol" % _raid_vans.size())
 
 # ---------------------------------------------------------- day 11: the market ---
@@ -236,7 +242,7 @@ func _maybe_the_market(delta: float, her: Vector2) -> void:
 	if _look_in > 0.0:
 		return
 	_look_in = EventDirector.ON_HER_WAY_LOOK
-	var candidates := market_candidates(_map, GameState.attempt_spend.city_state)
+	var candidates := market_candidates(_map, _run.attempt_spend.city_state)
 	if candidates.is_empty():
 		_market_owed = false
 		trace.note("contact", "no block is waiting to board up, so there is no market to lose")
@@ -269,7 +275,7 @@ static func market_candidates(map: CityMap, state: CityState) -> Array[Vector2i]
 func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.route_tree(),
-				GameState.settled_this_act(), PackedVector2Array())
+				_run.settled_this_act(), PackedVector2Array())
 	var ahead := _siting.cells_ahead(her, _heading, INF)
 	var best := Vector2i(-1, -1)
 	var nearest := INF
@@ -298,7 +304,7 @@ func _market_out_of_her_sight(her: Vector2, candidates: Array[Vector2i]) -> Vect
 ## Boards `block` up now and takes its market away: the arc's own next step, taken today, the
 ## buildings shown shuttered, and the stalls at its frontage gone from the day's plan.
 func board_up(block: Vector2i) -> bool:
-	var state := GameState.attempt_spend.city_state
+	var state := _run.attempt_spend.city_state
 	if not state or not state.advance_now(_map.block_plans, block, _day,
 			GameEnums.BlockPurpose.BOARDED_UP, GameEnums.BlockCause.SCHEDULED):
 		return false
@@ -341,7 +347,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	if not _map:
 		return false
 	var park := CityGenerator.swing_park(_map)
-	var state := GameState.attempt_spend.city_state
+	var state := _run.attempt_spend.city_state
 	if park.x < 0 or not state or not state.take(_map.block_plans, park, _day):
 		return false
 	_map.recompute_calm(state)
@@ -471,7 +477,7 @@ func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going
 		return Vector2.INF
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.route_tree(),
-				GameState.settled_this_act(), PackedVector2Array())
+				_run.settled_this_act(), PackedVector2Array())
 	var tile := _map.world_to_tile(Vector2(lane_x, wanted_y))
 	var step := Vector2i(0, 1 if going > 0.0 else -1)
 	# A block at a time once a stop is refused, three blocks at most: each refusal is a flood.

@@ -67,7 +67,7 @@ func _ready() -> void:
 		return
 	print("RECIPE_MOVEMENT_OK")
 	if map.recipe_bounds.has_area():
-		for plan: EventScheduler.Planned in (main.get("_city") as City).events._plans:
+		for plan: EventScheduler.Planned in (main.get("_city") as City).events.streaming._plans:
 			if not map.recipe_bounds.has_point(map.world_to_tile(plan.position)):
 				fail("bounded region installs event bodies outside authored ground")
 				return

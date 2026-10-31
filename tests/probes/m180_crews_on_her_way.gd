@@ -48,6 +48,7 @@ func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> v
 		print("%-6d %3d %-13s no route or no crews" % [seed_value, day, walk_name])
 		return
 	var rig := _walker(t, route[0])
+	city.events.use_player(rig)
 	var clock := 0.0
 	var first_sited := -1.0
 	for i in range(1, route.size()):
@@ -69,7 +70,7 @@ func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> v
 	for plan in crews:
 		sited += 1 if plan.is_placed() else 0
 		met += 1 if plan.was_live else 0
-	var siting := city.events.walk_siting()
+	var siting := city.events.ahead.walk_siting()
 	print("%-6d %3d %-13s %5d %6d %4d %11.1fs %14d  %s" % [seed_value, day, walk_name, crews.size(),
 			sited, met, first_sited, _pasted_cells() - before,
 			_refusal_summary(siting.waits if siting else {})])

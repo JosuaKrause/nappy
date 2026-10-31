@@ -369,13 +369,13 @@ func _header_text() -> String:
 			"already spent.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: it is " +
 			"created just off screen down her own line, after its screen-edge warning when it " +
 			"telegraphs (the cyclist, `EventManager.spawn_warned()`) and at once when it does not " +
-			"(the loose dog, `EventManager._send_down_her_line()`), coming at her at its own intensity. So its pass is " +
+			"(the loose dog, `EventsAhead._send_down_her_line()`), coming at her at its own intensity. So its pass is " +
 			"simulated from that creation, at the closest it can be made on any heading " +
 			"(`PendingWarning.least_distance()`, the view's half height, so the figure " +
 			"does not depend on which way a walk was going), moving as it moves. Such a row is " +
 			"measured once rather than averaged over 8 pulse phases: it is created at the age that " +
 			"has it reach her, walking into it from where it is created closest, at the loud of " +
-			"its beat (`EventManager.age_when_warned()`), so how far through the beat it is when it " +
+			"its beat (`EventSpawner.age_when_warned()`), so how far through the beat it is when it " +
 			"reaches her is fixed, not a phase she happens to arrive on.")
 	lines.append("")
 	lines.append("**Every other row is walked up to, and its telegraph is long over by then** — a " +

@@ -1351,6 +1351,7 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 	player.carrying = true
 	player.set_map(scene.map)
 	scene.add_entity(player)
+	events.use_player(player)
 	player.set_physics_process(false)
 	player.global_position = scene.map.tile_to_world(
 			(f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile)
@@ -1588,6 +1589,7 @@ func _test_his_catch_ends_the_section_with_what_struck_her(t: Node) -> void:
 		return
 	var player := Node2D.new()
 	player.add_to_group("player")
+	events.use_player(player)
 	t.add_child(player)
 	player.global_position = man.path[4]
 	var fired: Array[String] = []
@@ -2017,7 +2019,7 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
 	const STAND_AT := 30.0
 	var steam := EventCatalogue.by_id("basement_steam")
 	var blow := EventInstance.new()
-	# Set up before it joins the tree, the order `EventManager._create()` uses: `_ready()` reads the
+	# Set up before it joins the tree, the order `EventSpawner.create()` uses: `_ready()` reads the
 	# def.
 	blow.setup(steam, Vector2.ZERO)
 	t.add_child(blow)

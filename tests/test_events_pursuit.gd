@@ -68,24 +68,27 @@ class _RetryDirector extends EventDirector:
 		elapsed += delta
 		return []
 
-class _BlockedLesson extends EventManager:
+class _BlockedLesson extends EventsAhead:
 	var attempts := 0
 	func _warn_down_her_heading(def: EventDef, _her: Vector2, _sited: Vector2) -> void:
 		attempts += 1
 		_owe_pursuer_again(def)
 
 func _test_a_failed_lesson_retry_leaves_the_director_running(t) -> void:
-	var manager := _BlockedLesson.new()
+	var manager := EventManager.new()
+	var lesson := _BlockedLesson.new(manager.world, manager.streaming, manager.spawner,
+			manager.warnings)
+	manager.ahead = lesson
 	# An empty city map: the director owes its retry the same way with nothing on the ground.
 	var director := _RetryDirector.new(CityMap.new())
 	var body := CharacterBody2D.new()
 	body.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
-	manager._player = body
-	manager._director = director
-	manager._owe_pursuer_again(EventCatalogue.by_id("charging_dog"))
+	manager.use_player(body)
+	lesson._director = director
+	lesson._owe_pursuer_again(EventCatalogue.by_id("charging_dog"))
 	for frame in 150:
-		manager._place_what_is_owed_ahead(STEP)
-	t.check(manager.attempts == 2 and manager._pursuer_owed != null,
+		lesson.place_what_is_owed_ahead(STEP)
+	t.check(lesson.attempts == 2 and lesson._pursuer_owed != null,
 			"a blocked lesson remains owed and retries twice in 2.5s, rather than every frame")
 	t.close_to(director.elapsed, 2.5, "other director events receive every elapsed frame", 0.001)
 	manager.free()
@@ -469,7 +472,7 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 	t.check(checked > 0, "there is at least one hard_fail TOWARD_PLAYER row to check ('cyclist')")
 
 ## A warning for `def` coming down her line from `direction`, on open ground, put up with her at
-## `her` — the construction `EventManager._warn_down_her_line()` makes, with creation done the way
+## `her` — the construction `EventsAhead._warn_down_her_line()` makes, with creation done the way
 ## `EventManager.spawn_warned()` does it: its telegraph spent. What it creates is appended to
 ## `arrived`, for the caller to tick and free.
 static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector2,
@@ -480,7 +483,7 @@ static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector
 		var path := PendingWarning.route_down_her_line(null, place, at, direction)
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
-		instance.resume(EventManager.age_when_warned(def), 0.0)
+		instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		arrived.append(instance)
 		return true
 	var warning := PendingWarning.new(def, where, arrive)
@@ -498,7 +501,7 @@ static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector
 ## should be enough".)*
 ##
 ## On the real map, with the warning held the way `EventManager` holds one (`warn_first()`,
-## `_run_the_warnings()`) and read by a real `DangerEdge`, while she walks up her sidewalk and steps
+## `WarningBoard.run()`) and read by a real `DangerEdge`, while she walks up her sidewalk and steps
 ## out onto the carriageway and back:
 ##
 ## - **the badge is up with nothing in the world**, for no more than `Tuning.WARNING_ALONE_MAX`;
@@ -541,10 +544,10 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
 		instance.came_under_a_warning = true
-		instance.resume(EventManager.age_when_warned(def), 0.0)
+		instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		created.append(instance)
 		# In the manager's own list, so the edge measures him as the game's own badge does.
-		manager._instances.append(instance)
+		manager.world.instances.append(instance)
 		return true
 	var warning := manager.warn_first(def, her, where, arrive)
 	t.check(warning != null, "the cyclist's warning goes up on the sidewalk she is walking")
@@ -572,7 +575,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 			step = Vector2.LEFT
 		her += step * Tuning.WALK_SPEED * STEP
 		manager.visible_view().look(VisibleView.around(her).view, false)
-		manager._run_the_warnings(STEP, her)
+		manager.warnings.run(STEP, her)
 		elapsed += STEP
 		if not created.is_empty():
 			came_at = elapsed
@@ -680,7 +683,7 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t) -> void:
 	t.check(Tuning.PURSUIT_TIME >= 30.0, "which is a long cap, not an end a walk outlasts (%.0fs)"
 			% Tuning.PURSUIT_TIME)
 	t.close_to(dog.chase_speed(), 130.0, "at 130px/s", 0.001)
-	var sent := EventManager.as_warned(dog)
+	var sent := EventSpawner.as_warned(dog)
 	t.check(sent.warns_before_it_exists() and is_equal_approx(sent.warned_for(), dog.offscreen_notice)
 			and sent.warned_for() <= Tuning.WARNING_ALONE_MAX,
 			"sent at her, it is warned first for its own half second, within the one-second ceiling")
@@ -746,7 +749,7 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t) -> void:
 ## **Nothing comes at her from off screen unwarned.** *(PLAYTEST-145: "all offscreen events should
 ## work like that".)* Every pursuer that is sent rather than met — no trigger to wait on, and not
 ## set off beside her at a door — is warned of first: the resistance's own two by their rows, and the
-## day-3 dog by the copy `EventManager.as_warned()` makes as the director sends it. Each one's badge
+## day-3 dog by the copy `EventSpawner.as_warned()` makes as the director sends it. Each one's badge
 ## alone is at most `Tuning.WARNING_ALONE_MAX`.
 func _test_every_pursuer_sent_from_off_screen_is_warned_first(t) -> void:
 	var sent := 0
@@ -754,7 +757,7 @@ func _test_every_pursuer_sent_from_off_screen_is_warned_first(t) -> void:
 		if def.pursuit == null or def.notice_within() > 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
 			continue
 		sent += 1
-		var warned := EventManager.as_warned(def)
+		var warned := EventSpawner.as_warned(def)
 		t.check(warned.warns_before_it_exists() and warned.warned_for() <= Tuning.WARNING_ALONE_MAX,
 				"'%s' is warned first, its badge alone %.2fs, at most %.2fs"
 				% [def.id, warned.warned_for(), Tuning.WARNING_ALONE_MAX])

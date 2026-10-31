@@ -41,7 +41,7 @@ func run(t) -> void:
 ## same one rather than a second.
 func _test_every_mover_on_a_map_shares_its_one_navigator(t, city: City) -> void:
 	t.check(city.map.navigator() == city.navigator
-			and city.events._the_navigator() == city.navigator
+			and city.events.world.navigator() == city.navigator
 			and city.crowd._navigator == city.navigator,
 			"the city, its events and its crowd move by the map's one navigator")
 	var director := EventDirector.new(city.map)
@@ -287,7 +287,7 @@ func _test_a_body_and_its_record_are_one_footprint(t, city: City) -> void:
 		if not plan.is_placed() or plan.def.mobile or plan.def.detain_seconds > 0.0 \
 				or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED or plan.def.obstructs_radius <= 0.0:
 			continue
-		var recorded := EventManager.obstructed_footprint(map, plan.def, plan.position,
+		var recorded := EventSpawner.obstructed_footprint(map, plan.def, plan.position,
 				plan.facing)
 		var instance := EventInstance.new()
 		instance.skip_draw = true

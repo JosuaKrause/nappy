@@ -138,7 +138,7 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ## director would separately site a second one in front of her, from the one `EventDef` both read.
 ##
 ## `heat` is the shape the route bag's rows are put in (`EventCatalogue.heated()`), the same
-## `GameState.resistance.progress` the day's own placements were planned at.
+## `RunState.resistance.progress` the day's own placements were planned at.
 func start_day(day: int, plans: Array[EventScheduler.Planned],
 		rng: RandomNumberGenerator, siting: EventScheduler.WalkSiting = null,
 		heat: int = 0) -> void:
@@ -578,7 +578,7 @@ const ON_HER_WAY_LOOK := 1.0
 ## route van and day 6's rigged man shouting on the street she is walking instead — **on the branch she is walking**, ahead of her by distance along that
 ## route, off screen, `ON_HER_WAY_SIGHT` seconds of walking short of being seen. Returns every plan
 ## this call moved, so the caller can give back the ground the old body was standing on and take the
-## new — `EventManager._site_what_is_on_her_way()` is that caller — and a place from her route's bag
+## new — `EventsAhead.site_what_is_on_her_way()` is that caller — and a place from her route's bag
 ## sited for the first time, which the caller adds to the day's plan (`is_from_her_route()`).
 ##
 ## **The path is the day's route tree and nothing else is a site.** *(PLAYTEST-119: "the fire needs
@@ -595,7 +595,7 @@ const ON_HER_WAY_LOOK := 1.0
 ## fire's field and the engine's.
 ##
 ## **It may move until it is real, and never after.** A plan that has been streamed in once has
-## recorded its scar and moved its block along its arc (`EventManager._create`), so the city already
+## recorded its scar and moved its block along its arc (`EventSpawner.create`), so the city already
 ## remembers it burning there; moving it then would mean repairing a fact, which is the one thing
 ## this repository does not do to a guarantee. `Planned.was_live` is that line, and it is drawn at
 ## the streaming radius rather than at the screen edge — which is 900px out against a view half
@@ -988,7 +988,7 @@ func _roll_interval() -> float:
 ## siting it too close to see coming — an open question, not one this function answers.
 ##
 ## **The site is a direction and a check, not where the pursuer is created.** `EventManager` warns
-## of it first (`EventManager._warn_down_her_heading()`, M226): its badge is up alone for its own
+## of it first (`EventsAhead._warn_down_her_heading()`, M226): its badge is up alone for its own
 ## `offscreen_notice`, pointing down the way this site lies from her, and it is then created just out
 ## of sight that way on walkable ground (`PendingWarning.along_her_heading()`), its approach still to
 ## run. The lunge is still fired by **proximity** (`EventPursuit`).

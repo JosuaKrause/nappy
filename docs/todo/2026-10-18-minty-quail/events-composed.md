@@ -11,32 +11,32 @@ the lifecycle of its drawing nodes; how it is drawn is its look's (`src/events/v
 row by `EventLooks.for_row()`, reading its public state), and every picture is named in
 `EventPictures` (minty-quail-19). The manager steps its instances on the physics tick in a fixed
 order, and each is drawn interpolated between ticks by its look, which reads on its own drawn frame
-what the last tick left (minty-quail-21). The four ways a charge starts (a warning's clock running
-out, a lunge at the stand-off, the masked man's run distance, a start at once) are branches inside
-`EventPursuit` and `EventNoticeRun` rather than parts a row is composed of.
+what the last tick left (minty-quail-21). `EventManager` is the face the rest of the game talks
+to and hands its work to `EventStreaming`, `EventSpawner`, `WarningBoard`, `EventsAhead` and
+`CheckpointController`, all working over one `EventWorld`; it is handed the player and the run,
+and the doors' holds and releases come back to it as intents it carries out on her
+(minty-quail-24). The four ways a charge starts (a warning's clock running out, a lunge at the
+stand-off, the masked man's run distance, a start at once) are branches inside `EventPursuit` and
+`EventNoticeRun` rather than parts a row is composed of.
 
 **What is still keyed on a row's flags, picture or id** (every `def.look` comparison under `src/`
 outside `src/events/views/`, found by search): `at_heat()` flips behaviour flags (`investigates`,
-`hard_fail`) on a copy; `def.look ==` decides behaviour for CYCLIST's pelican (`EventManager.rolls_a_pelican()`
-and `spawn_warned()`, PR 4); whether a row is a spread is a list of pictures
+`hard_fail`) on a copy; `def.look ==` decides behaviour for CYCLIST's pelican
+(`EventSpawner.rolls_a_pelican()` and `spawn_warned()`); whether a row is a spread is a list of pictures
 (`EventDef.has_a_spread`); on `EventInstance` it decides whether the alley post's hold hides it
 (`is_suppressed_by_its_own_hold()` on CHECKPOINT_POST), the loose dog's lead in its footprint
 (`footprint_of()` on LOOSE_DOG), whether a rank draws and stands along its street like a spread
 (`drawn_box()` and the solid body's axis, `_solid_axis()`, on PROTEST and FIREFIGHT), a warning
 picture's size (`_warning_picture_size()` on CHARGING_DOG and ROBBER) and which way a stationary
-vehicle shows (`_stationary_vehicle_uses_side()` on BURNT_OUT_CAR); `EventManager._body_axis()`
-repeats the rank test for siting; the manager's `GUARDSMAN_GIVING_CHASE` tests choose only the run
-log's wording ("a guardsman" or "a policeman"); `CheckpointController` sends its guard by
-`by_id("door_guard")`. **Two clocks:**
+vehicle shows (`_stationary_vehicle_uses_side()` on BURNT_OUT_CAR); `EventSpawner._body_axis()`
+repeats the rank test for siting; `EventsAhead`'s `GUARDSMAN_GIVING_CHASE` tests choose only the
+run log's wording ("a guardsman" or "a policeman"). **Two clocks:**
 `ResistanceDirector` and `DayController` tick in `_process`, once per drawn frame, while the events
 step and their catches, hard fails and detentions are checked on the physics tick. **The tick still
 sets a drawing property:** a pursuer that warns over the street is put on the warning draw layer
 from its tick (`EventInstance._take_the_layer_it_warns_on()`, `DrawLayer.draw_on()`), since a look
-never writes the event. **Upward coupling:** the manager fetches the player
-(`EventManager._find_player()` from the `player` group), `CheckpointController` drives her and the
-camera directly (`hide_for_inspection`, `focus_camera_on`, `teleport_to`, `show_after_inspection`,
-`release_camera_focus`), the instance uses the red arrow's `ArrowField` as its pathfinder, and a
-car's driving copies crowd traffic's give-way (`EventCarDriving.room_to_its_line()`), the copy
+never writes the event. **Upward coupling:** the instance uses the red arrow's `ArrowField` as its
+pathfinder, and a car's driving copies crowd traffic's give-way (`EventCarDriving.room_to_its_line()`), the copy
 shared-components' `LaneMover` takes. **Events held by the scene:** `City` and `InteriorScene` each
 sum their events for the baby rather than the manager answering it, and
 `BuildingPlan.lay_the_grates()`, a placement class, builds the grates' sprite nodes through
@@ -59,7 +59,7 @@ design below is a direction, not a prescription, and the PR says which shape was
 
 **A direction for the build:** the pelican's behaviour keyed by data; the picture-size geometry
 siting reads (`box_of()`, `footprint_of()`, `solid_footprint_of()`, `drawn_box()`, `_solid_axis()`,
-`EventManager._body_axis()`, `_warning_picture_size()`, `warning_guard_rect()`, the guard post's
+`EventSpawner._body_axis()`, `_warning_picture_size()`, `warning_guard_rect()`, the guard post's
 offset and heading, `_stationary_vehicle_uses_side()`) and the alley post's hiding leave
-`EventInstance` with PR 4's spawner; movement proposed, validated, then committed for every mover,
-as a car's frame is; intents emitted for the player and camera instead of calling them. `EventManager` splits into streaming, spawning and warnings.
+`EventInstance` and the spawner for a class of their own the spawner and siting read; movement proposed, validated, then committed for every mover,
+as a car's frame is.

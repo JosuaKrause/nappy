@@ -430,7 +430,7 @@ func _walk_at_a_precinct_wall(t, city: City, map: CityMap, rows: Array,
 	return {"probe_walker": walkers[0], "wall": wall, "vertical": vertical, "base": base}
 
 # --------------------------------------------------------- a body in pieces ---
-# `EventManager.obstructed_footprint()` rasterises `EventDef.parts()` rather than the row's one
+# `EventSpawner.obstructed_footprint()` rasterises `EventDef.parts()` rather than the row's one
 # `shape`. Every row but the crash declares no parts, which means one piece at the origin carrying
 # `shape`, and these two tests are the two halves of that sentence: nothing moved for the rows that
 # are one piece, and the crash records its two cars instead of the street they are lying across.
@@ -456,9 +456,9 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map: Ci
 		var placed := at
 		if def.pavement_side == EventDef.Pavement.ANY:
 			placed = EventInstance._centred_on_the_pavement_band(map, at)
-		var axis := EventManager._body_axis(map, def, placed, Vector2.RIGHT)
+		var axis := EventSpawner._body_axis(map, def, placed, Vector2.RIGHT)
 		var before := def.shape.tiles_under(placed, axis)
-		var after := EventManager.obstructed_footprint(map, def, at, Vector2.RIGHT)
+		var after := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 		before.sort()
 		after.sort()
 		t.check(not before.is_empty(), "'%s' stands on ground at all (%d tiles)" % [id, before.size()])
@@ -489,9 +489,9 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map: Ci
 	# copy a 96px reach takes to span a 6-tile street.
 	var at := Vector2(float(base) * Tuning.TILE_SIZE + float(Tuning.STREET_WIDTH) * 16.0,
 			(float(along) + 0.5) * Tuning.TILE_SIZE)
-	var axis := EventManager._body_axis(map, def, at, Vector2.RIGHT)
+	var axis := EventSpawner._body_axis(map, def, at, Vector2.RIGHT)
 	var whole_band := def.shape.tiles_under(at, axis)
-	var cars := EventManager.obstructed_footprint(map, def, at, Vector2.RIGHT)
+	var cars := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 	t.check(not cars.is_empty(), "the cars stand on ground (%d tiles)" % cars.size())
 	t.check(cars.size() < whole_band.size(),
 			"the two cars take less ground than the band across the street would (%d of %d tiles)"
@@ -569,11 +569,11 @@ func _test_a_walker_passes_a_crash_on_its_pavement(t, city: City, map: CityMap) 
 # these two are the two ends of that one rule: a van at the kerb, which overhangs the carriageway
 # and takes none of it, and a tree across the street, which takes all of it.
 
-## Stands a real row's own body on the street through the same `EventManager.obstructed_footprint()`
+## Stands a real row's own body on the street through the same `EventSpawner.obstructed_footprint()`
 ## a day fills the record with, and gives back the tiles it took. Sited by hand rather than by
 ## planning a day, so the placement under test is this one and not whatever the seed rolled.
 func _stand_a_row(map: CityMap, def: EventDef, at: Vector2) -> Array[Vector2i]:
-	var covered := EventManager.obstructed_footprint(map, def, at, Vector2.RIGHT)
+	var covered := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 	map.obstruct_tiles(2, covered)
 	return covered
 
@@ -746,7 +746,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
 
 ## Every crashed car standing on the day `events` has planned, as `[centre, radius]` pairs — the
 ## rows that declare `EventDef.solid_parts`, each piece placed the way
-## `EventManager.obstructed_footprint()` places it. Read off the **plan** rather than off the live
+## `EventSpawner.obstructed_footprint()` places it. Read off the **plan** rather than off the live
 ## instances for the reason the record is: a plan covers the whole map and an instance only exists
 ## near the player.
 func _car_bodies(map: CityMap, events: EventManager) -> Array:

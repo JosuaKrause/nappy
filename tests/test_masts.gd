@@ -152,7 +152,8 @@ func _build_city(t) -> void:
 	t.add_child(_city)
 	_city.build(_map)
 	# No player in this rig, so nothing streams on its own — `EventManager._physics_process()`
-	# skips streaming when `_find_player()` fails, the same reason `test_event_manager.gd` gives.
+	# skips streaming while no player is handed in (`EventWorld.has_player()`), the same reason
+	# `test_event_manager.gd` gives.
 	# Streaming below is driven by hand, at whatever real moment each check wants a mast live.
 	_city.events.stream_radius = 10.0
 
@@ -170,8 +171,8 @@ func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventSchedule
 	return null
 
 ## Two masts, met minutes apart, still read the same broadcast clock — the mechanism behind "all
-## masts speak at once". `age` is set from `EventManager._broadcast_clock` at the moment each one
-## streams in (`_stream_in()`'s own doc), not from zero, so a mast met later in the day is not a
+## masts speak at once". `age` is set from `EventStreaming.broadcast_clock` at the moment each one
+## streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is not a
 ## mast that is "younger" — it is telling the same time as every other one.
 func _test_they_all_speak_together(t) -> void:
 	_city.events.start_day(Tuning.MAST_FIRST_DAY, _rng(Tuning.MAST_FIRST_DAY), [])
@@ -183,7 +184,7 @@ func _test_they_all_speak_together(t) -> void:
 	var b := sites[1]
 
 	_advance(9.0)
-	var clock_a: float = _city.events._broadcast_clock
+	var clock_a: float = _city.events.streaming.broadcast_clock
 	_city.events.stream_around(a.foot)
 	var plan_a := _plan_for(a.id)
 	t.check(plan_a != null and plan_a.live != null, "the first mast is live")
@@ -192,7 +193,7 @@ func _test_they_all_speak_together(t) -> void:
 				"a mast's age is the broadcast clock at the moment it streams in", 0.05)
 
 	_advance(6.0)
-	var clock_b: float = _city.events._broadcast_clock
+	var clock_b: float = _city.events.streaming.broadcast_clock
 	_city.events.stream_around(b.foot)
 	var plan_b := _plan_for(b.id)
 	t.check(plan_b != null and plan_b.live != null, "the second mast is live")

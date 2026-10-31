@@ -209,7 +209,7 @@ func _stands_at(plan: EventScheduler.Planned) -> Vector2:
 ## where it leaves a solid one — with nothing for a mobile row or one with no body. The same
 ## reading `EventInstance.setup()` makes of a stationary body: the first point of its path when
 ## it has one, recentred on the pavement band unless `pavement_side` pins it, its pieces laid
-## by `EventInstance._spread_is_vertical()` and its spine along `EventManager._body_axis()`.
+## by `EventInstance._spread_is_vertical()` and its spine along `EventSpawner._body_axis()`.
 func solids_of(plan: EventScheduler.Planned) -> Array[Solid]:
 	var found: Array[Solid] = []
 	var defs: Array[EventDef] = [plan.def]
@@ -224,7 +224,7 @@ func solids_of(plan: EventScheduler.Planned) -> Array[Solid]:
 				else plan.position
 		if def.pavement_side == EventDef.Pavement.ANY:
 			at = EventInstance._centred_on_the_pavement_band(_map, at)
-		var axis := EventManager._body_axis(_map, def, at, plan.facing)
+		var axis := EventSpawner._body_axis(_map, def, at, plan.facing)
 		var vertical := EventInstance._spread_is_vertical(_map, at)
 		for piece in def.parts():
 			var offset := piece.offset_for(vertical)

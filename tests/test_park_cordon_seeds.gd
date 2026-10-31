@@ -268,11 +268,11 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 			"walked_straight": cordon.walked_straight}
 	cordon.clear()
 	# Gone from the world the way the day's own frame retires him, his body's tiles given back
-	# (`EventManager._retire_finished()`, which nothing here ticks): left on the record, the
+	# (`EventStreaming.retire_finished()`, which nothing here ticks): left on the record, the
 	# ground he stood on would be solid for the next spot's run.
 	if not _gone(busker):
 		city.events.retire(busker)
-	city.events._retire_finished()
+	city.events.streaming.retire_finished()
 	return result
 
 ## Checks the chosen gap against the map: the tile beyond each of its stretches' edge tiles reached

@@ -408,7 +408,7 @@ func _test_sighted_successors_resolve(t) -> void:
 				% [def.id, def.aftermath.on_sight])
 	t.check(checked > 0, "there is at least one row with an aftermath.on_sight ('burning_building')")
 
-## It has no scheduled day at all, so nothing but `EventManager._summon_the_sighted_row()` can
+## It has no scheduled day at all, so nothing but `EventSpawner._summon_the_sighted_row()` can
 ## put one in the world — see `EventDef.aftermath.on_sight` on `burning_building`.
 func _test_fire_truck_is_never_scheduled(t) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
@@ -422,7 +422,7 @@ func _test_fire_truck_is_never_scheduled(t) -> void:
 ## (`ResistanceDirector.NOTICE_RADIUS`'s own reasoning), so she may be anywhere from the kerb the
 ## engine stops at to that far up its street. From each such point, standing still, the engine's
 ## warning is walked the way `EventManager` runs it: its place is the one
-## `PendingWarning.on_its_route()` gives (what `EventManager._summon_the_sighted_row()` hands the
+## `PendingWarning.on_its_route()` gives (what `EventSpawner._summon_the_sighted_row()` hands the
 ## warning), and the engine is created there with its telegraph spent, as `spawn_warned()` does.
 ## What holds: the place is up the road from the kerb and wholly out of sight when it is created, its
 ## badge alone was at most `Tuning.WARNING_ALONE_MAX`, and **from the badge to the earliest its field

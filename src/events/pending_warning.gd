@@ -60,7 +60,7 @@ var _arrive: Callable
 ## engine's summons, which would otherwise never come. Empty for a caller with nothing to retry.
 var on_withdrawn := Callable()
 ## Whether the cyclist this warns of is the pelican, rolled as the warning went up
-## (`EventManager.rolls_a_pelican()`). Read by the telemetry alone (`logged_name()`): the badge
+## (`EventSpawner.rolls_a_pelican()`). Read by the telemetry alone (`logged_name()`): the badge
 ## draws the row's own silhouette either way.
 var is_pelican := false
 

@@ -24,10 +24,10 @@ func _rig(t, day: int) -> Array:
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
-	city.events._day = day
+	city.events.world.day = day
 	city.events._recipe_plan = true
 	# The lights are off, so a red one cannot hold a car where the probe wants it to run.
-	city.events.signals = null
+	city.events.world.signals = null
 	var her := _Her.new()
 	t.add_child(her)
 	her.set_process(false)
@@ -92,14 +92,14 @@ func _lane_rig(t, def: EventDef) -> Array:
 	var route := PackedVector2Array([spot[0], spot[1]])
 	her.global_position = spot[2]
 	var plan := EventScheduler.Planned.new(def, route[0], route)
-	city.events._plans.append(plan)
-	city.events._find_player()
+	city.events.streaming._plans.append(plan)
+	city.events.use_player(her)
 	return [city, her, plan, route]
 
 ## One physics tick as the game runs it: the manager's own, which steps every instance, with her
 ## running while `running` says so.
 func _frame(city: City, running := false) -> void:
-	(city.events._player as _Her).running = running
+	(city.events.world.player as _Her).running = running
 	city.events._tick_the_events(STEP)
 
 ## Whether `car` is out of the world: finished, or handed to `queue_free()` by a retirement or a

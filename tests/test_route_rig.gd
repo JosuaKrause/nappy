@@ -467,7 +467,7 @@ func _test_a_plan_never_goes_through_the_boom(t) -> void:
 	var gate := EventScheduler.Planned.new(def, _city.map.tile_to_world(road))
 	gate.facing = Vector2.DOWN
 	gate.gate_state = RegionPlanner.GateState.new()
-	_city.events._plans.append(gate)
+	_city.events.streaming._plans.append(gate)
 	var rig := _rig(t)
 	# Where her body would touch the boom's: the boom inspects nobody, so there is no trigger to
 	# measure from, and what a plan must never do is put her under it.
@@ -480,7 +480,7 @@ func _test_a_plan_never_goes_through_the_boom(t) -> void:
 	var last_resort := rig._cheapest(from, to, {}, {}, false)
 	t.check(not last_resort.is_empty() and not _passes_within(last_resort, gate.position, reach),
 			"even the plan that gives up every preference goes round the boom")
-	_city.events._plans.erase(gate)
+	_city.events.streaming._plans.erase(gate)
 	rig.free()
 
 ## **A door that has just let her out is not planned back through.** A hut's crossing line runs
@@ -498,7 +498,7 @@ func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t) -> void
 	var hut := EventScheduler.Planned.new(def,
 			_city.map.tile_to_world(lane) + Vector2(Tuning.TILE_SIZE * 0.5, 0.0))
 	hut.facing = Vector2.DOWN
-	_city.events._plans.append(hut)
+	_city.events.streaming._plans.append(hut)
 	var rig := _rig(t)
 	rig._player = _stroller
 	var body := def.solid_reach() + Tuning.PLAYER_BODY_RADIUS
@@ -520,7 +520,7 @@ func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t) -> void
 			and rig._unstick_order[rig._unstick_order.size() - 1].dot(Vector2.DOWN) > 0.0,
 			"the unstick tries stepping into a door's circle last (%s first)" % rig._unstick_order[0])
 	rig._unsticking = false
-	_city.events._plans.erase(hut)
+	_city.events.streaming._plans.erase(hut)
 	rig.free()
 
 ## A sidewalk tile on a north-south pavement's first lane — the second lane east of it, the road
@@ -775,12 +775,14 @@ func _build_target_shape_fixture(t, day: int, progress_at_dawn: int = 0) -> Dict
 
 	var stroller: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(stroller)
+	city.events.use_player(stroller)
 	stroller.global_position = city.map.doorstep_world_position()
 
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
 	resistance.setup(city, city.map)
+	resistance.use_player(stroller)
 	resistance.start_day(day, _rng_for_day(day, "resistance"), Tuning.day_length(day))
 
 	return {"city": city, "resistance": resistance, "stroller": stroller, "saved": saved,
@@ -855,11 +857,17 @@ func _test_task_target_resolves_for_the_mast_task_on_day_11(t) -> void:
 	var rig := _target_shape_rig(t, fixture)
 	var resolved := rig._resolve_target("task")
 	var director := fixture["resistance"] as ResistanceDirector
-	# The contact stands on the mast's foot, a body's tile no plan can end on, so the leg aims at
-	# the open ground nearest it, from which the touch completes.
-	t.check(resolved != Vector2.INF and resolved != director.contact_position()
+	# The contact stands on the mast's foot. Where that tile is a body's, which no plan can end on,
+	# the leg aims at the open ground nearest it; where it is open — the mast put up beside the
+	# mark she read standing at the doorstep — at the foot itself. From either the touch completes.
+	var contact := director.contact_position()
+	var map := (fixture["city"] as City).map
+	var foot := map.world_to_tile(contact)
+	var on_a_body := not map.is_walkable(foot) or map.is_obstructed(foot)
+	t.check(resolved != Vector2.INF and (resolved != contact) == on_a_body
 			and director._contact.would_complete_at(resolved),
-			"'task' resolves to open ground the mast's foot is touched from")
+			"'task' resolves to ground the mast's foot is touched from (%s)"
+			% ("open ground beside it" if on_a_body else "the open foot itself"))
 	rig.free()
 	_free_target_shape_fixture(fixture)
 
@@ -1366,7 +1374,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	day.setup(city.map, _stroller, GameState)
 	day.set_process(false)
 	day.start(600.0)
-	city.events._player = _stroller
+	city.events.use_player(_stroller)
 
 	var rig := RouteRigNoQuit.new()
 	t.add_child(rig)
