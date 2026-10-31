@@ -233,8 +233,8 @@ fi
 
 cp "$rendered" "$COST_FILE"
 
-# And verify after, per CLAUDE.md's "an edit fails loudly": the file on disk now has exactly the
-# row count just rendered, and the refresh sentence names both tools.
+# And verify after, so a write that went wrong is not taken for a success: the file on disk now
+# has exactly the row count just rendered, and the refresh sentence names both tools.
 written_row_count="$(grep -cE '^test_.*\.gd [0-9]+$' "$COST_FILE")"
 if [[ "$written_row_count" -ne "$merged_count" ]]; then
     echo "tools/ci-costs.sh: wrote $COST_FILE but it has $written_row_count suite rows, expected $merged_count" >&2

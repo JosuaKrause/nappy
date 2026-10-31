@@ -10,7 +10,7 @@ the answer lives here once.
 a report; nothing here touches the disk or git except `git_line_dates()`, which a caller passes in
 as the `dates` lookup. Every structural assumption is asserted and raises `QueueFormatError`
 rather than being guessed past: a migration that quietly misfiled a record would be a lie in the
-commit, which is what `CLAUDE.md`'s "An edit fails loudly" forbids.
+commit.
 """
 
 from __future__ import annotations

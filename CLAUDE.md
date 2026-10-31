@@ -231,23 +231,10 @@ its first line as well.
 a skill because no file edit precedes it — it applies to the first sentence of a turn as much as the
 last.
 
-## Editing files
+## Moving files
 
-**An edit fails loudly or it is not an edit.** Whatever tool makes a change — a dedicated edit
-tool, `sed`, a heredoc, a script — the change is either visibly correct or visibly rejected: a
-replacement that matches nothing must say so rather than look like a success. In a repo where the
-docs *are* the design and get committed alongside the code, a doc edit that quietly did nothing is
-a lie in the commit rather than a missing change.
-
-So a script or a one-liner that rewrites a file **asserts the anchors before writing** —
-`str.index` rather than a silent `replace`, a `grep -c` that must return the count you expect —
-and **verifies after**, with line counts and a `grep` for something that must have survived. That
-holds for a small change as much as for the large-scale and structural work a script is the right
-tool for: moving a file whole, splitting a document, deleting a whole section, renaming an
-identifier across the tree, applying the same change to thirty files.
-
-**And grep for what pointed at it before you move anything**, since a reference is not visible
-from the file being moved.
+**Grep for what pointed at a file before you move it**, since a reference is not visible from the
+file being moved.
 
 ---
 
