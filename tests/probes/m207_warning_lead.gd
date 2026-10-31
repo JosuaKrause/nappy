@@ -198,7 +198,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 			result["point_seen_at"] = since
 		var box := EventFootprints.footprint_of(def)
 		if result["seen_at"] == INF \
-				and VisibleView.around(her).sees_any(Rect2(at + box.position, box.size)):
+				and VisibleView.around(her, null).sees_any(Rect2(at + box.position, box.size)):
 			result["seen_at"] = since
 		if result["chase_at"] == INF and not instance.is_telegraphing():
 			result["chase_at"] = since

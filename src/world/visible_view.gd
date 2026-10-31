@@ -67,17 +67,19 @@ var _right := Rect2()
 var controls: ScreenCover = null
 
 ## A view of `Tuning.VIEW_HALF_EXTENT` either side of `centre`, covered by `covering` — what a rig
-## with no camera stands in for the camera's view with. No `covering` is the tap scheme's whole view.
-static func around(centre: Vector2, covering: ScreenCover = null) -> VisibleView:
+## with no camera stands in for the camera's view with. A `covering` that is null or not in force is
+## the tap scheme's whole view; the argument is required so that a forgotten one cannot mean it.
+static func around(centre: Vector2, covering: ScreenCover) -> VisibleView:
 	var made := VisibleView.new()
 	made.look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), covering)
 	return made
 
 ## Sets the view and the corners for this frame, and lays the covered corners onto it: `covering` is
-## what the controls cover while their scheme is in force, `null` for the whole view (tap).
-func look(at_view: Rect2, covering: ScreenCover = null) -> void:
+## what the controls cover, which counts only while their scheme is in force (`ScreenCover.in_force`);
+## `null` or a cover not in force is the whole view (tap).
+func look(at_view: Rect2, covering: ScreenCover) -> void:
 	view = at_view
-	joystick = covering != null
+	joystick = covering != null and covering.in_force
 	if joystick:
 		var scale := view.size / covering.design_size
 		_left = _onto(covering.left, view, scale)
@@ -90,8 +92,7 @@ func look(at_view: Rect2, covering: ScreenCover = null) -> void:
 func look_through(player: Node2D) -> void:
 	var stroller := player as Stroller
 	var centre := stroller.camera_screen_center() if stroller else player.global_position
-	look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0),
-			controls if controls != null and controls.in_force else null)
+	look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), controls)
 
 ## `visible_share()` for `rect` against what `look()` was last told.
 func share_of(rect: Rect2) -> float:
@@ -164,10 +165,10 @@ static func _box_at(feet: Vector2, box: Rect2) -> Rect2:
 
 ## The share, 0 to 1, of `rect` (world space) the player can see in `view` (the world the camera
 ## shows), leaving out the corners `covering` says are covered (`null` for the whole view, the tap
-## scheme). 0 for a rectangle with no area. The two corners never overlap each other, so what they cover of `rect` is a plain
+## scheme, as is a cover not in force). 0 for a rectangle with no area. The two corners never overlap each other, so what they cover of `rect` is a plain
 ## sum. Allocates nothing, so a caller may ask it for every live thing every frame.
-static func visible_share(rect: Rect2, in_view: Rect2, covering: ScreenCover = null) -> float:
-	if covering == null:
+static func visible_share(rect: Rect2, in_view: Rect2, covering: ScreenCover) -> float:
+	if covering == null or not covering.in_force:
 		return _share(rect, in_view, false, Rect2(), Rect2())
 	var scale := in_view.size / covering.design_size
 	return _share(rect, in_view, true, _onto(covering.left, in_view, scale),

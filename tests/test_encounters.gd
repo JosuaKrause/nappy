@@ -179,18 +179,18 @@ func _test_the_joystick_corners_are_not_visible(t) -> void:
 	var middle := Rect2(Vector2(-5.0, -5.0), Vector2(10.0, 10.0))
 	for rect: Rect2 in [in_left, in_right]:
 		t.check(is_zero_approx(VisibleView.visible_share(rect, view, TouchControls.covered_screen()))
-				and is_equal_approx(VisibleView.visible_share(rect, view), 1.0),
+				and is_equal_approx(VisibleView.visible_share(rect, view, null), 1.0),
 				"a thing in a bottom corner is hidden by the joystick scheme and seen in the tap one")
 	for rect: Rect2 in [bottom_middle, middle]:
 		t.check(is_equal_approx(VisibleView.visible_share(rect, view, TouchControls.covered_screen()), 1.0)
-				and is_equal_approx(VisibleView.visible_share(rect, view), 1.0),
+				and is_equal_approx(VisibleView.visible_share(rect, view, null), 1.0),
 				"a thing between the corners or in the middle is visible in both schemes")
 	var top := view.position.y + left.position.y * scale.y
 	var straddling := Rect2(Vector2(view.position.x + 10.0, top - 5.0), Vector2(10.0, 10.0))
 	t.check(is_equal_approx(VisibleView.visible_share(straddling, view, TouchControls.covered_screen()), 0.5),
 			"one across the corner's top edge is half visible in the joystick scheme (%.2f)"
 			% VisibleView.visible_share(straddling, view, TouchControls.covered_screen()))
-	t.check(is_zero_approx(VisibleView.visible_share(Rect2(), view)),
+	t.check(is_zero_approx(VisibleView.visible_share(Rect2(), view, null)),
 			"a thing with no area is not visible")
 
 ## A yeller standing in the view's bottom-left corner: in the joystick scheme it is under the

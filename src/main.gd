@@ -452,6 +452,7 @@ func _ready() -> void:
 		return
 	if config.skips_the_title():
 		_flow.engage()
+		_hand_the_crowd_her()
 		return
 	_open_the_title()
 
@@ -748,17 +749,26 @@ var _escape_watched := false
 ## Hands her and the baby the map of the world she now walks (`WorldMap`): the stroller asks it how
 ## the ground under her turns a press (`Stroller.set_map()`), and the baby asks its world how loud it
 ## is and what the ground does to her (`Baby.set_world()`); and a city's events are handed her
-## (`EventManager.use_player()`) and its crowd (`Crowd.use_player()`). Called whenever she is put into
+## (`EventManager.use_player()`), and each world's events are handed what the controls cover
+## (`_hand_the_controls_cover_to_the_events()`). Called whenever she is put into
 ## a world, so neither ever asks a world she has left.
 func _put_her_in(map: WorldMap) -> void:
 	_player.set_map(map)
 	_baby.set_world(map.world)
 	if _city:
 		_city.events.use_player(_player)
-		if _city.crowd:
-			_city.crowd.use_player(_player)
+	_hand_the_controls_cover_to_the_events()
 	if _readout:
 		_readout.watch(_player, _baby, _day)
+
+## Hands the city's crowd the player, **from the moment she is in the `player` group and the world
+## is live**, which is when the crowd's old lookup by that group would first have found her: not
+## behind the title (`Stroller.stand_aside()` takes her out of the group, so a crowd handed her
+## then would step round and bump a pram nobody sees), but at `_engage_the_day()`, and where a day
+## is walked with no title in front of it. Never taken back, as the lookup's result never was.
+func _hand_the_crowd_her() -> void:
+	if _city and _city.crowd and _player:
+		_city.crowd.use_player(_player)
 
 ## Hands each world's events what the on-screen controls cover of the screen, for their view of what
 ## she can see (`VisibleView`, `EventManager.use_controls()`). Idempotent, and called wherever either
@@ -1249,6 +1259,7 @@ func _resume_gate_note() -> String:
 func _engage_the_day() -> void:
 	_flow.engage()
 	_player.step_back_in()
+	_hand_the_crowd_her()
 	if _city:
 		_pauses_with_the_game(_city)
 	_hud.visible = true
@@ -1734,6 +1745,7 @@ func _begin_the_scene(walks_a_day: bool) -> bool:
 	_flow.scene.begin()
 	if not walks_a_day:
 		_flow.engage()
+		_hand_the_crowd_her()
 	return true
 
 ## The authored scene could not be set up: its problems are printed and the game quits non-zero.

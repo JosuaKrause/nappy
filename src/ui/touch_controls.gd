@@ -176,7 +176,7 @@ var _mode := ControlsMode.Mode.TAP
 ## What these controls cover of the screen, and whether the scheme that covers it is in force: the
 ## one `ScreenCover` this node keeps current as the mode changes (`set_mode()`), handed on by `main`
 ## to everything that asks what she can see (`VisibleView`).
-var covering := covered_screen()
+var covering := covered_screen(false)
 
 ## The left covered corner includes the painted ring or Run disc, never its invisible catch.
 static func covered_left() -> Rect2:
@@ -190,10 +190,10 @@ static func covered_right() -> Rect2:
 	var left := FOCUS_RIGHT.x - RUN_RADIUS
 	return Rect2(left, top, ScreenOrientation.DESIGN_SIZE.x - left, ScreenOrientation.DESIGN_SIZE.y - top)
 
-## The two covered corners as a `ScreenCover`, with `in_force` as given: each focus carries either a
+## The two covered corners as a `ScreenCover`, in force unless `in_force` says otherwise: each focus carries either a
 ## steering ring or an equally sized Run disc, so the steering side the title chose does not change
 ## the covered footprint.
-static func covered_screen(in_force := false) -> ScreenCover:
+static func covered_screen(in_force := true) -> ScreenCover:
 	var made := ScreenCover.new(ScreenOrientation.DESIGN_SIZE, covered_left(), covered_right())
 	made.in_force = in_force
 	return made

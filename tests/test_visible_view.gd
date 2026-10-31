@@ -74,7 +74,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> v
 ## The view's centre, and points well inside each bottom corner, at its bottom middle, and in the
 ## middle — the middle and the bottom middle seen in both schemes, the corners only in the tap one.
 func _test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick(t) -> void:
-	var tap := VisibleView.around(Vector2.ZERO)
+	var tap := VisibleView.around(Vector2.ZERO, null)
 	var joystick := VisibleView.around(Vector2.ZERO, TouchControls.covered_screen())
 	var view := tap.view
 	var scale := view.size / ScreenOrientation.DESIGN_SIZE
@@ -109,7 +109,7 @@ func _test_the_margin_counts_past_the_edge_and_into_a_corner(t) -> void:
 ## straight up, its feet at the top edge (the box stands above them); straight down, the box's top at
 ## the bottom edge; across, half the box past the side.
 func _test_just_out_of_sight_is_the_edge_of_the_view_on_each_side(t) -> void:
-	var tap := VisibleView.around(Vector2.ZERO)
+	var tap := VisibleView.around(Vector2.ZERO, null)
 	var box := Rect2(-10.0, -30.0, 20.0, 30.0)
 	var m := VisibleView.CLEAR_MARGIN
 	t.close_to(tap.clear_of_sight(Vector2.ZERO, Vector2.UP, box), Tuning.VIEW_HALF_EXTENT.y + m,
@@ -131,7 +131,7 @@ func _test_just_out_of_sight_is_the_edge_of_the_view_on_each_side(t) -> void:
 ## In the joystick scheme a way down into a bottom corner ends at the corner's edge, nearer than the
 ## view's own: the corner is out of sight, as the area says.
 func _test_just_out_of_sight_may_be_a_covered_corner(t) -> void:
-	var tap := VisibleView.around(Vector2.ZERO)
+	var tap := VisibleView.around(Vector2.ZERO, null)
 	var joystick := VisibleView.around(Vector2.ZERO, TouchControls.covered_screen())
 	var box := Rect2(-6.0, -12.0, 12.0, 12.0)
 	var way := Vector2(-1.0, 1.0).normalized()
@@ -259,7 +259,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
 		bike.resume(EventCatalogue.by_id("cyclist").telegraph_time, 0.0)
 		bike.came_under_a_warning = true
 		source.live.append(bike)
-		source.view.look(VisibleView.around(her).view, TouchControls.covered_screen() if joystick else null)
+		source.view.look(VisibleView.around(her, null).view, TouchControls.covered_screen() if joystick else null)
 		var edge := DangerEdge.new()
 		t.add_child(edge)
 		edge.setup(source, player)

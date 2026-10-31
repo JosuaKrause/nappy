@@ -74,7 +74,7 @@ func _measure(t, fallback: bool) -> void:
 		var mark_at := director.contact_position()
 		player.global_position = mark_at
 		city.events.visible_view().look(Rect2(player.global_position - Tuning.VIEW_HALF_EXTENT,
-				Tuning.VIEW_HALF_EXTENT * 2.0))
+				Tuning.VIEW_HALF_EXTENT * 2.0), null)
 		director.set_sight(city.events.sees)
 		var plans_before := city.events.plans().size()
 		var started := Time.get_ticks_usec()

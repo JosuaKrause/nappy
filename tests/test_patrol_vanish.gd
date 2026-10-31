@@ -77,9 +77,9 @@ func _a_lane(map: CityMap, tiles := 8) -> Array:
 	return []
 
 ## Whether a car at `at` is anywhere in the view she has from `her`: the whole of its body and a
-## margin about it, the view the camera shows with no look-ahead on top (`VisibleView.around()`).
+## margin about it, the view the camera shows with no look-ahead on top (`VisibleView.around(, null)`).
 func _seen(at: Vector2, her: Vector2) -> bool:
-	return VisibleView.around(her).sees_any(Rect2(at - CAR_BOX * 0.5, CAR_BOX))
+	return VisibleView.around(her, null).sees_any(Rect2(at - CAR_BOX * 0.5, CAR_BOX))
 
 ## A real city on day `day` with a planned car of `def` on a stretch of carriageway and her at the
 ## sidewalk beside its middle, returned as `[city, her, plan, route]`.

@@ -395,9 +395,9 @@ static func lead_up_a_lane(box: Rect2) -> float:
 static func seen_from(view: VisibleView, her: Vector2) -> VisibleView:
 	if view and view.view.has_area():
 		var whole := VisibleView.new()
-		whole.look(view.view)
+		whole.look(view.view, null)
 		return whole
-	return VisibleView.around(her)
+	return VisibleView.around(her, null)
 
 ## Whether a drawing of `box` about its feet, standing at `at`, is wholly outside `view` (the
 ## camera's whole view, `seen_from()`), and at least `least_distance()` from her.

@@ -484,7 +484,7 @@ func _build_city(t, seed_value := SEED) -> void:
 ## The day's one view looked at `rect` with no corner covered, which is what the director's
 ## `set_sight(_city.events.sees)` and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
 func _look_at(rect: Rect2) -> void:
-	_city.events.visible_view().look(rect)
+	_city.events.visible_view().look(rect, null)
 
 ## Looks the day's view at the unrotated 640x360 screen round `her` (in the tap scheme the visible
 ## area is the whole view) and hands the director what she can see.
@@ -995,7 +995,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
 		var through := _through_alley_tiles(map)
 		for i in range(0, through.size(), 2):
 			var her := map.tile_to_world(through[i])
-			screen.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
+			screen.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
 			director.set_sight(screen.sees)
 			var mark := director._nearest_alley_within(her)
 			if mark != Vector2.INF:
@@ -2470,7 +2470,7 @@ func _check_no_start_was_passed_over(t, director: ResistanceDirector, her: Vecto
 ## The four starts `_draw_arrival_position()` tries before any drawn bearing: just out of sight
 ## straight above and below her and either side along her street, with the camera on her.
 static func _fixed_starts(def: EventDef, her: Vector2) -> Array[Vector2]:
-	var view := VisibleView.around(her)
+	var view := VisibleView.around(her, null)
 	var starts: Array[Vector2] = []
 	for way: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
 		starts.append(SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
@@ -2571,7 +2571,7 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 	if chaser == null:
 		return Vector2.INF
 	var start := chaser.global_position
-	var view := VisibleView.around(her)
+	var view := VisibleView.around(her, null)
 	var siting := director._spawn_siting
 	var asked := siting.ask(EventFootprints.footprint_of(chaser.def), director._chaser, her)
 	var beside := asked.beside
@@ -2650,7 +2650,7 @@ func _is_really_on_screen(_t, her: Vector2, at: Vector2) -> bool:
 	if bearing.length() > 0.001:
 		var dir := bearing.normalized()
 		lead = Vector2(dir.x, dir.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
-	return VisibleView.around(her + lead).sees(at)
+	return VisibleView.around(her + lead, null).sees(at)
 
 ## *(PLAYTEST-71: "maybe spawn the robber in pursuing mode offscreen when she interacts with the
 ## yeller so it runs towards her from offscreen"; "we need a version of the robber that is not
@@ -2765,7 +2765,7 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 			and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 			"he is warned of before he exists, for %.2fs alone, and arrives chasing" % def.warned_for())
 	var her := Vector2.ZERO
-	var view_on_her := VisibleView.around(her)
+	var view_on_her := VisibleView.around(her, null)
 	var edge_of_cone := ResistanceDirector.ARRIVAL_CONE - 0.001
 	var box := EventFootprints.footprint_of(def)
 	var starts: Array[Vector2] = [
@@ -2842,7 +2842,7 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 		robber.player_at = her
 		robber.player_running = absf(velocity) > Tuning.WALK_SPEED
 		var box := robber.drawn_box()
-		var in_sight := VisibleView.around(her).sees_any(
+		var in_sight := VisibleView.around(her, null).sees_any(
 				Rect2(robber.global_position + box.position, box.size))
 		if in_sight and result["first_seen"] == INF:
 			result["first_seen"] = elapsed
@@ -4359,7 +4359,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 		# from the badge to the first frame its field reaches her.
 		if warning and not trucks.is_empty():
 			var front := trucks[0]
-			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her),
+			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her, null),
 					EventFootprints.footprint_of(front.def), her, front.global_position)
 					and absf(front.global_position.x - warning.place.x) < 1.0
 					and signf(front.global_position.y - her.y) == signf(warning.place.y - her.y),

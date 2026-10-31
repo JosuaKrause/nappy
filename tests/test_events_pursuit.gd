@@ -535,10 +535,10 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 	var edge := DangerEdge.new()
 	t.add_child(edge)
 	edge.setup(manager, player)
-	manager.visible_view().look(VisibleView.around(her).view)
+	manager.visible_view().look(VisibleView.around(her, null).view, null)
 	var created: Array[EventInstance] = []
 	var where := func(at: Vector2) -> Vector2:
-		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at))
+		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at, null))
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path := PendingWarning.route_down_her_line(map, place, at, Vector2.UP)
 		var instance := EventInstance.new()
@@ -574,7 +574,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		elif elapsed > 0.6 and elapsed <= 0.9:
 			step = Vector2.LEFT
 		her += step * Tuning.WALK_SPEED * STEP
-		manager.visible_view().look(VisibleView.around(her).view)
+		manager.visible_view().look(VisibleView.around(her, null).view, null)
 		manager.warnings.run(STEP, her)
 		elapsed += STEP
 		if not created.is_empty():
@@ -590,7 +590,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 			"he is created once his %.2fs badge is over (%.2fs)" % [def.warned_for(), came_at])
 	if created.size() == 1:
 		var bike := created[0]
-		var view := VisibleView.around(her)
+		var view := VisibleView.around(her, null)
 		t.check(ground.has(map.tile_at(map.world_to_tile(bike.global_position))),
 				"on a sidewalk")
 		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(def), her,

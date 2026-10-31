@@ -137,7 +137,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 func _stand(city: City, player: Stroller, at: Vector2) -> void:
 	player.global_position = at
 	city.events.visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
-			Tuning.VIEW_HALF_EXTENT * 2.0))
+			Tuning.VIEW_HALF_EXTENT * 2.0), null)
 
 ## Runs every warning up to its end, her stepping `drift` halfway through its time, and prints what
 ## came of the one the director put up: where it pointed, where he was created, the run log's lines

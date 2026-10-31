@@ -669,7 +669,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 			wrong.append("between her and the fire")
 		if not Tile.is_road(_city.map.tile_type_at_world(at)):
 			wrong.append("off the carriageway")
-		if not SpawnSiting.is_out_of_sight(VisibleView.around(her_at[0]),
+		if not SpawnSiting.is_out_of_sight(VisibleView.around(her_at[0], null),
 				EventFootprints.footprint_of(engine.def), her_at[0], at):
 			wrong.append("in sight")
 		t.check(wrong.is_empty(), "created at %v with her at %v: on its road, on its way to the fire, "
@@ -1061,7 +1061,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		if warning.def.id != "fire_truck":
 			continue
 		engines += 1
-		t.check(SpawnSiting.is_out_of_sight(VisibleView.around(rig.global_position),
+		t.check(SpawnSiting.is_out_of_sight(VisibleView.around(rig.global_position, null),
 				EventFootprints.footprint_of(warning.def), rig.global_position, warning.place),
 				"and its badge points just out of sight, where it will come from")
 		# **It is aimed at where the fire actually is**, which is the half a runtime siting could
@@ -1094,7 +1094,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 			# warning before it existed, and that is what is held — at least the row's own minimum
 			# (`EventDef.minimum_telegraph()`), from the badge to the first frame its field reaches
 			# her (or, for a lethal row, its lethal reach does).
-			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her_at),
+			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her_at, null),
 					EventFootprints.footprint_of(arrived.def), her_at, arrived.global_position),
 					"and it is created just out of sight (%.0fpx from her)"
 					% arrived.global_position.distance_to(her_at))

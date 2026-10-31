@@ -61,7 +61,7 @@ func run(t) -> void:
 				var her := city.map.tile_to_world(tile)
 				player.global_position = her
 				city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
-						Tuning.VIEW_HALF_EXTENT * 2.0))
+						Tuning.VIEW_HALF_EXTENT * 2.0), null)
 				city.events.ahead.clear()
 				city.events.send_a_pursuer()
 				var shown := 0.0

@@ -40,7 +40,7 @@ static func _siting(map: CityMap, view: VisibleView,
 			func() -> SpawnSiting.Region: return region)
 
 static func _view_about(at: Vector2) -> VisibleView:
-	return VisibleView.around(at)
+	return VisibleView.around(at, null)
 
 ## Legal ground is walkable ground off the home block and outside a walled-off alley.
 func _test_legal_ground(t) -> void:
