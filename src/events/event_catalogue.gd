@@ -27,6 +27,10 @@ const STEAM_VENT_BODY := 16.0
 ## and a reach is a property of a person rather than of where he happens to be standing. Stated
 ## here rather than at either row, because a second copy of it is how the two quietly drift apart.
 const MASKED_MAN_REACH := 28.0
+## How close the masked man on the escape's stairs gets before he has the baby, inside the field he
+## shares with the roadblock's guard (`MASKED_MAN_REACH`): narrower so a runner who walks until he
+## runs, then runs, clears him on the tightest line onto the second flight (inbox #865).
+const MASKED_PURSUER_CATCH := 23.5
 ## The widest a `SpreadLook._draw_spread`-style body (`SpreadLook._draw_spread`,
 ## `RankLook._draw_cafe`) may be on a `SIDEWALK` tile before it draws past the pavement it stands
 ## on.
@@ -3156,18 +3160,20 @@ static func _masked_pursuer() -> EventDef:
 	# measured on the escape as built (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as
 	# the game steps, a 30Hz physics tick that moves her, then steps him and checks the catch):
 	# coming down from the second floor's door she meets it at the head of the second flight, and
-	# making for the first floor's door from there a runner who runs the whole way gets through on
-	# every line onto the flight, while a walker is caught holding plain left from the row level
-	# with the flight's head tread or the row below it, or down-left from the landing tile between
-	# the two flights. **A walker holding plain left from that landing tile gets through**, the
-	# margins are thin (a runner who runs the whole way is 33px from him at the closest; one who
-	# walks until he runs, then runs, turning plain left at row 11's centre, comes within 26.4px of
-	# him on the tick, inside his 28px catch, and is caught), and in the stairwell his warning is off screen,
+	# making for the first floor's door from there a runner gets through on every line onto the
+	# flight, while a walker is caught holding plain left from the row level with the flight's head
+	# tread or the row below it, or down-left from the landing tile between the two flights. **A
+	# walker holding plain left from that landing tile gets through**, the margins are thin against
+	# his 23.5px catch (`MASKED_PURSUER_CATCH`: a runner who walks until he runs, then runs, turning
+	# plain left at row 11's centre, comes within 24.6px of him on the tick and clears it by 1.1px;
+	# the walker down-left from the landing tile comes within 22.7px, 0.8px inside; a runner who runs
+	# the whole way is 33px from him at the closest), and in the stairwell his warning is off screen,
 	# since the view reaches 180px from her and he starts about 400px below; only the edge badge
 	# shows his charge, from the frame he runs (`DangerEdge`). The player accepted both (inbox
 	# #782 in minty-lemur).
 	def.notice.runs_within = 426.0
 	def.hard_fail = true
+	def.catch_reach = MASKED_PURSUER_CATCH
 	# **One of him at a time, and there is always another** *(2026-09-19: "then the pursuing guy
 	# should respawn forcing to switch the side again")*: a fresh one comes up the shaft this long
 	# after the last has run out of the top of it, so every run waits, warns and runs exactly as the

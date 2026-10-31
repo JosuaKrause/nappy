@@ -12,7 +12,7 @@ extends RefCounted
 ## the building's `EventManager._physics_process()`, which tells him where she is, steps him and
 ## checks the catch. It is stepped at the game's rhythm: a 30Hz physics tick moves her, then the
 ## manager's tick. A line is `TRIGGER seed <s> <route> <pace> charged at (<local tile units>) <d>px
-## from him, <outcome> at <t>s, <a>s after he ran, closest <k>px on a tick (the catch is 28px)`,
+## from him, <outcome> at <t>s, <a>s after he ran, closest <k>px on a tick (the catch is <r>px)`,
 ## where <k> is the nearest he stands to her centre on a physics tick, the only moment he moves and
 ## the catch is checked (he is drawn between two ticks' places). The routes all start on the second
 ## floor's door of his shaft, the way in from the second floor's hallway:
@@ -121,9 +121,9 @@ func _once(t, s: int, route: String, pace: String) -> void:
 			_hold(["move_up"], running)
 	_hold([], false)
 	var local := charged_at - scene.map.tile_to_world(origin) + Vector2.ONE * InteriorScene.TILE * 0.5
-	print("TRIGGER seed %d %s %s charged at %s %.0fpx from him, %s at %.2fs, %.2fs after he ran, closest %.1fpx on a tick (the catch is 28px)"
+	print("TRIGGER seed %d %s %s charged at %s %.0fpx from him, %s at %.2fs, %.2fs after he ran, closest %.1fpx on a tick (the catch is %.1fpx)"
 			% [s, route, pace, (local / InteriorScene.TILE).snapped(Vector2(0.01, 0.01)),
-			charged_range, outcome, elapsed, charged_for, closest_on_tick])
+			charged_range, outcome, elapsed, charged_for, closest_on_tick, man.def.lethal_reach()])
 	player.free()
 	events.free()
 	scene.free()

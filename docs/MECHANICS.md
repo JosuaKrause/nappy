@@ -1613,10 +1613,11 @@ nearest corridor door and let him pass. **He starts his run the moment she is wi
 flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
 walker is caught when she takes the flight holding plain left from the row level with its head tread
 or the row below, or down-left from the landing tile between the two flights. A walker who holds
-plain left from that landing tile gets through, and the margins are thin (on the tightest runner's
-line, walking until he runs, then running, and turning plain left at row 11's centre, he is drawn
-about 25px from her centre (24.6px), inside his 28px catch, and she clears it on the tick at 28.6px,
-by 0.6px; she is caught if she starts running 0.3s late). In the stairwell his warning is off screen,
+plain left from that landing tile gets through, and the margins are thin against his 23.5px catch
+*(inbox #865)* (on the tightest runner's line, walking until he runs, then running, and turning plain
+left at row 11's centre, he comes 24.6px from her centre on the tick, 1.1px outside it; the walker
+down-left from the landing tile comes 22.7px, 0.8px inside; she is caught if she starts running 0.3s
+late). In the stairwell his warning is off screen,
 and only the screen-edge badge shows his charge once he runs, up from the frame he starts running *(inbox #788 in minty-lemur: "Let's show that at least")*; the player accepted both *(inbox #782 in minty-lemur)*. So
 the side she switched to is not a side she can settle on, which is the whole point of him: the way
 down is a sequence of crossings rather than one.

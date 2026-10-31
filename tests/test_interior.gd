@@ -1236,8 +1236,9 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## along or starts running the moment he does, with the keys she already holds. **The margins are
 ## thin:** on the tightest runner's line (walking until he runs, then running, turning plain left at
 ## row 11's centre) how near he comes to her centre on the tick, the only place he moves and the
-## catch is checked, is pinned against his 28px catch (`_TIGHTEST_RUNNER_CLOSEST`); **she is caught if
-## she starts running 0.3s after he does.**
+## catch is checked, is pinned just outside his catch (`_TIGHTEST_RUNNER_CLOSEST` against
+## `EventCatalogue.MASKED_PURSUER_CATCH`); **she is caught if she starts running 0.3s after he
+## does.**
 func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 	for walk: Array in _SECOND_FLIGHT_TURNS:
 		for pace: String in ["walk", "run", "walk-run", "run-late"]:
@@ -1252,9 +1253,11 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 					"%s at a %s: %s (%s, %.0fpx from him at the closest)"
 					% [walk[3], pace, expected, met["outcome"], met["closest"]])
 			if walk[0] == 11 and pace == "walk-run":
-				t.check(absf(met["closest"] - _TIGHTEST_RUNNER_CLOSEST) < 0.5,
-						"%s at a %s: he comes %.1fpx from her centre on the tick (%.1fpx pinned, %s)"
-						% [walk[3], pace, met["closest"], _TIGHTEST_RUNNER_CLOSEST, "the catch 28px"])
+				t.check(absf(met["closest"] - _TIGHTEST_RUNNER_CLOSEST) < 0.5
+						and met["closest"] > EventCatalogue.MASKED_PURSUER_CATCH,
+						"%s at a %s: he comes %.1fpx from her centre on the tick (%.1fpx pinned), %s"
+						% [walk[3], pace, met["closest"], _TIGHTEST_RUNNER_CLOSEST,
+						"outside his %.1fpx catch" % EventCatalogue.MASKED_PURSUER_CATCH])
 			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
 					% [walk[3], pace, met["outcome"], met["closest"]])
 
@@ -1310,8 +1313,8 @@ func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts
 
 ## How near the masked man comes to her centre, on the tick, on the tightest runner's line (row 11,
 ## walking until he runs, then running): the margin `_test_she_has_to_run_to_the_first_floor_door`
-## pins against his 28px catch, measured on the escape as built.
-const _TIGHTEST_RUNNER_CLOSEST := 26.4
+## pins outside his catch (`EventCatalogue.MASKED_PURSUER_CATCH`), measured on the escape as built.
+const _TIGHTEST_RUNNER_CLOSEST := 24.6
 
 ## The lines onto the second flight, local to the grammar: the row of her turn, what she holds
 ## there, whether a walker is caught, and what to call it.
