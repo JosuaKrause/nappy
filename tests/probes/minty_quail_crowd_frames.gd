@@ -12,8 +12,8 @@ extends RefCounted
 ## ticks `FRAMES` consecutive drawn frames are read back (`DrawnFrame.wait()`, which draws a frame on
 ## demand when the window is covered). Each frame prints one `CROWD_FRAMES_JSON` line: the physics
 ## ticks run so far, the interpolation fraction, the followed car's node position (where its last
-## tick put it) and how many of the screen's pixels differ from the frame before. A frame drawn with
-## no tick since the last one whose pixels still differ shows the crowd drawn moving between ticks;
+## tick put it) and how many of the crop's pixels (the crop saved to `strip.png`) differ from the
+## frame before. A frame drawn with no tick since the last one whose pixels still differ shows the crowd drawn moving between ticks;
 ## where the crowd moved only on the tick, such a frame would be pixel for pixel the one before.
 ## It writes `strip.png`, the same crop of every frame side by side, round where the followed car
 ## was in the first, and
@@ -74,23 +74,23 @@ func run(t) -> void:
 	RenderingServer.frame_post_draw.disconnect(note)
 	var crops: Array[Image] = []
 	var anchor: Vector2 = rows[0].screen
+	# One crop for every frame, round where the car was drawn from in the first, so the car is seen
+	# moving through it and the street stands still. The pixels counted below are the crop's own.
+	var corner := (Vector2i(anchor) - CROP / 2).clamp(Vector2i.ZERO,
+			Vector2i(images[0].get_size()) - CROP)
+	for image in images:
+		crops.append(image.get_region(Rect2i(corner, CROP)))
 	var still_between_ticks := 0
 	var moved_between_ticks := 0
 	for frame in FRAMES:
 		var row := rows[frame]
-		var differing := _differing_pixels(images[frame - 1], images[frame]) if frame > 0 else 0
+		var differing := _differing_pixels(crops[frame - 1], crops[frame]) if frame > 0 else 0
 		var ticked: bool = frame == 0 or row.physics_ticks != rows[frame - 1].physics_ticks
 		if not ticked:
 			if differing > 0:
 				moved_between_ticks += 1
 			else:
 				still_between_ticks += 1
-		# One crop for every frame, round where the car was drawn from in the first, so the car is
-		# seen moving through it and the street stands still.
-		var screen := anchor
-		var corner := Vector2i(screen) - CROP / 2
-		corner = corner.clamp(Vector2i.ZERO, Vector2i(images[frame].get_size()) - CROP)
-		crops.append(images[frame].get_region(Rect2i(corner, CROP)))
 		row.erase("screen")
 		row["tick_since_last_frame"] = ticked
 		row["differing_pixels"] = differing
@@ -125,8 +125,8 @@ func _differing_pixels(a: Image, b: Image) -> int:
 		return 0
 	var count := 0
 	var size := a.get_size()
-	for y in range(0, size.y, 2):
-		for x in range(0, size.x, 2):
+	for y in size.y:
+		for x in size.x:
 			if a.get_pixel(x, y) != b.get_pixel(x, y):
 				count += 1
 	return count
