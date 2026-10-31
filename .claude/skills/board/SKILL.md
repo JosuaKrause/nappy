@@ -38,7 +38,8 @@ Top to bottom, every part present even when empty:
    player's correction:* it is written as a question, its My pick saying what happens if they leave
    it, and it stays until they answer it; a choice an agent made where the design was silent stays
    in its report and the pull request's description rather than coming here.
-3. `## Settled`: answered questions, kept until they are filed into the queue, each as below.
+3. `## Settled`: answered questions, kept until they are filed into the queue and gone the moment
+   they are (see "Settling"), each as below.
 4. `## Running`: a table `Item | What it is | State | Next`, one row per piece of work in flight —
    a refactor step, a fix, inbox notes waiting to be filed. A PR is a link in the State cell. Under
    it, one line on what comes after the running work.
@@ -91,10 +92,14 @@ answer differs.
 ## Settling
 
 A question is settled when the player's answer leaves nothing open. Its Me line then begins
-"settled:" and says what will be built, and the question moves under `## Settled`. **A settled
-question leaves the board once it is filed** — when the filing pull request carrying its inbox note
-merges — since the queue holds it from then on and the board holds open things only. A Running row
+"settled:" and says what will be built, and the question moves under `## Settled`. A Running row
 moves to Recently done when its pull request merges.
+
+**An item that is fully filed leaves the board whole, with no record of it kept there** (inbox
+#877): once the filing pull request carrying its inbox note merges, its settled question, its
+Running row (the inbox notes waiting to be filed, the notes it names) and any line about the filing
+go in the same turn, and no Recently done row or "filed" note stands in for them. The queue and the
+records hold it from then on, and the board holds open things only.
 
 ## Keeping it cheap
 
@@ -108,7 +113,7 @@ often:
   bookmark only; `session-cleanup`'s restart prompt carries both numbers.
 - **Write in one call.** Several ops go in one `update`, applied in order; a write's acknowledgement
   is the next write's anchor, with no read between.
-- **Keep the page small.** Settled questions leave once filed and Recently done keeps the last few;
+- **Keep the page small.** A filed item leaves whole and Recently done keeps the last few;
   the player's typed answers come back split into many small text runs, so a long-lived answer costs
   more on every full read.
 
