@@ -161,7 +161,7 @@ role named has nothing to check `status` against:
   one of verify's two local-full-run cases** — an agent left to judge it will run the whole thing
   to be safe. Only those two count: a change that is large or touches many files is not one by its
   size, since CI runs the same suite on a better tree, and a local full run is a wait long enough
-  to go to the background, which notifies this session and the player (inbox #870). A brief copied from an earlier one is checked for this
+  to go to the background, which notifies this session and the player (inbox #870 in minty-dolphin). A brief copied from an earlier one is checked for this
   line, not inherited. A red PR goes back to the agent with the failing output.
 - **Headless first.** Verification lives in the test rigs, not in watching the game. Windowed runs
   (`tools/run.sh`, repeated `tools/shot.sh`) open on the player's own screen; at most one or two
@@ -327,7 +327,7 @@ worktrees — merging is what collides — so parallelism is planned at the file
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the
   player through the orchestrator, in the entry where the next reader will look for it.
-- **An agent stays on one task, and no agent grows huge** (inbox #874). An agent re-reads its
+- **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
   for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
   Where the balance falls is *proposed, not asked for, open to the player's correction*:

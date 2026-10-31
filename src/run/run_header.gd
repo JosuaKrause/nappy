@@ -12,7 +12,7 @@ var nerves: int = Tuning.STARTING_NERVES
 var ending: GameEnums.Ending = GameEnums.Ending.NONE
 ## Physics ticks the world has actually been moving this run — advanced by one a tick by exactly one
 ## owner, `main._physics_process()`, while a day — a section of the escape included — is walking or
-## returning and the tree is not paused. **Counted in ticks, never in frame time** (inbox #866): a
+## returning and the tree is not paused. **Counted in ticks, never in frame time** (inbox #866 in minty-dolphin): a
 ## frame drawn late runs no more ticks than the engine steps, so a lag spike slows the
 ## game rather than adding time, and two machines playing the same run read the same time. Never
 ## shown during play; the ending screen is the only place it is read, through `play_seconds()`.
