@@ -327,6 +327,16 @@ worktrees — merging is what collides — so parallelism is planned at the file
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the
   player through the orchestrator, in the entry where the next reader will look for it.
+- **One agent per pull request, kept for that pull request and no longer** (inbox #874). An
+  agent re-reads its whole context on every turn, so a long-lived one pays most of its cost
+  re-reading its own history, and the size grows with every step it is kept for. A fresh agent
+  instead pays to establish its context once, from scratch. The balance: the builder that opens a
+  pull request stays with it through its review fixes and merges of `main`, since that work
+  needs the context it built; the next pull request, a plan's next part included, gets a fresh
+  agent with its own brief. A plan written by one agent is built by fresh ones, each briefed with
+  its part. A brief names the files and the records to read rather than asking for the whole
+  history, so a fresh agent's start stays small. A reviewer is fresh per pull request and is
+  resumed, while warm, for the delta reviews of that same pull request.
 - **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent that
   reported an hour ago replays its whole transcript at full price, because the prompt cache behind
   it has expired (woolly-finch 5). Resume only while the cache is live, and the windows are exact:
