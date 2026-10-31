@@ -83,7 +83,7 @@ func _camera_on(main: Node2D) -> Callable:
 	return func(row: EventDef, feet: Vector2) -> bool:
 		var centre: Vector2 = main._player.global_position
 		var view := Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
-		var box := EventInstance.footprint_of(row)
+		var box := EventFootprints.footprint_of(row)
 		if not box.has_area():
 			return view.has_point(feet)
 		return view.intersects(Rect2(feet + box.position, box.size))

@@ -410,7 +410,7 @@ func send_the_column(her: Vector2) -> PendingWarning:
 	var bottom := _map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
 	# About as far up the lane as the front truck is created, just out of sight: the view's half
 	# height and the truck's own picture.
-	var lead := PendingWarning.least_distance() + EventInstance.box_of(def).size.y
+	var lead := PendingWarning.least_distance() + EventFootprints.box_of(def).size.y
 	var past := Tuning.OUT_OF_SIGHT + def.field_reach()
 	# From the end with room for its place behind her and a stop beyond her, when only one end has
 	# it; with neither, from the end with more road behind her. The spine leaves the map by a tunnel

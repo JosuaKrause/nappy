@@ -16,7 +16,7 @@ extends Resource
 ## **`obstructs_radius` stays zero, because it closes no ground**: it drives down a carriageway she
 ## walks round it on. So the planners' disc, the crowd's per-tile record and the director's refusal
 ## of a director-sited body know nothing about it, and the body is `shape` itself, laid along the
-## car's heading (`EventInstance._solid_axis()`).
+## car's heading (`EventInstance.solid_axis()`).
 ##
 ## **What kills is not the body**: a strike area ahead of the nose, only while it drives its route,
 ## and only with her on the carriageway (`EventInstance.is_lethal_at()`) — a crowd car's own

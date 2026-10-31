@@ -518,9 +518,9 @@ func _test_its_picture_stands_over_its_body(t) -> void:
 	var engine := _engine(t, PackedVector2Array([Vector2.ZERO, Vector2(0.0, 600.0)]))
 	var shape := _truck().shape
 	t.check(is_equal_approx(engine.look._body_anchor("side").y,
-			shape.half_length * absf(engine._solid_axis().y) + shape.radius
+			shape.half_length * absf(engine.solid_axis().y) + shape.radius
 			+ float(EventPictures.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN["side"])),
 			"the side view's bottom lands on the body's southern edge")
-	t.check(EventInstance._picture_drop_of(_truck()) > shape.reach(),
+	t.check(EventFootprints.picture_drop_of(_truck()) > shape.reach(),
 			"and the drawn box allows for the lowered picture")
 	engine.free()

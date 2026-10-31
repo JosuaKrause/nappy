@@ -1131,7 +1131,7 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 				var view_at := feet - Vector2(Tuning.VIEW_HALF_EXTENT.x,
 						Tuning.VIEW_HALF_EXTENT.y * 2.0 + 2.0)
 				events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
-				var box := EventInstance.box_of(walker.def)
+				var box := EventFootprints.box_of(walker.def)
 				t.check(not events.on_screen(feet)
 						and events.sees(feet + Vector2(0.0, box.position.y * 0.5)),
 						"%s scheme: their feet are just below the view, their figure in it" % scheme)
@@ -1162,7 +1162,7 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 				var view := Rect2(Vector2(door.x - Tuning.VIEW_HALF_EXTENT.x,
 						top - 2.0 - Tuning.VIEW_HALF_EXTENT.y * 2.0), Tuning.VIEW_HALF_EXTENT * 2.0)
 				events.visible_view().look(view, joystick)
-				var car := EventInstance.box_of(EventCatalogue.by_id("police_patrol"))
+				var car := EventFootprints.box_of(EventCatalogue.by_id("police_patrol"))
 				var start: Vector2 = happenings._raid_beat[0]
 				var any_feet := false
 				for at: Vector2 in Array(happenings._raid_vans) + Array(happenings._raid_beat):

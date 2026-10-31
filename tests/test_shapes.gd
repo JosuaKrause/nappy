@@ -219,10 +219,10 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t) -> void:
 		instance.set_process(false)
 
 		var along := _along_axis(segment)
-		var axis := instance._solid_axis()
+		var axis := instance.solid_axis()
 		var street_kind := "horizontal" if horizontal else "vertical"
 		t.check(absf(axis.dot(along)) < 0.05,
-				("on a %s street, _solid_axis() (%s) is perpendicular to the street's own "
+				("on a %s street, solid_axis() (%s) is perpendicular to the street's own "
 						% [street_kind, axis])
 				+ ("direction (%s), not parallel to it — dot %.3f" % [along, axis.dot(along)]))
 
@@ -234,11 +234,11 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t) -> void:
 			# A capsule's own long axis stands along local Y before any rotation is applied —
 			# `GroundShape.collision_shape()`'s own docstring — so rotating `Vector2.DOWN` by the
 			# body's `rotation` gives the capsule's actual spine direction in world space; it must
-			# line up with `_solid_axis()` (parallel or anti-parallel, since a capsule is symmetric
+			# line up with `solid_axis()` (parallel or anti-parallel, since a capsule is symmetric
 			# end to end), not merely be perpendicular to it.
 			var spine := Vector2.DOWN.rotated(collision.rotation)
 			t.check(absf(spine.dot(axis)) > 0.95,
-					("on a %s street, the built capsule's own spine (%s) matches _solid_axis() (%s)"
+					("on a %s street, the built capsule's own spine (%s) matches solid_axis() (%s)"
 							% [street_kind, spine, axis]))
 		instance.free()
 

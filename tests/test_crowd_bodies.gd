@@ -456,7 +456,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map: Ci
 		var placed := at
 		if def.pavement_side == EventDef.Pavement.ANY:
 			placed = EventInstance._centred_on_the_pavement_band(map, at)
-		var axis := EventSpawner._body_axis(map, def, placed, Vector2.RIGHT)
+		var axis := EventFootprints.body_axis(map, def, placed, Vector2.RIGHT)
 		var before := def.shape.tiles_under(placed, axis)
 		var after := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 		before.sort()
@@ -489,7 +489,7 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map: Ci
 	# copy a 96px reach takes to span a 6-tile street.
 	var at := Vector2(float(base) * Tuning.TILE_SIZE + float(Tuning.STREET_WIDTH) * 16.0,
 			(float(along) + 0.5) * Tuning.TILE_SIZE)
-	var axis := EventSpawner._body_axis(map, def, at, Vector2.RIGHT)
+	var axis := EventFootprints.body_axis(map, def, at, Vector2.RIGHT)
 	var whole_band := def.shape.tiles_under(at, axis)
 	var cars := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
 	t.check(not cars.is_empty(), "the cars stand on ground (%d tiles)" % cars.size())

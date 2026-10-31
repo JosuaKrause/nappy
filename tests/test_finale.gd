@@ -871,7 +871,7 @@ func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
 ## warning is visible on screen.)* Walked: she comes at each of the game's roadblocks on two seeds'
 ## cities, and at every roadblock the escape can stand there, in a straight line from all round it, with the camera's view led by her walk as `Stroller` leads it
 ## (`RoadblockRig.view_round()`), and on the frame his hand goes up the whole of his raised-hand
-## picture at his post (`EventInstance.warning_guard_rect()`) is inside that view, he is drawn above
+## picture at his post (`EventFootprints.warning_guard_rect()`) is inside that view, he is drawn above
 ## the street's other figures (`DrawLayer.Layer.WARNING`); on every approach that ends in his
 ## charge, his hand went up first; once he charges, he sorts
 ## with the street again. The approaches on which the radius alone would have warned her with him
@@ -924,14 +924,14 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 					if was_waiting and not radius_alone_seen and inside \
 							and map.clear_line(band, her):
 						radius_alone_seen = true
-						if not view.encloses(EventInstance.warning_guard_rect(
+						if not view.encloses(EventFootprints.warning_guard_rect(
 								guard._spread_vertical, band, her)):
 							off_by_the_radius += 1
 					RoadblockRig._tick(made[1], her, false, -toward)
 					if was_waiting and guard.is_standing_for_its_notice():
 						warned += 1
 						warned_here = true
-						t.check(view.encloses(EventInstance.warning_guard_rect(
+						t.check(view.encloses(EventFootprints.warning_guard_rect(
 								guard._spread_vertical, band, her)),
 								"%s: his raised hand goes up in her view" % where)
 						t.check(DrawLayer.layer_of(guard) == DrawLayer.Layer.WARNING,

@@ -435,20 +435,20 @@ func _test_stationary_vehicles_face_their_street(t) -> void:
 	var map := CityMap.new()
 	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
-	t.check(not EventInstance._stationary_vehicle_uses_side(EventDef.Look.MOVING_VAN,
+	t.check(not EventFootprints.stands_side_on(EventCatalogue.by_id("moving_van"),
 			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
 			"a moving van on a north-south street uses its end view")
-	t.check(EventInstance._stationary_vehicle_uses_side(EventDef.Look.MOVING_VAN,
+	t.check(EventFootprints.stands_side_on(EventCatalogue.by_id("moving_van"),
 			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
 			"a moving van on an east-west street uses its side view")
-	t.check(EventInstance._stationary_vehicle_uses_side(EventDef.Look.BURNT_OUT_CAR,
+	t.check(EventFootprints.stands_side_on(EventCatalogue.by_id("burnt_out_car"),
 			map, map.tile_to_world(ns_tile), Vector2.RIGHT),
 			"a burnt car across a north-south street uses its side view")
-	t.check(not EventInstance._stationary_vehicle_uses_side(EventDef.Look.BURNT_OUT_CAR,
+	t.check(not EventFootprints.stands_side_on(EventCatalogue.by_id("burnt_out_car"),
 			map, map.tile_to_world(ew_tile), Vector2.RIGHT),
 			"a burnt car across an east-west street uses its end view")
-	t.check(EventInstance._stationary_vehicle_uses_side(
-			EventDef.Look.MOVING_VAN, WorldMap.open_ground(), Vector2.ZERO, Vector2.RIGHT),
+	t.check(EventFootprints.stands_side_on(
+			EventCatalogue.by_id("moving_van"), WorldMap.open_ground(), Vector2.ZERO, Vector2.RIGHT),
 			"off-street or data-level placement follows the vehicle's own default facing")
 
 	var vehicle_looks: Array[EventDef.Look] = [

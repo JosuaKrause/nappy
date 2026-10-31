@@ -1624,12 +1624,12 @@ func _shows(point: Vector2) -> bool:
 	return _on_screen.is_valid() and _on_screen.call(point)
 
 ## Whether any of what `row` can draw, standing at `feet`, would be on screen right now: its
-## footprint (`EventInstance.footprint_of()`, every picture its look can draw, its shadow, bob and
+## footprint (`EventFootprints.footprint_of()`, every picture its look can draw, its shadow, bob and
 ## halo rim, and the caret of a row that can be marked — what `PendingWarning` places outside the
 ## view by) asked through `_box_shows()`. A row that draws nothing of its own is its feet. What an
 ## event the director brings in or takes away asks, so nothing of it appears or vanishes in view.
 func _drawing_shows(row: EventDef, feet: Vector2) -> bool:
-	var box := EventInstance.footprint_of(row)
+	var box := EventFootprints.footprint_of(row)
 	if not box.has_area():
 		return _shows(feet)
 	return _box_shows(feet + box.get_center(), box.size * 0.5)

@@ -332,7 +332,7 @@ func short_of_its_stop(seconds: float, left: float) -> float:
 func turn_the_body() -> void:
 	if event._obstruction == null or event.def.shape == null or event.def.shape.half_length <= 0.0:
 		return
-	var angle := event._solid_axis().angle() - PI * 0.5
+	var angle := event.solid_axis().angle() - PI * 0.5
 	for child in event._obstruction.get_children():
 		var collision := child as CollisionShape2D
 		if collision and not is_equal_approx(collision.rotation, angle):

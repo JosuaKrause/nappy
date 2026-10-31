@@ -8,10 +8,6 @@ extends Node2D
 ## at the baby, so there is no ordering to get wrong, events compose by simple addition, and
 ## the whole thing is testable without a scene.
 
-## The gap between a posted roadblock guard's picture and the barrier's, so the two never touch —
-## see `guard_post_offset()`.
-const _GUARD_POST_CLEARANCE := 2.0
-
 ## Whether a def's instance draws itself as a **spread** — segments or a whole scene fitted across
 ## `def.obstructs_radius`, laid along whichever axis `_spread_is_vertical` picks for the street it
 ## stands on. That is `SpreadLook._draw_spread`, `RankLook._draw_cafe` or
@@ -170,83 +166,14 @@ var landed_ever := 0.0
 ## on screen or lands on her, or `null` until then. Telemetry only, like `landed_ever`.
 var encounter: EncounterWatch.Record = null
 
-## The box, in this node's own space, that what this instance draws roughly fills: its row's own
-## picture (`EventPictures.icon_for()`) standing on its feet at the origin, stretched along the run
-## a spread, a protest or a firefight covers, and grown by the wheel of a flock. An empty box for a
-## row that draws nothing of its own (`Look.NONE`). Not pixel-exact — no halo, no badge, no bob, the
-## view a mover is drawn in this frame aside — and it does not need to be: `EncounterWatch` asks
-## only whether most of it is in view. Worked out once, on first asking, from what `setup()`
-## decided.
+## The box, in this node's own space, that what this instance draws roughly fills
+## (`EventFootprints.drawn_box_of()`), with the run its own street gives a spread. Worked out once,
+## on first asking, from what `setup()` decided.
 func drawn_box() -> Rect2:
-	if _drawn_box_known:
-		return _drawn_box
-	_drawn_box_known = true
-	var box := box_of(def)
-	if not box.has_area():
-		_drawn_box = Rect2()
-		return _drawn_box
-	var size := box.size
-	box = _with_the_drop(def, box)
-	var half := maxf(11.0, def.obstructs_radius)
-	if def.has_a_spread and _spread_vertical:
-		box = box.merge(Rect2(-size.x * 0.5, -half, size.x, half * 2.0))
-	elif def.has_a_spread or def.look == EventDef.Look.PROTEST \
-			or def.look == EventDef.Look.FIREFIGHT:
-		box = box.merge(Rect2(-half, -size.y, half * 2.0, size.y))
-	if def.flock_size > 0:
-		box = box.grow(def.flock_spread)
-	_drawn_box = box
+	if not _drawn_box_known:
+		_drawn_box_known = true
+		_drawn_box = EventFootprints.drawn_box_of(def, _spread_vertical)
 	return _drawn_box
-
-## The box a row's own picture fills standing on its feet at the origin — `drawn_box()` before an
-## instance exists, and without the run a spread covers, which only an instance's own street decides.
-## Empty for a row that draws nothing of its own.
-static func box_of(row: EventDef) -> Rect2:
-	var icon := EventPictures.icon_for(row.look)
-	if icon.is_empty():
-		return Rect2()
-	var size := EventPictures.native_size(icon)
-	return Rect2(-size.x * 0.5, -size.y, size.x, size.y)
-
-## **Everything a row can put on the screen**, standing on its feet at the origin, whichever way it
-## faces: the union of every picture its look can draw (`EventPictures.family_sources()` — a cyclist
-## coming down the screen draws its front view, not the side view its badge shows) wherever it can
-## stand (the picture of a car that drives is lowered over its body, `_picture_drop_of()`), its body
-## shadow (a disc of its shape's radius at its feet), the loose dog's trailing lead, the bob and the
-## excitement halo's rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed
-## wholly outside the camera's view by (`PendingWarning.just_out_of_sight()`), so nothing of it
-## shows on the frame it exists *(amendment 6 of M226, the player: "I don't want any pop in")*. And
-## for a row that can be marked — anything with a field or a lethal reach — the danger caret above
-## its feet at its tallest (`EventPictures.largest_mark_rect()`), which stands well above the
-## picture. Empty for a row that draws nothing of its own.
-static func footprint_of(row: EventDef) -> Rect2:
-	var box := Rect2()
-	var any := false
-	for picture in EventPictures.family_sources(row.look):
-		var size := EventPictures.native_size(picture)
-		if size.x <= 0.0 or size.y <= 0.0:
-			continue
-		var one := Rect2(-size.x * 0.5, -size.y, size.x, size.y)
-		box = one if not any else box.merge(one)
-		any = true
-	if not any:
-		return box_of(row)
-	box = _with_the_drop(row, box)
-	if row.draws_body_shadow and row.shape != null:
-		var r := row.obstructs_radius if row.obstructs_radius > 0.0 else row.shape.radius
-		box = box.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
-	if row.look == EventDef.Look.LOOSE_DOG:
-		box = box.merge(Rect2(-LOOSE_LEAD_REACH, -8.0, LOOSE_LEAD_REACH * 2.0, 8.0))
-	box = box.grow(EventPictures.BOB_HEIGHT + EntityHalo.HALO_MARGIN)
-	if row.intensity > 0.0 or row.hard_fail:
-		box = box.merge(_with_the_drop(row,
-				EventPictures.largest_mark_rect().grow_individual(0.0, EventPictures.BOB_HEIGHT,
-						0.0, 0.0)))
-	return box
-
-## How far the loose dog's slack lead trails behind it, in px — `FigureLook._draw_loose_dog()`'s own
-## reach.
-const LOOSE_LEAD_REACH := 26.0
 
 var _drawn_box := Rect2()
 var _drawn_box_known := false
@@ -484,7 +411,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
 	_spread_vertical = _spread_is_vertical(_map, position)
-	_stationary_vehicle_side = _stationary_vehicle_uses_side(definition.look, _map, position, face)
+	_stationary_vehicle_side = EventFootprints.stands_side_on(definition, _map, position, face)
 	# A stride never starts mid-cycle — the mother's own `reset_at()` precedent.
 	_gait_phase = 0.0
 	_gait_moving = false
@@ -593,19 +520,6 @@ static func _alley_crossing_path(map: WorldMap, at: Vector2) -> PackedVector2Arr
 	return PackedVector2Array([Vector2(at.x, rect.position.y),
 			Vector2(at.x, rect.position.y + rect.size.y)])
 
-## Whether a stationary vehicle is seen side-on at this point. The moving van faces along the
-## street and the burnt car lies perpendicular to it. A junction or ground outside the lattice has
-## no single street axis, so the vehicle's own facing supplies the coherent default.
-static func _stationary_vehicle_uses_side(row_look: EventDef.Look, map: WorldMap, at: Vector2,
-		face: Vector2) -> bool:
-	var offsets := map.corridor_offsets(map.world_to_tile(at))
-	var on_a_north_south_street := offsets.x >= 0
-	var on_an_east_west_street := offsets.y >= 0
-	if on_a_north_south_street != on_an_east_west_street:
-		var parallel_side := on_an_east_west_street
-		return not parallel_side if row_look == EventDef.Look.BURNT_OUT_CAR else parallel_side
-	return absf(face.x) >= absf(face.y)
-
 func _ready() -> void:
 	# Stepped on the physics tick (`EventManager` steps it), so it is drawn interpolated between two
 	# ticks as she is, and moves as smoothly as she does. Placed here, so drawn from where it stands
@@ -626,40 +540,6 @@ func _ready() -> void:
 		flock.build()
 	look.build_nodes()
 
-## `+1` or `-1`: which side of a band laid along `vertical`'s axis the offset `toward` falls on,
-## across it. Level with the band's own line counts as `+1`.
-static func _guard_side_toward(vertical: bool, toward: Vector2) -> int:
-	var across := toward.x if vertical else toward.y
-	return -1 if across < 0.0 else 1
-
-## **Where a posted roadblock guard's feet stand relative to the band's centre: beside it, never
-## over it.** *(2026-09-25: "also the guards are on top of the barrier?")* The whole of his standing
-## picture is kept clear of the whole of the barrier's, `_GUARD_POST_CLEARANCE` apart, on `side`:
-##
-## - **End-on** (`vertical`), the column is as wide as `roadblock_segment_vertical.svg`, so he stands
-##   level with the band's centre, half the column's width and half his own out to the east or west.
-## - **Broadside**, the barrier stands as tall as `roadblock_segment.svg` on the band's line, so to
-##   the north his feet stand that far behind it and to the south his own height in front of it —
-##   his head clear of the barrier's foot rather than over it.
-##
-## Measured off the pictures themselves, so a redrawn barrier or guard moves the post with it.
-static func guard_post_offset(vertical: bool, side: int) -> Vector2:
-	var guard := EventPictures.native_size(EventPictures.GUARD_STANDING_BY_VIEW["front"])
-	if vertical:
-		var column := EventPictures.native_size(EventPictures.ROADBLOCK_SEGMENT_VERTICAL)
-		return Vector2(signf(side) * (column.x * 0.5 + guard.x * 0.5 + _GUARD_POST_CLEARANCE), 0.0)
-	if side < 0:
-		return Vector2(0.0,
-				-(EventPictures.native_size(EventPictures.ROADBLOCK_SEGMENT).y
-				+ _GUARD_POST_CLEARANCE))
-	return Vector2(0.0, guard.y + _GUARD_POST_CLEARANCE)
-
-## Which way a posted guard faces: straight out from the barrier on his own side, towards where she
-## would come from — so the turn to face her the frame the near one notices her is still a turn.
-static func guard_post_heading(vertical: bool, side: int) -> Vector2:
-	var outward := Vector2.RIGHT if vertical else Vector2.DOWN
-	return outward * (-1.0 if side < 0 else 1.0)
-
 ## Where its body stands, which is where the street is still shut: `global_position`, or where a
 ## barrier's guard left it (`EventBarrierPost.body_position()`), so a caller never has to ask which
 ## case it is holding.
@@ -679,73 +559,26 @@ func _would_stand_in_her_view() -> bool:
 	return player_view.encloses(warning_rect())
 
 ## The world rect his warning picture fills, at the widest and tallest of its views, standing on his
-## feet: a roadblock's guard at the post on her side of the band (`warning_guard_rect()`), anyone
-## else where he stands.
+## feet: a roadblock's guard at the post on her side of the band
+## (`EventFootprints.warning_guard_rect()`), anyone else where he stands.
 func warning_rect() -> Rect2:
 	if barrier_post:
-		return warning_guard_rect(_spread_vertical, body_position(), player_at)
-	var size := _warning_picture_size(def.look)
+		return EventFootprints.warning_guard_rect(_spread_vertical, body_position(), player_at)
+	var size := EventFootprints.warning_picture_size(def)
 	return Rect2(global_position - Vector2(size.x * 0.5, size.y), size)
-
-## The largest of a look's warning pictures: the dog's alert, the robber's two alert frames, and the
-## guard's raised hand for anyone else drawn standing in a warning.
-static func _warning_picture_size(row_look: EventDef.Look) -> Vector2:
-	if _warning_sizes.has(row_look):
-		return _warning_sizes[row_look]
-	var families: Array[Dictionary] = [EventPictures.GUARD_ALERT_BY_VIEW]
-	if row_look == EventDef.Look.CHARGING_DOG:
-		families = [EventPictures.CHARGING_DOG_ALERT_BY_VIEW]
-	elif row_look == EventDef.Look.ROBBER:
-		families = [EventPictures.ROBBER_ALERT_BY_VIEW, EventPictures.ROBBER_ALERT_BY_VIEW_B]
-	var size := Vector2.ZERO
-	for family in families:
-		for view: String in family:
-			size = size.max(EventPictures.native_size(family[view]))
-	_warning_sizes[row_look] = size
-	return size
-
-static var _warning_sizes := {}
-
-## The world rect a roadblock's guard fills with his hand raised, standing at the post on `her` side
-## of a band at `band_at` laid along `vertical` — what his warning draws
-## (`RoadblockLook.chaser_pictures()`), at the widest and tallest of its views, standing on his
-## feet.
-static func warning_guard_rect(vertical: bool, band_at: Vector2, her: Vector2) -> Rect2:
-	var feet := band_at + guard_post_offset(vertical, _guard_side_toward(vertical, her - band_at))
-	if _warning_guard == Vector2.ZERO:
-		for view: String in EventPictures.GUARD_ALERT_BY_VIEW:
-			_warning_guard = _warning_guard.max(
-					EventPictures.native_size(EventPictures.GUARD_ALERT_BY_VIEW[view]))
-	return Rect2(feet - Vector2(_warning_guard.x * 0.5, _warning_guard.y), _warning_guard)
-
-static var _warning_guard := Vector2.ZERO
 
 ## Some events are physically in the way. The body is a child so it travels with a mobile
 ## event and disappears with the instance.
 ##
-## **Built from the row's solid footprint** (`solid_footprint_of()`), the one the day's blocked
-## record is written from too (`EventSpawner.obstructed_footprint()`), so the body that stops her and
-## the tiles that stop every other mover are one solid read twice. One `StaticBody2D` holds every
+## **Built from the row's solid footprint** (`EventFootprints.solid_footprint_of()`), the one the
+## day's blocked record is written from too (`EventSpawner.obstructed_footprint()`), so the body that
+## stops her and the tiles that stop every other mover are one solid read twice. One `StaticBody2D` holds every
 ## piece, so nothing downstream — the debug view's bounding-box layer, which walks the physics
 ## tree, or `is_solid()` — has to learn that a row may have more than one.
 func _build_obstruction() -> void:
-	var body := solid_footprint_of(def, _solid_axis(), _spread_vertical).body()
+	var body := EventFootprints.solid_footprint_of(def, solid_axis(), _spread_vertical).body()
 	add_child(body)
 	_obstruction = body
-
-## **A row's solid footprint**, its origin at the row's own: one piece per `EventDef.parts()`
-## entry — one at the origin carrying `shape` for every row that declares none, a car per piece
-## for the crash — each offset along the spread axis (`spread_vertical`, `spread_at()`) by the
-## piece's own reading of whichever picture is in use, its spine along `axis` (`_solid_axis()`).
-## The physics body (`_build_obstruction()`) and the blocked record
-## (`EventSpawner.obstructed_footprint()`) both come from here.
-static func solid_footprint_of(row: EventDef, axis: Vector2, spread_vertical: bool) -> Footprint:
-	var footprint := Footprint.new()
-	for piece in row.parts():
-		var offset := piece.offset_for(spread_vertical)
-		footprint.add(piece.shape,
-				Vector2(0.0, offset) if spread_vertical else Vector2(offset, 0.0), axis)
-	return footprint
 
 ## How far a figure's body reaches round its feet when the row's own shape is the solid it stands
 ## at rather than the figure — a guard at his band — in px: the alley robber's own, a man on foot.
@@ -1032,21 +865,6 @@ func is_chatting() -> bool:
 ## whole of her own conversation instead.
 func is_its_guard_inside() -> bool:
 	return def.redetains and is_chatting()
-
-## Whether a checkpoint's own hold suppresses *every* drawing of this instance, halo included.
-##
-## **True only where the guard is the whole of what this row draws.** `checkpoint_post` is one
-## man at an alley mouth and nothing else, so when he goes in there is nothing left to draw; a hut
-## is a building and a gate is a boom across a road, and *(PLAYTEST-57: "the checkpoint house
-## disappears ... all this is incorrect".)* A structure that blinks out while she is inside it
-## reads as the door having been removed rather than as her having gone through it, which is the
-## opposite of what the hold is for.
-##
-## Read by `EventLook.draw()`, by `EventLook.draw_body()` (the halo's own re-draw entry point — see
-## that function's doc for why the halo needs its own guard rather than inheriting
-## `EventLook.draw()`'s), and by a test, so the three can never drift apart from each other.
-func is_suppressed_by_its_own_hold() -> bool:
-	return is_its_guard_inside() and def.look == EventDef.Look.CHECKPOINT_POST
 
 ## Whether this instance has ever held her (`EventHold.has_held()`). A row that does not redetain
 ## never holds her twice.
@@ -1526,7 +1344,7 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 func move_to(at: Vector2) -> void:
 	global_position = at
 	_spread_vertical = _spread_is_vertical(_map, at)
-	_stationary_vehicle_side = _stationary_vehicle_uses_side(def.look, _map, at, _heading)
+	_stationary_vehicle_side = EventFootprints.stands_side_on(def, _map, at, _heading)
 	_idle_phase_offset = _position_roll(101)
 	_invalidate_contribution_cache()
 	reset_physics_interpolation()
@@ -2148,7 +1966,7 @@ func _field_distance(world_position: Vector2, velocity: Vector2) -> float:
 func _field_distance_at(centre: Vector2, world_position: Vector2, velocity: Vector2) -> float:
 	var shape := field_shape()
 	if shape != null:
-		return shape.field_distance(centre, _solid_axis(), velocity, world_position)
+		return shape.field_distance(centre, solid_axis(), velocity, world_position)
 	return GroundShape.eccentric_distance(centre, velocity, world_position)
 
 ## The datum this row's field is priced from (`_field_distance_at()`) and drawn from (`DebugLayers`):
@@ -2293,7 +2111,7 @@ func expected_gross_at(player_position: Vector2) -> float:
 	if birds().is_empty():
 		var key := [global_position, player_position, player_velocity, velocity,
 			live_intensity, def.intensity, def.inner_radius, def.outer_radius,
-			def.falloff_power, def.core_intensity, def.core_radius, _solid_axis(),
+			def.falloff_power, def.core_intensity, def.core_radius, solid_axis(),
 			def.shape.kind if def.shape else -1,
 			def.shape.half_length if def.shape else 0.0,
 			def.shape.half_extents if def.shape else Vector2.ZERO]
@@ -2461,25 +2279,12 @@ func _position_roll(salt: int) -> float:
 func spread_axis() -> Vector2:
 	return Vector2.DOWN if _spread_vertical else Vector2.RIGHT
 
-## The ground-plane direction this instance's own solid body's spine lies along, for whichever of
-## the three families ever has a segment shape: a car that drives (`EventDef.vehicle`), along its
-## own heading; a spread-drawn row (`spread_axis()`, above); or the one stationary-vehicle row wide
-## enough to be a segment (`moving_van` — see `GroundShape.band()` on that row), which lies along
-## whichever of the street's axes `_stationary_vehicle_side` already draws it on. Never asked of a
-## point shape, where an axis means nothing.
-func _solid_axis() -> Vector2:
-	# A car's body lies along the way it is driving, and turns with it (`EventCarDriving.turn_the_body()`).
-	if def.vehicle != null:
-		return _heading.normalized() if not _heading.is_zero_approx() else Vector2.RIGHT
-	if def.has_a_spread or def.look == EventDef.Look.PROTEST or def.look == EventDef.Look.FIREFIGHT:
-		return spread_axis()
-	return Vector2.RIGHT if _stationary_vehicle_side else Vector2.DOWN
-
-## `_solid_axis()`, read by `DebugLayers` so its shadow and bounding-box layers rotate a segment the
-## same way `EventLook._draw_shape_shadow()` and `_build_obstruction()` already do, rather than
-## guessing an axis of their own.
+## The ground-plane direction this instance's own solid body's spine lies along
+## (`EventFootprints.solid_axis_of()`): its heading for a car that drives, its street's axis for a
+## spread, the side it shows for a stationary vehicle. Read by its body, its field, its behaviours,
+## its look's shadow and `DebugLayers`, so a segment is turned one way everywhere.
 func solid_axis() -> Vector2:
-	return _solid_axis()
+	return EventFootprints.solid_axis_of(def, _heading, _spread_vertical, _stationary_vehicle_side)
 
 ## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
 ## `CrowdAgent` shares. Called by `ExcitementHalo` once a frame for every live instance — above
@@ -2620,31 +2425,11 @@ func add_beside_it(node: Node2D) -> void:
 func spread_at(offset: float) -> Vector2:
 	return Vector2(0.0, offset) if _spread_vertical else Vector2(offset, 0.0)
 
-## The furthest below its own node a row's picture is ever drawn: a car's body reach, pointed
-## straight down the screen, and its look's largest canvas margin (`EventLook._body_anchor()`); zero
-## for every other row, whose pictures stand on the node. `footprint_of()` and `drawn_box()` add it.
-static func _picture_drop_of(row: EventDef) -> float:
-	if not EventPictures.is_anchored_over_its_body(row.look) or row.shape == null:
-		return 0.0
-	var margins := EventPictures.canvas_margins(row.look)
-	var margin := 0.0
-	for view: String in margins:
-		margin = maxf(margin, float(margins[view]))
-	return row.shape.reach() + margin
-
-## `box` and the same box lowered by `_picture_drop_of(row)`, together: every place between the
-## two a picture can stand as its heading turns.
-static func _with_the_drop(row: EventDef, box: Rect2) -> Rect2:
-	var drop := _picture_drop_of(row)
-	if drop <= 0.0:
-		return box
-	return box.merge(Rect2(box.position + Vector2(0.0, drop), box.size))
-
 ## Whether its spread runs down the screen rather than across it (`_spread_is_vertical()`).
 func runs_vertically() -> bool:
 	return _spread_vertical
 
-## Whether a stationary vehicle shows its side rather than its end (`_stationary_vehicle_uses_side()`).
+## Whether a stationary vehicle shows its side rather than its end (`EventFootprints.stands_side_on()`).
 func stands_side_on() -> bool:
 	return _stationary_vehicle_side
 

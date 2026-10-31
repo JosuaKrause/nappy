@@ -769,7 +769,7 @@ func _planned_parts(plan: EventScheduler.Planned) -> Array:
 		var offset := piece.offset_for(vertical)
 		centres.append(at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)))
 		shapes.append(piece.shape)
-	return [centres, shapes, EventSpawner._body_axis(_city.map, plan.def, at, plan.facing)]
+	return [centres, shapes, EventFootprints.body_axis(_city.map, plan.def, at, plan.facing)]
 
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a

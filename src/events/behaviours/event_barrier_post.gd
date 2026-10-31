@@ -80,11 +80,11 @@ func _set_off_from_the_near_post() -> void:
 	var her: Vector2 = event.player_at
 	var vertical: bool = event._spread_vertical
 	var toward: Vector2 = her - event.global_position if her != Vector2.INF else Vector2.ZERO
-	_chaser_side = EventInstance._guard_side_toward(vertical, toward)
+	_chaser_side = EventFootprints.guard_side_toward(vertical, toward)
 	# Not a step: he already stands at this post, drawn there while he waits, and the event's own
 	# origin moves from the band he guards to his feet so his chase sets off from them.
 	event.global_position = event.global_position \
-			+ EventInstance.guard_post_offset(vertical, _chaser_side)
+			+ EventFootprints.guard_post_offset(vertical, _chaser_side)
 	# Drawn from his post at once, not slid there between two ticks.
 	event.reset_physics_interpolation()
 	if her != Vector2.INF and not her.is_equal_approx(event.global_position):
@@ -114,7 +114,7 @@ func tiles_under_the_band() -> Rect2i:
 	var def: EventDef = event.def
 	if def.shape == null:
 		return Rect2i()
-	var tiles := def.shape.tiles_under(body_position(), event._solid_axis())
+	var tiles := def.shape.tiles_under(body_position(), event.solid_axis())
 	var low := tiles[0]
 	var high := tiles[0]
 	for tile in tiles:

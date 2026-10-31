@@ -95,7 +95,7 @@ func _stands_in_a_junction() -> bool:
 	var def: EventDef = event.def
 	if def.vehicle == null or def.shape == null:
 		return false
-	var axis: Vector2 = event._solid_axis()
+	var axis: Vector2 = event.solid_axis()
 	var reach := def.shape.reach()
 	var map: WorldMap = event._map
 	for i in JUNCTION_SAMPLES + 1:

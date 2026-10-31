@@ -2813,7 +2813,7 @@ static func _moving_van() -> EventDef:
 	def.outer_radius = 120.0
 	def.telegraph_time = 0.9
 	# Over `GroundShape.BAND_RADIUS`, so it is the one stationary-vehicle row whose shape is a
-	# segment rather than a point — see `EventInstance._solid_axis()`.
+	# segment rather than a point — see `EventInstance.solid_axis()`.
 	def.solid(GroundShape.band(28.0))
 	return def
 

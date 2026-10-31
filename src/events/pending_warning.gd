@@ -111,7 +111,7 @@ static func least_distance() -> float:
 	return Tuning.min_offscreen_boundary()
 
 ## **Just off screen** along `direction` (unit) from `her`: the nearest point at which everything
-## `row` can draw (`EventInstance.footprint_of()`) is wholly outside the camera's view, never nearer
+## `row` can draw (`EventFootprints.footprint_of()`) is wholly outside the camera's view, never nearer
 ## than `least_distance()`. *(Amendment 6 of M226, the player: "objects don't spawn \"at the edge of
 ## the screen\" they spawn *offscreen*" · "I don't want any pop in".)* `view` is the camera's whole
 ## view (`seen_from()`), whatever the input scheme: a corner the joystick's controls cover is out of
@@ -119,7 +119,7 @@ static func least_distance() -> float:
 ## placement never counts it.
 static func just_out_of_sight(view: VisibleView, row: EventDef, her: Vector2,
 		direction: Vector2) -> Vector2:
-	return her + direction * view.clear_of_sight(her, direction, EventInstance.footprint_of(row),
+	return her + direction * view.clear_of_sight(her, direction, EventFootprints.footprint_of(row),
 			least_distance())
 
 ## The camera's whole view placement is measured against: `view`'s own rect with no covered
@@ -138,7 +138,7 @@ static func seen_from(view: VisibleView, her: Vector2) -> VisibleView:
 static func is_out_of_sight(view: VisibleView, row: EventDef, her: Vector2, at: Vector2) -> bool:
 	if at.distance_to(her) + 0.5 < least_distance():
 		return false
-	var box := EventInstance.footprint_of(row)
+	var box := EventFootprints.footprint_of(row)
 	var drawn := Rect2(at + box.position, box.size) if box.has_area() \
 			else Rect2(at - Vector2.ONE * 0.5, Vector2.ONE)
 	return not view.sees_any(drawn)
@@ -267,7 +267,7 @@ static func in_its_lane(row: EventDef, her: Vector2, lane_x: float, going: float
 	var view := seen_from(in_view, her)
 	var toward_her := Vector2(0.0, -going)
 	var level := Vector2(lane_x, her.y)
-	var out := view.clear_of_sight(level, toward_her, EventInstance.footprint_of(row), least_distance())
+	var out := view.clear_of_sight(level, toward_her, EventFootprints.footprint_of(row), least_distance())
 	var at := Vector2(lane_x, clampf(her.y + toward_her.y * out, top, bottom))
 	if at.y != her.y + toward_her.y * out and not is_out_of_sight(view, row, her, at):
 		return Vector2.INF

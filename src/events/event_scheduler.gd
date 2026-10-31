@@ -1502,13 +1502,13 @@ class WalkSiting extends RefCounted:
 		return _waited("every site ahead of her on her street broke a placement rule")
 
 	## Whether any of what `def` draws, standing at `feet`, could be in the camera's view while she
-	## stands at `her`: its footprint where it is drawn (`EventInstance.footprint_of()`, a van's
+	## stands at `her`: its footprint where it is drawn (`EventFootprints.footprint_of()`, a van's
 	## reaching 56.5px up from its feet and 28.5px down) against the 640x360 view round her
 	## (`Tuning.VIEW_HALF_EXTENT`), grown on every side by the camera's lead
 	## (`Stroller.CAMERA_LOOK_AHEAD` along her facing, `Stroller.OBLIQUE_Y` of it up or down), since
 	## the lead eases toward a new facing over a turn, and by a tile to spare.
 	static func could_be_in_her_view(def: EventDef, feet: Vector2, her: Vector2) -> bool:
-		var box := EventInstance.footprint_of(def)
+		var box := EventFootprints.footprint_of(def)
 		var drawn := Rect2(feet + box.position, box.size) if box.has_area() \
 				else Rect2(feet, Vector2.ZERO)
 		var lead := Vector2(Stroller.CAMERA_LOOK_AHEAD,

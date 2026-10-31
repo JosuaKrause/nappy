@@ -106,7 +106,7 @@ func run(t) -> void:
 ## chase" · "off screen doesn't count toward the timing it only counts towards the warning timing")*:
 ## for each pursuer sent at her from off screen and each of her three answers, seconds from the first
 ## warning she can see to the pursuer first **visible** (anything it draws in view,
-## `EventInstance.footprint_of()`), to its **lunge** (its telegraph over, by the clock or by its
+## `EventFootprints.footprint_of()`), to its **lunge** (its telegraph over, by the clock or by its
 ## stand-off), and to it **catching her**; then the **warning**, which is the time until it is
 ## visible, and the **chase**, from the lunge to the catch.
 static func _print_the_gold_timing(edge: DangerEdge) -> void:
@@ -196,7 +196,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 		var since := clock - warned_at
 		if in_view and result["point_seen_at"] == INF:
 			result["point_seen_at"] = since
-		var box := EventInstance.footprint_of(def)
+		var box := EventFootprints.footprint_of(def)
 		if result["seen_at"] == INF \
 				and VisibleView.around(her).sees_any(Rect2(at + box.position, box.size)):
 			result["seen_at"] = since

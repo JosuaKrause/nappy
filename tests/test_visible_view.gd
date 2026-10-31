@@ -56,7 +56,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> v
 				var at := PendingWarning.just_out_of_sight(
 						PendingWarning.seen_from(source.view, player.global_position),
 						row, player.global_position, way)
-				var box := EventInstance.footprint_of(row)
+				var box := EventFootprints.footprint_of(row)
 				t.check(not source.view.view.intersects(Rect2(at + box.position, box.size)),
 						"the same covered bearing places the whole arrival outside the camera")
 		controls.set_mode(ControlsMode.Mode.TAP)
