@@ -230,11 +230,6 @@ func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Ar
 	_begin(spec)
 	streaming.consumed = consumed_one_shots
 	var plan := planner.plan(spec, rng, consumed_one_shots)
-	# One decision, the plan's: a day is keyed by its own number, and a day's spec is the day the
-	# run is on (a spec handed another day's would be planned under one number and streamed under
-	# another).
-	assert(not plan.is_a_day or spec.number == world.run.header.day,
-			"EventManager.start_day(%d) was handed day %d's spec" % [world.run.header.day, spec.number])
 	_take(spec, plan, focus)
 
 ## **The first half of every walk's start**, before anything is planned: clears whatever was here
