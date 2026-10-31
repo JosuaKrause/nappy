@@ -21,6 +21,11 @@ var _warnings: WarningBoard
 ## Whether a torn poster sends a pursuer on this walk (`DaySpec.poster_pursuits`), as the manager
 ## is handed the spec.
 var sends_poster_pursuits := true
+## Whether the home's streets are the walk's (`DaySpec.holds_the_home_streets`), as the manager is
+## handed the spec: every placement context made here for a siting after dawn reads it
+## (`EventScheduler.WalkSiting.holds_the_home_streets`), so what is sited while she walks keeps the
+## rule the walk was planned under at dawn.
+var holds_the_home_streets := true
 
 func _init(the_world: EventWorld, streaming: EventStreaming, spawner: EventSpawner,
 		warnings: WarningBoard) -> void:
@@ -64,6 +69,7 @@ func start_day(day: int, tree: RouteTree, doors: PackedVector2Array) -> void:
 			if not _siting:
 				_siting = EventScheduler.WalkSiting.new(day, world.city_map, tree,
 						world.run.settled_this_act(), doors)
+				_siting.holds_the_home_streets = holds_the_home_streets
 				# Where a crew may paste: only the city's buildings know their blank walls.
 				if world.city and world.city.poster_walls():
 					_siting.fronts = world.city.poster_walls().fronts()
@@ -330,8 +336,11 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 		return null
 	var def := EventCatalogue.heated(EventCatalogue.mast(),
 			world.run.resistance.progress)
-	var siting := _siting if _siting else EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree,
-			world.run.settled_this_act(), _day_doors)
+	var siting := _siting
+	if not siting:
+		siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree,
+				world.run.settled_this_act(), _day_doors)
+		siting.holds_the_home_streets = holds_the_home_streets
 	var plan := siting.among(def, rng, _streaming.plans(), offered)
 	if not plan:
 		return null
@@ -378,6 +387,7 @@ func _task_siting() -> EventScheduler.WalkSiting:
 	if not _task_siting_cache or _task_siting_tree != _day_tree:
 		_task_siting_cache = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree,
 				world.run.settled_this_act(), _day_doors)
+		_task_siting_cache.holds_the_home_streets = holds_the_home_streets
 		_task_siting_tree = _day_tree
 	return _task_siting_cache
 
@@ -467,6 +477,7 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree if _day_tree \
 				else RouteTree.for_day(world.city_map, world.day), world.run.settled_this_act(), _day_doors)
+		_siting.holds_the_home_streets = holds_the_home_streets
 		if world.city and world.city.poster_walls():
 			_siting.fronts = world.city.poster_walls().fronts()
 	var rigged := _director.rig_her_route(ids, size, world.run.resistance.progress, _siting)

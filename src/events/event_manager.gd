@@ -300,12 +300,14 @@ func stand_down() -> void:
 	set_physics_process(false)
 
 ## **The walk's own settings, out of the spec the run flow hands in**: whether falling asleep owes
-## her a return (`DaySpec.owes_a_return`) and whether a torn poster sends a pursuer
-## (`DaySpec.poster_pursuits`). Every walk hands its spec in as it starts (`start_day()`); a rig may
+## her a return (`DaySpec.owes_a_return`), whether a torn poster sends a pursuer
+## (`DaySpec.poster_pursuits`) and whether what is sited after dawn keeps off the home's streets
+## (`DaySpec.holds_the_home_streets`, read by every `EventScheduler.WalkSiting` the director makes). Every walk hands its spec in as it starts (`start_day()`); a rig may
 ## hand another in mid-walk. Until one is handed in, a day's settings (`DaySpec`'s own defaults).
 func use_the_spec(spec: DaySpec) -> void:
 	_owes_a_return = spec.owes_a_return
 	ahead.sends_poster_pursuits = spec.poster_pursuits
+	ahead.holds_the_home_streets = spec.holds_the_home_streets
 
 ## **Every charge still running ends for its counter as cut short** (`EventInstance.
 ## report_the_charge_cut_short()`): asked by `DayDirector.finish_day()` as a day ends, before the

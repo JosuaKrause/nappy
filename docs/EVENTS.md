@@ -2004,7 +2004,9 @@ tile holds here — a closed tile, a held street, the home block, **a standing s
 (`docs/CITY.md`, "Street trees"), the side of the sidewalk a row wants, a corner for a row with a
 spread, the power station's front — and the precinct weight with them; all but the street the
 home's front door opens onto, a door the escape never sets off from (`DaySpec.holds_the_home_streets`
-off; `docs/CITY.md`, "The escape").
+off; `docs/CITY.md`, "The escape"). What is sited after dawn reads the same setting off the walk's
+spec (`EventScheduler.WalkSiting.holds_the_home_streets`, handed over by `EventsAhead`), so a row
+placed while she walks keeps the rule the walk was planned under.
 Each candidate then meets the day's own spacing (`_room_around()`) and the escape's own refusals
 below. The answers are a function of the city alone, so a restart of the city section reads the
 ones the first plan worked out (`EventScheduler._kept_ground()`) unless the city's tiles,

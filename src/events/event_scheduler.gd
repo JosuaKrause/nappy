@@ -1270,6 +1270,11 @@ class WalkSiting extends RefCounted:
 	## handed over by `EventManager` from the city it belongs to. What a row whose `OnHerWay.at_a_front` is set
 	## may stand on; empty, and so nowhere, for a rig with no city.
 	var fronts := {}
+	## **Whether the home's streets are the walk's** (`DaySpec.holds_the_home_streets`): nothing
+	## sited after dawn stands on the street her front door opens onto, as nothing at dawn does
+	## (`EventScheduler._open_ground_for()`'s `from_the_door`). Handed over by `EventsAhead` from the
+	## spec the walk was started with; a day's rule until then.
+	var holds_the_home_streets := true
 
 	## `tree` is the day's corridor tree and `used_calm` is `RunState.settled_this_act()` — the two
 	## arguments `build_day` states its own placements against, taken here rather than the finished
@@ -1603,7 +1608,8 @@ class WalkSiting extends RefCounted:
 		var role := EventScheduler._role_for(def, _day)
 		var clear_of_the_routes: Array[Vector2i] = []
 		var merely_away: Array[Vector2i] = []
-		for tile in EventScheduler._open_ground_for(def, _map, _ground):
+		for tile in EventScheduler._open_ground_for(def, _map, _ground, -1,
+				holds_the_home_streets):
 			if _map.tile_to_world(tile).distance_to(away_from) < DUSK_CLEAR_OF_HER:
 				continue
 			merely_away.append(tile)
@@ -1804,7 +1810,8 @@ class WalkSiting extends RefCounted:
 		var key := "set|%s|%d" % [def.placement, side]
 		if not _ground.has(key):
 			var found := {}
-			for tile in EventScheduler._open_ground_for(def, _map, _ground, side):
+			for tile in EventScheduler._open_ground_for(def, _map, _ground, side,
+					holds_the_home_streets):
 				if not at_a_front or fronts.has(tile):
 					found[tile] = true
 			_ground[key] = found
