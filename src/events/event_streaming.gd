@@ -164,7 +164,7 @@ func stream_in(plan: EventScheduler.Planned) -> void:
 ## the one she reaches.
 ##
 ## This is where "the one she reaches" is decided, and it has to be here rather than anywhere
-## later. The moment an event enters the world it is real — `_create` records its scar and moves
+## later. The moment an event enters the world it is real — `EventSpawner.create()` records its scar and moves
 ## its block along its arc — so the alternatives have to stop being possible on the same frame,
 ## not when it finishes.
 ##

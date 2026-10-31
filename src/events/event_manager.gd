@@ -336,7 +336,8 @@ func start_day(day: int, rng: RandomNumberGenerator, consumed_one_shots: Array[S
 	# because a body is a body whether or not the player has come near enough to stream it in, and
 	# the crowd is placed and steered across the whole map. Last of the assembly, so that everything
 	# the day places — the catalogue's rows, the seals, the wall and the door structure — is in
-	# `_plans`, and so that every held segment the record refuses against is already on the map.
+	# the day's plan (`plans`, handed to `streaming.take()`), and so that every held segment the
+	# record refuses against is already on the map.
 	streaming.take(plans)
 	for plan in plans:
 		if plan.is_placed():

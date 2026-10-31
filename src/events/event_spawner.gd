@@ -357,7 +357,7 @@ static func as_warned(def: EventDef) -> EventDef:
 
 ## Whether a live instance whose def names an `aftermath.on_sight` has been seen yet, and if it just
 ## has, creates the row it names entering along its own street. Run every frame there is a
-## player, the same as `_place_what_is_owed_ahead` beside it.
+## player, as `EventsAhead.place_what_is_owed_ahead()` is.
 func summon_what_has_been_sighted(plans: Array[EventScheduler.Planned]) -> void:
 	for plan in plans:
 		if not plan.live or plan.def.aftermath.on_sight == "" or _sighted.get(plan, false):
