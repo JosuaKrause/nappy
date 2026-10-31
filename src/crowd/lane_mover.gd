@@ -50,10 +50,6 @@ var kind := Kind.WALKER:
 ## What only this agent's kind does on the lanes — `WalkerStrategy` or `CarStrategy`, installed by
 ## `kind`. Everything here that differs between a walker and a car asks it. See `LaneStrategy`.
 var strategy: LaneStrategy
-## `--skip motion`, handed in the same way. `_process` returns before its first line while it is
-## set, so this agent's clocks, steering, lookahead, turning, gait and recycling all stand still;
-## it is still drawn wherever the day placed it.
-var skip_motion := false
 
 ## This agent's own ground shape, set once in `setup()`: a point for a walker, a capsule along the
 ## travel axis for a car (`CarStrategy.shadow_shape()`). Read for the shadow and the debug view;
@@ -183,13 +179,14 @@ var _detour := 0.0
 ## Seconds this agent has left of the stride it owes its last about-face. See `_turn_round()`.
 var _turn_back_hold := 0.0
 
-## Moves itself in `_process`, not on the physics tick, so physics interpolation would draw it
-## gliding between two stale tick positions rather than where `_process` actually put it. Set on
-## the instance itself rather than inherited from a parent: every agent is added under `City`'s
-## shared, y-sorted `Entities` node (`City.add_entity()`), beside the player, who does want her
-## own physics-tick motion interpolated.
+## Stepped on the physics tick, inside the crowd's own (`step()`), so it is drawn interpolated
+## between two ticks as she and the events are, and moves as smoothly as they do on a screen drawing
+## faster than thirty frames a second. It inherits the setting from `City`'s shared, y-sorted
+## `Entities` node it is added under (`City.add_entity()`). Placed before it enters the tree, so the
+## first frame draws it where it stands rather than gliding in from the origin; every later jump is
+## reset where it is made (`_recycle()`, `WalkerStrategy._emerge_from_the_hut()`).
 func _ready() -> void:
-	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	reset_physics_interpolation()
 
 func _init() -> void:
 	_install(WalkerStrategy.new(self))
@@ -413,33 +410,20 @@ func _segment_is_shut(tile: Vector2i) -> bool:
 		return strategy.door_is_shut(key)
 	return strategy.shut_by_a_hold
 
-## What this agent charges its time to, handed in by the `Crowd` that makes it; none for an agent
-## built by hand, which is never timed. Handing it in copies whether the record is running into
-## `_timed`, so that with the record off `_process()` pays one member read (see `CrowdTiming`).
-var frame_timing: CrowdTiming = null:
-	set(value):
-		frame_timing = value
-		_timed = value != null and value.running()
-var _timed := false
-## True while `_process()` runs its own body inside the record's timing, so the call it makes to
-## itself is the body rather than another round of timing.
-var _timing := false
+## What this agent counts its draws to (`CrowdAgent._draw()`), handed in by the `Crowd` that makes
+## it; none for an agent built by hand. Its step times nothing of its own: it runs inside the
+## crowd's physics tick, which is timed once (see `CrowdTiming`).
+var frame_timing: CrowdTiming = null
 
-func _process(delta: float) -> void:
-	# The record's timing, when this agent was made under one and it is still running: the body
-	# below runs inside it through the call to itself. See `_timed`.
-	if _timed and not _timing and frame_timing.running():
-		var outer := frame_timing.enter()
-		_timing = true
-		_process(delta)
-		_timing = false
-		frame_timing.leave(outer)
-		return
-	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
-	# before anything below runs, so this agent stands exactly where the day placed it — no clock,
-	# steering, lookahead, turn, gait or recycle. It is still drawn; see `_draw()`'s own `skip_draw`.
-	if skip_motion:
-		return
+## One physics tick of this agent's motion: its clocks, steering, look-ahead, turning, gait and
+## recycling, and the crowd member's own end of the tick. `Crowd` runs it for every agent at the end
+## of its own physics tick (`Crowd._step_the_agents()`), after the traffic is spaced out and she is
+## met (the order a drawn frame ran them in before), so the motion and every rule about it run one to one on every machine, at 30Hz with a 1/30s
+## `delta`, and every clock here (the about-face's stride, a walker's sidestep, yield and hut, a
+## car's give-way, turn wait and bob, the excitement's jolt) ends on a tick (minty-dolphin #866).
+## The node is drawn interpolated between two ticks (see `_ready()`). A rig steps the whole crowd
+## with `Crowd.step()`; a suite may step one agent by hand.
+func step(delta: float) -> void:
 	# The stride an about-face owes its new heading, run down here rather than where it is spent, so
 	# that a body held at a gate or stopped behind a queue works it off too. See `_turn_round()`.
 	_turn_back_hold = maxf(0.0, _turn_back_hold - delta)
@@ -961,6 +945,7 @@ func _recycle() -> void:
 			_turn_round()
 			return
 		_enter_at_a_stretch_end()
+		reset_physics_interpolation()
 		return
 	var legal: Array = []
 	for _attempt in 6:
@@ -1015,6 +1000,9 @@ func _recycle() -> void:
 		# `world_to_tile` always floors away — so the clamp's own top has to give up a whole
 		# pixel or it can land exactly on the line and read as out of bounds again.
 		_set_along(clampf(_along(), 0.0, limit - 1.0))
+	# A recycle is a jump, so the drawing starts again from where it landed rather than being
+	# interpolated across the map from where it left (see `_ready()`).
+	reset_physics_interpolation()
 
 ## Whether this agent is about to step off the end of a stretch's street into the void: the tile
 ## half a tile ahead of it, along its lane, is ground the stretch cut off (`CityMap.is_cut_off()`).

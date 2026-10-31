@@ -21,8 +21,8 @@ things must not be inside each other, move them apart; do not ask them to want t
 it, so a bunched queue shunts the rearmost car several lengths backwards in one frame. A car
 choosing an arm of a junction has to look before it commits:
 
-- **`TrafficIndex` is the look, and it is a frame stale on purpose.** A car covers three pixels in a
-  frame and the question is about a car's length.
+- **`TrafficIndex` is the look, and it is a tick stale on purpose.** A car covers a few pixels in a
+  tick and the question is about a car's length.
 - **Two placements in the same frame cannot see each other**, and that is not a rare case —
   recycling is what happens to every car that leaves the box, and they all aim at the same entry
   band. `TrafficIndex.claim()` is the smallest thing that closes it.
@@ -318,14 +318,15 @@ draws no heads at all.
 
 ## A rig that steps the parts is not running the whole
 
-Several suites walk the crowd by hand — `for agent in crowd.agents(): agent._process(step)` — so
-that a minute of traffic does not take a minute. That skips the frame *around* the agents:
-`Crowd._physics_process`, which resolves the queue and rebuilds `TrafficIndex`. `claim()` is written
+Several suites walk the crowd by hand — `for agent in crowd.agents(): agent.step(step)` — so that a
+minute of traffic does not take a minute. That skips the rest of the tick *around* the agents'
+steps: `Crowd._physics_process`, which resolves the queue and rebuilds `TrafficIndex`. `claim()` is written
 to outlive one frame and nothing bounds it, so with nothing rebuilding, every recycle stays.
 
 **When a rig drives a subsystem by hand, ask what the engine was doing around it** — and if the
 answer is "keeping something bounded", the rig is not slow, it is wrong. `Crowd.step()` is the whole
-frame and is what a rig calls.
+tick but the player half and is what a rig calls; it and the live tick run the same order, the
+traffic and the doors first and the agents' steps last.
 
 ## The crowd is one picture on purpose
 

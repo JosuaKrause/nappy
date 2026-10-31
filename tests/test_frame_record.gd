@@ -313,8 +313,8 @@ func _test_the_clock_resolution(t) -> void:
 ## real tree's recorder, as `tests/test_camera_start.gd` drives its boot.
 ##
 ## The record is running before `main` is built, as it is in the game, where `main._ready()` sets
-## the recorder up before `_start_day()` makes the day's agents: so the day's agents copy the switch
-## on, and the timed path of each is checked on the real crowd (`_check_the_agents_are_timed_once`).
+## the recorder up before `_start_day()` makes the day's agents, and the crowd's timed tick, which
+## steps them, is checked on the real crowd (`_check_the_crowd_is_timed_once`).
 ## The recorder itself is then set up from a switch left off, the way a held restart leaves it.
 func _test_the_recorder_in_a_real_main(t) -> void:
 	var saved := _save_game_state()
@@ -373,7 +373,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == GameState.header.day,
 			"with the world's counters read at the end of its process step")
 	t.check(main._readout._frame_record_lines().size() == 1, "the readout carries the record's line")
-	_check_the_agents_are_timed_once(t, main._city.crowd.agents())
+	_check_the_crowd_is_timed_once(t, main._city.crowd)
 	FrameRecord.start(ledger)
 	Telemetry.end_run()
 	main.free()
@@ -384,78 +384,56 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	t.check(_save_game_state() == saved,
 			"the suite leaves every field a real main's run writes as it found it")
 
-## The real day's agents, made under the record: each `_process()` runs its body once (its clock
-## moves by one step, not two and not none), inside one timed call charged to `crowd`, and once the
-## record stops, the body still runs once and the record it ran under is not touched again. A
-## missing `return` after the timed call would walk every agent twice a frame, only while recording.
-func _check_the_agents_are_timed_once(t, agents: Array[CrowdAgent]) -> void:
-	var timed := agents.filter(func(agent: CrowdAgent) -> bool: return agent._timed)
-	t.check(not agents.is_empty() and timed.size() == agents.size(),
-			"every agent made under the record copies the switch on (%d of %d)"
-			% [timed.size(), agents.size()])
+## The real day's crowd, ticked under the record: its physics tick steps every agent once (each
+## clock moves by one step, not two and not none) inside one timed call charged to `crowd`, since an
+## agent steps inside the crowd's tick and times nothing of its own; once the record stops, the tick
+## still steps every agent once and the record it ran under is not touched again.
+func _check_the_crowd_is_timed_once(t, crowd: Crowd) -> void:
+	var agents := crowd.agents()
 	var scratch := FrameLedger.new(4)
 	FrameRecord.start(scratch)
 	scratch.process_start(Time.get_ticks_usec())
 	var clocks: Array[float] = []
 	for agent in agents:
 		clocks.append(agent.excitement._clock)
-	for agent in agents:
-		agent._process(STEP)
-	var once := true
+	crowd._physics_process(STEP)
+	var once := not agents.is_empty()
 	for i in agents.size():
 		once = once and is_equal_approx(agents[i].excitement._clock, clocks[i] + STEP)
-	t.check(once, "a timed agent's body runs once a call, not twice and not never")
-	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == agents.size(),
-			"each agent's call is one timed call (%d for %d agents)"
-			% [scratch._counters[FrameLedger.TIMER_CALLS], agents.size()])
+	t.check(once, "the crowd's timed tick steps every agent once, not twice and not never (%d agents)"
+			% agents.size())
+	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 1,
+			"as one timed call for the whole crowd (%d)" % scratch._counters[FrameLedger.TIMER_CALLS])
 	t.check(scratch._spent[FrameRecord.CROWD] > 0
 			and scratch._current == FrameRecord.PROCESS_REST,
-			"their bodies are charged to crowd, and the clock goes back to what was running")
+			"charged to crowd, and the clock goes back to what was running")
 	FrameRecord.stop()
 	var spent := scratch._spent.duplicate()
-	for agent in agents:
-		agent._process(STEP)
+	crowd._physics_process(STEP)
 	once = true
 	for i in agents.size():
 		once = once and is_equal_approx(agents[i].excitement._clock, clocks[i] + 2.0 * STEP)
-	t.check(once and scratch._counters[FrameLedger.TIMER_CALLS] == agents.size()
+	t.check(once and scratch._counters[FrameLedger.TIMER_CALLS] == 1
 			and scratch._spent == spent,
-			"once the record stops, an agent made under it runs its body once and times nothing")
+			"once the record stops, the tick steps every agent once and times nothing")
 
-## A crowd agent and a live event made with the record off are never timed, even once it is on;
-## a live event made under it runs its drawn frame (its look's redraw) once a call, inside `events`,
-## and once the record stops, it still redraws and the record it ran under is not touched again. Its
-## step times nothing of its own: the manager's physics tick that runs it is timed.
+## A live event made with the record off is never timed, even once it is on; one made under it runs
+## its drawn frame (its look's redraw) once a call, inside `events`, and once the record stops, it
+## still redraws and the record it ran under is not touched again. Its step times nothing of its
+## own: the manager's physics tick that runs it is timed.
 func _test_a_timed_body_runs_once(t) -> void:
 	var was_on := FrameRecord.on
 	var was := FrameRecord.ledger
 	FrameRecord.stop()
-	var untimed_agent := CrowdAgent.new()
-	untimed_agent.skip_motion = true
-	untimed_agent.frame_timing = FrameRecordTiming.new()
-	var null_sink_agent := CrowdAgent.new()
-	null_sink_agent.frame_timing = CrowdTiming.new()
 	var def := EventCatalogue.by_id("protest")
 	var untimed_event := _event(t, def)
 	var untimed_look := _BucketLook.watching(untimed_event)
 	var scratch := FrameLedger.new(4)
 	FrameRecord.start(scratch)
 	scratch.process_start(Time.get_ticks_usec())
-	var timed_agent := CrowdAgent.new()
-	timed_agent.skip_motion = true
-	timed_agent.frame_timing = FrameRecordTiming.new()
-	t.check(not untimed_agent._timed and timed_agent._timed,
-			"an agent copies the switch as it stands when it is made")
-	t.check(not null_sink_agent._timed,
-			"and one handed the null sink is never timed, record or no record")
-	null_sink_agent.free()
-	untimed_agent._process(STEP)
 	untimed_event._process(STEP)
 	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 0 and untimed_look.charged.size() == 1,
-			"an agent and an event made with the record off are not timed once it is on")
-	timed_agent._process(STEP)
-	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 1,
-			"an agent made under the record is timed once a call")
+			"an event made with the record off is not timed once it is on")
 	var event := _event(t, def)
 	t.check(event._timed, "an event copies the switch as it stands when it is made")
 	var look := _BucketLook.watching(event)
@@ -463,7 +441,7 @@ func _test_a_timed_body_runs_once(t) -> void:
 	t.check(look.charged == [FrameRecord.EVENTS],
 			"a timed event's drawn frame redraws once a call, inside the events bucket (%s)"
 			% [look.charged])
-	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 2
+	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 1
 			and scratch._current == FrameRecord.PROCESS_REST,
 			"as one timed call, and the clock goes back to what was running")
 	# Past its telegraph, so its first step announces it, in whatever bucket was running: its step
@@ -476,17 +454,14 @@ func _test_a_timed_body_runs_once(t) -> void:
 	event.step(STEP)
 	EventBus.event_activated.disconnect(listen)
 	t.check(is_equal_approx(event.age, age + STEP) and charged == [FrameRecord.PROCESS_REST]
-			and scratch._counters[FrameLedger.TIMER_CALLS] == 2,
+			and scratch._counters[FrameLedger.TIMER_CALLS] == 1,
 			"its step runs once a call and times nothing of its own (%s)" % [charged])
 	FrameRecord.stop()
 	var spent := scratch._spent.duplicate()
 	event._process(STEP)
-	timed_agent._process(STEP)
 	t.check(look.charged.size() == 2
-			and scratch._counters[FrameLedger.TIMER_CALLS] == 2 and scratch._spent == spent,
+			and scratch._counters[FrameLedger.TIMER_CALLS] == 1 and scratch._spent == spent,
 			"once the record stops, an event made under it redraws once and times nothing")
-	untimed_agent.free()
-	timed_agent.free()
 	untimed_event.free()
 	event.free()
 	FrameRecord.ledger = was

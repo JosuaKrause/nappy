@@ -217,8 +217,18 @@ func _test_the_city_hands_each_value_to_its_part(t) -> void:
 	rng.seed = SEED
 	city.crowd.start_day(1, rng)
 	var agents := city.crowd.agents()
-	t.check(not agents.is_empty() and agents[0].skip_draw and agents[0].skip_motion,
-			"and every agent the crowd makes")
+	t.check(not agents.is_empty() and agents[0].skip_draw,
+			"and every agent the crowd makes skips its drawing")
+	var at: Array[Vector2] = []
+	for agent in agents:
+		at.append(agent.global_position)
+	for i in 30:
+		city.crowd._physics_process(1.0 / 30.0)
+	var moved := 0
+	for i in agents.size():
+		if agents[i].global_position != at[i]:
+			moved += 1
+	t.check(moved == 0, "and a crowd tick under the crowd's skip_motion moves none of them (%d moved)" % moved)
 	city.free()
 
 ## The escape's clock is a day's: a section's spec carries the section length it is handed, and the

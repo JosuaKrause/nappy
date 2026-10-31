@@ -66,6 +66,8 @@ func run(t) -> void:
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
 	_test_the_motion_skip_stops_an_agent_in_its_tracks(t)
+	_test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not(t)
+	_test_the_morning_resolve_is_not_drawn_as_a_slide(t)
 
 	_city.free()
 
@@ -1281,12 +1283,12 @@ func _test_cars_do_not_drive_through_each_other(t) -> void:
 	var overlapping := 0
 	for i in int(round(60.0 / STEP)):
 		# Movement first and the separation after it, which is the order the world settles in:
-		# a car recycles into a lane during its own `_process`, and the pass that pulls it clear
+		# a car recycles into a lane during its own step, and the pass that pulls it clear
 		# of whatever it landed on is the next one. That single frame is off-screen by
 		# construction — recycling only ever happens at the edge of the field, which is further
 		# out than the corner of the screen.
 		for agent in _city.crowd.agents():
-			agent._process(STEP)
+			agent.step(STEP)
 		_city.crowd.space_out_the_traffic(STEP)
 		var closest := _closest_two_cars_in_a_lane()
 		worst = minf(worst, closest)
@@ -1504,7 +1506,7 @@ func _test_a_car_looks_before_it_turns(t) -> void:
 	var worst := 0.0
 	for i in int(round(60.0 / STEP)):
 		for agent in _city.crowd.agents():
-			agent._process(STEP)
+			agent.step(STEP)
 		# Read the positions **between** the movement and the separation, so what is measured is
 		# what the separation pass did and nothing else. Inferring it from a whole frame does not
 		# work: a recycle is a teleport by design, and re-rolling a lane can land in the one it
@@ -1545,6 +1547,9 @@ func _test_the_traffic_index_is_emptied_every_frame(t) -> void:
 	# place in a lane. The growth is visible within a frame or two of the first recycle, so this
 	# does not need the minute the tests either side of it do.
 	_advance(10.0)
+	# The tick ends with the agents' steps, and a car that recycles in one claims a place that the
+	# next tick's rebuild throws away, so the count is asked right after a rebuild.
+	_city.crowd.space_out_the_traffic(STEP)
 	# One entry per car, plus one for each car that is mid-turn: a turning car is in the queue it
 	# came from *and* has booked the place in the lane it is turning into, which nothing else in the
 	# index would show. See `Crowd.space_out_the_traffic`.
@@ -1587,24 +1592,99 @@ func _test_a_car_can_honour_the_headway_it_keeps(t) -> void:
 			"and a stopped queue leaves a car's length between bumpers (%.0f > %.0f)"
 			% [Tuning.CAR_GAP_MIN, Tuning.CAR_STRIKE_HALF_LENGTH * 2.0])
 
-## `--skip motion` (docs/DECISIONS.md, M140, "the crowd's scripts parked"): an agent with
-## `skip_motion` set stands exactly where it was when `_process` is stepped by hand, and one
-## without it moves the same way it always did.
+## `--skip motion` (docs/DECISIONS.md, M140, "the crowd's scripts parked"):
+## the crowd's `skip_motion` set steps nobody on its physics tick, and with it off the same tick
+## moves the agents as it always did.
 func _test_the_motion_skip_stops_an_agent_in_its_tracks(t) -> void:
 	_city.crowd.start_day(1, _rng(1))
-	var parked: CrowdAgent = _city.crowd.agents()[0]
-	parked.skip_motion = true
-	var moving: CrowdAgent = _city.crowd.agents()[1]
-	var parked_at := parked.global_position
-	var moving_at := moving.global_position
-	_step(parked, 2.0)
-	_step(moving, 2.0)
-	t.check(parked.global_position == parked_at,
-			"an agent with skip_motion set has not moved after two seconds of _process (%s)"
-			% parked.global_position)
-	t.check(moving.global_position != moving_at,
-			"the same agent with the flag off moves as it always did (%s -> %s)"
-			% [moving_at, moving.global_position])
+	var agent: CrowdAgent = _city.crowd.agents()[1]
+	var at := agent.global_position
+	_city.crowd.skip_motion = true
+	for i in int(round(2.0 / STEP)):
+		_city.crowd._physics_process(STEP)
+	t.check(agent.global_position == at,
+			"under --skip motion the crowd's tick steps nobody: an agent has not moved after two "
+			+ "seconds of ticks (%s)" % agent.global_position)
+	_city.crowd.skip_motion = false
+	for i in int(round(2.0 / STEP)):
+		_city.crowd._physics_process(STEP)
+	t.check(agent.global_position != at,
+			"with the flag off the tick steps it as it always does (%s -> %s)"
+			% [at, agent.global_position])
+
+## The crowd steps on the physics tick and is drawn interpolated between two ticks, as she is, so
+## an agent's node takes part in physics interpolation; and a jump is drawn where it lands, never
+## glided across: a recycle and a walker coming out of a checkpoint hut each reset the node's
+## interpolation, while it is shown, since Godot drops a reset made on a node hidden in the tree.
+func _test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not(t) -> void:
+	_city.crowd.start_day(1, _rng(1))
+	var car := _ResetSpy.new()
+	car.traffic = _city.crowd.traffic()
+	car.pockets = _city.crowd.pockets()
+	car.setup(CrowdAgent.Kind.CAR, _city.map, _city.crowd.field(), 7, 0.5)
+	_city.add_entity(car)
+	t.check(car.is_physics_interpolated_and_enabled(),
+			"an agent is drawn interpolated between ticks")
+	car.resets_shown = 0
+	car._recycle()
+	t.check(car.resets_shown == 1, "a recycle resets the drawing to where the agent lands (%d)"
+			% car.resets_shown)
+	var walker := _ResetSpy.new()
+	walker.setup(CrowdAgent.Kind.WALKER, _city.map, _city.crowd.field(), 11, 0.5)
+	_city.add_entity(walker)
+	var rules := walker.strategy as WalkerStrategy
+	var hut := WalkerDoorHold.new()
+	hut.position = walker.position
+	rules._door_hold = hut
+	hut.join(walker)
+	rules._enter_the_hut()
+	walker.resets_shown = 0
+	rules._emerge_from_the_hut()
+	t.check(walker.visible and walker.resets_shown == 1,
+			"a walker out of a hut is shown and drawn from where it comes out (%d)"
+			% walker.resets_shown)
+	car.free()
+	walker.free()
+
+## The morning's overlap resolve nudges some cars apart after every agent has entered the tree, so
+## the drawing is reset after it: each agent's last reset (noted by a child that every agent is
+## handed as it enters the tree, since a reset reaches an agent's children) was made where the agent
+## stands now, never where it stood before the resolve moved it.
+func _test_the_morning_resolve_is_not_drawn_as_a_slide(t) -> void:
+	_city.crowd.start_day(1, _rng(3))
+	var layer := _city.crowd.agents()[0].get_parent()
+	var marks: Array[_ResetMark] = []
+	var hand_one_out := func(node: Node) -> void:
+		var mark := _ResetMark.new()
+		marks.append(mark)
+		node.add_child(mark)
+	layer.child_entered_tree.connect(hand_one_out)
+	_city.crowd.start_day(1, _rng(3))
+	layer.child_entered_tree.disconnect(hand_one_out)
+	var off := 0
+	for mark in marks:
+		var agent := mark.get_parent() as CrowdAgent
+		if mark.reset_at != agent.global_position:
+			off += 1
+	t.check(not marks.is_empty() and off == 0,
+			"after start_day no agent's drawing was last reset away from where it stands (%d of %d)"
+			% [off, marks.size()])
+
+## Notes where its parent stood each time the parent's physics interpolation was reset.
+class _ResetMark extends Node:
+	var reset_at := Vector2.INF
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESET_PHYSICS_INTERPOLATION:
+			reset_at = (get_parent() as Node2D).global_position
+
+## A crowd agent that counts the interpolation resets that reach it while it is shown in the tree.
+class _ResetSpy extends CrowdAgent:
+	var resets_shown := 0
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESET_PHYSICS_INTERPOLATION and is_visible_in_tree():
+			resets_shown += 1
 
 # ------------------------------------------------------------------- helpers ---
 
@@ -1622,7 +1702,7 @@ func _strike(car: CrowdAgent, at: Vector2) -> bool:
 
 func _step(agent: CrowdAgent, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		agent._process(STEP)
+		agent.step(STEP)
 
 ## The first zebra far enough ahead of a car that it has room to stop for it. Anything closer
 ## than the braking distance it legitimately cannot stop for — since M29 it *commits* and clears

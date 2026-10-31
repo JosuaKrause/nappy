@@ -1,0 +1,13 @@
+CROWD_FRAMES_JSON {"car_node":[2768.0,2829.50952148438],"differing_pixels":0,"forced_draw":false,"fps":120.0,"fraction":0.2224,"frame":0,"physics_ticks":91,"tick_since_last_frame":true}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2829.50952148438],"differing_pixels":2725,"forced_draw":false,"fps":120.0,"fraction":0.45394,"frame":1,"physics_ticks":91,"tick_since_last_frame":false}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2829.50952148438],"differing_pixels":2958,"forced_draw":false,"fps":120.0,"fraction":0.724270000000001,"frame":2,"physics_ticks":91,"tick_since_last_frame":false}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2829.50952148438],"differing_pixels":2712,"forced_draw":false,"fps":120.0,"fraction":0.969070000000001,"frame":3,"physics_ticks":91,"tick_since_last_frame":false}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2833.97729492188],"differing_pixels":2863,"forced_draw":false,"fps":120.0,"fraction":0.214950000000001,"frame":4,"physics_ticks":92,"tick_since_last_frame":true}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2833.97729492188],"differing_pixels":2679,"forced_draw":false,"fps":120.0,"fraction":0.450870000000001,"frame":5,"physics_ticks":92,"tick_since_last_frame":false}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2833.97729492188],"differing_pixels":2908,"forced_draw":false,"fps":120.0,"fraction":0.725100000000001,"frame":6,"physics_ticks":92,"tick_since_last_frame":false}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2833.97729492188],"differing_pixels":2738,"forced_draw":false,"fps":120.0,"fraction":0.981600000000001,"frame":7,"physics_ticks":92,"tick_since_last_frame":false}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2838.44506835938],"differing_pixels":2678,"forced_draw":false,"fps":120.0,"fraction":0.220730000000001,"frame":8,"physics_ticks":93,"tick_since_last_frame":true}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2838.44506835938],"differing_pixels":2838,"forced_draw":false,"fps":120.0,"fraction":0.453260000000001,"frame":9,"physics_ticks":93,"tick_since_last_frame":false}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2838.44506835938],"differing_pixels":2682,"forced_draw":false,"fps":120.0,"fraction":0.723290000000001,"frame":10,"physics_ticks":93,"tick_since_last_frame":false}
+CROWD_FRAMES_JSON {"car_node":[2768.0,2838.44506835938],"differing_pixels":2730,"forced_draw":false,"fps":120.0,"fraction":0.969050000000001,"frame":11,"physics_ticks":93,"tick_since_last_frame":false}
+CROWD_FRAMES_SUMMARY {"frames":12,"frames_without_a_tick_that_moved":9,"frames_without_a_tick_that_stood_still":0,"interpolated":true}

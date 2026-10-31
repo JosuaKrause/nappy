@@ -10,9 +10,8 @@ extends RefCounted
 ## doorstep (`EventManager.start_day()`), the crowd from a fixed RNG seed with the day's gates — and
 ## walks a player rig with a real `Baby` down from the doorstep and then along one of two walks
 ## (`WALKS`): back and forth along the street, or from tick `CHASE_FROM` from event to event.
-## One simulated thirtieth of a second is one physics tick (the crowd's, the events' with every live
-## event's step inside it, the baby's, in that order) followed by one drawn frame (every agent's
-## `_process()`).
+## One simulated thirtieth of a second is one physics tick: the crowd's with every agent's step
+## inside it, the events' with every live event's step inside it, and the baby's, in that order.
 ## The first `WARMUP` ticks are not timed; the next `WINDOW` are.
 ##
 ## **Two modes over the same simulation.** `whole` times the real `EventManager._physics_process()`
@@ -141,8 +140,6 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		else:
 			row = _split_events(events, STEP)
 			row.append_array(_split_sweep(city, baby, rig.global_position))
-		for agent in crowd.agents():
-			agent._process(STEP)
 		# Wherever the step left her: a door's release sets her down somewhere else.
 		here = rig.global_position
 		chain = _chain(chain, city, rig, baby)

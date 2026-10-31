@@ -108,6 +108,12 @@ func jolt_radii() -> Vector2:
 func jolt_swell() -> float:
 	return (_jolt / _jolt_for) if _jolt > 0.0 else 1.0
 
+## `jolt_swell()` as it will stand `seconds` from now with nothing startling it again: what the
+## caret breathes with on a drawn frame between two ticks (`CrowdAgent._draw_mark()`). Draw-only:
+## nothing in the simulation calls it and it changes nothing.
+func jolt_swell_after(seconds: float) -> float:
+	return clampf((_jolt - seconds) / _jolt_for, 0.0, 1.0) if _jolt > 0.0 else 1.0
+
 ## Excitement per second this body puts out at a point, with no wall asked. The kernel is
 ## `GroundShape.eccentric_distance()`, eccentric while moving and the plain distance the instant it
 ## stops, off `velocity()`: a crowd body is always a point in field terms (see `GroundShape`'s class
