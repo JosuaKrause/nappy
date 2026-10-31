@@ -219,7 +219,7 @@ func _test_round_trip_field_list_matches_the_property_list(t) -> void:
 		t.check(name in written,
 				"'%s' is a GameState field the save format does not mention" % name)
 
-## The run's play time is counted in physics ticks (inbox #866) and saved as seconds
+## The run's play time is counted in physics ticks (inbox #866 in minty-dolphin) and saved as seconds
 ## (`to_data()`), so any save's seconds, whatever number they hold, load to the nearest tick, and
 ## a tick count is written back as its seconds.
 func _test_play_time_is_saved_as_seconds_and_counted_in_ticks(t) -> void:

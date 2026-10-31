@@ -699,7 +699,7 @@ func _test_no_interior_exists_outside_a_debug_build(t: Node) -> void:
 
 ## `GameState.header.play_ticks` has exactly one owner: `main._physics_process()`, which counts a tick
 ## only once a day is actually running, walking or returning, with the tree unpaused — and counts
-## ticks, never a drawn frame's length, so a long frame adds no play time (inbox #866). Same rig as
+## ticks, never a drawn frame's length, so a long frame adds no play time (inbox #866 in minty-dolphin). Same rig as
 ## `_test_the_readout_is_not_assembled_outside_a_debug_build` above — city, stroller, baby, day
 ## controller and hud, all built by hand rather than through `_ready()`, since this file's own
 ## class doc explains why `main` is never added to the tree here either.

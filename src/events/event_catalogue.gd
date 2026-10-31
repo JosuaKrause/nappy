@@ -29,7 +29,7 @@ const STEAM_VENT_BODY := 16.0
 const MASKED_MAN_REACH := 28.0
 ## How close the masked man on the escape's stairs gets before he has the baby, inside the field he
 ## shares with the roadblock's guard (`MASKED_MAN_REACH`): narrower so a runner who walks until he
-## runs, then runs, clears him on the tightest line onto the second flight (inbox #865).
+## runs, then runs, clears him on the tightest line onto the second flight (inbox #865 in minty-dolphin).
 const MASKED_PURSUER_CATCH := 23.5
 ## The widest a `SpreadLook._draw_spread`-style body (`SpreadLook._draw_spread`,
 ## `RankLook._draw_cafe`) may be on a `SIDEWALK` tile before it draws past the pavement it stands
@@ -181,7 +181,7 @@ static func mast() -> EventDef:
 ## **The day-3 lesson's own row for `row`**: for the charging dog, `charging_dog_tutorial`, the dog
 ## under an id of its own, which `EventDirector._teach_the_run()` hands out in place of the first
 ## dog it sends on `Tuning.RUN_TAUGHT_DAY`, so its GoatCounter counts (`seen-charging-dog-tutorial`,
-## its `dog-tutorial-*` charges) are its own (PLAYTEST-141; inbox #849); `row` itself for any other.
+## its `dog-tutorial-*` charges) are its own (PLAYTEST-141; inbox #849 in minty-dolphin); `row` itself for any other.
 ## A derived copy, built once: it shares the dog's picture and every number, and the day's roll
 ## never places it.
 static func lesson_of(row: EventDef) -> EventDef:
@@ -208,7 +208,7 @@ static func door_guard() -> EventDef:
 ## (`ResistanceDirector._maybe_set_a_trap()`), moved with her target (`EventManager.move_extra()`)
 ## and set on her when the roadblock's task is done. Every number and the picture are the alley
 ## robber's; the id, `task_guard`, is his own, so GoatCounter's seen, lost-day and charge counts
-## tell him apart from the robber in an alley (inbox #849). A derived copy, built once, as the
+## tell him apart from the robber in an alley (inbox #849 in minty-dolphin). A derived copy, built once, as the
 ## catalogue's rows are never placed by the day's roll.
 static func task_guard() -> EventDef:
 	if _task_guard == null:
@@ -2430,7 +2430,7 @@ static func out_of_the_car(day: int, stops := true) -> EventDef:
 ## `Tuning.WARNING_ALONE_MAX` rather than the day-3 dog's half second, then arriving charging. *(Inbox
 ## #764 in minty-lemur, the player: "yes, we can do a 1s on screen and 1s off-screen warning if they were not
 ## visible".)* A derived copy, built once, under an id of its own, `task_guard_sent`, so GoatCounter
-## tells him apart from the robber a task sends (inbox #849); his charges count as the task
+## tells him apart from the robber a task sends (inbox #849 in minty-dolphin); his charges count as the task
 ## guard's (`EventDef.counts_charges_as`).
 static func task_guard_sent() -> EventDef:
 	if _task_guard_sent == null:
