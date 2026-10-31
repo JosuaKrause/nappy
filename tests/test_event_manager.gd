@@ -83,14 +83,14 @@ func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t) -> void:
 ## day the run is taught as on any other.
 func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 	var events := _city.events
-	var day_before := events._day
+	var day_before := events.world.day
 	var dog := EventCatalogue.by_id("charging_dog")
 	var lesson := EventCatalogue.lesson_of(dog)
 	var at := _city.map.doorstep_world_position()
-	events._day = Tuning.RUN_TAUGHT_DAY
-	var robber := events._create(EventCatalogue.by_id("alley_robbery"), at)
-	var first := events._create(lesson, at)
-	var second := events._create(dog, at)
+	events.world.day = Tuning.RUN_TAUGHT_DAY
+	var robber := events.spawner.create(EventCatalogue.by_id("alley_robbery"), at)
+	var first := events.spawner.create(lesson, at)
+	var second := events.spawner.create(dog, at)
 	t.check(lesson.id == "charging_dog_tutorial" and lesson != dog
 			and lesson.pursuit != null and lesson.look == dog.look,
 			"the lesson's dog is a row of its own, drawn and chasing as the dog does")
@@ -104,7 +104,7 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 			"no other row has a lesson's row of its own")
 	for instance: EventInstance in [robber, first, second]:
 		instance.queue_free()
-	events._day = day_before
+	events.world.day = day_before
 
 ## The page's own lifetime, and that every look a row can carry has pictures on it, are
 ## `tests/test_atlas_events.gd`: with one baked page for the whole catalogue there is no
@@ -212,7 +212,7 @@ func _test_successor_replaces_its_parent(t) -> void:
 	if not convoy:
 		# The convoy is a recurring row rather than a one-shot; this seed may not have rolled
 		# one on this day. Spawn one directly rather than skip the check.
-		convoy = _city.events._spawn_unplanned(
+		convoy = _city.events.spawner.spawn(
 				EventCatalogue.by_id("military_convoy"), Vector2(500, 500))
 
 	var before := _city.events.active_count()
@@ -486,10 +486,10 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> voi
 ## back having forgotten it." `tests/test_heat.gd` already drives `EventInstance.resume()` directly
 ## and pins that its `from_noticed_at` argument restores the notice; the gap that shipped anyway
 ## was one level up — `EventScheduler.Planned` had no field to hold the notice, so
-## `EventManager._stream_in()` always called `resume()` with the default `INF` and a
+## `EventStreaming.stream_in()` always called `resume()` with the default `INF` and a
 ## `EventDef.notice` row streamed out mid-chase came back `is_waiting()`, standing where the day
 ## planted it. This drives the same encounter through
-## `EventManager._stream_in()`/`_stream_out()` themselves, the only place that bug could
+## `EventStreaming.stream_in()`/`stream_out()` themselves, the only place that bug could
 ## actually live — the same kind of wiring question the rest of this suite exists for (see the
 ## class doc above).
 ##
@@ -500,7 +500,7 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var plan := EventScheduler.Planned.new(def, Vector2(500.0, 500.0))
 
-	_city.events._stream_in(plan)
+	_city.events.streaming.stream_in(plan)
 	t.check(plan.live != null, "the hand-built plan streams in like any other")
 	if not plan.live:
 		return
@@ -515,12 +515,12 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 	t.check(not plan.live.is_waiting(), "and a second later it is still chasing, not patrolling")
 	var chase_age_before := plan.live.chase_age()
 
-	_city.events._stream_out(plan)
+	_city.events.streaming.stream_out(plan)
 	t.check(plan.live == null, "streaming out through the manager clears the live instance")
 	t.check(plan.noticed_at != INF,
 			"and the plan itself remembers when it noticed her, not just the freed instance")
 
-	_city.events._stream_in(plan)
+	_city.events.streaming.stream_in(plan)
 	t.check(plan.live != null, "streaming back in rebuilds it")
 	if plan.live:
 		t.check(not plan.live.is_waiting(),
@@ -564,6 +564,7 @@ func _walker(t, at: Vector2) -> Stroller:
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	rig.global_position = at
+	_city.events.use_player(rig)
 	return rig
 
 ## Seconds of walking since the last `_start`, advanced by `_walk` so a test can say *when*
@@ -630,7 +631,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 		GameState.attempt_spend.scars = scars_before
 		return
 	t.check(warning.left <= Tuning.WARNING_ALONE_MAX, "its badge is up alone for at most a second")
-	var stop := EventManager.where_the_summoned_row_stops(_city.map, plan.position)
+	var stop := EventSpawner.where_the_summoned_row_stops(_city.map, plan.position)
 	var offset := warning.offset
 	var looked := [0]
 	var jumped := [0]
@@ -703,10 +704,10 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 ## past it.
 ##
 ## Asked of the game's own path on a real city, every `TOWARD_PLAYER` row on foot: for one that
-## telegraphs, the director's warning (`EventManager._warn_down_her_line()`), run frame by frame with
-## her standing on the arterial's sidewalk (`_run_the_warnings()`), and the instance it creates
-## (`spawn_warned()`); for one that does not (`loose_dog`), the instance created at once with no
-## warning (`_send_down_her_line()`). On its first frame it is not telegraphing, its field is
+## telegraphs, the director's warning (`EventsAhead._warn_down_her_line()`), run frame by frame with
+## her standing on the arterial's sidewalk (`WarningBoard.run()`), and the instance it creates
+## (`EventSpawner.spawn_warned()`); for one that does not (`loose_dog`), the instance created at
+## once with no warning (`EventsAhead._send_down_her_line()`). On its first frame it is not telegraphing, its field is
 ## undamped, and a lethal row is lethal at its own centre.
 func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 	_start(Tuning.RUN_TAUGHT_DAY + 2)
@@ -724,9 +725,9 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 		var before := _city.events.instances().duplicate()
 		var warnings_before := _city.events.pending_warnings().size()
 		if def.warns_before_it_exists():
-			_city.events._warn_down_her_line(def, her, Vector2.UP)
+			_city.events.ahead._warn_down_her_line(def, her, Vector2.UP)
 		else:
-			_city.events._send_down_her_line(def, her, Vector2.UP)
+			_city.events.ahead._send_down_her_line(def, her, Vector2.UP)
 			t.check(_city.events.pending_warnings().size() == warnings_before,
 					"'%s' does not telegraph: no warning goes up for it" % def.id)
 		var arrived: EventInstance = null
@@ -737,7 +738,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 		t.check(def.warns_before_it_exists() or arrived != null,
 				"'%s' is created at once, the frame it is sent" % def.id)
 		while arrived == null and waited < def.telegraph_time + 5.0:
-			_city.events._run_the_warnings(WALK_STEP, her)
+			_city.events.warnings.run(WALK_STEP, her)
 			waited += WALK_STEP
 			for instance in _city.events.instances():
 				if instance.def.id == def.id and not before.has(instance):
@@ -862,17 +863,17 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
 		instance.setup(def, at)
 		_city.add_child(instance)
 		plan.live = instance
-		events._plans.append(plan)
+		events.streaming._plans.append(plan)
 		sighted.clear()
 		var warnings_before := events.pending_warnings().size()
-		events._visible.look(view, joystick)
-		events._summon_what_has_been_sighted()
+		events.world.visible.look(view, joystick)
+		events.spawner.summon_what_has_been_sighted(events.plans())
 		var summoned := events.pending_warnings().size() > warnings_before
 		t.check(sighted.has("burning_building") != joystick and summoned != joystick,
 				"%s scheme: the fire under the left corner is %s" % ["joystick" if joystick else "tap",
 				"neither sighted nor sends for the engine" if joystick else "sighted, and sends for the engine"])
-		events._plans.erase(plan)
-		events._pending.clear()
+		events.streaming._plans.erase(plan)
+		events.warnings._pending.clear()
 		instance.free()
 	EventBus.event_sighted.disconnect(on_sighted)
 
@@ -932,7 +933,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 				("walking %s: %.0fpx out, past the %.0fpx streaming band, so it is neither visible "
 				% [leg, plan.position.distance_to(sited_from), Tuning.EVENT_STREAM_RADIUS])
 				+ "nor real when it is placed")
-		var siting := _city.events.walk_siting()
+		var siting := _city.events.ahead.walk_siting()
 		t.check(siting != null and siting.still_ahead_of(sited_from, heading, plan.position),
 				"walking %s: and it is ahead of her along the branch she is walking" % leg)
 		var seen_at := -1.0
@@ -960,7 +961,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 ## of the run somewhere no fire ever was.
 ##
 ## The rule that keeps it true is that a plan stops being movable the moment it is *real*, which is
-## the first time it streams in — `EventManager._stream_in` records the scar there. The rule itself
+## the first time it streams in — `EventStreaming.stream_in` records the scar there. The rule itself
 ## is checked in `tests/test_events.gd`, against a director with the geometry written rather than
 ## walked; what is checked here is the wiring, against a real streaming manager and a real walk.
 func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
@@ -1066,7 +1067,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		# break: the route is built from the live instance's position when it is first seen, and a
 		# plan stops being movable at its first stream-in, so the two can never be a fire that moved
 		# after the engine was sent to where it used to be. The end of the route is the near kerb
-		# across from the frontage it is burning against — `EventManager._summon_the_sighted_row()`.
+		# across from the frontage it is burning against — `EventSpawner._summon_the_sighted_row()`.
 		var inward := _city.map.pavement_inward(_city.map.world_to_tile(plan.position))
 		var kerb: Vector2 = plan.position - Vector2(inward) \
 				* (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
@@ -1076,7 +1077,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		var her_at := rig.global_position
 		while _city.events.pending_warnings().has(warning) \
 				and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
-			_city.events._run_the_warnings(WALK_STEP, her_at)
+			_city.events.warnings.run(WALK_STEP, her_at)
 		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + WALK_STEP + 0.001,
 				"its badge is up alone for %.2fs, at most a second" % warning.shown)
 		var arrived: EventInstance = null
@@ -1135,7 +1136,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		_block(blocked, other.position, radius)
 	_block(blocked, plan.position, plan.def.outer_radius)
 	var engine_def := EventCatalogue.by_id(plan.def.aftermath.on_sight)
-	var parked := EventManager.where_the_summoned_row_stops(_city.map, plan.position)
+	var parked := EventSpawner.where_the_summoned_row_stops(_city.map, plan.position)
 	if engine_def and parked != Vector2.INF:
 		_block(blocked, parked, engine_def.outer_radius)
 	var grid := ReachabilityGrid.build(_city.map)

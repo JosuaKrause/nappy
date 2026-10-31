@@ -11,7 +11,7 @@ extends RefCounted
 ## **The rig.** Per seed and day, a real city through the real day order (`CityState.begin_day()`,
 ## `City.start_day()`, `EventManager.start_day()`, then the director), the mark read so the task is
 ## placed and her route rigged, and the day's longest route walked through
-## `EventManager._site_what_is_on_her_way()` and `_place_what_is_owed_ahead()` until the rigged bag
+## `EventsAhead.site_what_is_on_her_way()` and `place_what_is_owed_ahead()` until the rigged bag
 ## is spent, so day 11 has its second mast on her route and day 6 its second man shouting, the way a
 ## played day has them.
 ##
@@ -182,8 +182,8 @@ func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 	var direction := 1
 	player.global_position = path[0]
 	var walked := 0.0
-	city.events._find_player()
-	var bag := city.events._director.route_bag()
+	city.events.use_player(player)
+	var bag := city.events.ahead._director.route_bag()
 	while walked < 600.0 and bag and not bag.bag_in_front().is_empty():
 		var next: Vector2 = path[index + direction] if index + direction >= 0 \
 				and index + direction < path.size() else Vector2.INF
@@ -196,8 +196,8 @@ func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
-		city.events._site_what_is_on_her_way(STEP)
-		city.events._place_what_is_owed_ahead(STEP)
+		city.events.ahead.site_what_is_on_her_way(STEP)
+		city.events.ahead.place_what_is_owed_ahead(STEP)
 		player.global_position += player.velocity * STEP
 		walked += STEP
 

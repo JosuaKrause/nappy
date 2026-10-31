@@ -72,7 +72,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
-	var player := _rig_player(t, director.contact_position())
+	var player := _rig_player(t, director, director.contact_position())
 	_view = Rect2(player.global_position - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	var mark := director.current_step()
 	t.check(mark != null and mark.is_pickup and mark.day == DAY, "day %d opens on its mark" % DAY)
@@ -260,7 +260,7 @@ func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, seed_value)
-	var player := _rig_player(t, director.contact_position())
+	var player := _rig_player(t, director, director.contact_position())
 	_view = Rect2()
 	var mark := director.current_step()
 	if mark:
@@ -357,7 +357,7 @@ func _test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t) -> void:
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
-	var player := _rig_player(t, director.contact_position())
+	var player := _rig_player(t, director, director.contact_position())
 	var map := director._map
 	var body := director.contact_position()
 	var reach := ResistanceDirector._guard_notice_reach()
@@ -412,7 +412,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
-	var player := _rig_player(t, director.contact_position())
+	var player := _rig_player(t, director, director.contact_position())
 	_view = Rect2()
 	var mark := director.current_step()
 	if mark:
@@ -517,7 +517,7 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
-	var player := _rig_player(t, director.contact_position())
+	var player := _rig_player(t, director, director.contact_position())
 	_view = Rect2()
 	var mark := director.current_step()
 	if mark:
@@ -563,7 +563,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
-	var player := _rig_player(t, director.contact_position())
+	var player := _rig_player(t, director, director.contact_position())
 	var mark := director.current_step()
 	if mark:
 		director._on_contact_completed(mark.index)
@@ -627,7 +627,7 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 	city.build(CityGenerator.generate(SEED))
 	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, SEED)
-	var player := _rig_player(t, director.contact_position())
+	var player := _rig_player(t, director, director.contact_position())
 	_view = Rect2()
 	var mark := director.current_step()
 	if mark:
@@ -739,7 +739,7 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.scars = []
 	var director := _start_the_day(t, city, seed_value)
-	var player := _rig_player(t, director.contact_position())
+	var player := _rig_player(t, director, director.contact_position())
 	var her := player.global_position
 	_view = Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	var map := city.map
@@ -848,7 +848,9 @@ func _start_the_day(t, city: City, seed_value: int) -> ResistanceDirector:
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	return director
 
-func _rig_player(t, at: Vector2) -> Stroller:
+## A Stroller at `at`, in the tree, its physics stepped by nobody, handed to `director` and its
+## city's events as `main` hands her (`ResistanceDirector.use_player()`, `EventManager.use_player()`).
+func _rig_player(t, director: ResistanceDirector, at: Vector2) -> Stroller:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -857,6 +859,9 @@ func _rig_player(t, at: Vector2) -> Stroller:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = at
+	director.use_player(player)
+	if director._city:
+		director._city.events.use_player(player)
 	return player
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

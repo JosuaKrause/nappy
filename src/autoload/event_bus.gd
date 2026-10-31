@@ -98,7 +98,7 @@ signal save_deletion_settled(operation: int, kept: bool)
 signal event_telegraphed(instance)
 signal event_activated(instance)
 signal hard_fail_triggered(reason: String)
-## `EventManager._summon_what_has_been_sighted()`'s own first frame an `aftermath.on_sight` row (only
+## `EventSpawner.summon_what_has_been_sighted()`'s own first frame an `aftermath.on_sight` row (only
 ## `burning_building` today) is actually on screen — fired once per plan whether or not the warning
 ## for the row it summons could be put up, since seeing the fire is what happened and an engine with
 ## no road off screen to wait on is a separate fact about the geometry. `id` is the seen row's own
@@ -171,7 +171,7 @@ signal run_bout_began(day: int)
 
 ## `EventManager.spawn_warned()`'s own moment a pelican is created, its warning over.
 signal pelican_spawned(instance)
-## `EventManager._report_the_pelicans_in_view()`'s own first frame a pelican is on screen — once
+## `EventSpawner.report_the_pelicans_in_view()`'s own first frame a pelican is on screen — once
 ## per pelican.
 signal pelican_sighted(instance)
 ## `EventInstance.accumulate_landed()`'s own first share of the meter a pelican's field lands on

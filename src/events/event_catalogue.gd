@@ -199,6 +199,11 @@ static var _lesson_dog: EventDef = null
 static func mark_guard() -> EventDef:
 	return by_id("alley_robbery")
 
+## **The guard a door sets on her when she walks under its raised boom**, the row
+## `CheckpointController` is handed to send (`_door_guard()`).
+static func door_guard() -> EventDef:
+	return by_id("door_guard")
+
 ## **Day 13's task guard: the alley robber, waiting in a band round the roadblock**
 ## (`ResistanceDirector._maybe_set_a_trap()`), moved with her target (`EventManager.move_extra()`)
 ## and set on her when the roadblock's task is done. Every number and the picture are the alley
@@ -921,7 +926,7 @@ static func _construction() -> EventDef:
 ## street.
 ##
 ## Never scheduled directly — a SCRIPTED def with no day, created only once the fire has been
-## seen (`EventDef.aftermath.on_sight`, `EventManager._summon_what_has_been_sighted()`). The engine
+## seen (`EventDef.aftermath.on_sight`, `EventSpawner.summon_what_has_been_sighted()`). The engine
 ## used to be the day's own one-shot with the fire left behind wherever its route ended; the
 ## instruction reversed the two — *"the player should encounter the burning building before the
 ## fire truck ... the fire truck should spawn when the player sees the burning building not the
@@ -949,7 +954,7 @@ static func _fire_truck() -> EventDef:
 	def.outer_radius = 340.0
 	# The engine's whole warning: the badge goes up alone the moment the fire is seen and the engine
 	# is created just out of sight on its road when this is over — see
-	# `EventManager._summon_the_sighted_row()`. A second, `Tuning.WARNING_ALONE_MAX`, the most a badge
+	# `EventSpawner._summon_the_sighted_row()`. A second, `Tuning.WARNING_ALONE_MAX`, the most a badge
 	# is up with nothing in the world *(busy-quail, inbox #569: "1s warning should be enough -- let's
 	# apply that to the others as well")*; its field already covers her where it is created, so that
 	# second is the whole of what the contract's flat `Tuning.OFFSCREEN_WARNING_MIN` measures.
@@ -1117,8 +1122,8 @@ static func _burnt_shell() -> EventDef:
 ## inbox #598: a thing telegraphs only if it goes fast, comes toward her and carries a heavy penalty)*:
 ## no screen-edge badge and no warning first (`EventDef.telegraphs`). The director sends it down her
 ## own sidewalk and it is created at once just out of sight there (`PendingWarning.down_her_line()`,
-## `EventManager._send_down_her_line()`), its `telegraph_time` already spent, on the point of its beat
-## that has it reach her at its loudest (`EventManager.age_when_warned()`), so a pass costs what it
+## `EventsAhead._send_down_her_line()`), its `telegraph_time` already spent, on the point of its beat
+## that has it reach her at its loudest (`EventSpawner.age_when_warned()`), so a pass costs what it
 ## did under a warning. It is outside the telegraph contract rather than exempted from it.
 ##
 ## No change to placement: `TOWARD_PLAYER` costs more than the walk-through table alone suggests
@@ -1435,7 +1440,7 @@ static func _pigeon_flock() -> EventDef:
 ## climbs, and this is the plainest possible way to say it climbed: day 2 is the day the streets
 ## acquire something that can take the day off you.
 ##
-## About one rider in 400 is drawn as a pelican on the same bike (`EventManager.rolls_a_pelican()`),
+## About one rider in 400 is drawn as a pelican on the same bike (`EventSpawner.rolls_a_pelican()`),
 ## and nothing else about him changes: the pelican is a picture, never a row of its own.
 static func _cyclist() -> EventDef:
 	var def := EventDef.new()
@@ -1739,7 +1744,7 @@ static func _charging_dog() -> EventDef:
 ## front of it, while it drives its route, with her on the carriageway.
 ##
 ## **The patrol rung of the resistance's ladder.** `heat_response = PRESSES`: past
-## `GameState.resistance.progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
+## `RunState.resistance.progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
 ## it stops merely patrolling and starts investigating: it stops on its road once she is close and
 ## a policeman gets out and pursues her (`EventDef.investigates`, `out_of_the_car()`), whose catch
 ## costs her and never ends the day by itself. The car never gains `hard_fail`, whatever the heat,
@@ -2508,7 +2513,7 @@ static func _military_convoy() -> EventDef:
 	# As a place the day planned, faster than a walk, so the escape distance is the forward reach:
 	# `outer_radius · Tuning.field_scale(e)` at 120px/s (e = 0.24) is 395px, 4.29s, plus the margin
 	# the row already carried. Day 13's column is this row warned first
-	# (`EventManager.as_warned()`): that copy's badge alone is cut to `Tuning.WARNING_ALONE_MAX`, and
+	# (`EventSpawner.as_warned()`): that copy's badge alone is cut to `Tuning.WARNING_ALONE_MAX`, and
 	# it is held to the flat `Tuning.OFFSCREEN_WARNING_MIN`.
 	def.telegraph_time = 4.43
 	def.mobile = true
@@ -3087,7 +3092,7 @@ static func _finale_explosion() -> EventDef:
 ##
 ## **No `aftermath.scar`.** A scar is how the *run* remembers a fire on day 3; the escape is the last
 ## thing that happens in a run, so a crater has nothing left to persist into and recording one
-## would only put an entry in `GameState.attempt_spend.scars` that no later day ever reads.
+## would only put an entry in `RunState.attempt_spend.scars` that no later day ever reads.
 static func _impact_crater() -> EventDef:
 	var def := EventDef.new()
 	def.id = "impact_crater"

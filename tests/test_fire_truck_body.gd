@@ -146,7 +146,7 @@ func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 		engine.free()
 
 ## **Created where the game creates it**, just out of sight up its street
-## (`PendingWarning.on_its_route()`, the place `EventManager._summon_the_sighted_row()` asks for),
+## (`PendingWarning.on_its_route()`, the place `EventSpawner._summon_the_sighted_row()` asks for),
 ## from each of the four sides, with her standing in its lane facing it. On any street that place is
 ## nearer her than its warning reaches her (1.7s of its 190px/s past the touch, the touch counting
 ## its body and hers): up a north-south street the view is 180px to either side of her, and across
@@ -374,7 +374,7 @@ func _test_parked_its_field_is_a_points(t) -> void:
 ## **The route-redundancy guarantee with it parked** (the **city** skill: a day leaves distinct
 ## routes from home to its calm areas, counted as a max flow, `StreetNetwork.route_count()`). The
 ## engine parks on the carriageway's near tile across from the fire
-## (`EventManager.where_the_summoned_row_stops()`), its body a capsule along the street. On a real
+## (`EventSpawner.where_the_summoned_row_stops()`), its body a capsule along the street. On a real
 ## city, at every such kerb tried, every tile the body overlaps at all is blocked; the street it
 ## stands in counts as closed unless a way along it past the body is left inside its own corridor;
 ## and every calm area must keep as many distinct routes from home, up to two, as it had without
@@ -408,7 +408,7 @@ func _kerbs(map: CityMap) -> Array[Array]:
 		var inward := map.pavement_inward(tile)
 		if inward == Vector2i.ZERO:
 			continue
-		var park := EventManager.where_the_summoned_row_stops(map, map.tile_to_world(tile))
+		var park := EventSpawner.where_the_summoned_row_stops(map, map.tile_to_world(tile))
 		if park == Vector2.INF or not Tile.is_road(map.tile_type_at_world(park)):
 			continue
 		kerbs.append([park, Vector2(absf(float(inward.y)), absf(float(inward.x)))])

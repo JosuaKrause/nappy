@@ -37,7 +37,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 		instance.step(STEP)
 
 ## A fresh instance of `first`'s row and path, put back where `first` had got to as
-## `EventManager._stream_in()` does; checks the state names the behaviour under test (`behaviour`,
+## `EventStreaming.stream_in()` does; checks the state names the behaviour under test (`behaviour`,
 ## its class name) and comes back whole.
 func _round_trip(t, first: EventInstance, what: String, behaviour: StringName) -> EventInstance:
 	var state := first.save_behaviours()
@@ -309,11 +309,11 @@ func _test_the_manager_streams_a_behaviours_state(t) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var manager := EventManager.new()
-	manager._map = CityMap.new()
-	manager._map.world = world
+	manager.world.map = CityMap.new()
+	manager.world.map.world = world
 	t.add_child(manager)
 	var plan := EventScheduler.Planned.new(def, at)
-	manager._plans = [plan] as Array[EventScheduler.Planned]
+	manager.streaming._plans = [plan] as Array[EventScheduler.Planned]
 	manager.stream_around(at)
 	var robber := plan.live
 	t.check(robber != null, "he is streamed in where the day planned him")

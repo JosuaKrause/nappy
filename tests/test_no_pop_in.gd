@@ -8,7 +8,7 @@ extends RefCounted
 ## camera's whole view.
 ##
 ## **What is checked is what the instance draws, not what it was placed by.** Each place makes a real
-## instance the way the game creates it there (`EventManager.spawn_warned()`, `_send_down_her_line()`,
+## instance the way the game creates it there (`EventManager.spawn_warned()`, `EventsAhead._send_down_her_line()`,
 ## the trap's), told where she is, and asks it what it draws on that frame
 ## (`EventLook.drawn_rect_now()`: its pictures, its shadow, and its danger caret from the
 ## caret's own drawing numbers and its own projection of her). A footprint (`footprint_of()`) that
@@ -30,7 +30,7 @@ func run(t) -> void:
 ## The rows placed by a bearing from her.
 static func _rows() -> Array[EventDef]:
 	var rows: Array[EventDef] = [EventCatalogue.by_id("cyclist"), EventCatalogue.by_id("loose_dog"),
-			EventManager.as_warned(EventCatalogue.by_id("charging_dog")),
+			EventSpawner.as_warned(EventCatalogue.by_id("charging_dog")),
 			EventCatalogue.by_id("robber_giving_chase"), EventCatalogue.by_id("van_guard_giving_chase"),
 			EventCatalogue.by_id("policeman_giving_chase"),
 			EventCatalogue.by_id("guardsman_giving_chase")]
@@ -61,7 +61,7 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 	instance.setup(row, at, path)
 	instance.came_under_a_warning = true
 	if row.pursuit == null or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
-		instance.resume(EventManager.age_when_warned(row), 0.0)
+		instance.resume(EventSpawner.age_when_warned(row), 0.0)
 	instance.player_at = her
 	instance.player_running = false
 	return instance
@@ -135,7 +135,7 @@ func _test_her_own_sidewalk_on_real_cities(t) -> void:
 ## in its lane, through every camera.
 func _test_the_road_and_the_lane(t) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
-	var column := EventManager.as_warned(EventCatalogue.by_id("military_convoy"))
+	var column := EventSpawner.as_warned(EventCatalogue.by_id("military_convoy"))
 	var kerb := Vector2(2000.0, 4000.0)
 	var placed := 0
 	var popped: Array[String] = []
@@ -167,7 +167,7 @@ func _test_the_road_and_the_lane(t) -> void:
 ## come from there, so `in_its_lane()` has no place (the warning is withdrawn) rather than a place in
 ## view. With her a view's height or less from either end, every answer is off screen or none.
 func _test_the_lane_at_the_ends_of_the_road(t) -> void:
-	var column := EventManager.as_warned(EventCatalogue.by_id("military_convoy"))
+	var column := EventSpawner.as_warned(EventCatalogue.by_id("military_convoy"))
 	var top := 16.0
 	var bottom := 4000.0
 	var none := 0

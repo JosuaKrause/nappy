@@ -456,7 +456,7 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	resistance.start_day(day, resistance_rng, 300.0)
 	var mark := resistance.current_step()
 	t.check(mark != null and mark.is_pickup and mark.day == day, "day %d opens on its mark" % day)
-	var bag := city.events._director.route_bag()
+	var bag := city.events.ahead._director.route_bag()
 	var reading_took := 0.0
 	if mark:
 		var started := Time.get_ticks_usec()
@@ -469,10 +469,10 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	t.check(reading_took < READING_THE_MARK_BOUND,
 			"day %d: reading the mark and rigging her route takes %.2fs, under %.1fs"
 			% [day, reading_took, READING_THE_MARK_BOUND])
-	if city.events._siting:
-		t.check(city.events._siting.mast_checks == 0,
+	if city.events.ahead._siting:
+		t.check(city.events.ahead._siting.mast_checks == 0,
 				"day %d: the rig asks no tile whether a mast may stand there (%d)"
-				% [day, city.events._siting.mast_checks])
+				% [day, city.events.ahead._siting.mast_checks])
 	var rigged := bag.bag_in_front()
 	t.check(rigged.size() == size and rigged.count(row) == 1,
 			"day %d: reading the mark rigs her route with a bag of %d holding one %s (%s)"
@@ -490,7 +490,8 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	player.add_child(camera)
 	t.add_child(player)
 	player.set_physics_process(false)
-	t.check(path.size() >= 2 and city.events._find_player(), "a route to walk and her on it")
+	city.events.use_player(player)
+	t.check(path.size() >= 2 and city.events.world.has_player(), "a route to walk and her on it")
 	if path.size() < 2:
 		player.free()
 		city.free()
@@ -519,12 +520,12 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 		var owed_before := city.events.owed_ahead()
 		var plans_before := city.events.plans().size()
 		# In the order the manager's own tick runs them: what her walk sites, then what is owed.
-		city.events._site_what_is_on_her_way(STEP)
-		city.events._place_what_is_owed_ahead(STEP)
+		city.events.ahead.site_what_is_on_her_way(STEP)
+		city.events.ahead.place_what_is_owed_ahead(STEP)
 		if city.events.owed_ahead() < owed_before and handed < size:
 			handed += 1
 			if handed == size:
-				drawn_within = _a_place_from_her_route(city.events._director, row) != null
+				drawn_within = _a_place_from_her_route(city.events.ahead._director, row) != null
 		for plan in city.events.plans().slice(plans_before):
 			if (plan as EventScheduler.Planned).def.id == row:
 				placed.append(plan)
@@ -556,8 +557,8 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 			# And not by luck of this seed: what a route mast is offered along the whole of the
 			# branch she was walking holds no tile a mast site would refuse, out of a sidewalk and
 			# square that do hold some.
-			var siting := city.events._siting
-			var mast := city.events._director.route_row(row)
+			var siting := city.events.ahead._siting
+			var mast := city.events.ahead._director.route_row(row)
 			var ground: Dictionary = siting._ground_as_a_set(mast)
 			t.check(siting.mast_checks > 0 and siting.mast_checks * 10 < ground.size(),
 					"siting it asked %d tiles whether a mast may stand there, of %d tiles of ground"

@@ -114,7 +114,7 @@ The events:
   `lost-hard-fail` rather than nothing.
 - `nappy-day-3-seen-fire` — the first frame the burning building is in sight, whether or not the
   warning for the fire engine it summons can be put up yet
-  (`EventManager._summon_what_has_been_sighted()`): the point it stands at inside what she can see
+  (`EventSpawner.summon_what_has_been_sighted()`): the point it stands at inside what she can see
   (`VisibleView.sees()`), so not while it is only under a covered corner in the joystick scheme.
 - `nappy-day-3-fire-unmet` — a won day 3 on which the fire was never met and was lit off her path
   at dusk (`EventManager.light_what_she_never_met()`).
@@ -176,7 +176,7 @@ The events:
   hitting the player. it must appear as its own entry and it needs to be more granular than
   standard event telemetry")*, each once per pelican: created where its warning pointed
   (`EventManager.spawn_warned()`); its first frame properly on screen
-  (`EventManager._report_the_pelicans_in_view()`, the same test as an encounter's `seen` below:
+  (`EventSpawner.report_the_pelicans_in_view()`, the same test as an encounter's `seen` below:
   80% of its drawn box visible to her, `VisibleView`); the first share of her meter its field lands, inside its 90px
   (`EventInstance.accumulate_landed()`); and its lethal reach, 33px, covering her
   (`EventManager._check_hard_fails()`). The cyclist's contact does those two different things to
@@ -628,7 +628,7 @@ is made as the warning goes up, so the first line already knows.
 | `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls`, `EventManager` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag, and, on a pursuit marble, who was sent after her, from where and whether with a clear run at her (or that nobody was, with no ground out of her sight). So is the bag day 6's or day 11's mark rigs her route with: which marbles the next events on it are drawn from |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager`, `PosterWalls` | Where the city stopped being recomputable — a scar an event left, a crew starting and finishing a wall, a poster she tore down |
-| `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, a row down her line at the moment its warning is over and it is created, day 3's fire sited or moved on the branch she is walking, a place a marble from her route's bag put on it (the man shouting after day 6's mark, the mast after day 11's), the men a vehicle let out where it stopped for her — the investigating patrol's one or a hunting van's two, where it stood, how far from her, and who got out (`EventManager._let_the_officers_out()`) — or — on a day she won without it ever entering the world — where it was lit at dusk instead. The only record of a placement no seed reproduces, since it depends on the route she took |
+| `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, a row down her line at the moment its warning is over and it is created, day 3's fire sited or moved on the branch she is walking, a place a marble from her route's bag put on it (the man shouting after day 6's mark, the mast after day 11's), the men a vehicle let out where it stopped for her — the investigating patrol's one or a hunting van's two, where it stood, how far from her, and who got out (`EventsAhead.let_the_officers_out()`) — or — on a day she won without it ever entering the world — where it was lit at dusk instead. The only record of a placement no seed reproduces, since it depends on the route she took |
 | `taken` | `EventInstance` | Whether an `abduction`'s own bystander scene ever actually finishes — the only record that the catalogue touched the crowd at all. Written by the instance itself rather than by `EventManager`: the scene needs nothing the instance does not already carry (`player_at`, its own age), and that is what lets a data-level rig assert it with no map or city behind it |
 | `chat` | `EventManager` | A detention conversation started — which one, where, and how long it holds her. Written whenever `detain_seconds` fires, not only for `chatting_mother`, so a redetaining door's own toll is on this line too; what it costs the meter is on the line as well, since a sleeping baby pays nothing and an awake one pays `Tuning.CHAT_EXCITEMENT` |
 | `checkpoint` | `EventManager` | A region door's toll paid — where she was held, how long, and which side she came out on. Written on release rather than on capture, since "released on the north side" is the fact a reader wants and the teleport is what makes it true. **And a door she walked through instead** — which body's line she crossed on foot, heading where, and whether the boom was up: a crossing under a raised boom that skipped the toll, detected rather than guessed (docs/EVENTS.md, "Checkpoints"), so a trace can say whether the player took the dash and a rig run can be held to never taking it |

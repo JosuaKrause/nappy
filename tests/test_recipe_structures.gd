@@ -79,12 +79,12 @@ func run(t) -> void:
 func _test_the_scene_runs_under_the_spec_it_is_handed(t, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby) -> void:
 	player.global_position = city.map.tile_to_world(Vector2i(16, 16))
-	city.events._player = player
+	city.events.use_player(player)
 	var escape := MAIN.escape_section_spec(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
 	var errors := runtime.install(city, player, baby, escape)
 	t.check(errors.is_empty() and runtime.walk_spec == escape,
 			"an escape scene is installed into the spec it is handed: %s" % [errors])
-	t.check(not city.events._owes_a_return and not city.events._sends_poster_pursuits,
+	t.check(not city.events._owes_a_return and not city.events.ahead.sends_poster_pursuits,
 			"and its events owe no return and send no poster pursuer")
 	city.events.send_a_pursuer()
 	t.check(city.events.pending_warnings().is_empty(), "so a torn poster there sends nobody")
@@ -95,10 +95,10 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t, runtime: SceneRecipeRun
 			"a day scene's walk is the configured day's length (%.1fs)" % day.length)
 	errors = runtime.install(city, player, baby, day)
 	t.check(errors.is_empty() and runtime.walk_spec == day
-			and city.events._owes_a_return and city.events._sends_poster_pursuits,
+			and city.events._owes_a_return and city.events.ahead.sends_poster_pursuits,
 			"and the same spec, with a day's settings, is the one its events run under: %s" % [errors])
 	city.events.send_a_pursuer()
 	t.check(city.events.pending_warnings().size() == 1,
 			"so a torn poster on a day scene sends its pursuer (%d warnings)"
 			% city.events.pending_warnings().size())
-	city.events._pending.clear()
+	city.events.warnings._pending.clear()

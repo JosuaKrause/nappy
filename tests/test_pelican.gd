@@ -96,28 +96,29 @@ func _test_the_seed_decides_which_cyclist_is_the_pelican(t) -> void:
 func _test_the_bag_follows_the_run_and_the_count(t) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var manager := EventManager.new()
+	manager.use_run(GameState)
 	_new_run(11)
 	var first: Array[bool] = []
 	for _i in 400:
-		first.append(manager.rolls_a_pelican(cyclist))
+		first.append(manager.spawner.rolls_a_pelican(cyclist))
 	var fresh_11 := _rolls_for(11, [cyclist], 400)
 	t.check(first == fresh_11, "a manager's draws are a fresh manager's")
 	_new_run(12)
 	var other: Array[bool] = []
 	for _i in 400:
-		other.append(manager.rolls_a_pelican(cyclist))
+		other.append(manager.spawner.rolls_a_pelican(cyclist))
 	t.check(other == _rolls_for(12, [cyclist], 400) and other != first,
 			"the same manager on another run's seed draws that run's bag")
 	_new_run(12)
 	GameState.pelican.draws = 0
 	var again: Array[bool] = []
 	for _i in 400:
-		again.append(manager.rolls_a_pelican(cyclist))
+		again.append(manager.spawner.rolls_a_pelican(cyclist))
 	t.check(again == other, "and a count put back to 0 starts that bag again")
 	GameState.pelican.draws = 100
 	var from_100: Array[bool] = []
 	for _i in 300:
-		from_100.append(manager.rolls_a_pelican(cyclist))
+		from_100.append(manager.spawner.rolls_a_pelican(cyclist))
 	t.check(from_100 == other.slice(100), "and put back to 100 carries on from the hundredth")
 	manager.free()
 
@@ -131,8 +132,8 @@ func _test_the_dev_flag_makes_every_cyclist_a_pelican(t) -> void:
 			"the flag is read from the command line")
 	t.check(not RunConfig.parse(PackedStringArray(["--pelican"]), "", false).pelican,
 			"and answers nothing on a release build")
-	var flagged := _rolls_for(5, [cyclist], 40, EventManager.PelicanRig.ALWAYS)
-	var dog := _rolls_for(5, [EventCatalogue.by_id("loose_dog")], 5, EventManager.PelicanRig.ALWAYS)
+	var flagged := _rolls_for(5, [cyclist], 40, EventSpawner.PelicanRig.ALWAYS)
+	var dog := _rolls_for(5, [EventCatalogue.by_id("loose_dog")], 5, EventSpawner.PelicanRig.ALWAYS)
 	t.check(flagged.count(true) == 40 and dog.count(true) == 0,
 			"with it every cyclist is a pelican and no dog is")
 	t.check(GameState.pelican.draws == 0 and _rolls_for(5, [cyclist], 40) == plain,
@@ -227,13 +228,14 @@ func _new_run(run_seed: int) -> void:
 
 ## `count` answers of a fresh manager on run `run_seed`, asked for `defs` in turn, from a full bag.
 func _rolls_for(run_seed: int, defs: Array[EventDef], count: int,
-		rig := EventManager.PelicanRig.BAG) -> Array[bool]:
+		rig := EventSpawner.PelicanRig.BAG) -> Array[bool]:
 	_new_run(run_seed)
 	var manager := EventManager.new()
+	manager.use_run(GameState)
 	manager.pelican_rig = rig
 	var answers: Array[bool] = []
 	for i in count:
-		answers.append(manager.rolls_a_pelican(defs[i % defs.size()]))
+		answers.append(manager.spawner.rolls_a_pelican(defs[i % defs.size()]))
 	manager.free()
 	return answers
 
@@ -241,9 +243,10 @@ func _rolls_for(run_seed: int, defs: Array[EventDef], count: int,
 func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
 	GameState.header.run_seed = run_seed
 	var manager := EventManager.new()
+	manager.use_run(GameState)
 	var answers: Array[bool] = []
 	for _i in count:
-		answers.append(manager.rolls_a_pelican(def))
+		answers.append(manager.spawner.rolls_a_pelican(def))
 	manager.free()
 	return answers
 
@@ -324,7 +327,7 @@ func _ride() -> PackedVector2Array:
 
 ## *(Inbox #527 in azure-tapir, the player: "when the pelican spawns, when it's on screen, and when it's hitting the
 ## player ... logs should be correctly identifying it from the beginning".)* One pelican sent the
-## way the director sends every cyclist (`_warn_down_her_line()`), from its warning to its hit:
+## way the director sends every cyclist (`EventsAhead._warn_down_her_line()`), from its warning to its hit:
 ##
 ## - **the roll is made as the warning goes up**, so the badge already names the pelican;
 ## - **its creation is told once** (`EventBus.pelican_spawned`), and the run log's `ahead` line for
@@ -347,7 +350,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	t.add_child(stroller)
 	stroller.set_physics_process(false)
 	stroller.reset_at(her)
-	events._player = stroller
+	events.use_player(stroller)
 	var told := {"spawned": 0, "sighted": 0, "excited": 0, "struck": 0}
 	var on_spawned := func(_instance: Variant) -> void: told["spawned"] += 1
 	var on_sighted := func(_instance: Variant) -> void: told["sighted"] += 1
@@ -368,9 +371,9 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	events.trace = RunTrace.new(Telemetry.note)
 
 	var before := events.instances().size()
-	events.pelican_rig = EventManager.PelicanRig.ALWAYS
-	events._warn_down_her_line(def, her, Vector2.UP)
-	events.pelican_rig = EventManager.PelicanRig.BAG
+	events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
+	events.ahead._warn_down_her_line(def, her, Vector2.UP)
+	events.pelican_rig = EventSpawner.PelicanRig.BAG
 	var warning: PendingWarning = events.pending_warnings().back() \
 			if not events.pending_warnings().is_empty() else null
 	t.check(warning != null and warning.is_pelican and warning.logged_name() == "pelican",
@@ -389,7 +392,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	var pelican: EventInstance = null
 	var elapsed := 0.0
 	while elapsed < def.telegraph_time + 3.0 and pelican == null:
-		events._run_the_warnings(STEP, her)
+		events.warnings.run(STEP, her)
 		elapsed += STEP
 		if events.instances().size() > before:
 			pelican = events.instances().back()
@@ -400,7 +403,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 		return
 	t.check(told["spawned"] == 1, "its creation is told once (%d)" % told["spawned"])
 
-	events._report_the_pelicans_in_view()
+	events.spawner.report_the_pelicans_in_view()
 	t.check(told["sighted"] == 0, "created just off screen, it is not yet seen")
 	# `reset_at()` rather than a bare move, so the camera's screen centre, which a headless run never
 	# smooths along, is on her: what counts as on screen is measured about it.
@@ -439,7 +442,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	events._struck_by = ""
 	stroller.global_position = kid.global_position
 	events.retire(pelican)
-	events._retire_finished()
+	events.streaming.retire_finished()
 	events._check_hard_fails()
 	t.check(events.what_struck_her() == "cyclist" and told["struck"] == 1,
 			"where a kid's reach names the cyclist, and tells nothing of a pelican ('%s')"
@@ -469,7 +472,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 func _untangle(events: EventManager, stroller: Stroller, listeners: Array) -> void:
 	Telemetry.end_run()
 	events.trace = RunTrace.new()
-	events._player = null
+	events.use_player(null)
 	stroller.free()
 	var signals := [EventBus.pelican_spawned, EventBus.pelican_sighted, EventBus.pelican_excited_her,
 			EventBus.pelican_struck_her]

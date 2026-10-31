@@ -375,7 +375,7 @@ var outranked_by_a_stronger_barrier := false
 var baby_awake := true
 
 ## The shared boom state a `checkpoint_gate` draws raised or lowered from — `RegionPlanner.
-## GateState`, set by `EventManager._stream_in` from `Planned.gate_state`. `null` for every look
+## GateState`, set by `EventStreaming.stream_in` from `Planned.gate_state`. `null` for every look
 ## but `CHECKPOINT_GATE`, and read as lowered while it is: a gate that has not been wired to
 ## `Crowd` yet (or a data-level rig with no crowd at all) draws exactly the safe default.
 var gate_state: RegionPlanner.GateState = null
@@ -724,7 +724,7 @@ static var _warning_guard := Vector2.ZERO
 ## event and disappears with the instance.
 ##
 ## **Built from the row's solid footprint** (`solid_footprint_of()`), the one the day's blocked
-## record is written from too (`EventManager.obstructed_footprint()`), so the body that stops her and
+## record is written from too (`EventSpawner.obstructed_footprint()`), so the body that stops her and
 ## the tiles that stop every other mover are one solid read twice. One `StaticBody2D` holds every
 ## piece, so nothing downstream — the debug view's bounding-box layer, which walks the physics
 ## tree, or `is_solid()` — has to learn that a row may have more than one.
@@ -738,7 +738,7 @@ func _build_obstruction() -> void:
 ## for the crash — each offset along the spread axis (`spread_vertical`, `spread_at()`) by the
 ## piece's own reading of whichever picture is in use, its spine along `axis` (`_solid_axis()`).
 ## The physics body (`_build_obstruction()`) and the blocked record
-## (`EventManager.obstructed_footprint()`) both come from here.
+## (`EventSpawner.obstructed_footprint()`) both come from here.
 static func solid_footprint_of(row: EventDef, axis: Vector2, spread_vertical: bool) -> Footprint:
 	var footprint := Footprint.new()
 	for piece in row.parts():
@@ -766,7 +766,7 @@ static func mover_for(row: EventDef) -> Mover:
 ## `flock_velocities()` already hand `DebugLayers`.
 ##
 ## **A per-tile solid record reads the same pieces, index for index.**
-## `EventManager.obstructed_footprint()` steps `def.parts()` on its own rather than calling this
+## `EventSpawner.obstructed_footprint()` steps `def.parts()` on its own rather than calling this
 ## pair, but it is the same data: one disc of `obstructs_radius` for every row but the crash, which
 ## records tiles under each car and leaves the ground between them open — the whole reason the crowd
 ## steps round the cars and walks the debris.
@@ -1137,7 +1137,7 @@ func is_quiet_for_its_man() -> bool:
 	return investigation != null and investigation.is_quiet_for_its_man()
 
 ## How many men this vehicle has stopped for and still owes (`EventInvestigation`). Read by
-## `EventManager._let_the_officers_out()`.
+## `EventsAhead.let_the_officers_out()`.
 func officers_owed() -> int:
 	return investigation.officers_owed() if investigation else 0
 
@@ -1418,13 +1418,13 @@ func _way_is_open(from: Vector2, to: Vector2) -> bool:
 	return _navigator.clear_line(from, to, _mover)
 
 ## How far along its route this instance has got, so streaming it out and back in can resume it
-## instead of rewinding it. See `EventManager._stream_in`.
+## instead of rewinding it. See `EventStreaming.stream_in`.
 func path_travelled() -> float:
 	return _path_travelled
 
 ## How fast and which way this thing is actually travelling, in px/s.
 ##
-## Asked by `EventManager._warn_about_the_ground_she_is_on`, which has to know whether a lethal
+## Asked by `WarningBoard.warn_about_the_ground_she_is_on`, which has to know whether a lethal
 ## thing is coming *at her* rather than merely near her — walking orthogonally away from a cyclist
 ## must take the mark down, because there is no way it can reach her.
 ##
@@ -1477,7 +1477,7 @@ func facing_now() -> Vector2:
 
 ## Where on its own clock it noticed her, held time counted back in, or `INF` for a row that waits
 ## and has not noticed her (and for a row with no wait) — what a stream-out carries
-## (`EventManager._stream_out()`) and `resume()` gives back.
+## (`EventStreaming.stream_out()`) and `resume()` gives back.
 func noticed_at() -> float:
 	return _notice.started_at() if def.notice != null else INF
 
@@ -1533,7 +1533,7 @@ func move_to(at: Vector2) -> void:
 	queue_redraw()
 
 ## **Every behaviour's own state**, keyed by its class, as plain values a plan carries while this
-## event is out of the world (`EventManager._stream_out()`, `EventScheduler.Planned.behaviours`).
+## event is out of the world (`EventStreaming.stream_out()`, `EventScheduler.Planned.behaviours`).
 func save_behaviours() -> Dictionary:
 	var out := {}
 	for behaviour in _behaviours:
@@ -1620,7 +1620,7 @@ var is_parked: bool:
 ## barricade is across the street it shut, not two streets past it. Anything with no departure
 ## speed has no way to go anywhere; a café that closes has always simply been over. And a row with
 ## `EventDef.stops_where_it_arrives` **parks**: the fire engine is sent to the near kerb across from
-## the building (`EventManager.where_the_summoned_row_stops()`) and stays there for the rest of the
+## the building (`EventSpawner.where_the_summoned_row_stops()`) and stays there for the rest of the
 ## day, because a standing field beside a fire she was led to is the cost that makes the pair a
 ## street to turn round on rather than one to hurry past.
 ##

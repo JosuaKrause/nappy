@@ -16,5 +16,5 @@ extends Resource
 ## Event id to spawn the moment this one is first seen: what arrives once she has found it, where
 ## `on_finish` names what it leaves behind when it is done. How the burning building calls in the
 ## fire engine — `EventManager` owns the trigger, since it already owns the successor mechanism and
-## her position; see `EventManager._summon_what_has_been_sighted()`.
+## her position; see `EventSpawner.summon_what_has_been_sighted()`.
 @export var on_sight := ""

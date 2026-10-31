@@ -123,7 +123,7 @@ var blackout_forced := false
 ## Dark from its first frame, every power off — the escape's city, which is the same night as the
 ## blackout (`DaySpec.dark_from_the_start`). Set before `build()`; see `Blackout`.
 var dark_from_the_start := false
-## `--pelican`: every cyclist is drawn as the pelican. See `EventManager.rolls_a_pelican()`.
+## `--pelican`: every cyclist is drawn as the pelican. See `EventSpawner.rolls_a_pelican()`.
 var all_cyclists_pelicans := false
 ## `--force <id> [seconds]`: the one row the director hands out, and how often. See
 ## `EventDirector.force()`.
@@ -285,7 +285,7 @@ func build(city_map: CityMap) -> void:
 	events.trace = trace
 	events.skip_drawing = skip_event_drawing
 	if all_cyclists_pelicans:
-		events.pelican_rig = EventManager.PelicanRig.ALWAYS
+		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
 	add_child(events)
 	events.setup(self, map, navigator)
 	events.force(forced_row, forced_interval)

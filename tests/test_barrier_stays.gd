@@ -272,7 +272,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	EventBus.pursuit_ended.connect(listen[3])
 	EventBus.pursuit_cut_short.connect(listen[4])
 	var plan := EventScheduler.Planned.new(_hot_roadblock(), post)
-	city.events._stream_in(plan)
+	city.events.streaming.stream_in(plan)
 	var guard: EventInstance = plan.live
 	t.check(guard != null, "the roadblock streams in")
 	if guard == null:
@@ -294,11 +294,11 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		guard.step(STEP)
 		frames += 1
 	t.check(guard.is_leaving, "she shook him off and he is walking away")
-	city.events._stream_out(plan)
+	city.events.streaming.stream_out(plan)
 	var carried: Dictionary = plan.behaviours.get(&"EventBarrierPost", {})
 	t.check(bool(carried.get("spent", false)) and int(carried.get("side", 0)) == side,
 			"the plan carries the spent guard and the side he left (%s)" % [carried])
-	city.events._stream_in(plan)
+	city.events.streaming.stream_in(plan)
 	var back: EventInstance = plan.live
 	t.check(back != null and back != guard, "a fresh instance comes back")
 	if back != null:
@@ -316,8 +316,8 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		t.check(back.is_waiting() and not back.is_lethal_at(back.player_at),
 				"she walks up to it and nothing sets off")
 		# Streamed out once more, spent for good this time.
-		city.events._stream_out(plan)
-		city.events._stream_in(plan)
+		city.events.streaming.stream_out(plan)
+		city.events.streaming.stream_in(plan)
 		t.check(plan.live != null and plan.live.is_waiting() and plan.live.barrier_post.is_spent(),
 				"and a barrier streamed out and in again stays spent")
 		city.events.end_the_charges_still_running()

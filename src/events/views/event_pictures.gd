@@ -588,7 +588,7 @@ const CYCLIST_BY_VIEW_B := {
 ## in ~400 bikers should be a pelican riding a bicycle instead. Needs to be svg only")* — the same
 ## bike, path for path, on the same canvases, so it shares the cyclist's registration, wheel contact
 ## and pedal frames and only the rider differs. Drawn when `is_pelican` is set; see
-## `EventManager.rolls_a_pelican()` for who decides that and when.
+## `EventSpawner.rolls_a_pelican()` for who decides that and when.
 const PELICAN_BY_VIEW := {
 	"front": "events/pelican_cyclist_front",
 	"back": "events/pelican_cyclist_back",

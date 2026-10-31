@@ -195,7 +195,7 @@ func _test_catalogue_is_fair(t) -> void:
 ## warning is tied to the size of the field or the speed" · "all offscreen events should work like
 ## that"; busy-quail, inbox #569: "1s warning should be enough -- let's apply that to the others as
 ## well".)* Asked of every such row — the catalogue's own (`cyclist`, the fire engine,
-## the resistance's two pursuers) and the copies `EventManager.as_warned()` makes of day 13's column
+## the resistance's two pursuers) and the copies `EventSpawner.as_warned()` makes of day 13's column
 ## and of the day-3 dog — and asked as a relation: widening a non-pursuer's field and speeding it up
 ## leaves its `minimum_telegraph()` where it was, at `Tuning.OFFSCREEN_WARNING_MIN`. Every one's badge
 ## alone (`EventDef.warned_for()`) is at most `Tuning.WARNING_ALONE_MAX`, and the column's copy cuts
@@ -206,9 +206,9 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
 		if def.warns_before_it_exists():
 			warned.append(def)
 	var convoy := EventCatalogue.by_id("military_convoy")
-	var column := EventManager.as_warned(convoy)
+	var column := EventSpawner.as_warned(convoy)
 	warned.append(column)
-	warned.append(EventManager.as_warned(EventCatalogue.by_id("charging_dog")))
+	warned.append(EventSpawner.as_warned(EventCatalogue.by_id("charging_dog")))
 	var ids: Array[String] = []
 	for def in warned:
 		ids.append(def.id)

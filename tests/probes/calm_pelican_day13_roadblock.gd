@@ -151,6 +151,7 @@ func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	player.add_child(camera)
 	t.add_child(player)
+	city.events.use_player(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()
 	return player

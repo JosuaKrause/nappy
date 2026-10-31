@@ -288,7 +288,7 @@ func _test_halo_and_removal(t) -> void:
 		source.age = 3.0
 		manager.add_child(source)
 		source.set_process(false)
-		manager._instances.append(source)
+		manager.world.instances.append(source)
 		source.accumulate_landed(20.0)
 		sources.append(source)
 		var halo := ExcitementHalo.new()
@@ -316,7 +316,7 @@ func _test_halo_and_removal(t) -> void:
 			for i in managers.size():
 				managers[i].retire(sources[i])
 	for manager: EventManager in managers:
-		manager._instances.clear()
+		manager.world.instances.clear()
 	for halo: ExcitementHalo in halos:
 		halo._process(0.1)
 		halo.free()

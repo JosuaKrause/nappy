@@ -207,9 +207,9 @@ func _test_the_city_hands_each_value_to_its_part(t) -> void:
 	t.check(city._ground.mode == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
 			and city._building_shadows.skip_draw, "the ground, the scenery and the shadows")
 	t.check(city.events.skip_drawing
-			and city.events.pelican_rig == EventManager.PelicanRig.ALWAYS
-			and city.events._director._force_id == "cyclist"
-			and is_equal_approx(city.events._director._force_interval, 2.0),
+			and city.events.pelican_rig == EventSpawner.PelicanRig.ALWAYS
+			and city.events.ahead._director._force_id == "cyclist"
+			and is_equal_approx(city.events.ahead._director._force_interval, 2.0),
 			"the events")
 	t.check(city.crowd.skip_motion and city.crowd.skip_agent_drawing and city.blackout.forced,
 			"the crowd and the blackout")

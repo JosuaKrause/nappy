@@ -753,7 +753,7 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 			"and the band at (73,50), with her at (70,50), sent its far guard off")
 
 ## **And nothing over her head says otherwise.** A posted band's guard has not noticed her yet, so
-## inside its outer radius it raises the `SOON` mark (`EventManager._warn_about_the_ground_she_is_on()`),
+## inside its outer radius it raises the `SOON` mark (`WarningBoard.warn_about_the_ground_she_is_on()`),
 ## as every `hard_fail` row waiting for her does. A band whose guard has left for good waits for
 ## nobody: he never notices her or charges again, so it raises nothing, or the walk past a band
 ## that costs nothing would be made under a warning of a catch that cannot come.
@@ -771,15 +771,15 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t) -> void:
 	var band := EventInstance.new()
 	band.setup(EventCatalogue.escape_roadblock(), Vector2(1000.0, 1000.0))
 	manager.add_child(band)
-	manager._instances.append(band)
+	manager.world.instances.append(band)
 	her.global_position = band.global_position + Vector2(0.0, band.def.outer_radius - 20.0)
-	manager._find_player()
-	manager._warn_about_the_ground_she_is_on()
+	manager.use_player(her)
+	manager.warnings.warn_about_the_ground_she_is_on()
 	t.check(her.alert_level() == Stroller.Alert.SOON,
 			"a posted band's guard waiting for her raises the mark inside its outer radius")
 	band.barrier_post.come_back_as_the_barrier(1)
 	her._physics_process(1.0)
-	manager._warn_about_the_ground_she_is_on()
+	manager.warnings.warn_about_the_ground_she_is_on()
 	t.check(her.alert_level() == Stroller.Alert.NONE,
 			"a band whose guard has left for good raises nothing over her head")
 	her.remove_from_group("player")
@@ -1374,7 +1374,7 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 ## wider: the ground she is put down on is free of every **lethal reach**, not only of every body.
 ##
 ## **The mark means one thing and one condition raises it.**
-## `EventManager._warn_about_the_ground_she_is_on()` puts `Stroller.Alert.SOON` over her head for
+## `WarningBoard.warn_about_the_ground_she_is_on()` puts `Stroller.Alert.SOON` over her head for
 ## any `hard_fail` row that is still telegraphing, or still waiting to notice her, whose **outer**
 ## radius covers her — because that radius is exactly what the telegraph fairness contract promises
 ## her time to walk out of. On the first frame of section two every placement the finale made is in
@@ -1594,7 +1594,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 		live.step(0.05)
 		steps += 1
 	t.check(live.is_finished, "the burst is over after %.1fs" % (steps * 0.05))
-	# `_retire_finished()` runs inside `_physics_process`, which a synchronous test has to call
+	# `EventStreaming.retire_finished()` runs inside `_physics_process`, which a synchronous test has to call
 	# itself: no frame passes while `run()` is executing.
 	city.events._physics_process(0.0)
 	var craters := 0
@@ -1740,7 +1740,7 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 					main._player.global_position + Vector2(0.0, -400.0)]))
 	main._city.add_child(guard)
 	guard.set_process(false)
-	main._city.events._instances.append(guard)
+	main._city.events.world.instances.append(guard)
 	guard._charge.begin()
 	main._player.global_position = main._flow.spec.exits[CityEdge.Kind.TUNNEL]
 	main._day._process(0.0)

@@ -227,7 +227,7 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 ## **It is sited from her walk, it may be moved while it is nobody's memory yet, and it is fixed the
 ## moment it is real.**
 ##
-## The third of those is the one with teeth. `EventManager._stream_in` records the scar and moves the
+## The third of those is the one with teeth. `EventStreaming.stream_in` records the scar and moves the
 ## block along its arc the first time a plan enters the world, so the city already remembers this
 ## fire burning *there* — and a rule that moved it afterwards would be repairing a fact rather than
 ## checking one before accepting it. `Planned.was_live` is where the line is drawn, and it is drawn
@@ -485,9 +485,9 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 
 		var path := due[1] as PackedVector2Array
 		# A row that comes down her line is created just out of sight down it, its telegraph spent —
-		# after its warning when it telegraphs (she walks on through the badge: `EventManager`'s
-		# `_warn_down_her_line()` and `spawn_warned()`), at once when it does not
-		# (`_send_down_her_line()`, the loose dog).
+		# after its warning when it telegraphs (she walks on through the badge: `EventsAhead`'s
+		# `_warn_down_her_line()` and `EventSpawner.spawn_warned()`), at once when it does not
+		# (`EventsAhead._send_down_her_line()`, the loose dog).
 		if def.comes_down_her_line():
 			var direction := (path[0] - path[1]).normalized()
 			if def.warns_before_it_exists():
@@ -498,7 +498,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
 		if def.comes_down_her_line():
-			instance.resume(EventManager.age_when_warned(def), 0.0)
+			instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		t.add_child(instance)
 		instance.set_process(false)
 

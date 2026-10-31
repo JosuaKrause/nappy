@@ -136,7 +136,8 @@ src/
 	warning.gd            the one warning clock: started, held, called off or run out, read against
 	                      its owner's clock — an event's notice, a door crossing, a badge up alone
 	checkpoint_controller.gd  the district doors as she meets them: a hold and its release, a walk
-	                      under a raised boom, the crossing's warning and the guard it sets on her
+	                      under a raised boom, the crossing's warning and the guard it sets on her;
+	                      what a door does to her it says as an intent the manager carries out
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + the day's spec: the catalogue's
 	                      day, or the escape city's streets from its marble bag
@@ -144,10 +145,21 @@ src/
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
-	event_manager.gd      owns the live instances and one reference on the `events` atlas page;
-	                       steps them once a physics tick in a fixed order (tells them where she
-	                       is, steps them, then the catches and hard fails); answers
-	                       total_excitement_at
+	event_manager.gd      a day's events as the rest of the game sees them: handed the world, the
+	                       run, the player and the spec; holds one reference on the `events`
+	                       atlas page; steps the live instances once a physics tick in a fixed
+	                       order (tells them where she is, steps them, then the catches and hard
+	                       fails); answers total_excitement_at; hands its work to the parts below,
+	                       all working over one `EventWorld` (event_world.gd)
+	event_streaming.gd    the day's plan and the live instance each plan streams in as, carrying
+	                       its state out and back; the repeats, the masts, a finished plan spent
+	event_spawner.gd      every instance made, with its scar, its body and the bang outside;
+	                       what a finished row leaves; the rows summoned on sight; the pelican bag
+	warning_board.gd      the screen-edge badges up for something not in the world yet, and the
+	                       mark over her head
+	events_ahead.gd       what the director puts in front of her while she walks: sited on her
+	                       way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
+	                       a task's mast or row placed after dawn, the fire lit at dusk
 	event_director.gd     sites what the day budgeted and did not place, from her own walk:
 	                       the moments that cross her line, and day 3's fire
 	pending_warning.gd    a screen-edge warning up before its thing exists, for at most a
@@ -704,10 +716,10 @@ the meter code, and the meters can be unit-tested against a fake world.
 `Baby` does not know about event types. Each frame it asks the world for total stimulus:
 
 ```gdscript
-# EventManager keeps a list of active EventInstances in _instances
+# EventManager's live instances, shared through its EventWorld
 func excitement_sources_at(world_position: Vector2) -> Array:
 	var sources: Array = []
-	for instance in _instances:
+	for instance in world.instances:
 		var contribution := instance.contribution_at(world_position)
 		if contribution > 0.0:
 			sources.append([instance, contribution])

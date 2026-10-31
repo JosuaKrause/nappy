@@ -135,7 +135,7 @@ func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2
 	instance.setup(def, busker_at)
 	t.add_child(instance)
 	instance.set_process(false)
-	city.events._instances.append(instance)
+	city.events.world.instances.append(instance)
 
 	var step := 1.0 / 60.0
 	var warm_up := int(ceil((def.telegraph_time + 0.1) / step))
@@ -147,6 +147,7 @@ func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2
 	camera.name = "Camera2D"
 	stroller.add_child(camera)
 	t.add_child(stroller)
+	city.events.use_player(stroller)
 	stroller.set_physics_process(false)
 	stroller.global_position = standing_at
 	stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
@@ -167,7 +168,7 @@ func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2
 			result = elapsed
 			break
 
-	city.events._instances.erase(instance)
+	city.events.world.instances.erase(instance)
 	stroller.free()
 	instance.free()
 	return result
@@ -328,6 +329,7 @@ func _playground_settles(t) -> void:
 			camera.name = "Camera2D"
 			stroller.add_child(camera)
 			t.add_child(stroller)
+			city.events.use_player(stroller)
 			stroller.set_physics_process(false)
 			stroller.global_position = at
 			stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)

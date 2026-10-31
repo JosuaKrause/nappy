@@ -133,7 +133,7 @@ static func _seconds(value: float) -> String:
 ## with the camera on her.
 static func gold_encounters() -> Array[Dictionary]:
 	var list: Array[Dictionary] = []
-	var dog := EventManager.as_warned(EventCatalogue.by_id("charging_dog"))
+	var dog := EventSpawner.as_warned(EventCatalogue.by_id("charging_dog"))
 	for heading: Vector2 in [Vector2.UP, Vector2.RIGHT]:
 		list.append({"def": dog, "how": "day 3, %s" % _axis(heading), "heading": heading})
 	for id: String in ["robber_giving_chase", "van_guard_giving_chase"]:
@@ -165,7 +165,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 		# Created as `EventManager.spawn_warned()` creates it: one that arrives chasing (the
 		# resistance's sent robber and guard) with its telegraph spent.
 		if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
-			created.resume(EventManager.age_when_warned(def), 0.0)
+			created.resume(EventSpawner.age_when_warned(def), 0.0)
 		made.append(created)
 		return true
 	var warning := PendingWarning.new(def, where, arrive)
@@ -262,7 +262,7 @@ static func encounters() -> Array[Dictionary]:
 			"path": PackedVector2Array([streamed_from, streamed_from + Vector2(0.0, 4000.0)]),
 			"her": Vector2(Tuning.TILE_SIZE * 1.5, 0.0), "heading": up, "warm": 0.0})
 
-	# `loose_dog` does not telegraph: sent down her line unannounced (`EventManager.
+	# `loose_dog` does not telegraph: sent down her line unannounced (`EventsAhead.
 	# _send_down_her_line()`), created at once just out of sight, its telegraph spent.
 	var loose := EventCatalogue.by_id("loose_dog")
 	for heading: Vector2 in [up, right]:
@@ -270,9 +270,9 @@ static func encounters() -> Array[Dictionary]:
 		list.append({"def": loose, "how": "unannounced, down her line, %s" % _axis(heading),
 				"path": PendingWarning.route_down_her_line(null, place, Vector2.ZERO, heading),
 				"her": Vector2.ZERO, "heading": heading, "warm": 0.0,
-				"age": EventManager.age_when_warned(loose)})
+				"age": EventSpawner.age_when_warned(loose)})
 
-	# Warned of before it exists. `cyclist`: `EventManager._warn_down_her_line()`, the place just
+	# Warned of before it exists. `cyclist`: `EventsAhead._warn_down_her_line()`, the place just
 	# out of sight down her line, created on a route back down it past her.
 	for id: String in ["cyclist"]:
 		var def := EventCatalogue.by_id(id)
@@ -298,9 +298,9 @@ static func encounters() -> Array[Dictionary]:
 	# Day 13's column: warned in its lane of the main road, level with her; the front truck, driving
 	# south at her as she walks north beside the lane.
 	var lane_x := -Tuning.TILE_SIZE * 1.5
-	# The copy of the row the column is made of (`EventManager.as_warned()`), held to the minimum a
+	# The copy of the row the column is made of (`EventSpawner.as_warned()`), held to the minimum a
 	# warning first owes.
-	var column := EventManager.as_warned(convoy)
+	var column := EventSpawner.as_warned(convoy)
 	var lane_where := func(her: Vector2) -> Vector2:
 		return PendingWarning.in_its_lane(column, her, lane_x, 1.0, -1.0e6, 1.0e6)
 	var lane_route := func(place: Vector2, _her: Vector2) -> PackedVector2Array:
@@ -314,10 +314,10 @@ static func encounters() -> Array[Dictionary]:
 			"heading": up, "warm": 0.0})
 
 	# `charging_dog`: day 3's own, sent by the director down her heading and warned first
-	# (`EventManager._warn_down_her_heading()`), created just out of sight with its approach still to
+	# (`EventsAhead._warn_down_her_heading()`), created just out of sight with its approach still to
 	# run; and every later day's, a `MAP` row waiting for her (`EventScheduler._for_day()`).
 	var dog := EventCatalogue.by_id("charging_dog")
-	var sent_dog := EventManager.as_warned(dog)
+	var sent_dog := EventSpawner.as_warned(dog)
 	for heading: Vector2 in [up, right]:
 		var dog_where := func(her: Vector2) -> Vector2:
 			return PendingWarning.along_her_heading(null, sent_dog, her, heading)
@@ -458,7 +458,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 		instance.setup(def, path[0], path)
 		instance.came_under_a_warning = true
 		if def.pursuit == null:
-			instance.resume(EventManager.age_when_warned(def), 0.0)
+			instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		created.append(instance)
 		return true
 	var warning := PendingWarning.new(def, encounter["where"], arrive)

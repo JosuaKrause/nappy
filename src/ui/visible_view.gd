@@ -9,7 +9,7 @@ extends RefCounted
 ##
 ## **The one answer to "can she see it"**, for everything that asks: the screen-edge badge, which is
 ## up for a thing until she can see it (`DangerEdge`); the fire's
-## sighting, which summons the engine (`EventManager._summon_what_has_been_sighted()`); a chalk mark
+## sighting, which summons the engine (`EventSpawner.summon_what_has_been_sighted()`); a chalk mark
 ## counting as noticed, the one "has she seen this" of the resistance's (`ResistanceDirector`, handed
 ## `sees()` by `main`); the poster crews' pasting (`PosterWalls._work_the_crews()`); and the
 ## page's counter (`EncounterWatch`, the pelican's `pelican-seen`). **What is drawn and loaded is not

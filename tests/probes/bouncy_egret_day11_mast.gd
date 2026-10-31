@@ -48,7 +48,7 @@ func run(t) -> void:
 				if plan.mast_id != "":
 					at_the_mark[plan.mast_id] = true
 			result[0] = suite._walk_until_the_route_mast(at_the_mark, player)
-			var siting: EventScheduler.WalkSiting = suite._city.events._siting
+			var siting: EventScheduler.WalkSiting = suite._city.events.ahead._siting
 			var waits: Dictionary = siting.waits if siting else {}
 			print("  seed %10d  %-6s  tree tiles %s  passing %s" % [seed_value,
 					"PUT" if result[0] != "" else "never", where[0], where[1]])
@@ -70,8 +70,8 @@ func run(t) -> void:
 ## the routed mast's ground on the day's route tree. See the file's own doc.
 static func _where_a_mast_may_stand(city: City) -> Array:
 	var events: EventManager = city.events
-	var siting: EventScheduler.WalkSiting = events._siting
-	var def: EventDef = events._director.route_row(EventCatalogue.mast().id)
+	var siting: EventScheduler.WalkSiting = events.ahead._siting
+	var def: EventDef = events.ahead._director.route_row(EventCatalogue.mast().id)
 	var map: CityMap = city.map
 	var plans: Array[EventScheduler.Planned] = events.plans()
 	var none: Array[EventScheduler.Planned] = []

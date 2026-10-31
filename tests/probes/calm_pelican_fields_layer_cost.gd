@@ -43,6 +43,7 @@ func run(t) -> void:
 		var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 		var stroller: Stroller = scene.instantiate()
 		t.add_child(stroller)
+		city.events.use_player(stroller)
 		stroller.set_physics_process(false)
 		var layers := DebugLayers.new()
 		layers.setup(city.events, city.crowd, city, stroller)

@@ -8,8 +8,8 @@
   keyed on the two points in `EventInstance` and on the two points and `_map` in `CrowdAgent`, a
   pelican hook in one).
 - **Placement has about 25 entry points in four classes**, with self-declared copies:
-  `EventManager._where_the_sent_pursuer_starts` copies `ResistanceDirector._draw_arrival_position`
-  without its in-view check; `EventManager._a_clear_run_at` equals `ResistanceDirector._a_clear_run`
+  `EventsAhead._where_the_sent_pursuer_starts` copies `ResistanceDirector._draw_arrival_position`
+  without its in-view check; `EventsAhead._a_clear_run_at` equals `ResistanceDirector._a_clear_run`
   plus `_runs_through_the_boundary`; `send_a_pursuer` and `_send_at_her` repeat the same closures;
   `_his_walk_reaches_her` simulates a straight chase only because chasers do not path.
 - **Movers do not see each other:** event figures pass through walkers and cars and back.

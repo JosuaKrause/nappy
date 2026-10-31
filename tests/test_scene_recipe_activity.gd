@@ -29,12 +29,12 @@ func _ready() -> void:
 	expected += runtime.data.setup.get("seals", []).size() * 2
 	expected += runtime.data.setup.get("gates", []).size() * 3
 	expected += runtime.data.setup.get("barriers", []).size() * 3
-	if city.events._plans.size() != expected:
+	if city.events.streaming._plans.size() != expected:
 		fail("an unselected event, seal or region body is installed")
 		return
 	for entry: Dictionary in runtime.data.setup.get("events", []):
 		var matched := false
-		for plan in city.events._plans:
+		for plan in city.events.streaming._plans:
 			if plan.get_meta("recipe_name", "") == entry.name:
 				var errors: Array[String] = []
 				matched = plan.position.is_equal_approx(runtime.position_of(entry.at, errors))
@@ -50,12 +50,12 @@ func _ready() -> void:
 			fail("authored fixtures did not reach the real production building")
 			return
 	if runtime.data.setup.has("seals"):
-		for plan in city.events._plans:
+		for plan in city.events.streaming._plans:
 			if plan.def.id == "cafe_tables" and not is_equal_approx(plan.position.x, 2576):
 				fail("restaurant guests did not move exactly one block east")
 				return
 	if runtime.data.setup.has("barriers"):
-		for plan in city.events._plans:
+		for plan in city.events.streaming._plans:
 			if plan.def.id == "roadblock" and (not is_equal_approx(plan.position.x, 1552)
 					or plan.position.y < 2240 or plan.position.y > 2432):
 				fail("truck barrier is not a vertical band across the left street")

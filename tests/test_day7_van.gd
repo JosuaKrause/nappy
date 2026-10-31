@@ -57,7 +57,7 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var mark := resistance.current_step()
 	t.check(mark != null and mark.is_pickup and mark.day == DAY,
 			"seed %d: day %d opens on its mark" % [seed_value, DAY])
-	var bag := city.events._director.route_bag()
+	var bag := city.events.ahead._director.route_bag()
 	if mark:
 		resistance._on_contact_completed(mark.index)
 	var task_van: EventInstance = resistance._rider
@@ -77,7 +77,8 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	player.add_child(camera)
 	t.add_child(player)
 	player.set_physics_process(false)
-	t.check(path.size() >= 2 and city.events._find_player(), "a route to walk and her on it")
+	city.events.use_player(player)
+	t.check(path.size() >= 2 and city.events.world.has_player(), "a route to walk and her on it")
 	var placed: Array[EventScheduler.Planned] = []
 	var drawn_within := false
 	var her_at_siting := Vector2.INF
@@ -107,15 +108,15 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 			var plans_before := city.events.plans().size()
 			var obstructed_before := city.map.obstructed_tiles.duplicate()
 			# In the order the manager's own tick runs them: what her walk sites, then what is owed.
-			city.events._site_what_is_on_her_way(STEP)
-			city.events._place_what_is_owed_ahead(STEP)
+			city.events.ahead.site_what_is_on_her_way(STEP)
+			city.events.ahead.place_what_is_owed_ahead(STEP)
 			city.events.stream_around(player.global_position)
 			if city.events.owed_ahead() < owed_before and handed < size:
 				handed += 1
 				if handed == size:
-					drawn_within = _a_place_from_her_route(city.events._director) != null
+					drawn_within = _a_place_from_her_route(city.events.ahead._director) != null
 			for plan: EventScheduler.Planned in city.events.plans().slice(plans_before):
-				if plan.def.id == ROW and city.events._director.is_from_her_route(plan):
+				if plan.def.id == ROW and city.events.ahead._director.is_from_her_route(plan):
 					placed.append(plan)
 					her_at_siting = player.global_position
 					where_sited = plan.position
@@ -198,7 +199,7 @@ func _test_the_van_is_sited_wholly_out_of_the_camera_view(t) -> void:
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	city.events.start_day(DAY, _rng(seed_value, "events"), consumed)
-	var siting: EventScheduler.WalkSiting = city.events._siting
+	var siting: EventScheduler.WalkSiting = city.events.ahead._siting
 	var def := EventCatalogue.by_id(ROW)
 	var box := EventInstance.footprint_of(def)
 	var path := _the_longest_route(city)

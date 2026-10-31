@@ -5,7 +5,7 @@ extends RefCounted
 ## by hand -- nothing here needs a real `City` -- and its trigger
 ## (`CheckpointController.check_detentions()`) and its per-frame handoff
 ## (`_tell_them_where_she_is()`) are driven directly, the same shape `test_danger.gd` drives
-## `_warn_about_the_ground_she_is_on()` in.
+## `WarningBoard.warn_about_the_ground_she_is_on()` in.
 ##
 ## Plus the van: `abduction` draws its own scripted victim rather than touching a real `CrowdAgent`
 ## (docs/TODO.md, M56) -- drawing and telemetry only, so a data-level rig can drive the whole scene
@@ -46,7 +46,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 # by hand — nothing here needs a real `City` — and its trigger
 # (`CheckpointController.check_detentions()`) and its per-frame handoff
 # (`_tell_them_where_she_is()`) are driven directly, the same shape `test_danger.gd` drives
-# `_warn_about_the_ground_she_is_on()` in: a per-frame method with no signal of its own to
+# `WarningBoard.warn_about_the_ground_she_is_on()` in: a per-frame method with no signal of its own to
 # trigger from outside.
 
 ## A `WorldContext` whose `excitement_sources_at`/`total_excitement_at` read straight off a
@@ -66,7 +66,7 @@ class _ChatWorld extends WorldContext:
 ## `TelemetryObserver._blocked_rig()` in `tests/test_telemetry.gd` for the same trick.
 func _chat_manager() -> EventManager:
 	var manager := EventManager.new()
-	manager._map = CityMap.new()
+	manager.world.map = CityMap.new()
 	return manager
 
 ## A bare `Stroller`, in the tree so `_ready()` has run and its `@onready` camera lookup resolves.
@@ -86,9 +86,9 @@ func _test_a_conversation_locks_her_and_releases(t) -> void:
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 	var mother := _instance(t, def, at, path)
 	var manager := _chat_manager()
-	manager._instances.append(mother)
+	manager.world.instances.append(mother)
 	var stroller := _chat_stroller(t)
-	manager._player = stroller
+	manager.use_player(stroller)
 
 	stroller.global_position = at
 	stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
@@ -148,8 +148,8 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		var mother := _instance(t, def, at, path)
 		var manager := _chat_manager()
 		world.manager = manager
-		manager._instances.append(mother)
-		manager._player = stroller
+		manager.world.instances.append(mother)
+		manager.use_player(stroller)
 		stroller.global_position = at
 
 		if not awake:
@@ -202,9 +202,9 @@ func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 
 	var far_lane := _instance(t, def, at, path)
 	var far_manager := _chat_manager()
-	far_manager._instances.append(far_lane)
+	far_manager.world.instances.append(far_lane)
 	var far_stroller := _chat_stroller(t)
-	far_manager._player = far_stroller
+	far_manager.use_player(far_stroller)
 	far_stroller.global_position = at + Vector2(0.0, Tuning.TILE_SIZE)
 	far_manager._tell_them_where_she_is()
 	far_manager.checkpoints.check_detentions()
@@ -216,9 +216,9 @@ func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 
 	var mother := _instance(t, def, at, path)
 	var manager := _chat_manager()
-	manager._instances.append(mother)
+	manager.world.instances.append(mother)
 	var stroller := _chat_stroller(t)
-	manager._player = stroller
+	manager.use_player(stroller)
 
 	# Just outside the capture and well inside inner_radius: the ambient field still reaches her
 	# and only the conversation must not.
@@ -242,9 +242,9 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 	var mother := _instance(t, def, at, path)
 	var manager := _chat_manager()
-	manager._instances.append(mother)
+	manager.world.instances.append(mother)
 	var stroller := _chat_stroller(t)
-	manager._player = stroller
+	manager.use_player(stroller)
 	stroller.global_position = at
 
 	manager._tell_them_where_she_is()
@@ -267,7 +267,7 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 
 ## **No second conversation across streaming**: a conversation ends with her leaving
 ## (`EventInstance._be_done()`), and a plan streamed out while its instance is leaving is spent
-## (`EventManager._stream_out()`), so walking away past the stream radius and back brings no second
+## (`EventStreaming.stream_out()`), so walking away past the stream radius and back brings no second
 ## mother to stop her. Driven through the manager's own streaming on a plan, the way a day
 ## puts her in the world.
 func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
@@ -277,12 +277,12 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var manager := _chat_manager()
-	manager._map.world = world
+	manager.world.map.world = world
 	t.add_child(manager)
 	var plan := EventScheduler.Planned.new(def, at, path)
-	manager._plans = [plan] as Array[EventScheduler.Planned]
+	manager.streaming._plans = [plan] as Array[EventScheduler.Planned]
 	var stroller := _chat_stroller(t)
-	manager._player = stroller
+	manager.use_player(stroller)
 	stroller.global_position = at
 	manager.stream_around(at)
 	var mother := plan.live

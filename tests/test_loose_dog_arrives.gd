@@ -2,7 +2,7 @@ extends RefCounted
 ## **A loose dog sent from behind her arrives and runs past, or is retired out of sight.**
 ## *(sunny-hedgehog, 2026-09-27: "a loose dog that spawns behind me never arrives it stays offscreen
 ## indefinitely".)* The director sends the dog ahead of her; she may then turn round, or run. Run on
-## a real city through `EventManager._send_down_her_line()`, the dog sent from behind her while she
+## a real city through `EventsAhead._send_down_her_line()`, the dog sent from behind her while she
 ## stands, while she walks away at `Tuning.WALK_SPEED` (it closes on her at 40px/s) and while she
 ## runs away at `Tuning.RUN_SPEED` (it cannot). The first two must reach her and be gone; the third,
 ## sent from the furthest the director sites it, must be retired once it is out of sight and not
@@ -33,6 +33,7 @@ func run(t) -> void:
 	_rig.add_child(camera)
 	t.add_child(_rig)
 	_rig.set_physics_process(false)
+	_city.events.use_player(_rig)
 	for speed: float in [0.0, Tuning.WALK_SPEED]:
 		var dog := _send_from_behind(false)
 		var seen := _run(dog, speed, 25.0)
@@ -62,10 +63,10 @@ func _send_from_behind(far: bool) -> EventInstance:
 	if far:
 		var place := her + Vector2.DOWN * 700.0
 		var path := PendingWarning.route_down_her_line(null, place, her, Vector2.DOWN)
-		var made := _city.events._spawn_unplanned(def, path[0], path)
-		made.resume(EventManager.age_when_warned(def), 0.0)
+		var made := _city.events.spawner.spawn(def, path[0], path)
+		made.resume(EventSpawner.age_when_warned(def), 0.0)
 		return made
-	_city.events._send_down_her_line(def, her, Vector2.DOWN)
+	_city.events.ahead._send_down_her_line(def, her, Vector2.DOWN)
 	for instance in _city.events.instances():
 		if instance.def.id == "loose_dog" and not before.has(instance):
 			return instance
