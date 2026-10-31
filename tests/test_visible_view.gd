@@ -53,9 +53,9 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> v
 				bike.global_position = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
 				t.check(not edge._shows(bike), "both covered corners remain unseen on either side")
 				var way := (bike.global_position - player.global_position).normalized()
-				var at := PendingWarning.just_out_of_sight(
-						PendingWarning.seen_from(source.view, player.global_position),
-						row, player.global_position, way)
+				var at := SpawnSiting.just_out_of_sight(
+						SpawnSiting.seen_from(source.view, player.global_position),
+						EventFootprints.footprint_of(row), player.global_position, way)
 				var box := EventFootprints.footprint_of(row)
 				t.check(not source.view.view.intersects(Rect2(at + box.position, box.size)),
 						"the same covered bearing places the whole arrival outside the camera")

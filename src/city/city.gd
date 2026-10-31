@@ -97,6 +97,10 @@ var map: CityMap
 ## How everything that moves over `map` moves (`Navigator`), built once with the map and handed to
 ## the event manager, the crowd and whatever else this city's world puts in motion — never fetched.
 var navigator: Navigator
+## Where something sent at her may start (`SpawnSiting`): built once with the map, against the
+## navigator, the events' view of her (`EventManager.visible_view()`) and the day's region
+## (`siting_region()`), and handed to the events and the resistance — never fetched.
+var spawn_siting: SpawnSiting
 ## Where the city, its posters, its events and the day's closures write their own account for the
 ## run log — set before `build()`, which hands it on; silent until then.
 var trace := RunTrace.new()
@@ -290,7 +294,8 @@ func build(city_map: CityMap) -> void:
 	if all_cyclists_pelicans:
 		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
 	add_child(events)
-	events.setup(self, map, navigator)
+	spawn_siting = SpawnSiting.new(map, navigator, events.visible_view, siting_region)
+	events.setup(self, map, navigator, spawn_siting)
 	events.force(forced_row, forced_interval)
 	crowd = Crowd.new()
 	crowd.name = "Crowd"
@@ -1129,6 +1134,19 @@ func route_tree() -> RouteTree:
 ## meaningful after `start_day` — the same contract as `route_tree()`.
 func region_plan() -> RegionPlanner.RegionPlan:
 	return _region_plan
+
+## Today's region as a siting reads it (`SpawnSiting.Region`): the crossing alleys the wall closes,
+## and each body of the wall and of the district doors as a disc, its centre and its
+## `obstructs_radius`; null before `start_day` has grown a region plan.
+func siting_region() -> SpawnSiting.Region:
+	if not _region_plan:
+		return null
+	var region := SpawnSiting.Region.new()
+	region.walled_alleys = _region_plan.alley_walls
+	for body: EventScheduler.Planned in _region_plan.wall_bodies + _region_plan.door_bodies:
+		region.centres.append(body.position)
+		region.radii.append(body.def.obstructs_radius)
+	return region
 
 # ------------------------------------------------------- the day's shape in words ---
 # For whoever reports it: the run log's `plan` lines and the console's day line read the same

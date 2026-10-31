@@ -1,8 +1,8 @@
 class_name M137TrapArrival
 extends RefCounted
 ## Measurement probe for how often the trap's start falls back to the along-her-street
-## `beside_distance()` draw — a street that runs sideways, with no crossing street near enough for
-## a clear run above or below — rather than the preferred above-or-below draw
+## `SpawnSiting.beside_distance()` draw — a street that runs sideways, with no crossing street near
+## enough for a clear run above or below — rather than the preferred above-or-below draw
 ## (`ResistanceDirector._draw_arrival_position()`'s own doc and `docs/EVENTS.md`'s rows for
 ## `robber_giving_chase`/`van_guard_giving_chase`). Not a suite: it prints a rate rather than
 ## asserting one, so it lives under `tests/probes/`, where the runner never discovers it, and runs
@@ -59,10 +59,10 @@ func _measure(t, row_id: String, day: int, mark_step_index: int) -> void:
 		director._on_contact_completed(mark_step_index)
 		var her := director.contact_position()
 		if her != Vector2.INF:
-			var result: Array = director._draw_arrival_position(director._rng, her, def)
-			var at: Vector2 = result[0]
-			var clear: bool = result[1]
-			var is_beside: bool = result[2]
+			var result := director._draw_arrival_position(director._rng, her, def)
+			var at := result.at
+			var clear := result.clear
+			var is_beside := result.beside
 			if at == Vector2.INF:
 				no_legal_start += 1
 			elif is_beside:

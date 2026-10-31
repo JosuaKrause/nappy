@@ -145,8 +145,11 @@ func _notification(what: int) -> void:
 
 ## Hands the manager its city, the map it places on and the navigator its figures move by — the
 ## city's own (`City.navigator`), or the map's own (`WorldMap.navigator()`) for a rig that hands
-## none — and the city's run (`City.run`).
-func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
+## none — the city's run (`City.run`), and where something sent at her may start: the city's
+## (`City.spawn_siting`), or, for a rig that hands none, one over `map` against this manager's own
+## view and the city's region.
+func setup(city: City, map: CityMap, navigator: Navigator = null,
+		spawn_siting: SpawnSiting = null) -> void:
 	world.city = city
 	world.map = map
 	world.city_map = map
@@ -157,7 +160,9 @@ func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 		world.signals = city.signals
 		world.run = city.run
 	world.use_navigator(navigator if navigator else map.navigator())
-	ahead.use_director(map, world.navigator())
+	ahead.use_director(map, world.navigator(), spawn_siting if spawn_siting
+			else SpawnSiting.new(map, world.navigator(), visible_view,
+					city.siting_region if city else Callable()))
 	# **Connected once however often this is called.** `City.build()` calls `setup()` and a rig
 	# that wants its own map calls it again on the same manager, which Godot answers with an
 	# `ERROR: Signal ... is already connected` — an error line in a headless run is a failed
@@ -375,7 +380,7 @@ func sees(world_position: Vector2, margin := 0.0) -> bool:
 
 ## Whether a world point is anywhere in the camera's whole view this frame, the corners the
 ## joystick's controls cover included: `world.visible`'s view with no corners laid on it, the view
-## `PendingWarning.seen_from()` places against. What the resistance asks before it places or
+## `SpawnSiting.seen_from()` places against. What the resistance asks before it places or
 ## removes something (`ResistanceDirector.set_sight()`, wired by `main`), since a thing under a
 ## covered corner is still drawn there *(olive-hedgehog, inbox #598, the player: "off screen is not
 ## the same as visible -- the corners get removed for visible not for off screen")*. `false` until
@@ -625,6 +630,13 @@ func pending_warnings() -> Array[PendingWarning]:
 func warn_first(def: EventDef, her: Vector2, where: Callable,
 		arrive: Callable) -> PendingWarning:
 	return warnings.warn_first(def, her, where, arrive)
+
+## Sends `def` at her from out of her sight, warned first, where `search` says he starts and
+## `arrive` creates him (`WarningBoard.send_from_out_of_sight()`): a task's trap and day 13's task
+## guard, as the resistance sends them.
+func send_from_out_of_sight(def: EventDef, her: Vector2, search: Callable,
+		arrive: Callable) -> PendingWarning:
+	return warnings.send_from_out_of_sight(def, her, search, arrive)
 
 ## Creates `def` on `path` for a row whose warning ran before it existed
 ## (`EventSpawner.spawn_warned()`).

@@ -1271,7 +1271,9 @@ once**, a policeman through day 8 and a guardsman from day 9 (`EventManager.send
 inbox #591: "the pursuer is not a scheduled event. it is instant! policemen get switched to guardman
 on day 9"): the screen-edge badge goes up the moment the marble is drawn, for half a second with
 nothing in the world, and then he is created just off screen already chasing, as a task's robber
-is — no wait for her to turn from the wall or for a street. Walking does not end his chase within
+is and under the robber's rules (`SpawnSiting`) — never anywhere on the camera's view, and never
+with a run at her through the region's wall or a district door, so where no start passes those
+nobody comes — with no wait for her to turn from the wall or for a street. Walking does not end his chase within
 `Tuning.PURSUIT_TIME`'s 30s; running shakes him off; **his catch ends the day**
 ([merry-stork](playtests/2026-10-10-merry-stork.md): "Ends the day (Recommended)"). The tears' bag
 and the day's event bags never cross: a tear draws no event marble and moves no event's turn, and

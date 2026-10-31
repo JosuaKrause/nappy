@@ -126,9 +126,9 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 			_stand(city, player, spot)
 			_lines.clear()
 			director._send_at_her(robber, front_door)
-			printed += _run_out(city, director, player, "%s sweep %s%s" % [label,
-					RunTrace.tile(city.map.world_to_tile(spot)), " front door" if front_door else ""],
-					DRIFT)
+			var where := RunTrace.tile(city.map.world_to_tile(spot))
+			printed += _run_out(city, director, player, "%s sweep %s%s" % [label, where,
+					" front door" if front_door else ""], DRIFT)
 	director.free()
 	player.free()
 	return printed

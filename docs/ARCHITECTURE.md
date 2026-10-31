@@ -244,14 +244,23 @@ src/
 	                      tiles on the record are both built from
 	navigator.gd          the one way anything moves over a map: a swept step that keeps the
 	                      body clear, a walk down points, a way round, a way out, a route cut to
-	                      the ground, a `ChaseWay` to somebody a city away; handed to every mover
-	                      by whoever builds it
+	                      the ground, whether a chase reaches somebody, a `ChaseWay` to somebody a
+	                      city away; handed to every mover by whoever builds it
 	walk_field.gd         the walking-distance sweep over a map's ground, out from the places it is
 	                      begun from, a slice a frame: the red arrow's "closest by walking" and
 	                      the chase way's walk to her
 	chase_way.gd          the way a chaser follows to her round the buildings between them: a sweep
 	                      out from her kept fresh as she moves, read a step at a time; made by
 	                      `Navigator.way_to()`, held by day 13's task guard alone
+	visible_view.gd       what she can see: the camera's view less the corners the joystick's
+	                      controls cover, the one answer to "can she see it", and how far along a
+	                      bearing a drawing is wholly out of it
+	spawn_siting.gd       where something sent at her may start (`SpawnSiting`): the rules a start
+	                      is held to, each by name (legal ground, out of sight, off the camera's
+	                      whole view, clear of the region's wall and doors, a clear run, reaches
+	                      her), the one search out of her sight a caller hands its bearings, the
+	                      start across the street at a front door, and the sight geometry; built by
+	                      the city and handed to the events and the resistance
 	release_latch.gd      "she has just come through this, leave her alone until she has left it":
 	                      the flag a door arms on the way out, cleared by her walking out of its
 	                      own reach. The region doors and the building's doors share it

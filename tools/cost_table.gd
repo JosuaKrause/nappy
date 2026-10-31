@@ -371,7 +371,7 @@ func _header_text() -> String:
 			"telegraphs (the cyclist, `EventManager.spawn_warned()`) and at once when it does not " +
 			"(the loose dog, `EventsAhead._send_down_her_line()`), coming at her at its own intensity. So its pass is " +
 			"simulated from that creation, at the closest it can be made on any heading " +
-			"(`PendingWarning.least_distance()`, the view's half height, so the figure " +
+			"(`SpawnSiting.least_distance()`, the view's half height, so the figure " +
 			"does not depend on which way a walk was going), moving as it moves. Such a row is " +
 			"measured once rather than averaged over 8 pulse phases: it is created at the age that " +
 			"has it reach her, walking into it from where it is created closest, at the loud of " +

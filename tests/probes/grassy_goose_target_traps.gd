@@ -20,9 +20,10 @@ extends RefCounted
 ##   day 9 counts two cases a city.
 ##
 ## From there `ResistanceDirector._draw_arrival_position()` — the same call `_set_the_trap_on_her()`
-## makes, told whether the target is a front door — is asked with the director's own `_rng` and a
-## `_sight` answering the unrotated 640x360 screen round her. Counted per case: a start from across
-## the street, above or below her with a clear run, beside her along her street with one, a legal
+## makes, told whether the target is a front door — is asked with the director's own `_rng` and the
+## day's view looked through about her, the unrotated 640x360 screen round her. Counted per case: a
+## start from across the street, above or below her with a clear run, beside her along her street
+## with one, a legal
 ## start with no clear run at all, and no legal start; and, independently of the director, whether
 ## his straight run at her passes through a district door's line
 ## (`CheckpointController.where_she_crossed()` over each door body).
@@ -34,9 +35,6 @@ extends RefCounted
 ## outlasts him — the trap a player beats without running. Each such case is printed with the
 ## headings that escape and his start relative to her.
 ##
-## Written to run against the code before the front-door start too, for a before-and-after: it
-## passes the front-door flag only when `_draw_arrival_position()` takes one.
-
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS_TO_SWEEP := 30
 const DAYS: Array[int] = [8, 9, 11, 12, 14]
@@ -108,17 +106,16 @@ func run(t) -> void:
 			var front_door := task.target_kind == ResistanceSteps.TargetKind.STATION_DOOR \
 					or task.task_event_id == "burnt_shell"
 			for her: Vector2 in _where_she_stands(city, director, day):
-				var at := _draw(director, her, def, front_door)
-				var result: Array = at[1]
-				var start: Vector2 = result[0]
+				var result := _draw(director, her, def, front_door)
+				var start := result.at
 				if start == Vector2.INF:
 					tally[NO_START] += 1
 					continue
-				if result.size() > 3 and result[3]:
+				if result.across:
 					tally[ACROSS] += 1
-				elif result[2]:
+				elif result.beside:
 					tally[BESIDE] += 1
-				elif result[1]:
+				elif result.clear:
 					tally[ABOVE_BELOW] += 1
 				else:
 					tally[NO_CLEAR_RUN] += 1
@@ -179,18 +176,13 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 			+ Tuning.CHECKPOINT_RELEASE_MARGIN
 	return [hut.position + hut.facing * out, hut.position - hut.facing * out]
 
-## `_draw_arrival_position()` asked with `_sight` set to the screen round `her`; returns
-## `[her, result]`.
-func _draw(director: ResistanceDirector, her: Vector2, def: EventDef, front_door: bool) -> Array:
-	var screen := func(p: Vector2) -> bool:
-		return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
-				and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y
-	director.set_sight(screen, screen)
-	var args: Array = [director._rng, her, def]
-	if director.get_method_argument_count("_draw_arrival_position") >= 4:
-		args.append(front_door)
-	var result: Array = director.callv("_draw_arrival_position", args)
-	return [her, result]
+## `_draw_arrival_position()` asked with the day's view looked through about `her`, the
+## unrotated 640x360 screen round her.
+func _draw(director: ResistanceDirector, her: Vector2, def: EventDef,
+		front_door: bool) -> SpawnSiting.Start:
+	director._city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+			Tuning.VIEW_HALF_EXTENT * 2.0), false)
+	return director._draw_arrival_position(director._rng, her, def, front_door)
 
 ## Whether the straight run from `start` to `her` crosses the line of any of today's district-door
 ## bodies, the question `CheckpointController.watch_the_door_lines()` asks of her own steps.

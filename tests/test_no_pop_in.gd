@@ -81,8 +81,9 @@ func _test_open_ground_over_every_bearing_and_camera(t) -> void:
 		for view in _views(her):
 			for i in BEARINGS:
 				var way := Vector2.RIGHT.rotated(TAU * i / BEARINGS)
-				var places: Array[Vector2] = [PendingWarning.just_out_of_sight(
-						PendingWarning.seen_from(view, her), row, her, way)]
+				var places: Array[Vector2] = [SpawnSiting.just_out_of_sight(
+						SpawnSiting.seen_from(view, her), EventFootprints.footprint_of(row), her,
+						way)]
 				if row.comes_down_her_line():
 					places.append(PendingWarning.down_her_line(null, row, her, way, view))
 				if row.pursuit != null:
@@ -211,8 +212,8 @@ func _test_a_turned_window_shows_nothing_either(t) -> void:
 					* Transform2D(0.0, -view.view.get_center())
 			for i in BEARINGS:
 				var way := Vector2.RIGHT.rotated(TAU * i / BEARINGS)
-				var at := PendingWarning.just_out_of_sight(PendingWarning.seen_from(view, her), row,
-						her, way)
+				var at := SpawnSiting.just_out_of_sight(SpawnSiting.seen_from(view, her),
+						EventFootprints.footprint_of(row), her, way)
 				var instance := _arrival(row, at, her)
 				var rect := instance.look.drawn_rect_now()
 				instance.free()
