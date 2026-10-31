@@ -11,12 +11,12 @@ extends RefCounted
 ## out of view of (the day's `Tuning.OUT_OF_SIGHT` radius answers) and no screen to be off (it is
 ## always drawn).
 ##
-## **Asked, not pushed.** The camera moves inside the frame, at its own place in the tree's
-## process order, and the box an agent redraws against is the one the camera shows when that agent
-## is processed; a value written once a frame at some other point would be a frame behind for the
-## agents on one side of the camera. So the implementation answers at the moment of the ask
-## (`DrawnView` keeps its own once-a-process-frame box): the first agent processed in a frame sees
-## the camera as it stands then.
+## **Asked, not pushed.** The camera moves in the physics step, at its own place in the tree's
+## order, and the box an agent redraws against is the one the camera shows when the crowd's tick
+## reaches that agent; a value written once a frame at some other point could be a tick behind for
+## the agents on one side of the camera. So the implementation answers at the moment of the ask
+## (`DrawnView` keeps its own once-a-process-frame box): the first agent asked in a frame sees the
+## camera as it stands then.
 ## This base answers nothing: no area at all, which `beyond_every_view()` takes for "no camera".
 
 ## The world the current camera shows, grown by `DrawnView.MARGIN`: everything an agent's drawing

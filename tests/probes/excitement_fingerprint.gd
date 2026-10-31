@@ -11,8 +11,9 @@ extends RefCounted
 ##
 ## A walk is a player rig with a real `Baby` and a real `ExcitementHalo`, walked down from where the
 ## walk starts and then at the nearest live event she has not reached yet, through walls and all.
-## One tick is the crowd's physics tick, the events' (every live event's step inside it), the
-## baby's, then one drawn frame: every agent's and every event's own `_process()` and the halo's.
+## One tick is the crowd's physics tick (every agent's step inside it), the events' (every live
+## event's step inside it), the baby's, then one drawn frame: every event's own `_process()` and the
+## halo's.
 ## After it, every source with anything to say prints its contribution at her, its projected gross
 ## and net, whether its course is lethal, what it has landed in the window, its caret's strength and
 ## whether it holds a rim, each value as the hex of its 64-bit float so a difference in the last bit
@@ -148,9 +149,6 @@ func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Cr
 			crowd._physics_process(STEP)
 		events._physics_process(STEP)
 		baby._physics_process(STEP)
-		if crowd:
-			for agent in crowd.agents():
-				agent._process(STEP)
 		for instance in events.instances():
 			instance._process(STEP)
 		var began := Time.get_ticks_usec()

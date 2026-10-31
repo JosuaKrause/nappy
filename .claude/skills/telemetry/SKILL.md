@@ -67,8 +67,8 @@ func _physics_process(delta: float) -> void:
 		_tick_the_crowd(delta)
 ```
 
-A thing timed **once per body per frame** (a crowd agent, a live event) copies the switch when it
-is made (a crowd agent when `Crowd` hands it its `CrowdTiming`), so off it pays one member read: a
+A thing timed **once per body per frame** (a live event) copies the switch when it is made, so off
+it pays one member read: a
 static read and a second call on each of a couple of hundred bodies made every player's frame
 measurably longer on a desktop (docs/evidence/m159-frame-record-2026-10-04/). It is made per day,
 after the recorder has started. A live event times its drawn frame, its look's redraw gate, with
@@ -88,27 +88,9 @@ func _process(_delta: float) -> void:
 
 A step that re-ran itself could not take back what the inner run emitted, which is why a car's
 frame is proposed and committed by its driving (`EventCarDriving`) rather than by a second run. A
-crowd agent's mover (`LaneMover`) keeps its body where it is and calls itself, through the sink it
-is handed, which sets `_timed` when it is assigned and is never timed without one:
-
-```gdscript
-var frame_timing: CrowdTiming = null:
-	set(value):
-		frame_timing = value
-		_timed = value != null and value.running()
-var _timed := false
-var _timing := false
-
-func _process(delta: float) -> void:
-	if _timed and not _timing and frame_timing.running():
-		var outer := frame_timing.enter()
-		_timing = true
-		_process(delta)
-		_timing = false
-		frame_timing.leave(outer)
-		return
-	# the body, unchanged
-```
+crowd agent is not timed on its own: it steps inside the crowd's physics tick
+(`Crowd._step_the_agents()`), which is timed once, and keeps its `CrowdTiming` only to count its
+draws.
 
 The **scenery queue** (`SceneryResidency.update()`) is the third shape, and it is the scenery
 queue's alone. It reads `FrameRecord.on` once into a local and, under the record, also times what

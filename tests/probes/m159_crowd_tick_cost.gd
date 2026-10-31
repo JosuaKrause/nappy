@@ -8,9 +8,9 @@ extends RefCounted
 ## plan), starts the day's crowd from a fixed RNG seed with the day's gates, and walks a player
 ## rig down from the doorstep and then along one of two walks (`WALKS`): back and forth along the
 ## street (`_player_heading()`), which never reaches a walker, or at the nearest walker
-## (`_heading_at_the_nearest_walker()`). One agent frame (`CrowdAgent._process()`) and one crowd
-## tick run per simulated thirtieth of a second. The first
-## `WARMUP` ticks are not timed; the next `WINDOW` are.
+## (`_heading_at_the_nearest_walker()`). One crowd tick, every agent's step inside it
+## (`Crowd._step_the_agents()`), runs per simulated thirtieth of a second. The first `WARMUP` ticks
+## are not timed; the next `WINDOW` are.
 ##
 ## **Two modes over the same simulation.** `whole` calls the real `Crowd._physics_process()` and
 ## times it as one span. `split` makes the same calls the tick makes, in the same order, timing each
@@ -38,9 +38,8 @@ const CHASE_FROM := 90
 const REPETITIONS := 3
 const WARMUP := 150
 const WINDOW := 600
-## The split's columns, in the order the tick runs them: the agents' own frame first (the per-frame
-## work, timed for scale and not part of the tick), then `_advance_the_world()`'s calls and
-## `space_out_the_traffic()`'s inside it, then the player half.
+## The split's columns, in the order the tick runs them: the agents' steps first, then
+## `_advance_the_world()`'s calls and `space_out_the_traffic()`'s inside it, then the player half.
 const PARTS: Array[String] = ["agents", "signals", "pockets", "resolve", "keep_room", "index",
 		"claims", "give_way", "gates", "doors", "player"]
 
@@ -106,12 +105,8 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		var row: Array[int] = []
 		if mode == "whole":
 			var began := Time.get_ticks_usec()
-			for agent in crowd.agents():
-				agent._process(STEP)
-			var moved := Time.get_ticks_usec()
 			crowd._physics_process(STEP)
-			var ended := Time.get_ticks_usec()
-			row = [moved - began, ended - moved]
+			row = [Time.get_ticks_usec() - began]
 		else:
 			row = _split_tick(crowd)
 		chain = _chain(chain, crowd)
@@ -125,21 +120,21 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 			rows.append(row)
 		if (tick + 1) % 150 == 0:
 			marks.append(chain.hex_encode())
-	return {"schema_version": 2, "seed": city_seed, "day": day, "mode": mode,
+	return {"schema_version": 3, "seed": city_seed, "day": day, "mode": mode,
 		"walk": walk, "walker_contact_ticks": contact_ticks, "walker_door_ticks": held_ticks,
 		"agents": crowd.agent_count(), "huts": crowd._door_holds.size(), "gates": crowd._gates.size(), "step_seconds": STEP, "warmup_ticks": WARMUP,
-		"window_ticks": WINDOW, "columns": ["agents", "tick"] if mode == "whole" else PARTS,
+		"window_ticks": WINDOW, "columns": ["tick"] if mode == "whole" else PARTS,
 		"rows": rows, "chain": chain.hex_encode(), "chain_every_150_ticks": marks,
 		"engine": Engine.get_version_info().string, "os": OS.get_name(),
 		"processor": OS.get_processor_name()}
 
-## The tick, call by call, in `Crowd._tick_the_crowd()`'s own order: `_advance_the_world()` (with
-## `space_out_the_traffic()` opened up inside it) and then `_meet_the_player()`. Returns each call's
+## The tick, call by call, in `Crowd._tick_the_crowd()`'s own order: `_step_the_agents()`,
+## `_advance_the_world()` (with `space_out_the_traffic()` opened up inside it) and then
+## `_meet_the_player()`. Returns each call's
 ## microseconds in `PARTS` order.
 func _split_tick(crowd: Crowd) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	for agent in crowd.agents():
-		agent._process(STEP)
+	crowd._step_the_agents(STEP)
 	stamps.append(Time.get_ticks_usec())
 	if crowd._signals:
 		crowd._signals.advance(STEP)

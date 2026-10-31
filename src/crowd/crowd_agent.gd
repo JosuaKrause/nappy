@@ -90,9 +90,16 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 ## had at a sector boundary — up to 22.5 degrees back, which lands an east- or west-bound car's
 ## picture about nine pixels south of its own body for the rest of its run in that lane — while
 ## `EntityHalo`, which re-traces the body every frame it is drawn, stands where the car belongs.
+##
+## **It runs on the physics tick, at the end of the agent's step, and nothing of the crowd is left to
+## a drawn frame.** Everything the key reads (the velocity, the gait, the bob, the heading, the
+## excitement's caret) changes only on a tick, and an interpolated node replays the list it was last
+## drawn with wherever the frame puts it, so a drawn frame between two ticks has nothing to redraw.
+## The one thing that moves between ticks is the camera, and the drawn box's margin
+## (`DrawnView.MARGIN`, two tiles) is far wider than it moves in a tick.
 func _end_the_frame(delta: float) -> bool:
 	# The clocks only a crowd member keeps, its excitement's clock and the seconds of agitation a
-	# contact or a horn left, run here because every frame that is not skipped ends here.
+	# contact or a horn left, run here because every tick that is not skipped ends here.
 	excitement.advance(delta)
 	var picture := _look.picture(velocity())
 	var drawn_heading := _look.heading_key()

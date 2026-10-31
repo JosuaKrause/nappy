@@ -7,11 +7,8 @@ extends RefCounted
 ## one that feeds the frame record, handed in by whoever builds the city (`main._new_city()`).
 ## One per `Crowd`, handed on to its agents.
 ##
-## **An agent copies whether the record is running when it is handed this**, so that with the record
-## off its `_process()` pays one member read rather than a call into a second object: with two
-## hundred or so agents a frame, that difference made every player's frame measurably longer on a
-## desktop (`docs/evidence/m159-frame-record-2026-10-04/`). An agent is made per day, after the
-## recorder has started, so every one made under a record is timed.
+## **The crowd's physics tick is timed once, with every agent's step inside it** (`Crowd._tick_the_crowd()`),
+## so no agent times itself: an agent keeps the sink only to count its draws (`drew()`).
 
 ## Whether a record is running now.
 func running() -> bool:

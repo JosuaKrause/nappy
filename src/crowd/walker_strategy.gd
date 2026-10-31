@@ -363,6 +363,10 @@ func _emerge_from_the_hut() -> void:
 	var door_along: float = _door_hold.position.y if _mover._vertical else _door_hold.position.x
 	_mover._set_along(door_along + Tuning.WALKER_DOOR_STOP_DISTANCE * _mover._direction)
 	_mover._set_cross(_mover._lane_centre)
+	# Out from the hut's middle is a jump, so it is drawn from where it comes out rather than
+	# interpolated out of the hut; shown again above, so the reset is not the no-op it is on a node
+	# hidden in the tree.
+	_mover.reset_physics_interpolation()
 	# The lookahead is a cached answer about the tile it was standing on, and it is not standing
 	# there any more.
 	_mover._scan_at = Vector2i(-9999, -9999)
@@ -394,7 +398,7 @@ func _hold_factor() -> float:
 		return 0.0
 	return 1.0
 
-## True while this walker is being held at a door and is not walking anywhere — read by `_process`,
+## True while this walker is being held at a door and is not walking anywhere — read by `step()`,
 ## which has nothing to steer, look ahead for or turn at a junction while it is inside a hut.
 func _is_inside_a_hut() -> bool:
 	return _door_state == DoorState.INSPECTION

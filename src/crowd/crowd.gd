@@ -17,8 +17,13 @@ extends Node
 ## that box is stated over.
 ##
 ## **This node owns no agent as a scene child.** Every `CrowdAgent` is added under `City`'s shared,
-## y-sorted `Entities` node (`City.add_entity()`) rather than under here, so `CrowdAgent._ready()`
-## opts itself out of physics interpolation rather than inheriting the setting from this node.
+## y-sorted `Entities` node (`City.add_entity()`) rather than under here, so that it sorts against
+## her and everything else standing in the street.
+##
+## **The crowd moves on the physics tick.** This node's own tick steps every agent first
+## (`_step_the_agents()`), then spaces out the traffic and meets the player, so an agent's motion and
+## every rule about it are one to one at 30Hz on every machine (minty-dolphin #866), and each agent
+## is drawn interpolated between two ticks (`LaneMover._ready()`).
 
 ## The traffic's name on the mark over the player's head, so it can take its own down again and
 ## nobody else's. See `Stroller.stand_down()`.
@@ -94,10 +99,10 @@ var _signals: TrafficSignals
 ## A day only ends once, so a second car cannot claim the same run.
 var _struck := false
 ## `--skip motion`, handed in by whoever builds the city. `_physics_process` returns before the
-## signals advance while it is set, so nothing the crowd ticks (the signals, the pockets, the
-## traffic spacing, the index, the junctions, the gates, the doors, the player's own make-way and
-## bump scan, the strike and the horn) runs, and every agent it makes stands still too.
-## `step()`, the rig's own frame, is left alone: a rig asked to walk the crowd walks it.
+## agents step while it is set, so nothing the crowd ticks (every agent's motion, the signals, the
+## pockets, the traffic spacing, the index, the junctions, the gates, the doors, the player's own
+## make-way and bump scan, the strike and the horn) runs, and the day's population stands where it
+## was placed. `step()`, the rig's own tick, is left alone: a rig asked to walk the crowd walks it.
 var skip_motion := false
 ## `--skip crowd`, handed in the same way: every agent this makes skips its own drawing.
 var skip_agent_drawing := false
@@ -290,7 +295,6 @@ func set_focus(at: Vector2) -> void:
 func _make_an_agent() -> CrowdAgent:
 	var agent := CrowdAgent.new()
 	agent.skip_draw = skip_agent_drawing
-	agent.skip_motion = skip_motion
 	agent.traffic = _traffic
 	agent.door_segments = _door_segments
 	agent.home_segments = _home_segments
@@ -467,37 +471,33 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 # `pedestrian_ahead` is written here: the agents are already being walked once a frame, and a
 # per-car search would be the same work done fifty times over.
 
-## One frame of the crowd for a rig: everybody moves, and then the traffic is spaced out.
+## One tick of the crowd for a rig: everybody moves, and then the traffic is spaced out — the live
+## tick (`_tick_the_crowd()`) without the player half, since a rig has no player.
 ##
-## The engine drives those two halves separately — an agent moves in its own `_process`, the queue
-## is resolved in `Crowd._physics_process` — so a headless rig that only walks the agents is not
-## running the crowd the game runs. It is missing the separation pass, and it is also missing the
-## **rebuild** underneath it: `TrafficIndex.claim()` is written to be thrown away once a frame, so
-## with nothing throwing it away every recycle adds a car to a lane that never empties. Measured on
-## the arterial: sixty-five thousand entries after three thousand frames, a `_recycle` that scans
-## all of them six times over, and a frame that had grown from 1.09ms to **3.94** and was still
-## climbing. `test_balance`'s day on the arterial was 240 seconds of a 495-second suite for that
-## reason alone.
+## A headless rig that only walks the agents is not running the crowd the game runs. It is missing
+## the separation pass, and it is also missing the **rebuild** underneath it:
+## `TrafficIndex.claim()` is written to be thrown away once a tick, so with nothing throwing it away
+## every recycle adds a car to a lane that never empties, and a `_recycle` scans all of them six
+## times over.
 ##
 ## Movement first and separation after, which is the order the world settles in — see
 ## `test_crowd.gd`, "cars do not drive through each other", for why that order is the honest one.
-## `_advance_the_world()` is exactly that separation half, unchanged by putting a name on it: none
-## of its four lines reads an agent's position, so moving the agent stepping ahead of it rather
-## than into the middle of it (`_signals.advance` and `_pockets.refresh` are both bookkeeping
-## about the day's clock and its map, not about where anybody is standing) changes nothing this
-## frame settles on.
 func step(delta: float) -> void:
-	for agent in _agents:
-		agent._process(delta)
+	_step_the_agents(delta)
 	_advance_the_world(delta)
 
-## The frame's shared prologue, whatever is driving it: the day's signal clock, the map's own
-## pockets, the traffic queue and the walkers' doors, in that order. `step()` (a rig's manual
-## frame) and `_physics_process()` (the live tick) both open with exactly this, and used to spell
-## it out twice — once interleaving the agent stepping only `step()` needs in the middle of it,
-## which was two copies of four lines agreeing today and a silent place for the next one added to
-## drift. Extracted so the only difference left between the two callers is `step()`'s own agent
-## stepping and `_physics_process()`'s own player half.
+## Every agent's own step (`LaneMover.step()`), in the crowd's order: the first thing a tick does,
+## live (`_tick_the_crowd()`) or in a rig (`step()`). Its own function so a probe can time it apart
+## (`tests/probes/m159_crowd_tick_cost.gd`).
+func _step_the_agents(delta: float) -> void:
+	for agent in _agents:
+		agent.step(delta)
+
+## The tick's shared middle, after the agents have stepped, whatever is driving it: the day's signal
+## clock, the map's own pockets, the traffic queue and the walkers' doors, in that order. `step()`
+## (a rig's manual tick) and `_physics_process()` (the live tick) both run exactly this after
+## `_step_the_agents()`, so the only difference between the two callers is the live tick's player
+## half.
 func _advance_the_world(delta: float) -> void:
 	if _signals:
 		_signals.advance(delta)
@@ -1050,14 +1050,16 @@ func _physics_process(delta: float) -> void:
 	else:
 		_tick_the_crowd(delta)
 
-## The crowd's own tick, timed under the frame record's crowd bucket.
+## The crowd's own tick, timed under the frame record's crowd bucket: every agent steps, then the
+## traffic is spaced out and the doors held, then she is met — so a strike, a horn or a bump is
+## decided against where this tick's step put the agent.
 func _tick_the_crowd(delta: float) -> void:
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
-	# before the signals advance, so nothing below runs this frame — every agent's own `_process`
-	# is gated the same way (`CrowdAgent.skip_motion`), and `start_day` still placed the whole
+	# before the agents step, so nothing below runs this tick, and `start_day` still placed the whole
 	# population, so the street stands full of standing people and parked cars.
 	if skip_motion:
 		return
+	_step_the_agents(delta)
 	_advance_the_world(delta)
 	_meet_the_player()
 
