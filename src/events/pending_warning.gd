@@ -14,9 +14,9 @@ extends RefCounted
 ## others as well".)* How long is the row's own `EventDef.warned_for()`, never more than
 ## `Tuning.WARNING_ALONE_MAX`. Then the place the row's own ground gives for her where she is now
 ## (`_where`) is asked once more and the thing is created there (`_arrive`): just off screen, all of
-## it outside the camera's whole view (`just_out_of_sight()`), so nothing of it is drawn on the frame
-## it exists and it comes into view as soon as it moves, and the screen-edge badge goes off as it
-## comes into sight.
+## it outside the camera's whole view (`SpawnSiting.just_out_of_sight()`), so nothing of it is drawn
+## on the frame it exists and it comes into view as soon as it moves, and the screen-edge badge goes
+## off as it comes into sight.
 ##
 ## **The badge holds still.** Its place is fixed against her when the warning goes up and moves only
 ## with her own walking (`offset`): it is never re-planned while it is up, so it neither jumps
@@ -29,7 +29,9 @@ extends RefCounted
 ## Each kind of place below answers "its ground" differently: a cyclist on a sidewalk
 ## (`down_her_line()`), a pursuer sent down her heading on anything walkable (`along_her_heading()`),
 ## the fire engine on the road on its way to the fire (`on_its_route()`), the day-13 column in its lane
-## of the main road (`in_its_lane()`); the resistance's trap is placed by `ResistanceDirector`'s own.
+## of the main road (`in_its_lane()`); a pursuer sent at her from out of her sight — a task's trap,
+## the torn poster's man on foot — is placed by a `SpawnSiting` search
+## (`WarningBoard.send_from_out_of_sight()`).
 ## The owner of the warning (`EventManager`) decides what "arrive" does; this class holds the place,
 ## and its clock is the one every warning runs on (`Warning`), read against the time it has been up.
 
@@ -104,45 +106,6 @@ func tick(delta: float, her: Vector2) -> bool:
 ## cross street and the junction it makes.
 const FURTHER_TILES := Tuning.STREET_WIDTH * 2
 
-## The least distance from her anything arriving from off screen is created at:
-## `Tuning.min_offscreen_boundary()`, the view's half height — the worst case `EventDef.validate()`
-## checks a row's field against.
-static func least_distance() -> float:
-	return Tuning.min_offscreen_boundary()
-
-## **Just off screen** along `direction` (unit) from `her`: the nearest point at which everything
-## `row` can draw (`EventFootprints.footprint_of()`) is wholly outside the camera's view, never nearer
-## than `least_distance()`. *(Amendment 6 of M226, the player: "objects don't spawn \"at the edge of
-## the screen\" they spawn *offscreen*" · "I don't want any pop in".)* `view` is the camera's whole
-## view (`seen_from()`), whatever the input scheme: a corner the joystick's controls cover is out of
-## sight for the badge and every "has she seen it", but a thing placed under it is drawn there, so
-## placement never counts it.
-static func just_out_of_sight(view: VisibleView, row: EventDef, her: Vector2,
-		direction: Vector2) -> Vector2:
-	return her + direction * view.clear_of_sight(her, direction, EventFootprints.footprint_of(row),
-			least_distance())
-
-## The camera's whole view placement is measured against: `view`'s own rect with no covered
-## corners, or, where there is none or it has never been looked through — a caller that only asks
-## whether there is ground at all, such as `EventDirector`'s siting, or a rig with no camera — the
-## view about her.
-static func seen_from(view: VisibleView, her: Vector2) -> VisibleView:
-	if view and view.view.has_area():
-		var whole := VisibleView.new()
-		whole.look(view.view, false)
-		return whole
-	return VisibleView.around(her)
-
-## Whether everything `row` can draw, standing at `at`, is wholly outside `view` (the camera's whole
-## view, `seen_from()`), and at least `least_distance()` from her.
-static func is_out_of_sight(view: VisibleView, row: EventDef, her: Vector2, at: Vector2) -> bool:
-	if at.distance_to(her) + 0.5 < least_distance():
-		return false
-	var box := EventFootprints.footprint_of(row)
-	var drawn := Rect2(at + box.position, box.size) if box.has_area() \
-			else Rect2(at - Vector2.ONE * 0.5, Vector2.ONE)
-	return not view.sees_any(drawn)
-
 # ------------------------------------------------------------ down her line ---
 
 ## How far to either side of her line a place down it may be moved to reach its ground, in tiles —
@@ -150,8 +113,8 @@ static func is_out_of_sight(view: VisibleView, row: EventDef, her: Vector2, at: 
 const LATERAL_TILES := Tuning.STREET_WIDTH
 
 ## Where a row that comes down her own line (`cyclist`, `loose_dog`) is created: just out of sight in
-## `direction` from her (`just_out_of_sight()`), on the nearest ground `def.placement` names — a
-## sidewalk or a square — and still out of sight there. Moved sideways first, within
+## `direction` from her (`SpawnSiting.just_out_of_sight()`), on the nearest ground `def.placement`
+## names — a sidewalk or a square — and still out of sight there. Moved sideways first, within
 ## `LATERAL_TILES`, and where there is none level with that point — the carriageway of a cross street
 ## is ahead — further down her line, within `FURTHER_TILES`, never nearer. `Vector2.INF` where there
 ## is none.
@@ -164,8 +127,9 @@ const LATERAL_TILES := Tuning.STREET_WIDTH
 ## the timing rather than the city.
 static func down_her_line(map: CityMap, row: EventDef, her: Vector2, direction: Vector2,
 		in_view: VisibleView = null) -> Vector2:
-	var view := seen_from(in_view, her)
-	var ahead := just_out_of_sight(view, row, her, direction)
+	var view := SpawnSiting.seen_from(in_view, her)
+	var box := EventFootprints.footprint_of(row)
+	var ahead := SpawnSiting.just_out_of_sight(view, box, her, direction)
 	if not map:
 		return ahead
 	var along := direction * Tuning.TILE_SIZE
@@ -175,7 +139,7 @@ static func down_her_line(map: CityMap, row: EventDef, her: Vector2, direction: 
 		for step in LATERAL_TILES + 1:
 			for side: float in [1.0, -1.0]:
 				var at := level + across * (float(step) * side)
-				if _is_its_ground(map, row, at) and is_out_of_sight(view, row, her, at):
+				if _is_its_ground(map, row, at) and SpawnSiting.is_out_of_sight(view, box, her, at):
 					return at
 				if step == 0:
 					break
@@ -212,15 +176,17 @@ static func _is_its_ground(map: CityMap, row: EventDef, at: Vector2) -> bool:
 ## null is open ground.
 static func along_her_heading(map: CityMap, row: EventDef, her: Vector2, direction: Vector2,
 		in_view: VisibleView = null) -> Vector2:
-	var view := seen_from(in_view, her)
-	var ahead := just_out_of_sight(view, row, her, direction)
+	var view := SpawnSiting.seen_from(in_view, her)
+	var box := EventFootprints.footprint_of(row)
+	var ahead := SpawnSiting.just_out_of_sight(view, box, her, direction)
 	if not map:
 		return ahead
 	var step := direction * (Tuning.TILE_SIZE * 0.5)
 	var mover := EventInstance.mover_for(row)
 	for further in FURTHER_TILES * 2 + 1:
 		var at := ahead + step * float(further)
-		if map.passable(map.world_to_tile(at), mover) and is_out_of_sight(view, row, her, at):
+		if map.passable(map.world_to_tile(at), mover) \
+				and SpawnSiting.is_out_of_sight(view, box, her, at):
 			return at
 	return Vector2.INF
 
@@ -229,8 +195,8 @@ static func along_her_heading(map: CityMap, row: EventDef, her: Vector2, directi
 ## Where a row that drives a fixed route to a place of its own is created — the fire engine, on the
 ## fire's street, coming to the kerb at `stop`: on the road up from `stop`, against the way it travels
 ## (`travel`, unit), **level with her or further up it**, the nearest such point that is out of sight
-## (`is_out_of_sight()`). No further up the road than `reach`, which is as far as the road runs
-## inside the map.
+## (`SpawnSiting.is_out_of_sight()`). No further up the road than `reach`, which is as far as the
+## road runs inside the map.
 ##
 ## So the engine is always on its way to the fire and never past it, and never between her and the
 ## fire unless she is past the fire herself: walking up the street toward where it comes from keeps it
@@ -240,11 +206,12 @@ static func along_her_heading(map: CityMap, row: EventDef, her: Vector2, directi
 ## which is only ever her standing at its far end.
 static func on_its_route(row: EventDef, her: Vector2, stop: Vector2, travel: Vector2,
 		reach: float, in_view: VisibleView = null) -> Vector2:
-	var view := seen_from(in_view, her)
+	var view := SpawnSiting.seen_from(in_view, her)
+	var box := EventFootprints.footprint_of(row)
 	var up := maxf(float(Tuning.TILE_SIZE), (stop - her).dot(travel))
 	while up <= reach:
 		var at := stop - travel * up
-		if is_out_of_sight(view, row, her, at):
+		if SpawnSiting.is_out_of_sight(view, box, her, at):
 			return at
 		up += ROUTE_STEP
 	return Vector2.INF
@@ -264,11 +231,12 @@ const ROUTE_STEP := Tuning.TILE_SIZE * 0.25
 ## rather than a truck appearing on screen.
 static func in_its_lane(row: EventDef, her: Vector2, lane_x: float, going: float, top: float,
 		bottom: float, in_view: VisibleView = null) -> Vector2:
-	var view := seen_from(in_view, her)
+	var view := SpawnSiting.seen_from(in_view, her)
+	var box := EventFootprints.footprint_of(row)
 	var toward_her := Vector2(0.0, -going)
 	var level := Vector2(lane_x, her.y)
-	var out := view.clear_of_sight(level, toward_her, EventFootprints.footprint_of(row), least_distance())
+	var out := view.clear_of_sight(level, toward_her, box, SpawnSiting.least_distance())
 	var at := Vector2(lane_x, clampf(her.y + toward_her.y * out, top, bottom))
-	if at.y != her.y + toward_her.y * out and not is_out_of_sight(view, row, her, at):
+	if at.y != her.y + toward_her.y * out and not SpawnSiting.is_out_of_sight(view, box, her, at):
 		return Vector2.INF
 	return at

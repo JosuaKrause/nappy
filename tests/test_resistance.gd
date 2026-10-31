@@ -2402,13 +2402,11 @@ func _check_day_nines_trap_from_where_she_is_let_out(t, director: ResistanceDire
 func _check_no_start_was_passed_over(t, director: ResistanceDirector, her: Vector2,
 		label: String) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
-	var view := VisibleView.around(her)
-	var boundary := director._boundary_bodies_near(her,
-			ResistanceDirector.beside_distance(view, def, her))
+	var siting := director._spawn_siting
+	var asked := siting.ask(EventFootprints.footprint_of(def), director._chaser, her)
 	for candidate in _fixed_starts(def, her):
-		t.check(not (ResistanceDirector.is_legal_ground(_city.map,
-				_city.map.world_to_tile(candidate), director._walled_alleys())
-				and not ResistanceDirector._runs_through_the_boundary(candidate, her, boundary)),
+		t.check(not (siting.allows(SpawnSiting.Rule.LEGAL_GROUND, asked, candidate)
+				and siting.allows(SpawnSiting.Rule.CLEAR_OF_THE_BOUNDARY, asked, candidate)),
 				"%s: nobody is sent, and no start %v off her was passed over" % [label, candidate - her])
 
 ## The four starts `_draw_arrival_position()` tries before any drawn bearing: just out of sight
@@ -2417,7 +2415,8 @@ static func _fixed_starts(def: EventDef, her: Vector2) -> Array[Vector2]:
 	var view := VisibleView.around(her)
 	var starts: Array[Vector2] = []
 	for way: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
-		starts.append(PendingWarning.just_out_of_sight(view, def, her, way))
+		starts.append(SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
+				way))
 	return starts
 
 ## Runs the warning the trap row `row_id` is under to its end, frame by frame, with her standing at
@@ -2501,7 +2500,7 @@ func _the_screen_round(her: Vector2) -> Callable:
 ## (`CheckpointController.where_she_crossed()`), not through the director's own refusal. **A
 ## straight walkable run at her is a preference, not a guarantee** (`_draw_arrival_position()`'s
 ## own doc: with none from any start, the first legal one stands in): so with one — or from
-## across the street, with his own walk at her (`_his_walk_reaches_her()`) — he catches her
+## across the street, with his own walk at her (`SpawnSiting.Rule.REACHES_HER`) — he catches her
 ## where she stands, and without one none of the fixed starts (`_fixed_starts()`) had one on
 ## legal ground either, so the director passed over no clear start it could have taken. Measured
 ## per target by `tests/probes/grassy_goose_target_traps.gd`. Returns where he started, or `INF`.
@@ -2522,18 +2521,19 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 		return Vector2.INF
 	var start := chaser.global_position
 	var view := VisibleView.around(her)
-	var beside := ResistanceDirector.beside_distance(view, chaser.def, her)
+	var siting := director._spawn_siting
+	var asked := siting.ask(EventFootprints.footprint_of(chaser.def), director._chaser, her)
+	var beside := asked.beside
 	var dist := start.distance_to(her)
-	var boundary := director._boundary_bodies_near(her, beside)
 	var sideways := absf(start.y - her.y) < 0.5
 	var across := front_door and start.y > her.y and dist <= beside + 0.5 \
-			and director._his_walk_reaches_her(start, her, beside, boundary)
+			and siting.allows(SpawnSiting.Rule.REACHES_HER, asked, start)
 	var cone := absf(absf((start - her).angle()) - PI / 2.0) <= ResistanceDirector.ARRIVAL_CONE + 0.01
 	t.check(cone or sideways or across,
 			"%s: above or below her within the cone, beside her, or across the street (%.1fpx, at %v)"
 			% [label, dist, start - her])
 	t.check(not chaser.is_telegraphing(), "%s: already chasing, with no closing-in first" % label)
-	t.check(PendingWarning.is_out_of_sight(view, chaser.def, her, start),
+	t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(chaser.def), her, start),
 			"%s: wholly out of sight the frame he exists" % label)
 	var through_a_door := false
 	var plan := _city.region_plan()
@@ -2544,15 +2544,14 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 	t.check(not through_a_door,
 			"%s: his run at her from %s never crosses a district door's line"
 			% [label, _city.map.world_to_tile(start)])
-	t.check(ResistanceDirector.is_legal_ground(_city.map, _city.map.world_to_tile(start),
-			director._walled_alleys()), "%s: on walkable ground nothing refuses" % label)
-	var clear := director._a_clear_run(start, her)
+	t.check(siting.allows(SpawnSiting.Rule.LEGAL_GROUND, asked, start),
+			"%s: on walkable ground nothing refuses" % label)
+	var clear := siting.allows(SpawnSiting.Rule.CLEAR_RUN, asked, start)
 	if not clear and not across:
 		for candidate in _fixed_starts(chaser.def, her):
-			t.check(not (ResistanceDirector.is_legal_ground(_city.map,
-					_city.map.world_to_tile(candidate), director._walled_alleys())
-					and director._a_clear_run(candidate, her)
-					and not ResistanceDirector._runs_through_the_boundary(candidate, her, boundary)),
+			t.check(not (siting.allows(SpawnSiting.Rule.LEGAL_GROUND, asked, candidate)
+					and siting.allows(SpawnSiting.Rule.CLEAR_RUN, asked, candidate)
+					and siting.allows(SpawnSiting.Rule.CLEAR_OF_THE_BOUNDARY, asked, candidate)),
 					"%s: with no clear run from %s, none from %v off her either"
 					% [label, _city.map.world_to_tile(start), candidate - her])
 	t.check(not chaser.is_waiting(), "%s: never waiting, even before his first frame" % label)
@@ -2717,14 +2716,17 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 	var her := Vector2.ZERO
 	var view_on_her := VisibleView.around(her)
 	var edge_of_cone := ResistanceDirector.ARRIVAL_CONE - 0.001
+	var box := EventFootprints.footprint_of(def)
 	var starts: Array[Vector2] = [
-			PendingWarning.just_out_of_sight(view_on_her, def, her, Vector2.DOWN),
-			PendingWarning.just_out_of_sight(view_on_her, def, her, Vector2.UP),
-			PendingWarning.just_out_of_sight(view_on_her, def, her, Vector2.DOWN.rotated(edge_of_cone)),
-			PendingWarning.just_out_of_sight(view_on_her, def, her, Vector2.UP.rotated(-edge_of_cone)),
-			PendingWarning.just_out_of_sight(view_on_her, def, her, Vector2.RIGHT)]
+			SpawnSiting.just_out_of_sight(view_on_her, box, her, Vector2.DOWN),
+			SpawnSiting.just_out_of_sight(view_on_her, box, her, Vector2.UP),
+			SpawnSiting.just_out_of_sight(view_on_her, box, her,
+					Vector2.DOWN.rotated(edge_of_cone)),
+			SpawnSiting.just_out_of_sight(view_on_her, box, her,
+					Vector2.UP.rotated(-edge_of_cone)),
+			SpawnSiting.just_out_of_sight(view_on_her, box, her, Vector2.RIGHT)]
 	for start in starts:
-		t.check(PendingWarning.is_out_of_sight(view_on_her, def, her, start),
+		t.check(SpawnSiting.is_out_of_sight(view_on_her, box, her, start),
 				"from %v: wholly off screen the frame he exists" % start)
 		var stood := _walk_the_trap(def, start, 0.0)
 		t.check(stood["caught_at"] < INF,
@@ -4257,7 +4259,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 				"near it, the column's warning goes up with no truck in the world yet")
 		var warning := _warning_for(_city.events, "military_convoy")
 		t.check(warning != null, "and its badge has somewhere to point")
-		var lead := PendingWarning.least_distance()
+		var lead := SpawnSiting.least_distance()
 		if warning:
 			t.check(CrowdLanes.corridor_at(warning.place.x) == _city.map.main_road,
 					"pointing up the main road")
@@ -4304,8 +4306,8 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 		# from the badge to the first frame its field reaches her.
 		if warning and not trucks.is_empty():
 			var front := trucks[0]
-			t.check(PendingWarning.is_out_of_sight(VisibleView.around(her), front.def, her,
-					front.global_position)
+			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her),
+					EventFootprints.footprint_of(front.def), her, front.global_position)
 					and absf(front.global_position.x - warning.place.x) < 1.0
 					and signf(front.global_position.y - her.y) == signf(warning.place.y - her.y),
 					"its front truck is created just out of sight, up the lane the badge pointed")
@@ -4650,7 +4652,7 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 	var foot_tile := _city.map.world_to_tile(foot)
 	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 		var tile := foot_tile + side
-		if ResistanceDirector.is_legal_ground(_city.map, tile, director._walled_alleys()) \
+		if SpawnSiting.is_legal_ground(_city.map, tile, director._walled_alleys()) \
 				and not _city.map.is_obstructed(tile):
 			return _city.map.tile_to_world(tile)
 	return Vector2.INF
@@ -5470,7 +5472,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 				# order `_place_at_a_mast()` asks them in.
 				for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 					var next := foot_tile + side
-					if not ResistanceDirector.is_legal_ground(_city.map, next,
+					if not SpawnSiting.is_legal_ground(_city.map, next,
 							director._walled_alleys()) or _city.map.is_obstructed(next) \
 							or not director._reachable_from_home(next):
 						continue
@@ -5557,7 +5559,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
 		var walled := director._walled_alleys()
 		var lorry_tile := Vector2i(-1, -1)
 		for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-			if ResistanceDirector.is_legal_ground(map, tile, walled) and not map.is_obstructed(tile) \
+			if SpawnSiting.is_legal_ground(map, tile, walled) and not map.is_obstructed(tile) \
 					and map.tile_to_world(tile).distance_to(map.doorstep_world_position()) > 600.0:
 				lorry_tile = tile
 				break
@@ -5567,7 +5569,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
 		var inside: Array[Vector2i] = []
 		var clear: Array[Vector2i] = []
 		for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-			if not ResistanceDirector.is_legal_ground(map, tile, walled) or map.is_obstructed(tile):
+			if not SpawnSiting.is_legal_ground(map, tile, walled) or map.is_obstructed(tile):
 				continue
 			var gap := map.tile_to_world(tile).distance_to(lorry.position)
 			if gap > Tuning.EVENT_SPACING_ANY and gap < lorry_def.field_reach() - Tuning.TILE_SIZE:

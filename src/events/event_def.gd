@@ -1261,14 +1261,14 @@ func validate() -> bool:
 	if solid_when == SolidWhen.ONCE_IT_STARTS and telegraph_time <= 0.0:
 		push_error("event '%s' waits for a notice it does not have before it becomes solid" % id)
 		return false
-	# A `TOWARD_PLAYER` row is created at least `PendingWarning.least_distance()` from her when it is
+	# A `TOWARD_PLAYER` row is created at least `SpawnSiting.least_distance()` from her when it is
 	# warned of first — just out of sight, never nearer than the view's half height, whatever she is
 	# facing and in either control scheme — and at least `Tuning.min_offscreen_lead()` at its own
 	# closing speed and notice when it is created at once (a patrol down the road). So a row whose own
 	# field reaches that far would be created already on her on the one heading and moment the
 	# director cannot avoid, which is the one thing "she gets close and it arrives" cannot mean.
 	if spawn_mode == SpawnMode.TOWARD_PLAYER:
-		var floor_lead := PendingWarning.least_distance() if comes_down_her_line() \
+		var floor_lead := SpawnSiting.least_distance() if comes_down_her_line() \
 				else Tuning.min_offscreen_lead(speed + Tuning.WALK_SPEED, offscreen_notice)
 		if outer_radius >= floor_lead:
 			push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
@@ -1489,7 +1489,7 @@ func nearest_crouch() -> float:
 ##
 ## **For a row warned of before it exists** (`warns_before_it_exists()`) **it is its badge to its
 ## reach**: its badge alone (`warned_for()`), with nothing in the world, plus the time the thing then
-## takes to reach her from where it is created. Created closest — `PendingWarning.least_distance()`,
+## takes to reach her from where it is created. Created closest — `SpawnSiting.least_distance()`,
 ## just out of sight on the view's short axis — and reaching her with her walking into it: at its
 ## lethal reach for a `hard_fail` row, which is when it can end the day, and at its field's forward
 ## reach for any other, which is when it charges her. A field that already covers her where it is
@@ -1499,7 +1499,7 @@ func warning_time() -> float:
 		return telegraph_time
 	var closing := speed + Tuning.WALK_SPEED
 	var reach := lethal_reach() if hard_fail else field_reach()
-	var created_at := PendingWarning.least_distance()
+	var created_at := SpawnSiting.least_distance()
 	return warned_for() + maxf(0.0, created_at - reach) / closing
 
 ## How long this row's badge is up alone, with nothing in the world, before it is placed just out of

@@ -1428,7 +1428,7 @@ static func _pigeon_flock() -> EventDef:
 ## The fairness contract does the work: from the badge to his reach, walking into him, she is owed
 ## the flat `Tuning.OFFSCREEN_WARNING_MIN` (1.0s) every warning from off screen is owed, which is what
 ## `EventDef.warning_time()` measures. `EventDef.validate()` also refuses a field that reaches where he
-## is created closest, `PendingWarning.least_distance()` (180px, the view's short axis), which would
+## is created closest, `SpawnSiting.least_distance()` (180px, the view's short axis), which would
 ## already be on her the moment he existed; 90 sits far under it.
 ##
 ## **`inner_radius` is 33px, not the 26 a bike's own width would suggest.** *(Playtest 25, finding

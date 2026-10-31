@@ -56,7 +56,7 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 ## stand (the picture of a car that drives is lowered over its body, `picture_drop_of()`), its body
 ## shadow (a disc of its shape's radius at its feet), the loose dog's trailing lead, the bob and the
 ## excitement halo's rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed
-## wholly outside the camera's view by (`PendingWarning.just_out_of_sight()`), so nothing of it
+## wholly outside the camera's view by (`SpawnSiting.just_out_of_sight()`), so nothing of it
 ## shows on the frame it exists *(amendment 6 of M226, the player: "I don't want any pop in")*. And
 ## for a row that can be marked — anything with a field or a lethal reach — the danger caret above
 ## its feet at its tallest (`EventPictures.largest_mark_rect()`), which stands well above the

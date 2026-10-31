@@ -468,7 +468,8 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			wrong.append("its badge was up alone %.2fs" % warning.shown)
 		elif (place - kerb).dot(travel) >= 0.0:
 			wrong.append("created at the kerb or past it at %v" % place)
-		elif not PendingWarning.is_out_of_sight(VisibleView.around(her), truck, her, place):
+		elif not SpawnSiting.is_out_of_sight(VisibleView.around(her),
+				EventFootprints.footprint_of(truck), her, place):
 			wrong.append("created in sight at %v with her at %v" % [place, her])
 		var to_reach := 0.0
 		while engine.excitement.contribution_at(her) <= 0.0 and to_reach < 10.0:

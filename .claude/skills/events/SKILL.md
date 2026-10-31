@@ -117,12 +117,13 @@ in the world, the badge up at once for the row's own `EventDef.warned_for()`, **
 `Tuning.WARNING_ALONE_MAX`** (`validate()` refuses longer; busy-quail #569), its place fixed against
 her so the badge moves only with her walking and never jumps. Then the thing is created **just off
 screen** (calm-kestrel #559) where its ground has a place for it from where she is by then
-(`PendingWarning.just_out_of_sight()`: everything it can draw, `EventFootprints.footprint_of()`,
+(`SpawnSiting.just_out_of_sight()`: everything it can draw, `EventFootprints.footprint_of()`,
 wholly outside the camera's whole view, corners included, never nearer than
-`PendingWarning.least_distance()`) — **no pop-in** (olive-hedgehog #598), and
+`SpawnSiting.least_distance()`) — **no pop-in** (olive-hedgehog #598), and
 `tests/test_no_pop_in.gd` holds it — a sidewalk for the bike, walkable ground down her heading for
-the day-3 dog, the road on its way to the fire for the engine, its lane for the column, the
-director's own rules for the trap. A non-pursuer is created with its telegraph spent
+the day-3 dog, the road on its way to the fire for the engine, its lane for the column, and for a
+pursuer sent from out of her sight — the trap, the torn poster's man on foot — one `SpawnSiting`
+search under its named rules (`WarningBoard.send_from_out_of_sight()`). A non-pursuer is created with its telegraph spent
 (`EventManager.spawn_warned()`); **a pursuer with its telegraph still to run**, since its telegraph
 is its approach — except one that arrives chasing (`PursuitSpec.Start.ARRIVES_CHASING`: the
 resistance's sent robber and guard, and a

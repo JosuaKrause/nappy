@@ -3,10 +3,11 @@ extends RefCounted
 ## **The one way anything that walks or drives across a world moves**: each map builds one
 ## (`WorldMap.navigator()`), and it is handed to every mover by whoever builds it — the city to its
 ## event manager, its crowd and the resistance, the event manager to every figure it makes — rather
-## than fetched. A step, a walk down a list of points, a way round and a way out are all asked of the
-## map's one blocked record through the mover's own layers (`Mover`, `WorldMap.passable()`), so a cat,
-## a bike, a pursuer, a departing dog, a man walking back to his van and the masked man on the
-## building's stairs are all stopped by what stops her.
+## than fetched. A step, a walk down a list of points, a way round, a way out and whether a chase
+## reaches somebody (`reaches()`) are all asked of the map's one blocked record through the mover's
+## own layers (`Mover`, `WorldMap.passable()`), so a cat, a bike, a pursuer, a departing dog, a man
+## walking back to his van and the masked man on the building's stairs are all stopped by what stops
+## her.
 ##
 ## **Every step is swept**: the tiles the whole step crosses are asked, not only the one it lands
 ## on, so a long frame cannot carry a chaser through a wall a tile thick. And it keeps the mover's
@@ -239,6 +240,40 @@ func _search(start: Vector2i, mover: Mover, avoid: Rect2i, arrived: Callable) ->
 ## along `sight`: made once by a figure that is set on her from a city away, and kept by it.
 func way_to(mover: Mover, sight: Mover) -> ChaseWay:
 	return ChaseWay.new(self, mover, sight)
+
+# -------------------------------------------------------------------- chases ---
+
+## How finely `reaches()` walks a chase, in px: an eighth of a tile, finer than a chase's own step
+## at 30 frames a second (130px/s, about 4.3px).
+const REACH_STEP := Tuning.TILE_SIZE / 8.0
+
+## **Whether the chase `mover` takes from `from` reaches somebody standing at `to`** within `limit`
+## px of ground: walked the way `EventPursuit` walks a pursuer at her, straight at her and sliding
+## along walls (`step()`), stopped by what stops her, never stuck against a wall and never taking a
+## step `avoid` refuses (`func(from: Vector2, to: Vector2) -> bool`, true for a step it may not
+## take; empty for none — a siting's region wall and doors, `SpawnSiting`). **Stuck includes
+## creeping**: a slide along a wall met nearly square-on keeps only the sliver of the step that runs
+## along it, so a step that keeps under a quarter of its length is a mover standing at the wall, not
+## one coming round it.
+##
+## **The straight chase is the one a start is sited for.** Every pursuer sent at her from a start
+## chases straight; only day 13's task guard walks round buildings (`way_to()`), and he is in the
+## world already when he is set on her, so no start is sited for his way.
+func reaches(from: Vector2, to: Vector2, mover: Mover, limit: float,
+		avoid := Callable()) -> bool:
+	var at := from
+	var walked := 0.0
+	while walked <= limit:
+		var toward := to - at
+		if toward.length() <= REACH_STEP:
+			return true
+		var moved := step(at, toward.normalized() * REACH_STEP, mover)
+		if moved.length() < REACH_STEP * 0.25 \
+				or (avoid.is_valid() and bool(avoid.call(at, at + moved))):
+			return false
+		at += moved
+		walked += moved.length()
+	return false
 
 # --------------------------------------------------------------------- routes ---
 

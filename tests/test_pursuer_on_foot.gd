@@ -165,14 +165,14 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t)
 	t.check(told[0] == 1, "the counter's poster-pursuit goes out as he is sent (%d)" % told[0])
 	var start := city.events.ahead._where_the_sent_pursuer_starts(EventCatalogue.on_foot_on(6),
 			her.global_position, Vector2.ZERO, true)
-	t.check(start[1], "from a sidewalk in the city, his start has a clear run at her")
+	t.check(start.clear, "from a sidewalk in the city, his start has a clear run at her")
 	_run_the_warning(city, her)
 	var sent := city.events.ahead.sent_pursuer()
 	t.check(sent != null, "once the badge's time is up he is in the world")
 	if sent:
-		var view := PendingWarning.seen_from(city.events.visible_view(), her.global_position)
-		t.check(PendingWarning.is_out_of_sight(view, sent.def, her.global_position,
-				sent.global_position),
+		var view := SpawnSiting.seen_from(city.events.visible_view(), her.global_position)
+		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(sent.def),
+				her.global_position, sent.global_position),
 				"created wholly out of her sight (%.0fpx off)"
 				% sent.global_position.distance_to(her.global_position))
 		t.check(sent.came_under_a_warning and not sent.is_telegraphing() and not sent.is_waiting(),
@@ -254,7 +254,7 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t) -
 		var def := EventCatalogue.by_id(id)
 		for running: bool in [false, true]:
 			var pursuer := EventInstance.new()
-			pursuer.setup(def, Vector2(0.0, -PendingWarning.least_distance() - 40.0))
+			pursuer.setup(def, Vector2(0.0, -SpawnSiting.least_distance() - 40.0))
 			pursuer.came_under_a_warning = true
 			pursuer.resume(EventSpawner.age_when_warned(def), 0.0)
 			var at := Vector2.ZERO

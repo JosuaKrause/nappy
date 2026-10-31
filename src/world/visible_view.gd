@@ -23,12 +23,13 @@ extends RefCounted
 ## In tap mode the whole view counts. A thing under a covered corner keeps its badge.
 ##
 ## **Placing a thing is not a "has she seen it" question.** A thing arriving from off screen is placed
-## wholly outside the camera's whole view, corners included (`PendingWarning.seen_from()` asks
+## wholly outside the camera's whole view, corners included (`SpawnSiting.seen_from()` asks
 ## `clear_of_sight()` of this view with no corners laid on it) *(amendment 6 of M226, the player: "I
 ## don't want any pop in")*: a thing placed under a corner would still be drawn there. The same goes
-## for whatever the resistance places or takes away, which asks `EventManager.on_screen()`, a point
-## anywhere in this view's whole rect, corners included *(olive-hedgehog, inbox #598: "off screen is
-## not the same as visible -- the corners get removed for visible not for off screen")*.
+## for whatever the resistance places or takes away, which asks `EventManager.on_screen()`, and for a
+## pursuer sent at her, whose start asks `SpawnSiting.on_the_view()`: a point anywhere in this view's
+## whole rect, corners included *(olive-hedgehog, inbox #598: "off screen is not the same as visible
+## -- the corners get removed for visible not for off screen")*.
 ##
 ## The corners are worked out from `TouchControls`' own constants in the 1280x720 design box and
 ## scaled onto the view, so moving a ring or a button moves what it covers.
@@ -114,7 +115,7 @@ func sees_any(rect: Rect2) -> bool:
 ## whose drawn box is `box` — relative to its feet — is wholly out of sight, never less than
 ## `at_least`. A covered corner counts as out of sight, so in the joystick scheme a way that crosses
 ## one ends at its edge rather than at the view's; asked of a view with no corners (what placement
-## asks, `PendingWarning.seen_from()`), it is the edge of the camera's whole view.
+## asks, `SpawnSiting.seen_from()`), it is the edge of the camera's whole view.
 ##
 ## The view's own edge first, worked out per side; then, in the joystick scheme, the nearer
 ## distances are walked in `SIGHT_STEP` steps from `at_least`, for the one place a corner can make

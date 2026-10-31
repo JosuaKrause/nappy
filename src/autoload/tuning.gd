@@ -1612,7 +1612,7 @@ func offscreen_boundary(heading: Vector2) -> float:
 
 ## The least `offscreen_boundary()` can be for any heading — the vertical axis, since 180 is
 ## smaller than the 320 the horizontal one gives — and the floor under where anything warned of
-## first is placed (`PendingWarning.least_distance()`), which a covered corner of the joystick scheme
+## first is placed (`SpawnSiting.least_distance()`), which a covered corner of the joystick scheme
 ## would otherwise bring nearer on a shallow way down to one side. What a fairness check needs when it
 ## has no particular heading to ask about: `EventDef.validate()` checks a row's own geometry against the
 ## worst case the director could ever site it in, not the case a given walk happens to produce.
@@ -1654,7 +1654,7 @@ const OFFSCREEN_NOTICE := 0.2
 ## How far out along `heading` something that travels toward her and is created at once starts — a
 ## patrol the director sends down the road: outside the view (`offscreen_boundary()`) and `notice`
 ## seconds further still, at `closing_speed`. Something warned of before it exists is placed just
-## out of sight instead (`PendingWarning.just_out_of_sight()`).
+## out of sight instead (`SpawnSiting.just_out_of_sight()`).
 ##
 ## **`closing_speed` is the row's own speed plus `WALK_SPEED`, not the row's speed alone** — she is
 ## usually walking into it, so the gap between the siting and the boundary closes at both speeds

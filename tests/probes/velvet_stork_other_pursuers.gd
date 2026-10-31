@@ -124,7 +124,7 @@ func _the_sent_robbers_starts(t, seed_value: int) -> void:
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.scars = []
 	var director: ResistanceDirector = suite._start_the_day(t, city, seed_value)
-	var player: Stroller = suite._rig_player(t, director.contact_position())
+	var player: Stroller = suite._rig_player(t, director, director.contact_position())
 	var map := city.map
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
@@ -144,12 +144,13 @@ func _the_sent_robbers_starts(t, seed_value: int) -> void:
 	for i in range(0, open.size(), stride):
 		var her := map.tile_to_world(open[i])
 		player.global_position = her
-		var drawn: Array = director._draw_arrival_position(rng, her, def)
-		var start: Vector2 = drawn[0]
+		var drawn := director._draw_arrival_position(rng, her, def)
+		var start := drawn.at
 		if start == Vector2.INF:
 			unsent += 1
 			continue
-		var kind := "across the street" if drawn[3] else ("a clear run" if drawn[1] else "no clear run")
+		var kind := "across the street" if drawn.across \
+				else ("a clear run" if drawn.clear else "no clear run")
 		var row: Array = counts[kind]
 		row[0] += 1
 		var him := start

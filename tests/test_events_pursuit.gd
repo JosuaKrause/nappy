@@ -173,13 +173,13 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 ## A pursuer sent at her — the day-3 dog, the resistance's own two — is warned of first and created
 ## just out of sight (`PendingWarning`), which depends on the way it comes and on what she can see,
 ## so this asks for the worst case over every heading and either control scheme rather than one of
-## them — `PendingWarning.least_distance()`, the view's half height, which is the least ground the
+## them — `SpawnSiting.least_distance()`, the view's half height, which is the least ground the
 ## contract can ever rely on. A rig checked against a more generous heading would pass on an
 ## encounter the game can still produce on a worse one.
 func _sited_at(def: EventDef) -> float:
 	if def.notice_within() > 0.0:
 		return def.notice_within() - 10.0
-	return PendingWarning.least_distance()
+	return SpawnSiting.least_distance()
 
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.
@@ -403,7 +403,7 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 ##
 ## Two things have to agree and neither knows about the other: the stand-off is where it stops, and
 ## the warning decides where it starts. If the stand-off ever grows past the least it could ever be
-## created at — `PendingWarning.least_distance()`, the worst case over every heading she might be
+## created at — `SpawnSiting.least_distance()`, the worst case over every heading she might be
 ## walking and either control scheme — a pursuer *backs away* through its own telegraph instead of
 ## closing, which is a dog that visibly reverses down the street in front of her.
 ##
@@ -417,7 +417,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
 		var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
-		var floor_lead := PendingWarning.least_distance()
+		var floor_lead := SpawnSiting.least_distance()
 		t.check(standoff < floor_lead,
 				"'%s' stands off at %.0fpx, inside the %.0fpx it is sited at even on the worst axis"
 				% [def.id, standoff, floor_lead])
@@ -593,7 +593,8 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		var view := VisibleView.around(her)
 		t.check(ground.has(map.tile_at(map.world_to_tile(bike.global_position))),
 				"on a sidewalk")
-		t.check(PendingWarning.is_out_of_sight(view, def, her, bike.global_position),
+		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(def), her,
+				bike.global_position),
 				"wholly out of sight the frame he exists")
 		t.check(not bike.is_telegraphing(), "with his telegraph already spent, so he can end the day")
 		var into_sight := INF
@@ -615,7 +616,8 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 				gone = since
 		# At once from just out of sight; where its ground is further — the carriageway of a cross
 		# street just out of sight, so the far sidewalk — as soon as he has ridden the difference.
-		var just_out := PendingWarning.just_out_of_sight(view, def, her, Vector2.UP)
+		var just_out := SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
+				Vector2.UP)
 		var further := maxf(0.0, (bike.path[0] - just_out).dot(Vector2.UP))
 		t.check(into_sight <= further / def.speed + 3.0 * STEP,
 				"and he comes into sight as soon as he has ridden the %.0fpx his ground put him past "

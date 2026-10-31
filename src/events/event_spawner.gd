@@ -324,7 +324,7 @@ func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> 
 ## How old a non-pursuer warned of before it exists — or sent down her line unannounced, the loose
 ## dog — is when it is created: its telegraph spent, and, for a mover that pulses (`loose_dog`), on
 ## to the point of its beat that has it reach her, walking into it from where it is created closest
-## (`PendingWarning.least_distance()`), at the loud of its beat. **Its warning's length does not
+## (`SpawnSiting.least_distance()`), at the loud of its beat. **Its warning's length does not
 ## decide which beat it meets her on**: the pulse runs on its age, so without this a warning cut to
 ## a second has it created at the loud of its beat and pass her at the quiet, which halves what a
 ## pass costs (`docs/COSTS.md`, `tests/probes/m174_pass.gd`, which creates it at this same age).
@@ -332,7 +332,7 @@ static func age_when_warned(def: EventDef) -> float:
 	var spent := def.telegraph_time
 	if def.pulse_period <= 0.0 or not def.mobile or def.speed <= 0.0:
 		return spent
-	var flight := PendingWarning.least_distance() / (def.speed + Tuning.WALK_SPEED)
+	var flight := SpawnSiting.least_distance() / (def.speed + Tuning.WALK_SPEED)
 	var loud_on_her := def.pulse_period * 0.5 - flight
 	return loud_on_her + ceilf((spent - loud_on_her) / def.pulse_period - 0.001) * def.pulse_period
 

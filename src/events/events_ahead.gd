@@ -11,7 +11,8 @@ extends RefCounted
 ##
 ## Handed the world the events stand in (`EventWorld`), the streaming a placed plan joins
 ## (`EventStreaming`), the spawner a row is made by (`EventSpawner`) and the warning board a row
-## from off screen is warned on (`WarningBoard`).
+## from off screen is warned on (`WarningBoard`); and, with the director, where something sent at
+## her may start (`SpawnSiting`).
 
 ## The world the events stand in, the run, the player and the live instances.
 var world: EventWorld
@@ -35,14 +36,17 @@ func _init(the_world: EventWorld, streaming: EventStreaming, spawner: EventSpawn
 	_warnings = warnings
 
 ## Makes the director that sites rows ahead of her over the city's `map`, its figures moving by
-## `navigator`, handed the forced row a director made before it had.
-func use_director(map: CityMap, navigator: Navigator) -> void:
+## `navigator`, handed the forced row a director made before it had, and keeps `spawn_siting`, where
+## the pursuer a torn poster sends may start.
+func use_director(map: CityMap, navigator: Navigator, spawn_siting: SpawnSiting) -> void:
 	_director = EventDirector.new(map, navigator)
 	_director.force(_forced_row, _forced_interval)
+	_spawn_siting = spawn_siting
 
 ## No director: a world that is not the city, where nothing is sited while she walks.
 func drop_director() -> void:
 	_director = null
+	_spawn_siting = null
 
 ## Whether a director sites anything ahead of her in this world.
 func has_director() -> bool:
@@ -103,6 +107,9 @@ func clear() -> void:
 ## What sites rows ahead of her on a day, over the city (`EventDirector`); none in a world with no
 ## city (`EventManager.setup_world()`), where nothing is sited while she walks.
 var _director: EventDirector
+## Where something sent at her may start (`SpawnSiting`): the city's, handed in with the director;
+## none in a world with no city, where no torn poster sends anybody.
+var _spawn_siting: SpawnSiting
 ## The day's placement context for a row the day left for her walk to site, or `null` on a day that
 ## left none — the whole of `EventDef.on_her_way`, which today is day 3's fire and nothing
 ## else. Built in `start_day()` and read twice: the director sites against it while she walks, and
@@ -140,10 +147,11 @@ var _sent_warning: PendingWarning = null
 
 ## **A torn poster drew the pursuit marble** (`PosterWalls`): the pursuer on foot is sent at her at
 ## once — a policeman through day 8, a guardsman from day 9 (`EventCatalogue.on_foot_on()`). He is
-## warned and placed as a task's robber is (`ResistanceDirector._set_the_trap_on_her()`): the
-## screen-edge badge goes up alone at once for his half second (`EventDef.warned_for()`), pointing
-## where he will start (`_where_the_sent_pursuer_starts()`), and then he is created just out of
-## sight that way from where she is by then, already chasing (`_spawner.spawn_warned()`,
+## warned and placed as a task's robber is (`WarningBoard.send_from_out_of_sight()`, as
+## `ResistanceDirector._send_at_her()` sends him): the screen-edge badge goes up alone at once for
+## his half second (`EventDef.warned_for()`), pointing where he will start
+## (`_where_the_sent_pursuer_starts()`), and then he is created just out of sight that way from
+## where she is by then, already chasing (`_spawner.spawn_warned()`,
 ## `PursuitSpec.Start.ARRIVES_CHASING`). No wait for a heading or a street: the tear is the moment.
 ##
 ## **Outside the day's own plan, queue and streams.** He is not the scheduler's or the director's:
@@ -159,7 +167,8 @@ var _sent_warning: PendingWarning = null
 ## of sandy-ferret.)* `EventBus.poster_pursuit_sent` fires only when this sends one, the moment his
 ## warning goes up, so the counter's `poster-pursuit` is one per pursuer sent.
 func send_a_pursuer() -> void:
-	if not sends_poster_pursuits or not world.has_player() or a_pursuer_is_after_her():
+	if not sends_poster_pursuits or not world.has_player() or a_pursuer_is_after_her() \
+			or not _spawn_siting:
 		return
 	var def := EventCatalogue.on_foot_on(world.day)
 	if not def:
@@ -167,34 +176,22 @@ func send_a_pursuer() -> void:
 	var her := world.player.global_position
 	var first_up := posmod(hash("%d:%d:tear-pursuer" % [world.run.header.run_seed,
 			world.run.posters.tears]), 2) == 0
-	var first := _where_the_sent_pursuer_starts(def, her, Vector2.ZERO, first_up)
-	if first[0] == Vector2.INF:
-		world.trace.note("roll", "poster tear sends nobody: no walkable ground out of sight of her at %s"
-				% RunTrace.tile(world.map.world_to_tile(her)))
-		return
-	# The bearing the badge points along, fixed now; where he is created is asked again along it
-	# when the badge's time is up, from wherever she is then.
-	var bearing: Vector2 = (first[0] - her).normalized()
-	var drawn: Array = [first]
-	var putting_up := [true]
-	var where := func(standing: Vector2) -> Vector2:
-		if putting_up[0]:
-			putting_up[0] = false
-			return first[0]
-		drawn[0] = _where_the_sent_pursuer_starts(def, standing, bearing, first_up)
-		return drawn[0][0]
-	var arrive := func(place: Vector2, standing: Vector2) -> bool:
+	var search := func(standing: Vector2, prefer: Vector2) -> SpawnSiting.Start:
+		return _where_the_sent_pursuer_starts(def, standing, prefer, first_up)
+	var arrive := func(place: Vector2, standing: Vector2, start: SpawnSiting.Start) -> void:
 		_sent_after_her = _spawner.spawn_warned(def, PackedVector2Array([place]))
 		var who := "a %s" % def.noun
 		world.trace.note("roll", "poster tear: %s sent after her from %s, %.0fpx off (%s)"
 				% [who, RunTrace.tile(world.map.world_to_tile(place)),
-				standing.distance_to(place), "a clear run at her" if drawn[0][1]
+				standing.distance_to(place), "a clear run at her" if start.clear
 						else "no clear run at her"])
-		return true
-	_sent_warning = _warnings.warn_first(def, her, where, arrive)
-	if _sent_warning:
-		# `VisitCounter`'s own "poster-pursuit" — see docs/TELEMETRY.md, "The page counts visits".
-		EventBus.poster_pursuit_sent.emit()
+	_sent_warning = _warnings.send_from_out_of_sight(def, her, search, arrive)
+	if not _sent_warning:
+		world.trace.note("roll", "poster tear sends nobody: no walkable ground out of sight of her "
+				+ "at %s" % RunTrace.tile(world.map.world_to_tile(her)))
+		return
+	# `VisitCounter`'s own "poster-pursuit" — see docs/TELEMETRY.md, "The page counts visits".
+	EventBus.poster_pursuit_sent.emit()
 
 ## **The men an investigating vehicle lets out.** *(merry-stork, the player: "an investigating
 ## police car should not leave the street. it should stop if close to her and a policeman should
@@ -257,59 +254,25 @@ func sent_pursuer() -> EventInstance:
 ## own cone (`ResistanceDirector.ARRIVAL_CONE`), stepped rather than rolled.
 const SENT_CONE := PI / 6.0
 
-## **Where the pursuer a torn poster sends starts: just out of sight of her** (`PendingWarning.
-## just_out_of_sight()`, everything he can draw outside the camera's whole view, never nearer than
-## the view's half height), on legal ground (`ResistanceDirector.is_legal_ground()`: walkable, not
-## closed or held, not the home block, not a walled-off alley). `[position, clear]`: `Vector2.INF`
-## when no start qualifies, and whether the straight line from there to her is walkable and passes
-## through no body of the day's region wall or doors (`_a_clear_run_at()`).
-##
-## **The task robber's rule, with nothing drawn from a stream** (`ResistanceDirector.
-## _draw_arrival_position()`): `prefer`, the bearing his badge already points along, first when it
-## is asked again; then straight above or below her (`first_up` says which first), since the view is
-## shorter that way; then at `SENT_CONE` either side of each; then straight along her street either
-## way. **A clear run at her decides it**, since he chases in a straight line, sliding along
-## whatever wall is in the way; only where none has one does the first legal start stand in.
+## **Where the pursuer a torn poster sends starts: just out of sight of her, under the task
+## robber's rules** (`SpawnSiting.start_out_of_sight()`): on legal ground, nowhere on the camera's
+## whole view, never with a run at her through the day's region wall or a district door, and a clear
+## run at her deciding it, the first start that passes the rest standing in where none has one.
+## Nothing is drawn from a stream: `prefer`, the bearing his badge already points along, first when
+## it is asked again; then straight above or below her (`first_up` says which first), since the view
+## is shorter that way; then at `SENT_CONE` either side of each; then straight along her street
+## either way. Its `at` is `Vector2.INF` when no start qualifies.
 func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2,
-		first_up: bool) -> Array:
-	var view := PendingWarning.seen_from(world.visible, her)
-	var walled: Array[Rect2i] = []
-	var region: RegionPlanner.RegionPlan = world.city.region_plan() if world.city else null
-	if region:
-		walled = region.alley_walls
+		first_up: bool) -> SpawnSiting.Start:
+	var asked := _spawn_siting.ask(EventFootprints.footprint_of(def), EventInstance.mover_for(def),
+			her)
 	var bearings: Array[Vector2] = []
 	if prefer != Vector2.ZERO:
 		bearings.append(prefer)
 	var up := Vector2.UP if first_up else Vector2.DOWN
 	bearings.append_array([up, -up, up.rotated(SENT_CONE), up.rotated(-SENT_CONE),
 			-up.rotated(SENT_CONE), -up.rotated(-SENT_CONE), Vector2.RIGHT, Vector2.LEFT])
-	var fallback := Vector2.INF
-	for bearing in bearings:
-		var at := PendingWarning.just_out_of_sight(view, def, her, bearing)
-		var tile := world.map.world_to_tile(at)
-		if not world.map.in_bounds(tile) \
-				or not ResistanceDirector.is_legal_ground(world.city_map, tile, walled):
-			continue
-		if not PendingWarning.is_out_of_sight(view, def, her, at):
-			continue
-		if _a_clear_run_at(at, her, region):
-			return [at, true]
-		if fallback == Vector2.INF:
-			fallback = at
-	return [fallback, false]
-
-## Whether the straight line from `from` to `to` crosses only ground a man on foot may enter
-## (`Navigator.clear_line()`), and passes through no body of the day's region wall or doors — a man
-## walking through the checkpoint she was inspected at is no run at her.
-func _a_clear_run_at(from: Vector2, to: Vector2, region: RegionPlanner.RegionPlan) -> bool:
-	if not world.navigator().clear_line(from, to, Mover.on_foot()):
-		return false
-	if region:
-		for body: EventScheduler.Planned in region.wall_bodies + region.door_bodies:
-			var nearest := Geometry2D.get_closest_point_to_segment(body.position, from, to)
-			if nearest.distance_to(body.position) <= body.def.obstructs_radius:
-				return false
-	return true
+	return _spawn_siting.start_out_of_sight(asked, bearings)
 
 ## **One more mast, for day 11's task, generated as the next event** when no live mast stands near
 ## the mark she read (`ResistanceDirector._place_at_a_mast()`). *(2026-10-03, quiet-yak, inbox #486,

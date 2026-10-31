@@ -47,7 +47,7 @@ extends RefCounted
 ## loose dog) — coming at her at its own intensity.
 ##
 ## So a `TOWARD_PLAYER` row is spawned here the way `EventManager.spawn_warned()` creates it: its
-## telegraph spent, `PendingWarning.least_distance()` away — the closest it is ever created, since a
+## telegraph spent, `SpawnSiting.least_distance()` away — the closest it is ever created, since a
 ## figure in `docs/COSTS.md` may not depend on which way a particular walk was going — and closing at
 ## both speeds because she is walking into it.
 ##
@@ -171,7 +171,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 		heading_x = 1.0
 	# Where a row that comes at her is created, closest; otherwise the fixed window that clears
 	# every radius in the catalogue.
-	var lead := PendingWarning.least_distance() if toward_her else LEAD
+	var lead := SpawnSiting.least_distance() if toward_her else LEAD
 	var her_pos := instance.position + Vector2(heading_x * lead, offset)
 	var her_velocity := Vector2(-heading_x * Tuning.WALK_SPEED, 0.0)
 

@@ -37,8 +37,9 @@ func pending_warnings() -> Array[PendingWarning]:
 # inbox #569: "1s warning should be enough".)* Everything that arrives from off screen under the
 # screen-edge badge comes through here: `cyclist` from the director, and
 # `charging_dog` when the director sends it down her heading; the fire engine from the fire it was
-# called to; day 13's column from `ResistanceHappenings`; and the resistance's own two pursuers from
-# `ResistanceDirector`, the moment she has done a task.
+# called to; day 13's column from `ResistanceHappenings`; and, sent from out of her sight
+# (`send_from_out_of_sight()`), the resistance's own pursuers from `ResistanceDirector`, the moment
+# she has done a task, and the pursuer on foot a torn poster sends.
 
 ## Puts up a warning for `def` with nothing in the world yet, pointing where `where` gives for her
 ## standing at `her`, and once its badge has been up alone for the row's own `warned_for()` — at
@@ -56,6 +57,40 @@ func warn_first(def: EventDef, her: Vector2, where: Callable,
 		return null
 	_pending.append(warning)
 	return warning
+
+## **Sends `def` at her from out of her sight, warned first**: the one way a pursuer that is set on
+## her by what she did arrives — a task's trap and day 13's task guard (`ResistanceDirector`), the
+## pursuer on foot a torn poster sends (`EventsAhead.send_a_pursuer()`). `search` is
+## `func(standing: Vector2, prefer: Vector2) -> SpawnSiting.Start`, where he would start for her
+## standing at `standing`, trying `prefer` first where it is not zero; `arrive` is
+## `func(place: Vector2, standing: Vector2, start: SpawnSiting.Start) -> void`, which creates him at
+## `place` with her at `standing`, `start` being the search's answer that placed him.
+##
+## The badge goes up alone at once, pointing where the first search put him, along a bearing fixed
+## now; when its time is up the search is asked again from wherever she is then, along that bearing
+## first, and he is created where it answers, so he comes from where the badge said wherever that
+## still serves. Only putting the badge up reuses the first answer: the camera can settle while she
+## stands still, so the start he is created at is asked against the view of the moment he exists.
+## Returns the warning, or null when the first search found no start, in which case nothing is up
+## and nobody is sent; the caller says so in the run log.
+func send_from_out_of_sight(def: EventDef, her: Vector2, search: Callable,
+		arrive: Callable) -> PendingWarning:
+	var first: SpawnSiting.Start = search.call(her, Vector2.ZERO)
+	if first.at == Vector2.INF:
+		return null
+	var bearing := (first.at - her).normalized()
+	var drawn: Array[SpawnSiting.Start] = [first]
+	var putting_up := [true]
+	var where := func(standing: Vector2) -> Vector2:
+		if putting_up[0]:
+			putting_up[0] = false
+			return first.at
+		drawn[0] = search.call(standing, bearing)
+		return drawn[0].at
+	var on_arrival := func(place: Vector2, standing: Vector2) -> bool:
+		arrive.call(place, standing, drawn[0])
+		return true
+	return warn_first(def, her, where, on_arrival)
 
 ## Moves every warning's place with her, standing at `here`, and creates what is due. Run every
 ## frame there is a player. A warning withdrawn — its ground had no place for the thing when its
