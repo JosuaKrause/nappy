@@ -38,16 +38,18 @@ src/
                         and the run flow: its screens (`run_flow.gd`) and its days (`day_director.gd`)
 	run_sub_state.gd      the interface of a part: reset, photograph, give_back, to_data, restore
 	run_state_registry.gd the one list the dawn, a lost day, the snapshot and the save walk
-	run_header.gd         seed, presentation, day, nerves, ending, play time
+	run_header.gd         seed, presentation, day, nerves, ending, play time (in physics ticks)
 	resistance_run_state.gd  steps, progress, sabotage, the package; given back by a lost day
 	attempt_spend_state.gd   one-shots, scars, block arcs; given back by a lost day
 	settled_state.gd      the calm block she settled in each day
 	run_facts.gd          escape section, used alleys, fenced park: riders beside the snapshot
 	day_director.gd       starts a day (the ordered construction of its world) and ends it, handed
 	                      the world and the run; `main` and the tests both call it
-	day_end.gd            what a day's end settled: its cause, the calendar, the hand-over
+	day_end.gd            what a day's end settled: its cause, its words, the calendar, the hand-over
 	run_flow.gd           which screen is up, what its continue leads to, and the day being walked,
 	                      announced to the readout, the HUD and the route rig
+	authored_scene.gd     what the run asks of an authored scene, the flow's configuration for one
+	summary_model.gd      what a summary screen says, pure; the run's standing and the tally, once
   player/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
@@ -237,7 +239,8 @@ src/
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
 	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo
 	title_screen.gd       the screen a run opens on and goes back to; asks which control scheme
-	day_summary.gd        the screen between days, and the one at the end of a run
+	day_summary.gd        the screen between days, and the one at the end of a run; renders a
+	                      `SummaryModel`
 	pause_screen.gd       the pause
 	save_indicator.gd     the small corner symbol: shown from the moment a save or a deletion starts,
 	                      fully shown while the change is unanswered and for its minimum, struck
@@ -591,7 +594,7 @@ an argument. **The autoload is where the run lives, not how it is reached**: it 
 reloads (the held restart, the day-14 hand-over, a run carried to its checkpoint), and `main`, the
 composition root, takes it once and hands it, typed `RunState`, to every reader it builds — the
 `City` (which hands it to its `PosterWalls`, which hands each `Building` whether the neighbor was
-taken, the one thing `PosterArt` draws from the run), the HUD, the summary, pause and title screens,
+taken, the one thing `PosterArt` draws from the run), the HUD, the pause and title screens,
 `RunSession` and its `TelemetryObserver`, the frame trace and recorder, `DayController`,
 `VisitCounter`, the route rig and the scene recipe runtime — so a test hands a reader whichever run
 it built. `GameSave` is a namespace of static functions, handed the run
@@ -608,21 +611,38 @@ Not an autoload: a `RefCounted` (`src/run/run_flow.gd`) that `main` builds once 
 way through its screens. Its `mode` is the screen in front of the walk — the title, a day brief, the
 walk itself, an ordinary day's end, a lost day that spent a normal run's last nerve, day 14 handing
 over to the escape, a lost section, the day that ended the run, the ending, the escape's epilogue —
-and `continued()` answers the one continue every summary screen sends with the step it leads to
-(engage the day, start the next attempt, carry the run to its checkpoint, retry the section, show
-the ending, go back to the title, reload the scene) and the mode that leaves. A continue with no
-screen up leads nowhere. `DaySummary` sends a tap's continue two frames after the tap, to show the
+and `continued(raised_in)` answers the one continue every summary screen sends, carrying the mode
+the screen was raised in, with the step it leads to (engage the day, start the next attempt, carry
+the run to its checkpoint, retry the section, show the ending, go back to the title, reload the
+scene) and the mode that leaves. A continue from a screen the run has already left, or with no
+screen up, leads nowhere. `DaySummary` sends a tap's continue two frames after the tap, to show the
 continue button pressed, and drops it once the screen tapped has been dismissed or replaced since,
 so a tap and a key reaching one screen are one continue, whichever screen it is. `main` tells it
 each time a screen comes up or a day ends (`DayDirector`'s `DayEnd` picks the screen), carries out
 its steps, and records how the boot came to the run (`Opening`: fresh, resumed, carried from a
 checkpoint, the escape handed over, resumed or from the flag). **A scene recipe is a configuration
-of it** (`authored`): every continue plays the authored scene again, a lost escape section is the
-scene runtime's to retry, and a won last day hands over to nothing. It announces each day or
-section to the observers that draw it — `day_started(spec)` before anything is built and
-`day_planned(spec)` once it is placed — and `main` connects the developer readout (the day's line
-and its routes), the HUD (whether its clock reads to the hundredth) and the route rig (its targets
-for the day) to them; an authored scene's day is never planned.
+of it** (`author(scene)`, an `AuthoredScene`, which `SceneRecipeRuntime` extends and a test hands
+bare): every continue plays the authored scene again, a lost escape section is the scene's to
+retry, a won last day hands over to nothing, the city is built on the scene's own map
+(`authored_map()`), the escape's city plans no finale of its own (`plans_the_finale()`), and the HUD
+says none of the control lessons the scene has learned (`lessons_learned()`, handed to
+`HUD.configure()`). `main` keeps no recipe of its own: every place an authored scene differs asks
+the flow. It starts each day: `start_day(director, spec)` announces it, has the director build it —
+`DayDirector.start_day()` for the game's own run, `start_authored_day()` for an authored scene,
+whose setup the scene installs — and announces it planned. It announces each day or section to the
+observers that draw it — `day_started(spec)` before anything is built and `day_planned(spec)` once
+it is placed — and `main` connects the developer readout (the day's line and its routes), the HUD
+(whether its clock reads to the hundredth) and the route rig (its targets for the day) to them; an
+authored scene's day is never planned.
+
+### `SummaryModel`
+Not an autoload: a pure `RefCounted` (`src/run/summary_model.gd`, the domain model) saying what one
+summary screen says — a day brief, a day's or a lost section's summary, an ending, the escape's
+epilogue — built by `main` from the run, the day's end (`DayEnd`, which carries the loss's own
+sentence and the way out) and `Texts`. `DaySummary` only renders it, breaking its prose between
+sentences to each label's width, and sends back the `RunFlow` mode it was raised in with its
+continue. It is also the one place the run's standing (the day of fourteen, the nerves as stars)
+and the resistance tally are worded; the pause screen reads `standing_line()`.
 
 ### `DayDirector`
 Not an autoload: a `RefCounted` that `main` builds for the world as it stands when a day starts or
@@ -636,8 +656,8 @@ events it plans), the resistance, the player, the baby and the clock; `finish_da
 the clock and the run, since the escape's building has no city, crowd or resistance, and reads the
 events, city, player and baby where there are some. It calls no observer: the readout, the HUD and
 the route rig hear the day from `RunFlow`. It is handed the run, a `RunState` (the class of the
-`GameState` autoload), rather than reading the autoload by name. A scene recipe's day start stays in
-`main`.
+`GameState` autoload), rather than reading the autoload by name. `start_authored_day(spec, scene)`
+starts an authored scene's day from the same components, the scene installing its own setup.
 
 ### `VisitCounter`
 Sends anonymous GoatCounter events for how far a run gets, and what a day actually ended on and

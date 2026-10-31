@@ -26,6 +26,7 @@ func run(t) -> void:
 
 	_test_round_trip_field_list_matches_the_property_list(t)
 	_test_round_trip_preserves_every_field(t)
+	_test_play_time_is_saved_as_seconds_and_counted_in_ticks(t)
 	_test_a_won_days_regained_nerve_survives_a_round_trip(t)
 	_test_missing_file_is_dropped(t)
 	_test_garbled_text_is_dropped(t)
@@ -218,6 +219,24 @@ func _test_round_trip_field_list_matches_the_property_list(t) -> void:
 		t.check(name in written,
 				"'%s' is a GameState field the save format does not mention" % name)
 
+## The run's play time is counted in physics ticks (inbox #866) and saved as seconds, the shape
+## every save has always held it in: a save written before ticks were counted, holding any number
+## of seconds, loads to the nearest tick, and a tick count is written back as its seconds.
+func _test_play_time_is_saved_as_seconds_and_counted_in_ticks(t) -> void:
+	var header := RunHeader.new()
+	var old := header.to_data()
+	old["play_seconds"] = 123.456
+	header.restore(old)
+	t.check(header.play_ticks == roundi(123.456 * Engine.physics_ticks_per_second),
+			"seconds from an older save load to the nearest tick (%d)" % header.play_ticks)
+	header.play_ticks = 9645
+	var written := header.to_data()
+	t.check(written["play_seconds"] is float
+			and is_equal_approx(written["play_seconds"], 9645.0 / Engine.physics_ticks_per_second),
+			"and ticks are written back as seconds (%s)" % written["play_seconds"])
+	header.restore(written)
+	t.check(header.play_ticks == 9645, "which load back to the same tick")
+
 ## Every field, mutated to a value its default could not be mistaken for, round-tripped through
 ## the actual file — `_write_now()`/`_read_now()`, not the in-memory dictionaries, so a JSON
 ## int-becomes-float or a `Vector2i` key that cannot survive `JSON.stringify()` would show up here.
@@ -227,7 +246,7 @@ func _test_round_trip_preserves_every_field(t) -> void:
 	GameState.header.nerves = 3
 	GameState.resistance.progress = 2
 	GameState.header.ending = GameEnums.Ending.NONE
-	GameState.header.play_seconds = 123.456
+	GameState.header.play_ticks = 3704
 	GameState.attempt_spend.consumed_one_shots = ["a_one_shot", "another_one_shot"]
 	GameState.resistance.completed_steps = [0, 2]
 	GameState.resistance.failed_steps = [1]
@@ -253,7 +272,7 @@ func _test_round_trip_preserves_every_field(t) -> void:
 	t.check(GameState.header.day == 6, "day survives")
 	t.check(GameState.header.nerves == 3, "nerves survives")
 	t.check(GameState.resistance.progress == 2, "resistance_progress survives")
-	t.close_to(GameState.header.play_seconds, 123.456, "play_seconds survives to a float")
+	t.check(GameState.header.play_ticks == 3704, "the play time survives to the tick, saved as seconds")
 	t.check(GameState.attempt_spend.consumed_one_shots == ["a_one_shot", "another_one_shot"],
 			"consumed_one_shots survives, string array and all")
 	t.check(GameState.resistance.completed_steps == [0, 2], "completed_resistance_steps survives")
@@ -839,7 +858,6 @@ const _TITLE_SCENE := preload("res://scenes/ui/title_screen.tscn")
 func _build_bare_main(t) -> Node2D:
 	var main: Node2D = _MAIN_SCRIPT.new()
 	main._summary = _SUMMARY_SCENE.instantiate()
-	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	main._pause = _PAUSE_SCENE.instantiate()
 	main._pause.use_run(main._run)
@@ -939,7 +957,6 @@ func _bare_gate_main(t) -> Node2D:
 	main._status = Label.new()
 	main._title = TitleScreen.new()
 	main._summary = _SUMMARY_SCENE.instantiate()
-	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	return main
 
@@ -1110,7 +1127,7 @@ func _test_title_leads_to_the_day_brief_with_nothing_charged(t) -> void:
 		t.check(GameSave._read_now(GameState).get("day_under_way") == false,
 				"showing the day brief writes nothing new — the dawn write already said this")
 
-		main._on_summary_continued()
+		main._on_summary_continued(main._flow.mode)
 		t.check(not main._summary.is_showing(), "continuing dismisses the brief")
 		t.check(main._flow.mode == RunFlow.Mode.WALKING, "and the gate is spent")
 		t.check(GameSave._read_now(GameState).get("day_under_way") == true,
@@ -1630,7 +1647,6 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	var main: Node2D = _MAIN_SCRIPT.new()
 	main._save_indicator = indicator
 	main._summary = _SUMMARY_SCENE.instantiate()
-	main._summary.use_run(main._run)
 	old_main_scene.add_child(main._summary)
 	# Day 14's summary after the hand-over (`DayEnd.hands_over_to_the_escape`).
 	main._flow.mode = RunFlow.Mode.INTO_ESCAPE
@@ -1639,7 +1655,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 
 	var day_fourteen := GameSave._new_operation()
 	EventBus.save_written.emit(day_fourteen, int(GameSave.Result.PENDING))
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	t.check(reloads.size() == 1, "continuing past day 14's summary reloads into the escape")
 	t.check(indicator.get_parent() == home,
 			"and hands the symbol showing day 14's pending save to the tree's root first")

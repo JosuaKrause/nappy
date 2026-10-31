@@ -1,7 +1,8 @@
 class_name SceneRecipeRuntime
-extends Node
+extends AuthoredScene
 ## One saved setup feeds free play, headless assertions and frame-locked recording. Playback
 ## starts only after construction and scenery preparation; observations use the game's physics ticks.
+## The authored scene `RunFlow` is configured with when the boot was handed `--recipe`.
 
 const DIRECTIONS := {"north": Vector2.UP, "south": Vector2.DOWN,
 		"east": Vector2.RIGHT, "west": Vector2.LEFT}
@@ -512,12 +513,31 @@ func start_position() -> Vector2:
 	var errors: Array[String] = []
 	return position_of(data.get("setup", {}).get("player", {}).get("at", "doorstep"), errors)
 
+## The map the recipe's city section is built to (`built.map`).
+func city_map() -> CityMap:
+	return built.map
+
+## `setup.tutorial_complete`: a mid-game scene starts after the ordinary control lessons.
+func lessons_learned() -> bool:
+	return bool(data.get("setup", {}).get("tutorial_complete", false))
+
+func plays_by_script() -> bool:
+	return scripted
+
 ## Installs the fixed day before the world gets a simulation frame. Geometry eligibility reads
 ## the declared construction context, never the exterior's unbuilt walkable floor. `spec` is the walk
 ## the run flow started for the scene — the same object its clock and HUD run on — and the scene's
-## events run under its settings (`EventManager.start_recipe()`).
+## events run under its settings (`EventManager.start_recipe()`). A setup that does not stand is
+## recorded as failed in the manifest (`setup_failed`) as well as returned.
 func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		resistance: ResistanceDirector = null) -> Array[String]:
+	var errors := _install(city, player, baby, spec, resistance)
+	if not errors.is_empty():
+		manifest["setup_failed"] = true
+	return errors
+
+func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
+		resistance: ResistanceDirector) -> Array[String]:
 	walk_spec = spec
 	_city = city
 	_player = player

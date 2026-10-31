@@ -231,12 +231,12 @@ func _test_the_hud_names_the_mode_when_invincible(t) -> void:
 	hud.use_run(GameState)
 	t.add_child(hud)
 	hud.set_process(false)
-	hud.configure(true, true)
+	hud.configure(true, true, false)
 	hud._refresh_header()
 	t.check(hud._header.text.contains("INVINCIBLE"),
 		"the debug header names the mode so no capture from this run reads as a real one")
 
-	hud.configure(true, false)
+	hud.configure(true, false, false)
 	hud._refresh_header()
 	t.check(not hud._header.text.contains("INVINCIBLE"), "and drops it once the flag is off")
 

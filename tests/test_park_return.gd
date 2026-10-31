@@ -63,7 +63,7 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 			% [ResistanceSteps.swing_day(), GameState.header.day])
 	# A resumed run opens on the day's brief; leaving it is what puts her on the street.
 	if main._flow.mode == RunFlow.Mode.BRIEF:
-		main._on_summary_continued()
+		main._on_summary_continued(main._flow.mode)
 	t.check(main._day.is_running() and not main._summary.is_showing(),
 			"seed %d: day %d is under way" % [seed_value, GameState.header.day])
 	var director: ResistanceDirector = main._resistance
@@ -126,7 +126,7 @@ func _walk_out_through_the_gap(main: Node2D, swing: Vector2, shows: Callable) ->
 func _check_the_next_morning(t, main: Node2D, label: String) -> void:
 	t.check(main._summary.is_showing(), "%s: the won day's summary is up" % label)
 	var map: CityMap = main._city.map
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	t.check(GameState.header.day == ResistanceSteps.swing_day() + 1,
 			"%s: leaving the summary starts day %d (day %d)"
 			% [label, ResistanceSteps.swing_day() + 1, GameState.header.day])
@@ -220,7 +220,7 @@ func _test_shut_in_with_the_baby_asleep(t, seed_value: int) -> void:
 			"%s: shut in, the day is lost to the cordon (%s)" % [label, results])
 	t.check(main._summary.is_showing(), "%s: the lost day's summary is up" % label)
 	var day := GameState.header.day
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	t.check(GameState.header.day == day and not main._summary.is_showing()
 			and not t.get_tree().paused,
 			"%s: leaving it plays day %d again (day %d)" % [label, day, GameState.header.day])

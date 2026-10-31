@@ -978,9 +978,9 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	main._interior.exit_requested.emit()
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	t.check(main._city != null and main._flow.spec.section == DaySpec.Section.CITY,
 			"seed %d: the service door puts her in the city" % PLAYERS_SEED)
 	if main._city != null:
@@ -1494,7 +1494,6 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	t.check(_escape_tint(city, day, on_the_walk, corridor).z == first.x,
 			"wiping the tint leaves every kerb of the walk plain")
 	main._summary = SUMMARY_SCENE.instantiate()
-	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
 	main._hud.use_run(main._run)
@@ -1660,7 +1659,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 		t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
 				"section %d: with a full clock standing still behind it" % section)
 
-		main._on_summary_continued()
+		main._on_summary_continued(main._flow.mode)
 		t.check(not main._summary.is_showing() and not t.get_tree().paused,
 				"section %d: continuing takes the screen away and the walk begins" % section)
 		t.check(main._hud.visible, "section %d: with the HUD back" % section)
@@ -1685,7 +1684,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 				"section %d: since a normal run's lost section spends none" % section)
 
 		teach.text = ""
-		main._on_summary_continued()
+		main._on_summary_continued(main._flow.mode)
 		t.check(main._flow.spec.section == section and main._summary.is_showing()
 				and main._flow.mode == RunFlow.Mode.BRIEF,
 				"section %d: its continue is the same section again, behind its brief" % section)
@@ -1694,7 +1693,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 				% [section, title.text, body.text])
 		t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
 				"section %d: with a full clock standing still behind it" % section)
-		main._on_summary_continued()
+		main._on_summary_continued(main._flow.mode)
 		t.check(not main._summary.is_showing() and not t.get_tree().paused
 				and main._day.is_running(),
 				"section %d: the brief's continue is the walk" % section)
@@ -1715,18 +1714,18 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 		_free_the_escape(t, main)
 
 ## **The escape is counted like a day** *(minty-lemur #785: "telemetry should work the same also in
-## escape both apartment and city")*: the run's played time (`GameState.header.play_seconds`, which the
+## escape both apartment and city")*: the run's played time (`GameState.header.play_ticks`, which the
 ## ending screen shows) runs while a section is walked, and a charge still running when she gets
 ## out of the city is closed for the page's counter as cut short, before the section's own end is
 ## counted — through the day's own finish path, as a day's are.
 func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 	var main := _boot_the_escape(t, DaySpec.Section.CITY)
-	main._on_summary_continued()
-	var played := GameState.header.play_seconds
-	main._process(0.5)
-	t.check(is_equal_approx(GameState.header.play_seconds, played + 0.5),
-			"walking the city section counts toward the run's played time (%.2f, then %.2f)"
-			% [played, GameState.header.play_seconds])
+	main._on_summary_continued(main._flow.mode)
+	var played := GameState.header.play_ticks
+	main._physics_process(1.0 / Engine.physics_ticks_per_second)
+	t.check(GameState.header.play_ticks == played + 1,
+			"walking the city section counts toward the run's played time (%d, then %d ticks)"
+			% [played, GameState.header.play_ticks])
 
 	var heard: Array[String] = []
 	var on_cut_short := func(id: String) -> void:
@@ -2031,7 +2030,6 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = SUMMARY_SCENE.instantiate()
-	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
 	main._hud.use_run(main._run)
@@ -2105,7 +2103,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "and neither does losing focus")
 
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	EventBus.hard_fail_triggered.emit("abduction")
 	t.check(main._summary.is_showing() and main._flow.mode != RunFlow.Mode.BRIEF,
 			"a lost section's outcome screen is up")
@@ -2117,15 +2115,16 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 	t.check(t.get_tree().paused and main._summary.is_showing(),
 			"and closing it leaves the outcome screen up and the tree paused")
 
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	t.check(main._summary.is_showing() and main._flow.mode == RunFlow.Mode.BRIEF, "the retry's brief is up")
 	main._unhandled_input(_action("pause"))
 	t.check(not main._pause.is_open(), "Esc does not open the pause over it")
 
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	main._player.global_position = main._flow.spec.exits[CityEdge.Kind.TUNNEL]
 	main._day._process(0.0)
-	t.check(main._summary.is_showing_the_epilogue(), "out of the city, the epilogue is up")
+	t.check(main._flow.mode == RunFlow.Mode.EPILOGUE and main._summary.is_showing(),
+			"out of the city, the epilogue is up")
 	main._unhandled_input(_action("pause"))
 	t.check(not main._pause.is_open(), "Esc does not open the pause over the epilogue")
 	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
@@ -2232,7 +2231,6 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
 	main._pause = PAUSE_SCREEN_SCENE.instantiate()
 	main._pause.use_run(main._run)
 	main._summary = SUMMARY_SCENE.instantiate()
-	main._summary.use_run(main._run)
 	main._connect_summary_and_pause_signals()
 	t.check(main._pause.restart_requested.is_connected(main._restart_run),
 			"the escape's own pause screen reaches main._restart_run(), same as a day's")

@@ -53,9 +53,9 @@ func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 	t.check(main._interior != null, "the boot stands in the building")
 	var baby: Baby = main._baby
 	t.check(baby.world() == main._interior, "in the building she reads the building")
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	main._interior.exit_requested.emit()
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	t.check(main._city != null, "the service door has put her in the city")
 	if main._city != null:
 		t.check(main._baby == baby, "and it is the same baby")

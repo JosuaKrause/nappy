@@ -358,7 +358,7 @@ func _end_run(which: GameEnums.Ending) -> void:
 	_trace.note("ending", "%s on day %d — resistance %d/%d, sabotage %s, played %s" % [
 		GameEnums.Ending.keys()[which].to_lower(), header.day,
 		resistance.progress, Tuning.RESISTANCE_GOAL,
-		"done" if resistance.sabotage_done else "not done", format_clock(header.play_seconds)])
+		"done" if resistance.sabotage_done else "not done", format_clock(header.play_seconds())])
 	EventBus.run_ended.emit(which)
 	# A finished run leaves no save: there is nothing left to resume, and a
 	# save that named an ended run would have to be specially refused on load rather than simply

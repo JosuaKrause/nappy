@@ -151,7 +151,7 @@ func _change_everything() -> void:
 	GameState.header.nerves = 2
 	GameState.resistance.progress += 3
 	GameState.header.ending = GameEnums.Ending.NEUTRAL
-	GameState.header.play_seconds += 500.0
+	GameState.header.play_ticks += 15000
 	GameState.attempt_spend.consumed_one_shots.append("spent_after_the_checkpoint")
 	GameState.resistance.completed_steps.append(99)
 	GameState.resistance.failed_steps.append(98)
@@ -197,7 +197,7 @@ func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t) -> void:
 	GameState.begin_day()
 	var day_four := GameState.checkpoint.duplicate(true)
 	t.check(GameState.checkpoint_day() == 4, "day 4 is a checkpoint")
-	GameState.header.play_seconds = 77.0
+	GameState.header.play_ticks = 2310
 	GameState.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
 	GameState.begin_day()
 	t.check(GameState.checkpoint == day_four, "a retry of day 4 does not replace its dawn")
@@ -274,7 +274,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	GameState.header.nerves = 1
 	main._on_day_finished(GameEnums.DayResult.LOST_TIMEOUT)
 	t.check(GameState.header.day == 8 and main._summary.is_showing(), "the lost-day screen is up, at day 8")
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 
 	var playing := main
 	if reloads.size() == 1:
@@ -341,7 +341,6 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	GameState.header.nerves = 2
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = SUMMARY_SCENE.instantiate()
-	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
 	main._hud.use_run(main._run)
@@ -368,7 +367,7 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	main._on_day_finished(GameEnums.DayResult.LOST_HARD_FAIL)
 	t.check(GameState.header.nerves == 0 and main._flow.mode == RunFlow.Mode.RUN_OVER,
 			"the last nerve does not start it again")
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	t.check(GameState.header.ending == GameEnums.Ending.BAD and main._flow.mode == RunFlow.Mode.ENDING,
 			"it is the bad ending")
 	var heading: Label = main._summary.get_node("Root/Center/Lines/Heading")
@@ -401,7 +400,7 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 			"the boot stands in the building on its brief")
 	t.check(main._interior.exit_requested.is_connected(main._day.reach_the_exit),
 			"the service door is wired to the day's own goal")
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	main._interior.exit_requested.emit()
 	t.check(GameState.header.nerves == 3, "leaving the building gives the hard run no nerve back")
 	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
@@ -428,10 +427,12 @@ func _test_the_lost_day_screen_says_where_she_goes_back_to(t) -> void:
 	GameState.start_run(_SEED)
 	GameState.header.day = 8
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
-	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "Dusk came.", Tuning.STARTING_NERVES, 0.0,
-			true)
+	var end := DayEnd.new()
+	end.result = GameEnums.DayResult.LOST_TIMEOUT
+	end.reason = "Dusk came."
+	end.goes_back = true
+	summary.show_summary(SummaryModel.day_over(GameState, end), RunFlow.Mode.BACK_TO_CHECKPOINT)
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
 	t.check(body.text.contains("Back to day 8"), "it names the day she goes back to ('%s')" % body.text)
 	t.check(body.text.contains(NerveDisplay.stars(Tuning.STARTING_NERVES)), "with five stars")
@@ -731,7 +732,6 @@ func _bare_gate_main(t) -> Node2D:
 	main._title.use_run(main._run)
 	t.add_child(main._title)
 	main._summary = SUMMARY_SCENE.instantiate()
-	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	return main
 

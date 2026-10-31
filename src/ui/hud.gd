@@ -36,10 +36,16 @@ var _debug := OS.is_debug_build()
 var _invincible := false
 
 ## What the run's configuration decides about this HUD: the debug shape (`false` for a release
-## build and for `--player-view`) and whether the run is invincible. Called before `_ready()`.
-func configure(debug: bool, invincible: bool) -> void:
+## build and for `--player-view`), whether the run is invincible, and whether the ordinary control
+## lessons have already been learned (an authored mid-game scene's `tutorial_complete`, which
+## `RunFlow.lessons_learned()` answers), so the HUD says none of them: no walking lesson, no pause
+## lesson and no run lesson. Danger warnings and the rest of the HUD stay. Called before `_ready()`.
+func configure(debug: bool, invincible: bool, lessons_learned: bool) -> void:
 	_debug = debug
 	_invincible = invincible
+	_lessons_learned = lessons_learned
+	_taught_pause = lessons_learned
+	_taught_run = lessons_learned
 
 ## The run whose day, act, nerves and resistance the header and the resistance line read, handed in
 ## by `use_run()`.
@@ -176,6 +182,8 @@ var _rig: Stroller
 ## stopped, it is a person who has not started, so it does not count.
 var _walked_today := false
 var _stood_for := 0.0
+## Whether the ordinary control lessons were learned before this run began — see `configure()`.
+var _lessons_learned := false
 ## Once per **run**, not once per day. See `_teach_the_pause()`.
 var _taught_pause := false
 ## Once per **run**, and only on `Tuning.RUN_TAUGHT_DAY`. See `_on_event_telegraphed()`.
@@ -199,7 +207,7 @@ func _teach_the_day(day: int) -> void:
 	# remembers a lesson the player never actually reached. `_taught_pause` keeps the once-per-run
 	# shape the comment above it argues for — it is not tied to a day, so whether a rewind should
 	# clear it too is a different question and not this one's to answer.
-	if day == Tuning.RUN_TAUGHT_DAY:
+	if day == Tuning.RUN_TAUGHT_DAY and not _lessons_learned:
 		_taught_run = false
 
 
@@ -274,6 +282,8 @@ func _on_event_telegraphed(instance: EventInstance) -> void:
 	_say(phrase[0].to_upper() + phrase.substr(1), instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
 func _say_the_walking_lesson(joystick: bool) -> void:
+	if _lessons_learned:
+		return
 	_say(Texts.WALKING_LESSON % _run_phrase(joystick), TEACH_SECONDS)
 
 ## The title opens after day 1 has started, so the lesson said at dawn was worded for whatever
