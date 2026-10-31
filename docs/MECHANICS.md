@@ -526,7 +526,7 @@ meter, none of which a data-level test can see:
 **Excitement stays a pure query.** A contact does not touch `Baby.excitement`; it *startles
 the person she walked into*, and the crowd's set (`CrowdSources`) sums that agent like it sums
 every other one. So contacts still compose by plain addition, there is still no ordering to get
-wrong, and `WorldContext.total_excitement_at` still adds exactly two sets. See the **events** skill.
+wrong, and `WorldContext.total_excitement_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.
 
 ### A car is lethal
 

@@ -29,8 +29,8 @@ extends Node
 ## each: no route tree, so no `path`; no `ResistanceDirector`, so no `contact`; no `CityMap` in the
 ## building, so no `cross`, `road`, `calm` or `left` there, no trail and no dusk map, and a tile in
 ## any line is the building's own grid. The events are an
-## event source either way — an `EventManager`, the city's or the building's, answering `instances()`
-## and `total_excitement_at()` — so `near`, `chase`, `cue`, `freeze`, `run`, `idle`, `blocked`, `turn`,
+## event source either way — an `EventManager`, the city's or the building's, answering `instances()`,
+## with its excitement read off the world's sets (`WorldContext`) — so `near`, `chase`, `cue`, `freeze`, `run`, `idle`, `blocked`, `turn`,
 ## `frame` and the losing line read a section exactly as they read a day.
 
 ## How far off the committed heading counts as doubling back rather than turning a corner.

@@ -1,9 +1,5 @@
 # Shared components instead of copies that drift
 
-What a crowd body and an event charge her is one `ExcitementSource` (`src/world/`) each composes, with
-only its own field per type (`EventExcitement`, `CrowdExcitement`), answered per world by
-`ExcitementSources` sets that `WorldContext` holds, the door rule stated once (minty-quail-27).
-
 - **Placement has about 25 entry points in four classes**, with self-declared copies:
   `EventsAhead._where_the_sent_pursuer_starts` copies `ResistanceDirector._draw_arrival_position`
   without its in-view check; `EventsAhead._a_clear_run_at` equals `ResistanceDirector._a_clear_run`
@@ -35,14 +31,7 @@ the resistance's walking-distance field) as its pathfinder, a dependency on the 
 map's one `Navigator` is the shared one; a car's driving copies crowd traffic's
 give-way (`EventCarDriving.room_to_its_line()`), the copy `LaneMover` takes; movement proposed,
 validated, then committed for every mover, as a car's frame is (minty-quail-17), built so far for the car
-alone; and the city behind the title screen: on a day the street plays on there, so the traffic
-signals, every event's age, phase and repeat timers, the shared broadcast clock and the street's
-stocking advance on ticks no walk stepped, while the day's own clocks count only the ticks the walk
-stepped. That stays (inbox #883): asked whether the day should keep playing on behind the title, freeze,
-or start fresh, the player chose to keep it, "a little bit of variety is fine", since a seed-of-the-day
-run is played whole, only day 1 is affected and it opens on a predictable scene, and "no events ever
-spawn at the home block anyway". **Read as:** no reset when a day starts; the docs say the city runs on
-behind the title.
+alone.
 
 **Open question, the orchestrating session's carry-over from minty-quail-5 rather than the player's
 ask:** whether the crowd's lane movement goes onto the map's one `Navigator`. It is not part of the
