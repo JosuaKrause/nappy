@@ -12,6 +12,16 @@ obstacle to avoid, crossing the street, turning around, and later lessons such a
 hut that can be walked through. Each lesson's bubble shows only a few times, at the moment it
 applies, then never again.
 
+**Two bubbles asked for since:** the zebra-crossing bubble on day 1, shown when she steps onto the
+road away from a crossing (minty-dolphin #834, #867; `car-free-start.md`), and one for the chalk
+mark: "also a thought bubble should hint on going into the alley to get the mark"
+(minty-dolphin #868). The chalk mark is the resistance's first encounter, a mark drawn in an alley that she walks in
+to touch, with the alley's robber at its far end; day 6's brief names the rumor of chalk and the task
+has its red arrow (`CLAUDE.md`, "Things deliberately not done"). **Read as:** on the day the chalk
+mark is first there, a bubble hints that she can go into the alley to reach it, beside the brief and
+the arrow. **Open:** whether it shows once or on every day a mark is there, and what sets it off (the
+alley mouth coming into view, or her passing it).
+
 *Proposed, not asked for:* the bubble looks unlike the danger exclamation mark already drawn over
 her, since **cues** keeps that vocabulary short; the icons are SVG, drawn by Opus under **svg-art**
 and **cues**, and the first attempt comes back to the player early; "a few times" starts at three

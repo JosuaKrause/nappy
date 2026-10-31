@@ -1,5 +1,7 @@
 priority: now
 after: 2026-10-18-minty-quail
+after: 2026-10-24-lilac-marten
+after: 2026-10-18-snowy-goose
 
 # grassy-beaver — A day one that teaches: hand-crafted, a park close by, thought bubbles, and the loss shown · filed 2026-10-24
 
@@ -48,9 +50,16 @@ curly-moose #819); a first-day line of text about the tinted sidewalks.
 make the intro a slog. we want to start right into the action" (curly-moose #819); the thought
 bubbles (`thought-bubbles.md`) "might even make the text obsolete".
 
-**Items:** `hand-crafted-day-one.md`, `thought-bubbles.md`, `the-loss-shown.md`,
-`day-one-milestones.md`, `opening-shot.md` (an experiment), `junction-signs.md`, `day-two.md`.
+**Items:** `hand-crafted-day-one.md`, `car-free-start.md`, `thought-bubbles.md`,
+`the-loss-shown.md`, `day-one-milestones.md`, `opening-shot.md` (an experiment), `junction-signs.md`,
+`day-two.md`.
 
-*Proposed, not asked for:* built after minty-quail (one engine), since the director and the event
-manager it orders are what the refactor is reshaping; the band `now`, since the player tied
-cross-posting to day one being fixed (curly-moose #824). Open to the player's correction.
+**After the escape.** The player: "the task is clear refactor then escape then tutorial"
+(minty-dolphin #852), and earlier "the escape and day one fixes can go after the refactor"
+(minty-dolphin #830). **Read as:** this entry waits for minty-quail (the refactor) and for the
+escape's fixes, lilac-marten (its fuller escape, with that entry's other two items) and snowy-goose
+(explosions in the escape city), which its `after:` lines say.
+
+*Proposed, not asked for:* the band `now`, since the player tied cross-posting to day one being
+fixed (curly-moose #824); waiting for lilac-marten's charger timing and total time as well as its
+fuller escape, since they are one entry. Open to the player's correction.

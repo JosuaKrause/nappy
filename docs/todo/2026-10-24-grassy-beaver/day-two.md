@@ -6,9 +6,15 @@ traffic half (below).
 
 **Build:** day 2 carries a dead end met early, with its thought bubble (`thought-bubbles.md`).
 
-**Open, the filer's reading:** lesson (e), timing the approach for moving obstacles, was proposed
-for day 2 only as traffic timing, which the player's answer below takes out; whether day 2 should
-teach timing another moving obstacle (a cyclist, a dog) is unasked.
+**Lesson (e) is day 1's.** Timing the approach for moving obstacles was proposed for day 2 only as
+traffic timing, which the player's answer below takes out; asked whether day 2 should teach timing a
+cyclist or a dog instead, the player put the homeless yeller last on day 1 (minty-dolphin #834,
+`hand-crafted-day-one.md`).
+
+**A path past day 1's park.** The player: "spoiled actually teaches the lesson. there should be a
+path that touches the first day's park so the player learns this lesson (since they are free to go
+to it again)" (minty-dolphin #834). **Build:** day 2's city offers a path that passes day 1's park,
+which is spoiled with noisy events and stays walkable, so a player who goes back sees it spoiled.
 
 **Traffic.** Asked "how do you plan to do traffic timing on day 2 only? you don't want any traffic
 on day 1?" (curly-moose #819), and told the proposal was that day 1's route asks for no lethal
@@ -21,6 +27,8 @@ day 1's largest single cause before it) come from a player crossing the carriage
 crossing, so what day 1 lacks is the lesson that a street is crossed at its crossings, not a change
 to traffic.
 
-*Proposed, not asked for:* a thought bubble the first times she steps into the carriageway away from
-a crossing, pointing her at the nearest one; whether day 1's hand-crafted route also passes a
-crossing early, so the lesson has its place, is the builder's to propose.
+**The crossing bubble is day 1's.** Asked on the board whether day 1 gets a thought bubble for
+running across the street (the first few times she steps into the road away from a crossing,
+pointing at the nearest one), the player: "yes" (minty-dolphin #834); `car-free-start.md` has when
+it shows. *Proposed, not asked for:* whether day 1's hand-crafted route also passes a crossing early,
+so the lesson has its place, is the builder's to propose.

@@ -32,7 +32,18 @@ vehicle shows (`_stationary_vehicle_uses_side()` on BURNT_OUT_CAR); `EventSpawne
 repeats the rank test for siting; `EventsAhead`'s `GUARDSMAN_GIVING_CHASE` tests choose only the
 run log's wording ("a guardsman" or "a policeman"). **Two clocks:**
 `ResistanceDirector` and `DayController` tick in `_process`, once per drawn frame, while the events
-step and their catches, hard fails and detentions are checked on the physics tick. **The tick still
+step and their catches, hard fails and detentions are checked on the physics tick. **Every clock is
+to be frame-locked** (minty-dolphin #866): the player, "actually we should make all clocks in the game
+frame locked. otherwise someone with a faster computer could get lower times over someone with many
+lag frames", with a later "seed of the day" leaderboard in mind, and "lag frames where nothing happens
+(I don't think we have those) shouldn't count". Read back and confirmed ("that works"): every clock
+that makes a time the player sees or decides an outcome (the day countdown, the resistance clocks,
+any other such clock under `src/events/`, `src/resistance/`, `src/day/`, the traffic signals and the
+encounter watch) counts the physics ticks the walk's simulation actually stepped: not paused, no
+screen up, no load hold, and the catch-up ticks after a hitch count. *Proposed, not asked for:* a test
+that one long drawn frame advances no clock beyond the ticks that ran, and the escape's hundredths
+label showing the tick clock advanced by the physics interpolation fraction, so it looks as it does
+now. The run's play time already counts ticks (minty-quail-23). **The tick still
 sets a drawing property:** a pursuer that warns over the street is put on the warning draw layer
 from its tick (`EventInstance._take_the_layer_it_warns_on()`, `DrawLayer.draw_on()`), since a look
 never writes the event. **Upward coupling:** the instance uses the red arrow's `ArrowField` as its

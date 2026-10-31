@@ -47,6 +47,18 @@ map, navigator, configuration, clock, event sink) through its setup or construct
 fetching it from an autoload, a scene-tree group or a static. Tests then hand it fakes instead of
 patching statics or reaching into private fields. Every item below applies it to what it extracts.
 
+**No legacy shape is kept** (minty-dolphin #852): the player, "Don't let legacy implementations
+prevent you from establishing a clean design". Read as: an old path, a forwarder kept for an old
+name so callers or tests need not change, or a rule that holds only "in practice" is replaced, not
+kept beside the new design.
+
+**The parts end up independent; sequential now is fine** (minty-dolphin #845): asked "why one PR at
+a time? no way to partition work?", the player, "okay, let's do the refactor in a way that things
+will ultimately be independent but it's okay if it needs to be sequential right now". Read as: the
+refactor leaves its parts independent of each other, so later work on them can be split across
+parallel agents; items that touch the same code now run one after another, and items already
+independent run in parallel.
+
 ## Order
 
 Each step leaves the game working and is its own PR, reviewed on its own. **A step is done at test
