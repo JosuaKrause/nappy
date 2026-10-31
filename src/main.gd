@@ -794,7 +794,7 @@ func _build_the_escape_building() -> void:
 	_building_events.use_player(_player)
 	_interior.events = _building_events
 	_building_seed = _run.day_rng(_run.header.day, "finale-interior").randi()
-	BuildingPlan.lay_the_grates(_interior.map)
+	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map)
 	# The building shows what the city shows: the same badge, halo and debug view, reading its
 	# events as a day reads the city's — see `_event_source()`. The city's own build calls the same
 	# three again when she walks out, which points them at the street.

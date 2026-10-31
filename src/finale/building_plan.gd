@@ -82,7 +82,7 @@ static func _place_the_masked_man(map: InteriorMapPlan,
 ## out of `Tuning.FINALE_STEAM_PERIODS`, and staggered so the three do not open the whole corridor at
 ## once on the first pass; after that their own periods do it. Between blows there is no instance at
 ## all, so a vent that is off costs nothing and stops nobody; its grate stays on the floor
-## (`lay_the_grates()`).
+## (`grates()`).
 static func _place_the_basement(map: InteriorMapPlan, rng: RandomNumberGenerator,
 		plans: Array[EventScheduler.Planned]) -> void:
 	var walk := map.basement_walk()
@@ -119,24 +119,11 @@ static func _place_the_explosions_outside(plans: Array[EventScheduler.Planned]) 
 	bang.age = bang.arrives_aged
 	plans.append(bang)
 
-## **Each vent's floor grate, lying on its site for the whole escape**, through the building's map
-## (`WorldMap.add_entity()`), and answered for whoever wants to find them. A gate she can see only
-## while it is shut is one she finds by walking into its notice; a grate lying in the corridor,
-## blowing or not, is one she sees from the corner and times. So the grate is floor owned by the
-## vent's place rather than by any blow's picture, and each blow's cloud rises out of it.
-##
-## **Ground, not something standing on it**: she walks over it between blows, so it lies on the
-## ground layer (`DrawLayer.Layer.GROUND`), after the floor tiles, under the walls and the y-sorted
-## layer she and every blow stand in, centred on the vent's point, where each blow's frames are
-## anchored. No body: the grate is where the gate is, not a second gate.
-static func lay_the_grates(map: InteriorMapPlan) -> Array[Sprite2D]:
-	var grates: Array[Sprite2D] = []
-	for at in map.vent_sites():
-		var grate := Sprite2D.new()
-		grate.name = "SteamGrate"
-		grate.texture = EventPictures.steam_grate()
-		grate.centered = true
-		grate.position = at
-		map.add_entity(grate, DrawLayer.Layer.GROUND)
-		grates.append(grate)
-	return grates
+## **Where each vent's floor grate lies, for the whole escape**: on each vent's own point
+## (`InteriorMapPlan.vent_sites()`). A gate she can see only while it is shut is one she finds by
+## walking into its notice; a grate lying in the corridor, blowing or not, is one she sees from the
+## corner and times. So the grate is floor owned by the vent's place rather than by any blow's
+## picture, and each blow's cloud rises out of it. Where it lies is the building's; drawing it is a
+## view's (`SteamGrates.lay()`).
+static func grates(map: InteriorMapPlan) -> Array[Vector2]:
+	return map.vent_sites()

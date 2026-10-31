@@ -2112,7 +2112,7 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: Node) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	var events := BuildingEvents.events_in(t, scene, rng)
-	var grates := BuildingPlan.lay_the_grates(scene.map)
+	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map), scene.map)
 	var ground := scene.get_node_or_null("Ground") as CanvasItem
 	t.check(ground != null, "the building has its floor tiles to lie on")
 	# She joins the same layer every blow does (`InteriorScene.add_entity()`), so a stand-in there
