@@ -674,7 +674,7 @@ func _ground_lets(tile: Vector2i, layers: int) -> bool:
 ## where a layer `mover` names stands today, and outside an authored scene's stretch. The ground's
 ## own tile types are not laid out: a sweep reads them off `tiles` itself (`walkable_by_type()`),
 ## since that is a lookup per neighbour against a call. What the red arrow's sweep and day 13's
-## guard's walk to her run on (`ArrowField`), laid out once for each state of the record
+## guard's walk to her run on (`WalkField`), laid out once for each state of the record
 ## (`day_record_version`, `obstruction_version`).
 func ground_for(mover: Mover) -> PackedInt32Array:
 	var ground := super(mover)
@@ -1092,7 +1092,7 @@ static var _WALKABLE: PackedByteArray = _lut(Tile.is_walkable)
 static var _CALM: PackedByteArray = _lut(Tile.is_calm)
 
 ## `Tile.is_walkable` as a table indexed by tile type, for a sweep over `tiles` outside this file
-## (`ArrowField`, the red arrow's walking distances) that wants the same answer
+## (`WalkField`, the red arrow's walking distances) that wants the same answer
 ## `walk_field_from()` reads without a function call per neighbour.
 static func walkable_by_type() -> PackedByteArray:
 	return _WALKABLE

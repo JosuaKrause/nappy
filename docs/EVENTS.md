@@ -1883,7 +1883,7 @@ The roadblock's waiting guard comes after her the moment she has done its task, 
 stands, and he is the one pursuer who walks round buildings toward her: where no clear line runs to
 her he follows the walk to her over the ground she can walk, refreshed as she moves, rather than
 the straight line every other chase slides along walls
-(`EventInstance.notice_her_at()`, `_paths_to_her`), since he may start a city away. His notice,
+(`EventInstance.notice_her_at()`, `_chase_way`), since he may start a city away. His notice,
 stand-off and lunge are every pursuer's.
 
 | id | kind | from | Behaviour |

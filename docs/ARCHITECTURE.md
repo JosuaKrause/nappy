@@ -244,7 +244,14 @@ src/
 	                      tiles on the record are both built from
 	navigator.gd          the one way anything moves over a map: a swept step that keeps the
 	                      body clear, a walk down points, a way round, a way out, a route cut to
-	                      the ground; handed to every mover by whoever builds it
+	                      the ground, a `ChaseWay` to somebody a city away; handed to every mover
+	                      by whoever builds it
+	walk_field.gd         the walking-distance sweep over a map's ground, out from the places it is
+	                      begun from, a slice a frame: the red arrow's "closest by walking" and
+	                      the chase way's walk to her
+	chase_way.gd          the way a chaser follows to her round the buildings between them: a sweep
+	                      out from her kept fresh as she moves, read a step at a time; made by
+	                      `Navigator.way_to()`, held by day 13's task guard alone
 	release_latch.gd      "she has just come through this, leave her alone until she has left it":
 	                      the flag a door arms on the way out, cleared by her walking out of its
 	                      own reach. The region doors and the building's doors share it

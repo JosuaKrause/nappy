@@ -181,14 +181,14 @@ func _test_the_arrow_stays_on_the_stretch(t, _map: CityMap) -> void:
 	]
 	var raw_ground := PackedInt32Array()
 	raw_ground.resize(map.tiles.size())
-	raw_ground.fill(ArrowField.UNREACHED)
-	var raw := ArrowField.start(map, targets, Vector2i.ZERO)
+	raw_ground.fill(WalkField.UNREACHED)
+	var raw := WalkField.start(map, targets, Vector2i.ZERO)
 	while not raw.done:
 		raw.advance(map, raw_ground, map.tiles.size())
 	var director := ResistanceDirector.new()
 	director._map = map
 	var ground := director._ground_for_the_arrow()
-	var authored := ArrowField.start(map, targets, Vector2i.ZERO)
+	var authored := WalkField.start(map, targets, Vector2i.ZERO)
 	while not authored.done:
 		authored.advance(map, ground, map.tiles.size())
 	var start := Vector2i(0, 0)

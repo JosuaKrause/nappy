@@ -2875,7 +2875,7 @@ func _reach_distance(instance: EventInstance) -> float:
 ## at the one before, and only moving him in her view would put him at hers. **Wherever he is when
 ## she has done the task — in the band, on the ring past it, at another roadblock — he starts after
 ## her the moment she has** (`_set_the_task_guard_on_her()`), walking round the buildings between
-## them rather than stalling behind one (`EventInstance._paths_to_her`); running shakes him off.
+## them rather than stalling behind one (`EventInstance._chase_way`); running shakes him off.
 ##
 ## **A guard who has noticed her is not moved**, nor one whose chase is over: he is after her, or
 ## gone, and a move would take him off her or bring him back.
@@ -2934,7 +2934,7 @@ func _move_the_task_guard_to_her_target() -> void:
 ## has not yet noticed her notices her now (`EventInstance.notice_her_at()`) and starts after her
 ## from where he is: from the band with a clear line, as he would have; from the roadblock before,
 ## from the ring past the band, or round a corner, the same. **He starts after her and walks round
-## buildings to her** (`EventInstance._paths_to_her`): where no clear line runs to her he follows the
+## buildings to her** (`EventInstance._chase_way`): where no clear line runs to her he follows the
 ## walk to her, refreshed as she moves, so from another roadblock he comes all the way to her unless
 ## she leaves him behind: he gains on a walker only 38px a second (his 130 against
 ## `Tuning.WALK_SPEED`'s 92), so from across the city a walk away can outlast his
@@ -3317,7 +3317,7 @@ func red_arrow_target() -> Vector2:
 	return at if at != Vector2.INF else contact_position()
 
 ## How often the arrow of a task several places answer is chosen again: twice a second. **A choice
-## is a lookup**: her tile read in two finished fields (`ArrowField`), plus a scan of the live
+## is a lookup**: her tile read in two finished fields (`WalkField`), plus a scan of the live
 ## targets to see whether they are still the ones the fields were swept from. The sweeps behind the
 ## fields run apart from it, a slice a tick (`ARROW_SWEEP_TILES_PER_TICK`), and only when the
 ## targets or what blocks her have changed. `tests/probes/plush_moose_arrow_cost.gd` measures both.
@@ -3326,7 +3326,7 @@ const ARROW_RETARGET_SECONDS := 0.5
 ## the one it points at — four tiles closer moves it, three do not — so it does not flicker between
 ## two that are about as near as each other. *(Proposed, not asked for: plush-moose's entry.)*
 const ARROW_HOLD_TILES := 4
-## How many tiles of a sweep (`ArrowField.advance()`) one tick runs. A whole sweep of a city's
+## How many tiles of a sweep (`WalkField.advance()`) one tick runs. A whole sweep of a city's
 ## open ground at once is a long tick, so it is spread: at this size a slice is a small part of a
 ## frame, and one field is done in about twenty ticks, two thirds of a second, while the arrow reads
 ## the field it replaces. `tests/probes/plush_moose_arrow_cost.gd` measures the slice, the tick and
@@ -3339,15 +3339,15 @@ const ARROW_SWEEP_TILES_PER_TICK := 1000
 ## task is placed.
 var _arrow_key: Variant = null
 var _arrow_clock := 0.0
-## The finished fields the arrow reads (`ArrowField`): `_arrow_nearest` swept from every target at
+## The finished fields the arrow reads (`WalkField`): `_arrow_nearest` swept from every target at
 ## once, which says which is closest from any tile and how far; `_arrow_own` swept from the one the
 ## arrow points at alone, which says how far that one is when another is closest — what the hold
 ## compares. Null until the first of each finishes.
-var _arrow_nearest: ArrowField
-var _arrow_own: ArrowField
+var _arrow_nearest: WalkField
+var _arrow_own: WalkField
 ## The sweeps under way that will replace them, or null when none is.
-var _arrow_nearest_next: ArrowField
-var _arrow_own_next: ArrowField
+var _arrow_nearest_next: WalkField
+var _arrow_own_next: WalkField
 ## `_ground_for_the_arrow()`'s layout, and the state of what blocks her it was laid out for.
 var _arrow_ground := PackedInt32Array()
 var _arrow_ground_versions := Vector2i(-1, -1)
@@ -3388,7 +3388,7 @@ func _contact_key() -> Variant:
 static func _same_key(a: Variant, b: Variant) -> bool:
 	return typeof(a) == typeof(b) and a == b
 
-## Every place that answers today's task, as `{key, at, reach, beat}` (`ArrowField.start()`): `reach`
+## Every place that answers today's task, as `{key, at, reach, beat}` (`WalkField.start()`): `reach`
 ## is how far from `at` a touch counts, and `beat` the path a man shouting paces, so a tile beside
 ## any of his beat is beside him.
 func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
@@ -3434,8 +3434,8 @@ static func _mast_reach() -> float:
 	return EventCatalogue.mast().solid_reach() + Tuning.PLAYER_BODY_RADIUS \
 			+ ContactPoint.REACH
 
-## The ground every sweep of the arrow starts from (`ArrowField.advance()`): each tile
-## `ArrowField.UNREACHED`, or `ArrowField.BLOCKED` where she cannot walk right now — today's
+## The ground every sweep of the arrow starts from (`WalkField.advance()`): each tile
+## `WalkField.UNREACHED`, or `WalkField.BLOCKED` where she cannot walk right now — today's
 ## closures (`CityMap.closed_tiles`, the fenced park's ground included), the soft seals shut to
 ## walkers (`soft_sealed_tiles`) and the tile under every stationary solid body standing
 ## (`obstructed_tiles`), which holds what was put down after dawn too: a body rigged onto her route,
@@ -3452,13 +3452,13 @@ func _ground_for_the_arrow() -> PackedInt32Array:
 	if versions == _arrow_ground_versions and not _arrow_ground.is_empty():
 		return _arrow_ground
 	_arrow_ground_versions = versions
-	var ground := ArrowField.ground_for(_map)
+	var ground := WalkField.ground_for(_map)
 	_arrow_ground = ground
 	return _arrow_ground
 
 ## Chooses the target the red arrow points at, for a task several places answer, by **walking
 ## distance and never straight-line**: the closest on foot from where she stands, read at her tile
-## from the finished fields (`ArrowField`). It stays on the one it points at until another is at
+## from the finished fields (`WalkField`). It stays on the one it points at until another is at
 ## least `ARROW_HOLD_TILES` closer, whether she is heading for that one or has walked on past the
 ## task; it leaves at once a target that has gone or that she can no longer walk to. Before the
 ## first sweep has finished it stays on the contact's own target (`_contact_key()`).
@@ -3478,7 +3478,7 @@ func retarget_the_arrow() -> void:
 	if found.is_empty():
 		_arrow_nearest_next = null
 	elif not _swept_for(newest, found, versions):
-		_arrow_nearest_next = ArrowField.start(_map, found, versions)
+		_arrow_nearest_next = WalkField.start(_map, found, versions)
 	var chosen: Variant = _choose_the_arrow(found)
 	if chosen == null:
 		if _arrow_position() == Vector2.INF:
@@ -3494,7 +3494,7 @@ func retarget_the_arrow() -> void:
 		if _same_key(target["key"], _arrow_key):
 			var alone: Array[Dictionary] = [target]
 			if not _swept_for(own_newest, alone, versions):
-				_arrow_own_next = ArrowField.start(_map, alone, versions)
+				_arrow_own_next = WalkField.start(_map, alone, versions)
 
 ## The key `retarget_the_arrow()` points the arrow at from `found`, or null to leave it: see there.
 func _choose_the_arrow(found: Array[Dictionary]) -> Variant:
@@ -3533,19 +3533,19 @@ func _choose_the_arrow(found: Array[Dictionary]) -> Variant:
 	return nearest if nearest_length <= current_length - ARROW_HOLD_TILES else current
 
 ## Whether `field` (finished or under way) was swept from exactly `found`, each standing where it
-## stood then (`ArrowField.anchor_of()`), under the blocking `versions` name.
-func _swept_for(field: ArrowField, found: Array[Dictionary], versions: Vector2i) -> bool:
+## stood then (`WalkField.anchor_of()`), under the blocking `versions` name.
+func _swept_for(field: WalkField, found: Array[Dictionary], versions: Vector2i) -> bool:
 	if field == null or field.versions != versions or field.anchors.size() != found.size():
 		return false
 	for target in found:
 		var key: Variant = target["key"]
-		if not field.anchors.has(key) or field.anchors[key] != ArrowField.anchor_of(_map, target):
+		if not field.anchors.has(key) or field.anchors[key] != WalkField.anchor_of(_map, target):
 			return false
 	return true
 
 ## Runs `budget` tiles of the sweeps under way, the field of every target first, and chooses again
 ## the moment one finishes. A tick that lays out the ground (`_ground_for_the_arrow()`) or a field
-## (`ArrowField.advance()`'s first call) does that alone.
+## (`WalkField.advance()`'s first call) does that alone.
 func _sweep_the_arrow_fields(budget: int) -> void:
 	if not _arrow_nearest_next and not _arrow_own_next:
 		return

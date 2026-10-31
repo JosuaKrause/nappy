@@ -88,12 +88,13 @@ func _chase(delta: float) -> void:
 	var step := minf(def.pursuit.speed * delta, range_to_her)
 	if event.is_telegraphing():
 		step = _close_through_the_telegraph(delta, step, range_to_her, standoff)
-	# **Day 13's task guard walks round buildings toward her** (`EventInstance._paths_to_her`):
+	# **Day 13's task guard walks round buildings toward her** (`EventInstance._chase_way`):
 	# where no clear line runs to her he follows the walk instead. Only the direction changes.
-	if event._paths_to_her:
-		event._keep_the_way_to_her_fresh()
+	if event._chase_way != null:
+		event._chase_way.keep_fresh(event.player_at, event.global_position)
 		if step > 0.0:
-			event._heading = event._way_toward_her(event._heading)
+			event._heading = event._chase_way.toward(event.global_position, event.player_at,
+					event._heading)
 	var moved: Vector2 = event._step(event._heading * step)
 	event.position += moved
 	# Ground covered, not ground gained: sliding along a wall is still moving.

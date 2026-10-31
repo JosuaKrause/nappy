@@ -1,8 +1,9 @@
-class_name ArrowField
+class_name WalkField
 extends RefCounted
-## How far she has to walk to the places that answer a task, from every tile at once: the
-## red arrow's measure of "closest" for a task several places answer
-## (`ResistanceDirector.retarget_the_arrow()`). *(Inbox #561 in coral-bunny, the player:
+## **How far a figure on foot walks to the places a sweep is begun from, from every tile at once**:
+## the red arrow's measure of "closest" for a task several places answer
+## (`ResistanceDirector.retarget_the_arrow()`), and the walk a chaser follows to her round the
+## buildings (`ChaseWay`). World ground: the one sweep both are handed, over the map they walk. *(Inbox #561 in coral-bunny, the player:
 ## "closest here always means path closeness not crow closeness".)*
 ##
 ## **Built out from the targets, not out from her.** The places that answer a task stand still
@@ -59,8 +60,8 @@ static func anchor_of(map: WorldMap, target: Dictionary) -> Vector2i:
 ## from it a touch counts, `beat` the path it paces (empty for one that stands still). Nothing is
 ## laid out or swept until `advance()`, so starting one costs a frame nothing.
 static func start(map: WorldMap, targets: Array[Dictionary],
-		blocked_versions: Vector2i) -> ArrowField:
-	var field := ArrowField.new()
+		blocked_versions: Vector2i) -> WalkField:
+	var field := WalkField.new()
 	field.versions = blocked_versions
 	field._targets = targets
 	for target in targets:
@@ -74,7 +75,7 @@ static func start(map: WorldMap, targets: Array[Dictionary],
 ## every stationary solid body standing and a precinct's posts, and outside an authored scene's
 ## stretch. What that record leaves out she walks through here as she does in the street: a mobile
 ## row, which moves out of her way, and a door's own bodies, which let a walker through. One reading
-## for every sweep, so the red arrow and day 13's guard set on her (`EventInstance._paths_to_her`)
+## for every sweep, so the red arrow and day 13's guard set on her (`ChaseWay`)
 ## never disagree about where she can walk; a caller lays it out once for each state of what blocks
 ## her (`WorldMap.day_record_version`, `WorldMap.obstruction_version`).
 static func ground_for(map: WorldMap) -> PackedInt32Array:

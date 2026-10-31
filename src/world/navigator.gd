@@ -235,6 +235,11 @@ func _search(start: Vector2i, mover: Mover, avoid: Rect2i, arrived: Callable) ->
 				queue.append(next)
 	return PackedVector2Array()
 
+## **A way for `mover` to follow somebody round the buildings between them** (`ChaseWay`), seeing
+## along `sight`: made once by a figure that is set on her from a city away, and kept by it.
+func way_to(mover: Mover, sight: Mover) -> ChaseWay:
+	return ChaseWay.new(self, mover, sight)
+
 # --------------------------------------------------------------------- routes ---
 
 ## **A route cut to the ground `mover` can walk it on**, checked before it is accepted rather than
