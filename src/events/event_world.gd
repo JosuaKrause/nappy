@@ -44,7 +44,7 @@ var points_at := Callable()
 ## (`VisibleView`): the screen-edge badge, the placing of what arrives from off screen, the fire's
 ## sighting, a chalk mark's notice (`ResistanceDirector.set_sight()`, wired to
 ## `EventManager.sees()` by `main`), the poster crews and the page's counter. What the resistance
-## places and removes asks `EventManager.on_screen()` of the same view instead. One instance for
+## places and removes asks the siting's `DRAWING_OFF_THE_VIEW` of the same view instead. One instance for
 ## the day, never replaced, so a caller may keep it. Set at the top of each physics tick by
 ## `EventManager._look_through_the_camera()`.
 var visible := VisibleView.new()

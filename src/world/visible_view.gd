@@ -26,7 +26,7 @@ extends RefCounted
 ## wholly outside the camera's whole view, corners included (`SpawnSiting.seen_from()` asks
 ## `clear_of_sight()` of this view with no corners laid on it) *(amendment 6 of M226, the player: "I
 ## don't want any pop in")*: a thing placed under a corner would still be drawn there. The same goes
-## for whatever the resistance places or takes away, which asks `EventManager.on_screen()`, and for a
+## for whatever the resistance places or takes away, which asks the siting, and for a
 ## pursuer sent at her, whose start asks `SpawnSiting.on_the_view()`: a point anywhere in this view's
 ## whole rect, corners included *(olive-hedgehog, inbox #598: "off screen is not the same as visible
 ## -- the corners get removed for visible not for off screen")*.
