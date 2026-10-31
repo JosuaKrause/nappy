@@ -86,7 +86,7 @@ func _force_recycles(t, data: Dictionary, label: String) -> void:
 			agent.free()
 			continue
 		t.add_child(agent)
-		agent.view = CrowdView.new(t)
+		agent.view = ScreenCrowdView.new(t)
 		_look_at(camera, at)
 		t.check(camera.get_screen_center_position().distance_to(at) < 1.0,
 				"%s camera centers on actor: %s / %s" % [label, camera.get_screen_center_position(), at])

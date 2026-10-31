@@ -71,6 +71,8 @@ var _navigator: Navigator
 ## stationary body, and not by a precinct's posts, which the crowd walks between as it always does
 ## (it has no body, `CityMap.post_tiles()`).
 var _pushed := Mover.of(Mover.GROUND | Mover.TODAY)
+## Whom the crowd makes way for, bumps and strikes: handed in by whoever puts her into the city's world
+## (`use_player()`, `main._put_her_in()`), none until then and in a rig that has none.
 var _player: Stroller
 ## The patch of city being simulated. Held here, moved onto the player every physics frame, and
 ## read by every agent when it recycles.
@@ -79,10 +81,12 @@ var _field: CrowdField
 ## sorts, and read by a car deciding which arm of a junction to turn into. See `TrafficIndex`.
 var _traffic := TrafficIndex.new()
 ## What the screen shows, handed to every agent so none of them reaches for the viewport. See
-## `CrowdView`.
-var _view := CrowdView.new(self)
-## What the crowd and its agents charge their time and their draws to. See `CrowdTiming`.
-var _timing := CrowdTiming.new()
+## `CrowdView`. None is a crowd with no screen: every agent drawn, and the day's own radius for
+## "out of sight". Handed in by `City` before the day's agents are made.
+var view: CrowdView = null
+## What the crowd and its agents charge their time and their draws to. See `CrowdTiming`; the null
+## sink until the city hands another.
+var timing := CrowdTiming.new()
 ## The lights on the spine. Owned by `City`; the clock is advanced here because this is the class
 ## a rig steps, and a rig that runs the traffic without running the signals is running a
 ## different city — see `step()`.
@@ -170,6 +174,11 @@ func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
 	_signals = city.signals
 	_field = CrowdField.new(map, map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, map.size)).get_center())
+
+## Hands the crowd the player it makes way for. Called whenever she is put into the city's world
+## (`main._put_her_in()`); null takes her away.
+func use_player(player: Stroller) -> void:
+	_player = player
 
 ## Clears yesterday's crowd and populates today's. The population is fixed for the day and
 ## comes from the act, not the day: the streets thin out as the occupation settles in, and
@@ -286,8 +295,8 @@ func _make_an_agent() -> CrowdAgent:
 	agent.door_segments = _door_segments
 	agent.home_segments = _home_segments
 	agent.pockets = _pockets
-	agent.view = _view
-	agent.frame_timing = _timing
+	agent.view = view
+	agent.frame_timing = timing
 	agent.excitement.heard_in = sources
 	return agent
 
@@ -1034,10 +1043,10 @@ func _is_to_the_right_of(a: CrowdAgent, b: CrowdAgent) -> bool:
 # shape and cost as the crowd's half of what the baby asks every physics frame (`CrowdSources`).
 
 func _physics_process(delta: float) -> void:
-	if _timing.running():
-		var outer := _timing.enter()
+	if timing.running():
+		var outer := timing.enter()
 		_tick_the_crowd(delta)
-		_timing.leave(outer)
+		timing.leave(outer)
 	else:
 		_tick_the_crowd(delta)
 
@@ -1057,9 +1066,7 @@ func _tick_the_crowd(delta: float) -> void:
 ## apart (`tests/probes/m159_crowd_tick_cost.gd`); nothing else calls it.
 func _meet_the_player() -> void:
 	if not _player:
-		_player = get_tree().get_first_node_in_group("player") as Stroller
-		if not _player:
-			return
+		return
 	var here := _player.global_position
 	_field.centre = here
 	var on_the_road := Tile.is_road(_map.tile_type_at_world(here))

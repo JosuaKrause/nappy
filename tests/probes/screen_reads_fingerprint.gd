@@ -38,7 +38,7 @@ static func _view_about(centre: Vector2, joystick: bool, controls: TouchControls
 
 ## The crowd's view of the screen, anchored in `anchor`'s viewport.
 static func _crowd_view_of(anchor: Node) -> CrowdView:
-	return CrowdView.new(anchor)
+	return ScreenCrowdView.new(anchor)
 
 static func _hex(values: Array) -> String:
 	var parts: Array[String] = []

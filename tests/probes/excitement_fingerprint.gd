@@ -54,6 +54,7 @@ func _a_day(t, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_day(day)
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
+	city.crowd_view = ScreenCrowdView.new(t)
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
 	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"),
@@ -79,6 +80,7 @@ func _the_escape_city(t, seed_value: int) -> int:
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
+	city.crowd_view = ScreenCrowdView.new(t)
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
 	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"),

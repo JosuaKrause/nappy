@@ -432,7 +432,9 @@ func _test_a_timed_body_runs_once(t) -> void:
 	FrameRecord.stop()
 	var untimed_agent := CrowdAgent.new()
 	untimed_agent.skip_motion = true
-	untimed_agent.frame_timing = CrowdTiming.new()
+	untimed_agent.frame_timing = FrameRecordTiming.new()
+	var null_sink_agent := CrowdAgent.new()
+	null_sink_agent.frame_timing = CrowdTiming.new()
 	var def := EventCatalogue.by_id("protest")
 	var untimed_event := _event(t, def)
 	var untimed_look := _BucketLook.watching(untimed_event)
@@ -441,9 +443,12 @@ func _test_a_timed_body_runs_once(t) -> void:
 	scratch.process_start(Time.get_ticks_usec())
 	var timed_agent := CrowdAgent.new()
 	timed_agent.skip_motion = true
-	timed_agent.frame_timing = CrowdTiming.new()
+	timed_agent.frame_timing = FrameRecordTiming.new()
 	t.check(not untimed_agent._timed and timed_agent._timed,
 			"an agent copies the switch as it stands when it is made")
+	t.check(not null_sink_agent._timed,
+			"and one handed the null sink is never timed, record or no record")
+	null_sink_agent.free()
 	untimed_agent._process(STEP)
 	untimed_event._process(STEP)
 	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 0 and untimed_look.charged.size() == 1,

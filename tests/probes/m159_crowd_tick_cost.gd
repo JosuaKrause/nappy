@@ -56,6 +56,7 @@ func run(t) -> void:
 	for city_seed in SEEDS:
 		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
+		city.crowd_view = ScreenCrowdView.new(t)
 		city.build(CityGenerator.generate(city_seed))
 		for day in DAYS:
 			for walk in WALKS:

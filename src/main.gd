@@ -695,6 +695,8 @@ func _new_city() -> City:
 	city.skip_event_drawing = config.skip_events
 	city.skip_crowd_drawing = config.skip_crowd
 	city.skip_crowd_motion = config.skip_motion
+	city.crowd_view = ScreenCrowdView.new(self)
+	city.crowd_timing = FrameRecordTiming.new()
 	city.blackout_forced = config.blackout_requested
 	city.all_cyclists_pelicans = config.pelican
 	city.forced_row = config.forced_row
@@ -745,13 +747,15 @@ var _escape_watched := false
 ## Hands her and the baby the map of the world she now walks (`WorldMap`): the stroller asks it how
 ## the ground under her turns a press (`Stroller.set_map()`), and the baby asks its world how loud it
 ## is and what the ground does to her (`Baby.set_world()`); and a city's events are handed her
-## (`EventManager.use_player()`). Called whenever she is put into a world, so neither ever asks a
-## world she has left.
+## (`EventManager.use_player()`) and its crowd (`Crowd.use_player()`). Called whenever she is put into
+## a world, so neither ever asks a world she has left.
 func _put_her_in(map: WorldMap) -> void:
 	_player.set_map(map)
 	_baby.set_world(map.world)
 	if _city:
 		_city.events.use_player(_player)
+		if _city.crowd:
+			_city.crowd.use_player(_player)
 	if _readout:
 		_readout.watch(_player, _baby, _day)
 
