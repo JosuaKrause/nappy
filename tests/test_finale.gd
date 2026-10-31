@@ -1654,7 +1654,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 				"section %d: it opens on its brief" % section)
 		t.check(title.text == words,
 				"section %d: titled with the section's own words ('%s')" % [section, title.text])
-		t.check(body.text.contains("Nerves left: %s" % NerveDisplay.stars(nerves)),
+		t.check(body.text.contains("Nerves left: %s" % Texts.nerve_stars(nerves)),
 				"section %d: and carrying the nerve line, as stars ('%s')" % [section, body.text])
 		t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
 				"section %d: with a full clock standing still behind it" % section)
@@ -1677,7 +1677,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 		t.check(title.text.replace("\n", " ").contains(Texts.HARD_FAIL_TEXT["abduction"]),
 				"section %d: which states the reason, as a lost day's does ('%s')"
 				% [section, title.text])
-		t.check(body.text.contains(words) and body.text.contains(NerveDisplay.stars(nerves)),
+		t.check(body.text.contains(words) and body.text.contains(Texts.nerve_stars(nerves)),
 				"section %d: under the section's own words, the nerves unchanged ('%s')"
 				% [section, body.text])
 		t.check(GameState.header.nerves == nerves,
@@ -1688,7 +1688,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 		t.check(main._flow.spec.section == section and main._summary.is_showing()
 				and main._flow.mode == RunFlow.Mode.BRIEF,
 				"section %d: its continue is the same section again, behind its brief" % section)
-		t.check(title.text == words and body.text.contains(NerveDisplay.stars(nerves)),
+		t.check(title.text == words and body.text.contains(Texts.nerve_stars(nerves)),
 				"section %d: titled with its words and the nerves unchanged ('%s', '%s')"
 				% [section, title.text, body.text])
 		t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),

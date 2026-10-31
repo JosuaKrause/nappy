@@ -140,7 +140,7 @@ static func epilogue(end: DayEnd) -> SummaryModel:
 	model.kind = Kind.EPILOGUE
 	model.heading = Texts.FINALE_HEADING
 	model.title = Texts.FINALE_TITLE
-	model.body_prose = Texts.FINALE_BODY.get(end.exit_reached, Texts.FINALE_BODY[CityEdge.Kind.BRIDGE])
+	model.body_prose = Texts.FINALE_BODY.get(end.exit_reached, Texts.FINALE_BODY_DEFAULT)
 	model._body_shape = Texts.FINALE_OUT_IN
 	model._body_fill = [RunState.format_clock(end.elapsed_seconds)]
 	return model
@@ -151,10 +151,10 @@ static func epilogue(end: DayEnd) -> SummaryModel:
 static func day_line(day: int) -> String:
 	return Texts.SUMMARY_DAY % [day, Tuning.RUN_LENGTH_DAYS]
 
-## The nerves left, as stars (`NerveDisplay.stars()`) — never a digit — on every screen that shows
+## The nerves left, as stars (`Texts.nerve_stars()`, data below this layer) — never a digit — on every screen that shows
 ## them.
 static func nerves_line(nerves: int) -> String:
-	return Texts.SUMMARY_NERVES % NerveDisplay.stars(nerves)
+	return Texts.SUMMARY_NERVES % Texts.nerve_stars(nerves)
 
 ## Where the run stands, on one line: the pause screen's, the day and the nerves it covers in the HUD.
 static func standing_line(run: RunState) -> String:

@@ -194,13 +194,15 @@ func _test_the_pause_says_where_the_run_stands(t) -> void:
 	var line: String = pause._standing.text
 	t.check(line.contains("7") and line.contains("***"),
 			"the pause says which day it is and how many nerves are left, as stars ('%s')" % line)
+	t.check(line == SummaryModel.standing_line(GameState),
+			"and the line is the summary model's own standing line, the one formatter")
 	pause.close()
 
-	# A single nerve is one star, drawn through the same `NerveDisplay.stars()` every other screen
+	# A single nerve is one star, drawn through the same `Texts.nerve_stars()` every other screen
 	# reads the count through — never a digit and never the word.
 	GameState.header.nerves = 1
 	pause.open()
-	t.check(pause._standing.text.contains(NerveDisplay.stars(1))
+	t.check(pause._standing.text.contains(Texts.nerve_stars(1))
 				and not pause._standing.text.contains("1 nerve"),
 			"and the last one is one star, not a number ('%s')" % pause._standing.text)
 	pause.close()

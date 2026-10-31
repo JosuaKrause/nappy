@@ -358,7 +358,7 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 			and main._flow.mode == RunFlow.Mode.SECTION_LOST,
 			"a lost section costs a hard run a nerve, and comes up on the day's outcome screen")
 	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
-	t.check(body.text.contains("Nerves left: %s" % NerveDisplay.stars(1))
+	t.check(body.text.contains("Nerves left: %s" % Texts.nerve_stars(1))
 			and body.text.contains("Escape the building"),
 			"which shows the one star left under the section's own words ('%s')" % body.text)
 
@@ -404,7 +404,7 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 	main._interior.exit_requested.emit()
 	t.check(GameState.header.nerves == 3, "leaving the building gives the hard run no nerve back")
 	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
-	t.check(main._summary.is_showing() and body.text.contains(NerveDisplay.stars(3)),
+	t.check(main._summary.is_showing() and body.text.contains(Texts.nerve_stars(3)),
 			"and the city's brief shows the same count ('%s')" % body.text)
 	t.get_tree().paused = false
 	Telemetry.end_run()
@@ -435,7 +435,7 @@ func _test_the_lost_day_screen_says_where_she_goes_back_to(t) -> void:
 	summary.show_summary(SummaryModel.day_over(GameState, end), RunFlow.Mode.BACK_TO_CHECKPOINT)
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
 	t.check(body.text.contains("Back to day 8"), "it names the day she goes back to ('%s')" % body.text)
-	t.check(body.text.contains(NerveDisplay.stars(Tuning.STARTING_NERVES)), "with five stars")
+	t.check(body.text.contains(Texts.nerve_stars(Tuning.STARTING_NERVES)), "with five stars")
 	t.check(not body.text.contains("again"), "and not that she tries the day again")
 	t.check(summary._continue_column.visible, "and the continue button stays")
 	summary.free()

@@ -1454,7 +1454,7 @@ way, read in seconds at the 30 Hz tick (`play_seconds()`). **Frame locked**
 (inbox #866): it counts the ticks the game stepped, never a drawn frame's length, so a machine that
 draws a frame late spends no extra time on the clock — a lag spike past the engine's steps per
 frame slows the game instead — and a faster machine reads no lower time. The save holds it in
-seconds, as it always has, and loads it to the nearest tick. Not wall time, and not
+seconds and loads it to the nearest tick, whatever seconds an older save holds. Not wall time, and not
 the day timer above, which resets every day — a retried day's first attempt counts toward it, and
 neither the pause screen, the day summary nor the title screen do. It is part of a normal run's
 checkpoint, so going back to one puts it back to that dawn's reading (see "Two modes").
@@ -1765,7 +1765,7 @@ escape's ending instead of day 14's.
 
 **Drawn as stars everywhere they show, never as a digit or a word for the count** — the HUD's
 debug header, the day brief, a section's brief, the day summary and the pause screen all read the
-count through `NerveDisplay.stars()` (`src/ui/nerve_display.gd`), a star per nerve and `-` for
+count through `Texts.nerve_stars()` (`src/ui/texts.gd`), a star per nerve and `-` for
 none, so a sixth screen that shows nerves has one function to match rather than a number to
 invent.
 

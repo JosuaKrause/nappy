@@ -1015,7 +1015,7 @@ func _test_focus_lost_does_nothing_over_the_day_summary(t) -> void:
 	_teardown_focus_pause_main(t, main)
 
 ## The ending is the same `_summary` screen showing a different body — see `DaySummary.
-## show_ending()` — so it is covered by the same `is_showing()` guard rather than a case of its own.
+## show_summary()` with `SummaryModel.ending()` — so it is covered by the same `is_showing()` guard rather than a case of its own.
 func _test_focus_lost_does_nothing_over_the_ending(t) -> void:
 	var main := _build_focus_pause_main(t)
 	main._summary.show_summary(SummaryModel.ending(main._run, GameEnums.Ending.GOOD),

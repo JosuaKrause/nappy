@@ -192,10 +192,6 @@ var recipe_manifest_path := "":
 	set(value): recipe_manifest_path = _write(recipe_manifest_path, value)
 var recipe_draft_path := "":
 	set(value): recipe_draft_path = _write(recipe_draft_path, value)
-## A scene recipe is loaded and this is a debug build, the only build that reads one. Only the
-## fact is kept; the recipe's values already stand in the fields above.
-var has_recipe := false:
-	set(value): has_recipe = _write(has_recipe, value)
 
 # ------------------------------------------------------------------- resolving ---
 
@@ -286,7 +282,6 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 	config.recipe_validate = flags.recipe_validate()
 	config.recipe_manifest_path = flags.recipe_manifest_path()
 	config.recipe_draft_path = flags.recipe_draft_path()
-	config.has_recipe = flags.has_recipe()
 	config._freeze()
 	return config
 

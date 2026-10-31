@@ -48,5 +48,5 @@ func restore(data: Dictionary) -> void:
 	day = int(data["day"])
 	nerves = int(data["nerves"])
 	ending = int(data["ending"]) as GameEnums.Ending
-	# Saved as seconds, as every save before ticks were counted was too: back to the nearest tick.
+	# Saved as seconds (`to_data()`), so any save's seconds load back to the nearest tick.
 	play_ticks = roundi(float(data["play_seconds"]) * Engine.physics_ticks_per_second)

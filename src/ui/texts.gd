@@ -162,6 +162,7 @@ const DAY_BRIEF := {
 const SUMMARY_DAY := "Day %d of %d"
 ## `%s` the nerves as stars.
 const SUMMARY_NERVES := "Nerves left: %s"
+## The nerves are drawn as stars, never as a digit or a word for the count, by `nerve_stars()`.
 ## A lost day that is tried again; `%d` is the day.
 const SUMMARY_TRY_AGAIN := "You try day %d again."
 ## A normal run's last nerve, sent back to its checkpoint; `%d` is that day.
@@ -296,6 +297,9 @@ const ENDING_PLAYED := "%s\n\nTime played: %s%s"
 
 const FINALE_HEADING := "THE END"
 const FINALE_TITLE := "You are out."
+## The bridge's body, which is also the one for an exit `FINALE_BODY` has no entry for.
+const FINALE_BODY_DEFAULT := "The water is under you and the city is behind you. " \
+		+ "She does not wake."
 ## The key is a `CityEdge.Kind`.
 ## What is behind her, and it is the same sentence either way: she is out, nobody is following,
 ## and the city is still there. The two differ only in what she is standing on. Plain prose, one
@@ -305,9 +309,7 @@ const FINALE_BODY := {
 	CityEdge.Kind.TUNNEL:
 		"The mountain closes over the road behind you. "
 		+ "She does not wake.",
-	CityEdge.Kind.BRIDGE:
-		"The water is under you and the city is behind you. "
-		+ "She does not wake.",
+	CityEdge.Kind.BRIDGE: FINALE_BODY_DEFAULT,
 }
 ## `%s` the body, `%s` the time the escape took as a clock.
 const FINALE_OUT_IN := "%s\n\nOut in: %s"
@@ -419,3 +421,9 @@ const EVENT_NAMES := {
 	"masked_pursuer": "Masked man",
 	"basement_steam": "Steam",
 }
+
+## The one place nerves become text on screen: a star per nerve, `-` for none, and never a digit.
+## The HUD, the summary screens and the pause screen all read the count through it, so a digit or
+## a word for the count cannot creep back into one more place that shows it.
+static func nerve_stars(nerves: int) -> String:
+	return "*".repeat(nerves) if nerves > 0 else "-"

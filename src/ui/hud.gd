@@ -511,9 +511,9 @@ func _refresh_header() -> void:
 		return
 	var text := "day %d / %d      act %d      nerves %s" % [
 		_run.header.day, Tuning.RUN_LENGTH_DAYS, _run.current_act(),
-		# `NerveDisplay.stars()` — see its own class doc for why every screen that shows a nerve
-		# count reads through it rather than repeating this line.
-		NerveDisplay.stars(_run.header.nerves),
+		# `Texts.nerve_stars()` — every screen that shows a nerve count reads through it rather
+		# than repeating this line.
+		Texts.nerve_stars(_run.header.nerves),
 	]
 	# So no capture from an --invincible run reads as a real one — appended to the same debug
 	# label rather than a mark of its own, since the cues vocabulary is for the world she is

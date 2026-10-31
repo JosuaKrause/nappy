@@ -219,9 +219,9 @@ func _test_round_trip_field_list_matches_the_property_list(t) -> void:
 		t.check(name in written,
 				"'%s' is a GameState field the save format does not mention" % name)
 
-## The run's play time is counted in physics ticks (inbox #866) and saved as seconds, the shape
-## every save has always held it in: a save written before ticks were counted, holding any number
-## of seconds, loads to the nearest tick, and a tick count is written back as its seconds.
+## The run's play time is counted in physics ticks (inbox #866) and saved as seconds
+## (`to_data()`), so any save's seconds, whatever number they hold, load to the nearest tick, and
+## a tick count is written back as its seconds.
 func _test_play_time_is_saved_as_seconds_and_counted_in_ticks(t) -> void:
 	var header := RunHeader.new()
 	var old := header.to_data()
@@ -938,7 +938,7 @@ func _with_forced_save(callable: Callable) -> void:
 ## The fuller rig `_on_title_start()`/`_show_the_resume_gate()`/`_on_summary_continued()` need to
 ## run for real: the same touch/camera/city/hud/edge/status scaffolding
 ## `_test_dismissing_a_fresh_titles_start_writes_the_save_under_way()` needs to drive
-## `_engage_the_day()`, plus a real `DaySummary` scene instance so `show_day_brief()`'s own labels
+## `_engage_the_day()`, plus a real `DaySummary` scene instance so `show_summary()`'s own labels
 ## have something to populate into.
 func _bare_gate_main(t) -> Node2D:
 	var main: Node2D = _MAIN_SCRIPT.new()
