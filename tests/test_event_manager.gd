@@ -166,7 +166,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 
 func _start(day: int) -> void:
 	var consumed: Array[String] = []
-	_city.events.start_day(day, _rng(day), consumed)
+	_city.events.start_day(DaySpec.for_day(day), _rng(day), consumed)
 
 func _test_day_populates_the_manager(t) -> void:
 	_start(1)
@@ -1178,13 +1178,13 @@ func _test_a_fire_that_was_never_lit_was_not_spent(t) -> void:
 	var consumed: Array[String] = []
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var day := Tuning.RUN_TAUGHT_DAY
-	_city.events.start_day(day, _rng(day), consumed)
+	_city.events.start_day(DaySpec.for_day(day), _rng(day), consumed)
 	t.check(not "burning_building" in consumed and _fire_plan() != null,
 			"day 3 budgets the fire without spending it, because a plan with no position promises "
 			+ "nothing yet")
 
 	# Lost without her ever walking out to it. The same day, again, still owes her one.
-	_city.events.start_day(day, _rng(day), consumed)
+	_city.events.start_day(DaySpec.for_day(day), _rng(day), consumed)
 	t.check(_fire_plan() != null, "a day 3 lost before she reached it is offered it again")
 
 	# Now she walks into it. That is the fire the run remembers, and there is not a second one.
@@ -1195,7 +1195,7 @@ func _test_a_fire_that_was_never_lit_was_not_spent(t) -> void:
 	_walk(rig, route, func() -> bool: return plan.was_live)
 	t.check(plan.was_live and "burning_building" in consumed,
 			"walking into it is what spends it")
-	_city.events.start_day(day, _rng(day), consumed)
+	_city.events.start_day(DaySpec.for_day(day), _rng(day), consumed)
 	t.check(_fire_plan() == null, "and no later day plans a second one")
 	rig.free()
 	_city.events.stream_radius = INF

@@ -47,7 +47,7 @@ func _play_a_run(t, seed_value: int) -> void:
 		city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"))
 
 		city.set_act(GameState.current_act())
-		city.events.start_day(day, GameState.day_rng(day), GameState.attempt_spend.consumed_one_shots)
+		city.events.start_day(DaySpec.for_day(day), GameState.day_rng(day), GameState.attempt_spend.consumed_one_shots)
 		director.start_day(day, GameState.day_rng(day, "resistance"), Tuning.day_length(day))
 
 		t.check(city.events.active_count() > 0, "seed %d day %d has events" % [seed_value, day])

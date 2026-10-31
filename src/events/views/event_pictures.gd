@@ -819,9 +819,9 @@ const STEAM_B := "events/steam_b"
 const STEAM_BILLOW_PERIOD := 0.7
 ## The vent's floor grate, which is **not** the blow's picture: a blow is an instance that comes and
 ## goes, and a vent that is there all the time, blowing or not, is what a player can plan around. So
-## no look draws it — the building lays one at every vent for the whole escape
-## (`BuildingPlan.lay_the_grates()`), through `steam_grate()`, at floor level under everything that
-## stands, and each blow's cloud rises out of it. A ground decal on its own 32×32 canvas, centred on
+## no instance's look draws it — a view of its own lays one where the building says each vent's
+## lies for the whole escape (`SteamGrates.lay()`, `BuildingPlan.grates()`), through `steam_grate()`,
+## at floor level under everything that stands, and each blow's cloud rises out of it. A ground decal on its own 32×32 canvas, centred on
 ## the vent's point, which is the two cloud frames' bottom-centre anchor, so the column comes up out
 ## of the slots with no offset of its own.
 const STEAM_GRATE := "events/steam_grate"
@@ -1097,7 +1097,7 @@ static func native_size(picture: String) -> Vector2:
 	return Vector2(AtlasLibrary.native_size(StringName(picture)))
 
 ## The basement vent's floor grate, for the building to lay at every vent
-## (`BuildingPlan.lay_the_grates()`) — see `STEAM_GRATE`
+## (`BuildingPlan.grates()`, `SteamGrates.lay()`) — see `STEAM_GRATE`
 ## for why no instance draws it. Fetched here rather than by name there, so the region is still
 ## named in this file with every other picture of the page.
 static func steam_grate() -> AtlasTexture:

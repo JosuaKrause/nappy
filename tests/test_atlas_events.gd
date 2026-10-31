@@ -188,14 +188,14 @@ func _test_the_manager_holds_one_reference_for_its_own_life(t) -> void:
 			"the manager holds exactly one reference from the moment it is in the tree (got %d)"
 			% AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP))
 	var consumed: Array[String] = []
-	city.events.start_day(1, _rng(1), consumed)
+	city.events.start_day(DaySpec.for_day(1), _rng(1), consumed)
 	t.check(AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP) == 1,
 			"a day's events do not each take a reference of their own (got %d)"
 			% AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP))
 	city.events.clear()
 	t.check(AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP) == 1,
 			"clearing the day keeps the page held rather than releasing and reloading it")
-	city.events.start_day(2, _rng(2), consumed)
+	city.events.start_day(DaySpec.for_day(2), _rng(2), consumed)
 	t.check(AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP) == 1,
 			"and a second day starts on the same one reference (got %d)"
 			% AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP))
@@ -211,7 +211,7 @@ func _test_the_manager_holds_one_reference_for_its_own_life(t) -> void:
 func _test_a_manager_freed_mid_day_still_gives_its_page_back(t) -> void:
 	var city := _city(t)
 	var consumed: Array[String] = []
-	city.events.start_day(1, _rng(3), consumed)
+	city.events.start_day(DaySpec.for_day(1), _rng(3), consumed)
 	t.check(AtlasLibrary.is_acquired(EventPictures.ATLAS_GROUP),
 			"the day's manager holds its page before the city is torn down")
 	city.free()

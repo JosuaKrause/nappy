@@ -35,7 +35,8 @@ func _measure(t, awake: bool) -> void:
 		var built := Rig.plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		for street: Array in Rig.roadblock_streets(map, plan):
+		var placements: Array[EventScheduler.Planned] = built["placements"]
+		for street: Array in Rig.roadblock_streets(map, plan, placements):
 			var segment: StreetNetwork.Segment = street[0]
 			var group: Array[EventScheduler.Planned] = []
 			group.assign(street[1])

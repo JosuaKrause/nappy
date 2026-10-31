@@ -268,7 +268,7 @@ func _a_day(t) -> City:
 	GameState.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, WALK_DAY)
 	city.start_day(state, WALK_DAY, _rng("closures"))
-	city.events.start_day(WALK_DAY, _rng("events"), [], city.map.doorstep_world_position())
+	city.events.start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map.doorstep_world_position())
 	return city
 
 static func _rng(stream: String) -> RandomNumberGenerator:

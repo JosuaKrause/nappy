@@ -37,7 +37,7 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DAY, _rng(seed_value, "events"), consumed)
+	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
 
 	var saved_completed := GameState.resistance.completed_steps.duplicate()
 	var saved_failed := GameState.resistance.failed_steps.duplicate()
@@ -198,7 +198,7 @@ func _test_the_van_is_sited_wholly_out_of_the_camera_view(t) -> void:
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DAY, _rng(seed_value, "events"), consumed)
+	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
 	var siting: EventScheduler.WalkSiting = city.events.ahead._siting
 	var def := EventCatalogue.by_id(ROW)
 	var box := EventInstance.footprint_of(def)

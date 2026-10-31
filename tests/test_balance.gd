@@ -38,7 +38,7 @@ func run(t) -> void:
 
 func _start_day(day: int) -> void:
 	var consumed: Array[String] = []
-	_city.events.start_day(day, _rng(day, "events"), consumed)
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), consumed)
 
 ## Puts the world around a point the way it would be for a player standing there.
 ##

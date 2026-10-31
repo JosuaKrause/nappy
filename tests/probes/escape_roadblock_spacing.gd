@@ -5,7 +5,7 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/escape_roadblock_spacing.gd      (prints ESCAPE_SPACING lines)
 ##
-## The plan is `FinalePlanner.plan()` on seeds 1 to 40, built the way `tests/test_finale.gd` builds
+## The plan is the escape's (`DayPlanner.plan_the_escape_city()`) on seeds 1 to 40, built the way `tests/test_finale.gd` builds
 ## it, and each band stands where `EventScheduler._stands_at()` puts it, which is where its guard
 ## notices her from. "Under" counts the pairs nearer than the two guards' notices together
 ## (`EventDef.notice` each), the ground on which both can come for her at once.
@@ -23,9 +23,10 @@ func run(t) -> void:
 		map.repaint(GameState.attempt_spend.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		var plan := FinalePlanner.plan(map, rng, _city_spec())
+		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
+				_city_spec())
 		var bands: Array[EventScheduler.Planned] = []
-		for placement in plan.placements:
+		for placement in placements:
 			if placement.def.id == "roadblock":
 				bands.append(placement)
 		var nearest := INF

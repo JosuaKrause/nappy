@@ -175,7 +175,7 @@ func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventSchedule
 ## streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is not a
 ## mast that is "younger" — it is telling the same time as every other one.
 func _test_they_all_speak_together(t) -> void:
-	_city.events.start_day(Tuning.MAST_FIRST_DAY, _rng(Tuning.MAST_FIRST_DAY), [])
+	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
 	var sites := _sites()
 	t.check(sites.size() >= 2, "there are at least two masts to compare")
 	if sites.size() < 2:
@@ -208,7 +208,7 @@ func _test_they_all_speak_together(t) -> void:
 				"they were not both stamped the instant they happened to stream in")
 
 func _test_mast_foot_answers_a_stable_id(t) -> void:
-	_city.events.start_day(Tuning.MAST_FIRST_DAY, _rng(Tuning.MAST_FIRST_DAY), [])
+	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
 	var site := _sites()[0]
 	t.check(_city.events.mast_foot(site.id).distance_to(site.foot) < 0.01,
 			"mast_foot() answers the same point MastSites named for this id")
@@ -218,7 +218,7 @@ func _test_mast_foot_answers_a_stable_id(t) -> void:
 # -------------------------------------------------------------- silencing ---
 
 func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
-	_city.events.start_day(Tuning.MAST_FIRST_DAY, _rng(Tuning.MAST_FIRST_DAY), [])
+	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
 	var target := _sites()[0]
 	_city.events.stream_around(target.foot)
 	var plan := _plan_for(target.id)
@@ -249,7 +249,7 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
 		t.check(is_zero_approx(plan.live.current_intensity()), "still no field")
 
 func _test_silencing_every_mast_works_for_the_rest_of_the_day(t) -> void:
-	_city.events.start_day(Tuning.CURFEW_ANNOUNCE_DAY, _rng(Tuning.CURFEW_ANNOUNCE_DAY), [])
+	_city.events.start_day(DaySpec.for_day(Tuning.CURFEW_ANNOUNCE_DAY), _rng(Tuning.CURFEW_ANNOUNCE_DAY), [])
 	for site in _sites():
 		_city.events.stream_around(site.foot)
 	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `_place_masts()` skips a

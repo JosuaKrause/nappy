@@ -794,7 +794,7 @@ func _build_the_escape_building() -> void:
 	_building_events.use_player(_player)
 	_interior.events = _building_events
 	_building_seed = _run.day_rng(_run.header.day, "finale-interior").randi()
-	BuildingPlan.lay_the_grates(_interior.map)
+	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map)
 	# The building shows what the city shows: the same badge, halo and debug view, reading its
 	# events as a day reads the city's — see `_event_source()`. The city's own build calls the same
 	# three again when she walks out, which points them at the street.
@@ -874,16 +874,20 @@ func _plan_the_finale_city() -> void:
 	if not _flow.plans_the_finale():
 		return
 	var elapsed := Time.get_ticks_msec()
-	var plan := FinalePlanner.plan(_city.map, _run.day_rng(_run.header.day, "finale"), _flow.spec)
-	_city.events.start_planned(_flow.spec, plan.placements, _finale_start_position())
+	# The escape spends none of the run's one-shots: a list of its own, empty.
+	var none: Array[String] = []
+	_city.events.start_day(_flow.spec, _run.day_rng(_run.header.day, "finale"), none,
+			_finale_start_position())
+	var walk := _city.events.walk() as FinalePlanner.Plan
 	# The streets the chains run through carry the route's kerb tint, as a day's corridor does.
-	_city.tint_the_route(plan)
+	_city.tint_the_route(walk)
 	# Printed as well as logged, for the same reason `_start_day()` prints the day it just built:
 	# the shape of the walk is the one thing worth knowing before anything else in the log means
 	# anything, and a run with telemetry off still has a console.
+	var summary := walk.summary(_city.events.plans().size())
 	print("[Main] finale planned in %d ms (seed %d): %s"
-			% [Time.get_ticks_msec() - elapsed, _city.map.seed_used, plan.summary()])
-	_the_trace().note("plan", "finale: %s" % plan.summary())
+			% [Time.get_ticks_msec() - elapsed, _city.map.seed_used, summary])
+	_the_trace().note("plan", "finale: %s" % summary)
 
 ## `--start-escape`'s raw word (`config.start_escape_at`), mapped onto the `InteriorMap.PARTS` waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
@@ -950,8 +954,11 @@ func _start_section(spec: DaySpec, restarted: bool) -> void:
 		if not restarted:
 			start_at = _interior.part_world_position(_escape_start_part())
 		_player.reset_at(start_at, Vector2.UP)
-		_building_events.start_planned(spec, BuildingPlan.plan(_interior.map, _building_seed),
-				start_at)
+		# The same seed on every entry, so a retry is the same building.
+		var building_rng := RandomNumberGenerator.new()
+		building_rng.seed = _building_seed
+		var none: Array[String] = []
+		_building_events.start_day(spec, building_rng, none, start_at)
 		_interior.start_the_night(_building_seed)
 	else:
 		# The building is behind her and nobody is in it, so its own events stop rather than

@@ -590,7 +590,7 @@ func _attempt_the_day(t, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
 	GameState.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var player := _rig_player(t, her)
 	var director := _director(t)
 	director.use_player(player)
@@ -1913,7 +1913,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = hash("%d:events:%d" % [seed_value, day])
 		var consumed: Array[String] = []
-		city.events.start_day(day, events_rng, consumed, doorstep)
+		city.events.start_day(DaySpec.for_day(day), events_rng, consumed, doorstep)
 
 		var director := ResistanceDirector.new()
 		t.add_child(director)
@@ -2305,7 +2305,7 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 			GameState.attempt_spend.city_state = state
 			state.begin_day(_city.map.block_plans, day)
 			_city.start_day(state, day, _rng(day, "closures"))
-			_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+			_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 			var before := _robbers_on_the_street()
 			var director := _director(t)
 			director.start_day(day, _rng(day, "resistance"), 300.0)
@@ -3130,7 +3130,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		state.begin_day(_city.map.block_plans, Tuning.RUN_LENGTH_DAYS)
 		_city.start_day(state, Tuning.RUN_LENGTH_DAYS, _rng(Tuning.RUN_LENGTH_DAYS, "closures"))
 		_city.events.stream_radius = INF
-		_city.events.start_day(Tuning.RUN_LENGTH_DAYS,
+		_city.events.start_day(DaySpec.for_day(Tuning.RUN_LENGTH_DAYS),
 				_rng(Tuning.RUN_LENGTH_DAYS, "events"), [], site.foot)
 		var mast_plan: EventScheduler.Planned = null
 		for plan in _city.events.plans():
@@ -3218,7 +3218,7 @@ func _ride_a_recorded_scar(t, site: Vector2i, label: String) -> void:
 		GameState.attempt_spend.scars = [{"id": "burnt_shell", "position": scar_at, "since_day": 3}]
 		# `_place_scars()` plans a `burnt_shell` at `scar_at` for the day; it is in the world only
 		# if `scar_at` is inside the streaming radius of the doorstep.
-		_city.events.start_day(8, _rng(8, "events"), [], doorstep)
+		_city.events.start_day(DaySpec.for_day(8), _rng(8, "events"), [], doorstep)
 
 		var director := _director(t)
 		director.start_day(8, _rng(8, "resistance"), 300.0)
@@ -3685,7 +3685,7 @@ func _test_the_door_task_never_borders_the_home_block(t) -> void:
 		city.start_day(closure_state, day, closure_rng)
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = hash("%d:events:%d" % [seed_value, day])
-		city.events.start_day(day, events_rng, [], city.map.doorstep_world_position())
+		city.events.start_day(DaySpec.for_day(day), events_rng, [], city.map.doorstep_world_position())
 
 		var home_border := StreetNetwork.around_blocks(
 				Rect2i(city.map.home_block, Vector2i.ONE))
@@ -3807,7 +3807,7 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 		var state := CityState.new()
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures"))
-		_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+		_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 		var director := _director(t)
 		director.start_day(day, _rng(day, "resistance"), 300.0)
 		var mark := director.current_step()
@@ -3946,7 +3946,7 @@ func _director_on_the_neighbor(t) -> ResistanceDirector:
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
@@ -4169,7 +4169,7 @@ func _director_on_day(t, day: int, state: CityState) -> ResistanceDirector:
 	GameState.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	return director
@@ -4855,7 +4855,7 @@ func _start_the_finale(t, seed_value: int) -> Array:
 	GameState.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
-	_city.events.start_day(day, _rng(day, "events", seed_value), [],
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
@@ -5604,7 +5604,7 @@ func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
 	GameState.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
-	_city.events.start_day(day, _rng(day, "events", seed_value), [],
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())
 	var director := _director(t)
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
@@ -5725,7 +5725,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 				var closure_state := CityState.new()
 				closure_state.begin_day(city.map.block_plans, day)
 				city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
-				city.events.start_day(day, _production_rng(seed_value, day, "events"), [],
+				city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
 						city.map.doorstep_world_position())
 
 				var director := ResistanceDirector.new()
@@ -5811,7 +5811,7 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 				var closure_state := CityState.new()
 				closure_state.begin_day(city.map.block_plans, day)
 				city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
-				city.events.start_day(day, _production_rng(seed_value, day, "events"), [],
+				city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
 						city.map.doorstep_world_position())
 
 				var director := ResistanceDirector.new()
@@ -5876,7 +5876,7 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 			var closure_state := CityState.new()
 			closure_state.begin_day(city.map.block_plans, day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
-			city.events.start_day(day, _production_rng(seed_value, day, "events"), [],
+			city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 
 			var director := ResistanceDirector.new()
@@ -5965,7 +5965,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 				var state := CityState.new()
 				state.begin_day(city.map.block_plans, day)
 				city.start_day(state, day, _production_rng(seed_value, day, "closures"))
-				city.events.start_day(day, _production_rng(seed_value, day, "events"), [],
+				city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
 						city.map.doorstep_world_position())
 				var region_plan: RegionPlanner.RegionPlan = city.region_plan()
 				var pool := ResistanceSteps.target_candidates(step, city.map, region_plan)

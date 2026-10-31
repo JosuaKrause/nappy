@@ -329,7 +329,7 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("checkpoint-wiring-events:%d:%d" % [BASE_SEED, day])
 	var consumed: Array[String] = []
-	city.events.start_day(day, events_rng, consumed)
+	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var region_plan := city.region_plan()
 	t.check(region_plan.door_bodies.size() > 0,
@@ -659,19 +659,6 @@ func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
 			stroller.free()
 			manager.free()
 
-## A `WorldContext` answering out of one `EventManager`, so a real `Baby` can be driven against the
-## same sum the game's own `City` builds — the test hands it to the baby with `Baby.set_world()`.
-##
-## **It forwards `excitement_sources_at()` rather than reimplementing it**, which is the whole
-## point: the rule under test (a hold silences everything else) lives in that function, and a rig
-## that summed the instances itself would pass whatever the game did.
-class _DoorWorld extends WorldContext:
-	var manager: EventManager
-	func excitement_sources_at(world_position: Vector2) -> Array:
-		return manager.excitement_sources_at(world_position)
-	func total_excitement_at(world_position: Vector2) -> float:
-		return manager.total_excitement_at(world_position)
-
 ## **The hold charges its toll and nothing else.** She is inside the hut for those two seconds, not
 ## on the pavement, so a door standing beside a loud field has to cost exactly what a door standing
 ## on a quiet street costs — *"it works in both directions with the same cost each time"*. A
@@ -686,10 +673,13 @@ class _DoorWorld extends WorldContext:
 ## asking the neighbour to be louder than a door, which is a balance decision it has no business
 ## holding.
 func _test_the_hold_charges_only_its_toll(t) -> void:
-	var world := _DoorWorld.new()
+	# A bare world handed one `EventManager`, so a real `Baby` is driven against the same answer
+	# the game's own city gives (`WorldContext.excitement_sources_at()`, where the rule under test —
+	# a hold silences everything else — lives), rather than a rig that summed the instances itself.
+	var world := WorldContext.new()
 	t.add_child(world)
 	var manager := _manager(t)
-	world.manager = manager
+	world.events = manager
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
 	var baby := stroller.get_node_or_null("Baby") as Baby

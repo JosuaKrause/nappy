@@ -538,13 +538,9 @@ func _layer_node(layer: int, name: String, y_sorted := false) -> Node2D:
 	return layers().hold(layer, node, y_sorted)
 
 # ------------------------------------------------------------------ the meters ---
-# `InteriorScene` is a `WorldContext`, so the baby asks it how loud it is here: its events' sum, and
-# the basement's decay.
-
-## The events inside the building — the day's `EventManager`, handed the building's map — or null
-## while the building is walked empty. The same relationship `City` has to its own: the world sums
-## the events it is handed.
-var events: EventManager = null
+# `InteriorScene` is a `WorldContext`, so the baby asks it how loud it is here: the answer of the
+# events it is handed (`WorldContext.events`, the day's `EventManager` on the building's map, or
+# null while the building is walked empty), and the basement's decay.
 
 ## **The basement gives nothing back**: the meter does not fall while she is in it, awake or asleep
 ## (`Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`), so what a vent charges her with stays until she
@@ -553,14 +549,6 @@ func decay_multiplier(world_position: Vector2) -> float:
 	if InteriorMap.part_at(map.world_to_tile(world_position)) == "basement":
 		return Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER
 	return 1.0
-
-func total_excitement_at(world_position: Vector2) -> float:
-	return events.total_excitement_at(world_position) if events else 0.0
-
-func excitement_sources_at(world_position: Vector2) -> Array:
-	if not events:
-		return []
-	return events.excitement_sources_at(world_position)
 
 # ------------------------------------------------------------------ transitions ---
 

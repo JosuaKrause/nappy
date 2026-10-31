@@ -96,7 +96,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	var start := city.map.doorstep_world_position()
 	var consumed: Array[String] = []
 	var events := city.events
-	events.start_day(day, _rng("events", city_seed, day), consumed, start)
+	events.start_day(DaySpec.for_day(day), _rng("events", city_seed, day), consumed, start)
 	events.stream_around(start)
 	var crowd := city.crowd
 	crowd.start_day(day, _rng("crowd", city_seed, day), start)

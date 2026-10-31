@@ -1,8 +1,9 @@
 extends RefCounted
 ## **The escape's building with its events, as the game runs them**: the day's own `EventManager`
 ## handed the building's map (`EventManager.setup_world()`), the whole plan in the world at once, and
-## the building's own placements started on it (`BuildingPlan.plan()`, `start_planned()`), from the
-## seed `rng` draws, as `main` draws it from the run's. Shared by `tests/test_interior.gd`,
+## the building's walk started on it (`EventManager.start_day()` with the building's spec, which
+## plans the building's own placements, `BuildingPlan.plan()`), from the seed `rng` draws, as `main`
+## draws it from the run's. Shared by `tests/test_interior.gd`,
 ## `tests/test_wall_shield.gd`, `tests/basement_walk_rig.gd` and the probes that walk the building.
 
 ## The building's events in `scene`, added under `parent`, started from `rng`'s next draw. The seed
@@ -22,8 +23,10 @@ static func events_in(parent: Node, scene: InteriorScene,
 ## seed, so the same building.
 static func restart(events: EventManager, scene: InteriorScene) -> void:
 	var seed: int = events.get_meta(&"building_seed")
-	events.start_planned(spec(), BuildingPlan.plan(scene.map, seed),
-			scene.map.start_world_position())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var none: Array[String] = []
+	events.start_day(spec(), rng, none, scene.map.start_world_position())
 	scene.start_the_night(seed)
 
 ## The building section's own spec.

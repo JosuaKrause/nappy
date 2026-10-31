@@ -24,7 +24,7 @@ func run(t) -> void:
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	_city.events.start_day(Tuning.RUN_TAUGHT_DAY + 2, rng, consumed)
+	_city.events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY + 2), rng, consumed)
 	_rig = Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

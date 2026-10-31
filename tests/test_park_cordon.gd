@@ -61,7 +61,7 @@ func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
 	GameState.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)

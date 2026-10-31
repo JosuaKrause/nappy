@@ -58,7 +58,7 @@ func _build_day(t) -> void:
 	state.begin_day(_city.map.block_plans, DAY)
 	_city.start_day(state, DAY, _rng("closures"))
 	var consumed: Array[String] = []
-	_city.events.start_day(DAY, _rng("events"), consumed)
+	_city.events.start_day(DaySpec.for_day(DAY), _rng("events"), consumed)
 
 	_saved_completed = GameState.resistance.completed_steps.duplicate()
 	_saved_failed = GameState.resistance.failed_steps.duplicate()
@@ -224,7 +224,7 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t) -> void:
 	state.begin_day(map.block_plans, day)
 	city.start_day(state, day, _rng("checkpoint-closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(day, _rng("checkpoint-events"), consumed)
+	city.events.start_day(DaySpec.for_day(day), _rng("checkpoint-events"), consumed)
 
 	var huts: Array[EventScheduler.Planned] = []
 	for body in city.region_plan().door_bodies:

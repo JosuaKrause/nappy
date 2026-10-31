@@ -92,7 +92,7 @@ func _build_day(t) -> void:
 	state.begin_day(_city.map.block_plans, DAY)
 	_city.start_day(state, DAY, _rng("closures"))
 	var consumed: Array[String] = []
-	_city.events.start_day(DAY, _rng("events"), consumed)
+	_city.events.start_day(DaySpec.for_day(DAY), _rng("events"), consumed)
 
 	_saved_completed = GameState.resistance.completed_steps.duplicate()
 	_saved_failed = GameState.resistance.failed_steps.duplicate()
@@ -760,7 +760,7 @@ func _build_target_shape_fixture(t, day: int, progress_at_dawn: int = 0) -> Dict
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng_for_day(day, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(day, _rng_for_day(day, "events"), consumed)
+	city.events.start_day(DaySpec.for_day(day), _rng_for_day(day, "events"), consumed)
 
 	var saved := {
 		"completed": GameState.resistance.completed_steps.duplicate(),
@@ -1344,7 +1344,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	city.start_day(state, door_day, rng)
 	var consumed: Array[String] = []
 	rng.seed = hash("%d:%d:boom-events" % [SEED, door_day])
-	city.events.start_day(door_day, rng, consumed)
+	city.events.start_day(DaySpec.for_day(door_day), rng, consumed)
 
 	var gate: EventInstance = null
 	var hut: EventInstance = null

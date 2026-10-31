@@ -224,7 +224,7 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [SEED, 6])
 	var consumed: Array[String] = []
-	city.events.start_day(6, rng, consumed, her.global_position)
+	city.events.start_day(DaySpec.for_day(6), rng, consumed, her.global_position)
 	var director := city.events.ahead._director
 	var owed := director.owed()
 	var next_in: float = director._next_in

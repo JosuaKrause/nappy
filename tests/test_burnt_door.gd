@@ -102,7 +102,7 @@ func _task_on_offer(t, city: City) -> ResistanceDirector:
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng("closures"))
 	var none: Array[String] = []
-	city.events.start_day(DAY, _rng("events"), none, city.map.doorstep_world_position())
+	city.events.start_day(DaySpec.for_day(DAY), _rng("events"), none, city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)

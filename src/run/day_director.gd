@@ -108,8 +108,7 @@ func start_day(the_spec: DaySpec) -> void:
 	# which is why the crowd is populated after the spawn position is settled rather than
 	# before it, and why the events are streamed a second time once it is known.
 	var doorstep := city.map.doorstep_world_position()
-	city.events.use_the_spec(spec)
-	city.events.start_day(today, run.day_rng(), spend.consumed_one_shots, doorstep)
+	city.events.start_day(spec, run.day_rng(), spend.consumed_one_shots, doorstep)
 	# The day's seals are planned inside the call above, and a `fallen_tree_seal` takes a street
 	# tree's own pit. `City.start_day` already emptied the pits its own closures took, so this is
 	# the second half of one refresh rather than a repair of it — see `City.refresh_street_trees`.

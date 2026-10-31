@@ -159,7 +159,7 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ## boundary — one in `Tuning.GATEHOUSE_DAY_SEAL_SHARE` of them from `Tuning.REGION_WALL_FIRST_DAY` on
 ## — thinned by a small fraction, plus the mouths of any through-alley the walk does not reach
 ## (`RouteSource.reaches_the_alley()`). Returned as `EventScheduler.Planned` so the caller
-## (`EventManager.start_day`, or `FinalePlanner.plan()` for the escape's city) can simply append
+## (`DayPlanner`, for a day and for the escape's city) can simply append
 ## them to the walk's plan.
 ##
 ## **A day and the escape's city are this one path with the spec's settings**, since the walk is

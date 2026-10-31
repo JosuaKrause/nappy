@@ -3,14 +3,15 @@ extends RefCounted
 ## **What the escape's building places, and where**: the building's own hand on the day's machinery.
 ## The player allows the building its own way of placing events and nothing else of its own
 ## (minty-lemur #785), so this is the whole of what is the building's: a list of plans
-## (`EventScheduler.Planned`) the day's `EventManager` runs exactly as it runs any plan — streamed
-## in, told where she is, summed into the meter, its catches ending the section with their cause —
-## with the building's map under them (`InteriorMapPlan`).
+## (`EventScheduler.Planned`), asked for by the day's planner when the walk is the building's
+## (`DayPlanner`), that the day's `EventManager` runs exactly as it runs any plan — streamed in, told
+## where she is, summed into the meter, its catches ending the section with their cause — with the
+## building's map under them (`InteriorMapPlan`).
 ##
 ## *"We can keep the events inside the house relatively minimal"*, so at most one of each: the fire
 ## on one stairwell, the masked man coming up the other again and again, the mouse and the steam in
-## the basement, and the explosions outside. **Deterministic from the seed handed in**, so a retry is
-## the same building rather than an easier one.
+## the basement, and the explosions outside. **Deterministic from the stream handed in**, so a retry
+## handed the same seed is the same building rather than an easier one.
 
 ## Which stairwell the fire closes, and it is **always the left one** *(2026-09-19: "there should be
 ## a fire on the left like it is right now but the top floor right side should be completely blocked
@@ -22,11 +23,9 @@ const BURNING_SIDE := "left"
 ## The shaft the masked man runs, the one the fire did not take.
 const PURSUED_SIDE := "right"
 
-## The building's plans, from `map` and `seed`, in the order they come into the world.
-static func plan(map: InteriorMapPlan, seed: int) -> Array[EventScheduler.Planned]:
+## The building's plans, from `map` and `rng`, in the order they come into the world.
+static func plan(map: InteriorMapPlan, rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
 	var plans: Array[EventScheduler.Planned] = []
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
 	_place_the_fire(map, plans)
 	_place_the_masked_man(map, plans)
 	_place_the_basement(map, rng, plans)
@@ -83,7 +82,7 @@ static func _place_the_masked_man(map: InteriorMapPlan,
 ## out of `Tuning.FINALE_STEAM_PERIODS`, and staggered so the three do not open the whole corridor at
 ## once on the first pass; after that their own periods do it. Between blows there is no instance at
 ## all, so a vent that is off costs nothing and stops nobody; its grate stays on the floor
-## (`lay_the_grates()`).
+## (`grates()`).
 static func _place_the_basement(map: InteriorMapPlan, rng: RandomNumberGenerator,
 		plans: Array[EventScheduler.Planned]) -> void:
 	var walk := map.basement_walk()
@@ -92,7 +91,7 @@ static func _place_the_basement(map: InteriorMapPlan, rng: RandomNumberGenerator
 	var mouse_at: Vector2i = walk[walk.size() / 3]
 	plans.append(EventScheduler.Planned.new(EventCatalogue.by_id("alley_mouse"),
 			map.tile_to_world(mouse_at)))
-	# Spent to keep the seed's stream where it has always been: the mouse's dash is its own short
+	# Spent to keep the stream where it has always been: the mouse's dash is its own short
 	# crossing indoors (`EventInstance._alley_crossing_path()`), with no alley to roll one from.
 	rng.randf()
 	var sites := map.vent_sites()
@@ -120,24 +119,11 @@ static func _place_the_explosions_outside(plans: Array[EventScheduler.Planned]) 
 	bang.age = bang.arrives_aged
 	plans.append(bang)
 
-## **Each vent's floor grate, lying on its site for the whole escape**, through the building's map
-## (`WorldMap.add_entity()`), and answered for whoever wants to find them. A gate she can see only
-## while it is shut is one she finds by walking into its notice; a grate lying in the corridor,
-## blowing or not, is one she sees from the corner and times. So the grate is floor owned by the
-## vent's place rather than by any blow's picture, and each blow's cloud rises out of it.
-##
-## **Ground, not something standing on it**: she walks over it between blows, so it lies on the
-## ground layer (`DrawLayer.Layer.GROUND`), after the floor tiles, under the walls and the y-sorted
-## layer she and every blow stand in, centred on the vent's point, where each blow's frames are
-## anchored. No body: the grate is where the gate is, not a second gate.
-static func lay_the_grates(map: InteriorMapPlan) -> Array[Sprite2D]:
-	var grates: Array[Sprite2D] = []
-	for at in map.vent_sites():
-		var grate := Sprite2D.new()
-		grate.name = "SteamGrate"
-		grate.texture = EventPictures.steam_grate()
-		grate.centered = true
-		grate.position = at
-		map.add_entity(grate, DrawLayer.Layer.GROUND)
-		grates.append(grate)
-	return grates
+## **Where each vent's floor grate lies, for the whole escape**: on each vent's own point
+## (`InteriorMapPlan.vent_sites()`). A gate she can see only while it is shut is one she finds by
+## walking into its notice; a grate lying in the corridor, blowing or not, is one she sees from the
+## corner and times. So the grate is floor owned by the vent's place rather than by any blow's
+## picture, and each blow's cloud rises out of it. Where it lies is the building's; drawing it is a
+## view's (`SteamGrates.lay()`).
+static func grates(map: InteriorMapPlan) -> Array[Vector2]:
+	return map.vent_sites()

@@ -314,7 +314,7 @@ func _test_the_bounding_box_layer_draws_every_enabled_body(t) -> void:
 	var consumed: Array[String] = []
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("m100-debug-layers:events:%d" % day)
-	city.events.start_day(day, events_rng, consumed)
+	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Stroller = scene.instantiate()

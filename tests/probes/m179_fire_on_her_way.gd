@@ -82,7 +82,7 @@ func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
-	city.events.start_day(day, rng, consumed)
+	city.events.start_day(DaySpec.for_day(day), rng, consumed)
 	var plan: EventScheduler.Planned = null
 	for candidate in city.events.plans():
 		if candidate.def.id == "burning_building":

@@ -50,7 +50,7 @@ func _test_every_task_days_destination_draws_no_mark(t) -> void:
 		GameState.attempt_spend.city_state = state
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures"))
-		_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+		_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)

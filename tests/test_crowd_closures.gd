@@ -647,7 +647,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = hash("crowd-wall-events:%d:%d" % [SEED, day])
 		var consumed: Array[String] = []
-		city.events.start_day(day, events_rng, consumed)
+		city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 		var plan := city.region_plan()
 		if not plan.walls.is_empty() and not plan.doors.is_empty():
 			wall_segment = plan.walls[0]
@@ -752,7 +752,7 @@ func _open_a_door_day(t) -> Dictionary:
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = hash("crowd-door-events:%d:%d" % [SEED, day])
 		var consumed: Array[String] = []
-		city.events.start_day(day, events_rng, consumed)
+		city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 		if not city.region_plan().doors.is_empty():
 			door = city.region_plan().doors[0]
 			used_day = day
@@ -1144,7 +1144,7 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("crowd-home-events:%d:%d" % [SEED, day])
 	var consumed: Array[String] = []
-	city.events.start_day(day, events_rng, consumed)
+	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var home_segments := StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE))
 	t.check(not home_segments.is_empty(), "the home block has bordering streets")

@@ -49,7 +49,7 @@ func _start_the_last_day() -> void:
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng("closures"))
-	_city.events.start_day(day, _rng("events"), [], _city.map.power_station_door_position())
+	_city.events.start_day(DaySpec.for_day(day), _rng("events"), [], _city.map.power_station_door_position())
 	_city.crowd.start_day(day, _rng("crowd"))
 
 ## A point `distance` px straight south of the station's lot, the way she walks off from its door.

@@ -61,7 +61,7 @@ func run(t) -> void:
 			rng.seed = hash("polite-rabbit-walls:%d:%d" % [city_seed, day])
 			city.start_day(CityState.new(), day, rng)
 			var consumed: Array[String] = []
-			city.events.start_day(day, rng, consumed, city.map.doorstep_world_position())
+			city.events.start_day(DaySpec.for_day(day), rng, consumed, city.map.doorstep_world_position())
 			var events := [0.0, 0.0, 0.0]
 			var crowd := [0.0, 0.0, 0.0]
 			var seconds := 0.0

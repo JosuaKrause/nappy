@@ -1356,7 +1356,7 @@ from walking past it".)* That row is a `SealPlanner` scene rather than a `RoadCl
 pavements either side of them are ground she can walk. What closes them is
 `Tuning.CAR_ACCIDENT_INTENSITY`, a field over the scene's own band that costs more than half the
 meter to squeeze past. **It is still not a third thing to sum**: a seal is a catalogue row, so it
-emits the way every event does and `City.total_excitement_at` is unchanged. What has changed is
+emits the way every event does and `WorldContext.total_excitement_at` is unchanged. What has changed is
 that a seal may be loud, and only this one is — the fallen tree (one trunk kerb to kerb) and the
 burst main (a crater between two barriers) leave no gaps to close and stay at zero.
 

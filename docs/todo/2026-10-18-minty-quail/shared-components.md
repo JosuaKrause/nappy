@@ -29,6 +29,13 @@ named at `event_instance.gd:3907` as `CrowdAgent._redraw_if_the_picture_changed(
 members live (`WalkerLook`, `CarLook`) once both the crowd's split and the events step that owns
 `src/events/` have merged.
 
+**Carry-over from events-composed 4b (minty-quail-25), the builder's fork rather than the player's
+ask:** `WorldContext` (`src/world/`, the world layer) holds fields typed `EventManager` and `Crowd`
+(simulation) so it can hand the baby both answers to "how exciting is it here", a typed dependency
+pointing up a layer. The `ExcitementSource` component above is what those fields are typed against
+once it exists, both the manager and the crowd extending or composing it; the plainer alternative
+the builder named is the world handed callables instead of the objects.
+
 **Open question, the orchestrating session's carry-over from minty-quail-5 rather than the player's
 ask:** whether the crowd's lane movement goes onto the map's one `Navigator`. It is not part of the
 walker-and-car split, because a lane-following held step is a different motion model from the
