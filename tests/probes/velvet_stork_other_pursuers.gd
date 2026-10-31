@@ -124,7 +124,7 @@ func _the_sent_robbers_starts(t, seed_value: int) -> void:
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.scars = []
 	var director: ResistanceDirector = suite._start_the_day(t, city, seed_value)
-	var player: Stroller = suite._rig_player(t, director.contact_position())
+	var player: Stroller = suite._rig_player(t, director, director.contact_position())
 	var map := city.map
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
