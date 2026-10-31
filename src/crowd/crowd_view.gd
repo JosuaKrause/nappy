@@ -15,7 +15,8 @@ extends RefCounted
 ## process order, and the box an agent redraws against is the one the camera shows when that agent
 ## is processed; a value written once a frame at some other point would be a frame behind for the
 ## agents on one side of the camera. So the implementation answers at the moment of the ask
-## (`DrawnView` keeps its own once-a-process-frame box), exactly as the crowd always read it.
+## (`DrawnView` keeps its own once-a-process-frame box): the first agent processed in a frame sees
+## the camera as it stands then.
 ## This base answers nothing: no area at all, which `beyond_every_view()` takes for "no camera".
 
 ## The world the current camera shows, grown by `DrawnView.MARGIN`: everything an agent's drawing
