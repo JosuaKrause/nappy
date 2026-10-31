@@ -398,12 +398,12 @@ func _check_the_agents_are_timed_once(t, agents: Array[CrowdAgent]) -> void:
 	scratch.process_start(Time.get_ticks_usec())
 	var clocks: Array[float] = []
 	for agent in agents:
-		clocks.append(agent._clock)
+		clocks.append(agent.excitement._clock)
 	for agent in agents:
 		agent._process(STEP)
 	var once := true
 	for i in agents.size():
-		once = once and is_equal_approx(agents[i]._clock, clocks[i] + STEP)
+		once = once and is_equal_approx(agents[i].excitement._clock, clocks[i] + STEP)
 	t.check(once, "a timed agent's body runs once a call, not twice and not never")
 	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == agents.size(),
 			"each agent's call is one timed call (%d for %d agents)"
@@ -417,7 +417,7 @@ func _check_the_agents_are_timed_once(t, agents: Array[CrowdAgent]) -> void:
 		agent._process(STEP)
 	once = true
 	for i in agents.size():
-		once = once and is_equal_approx(agents[i]._clock, clocks[i] + 2.0 * STEP)
+		once = once and is_equal_approx(agents[i].excitement._clock, clocks[i] + 2.0 * STEP)
 	t.check(once and scratch._counters[FrameLedger.TIMER_CALLS] == agents.size()
 			and scratch._spent == spent,
 			"once the record stops, an agent made under it runs its body once and times nothing")

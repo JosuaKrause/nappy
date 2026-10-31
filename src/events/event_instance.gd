@@ -1750,17 +1750,20 @@ func field_at(world_position: Vector2, intensity_override: float,
 ## same kernel with no body at all for the handful of emitting rows with no shape (`playground`,
 ## whose look is drawn by the park itself rather than by `EventInstance`).
 func _field_distance(world_position: Vector2, velocity: Vector2) -> float:
-	return _field_distance_at(global_position, world_position, velocity)
+	return field_distance_from(global_position, field_shape(), solid_axis(), world_position,
+			velocity)
 
-## `_field_distance()` for a field centred somewhere other than this node: the band a guard has
-## walked away from.
-func _field_distance_at(centre: Vector2, world_position: Vector2, velocity: Vector2) -> float:
-	var shape := field_shape()
+## `_field_distance()` with its datum handed in — where the field stands, its shape (null for a
+## point) and the axis its body lies along: the kernel the caret's projection prices every sample
+## with too, its datum read once before it samples (`EventExcitement._begin_the_projection()`),
+## since nothing about it moves while the projection runs.
+func field_distance_from(centre: Vector2, shape: GroundShape, axis: Vector2,
+		world_position: Vector2, velocity: Vector2) -> float:
 	if shape != null:
-		return shape.field_distance(centre, solid_axis(), velocity, world_position)
+		return shape.field_distance(centre, axis, velocity, world_position)
 	return GroundShape.eccentric_distance(centre, velocity, world_position)
 
-## The datum this row's field is priced from (`_field_distance_at()`) and drawn from (`DebugLayers`):
+## The datum this row's field is priced from (`field_distance_from()`) and drawn from (`DebugLayers`):
 ## its `shape`, or none — a point at its centre — for a row whose field is priced from its centre
 ## (`VehicleSpec.field_from_its_centre`, the fire engine) or that has no shape.
 func field_shape() -> GroundShape:

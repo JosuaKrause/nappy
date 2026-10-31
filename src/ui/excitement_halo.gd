@@ -244,8 +244,9 @@ func _pick_and_predict() -> void:
 		source.set_expected_total_gross(total_expected_gross)
 		if picked_set.has(source):
 			continue
+		# A rim not held has nothing to fade, so only a held one is told zero.
 		var rim = source.rim
-		if rim == null:
+		if rim == null or not rim.is_held():
 			continue
 		rim.set_strength(0.0, Palette.HALO_WEAK)
 		if rim.is_held():

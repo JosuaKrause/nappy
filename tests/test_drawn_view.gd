@@ -136,7 +136,7 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	while x < 200.0 and not seen:
 		car.position = Vector2(x, 180.0)
 		car.excitement.set_player_at(car.position + Vector2(60.0, 0.0))
-		car._clock += STEP
+		car.excitement._clock += STEP
 		var before: Variant = car.excitement._caret_key_was
 		var asked := car._end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(

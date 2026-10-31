@@ -258,18 +258,23 @@ var _expected_landed_cache := 0.0
 ## total the halo sums is already in the units the shared decay is taken out of. The present rate
 ## subtracted is the real `contribution_at()` — what she is charged right now — so the answer is the
 ## approach minus the honest present.
+##
+## **The reach is asked before whether it projects at all** (`_projects()`): every check before the
+## sampling answers zero and changes nothing, so their order is free, and most of a day's sources
+## are out of reach, so the type's question is asked only of the few near enough to matter. The halo
+## asks this of every source every drawn frame.
 func expected_gross_at(player_position: Vector2) -> float:
-	if outranked or not _projects():
+	if outranked:
 		return 0.0
 	var velocity := _projection_velocity()
 	var closing := player_velocity - velocity
 	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + _projection_reach()
 	if body.global_position.distance_to(player_position) > reach:
 		return 0.0
-	if velocity.is_zero_approx() and player_velocity.is_zero_approx():
+	if (velocity.is_zero_approx() and player_velocity.is_zero_approx()) or not _projects():
 		return 0.0
 	var current_rate := contribution_at(player_position)
-	_begin_the_projection()
+	_begin_the_projection(velocity)
 	var future_integral: float
 	var key := _projection_key(player_position, velocity)
 	if key.is_empty():
@@ -291,11 +296,14 @@ func _sample_expected_landed(player_position: Vector2, velocity: Vector2) -> flo
 	var dt := 0.25
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var integral := 0.0
+	# Where it stands and the walls it asks, read once: neither moves while it samples.
+	var from := body.global_position
+	var grid := wall_grid()
 	for i in steps:
 		var t := float(i + 1) * dt
 		var sample := player_position + player_velocity * t - velocity * t
 		var rate := _projected_field(sample, velocity)
-		if rate > 0.0 and _walled_off(body.global_position + velocity * t,
+		if rate > 0.0 and grid != null and grid.wall_between(from + velocity * t,
 				player_position + player_velocity * t):
 			rate = 0.0
 		integral += rate * dt
@@ -331,8 +339,8 @@ func _projection_velocity() -> Vector2:
 func _projection_reach() -> float:
 	return 0.0
 
-## Anything the projection works out once before it samples.
-func _begin_the_projection() -> void:
+## Anything the projection works out once before it samples, `velocity` the course it runs on.
+func _begin_the_projection(_velocity: Vector2) -> void:
 	pass
 
 ## Every input the projection's samples read, by value, or empty where none is cached.

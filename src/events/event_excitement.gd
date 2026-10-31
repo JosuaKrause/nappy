@@ -20,6 +20,18 @@ var _event: EventInstance
 ## (`EventInstance.caret_intensity_over_horizon()`).
 var _live_intensity := 0.0
 
+## The field's datum, read once before the projection samples, since nothing about it moves while it
+## does: its row, where it stands, its shape and the axis its body lies along
+## (`EventInstance.field_shape()`, `solid_axis()`), and whether a sample can be priced off them directly (`_direct`) — not for a
+## flock, whose birds are each their own field, nor for a rate or a course `EventInstance.field_at()`
+## would not take as given, which it then answers in full.
+var _def: EventDef = null
+var _from := Vector2.ZERO
+var _shape: GroundShape = null
+var _axis := Vector2.ZERO
+var _flock := false
+var _direct := false
+
 func _init(event: EventInstance) -> void:
 	super(event)
 	_event = event
@@ -77,20 +89,32 @@ func _projection_reach() -> float:
 	return _event.def.field_reach()
 
 ## **The row's live rate** (`EventInstance.caret_intensity_over_horizon()`): its telegraph's damping
-## undone, its pulse at the horizon's mean.
-func _begin_the_projection() -> void:
+## undone, its pulse at the horizon's mean. And the field's datum, so that each sample is the kernel
+## `EventInstance.field_at()` ends in (`EventInstance.field_distance_from()`, then the row's
+## `EventDef.emission_at_distance()`) without asking again, twenty times over, what does not change
+## between them. **The same number `field_at()` answers**: the projection runs only on a source that
+## projects (`_projects()`: neither finished nor leaving, which is all `field_at()` checks before
+## the kernel), and `_direct` holds only where `field_at()` would take the rate and the course as
+## given and reach the kernel.
+func _begin_the_projection(velocity: Vector2) -> void:
 	_live_intensity = _event.caret_intensity_over_horizon()
+	_flock = not _event.birds().is_empty()
+	_def = _event.def
+	_from = _event.global_position
+	_shape = _event.field_shape()
+	_axis = _event.solid_axis()
+	_direct = not _flock and _live_intensity >= 0.0 and velocity != Vector2.INF
 
 ## Every input the samples read, by value, mutable definition and shape fields included: age alone
 ## cannot cover a retirement, silence, external movement or changed player state. Empty for a flock,
 ## whose every bird has its own mutable geometry and is sampled afresh.
 func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
-	if not _event.birds().is_empty():
+	if _flock:
 		return []
-	var def := _event.def
-	return [_event.global_position, player_position, player_velocity, velocity,
+	var def := _def
+	return [_from, player_position, player_velocity, velocity,
 		_live_intensity, def.intensity, def.inner_radius, def.outer_radius,
-		def.falloff_power, def.core_intensity, def.core_radius, _event.solid_axis(),
+		def.falloff_power, def.core_intensity, def.core_radius, _axis,
 		def.shape.kind if def.shape else -1,
 		def.shape.half_length if def.shape else 0.0,
 		def.shape.half_extents if def.shape else Vector2.ZERO]
@@ -98,7 +122,10 @@ func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
 ## The field at the translated point, at the live rate, its ellipse oriented by the source's own
 ## velocity rather than the pair's relative heading.
 func _projected_field(sample: Vector2, velocity: Vector2) -> float:
-	return _event.field_at(sample, _live_intensity, velocity)
+	if not _direct:
+		return _event.field_at(sample, _live_intensity, velocity)
+	return _def.emission_at_distance(
+			_event.field_distance_from(_from, _shape, _axis, sample, velocity), _live_intensity)
 
 ## Whether this event's own course puts her inside the radius that ends the day before the horizon
 ## is out, her position held fixed: `EventInstance.is_lethal_at()`'s straight-line reach,

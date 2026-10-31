@@ -29,16 +29,11 @@ var skip_draw := false
 ## it the contact re-fires every frame and one person costs what a crowd should.
 var touching := false
 
-## This body as a thing that charges the baby (`CrowdExcitement`): its field, the jolt's share of
-## it, its ledger of what it has landed, its projection and its caret's strength. `ExcitementHalo`
-## tells it once a frame where she is, which is the one channel that reaches every body in the crowd
-## whether or not it is near a road.
+## This body as a thing that charges the baby (`CrowdExcitement`): its field, the jolt a contact or
+## a horn leaves and its share of the field, its clock, its ledger of what it has landed, its
+## projection and its caret's strength. `ExcitementHalo` tells it once a frame where she is, which
+## is the one channel that reaches every body in the crowd whether or not it is near a road.
 var excitement := CrowdExcitement.new(self)
-
-## The crowd's set this body is heard in (`CrowdSources`), handed in by the `Crowd` that makes it,
-## told whenever this body's jolt widens so the set's sweep never skips it; null for a body no crowd
-## made.
-var heard_in: CrowdSources = null
 
 ## The sector, flip and third term currently drawn, so a redraw only happens when one of them
 ## changes. The third is the gait frame for a walker and the body's bob for a car, quantised by
@@ -61,28 +56,6 @@ var _picture_is_stale := false
 ## first nonzero glow and given back once faded, so only the handful `ExcitementHalo.MAX_SOURCES`
 ## picks ever holds one.
 var _rim := SourceRim.new(_build_rim)
-
-## Seconds of agitation left, and how loud the agitation started. A person she walked into is
-## startled and says so; a car that had to sound its horn keeps sounding for a moment. This is
-## how a contact reaches the meter *without* anything writing to `Baby.excitement`: the source
-## is the body she touched, summed exactly like every other body.
-var _jolt := 0.0
-var _jolt_for := 1.0
-var _jolt_intensity := 0.0
-var _jolt_inner := 0.0
-var _jolt_outer := 0.0:
-	set(value):
-		_jolt_outer = value
-		if heard_in:
-			heard_in.widen_to(value)
-
-## This agent's own simulation clock, in seconds, advanced by `delta` every frame
-## (`_end_the_frame()`). `excitement.landed()` is measured against this rather than the wall clock,
-## so a paused game does not empty the halo and a rig measures the window on simulated time.
-var _clock := 0.0
-
-func clock() -> float:
-	return _clock
 
 ## Everything this agent's own drawing can cover, relative to its position — what
 ## `_end_the_frame()` asks `CrowdView.drawn_box()` about. `ENTRY_PICTURE_ROOM` either side, and
@@ -118,10 +91,9 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 ## picture about nine pixels south of its own body for the rest of its run in that lane — while
 ## `EntityHalo`, which re-traces the body every frame it is drawn, stands where the car belongs.
 func _end_the_frame(delta: float) -> bool:
-	# The clocks only a crowd member keeps: its simulation clock, and the seconds of agitation a
-	# contact or a horn left, run down here because every frame that is not skipped ends here.
-	_clock += delta
-	_jolt = maxf(0.0, _jolt - delta)
+	# The clocks only a crowd member keeps, its excitement's clock and the seconds of agitation a
+	# contact or a horn left, run here because every frame that is not skipped ends here.
+	excitement.advance(delta)
 	var picture := _look.picture(velocity())
 	var drawn_heading := _look.heading_key()
 	var changed := picture != _picture or drawn_heading != _drawn_heading
@@ -152,29 +124,6 @@ func _end_the_frame(delta: float) -> bool:
 		return true
 	return false
 
-## Startles this agent for `seconds`. The only way anything outside the crowd adds excitement
-## to the world, and it deliberately adds it to a *body* rather than to the baby.
-func startle(intensity: float, seconds: float, inner: float, outer: float) -> void:
-	# Never shortens an agitation already running: a second bump on top of the first must not
-	# be able to make the first one quieter.
-	if _jolt > 0.0 and intensity * seconds < _jolt_intensity * _jolt:
-		return
-	_jolt = seconds
-	_jolt_for = seconds
-	_jolt_intensity = intensity
-	_jolt_inner = inner
-	_jolt_outer = outer
-
-## True while this agent is agitated, so the same contact is not written down twice.
-func is_startled() -> bool:
-	return _jolt > 0.0
-
-## The jolt's own inner and outer radii, valid only while `is_startled()` — read by `DebugLayers`
-## so its fields layer can draw the extra field a running jolt adds on top of this agent's ordinary
-## one, the same pair `CrowdExcitement` sums in.
-func jolt_radii() -> Vector2:
-	return Vector2(_jolt_inner, _jolt_outer)
-
 ## Builds this body's rim from its look, which a new kind changes.
 func _build_rim() -> EntityHalo:
 	var halo := EntityHalo.new(_look.draw_body, _look.bob)
@@ -189,10 +138,10 @@ func _build_rim() -> EntityHalo:
 ## being startled is enough to skip it, which is the same hysteresis a contact uses: a pair sitting
 ## inside each other for half a second must cost one crash, not thirty.
 func crashed_into() -> void:
-	if _jolt > 0.0:
+	if excitement.is_startled():
 		return
 	_speed = 0.0
-	startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION * 2.0,
+	excitement.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION * 2.0,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 
 # ---------------------------------------------------------------- drawing ---
@@ -214,6 +163,7 @@ func _init() -> void:
 func _kind_installed() -> void:
 	_look = CarLook.new(self) if kind == Kind.CAR else WalkerLook.new(self)
 	_carets = _look.carets()
+	excitement.take_kind(kind)
 
 func restart_the_picture() -> void:
 	_look.restart()
@@ -285,7 +235,7 @@ func _draw_mark() -> void:
 	var strength := excitement.caret_strength()
 	if strength <= 0:
 		return
-	var swell := (_jolt / _jolt_for) if _jolt > 0.0 else 1.0
+	var swell := excitement.jolt_swell()
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, -(MARK_HEIGHT + 10.0 * swell))
 	var colour := Palette.MARK_LETHAL if strength == 2 else Palette.MARK_COSTLY

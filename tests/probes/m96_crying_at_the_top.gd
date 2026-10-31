@@ -7,7 +7,7 @@ extends RefCounted
 ##     tools/test.sh probes/m96_crying_at_the_top.gd
 ##
 ## **The rig mirrors tests/test_meters.gd's own `FakeWorld` and `_one_bump_from`** — a real
-## `CrowdAgent.startle()` or a real `EventInstance` feeds `FakeWorld.noise`, and a bare
+## `CrowdExcitement.startle()` or a real `EventInstance` feeds `FakeWorld.noise`, and a bare
 ## `Baby`/`Stroller` pair is driven by hand at a fixed step, since a headless probe has no crowd to
 ## steer a body through.
 ##
@@ -175,14 +175,14 @@ func _one_bump_from(t, at: float) -> Dictionary:
 	_build(t)
 	var agent := CrowdAgent.new()
 	agent.global_position = _stroller.global_position
-	agent.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
+	agent.excitement.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
 			Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
 	_baby.excitement = at
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var peaks := _new_peaks()
 	var jolt := Tuning.BUMP_DURATION
 	while jolt > 0.0:
-		agent._jolt = jolt
+		agent.excitement._jolt = jolt
 		_world.noise = agent.excitement.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
@@ -203,11 +203,11 @@ func _two_bumps_at_the_top(t) -> Dictionary:
 	for bump_start in [0.0, Tuning.BUMP_DURATION + gap]:
 		var agent := CrowdAgent.new()
 		agent.global_position = _stroller.global_position
-		agent.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
+		agent.excitement.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
 				Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
 		var jolt := Tuning.BUMP_DURATION
 		while jolt > 0.0:
-			agent._jolt = jolt
+			agent.excitement._jolt = jolt
 			_world.noise = agent.excitement.contribution_at(_stroller.global_position)
 			_baby._update_excitement(STEP, _stroller.global_position, false)
 			_track_peaks(peaks)

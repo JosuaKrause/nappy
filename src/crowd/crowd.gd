@@ -288,7 +288,7 @@ func _make_an_agent() -> CrowdAgent:
 	agent.pockets = _pockets
 	agent.view = _view
 	agent.frame_timing = _timing
-	agent.heard_in = sources
+	agent.excitement.heard_in = sources
 	return agent
 
 ## Exact authoring shares the live crowd's lane, pocket and junction machinery. A rejected
@@ -1227,7 +1227,7 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	agent.global_position += _navigator.step(agent.global_position, push, _pushed)
 	if not agent.touching:
 		agent.touching = true
-		agent.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
+		agent.excitement.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
 				Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
 		EventBus.crowd_bumped.emit(here)
 	# Whichever way they were pushed, keep going that way: the walker's own steering is what
@@ -1270,9 +1270,9 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 		return false
 	if absf(offset.dot(Vector2(-forward.y, forward.x))) > Tuning.CAR_STRIKE_HALF_WIDTH * 2.0:
 		return false
-	if not agent.is_startled():
+	if not agent.excitement.is_startled():
 		EventBus.car_near_miss.emit(here)
-	agent.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
+	agent.excitement.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	return true
 

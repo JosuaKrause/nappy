@@ -196,16 +196,18 @@ func _test_crowd_mutations(t) -> void:
 		_crowd_parity(t, source, at, "crowd before player")
 		source.excitement.set_player_at(at, Vector2(92.0, 0.0))
 		_crowd_parity(t, source, at, "crowd player")
-		for field: String in ["_speed", "_direction", "_turn_back_hold",
-				"_jolt", "_jolt_for", "_jolt_intensity", "_jolt_inner", "_jolt_outer"]:
+		for field: String in ["_speed", "_direction", "_turn_back_hold"]:
 			source.set(field, float(source.get(field)) + 1.25)
+			_crowd_parity(t, source, at, "crowd external " + field)
+		for field: String in ["_jolt", "_jolt_for", "_jolt_intensity", "_jolt_inner", "_jolt_outer"]:
+			source.excitement.set(field, float(source.excitement.get(field)) + 1.25)
 			_crowd_parity(t, source, at, "crowd external " + field)
 		# A yield and a door hold are a walker's, kept by its strategy; a car has neither.
 		var walking := kind == CrowdAgent.Kind.WALKER
 		if walking:
 			source.strategy._yield_left += 1.25
 			_crowd_parity(t, source, at, "crowd external _yield_left")
-		source.startle(80.0, 2.0, 30.0, 170.0)
+		source.excitement.startle(80.0, 2.0, 30.0, 170.0)
 		_crowd_parity(t, source, at, "crowd new horn/bump")
 		source.position += Vector2(33.0, 8.0)
 		_crowd_parity(t, source, at, "crowd external displacement")
@@ -276,8 +278,8 @@ func _test_consumer_order(t) -> void:
 		var at := Vector2(210.0 - float(step) * 4.0, 20.0)
 		cached.age += 0.1
 		reference.age = cached.age
-		car._clock += 0.1
-		reference_car._clock = car._clock
+		car.excitement._clock += 0.1
+		reference_car.excitement._clock = car.excitement._clock
 		cached.player_at = at
 		reference.player_at = at
 		t.check(cached.excitement.caret_strength() == reference.excitement.caret_strength(), "pre-halo event mark parity")

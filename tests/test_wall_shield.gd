@@ -326,7 +326,7 @@ func _test_a_crowd_body_is_silent_behind_a_wall(t) -> void:
 	t.check(car.excitement._field(her) > 0.0, "the car's field reaches her distance (%.2f/s)"
 			% car.excitement._field(her))
 	t.check(car.excitement.contribution_at(her) == 0.0, "but not through the building between them")
-	car.startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
+	car.excitement.startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
 	t.check(car.excitement.contribution_at(her) == 0.0, "nor does its horn")
 	car._map = _map_with([])
 	t.check(car.excitement.contribution_at(her) > 0.0, "and on open ground the same car is heard")

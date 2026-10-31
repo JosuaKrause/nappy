@@ -91,13 +91,13 @@ src/
 	                      set of things that charge her
 	crowd_sources.gd      the crowd as one set of things that charge her (`CrowdSources`): the
 	                      sweep that skips a body out of earshot, and the widest jolt it skips by
-	crowd_excitement.gd   a crowd body as a thing that charges her (`CrowdExcitement`): its field
-	                      with the jolt a contact or a horn leaves, its reach, a car's strike box
+	crowd_excitement.gd   a crowd body as a thing that charges her (`CrowdExcitement`): its field,
+	                      the jolt a contact or a horn leaves, its clock, its reach, a car's strike box
 	lane_mover.gd         the lane movement a walker and a car share — lane state, look-ahead,
 	                      held step, placement and recycling — asking its kind's strategy what differs
 	crowd_agent.gd        one walker or one car in the crowd, on the lane mover: its excitement (a
-	                      composed `CrowdExcitement`), its jolt, its rim and caret and the redraw
-	                      gate; drawn by its look from the baked `crowd` page
+	                      composed `CrowdExcitement`), its rim and caret and the redraw gate; drawn
+	                      by its look from the baked `crowd` page
 	agent_look.gd         how a crowd member is drawn and what its redraw key reads
 	walker_look.gd        a walker's picture: five views in two gait frames, its stride
 	car_look.gd           a car's picture: five views in three layers, its bob over its wheels

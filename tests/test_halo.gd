@@ -151,8 +151,9 @@ func _test_the_cap_keeps_the_strongest(t) -> void:
 ## **Measured on the source's own simulation clock, `_clock`, not on wall time.** Neither rig is in
 ## a running tree here (`_instance_at()` never calls `setup()` through a parent, and a bare
 ## `CrowdAgent.new()` is never added), so nothing is ticking `_process()` — advancing `_clock`
-## directly is what stands in for `WINDOW` seconds of simulated time elapsing.
-func _check_accumulates_and_decays(t, source, label: String) -> void:
+## directly on `clocked`, whichever object keeps the source's clock (the instance, or a crowd body's
+## `excitement`), is what stands in for `WINDOW` seconds of simulated time elapsing.
+func _check_accumulates_and_decays(t, source, clocked: Object, label: String) -> void:
 	source.excitement.accumulate_landed(35.0)
 	t.check(is_equal_approx(source.excitement.landed(), 35.0),
 			"%s: a burst reads as itself, not decayed from the frame it landed" % label)
@@ -165,7 +166,7 @@ func _check_accumulates_and_decays(t, source, label: String) -> void:
 
 	# Advancing the source's own simulation clock past WINDOW is the same fact as WINDOW seconds
 	# of simulated time elapsing, and does not need the test to actually tick _process() or sleep.
-	source._clock += ExcitementSource.WINDOW + 0.1
+	clocked._clock += ExcitementSource.WINDOW + 0.1
 	t.check(is_equal_approx(source.excitement.landed(), 0.0),
 			("%s: once WINDOW has fully elapsed on the simulation clock the burst reads as " +
 					"~0, not merely faded") % label)
@@ -182,11 +183,11 @@ func _check_accumulates_and_decays(t, source, label: String) -> void:
 
 func _test_landed_accumulates_and_decays(t) -> void:
 	var instance := _instance_at(_def("landed_event", 10.0), Vector2.ZERO)
-	_check_accumulates_and_decays(t, instance, "EventInstance")
+	_check_accumulates_and_decays(t, instance, instance, "EventInstance")
 	instance.free()
 
 	var agent := CrowdAgent.new()
-	_check_accumulates_and_decays(t, agent, "CrowdAgent")
+	_check_accumulates_and_decays(t, agent, agent.excitement, "CrowdAgent")
 	agent.free()
 
 # ------------------------------------------------------------- net, not gross ---
@@ -375,7 +376,7 @@ func _test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t) -> void:
 	# than assumed.
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
-	car.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
+	car.excitement.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	var at_inner_radius := Vector2(Tuning.CAR_HORN_INNER_RADIUS, 0.0)
 	t.check(car.excitement.contribution_at(at_inner_radius) > ExcitementHalo.CONTRIBUTION_FLOOR,
@@ -401,7 +402,7 @@ func _test_select_sources_takes_a_mixed_candidate_set(t) -> void:
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
 	car.position = Vector2(20.0, 0.0)
-	car.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
+	car.excitement.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	var picked := ExcitementHalo.select_sources([instance.excitement, car.excitement], Vector2.ZERO)
 	t.check(picked.size() == 2,

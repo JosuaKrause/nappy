@@ -11,13 +11,13 @@ var _crowd: Crowd
 
 ## The widest jolt any of this crowd's bodies has carried — it only ever grows, through
 ## `widen_to()`, however a body's jolt radius is written. What `silent_beyond()` is stated over, so a
-## jolt wider than any `CrowdAgent.startle()` passes today still counts the moment it exists.
+## jolt wider than any `CrowdExcitement.startle()` passes today still counts the moment it exists.
 var _widest_jolt_outer := 0.0
 
 func _init(crowd: Crowd) -> void:
 	_crowd = crowd
 
-## Told by a body whenever its jolt's outer radius is written (`CrowdAgent`).
+## Told by a body whenever its jolt's outer radius is written (`CrowdExcitement`).
 func widen_to(jolt_outer: float) -> void:
 	_widest_jolt_outer = maxf(_widest_jolt_outer, jolt_outer)
 

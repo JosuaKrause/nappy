@@ -210,8 +210,8 @@ func field_runs(view: Rect2) -> Array:
 		# doc), so it is outlined as a point whatever the agent's own shadow shape says.
 		var velocity := agent.velocity()
 		var levels: Array[float] = [inner, outer]
-		if agent.is_startled():
-			var jolt := agent.jolt_radii()
+		if agent.excitement.is_startled():
+			var jolt := agent.excitement.jolt_radii()
 			levels.append(jolt.x)
 			levels.append(jolt.y)
 		var source := agent.global_position
