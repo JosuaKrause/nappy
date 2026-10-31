@@ -85,6 +85,8 @@ func _set_off_from_the_near_post() -> void:
 	# origin moves from the band he guards to his feet so his chase sets off from them.
 	event.global_position = event.global_position \
 			+ EventInstance.guard_post_offset(vertical, _chaser_side)
+	# Drawn from his post at once, not slid there between two ticks.
+	event.reset_physics_interpolation()
 	if her != Vector2.INF and not her.is_equal_approx(event.global_position):
 		event._heading = (her - event.global_position).normalized()
 
@@ -104,7 +106,7 @@ func back_at_the_band() -> void:
 	_chaser_side = 0
 	if event._obstruction:
 		event._obstruction.position = Vector2.ZERO
-	event.look.move_nodes(true)
+	event.reset_physics_interpolation()
 
 ## The tiles under the barrier's solid body where it was left, as the smallest rect holding them:
 ## the ground a guard walking off from it, and the far guard, never walk through.
@@ -139,7 +141,7 @@ func stand_as_the_barrier() -> void:
 	event._notice.stop()
 	event.global_position = _body_left_at
 	keep_the_body()
-	event.look.move_nodes()
+	event.reset_physics_interpolation()
 
 ## **Streamed in after its guard was spent**: only the barrier, at the place the plan stands,
 ## waiting and solid, with the post `side` left empty and the far guard gone with his partner.
@@ -157,7 +159,6 @@ func come_back_as_the_barrier(side: int) -> void:
 	event._charge.warned = true
 	event._charge.ended = true
 	keep_the_body()
-	event.look.move_nodes()
 
 ## Its guard spent, or on his way out from the barrier, and the side he left: only then is there
 ## anything to carry.

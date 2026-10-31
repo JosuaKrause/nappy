@@ -325,7 +325,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 	var lethal_standing := false
 	for i in 60:
 		guard.player_at = her
-		guard._process(0.1)
+		guard.step(0.1)
 		lunged_standing = lunged_standing or guard.phase == EventInstance.Phase.ACTIVE
 		lethal_standing = lethal_standing or guard.is_lethal_at(her)
 	t.check(not lunged_standing and not lethal_standing,
@@ -334,7 +334,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 	for i in 60:
 		her += Vector2(Tuning.WALK_SPEED * 0.1, 0.0)
 		guard.player_at = her
-		guard._process(0.1)
+		guard.step(0.1)
 		if guard.phase == EventInstance.Phase.ACTIVE:
 			lunged_at = guard.global_position.distance_to(her)
 			break
@@ -454,7 +454,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 		# He notices her the ordinary way: she comes within his reach along a clear line, here a
 		# step from him on his own tile.
 		guard.player_at = guard.global_position + Vector2(4.0, 0.0)
-		guard._process(0.1)
+		guard.step(0.1)
 		t.check(not guard.is_waiting(), "(%s) he noticed her the ordinary way" % what)
 		_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
 	director._on_contact_completed(step.index)
@@ -468,10 +468,10 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 				"(%s) in her view he stands with his warning up for %.1fs" % [what, guard.notice_time()])
 		var held_at := guard.global_position
 		guard.player_at = at
-		guard._process(Tuning.WARNING_ALONE_MAX - 0.1)
+		guard.step(Tuning.WARNING_ALONE_MAX - 0.1)
 		t.check(guard.is_telegraphing() and guard.global_position == held_at,
 				"(%s) still standing just short of that second" % what)
-		guard._process(0.2)
+		guard.step(0.2)
 		t.check(not guard.is_telegraphing(), "(%s) and then he charges" % what)
 	if not parked:
 		t.check(guard.is_standing_for_its_notice()
@@ -489,7 +489,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	var lethal := false
 	while walked < 30.0 and not lethal and not guard.is_finished:
 		guard.player_at = at
-		guard._process(0.1)
+		guard.step(0.1)
 		walked += 0.1
 		nearest = minf(nearest, guard.global_position.distance_to(at))
 		lethal = guard.is_lethal_at(at)
@@ -593,7 +593,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 		return
 	_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
 	guard.player_at = her
-	guard._process(0.1)
+	guard.step(0.1)
 	t.check(guard.is_telegraphing() and guard.warns_by_radius(),
 			"150px from him, outside his %.0fpx stand-off, he warns her" % standoff)
 	player.global_position = her
@@ -603,7 +603,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 	while walked < 10.0 and not charged and not guard.is_finished:
 		her += away * Tuning.WALK_SPEED * 0.05
 		guard.player_at = her
-		guard._process(0.05)
+		guard.step(0.05)
 		walked += 0.05
 		charged = not guard.is_waiting() and not guard.is_telegraphing()
 	t.check(charged, "the task done, he charges her even as she walks away (after %.1fs)" % walked)
@@ -681,7 +681,7 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 	var lethal := false
 	while walked < allowed and not lethal and not guard.is_finished:
 		guard.player_at = at
-		guard._process(0.1)
+		guard.step(0.1)
 		walked += 0.1
 		nearest = minf(nearest, guard.global_position.distance_to(at))
 		lethal = guard.is_lethal_at(at)

@@ -56,7 +56,7 @@ func _her(t, at: Vector2, facing: Vector2) -> Stroller:
 func _step(engine: EventInstance, player: Stroller) -> void:
 	engine.player_at = player.global_position
 	engine.pram_at = player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS
-	engine._process(STEP)
+	engine.step(STEP)
 	if engine._obstruction:
 		engine._obstruction.force_update_transform()
 		for child in engine._obstruction.get_children():

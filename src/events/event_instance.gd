@@ -127,8 +127,8 @@ var is_finished: bool:
 		return phase == Phase.DONE
 
 ## **The one place its phase changes**, and with it what every phase change owes: the field it
-## answers is a function of the phase, so the contribution cache is let go, and a row that is done
-## stops showing its scenery.
+## answers is a function of the phase, so the contribution cache is let go. A row that is done stops
+## showing its scenery on the next drawn frame, when its look reads `is_finished`.
 func transition(to: Phase) -> void:
 	if phase == to:
 		return
@@ -136,8 +136,6 @@ func transition(to: Phase) -> void:
 		_telegraph_ended = true
 	phase = to
 	_invalidate_contribution_cache()
-	if to == Phase.DONE:
-		look.hide_the_scenery()
 
 ## **A telegraph or notice that has run its time is over**: asked wherever the notice clock or
 ## the age moves, so the stored phase is never behind the clock.
@@ -394,7 +392,7 @@ var _activation_announced := false
 ## shared because neither exposes it as a constant reachable from this file. Reset in `setup()`
 ## and `resume()` so a stride never starts mid-cycle — see `_advance_gait()`.
 var _gait_phase := 0.0
-## Whether this instance actually covered ground the most recent `_process()` tick — the gate that
+## Whether this instance actually covered ground on its most recent step (`step()`) — the gate that
 ## makes a stopped figure (a queue, a give-way, a waiting robber, a chatting mother, a stationary
 ## yeller, the dog walker's own stop) hold frame a rather than whatever `_gait_phase` last landed
 ## on. See `_advance_gait()` and `EventLook._gait_stepping()`.
@@ -427,7 +425,7 @@ var _mover: Mover
 ## a square as a figure would.
 var _sight: Mover
 ## The solid body `_build_obstruction()` made, or `null` before it exists and after
-## `_process()` has dropped it. See `is_solid()`.
+## its step has dropped it. See `is_solid()`.
 var _obstruction: StaticBody2D
 
 ## The child that re-draws this event's own body in a ring of offsets — see `EntityHalo`, the
@@ -446,11 +444,11 @@ var _halo: EntityHalo
 ## `landed()`.
 var _landed_history: Array = []
 
-## This event's own simulation clock, in seconds, advanced by `delta` in `_process()` while the
+## This event's own simulation clock, in seconds, advanced by `delta` in `step()` while the
 ## event is still live. `landed()` is measured against this rather than `Time.get_ticks_msec()` so
 ## that a paused game does not empty the halo, and so a rig can measure the window on simulated
 ## time by advancing this directly instead of waiting on the wall clock. Frozen once `is_finished`
-## — see `_process()` — so a spent instance's history simply stops moving rather than continuing
+## — see `step()` — so a spent instance's history simply stops moving rather than continuing
 ## to drain toward zero after nothing more can land on it.
 var _clock := 0.0
 
@@ -609,12 +607,10 @@ static func _stationary_vehicle_uses_side(row_look: EventDef.Look, map: WorldMap
 	return absf(face.x) >= absf(face.y)
 
 func _ready() -> void:
-	# Moves itself in `_process`, not on the physics tick, so physics interpolation would draw it
-	# gliding between two stale tick positions rather than where `_process` actually put it. Set
-	# on the instance itself rather than inherited from a parent: every instance is added under
-	# `City`'s shared, y-sorted `Entities` node (`City.add_entity()`), beside the player, who does
-	# want her own physics-tick motion interpolated.
-	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	# Stepped on the physics tick (`EventManager` steps it), so it is drawn interpolated between two
+	# ticks as she is, and moves as smoothly as she does. Placed here, so drawn from where it stands
+	# rather than gliding in from the origin.
+	reset_physics_interpolation()
 	EventBus.event_telegraphed.emit(self)
 	_telegraph_announced = true
 	# `EventDef.SolidWhen.ONCE_IT_STARTS` is the one row shape that does not put its body down here
@@ -812,7 +808,7 @@ func _rim_holder() -> Node2D:
 	return holder if holder != null else self
 
 ## Whether this instance is solid right now. True from `_ready()` for anything with
-## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` —
+## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_tick()` —
 ## false through the notice of a `SolidWhen.ONCE_IT_STARTS` row, which is what that setting is for, and
 ## false while a boom (`EventDef.SolidWhen.WHILE_LOWERED`) stands raised.
 func is_solid() -> bool:
@@ -826,8 +822,8 @@ func is_raised() -> bool:
 	return gate_state != null and gate_state.raised
 
 ## A boom's body follows its arm: solid while it is down, not while it is up. *(2026-09-24, the
-## player: "I didn't say it should stay solid when it's open".)* Called once a frame from
-## `_process()`; the shapes are switched rather than the body freed and rebuilt, so nothing that
+## player: "I didn't say it should stay solid when it's open".)* Called once a step from
+## `_tick()`; the shapes are switched rather than the body freed and rebuilt, so nothing that
 ## holds the body — the debug view's bounding-box layer — ever sees it vanish.
 ##
 ## **It never comes down on her, and that is `Crowd`'s half, not this one's.** The arm is the one
@@ -900,19 +896,29 @@ func _end_its_route(may_park := true) -> void:
 ## started, so every one made under a record is timed.
 var _timed := FrameRecord.on
 
-func _process(delta: float) -> void:
-	# The record's timing, when this event was made under one and it is still running, round the
-	# one tick. See `_timed`.
+## **A drawn frame only redraws.** What the event does is stepped on the physics tick by its manager
+## (`step()`); here its look asks for a redraw if the picture changed, moves its drawing nodes and
+## hides what a finished event leaves (`EventLook.redraw_if_the_picture_changed()`), from the state
+## the last tick left. Timed under the record's events, as the step is.
+func _process(_delta: float) -> void:
+	if look == null:
+		return
 	if _timed and FrameRecord.on:
 		var outer := FrameRecord.enter(FrameRecord.EVENTS)
-		_frame(delta)
+		look.redraw_if_the_picture_changed()
 		FrameRecord.leave(outer)
 		return
-	_frame(delta)
+	look.redraw_if_the_picture_changed()
 
-## One frame: the tick, inside a car's proposed frame for a car that drives (`EventCarDriving`),
-## which commits the pose the tick ends on or takes it back.
-func _frame(delta: float) -> void:
+## Whether a hand holds it still, so its manager does not step it: a scene recipe that walks it
+## itself (`SceneRecipeRuntime`). Its drawing goes on.
+var held_by_hand := false
+
+## **One physics tick of the event**, which its manager runs in a fixed order
+## (`EventManager._step_them()`): the tick, inside a car's proposed frame for a car that drives
+## (`EventCarDriving`), which commits the pose the tick ends on or takes it back. Nothing once it is
+## finished.
+func step(delta: float) -> void:
 	if is_finished:
 		return
 	if car == null:
@@ -922,7 +928,7 @@ func _frame(delta: float) -> void:
 	_tick(delta)
 	car.end_frame()
 
-## What it does in one tick, run once a frame by `_frame()`.
+## What it does in one tick, run by `step()`.
 func _tick(delta: float) -> void:
 	_clock += delta
 	_age += delta
@@ -948,7 +954,6 @@ func _tick(delta: float) -> void:
 			# He walks off and the barrier does not go with him: its body stays where it was built
 			# through the departure as through the chase (its picture is its own node).
 			barrier_post.keep_the_body()
-		look.redraw_if_the_picture_changed()
 		return
 
 	if is_chatting():
@@ -958,7 +963,6 @@ func _tick(delta: float) -> void:
 		# Frozen, so no distance is covered — `_advance_gait(0.0)` marks the frame stopped rather
 		# than leaving `_gait_moving` at whatever it read the tick before the conversation started.
 		_advance_gait(0.0)
-		look.redraw_if_the_picture_changed()
 		return
 
 	# What it does, in the order it was composed (`EventBehaviours.compose()`): each behaviour
@@ -999,9 +1003,7 @@ func _tick(delta: float) -> void:
 		# the body and needs no redraw for it. A spent guard moves nothing, so there is nothing to
 		# re-pin.
 		barrier_post.keep_the_body()
-	look.move_nodes()
 	_take_the_layer_it_warns_on()
-	look.redraw_if_the_picture_changed()
 
 ## **A pursuer that warns over the street is drawn on the warning layer for the whole of its
 ## warning** (`PursuitSpec.warns_over_the_street`, `DrawLayer.Layer.WARNING`): the roadblock's guard,
@@ -1017,7 +1019,7 @@ func _take_the_layer_it_warns_on() -> void:
 # ------------------------------------------------------------------- the hold ---
 
 ## Whether a conversation or a door's hold is running right now (`EventHold`). Freezes pacing (see
-## `_process`) and switches a mother's posture from strolling to talking
+## `_tick()`) and switches a mother's posture from strolling to talking
 ## (`FigureLook._draw_chatting_mother`).
 func is_chatting() -> bool:
 	return hold != null and hold.is_running()
@@ -1514,6 +1516,8 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 	_gait_moving = false
 	if def.mobile and path.size() > 1:
 		route.advance(0.0)
+	# Put back where it was, not slid there from wherever it was made.
+	reset_physics_interpolation()
 
 ## **Stands it at `at`, keeping everything it is in the middle of**: its phase, its notice, every
 ## behaviour's state. What setup reads off the ground it stands on is read again for the new ground
@@ -1525,6 +1529,7 @@ func move_to(at: Vector2) -> void:
 	_stationary_vehicle_side = _stationary_vehicle_uses_side(def.look, _map, at, _heading)
 	_idle_phase_offset = _position_roll(101)
 	_invalidate_contribution_cache()
+	reset_physics_interpolation()
 	queue_redraw()
 
 ## **Every behaviour's own state**, keyed by its class, as plain values a plan carries while this
@@ -1877,7 +1882,7 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# `Tuning.OFFICER_STOP_SECONDS`, so its whole lands that many points on her standing
 		# beside him — at the centre of his own field, which is where his catch puts her. A short sharp
 		# spike rather than a field she strolls out of, and his field, so walking away takes some
-		# of it off. Nothing after it: he is walking back by then (`_process()`).
+		# of it off. Nothing after it: he is walking back by then (`_tick()`).
 		var into := clampf(on_foot.stopped_for() / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
 		return 2.0 * def.pursuit.stop_excitement / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
 	if is_chatting():

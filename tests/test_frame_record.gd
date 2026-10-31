@@ -423,8 +423,9 @@ func _check_the_agents_are_timed_once(t, agents: Array[CrowdAgent]) -> void:
 			"once the record stops, an agent made under it runs its body once and times nothing")
 
 ## A crowd agent and a live event made with the record off are never timed, even once it is on;
-## a live event made under it runs its body once a call, inside `events`, and once the record
-## stops, its body still runs once and the record it ran under is not touched again.
+## a live event made under it runs its drawn frame (its look's redraw) once a call, inside `events`,
+## and once the record stops, it still redraws and the record it ran under is not touched again. Its
+## step times nothing of its own: the manager's physics tick that runs it is timed.
 func _test_a_timed_body_runs_once(t) -> void:
 	var was_on := FrameRecord.on
 	var was := FrameRecord.ledger
@@ -434,6 +435,7 @@ func _test_a_timed_body_runs_once(t) -> void:
 	untimed_agent.frame_timing = CrowdTiming.new()
 	var def := EventCatalogue.by_id("protest")
 	var untimed_event := _event(t, def)
+	var untimed_look := _BucketLook.watching(untimed_event)
 	var scratch := FrameLedger.new(4)
 	FrameRecord.start(scratch)
 	scratch.process_start(Time.get_ticks_usec())
@@ -443,43 +445,62 @@ func _test_a_timed_body_runs_once(t) -> void:
 	t.check(not untimed_agent._timed and timed_agent._timed,
 			"an agent copies the switch as it stands when it is made")
 	untimed_agent._process(STEP)
-	var age := untimed_event.age
 	untimed_event._process(STEP)
-	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 0
-			and is_equal_approx(untimed_event.age, age + STEP),
+	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 0 and untimed_look.charged.size() == 1,
 			"an agent and an event made with the record off are not timed once it is on")
 	timed_agent._process(STEP)
 	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 1,
 			"an agent made under the record is timed once a call")
 	var event := _event(t, def)
 	t.check(event._timed, "an event copies the switch as it stands when it is made")
-	# Past its telegraph, so its first body announces it, and the announcement says which bucket
-	# the body ran in.
-	event.age = def.telegraph_time + 0.01
-	age = event.age
-	var charged: Array[int] = []
-	var listen := func(_instance: Variant) -> void: charged.append(FrameRecord.ledger._current)
-	EventBus.event_activated.connect(listen)
+	var look := _BucketLook.watching(event)
 	event._process(STEP)
-	EventBus.event_activated.disconnect(listen)
-	t.check(is_equal_approx(event.age, age + STEP), "a timed event's body runs once a call")
-	t.check(charged == [FrameRecord.EVENTS], "inside the events bucket (%s)" % [charged])
+	t.check(look.charged == [FrameRecord.EVENTS],
+			"a timed event's drawn frame redraws once a call, inside the events bucket (%s)"
+			% [look.charged])
 	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 2
 			and scratch._current == FrameRecord.PROCESS_REST,
 			"as one timed call, and the clock goes back to what was running")
+	# Past its telegraph, so its first step announces it, in whatever bucket was running: its step
+	# times nothing itself.
+	event.age = def.telegraph_time + 0.01
+	var age := event.age
+	var charged: Array[int] = []
+	var listen := func(_instance: Variant) -> void: charged.append(FrameRecord.ledger._current)
+	EventBus.event_activated.connect(listen)
+	event.step(STEP)
+	EventBus.event_activated.disconnect(listen)
+	t.check(is_equal_approx(event.age, age + STEP) and charged == [FrameRecord.PROCESS_REST]
+			and scratch._counters[FrameLedger.TIMER_CALLS] == 2,
+			"its step runs once a call and times nothing of its own (%s)" % [charged])
 	FrameRecord.stop()
 	var spent := scratch._spent.duplicate()
 	event._process(STEP)
 	timed_agent._process(STEP)
-	t.check(is_equal_approx(event.age, age + 2.0 * STEP)
+	t.check(look.charged.size() == 2
 			and scratch._counters[FrameLedger.TIMER_CALLS] == 2 and scratch._spent == spent,
-			"once the record stops, an event made under it runs its body once and times nothing")
+			"once the record stops, an event made under it redraws once and times nothing")
 	untimed_agent.free()
 	timed_agent.free()
 	untimed_event.free()
 	event.free()
 	FrameRecord.ledger = was
 	FrameRecord.on = was_on
+
+## A look that only notes which bucket the clock was charging each time its event's drawn frame asked
+## it to redraw. `watching()` lets the event's own look go first, so nothing it built is left over.
+class _BucketLook extends EventLook:
+	var charged: Array[int] = []
+
+	static func watching(instance: EventInstance) -> _BucketLook:
+		instance.look.release_nodes()
+		var look := _BucketLook.new(instance)
+		instance.look = look
+		return look
+
+	func redraw_if_the_picture_changed() -> bool:
+		charged.append(FrameRecord.ledger._current if FrameRecord.on else -1)
+		return false
 
 ## A live event standing alone, its process callback left to the test, as `tests/test_acts.gd`
 ## builds one.

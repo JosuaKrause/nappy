@@ -110,7 +110,7 @@ func _test_moving_instance_alternates_gait_frames(t) -> void:
 	var saw_b := false
 	var saw_a_again := false
 	for i in 400:
-		instance._process(STEP)
+		instance.step(STEP)
 		if instance.look._gait_stepping():
 			saw_b = true
 		elif saw_b:
@@ -129,7 +129,7 @@ func _test_waiting_robber_holds_frame_a(t) -> void:
 	# Well outside `EventDef.notice`, so he stays `is_waiting()` for the whole run.
 	instance.player_at = Vector2(9999.0, 9999.0)
 	for i in 120:
-		instance._process(STEP)
+		instance.step(STEP)
 		t.check(instance.is_waiting(), "still only waiting at tick %d" % i)
 		t.check(not instance.look._gait_stepping(), "a waiting robber holds frame a (tick %d)" % i)
 	instance.free()
@@ -142,11 +142,11 @@ func _test_chatting_mother_freezes_gait_when_talking(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("chatting_mother"), Vector2.ZERO, route, Vector2.RIGHT)
 	for i in 60:
-		instance._process(STEP)
+		instance.step(STEP)
 	instance.start_chat()
 	t.check(instance.is_chatting(), "the conversation is running")
 	for i in 30:
-		instance._process(STEP)
+		instance.step(STEP)
 		t.check(not instance.look._gait_stepping(), "frozen mid-conversation holds frame a (tick %d)" % i)
 	instance.free()
 
@@ -178,7 +178,7 @@ func _test_dog_walker_and_dog_share_one_phase(t) -> void:
 	var rest: String = EventPictures.dog_picture("side", false, false)
 	var agreed := true
 	for i in 300:
-		instance._process(STEP)
+		instance.step(STEP)
 		var stepping := instance.look._gait_stepping()
 		var person_frame: String = EventPictures.PERSON_BY_VIEW_B["side"] if stepping \
 				else EventPictures.PERSON_BY_VIEW["side"]
@@ -232,7 +232,7 @@ func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t) -> void:
 	var shown: Array[String] = []
 	var changed_at: Array[float] = []
 	for i in 900:
-		instance._process(STEP)
+		instance.step(STEP)
 		var now := EventPictures.dog_picture("side", instance.look._gait_stepping(),
 				instance.look._gait_second_half())
 		if shown.is_empty() or shown[-1] != now:
@@ -314,7 +314,7 @@ func _test_idle_families_alternate_on_time_without_moving(t) -> void:
 		var saw_false := false
 		var ticks := int(period / STEP) * 3 + 10
 		for i in ticks:
-			instance._process(STEP)
+			instance.step(STEP)
 			if instance.look._idle_stepping(period):
 				saw_true = true
 			else:
@@ -344,7 +344,7 @@ func _test_gait_and_idle_phase_reset_on_setup(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	for i in 40:
-		instance._process(STEP)
+		instance.step(STEP)
 	t.check(instance._gait_phase != 0.0, "the phase has moved on from its starting value")
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	t.check(instance._gait_phase == 0.0 and not instance._gait_moving,
@@ -365,7 +365,7 @@ func _test_gait_query_is_stable_within_a_tick(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	for i in 40:
-		instance._process(STEP)
+		instance.step(STEP)
 	var first := instance.look._gait_stepping()
 	for i in 5:
 		t.check(instance.look._gait_stepping() == first,

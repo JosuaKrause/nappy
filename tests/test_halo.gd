@@ -543,13 +543,13 @@ func _test_a_cat_dash_is_selected_and_lands(t) -> void:
 
 	# Mid-telegraph: `TELEGRAPH_INTENSITY_FRACTION` (0.15) damps 17/s to 2.55/s, still comfortably
 	# above `CONTRIBUTION_FLOOR` (1.0) at zero distance.
-	cat._process(def.telegraph_time * 0.5)
+	cat.step(def.telegraph_time * 0.5)
 	t.check(ExcitementHalo.select_sources([cat], Vector2.ZERO).size() == 1,
 			"a cat_dash instance standing on her clears the floor while still telegraphing")
 
 	var elapsed := def.telegraph_time * 0.5
 	while elapsed < def.telegraph_time + def.duration:
-		cat._process(STEP)
+		cat.step(STEP)
 		elapsed += STEP
 		var contribution: float = cat.contribution_at(Vector2.ZERO)
 		if contribution > 0.0:
@@ -569,15 +569,15 @@ func _test_a_flock_is_selected_and_lands(t) -> void:
 	# the telegraph and the burst below are measured from the moment it notices her — which is the
 	# end of a frame, so the notice gets a frame of its own before the telegraph is stepped.
 	flock.player_at = Vector2.ZERO
-	flock._process(STEP)
+	flock.step(STEP)
 
-	flock._process(def.telegraph_time * 0.5)
+	flock.step(def.telegraph_time * 0.5)
 	t.check(ExcitementHalo.select_sources([flock], Vector2.ZERO).size() == 1,
 			"a flock standing on her clears the floor while still on the ground telegraphing")
 
 	var elapsed := def.telegraph_time * 0.5
 	while elapsed < def.telegraph_time + def.duration:
-		flock._process(STEP)
+		flock.step(STEP)
 		elapsed += STEP
 		var contribution: float = flock.contribution_at(Vector2.ZERO)
 		if contribution > 0.0:
@@ -604,13 +604,13 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 	# gets one of its own — then past the telegraph, so the birds are up and flying rather than
 	# pecking about on the ground.
 	flock.player_at = Vector2.ZERO
-	flock._process(STEP)
-	flock._process(def.telegraph_time + 0.1)
+	flock.step(STEP)
+	flock.step(def.telegraph_time + 0.1)
 
 	var before: Array[Vector2] = []
 	for bird in flock.flock.birds:
 		before.append(bird.at)
-	flock._process(STEP)
+	flock.step(STEP)
 	var moved := 0
 	for i in flock.flock.birds.size():
 		if not flock.flock.birds[i].at.is_equal_approx(before[i]):

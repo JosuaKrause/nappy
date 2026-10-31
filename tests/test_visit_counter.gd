@@ -463,7 +463,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 	placed.set_process(false)
 	for i in int(ceil((def.telegraph_time + 0.5) / step)):
 		placed.player_at = her
-		placed._process(step)
+		placed.step(step)
 	t.check(began.size() == 1, "placed at once, its chase is reported once after its telegraph "
 		+ "(%d reports)" % began.size())
 	var age := placed.age
@@ -478,7 +478,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 	streamed.resume(age, travelled)
 	for i in 10:
 		streamed.player_at = her
-		streamed._process(step)
+		streamed.step(step)
 	t.check(began.is_empty(), "streamed back in mid-chase, the same chase is not reported again")
 	streamed.free()
 
@@ -490,7 +490,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 	warned.resume(def.telegraph_time, 0.0)
 	for i in 10:
 		warned.player_at = her
-		warned._process(step)
+		warned.step(step)
 	t.check(began.size() == 1 and began[0] == "charging_dog",
 		"created where its warning pointed, its chase is reported once (%s)" % [began])
 	warned.free()
@@ -586,7 +586,7 @@ func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
 		her.x += Tuning.RUN_SPEED * step
 		shaken.player_at = her
 		shaken.player_running = true
-		shaken._process(step)
+		shaken.step(step)
 		if shaken.is_leaving:
 			break
 	t.check(counter.sent == [name + "chased", name + "shaken"],
@@ -597,7 +597,7 @@ func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
 	var outlasted := _charger(t, def)
 	for i in int(round((def.telegraph_time + def.duration + 1.0) / step)):
 		outlasted.player_at = outlasted.global_position + Vector2(400.0, 0.0)
-		outlasted._process(step)
+		outlasted.step(step)
 		if outlasted.is_leaving:
 			break
 	t.check(counter.sent == [name + "chased", name + "outlasted"],
@@ -690,7 +690,7 @@ func _test_the_masked_man_has_his_counter(t) -> void:
 		"his run is counted chased (%s)" % [counter.sent])
 	for i in int(round(6.0 / (1.0 / 60.0))):
 		man.player_at = Vector2(200.0, 0.0)
-		man._process(1.0 / 60.0)
+		man.step(1.0 / 60.0)
 		if man.is_leaving:
 			break
 	t.check(counter.sent == [name + "warned", name + "chased", name + "outlasted"],
@@ -771,7 +771,7 @@ func _walk(instance: EventInstance, her: Vector2, seconds: float) -> void:
 	var step := 1.0 / 60.0
 	for i in maxi(1, int(round(seconds / step))):
 		instance.player_at = her
-		instance._process(step)
+		instance.step(step)
 
 ## The pelican's own four moments, each its own day-numbered event *(inbox #527 in azure-tapir, the player: "when
 ## the pelican spawns, when it's on screen, and when it's hitting the player. it must appear as its

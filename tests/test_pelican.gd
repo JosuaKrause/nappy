@@ -271,8 +271,8 @@ func _test_a_pelican_rides_as_one_to_the_end(t) -> void:
 	for _i in 600:
 		if pelican.is_finished:
 			break
-		pelican._process(STEP)
-		kid._process(STEP)
+		pelican.step(STEP)
+		kid.step(STEP)
 		travelled = pelican.path_travelled()
 	t.check(travelled > 200.0, "the pelican rode %.0fpx of its 300px line" % travelled)
 	t.check(pelican.is_pelican and (pelican.look as FigureLook).rider_pictures()[0] == EventPictures.PELICAN_BY_VIEW,
@@ -291,8 +291,8 @@ func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t) -> void:
 	var pelican := events.spawn_warned(def, _ride(), true)
 	var kid := events.spawn_warned(def, _ride(), false)
 	for _i in 30:
-		pelican._process(STEP)
-		kid._process(STEP)
+		pelican.step(STEP)
+		kid.step(STEP)
 	t.check(pelican.def == kid.def, "both are the catalogue's own cyclist row")
 	t.check(pelican.global_position == kid.global_position
 			and pelican.travel_velocity() == kid.travel_velocity(),

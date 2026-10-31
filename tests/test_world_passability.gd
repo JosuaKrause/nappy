@@ -249,7 +249,7 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t) -> void:
 		instance.hold_still_longer(cat.crouch_for_a_run(run))
 		var clock := 0.0
 		while instance.global_position.x < 0.0 and clock < 10.0:
-			instance._process(0.01)
+			instance.step(0.01)
 			clock += 0.01
 		t.close_to(clock, on_time, "a run of %.0fpx reaches the middle when a whole one does" % run,
 				0.03)
@@ -462,7 +462,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 					left_from = instance.global_position
 				instance.departure.leave(0.05)
 			else:
-				instance._process(0.05)
+				instance.step(0.05)
 			if instance.is_finished:
 				break
 			var now := instance.global_position

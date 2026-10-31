@@ -130,7 +130,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		# Existing instances move first; a callback creates the new one for this frame's observation.
 		for instance in source.live:
 			instance.player_at = her
-			instance._process(STEP)
+			instance.step(STEP)
 		for warning in source.warnings.duplicate():
 			if warning.tick(STEP, her):
 				source.warnings.erase(warning)

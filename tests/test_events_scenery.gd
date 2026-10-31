@@ -29,7 +29,7 @@ func _instance(t, def: EventDef, at := Vector2.ZERO,
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 ## Walks her past a flock at `offset` px to one side at `Tuning.WALK_SPEED`, telling the instance
 ## where she is every tick the way the world does, and answers how far from the middle she was on
@@ -40,7 +40,7 @@ func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
 	var answer := INF
 	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
 		instance.player_at = her
-		instance._process(STEP)
+		instance.step(STEP)
 		if not instance.is_waiting() and not instance.is_telegraphing():
 			answer = her.distance_to(instance.position)
 			break
@@ -57,7 +57,7 @@ func _flock_walked_through(t, def: EventDef, offset: float) -> float:
 	var net := 0.0
 	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
 		instance.player_at = her
-		instance._process(STEP)
+		instance.step(STEP)
 		if her.distance_to(instance.position) <= def.outer_radius:
 			net += (instance.contribution_at(her) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
 		her.x += Tuning.WALK_SPEED * STEP
@@ -117,7 +117,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 	# identical passes tell a reader nothing and the one number that matters does.
 	var furthest := 0.0
 	for i in int(2.0 / STEP):
-		instance._process(STEP)
+		instance.step(STEP)
 		if instance.is_leaving:
 			break
 		for bird in instance.flock.birds:
@@ -262,7 +262,7 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 
 	# She comes inside the trigger: the notice starts here rather than at dawn.
 	instance.player_at = Vector2(def.notice_within() - 10.0, 0.0)
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(),
 			"walking up to it is what starts it")
 	for bird in instance.flock.birds:

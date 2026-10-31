@@ -105,7 +105,7 @@ func _handover_net(def: EventDef, at_inner_radius: bool, decay: float, sensitivi
 	# row it measures, since a `MAP` row's telegraph is hours over by the time she reaches it.
 	var warm_steps := int(ceil((def.telegraph_time + 0.05 + phase_delay) / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 
 	var her_pos: Vector2 = instance.global_position + Vector2(LEAD, 0.0)
 	var incoming_sum := 0.0
@@ -114,7 +114,7 @@ func _handover_net(def: EventDef, at_inner_radius: bool, decay: float, sensitivi
 	# sums stop the moment either stopping rule fires.
 	var steps := int(ceil((LEAD / Tuning.WALK_SPEED) / STEP)) + 240
 	for _i in steps:
-		instance._process(STEP)
+		instance.step(STEP)
 		var to_instance: Vector2 = instance.global_position - her_pos
 		if to_instance.length() > 1.0:
 			her_pos += to_instance.normalized() * Tuning.WALK_SPEED * STEP
@@ -152,7 +152,7 @@ func _handover_then_linger_net(def: EventDef, decay: float, sensitivity: float,
 
 	var warm_steps := int(ceil((def.telegraph_time + 0.05 + phase_delay) / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 
 	var her_pos: Vector2 = instance.global_position + Vector2(LEAD, 0.0)
 	var direction := Vector2(-1.0, 0.0)
@@ -162,7 +162,7 @@ func _handover_then_linger_net(def: EventDef, decay: float, sensitivity: float,
 	var reached := false
 	var linger_remaining := linger_seconds
 	for _i in steps:
-		instance._process(STEP)
+		instance.step(STEP)
 		if not reached:
 			var to_instance: Vector2 = instance.global_position - her_pos
 			if to_instance.length() > 1.0:

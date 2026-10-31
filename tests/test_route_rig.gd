@@ -1398,7 +1398,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 		baby._physics_process(STEP)
 		for instance in city.events.instances():
 			if instance.def.redetains:
-				instance._process(STEP)
+				instance.step(STEP)
 		city.events.checkpoints.watch_the_door_lines()
 		city.events.checkpoints.check_detentions()
 		held = held or _stroller.is_detained()

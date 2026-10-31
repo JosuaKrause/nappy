@@ -1784,7 +1784,7 @@ func _stays_asleep_walking_in_and_out(robbery: EventDef, guard_at: Vector2, near
 		for s in steps + 1:
 			var at := from.lerp(to, float(s) / float(maxi(steps, 1)))
 			robber.player_at = at
-			robber._process(STEP)
+			robber.step(STEP)
 			if not robber.is_waiting():
 				woke = true
 	robber.free()
@@ -2534,7 +2534,7 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 					% [label, _city.map.world_to_tile(start), candidate - her])
 	t.check(not chaser.is_waiting(), "%s: never waiting, even before his first frame" % label)
 	chaser.player_at = her
-	chaser._process(STEP)
+	chaser.step(STEP)
 	var closed := start.distance_to(her) - chaser.global_position.distance_to(her)
 	t.check(closed > chaser.def.chase_speed() * STEP * 0.9 or (across and closed > 0.0),
 			"%s: and coming at her%s from his first frame" % [label,
@@ -2546,7 +2546,7 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 	while elapsed < chaser.def.telegraph_time + chaser.def.duration \
 			and not chaser.is_finished and not caught:
 		chaser.player_at = her
-		chaser._process(STEP)
+		chaser.step(STEP)
 		elapsed += STEP
 		caught = chaser.is_lethal_at(her)
 	t.check(caught, "%s: and, with a %s, reaches her where she stands (%.1fs)"
@@ -2768,7 +2768,7 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 				Rect2(robber.global_position + box.position, box.size))
 		if in_sight and result["first_seen"] == INF:
 			result["first_seen"] = elapsed
-		robber._process(STEP)
+		robber.step(STEP)
 		elapsed += STEP
 		var offset := robber.global_position - her
 		if was_telegraphing and not robber.is_telegraphing():
@@ -3115,7 +3115,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 				"the mast at her focus is live from the day it was started")
 		var mast := mast_plan.live
 		for i in int(round((mast.def.telegraph_time + 0.2) / STEP)):
-			mast._process(STEP)
+			mast.step(STEP)
 		var nearby := site.foot + Vector2(50.0, 0.0)
 		t.check(mast.contribution_at(nearby) > 0.0,
 				"the mast reaches its own nearby sidewalk while it is on")
@@ -4284,7 +4284,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 			var to_reach := 0.0
 			while front.contribution_at(her) <= 0.0 and to_reach < 10.0:
 				front.player_at = her
-				front._process(STEP)
+				front.step(STEP)
 				to_reach += STEP
 			t.check(warning.shown + to_reach + 0.001 >= warning.def.minimum_telegraph(),
 					("and from the badge to the earliest its field reaches her is %.2fs, at least "
@@ -5198,7 +5198,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 				while hut.is_chatting() and guard_steps > 0:
 					guard_steps -= 1
 					for instance in events.instances():
-						instance._process(STEP)
+						instance.step(STEP)
 				t.check(not hut.is_chatting() and guard_steps > 0, "the hold runs its clock out")
 				events.checkpoints.release_finished_holds(player)
 				# She stood at the hut's own centre, so which side she is put down on is not measured

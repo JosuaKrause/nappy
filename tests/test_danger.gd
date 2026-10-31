@@ -123,7 +123,7 @@ func _test_the_caret_matches_the_halo_after_the_horizon(t) -> void:
 
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / STEP))
 	for i in steps:
-		instance._process(STEP)
+		instance.step(STEP)
 		player_pos += player_velocity * STEP
 		var contribution := instance.contribution_at(player_pos)
 		if contribution > 0.0:
@@ -190,7 +190,7 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t) -> void:
 
 			var steps := int(round(horizon / STEP))
 			for i in steps:
-				instance._process(STEP)
+				instance.step(STEP)
 				player_pos += player_velocity * STEP
 				var contribution := instance.contribution_at(player_pos)
 				if contribution > 0.0:
@@ -281,8 +281,8 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t) -> void:
 
 	var steps := int(round(horizon / STEP))
 	for i in steps:
-		a._process(STEP)
-		b._process(STEP)
+		a.step(STEP)
+		b.step(STEP)
 		player_pos += player_velocity * STEP
 		var contribution_a := a.contribution_at(player_pos)
 		if contribution_a > 0.0:
@@ -470,7 +470,7 @@ func _test_the_mark_still_breathes(t) -> void:
 	var lowest := INF
 	var highest := 0.0
 	for i in int(round(def.pulse_period / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 		lowest = minf(lowest, instance.look.mark_swell())
 		highest = maxf(highest, instance.look.mark_swell())
 	t.check(highest > lowest * 1.5,
@@ -953,7 +953,7 @@ func _warn_through(manager: EventManager) -> void:
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 ## A Stroller with the camera it looks up by path, in the tree so its `@onready` actually runs
 ## and `_physics_process` can be stepped by hand. `SomeNode.new()` is not named `SomeNode`, so

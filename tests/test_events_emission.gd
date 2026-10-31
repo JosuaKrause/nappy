@@ -35,7 +35,7 @@ func _instance(t, def: EventDef, at := Vector2.ZERO,
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 func _test_telegraph_damps_emission(t) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
@@ -64,7 +64,7 @@ func _test_pulse_envelope(t) -> void:
 	var lowest := INF
 	var highest := -INF
 	for i in int(def.pulse_period / STEP):
-		instance._process(STEP)
+		instance.step(STEP)
 		lowest = minf(lowest, instance.current_intensity())
 		highest = maxf(highest, instance.current_intensity())
 
@@ -242,7 +242,7 @@ func _test_an_event_leaves_rather_than_vanishing(t) -> void:
 	# her — and she is gone again for the whole of the rest of it.
 	var alone := _instance(t, def, Vector2.ZERO)
 	alone.player_at = Vector2.ZERO
-	alone._process(STEP)
+	alone.step(STEP)
 	alone.player_at = Vector2.INF
 	_advance(alone, def.telegraph_time + def.duration + EventDeparture.LEAVING_GIVES_UP + 0.2)
 	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")

@@ -262,7 +262,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
 		var step := 1.0 / 60.0
 		for i in 6:
 			bike.player_at = her
-			bike._process(step)
+			bike.step(step)
 			edge._measure(step)
 		var badged := false
 		for badge in edge.announcing():

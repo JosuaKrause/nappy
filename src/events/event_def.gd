@@ -840,12 +840,20 @@ func detain_distance() -> float:
 ## Entering the lethal radius ends the day immediately.
 @export var hard_fail := false
 
+## How close a row with no pursuit has to come to end the day when that is not its field's own
+## core, in px, or 0 for its `inner_radius`: the masked man on the escape's stairs catches inside
+## the core his field shares with the roadblock's guard. `lethal_reach()` reads it.
+@export var catch_reach := 0.0
+
 ## **The distance that ends the day**: a pursuer's `PursuitSpec.catch_reach` where it sets one (a
-## roadblock's guard catches at a man's reach, not at his band's core), the field's own core
-## otherwise. Every caller asks this, so none has to know which kind of row it holds.
+## roadblock's guard catches at a man's reach, not at his band's core), the row's own `catch_reach`
+## where it sets one, the field's own core otherwise. Every caller asks this, so none has to know
+## which kind of row it holds.
 func lethal_reach() -> float:
 	if pursuit and pursuit.catch_reach > 0.0:
 		return pursuit.catch_reach
+	if catch_reach > 0.0:
+		return catch_reach
 	return inner_radius
 
 ## What `Tuning.pursuit_standoff()` is stated over for this row: its `PursuitSpec.lunge_reach`

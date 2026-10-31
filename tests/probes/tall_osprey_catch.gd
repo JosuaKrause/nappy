@@ -77,7 +77,7 @@ func _notice_to_lunge(def: EventDef, walking: bool) -> float:
 		if walking:
 			her.x -= Tuning.WALK_SPEED * STEP
 		instance.player_at = her
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 		if noticed < 0.0 and not instance.is_waiting():
 			noticed = elapsed
@@ -122,7 +122,7 @@ func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
 		her.x += speed * STEP
 		instance.player_at = her
 		instance.player_running = speed > Tuning.WALK_SPEED
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 		if since_notice != INF:
 			since_notice += STEP

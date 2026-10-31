@@ -102,14 +102,10 @@ func _play_a_run(t, seed_value: int) -> void:
 	city.free()
 	_restore_game_state(saved)
 
-## Drives the day forward by hand. The instances and the manager are ticked the way the
-## engine would, but at a coarse step.
+## Drives the day forward by hand: the manager's physics tick, which steps its instances, the way
+## the engine would, but at a coarse step.
 func _simulate(city: City, seconds: float) -> void:
 	for i in int(round(seconds / SIMULATION_STEP)):
-		# Snapshot: retiring an event mutates the manager's list mid-tick.
-		for instance in city.events.instances().duplicate():
-			if is_instance_valid(instance) and not instance.is_finished:
-				instance._process(SIMULATION_STEP)
 		city.events._physics_process(SIMULATION_STEP)
 
 func _save_game_state() -> Dictionary:

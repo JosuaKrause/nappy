@@ -72,7 +72,7 @@ func _tell(car: EventInstance, player: Stroller) -> void:
 ## the tree's next flush, which a synchronous sweep never reaches.
 func _drive(car: EventInstance, player: Stroller) -> void:
 	_tell(car, player)
-	car._process(STEP)
+	car.step(STEP)
 	if car._obstruction:
 		car._obstruction.force_update_transform()
 		for child in car._obstruction.get_children():
@@ -547,7 +547,7 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t) -> void:
 			officer.give_up_the_chase()
 		if officer and not officer.is_finished:
 			officer.player_at = player.global_position
-			officer._process(STEP)
+			officer.step(STEP)
 		elif officer and not aside:
 			# He is back in. She stays in its lane for two seconds, then steps out of it.
 			stood_for_her += STEP
@@ -651,14 +651,14 @@ func _test_it_stops_at_a_red_light(t) -> void:
 	var car := _car(t, _patrol(), route, map)
 	car.signals = signals
 	for i in int(5.0 / STEP):
-		car._process(STEP)
+		car.step(STEP)
 	var nose := car.global_position.x + car.def.shape.reach()
 	t.check(car.car.is_standing() and nose <= box_x - Tuning.CAR_STOP_LINE_SETBACK + 0.5,
 			"on red it stands at the stop line (nose %.0f, box %.0f)" % [nose, box_x])
 	while not signals.green_for(junction, false):
 		signals.elapsed += 0.25
 	for i in int(2.0 / STEP):
-		car._process(STEP)
+		car.step(STEP)
 	t.check(car.global_position.x > box_x, "and on green it drives through (%.0f)"
 			% car.global_position.x)
 	car.free()

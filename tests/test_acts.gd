@@ -50,7 +50,7 @@ func _instance(t, def: EventDef, at := Vector2.ZERO) -> EventInstance:
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 func _test_a_protest_grows(t) -> void:
 	var def := EventCatalogue.by_id("protest")
@@ -70,7 +70,7 @@ func _test_a_protest_grows(t) -> void:
 func _peak_over(instance: EventInstance, seconds: float) -> float:
 	var peak := 0.0
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 		peak = maxf(peak, instance.current_intensity())
 	return peak
 

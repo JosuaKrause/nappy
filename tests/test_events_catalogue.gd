@@ -93,7 +93,7 @@ func _test_spread_classification_follows_every_look_and_copy(t) -> void:
 	var instance := EventInstance.new()
 	def.telegraph_time = STEP
 	instance.setup(def, Vector2.ZERO)
-	instance._process(STEP * 2.0)
+	instance.step(STEP * 2.0)
 	t.check(not instance.is_telegraphing() and def.has_a_spread,
 			"crossing an instance phase leaves its definition's classification true")
 	instance._be_done()

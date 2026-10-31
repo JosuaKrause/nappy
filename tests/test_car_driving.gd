@@ -25,7 +25,7 @@ func _engine(t, route: PackedVector2Array) -> EventInstance:
 func _step(engine: EventInstance, her: Vector2, facing: Vector2) -> void:
 	engine.player_at = her
 	engine.pram_at = her + facing * Tuning.PLAYER_BODY_RADIUS
-	engine._process(STEP)
+	engine.step(STEP)
 
 ## **She stands just past its kerb, so the step that would end its route is the one taken back.**
 ## Parked there, it would be parked short of its kerb, for good: a parked engine never drives on.

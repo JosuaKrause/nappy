@@ -250,11 +250,10 @@ on the far side of the door so being let out reads as being let through
 **Going in and coming out are owned by different halves, and that asymmetry is the whole of why
 she reappears where she is let out.** Hiding her happens on the frame `start_chat()` fires, which
 is a physics frame, so no drawn frame can catch her between the two. Showing her again has to
-happen on the frame she is *moved*, and the move is the release — also a physics frame — while the
-hold's own seconds run down in `EventInstance._process()`, a drawn one. So the release does both,
-in order: teleport, then show, then hand the camera back. Ending the hold by un-hiding her where
-its clock ran out drew her standing at the place she went in for every frame until the next physics
-tick. The pram's cue and the alert mark hidden
+happen on the frame she is *moved*, and the move is the release, on the same physics tick as the
+step whose seconds ran the hold down and after it. So the release does both, in order: teleport,
+then show, then hand the camera back. Ending the hold by un-hiding her where its clock ran out would
+draw her standing at the place she went in. The pram's cue and the alert mark hidden
 along with her are the same drawing call that draws her, so nothing about them needs its own
 switch. The meters keep running throughout — sleepiness still drains at the idle rate, because the
 baby is still there whether or not the player can see her.
@@ -1614,10 +1613,11 @@ nearest corridor door and let him pass. **He starts his run the moment she is wi
 flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
 walker is caught when she takes the flight holding plain left from the row level with its head tread
 or the row below, or down-left from the landing tile between the two flights. A walker who holds
-plain left from that landing tile gets through, and the margins are thin (on the tightest runner's
-line, walking until he runs, then running, and turning plain left at row 11's centre, he is drawn
-about 25px from her centre (24.6px), inside his 28px catch, and she clears it on the tick at 28.6px,
-by 0.6px; she is caught if she starts running 0.3s late). In the stairwell his warning is off screen,
+plain left from that landing tile gets through, and the margins are thin against his 23.5px catch
+*(inbox #865)* (on the tightest runner's line, walking until he runs, then running, and turning plain
+left at row 11's centre, he comes 24.6px from her centre on the tick, 1.1px outside it; the walker
+down-left from the landing tile comes 22.7px, 0.8px inside; she is caught if she starts running 0.3s
+late). In the stairwell his warning is off screen,
 and only the screen-edge badge shows his charge once he runs, up from the frame he starts running *(inbox #788 in minty-lemur: "Let's show that at least")*; the player accepted both *(inbox #782 in minty-lemur)*. So
 the side she switched to is not a side she can settle on, which is the whole point of him: the way
 down is a sequence of crossings rather than one.

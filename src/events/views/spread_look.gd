@@ -431,10 +431,6 @@ func move_nodes(redraw := false) -> void:
 func release_nodes() -> void:
 	_release_the_slices()
 
-func hide_the_scenery() -> void:
-	for scenery in _sceneries:
-		scenery.hide()
-
 ## The first slice, which every other part of a long picture is drawn after, so a rim behind it
 ## is behind the whole picture.
 func rim_holder() -> Node2D:

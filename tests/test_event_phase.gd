@@ -62,7 +62,7 @@ func _test_a_row_with_no_wait_is_in_its_telegraph_then_active(t) -> void:
 			"a row with no wait starts in its telegraph")
 	var steps := int(ceil(def.telegraph_time / STEP)) + 1
 	for i in steps:
-		instance._process(STEP)
+		instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.ACTIVE and not instance.is_telegraphing(),
 			"and is active once its telegraph has run")
 	instance.free()
@@ -74,19 +74,19 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t) -> void:
 	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
 			"a row that waits starts waiting")
 	instance.player_at = Vector2(def.notice.within - 10.0, 0.0)
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.WARNING and not instance.is_waiting(),
 			"inside its one radius it notices her and warns")
 	t.check(instance.noticed_at() != INF, "and its notice has a start")
 	instance.player_at = Vector2(def.notice.within + 40.0, 0.0)
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
 			"back outside its radius, it waits again")
 	t.check(instance.noticed_at() == INF, "with no notice left")
 	instance.player_at = Vector2(def.notice.within - 10.0, 0.0)
 	var frames := 0
 	while instance.phase == EventInstance.Phase.WARNING or frames == 0:
-		instance._process(STEP)
+		instance.step(STEP)
 		frames += 1
 		if frames > 200:
 			break
@@ -102,7 +102,7 @@ func _test_a_departure_and_a_finish_are_phases(t) -> void:
 	instance.player_at = Vector2(0.0, 2000.0)
 	var frames := 0
 	while not instance.is_leaving and frames < 400:
-		instance._process(STEP)
+		instance.step(STEP)
 		frames += 1
 	t.check(instance.phase == EventInstance.Phase.LEAVING and instance.is_leaving,
 			"off the end of its route it is leaving (%d frames)" % frames)
@@ -128,7 +128,7 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 			dog.player_running = true
 			her += Vector2(Tuning.RUN_SPEED * STEP, 0.0)
 		dog.player_at = her
-		dog._process(STEP)
+		dog.step(STEP)
 		clock += STEP
 	t.check(dog.is_leaving and dog.chase_age() < def.telegraph_time,
 			"run from 1.2s, the lesson dog gives up %.1fs into its %.1fs telegraph"
@@ -137,11 +137,11 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 	# She follows it at 100px, so it stays in her sight and in the world while its clock runs.
 	while dog.chase_age() < def.telegraph_time - 2.0 * STEP and not dog.is_finished:
 		dog.player_at = dog.global_position + Vector2(100.0, 0.0)
-		dog._process(STEP)
+		dog.step(STEP)
 		t.check(dog.is_telegraphing(), "every frame until its clock runs out (%.1fs)" % dog.chase_age())
 	while dog.chase_age() < def.telegraph_time + STEP and not dog.is_finished:
 		dog.player_at = dog.global_position + Vector2(100.0, 0.0)
-		dog._process(STEP)
+		dog.step(STEP)
 	t.check(not dog.is_finished and dog.is_leaving, "still in the world, leaving")
 	t.check(not dog.is_telegraphing(), "and not once its %.1fs have run" % def.telegraph_time)
 	dog.free()
@@ -154,9 +154,9 @@ func _test_a_held_notice_comes_back_as_far_run(t) -> void:
 	var first := EventInstance.new()
 	first.setup(def, Vector2.ZERO)
 	first.player_at = Vector2(def.notice.within - 10.0, 0.0)
-	first._process(STEP)
+	first.step(STEP)
 	for i in 5:
-		first._process(STEP)
+		first.step(STEP)
 	first._notice.hold(0.3)
 	var into := first.chase_age()
 	var second := EventInstance.new()

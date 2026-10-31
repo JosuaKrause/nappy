@@ -38,7 +38,7 @@ func _instance(t, def: EventDef, at := Vector2.ZERO,
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 # The one row whose whole mechanic is time under compulsion rather than a field: entering
 # `detain_radius` locks the player's own movement input, and what she is charged while it holds
@@ -161,7 +161,7 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		t.check(stroller.is_detained(), "a capture starts whether she is awake or asleep")
 
 		for i in int(round(def.detain_seconds / STEP)) + 5:
-			mother._process(STEP)
+			mother.step(STEP)
 			manager._tell_them_where_she_is()
 			baby._physics_process(STEP)
 
@@ -329,7 +329,7 @@ func _test_the_take_begins_only_once_she_is_close(t) -> void:
 	t.check(not instance.is_taking_a_victim(), "outside the field, nothing has started")
 
 	instance.player_at = Vector2(def.outer_radius - 20.0, 0.0)
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "and it begins the frame she comes inside it")
 	instance.free()
 
@@ -376,12 +376,12 @@ func _test_a_hunting_van_draws_no_victim(t) -> void:
 	# Inside the field but outside the trigger, so it is only waiting — the take may begin exactly
 	# as it would for a cold van.
 	instance.player_at = Vector2(hot.notice_within() + 20.0, 0.0)
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "waiting, it takes a bystander exactly like a cold van")
 
 	# Now she comes inside the trigger: it notices her and stops waiting, in the same frame.
 	instance.player_at = Vector2(hot.notice_within() - 10.0, 0.0)
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(not instance.is_waiting(), "she is inside the trigger, so it turns and notices her")
 	t.check(not instance.is_taking_a_victim(), "and the take it was running is abandoned")
 
@@ -398,7 +398,7 @@ func _test_a_hunting_van_stays_solid_once_it_notices_her(t) -> void:
 	t.check(instance.is_solid(), "a hunting van still parked is solid, exactly like a cold one")
 
 	instance.player_at = Vector2(hot.notice_within() - 10.0, 0.0)
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(not instance.is_waiting(), "she is inside the trigger, so it stops waiting")
 	t.check(instance.is_solid() and instance.officers_owed() == 2,
 			"and it stays solid where it stands, owing the two men it lets out")

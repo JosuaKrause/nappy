@@ -521,7 +521,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		var strongest := guard.contribution_at(beside)
 		# In inside his radius: he warns.
 		guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
-		guard._process(step)
+		guard.step(step)
 		var warned := guard.is_standing_for_its_notice()
 		strongest = maxf(strongest, maxf(guard.contribution_at(beside),
 				guard.contribution_at(guard.player_at)))
@@ -529,14 +529,14 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		# and walks away.
 		var waited := 0
 		while guard.is_telegraphing() and waited < int((def.pursuit.warns_for + 1.0) / step):
-			guard._process(step)
+			guard.step(step)
 			waited += 1
 		var charged := false
 		var frames := 0
 		while not guard.gave_up and frames < int(10.0 / step):
 			guard.player_at = guard.global_position + Vector2(0.0, 300.0)
 			guard.player_running = true
-			guard._process(step)
+			guard.step(step)
 			charged = charged or guard.is_chasing()
 			if guard.is_chasing():
 				strongest = maxf(strongest, maxf(guard.contribution_at(beside),
@@ -549,7 +549,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		frames = 0
 		while guard.is_leaving and frames < int(30.0 / step):
 			guard.player_at = her
-			guard._process(step)
+			guard.step(step)
 			strongest = maxf(strongest, guard.contribution_at(beside))
 			frames += 1
 		var gone := guard.barrier_post.is_spent() and not guard.is_leaving and guard.is_solid()
@@ -591,17 +591,17 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	guard.look.attach_nodes()
 	var posted_first := guard.barrier_post.has_its_far_guard_posted()
 	guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
-	guard._process(step)
+	guard.step(step)
 	var waited := 0
 	while guard.is_telegraphing() and waited < int((def.pursuit.warns_for + 1.0) / step):
-		guard._process(step)
+		guard.step(step)
 		waited += 1
 	var posted_through_the_chase := true
 	var frames := 0
 	while not guard.is_leaving and frames < int(10.0 / step):
 		guard.player_at = guard.global_position + Vector2(0.0, 300.0)
 		guard.player_running = true
-		guard._process(step)
+		guard.step(step)
 		if not guard.is_leaving:
 			posted_through_the_chase = posted_through_the_chase \
 					and guard.barrier_post.has_its_far_guard_posted()
@@ -616,6 +616,8 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 			"the far guard sets off from his post the frame his partner starts to leave")
 	t.check(set_off.distance_to(her) > guard.body_position().distance_to(her),
 			"and he sets off from the far post, beyond the band from her")
+	# His node is the look's, made on the drawn frame after the step that sent him.
+	guard._process(step)
 	var far_node := (guard.look as RoadblockLook).far_guard_node()
 	t.check(far_node != null and far_node.is_inside_tree(),
 			"and walks on his own node beside the band's")
@@ -627,6 +629,7 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	var walked := 0
 	while guard.barrier_post.far.at != Vector2.INF and walked < int(30.0 / step):
 		guard.player_at = her
+		guard.step(step)
 		guard._process(step)
 		walked += 1
 		var now := guard.barrier_post.far.at
@@ -1589,7 +1592,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 	var live := city.events.instances()[0]
 	var steps := 0
 	while not live.is_finished and steps < 400:
-		live._process(0.05)
+		live.step(0.05)
 		steps += 1
 	t.check(live.is_finished, "the burst is over after %.1fs" % (steps * 0.05))
 	# `_retire_finished()` runs inside `_physics_process`, which a synchronous test has to call

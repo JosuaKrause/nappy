@@ -301,9 +301,9 @@ func release_finished_holds(body: Stroller) -> void:
 		body.teleport_to(released_at)
 		# **Moved, then shown, in that order and in this one frame.** `teleport_to()` has just put
 		# her down and reset her interpolation, so the first frame drawn after this call draws her
-		# at the door she is coming out of and nowhere else. The un-hide cannot live on the
-		# instance's own clock — that runs in `_process`, a drawn frame, and every frame between it
-		# and the next physics tick drew her standing at the place she went in. The camera comes
+		# at the door she is coming out of and nowhere else. The un-hide does not live on the
+		# instance's own clock: the hold that ends on its step does not move her, and showing her
+		# there would draw her standing at the place she went in. The camera comes
 		# back here for the same reason: its ease home then starts from the hut toward where she
 		# actually is rather than toward where she was caught.
 		body.show_after_inspection()
