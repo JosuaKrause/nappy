@@ -662,7 +662,6 @@ func _test_opening_the_title_reasserts_the_orientation_it_finds_stale(t) -> void
 func _test_the_summary_and_pause_restart_signals_are_both_connected(t) -> void:
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = DAY_SUMMARY_SCENE.instantiate()
-	main._summary.use_run(main._run)
 	main._pause = PAUSE_SCREEN_SCENE.instantiate()
 	main._pause.use_run(main._run)
 	main._connect_summary_and_pause_signals()
@@ -698,8 +697,9 @@ func _test_no_interior_exists_outside_a_debug_build(t: Node) -> void:
 			"and never builds the interior scene at all, not even off to one side")
 	main.free()
 
-## `GameState.header.play_seconds` has exactly one owner: the branch of this `_process()` reached only
-## once a day is actually running, walking or returning, with the tree unpaused. Same rig as
+## `GameState.header.play_ticks` has exactly one owner: `main._physics_process()`, which counts a tick
+## only once a day is actually running, walking or returning, with the tree unpaused — and counts
+## ticks, never a drawn frame's length, so a long frame adds no play time (inbox #866). Same rig as
 ## `_test_the_readout_is_not_assembled_outside_a_debug_build` above — city, stroller, baby, day
 ## controller and hud, all built by hand rather than through `_ready()`, since this file's own
 ## class doc explains why `main` is never added to the tree here either.
@@ -717,9 +717,9 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	var saved_progress := GameState.resistance.progress
 	var saved_sabotage := GameState.resistance.sabotage_done
 
-	GameState.header.play_seconds = 42.0
+	GameState.header.play_ticks = 42
 	GameState.start_run(SEED)
-	t.check(is_zero_approx(GameState.header.play_seconds), "start_run() zeroes the clock with the rest of the run")
+	t.check(GameState.header.play_ticks == 0, "start_run() zeroes the clock with the rest of the run")
 
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
@@ -757,38 +757,56 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	main._hud = hud
 	main._flow.mode = RunFlow.Mode.WALKING
 
-	const DELTA := 0.1
+	const TICK := 1.0 / 30.0
 
 	t.get_tree().paused = false
-	main._process(DELTA)
-	t.check(is_equal_approx(GameState.header.play_seconds, DELTA),
-			"a walking frame with the tree unpaused advances the clock")
+	main._physics_process(TICK)
+	t.check(GameState.header.play_ticks == 1 and is_equal_approx(GameState.header.play_seconds(),
+			1.0 / Engine.physics_ticks_per_second),
+			"a walking tick with the tree unpaused advances the clock by one tick")
+
+	# A drawn frame five seconds long, the lag spike a slow machine draws: the frame's own length
+	# adds nothing. Only the ticks the engine steps count, so the clock is where the ticks left it.
+	main._process(5.0)
+	t.check(GameState.header.play_ticks == 1,
+			"a long drawn frame adds no play time beyond the ticks that ran (%d)"
+			% GameState.header.play_ticks)
 
 	# The pause screen: phase stays WALKING (a day in progress, Esc pressed), the tree pauses.
 	t.get_tree().paused = true
-	main._process(DELTA)
-	t.check(is_equal_approx(GameState.header.play_seconds, DELTA), "a paused frame does not")
+	main._physics_process(TICK)
+	t.check(GameState.header.play_ticks == 1, "a paused tick does not")
 
 	# The day summary: `DayController._end()` sets `phase` to `OVER` before the summary ever
-	# pauses the tree, so this is the shape a real day-end frame actually arrives in.
+	# pauses the tree, so this is the shape a real day-end tick actually arrives in.
 	day.phase = GameEnums.DayPhase.OVER
-	main._process(DELTA)
-	t.check(is_equal_approx(GameState.header.play_seconds, DELTA),
+	main._physics_process(TICK)
+	t.check(GameState.header.play_ticks == 1,
 			"the day summary (phase OVER, tree still paused) does not advance it either")
 
 	# The title screen: unpaused, so the phase/pause check alone could not explain a stopped
-	# clock here — the title's own early return in `_process()` is what has to.
+	# clock here — the flow saying TITLE rather than WALKING is what has to.
 	day.phase = GameEnums.DayPhase.WALKING
 	t.get_tree().paused = false
 	main._flow.mode = RunFlow.Mode.TITLE
-	main._process(DELTA)
-	t.check(is_equal_approx(GameState.header.play_seconds, DELTA),
+	main._physics_process(TICK)
+	t.check(GameState.header.play_ticks == 1,
 			"the title screen does not advance it, even with the tree unpaused behind it")
 
+	# Every screen that stands in front of the walk, and a scene reload on its way, with the day's
+	# phase still WALKING and the tree unpaused: the walk does not step, so the tick does not count.
+	for screen: int in [RunFlow.Mode.BRIEF, RunFlow.Mode.DAY_OVER, RunFlow.Mode.ENDING,
+			RunFlow.Mode.EPILOGUE, RunFlow.Mode.RELOADING, RunFlow.Mode.BOOTING]:
+		main._flow.mode = screen
+		main._physics_process(TICK)
+	t.check(GameState.header.play_ticks == 1,
+			"no screen in front of the walk, and no reload or boot hold, adds a tick (%d)"
+			% GameState.header.play_ticks)
+
 	main._flow.mode = RunFlow.Mode.WALKING
-	main._process(DELTA)
-	t.check(is_equal_approx(GameState.header.play_seconds, DELTA * 2),
-			"and a walking frame afterwards resumes rather than having latched off")
+	main._physics_process(TICK)
+	t.check(GameState.header.play_ticks == 2,
+			"and a walking tick afterwards resumes rather than having latched off")
 
 	main._status.free()
 	main.free()
@@ -805,7 +823,7 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	GameState.header.nerves = saved_nerves
 	GameState.resistance.progress = saved_progress
 	GameState.resistance.sabotage_done = saved_sabotage
-	GameState.header.play_seconds = 0.0
+	GameState.header.play_ticks = 0
 
 ## The player's camera has no limits, so at each map corner the view is centered on her, the
 ## look-ahead is added toward the corner, and the ground has to be painted under all of it through
@@ -854,7 +872,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 
 	t.check(beyond_the_band, "a corner view reaches past the band, so the check is not vacuous")
 	city.free()
-	GameState.header.play_seconds = 0.0
+	GameState.header.play_ticks = 0
 
 ## The trailer overview grows the finite city by one authored landscape margin. Its added east and
 ## west columns are forest, while the north and south bands own their corners and the bridge's
@@ -897,7 +915,7 @@ func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 			"the water either side of the bridge goes on too")
 
 	city.free()
-	GameState.header.play_seconds = 0.0
+	GameState.header.play_ticks = 0
 
 # ------------------------------------------------------------- focus pause ---
 
@@ -932,7 +950,6 @@ func _test_no_focus_pause_from_query(t) -> void:
 func _build_focus_pause_main(t) -> Node2D:
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._summary = DAY_SUMMARY_SCENE.instantiate()
-	main._summary.use_run(main._run)
 	t.add_child(main._summary)
 	main._pause = PAUSE_SCREEN_SCENE.instantiate()
 	main._pause.use_run(main._run)
@@ -989,7 +1006,8 @@ func _test_focus_lost_does_nothing_on_the_title(t) -> void:
 ## already asking for the player's attention.
 func _test_focus_lost_does_nothing_over_the_day_summary(t) -> void:
 	var main := _build_focus_pause_main(t)
-	main._summary.show_day(GameEnums.DayResult.WON, "", 3)
+	main._summary.show_summary(SummaryModel.day_over(main._run, _ended(GameEnums.DayResult.WON)),
+			RunFlow.Mode.DAY_OVER)
 	t.check(main._summary.is_showing(), "the day summary is up")
 	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(),
@@ -997,10 +1015,11 @@ func _test_focus_lost_does_nothing_over_the_day_summary(t) -> void:
 	_teardown_focus_pause_main(t, main)
 
 ## The ending is the same `_summary` screen showing a different body — see `DaySummary.
-## show_ending()` — so it is covered by the same `is_showing()` guard rather than a case of its own.
+## show_summary()` with `SummaryModel.ending()` — so it is covered by the same `is_showing()` guard rather than a case of its own.
 func _test_focus_lost_does_nothing_over_the_ending(t) -> void:
 	var main := _build_focus_pause_main(t)
-	main._summary.show_ending(GameEnums.Ending.GOOD, GameState.header.day)
+	main._summary.show_summary(SummaryModel.ending(main._run, GameEnums.Ending.GOOD),
+			RunFlow.Mode.ENDING)
 	t.check(main._summary.is_showing(), "the ending screen is up")
 	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(not main._pause.is_open(), "focus loss does not open a second screen over the ending")
@@ -1067,8 +1086,8 @@ func _test_return_ignores_input_for_half_a_second(t) -> void:
 		t.check(not main._pause.is_open(), "the same press after the window resumes")
 		# The day brief.
 		var starts := [0]
-		main._summary.continued.connect(func(): starts[0] += 1)
-		main._summary.show_day_brief(3, 3)
+		main._summary.continued.connect(func(_raised_in: int): starts[0] += 1)
+		main._summary.show_summary(SummaryModel.brief_for(main._run), RunFlow.Mode.BRIEF)
 		main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 		main._return_window.notification(what)
 		_press_accept(t)
@@ -1184,7 +1203,6 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	day.set_process(false)
 	day.setup(city.map, stroller, GameState)
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 
 	var main: Node2D = MAIN_SCRIPT.new()
@@ -1284,3 +1302,13 @@ func _test_rig_quit_seconds_from(t) -> void:
 			"an outsized --after is clamped to the fixed ceiling rather than honoured outright")
 	t.check(ceiling > 210.0 + margin,
 			"the ceiling comfortably fits a whole ordinary day plus its own margin")
+
+## A day's end as `DayDirector.finish_day()` settles one: what ended it, the loss's own sentence,
+## the clock it ended on, and whether it sent a normal run back to its checkpoint.
+func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0, goes_back := false) -> DayEnd:
+	var end := DayEnd.new()
+	end.result = result
+	end.reason = reason
+	end.elapsed_seconds = elapsed
+	end.goes_back = goes_back
+	return end

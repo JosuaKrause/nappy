@@ -8,8 +8,12 @@ var finished_day := 0
 var result := GameEnums.DayResult.WON
 ## What ended a crying or hard-fail day (`LossCause`), `""` otherwise.
 var cause := ""
+## What the day's loss says (`DayController.failure_reason`, from `Texts`), `""` for a win.
+var reason := ""
 ## The day's clock at the instant it ended, clamped to the day's length.
 var elapsed_seconds := 0.0
+## Which way out of the city she took (`CityEdge.Kind`, as an `int`), or -1 when she took none.
+var exit_reached := -1
 ## An escape section: the director has ended the day (`day_ended` sent) and nothing more; the
 ## section's own cost and screen are `main`'s.
 var is_section := false

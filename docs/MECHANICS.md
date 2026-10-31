@@ -1410,7 +1410,7 @@ at being won in about a third of that.
 Running out is a day loss. The timer is shown as a light-level shift rather than a number,
 with an explicit clock in the HUD corner, `m:ss` through `GameState.format_clock_seconds()`.
 
-The summary between days (`DaySummary.show_day()`) names the same clock at the instant the day
+The summary between days (`SummaryModel.day_over()`) names the same clock at the instant the day
 ended, as its own title: a won day reads *"She fell asleep after 1:24."*, a lost day reads its
 own reason with the clock worked into it — *"She started crying after 1:24. There is no settling
 her now."* for a crying loss, the reason then the clock as its own sentence for a hard fail —
@@ -1442,14 +1442,19 @@ label's own line count is the number of lines `SentenceLines` returned.
 number, the nerves carried into it and the morning's own line (`Texts.DAY_BRIEF`, below) all read off
 `GameState.header.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
 today again (a loss with nerves left retries the same day) — never off the day that just ended.
-The day brief a resumed run opens on (`DaySummary.show_day_brief()`) is built the same way, since
+The day brief a resumed run opens on (`SummaryModel.brief_for()`) is built the same way, since
 it is the same screen showing what a load already charged rather than what a day just did.
 
 ## The run clock
 
-`GameState.header.play_seconds` is a second clock, over the whole run rather than one day: the sum of
-every second a day — a section of the escape included — spent `WALKING` or `RETURNING` with the
-tree unpaused. Not wall time, and not
+`GameState.header.play_ticks` is a second clock, over the whole run rather than one day: the
+physics ticks on which she walked a day — a section of the escape included — `WALKING` or
+`RETURNING`, with the tree unpaused and no screen in front of the walk and no scene reload on its
+way, read in seconds at the 30 Hz tick (`play_seconds()`). **Frame locked**
+(inbox #866): it counts the ticks the game stepped, never a drawn frame's length, so a machine that
+draws a frame late spends no extra time on the clock — a lag spike past the engine's steps per
+frame slows the game instead — and a faster machine reads no lower time. The save holds it in
+seconds and loads it to the nearest tick, whatever seconds an older save holds. Not wall time, and not
 the day timer above, which resets every day — a retried day's first attempt counts toward it, and
 neither the pause screen, the day summary nor the title screen do. It is part of a normal run's
 checkpoint, so going back to one puts it back to that dawn's reading (see "Two modes").
@@ -1544,7 +1549,7 @@ Walking out of the city ends the run. Hard mode is the player choosing to
 have the wrong turn in the last minutes count.
 
 **Every section opens on its brief** — the same day brief a resumed run opens on
-(`DaySummary.show_day_brief()`), titled *"Escape the building"* or *"Escape the city"* where a day's
+(`SummaryModel.brief_for()`), titled *"Escape the building"* or *"Escape the city"* where a day's
 number stands (`DaySpec.title`), and carrying the Nerve count as the run holds it — unchanged in a
 normal run, whose escape spends none, and in a hard run whatever its lost sections spent. A retry
 opens on it too, after the lost section's outcome screen: the outcome screen says why the section
@@ -1760,7 +1765,7 @@ escape's ending instead of day 14's.
 
 **Drawn as stars everywhere they show, never as a digit or a word for the count** — the HUD's
 debug header, the day brief, a section's brief, the day summary and the pause screen all read the
-count through `NerveDisplay.stars()` (`src/ui/nerve_display.gd`), a star per nerve and `-` for
+count through `Texts.nerve_stars()` (`src/ui/texts.gd`), a star per nerve and `-` for
 none, so a sixth screen that shows nerves has one function to match rather than a number to
 invent.
 

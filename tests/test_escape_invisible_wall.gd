@@ -37,10 +37,10 @@ func run(t) -> void:
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	t.check(main._interior != null, "the boot stands in the building")
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	var before := _her_page_counts(main._player)
 	main._interior.exit_requested.emit()
-	main._on_summary_continued()
+	main._on_summary_continued(main._flow.mode)
 	var after := _her_page_counts(main._player)
 	t.check(after == before,
 			"walking her out into the city leaves her pages' counts as they were (%s, then %s)"

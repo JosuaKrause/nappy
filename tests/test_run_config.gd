@@ -87,18 +87,17 @@ func _test_a_resolved_config_cannot_change(t) -> void:
 	var refused := RefusedWrites.new()
 	OS.add_logger(refused)
 	config.invincible = true
-	config.has_recipe = true
 	config._open = true
 	config._given = PackedStringArray(["--invincible"])
 	config._movie = true
 	config.debug_build = false
 	OS.remove_logger(refused)
-	t.check(not config.invincible and not config.has_recipe and config.debug_build
+	t.check(not config.invincible and config.debug_build
 			and not config._movie and not "--invincible" in config._given,
 			"a write after the build changes nothing, the fields that hold the gate included")
 	config.invincible = true
 	t.check(not config.invincible, "and reopening it did not work")
-	t.check(refused.count == 6, "each refused write is reported, not swallowed: %d" % refused.count)
+	t.check(refused.count == 5, "each refused write is reported, not swallowed: %d" % refused.count)
 	var args := config.active_args
 	args.append("--invincible")
 	t.check(not "--invincible" in config.active_args,
@@ -115,12 +114,11 @@ func _test_a_recipe_stands_in_for_the_run_flags(t) -> void:
 	t.check(overlaid.seed_override == 9 and overlaid.day_override == 7 and overlaid.start_escape
 			and overlaid.start_escape_at == "lobby" and overlaid.parent_override == "father",
 			"the recipe's seed, day, escape part and parent are the run's")
-	t.check(overlaid.recipe_path == "scene.json" and overlaid.has_recipe,
-			"the rest of the run is parsed from the same words, a recipe noted beside it")
-	t.check(RunConfig.parse(_words(["--seed", "3"]), "", false, false, recipe).seed_override == 0
-			and not RunConfig.parse(_words([]), "", false, false, recipe).has_recipe,
+	t.check(overlaid.recipe_path == "scene.json",
+			"the rest of the run is parsed from the same words")
+	t.check(RunConfig.parse(_words(["--seed", "3"]), "", false, false, recipe).seed_override == 0,
 			"a release build keeps no recipe, whatever it is handed")
-	t.check(base.seed_override == 3 and base.day_override == 2 and not base.has_recipe,
+	t.check(base.seed_override == 3 and base.day_override == 2,
 			"and the config it was put on is unchanged")
 
 ## A day's length is decided in one place and handed on as a number: `--day-length` for every day

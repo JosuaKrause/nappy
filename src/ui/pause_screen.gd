@@ -131,12 +131,11 @@ var _was_paused := false
 ## Read at `open()` rather than kept in step with `EventBus`, because a screen that is only ever
 ## looked at while the game is stopped cannot go stale, and a listener that has to be kept correct
 ## across fourteen days is a listener that will not be.
+##
+## Worded by `SummaryModel.standing_line()`, the one place the day of fourteen and the nerves (as
+## stars, never a digit) are worded for the day summary and the day brief too.
 func _show_where_the_run_stands() -> void:
-	var nerves := _run.header.nerves
-	# Stars, drawn through `NerveDisplay.stars()` — the same text the HUD, the day brief and the
-	# day summary all read the count through, never a digit.
-	_standing.text = Texts.PAUSE_STANDING % [_run.header.day,
-			Tuning.RUN_LENGTH_DAYS, NerveDisplay.stars(nerves)]
+	_standing.text = SummaryModel.standing_line(_run)
 
 func open() -> void:
 	visible = true

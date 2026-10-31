@@ -6,7 +6,7 @@ func _ready() -> void:
 	var packed: PackedScene = load("res://scenes/main.tscn")
 	var main := packed.instantiate()
 	add_child(main)
-	var runtime: SceneRecipeRuntime = main.get("_recipe")
+	var runtime: SceneRecipeRuntime = main.get("_flow").scene
 	var city: City = main.get("_city")
 	if not runtime or not city or runtime.manifest.get("setup_failed", false):
 		return

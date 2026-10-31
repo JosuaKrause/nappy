@@ -147,9 +147,13 @@ func _test_a_section_is_ended_but_not_settled(t) -> void:
 	spec.number = 15
 	var rig := _rig(t, spec)
 	var director: DayDirector = rig["director"]
+	director.day.failure_reason = "She started crying."
+	director.day.exit_reached = CityEdge.Kind.TUNNEL
 	var end := director.finish_day(GameEnums.DayResult.LOST_CRYING)
 	t.check(end.is_section and end.finished_day == 15 and end.cause == "self",
 			"a section sends day_ended under its own number and cause")
+	t.check(end.reason == "She started crying." and end.exit_reached == CityEdge.Kind.TUNNEL,
+			"and its end carries the clock's own sentence and the way out, for the summary to say")
 	t.check(_run.header.nerves == Tuning.STARTING_NERVES,
 			"and leaves what it costs to the section's own flow")
 	_put_away(rig)

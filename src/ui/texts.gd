@@ -59,8 +59,9 @@ const TITLE_LETTER_RIGHT := "R"
 # lesson, and the two buttons' captions (the day summary's buttons carry the same two).
 
 const PAUSE_TITLE := "Stopped on the pavement."
-## `%d` the day, `%d` the run's length in days, `%s` the nerves as stars.
-const PAUSE_STANDING := "Day %d of %d     ·     Nerves left: %s"
+## The day of the run (`SUMMARY_DAY`) and the nerves left (`SUMMARY_NERVES`) on one line, each worded
+## by `SummaryModel` as the day summary words it.
+const PAUSE_STANDING := "%s     ·     %s"
 ## One body for every device. *(2026-09-06, the player: "in fact I said to remove the keyboard
 ## inputs altogether but I'm willing to compromise on letting them stay silently".)* The keyboard
 ## still walks, runs, pauses and restarts — nothing here stops reading `KEY_R`/`KEY_Q` or the
@@ -128,9 +129,9 @@ const DISTANCE_METRES := "%d m"
 ## thing that day introduces, so this is also where a new obstacle is first heard of; a line is
 ## not tied to its own day's resistance task or once-only happening, so one that would give a
 ## task away says something else that is true that morning instead. Looked up by the calendar day
-## alone — `DaySummary.show_day_brief(day, …)` (a resumed run's own gate) is handed the day and
-## `show_day()` (the ordinary transition) reads `GameState.header.day` — never by what an attempt
-## touched, so a lost day's own line reads exactly as it did this morning.
+## alone — `SummaryModel.brief_for()` (a resumed run's own gate) and `day_over()` (the ordinary
+## transition) both read the run's day — never by what an attempt touched, so a lost day's own
+## line reads exactly as it did this morning.
 ##
 ## Written as plain prose, one space between sentences and no `\n` of its own: `SentenceLines
 ## .break_for_label()` breaks a multi-sentence entry onto more than one line only where `_brief`'s
@@ -159,7 +160,7 @@ const DAY_BRIEF := {
 
 ## `%d` the day, `%d` the run's length in days.
 const SUMMARY_DAY := "Day %d of %d"
-## `%s` the nerves as stars.
+## `%s` the nerves as stars, by `nerve_stars()`: never a digit or a word for the count.
 const SUMMARY_NERVES := "Nerves left: %s"
 ## A lost day that is tried again; `%d` is the day.
 const SUMMARY_TRY_AGAIN := "You try day %d again."
@@ -245,7 +246,7 @@ const RESUMED_DAY_LOST := "Left before the day ended. That cost a nerve — it s
 const RESUMED_LAST_NERVE := "Left before the day ended. That was the last nerve — back to day %d."
 
 # --------------------------------------------------------------------- endings ---
-# `DaySummary.show_ending()`: a big heading, the title under it, and the body (then the run's
+# `SummaryModel.ending()`: a big heading, the title under it, and the body (then the run's
 # length, and for the hard run's loss the day it ended on).
 
 ## The one line on the ending screen that is not writing.
@@ -270,7 +271,7 @@ const ENDING_TITLE := {
 	GameEnums.Ending.GOOD: "Silence.",
 }
 const ENDING_TITLE_DEFAULT := "The end."
-## Plain prose, one space between sentences: `show_ending()` breaks it onto more than one line
+## Plain prose, one space between sentences: `DaySummary` breaks it onto more than one line
 ## through `SentenceLines.break_for_label()`, the same helper `Texts.DAY_BRIEF` and every other screen's
 ## prose goes through, rather than a `\n` typed into each entry.
 const ENDING_BODY := {
@@ -295,18 +296,19 @@ const ENDING_PLAYED := "%s\n\nTime played: %s%s"
 
 const FINALE_HEADING := "THE END"
 const FINALE_TITLE := "You are out."
+## The bridge's body, which is also the one for an exit `FINALE_BODY` has no entry for.
+const FINALE_BODY_DEFAULT := "The water is under you and the city is behind you. " \
+		+ "She does not wake."
 ## The key is a `CityEdge.Kind`.
 ## What is behind her, and it is the same sentence either way: she is out, nobody is following,
 ## and the city is still there. The two differ only in what she is standing on. Plain prose, one
-## space between sentences: `show_finale()` breaks it through `SentenceLines.break_for_label()`,
+## space between sentences: `DaySummary` breaks it through `SentenceLines.break_for_label()`,
 ## the same helper the rest of this file's prose goes through, rather than a `\n` of its own.
 const FINALE_BODY := {
 	CityEdge.Kind.TUNNEL:
 		"The mountain closes over the road behind you. "
 		+ "She does not wake.",
-	CityEdge.Kind.BRIDGE:
-		"The water is under you and the city is behind you. "
-		+ "She does not wake.",
+	CityEdge.Kind.BRIDGE: FINALE_BODY_DEFAULT,
 }
 ## `%s` the body, `%s` the time the escape took as a clock.
 const FINALE_OUT_IN := "%s\n\nOut in: %s"
@@ -418,3 +420,9 @@ const EVENT_NAMES := {
 	"masked_pursuer": "Masked man",
 	"basement_steam": "Steam",
 }
+
+## The one place nerves become text on screen: a star per nerve, `-` for none, and never a digit.
+## The HUD, the summary screens and the pause screen all read the count through it, so a digit or
+## a word for the count cannot creep back into one more place that shows it.
+static func nerve_stars(nerves: int) -> String:
+	return "*".repeat(nerves) if nerves > 0 else "-"

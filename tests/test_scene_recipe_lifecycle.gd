@@ -12,7 +12,7 @@ func _ready() -> void:
 	var scene: PackedScene = load("res://scenes/main.tscn")
 	main = scene.instantiate()
 	add_child(main)
-	recipe = main.get("_recipe")
+	recipe = main.get("_flow").scene
 	player = main.get("_player")
 	if not recipe or not player or recipe.manifest.get("setup_failed", false):
 		fail("real Main did not finish recipe setup")
@@ -137,7 +137,7 @@ func _ready() -> void:
 	if not progressed:
 		fail("winning the recipe day did not apply normal progression")
 		return
-	(main.get("_summary") as Node).emit_signal("continued")
+	(main.get("_summary") as Node).emit_signal("continued", main.get("_flow").mode)
 	for frame in 180:
 		if not is_inside_tree():
 			return

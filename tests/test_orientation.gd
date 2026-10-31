@@ -251,7 +251,6 @@ func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
 	var edge_layer := CanvasLayer.new()
 	var touch_layer := CanvasLayer.new()
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	var pause: CanvasLayer = PAUSE_SCREEN_SCENE.instantiate()
 	pause.use_run(GameState)

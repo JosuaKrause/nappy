@@ -71,7 +71,7 @@ func run(t) -> void:
 	GameState.header.day = prior_day
 
 ## **One spec for an authored scene**: the walk the run flow started — the one its clock and HUD run
-## on (`main._start_recipe_day()`, or the escape boot's section) — is the spec the scene's events run
+## on (`DayDirector.start_authored_day()`, or the escape boot's section) — is the spec the scene's events run
 ## under, handed through `install()`, with no second spec built beside it. An escape scene's events
 ## owe no return and a torn poster sends nobody there; a day scene's walk is the day as configured,
 ## `--day-length` included (`main.day_spec()`), and its events run with a day's settings, a torn

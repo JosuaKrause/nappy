@@ -30,6 +30,8 @@ func run(t) -> void:
 	_test_the_task_line_clears_when_the_task_is_done(t)
 	_test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t)
 	_test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t)
+	_test_learned_lessons_say_no_control_lesson(t)
+	_test_unlearned_lessons_are_all_said(t)
 
 func _hud(t) -> CanvasLayer:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
@@ -637,3 +639,58 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
 	GameState.header.day = saved_day
 	controls.free()
 	hud.free()
+
+## `configure(debug, invincible, lessons_learned)` with `lessons_learned` (an authored mid-game
+## scene's `tutorial_complete`) silences the three ordinary control lessons and nothing else: the
+## walking lesson on day 1 (at dawn and again when the controls are chosen), the pause lesson
+## (`_taught_pause` starts taught) and the run lesson (`_taught_run` starts taught and the
+## teaching day does not reset it). Each assertion fails if its guard is dropped.
+func _test_learned_lessons_say_no_control_lesson(t) -> void:
+	var saved_day := GameState.header.day
+	GameState.header.day = 1
+	var hud := _configured_hud(t, true)
+	hud._teach_the_day(1)
+	t.check(hud._teach.line == "", "learned: day 1 says no walking lesson at dawn")
+	hud._on_controls_chosen(true, false)
+	t.check(hud._teach.line == "", "learned: choosing the controls says no walking lesson")
+	t.check(hud._taught_pause, "learned: the pause lesson starts taught")
+	hud._teach_the_day(Tuning.RUN_TAUGHT_DAY)
+	t.check(hud._taught_run, "learned: the teaching day does not reset the run lesson")
+	GameState.header.day = Tuning.RUN_TAUGHT_DAY
+	var pursuer := _pursuer()
+	hud._on_event_telegraphed(pursuer)
+	t.check(hud._teach.line == "", "learned: a pursuit on the teaching day says no run lesson")
+	pursuer.free()
+	hud.free()
+	GameState.header.day = saved_day
+
+## The same calls with `lessons_learned` false: every lesson comes back, so the test above cannot
+## pass for a HUD that says nothing at all.
+func _test_unlearned_lessons_are_all_said(t) -> void:
+	var saved_day := GameState.header.day
+	GameState.header.day = 1
+	var hud := _configured_hud(t, false)
+	hud._teach_the_day(1)
+	t.check(hud._teach.line != "", "unlearned: day 1 says the walking lesson at dawn")
+	hud._teach.show_line("")
+	hud._on_controls_chosen(true, false)
+	t.check(hud._teach.line != "", "unlearned: choosing the controls says it again")
+	t.check(not hud._taught_pause, "unlearned: the pause lesson is still to come")
+	hud._teach_the_day(Tuning.RUN_TAUGHT_DAY)
+	t.check(not hud._taught_run, "unlearned: the teaching day opens the run lesson")
+	GameState.header.day = Tuning.RUN_TAUGHT_DAY
+	var pursuer := _pursuer()
+	hud._on_event_telegraphed(pursuer)
+	t.check(hud._teach.line != "", "unlearned: a pursuit on the teaching day says the run lesson")
+	pursuer.free()
+	hud.free()
+	GameState.header.day = saved_day
+
+## A HUD configured as `main` configures it, before it enters the tree.
+func _configured_hud(t, lessons_learned: bool) -> CanvasLayer:
+	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	hud.configure(true, false, lessons_learned)
+	hud.use_run(GameState)
+	t.add_child(hud)
+	hud.set_process(false)
+	return hud
