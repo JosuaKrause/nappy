@@ -708,12 +708,15 @@ func _end_its_route(may_park := true) -> void:
 var _timed := FrameRecord.on
 
 ## **A drawn frame only redraws.** What the event does is stepped on the physics tick by its manager
-## (`step()`); here its look asks for a redraw if the picture changed, moves its drawing nodes and
-## hides what a finished event leaves (`EventLook.redraw_if_the_picture_changed()`), from the state
-## the last tick left. Timed under the record's events, as the step is.
+## (`step()`); here it takes the draw layer its warning puts it on (`_take_the_layer_it_warns_on()`),
+## and its look asks for a redraw if the picture changed, moves its drawing nodes and hides what a
+## finished event leaves (`EventLook.redraw_if_the_picture_changed()`), all from the state the last
+## tick left, so the tick writes no drawing property. Timed under the record's events, as the step
+## is.
 func _process(_delta: float) -> void:
 	if look == null:
 		return
+	_take_the_layer_it_warns_on()
 	if _timed and FrameRecord.on:
 		var outer := FrameRecord.enter(FrameRecord.EVENTS)
 		look.redraw_if_the_picture_changed()
@@ -814,13 +817,13 @@ func _tick(delta: float) -> void:
 		# the body and needs no redraw for it. A spent guard moves nothing, so there is nothing to
 		# re-pin.
 		barrier_post.keep_the_body()
-	_take_the_layer_it_warns_on()
 
 ## **A pursuer that warns over the street is drawn on the warning layer for the whole of its
 ## warning** (`PursuitSpec.warns_over_the_street`, `DrawLayer.Layer.WARNING`): the roadblock's guard,
 ## from the frame he steps out to his post with his hand raised until he charges, over every figure
 ## on the street, under the city's overhead layer. Once he charges he sorts with the street again,
-## on the entity layer at his own feet.
+## on the entity layer at his own feet. Taken on the drawn frame (`_process()`), from the phase the
+## last tick left: a look never writes the event, and the tick writes no drawing property.
 func _take_the_layer_it_warns_on() -> void:
 	if def.pursuit == null or not def.pursuit.warns_over_the_street:
 		return

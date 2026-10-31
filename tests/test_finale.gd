@@ -928,6 +928,8 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 								guard._spread_vertical, band, her)):
 							off_by_the_radius += 1
 					RoadblockRig._tick(made[1], her, false, -toward)
+					# The layer is taken on the drawn frame, from what the tick left.
+					guard._process(0.0)
 					if was_waiting and guard.is_standing_for_its_notice():
 						warned += 1
 						warned_here = true

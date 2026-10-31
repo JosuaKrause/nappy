@@ -109,6 +109,7 @@ src/
 	event_def.gd          authored event data
 	notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
 	pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
+	hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
 	day_switch.gd         how a row is sited and noticed from the day after its first appearance
 	on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
 	aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
