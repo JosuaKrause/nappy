@@ -196,7 +196,7 @@ The events:
   `EventManager` while a day is played — the escape's city included, as day 16, but not behind
   the title, and not in the escape's building, whose events are not an `EventManager`'s — decides
   each:
-  - **What she can see** is `VisibleView.visible_share()` (`src/ui/visible_view.gd`): the share of
+  - **What she can see** is `VisibleView.visible_share()` (`src/world/visible_view.gd`): the share of
     a world rectangle inside the camera's view, `Tuning.VIEW_HALF_EXTENT` about its centre, less, in
     the joystick scheme, the two bottom corners its controls cover — each from the screen's side to
     the far edge of its focal disc, and from its painted top down. A ring and Run share the same
