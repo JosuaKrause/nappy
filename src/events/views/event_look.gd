@@ -93,14 +93,14 @@ func _in_the_drawn_view() -> bool:
 	return _shows_its_nodes(reach)
 
 ## Everything the event can draw about its feet: the row's whole footprint, caret included
-## (`EventInstance.footprint_of()`), with the run its own street gives a spread (`drawn_box()`), and
+## (`EventFootprints.footprint_of()`), with the run its own street gives a spread (`drawn_box()`), and
 ## the caret at its tallest for a row with no picture of its own to carry one, and a picture that
 ## reaches past it (`_front_box()`, a street fire's whole burning front and its smoke). Worked out
 ## once: nothing here moves with the event.
 func _drawn_reach() -> Rect2:
 	if not _drawn_reach_known:
 		_drawn_reach_known = true
-		_drawn_reach_box = EventInstance.footprint_of(event.def).merge(event.drawn_box()) \
+		_drawn_reach_box = EventFootprints.footprint_of(event.def).merge(event.drawn_box()) \
 				.merge(EventPictures.largest_mark_rect())
 		var front := _front_box()
 		if front.has_area():
@@ -150,7 +150,7 @@ func drawn_heading() -> Vector2:
 	if event.def.look == EventDef.Look.ROBBER and event.is_waiting():
 		return _robber_waiting_heading()
 	if event.barrier_post and not event.barrier_post.has_left_its_body():
-		return EventInstance.guard_post_heading(event.runs_vertically(), 1)
+		return EventFootprints.guard_post_heading(event.runs_vertically(), 1)
 	return event.facing_now()
 
 ## Which pose `RankLook._draw_protest()` is standing its rank in: 0 for anything that is not a
@@ -200,7 +200,7 @@ func _picture_key() -> Vector4i:
 		idle = _idle_stepping(EventPictures.STEAM_BILLOW_PERIOD)
 	var flags := 0
 	flags = flags * 2 + (1 if event.is_finished else 0)
-	flags = flags * 2 + (1 if event.is_suppressed_by_its_own_hold() else 0)
+	flags = flags * 2 + (1 if EventFootprints.hidden_by_its_hold(event) else 0)
 	flags = flags * 2 + (1 if event.is_leaving else 0)
 	flags = flags * 2 + (1 if _gait_stepping() else 0)
 	# The normal dog alone tells its two steps apart (`EventPictures.dog_picture()`), so only its
@@ -247,7 +247,7 @@ func draw() -> void:
 		return
 	if event.is_finished:
 		return
-	if event.is_suppressed_by_its_own_hold():
+	if EventFootprints.hidden_by_its_hold(event):
 		return
 	var bob := current_bob()
 	# Told to `Sprites` as well as to the canvas, for the reason `Sprites._base_transform` gives:
@@ -505,7 +505,7 @@ func mark_rect() -> Rect2:
 ## event's own projection of her), and a picture that reaches past its footprint (`_front_box()`, a
 ## street fire's whole burning front and smoke). What `tests/test_no_pop_in.gd` checks against the
 ## view on a thing's first frame: the caret is measured from the drawing's own numbers, not from
-## `EventInstance.footprint_of()`'s worst case, so a footprint that leaves it out fails there.
+## `EventFootprints.footprint_of()`'s worst case, so a footprint that leaves it out fails there.
 func drawn_rect_now() -> Rect2:
 	var rect := event.drawn_box()
 	for picture in EventPictures.family_sources(event.def.look):
@@ -517,8 +517,8 @@ func drawn_rect_now() -> Rect2:
 				else event.def.shape.radius
 		rect = rect.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
 	if event.def.look == EventDef.Look.LOOSE_DOG:
-		var behind := EventInstance.LOOSE_LEAD_REACH if _heading_is_west() \
-				else -EventInstance.LOOSE_LEAD_REACH
+		var behind := EventFootprints.LOOSE_LEAD_REACH if _heading_is_west() \
+				else -EventFootprints.LOOSE_LEAD_REACH
 		rect = rect.merge(Rect2(Vector2(minf(behind, 0.0), -8.0),
 				Vector2(absf(behind), 6.0)).grow(1.0))
 	rect.position.y += current_bob()
@@ -535,7 +535,7 @@ func drawn_rect_now() -> Rect2:
 ## Draws the body onto `canvas`: the event itself for the ordinary frame, or `EntityHalo` once per
 ## ring offset to trace the silhouette. Nothing while its own hold hides it.
 func draw_body(canvas: CanvasItem) -> void:
-	if event.is_suppressed_by_its_own_hold():
+	if EventFootprints.hidden_by_its_hold(event):
 		return
 	_draw_figure(canvas)
 

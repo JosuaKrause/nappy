@@ -1097,7 +1097,7 @@ func _test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t) -> void
 	Telemetry.end_run()
 
 ## `--invincible` clamps the countdown to exactly zero once a day runs out rather than ending it
-## (`DayController._process()`), which holds the elapsed day clock at the day's own length for as
+## (`DayController.tick()`), which holds the elapsed day clock at the day's own length for as
 ## long as the day keeps running afterward — so under a clock-named scheme, every picture taken
 ## past dusk that day asked for the exact same file and each one silently overwrote the last. A
 ## counter cannot repeat this way at all, which this checks directly by pinning `_clock` at zero

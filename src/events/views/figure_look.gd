@@ -83,8 +83,8 @@ func charging_dog_pictures() -> Array[Dictionary]:
 ## the span it owns and the reason to cross the street. Here the same lead trails on the ground
 ## behind one body, and the difference between the two pictures is the whole event.
 func _draw_loose_dog(canvas: CanvasItem) -> void:
-	var behind := Vector2(EventInstance.LOOSE_LEAD_REACH if _heading_is_west()
-			else -EventInstance.LOOSE_LEAD_REACH, 0.0)
+	var behind := Vector2(EventFootprints.LOOSE_LEAD_REACH if _heading_is_west()
+			else -EventFootprints.LOOSE_LEAD_REACH, 0.0)
 	_draw_body_shadow(canvas)
 	# On the ground and slack, not held up at hip height. Nobody is holding it. The lead's own
 	# offset stays a plain east/west span — a composite the picture underneath it does not own,

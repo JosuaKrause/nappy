@@ -36,6 +36,18 @@ pointing up a layer. The `ExcitementSource` component above is what those fields
 once it exists, both the manager and the crowd extending or composing it; the plainer alternative
 the builder named is the world handed callables instead of the objects.
 
+**Carry-overs from events-composed (minty-quail-26), the orchestrating session's rather than the
+player's ask:** an event instance uses the red arrow's `ArrowField` (`src/resistance/arrow_field.gd`,
+the resistance's walking-distance field) as its pathfinder, a dependency on the resistance where the
+map's one `Navigator` is the shared one; a car's driving copies crowd traffic's
+give-way (`EventCarDriving.room_to_its_line()`), the copy `LaneMover` takes; movement proposed,
+validated, then committed for every mover, as a car's frame is (minty-quail-17), built so far for the car
+alone; and the city behind the title screen: on a day the street plays on there, so the traffic
+signals, every event's age, phase and repeat timers, the shared broadcast clock and the street's
+stocking advance on ticks no walk stepped, while the day's own clocks count only the ticks the walk
+stepped (the 4c builder's fork, widened at review; whether a day should start from a state that does
+not depend on how long the title was up is the player's question on the board).
+
 **Open question, the orchestrating session's carry-over from minty-quail-5 rather than the player's
 ask:** whether the crowd's lane movement goes onto the map's one `Navigator`. It is not part of the
 walker-and-car split, because a lane-following held step is a different motion model from the

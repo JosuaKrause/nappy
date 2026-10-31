@@ -1119,7 +1119,7 @@ static func hold_refusal(def: EventDef) -> String:
 		return "does not pursue her, so it has no straight walk away to hold"
 	if def.vehicle != null:
 		return "drives, and a car leaves by its own rules"
-	if def.investigates:
+	if def.investigates():
 		return "lets men out, who walk back to it"
 	if def.stops_where_it_arrives:
 		return "parks where it arrives"

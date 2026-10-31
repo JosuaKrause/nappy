@@ -232,7 +232,7 @@ func _test_the_escape_clock_takes_its_length_and_invincible(t) -> void:
 	clock.set_process(false)
 	clock.start(spec.length)
 	t.check(is_equal_approx(clock.time_remaining, 25.0), "a section runs the length handed in")
-	clock._process(5.0)
+	clock.tick(5.0)
 	t.check(is_equal_approx(clock.time_remaining, 25.0), "and stands still when invincible")
 	clock.free()
 

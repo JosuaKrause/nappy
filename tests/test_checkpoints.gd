@@ -1344,7 +1344,7 @@ func _test_a_stroller_stopped_against_the_hut_is_detained(t) -> void:
 ## disappears ... all this is incorrect".)* A building that blinks out while she is inside it reads
 ## as the door having been taken away rather than as her having gone through it. An alley post is
 ## the one row where the two are the same thing: he is all it draws, so when he goes in there is
-## nothing left. `is_its_guard_inside()` and `is_suppressed_by_its_own_hold()` are the two
+## nothing left. `is_its_guard_inside()` and `EventFootprints.hidden_by_its_hold()` are the two
 ## conditions `_draw_checkpoint_hut()`, `_draw()` and `draw_body()` (the halo's own re-draw entry
 ## point) gate on, so asserting them here is asserting what the halo and the picture actually do
 ## without a canvas.
@@ -1363,14 +1363,14 @@ func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
 
 		t.check(stroller.visible, "%s: she is visible before the hold starts" % id)
 		t.check(not door.is_its_guard_inside(), "%s: and its guard is outside" % id)
-		t.check(not door.is_suppressed_by_its_own_hold(), "%s: and it is drawn" % id)
+		t.check(not EventFootprints.hidden_by_its_hold(door), "%s: and it is drawn" % id)
 		stroller.global_position = centre + axis * 60.0
 		manager._tell_them_where_she_is()
 		manager.checkpoints.check_detentions()
 		t.check(door.is_chatting(), "%s: the hold starts" % id)
 		t.check(not stroller.visible, "%s: and she is hidden the instant it does" % id)
 		t.check(door.is_its_guard_inside(), "%s: with the guard, who takes her in" % id)
-		t.check(door.is_suppressed_by_its_own_hold() == is_a_guard_alone,
+		t.check(EventFootprints.hidden_by_its_hold(door) == is_a_guard_alone,
 				("%s: and the rest of it stays exactly where it is, unless the guard was the " +
 				"whole of it") % id)
 
@@ -1378,7 +1378,7 @@ func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
 		t.check(not door.is_chatting(), "%s: the hold ends" % id)
 		t.check(stroller.visible, "%s: and she is visible again the same frame" % id)
 		t.check(not door.is_its_guard_inside(), "%s: with the guard back at his post" % id)
-		t.check(not door.is_suppressed_by_its_own_hold(), "%s: and the whole of it drawn" % id)
+		t.check(not EventFootprints.hidden_by_its_hold(door), "%s: and the whole of it drawn" % id)
 
 		door.free()
 		stroller.free()
@@ -1465,7 +1465,7 @@ func _test_the_whole_hold_reads_as_one_move(t) -> void:
 			+ "that is already smoothing the move")
 
 	# **The hut vanishing.** Only the guard goes in with her.
-	t.check(not hut.is_suppressed_by_its_own_hold(), "the hut is still drawn through the hold")
+	t.check(not EventFootprints.hidden_by_its_hold(hut), "the hut is still drawn through the hold")
 	t.check(hut.is_its_guard_inside(), "and its guard is not")
 
 	_advance_hold(manager, stroller, Tuning.CAMERA_EASE_SECONDS)

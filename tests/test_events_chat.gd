@@ -380,7 +380,7 @@ func _test_a_hunting_van_draws_no_victim(t) -> void:
 	instance.free()
 
 ## Anything that stands still is solid at the width it is drawn, and a hunting van stands still:
-## it hunts on foot (`EventDef.hunts_on_foot`, inbox #669 in coral-lark: "Same as the police"), letting its men
+## it hunts on foot (`EventDef.hunts` letting its men out, inbox #669 in coral-lark: "Same as the police"), letting its men
 ## out rather than moving, so its body stays where it is once it has noticed her too.
 func _test_a_hunting_van_stays_solid_once_it_notices_her(t) -> void:
 	var hot := _hunting_abduction()

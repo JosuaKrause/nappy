@@ -109,11 +109,15 @@ src/
 	event_def.gd          authored event data
 	notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
 	pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
+	hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
 	day_switch.gd         how a row is sited and noticed from the day after its first appearance
 	on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
 	aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
 	vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
 	abduction_spec.gd     the unmarked van's take of a bystander
+	event_footprints.gd   where a row's pictures and body stand, off the pictures themselves: the
+	                      box it draws, all it can put on the screen, its solid footprint and its
+	                      spine, the roadblock guard's post, a warning's picture, its hold's hiding
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
@@ -176,12 +180,13 @@ src/
 	                      days 15 and 16, are each one of these
 	day_controller.gd     the clock, the two phases, the four ways a day ends, handed the day's
 	                      spec: her front door, the building's service exit or the city's two
-	                      ways out is its goal
+	                      ways out is its goal; ticked by `main` on the walk's physics tick
 	loss_cause.gd         what ended a hard-fail or crying day: pure rules over plain values, no
 	                      nodes and no globals; `DayDirector` reads the world and hands them in
   resistance/
 	resistance_director.gd  places the day's contact; the guard and the deadline; activates a
-	                         perform step the moment the mark that unlocks it is touched
+	                         perform step the moment the mark that unlocks it is touched; ticked
+	                         by `main` on the walk's physics tick, as the day's clock is
 	resistance_steps.gd     the calendar: a mark and the perform step it unlocks share one day,
 	                         plus the finale
 	contact_point.gd        touch to complete — a chalk mark, a task's own event instance, or a

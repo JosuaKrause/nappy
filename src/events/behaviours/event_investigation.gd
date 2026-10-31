@@ -1,6 +1,6 @@
 class_name EventInvestigation
 extends EventBehaviour
-## **A vehicle that investigates** (`EventDef.investigates`): while it waits, a car drives its route,
+## **A vehicle that investigates** (`EventDef.investigates()`): while it waits, a car drives its route,
 ## and from the frame she is within its notice along a clear line it has seen her. It stops — where
 ## it is, on its route — as soon as its body is clear of every junction box, and owes the men it
 ## lets out; it stands while they are out, and once every one is back in it is done: a car drives on
@@ -14,7 +14,7 @@ const JUNCTION_SAMPLES := 8
 ## Whether it has noticed her along a clear line, from that frame on — its notice waits until it
 ## has also stopped, which a car with its body in a junction box does only once the body is clear.
 var _seen_her := false
-## How many men it has stopped for and still owes: `EventDef.lets_out` from the frame it stops until
+## How many men it has stopped for and still owes: `EventDef.lets_out()` from the frame it stops until
 ## `EventManager` has put them all down (`let_out()`).
 var _officers_owed := 0
 ## The men it let out, once they are in the world. **Not carried across a stream-out**: they are
@@ -55,7 +55,7 @@ func _investigate() -> void:
 			_seen_her = true
 		if _seen_her and not _stands_in_a_junction():
 			event._notice_her()
-			_officers_owed = def.lets_out
+			_officers_owed = def.lets_out()
 		return
 	if _officers_owed > 0:
 		return
@@ -95,7 +95,7 @@ func _stands_in_a_junction() -> bool:
 	var def: EventDef = event.def
 	if def.vehicle == null or def.shape == null:
 		return false
-	var axis: Vector2 = event._solid_axis()
+	var axis: Vector2 = event.solid_axis()
 	var reach := def.shape.reach()
 	var map: WorldMap = event._map
 	for i in JUNCTION_SAMPLES + 1:

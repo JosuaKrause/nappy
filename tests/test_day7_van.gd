@@ -145,7 +145,7 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 				% [seed_value, offset])
 		# What it draws, where it is drawn, against the camera's view as it leads her
 		# (`Stroller.CAMERA_LOOK_AHEAD` along her heading, `Stroller.OBLIQUE_Y` of it up or down).
-		var box := EventInstance.footprint_of(plan.def)
+		var box := EventFootprints.footprint_of(plan.def)
 		var drawn := Rect2(where_sited + box.position, box.size)
 		var lead := Vector2(heading_at_siting.x, heading_at_siting.y * Stroller.OBLIQUE_Y) \
 				* Stroller.CAMERA_LOOK_AHEAD
@@ -187,7 +187,7 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 ## **No part of the route van is in the camera's view the frame it is created** ("Nothing may be
 ## seen to appear", `docs/EVENTS.md`): asked of `WalkSiting.ahead_on_her_street()` directly, from
 ## every third cell of the day's longest route with her walking it either way, its drawing
-## (`EventInstance.footprint_of()`, where it is drawn round its feet) against the 640x360 view led
+## (`EventFootprints.footprint_of()`, where it is drawn round its feet) against the 640x360 view led
 ## `Stroller.CAMERA_LOOK_AHEAD` along her heading as the camera leads her.
 func _test_the_van_is_sited_wholly_out_of_the_camera_view(t) -> void:
 	var seed_value: int = SEEDS[0]
@@ -201,7 +201,7 @@ func _test_the_van_is_sited_wholly_out_of_the_camera_view(t) -> void:
 	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
 	var siting: EventScheduler.WalkSiting = city.events.ahead._siting
 	var def := EventCatalogue.by_id(ROW)
-	var box := EventInstance.footprint_of(def)
+	var box := EventFootprints.footprint_of(def)
 	var path := _the_longest_route(city)
 	var sited := 0
 	var seen: Array[String] = []

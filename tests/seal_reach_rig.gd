@@ -27,7 +27,7 @@ static func body_overhang(map: CityMap, ground: WalkGround,
 ## How far the ground `plan`'s picture is drawn over reaches into a building tile, in px.
 static func drawing_overhang(map: CityMap, plan: EventScheduler.Planned) -> float:
 	var def := plan.def
-	var box := EventInstance.box_of(def)
+	var box := EventFootprints.box_of(def)
 	if not box.has_area():
 		return 0.0
 	var at: Vector2 = plan.path[0] if plan.path.size() > 0 else plan.position

@@ -540,7 +540,7 @@ tunnel, 42.1s to spare`, written before the run's own `ending` line.
 predicate all three losing results — crying, a hard fail, the clock reaching zero — consult before
 ending the day, so none of them do; a won day still ends normally. **It also stands the day clock
 and the excitement meter still**, rather than letting the day run its noisy, darkening course with
-nothing able to end it: `DayController._process()` skips the countdown outright, so
+nothing able to end it: `DayController.tick()` skips the countdown outright, so
 `fraction_remaining()` — and the light it drives — stays wherever the day started, and `Baby.
 _update_excitement()` never adds to the meter, though decay may still run it down. *(2026-09-11,
 overturning the flag's own first build the same evening, [PLAYTEST-57](playtests/PLAYTEST-57.md):

@@ -5,7 +5,7 @@ extends Resource
 ## the numbers here and the row's notice (`NoticeSpec`).
 ##
 ## A row has a `PursuitSpec` only when it pursues; one that only pursues once it hunts (the
-## roadblock, `EventDef.hunts_as`) carries the spec its hunting copy takes, and `EventDef.at_heat()`
+## roadblock, `EventDef.hunts`) carries the spec its hunting copy takes, and `EventDef.at_heat()`
 ## gives that copy its speed and its notice.
 
 ## How a pursuer's chase begins.

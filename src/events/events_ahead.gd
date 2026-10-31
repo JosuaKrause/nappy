@@ -185,8 +185,7 @@ func send_a_pursuer() -> void:
 		return drawn[0][0]
 	var arrive := func(place: Vector2, standing: Vector2) -> bool:
 		_sent_after_her = _spawner.spawn_warned(def, PackedVector2Array([place]))
-		var who := "a guardsman" if def.look == EventDef.Look.GUARDSMAN_GIVING_CHASE \
-				else "a policeman"
+		var who := "a %s" % def.noun
 		world.trace.note("roll", "poster tear: %s sent after her from %s, %.0fpx off (%s)"
 				% [who, RunTrace.tile(world.map.world_to_tile(place)),
 				standing.distance_to(place), "a clear run at her" if drawn[0][1]
@@ -230,9 +229,8 @@ func let_the_officers_out() -> void:
 			vehicle.let_out(officer)
 		# Under `ahead`: men put down from her walk, where she stood — no seed says where a vehicle
 		# noticed her. See docs/TELEMETRY.md, "The entry kinds".
-		var guards := def.look == EventDef.Look.GUARDSMAN_GIVING_CHASE
-		var who := ("a guardsman gets out" if guards else "a policeman gets out") if owed == 1 \
-				else "%d %s get out" % [owed, "guardsmen" if guards else "policemen"]
+		var who := "a %s gets out" % def.noun if owed == 1 \
+				else "%d %s get out" % [owed, def.noun_plural]
 		world.trace.note("ahead", "%s at %s, %.0fpx from her, and %s"
 				% ["an investigating patrol stops" if vehicle.def.vehicle != null
 						else "%s, standing," % vehicle.def.id,

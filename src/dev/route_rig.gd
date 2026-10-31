@@ -769,7 +769,7 @@ func _planned_parts(plan: EventScheduler.Planned) -> Array:
 		var offset := piece.offset_for(vertical)
 		centres.append(at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)))
 		shapes.append(piece.shape)
-	return [centres, shapes, EventSpawner._body_axis(_city.map, plan.def, at, plan.facing)]
+	return [centres, shapes, EventFootprints.body_axis(_city.map, plan.def, at, plan.facing)]
 
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
@@ -1475,7 +1475,7 @@ func _begin_leg(target_world: Vector2) -> void:
 ## Elapsed day time, in simulated seconds — this rig's own `_elapsed_seconds`, not
 ## `_day.time_total - _day.time_remaining`. The two agree while the day is played straight, since
 ## both are the same sum of physics deltas since the day began; they part company under
-## `--invincible`, which `DayController._process()` (`src/day/day_controller.gd`) stands still on
+## `--invincible`, which `DayController.tick()` (`src/day/day_controller.gd`) stands still on
 ## purpose — *"the clock never moves"*, so the capture it exists for never runs out of day — which
 ## is exactly wrong for the number this class exists to report. A `--route` run *under*
 ## `--invincible` (the only way to measure whether a day fits its clock without the meter or an

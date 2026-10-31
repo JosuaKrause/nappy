@@ -699,7 +699,9 @@ func _test_no_interior_exists_outside_a_debug_build(t: Node) -> void:
 
 ## `GameState.header.play_ticks` has exactly one owner: `main._physics_process()`, which counts a tick
 ## only once a day is actually running, walking or returning, with the tree unpaused — and counts
-## ticks, never a drawn frame's length, so a long frame adds no play time (inbox #866 in minty-dolphin). Same rig as
+## ticks, never a drawn frame's length, so a long frame adds no play time (inbox #866 in minty-dolphin) — and the same
+## tick runs the day's countdown (`DayController.tick()`) and the resistance's clocks
+## (`ResistanceDirector.tick()`), so a long drawn frame moves no clock beyond the ticks that ran. Same rig as
 ## `_test_the_readout_is_not_assembled_outside_a_debug_build` above — city, stroller, baby, day
 ## controller and hud, all built by hand rather than through `_ready()`, since this file's own
 ## class doc explains why `main` is never added to the tree here either.
@@ -741,12 +743,17 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	t.add_child(day)
 	day.set_process(false)
 	day.setup(city.map, stroller, GameState)
-	day.phase = GameEnums.DayPhase.WALKING
+	day.start(300.0)
 
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
 	hud.use_run(GameState)
 	t.add_child(hud)
 	hud.set_process(false)
+
+	var resistance := ResistanceDirector.new()
+	t.add_child(resistance)
+	resistance.set_process(false)
+	resistance.setup(city, city.map)
 
 	var main: Node2D = MAIN_SCRIPT.new()
 	main._status = Label.new()
@@ -755,6 +762,7 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	main._baby = baby
 	main._day = day
 	main._hud = hud
+	main._resistance = resistance
 	main._flow.mode = RunFlow.Mode.WALKING
 
 	const TICK := 1.0 / 30.0
@@ -767,15 +775,40 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 
 	# A drawn frame five seconds long, the lag spike a slow machine draws: the frame's own length
 	# adds nothing. Only the ticks the engine steps count, so the clock is where the ticks left it.
+	t.check(is_equal_approx(day.time_remaining, 300.0 - TICK)
+			and is_equal_approx(resistance._happenings._elapsed, TICK),
+			"and the day's countdown and the resistance's clock by the same tick (%.4f, %.4f)"
+			% [day.time_remaining, resistance._happenings._elapsed])
 	main._process(5.0)
+	# Each clock's own node is driven with the long frame too: `main._process()` never ran either
+	# clock, so only their own frame hooks can show one that counts a drawn frame's length.
+	day._process(5.0)
+	t.check(not resistance.has_method("_process"),
+			"the resistance director has no frame hook of its own to run a clock from")
+	var escape_day := DayController.new()
+	t.add_child(escape_day)
+	escape_day.set_process(false)
+	escape_day.setup(city.map, stroller, GameState)
+	escape_day.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+	escape_day.start(30.0)
+	escape_day._process(5.0)
+	t.check(is_equal_approx(escape_day.time_remaining, 30.0),
+			"and a long drawn frame moves the escape's countdown not at all (%.4f)"
+			% escape_day.time_remaining)
+	escape_day.queue_free()
 	t.check(GameState.header.play_ticks == 1,
 			"a long drawn frame adds no play time beyond the ticks that ran (%d)"
 			% GameState.header.play_ticks)
+	t.check(is_equal_approx(day.time_remaining, 300.0 - TICK)
+			and is_equal_approx(resistance._happenings._elapsed, TICK),
+			"and moves neither the day's countdown nor the resistance's clock (%.4f, %.4f)"
+			% [day.time_remaining, resistance._happenings._elapsed])
 
 	# The pause screen: phase stays WALKING (a day in progress, Esc pressed), the tree pauses.
 	t.get_tree().paused = true
 	main._physics_process(TICK)
-	t.check(GameState.header.play_ticks == 1, "a paused tick does not")
+	t.check(GameState.header.play_ticks == 1 and is_equal_approx(day.time_remaining, 300.0 - TICK),
+			"a paused tick does not, nor does the day's countdown run")
 
 	# The day summary: `DayController._end()` sets `phase` to `OVER` before the summary ever
 	# pauses the tree, so this is the shape a real day-end tick actually arrives in.
@@ -811,6 +844,7 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 	main._status.free()
 	main.free()
 	hud.free()
+	resistance.free()
 	day.free()
 	stroller.free()
 	city.free()

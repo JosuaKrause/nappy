@@ -47,8 +47,8 @@ func send_off(side: int) -> void:
 		gone = true
 		return
 	var vertical: bool = event._spread_vertical
-	at = event.body_position() + EventInstance.guard_post_offset(vertical, side)
-	heading = EventInstance.guard_post_heading(vertical, side)
+	at = event.body_position() + EventFootprints.guard_post_offset(vertical, side)
+	heading = EventFootprints.guard_post_heading(vertical, side)
 	var her: Vector2 = event.player_at
 	if her != Vector2.INF and not her.is_equal_approx(at):
 		heading = (at - her).normalized()

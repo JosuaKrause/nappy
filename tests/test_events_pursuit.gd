@@ -604,7 +604,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 			bike.step(STEP)
 			since += STEP
 			edge._measure(STEP)
-			var box := EventInstance.footprint_of(def)
+			var box := EventFootprints.footprint_of(def)
 			if into_sight == INF and manager.visible_view().sees_any(
 					Rect2(bike.global_position + box.position, box.size)):
 				into_sight = since

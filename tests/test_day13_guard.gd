@@ -152,7 +152,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	# The band out of her view: on the arrow's next choice he is in it.
 	_view = Rect2()
 	director._arrow_clock = ResistanceDirector.ARROW_RETARGET_SECONDS
-	director._process(0.0)
+	director.tick(0.0)
 	_check_he_guards(t, director, other, player, ringed, "the roadblock she approaches")
 
 	# And again, however often she changes target.
@@ -763,7 +763,7 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 			and away <= widest + Tuning.TILE_SIZE,
 			"seed %d: close by, %.0fpx from where she read the mark (%.0f-%.0fpx)"
 			% [seed_value, away, ResistanceDirector.NEAR_THE_MARK, widest])
-	var box := EventInstance.footprint_of(roadblock.def)
+	var box := EventFootprints.footprint_of(roadblock.def)
 	t.check(not _view.intersects(Rect2(roadblock.global_position + box.position, box.size)),
 			"seed %d: no part of it is in her view when it is put there" % seed_value)
 	t.check(map.is_obstructed(map.world_to_tile(roadblock.body_position())),

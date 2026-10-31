@@ -171,7 +171,7 @@ func _move_the_band(redraw := false) -> void:
 	if not _band.global_position.is_equal_approx(at):
 		_band.global_position = at
 	_band.visible = not (event.skip_draw or event.is_finished
-			or event.is_suppressed_by_its_own_hold())
+			or EventFootprints.hidden_by_its_hold(event))
 	if redraw:
 		_band.queue_redraw()
 
@@ -186,11 +186,11 @@ func _roadblock_band_at() -> Vector2:
 ## hysteresis for the one heading the event carries — the chaser's, once there is one — and a
 ## second figure turned another way must not reset it on every draw.
 func _draw_posted_guard(canvas: CanvasItem, band_at: Vector2, side: int) -> void:
-	var feet := band_at + EventInstance.guard_post_offset(event.runs_vertically(), side)
+	var feet := band_at + EventFootprints.guard_post_offset(event.runs_vertically(), side)
 	_draw_shadow(canvas, feet, EventPictures.GUARD_SHADOW_RADIUS)
 	var kept := _view_sector
 	_draw_eight_view(EventPictures.GUARD_STANDING_BY_VIEW,
-			EventInstance.guard_post_heading(event.runs_vertically(), side), canvas,
+			EventFootprints.guard_post_heading(event.runs_vertically(), side), canvas,
 			false, {}, false, feet)
 	_view_sector = kept
 
@@ -259,7 +259,7 @@ func _move_the_far_guard() -> void:
 	if not _far_node.is_inside_tree():
 		return
 	_far_node.visible = not (event.skip_draw or event.is_finished
-			or event.is_suppressed_by_its_own_hold())
+			or EventFootprints.hidden_by_its_hold(event))
 	_far_node.queue_redraw()
 
 func _release_the_far_guard() -> void:

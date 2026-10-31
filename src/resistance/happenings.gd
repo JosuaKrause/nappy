@@ -131,7 +131,8 @@ func start_day(day: int, with_its_events := true) -> void:
 	if day >= MARKET_DAY and _city:
 		_city.board_neighbor_window()
 
-## Once a frame, from the director: brings in whatever the day is waiting to bring in. `her` is her
+## Once a tick the walk stepped, from the director (`ResistanceDirector.tick()`): brings in
+## whatever the day is waiting to bring in. `her` is her
 ## position, `Vector2.INF` with no player, and `velocity` hers; `shows(row, feet)` is whether any
 ## of what `row` draws, standing at `feet`, would be in the camera's whole view, covered corners
 ## included (the director's `_drawing_shows()`, since what it decides is where something appears),
@@ -179,7 +180,7 @@ func _plan_the_raid() -> void:
 ## her door and none of it would be on screen — each van's and the patrol car's whole drawing, at
 ## both ends of the car's beat, asked through `shows` — *nothing is seen to appear* — so it is
 ## waiting at home rather than arriving in front of her. Cold, whatever the run's heat: a heated
-## `night_raid` lets its men out after her at `Tuning.HEAT_HUNTS_LEVEL` (`EventDef.hunts_on_foot`),
+## `night_raid` lets its men out after her at `Tuning.HEAT_HUNTS_LEVEL` (`EventDef.hunts`),
 ## and men sent after her from her own door would make the doorstep the one place she is hunted,
 ## which is the opposite of what the raid was decided as.
 func _maybe_raid(her: Vector2, shows: Callable) -> void:
@@ -410,7 +411,7 @@ func send_the_column(her: Vector2) -> PendingWarning:
 	var bottom := _map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
 	# About as far up the lane as the front truck is created, just out of sight: the view's half
 	# height and the truck's own picture.
-	var lead := PendingWarning.least_distance() + EventInstance.box_of(def).size.y
+	var lead := PendingWarning.least_distance() + EventFootprints.box_of(def).size.y
 	var past := Tuning.OUT_OF_SIGHT + def.field_reach()
 	# From the end with room for its place behind her and a stop beyond her, when only one end has
 	# it; with neither, from the end with more road behind her. The spine leaves the map by a tunnel

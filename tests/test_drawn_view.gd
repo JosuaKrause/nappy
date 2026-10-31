@@ -278,8 +278,8 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 				Rect2(fire.global_position + drawn.position, drawn.size))
 		if on_screen and not asked:
 			shown_unasked += 1
-		var point := Rect2(fire.global_position + EventInstance.footprint_of(def).position,
-				EventInstance.footprint_of(def).size)
+		var point := Rect2(fire.global_position + EventFootprints.footprint_of(def).position,
+				EventFootprints.footprint_of(def).size)
 		if on_screen and not DrawnView.box_of(screen).intersects(point):
 			shown_point_outside += 1
 		left -= 8.0

@@ -1,8 +1,7 @@
 extends RefCounted
 ## `DayController`'s clock: the countdown itself, and how often it tells anyone about it.
 ##
-## `docs/TODO.md`, M124: `_process()` used to emit `EventBus.day_time_changed` every frame, sixty
-## times a second, for a label (`hud.gd`'s `_on_day_time_changed()`) that only reads to the whole
+## `tick()` emits `EventBus.day_time_changed` for a label (`hud.gd`'s `_on_day_time_changed()`) that only reads to the whole
 ## second and only changes its urgency colour at the same boundary. It now emits only when the
 ## whole second actually displayed has changed, which this suite holds from the emitting side —
 ## `hud.gd` itself belongs to a different milestone and is read only.
@@ -12,6 +11,7 @@ func run(t) -> void:
 	_test_a_day_starting_is_its_own_emit(t)
 	_test_invincible_stops_emitting_once_the_first_second_is_told(t)
 	_test_the_escape_clock_moves_every_frame(t)
+	_test_a_drawn_frame_shows_the_escape_clock_between_ticks(t)
 	_test_the_formatters(t)
 	_test_an_escape_section_reads_its_clock_to_the_hundredth(t)
 	_test_a_frozen_escape_clock_stays_silent(t)
@@ -45,7 +45,7 @@ func _test_the_clock_emits_once_per_second_crossed(t) -> void:
 	# A dozen frames, comfortably inside the same whole second (10.5 down to 10.3): nothing to
 	# tell the HUD that it has not already been told.
 	for i in 12:
-		day._process(step)
+		day.tick(step)
 	t.check(emits[0] == 0,
 			"frames that stay inside the same whole second do not re-emit (%d emits)" % emits[0])
 
@@ -53,7 +53,7 @@ func _test_the_clock_emits_once_per_second_crossed(t) -> void:
 	# boundary (10 -> 9), comfortably clear of 10.0 and 9.0 either side -- one emit is owed for
 	# it, not one per frame the crossing happened to take.
 	for i in 48:
-		day._process(step)
+		day.tick(step)
 	t.check(emits[0] == 1,
 			"crossing one whole-second boundary is told exactly once (%d emits)" % emits[0])
 
@@ -76,9 +76,9 @@ func _test_a_day_starting_is_its_own_emit(t) -> void:
 	day.free()
 
 ## `--invincible` (`DayController.invincible`) freezes `time_remaining` outright (see
-## `_process()`), so once the first second of a frozen day has been told, the value driving the
+## `tick()`), so once the first second of a frozen day has been told, the value driving the
 ## gate never changes again -- the gate must not re-emit an unchanging number just because
-## `_process()` keeps being called.
+## `tick()` keeps being called.
 func _test_invincible_stops_emitting_once_the_first_second_is_told(t) -> void:
 	var day := _rig(t)
 	day.invincible = true
@@ -90,7 +90,7 @@ func _test_invincible_stops_emitting_once_the_first_second_is_told(t) -> void:
 	day.start(10.0)
 	emits[0] = 0
 	for i in 120:
-		day._process(1.0 / 60.0)
+		day.tick(1.0 / 60.0)
 	t.check(emits[0] == 0,
 			"a frozen clock has nothing new to tell the HUD after its first frame, so it stays " +
 			"silent rather than repeating the same number 120 times (%d emits)" % emits[0])
@@ -110,7 +110,7 @@ func _test_the_escape_clock_moves_every_frame(t) -> void:
 	escape.start(180.0)
 	labels.clear()
 	for i in 10:
-		escape._process(0.016)
+		escape.tick(0.016)
 	t.check(labels.size() == 10,
 			"the escape's clock emits on each of ten frames inside one second (%d)" % labels.size())
 	var distinct := {}
@@ -129,10 +129,47 @@ func _test_the_escape_clock_moves_every_frame(t) -> void:
 	day.start(10.5)
 	emits[0] = 0
 	for i in 10:
-		day._process(0.016)
+		day.tick(0.016)
 	t.check(emits[0] == 0, "a day's controller stays silent inside one second (%d)" % emits[0])
 	EventBus.day_time_changed.disconnect(count)
 	day.free()
+
+## **Between two ticks a drawn frame shows the escape's hundredths a fraction of a tick on**
+## (`DayController._process()`): the tick's countdown advanced by the physics interpolation
+## fraction, never past where the next tick puts it, and the countdown itself untouched. A day's
+## whole-second clock and a frozen escape clock are told nothing by a drawn frame.
+func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t) -> void:
+	var tick := 1.0 / Engine.physics_ticks_per_second
+	var shown := []
+	var on_emit := func(remaining: float, _total: float) -> void:
+		shown.append(remaining)
+	EventBus.day_time_changed.connect(on_emit)
+	var escape := _rig(t)
+	escape.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+	escape.start(180.0)
+	escape.tick(tick)
+	var after_the_tick := escape.time_remaining
+	shown.clear()
+	escape._process(5.0)
+	t.check(shown.size() == 1 and shown[0] <= after_the_tick
+			and shown[0] > after_the_tick - tick - 0.0001,
+			"a drawn frame shows the countdown between this tick and the next (%s, %.4f)"
+			% [shown, after_the_tick])
+	t.check(is_equal_approx(escape.time_remaining, after_the_tick),
+			"and a five-second drawn frame moves the countdown itself not at all")
+	escape.free()
+	for frozen in [false, true]:
+		var day := _rig(t)
+		day.invincible = frozen
+		if frozen:
+			day.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
+		day.start(180.0)
+		shown.clear()
+		day._process(0.016)
+		t.check(shown.is_empty(), "a %s is told nothing by a drawn frame (%s)"
+				% ["frozen escape clock" if frozen else "day's clock", shown])
+		day.free()
+	EventBus.day_time_changed.disconnect(on_emit)
 
 func _test_the_formatters(t) -> void:
 	t.check(GameState.format_clock_hundredths(179.43) == "2:59.43",
@@ -165,7 +202,7 @@ func _test_a_frozen_escape_clock_stays_silent(t) -> void:
 	escape.start(180.0)
 	emits[0] = 0
 	for i in 10:
-		escape._process(0.016)
+		escape.tick(0.016)
 	t.check(emits[0] == 0, "a frozen escape clock is silent (%d emits)" % emits[0])
 	EventBus.day_time_changed.disconnect(count)
 	escape.free()
@@ -184,7 +221,7 @@ func _test_each_section_is_won_at_its_own_goal(t) -> void:
 	building.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
 	building.day_finished.connect(on_finished)
 	building.start(180.0)
-	building._process(0.016)
+	building.tick(0.016)
 	t.check(results.is_empty(), "the building is not won by standing anywhere (%s)" % [results])
 	building.reach_the_exit()
 	t.check(results == [GameEnums.DayResult.WON] and not building.is_running(),
@@ -199,11 +236,11 @@ func _test_each_section_is_won_at_its_own_goal(t) -> void:
 	city.day_finished.connect(on_finished)
 	city.start(180.0)
 	city.reach_the_exit()
-	city._process(0.016)
+	city.tick(0.016)
 	t.check(results.is_empty(), "the city is won by neither its building's exit nor standing away "
 			+ "from its two ways out (%s)" % [results])
 	city._player.global_position = Vector2(-1000.0 + Tuning.FINALE_EXIT_REACH - 1.0, 0.0)
-	city._process(0.016)
+	city.tick(0.016)
 	t.check(results == [GameEnums.DayResult.WON] and city.exit_reached == CityEdge.Kind.BRIDGE,
 			"at the bridge deck, awake, the city section is won by the bridge (%s, %d)"
 			% [results, city.exit_reached])
@@ -214,6 +251,6 @@ func _test_each_section_is_won_at_its_own_goal(t) -> void:
 	day.day_finished.connect(on_finished)
 	day.start(210.0)
 	day.reach_the_exit()
-	day._process(0.016)
+	day.tick(0.016)
 	t.check(results.is_empty(), "a day is won by neither (%s)" % [results])
 	day.free()

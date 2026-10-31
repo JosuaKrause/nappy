@@ -505,7 +505,7 @@ func _test_wall_crossing_posts_four_guards(t) -> void:
 ## one that would stand inside it. *(2026-09-25, the player, on a walled alley's own two guards
 ## per mouth: "one guard in alleys on each end.")* Checked geometrically rather than by trusting
 ## the sign convention `RegionPlanner._alley_mouth_street_side()` reads out of `at_start`: the
-## guard's own feet (`EventInstance.guard_post_offset()`, at the mouth's own `_spread_is_vertical`
+## guard's own feet (`EventFootprints.guard_post_offset()`, at the mouth's own `_spread_is_vertical`
 ## reading) fall on the far side of the alley's own long-axis extent from its interior, at both
 ## mouths.
 func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
@@ -536,7 +536,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
 					if sides.is_empty():
 						continue
 					var spread_vertical := EventInstance._spread_is_vertical(map, body.position)
-					var offset := EventInstance.guard_post_offset(spread_vertical, sides[0])
+					var offset := EventFootprints.guard_post_offset(spread_vertical, sides[0])
 					var guard_pos := body.position + offset
 					var guard_along: float = guard_pos.y if vertical else guard_pos.x
 					t.check(guard_along < low or guard_along > high,

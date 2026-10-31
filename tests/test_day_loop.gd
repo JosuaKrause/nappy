@@ -59,7 +59,7 @@ func _teardown() -> void:
 	_player.free()
 
 func _tick(seconds: float) -> void:
-	_day._process(seconds)
+	_day.tick(seconds)
 
 func _at_home() -> void:
 	_player.global_position = _map.home_world_position()

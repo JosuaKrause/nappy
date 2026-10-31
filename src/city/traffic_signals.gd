@@ -33,8 +33,11 @@ extends RefCounted
 ## green — it is a clearance period, so the crossing arm stays red through it.
 enum Phase { MAIN_GREEN, MAIN_AMBER, SIDE_GREEN, SIDE_AMBER }
 
-## Simulated seconds since the run began. Advanced by `City`, which is also what pauses it: the
-## lights stop with everything else behind the pause screen.
+## Simulated seconds since the day began (`Crowd.start_day()` sets it back to zero). **Counted in
+## physics ticks**: advanced by the crowd's own physics tick (`Crowd._physics_process()`) by the
+## tick's fixed length, so a frame drawn late runs the lights only by the ticks the engine stepped
+## and the green wave keeps its timing in ticks on every machine; the lights stop with everything
+## else behind the pause screen.
 var elapsed := 0.0
 
 ## Whether the lights have power. The blackout (`Blackout`) turns it off, and with it every light on

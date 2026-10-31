@@ -98,23 +98,14 @@ static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 	# nobody else's: a walker walks the street up to the body and turns where it stands, so the
 	# record has to say where the body is. It is also what keeps a crash walkable on its pavements,
 	# since a row solid in parts records its pieces and the two cars are the only pieces there are.
-	var axis := _body_axis(map, def, placed, facing)
+	var axis := EventFootprints.body_axis(map, def, placed, facing)
 	# Which way round a piece's own offset is laid is `EventInstance.spread_at()`'s question, and
 	# it is asked of the placed position for the same reason the axis is: a piece offset the wrong
 	# way is a body recorded across the street from the car it belongs to.
 	var spread_vertical := EventInstance._spread_is_vertical(map, placed)
 	# The footprint the instance builds its physics body from
-	# (`EventInstance.solid_footprint_of()`), so the record and the body are one solid.
-	return EventInstance.solid_footprint_of(def, axis, spread_vertical).tiles(placed)
-
-## The ground-plane direction a sited body's spine lies along — `EventInstance._solid_axis()` for a
-## body that does not exist yet, off the same two statics that instance would read.
-static func _body_axis(map: WorldMap, def: EventDef, placed: Vector2, facing: Vector2) -> Vector2:
-	if def.has_a_spread or def.look == EventDef.Look.PROTEST \
-			or def.look == EventDef.Look.FIREFIGHT:
-		return Vector2.DOWN if EventInstance._spread_is_vertical(map, placed) else Vector2.RIGHT
-	return Vector2.RIGHT if EventInstance._stationary_vehicle_uses_side(def.look, map, placed,
-			facing) else Vector2.DOWN
+	# (`EventFootprints.solid_footprint_of()`), so the record and the body are one solid.
+	return EventFootprints.solid_footprint_of(def, axis, spread_vertical).tiles(placed)
 
 ## Adds an event outside the day's plan and outside the streaming, at a path the caller chose.
 ## The director's cats arrive this way, and so does the resistance's robbery.
@@ -168,7 +159,7 @@ var _pelican_bag_seed := 0
 ## rebuilt from it. `--pelican` (`PelicanRig.ALWAYS`, set by the city) answers yes for every one
 ## without changing what is drawn.
 func rolls_a_pelican(def: EventDef) -> bool:
-	if def.look != EventDef.Look.CYCLIST:
+	if not def.may_be_a_pelican:
 		return false
 	var drew: bool = _the_pelican_bag().draw()
 	world.run.pelican.draws += 1
@@ -322,7 +313,7 @@ func spawn_warned(def: EventDef, path: PackedVector2Array, pelican := false) -> 
 	instance.came_under_a_warning = true
 	if def.pursuit == null or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.resume(age_when_warned(def), 0.0)
-	if pelican and def.look == EventDef.Look.CYCLIST:
+	if pelican and def.may_be_a_pelican:
 		_ride_as_a_pelican(instance)
 	return instance
 

@@ -44,7 +44,7 @@ var _sceneries: Array[EventScenery] = []
 func _update_scenery() -> void:
 	if _sceneries.is_empty():
 		return
-	var shown := not (event.skip_draw or event.is_finished or event.is_suppressed_by_its_own_hold())
+	var shown := not (event.skip_draw or event.is_finished or EventFootprints.hidden_by_its_hold(event))
 	var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD \
 			if event.def.look == EventDef.Look.CAR_ACCIDENT \
 			else EventPictures.BURST_MAIN_SPLASH_PERIOD
@@ -126,7 +126,7 @@ func _spread_slice_count(segment_picture: String) -> int:
 ## covers 11px either side of its origin, as `drawn_box()` reserves.
 func _spread_run() -> PackedVector2Array:
 	if event.def.obstructs_radius > 0.0 and event.def.shape != null:
-		return DrawLayer.run_of(EventInstance.solid_footprint_of(event.def, event.spread_axis(),
+		return DrawLayer.run_of(EventFootprints.solid_footprint_of(event.def, event.spread_axis(),
 				event.runs_vertically()),
 				Vector2.ZERO)
 	return PackedVector2Array([event.spread_at(-11.0), event.spread_at(11.0)])
@@ -298,7 +298,7 @@ func _move_the_slices(redraw := false) -> void:
 			_attach_the_slices()
 			return
 	var at := event.body_position()
-	var shown := not (event.skip_draw or event.is_finished or event.is_suppressed_by_its_own_hold())
+	var shown := not (event.skip_draw or event.is_finished or EventFootprints.hidden_by_its_hold(event))
 	for slice in _slices:
 		var feet := at + _slice_feet[slice.index]
 		if not slice.global_position.is_equal_approx(feet):

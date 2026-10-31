@@ -401,7 +401,7 @@ const HEAT_PRESSES_POPULATION := 1.6
 ## one the player feels without seeing anything change, so it is the seasoning rather than the meal.
 const HEAT_PRESSES_INTENSITY := 1.35
 ## The progress at which a pressing row stops merely running its route and starts investigating —
-## stopping near her and letting a pursuer on foot out (`EventDef.investigates`). As close to half
+## stopping near her and letting a pursuer on foot out (`EventDef.investigates()`, read off its `HuntSpec`). As close to half
 ## way through `RESISTANCE_GOAL` as a whole task lets it land (`roundi(5 / 2.0)`), so the first half
 ## of the subquest is the city being *denser* and the second is it being *interested* — two
 ## escalations rather than one continuous number nobody can name the moment of.

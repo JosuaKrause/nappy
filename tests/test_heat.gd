@@ -73,7 +73,7 @@ func _test_the_ladder_has_a_top(t) -> void:
 
 ## The lethal rung: below its own threshold a `HUNTS` row is untouched, and at or above it, it
 ## pursues, keeps `hard_fail`, and its derived numbers satisfy the pursuit contract measured from
-## its own data — or, a row that hunts on foot (`EventDef.hunts_on_foot`, the two vans), it lets
+## its own data — or, a row that hunts on foot (`EventDef.hunts` letting men out, the two vans), it lets
 ## its men out instead, never a pursuer itself and as lethal as it is cold, its men's stand-off
 ## inside its notice and their catch ending the day. Checked over the response rather than over the one row that carries it, the same
 ## shape `_test_the_ladder_has_a_top` uses, so a second `HUNTS` row added later inherits the promise
@@ -87,8 +87,8 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
 			var should_hunt := level >= Tuning.HEAT_HUNTS_LEVEL
-			if def.hunts_on_foot:
-				t.check(hot.investigates == should_hunt and hot.pursuit == null
+			if def.hunts.lets_out > 0:
+				t.check(hot.investigates() == should_hunt and hot.pursuit == null
 						and hot.hard_fail == def.hard_fail,
 						"'%s' heat %d: it lets its men out iff at or past its own threshold, never "
 						% [def.id, level] + "chasing her itself")
@@ -150,11 +150,11 @@ func _test_the_raid_hunts_past_its_own_threshold(t) -> void:
 		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
 				"heat %d: hunting moves neither population nor intensity" % level)
 		if level < Tuning.HEAT_HUNTS_LEVEL:
-			t.check(not hot.investigates and hot.pursuit == null and not hot.hard_fail
+			t.check(not hot.investigates() and hot.pursuit == null and not hot.hard_fail
 					and hot.duration == cold.duration,
 					"heat %d: below its own threshold the raid is untouched" % level)
 			continue
-		t.check(hot.investigates and hot.lets_out == 2 and hot.pursuit == null and not hot.hard_fail,
+		t.check(hot.investigates() and hot.lets_out() == 2 and hot.pursuit == null and not hot.hard_fail,
 				"heat %d: at or past its threshold the raid's van lets two men out, and never "
 				% level + "chases or kills")
 
@@ -306,7 +306,7 @@ func _test_the_patrol_investigates_past_the_threshold(t) -> void:
 	for level in EventCatalogue.heat_levels():
 		var hot := EventCatalogue.heated(cold, level)
 		var should_investigate := level >= Tuning.HEAT_INVESTIGATES_LEVEL
-		t.check(hot.investigates == should_investigate,
+		t.check(hot.investigates() == should_investigate,
 				"heat %d: the patrol investigates iff it is at or past the threshold" % level)
 		t.check(hot.pursuit == null, "heat %d: and the car itself never pursues her" % level)
 		if should_investigate:
@@ -325,7 +325,7 @@ func _test_the_patrol_investigates_past_the_threshold(t) -> void:
 ## away the moment it started answering to heat.
 func _test_it_patrols_while_it_waits(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
-	t.check(hot.investigates and hot.mobile, "the fully heated patrol is a mobile investigator")
+	t.check(hot.investigates() and hot.mobile, "the fully heated patrol is a mobile investigator")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(hot, path[0], path)
@@ -538,7 +538,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 			guard.step(STEP)
 			t.check(guard.barrier_post.has_left_its_body() and guard.barrier_post.chaser_side() == side,
 					"%s: the guard on her side sets off" % what)
-			var his_post := post + EventInstance.guard_post_offset(vertical, side)
+			var his_post := post + EventFootprints.guard_post_offset(vertical, side)
 			t.check(guard.global_position.is_equal_approx(his_post),
 					"%s: from his own post (%s, the post %s)" % [what, guard.global_position, his_post])
 			t.check(guard.body_position().is_equal_approx(post),

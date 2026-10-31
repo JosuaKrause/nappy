@@ -41,11 +41,11 @@ var _connected := false
 ## (`"%d:%02d" % [int(remaining) / 60, int(remaining) % 60]`) and its urgency colour flips at the
 ## same integer boundary (`remaining < 60.0`, which changes exactly when `int(remaining)` drops
 ## from 60 to 59) — so re-emitting while this has not changed can only ever hand the HUD text and
-## colour it would draw identically to what it drew last time. `-1` so the day's first frame,
+## colour it would draw identically to what it drew last time. `-1` so the day's first tick,
 ## whatever `time_remaining` starts at, always counts as a change.
 var _last_emitted_second := -1
 ## `--invincible`, handed in by whoever builds the day: nothing but a win ends it and its clock
-## stands still. See `_process()` and `_ignores_loss()`.
+## stands still. See `tick()` and `_ignores_loss()`.
 var invincible := false
 
 func setup(map: CityMap, player: Node2D, run: RunState) -> void:
@@ -78,7 +78,13 @@ func fraction_remaining() -> float:
 func is_running() -> bool:
 	return phase != GameEnums.DayPhase.OVER
 
-func _process(delta: float) -> void:
+## **One tick of the day's clock**, run by `main` on every physics tick the walk stepped, the same
+## tick its play time counts (`main._physics_process()`): the countdown, what the HUD is told of it,
+## dusk, and whether she has reached the day's goal. **Frame locked** (inbox #866 in minty-dolphin):
+## it counts the ticks the walk stepped, never a drawn frame's length, so a lag spike slows the
+## clock with the game instead of running it on, and two machines walking the same day read the same
+## time; nothing counts behind a pause, a screen or a load. `delta` is the tick's length.
+func tick(delta: float) -> void:
 	if not is_running():
 		return
 
@@ -92,12 +98,13 @@ func _process(delta: float) -> void:
 	if not invincible:
 		time_remaining -= delta
 	var displayed := maxf(time_remaining, 0.0)
-	# A day's label reads to the whole second and nothing finer, so a frame that has not crossed a
+	# A day's label reads to the whole second and nothing finer, so a tick that has not crossed a
 	# second boundary since the last emit would only hand the HUD the same text and the same
-	# urgency colour it already drew — sixty avoidable emits (and, downstream, sixty format calls
+	# urgency colour it already drew — thirty avoidable emits (and, downstream, thirty format calls
 	# and a `modulate` write) for the one that actually changes anything. A clock that reads to the
-	# hundredth (`DaySpec.clock_hundredths`, the escape's) emits on every frame the countdown moves,
-	# since its label changes on nearly every one *(inbox #746 in woolly-penguin, the player:
+	# hundredth (`DaySpec.clock_hundredths`, the escape's) emits on every tick the countdown moves,
+	# and between ticks on every drawn frame (`_process()`), since its label changes on nearly every
+	# one *(inbox #746 in woolly-penguin, the player:
 	# "escape clocke we can try 100s but it's not going to be much better? framerate is too low? all
 	# of this was on phone.")*; a frozen `invincible` clock never reaches this line's emit twice.
 	var second := int(displayed)
@@ -122,7 +129,20 @@ func _process(delta: float) -> void:
 	if _reached_the_goal():
 		_end(GameEnums.DayResult.WON)
 
-## Whether she is standing on the day's goal this frame — `spec.goal`: her front door with the baby
+## **A drawn frame only shows the escape's hundredths**: between two ticks, a clock that reads to the
+## hundredth (`DaySpec.clock_hundredths`) is told the tick's countdown advanced by how far the frame
+## is into the next tick (`Engine.get_physics_interpolation_fraction()`), so its label moves on every
+## drawn frame as smoothly as the world it is drawn over, never past where the next tick will put it.
+## It changes nothing: the countdown, dusk and the goal are the tick's. A frozen `invincible` clock,
+## a day's whole-second clock and a day that is over are told nothing here.
+func _process(_delta: float) -> void:
+	if not spec.clock_hundredths or invincible or not is_running():
+		return
+	var into_the_tick := Engine.get_physics_interpolation_fraction() \
+			/ Engine.physics_ticks_per_second
+	EventBus.day_time_changed.emit(maxf(time_remaining - into_the_tick, 0.0), time_total)
+
+## Whether she is standing on the day's goal this tick — `spec.goal`: her front door with the baby
 ## asleep, or one of the city's two ways out however the baby is. The building's service exit is
 ## never reached by position here; the building says when she is through it (`reach_the_exit()`).
 func _reached_the_goal() -> bool:

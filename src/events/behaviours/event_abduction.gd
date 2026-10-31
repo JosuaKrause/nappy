@@ -33,7 +33,7 @@ func stop() -> void:
 ## progress is abandoned — no victim is drawn again and nothing is logged.
 func step(_delta: float) -> void:
 	var def: EventDef = event.def
-	if (def.pursuit != null or def.investigates) and not event.is_waiting():
+	if (def.pursuit != null or def.investigates()) and not event.is_waiting():
 		_taken_at = INF
 		return
 	if _taken_at == INF:

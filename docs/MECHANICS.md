@@ -284,7 +284,7 @@ of them still drawn, so a lorry reversing beside them is part of what it costs.
 inside, not the building he works in: a checkpoint that blinks out for two seconds reads as the
 door having been removed rather than as her having gone through it. The one row where the whole
 picture goes is `checkpoint_post`, an alley guard standing alone, since he *is* all of it —
-`EventInstance.is_suppressed_by_its_own_hold()` is that narrower question and the halo gates on it
+`EventFootprints.hidden_by_its_hold()` is that narrower question and the halo gates on it
 too.
 
 **The crowd is held at the same gatehouses, and none of it is her machinery.** *(Playtest 58: "walkers
@@ -1409,6 +1409,20 @@ an ordinary day, `CURFEW_DAY_LENGTH_SECONDS` (180 s) once curfew starts (day 6 o
 at being won in about a third of that.
 Running out is a day loss. The timer is shown as a light-level shift rather than a number,
 with an explicit clock in the HUD corner, `m:ss` through `GameState.format_clock_seconds()`.
+
+**The day's clock is frame locked** (inbox #866 in minty-dolphin): it counts down one 30 Hz physics
+tick at a time, on the same ticks the run clock below counts — a tick on which she walked the day,
+with the tree unpaused and no screen in front of the walk (`DayController.tick()`, run by
+`main._physics_process()`). A frame drawn late adds only the ticks the engine stepped in it, a lag
+spike past the engine's steps per frame slows the clock with the game, and a faster machine reads
+no lower time. The resistance's clocks — a task's deadline, the note's lingering rider, the mark's
+sight dwell, the red arrow's choice and its sweep, the day's happenings and the park cordon — run on
+the same tick (`ResistanceDirector.tick()`), before the day's, as the tree ordered them. The events
+step on every physics tick the city runs, which on a day includes the ticks behind the title screen,
+where the street plays on. The escape's clock,
+which reads to the hundredth, is drawn between two ticks as the tick's countdown advanced by how far
+the frame is into the next one (`Engine.get_physics_interpolation_fraction()`), so its label moves
+on every drawn frame without the countdown itself moving off the tick.
 
 The summary between days (`SummaryModel.day_over()`) names the same clock at the instant the day
 ended, as its own title: a won day reads *"She fell asleep after 1:24."*, a lost day reads its

@@ -280,7 +280,7 @@ func _test_roadblock_guard_stands_clear_of_the_band(t) -> void:
 		t.check(band.size.x > 0.0 and band.size.y > 0.0,
 				"%s, the barrier has a picture to stand clear of (%s)" % [axis, band])
 		for side: int in [-1, 1]:
-			var feet := EventInstance.guard_post_offset(vertical, side)
+			var feet := EventFootprints.guard_post_offset(vertical, side)
 			var guard := Rect2(feet - Vector2(guard_size.x * 0.5, guard_size.y), guard_size)
 			t.check(not guard.intersects(band),
 					"%s, side %d: the guard's picture %s is clear of the barrier's %s"
@@ -288,16 +288,16 @@ func _test_roadblock_guard_stands_clear_of_the_band(t) -> void:
 			var across := feet.x if vertical else feet.y
 			t.check(signf(across) == signf(side),
 					"%s, side %d: he stands on that side of the band (%s)" % [axis, side, feet])
-			var heading := EventInstance.guard_post_heading(vertical, side)
+			var heading := EventFootprints.guard_post_heading(vertical, side)
 			t.check(heading.dot(feet) > 0.0,
 					"%s, side %d: facing out from it (%s)" % [axis, side, heading])
 	# The one who gives chase is the one on her side, across the band; level with its line, south.
-	t.check(EventInstance._guard_side_toward(false, Vector2(30.0, -200.0)) == -1
-			and EventInstance._guard_side_toward(false, Vector2(-30.0, 200.0)) == 1
-			and EventInstance._guard_side_toward(true, Vector2(-200.0, 30.0)) == -1
-			and EventInstance._guard_side_toward(true, Vector2(200.0, -30.0)) == 1,
+	t.check(EventFootprints.guard_side_toward(false, Vector2(30.0, -200.0)) == -1
+			and EventFootprints.guard_side_toward(false, Vector2(-30.0, 200.0)) == 1
+			and EventFootprints.guard_side_toward(true, Vector2(-200.0, 30.0)) == -1
+			and EventFootprints.guard_side_toward(true, Vector2(200.0, -30.0)) == 1,
 			"the chaser is the guard on whichever side of the band she is, across it")
-	t.check(EventInstance._guard_side_toward(false, Vector2(170.0, 0.0)) == 1,
+	t.check(EventFootprints.guard_side_toward(false, Vector2(170.0, 0.0)) == 1,
 			"and level with the band's own line it is the camera-facing south")
 
 ## **The barrier's picture covers the ground its body closes, on both axes, and no more.**

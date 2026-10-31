@@ -15,7 +15,7 @@ extends RefCounted
 ## ahead of her, and how near her own later walk ever came to it; whether it was ever inside her view
 ## (`Tuning.VIEW_HALF_EXTENT` round her, the player's unrotated screen); and, where it was not, why:
 ## never sited, sited past where she stopped walking, or sited off the way she then walked. Of each
-## van put on her route, too: whether any of what it draws (`EventInstance.footprint_of()`) was in
+## van put on her route, too: whether any of what it draws (`EventFootprints.footprint_of()`) was in
 ## the camera's view, led `Stroller.CAMERA_LOOK_AHEAD` along her heading, the moment it was put
 ## there; whether its tile carries one of the day's routes (`Corridor.carries_a_route()`); and
 ## whether her later walk passed within its body and hers (`obstructs_radius` plus
@@ -168,7 +168,7 @@ class Walk extends RefCounted:
 				her_at_siting = player.global_position
 				heading_at_siting = player.velocity.normalized()
 				ahead_at_siting = van.position.distance_to(player.global_position)
-				var box := EventInstance.footprint_of(van.def)
+				var box := EventFootprints.footprint_of(van.def)
 				var lead := Vector2(heading_at_siting.x, heading_at_siting.y * Stroller.OBLIQUE_Y) \
 						* Stroller.CAMERA_LOOK_AHEAD
 				var view := Rect2(player.global_position + lead - Tuning.VIEW_HALF_EXTENT,

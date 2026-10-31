@@ -23,7 +23,7 @@ static func compose(event: EventInstance, row: EventDef) -> Array[EventBehaviour
 	if row.flock_size > 0:
 		event.flock = EventFlock.new()
 		_add(out, event, event.flock)
-	if row.investigates:
+	if row.investigates():
 		event.investigation = EventInvestigation.new()
 		_add(out, event, event.investigation)
 	if row.pursuit != null:
@@ -34,10 +34,10 @@ static func compose(event: EventInstance, row: EventDef) -> Array[EventBehaviour
 	if row.leaves_its_body():
 		event.barrier_post = EventBarrierPost.new()
 		_add(out, event, event.barrier_post)
-	if row.notice != null and row.pursuit == null and not row.investigates:
+	if row.notice != null and row.pursuit == null and not row.investigates():
 		event.notice_run = EventNoticeRun.new()
 		_add(out, event, event.notice_run)
-	if row.mobile and not row.investigates and row.pursuit == null and row.notice == null:
+	if row.mobile and not row.investigates() and row.pursuit == null and row.notice == null:
 		_add(out, event, event.route)
 	if row.detain_seconds > 0.0:
 		event.hold = EventHold.new()

@@ -740,14 +740,14 @@ func _body_on_a_junction(map: CityMap, car: EventInstance) -> bool:
 func _test_the_hunting_vans_hunt_on_foot(t) -> void:
 	for id: String in ["night_raid", "abduction"]:
 		var cold := EventCatalogue.by_id(id)
-		t.check(cold.hunts_on_foot and cold.lets_out == 2, "'%s' hunts on foot, with two men" % id)
+		t.check(cold.hunts.lets_out == 2, "'%s' hunts on foot, with two men" % id)
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(cold, level)
 			var hunts := level >= Tuning.HEAT_HUNTS_LEVEL
 			t.check(hot.pursuit == null and hot.hard_fail == cold.hard_fail,
 					"'%s' heat %d: the van itself never chases her, and is as lethal as cold"
 					% [id, level])
-			t.check(hot.investigates == hunts, "'%s' heat %d: it lets men out iff it hunts"
+			t.check(hot.investigates() == hunts, "'%s' heat %d: it lets men out iff it hunts"
 					% [id, level])
 			t.check(hot.validate(), "'%s' heat %d: and it is fair" % [id, level])
 	for day: int in [8, 10]:
