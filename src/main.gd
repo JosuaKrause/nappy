@@ -1986,9 +1986,11 @@ func _physics_process(delta: float) -> void:
 			and _day.phase in [GameEnums.DayPhase.WALKING, GameEnums.DayPhase.RETURNING] \
 			and not _tree_is_paused():
 		_run.header.play_ticks += 1
-		_day.tick(delta)
+		# The resistance first, as the tree order always had it (`Resistance` is added before `Day`):
+		# the tick a day ends on does not tick the resistance once more after the end.
 		if _resistance:
 			_resistance.tick(delta)
+		_day.tick(delta)
 
 func _process(delta: float) -> void:
 	_dev_rig.update_follow_camera(_city)

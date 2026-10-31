@@ -780,6 +780,22 @@ func _test_play_seconds_only_advances_while_the_world_moves(t) -> void:
 			"and the day's countdown and the resistance's clock by the same tick (%.4f, %.4f)"
 			% [day.time_remaining, resistance._happenings._elapsed])
 	main._process(5.0)
+	# Each clock's own node is driven with the long frame too: `main._process()` never ran either
+	# clock, so only their own frame hooks can show one that counts a drawn frame's length.
+	day._process(5.0)
+	t.check(not resistance.has_method("_process"),
+			"the resistance director has no frame hook of its own to run a clock from")
+	var escape_day := DayController.new()
+	t.add_child(escape_day)
+	escape_day.set_process(false)
+	escape_day.setup(city.map, stroller, GameState)
+	escape_day.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+	escape_day.start(30.0)
+	escape_day._process(5.0)
+	t.check(is_equal_approx(escape_day.time_remaining, 30.0),
+			"and a long drawn frame moves the escape's countdown not at all (%.4f)"
+			% escape_day.time_remaining)
+	escape_day.queue_free()
 	t.check(GameState.header.play_ticks == 1,
 			"a long drawn frame adds no play time beyond the ticks that ran (%d)"
 			% GameState.header.play_ticks)
