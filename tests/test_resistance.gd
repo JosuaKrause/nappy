@@ -776,7 +776,7 @@ func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t) -> void:
 
 		var lines: Array[String] = []
 		director.trace = RunTrace.recording(lines)
-		director._process(STEP)
+		director.tick(STEP)
 		t.check(director.contact_position().distance_to(far_alley) < 0.5,
 				"an unseen mark moves to the alley she has just come near")
 
@@ -812,7 +812,7 @@ func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 		var player := _rig_player(t, player_at)
 		director.use_player(player)
 
-		director._process(STEP)
+		director.tick(STEP)
 		t.check(director.contact_position().distance_to(mark_at) < 0.5,
 				"within NOTICE_RADIUS of her own mark, nothing moves — not even to a nearer alley")
 
@@ -846,7 +846,7 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 		var player := _rig_player(t, far_alley)
 		director.use_player(player)
 
-		director._process(STEP)
+		director.tick(STEP)
 		t.check(director.contact_position().distance_to(far_alley) < 0.5,
 				"on screen but far outlasts nothing: it still relocates to the alley she has come near")
 
@@ -880,7 +880,7 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t) -> void:
 		var on_that_tile := func(p: Vector2) -> bool: return p.distance_to(raw_nearest) < 0.5
 		director.set_sight(on_that_tile, on_that_tile)
 
-		director._process(STEP)
+		director.tick(STEP)
 		var new_at := director.contact_position()
 		t.check(new_at.distance_to(old_at) > 0.5, "the mark actually moved")
 		t.check(new_at.distance_to(raw_nearest) > 0.5,
@@ -1008,7 +1008,7 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
 			var player := _rig_player(t, her)
 			director.use_player(player)
 			for i in ceili((ResistanceDirector.SEEN_DWELL_SECONDS + 0.5) / STEP):
-				director._process(STEP)
+				director.tick(STEP)
 			t.check(mark_at.distance_to(her) <= ResistanceDirector.SEEN_DISTANCE
 					and director._seen != joystick,
 					"%s scheme: a mark %.0fpx off under the left corner is %s"
@@ -1076,7 +1076,7 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 		t.check(walker != null, "the neighbor is walking home")
 		if walker:
 			walker.transition(EventInstance.Phase.PARKED)
-			late._process(STEP)
+			late.tick(STEP)
 			t.check(late._taken_neighbor == walker, "reaching the door first, they are to be taken")
 			var at := walker.global_position
 			var view_at := at - corner_at - corner_size * 0.5
@@ -1084,13 +1084,13 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 			t.check(events.on_screen(at) and not events.sees(at),
 					"the neighbor stands in the view, under the covered corner")
 			late.set_sight(events.sees, events.on_screen)
-			late._process(STEP)
+			late.tick(STEP)
 			t.check(late._taken_neighbor == walker and is_instance_valid(walker)
 					and not walker.is_finished,
 					"under the covered corner, the neighbor is not taken where they are drawn")
 			events.visible_view().look(Rect2(at + Vector2(Tuning.VIEW_HALF_EXTENT.x * 4.0, 0.0),
 					Tuning.VIEW_HALF_EXTENT * 2.0), true)
-			late._process(STEP)
+			late.tick(STEP)
 			t.check(late._taken_neighbor == null, "once the camera is off them, they are taken")
 		late.free())
 
@@ -1124,7 +1124,7 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 			if walker:
 				walker.transition(EventInstance.Phase.PARKED)
 				away.call()
-				late._process(STEP)
+				late.tick(STEP)
 				t.check(late._taken_neighbor == walker,
 						"%s scheme: reaching the door first, they are to be taken" % scheme)
 				var feet := walker.global_position
@@ -1135,11 +1135,11 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 				t.check(not events.on_screen(feet)
 						and events.sees(feet + Vector2(0.0, box.position.y * 0.5)),
 						"%s scheme: their feet are just below the view, their figure in it" % scheme)
-				late._process(STEP)
+				late.tick(STEP)
 				t.check(late._taken_neighbor == walker and not walker.is_finished,
 						"%s scheme: with their figure on screen, the neighbor is not taken" % scheme)
 				away.call()
-				late._process(STEP)
+				late.tick(STEP)
 				t.check(late._taken_neighbor == null,
 						"%s scheme: once the camera is off them, they are taken" % scheme)
 			late.free()
@@ -1169,11 +1169,11 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 					any_feet = any_feet or events.on_screen(at)
 				t.check(not any_feet and view.intersects(Rect2(start + car.position, car.size)),
 						"%s scheme: no feet of the raid are in view, the car's picture is" % scheme)
-				director._process(STEP)
+				director.tick(STEP)
 				t.check(happenings.raid.is_empty(),
 						"%s scheme: the raid waits while the car would be drawn in view" % scheme)
 				away.call()
-				director._process(STEP)
+				director.tick(STEP)
 				t.check(happenings.raid.size() == 3,
 						"%s scheme: off camera, the raid arrives (%d)" % [scheme, happenings.raid.size()])
 				for instance in happenings.raid:
@@ -1198,18 +1198,18 @@ func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> v
 		director.use_player(player)
 
 		# One frame short of the dwell window: not seen yet.
-		director._process(ResistanceDirector.SEEN_DWELL_SECONDS - STEP)
+		director.tick(ResistanceDirector.SEEN_DWELL_SECONDS - STEP)
 		t.check(director.contact_position().distance_to(mark_at) < 0.5,
 				"within SEEN_DISTANCE the whole time, so it has not moved regardless of being seen yet")
 
 		# The dwell completes on this frame.
-		director._process(STEP)
+		director.tick(STEP)
 
 		# Walk her far away — seen does not chase, but it also does not relocate any more.
 		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
 		t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
 		player.global_position = far_alley
-		director._process(STEP)
+		director.tick(STEP)
 		t.check(director.contact_position().distance_to(mark_at) < 0.5,
 				"seen after the dwell window completes, so it stays put however far she walks after")
 
@@ -1289,7 +1289,7 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 
 		var player := _rig_player(t, player_at)
 		director.use_player(player)
-		director._process(STEP)
+		director.tick(STEP)
 		var new_tile := _city.map.world_to_tile(director.contact_position())
 		t.check(new_tile != nearer_tile,
 				"a relocated mark avoids the alley a completed step used, another being in reach")
@@ -1314,7 +1314,7 @@ func _test_the_guard_moves_with_the_mark_into_its_new_alley(t) -> void:
 		var player := _rig_player(t, far_alley)
 		director.use_player(player)
 
-		director._process(STEP)
+		director.tick(STEP)
 		var new_at := director.contact_position()
 		t.check(new_at.distance_to(old_at) > 0.5, "the mark actually moved")
 		t.check(old_guard != null and old_guard.is_finished,
@@ -1359,7 +1359,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
 		var feet := guard.global_position
 		var near_him := func(p: Vector2) -> bool: return p.distance_to(feet) < 40.0
 		director.set_sight(near_him, near_him)
-		director._process(STEP)
+		director.tick(STEP)
 		t.check(director.contact_position().distance_to(old_at) < 0.5,
 				"with him on her screen, the mark stays where it is")
 		t.check(not guard.is_finished, "and he is not retired in front of her")
@@ -1367,13 +1367,13 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
 		var nothing := func(_p: Vector2) -> bool: return false
 		director.set_sight(nothing, nothing)
 		guard._notice_her()
-		director._process(STEP)
+		director.tick(STEP)
 		t.check(director.contact_position().distance_to(old_at) < 0.5,
 				"off her screen but awake, the mark still stays where it is")
 		t.check(not guard.is_finished, "and he is not retired out of his chase")
 
 		guard._stop_warning()
-		director._process(STEP)
+		director.tick(STEP)
 		t.check(director.contact_position().distance_to(old_at) > 0.5,
 				"asleep and out of her sight, the mark moves")
 		t.check(guard.is_finished, "and he is retired with it")
@@ -1930,7 +1930,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
 
 		var player := _rig_player(t, doorstep)
 		director.use_player(player)
-		director._process(STEP)
+		director.tick(STEP)
 
 		var robbery := EventCatalogue.by_id("alley_robbery")
 		var min_distance: float = robbery.inner_radius + ContactPoint.REACH
@@ -2084,7 +2084,7 @@ func _test_a_perform_contact_is_never_relocated(t) -> void:
 		var player := _rig_player(t, far_alley)
 		director.use_player(player)
 
-		director._process(STEP)
+		director.tick(STEP)
 		t.check(director.contact_position().distance_to(at) < 0.5,
 				"a perform contact is never subject to the mark's own re-placement rule")
 
@@ -2112,7 +2112,7 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
 
 		var player := _rig_player(t, decoy_at)
 		director.use_player(player)
-		director._process(STEP)
+		director.tick(STEP)
 		t.check(director.contact_position().distance_to(decoy_at) < 0.5,
 				"the contact rides onto the look-alike she actually reached, not the seeded one")
 		t.check(director._rider == decoy and director._rider != seeded_rider,
@@ -2160,20 +2160,20 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
 		t.check(near > ContactPoint.REACH, "there is ground near him that is not the handover")
 		var player := _rig_player(t, first_at + Vector2(near, 0.0))
 		director.use_player(player)
-		director._process(STEP)
+		director.tick(STEP)
 		director._contact._physics_process(STEP)
 		t.check(director._rider == first, "coming near the first look-alike moves the contact onto him")
 		t.check(completed.is_empty(), "and nothing is handed over from where she stands")
 
 		# Out again, well clear of all three.
 		player.global_position = first_at + Vector2(ResistanceDirector.NOTICE_RADIUS, 0.0)
-		director._process(STEP)
+		director.tick(STEP)
 		director._contact._physics_process(STEP)
 		t.check(completed.is_empty(), "walking on from him hands nothing over")
 
 		# And onto the second, whom she hands it to.
 		player.global_position = second_at
-		director._process(STEP)
+		director.tick(STEP)
 		director._contact._physics_process(STEP)
 		t.check(completed == [2], "the step completes on the second look-alike, the one she hands it to")
 		t.check(director._rider == second, "whose contact it is")
@@ -2181,7 +2181,7 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
 		# her, for `NOTE_HANDOVER_LINGER_SECONDS` first.
 		t.check(not second.is_leaving and not first.is_leaving and not seeded.is_leaving,
 				"nobody leaves the instant she hands it over — he keeps shouting first")
-		director._process(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS + STEP)
+		director.tick(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS + STEP)
 		t.check(second.is_leaving and not first.is_leaving and not seeded.is_leaving,
 				"and once he has lingered that long, he is the one who leaves; the one she walked " +
 				"past keeps shouting")
@@ -2852,7 +2852,7 @@ func _test_a_perform_step_expires_when_its_rider_is_gone(t) -> void:
 		t.check(rider != null, "the perform step rides on a live instance")
 
 		rider._finish()
-		director._process(0.1)
+		director.tick(0.1)
 		t.check(director.current_step() == null, "and it is gone once the rider is")
 		t.check(2 in GameState.resistance.failed_steps, "recorded as failed for the run")
 		director.free())
@@ -2879,11 +2879,11 @@ func _test_a_timed_step_expires(t) -> void:
 		t.add_child(director._contact)
 		director._contact.set_physics_process(false)
 
-		director._process(100.0 * timed.deadline_fraction * 0.5)
+		director.tick(100.0 * timed.deadline_fraction * 0.5)
 		t.check(director.current_step() != null, "on offer before the deadline")
 		t.check(9001 not in GameState.resistance.failed_steps, "nothing has failed yet")
 
-		director._process(100.0 * timed.deadline_fraction)
+		director.tick(100.0 * timed.deadline_fraction)
 		t.check(director.current_step() == null, "past the deadline it is gone")
 		t.check(9001 in GameState.resistance.failed_steps, "and recorded as failed for the run")
 		director.free())
@@ -2949,11 +2949,11 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 		t.check(not decoy.is_leaving and decoy.contribution_at(decoy.global_position) > 0.0,
 				"a look-alike she never reached is left exactly alone, still shouting")
 
-		director._process(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS - STEP)
+		director.tick(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS - STEP)
 		t.check(not rider.is_leaving,
 				"and still hasn't, a frame short of the full linger")
 
-		director._process(2.0 * STEP)
+		director.tick(2.0 * STEP)
 		t.check(rider.is_leaving,
 				"and stops shouting and leaves once he has lingered that long")
 		t.close_to(rider.contribution_at(rider.global_position), 0.0,
@@ -3080,7 +3080,7 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 		attempt._on_contact_completed(2)
 		t.check(rider != null and not rider.is_leaving,
 				"completing it keeps him shouting first, not sent away yet")
-		attempt._process(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS + STEP)
+		attempt.tick(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS + STEP)
 		t.check(rider != null and rider.is_leaving,
 				"and sends him away once he has lingered that long")
 		attempt.free()
@@ -4000,7 +4000,7 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
 		t.check(walker != null, "the neighbor is walking home again on the retry")
 		if walker:
 			walker.transition(EventInstance.Phase.PARKED)
-		late._process(STEP)
+		late.tick(STEP)
 		var warning := ResistanceSteps.warning_step()
 		t.check(warning.index in GameState.resistance.failed_steps,
 				"reaching the door first, the neighbor is taken and the task is lost")
@@ -4499,7 +4499,7 @@ func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
 					"standing at the start the arrow points at the closer one")
 			# Walking east: the other becomes closer by more than the hold, and the tick moves it.
 			player.global_position = _city.map.tile_to_world(here + Vector2i(8, 0))
-			director._process(ResistanceDirector.ARROW_RETARGET_SECONDS)
+			director.tick(ResistanceDirector.ARROW_RETARGET_SECONDS)
 			t.check(director.red_arrow_target().distance_to(east.global_position) < 1.0,
 					"walking toward the other one, the arrow switches to it")
 			# Back to a spot about as near to both: it stays where it is.
@@ -4582,7 +4582,7 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t) -> void:
 					"asked after he is freed, it answers the contact's own place (%s)" % asked)
 			t.check(director._arrow_nearest_next == null,
 					"and asking started no sweep: it is a read")
-			director._process(STEP)
+			director.tick(STEP)
 			t.check(director.red_arrow_target().distance_to(far.global_position) < 1.0,
 					"the next frame the arrow is on a man still there")
 			director._settle_the_arrow()
@@ -4757,7 +4757,7 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 	t.check(director.red_arrow_target().distance_to(near_foot) < 1.0
 			and director._mast_id == near,
 			"before the next choice the arrow and task still point at the near mast")
-	director._process(STEP)
+	director.tick(STEP)
 	t.check(director.red_arrow_target().distance_to(third_foot) < 1.0
 			and director._mast_id == third,
 			"following her between masts moves the task to the one she actually touches")
@@ -5739,7 +5739,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 				# that — so a mark checked before this tick is checked somewhere she never sees.
 				var player := _rig_player(t, city.map.doorstep_world_position())
 				director.use_player(player)
-				director._process(STEP)
+				director.tick(STEP)
 
 				var region_plan: RegionPlanner.RegionPlan = city.region_plan()
 				var walled_alleys: Array[Rect2i] = region_plan.alley_walls if region_plan else []
@@ -5825,7 +5825,7 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 				# doc for why the tick is load-bearing.
 				var player := _rig_player(t, city.map.doorstep_world_position())
 				director.use_player(player)
-				director._process(STEP)
+				director.tick(STEP)
 
 				var mark_step := director.current_step()
 				if mark_step != null and mark_step.is_pickup:

@@ -180,12 +180,13 @@ src/
 	                      days 15 and 16, are each one of these
 	day_controller.gd     the clock, the two phases, the four ways a day ends, handed the day's
 	                      spec: her front door, the building's service exit or the city's two
-	                      ways out is its goal
+	                      ways out is its goal; ticked by `main` on the walk's physics tick
 	loss_cause.gd         what ended a hard-fail or crying day: pure rules over plain values, no
 	                      nodes and no globals; `DayDirector` reads the world and hands them in
   resistance/
 	resistance_director.gd  places the day's contact; the guard and the deadline; activates a
-	                         perform step the moment the mark that unlocks it is touched
+	                         perform step the moment the mark that unlocks it is touched; ticked
+	                         by `main` on the walk's physics tick, as the day's clock is
 	resistance_steps.gd     the calendar: a mark and the perform step it unlocks share one day,
 	                         plus the finale
 	contact_point.gd        touch to complete — a chalk mark, a task's own event instance, or a

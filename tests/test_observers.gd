@@ -80,7 +80,7 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 	main._on_summary_continued(main._flow.mode)
 	# Dusk: the day's own clock run out, through the one frame that notices it.
 	main._day.time_remaining = 0.0
-	main._day._process(0.0)
+	main._day.tick(0.0)
 	main._on_summary_continued(main._flow.mode)
 	main._on_day_finished(GameEnums.DayResult.WON)
 	main._on_summary_continued(main._flow.mode)
@@ -164,7 +164,7 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	main._on_summary_continued(main._flow.mode)
 	t.get_tree().paused = true
 	main._player.global_position = main._flow.spec.exits[CityEdge.Kind.TUNNEL]
-	main._day._process(0.0)
+	main._day.tick(0.0)
 
 	var lines := _lines_kept(Telemetry.current_log().lines)
 	Telemetry.end_run()

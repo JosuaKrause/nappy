@@ -152,7 +152,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	# The band out of her view: on the arrow's next choice he is in it.
 	_view = Rect2()
 	director._arrow_clock = ResistanceDirector.ARROW_RETARGET_SECONDS
-	director._process(0.0)
+	director.tick(0.0)
 	_check_he_guards(t, director, other, player, ringed, "the roadblock she approaches")
 
 	# And again, however often she changes target.

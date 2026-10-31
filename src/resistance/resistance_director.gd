@@ -17,7 +17,7 @@ extends Node
 ## tomorrow.
 ##
 ## **The mark itself needs no physics-interpolation opt-out.** `ContactPoint` follows a rider on
-## the physics tick (correctly interpolated, like the player), and this director's own `_process`
+## the physics tick (correctly interpolated, like the player), and this director's own `tick()`
 ## only ever relocates an unseen mark (`_move_the_mark()`) while it is beyond `NOTICE_RADIUS` —
 ## which exceeds the screen's own half-diagonal, so the jump is never on screen to be drawn
 ## sliding in the first place.
@@ -495,7 +495,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# to read it.
 	_city.add_entity(_contact, DrawLayer.Layer.GROUND_MARKS)
 	# Where several places answer, the arrow starts on the one the contact was placed on, and
-	# `_process()` moves it to the closest on foot once the first sweep has finished.
+	# `tick()` moves it to the closest on foot once the first sweep has finished.
 	if ResistanceSteps.answers_at_several_places(_step):
 		_arrow_key = _contact_key()
 	EventBus.resistance_contact_available.emit(_step.index)
@@ -2387,7 +2387,7 @@ const NEIGHBOR_WALK_BAND_TILES := 8
 ## ground the day's closures and bodies leave open (`_reach_blocked`, the director's own
 ## reachability answer), on sidewalks and crossings where they reach and over any walkable ground
 ## where they do not. **The walk is the deadline**: `EventCatalogue.neighbor_heading_home()` stops
-## at the door (`stops_where_it_arrives`), and `_process()` reads a parked neighbor as the task
+## at the door (`stops_where_it_arrives`), and `tick()` reads a parked neighbor as the task
 ## lost. Null when no start qualifies, which leaves the task with nowhere to go.
 ##
 ## The start is drawn by the day's RNG from the band of tiles `NEIGHBOR_WALK_BAND_TILES` either side
@@ -2728,7 +2728,13 @@ func _reachable_from_home(tile: Vector2i) -> bool:
 	_ensure_reachability()
 	return _reach_grid.reaches(tile, _reach_blocked, _reach_reached)
 
-func _process(delta: float) -> void:
+## **One tick of the resistance's day**, run by `main` on every physics tick the walk stepped, the
+## same tick its play time counts (`main._physics_process()`): the happenings, the note's lingering
+## rider, the step's own clock and deadline, the mark's sight dwell, the red arrow's choice and its
+## sweep. **Frame locked** (inbox #866 in minty-dolphin): it counts the ticks the walk stepped, never
+## a drawn frame's length, so a lag spike slows the task's clocks with the game rather than running
+## them on, and nothing here runs behind a pause, a screen or a load. `delta` is the tick's length.
+func tick(delta: float) -> void:
 	_happenings.tick(delta, _player_position(), _player_velocity(), _drawing_shows)
 	if _taken_neighbor:
 		_take_the_neighbor_away()
@@ -2762,7 +2768,7 @@ func _process(delta: float) -> void:
 			_arrow_clock = 0.0
 			retarget_the_arrow()
 			_move_the_task_guard_to_her_target()
-		_sweep_the_arrow_fields(ARROW_SWEEP_TILES_PER_FRAME)
+		_sweep_the_arrow_fields(ARROW_SWEEP_TILES_PER_TICK)
 		if not _same_key(_arrow_key, _task_guard_asked_for):
 			_move_the_task_guard_to_her_target()
 		if _step.target_kind == ResistanceSteps.TargetKind.MAST:
@@ -2774,7 +2780,7 @@ func _process(delta: float) -> void:
 	_expire("expired at %.0f%% of the day" % (_step.deadline_fraction * 100.0))
 
 ## Counts down `_lingering_rider`'s stay and calls `EventInstance.leave_for_a_completed_task()`
-## once `NOTE_HANDOVER_LINGER_SECONDS` is up — run every frame independently of `_step`/`_contact`,
+## once `NOTE_HANDOVER_LINGER_SECONDS` is up — run every tick independently of `_step`/`_contact`,
 ## since the note task is already complete and cleared by the time this fires. Freed or otherwise
 ## finished early (the day ending under her) clears the wait rather than erroring on a dead
 ## instance; nothing else needs telling, since a day that has ended has nothing left to charge.
@@ -2806,7 +2812,7 @@ func _tick_lingering_rider(delta: float) -> void:
 ## changes target (`_move_the_task_guard_to_her_target()`), so the roadblock she walks up to is the
 ## guarded one whichever she picks, unless he is in her view from the moment she changes target to
 ## the moment she arrives — and whichever she touches, he starts after her from wherever he stands,
-## the ring past its band included, the moment she has (`_set_the_task_guard_on_her()`); and `_process()`'s own deadline check reads
+## the ring past its band included, the moment she has (`_set_the_task_guard_on_her()`); and `tick()`'s own deadline check reads
 ## `_elapsed` against `_day_length` — none of them reads `_rider`'s identity.
 ##
 ## Skipped while the nearest look-alike in reach is already the one it rides (`best == _rider`):
@@ -2848,7 +2854,7 @@ func _reach_distance(instance: EventInstance) -> float:
 ## around offscreen as much as we want. If we need to move multiple times so be it")*. The roadblock
 ## she approaches is the one the red arrow points at (`_arrow_key`), the closest on foot, which moves
 ## as she walks toward another. Asked on each of the arrow's choices, and at once when the arrow
-## moves (`_process()`), as often as she changes target:
+## moves (`tick()`), as often as she changes target:
 ## - **he already guards it where he stands** — in its band, with a clear line to its body
 ##   (`_guards_the_roadblock()`), as a guard over one of a line of roadblocks often is for the next:
 ##   nothing moves, and he is its guard from now on;
@@ -3044,7 +3050,7 @@ func _track_sight_and_reposition(delta: float) -> void:
 ## alley, a building or a pocket nothing can walk out of even though it is never placed there to
 ## start with), within `NOTICE_RADIUS` — or `Vector2.INF` if there is none. Linear over
 ## `CityMap.tiles_of_type()`, which is cached; there is one active mark at a time, so this runs
-## once a frame at most.
+## once a tick at most.
 ##
 ## **`is_obstructed()` was missing here even after M188 added it to `_pick_reachable()`.** A `--day 9 --seed 4242 --route mark,task,calm,home --no-title` boot of
 ## the real game still stood day 9's mark inside a building: the dawn draw itself landed on legal
@@ -3297,7 +3303,7 @@ func pointable_objective() -> Vector2:
 ## never chooses, never sweeps and never moves the contact, since `main.gd` asks it every frame and
 ## a scene recipe's `arrowed` check and `_begin_step()`'s run-log line ask it too. So in the frame
 ## between the chosen man shouting or roadblock going (finished, or freed as it streams out) and
-## `_process()` choosing again, it answers the contact's own position, which is always a place that
+## `tick()` choosing again, it answers the contact's own position, which is always a place that
 ## answers the task, and never a freed one's. On day 11 the contact moves with the arrow
 ## (`_point_the_arrow_at()`), so the contact's position is the arrow's.
 func red_arrow_target() -> Vector2:
@@ -3313,19 +3319,19 @@ func red_arrow_target() -> Vector2:
 ## How often the arrow of a task several places answer is chosen again: twice a second. **A choice
 ## is a lookup**: her tile read in two finished fields (`ArrowField`), plus a scan of the live
 ## targets to see whether they are still the ones the fields were swept from. The sweeps behind the
-## fields run apart from it, a slice a frame (`ARROW_SWEEP_TILES_PER_FRAME`), and only when the
+## fields run apart from it, a slice a tick (`ARROW_SWEEP_TILES_PER_TICK`), and only when the
 ## targets or what blocks her have changed. `tests/probes/plush_moose_arrow_cost.gd` measures both.
 const ARROW_RETARGET_SECONDS := 0.5
 ## How many tiles of walking closer another target has to be, at least, before the arrow leaves
 ## the one it points at — four tiles closer moves it, three do not — so it does not flicker between
 ## two that are about as near as each other. *(Proposed, not asked for: plush-moose's entry.)*
 const ARROW_HOLD_TILES := 4
-## How many tiles of a sweep (`ArrowField.advance()`) one frame runs. A whole sweep of a city's
-## open ground at once is a long frame, so it is spread: at this size a slice is a small part of a
-## frame, and one field is done in about twenty frames, a third of a second at 60fps, while the
-## arrow reads the field it replaces. `tests/probes/plush_moose_arrow_cost.gd` measures the slice,
-## the tick and the whole sweep.
-const ARROW_SWEEP_TILES_PER_FRAME := 1000
+## How many tiles of a sweep (`ArrowField.advance()`) one tick runs. A whole sweep of a city's
+## open ground at once is a long tick, so it is spread: at this size a slice is a small part of a
+## frame, and one field is done in about twenty ticks, two thirds of a second, while the arrow reads
+## the field it replaces. `tests/probes/plush_moose_arrow_cost.gd` measures the slice, the tick and
+## the whole sweep.
+const ARROW_SWEEP_TILES_PER_TICK := 1000
 
 ## What the red arrow points at right now, for a task several places answer: the instance id of a
 ## man shouting or a roadblock (an id rather than the `EventInstance`, so a freed one is never
@@ -3458,7 +3464,7 @@ func _ground_for_the_arrow() -> PackedInt32Array:
 ## first sweep has finished it stays on the contact's own target (`_contact_key()`).
 ##
 ## Also starts a sweep wherever the targets, or what blocks her (`CityMap.day_record_version`,
-## `CityMap.obstruction_version`), are no longer what a field was swept for. Run by `_process()`
+## `CityMap.obstruction_version`), are no longer what a field was swept for. Run by `tick()`
 ## every `ARROW_RETARGET_SECONDS`, at once when the target has gone, and when a sweep finishes. On
 ## day 11 the contact moves with the arrow, so the mast the arrow points at is the one a touch
 ## silences.
@@ -3538,12 +3544,12 @@ func _swept_for(field: ArrowField, found: Array[Dictionary], versions: Vector2i)
 	return true
 
 ## Runs `budget` tiles of the sweeps under way, the field of every target first, and chooses again
-## the moment one finishes. A frame that lays out the ground (`_ground_for_the_arrow()`) or a field
+## the moment one finishes. A tick that lays out the ground (`_ground_for_the_arrow()`) or a field
 ## (`ArrowField.advance()`'s first call) does that alone.
 func _sweep_the_arrow_fields(budget: int) -> void:
 	if not _arrow_nearest_next and not _arrow_own_next:
 		return
-	# Laying out what blocks her afresh is a frame's work of its own, like a field's own layout.
+	# Laying out what blocks her afresh is a tick's work of its own, like a field's own layout.
 	if Vector2i(_map.day_record_version, _map.obstruction_version) != _arrow_ground_versions \
 			or _arrow_ground.is_empty():
 		_ground_for_the_arrow()

@@ -144,11 +144,11 @@ func _test_the_clock_never_moves_under_invincible(t) -> void:
 	_build(t)
 	_day.start(10.0)
 	_day.invincible = true
-	_day._process(9.0)
+	_day.tick(9.0)
 	t.close_to(_day.time_remaining, 10.0,
 			"the clock has not moved even after what would be most of the day", 0.001)
 	t.check(_results.is_empty(), "and nothing ended the day either")
-	_day._process(5.0)
+	_day.tick(5.0)
 	t.close_to(_day.time_remaining, 10.0,
 			"or after running past what would have been dusk", 0.001)
 	t.check(_results.is_empty(), "dusk still never arrives")
@@ -189,7 +189,7 @@ func _test_the_clock_and_the_meter_both_move_with_the_flag_off(t) -> void:
 	_build(t)
 	_day.start(10.0)
 	_day.invincible = false
-	_day._process(3.0)
+	_day.tick(3.0)
 	t.check(_day.time_remaining < 10.0 - 0.01, "the clock counts down with the flag off")
 	_teardown()
 
@@ -219,7 +219,7 @@ func _test_the_three_losses_still_end_the_day_with_the_flag_off(t) -> void:
 
 	_build(t)
 	_day.start(10.0)
-	_day._process(11.0)
+	_day.tick(11.0)
 	t.check(_results == [GameEnums.DayResult.LOST_TIMEOUT],
 		"dusk still loses the day with the flag off")
 	_teardown()

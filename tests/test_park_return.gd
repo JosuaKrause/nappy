@@ -92,7 +92,7 @@ func _camera_on(main: Node2D) -> Callable:
 func _frame(main: Node2D, shows: Callable) -> void:
 	var happenings: ResistanceHappenings = main._resistance._happenings
 	happenings.tick(STEP, main._player.global_position, Vector2.ZERO, shows)
-	main._day._process(STEP)
+	main._day.tick(STEP)
 
 ## Walks her toward `to` at the walking speed for `seconds`, a frame at a time.
 func _walk(main: Node2D, to: Vector2, seconds: float, shows: Callable) -> void:
@@ -143,7 +143,7 @@ func _check_the_next_morning(t, main: Node2D, label: String) -> void:
 			"%s: she stands at her own door (%s)" % [label, here])
 	# And the day moves: a second of it ticks the clock down.
 	var before: float = main._day.time_remaining
-	main._day._process(1.0)
+	main._day.tick(1.0)
 	t.check(main._day.time_remaining < before, "%s: the clock runs" % label)
 
 func _finish(t, main: Node2D) -> void:

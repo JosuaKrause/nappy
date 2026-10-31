@@ -289,7 +289,7 @@ func clear() -> void:
 			post.queue_free()
 	_posts.clear()
 
-## Once a frame, from `ResistanceHappenings.tick()`. `her` is her position (`Vector2.INF` with no
+## Once a tick, from `ResistanceHappenings.tick()`. `her` is her position (`Vector2.INF` with no
 ## player), `shows(row, feet)` whether any of `row`'s drawing standing at `feet` is in the camera's
 ## whole view (unset in a rig with no camera, where `Tuning.OUT_OF_SIGHT` from her stands in).
 func tick(delta: float, her: Vector2, shows: Callable) -> void:

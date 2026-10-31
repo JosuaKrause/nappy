@@ -1966,7 +1966,9 @@ func _tree_is_paused() -> bool:
 	var loop := Engine.get_main_loop()
 	return loop is SceneTree and (loop as SceneTree).paused
 
-## The run's play time (`RunHeader.play_ticks`), one physics tick at a time — its one owner. **Frame
+## **The walk's tick**: the run's play time (`RunHeader.play_ticks`), the day's countdown
+## (`DayController.tick()`) and the resistance's clocks (`ResistanceDirector.tick()`), one physics
+## tick at a time — the one tick source all three count. **Frame
 ## locked** (inbox #866 in minty-dolphin): it counts the ticks the engine stepped, never a drawn frame's length, so a
 ## frame drawn late adds only the ticks that ran in it, a lag spike past the engine's steps per frame
 ## slows the game instead of adding time, and a faster machine reads no lower time. **A tick counts
@@ -1976,14 +1978,17 @@ func _tree_is_paused() -> bool:
 ## at `OVER`, since `DayController._end()` sets it before emitting the signal that shows the summary),
 ## and the tree is not paused (the pause screen, and every screen that stands in front of the walk).
 ## The catch-up ticks after a hitch did step the walk, and count. This node runs through a pause
-## (Esc), so the pause is asked rather than inherited.
-func _physics_process(_delta: float) -> void:
+## (Esc), so the pause is asked rather than inherited. `delta` is the tick's fixed length.
+func _physics_process(delta: float) -> void:
 	if not _player or not _baby or not _day:
 		return
 	if _flow.mode == RunFlow.Mode.WALKING \
 			and _day.phase in [GameEnums.DayPhase.WALKING, GameEnums.DayPhase.RETURNING] \
 			and not _tree_is_paused():
 		_run.header.play_ticks += 1
+		_day.tick(delta)
+		if _resistance:
+			_resistance.tick(delta)
 
 func _process(delta: float) -> void:
 	_dev_rig.update_follow_camera(_city)
@@ -2021,7 +2026,7 @@ func _process(delta: float) -> void:
 	# whether today's task is on offer with its mark already touched, and which of the places
 	# that answer it the arrow points at, so this is only ever a read of it, never a placement
 	# or a move of its own — and asking it is a read too: the director chooses in its own
-	# `_process()`. `_resistance` can be null here: several `tests/test_main.gd` rigs drive
+	# `tick()`. `_resistance` can be null here: several `tests/test_main.gd` rigs drive
 	# `_process()` with a script-only `main` that never builds one.
 	var task_at := _resistance.red_arrow_target() if _resistance else Vector2.INF
 	_hud.set_task_guidance(task_at != Vector2.INF, task_at)

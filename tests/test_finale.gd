@@ -1772,7 +1772,7 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 	main._city.events.world.instances.append(guard)
 	guard._charge.begin()
 	main._player.global_position = main._flow.spec.exits[CityEdge.Kind.TUNNEL]
-	main._day._process(0.0)
+	main._day.tick(0.0)
 	t.check(heard == ["cut short masked_pursuer", "day %d WON" % DaySpec.CITY_DAY],
 			"getting out closes the charge still running, then ends the city's day (%s)" % [heard])
 	EventBus.pursuit_cut_short.disconnect(on_cut_short)
@@ -2152,7 +2152,7 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 
 	main._on_summary_continued(main._flow.mode)
 	main._player.global_position = main._flow.spec.exits[CityEdge.Kind.TUNNEL]
-	main._day._process(0.0)
+	main._day.tick(0.0)
 	t.check(main._flow.mode == RunFlow.Mode.EPILOGUE and main._summary.is_showing(),
 			"out of the city, the epilogue is up")
 	main._unhandled_input(_action("pause"))

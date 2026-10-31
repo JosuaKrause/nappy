@@ -24,7 +24,7 @@ extends RefCounted
 ## - **tick**: `retarget_the_arrow()` with her at each position — what `_process()` runs twice a
 ##   second. On the per-target fields (`ArrowField`) it is a lookup, plus starting the sweep of the
 ##   one it now points at when it moved the arrow; on the walk it replaced, the whole walk.
-## - **sweep slice**: one frame's `_sweep_the_arrow_fields(ARROW_SWEEP_TILES_PER_FRAME)` while a
+## - **sweep slice**: one tick's `_sweep_the_arrow_fields(ARROW_SWEEP_TILES_PER_TICK)` while a
 ##   sweep is under way, over the first sweep from nothing and every sweep a tick started; and how
 ##   many frames the longest of them took to finish.
 ## - **whole sweep at once**: the same field swept in one go, for scale — what one frame would cost
@@ -137,7 +137,7 @@ func _sweep_to_the_end(director: ResistanceDirector, slices: Array[int]) -> int:
 			and count < 1000:
 		var started := Time.get_ticks_usec()
 		director.call("_sweep_the_arrow_fields", director.get_script().get_script_constant_map()
-				.get("ARROW_SWEEP_TILES_PER_FRAME", 1500))
+				.get("ARROW_SWEEP_TILES_PER_TICK", 1500))
 		slices.append(Time.get_ticks_usec() - started)
 		count += 1
 	return count

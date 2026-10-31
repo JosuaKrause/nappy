@@ -1303,7 +1303,7 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 		StrollerSteer.velocity_step(_stroller, STEP)
 		_stroller.global_position += _stroller.velocity * STEP
 		baby._physics_process(STEP)
-		day._process(STEP)
+		day.tick(STEP)
 		elapsed += STEP
 		if rig._done:
 			done = true

@@ -131,7 +131,8 @@ func start_day(day: int, with_its_events := true) -> void:
 	if day >= MARKET_DAY and _city:
 		_city.board_neighbor_window()
 
-## Once a frame, from the director: brings in whatever the day is waiting to bring in. `her` is her
+## Once a tick the walk stepped, from the director (`ResistanceDirector.tick()`): brings in
+## whatever the day is waiting to bring in. `her` is her
 ## position, `Vector2.INF` with no player, and `velocity` hers; `shows(row, feet)` is whether any
 ## of what `row` draws, standing at `feet`, would be in the camera's whole view, covered corners
 ## included (the director's `_drawing_shows()`, since what it decides is where something appears),

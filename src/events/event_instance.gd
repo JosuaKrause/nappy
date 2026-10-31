@@ -1091,7 +1091,7 @@ var _her_way_chain_from := Vector2i(-1, -1)
 var _her_way_chain_field: ArrowField
 
 ## How many tiles of a sweep one frame of his chase runs: under half a millisecond, half the red
-## arrow's slice (`ResistanceDirector.ARROW_SWEEP_TILES_PER_FRAME`), since his runs whenever she
+## arrow's slice (`ResistanceDirector.ARROW_SWEEP_TILES_PER_TICK`), since his runs whenever she
 ## has moved on rather than only when the targets change. A sweep is adopted as soon as it has
 ## reached his tile, so from close by it takes a frame or two.
 const WAY_SWEEP_TILES_PER_FRAME := 500

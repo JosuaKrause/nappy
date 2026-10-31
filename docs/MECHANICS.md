@@ -1410,6 +1410,18 @@ at being won in about a third of that.
 Running out is a day loss. The timer is shown as a light-level shift rather than a number,
 with an explicit clock in the HUD corner, `m:ss` through `GameState.format_clock_seconds()`.
 
+**The day's clock is frame locked** (inbox #866 in minty-dolphin): it counts down one 30 Hz physics
+tick at a time, on the same ticks the run clock below counts — a tick on which she walked the day,
+with the tree unpaused and no screen in front of the walk (`DayController.tick()`, run by
+`main._physics_process()`). A frame drawn late adds only the ticks the engine stepped in it, a lag
+spike past the engine's steps per frame slows the clock with the game, and a faster machine reads
+no lower time. The resistance's clocks — a task's deadline, the note's lingering rider, the mark's
+sight dwell, the red arrow's choice and its sweep, the day's happenings and the park cordon — run on
+the same tick (`ResistanceDirector.tick()`), as every event's own clock does. The escape's clock,
+which reads to the hundredth, is drawn between two ticks as the tick's countdown advanced by how far
+the frame is into the next one (`Engine.get_physics_interpolation_fraction()`), so its label moves
+on every drawn frame without the countdown itself moving off the tick.
+
 The summary between days (`SummaryModel.day_over()`) names the same clock at the instant the day
 ended, as its own title: a won day reads *"She fell asleep after 1:24."*, a lost day reads its
 own reason with the clock worked into it — *"She started crying after 1:24. There is no settling

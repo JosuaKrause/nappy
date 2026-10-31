@@ -30,9 +30,10 @@ var _travelled := 0.0
 var _moving := false
 
 func _ready() -> void:
-	# Moved from `_process` by `ParkCordon`, never from a physics tick, so there is nothing to
-	# interpolate — the same opt-out as `CrowdAgent`.
-	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	# Moved on the physics tick by `ParkCordon` (the resistance's `tick()`), so he is drawn
+	# interpolated between two ticks as she is, and walks as smoothly as she does. Placed before he
+	# is added, so drawn from where he stands rather than gliding in from the origin.
+	reset_physics_interpolation()
 
 func _enter_tree() -> void:
 	AtlasLibrary.acquire(&"events")
