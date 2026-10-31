@@ -34,6 +34,7 @@ func run(t) -> void:
 	_test_a_mark_within_notice_radius_does_not_move(t)
 	_test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t)
 	_test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t)
+	_test_the_siting_hands_the_same_region_until_the_plan_changes(t)
 	_test_a_guard_never_lands_within_his_own_reach_of_her(t)
 	_test_a_relocated_mark_and_its_guard_are_placed_off_screen(t)
 	_test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t)
@@ -873,11 +874,35 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 		player.free()
 		director.free())
 
+## **The region a siting reads is built once for a plan**: the relocation asks it for every candidate
+## tile, so each ask handing out a freshly built copy of the wall's and the doors' discs was most of
+## its cost. It is rebuilt when the plan is another one, or when a list of the plan is another list
+## or a different length.
+func _test_the_siting_hands_the_same_region_until_the_plan_changes(t) -> void:
+	_build_city(t)
+	var state := CityState.new()
+	state.begin_day(_city.map.block_plans, 10)
+	_city.start_day(state, 10, RandomNumberGenerator.new())
+	var first := _city.siting_region()
+	t.check(first != null and first.centres.size() > 0, "day 10 has a region wall and doors")
+	t.check(_city.siting_region() == first and _city.spawn_siting.region() == first,
+			"asked again, the siting is handed the same region")
+	var plan := _city.region_plan()
+	var walls := plan.wall_bodies.size()
+	plan.alley_walls.append(Rect2i(1, 1, 1, 1))
+	var changed := _city.siting_region()
+	t.check(changed != first and changed.walled_alleys.size() == plan.alley_walls.size(),
+			"a wall alley added to the plan is a new region")
+	plan.door_bodies = plan.door_bodies.duplicate()
+	t.check(_city.siting_region() != changed and walls == plan.wall_bodies.size(),
+			"another list of doors is a new region")
+	plan.alley_walls.pop_back()
+
 ## brisk-wombat, "the mark and its robber never appear in front of her" — the mark's own half:
 ## *"I just had one appear out of nowhere while I was walking through an alley."* `_nearest_alley_
 ## within()`'s own nearest candidate to `here` is, by construction, wherever she is standing or
 ## right beside it, which is on screen more often than not, so the search has to actively refuse
-## whatever `_mark_shows()` calls on screen rather than pick the plain nearest blind. `raw_nearest`
+## whatever `_drawing_shows()` calls on screen rather than pick the plain nearest blind. `raw_nearest`
 ## names exactly that plain-nearest tile (asked with neither of the director's view tests set, so
 ## nothing is ever on screen); hiding only that one tile from both, mocked, is what makes the
 ## assertion below discriminate the refusal — the search has to find some other candidate still in
