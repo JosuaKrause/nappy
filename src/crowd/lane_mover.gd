@@ -416,9 +416,9 @@ func _segment_is_shut(tile: Vector2i) -> bool:
 var frame_timing: CrowdTiming = null
 
 ## One physics tick of this agent's motion: its clocks, steering, look-ahead, turning, gait and
-## recycling, and the crowd member's own end of the tick. `Crowd` runs it for every agent at the top
-## of its own physics tick (`Crowd._step_the_agents()`), before the traffic is spaced out and she is
-## met, so the motion and every rule about it run one to one on every machine, at 30Hz with a 1/30s
+## recycling, and the crowd member's own end of the tick. `Crowd` runs it for every agent at the end
+## of its own physics tick (`Crowd._step_the_agents()`), after the traffic is spaced out and she is
+## met (the order a drawn frame ran them in before), so the motion and every rule about it run one to one on every machine, at 30Hz with a 1/30s
 ## `delta`, and every clock here (the about-face's stride, a walker's sidestep, yield and hut, a
 ## car's give-way, turn wait and bob, the excitement's jolt) ends on a tick (minty-dolphin #866).
 ## The node is drawn interpolated between two ticks (see `_ready()`). A rig steps the whole crowd

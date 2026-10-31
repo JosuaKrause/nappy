@@ -20,10 +20,11 @@ extends Node
 ## y-sorted `Entities` node (`City.add_entity()`) rather than under here, so that it sorts against
 ## her and everything else standing in the street.
 ##
-## **The crowd moves on the physics tick.** This node's own tick steps every agent first
-## (`_step_the_agents()`), then spaces out the traffic and meets the player, so an agent's motion and
-## every rule about it are one to one at 30Hz on every machine (minty-dolphin #866), and each agent
-## is drawn interpolated between two ticks (`LaneMover._ready()`).
+## **The crowd moves on the physics tick.** This node's own tick spaces out the traffic, holds the
+## doors and meets the player, and then steps every agent (`_step_the_agents()`), the order the live
+## game ran at 30 frames a second before the agents moved on the tick, so an agent's motion and every
+## rule about it are one to one at 30Hz on every machine (minty-dolphin #866) and nothing changes for
+## a 30fps player. Each agent is drawn interpolated between two ticks (`LaneMover._ready()`).
 
 ## The traffic's name on the mark over the player's head, so it can take its own down again and
 ## nobody else's. See `Stroller.stand_down()`.
@@ -482,8 +483,9 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 # `pedestrian_ahead` is written here: the agents are already being walked once a frame, and a
 # per-car search would be the same work done fifty times over.
 
-## One tick of the crowd for a rig: everybody moves, and then the traffic is spaced out — the live
-## tick (`_tick_the_crowd()`) without the player half, since a rig has no player.
+## One tick of the crowd for a rig: the traffic is spaced out and the doors held, and then everybody
+## moves — the live tick (`_tick_the_crowd()`) without the player half, since a rig has no player. A
+## rig and the game run the same order.
 ##
 ## A headless rig that only walks the agents is not running the crowd the game runs. It is missing
 ## the separation pass, and it is also missing the **rebuild** underneath it:
@@ -491,24 +493,24 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 ## every recycle adds a car to a lane that never empties, and a `_recycle` scans all of them six
 ## times over.
 ##
-## Movement first and separation after, which is the order the world settles in — see
-## `test_crowd.gd`, "cars do not drive through each other", for why that order is the honest one.
+## The world first and movement after, which is what a drawn frame did in the game: the tick before
+## the agents' own frame. A car that moves into another's space is pulled apart by the next tick's
+## resolve before anything reads it; see `test_crowd.gd`, "cars do not drive through each other".
 func step(delta: float) -> void:
-	_step_the_agents(delta)
 	_advance_the_world(delta)
+	_step_the_agents(delta)
 
-## Every agent's own step (`LaneMover.step()`), in the crowd's order: the first thing a tick does,
+## Every agent's own step (`LaneMover.step()`), in the crowd's order: the last thing a tick does,
 ## live (`_tick_the_crowd()`) or in a rig (`step()`). Its own function so a probe can time it apart
 ## (`tests/probes/m159_crowd_tick_cost.gd`).
 func _step_the_agents(delta: float) -> void:
 	for agent in _agents:
 		agent.step(delta)
 
-## The tick's shared middle, after the agents have stepped, whatever is driving it: the day's signal
-## clock, the map's own pockets, the traffic queue and the walkers' doors, in that order. `step()`
-## (a rig's manual tick) and `_physics_process()` (the live tick) both run exactly this after
-## `_step_the_agents()`, so the only difference between the two callers is the live tick's player
-## half.
+## The tick's shared first half, whatever is driving it: the day's signal clock, the map's own
+## pockets, the traffic queue and the walkers' doors, in that order. `step()` (a rig's manual tick)
+## and `_physics_process()` (the live tick) both run exactly this before `_step_the_agents()`, so the
+## only difference between the two callers is the live tick's player half.
 func _advance_the_world(delta: float) -> void:
 	if _signals:
 		_signals.advance(delta)
@@ -1061,18 +1063,19 @@ func _physics_process(delta: float) -> void:
 	else:
 		_tick_the_crowd(delta)
 
-## The crowd's own tick, timed under the frame record's crowd bucket: every agent steps, then the
-## traffic is spaced out and the doors held, then she is met — so a strike, a horn or a bump is
-## decided against where this tick's step put the agent.
+## The crowd's own tick, timed under the frame record's crowd bucket: the traffic is spaced out and
+## the doors held, she is met, and then every agent steps — so a strike, a horn or a bump is decided
+## against where the last tick's step left the agent, as it was when the agents moved a drawn frame
+## after the tick.
 func _tick_the_crowd(delta: float) -> void:
 	# `--skip motion`'s own probe (docs/DECISIONS.md, M140, "the crowd's scripts parked"): returns
 	# before the agents step, so nothing below runs this tick, and `start_day` still placed the whole
 	# population, so the street stands full of standing people and parked cars.
 	if skip_motion:
 		return
-	_step_the_agents(delta)
 	_advance_the_world(delta)
 	_meet_the_player()
+	_step_the_agents(delta)
 
 ## The tick's player half: who makes way for her, who she bumps, which car may strike her and which
 ## sounds its horn. Its own function beside `_advance_the_world()` so a probe can time the two halves

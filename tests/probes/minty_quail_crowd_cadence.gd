@@ -13,9 +13,7 @@ extends RefCounted
 ## runs on either revision.
 ##
 ## `CADENCE_SEEDS` (comma-separated, default `SEEDS`) names more cities to run, to tell a difference
-## from noise. `CADENCE_ORDER=old` runs a revision with C1 in the order main's live game ran at 30fps,
-## the tick's world and player halves and then the agents' step (`_advance_the_world()`,
-## `_meet_the_player()`, `_step_the_agents()`), to show what the new order inside the tick changes.
+## from noise.
 ##
 ## Each run starts the seed's city on the day as `m159_crowd_tick_cost.gd` does, and walks a player
 ## rig one of two ways (`WALKS`): `road`, back and forth across the carriageway nearest the doorstep,
@@ -43,7 +41,6 @@ func run(t) -> void:
 		seeds = []
 		for word in OS.get_environment("CADENCE_SEEDS").split(","):
 			seeds.append(int(word))
-	var old_order := OS.get_environment("CADENCE_ORDER") == "old"
 	EventBus.car_near_miss.connect(func(_at: Vector2) -> void: _horns += 1)
 	EventBus.crowd_bumped.connect(func(_at: Vector2) -> void: _bumps += 1)
 	EventBus.hard_fail_triggered.connect(func(cause: String) -> void:
@@ -66,14 +63,14 @@ func run(t) -> void:
 			for walk in WALKS:
 				for per_tick in frames:
 					print("CROWD_CADENCE_JSON " + JSON.stringify(
-							_run_once(city, rig, city_seed, day, walk, per_tick, old_order)))
+							_run_once(city, rig, city_seed, day, walk, per_tick)))
 		city.crowd._player = null
 		city.free()
 	rig.free()
 	t.check(true, "ran")
 
 func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String,
-		per_tick: int, old_order := false) -> Dictionary:
+		per_tick: int) -> Dictionary:
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, day)
 	var closures := RandomNumberGenerator.new()
@@ -108,12 +105,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 		rig.global_position = here
 		rig.velocity = going * Tuning.WALK_SPEED
 		here += going * Tuning.WALK_SPEED * STEP
-		if old_order and steps_its_agents:
-			crowd._advance_the_world(STEP)
-			crowd._meet_the_player()
-			crowd._step_the_agents(STEP)
-		else:
-			crowd._physics_process(STEP)
+		crowd._physics_process(STEP)
 		if not steps_its_agents:
 			for _frame in per_tick:
 				for agent in crowd.agents():
@@ -143,7 +135,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	var horns := _horns - horns_at_warmup
 	var minutes := WINDOW * STEP / 60.0
 	return {"seed": city_seed, "day": day, "walk": walk, "frames_per_tick": per_tick,
-		"steps_on_the_tick": steps_its_agents, "old_order": old_order, "agents": crowd.agent_count(),
+		"steps_on_the_tick": steps_its_agents, "agents": crowd.agent_count(),
 		"window_seconds": WINDOW * STEP,
 		"headway_p10": _quantile(gaps, 0.1), "headway_median": _quantile(gaps, 0.5),
 		"headway_min": gaps[0] if not gaps.is_empty() else INF,

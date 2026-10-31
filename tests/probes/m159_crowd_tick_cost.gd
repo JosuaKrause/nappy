@@ -38,10 +38,10 @@ const CHASE_FROM := 90
 const REPETITIONS := 3
 const WARMUP := 150
 const WINDOW := 600
-## The split's columns, in the order the tick runs them: the agents' steps first, then
-## `_advance_the_world()`'s calls and `space_out_the_traffic()`'s inside it, then the player half.
-const PARTS: Array[String] = ["agents", "signals", "pockets", "resolve", "keep_room", "index",
-		"claims", "give_way", "gates", "doors", "player"]
+## The split's columns, in the order the tick runs them: `_advance_the_world()`'s calls and
+## `space_out_the_traffic()`'s inside it, then the player half, then the agents' steps.
+const PARTS: Array[String] = ["signals", "pockets", "resolve", "keep_room", "index",
+		"claims", "give_way", "gates", "doors", "player", "agents"]
 
 func run(t) -> void:
 	var rig := Stroller.new()
@@ -128,14 +128,12 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		"engine": Engine.get_version_info().string, "os": OS.get_name(),
 		"processor": OS.get_processor_name()}
 
-## The tick, call by call, in `Crowd._tick_the_crowd()`'s own order: `_step_the_agents()`,
-## `_advance_the_world()` (with `space_out_the_traffic()` opened up inside it) and then
-## `_meet_the_player()`. Returns each call's
+## The tick, call by call, in `Crowd._tick_the_crowd()`'s own order: `_advance_the_world()` (with
+## `space_out_the_traffic()` opened up inside it), `_meet_the_player()` and then
+## `_step_the_agents()`. Returns each call's
 ## microseconds in `PARTS` order.
 func _split_tick(crowd: Crowd) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	crowd._step_the_agents(STEP)
-	stamps.append(Time.get_ticks_usec())
 	if crowd._signals:
 		crowd._signals.advance(STEP)
 	stamps.append(Time.get_ticks_usec())
@@ -156,6 +154,8 @@ func _split_tick(crowd: Crowd) -> Array[int]:
 	crowd._hold_walkers_at_doors(STEP)
 	stamps.append(Time.get_ticks_usec())
 	crowd._meet_the_player()
+	stamps.append(Time.get_ticks_usec())
+	crowd._step_the_agents(STEP)
 	stamps.append(Time.get_ticks_usec())
 	var parts: Array[int] = []
 	for i in range(1, stamps.size()):

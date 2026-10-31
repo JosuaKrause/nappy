@@ -72,18 +72,19 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 		rig.velocity = going * Tuning.WALK_SPEED
 		here += going * Tuning.WALK_SPEED * STEP
 		var began := Time.get_ticks_usec()
+		crowd._physics_process(STEP)
+		var moved := Time.get_ticks_usec()
 		# A crowd that steps its own agents inside its tick (`_step_the_agents()`, from minty-quail
-		# shared-components C1) is stepped by the tick alone; before it, each agent's own frame came
-		# first, in the same order. Called by name so the one file runs on either revision.
+		# shared-components C1) is stepped by the tick alone. Before it, each agent's own frame came
+		# after the crowd's tick, in the same order. Called by name so the one file runs on either
+		# revision, and the game's own order on both.
 		if not crowd.has_method("_step_the_agents"):
 			for agent in crowd.agents():
 				agent.call("_process", STEP)
-		var moved := Time.get_ticks_usec()
-		crowd._physics_process(STEP)
 		var ended := Time.get_ticks_usec()
 		if tick >= WARMUP:
-			agents_us.append(moved - began)
-			tick_us.append(ended - moved)
+			tick_us.append(moved - began)
+			agents_us.append(ended - moved)
 		chain = _chain(chain, crowd)
 		drawn = _drawn(drawn, crowd)
 	agents_us.sort()

@@ -325,7 +325,8 @@ to outlive one frame and nothing bounds it, so with nothing rebuilding, every re
 
 **When a rig drives a subsystem by hand, ask what the engine was doing around it** — and if the
 answer is "keeping something bounded", the rig is not slow, it is wrong. `Crowd.step()` is the whole
-tick but the player half and is what a rig calls.
+tick but the player half and is what a rig calls; it and the live tick run the same order, the
+traffic and the doors first and the agents' steps last.
 
 ## The crowd is one picture on purpose
 

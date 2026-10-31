@@ -1547,6 +1547,9 @@ func _test_the_traffic_index_is_emptied_every_frame(t) -> void:
 	# place in a lane. The growth is visible within a frame or two of the first recycle, so this
 	# does not need the minute the tests either side of it do.
 	_advance(10.0)
+	# The tick ends with the agents' steps, and a car that recycles in one claims a place that the
+	# next tick's rebuild throws away, so the count is asked right after a rebuild.
+	_city.crowd.space_out_the_traffic(STEP)
 	# One entry per car, plus one for each car that is mid-turn: a turning car is in the queue it
 	# came from *and* has booked the place in the lane it is turning into, which nothing else in the
 	# index would show. See `Crowd.space_out_the_traffic`.

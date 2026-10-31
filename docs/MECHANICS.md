@@ -1424,7 +1424,8 @@ the same tick (`ResistanceDirector.tick()`), before the day's, as the tree order
 step on every physics tick the city runs, which on a day includes the ticks behind the title screen,
 where the street plays on, and so does the crowd: every walker and car moves, gives way, sounds its
 horn and is bumped once a tick, on every machine, and is drawn interpolated between two ticks, as
-she is. What an agent's picture does besides move is redrawn on the tick, thirty times a second: a
+she is. Inside the tick the traffic is spaced out, the doors held and she is met first, and then
+every agent steps, so a strike, a horn or a bump reads where the last tick left the cars. What an agent's picture does besides move is redrawn on the tick, thirty times a second: a
 car's bob over its wheels and a walker's gait step at that rate even on a faster screen, while a
 marked car's caret, a danger cue, breathes with its horn on every drawn frame. The escape's clock,
 which reads to the hundredth, is drawn between two ticks as the tick's countdown advanced by how far
