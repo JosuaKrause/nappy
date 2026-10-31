@@ -173,9 +173,10 @@ func _protest_pose() -> int:
 ## over from the last one), the caret's own 0/1/2 strength, and the protest pose. `z` and `w` are
 ## the two continuous quantities, quantised — see `BOB_STEPS_PER_PX` and `SWELL_STEPS`.
 func _picture_key() -> Vector4i:
-	# `_caret_strength()` is cached against `age` and was already asked once per draw through
+	# The caret's strength is cached against `age` and where she is
+	# (`ExcitementSource.caret_strength()`) and was already asked once per draw through
 	# `wants_a_mark()`, so asking it here costs a frame exactly what it always cost.
-	var caret := _caret_strength()
+	var caret := event.excitement.caret_strength()
 	var swell := 0.0
 	var flashed_off := false
 	if caret > 0:
@@ -375,47 +376,13 @@ func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 		_draw_shape_shadow(canvas, piece.shape,
 				origin + event.spread_at(piece.offset_for(event.runs_vertically())))
 
-## The caret's own answer, 0 (none), 1 (amber) or 2 (doubled red), computed once and cached —
-## `wants_a_mark()`, `mark_colour()`, `_draw_mark()` and `_picture_key()` all ask in the same
-## frame, and each is a fresh sampling loop over `expected_impact_at()` or `will_be_lethal()` if
-## they do not share one. **Cache per frame, the way the halo already does its own once-a-frame
-## work**, rather than pricing the projection four times over for every visible source every draw.
-##
-## **Keyed on where she is as well as on the clock, and the pair is load-bearing.** The answer is
-## a projection of this event's course against her position, so it goes stale when either moves —
-## and the two do not move together: `player_at` is written by `EventManager` and `ExcitementHalo`
-## from outside, the manager on its physics tick and the halo once a drawn frame, while
-## `redraw_if_the_picture_changed()` asks for the caret on the event's own drawn frame. Keyed
-## on `age` alone, the first of those to ask fixes the answer for the whole
-## tick, and a caret computed against last frame's position — or against `Vector2.INF`, before
-## anything has said where she is at all — is the one that stands.
-var _caret_strength_age := -1.0
-
-var _caret_strength_at := Vector2.INF
-
-var _caret_strength_cache := 0
-
-func _caret_strength() -> int:
-	if _caret_strength_age == event.age and _caret_strength_at == event.player_at:
-		return _caret_strength_cache
-	_caret_strength_age = event.age
-	_caret_strength_at = event.player_at
-	_caret_strength_cache = 0
-	# A permanent feature of a fixed map never appears, so there is no moment to mark: the same
-	# reason the fairness contract exempts an `AMBIENT` row.
-	if not (event.is_finished or event.is_leaving or event.def.kind == GameEnums.EventKind.AMBIENT):
-		if event.will_be_lethal(event.player_at):
-			_caret_strength_cache = 2
-		elif event.expected_impact_at(event.player_at) >= Tuning.EXPECTED_IMPACT_POINTS:
-			_caret_strength_cache = 1
-	return _caret_strength_cache
-
 ## Whether this event is worth a mark at all.
 ##
 ## **The mark is raised by what a thing is projected to do to her, held still, and by nothing
 ## else.** *(2026-09-08, the player: "carets shouldn't be chosen by source value but by expected
-## impact value".)* A row's own declared cost does not decide it — `expected_impact_at()` and
-## `will_be_lethal()` do, at wherever she is
+## impact value".)* A row's own declared cost does not decide it — its source's
+## (`ExcitementSource.caret_strength()`, cached once per frame for every caller here) does, from
+## `expected_impact_at()` and `will_be_lethal()` at wherever she is
 ## actually standing and however this thing is actually moving, so the same row is marked at one
 ## moment and not at the next: a café she is standing in is unmarked, and a cyclist whose line
 ## reaches her is marked while one passing wide of her is not.
@@ -424,7 +391,7 @@ func _caret_strength() -> int:
 ## projection — see `expected_impact_at()` — which is the halo's job from the moment she is in its
 ## field, not the caret's.
 func wants_a_mark() -> bool:
-	return _caret_strength() > 0
+	return event.excitement.caret_strength() > 0
 
 ## How hard the mark is breathing, 0..1, from what the event is emitting right now.
 ##
@@ -446,7 +413,7 @@ func mark_swell() -> float:
 ## *near* and red mean *far*, which is a colour carrying no information and being read as something
 ## else.
 ##
-## **Follows the strength `_caret_strength()` computed, not `def.hard_fail`.** *(2026-09-08, the
+## **Follows the strength its source's caret computed, not `def.hard_fail`.** *(2026-09-08, the
 ## player: "we can keep the double red == lethal", then "and not all lethal things need a caret
 ## either".)* A `hard_fail` row still reads doubled red exactly when its own current course would
 ## put her inside the radius that ends the day — `will_be_lethal()` — and reads amber like anything
@@ -456,7 +423,7 @@ func mark_swell() -> float:
 ## So the colour is the scale and the **flash** — visible whether or not she was there when the
 ## event started — is what says it has not happened yet. See `_draw_mark`.
 func mark_colour() -> Color:
-	return Palette.MARK_LETHAL if _caret_strength() == 2 else Palette.MARK_COSTLY
+	return Palette.MARK_LETHAL if event.excitement.caret_strength() == 2 else Palette.MARK_COSTLY
 
 ## A caret over anything worth looking at, breathing with what it is currently emitting.
 ##
@@ -478,7 +445,7 @@ func _draw_mark() -> void:
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, _picture_drop_now() - (EventPictures.MARK_HEIGHT + 10.0 * swell))
 	Sprites.draw_caret(event, at, EventPictures.MARK_WIDTH * scale, mark_colour())
-	if _caret_strength() == 2:
+	if event.excitement.caret_strength() == 2:
 		# Doubled, so lethal reads at a glance and never has to be told apart by hue.
 		Sprites.draw_caret(event, at - Vector2(0.0, EventPictures.MARK_WIDTH * scale * 0.85),
 				EventPictures.MARK_WIDTH * scale, mark_colour())
@@ -493,7 +460,7 @@ func mark_rect() -> Rect2:
 	var width := EventPictures.MARK_WIDTH * (0.55 + 0.45 * swell)
 	var at := Vector2(0.0, _picture_drop_now() - (EventPictures.MARK_HEIGHT + 10.0 * swell))
 	var top := at.y - width * 0.8
-	if _caret_strength() == 2:
+	if event.excitement.caret_strength() == 2:
 		top -= width * 0.85
 	var outline := 1.0
 	return Rect2(-width - outline, top - outline, (width + outline) * 2.0,

@@ -258,7 +258,7 @@ func loss_cause(result: GameEnums.DayResult) -> String:
 ## The impure half `LossCause.crying_suffix()` is named for: every live event's own `landed()`
 ## grouped by its catalogue id, or `pelican` for a pelican, every live crowd agent's grouped by
 ## `crowd` (a walker) or `traffic` (a car), and the baby's own running/alley share under `self` —
-## all over the same `ExcitementHalo.WINDOW` the halo itself reads. Only positive shares are kept,
+## all over the same `ExcitementSource.WINDOW` the halo itself reads. Only positive shares are kept,
 ## so an empty result means nothing landed anything in the window at all.
 ##
 ## Read once, in the same physics frame `Baby._update_state()` decided she was crying —
@@ -271,13 +271,13 @@ func landed_by_group() -> Dictionary:
 		# (`EventInstance.logged_name()`), so a pelican's share is `pelican`'s rather than added to
 		# the cyclists' *(inbox #527 in azure-tapir)*. Only positive shares are kept.
 		for instance in events.instances():
-			var points := instance.landed()
+			var points := instance.excitement.landed()
 			if points > 0.0:
 				var name := instance.logged_name()
 				by_group[name] = float(by_group.get(name, 0.0)) + points
 	if city and city.crowd:
 		for agent: CrowdAgent in city.crowd.agents():
-			var points := agent.landed()
+			var points := agent.excitement.landed()
 			if points <= 0.0:
 				continue
 			var key := "traffic" if agent.kind == CrowdAgent.Kind.CAR else "crowd"

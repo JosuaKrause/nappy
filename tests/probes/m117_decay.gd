@@ -126,7 +126,7 @@ func _walk(city: City, from: Vector2, to: Vector2, day: int, city_seed: int) -> 
 		city.crowd.step(STEP)
 
 		var multiplier := city.decay_multiplier(at)
-		var incoming := city.crowd.total_excitement_at(at)
+		var incoming := city.crowd.sources.total_at(at)
 		if city.is_alley(at):
 			incoming += Tuning.EXCITEMENT_FROM_ALLEY
 		crowd_total += incoming

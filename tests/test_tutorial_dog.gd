@@ -178,12 +178,12 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t) -> void:
 	dog.setup(hot, Vector2.ZERO)
 	# Inside the field (`outer_radius`) but outside the trigger (`EventDef.notice`) — the "on sight"
 	# band alley_robbery's own shape leaves room for.
-	dog.set_player_at(Vector2((hot.outer_radius + hot.notice_within()) * 0.5, 0.0))
+	dog.excitement.set_player_at(Vector2((hot.outer_radius + hot.notice_within()) * 0.5, 0.0))
 	dog.step(STEP)
 	t.check(dog.is_waiting() and not dog.is_telegraphing(),
 			"inside its own field but outside the trigger, a day-4 dog has not noticed her yet")
 
-	dog.set_player_at(Vector2(hot.notice_within() - 10.0, 0.0))
+	dog.excitement.set_player_at(Vector2(hot.notice_within() - 10.0, 0.0))
 	dog.step(STEP)
 	t.check(not dog.is_waiting() and dog.is_telegraphing(),
 			"inside the trigger, it notices her and starts its telegraph")
@@ -199,7 +199,7 @@ func _test_day_3_dog_still_charges_the_moment_it_streams_in(t) -> void:
 	t.check(def.notice_within() <= 0.0, "day 3's own def is untouched by the switch")
 	var dog := EventInstance.new()
 	dog.setup(def, Vector2.ZERO)
-	dog.set_player_at(Vector2(1000.0, 1000.0))
+	dog.excitement.set_player_at(Vector2(1000.0, 1000.0))
 	dog.step(STEP)
 	t.check(not dog.is_waiting() and dog.is_telegraphing(),
 			"a day-3 dog is already telegraphing its charge however far away she is standing")

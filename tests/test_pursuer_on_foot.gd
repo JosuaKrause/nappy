@@ -365,11 +365,11 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
 			man.step(STEP)
 			elapsed += STEP
 			if man.has_stopped_her() and not man.is_leaving:
-				landed += man.contribution_at(her) * STEP
+				landed += man.excitement.contribution_at(her) * STEP
 				if walks_away:
 					her += Vector2.LEFT * Tuning.WALK_SPEED * STEP
 			elif man.is_leaving:
-				after += man.contribution_at(her) * STEP
+				after += man.excitement.contribution_at(her) * STEP
 		if walks_away:
 			t.check(landed >= stop * 0.9,
 					"walking away as he reaches her, she still takes %.1f of its %.0f" % [landed, stop])
@@ -620,7 +620,7 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 	while elapsed < 40.0:
 		_tick(events)
 		elapsed += STEP
-		landed += events.total_excitement_at(her.global_position) * STEP
+		landed += events.sources.total_at(her.global_position) * STEP
 		if officer == null and car.its_officer() != null:
 			officer = car.its_officer()
 		var out_of_reach := car.global_position.distance_to(her.global_position) \

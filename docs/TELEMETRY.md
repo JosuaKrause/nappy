@@ -98,14 +98,14 @@ The events:
   `lost-hard-fail-charging-dog-tutorial` and day 13's task guard `lost-hard-fail-task-guard` or,
   sent at her, `lost-hard-fail-task-guard-sent` — and a pelican is `pelican` rather than
   its row's `cyclist` (`EventManager.what_struck_her()`). A crying loss names whichever source
-  landed the most on her over the halo's own window (`ExcitementHalo.WINDOW`, 5s) at the moment she
-  cried: the row id of the event that landed it (`EventInstance.landed()`, grouped by
+  landed the most on her over every source's own window (`ExcitementSource.WINDOW`, 5s) at the moment she
+  cried: the row id of the event that landed it (`ExcitementSource.landed()` on the event's source, grouped by
   `EventInstance.logged_name()` in `DayDirector.landed_by_group()`) — a catalogue row's, or one of the three rows met on one occasion that
   sit outside the catalogue's list, so a day cried away mostly under day 13's task guard is
   `lost-crying-task-guard`, never `lost-crying-alley-robbery`, and the lesson's dog and the task
   guard sent at her are `lost-crying-charging-dog-tutorial` and `lost-crying-task-guard-sent` —
   again `pelican` for a pelican, `crowd` for
-  walkers or `traffic` for cars (`CrowdAgent.landed()`, told apart by `CrowdAgent.kind`), or `self`
+  walkers or `traffic` for cars (`ExcitementSource.landed()` on the body's source, told apart by `CrowdAgent.kind`), or `self`
   for her own running and
   standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
   own). Ties, and a window with nothing landed in it at all, pick the alphabetically first group
@@ -178,7 +178,7 @@ The events:
   (`EventManager.spawn_warned()`); its first frame properly on screen
   (`EventSpawner.report_the_pelicans_in_view()`, the same test as an encounter's `seen` below:
   80% of its drawn box visible to her, `VisibleView`); the first share of her meter its field lands, inside its 90px
-  (`EventInstance.accumulate_landed()`); and its lethal reach, 33px, covering her
+  (its source's first-landing callback, `EventSpawner._ride_as_a_pelican()`); and its lethal reach, 33px, covering her
   (`EventManager._check_hard_fails()`). The cyclist's contact does those two different things to
   her — its field fills the meter, its reach ends the day — so each is an event of its own. A
   `pelican-hit` is sent just ahead of the day's own `lost-hard-fail-pelican`.
@@ -216,7 +216,7 @@ The events:
     controls, its halo or its badge does not count. A row that draws nothing of its own (`playground`, `curfew_announce`) is never seen.
   - **`influenced`**, at most once per encounter, the first frame it is meaningful, the same for
     every row: `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within the
-    encounter (`EventInstance.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or it
+    encounter (its source's `ExcitementSource.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or it
     catching her or beginning a hold of her *(inbox #577, the player: "let's count chases and catches
     as influenced always")*. A catch and a hold are the game's own tests, called and not copied
     *(inbox #586 in [olive-hedgehog](playtests/2026-10-05-olive-hedgehog.md), the player: "use the real catch code")*: `EventInstance.is_lethal_at()`, so a cyclist

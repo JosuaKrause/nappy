@@ -161,7 +161,7 @@ func _test_a_protest_stays_something_she_can_be_routed_through(t) -> void:
 ## **A door's price is the detention, not the field, and that has to stay true of the one source a
 ## door charges as.** *(2026-09-20: "guard posts should emit less excitement by themselves, too";
 ## "since there can be other obstacles around".)* Every `EventDef.barrier_structure` row collapses
-## to the strongest of them at her position (`EventManager.excitement_sources_at()`), so a hut, a
+## to the strongest of them at her position (`EventSources.sources_at()`), so a hut, a
 ## gate and a wall's roadblocks at one corner charge one rate between them. What that rate has to
 ## stay under is the **toll the hold itself charges**: a detention is spent standing still, where
 ## `Tuning.EXCITEMENT_DECAY_IDLE` is zero and nothing is earned back, so the field bills for every

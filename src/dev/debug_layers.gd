@@ -33,7 +33,7 @@ extends Node2D
 ## `Tuning.falloff()` prices, so this layer cannot disagree with what the meter does: a capsule
 ## about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one.
 ## **And cut where a wall stops it**: an outline is drawn only where the emitter's own walls
-## (`EventInstance.wall_grid()`, `CrowdAgent.wall_grid()`) let its field reach, so behind a
+## (`ExcitementSource.wall_grid()`) let its field reach, so behind a
 ## building, where the meter receives nothing, there is no line either, to within one `CUT_PIECE`. `_draw_fields()` is where the
 ## shape-per-emitter decision is made, and `open_runs()` where the cut is.
 ##
@@ -174,7 +174,7 @@ func field_runs(view: Rect2) -> Array:
 			continue
 		var colour := FIELD_LETHAL if instance.def.hard_fail else FIELD_COSTLY
 		var source := instance.global_position
-		var grid := instance.wall_grid()
+		var grid := instance.excitement.wall_grid()
 		var id := instance.get_instance_id()
 		var offsets := instance.flock_offsets()
 		if offsets.is_empty():
@@ -206,16 +206,16 @@ func field_runs(view: Rect2) -> Array:
 		var outer := Tuning.CAR_OUTER_RADIUS if is_car else Tuning.PEDESTRIAN_OUTER_RADIUS
 		# Noise, never lethal — a car's strike box is drawn in the bounding-box layer instead, in
 		# the same lethal colour, because being hit is a body question and this is a field one. A
-		# crowd body is always a point in field terms (see `CrowdAgent.contribution_at()`'s own
+		# crowd body is always a point in field terms (see `CrowdExcitement`'s own
 		# doc), so it is outlined as a point whatever the agent's own shadow shape says.
 		var velocity := agent.velocity()
 		var levels: Array[float] = [inner, outer]
-		if agent.is_startled():
-			var jolt := agent.jolt_radii()
+		if agent.excitement.is_startled():
+			var jolt := agent.excitement.jolt_radii()
 			levels.append(jolt.x)
 			levels.append(jolt.y)
 		var source := agent.global_position
-		var grid := agent.wall_grid()
+		var grid := agent.excitement.wall_grid()
 		var id := agent.get_instance_id()
 		for level in levels:
 			if not _may_be_seen(view, source, level):
@@ -244,7 +244,7 @@ func _view_rect() -> Rect2:
 
 ## Whether a field level about `at` can reach into `view`, asked before its outline is built: no
 ## outline reaches further from its emitter than `level / (1 - Tuning.FIELD_ECCENTRICITY_MAX)`,
-## the bound `CrowdAgent.contribution_at()` culls by, past the end of a body's own `spine`.
+## the bound `CrowdExcitement` culls by, past the end of a body's own `spine`.
 static func _may_be_seen(view: Rect2, at: Vector2, level: float, spine := 0.0) -> bool:
 	return view.grow(level / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX) + spine).has_point(at)
 
@@ -285,14 +285,14 @@ const _CUT_STEPS := 4
 ## A closed outline as the open polylines left once every stretch of it a wall keeps the field from
 ## is cut away: walled where `grid.wall_between()` blocks the line from `source`, the emitter's own
 ## node, to the point — the line `contribution_at()` asks, of the grid the emitter asks it of
-## (`EventInstance.wall_grid()`, `CrowdAgent.wall_grid()`). With nothing walled it is the whole
+## (`ExcitementSource.wall_grid()`). With nothing walled it is the whole
 ## loop, closed; with everything walled it is nothing; with no grid nothing is walled. The outline
 ## is asked piece by piece (`CUT_PIECE`), and **where a piece runs from open to walled, the cut is
 ## where the answer turns along it**, found by halving it, so the line ends at the wall's depth
 ## rather than at whichever point of the outline happened to fall short of it.
 ##
 ## **Most outlines ask no line at all**: a source on open ground — a row from outside the walls
-## (`EventInstance.wall_grid()`) — has its whole outline at once, and otherwise
+## (`ExcitementSource.wall_grid()`) — has its whole outline at once, and otherwise
 ## `_deep_ground_meets()` answers first whether anything
 ## within the outline's bounds could be deep enough in a building to wall one, and a walker on a
 ## sidewalk beside a facade almost never reaches that far in.

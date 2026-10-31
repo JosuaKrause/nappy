@@ -116,7 +116,8 @@ func crossing_door() -> EventInstance:
 
 ## The region door whose hold is running right now and whose own trigger circle `world_position`
 ## lies inside, or `null` when this point is not inside a door. `WorldContext.excitement_sources_at()`
-## asks it too, through the manager, for the crowd half of the same sum.
+## asks it too, through the events' set (`EventSources.holds_her_alone()`), for the crowd half of the
+## same sum.
 ##
 ## **She is *inside the hut*, so the street does not reach her.** A hold is the one state in the
 ## game where she is not standing on the ground the meter is being asked about: she is hidden, the

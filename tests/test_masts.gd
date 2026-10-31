@@ -230,12 +230,12 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
 	# Asked once before silencing, on purpose: `contribution_at()` caches per `(age, position)`,
 	# and silencing does not move `age` — without its own cache invalidation this would go on
 	# answering the pre-silence figure for the rest of the tick, exactly the defect
-	# `EventInstance._invalidate_contribution_cache()`'s own doc warns `_finish()` about.
-	var _primed := plan.live.contribution_at(nearby)
+	# `ExcitementSource.invalidate_contribution()`'s own doc warns `_finish()` about.
+	var _primed := plan.live.excitement.contribution_at(nearby)
 
 	t.check(_city.events.silence_mast(target.id), "silencing a mast by id finds it")
 	t.check(is_zero_approx(plan.live.current_intensity()), "a silenced mast's field is gone")
-	t.check(is_zero_approx(plan.live.contribution_at(nearby)),
+	t.check(is_zero_approx(plan.live.excitement.contribution_at(nearby)),
 			"and contribution_at() answers zero in the same tick, not the pre-silence cache")
 	t.check(not plan.live.is_finished, "but the mast still stands — it has not left")
 

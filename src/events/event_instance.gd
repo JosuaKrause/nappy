@@ -4,9 +4,10 @@ extends Node2D
 ## it does is its behaviours' (`src/events/behaviours/`); how it looks is its look's
 ## (`src/events/views/`), which reads its public state and draws it.
 ##
-## The excitement model is entirely a *query* — `contribution_at()`. Nothing pushes a value
-## at the baby, so there is no ordering to get wrong, events compose by simple addition, and
-## the whole thing is testable without a scene.
+## The excitement model is entirely a *query*, asked of the source it composes (`excitement`, an
+## `EventExcitement`) over the field it states here (`field_at()`). Nothing pushes a value at the
+## baby, so there is no ordering to get wrong, events compose by simple addition, and the whole
+## thing is testable without a scene.
 
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
@@ -109,7 +110,7 @@ func transition(to: Phase) -> void:
 	if phase == Phase.WARNING and to == Phase.ACTIVE:
 		_telegraph_ended = true
 	phase = to
-	_invalidate_contribution_cache()
+	excitement.invalidate_contribution()
 
 ## **A telegraph or notice that has run its time is over**: asked wherever the notice clock or
 ## the age moves, so the stored phase is never behind the clock.
@@ -130,18 +131,13 @@ var is_pelican := false
 ## beginning".)*
 const PELICAN_NAME := "pelican"
 
-## Whether `EventBus.pelican_excited_her` has gone out for this pelican: once per pelican, on the
-## first share of the meter it lands (`accumulate_landed()`).
-var _reported_excitement := false
-
-## Every point this instance has ever landed on her meter, never pruned — the running total
-## `EncounterWatch` measures an encounter's share against, since `landed()` keeps only the halo's
-## `ExcitementHalo.WINDOW` and an encounter can be longer. Telemetry only: nothing that decides
-## anything reads it.
-var landed_ever := 0.0
+## This event as a thing that charges the baby (`EventExcitement`): its present rate at a point,
+## its ledger of what it has landed, its projection and its caret's strength.
+var excitement := EventExcitement.new(self)
 
 ## `EncounterWatch`'s own record of this instance's encounters with her, made the first time it is
-## on screen or lands on her, or `null` until then. Telemetry only, like `landed_ever`.
+## on screen or lands on her, or `null` until then. Telemetry only, like
+## `ExcitementSource.landed_ever`.
 var encounter: EncounterWatch.Record = null
 
 ## The box, in this node's own space, that what this instance draws roughly fills
@@ -201,8 +197,8 @@ var skip_draw := false
 ##
 ## Two things want it, and neither is a reference to her: a pursuer walks toward it, and anything
 ## that is *leaving* uses it to know when it is out of sight. `ExcitementHalo` writes the same
-## value again every frame through `set_player_at()`, part of the duck type it reads back for the
-## caret — the two writers agree because both read `_player.global_position` the same frame.
+## value again every frame through `excitement.set_player_at()`, which keeps it here, for the caret
+## — the two writers agree because both read `_player.global_position` the same frame.
 var player_at := Vector2.INF
 
 ## Where her pram's own body is (`Stroller.PRAM_BODY_RADIUS`, on her circumference along her
@@ -211,39 +207,6 @@ var player_at := Vector2.INF
 ## her that meets a car first when she faces it, so a car that stopped only for her own body would
 ## shove the pram, and a strike stated over her body alone would be stopped short by the pram.
 var pram_at := Vector2.INF
-
-## Her current velocity, her current decay rate (`Baby.decay_rate()`, her locomotion times the
-## ground she is on) and the baby's current sensitivity (`Baby.current_sensitivity()`) —
-## everything `expected_impact_at()` needs to answer "if she keeps doing what she is doing." All
-## three default to the values that make it answer exactly as it always did (held still, nothing
-## given back, nothing damped) for any caller — a data-level test among them — that has not told
-## this instance otherwise.
-var player_velocity := Vector2.ZERO
-var player_decay_rate := 0.0
-var player_sensitivity := 1.0
-
-## The sum of `expected_gross_at()` over every source `ExcitementHalo` is running this frame, told
-## once a frame through `set_expected_total_gross()` — `-1.0` (the default) means nobody has, so
-## `expected_impact_at()` nets the whole projected decay against this instance alone, exactly as it
-## always did.
-var player_expected_total_gross := -1.0
-
-## Part of `ExcitementHalo`'s duck type — see that class's doc. `EventManager` already keeps
-## `player_at` current for the chase and the leaving check; this is the same field, told from the
-## other direction, plus the three above `expected_impact_at()` needs and nothing else in this
-## file reads.
-func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
-		sensitivity: float = 1.0) -> void:
-	player_at = at
-	player_velocity = velocity
-	player_decay_rate = decay_rate
-	player_sensitivity = sensitivity
-
-## Told once a frame by `ExcitementHalo`, after every live candidate's own `expected_gross_at()`
-## has been asked at the same position — see `expected_impact_at()`'s own doc for why the total has
-## to be gathered before any one source's share of the decay can be known.
-func set_expected_total_gross(total: float) -> void:
-	player_expected_total_gross = total
 
 ## The camera's whole view this frame (`VisibleView.view`), written beside `player_at` by
 ## `EventManager._tell_them_where_she_is()`: what a waiting charger's notice is held to
@@ -254,22 +217,6 @@ var player_view := Rect2()
 ## one thing that reads it asks both together: a pursuer gives up because **she ran**, which is a
 ## fact about her and not about the gap. See `EventPursuit`.
 var player_running := false
-
-## Whether another structure of the same region boundary is charging her harder than this one is,
-## at `player_at`. Written once a frame by `EventManager._tell_them_where_she_is()`, `false` for
-## every row that is not a `EventDef.barrier_structure` and for the one of them that is the
-## maximum.
-##
-## **It exists so the two cues that say "this will cost you" agree with the meter, which keeps only
-## that maximum.** `expected_impact_at()` returns nothing for an outranked structure and
-## `ExcitementHalo.select_sources()` leaves it out, so a corner where a wall meets a door draws one
-## rim on the barrier that is actually charging her rather than five rims sharing one barrier's
-## worth of cost — and `MAX_SOURCES` is not spent on four bodies that land nothing.
-##
-## **Told from outside rather than asked here**, for the same reason `player_at` is: an instance
-## has no view of the others, and the answer is a property of where she is standing this frame.
-## `false` until somebody says otherwise, which is the ordinary behaviour a data-level test gets.
-var outranked_by_a_stronger_barrier := false
 
 ## Whether the baby is awake right now. Written once a frame by `EventManager` alongside
 ## `player_at`, and read by exactly one row: `chatting_mother`'s conversation is the only thing in
@@ -333,24 +280,15 @@ var _sight: Mover
 ## its step has dropped it. See `is_solid()`.
 var _obstruction: StaticBody2D
 
-## The child that re-draws this event's own body in a ring of offsets — see `EntityHalo`, the
-## class shared with `CrowdAgent` that owns the ring, the shared shader material and the drawing.
-## Built on this instance's first nonzero glow and freed on the spot once it has faded back out,
-## or by `ExcitementHalo` through `release_halo()` once this instance is queued for deletion, so it
-## is `null` whenever nothing is drawn — see `set_halo_strength()`, and `EntityHalo`'s class doc
-## for why a rim held by every live event leaves most of them dark on the web.
-var _halo: EntityHalo
+## The rim `ExcitementHalo` lights on this event (`Rim`), handed to its source: its own body's,
+## or the band's while a guard walks away from his barrier.
+var _rim := Rim.new(self)
 
-## `[when, points]` entries landed on her from this event, `when` stamped from `_clock` in
-## seconds, for whatever is still inside `ExcitementHalo.WINDOW` — a true sliding sum rather than
-## a decayed average, so a burst reads as itself for the whole window and then drops. Lazily
-## grown: an event that has never landed anything keeps this empty. Duck-typed with `CrowdAgent`'s
-## own copy — see `ExcitementHalo`'s class doc for the whole shape. See `accumulate_landed()` and
-## `landed()`.
-var _landed_history: Array = []
+func _init() -> void:
+	excitement.rim = _rim
 
 ## This event's own simulation clock, in seconds, advanced by `delta` in `step()` while the
-## event is still live. `landed()` is measured against this rather than `Time.get_ticks_msec()` so
+## event is still live. `excitement.landed()` is measured against this rather than the wall clock so
 ## that a paused game does not empty the halo, and so a rig can measure the window on simulated
 ## time by advancing this directly instead of waiting on the wall clock. Frozen once `is_finished`
 ## — see `step()` — so a spent instance's history simply stops moving rather than continuing
@@ -595,21 +533,22 @@ func solid_part_shapes() -> Array[GroundShape]:
 		shapes.append(piece.shape)
 	return shapes
 
-## Built by `set_halo_strength()` the first time `ExcitementHalo` picks this instance, never in
+## Built by its rim the first time `ExcitementHalo` picks this instance, never in
 ## `_ready()`: a day has dozens of events live at once, and a rim each would take every block the
 ## web's renderer can read — see `EntityHalo`'s class doc. `EntityHalo` gets the look's own
 ## `EventLook.draw_body` and `EventLook.current_bob` so its ring rides the same lift
 ## `EventLook.draw()` gives the body.
-func _build_halo() -> void:
-	_halo = EntityHalo.new(look.draw_body, look.current_bob)
+func _build_halo() -> EntityHalo:
+	var halo := EntityHalo.new(look.draw_body, look.current_bob)
 	var holder := _rim_holder()
-	holder.add_child(_halo)
-	_halo.position = global_position - holder.global_position
+	holder.add_child(halo)
+	halo.position = global_position - holder.global_position
 	# **First child, so first of the behind-parent drawers.** The rim and the visible scene's layers
 	# (`EventScenery`) both opt into `show_behind_parent`, and siblings that do are painted in
 	# tree order, so a rim after the scenery, which `_ready()` builds long before any pick, would
 	# paint over the pictures it is meant to outline.
-	holder.move_child(_halo, 0)
+	holder.move_child(halo, 0)
+	return halo
 
 ## What the rim stands behind: this node, or what the look names instead (`EventLook.rim_holder()`,
 ## the first slice of a long picture drawn in slices, so the rim is behind the whole picture as it
@@ -1256,7 +1195,7 @@ func travel_velocity() -> Vector2:
 ## **A waiting pursuer still has no course.** `is_waiting()` means nobody has been noticed yet, so
 ## there is nothing here to project toward; only the moment it decides changes the answer, exactly
 ## as `travel_velocity()` already has it.
-func _caret_velocity() -> Vector2:
+func caret_velocity() -> Vector2:
 	if is_finished or is_leaving:
 		return Vector2.ZERO
 	if def.pursuit != null:
@@ -1327,7 +1266,7 @@ func move_to(at: Vector2) -> void:
 	_spread_vertical = _spread_is_vertical(_map, at)
 	_stationary_vehicle_side = EventFootprints.stands_side_on(def, _map, at, _heading)
 	_idle_phase_offset = _position_roll(101)
-	_invalidate_contribution_cache()
+	excitement.invalidate_contribution()
 	reset_physics_interpolation()
 	queue_redraw()
 
@@ -1620,7 +1559,7 @@ func _stop_warning() -> void:
 		pursuit.lunge_held = false
 	if barrier_post:
 		barrier_post.back_at_the_band()
-	_invalidate_contribution_cache()
+	excitement.invalidate_contribution()
 
 ## **Holds the notice clock for this tick** (`_notice.hold()`), run straight after `age`
 ## advances and before the phase is settled, so a frame whose notice is held is never seen as
@@ -1663,7 +1602,7 @@ func _pause_a_held_notice(delta: float) -> void:
 ##
 ## `pulse_multiplier_override` (`< 0.0` means "not given") replaces the instant's own
 ## `0.25 + 0.75 × pulse(age)` reading — the only caller that ever passes one is
-## `_caret_intensity_over_horizon()`, asking for the pulse's own mean over
+## `caret_intensity_over_horizon()`, asking for the pulse's own mean over
 ## `Tuning.EXPECTED_IMPACT_HORIZON` instead of the beat this instant happens to be on.
 func current_intensity(pulse_multiplier_override := -1.0) -> float:
 	if is_finished or is_leaving:
@@ -1735,7 +1674,7 @@ static func _pulse_mean_multiplier(age: float, horizon: float, period: float) ->
 	return 0.625 - 0.375 * mean_cos
 
 ## The multiplier the phase this instance is in puts on `def.intensity`, and the one place the
-## three answers live — `_caret_intensity_over_horizon()` divides by exactly this rather than
+## three answers live — `caret_intensity_over_horizon()` divides by exactly this rather than
 ## repeating the conditions, so the caret's projection and the meter can never disagree about which
 ## phase damps.
 ##
@@ -1760,163 +1699,34 @@ func _notice_damping() -> float:
 ## skipped, by dividing it back out of the same call rather than a second copy of the ramp and
 ## pulse logic above it.
 ##
-## Only `expected_gross_at()`'s own projection reads this. Every other caller of
-## `contribution_at()` — the halo, the exclamation mark, the meter itself — wants what a source is
+## Only the projection reads this (`ExcitementSource.expected_gross_at()`). Every caller of the
+## present rate — the halo, the exclamation mark, the meter itself — wants what a source is
 ## actually doing right now, damped or not, because it is asking about the present rather than
 ## about the course this thing is on. Without this, a `cyclist` ridden straight at a standing
 ## player through its own 2s telegraph reads at `TELEGRAPH_INTENSITY_FRACTION` (15%) the whole
-## time, and `expected_gross_at()` under-counts the approach by the same fraction.
+## time, and the projection under-counts the approach by the same fraction.
 ##
 ## **And a pulse is projected at its own mean over the horizon, not at this instant's beat** — see
 ## `_pulse_mean_multiplier()`'s own doc for why a frozen instant could read anywhere from a quarter
 ## to the full peak of a row whose pulse turns over inside `Tuning.EXPECTED_IMPACT_HORIZON`.
-func _caret_intensity_over_horizon() -> float:
+func caret_intensity_over_horizon() -> float:
 	var pulse_override := -1.0
 	if def.pulse_period > 0.0:
 		pulse_override = _pulse_mean_multiplier(age, Tuning.EXPECTED_IMPACT_HORIZON,
 				def.pulse_period)
 	return current_intensity(pulse_override) / _notice_damping()
 
-## Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
-## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
-## event's exact share of what landed this frame — `contribution × sensitivity × delta` — so the
-## halo can never disagree with what the bar actually did. *(2026-09-08, the player: "don't derive
-## it from the source numbers but trace an increase in excitement back to its constituents".)*
-## Stamped with `_clock`, this event's own simulation clock, rather than the wall clock, so a
-## paused game does not empty the halo and a rig can measure the window on simulated time.
-func accumulate_landed(points: float) -> void:
-	_prune_landed_history()
-	if points > 0.0:
-		_landed_history.append([_clock, points])
-		landed_ever += points
-		# A pelican's first share of the meter, for `VisitCounter` and the run log — told once, and
-		# never read back by anything here.
-		if is_pelican and not _reported_excitement:
-			_reported_excitement = true
-			EventBus.pelican_excited_her.emit(self)
-
-## The sum of every entry still inside `ExcitementHalo.WINDOW`. Pruned here too, not only on
-## write, so a source nobody has visited in a while reports honestly the moment it is asked rather
-## than waiting for its next landing.
-func landed() -> float:
-	_prune_landed_history()
-	var total := 0.0
-	for entry in _landed_history:
-		total += entry[1]
-	return total
-
-func _prune_landed_history() -> void:
-	var cutoff := _clock - ExcitementHalo.WINDOW
-	while not _landed_history.is_empty() and _landed_history[0][0] < cutoff:
-		_landed_history.pop_front()
-
-## Excitement per second this event contributes at a point.
+## **This event's field at a point**, with no question about what stands between: what its source
+## charges on open ground (`EventExcitement`), and what the caret's projection asks before it asks
+## about walls at the two bodies' own projected places.
 ##
-## `intensity_override` replaces `current_intensity()` for this one call when given (`< 0.0`
-## means "not given" — every intensity this def can carry is positive). The only caller that ever
-## passes one is `expected_gross_at()`'s own projection, asking for `_caret_intensity_over_horizon()`
-## — the row's live rate, its pulse projected at the horizon's own mean rather than frozen at this
-## instant's beat — in place of whatever a telegraph has this one currently damped to; every other
-## caller gets the answer it always got.
-##
-## `velocity_override` replaces `travel_velocity()` for the field's own kernel, the same way, when
-## given (`Vector2.INF` means "not given"). The only caller is `expected_gross_at()` too, and for
-## the same reason: its projection translates the *sample point* by `_caret_velocity()` rather than
-## moving the source, and the ellipse the translated point is measured against has to be oriented by
-## that same velocity or the two disagree about which way this thing is going. A pursuer holding its
-## telegraph stand-off is the case that matters — `travel_velocity()` is zero there (it is holding
-## still) while `_caret_velocity()` is the lunge it is about to make.
-## The cache `contribution_at()` below keeps for its plain query (no override given) — see that
-## function's own doc.
-var _contribution_age := -1.0
-var _contribution_at := Vector2.INF
-var _contribution_cache := 0.0
-
-## Forces the next `contribution_at()` call to recompute rather than trust the cache, which is keyed
-## on `(age, world_position)`. The field also changes with things that move without the age moving —
-## a phase change made from outside its own tick (`EventManager.retire()` finishing it) or a mast
-## silenced — so `transition()` and the silencing call this, and the very next call recomputes.
-func _invalidate_contribution_cache() -> void:
-	_contribution_age = -1.0
-
-## **The plain query — no override given — is cached once per frame per position**, the same
-## `age`-keyed shape `EventLook._caret_strength()` documents below: `Baby._update_excitement()`
-## (physics rate) and `ExcitementHalo.select_sources()` (frame rate) both ask every live instance
-## for its contribution at the same point most frames, so a repeat this tick answers from the cache
-## instead of re-running the field. `expected_impact_at()`'s own projection passes an override or a
-## translated `world_position` for every sample but its first, so those calls never match the cache
-## key and always recompute, which is correct — the cache is only ever for the single point every
-## ordinary caller actually asks about.
-func contribution_at(world_position: Vector2, intensity_override := -1.0,
-		velocity_override := Vector2.INF) -> float:
-	var cacheable := intensity_override < 0.0 and velocity_override == Vector2.INF
-	if cacheable and _contribution_age == age and _contribution_at == world_position:
-		return _contribution_cache
-	var result := _contribution_at_uncached(world_position, intensity_override, velocity_override)
-	if cacheable:
-		_contribution_age = age
-		_contribution_at = world_position
-		_contribution_cache = result
-	return result
-
-## **Nothing reaches her through a building**: a field is zero wherever `_walled_off()` says a
-## building stands between this node and the point. Asked only once the field is positive, so a
-## source out of reach costs no line at all.
-##
-## **A source beyond `EventDef.silent_beyond()` of the point answers zero before anything else is
-## asked** — its intensity, its velocity, its shape — since that field is zero there by
-## construction and the wall is only asked of a positive one. Not for a flock or anything leaving:
-## a flock's birds and a guard's band stand away from this node.
-func _contribution_at_uncached(world_position: Vector2, intensity_override: float,
-		velocity_override: Vector2) -> float:
-	if not is_leaving and birds().is_empty():
-		var reach := def.silent_beyond()
-		if global_position.distance_squared_to(world_position) > reach * reach:
-			return 0.0
-	var field := _field_at(world_position, intensity_override, velocity_override)
-	if field > 0.0 and _walled_off_now(global_position, world_position):
-		return 0.0
-	return field
-
-## Whether a wall stands between a source standing at `source_at` and her at `her_at`, deep enough
-## to keep its excitement from her — `WorldMap.wall_between()`, measured from this node (a flock's
-## centre, a shaped row's middle) to her centre. *(plaid-wombat, inbox #554: "Excitement should not
-## go through any wall".)* The map's own walls answer it, the city's buildings outdoors and the
-## building's walls indoors; nothing is walled on open ground, and nothing for a row whose field no
-## wall stops (`EventDef.from_outside`).
-func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
-	return not def.from_outside and _map.wall_between(source_at, her_at)
-
-## The map `_walled_off()` asks — open ground for a row no wall stops (`EventDef.from_outside`), so
-## the debug view's fields layer, which cuts this source's outline from its own node along the same
-## lines (`DebugLayers.open_runs()`), cuts it exactly where the meter does.
-func wall_grid() -> WorldMap:
-	return _NO_WALLS if def.from_outside else _map
-
-## Open ground, the walls a field from outside meets.
-static var _NO_WALLS := WorldMap.open_ground()
-
-## The last line `contribution_at()` asked about and its answer, kept by value. The meter's sum,
-## the halo's pick and the caret's present rate ask the same pair in a frame, and the answer
-## depends on nothing but the two points and the map — a body moved from outside is a new key, so
-## nothing here can answer stale the way a clock-keyed cache of the field would.
-var _wall_from := Vector2.INF
-var _wall_to := Vector2.INF
-var _wall_answer := false
-
-## `_walled_off()` through that one-line cache, for `contribution_at()` alone: the caret's
-## projection asks a different pair at every step and would only push the frame's own pair out.
-func _walled_off_now(source_at: Vector2, her_at: Vector2) -> bool:
-	if source_at != _wall_from or her_at != _wall_to:
-		_wall_from = source_at
-		_wall_to = her_at
-		_wall_answer = _walled_off(source_at, her_at)
-	return _wall_answer
-
-## The field alone, with no question about what stands between — what `contribution_at()` charges
-## on open ground, and what the caret's projection asks before it asks about walls at the two
-## bodies' own projected places.
-func _field_at(world_position: Vector2, intensity_override: float,
+## `intensity_override` (`< 0.0` means "not given") replaces `current_intensity()`: the projection
+## passes `caret_intensity_over_horizon()`, the row's live rate, in place of whatever a telegraph has
+## it damped to. `velocity_override` (`Vector2.INF` means "not given") replaces `travel_velocity()`
+## for the kernel: the projection translates the sample point by `caret_velocity()`, and the ellipse
+## that point is measured against has to be oriented by that same velocity — a pursuer holding its
+## stand-off is still, and about to lunge.
+func field_at(world_position: Vector2, intensity_override: float,
 		velocity_override: Vector2) -> float:
 	if is_finished:
 		return 0.0
@@ -1932,25 +1742,28 @@ func _field_at(world_position: Vector2, intensity_override: float,
 	# two-part field is charged for both parts here and not only in the cost table — and so that a
 	# row shaping its own drop-off (`EventDef.falloff_power`) is felt as the shape it is priced at.
 	# The peak handed over is this phase's, so the telegraph and the pulse damp the core and the
-	# field together; an uncored row comes back bit for bit what it always did.
+	# field together; an uncored row is charged its plain falloff.
 	return def.emission_at_distance(_field_distance(world_position, velocity), intensity)
 
-## The distance `contribution_at()` prices this row's field at — `GroundShape.field_distance()`
+## The distance `field_at()` prices this row's field at — `GroundShape.field_distance()`
 ## over this row's own shape (D1's `body ⊕ disc` stationary, D2's `point ⊕ ellipse` moving), or the
 ## same kernel with no body at all for the handful of emitting rows with no shape (`playground`,
 ## whose look is drawn by the park itself rather than by `EventInstance`).
 func _field_distance(world_position: Vector2, velocity: Vector2) -> float:
-	return _field_distance_at(global_position, world_position, velocity)
+	return field_distance_from(global_position, field_shape(), solid_axis(), world_position,
+			velocity)
 
-## `_field_distance()` for a field centred somewhere other than this node: the band a guard has
-## walked away from.
-func _field_distance_at(centre: Vector2, world_position: Vector2, velocity: Vector2) -> float:
-	var shape := field_shape()
+## `_field_distance()` with its datum handed in — where the field stands, its shape (null for a
+## point) and the axis its body lies along: the kernel the caret's projection prices every sample
+## with too, its datum read once before it samples (`EventExcitement._begin_the_projection()`),
+## since nothing about it moves while the projection runs.
+func field_distance_from(centre: Vector2, shape: GroundShape, axis: Vector2,
+		world_position: Vector2, velocity: Vector2) -> float:
 	if shape != null:
-		return shape.field_distance(centre, solid_axis(), velocity, world_position)
+		return shape.field_distance(centre, axis, velocity, world_position)
 	return GroundShape.eccentric_distance(centre, velocity, world_position)
 
-## The datum this row's field is priced from (`_field_distance_at()`) and drawn from (`DebugLayers`):
+## The datum this row's field is priced from (`field_distance_from()`) and drawn from (`DebugLayers`):
 ## its `shape`, or none — a point at its centre — for a row whose field is priced from its centre
 ## (`VehicleSpec.field_from_its_centre`, the fire engine) or that has no shape.
 func field_shape() -> GroundShape:
@@ -2026,196 +1839,6 @@ func is_lethal_at(world_position: Vector2) -> bool:
 func clear_line_to(world_position: Vector2) -> bool:
 	return _navigator.clear_line(global_position, world_position, _sight)
 
-## One bounded integral cache per source, with a by-value key rather than a clock or identity.
-var _expected_landed_key: Array = []
-var _expected_landed_cache := 0.0
-
-## The gross points this event is anticipated to land over `Tuning.EXPECTED_IMPACT_HORIZON` **if
-## she and it both carry on exactly as they are**, before her own decay is netted against it —
-## `expected_impact_at()` is the net; this is the half of it every source projects for itself, and
-## `ExcitementHalo` reads it too, once a frame, to learn what the horizon's decay has to be shared
-## between. Duck-typed with `CrowdAgent`'s own copy.
-##
-## *(2026-09-20, overturning 2026-09-08's "I don't want a caret when walking into a car from the
-## side": "caret communicates anticipated net gain. basically if I keep doing what I'm doing I
-## very likely get that amount in net gain".)* Her own current `player_velocity` now moves her
-## through the projection exactly as `velocity` moves the source — a café she is walking toward
-## now does expect something, because she is not going to stay held still against it. What she
-## already answered stays true of the *source's* own half: a car passing wide of a **stationary**
-## her still expects nothing from that car, because nothing about the car's course crosses her
-## line — the overturn is that her line is no longer flattened to a point.
-##
-## **Projected at `_caret_velocity()` and `_caret_intensity_over_horizon()`, not
-## `travel_velocity()` and `current_intensity()`.** The row's *live* course and rate, because the
-## caret is asking what this thing is on its way to doing rather than what a telegraph currently
-## has it doing: a telegraphing `cyclist` is already moving at its route speed (`travel_velocity()`
-## already answers that), but reads at 15% of its own field the whole time it telegraphs —
-## projecting the damped rate would keep the sum under the line until the telegraph is nearly over,
-## the same gap a pursuer holding its stand-off would have if the caret read its own zeroed
-## `travel_velocity()`. `current_rate` below is deliberately still the real, possibly-damped
-## `contribution_at()` — what she is actually being charged right now — so the subtraction is the
-## live approach minus the honest present, not the live approach minus itself. A pulsing row's own
-## rate is the horizon's own **mean** of the pulse rather than this instant's beat — see
-## `_caret_intensity_over_horizon()`'s own doc.
-##
-## **Skipped without sampling once neither body is moving, or the reach cannot close inside the
-## horizon.** Two bodies both held still is the one case where nothing about the answer can
-## change, and the reach the early-out compares against is now the pair's own closing speed
-## (`player_velocity - velocity`), not the source's alone — a fast source she is outrunning no
-## longer over-reaches its true closing distance the way comparing only its own speed would.
-##
-## **Floored at zero, and scaled by `player_sensitivity` here rather than left to the caller** —
-## `Baby.current_sensitivity()`, read the same way the backward-looking halo bakes it into
-## `landed()` — so the total `ExcitementHalo` sums across every live source is already in the units
-## the shared decay is taken out of.
-func expected_gross_at(player_position: Vector2) -> float:
-	if is_finished or is_leaving:
-		return 0.0
-	# A barrier the meter is not charging her for has no impact to project: the strongest structure
-	# of a boundary is the whole of what lands, and the others would each promise the same cost
-	# over again. See `outranked_by_a_stronger_barrier`.
-	if outranked_by_a_stronger_barrier:
-		return 0.0
-	var velocity := _caret_velocity()
-	var closing := player_velocity - velocity
-	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + def.field_reach()
-	if global_position.distance_to(player_position) > reach:
-		return 0.0
-	if velocity.is_zero_approx() and player_velocity.is_zero_approx():
-		return 0.0
-	var current_rate := contribution_at(player_position)
-	var live_intensity := _caret_intensity_over_horizon()
-	var future_integral: float
-	# Compare the effective sample inputs by value, including mutable definition/shape fields.
-	# Age alone cannot cover a retirement, silence, external movement or changed player state.
-	# Flocks retain their ordinary path: every bird has independently mutable geometry.
-	if birds().is_empty():
-		var key := [global_position, player_position, player_velocity, velocity,
-			live_intensity, def.intensity, def.inner_radius, def.outer_radius,
-			def.falloff_power, def.core_intensity, def.core_radius, solid_axis(),
-			def.shape.kind if def.shape else -1,
-			def.shape.half_length if def.shape else 0.0,
-			def.shape.half_extents if def.shape else Vector2.ZERO]
-		if key != _expected_landed_key:
-			_expected_landed_cache = _sample_expected_landed(player_position, velocity,
-					live_intensity)
-			_expected_landed_key = key
-		future_integral = _expected_landed_cache
-	else:
-		future_integral = _sample_expected_landed(player_position, velocity, live_intensity)
-	# Present contribution, sensitivity and shared netting remain live on every request.
-	var gross := future_integral - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	return maxf(gross * player_sensitivity, 0.0)
-
-## Only the future integral is reusable. The key above covers every input these samples read;
-## shape radius is read by neither the reach guard (`EventDef.field_reach()`) nor field distance,
-## which measures from the spine.
-func _sample_expected_landed(player_position: Vector2, velocity: Vector2,
-		live_intensity: float) -> float:
-	var dt := 0.25
-	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
-	var integral := 0.0
-	for i in steps:
-		# Projecting the *source* forward by `velocity * t` and querying its field at her own
-		# projected position, `player_position + player_velocity * t`, is the same number as
-		# holding the source still and asking for its field at the pair's relative offset instead
-		# — `_field_at` is the field every caller of `contribution_at` is charged, translated, so
-		# nothing here recomputes a falloff or a flock sum of its own. `velocity` (the source's
-		# own) is passed a second time, as the override, so the ellipse the translated point is
-		# measured against is oriented the way the source is actually travelling, not the pair's
-		# relative heading — see `contribution_at()`'s own doc for why the two must agree.
-		# The field translates; a wall does not. So the wall is asked between the two bodies'
-		# own projected places, where a building actually stands, never at the translated point.
-		var t := float(i + 1) * dt
-		var sample := player_position + player_velocity * t - velocity * t
-		var rate := _field_at(sample, live_intensity, velocity)
-		if rate > 0.0 and _walled_off(global_position + velocity * t,
-				player_position + player_velocity * t):
-			rate = 0.0
-		integral += rate * dt
-	return integral
-
-## The net points this event is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
-## **if she and it both carry on exactly as they are** — the caret's own answer to *"if I keep doing
-## what I'm doing, how much will I get"*, which is `ExcitementHalo.net_landed()`'s question asked
-## forward instead of back: `expected_gross_at()` less her own decay over the same horizon. See
-## `EventLook.wants_a_mark()` for what a result at or above `Tuning.EXPECTED_IMPACT_POINTS` does
-## with the answer.
-##
-## **`player_decay_rate` (`Baby.decay_rate()`) defaults to `0.0`, which answers exactly as this
-## function always did — held still, nothing given back — for any caller that has not told this
-## instance her actual state, a data-level test among them.**
-##
-## **Shared between every source worth a mark when `ExcitementHalo` is driving the frame, charged
-## against this source alone otherwise.** *(2026-09-20, on the un-shared version this replaces:
-## "with two sources near her every caret reads low".)* `player_expected_total_gross` is `-1.0` —
-## "not given" — for any caller that has not told this instance the frame's total, which keeps the
-## old, pessimistic-but-independent answer for a data-level test or a single source read alone.
-## `ExcitementHalo` sums `expected_gross_at()` over every live event and crowd body once a frame,
-## the same once-a-frame pass it already runs for the halo's own `total_landed`, and hands the sum
-## back through `set_expected_total_gross()` before anything asks for a net — the *sources that
-## earn a caret* are exactly the ones whose own `expected_gross_at()` is positive, since a source
-## contributing nothing to the total also draws nothing from it, so summing over every live
-## candidate rather than only the ones already worth a mark changes nothing about the answer and
-## needs no second, smaller pass to find them.
-##
-## **`ExcitementHalo.net_landed()`'s own arithmetic, forward instead of back.** Every source's
-## share of the horizon's decay scales by the identical factor
-## `player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON / player_expected_total_gross`, so summing
-## every source's own `expected_impact_at()` back up reproduces `player_expected_total_gross` less
-## the whole decay exactly — the bar's own projected rise — rather than approximately, the same
-## exactness `net_landed()`'s own doc proves for the backward-looking halo.
-func expected_impact_at(player_position: Vector2) -> float:
-	var gross := expected_gross_at(player_position)
-	if gross <= 0.0:
-		return 0.0
-	var decay := player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	if player_expected_total_gross >= 0.0:
-		return ExcitementHalo.net_landed(gross, player_expected_total_gross, decay)
-	return maxf(gross - decay, 0.0)
-
-## Whether this event's own current course puts her inside the radius that ends the day at some
-## point before `Tuning.EXPECTED_IMPACT_HORIZON`, her position held fixed — `is_lethal_at()`'s
-## straight-line reach, `def.lethal_reach()`, asked at every step of the same projection
-## `expected_impact_at()` takes, rather than only at the position she is standing at now. The
-## doubled caret's own question.
-##
-## **The straight-line reach without the clear-line test.** A pursuer's real catch also needs
-## `clear_line_to()` her, and the caret does not ask it: it projects the pursuer straight at her,
-## so it can read red while a building still stands between them, before he has come round the
-## corner. Whether it should ask is open to overturn (the polite-rabbit record says why it does
-## not).
-##
-## **`is_lethal_at()`'s guards, minus its own telegraph gate.** A telegraphing `hard_fail` row
-## cannot fire *yet* — that gate is exactly right for `is_lethal_at()`'s own callers, which ask
-## whether it is lethal **right now** — but the caret is asking whether its course, once the
-## telegraph clears, puts her inside the radius that ends the day, which a telegraphing row can
-## answer just as truly as a live one: a `cyclist` ridden straight at her through its whole
-## telegraph has to read red, or the doubled caret only ever appears in the last fraction of a
-## second. `is_waiting()`, `is_finished` and `is_leaving` still refuse it — a waiting pursuer has
-## not decided anything about her yet, so there is no course to be lethal on.
-##
-## **A car that drives asks its own strike along its own course** (`EventDef.vehicle`): driving now,
-## and her in front of its nose on the carriageway from some point of its next
-## `EXPECTED_IMPACT_HORIZON` straight ahead — so the doubled caret is over a patrol car exactly when
-## staying where she is in its lane would end the day.
-func will_be_lethal(player_position: Vector2) -> bool:
-	if car:
-		return car.will_strike(player_position)
-	if is_finished or is_leaving or is_waiting() or not def.hard_fail:
-		return false
-	var velocity := _caret_velocity()
-	var reach := def.lethal_reach()
-	if velocity.is_zero_approx():
-		return global_position.distance_to(player_position) <= reach
-	var dt := 0.25
-	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
-	for i in steps + 1:
-		var future_at := global_position + velocity * (float(i) * dt)
-		if future_at.distance_to(player_position) <= reach:
-			return true
-	return false
-
 ## Whether it is holding still through its telegraph — a crouching cat is not walking.
 func is_telegraphing_still() -> bool:
 	return def.still_while_telegraphing and is_telegraphing()
@@ -2250,9 +1873,9 @@ func _position_roll(salt: int) -> float:
 	return float(absi(mixed) % 4096) / 4096.0
 
 # ------------------------------------------------------------------ the halo ---
-# The ring itself is `EntityHalo`'s job now, shared with `CrowdAgent` — see that class for the
-# offsets, the shared material, and why a `canvas_item` shader on this entity's own sprite could
-# not have bloomed outward on its own.
+# The ring itself is `EntityHalo`'s, shared with `CrowdAgent` — see that class for the offsets, the
+# shared material, and why a `canvas_item` shader on this entity's own sprite could not bloom
+# outward on its own.
 
 ## The ground-plane direction a spread-shaped shadow sweeps along — local Y when the street this
 ## instance stands on is east-west (`_spread_vertical`), local X otherwise. The same axis
@@ -2267,105 +1890,77 @@ func spread_axis() -> Vector2:
 func solid_axis() -> Vector2:
 	return EventFootprints.solid_axis_of(def, _heading, _spread_vertical, _stationary_vehicle_side)
 
-## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
-## `CrowdAgent` shares. Called by `ExcitementHalo` once a frame for every live instance — above
-## zero for the handful `select_sources()` picked, zero for everything else. Refuses a nonzero
-## glow once the event is finished, because a finished event still sits in
-## `EventManager.instances()` for one more frame than its `contribution_at()` (already zero) would
-## otherwise buy it.
+## **This event's rim** (`SourceRim`), as `ExcitementHalo` lights it once a frame. Its own body's
+## rim, with two rules of an event's own on top of the lifetime every rim keeps:
 ##
-## **The rim is built on the first nonzero glow and given back once it has faded all the way out**
-## — not the frame the target first reaches zero, or a source that just left `MAX_SOURCES` would be
-## cut off mid-fade instead of draining over `EntityHalo.FADE_OUT_SECONDS`. The same lifetime
-## `CrowdAgent.set_halo_strength()` gives its own rim; `release_halo()` is how it is given back.
-func set_halo_strength(strength: float, colour: Color) -> void:
-	# **While a guard walks away from his barrier any rim is the barrier's**, on the band
-	# (`RoadblockLook.RoadblockBand`'s own) and not on the man, who is costing her nothing. **An
-	# instance never holds two rims at once** (`ExcitementHalo` counts one block per instance
-	# against `EntityHalo.RIM_BUDGET`): the man's is given back on the spot as the band's is built,
-	# and the band's on the spot as the instance's own is wanted again once the barrier stands
-	# alone.
-	if is_leaving and barrier_post and barrier_post.has_left_its_body() \
-			and look.band_node() != null \
-			and not is_finished:
-		if _halo:
-			EntityHalo.release(_halo)
-			_halo = null
-		_glow_the_band(strength, colour)
-		return
-	if _band_halo and strength > 0.0 and not is_finished:
-		_release_the_band_halo()
-	else:
-		_glow_the_band(0.0, colour)
-	if strength <= 0.0 or is_finished:
-		if _halo:
-			_halo.set_glow(0.0, colour)
-			if _halo.is_faded_out():
-				EntityHalo.release(_halo)
-				_halo = null
-		return
-	if not _halo:
-		_build_halo()
-	_halo.set_glow(strength, colour)
+## - **A finished event refuses a lit rim**, since it still sits among the live instances for one
+##   more frame than its field (already zero) would otherwise buy it.
+## - **While a guard walks away from his barrier any rim is the barrier's**, on the band
+##   (`RoadblockLook.RoadblockBand`'s own, `band`) and not on the man, who is costing her nothing.
+##   **An instance never holds two rims at once** (`ExcitementHalo` counts one block per source
+##   against `EntityHalo.RIM_BUDGET`): the man's is given back on the spot as the band's is built,
+##   and the band's on the spot as the instance's own is wanted again once the barrier stands alone.
+class Rim extends SourceRim:
+	var _event: EventInstance
+	## The band's rim, built when a departing guard's barrier becomes the thing costing her.
+	var band: SourceRim
 
-## The band's own rim, built when a departing guard's barrier becomes the thing costing her and
-## given back once it has faded.
-func _glow_the_band(strength: float, colour: Color) -> void:
-	if strength <= 0.0:
-		if _band_halo:
-			_band_halo.set_glow(0.0, colour)
-			if _band_halo.is_faded_out():
-				_release_the_band_halo()
-		return
-	if _band_halo == null:
-		_band_halo = EntityHalo.new(_draw_the_band_for_the_halo, func() -> float: return 0.0)
-		# Behind the band's first slice, drawn before every other part of the band, as a rim is
-		# behind the picture it outlines (`_rim_holder()`).
-		var holder := (look as RoadblockLook).band_rim_holder()
-		holder.add_child(_band_halo)
-		_band_halo.position = look.band_node().global_position - holder.global_position
-	_band_halo.set_glow(strength, colour)
+	func _init(event: EventInstance) -> void:
+		super(event._build_halo)
+		_event = event
+		band = SourceRim.new(event._build_band_halo)
 
-var _band_halo: EntityHalo
+	func set_strength(strength: float, colour: Color) -> void:
+		if _event._the_band_carries_the_rim():
+			_let_go()
+			band.set_strength(strength, colour)
+			return
+		if band.is_held() and strength > 0.0 and not _event.is_finished:
+			band.release()
+		else:
+			band.set_strength(0.0, colour)
+		super.set_strength(0.0 if _event.is_finished else strength, colour)
+
+	func is_held() -> bool:
+		return super.is_held() or band.is_held()
+
+	func release() -> void:
+		_let_go()
+		band.release()
+
+	## Gives back the rims that stand behind a slice of the look (`SpreadLook.Slice`), on the spot,
+	## when the look is about to let go of its slices (`SpreadLook.letting_go_of_the_slices`).
+	func release_on_slices() -> void:
+		if _halo != null and _halo.get_parent() is SpreadLook.Slice:
+			_let_go()
+		var banded := band.entity_halo()
+		if banded != null and banded.get_parent() is SpreadLook.Slice:
+			band.release()
+
+## Whether the band carries this event's rim: a guard has left the barrier he stood at and the band
+## still stands.
+func _the_band_carries_the_rim() -> bool:
+	return is_leaving and barrier_post != null and barrier_post.has_left_its_body() \
+			and look.band_node() != null and not is_finished
+
+## The band's rim, behind the band's first slice, drawn before every other part of the band, as a
+## rim is behind the picture it outlines (`_rim_holder()`).
+func _build_band_halo() -> EntityHalo:
+	var halo := EntityHalo.new(_draw_the_band_for_the_halo, func() -> float: return 0.0)
+	var holder := (look as RoadblockLook).band_rim_holder()
+	holder.add_child(halo)
+	halo.position = look.band_node().global_position - holder.global_position
+	return halo
 
 func _draw_the_band_for_the_halo(canvas: CanvasItem) -> void:
 	look.draw_the_band(canvas, Vector2.ZERO)
 
-func _release_the_band_halo() -> void:
-	if _band_halo:
-		EntityHalo.release(_band_halo)
-		_band_halo = null
-
-## Gives back the rims that stand behind a slice of the look (`SpreadLook.Slice`), on the spot,
-## when the look is about to let go of its slices (`SpreadLook.letting_go_of_the_slices`).
 func _release_rims_on_slices() -> void:
-	if _halo != null and _halo.get_parent() is SpreadLook.Slice:
-		EntityHalo.release(_halo)
-		_halo = null
-	if _band_halo != null and _band_halo.get_parent() is SpreadLook.Slice:
-		EntityHalo.release(_band_halo)
-		_band_halo = null
+	_rim.release_on_slices()
 
 ## The rim lit around this instance's own picture, or null: the canvas a look draws no shadow on.
 func rim() -> EntityHalo:
-	return _halo
-
-## Whether this instance holds a rim right now, lit or still fading — what `ExcitementHalo` counts
-## against `EntityHalo.RIM_BUDGET`.
-func holds_a_halo() -> bool:
-	return _halo != null or _band_halo != null
-
-## Frees the rim on the spot, never through `queue_free()`: a rim keeps its block in the web
-## renderer's instance buffer until the engine frees it, and a queued free lands at the end of the
-## frame, after any rim built in the meantime has already been handed a block — see
-## `EntityHalo.release()`. Called by `set_halo_strength()` once a fade is over, and by
-## `ExcitementHalo` for an instance queued for deletion, whose body goes before the next frame is
-## drawn anyway.
-func release_halo() -> void:
-	if _halo:
-		EntityHalo.release(_halo)
-		_halo = null
-	_release_the_band_halo()
+	return _rim.entity_halo()
 
 # ------------------------------------------------------------------ the look ---
 
@@ -2389,7 +1984,7 @@ func _enter_tree() -> void:
 		look.enter_tree()
 
 func _exit_tree() -> void:
-	_band_halo = null
+	_rim.band.forget()
 	if look:
 		look.release_nodes()
 

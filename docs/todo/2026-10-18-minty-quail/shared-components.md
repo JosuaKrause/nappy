@@ -1,12 +1,5 @@
 # Shared components instead of copies that drift
 
-- **The excitement source is copied.** `CrowdAgent` and `EventInstance` both carry 24 methods with
-  the same names and no shared base (`contribution_at`, `expected_gross_at`,
-  `_sample_expected_landed`, `accumulate_landed`, `_prune_landed_history`, `_walled_off_now`,
-  `wall_grid`, `will_be_lethal`, `set_halo_strength`, ...), documented as "duck-typed with
-  CrowdAgent's own copy"; the copies already differ (signatures, extra bookkeeping, the wall cache
-  keyed on the two points in `EventInstance` and on the two points and `_map` in `CrowdAgent`, a
-  pelican hook in one).
 - **Placement has about 25 entry points in four classes**, with self-declared copies:
   `EventsAhead._where_the_sent_pursuer_starts` copies `ResistanceDirector._draw_arrival_position`
   without its in-view check; `EventsAhead._a_clear_run_at` equals `ResistanceDirector._a_clear_run`
@@ -14,9 +7,12 @@
   `_his_walk_reaches_her` simulates a straight chase only because chasers do not path.
 - **Movers do not see each other:** event figures pass through walkers and cars and back.
 
-**Build:** an `ExcitementSource` component both compose, with only the field itself per type; one
-`SpawnSiting` service with registered legality rules and a "reaches her" query on the map's one
-`Navigator` (`WorldMap.navigator()`); a shared separation pass over every mover.
+**Build:** one `SpawnSiting` service with registered legality rules and a "reaches her" query on the map's one
+`Navigator` (`WorldMap.navigator()`); a shared separation pass over every mover. **Who gives way** (inbox #884): asked whether, when
+event figures and the crowd meet, the crowd yields, everyone separates, or only cars stop, the player:
+"(a) the crowd yields. a charging dog doesn't care but a pedestrian doesn't want to get overrun. same
+applies to other events." **Read as:** walkers step aside or are pushed and cars stand for an event
+figure, while every event figure keeps its course and timing.
 
 **Carry-overs, the orchestrating session's rather than the player's ask.** `CrowdView` (in
 `src/crowd/`, simulation) reads the shared `DrawnView` and `ScreenOrientation`, which are view-layer;
@@ -29,24 +25,13 @@ named at `event_instance.gd:3907` as `CrowdAgent._redraw_if_the_picture_changed(
 members live (`WalkerLook`, `CarLook`) once both the crowd's split and the events step that owns
 `src/events/` have merged.
 
-**Carry-over from events-composed 4b (minty-quail-25), the builder's fork rather than the player's
-ask:** `WorldContext` (`src/world/`, the world layer) holds fields typed `EventManager` and `Crowd`
-(simulation) so it can hand the baby both answers to "how exciting is it here", a typed dependency
-pointing up a layer. The `ExcitementSource` component above is what those fields are typed against
-once it exists, both the manager and the crowd extending or composing it; the plainer alternative
-the builder named is the world handed callables instead of the objects.
-
 **Carry-overs from events-composed (minty-quail-26), the orchestrating session's rather than the
 player's ask:** an event instance uses the red arrow's `ArrowField` (`src/resistance/arrow_field.gd`,
 the resistance's walking-distance field) as its pathfinder, a dependency on the resistance where the
 map's one `Navigator` is the shared one; a car's driving copies crowd traffic's
 give-way (`EventCarDriving.room_to_its_line()`), the copy `LaneMover` takes; movement proposed,
 validated, then committed for every mover, as a car's frame is (minty-quail-17), built so far for the car
-alone; and the city behind the title screen: on a day the street plays on there, so the traffic
-signals, every event's age, phase and repeat timers, the shared broadcast clock and the street's
-stocking advance on ticks no walk stepped, while the day's own clocks count only the ticks the walk
-stepped (the 4c builder's fork, widened at review; whether a day should start from a state that does
-not depend on how long the title was up is the player's question on the board).
+alone.
 
 **Open question, the orchestrating session's carry-over from minty-quail-5 rather than the player's
 ask:** whether the crowd's lane movement goes onto the map's one `Navigator`. It is not part of the

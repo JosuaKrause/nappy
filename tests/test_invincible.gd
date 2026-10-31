@@ -18,11 +18,10 @@ class FakeWorld extends WorldContext:
 	func total_excitement_at(_world_position: Vector2) -> float:
 		return noise
 
-	func excitement_sources_at(_world_position: Vector2) -> Array:
-		return [[self, noise]] if noise > 0.0 else []
+	var _noise := ExcitementSource.new(self)
 
-	func accumulate_landed(_points: float) -> void:
-		pass
+	func excitement_sources_at(_world_position: Vector2) -> Array:
+		return [[_noise, noise]] if noise > 0.0 else []
 
 ## A live `Baby` standing on a `FakeWorld`, for the meter half of the flag — see
 ## `_build_meter_rig()`.

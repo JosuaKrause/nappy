@@ -130,6 +130,11 @@ var forced_interval := 0.0
 ## The lights on the spine. Held here because both the traffic and the signal heads read it, and
 ## advanced by `Crowd`, which is the thing a rig steps — see `Crowd.step()`.
 var signals: TrafficSignals
+## The day's events on this city's streets (`EventManager`), built with the city: what the run flow,
+## the resistance and the observers ask about events here.
+var events: EventManager
+## The crowd on this city's streets (`Crowd`), built with the city.
+var crowd: Crowd
 ## The last night's blackout, which puts out every window, light and mast at once. See `Blackout`.
 var blackout: Blackout
 var _daylight: CanvasModulate
@@ -293,6 +298,8 @@ func build(city_map: CityMap) -> void:
 	crowd.skip_motion = skip_crowd_motion
 	add_child(crowd)
 	crowd.setup(self, map, navigator)
+	# What charges her here, as the baby and the halo ask it: the events, then the crowd.
+	excitement_sources = [events.sources, crowd.sources]
 	blackout = Blackout.new()
 	blackout.name = "Blackout"
 	blackout.forced = blackout_forced

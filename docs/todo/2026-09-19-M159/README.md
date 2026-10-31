@@ -28,7 +28,7 @@ active-play windows, and verify identical behavior. A measured reduction in a na
 must be distinguished from whole-frame improvement and perceived smoothness. The existing noisy
 toggle trials establish neither a causal toggle cost nor a shipping pacing choice.
 
-**The conservative contribution rejection** is `CrowdAgent.contribution_at()` skipping velocity
+**The conservative contribution rejection** is `CrowdExcitement.contribution_at()` skipping velocity
 and ellipse work outside a bound that includes the current jolt and the maximum forward stretch.
 **The raw traces** come from `--frame-trace`, which supplies bounded raw callback intervals and
 atlas CPU spans; its semantics and limits are in

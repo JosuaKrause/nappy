@@ -517,4 +517,4 @@ static func _reaches(instance: EventInstance, her: Vector2) -> bool:
 		return instance.is_lethal_at(her)
 	if instance.is_telegraphing() or instance.is_waiting():
 		return false
-	return instance.contribution_at(her) > 0.0
+	return instance.excitement.contribution_at(her) > 0.0

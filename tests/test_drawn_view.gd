@@ -135,15 +135,15 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	var projected_off_screen := false
 	while x < 200.0 and not seen:
 		car.position = Vector2(x, 180.0)
-		car.set_player_at(car.position + Vector2(60.0, 0.0))
-		car._clock += STEP
-		var before := car._mark_strength_clock
+		car.excitement.set_player_at(car.position + Vector2(60.0, 0.0))
+		car.excitement._clock += STEP
+		var before: Variant = car.excitement._caret_key_was
 		var asked := car._end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
 				Rect2(car.position + CrowdAgent.DRAWN_REACH.position, CrowdAgent.DRAWN_REACH.size))
 		if not in_box:
 			skipped += 0 if asked else 1
-			projected_off_screen = projected_off_screen or car._mark_strength_clock != before
+			projected_off_screen = projected_off_screen or car.excitement._caret_key_was != before
 		asked_since_off = asked_since_off or asked
 		# Where the car's own drawing reaches: its body about its feet and the caret above it.
 		if shown.intersects(Rect2(car.position + Vector2(-41.0, -66.0), Vector2(82.0, 100.0))):
@@ -154,7 +154,7 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	t.check(not projected_off_screen, "and its caret was never projected there")
 	t.check(seen and first_seen_asked,
 			"it asked for its redraw no later than the first frame any of it shows")
-	t.check(car._caret_strength() == 2,
+	t.check(car.excitement.caret_strength() == 2,
 			"and the redraw it asked for draws the doubled red caret it is owed")
 	screen.free()
 	DrawnView.forget()
@@ -198,10 +198,10 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]))
 	cyclist.set_process(false)
 	screen.add_child(cyclist)
-	cyclist.set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
+	cyclist.excitement.set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
 	var key_before := cyclist.look._picture
 	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
-	t.check(cyclist.look._picture == key_before and cyclist.look._caret_strength_age == -1.0,
+	t.check(cyclist.look._picture == key_before and not cyclist.excitement._caret_known,
 			"and works out neither its key nor its caret")
 	var drawn := cyclist.look.drawn_rect_now()
 	t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,

@@ -1,82 +1,37 @@
 class_name ExcitementHalo
 extends Node2D
 ## Which live sources are actively charging the meter right now, and how much each is actually
-## *responsible for the bar climbing*, read back onto one rim per source in two channels that
-## now agree rather than disagree. It answers *which of the six things around her* and *how bad
-## has this one actually been*, neither of which the meter's own number can: a number says how
-## much in total and never which, and never whether a row that costs the same on the page cost
-## her nothing today or cost her the whole meter.
+## *responsible for the bar climbing*, read back onto one rim per source in two channels. It answers
+## *which of the six things around her* and *how bad has this one actually been*, neither of which
+## the meter's own number can: a number says how much in total and never which.
 ##
-## **Both channels read `net_landed()`, on different curves, and neither reads distance any
-## more.** *(2026-09-08, the player, overturning playtest 36's "the intensity of the halo states
-## how far away I am": "the transparency shouldn't show distance since distance actually doesn't
-## matter. only the actual received amount counts which might depend on the distance but we don't
-## need to encode the distance. this frees up transparency for also encoding magnitude." And, on
-## the same day, why the two curves differ: "color and transparency shouldn't be the same number.
-## transparency can be used to emphasize low values.")* `colour_for()` is linear in the net, so hue
-## separates the high end; `magnitude_for()` rises fast and saturates early, so a point or two is
-## already faintly visible and the low end is where transparency does its work. A busker at arm's
-## length no longer reads as bright as a burning building at arm's length by construction — that
-## read the *distance*, and distance is exactly what stopped mattering.
+## **Both channels read `ExcitementSource.net_landed()`, on different curves, and neither reads
+## distance** *(2026-09-08, the player: "the transparency shouldn't show distance since distance
+## actually doesn't matter. only the actual received amount counts ... color and transparency
+## shouldn't be the same number. transparency can be used to emphasize low values.")*
+## `colour_for()` is linear in the net, so hue separates the high end; `magnitude_for()` rises fast
+## and saturates early, so the low end is where transparency does its work.
 ##
-## **The net, not the gross, since 2026-09-20** — *(playtest 112: "he gets deep red but my bar
-## doesn't move up much. it was supposed to indicate the actual amount I receive over a time
-## window"; playtest 113: "let's ... fix what the halo reflects".)* `landed()` is still each
-## source's own gross sum, traced from the meter exactly as before; `net_landed()` is that sum less
-## the source's own share of the decay the bar took in the same window, shared in proportion to
-## what every live source landed — see that function's own doc for the arithmetic and why the sum
-## across sources is exact rather than approximate. A source now reads red only while the bar is
-## actually climbing because of it, which the gross number never said.
+## **The net, not the gross** *(playtest 112: "he gets deep red but my bar doesn't move up much")*:
+## each source's own `landed()` less its share of the decay the bar took in the same window, so a
+## source reads red only while the bar is actually climbing because of it.
 ##
-## **It draws nothing itself.** *(2026-09-07, the player: "it should use the outline of the
-## sprite. that's why it needs to be a shader. or draw the sprite in a uniform color multiple
-## times ... the halo should not extend more than a few pixels beyond the object's outline.")* A
-## shape drawn here — a circle, a rect, any radius derived from a def — can only ever be a picture
-## of a *number*, and the whole licence this cue has to exist is that it draws the *thing* rather
-## than the thing's *reach*. `EntityHalo` is the one place that draws, shared by `EventInstance`
-## and `CrowdAgent`, told a *target* alpha and colour through `set_halo_strength()` and eased
-## toward it on its own clock — see `EntityHalo.FADE_IN_SECONDS`/`FADE_OUT_SECONDS`.
+## **It draws nothing itself** *(2026-09-07, the player: "it should use the outline of the
+## sprite")*: a shape drawn here could only ever be a picture of a *number*, and the licence this
+## cue has is that it draws the *thing*. Each source's body draws its own rim (`SourceRim`, handed
+## to the source as `ExcitementSource.rim`), told a *target* alpha and colour that it eases toward
+## on its own clock (`EntityHalo.FADE_IN_SECONDS`/`FADE_OUT_SECONDS`).
 ##
-## **It does not accumulate anything itself.** *(2026-09-08, the player: "don't derive it from the
-## source numbers but trace an increase in excitement back to its constituents".)* What has
-## actually landed on her is traced from the meter's own sum: `Baby._update_excitement()` calls
-## each source's own `accumulate_landed(points)` with its exact share of what reached the bar,
-## sensitivity included, so `landed()` can never disagree with what the bar actually did, and
-## `Baby.decay_in_window()` is the same meter's own decay, over the same window. This node only
-## selects sources and combines the two into each rim's net.
+## **It accumulates nothing itself.** What has landed on her is traced from the meter's own sum:
+## `Baby._update_excitement()` hands each source its exact share (`accumulate_landed()`), and
+## `Baby.decay_in_window()` is the same meter's decay over the same window. This node only selects
+## sources and combines the two into each rim's net, and tells every source where she is and what
+## the frame's projected total is for its caret (`ExcitementSource.set_player_at()`,
+## `set_expected_total_gross()`).
 ##
-## **The duck type.** GDScript has no interface to lean on, so it is stated here: a candidate is
-## any `Node2D` that answers —
-##
-## - `contribution_at(world_position: Vector2) -> float` — excitement/s this source delivers at a
-##   point, the query events and the crowd already share.
-## - `accumulate_landed(points: float) -> void` — folds an exact points share, already computed by
-##   the caller, into a `WINDOW`-second sliding sum.
-## - `landed() -> float` — that sum: everything still inside the last `WINDOW` seconds.
-## - `set_halo_strength(alpha: float, colour: Color) -> void` — told once a frame what to show, as
-##   a *target* its own halo state eases toward rather than an immediate value; `0` for everything
-##   not picked, and for a pick that finds no free block. A source builds its rim on its first nonzero target and gives it back once faded.
-## - `holds_a_halo() -> bool` — whether it holds a rim right now, lit or still fading, which is
-##   what `_process()` counts against `EntityHalo.RIM_BUDGET`.
-## - `release_halo() -> void` — gives its rim back on the spot, through `EntityHalo.release()`;
-##   asked of a source only once it is queued for deletion.
-## - `set_player_at(world_position: Vector2, velocity: Vector2, decay_rate: float, sensitivity:
-##   float) -> void` — this frame's player position, velocity, `Baby.decay_rate()` and
-##   `Baby.current_sensitivity()`, told once a frame to every candidate whether or not it was
-##   picked. `EventInstance` already gets the position from `EventManager`; `CrowdAgent` has no
-##   other channel to the player at all, since `Crowd` visits an agent only when it is near a road,
-##   and this node is the one place already visiting every agent in the crowd every frame
-##   regardless.
-## - `expected_gross_at(world_position: Vector2) -> float` — the gross points this source projects
-##   over `Tuning.EXPECTED_IMPACT_HORIZON`, before her own decay is netted against it. Summed over
-##   every candidate below, once a frame, so every source's own `expected_impact_at()` — the
-##   caret's own net gain, projected forward the way `landed()` and `decay_in_window()` are read
-##   back — can share the horizon's decay in proportion rather than each netting the whole of it
-##   against itself.
-## - `set_expected_total_gross(total: float) -> void` — that sum, told back to every candidate
-##   before anybody's caret is asked for, the forward-looking twin of `total_landed` below.
-##
-## `EventInstance` and `CrowdAgent` both satisfy this without sharing a base class.
+## **Its candidates are every source of the sets it is handed** (`ExcitementSources`, the world's
+## own `WorldContext.excitement_sources`): the events and the whole crowd in the city, the events
+## alone in the building.
 
 ## Excitement/s a source has to reach at her own position before it earns a place in the halo.
 ##
@@ -90,58 +45,32 @@ const CONTRIBUTION_FLOOR := 1.0
 ## The most sources one frame may light up. **Past the cap the weakest contributors are the
 ## ones left out**, in `select_sources()` below — not the furthest and not the newest — because
 ## dropping the smallest terms of a sum is the smallest possible error the drawn total can carry.
-## The candidate set is every live event plus the whole crowd, so unlike the days before the crowd
-## joined it, an ordinary busy pavement can put far more than eight candidates inside her reach at
-## once — this cap, together with `CONTRIBUTION_FLOOR`, is what keeps that legible. See
+## The candidate set is every live event plus the whole crowd, so an ordinary busy sidewalk can put
+## far more than eight candidates inside her reach at once — this cap, together with
+## `CONTRIBUTION_FLOOR`, is what keeps that legible. See
 ## `docs/TODO.md`, "`MAX_SOURCES` (8) is a played question", for the measurement this number is
 ## checked against.
 const MAX_SOURCES := 8
 
-## The width of `landed()`'s sliding sum, in seconds — `Tuning.EXPECTED_IMPACT_HORIZON` read
-## backward rather than a number of its own. The caret projects the same five seconds forward;
-## see that constant's own doc for why one figure serves both directions.
-##
-## **A true sum, not a decayed average.** *(2026-09-08, the player: "if a honking car caused 35
-## excitement to the player that's the number that informs the color of the halo".)* A 35-point
-## burst has to read as 35 for the whole window and then drop, not fade from the instant it
-## happened, so each source keeps its own list of `[when, points]` entries and `landed()` is their
-## sum for whatever is still within `WINDOW` — see `EventInstance.landed()`.
-##
-## **`when` is each source's own simulation clock, in seconds, not the wall clock.** A source
-## advances its own `_clock` by `delta` in its `_process()`, so a pause longer than `WINDOW` does
-## not empty every halo the instant the game resumes, and a test rig measures the window on
-## simulated time rather than on however long the assertion actually took to run.
-##
-## **Chosen to be looked at, not derived.** *(2026-09-07: "5s sounds good for now".)* `cat_dash`
-## is a three-second interruption and `busker` is continuous, so it has to be long enough that a
-## brief scare colours at all and short enough that a source she has walked away from stops
-## colouring promptly.
-const WINDOW := Tuning.EXPECTED_IMPACT_HORIZON
-
 ## Which live sources earn a place in the halo, strongest contribution first, capped at
-## `MAX_SOURCES`. See the class doc for what a "source" has to answer to.
+## `MAX_SOURCES`. Every candidate is an `ExcitementSource`.
 ##
 ## **A cue that marks everything says nothing** (`.claude/skills/cues/SKILL.md`), so the set is
 ## never "every source that exists" — it is `contribution_at(at)` above the floor, capped at the
 ## eight strongest, which keeps a busy pavement legible.
 ##
-## **A barrier structure the meter is not charging her for is excluded on the same line.** The
-## region boundary's own pieces — a door's hut, boom and post, and the `roadblock` a wall stands as
-## — charge as one source, the strongest at her position, so the others land nothing and a rim on
+## **A source outranked by another is excluded on the same line** (`ExcitementSource.outranked`).
+## The region boundary's own pieces — a door's hut, boom and post, and the `roadblock` a wall stands
+## as — charge as one source, the strongest at her position, so the others land nothing and a rim on
 ## one of them would be a cue marking a thing that is costing her nothing while its neighbour reads
-## red. `EventManager` writes `outranked_by_a_stronger_barrier` once a frame; see there.
-##
-## **The one place the duck type is peeked under.** `outranked_by_a_stronger_barrier` is an
-## event-only concept — a crowd body has no def and is never asked for it — so it is read only
-## after `source is EventInstance` says the object in hand actually is one. A mast is halo'd like
-## any other placed row now that it stands somewhere: `docs/EVENTS.md`, "No row is `city_wide`".
+## red.
 ##
 ## Pulled out as a static function so a test can hold the selection, the floor and the drop order
 ## without a scene, a shader or a viewport — the same reason `BadgeModel.announces()` is static.
 static func select_sources(candidates: Array, at: Vector2) -> Array:
 	var ranked: Array = []
 	for source in candidates:
-		if source is EventInstance and source.outranked_by_a_stronger_barrier:
+		if source.outranked:
 			continue
 		var contribution: float = source.contribution_at(at)
 		if contribution > CONTRIBUTION_FLOOR:
@@ -164,9 +93,8 @@ const MAX_ALPHA := 0.75
 ## player: "transparency can be used to emphasize low values ... all changes should transition
 ## (hue and transparency) instead of immediately showing the actual value".)* A source just picked
 ## has landed nothing yet — `landed()` is a sliding sum, not instantaneous — and a rim that opened
-## at zero alpha would be invisible for the whole time it takes to earn one, which reads as exactly
-## the "shows nothing" playtest 38 reported. The floor is what a source fades *in* to before it has
-## anything to say about magnitude.
+## at zero alpha would be invisible for the whole time it takes to earn one, which reads as showing
+## nothing. The floor is what a source fades *in* to before it has anything to say about magnitude.
 const MIN_MAGNITUDE := 0.2
 
 ## Where `magnitude_for()`'s curve is already at `MAX_ALPHA`. *(2026-09-08, the player: "one point
@@ -176,13 +104,10 @@ const MIN_MAGNITUDE := 0.2
 ## its work well before colour has finished its own climb from pale to red.
 const LOW_EMPHASIS_POINTS := 15.0
 
-## How brightly a source's own rim reads: `net_landed()` on a curve that rises fast and saturates
-## early, so a point or two is already faintly visible and fifteen points is already solid — the
-## opposite curve from `colour_for()`'s straight line to forty, which is the whole reason the two
-## channels no longer say the same thing at once. *(2026-09-08, the player, dropping the "how far
-## away" read this replaced: "the transparency shouldn't show distance since distance actually
-## doesn't matter. only the actual received amount counts ... this frees up transparency for also
-## encoding magnitude." And on the shape of the curve itself: "transparency can be used to
+## How brightly a source's own rim reads: `ExcitementSource.net_landed()` on a curve that rises
+## fast and saturates early, so a point or two is already faintly visible and fifteen points is
+## already solid — the opposite curve from `colour_for()`'s straight line to forty, so the two
+## channels never say the same thing at once *(2026-09-08, the player: "transparency can be used to
 ## emphasize low values.")* `sqrt` is the cheap curve with that shape: `sqrt(x)` for `x` in `0..1`
 ## rises steeply near zero and flattens as it approaches one, unlike the straight line `colour_for`
 ## wants for its own axis.
@@ -192,17 +117,15 @@ static func magnitude_for(net: float) -> float:
 # -------------------------------------------------------------------- colour ---
 
 ## How red a source's own rim reads: pale for a source that has cost her almost nothing over the
-## last `WINDOW` seconds, red for one that has actually raised the bar. `net` is `net_landed()` —
-## what actually reached the meter less this source's own share of what walking gave back, see
-## that function's own doc — not a rate, and it saturates at `Tuning.EXPECTED_IMPACT_POINTS`, the
+## last `ExcitementSource.WINDOW` seconds, red for one that has actually raised the bar. `net` is
+## `ExcitementSource.net_landed()` — what actually reached the meter less this source's own share of
+## what walking gave back — not a rate, and it saturates at `Tuning.EXPECTED_IMPACT_POINTS`, the
 ## same line the caret goes amber at read the other way round.
 ##
-## **This is the axis the row's own declared `intensity` was proposed for and rejected.** Put as a
-## fork — a lethal `cyclist` (18/s) glowing paler than a harmless `protest` (42/s) — the answer was
-## *"magnitude of how much actually landed at the player -- track it over a time window -- then
-## you have the real cost"*: what a row is declared to emit is a fact about the catalogue, and what
-## it has actually delivered is a fact about the encounter she just had, which is the only one this
-## cue should be reporting.
+## **What it delivered, never what the row declares it emits** *(the player: "magnitude of how much
+## actually landed at the player -- track it over a time window -- then you have the real cost")*:
+## a lethal `cyclist` (18/s) may rightly read paler than a harmless `protest` (42/s), since the cue
+## reports the encounter she just had, not the catalogue.
 ##
 ## **Through `Palette.HALO_MID`, not a straight lerp past it.** *(Playtest 38, finding 4: "there is
 ## also no real fade from yellow to red (eg when standing next to the other baby lady".)* A chat
@@ -217,43 +140,13 @@ static func colour_for(net: float) -> Color:
 		return Palette.HALO_WEAK.lerp(Palette.HALO_MID, t * 2.0)
 	return Palette.HALO_MID.lerp(Palette.HALO_STRONG, (t - 0.5) * 2.0)
 
-# -------------------------------------------------------------------- net, not gross ---
-
-## A source's own share of the decay the bar took over the same window, in proportion to what it
-## landed, subtracted from what it landed — floored at zero, never a source reading as a cost the
-## bar did not carry. *(2026-09-20, playtest 112's arithmetic and playtest 113's answer to it: "he
-## gets deep red but my bar doesn't move up much. it was supposed to indicate the actual amount I
-## receive over a time window" · "let's ... fix what the halo reflects.")* Overturns *(2026-09-08:
-## "don't derive it from the source numbers but trace an increase in excitement back to its
-## constituents")* only in what the traced number counts, not in how it is traced: `landed` is
-## still read back from `Baby._update_excitement()`, never recomputed from `contribution_at()`.
-##
-## **The floor is why the sum this buys is exact, not approximate.** Every source's own share
-## scales by the identical factor `decay / total_landed`, so either that factor is under one and
-## every source keeps a positive net summing to `total_landed − decay` — the bar's own rise — or it
-## is at least one and every source floors to zero *together*, which is the other half of the
-## sentence this overturns: a source reads red only while the bar is climbing because of it, and
-## when the bar is not climbing at all, nothing reads red. `total_landed` is every live
-## candidate's own `landed()`, not only the picked, capped set — an unpicked source still owes and
-## is owed its share of the same decay.
-##
-## Zero when nothing has landed from anybody: nothing to share the decay against, and a source
-## with `landed <= 0.0` has nothing a floor needs to catch either.
-static func net_landed(landed: float, total_landed: float, decay: float) -> float:
-	if total_landed <= 0.0:
-		return 0.0
-	return maxf(0.0, landed - decay * (landed / total_landed))
-
-## The event source: anything answering `instances() -> Array[EventInstance]` — `EventManager` in
-## the city and in the escape's building alike. See `setup()`.
-var _events: Node
-## The crowd, or null where there is none — the escape's building has nobody in it but the events.
-var _crowd: Crowd
+## The sets of sources this halo picks among (`ExcitementSources`): the world's, handed in.
+var _sets: Array[ExcitementSources] = []
 var _player: Node2D
 var _baby: Baby
 
 ## Reused across frames rather than a fresh `Array` every tick — `.clear()` keeps whatever backing
-## storage the previous frame's `append_array` calls grew, so a day at a steady candidate count
+## storage the previous frame's appends grew, so a day at a steady candidate count
 ## (events plus the whole crowd, ~275) stops paying for a new allocation every frame for an array
 ## whose size barely moves frame to frame.
 var _candidates: Array = []
@@ -264,76 +157,44 @@ var _candidates: Array = []
 ## `EntityHalo.RIM_BUDGET` entries.
 var _holders := {}
 
-## **The building shows what the city shows.** `events` is an event source rather than a day, the
-## one question asked of it being `instances()`, and `crowd` may be null — so the building's events
-## and no crowd is a whole candidate set, and a masked man on the stairs or a steam vent in the
-## basement wears the same rim a dog on a sidewalk does. `Baby._update_excitement()` traces
-## `landed()` from `WorldContext.excitement_sources_at()`, which `InteriorScene` answers from the
-## same instances, so nothing about the netting changes indoors. **Called again when the escape
-## walks out of the service door**, with the city's source and crowd in place of the building's.
-func setup(events: Node, crowd: Crowd, player: Node2D, baby: Baby) -> void:
-	_events = events
-	_crowd = crowd
+## **The building shows what the city shows.** `sets` is whatever the world it is handed holds —
+## the city's events and crowd, or the building's events alone — so a masked man on the stairs or a
+## steam vent in the basement wears the same rim a dog on a sidewalk does. **Called again when the
+## escape walks out of the service door**, with the city's sets in place of the building's.
+func setup(sets: Array[ExcitementSources], player: Node2D, baby: Baby) -> void:
+	_sets = sets
 	_player = player
 	_baby = baby
 
-## Every frame: tell every candidate where she is standing, pick the sources, tell each one how
-## bright its own ring reads and what colour it is, and tell everything else zero. **Nothing here
-## accumulates `landed()`** — that happens where the meter is fed, in `Baby._update_excitement()`,
-## so this node only reads it back. `set_halo_strength()` is what actually stores it and queues
-## that source's own halo child for redraw — this node has no `_draw()` of its own left to call.
-## `set_player_at()` is unconditional and comes first, since a source's own caret depends on it
-## whether or not the source cleared the halo's own floor.
+## Every frame: tell every candidate where she is standing, pick the sources, tell each one's rim
+## how bright it reads and what colour it is, and tell everything else zero.
 ##
-## **The candidate set is every live event and the whole crowd**, not only a startled body —
-## *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
-## because of people".)* `CONTRIBUTION_FLOOR` and `MAX_SOURCES` are what keep a busy pavement
-## legible rather than a special case admitting only the caret-worthy.
+## **The candidate set is every source of every set, the whole crowd included** *(2026-09-08, the
+## player: "a busy street is noisy because of cars and a busy sidewalk is noisy because of
+## people")*: `CONTRIBUTION_FLOOR` and `MAX_SOURCES` keep a busy sidewalk legible.
 ##
 ## **`total_landed` and `decay` are read once, over every candidate, before anybody's net is
-## computed** — `net_landed()`'s own doc explains why the sum this buys is exact: every source
-## scales by the identical factor, so the floor only ever catches all of them together, not one at
-## a time depending on loop order.
-##
-## **`set_player_at()` also carries what every source's own `expected_impact_at()` needs to answer
-## the caret's "if I keep doing what I'm doing" — her velocity, `Baby.decay_rate()` and
-## `Baby.current_sensitivity()`.** `_player` is a `Node2D` by its own duck type, so the velocity
-## read is a soft cast: a player with no `CharacterBody2D` (a data-level test's stand-in) answers
-## zero, which is the same "held still" default `expected_impact_at()` already falls back to.
-##
-## **`expected_gross_at()` is asked of every candidate right after `set_player_at()`, the same
-## shape `total_landed` already has** — one pass to gather the frame's total before anybody's own
-## share of the decay can be known, then `set_expected_total_gross()` hands that total back to
-## every candidate before the halo's own netting loop asks a single one of them for a caret. A
-## source whose own projection is nothing (far away, or both bodies held still) answers zero and
-## costs nothing but the reach check `expected_gross_at()` already opens with.
+## computed**, and `expected_gross_at()` is asked of every candidate right after `set_player_at()`,
+## its sum handed back through `set_expected_total_gross()` before anything asks a caret: every
+## source's share scales by one factor (`ExcitementSource.net_landed()`), so the floor catches all of
+## them together, never one at a time depending on loop order. `_player` is a `Node2D`, so her
+## velocity is a soft cast: a stand-in with no `CharacterBody2D` answers held still.
 ##
 ## **No more than `EntityHalo.RIM_BUDGET` rims exist at once, none is cut short to keep it so, and
-## the strongest picks are lit first.** On the web a rim past the renderer's sixteenth block draws
-## nothing at all (`EntityHalo`'s class doc), and every change a rim shows eases rather than jumps
-## (`.claude/skills/cues/SKILL.md`, the player on 2026-09-08: "all changes should transition (hue
-## and transparency) instead of immediately showing the actual value"). So a rim that has dropped
-## out of the picked set always fades all the way out. *(2026-10-04, the player, once the budget was
-## a cap: "if we have a limit with number of halos the selection should be by intensity so only the
-## top k most intensive halos show at any one time".)* So when the budget is full the blocks go by
-## strength: **a pick that already holds a rim, lit or still fading, is lit at once and in place**
-## (relighting needs no new block), and picks with no rim are served strongest first, by this
-## frame's `contribution_at()` — the ranking `select_sources()` already uses — while blocks remain.
-## There is no line: a pick that cannot be served shows nothing yet and is asked again next frame.
-## A wait happens only when the budget is full. No bound holds on it: under constant turnover a
-## weak pick may stay unlit for as long as stronger ones keep arriving, which is what "only the top
-## k" asks for. The picks themselves are at most `MAX_SOURCES`, and a rim not picked fades out
-## within one `EntityHalo.FADE_OUT_SECONDS`, so the picks that hold no rim are served as those
-## fades end.
+## the strongest picks are lit first** *(2026-10-04, the player: "if we have a limit with number of
+## halos the selection should be by intensity so only the top k most intensive halos show at any
+## one time")*. On the web a rim past the renderer's sixteenth block draws nothing (`EntityHalo`'s
+## class doc), and every change a rim shows eases rather than jumps, so a rim dropped from the picks
+## always fades all the way out. A pick that already holds a rim is lit at once, in place; picks with
+## no rim are served strongest first, by this frame's `contribution_at()`, while blocks remain, and
+## one that cannot be served shows nothing yet and is asked again next frame.
 ##
 ## **The count is taken after every block that can come back this frame has**, because the engine
-## hands a new rim its block before it releases one freed by a queued deletion (see `EntityHalo`'s
-## class doc): every source not to be lit — unpicked or no longer a candidate — is told
-## zero before any unserved pick is served, and a rim whose fade is over is freed on the spot inside
-## that call. `_holders` carries last frame's holders over, so a source that has left the candidate
-## set still counts while its rim exists — and one queued for deletion (an event `EventManager` has
-## just retired, a crowd cleared at the end of a day) gives its rim back on the spot here, since its
-## body goes before the next frame is drawn anyway, and is never lit again.
+## hands a new rim its block before it releases one freed by a queued deletion: every source not to
+## be lit is told zero before any unserved pick is served, and a rim whose fade is over is freed on
+## the spot inside that call. `_holders` carries last frame's holders over, so a source that has left
+## the candidates still counts while its rim exists, and one whose body is queued for deletion gives
+## its rim back on the spot here and is never lit again.
 func _process(_delta: float) -> void:
 	if FrameRecord.on:
 		var outer := FrameRecord.enter(FrameRecord.CUES)
@@ -344,7 +205,7 @@ func _process(_delta: float) -> void:
 
 ## Picking the rims and predicting the carets, timed under `FrameRecord.CUES`.
 func _pick_and_predict() -> void:
-	if not _events or not _player or not _baby:
+	if _sets.is_empty() or not _player or not _baby:
 		return
 	var here := _player.global_position
 	var player_velocity := (_player as CharacterBody2D).velocity \
@@ -352,14 +213,12 @@ func _pick_and_predict() -> void:
 	var player_decay_rate := _baby.decay_rate()
 	var player_sensitivity := _baby.current_sensitivity()
 	_candidates.clear()
-	_candidates.append_array(_events.instances())
-	if _crowd:
-		_candidates.append_array(_crowd.agents())
+	for set in _sets:
+		set.every_source(_candidates)
 	var picked := select_sources(_candidates, here)
-	# A `Dictionary` keyed by the picked objects themselves, built once off the (at most
-	# `MAX_SOURCES`) picked set, so the loop below tests membership in O(1) rather than running a
-	# linear `in` scan of `picked` for every one of up to ~275 candidates — an object key hashes by
-	# identity, the same equality `in` was already using.
+	# A `Dictionary` keyed by the picked sources themselves, built once off the (at most
+	# `MAX_SOURCES`) picked set, so the loop below tests membership in O(1) rather than a linear
+	# scan of `picked` for every one of up to ~275 candidates.
 	var picked_set := {}
 	for source in picked:
 		picked_set[source] = true
@@ -374,42 +233,53 @@ func _pick_and_predict() -> void:
 		source.set_player_at(here, player_velocity, player_decay_rate, player_sensitivity)
 		total_expected_gross += source.expected_gross_at(here)
 	# Every block that can come back this frame comes back before any unserved pick is served —
-	# see this function's doc. First the rims of last frame's holders that are being deleted anyway.
+	# see this function's doc. First the rims of last frame's holders whose bodies are going anyway.
 	for source in _holders:
-		if is_instance_valid(source) and source.is_queued_for_deletion():
-			source.release_halo()
+		if is_instance_valid(source.body) and source.body.is_queued_for_deletion():
+			var going = source.rim
+			if going:
+				going.release()
 	var holders := {}
 	for source in _candidates:
 		source.set_expected_total_gross(total_expected_gross)
 		if picked_set.has(source):
 			continue
-		source.set_halo_strength(0.0, Palette.HALO_WEAK)
-		if source.holds_a_halo():
+		# A rim not held has nothing to fade, so only a held one is told zero.
+		var rim = source.rim
+		if rim == null or not rim.is_held():
+			continue
+		rim.set_strength(0.0, Palette.HALO_WEAK)
+		if rim.is_held():
 			holders[source] = true
 	# A holder that is no longer a candidate at all still holds its block; told zero like any other
 	# unpicked source, so it fades and gives it back rather than counting against the budget forever.
 	for source in _holders:
-		if not is_instance_valid(source) or picked_set.has(source) or holders.has(source):
+		if not is_instance_valid(source.body) or picked_set.has(source) or holders.has(source):
 			continue
-		source.set_halo_strength(0.0, Palette.HALO_WEAK)
-		if source.holds_a_halo():
+		var rim = source.rim
+		if rim == null:
+			continue
+		rim.set_strength(0.0, Palette.HALO_WEAK)
+		if rim.is_held():
 			holders[source] = true
 	# Picks that already hold a rim are lit at once, in place: relighting needs no new block. Picks
 	# with no rim are served strongest first (`picked` is in that order) while blocks remain; the
 	# rest are told zero and show nothing yet.
 	for source in picked:
-		if source.is_queued_for_deletion():
+		var rim = source.rim
+		if rim == null or source.body.is_queued_for_deletion():
 			continue
-		if source.holds_a_halo():
+		if rim.is_held():
 			holders[source] = true
 	for source in picked:
-		if source.is_queued_for_deletion():
+		var rim = source.rim
+		if rim == null or source.body.is_queued_for_deletion():
 			continue
-		if not source.holds_a_halo():
+		if not rim.is_held():
 			if holders.size() >= EntityHalo.RIM_BUDGET:
-				source.set_halo_strength(0.0, Palette.HALO_WEAK)
+				rim.set_strength(0.0, Palette.HALO_WEAK)
 				continue
 			holders[source] = true
-		var net := net_landed(source.landed(), total_landed, decay)
-		source.set_halo_strength(magnitude_for(net), colour_for(net))
+		var net := ExcitementSource.net_landed(source.landed(), total_landed, decay)
+		rim.set_strength(magnitude_for(net), colour_for(net))
 	_holders = holders

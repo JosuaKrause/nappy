@@ -177,7 +177,7 @@ func strikes(her: Vector2) -> bool:
 ## **Whether it will strike her if she stays where she is**: driving now, and her in front of its
 ## nose on the carriageway from some point of its next `Tuning.EXPECTED_IMPACT_HORIZON` straight
 ## ahead, only as far as the line it gives way at and the end of a route it stops at. What
-## `EventInstance.will_be_lethal()` answers for a car.
+## `EventExcitement.will_be_lethal()` answers for a car.
 func will_strike(her: Vector2) -> bool:
 	if not is_driving():
 		return false

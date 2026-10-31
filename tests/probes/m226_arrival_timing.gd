@@ -191,7 +191,7 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 		var swell: float = instance.look.mark_swell()
 		var width: float = instance.MARK_WIDTH * (0.55 + 0.45 * swell)
 		var at: float = -(instance.MARK_HEIGHT + 10.0 * swell)
-		for mark in (2 if instance.look._caret_strength() == 2 else 1):
+		for mark in (2 if instance.excitement.caret_strength() == 2 else 1):
 			parts.append(Rect2(-width - 1.0, at - width * 0.8 - 1.0,
 					width * 2.0 + 2.0, width * 1.3 + 2.0))
 			at -= width * 0.85

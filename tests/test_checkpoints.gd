@@ -674,12 +674,13 @@ func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
 ## holding.
 func _test_the_hold_charges_only_its_toll(t) -> void:
 	# A bare world handed one `EventManager`, so a real `Baby` is driven against the same answer
-	# the game's own city gives (`WorldContext.excitement_sources_at()`, where the rule under test —
-	# a hold silences everything else — lives), rather than a rig that summed the instances itself.
+	# the game's own city gives (`WorldContext.excitement_sources_at()`, whose door rule — a hold
+	# silences everything else — is `ExcitementSources.all_at()`'s), rather than a rig that summed
+	# the instances itself.
 	var world := WorldContext.new()
 	t.add_child(world)
 	var manager := _manager(t)
-	world.events = manager
+	world.excitement_sources = [manager.sources]
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
 	var baby := stroller.get_node_or_null("Baby") as Baby
@@ -700,7 +701,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	var entry := centre + axis * 60.0
 	stroller.global_position = entry
 	manager._tell_them_where_she_is()
-	var beside_it := loud.contribution_at(entry)
+	var beside_it := loud.excitement.contribution_at(entry)
 	var would_leak := beside_it * Tuning.CHECKPOINT_DETAIN_SECONDS
 	t.check(would_leak > TOLL_TOLERANCE * 4.0,
 			("a leak would be worth %.1f points of the loudspeaker beside the door over the hold, " +
@@ -723,15 +724,15 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	t.close_to(baby.excitement - before, Tuning.CHAT_EXCITEMENT,
 			"the whole crossing costs the toll and nothing else (%.1f against %.0f)"
 			% [baby.excitement - before, Tuning.CHAT_EXCITEMENT], TOLL_TOLERANCE)
-	t.close_to(loud.landed(), 0.0,
+	t.close_to(loud.excitement.landed(), 0.0,
 			"and nothing of it is attributed to the loudspeaker beside the door (%.1f)"
-			% loud.landed(), 0.01)
+			% loud.excitement.landed(), 0.01)
 
 	# And the moment she is out, the street is back: the silence is a fact about being inside a
 	# door, not a shield the door leaves behind it.
 	manager.checkpoints.check_detentions()
 	manager._tell_them_where_she_is()
-	t.check(manager.total_excitement_at(stroller.global_position) > 0.0,
+	t.check(manager.sources.total_at(stroller.global_position) > 0.0,
 			"released, the fields around the door charge her again")
 
 	hut.free()
@@ -769,7 +770,7 @@ func _test_a_boundarys_structures_charge_as_one(t) -> void:
 	var strongest := 0.0
 	for body in kit:
 		manager.world.instances.append(body)
-		var rate := body.contribution_at(here)
+		var rate := body.excitement.contribution_at(here)
 		summed += rate
 		strongest = maxf(strongest, rate)
 	t.check(summed > strongest * 1.5,
@@ -779,12 +780,12 @@ func _test_a_boundarys_structures_charge_as_one(t) -> void:
 
 	stroller.global_position = here
 	manager._tell_them_where_she_is()
-	t.close_to(manager.total_excitement_at(here), strongest,
+	t.close_to(manager.sources.total_at(here), strongest,
 			"the whole boundary kit charges the strongest of it and not the sum (%.1f/s against a "
-			% manager.total_excitement_at(here) + "sum of %.1f/s)" % summed, 0.01)
+			% manager.sources.total_at(here) + "sum of %.1f/s)" % summed, 0.01)
 
 	var landed_on: Array = []
-	for pair in manager.excitement_sources_at(here):
+	for pair in manager.sources.sources_at(here):
 		landed_on.append(pair[0])
 	t.check(landed_on.size() == 1, "one source reaches the bar, not five (%d)" % landed_on.size())
 	if landed_on.size() == 1:
@@ -792,7 +793,10 @@ func _test_a_boundarys_structures_charge_as_one(t) -> void:
 				"and it is the one that was the maximum, which is what its own landed() will "
 				+ "carry and what the halo's colour is traced from", 0.01)
 
-	var picked := ExcitementHalo.select_sources(kit, here)
+	var candidates: Array = []
+	for structure in kit:
+		candidates.append(structure.excitement)
+	var picked := ExcitementHalo.select_sources(candidates, here)
 	t.check(picked.size() == 1,
 			("and the halo draws one rim, on that same body: a rim on a structure landing nothing " +
 			"while its neighbour reads red is a cue disagreeing with the bar (%d picked)")
@@ -804,8 +808,8 @@ func _test_a_boundarys_structures_charge_as_one(t) -> void:
 	manager._tell_them_where_she_is()
 	var now_strongest := 0.0
 	for body in kit:
-		now_strongest = maxf(now_strongest, body.contribution_at(stroller.global_position))
-	t.close_to(manager.total_excitement_at(stroller.global_position), now_strongest,
+		now_strongest = maxf(now_strongest, body.excitement.contribution_at(stroller.global_position))
+	t.close_to(manager.sources.total_at(stroller.global_position), now_strongest,
 			"and a step along the wall re-asks it rather than keeping the first answer", 0.01)
 
 	for body in kit:
@@ -1099,7 +1103,7 @@ func _test_entering_a_hold_resets_the_cameras_interpolation_too(t) -> void:
 # holds here holds for the real thing.
 
 ## The summed field of a day's plan at a point, with the boundary kit collapsed to its strongest —
-## the same rule `EventManager.excitement_sources_at()` applies, read off plans rather than live
+## the same rule `EventSources.sources_at()` applies, read off plans rather than live
 ## instances so a whole day can be swept without streaming it in.
 func _planned_field_at(plans: Array[EventScheduler.Planned], at: Vector2) -> float:
 	var total := 0.0

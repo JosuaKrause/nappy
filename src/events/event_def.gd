@@ -879,9 +879,8 @@ func detain_distance() -> float:
 ## **The maximum is taken over every flagged instance at once, not per cluster.** There is no
 ## grouping to get wrong and nothing to tune: two barriers far enough apart not to overlap already
 ## contribute nothing to each other's ground, so the answer only differs from the sum exactly where
-## the player said it should. `EventManager.excitement_sources_at()` is the one place that does it,
-## and the halo, the caret and the meter all read that same answer — see
-## `EventInstance.outranked_by_a_stronger_barrier`.
+## the player said it should. `EventSources.sources_at()` is the one place that does it, and the
+## halo, the caret and the meter all read that same answer — see `ExcitementSource.outranked`.
 @export var barrier_structure := false
 
 ## Entering the lethal radius ends the day immediately.
@@ -1554,9 +1553,10 @@ func as_warned_first() -> EventDef:
 ## of `outer_radius` alone now that a segment's field is a capsule rather than a disc, and now that
 ## a moving point's own forward reach outgrows its resting radius:
 ## `EventScheduler._keeps_its_field_clear`'s clearance, the streaming rect, and
-## `EventInstance.expected_gross_at()`'s early-out. `half_length + outer_radius` for a segment (the
-## along-axis reach, which is exactly the old flat `outer_radius` a row's radii were derived
-## *against* — see the catalogue's own docstrings) whose field is priced from that segment. This
+## `ExcitementSource.expected_gross_at()`'s early-out (`EventExcitement._projection_reach()`).
+## `half_length + outer_radius` for a segment (the along-axis reach, which is exactly the old flat
+## `outer_radius` a row's radii were derived *against* — see the catalogue's own docstrings) whose
+## field is priced from that segment. This
 ## figure does not grow with speed, so for the patrol car, a segment that drives, it is the reach
 ## of its field standing.
 ## A row whose field is priced from its centre (`VehicleSpec.field_from_its_centre`, the fire engine) is a
@@ -1641,8 +1641,8 @@ func emission_at(at: Vector2) -> float:
 
 ## What a row emits at a distance from its centre — the field, and the core over the top of it
 ## where there is one. **Every price in the game goes through here**: the cost table's integral,
-## the placement rules that read it, and `EventInstance.contribution_at()`, which is what the baby
-## is actually charged.
+## the placement rules that read it, and an event's `ExcitementSource.contribution_at()`, which is
+## what the baby is actually charged.
 ##
 ## `at_intensity` is the peak the *caller* is carrying rather than the row's catalogued one — an
 ## instance's `current_intensity()`, after the telegraph damping and the pulse envelope. **The core
@@ -1667,8 +1667,8 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 
 ## A straight-line distance from a live instance's node beyond which its field is exactly zero,
 ## whatever its intensity, speed, heading or the way its shape lies — so
-## `EventInstance.contribution_at()` can answer zero for a far source without working the field
-## out, which is most of the catalogue most of the time.
+## an event's source (`EventExcitement._field()`) can answer zero for a far source without working
+## the field out, which is most of the catalogue most of the time.
 ##
 ## **Why it is safe.** `emission_at_distance()` is zero once the field distance it is handed is
 ## past every radius it reads: `inner_radius`, `outer_radius` and, with a core, `core_radius`. The

@@ -240,12 +240,12 @@ func _test_excitement_sums_over_instances(t) -> void:
 	var at: Vector2 = instances[0].global_position
 	var expected := 0.0
 	for instance in instances:
-		expected += instance.contribution_at(at)
-	t.close_to(_city.events.total_excitement_at(at), expected,
+		expected += instance.excitement.contribution_at(at)
+	t.close_to(_city.events.sources.total_at(at), expected,
 			"the manager's total is the sum of the instances' contributions")
 
 	var far := Vector2(-10000.0, -10000.0)
-	t.close_to(_city.events.total_excitement_at(far), 0.0,
+	t.close_to(_city.events.sources.total_at(far), 0.0,
 			"nothing reaches a point outside every radius")
 
 # ---------------------------------------------------- the world near you (M27) ---
@@ -1100,7 +1100,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 			var to_reach := 0.0
 			var reaches := func() -> bool:
 				return arrived.is_lethal_at(her_at) if arrived.def.hard_fail \
-						else arrived.contribution_at(her_at) > 0.0
+						else arrived.excitement.contribution_at(her_at) > 0.0
 			var on_her_at_once: bool = reaches.call()
 			while not reaches.call() and to_reach < 10.0:
 				arrived.player_at = her_at

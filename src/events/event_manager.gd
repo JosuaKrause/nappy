@@ -3,7 +3,7 @@ extends Node
 ## **A day's events, in whatever world she walks**: the one thing the run flow, the resistance, the
 ## city and the observers talk to about events. It starts a day (`start_day()`), steps its live
 ## instances once a physics tick in a fixed order (`_tick_the_events()`), answers what charges the
-## baby at a point (`excitement_sources_at()`), sees what struck her (`_check_hard_fails()`) and
+## baby at a point (`sources`), sees what struck her (`_check_hard_fails()`) and
 ## ends the day's charges. The work behind that face is handed to the parts that own it, each handed
 ## the one `EventWorld` they share:
 ##
@@ -112,6 +112,7 @@ func _init() -> void:
 	ahead = EventsAhead.new(world, streaming, spawner, warnings)
 	checkpoints = CheckpointController.new(world, spawner.spawn, EventBus,
 			EventCatalogue.door_guard())
+	sources = EventSources.new(world, checkpoints)
 	checkpoints.door_crossed.connect(func(at: Vector2, axis: Vector2, inspected: bool) -> void:
 			door_crossed.emit(at, axis, inspected))
 	checkpoints.takes_her_in.connect(_take_her_in)
@@ -414,73 +415,17 @@ func instances() -> Array[EventInstance]:
 
 # ------------------------------------------------------------ WorldContext ---
 
-## Every live instance's own contribution at this point, as `[instance, contribution]` pairs, for
-## every instance whose contribution here is actually positive.
-##
-## **Inside a door, the door's toll is the only thing that charges.** `door_holding_her_at()` below
-## says whether this point is inside a running region-door hold; while it is, the hold's own flat
-## `Tuning.CHAT_EXCITEMENT` rate is the whole of the answer and every other field in the city is
-## off. See that function for why that is a fact about where she is rather than a special case.
-##
-## **And the region boundary's own structures charge as one source rather than as their sum** —
-## *"since two gates can be adjacent to each other their influence shouldn't add up"*. Every
-## instance whose def carries `EventDef.barrier_structure` is a piece of a street being held, and
-## the strongest of them here is the one that lands; the rest contribute nothing and are not in the
-## returned pairs at all, so `Baby._update_excitement()` attributes what actually reaches the bar to
-## the structure that was the maximum and `ExcitementHalo`'s colour follows it by construction.
-## Everything else in the catalogue still sums, which is the contract the density is built on.
-func excitement_sources_at(world_position: Vector2) -> Array:
-	var inside := door_holding_her_at(world_position)
-	if inside:
-		return [[inside, inside.contribution_at(world_position)]]
-	var sources: Array = []
-	# Ties keep the first of `world.instances`, which is the order the day streamed them in — a stable,
-	# seed-determined answer rather than one that depends on floating-point luck.
-	var strongest: EventInstance = null
-	var strongest_rate := 0.0
-	for instance in world.instances:
-		var contribution := instance.contribution_at(world_position)
-		if contribution <= 0.0:
-			continue
-		if instance.def.barrier_structure:
-			if contribution > strongest_rate:
-				strongest_rate = contribution
-				strongest = instance
-			continue
-		sources.append([instance, contribution])
-	if strongest:
-		sources.append([strongest, strongest_rate])
-	return sources
-
-## The one barrier structure that lands at `world_position` — the strongest of them, the same
-## answer `excitement_sources_at()` keeps — or `null` when none reaches. Used once a frame by
-## `_tell_them_where_she_is()` to tell the others they are outranked, so the caret and the halo
-## agree with the meter about which body is charging her. See
-## `EventInstance.outranked_by_a_stronger_barrier`.
-func _strongest_barrier_at(world_position: Vector2) -> EventInstance:
-	var strongest: EventInstance = null
-	var strongest_rate := 0.0
-	for instance in world.instances:
-		if not instance.def.barrier_structure:
-			continue
-		var contribution := instance.contribution_at(world_position)
-		if contribution > strongest_rate:
-			strongest_rate = contribution
-			strongest = instance
-	return strongest
+## **These events as one set of things that charge the baby** (`EventSources`): the door's toll
+## alone inside a held door, a region boundary's structures as their strongest, everything else
+## summed. Handed to the world the events stand in (`WorldContext.excitement_sources`), which hands
+## it to the baby and the halo.
+var sources: EventSources
 
 ## The region door whose hold is running right now and whose trigger circle `world_position` lies
 ## inside, or null: `CheckpointController.door_holding_her_at()`. Inside a door, the door's toll is
-## the only thing that charges (`excitement_sources_at()`), and the world asks it for the crowd's
-## half (`WorldContext.excitement_sources_at()`).
+## the only thing that charges (`EventSources.holds_her_alone()`).
 func door_holding_her_at(world_position: Vector2) -> EventInstance:
 	return checkpoints.door_holding_her_at(world_position)
-
-func total_excitement_at(world_position: Vector2) -> float:
-	var total := 0.0
-	for pair in excitement_sources_at(world_position):
-		total += pair[1]
-	return total
 
 # ------------------------------------------------------------------ ticking ---
 
@@ -554,14 +499,13 @@ func _step_them(delta: float) -> void:
 ## wrong until it runs.
 ## **The third fact is which barrier structure is the one charging her**, and it is handed over
 ## here because this is already the once-a-frame visit to every instance that knows where she is.
-## `excitement_sources_at()` keeps only the strongest of the boundary kit, so a caret or a halo
-## rim on one of the others would be promising a cost the meter is not taking — see
-## `EventInstance.outranked_by_a_stronger_barrier`.
+## `EventSources` keeps only the strongest of the boundary kit, so a caret or a halo rim on one of
+## the others would be promising a cost the meter is not taking (`ExcitementSource.outranked`).
 func _tell_them_where_she_is() -> void:
 	var stroller := world.player as Stroller
 	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0
 	var awake: bool = stroller == null or stroller.baby_is_awake()
-	var strongest := _strongest_barrier_at(world.player.global_position)
+	var strongest := sources.strongest_barrier_at(world.player.global_position)
 	# Inside a district door's hold, nothing but the door's toll reaches her
 	# (`door_holding_her_at()`), so a man who would stop her waits for her outside
 	# (`EventInstance.she_is_held`).
@@ -578,8 +522,7 @@ func _tell_them_where_she_is() -> void:
 		instance.player_running = running
 		instance.baby_awake = awake
 		instance.she_is_held = held
-		instance.outranked_by_a_stronger_barrier = \
-				instance.def.barrier_structure and instance != strongest
+		instance.excitement.outranked = instance.def.barrier_structure and instance != strongest
 
 ## How many times today she has walked across a door's line rather than being let through it:
 ## `CheckpointController.walks_under_a_boom()`.

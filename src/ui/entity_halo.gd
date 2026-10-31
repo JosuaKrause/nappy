@@ -90,7 +90,7 @@ const FADE_IN_SECONDS := 0.3
 
 ## How long a rim takes to drain to a lower target, longer than `FADE_IN_SECONDS` so a burst that
 ## expires all at once dims rather than switching off — a source dropped from the picked set, or
-## whose points have just left `ExcitementHalo.WINDOW`, is told a target of zero and fades out
+## whose points have just left `ExcitementSource.WINDOW`, is told a target of zero and fades out
 ## rather than vanishing on the spot.
 const FADE_OUT_SECONDS := 0.8
 
@@ -145,7 +145,7 @@ static func shared_material() -> ShaderMaterial:
 ## Frees `rim` on the spot — out of its owner, then the object itself — so its block in the
 ## renderer's instance buffer is released before anything later this frame builds a rim and asks
 ## for one. See the class doc for why `queue_free()` is not enough. The one way an owner gives a
-## rim back: `EventInstance.release_halo()` and `CrowdAgent.release_halo()`.
+## rim back: `SourceRim`, from its `release()` and from `set_strength()` once a fade is over.
 static func release(rim: EntityHalo) -> void:
 	var owner_node := rim.get_parent()
 	if owner_node:

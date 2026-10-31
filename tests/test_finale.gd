@@ -523,13 +523,13 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		t.add_child(guard)
 		guard.set_process(false)
 		guard.look.attach_nodes()
-		var strongest := guard.contribution_at(beside)
+		var strongest := guard.excitement.contribution_at(beside)
 		# In inside his radius: he warns.
 		guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
 		guard.step(step)
 		var warned := guard.is_standing_for_its_notice()
-		strongest = maxf(strongest, maxf(guard.contribution_at(beside),
-				guard.contribution_at(guard.player_at)))
+		strongest = maxf(strongest, maxf(guard.excitement.contribution_at(beside),
+				guard.excitement.contribution_at(guard.player_at)))
 		# She stays inside his radius until his warning has run: he charges. She runs; he gives up
 		# and walks away.
 		var waited := 0
@@ -544,21 +544,21 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 			guard.step(step)
 			charged = charged or guard.is_chasing()
 			if guard.is_chasing():
-				strongest = maxf(strongest, maxf(guard.contribution_at(beside),
-						guard.contribution_at(guard.global_position + Vector2(0.0, 40.0))))
+				strongest = maxf(strongest, maxf(guard.excitement.contribution_at(beside),
+						guard.excitement.contribution_at(guard.global_position + Vector2(0.0, 40.0))))
 			frames += 1
 		var her := guard.player_at
 		guard.player_running = false
 		var leaving := guard.is_leaving and guard.barrier_post.is_spent()
-		strongest = maxf(strongest, guard.contribution_at(beside))
+		strongest = maxf(strongest, guard.excitement.contribution_at(beside))
 		frames = 0
 		while guard.is_leaving and frames < int(30.0 / step):
 			guard.player_at = her
 			guard.step(step)
-			strongest = maxf(strongest, guard.contribution_at(beside))
+			strongest = maxf(strongest, guard.excitement.contribution_at(beside))
 			frames += 1
 		var gone := guard.barrier_post.is_spent() and not guard.is_leaving and guard.is_solid()
-		strongest = maxf(strongest, guard.contribution_at(beside))
+		strongest = maxf(strongest, guard.excitement.contribution_at(beside))
 		t.check(warned and charged and leaving and gone,
 				"%s guard warns, charges, is shaken off and leaves the band standing solid" % name)
 		t.check(strongest == 0.0,
@@ -570,7 +570,7 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		t.add_child(streamed)
 		streamed.set_process(false)
 		streamed.barrier_post.come_back_as_the_barrier(1)
-		t.check(streamed.is_solid() and streamed.contribution_at(Vector2(400.0, 70.0)) == 0.0,
+		t.check(streamed.is_solid() and streamed.excitement.contribution_at(Vector2(400.0, 70.0)) == 0.0,
 				"%s band streamed back in after its guard was spent is solid and silent" % name)
 		streamed.free()
 

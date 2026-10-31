@@ -269,9 +269,9 @@ func silence_mast(mast_id: String) -> bool:
 		if plan.live:
 			plan.live.silenced = true
 			# The same invalidation `_finish()` does for `is_finished` — `age` does not move the
-			# instant this flips, so the cache `contribution_at()` keeps would otherwise go on
+			# instant this flips, so the cache the present rate keeps would otherwise go on
 			# answering the pre-silence contribution for the rest of this tick.
-			plan.live._invalidate_contribution_cache()
+			plan.live.excitement.invalidate_contribution()
 	return found
 
 ## Silences every mast, for the rest of the day. The masts stop because the power does: this is what
@@ -287,7 +287,7 @@ func silence_all_masts() -> int:
 		plan.silenced = true
 		if plan.live:
 			plan.live.silenced = true
-			plan.live._invalidate_contribution_cache()
+			plan.live.excitement.invalidate_contribution()
 	return silenced.size()
 
 ## How many sited events the day is carrying, live or waiting to be walked past. This is the

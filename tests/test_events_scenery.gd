@@ -59,7 +59,7 @@ func _flock_walked_through(t, def: EventDef, offset: float) -> float:
 		instance.player_at = her
 		instance.step(STEP)
 		if her.distance_to(instance.position) <= def.outer_radius:
-			net += (instance.contribution_at(her) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
+			net += (instance.excitement.contribution_at(her) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
 		her.x += Tuning.WALK_SPEED * STEP
 	instance.free()
 	return net
@@ -126,12 +126,12 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 			"every bird stayed inside the %.0fpx flock for the whole burst (furthest %.0fpx)"
 			% [def.flock_spread, furthest])
 
-	var middle := instance.contribution_at(Vector2.ZERO)
-	var rim := instance.contribution_at(Vector2(def.outer_radius - 6.0, 0.0))
+	var middle := instance.excitement.contribution_at(Vector2.ZERO)
+	var rim := instance.excitement.contribution_at(Vector2(def.outer_radius - 6.0, 0.0))
 	t.check(middle > rim * 4.0,
 			"walking through the middle of a flock (%.1f/s) costs far more than skirting it (%.1f/s)"
 			% [middle, rim])
-	t.check(rim >= 0.0 and instance.contribution_at(Vector2(def.outer_radius + 80.0, 0.0)) == 0.0,
+	t.check(rim >= 0.0 and instance.excitement.contribution_at(Vector2(def.outer_radius + 80.0, 0.0)) == 0.0,
 			"and nothing at all reaches past the radius the contract was checked against")
 	instance.free()
 
@@ -271,7 +271,7 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 	# Read at the flock's own middle rather than at her: every bird is inside `flock_spread` of it
 	# whatever the wheel is doing, so the two readings differ by the damping rather than by where
 	# eleven birds happened to be on the frame each was taken.
-	var on_the_ground := instance.contribution_at(Vector2.ZERO)
+	var on_the_ground := instance.excitement.contribution_at(Vector2.ZERO)
 
 	_advance(instance, def.telegraph_time + 0.2)
 	var up := 0
@@ -279,9 +279,9 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 		if bird.lift > 0.0:
 			up += 1
 	t.check(up == instance.flock.birds.size(), "then all %d of them are up" % instance.flock.birds.size())
-	t.check(instance.contribution_at(Vector2.ZERO) > on_the_ground * 3.0,
+	t.check(instance.excitement.contribution_at(Vector2.ZERO) > on_the_ground * 3.0,
 			"and the burst is what costs (%.1f/s through the middle against %.1f/s while they peck)"
-			% [instance.contribution_at(Vector2.ZERO), on_the_ground])
+			% [instance.excitement.contribution_at(Vector2.ZERO), on_the_ground])
 	instance.free()
 
 func _test_mobile_follows_its_path(t) -> void:

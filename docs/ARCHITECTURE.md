@@ -87,11 +87,17 @@ src/
 	region_planner.gd     partitions the lattice into regions; turns the day's tree into a wall with doors, and stands the checkpoint structure and gate state at every door
   crowd/
 	crowd.gd              owns the day's agents and the `crowd` atlas page, held for its own life
-	                      rather than released between days; sums their excitement
+	                      rather than released between days; hands the world its agents as one
+	                      set of things that charge her
+	crowd_sources.gd      the crowd as one set of things that charge her (`CrowdSources`): the
+	                      sweep that skips a body out of earshot, and the widest jolt it skips by
+	crowd_excitement.gd   a crowd body as a thing that charges her (`CrowdExcitement`): its field,
+	                      the jolt a contact or a horn leaves, its clock, its reach, a car's strike box
 	lane_mover.gd         the lane movement a walker and a car share — lane state, look-ahead,
 	                      held step, placement and recycling — asking its kind's strategy what differs
-	crowd_agent.gd        one walker or one car in the crowd, on the lane mover: its excitement field,
-	                      halo, caret and the redraw gate; drawn by its look from the baked `crowd` page
+	crowd_agent.gd        one walker or one car in the crowd, on the lane mover: its excitement (a
+	                      composed `CrowdExcitement`), its rim and caret and the redraw gate; drawn
+	                      by its look from the baked `crowd` page
 	agent_look.gd         how a crowd member is drawn and what its redraw key reads
 	walker_look.gd        a walker's picture: five views in two gait frames, its stride
 	car_look.gd           a car's picture: five views in three layers, its bob over its wheels
@@ -121,9 +127,16 @@ src/
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
-	                       emission, and the behaviours it is composed of, stepped in order on
-	                       its manager's physics tick (`step()`); drawn by its look, which each
-	                       drawn frame redraws it if its picture changed, interpolated between ticks
+	                       its field (`field_at()`), and the behaviours it is composed of, stepped
+	                       in order on its manager's physics tick (`step()`); drawn by its look,
+	                       which each drawn frame redraws it if its picture changed, interpolated
+	                       between ticks; its excitement is a composed `EventExcitement`
+	event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
+	                       present rate cached on its age, the walls it does not pass, its live
+	                       course and rate for the projection, whether that course is lethal
+	event_sources.gd      a day's live events as one set of things that charge her
+	                       (`EventSources`): the door's toll alone inside a held door, a region
+	                       boundary's structures as their strongest
 	views/                how an event looks, read off its public state: `EventPictures` names
 	                       every picture (each a region of the baked `events` page) and the
 	                       tables that pick one; `EventLooks.for_row()` gives each row the look
@@ -154,7 +167,8 @@ src/
 	                       a day, the escape's city or its building; holds one reference on the `events`
 	                       atlas page; steps the live instances once a physics tick in a fixed
 	                       order (tells them where she is, steps them, then the catches and hard
-	                       fails); answers total_excitement_at; hands its work to the parts below,
+	                       fails); hands the world its events as one set of things that charge
+	                       her (`sources`); hands its work to the parts below,
 	                       all working over one `EventWorld` (event_world.gd)
 	day_planner.gd        what a walk places before she sets off, chosen by its spec: a day's
 	                       holds, seals, rows and doors; the escape city's seals and rows on its
@@ -162,7 +176,8 @@ src/
 	event_streaming.gd    the day's plan and the live instance each plan streams in as, carrying
 	                       its state out and back; the repeats, the masts, a finished plan spent
 	event_spawner.gd      every instance made, with its scar, its body and the bang outside;
-	                       what a finished row leaves; the rows summoned on sight; the pelican bag
+	                       what a finished row leaves; the rows summoned on sight; the pelican bag,
+	                       and the pelican's first landing on her
 	warning_board.gd      the screen-edge badges up for something not in the world yet, and the
 	                       mark over her head
 	events_ahead.gd       what the director puts in front of her while she walks: sited on her
@@ -207,9 +222,16 @@ src/
 	                      the navigator, adding to its world, what its ground does to her walk;
 	                      open ground (`open_ground()`) for a rig with no world
 	world_context.gd      the only questions the baby may ask the world (how loud it is here: the
-	                      answer of the events and the crowd it is handed), adding a node to the
+	                      answer of the sets of sources it is handed), adding a node to the
 	                      world on a draw layer (`add_entity()`), and what its ground does to her
 	                      each frame and how it shows a bang outside
+	excitement_source.gd  one thing that charges her (`ExcitementSource`), composed by an event and
+	                      a crowd body alike: the ledger of what it landed and its window, its first
+	                      landing, the walls, what she is doing, the cached present rate, the
+	                      projection, the caret's strength; a type says only its own field, reach,
+	                      course, clock and lethal course
+	excitement_sources.gd a set of sources answered as one (`ExcitementSources`), and the door rule:
+	                      a set that holds her alone is the whole answer
 	draw_layer.gd         the one list of draw layers both worlds share, the only place a
 	                      z_index is written, and a long footprint's feet-anchored slices
 	world_layers.gd       the node one world draws each of its layers in
@@ -259,6 +281,8 @@ src/
 	badge_model.gd        which dangers get a screen-edge badge and when: plain data in, badges out, no scene
 	danger_edge.gd        the screen-edge badge: builds the model's inputs each frame and draws what it decides
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
+	source_rim.gd         one source's rim as the halo lights it (`SourceRim`): built on its first
+	                      glow, given back once faded; an event's adds its band
 	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo
 	title_screen.gd       the screen a run opens on and goes back to; asks which control scheme
 	day_summary.gd        the screen between days, and the one at the end of a run; renders a
@@ -715,39 +739,42 @@ choice (`main`), which hands that world's map down.
 `Baby` never learns what a tile or an event is. It asks a `WorldContext` three questions —
 `is_calm_zone()`, `is_alley()`, `total_excitement_at()` — and that is the entire surface
 between the meters and the world. The debug world answers with hand-placed test data; the generated
-city and the event manager answer for real. **No world sums its events itself**: the manager answers
-for its events (`EventManager.excitement_sources_at()`) and the crowd for its walkers and cars, and
-`WorldContext.excitement_sources_at()` hands the baby the manager's answer plus the crowd's where
-there is one — each handed to the world as `WorldContext.events` and `crowd`. `InteriorScene` (the
-escape's building) is a third implementor: its events are the day's own `EventManager`, run on the
-building's map, it has no crowd, and its basement gives no decay back. `main` hands her the world she walks
+city and the event manager answer for real. **No world sums its events itself**: it is handed the
+sets of things that charge her (`WorldContext.excitement_sources`, each an `ExcitementSources` in the
+world layer) — the manager's events (`EventSources`) and the crowd's walkers and cars
+(`CrowdSources`) — and `WorldContext.excitement_sources_at()` hands the baby every set's pairs, the
+door rule stated once (`ExcitementSources.all_at()`). The world names no event and no crowd, so it
+depends on nothing above it. `InteriorScene` (the escape's building) is a third implementor: its
+set is the day's own `EventManager`'s, run on the building's map, it has no crowd, and its basement
+gives no decay back. `main` hands her the world she walks
 (`Baby.set_world()`) each time it puts her into one. Adding an event type therefore never touches
 the meter code, and the meters can be unit-tested against a fake world.
 
 ## Excitement aggregation
 
-`Baby` does not know about event types. Each frame it asks the world for total stimulus:
+`Baby` does not know about event types. Each frame it asks the world for every source contributing
+at her position, as `[source, contribution]` pairs, sums them, and hands each source its exact
+share of what landed (`ExcitementSource.accumulate_landed()`). Every source is an
+`ExcitementSource`, composed by its body — an `EventInstance` as `EventExcitement`, a `CrowdAgent`
+as `CrowdExcitement` — which keeps once what the two have in common: the ledger and its window, the
+walls, what she is doing, the cached present rate, the projection of the next five seconds and the
+caret's strength. A type states only its own field, reach, course, clock and lethal course:
 
 ```gdscript
-# EventManager's live instances, shared through its EventWorld
-func excitement_sources_at(world_position: Vector2) -> Array:
-	var sources: Array = []
-	for instance in world.instances:
-		var contribution := instance.contribution_at(world_position)
-		if contribution > 0.0:
-			sources.append([instance, contribution])
-	return sources
-
-func total_excitement_at(world_position: Vector2) -> float:
-	var total := 0.0
-	for pair in excitement_sources_at(world_position):
-		total += pair[1]
-	return total
+# ExcitementSource: the present rate for every kind of source (behind a cache for a kind that
+# keeps one, as an event does on its age)
+func contribution_at(at: Vector2) -> float:
+	var field := _field(at)  # the type's own field, no wall asked
+	if field > 0.0 and _walled_off_now(body.global_position, at):
+		return 0.0
+	return field
 ```
 
-`EventInstance.contribution_at()` implements the falloff from `docs/MECHANICS.md` and
-applies the telegraph fraction if the instance is still in its telegraph phase. Adding an
-event type never requires touching `Baby`.
+`EventInstance.field_at()` implements the falloff from `docs/MECHANICS.md` and applies the
+telegraph fraction if the instance is still in its telegraph phase; `EventExcitement` caches its
+rate on the instance's age. Adding an event type never requires touching `Baby`. The halo
+(`ExcitementHalo`) is handed the same sets and reads every source's ledger back for the rims and
+its projection for the carets.
 
 The scan is linear. An earlier draft of this document called for a uniform spatial hash;
 the day's live event count never grows past a few dozen, so a hash would have been more
@@ -756,7 +783,7 @@ wants hundreds of sources.
 
 A far source is cheap in the scan without one. An event further from her than
 `EventDef.silent_beyond()` answers zero before its intensity, speed or shape is read, and the crowd's
-half skips a body past `CrowdAgent.silent_beyond()` without calling into it. Each is a distance no
+half skips a body past `CrowdSources.silent_beyond()` without calling into it. Each is a distance no
 field can reach past, at any speed or heading, so the sums are the same to the last bit. Two kinds of
 event are exempt and always work the field out: a flock, whose birds stand away from the node, and
 an instance that is leaving (a guard walking away from his barrier), whose band stands away from it.

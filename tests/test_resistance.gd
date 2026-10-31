@@ -2944,9 +2944,9 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 
 		t.check(not rider.is_leaving,
 				"the one she reached keeps shouting the instant the note is handed over")
-		t.check(rider.contribution_at(rider.global_position) > 0.0,
+		t.check(rider.excitement.contribution_at(rider.global_position) > 0.0,
 				"and still charges her, since he has not started leaving yet")
-		t.check(not decoy.is_leaving and decoy.contribution_at(decoy.global_position) > 0.0,
+		t.check(not decoy.is_leaving and decoy.excitement.contribution_at(decoy.global_position) > 0.0,
 				"a look-alike she never reached is left exactly alone, still shouting")
 
 		director.tick(ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS - STEP)
@@ -2956,10 +2956,10 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 		director.tick(2.0 * STEP)
 		t.check(rider.is_leaving,
 				"and stops shouting and leaves once he has lingered that long")
-		t.close_to(rider.contribution_at(rider.global_position), 0.0,
+		t.close_to(rider.excitement.contribution_at(rider.global_position), 0.0,
 				"and contributes nothing to the meter the same frame", 0.001)
 		t.check(not decoy.is_leaving, "a look-alike she never reached is still left exactly alone")
-		t.check(decoy.contribution_at(decoy.global_position) > 0.0,
+		t.check(decoy.excitement.contribution_at(decoy.global_position) > 0.0,
 				"still shouting, still emitting")
 
 		director.free())
@@ -2988,7 +2988,7 @@ func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t) ->
 						else "east, the first half"))
 		# Sited ahead of him on his own heading — where "the way it was going" would walk him
 		# straight at her if nothing turned him round.
-		instance.set_player_at(instance.position + walking * 40.0)
+		instance.excitement.set_player_at(instance.position + walking * 40.0)
 
 		instance.leave_for_a_completed_task()
 
@@ -3012,12 +3012,12 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t) -> v
 	instance.set_process(false)
 	# She stands still for the whole test — the case that used to pop him out of existence
 	# mid-screen at the backstop.
-	instance.set_player_at(Vector2(20.0, 0.0))
+	instance.excitement.set_player_at(Vector2(20.0, 0.0))
 	t.check(instance.current_intensity() > 0.0, "shouting, before the task is done")
 
 	instance.leave_for_a_completed_task()
 	t.check(instance.is_leaving, "he stops the instant she hands him the note")
-	t.close_to(instance.contribution_at(instance.global_position), 0.0,
+	t.close_to(instance.excitement.contribution_at(instance.global_position), 0.0,
 			"and contributes nothing the same frame", 0.001)
 
 	var before := instance.global_position
@@ -3025,7 +3025,7 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t) -> v
 	instance.departure.leave(EventDeparture.LEAVING_GIVES_UP)
 	t.check(not instance.is_finished,
 			"still leaving past the backstop's own six seconds, since she is still watching")
-	t.close_to(instance.contribution_at(instance.global_position), 0.0,
+	t.close_to(instance.excitement.contribution_at(instance.global_position), 0.0,
 			"and still contributes nothing")
 	t.check(instance.global_position.distance_to(instance.player_at) > before_distance,
 			"farther away than when he started, not stalled")
@@ -3044,7 +3044,7 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
 	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
 	t.add_child(instance)
 	instance.set_process(false)
-	instance.set_player_at(Vector2(20.0, 0.0))
+	instance.excitement.set_player_at(Vector2(20.0, 0.0))
 
 	instance._be_done()
 	t.check(instance.is_leaving, "an ordinary departure starts leaving the same way")
@@ -3142,7 +3142,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 		for i in int(round((mast.def.telegraph_time + 0.2) / STEP)):
 			mast.step(STEP)
 		var nearby := site.foot + Vector2(50.0, 0.0)
-		t.check(mast.contribution_at(nearby) > 0.0,
+		t.check(mast.excitement.contribution_at(nearby) > 0.0,
 				"the mast reaches its own nearby sidewalk while it is on")
 
 		var quiet: Array[bool] = []
@@ -3170,7 +3170,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 				lot.end.y + Tuning.BLACKOUT_DISTANCE + 8.0))
 		t.check(quiet.size() == 1, "far enough away, the city goes quiet, once")
 		t.check(mast.silenced, "the mast is marked silenced")
-		t.close_to(mast.contribution_at(nearby), 0.0,
+		t.close_to(mast.excitement.contribution_at(nearby), 0.0,
 				"the mast contributes nothing afterwards")
 		GameState.resistance.sabotage_done = false
 		_city.blackout.update(Vector2(lot.get_center().x, lot.end.y))
@@ -4310,7 +4310,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 					and signf(front.global_position.y - her.y) == signf(warning.place.y - her.y),
 					"its front truck is created just out of sight, up the lane the badge pointed")
 			var to_reach := 0.0
-			while front.contribution_at(her) <= 0.0 and to_reach < 10.0:
+			while front.excitement.contribution_at(her) <= 0.0 and to_reach < 10.0:
 				front.player_at = her
 				front.step(STEP)
 				to_reach += STEP

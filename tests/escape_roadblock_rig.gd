@@ -145,7 +145,7 @@ class Meter extends RefCounted:
 	func feed(instances: Array[EventInstance], her: Vector2, running: bool, idle: bool) -> void:
 		var strongest := 0.0
 		for instance in instances:
-			strongest = maxf(strongest, instance.contribution_at(her))
+			strongest = maxf(strongest, instance.excitement.contribution_at(her))
 		var incoming := strongest + (Tuning.EXCITEMENT_FROM_RUNNING if running else 0.0)
 		incoming *= Tuning.SLEEPING_SENSITIVITY if asleep else 1.0
 		var decay := Tuning.EXCITEMENT_DECAY_IDLE if idle else (
@@ -212,7 +212,7 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 		for instance in instances:
 			if instance.is_chasing():
 				charged[instance] = true
-			strongest = maxf(strongest, instance.contribution_at(her))
+			strongest = maxf(strongest, instance.excitement.contribution_at(her))
 		meter.feed(instances, her, false, false)
 		walked += Tuning.WALK_SPEED * STEP
 	made[0].free()

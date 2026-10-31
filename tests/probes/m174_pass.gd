@@ -189,7 +189,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 		instance.step(STEP)
 		her_pos += her_velocity * STEP
 		if her_pos.distance_to(instance.position) <= def.outer_radius:
-			incoming_sum += instance.contribution_at(her_pos) * sensitivity * STEP
+			incoming_sum += instance.excitement.contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
 
 	instance.free()

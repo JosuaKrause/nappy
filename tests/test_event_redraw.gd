@@ -197,7 +197,7 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t) -> void:
 ## of the mark's size, and the key has to carry it or a caret would freeze on whichever half of the
 ## beat it was last drawn in.
 ##
-## The strength is written straight into the per-frame cache `_caret_strength()` keeps against
+## The strength is written straight into the per-frame cache `caret_strength()` keeps against
 ## `age`, the same way `tests/test_event_strides.gd` writes `_gait_phase` to reach a state a rig
 ## cannot otherwise stand in: what is under test is the key, not the projection that feeds it.
 func _test_the_marks_flash_is_in_the_key(t) -> void:
@@ -210,8 +210,7 @@ func _test_the_marks_flash_is_in_the_key(t) -> void:
 		instance.step(STEP)
 		if not instance.is_telegraphing():
 			break
-		instance.look._caret_strength_age = instance.age
-		instance.look._caret_strength_cache = 1
+		_force_the_caret(instance, 1)
 		seen[instance.look._picture_key()] = true
 	t.check(seen.size() >= 2,
 			"a marked, telegraphing event takes more than one key across one flash beat (%d)"
@@ -226,14 +225,13 @@ func _test_the_caret_strength_is_in_the_key(t) -> void:
 	instance.step(STEP)
 	var keys := {}
 	for strength in [0, 1, 2]:
-		instance.look._caret_strength_age = instance.age
-		instance.look._caret_strength_cache = strength
+		_force_the_caret(instance, strength)
 		keys[instance.look._picture_key()] = true
 	t.check(keys.size() == 3, "no caret, a caret and a doubled caret are three different keys")
 	instance.free()
 
 ## **The gate asks for the caret once a tick, and that must not be the answer the rest of the frame
-## gets.** `_caret_strength()` caches its projection so that the four things wanting it in one
+## gets.** `caret_strength()` caches its projection so that the four things wanting it in one
 ## frame share one sampling loop — and the gate is now the *first* of the four to ask, at the end
 ## of this instance's own `_process()`, while `player_at` is written from outside by
 ## `EventManager` and `ExcitementHalo` at whatever point in the frame those nodes run. Keyed on
@@ -252,9 +250,9 @@ func _test_asking_for_the_key_does_not_freeze_the_caret(t) -> void:
 	# before whoever writes `player_at`.
 	for i in int(ceil(def.telegraph_time / STEP)) + 1:
 		instance.step(STEP)
-	t.check(instance.look._caret_strength() == 0, "with nobody to aim at there is no caret")
-	instance.set_player_at(instance.global_position + Vector2(def.outer_radius, 0.0))
-	t.check(instance.look._caret_strength() == 2,
+	t.check(instance.excitement.caret_strength() == 0, "with nobody to aim at there is no caret")
+	instance.excitement.set_player_at(instance.global_position + Vector2(def.outer_radius, 0.0))
+	t.check(instance.excitement.caret_strength() == 2,
 			"and telling it where she is, inside the same tick, reads the doubled lethal caret")
 	instance.free()
 
@@ -500,3 +498,10 @@ func _test_a_masts_lamp_and_its_silence_move_its_key(t) -> void:
 	instance.silenced = true
 	t.check(instance.look._picture_key() != before, "silencing the mast moves its key")
 	instance.free()
+
+## Makes `instance`'s source answer `strength` for its caret this frame, as if it had worked it out.
+static func _force_the_caret(instance: EventInstance, strength: int) -> void:
+	var source := instance.excitement
+	source._caret_known = true
+	source._caret_key_was = source._caret_key()
+	source._caret = strength

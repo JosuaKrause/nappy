@@ -29,8 +29,8 @@ extends Node
 ## each: no route tree, so no `path`; no `ResistanceDirector`, so no `contact`; no `CityMap` in the
 ## building, so no `cross`, `road`, `calm` or `left` there, no trail and no dusk map, and a tile in
 ## any line is the building's own grid. The events are an
-## event source either way — an `EventManager`, the city's or the building's, answering `instances()`
-## and `total_excitement_at()` — so `near`, `chase`, `cue`, `freeze`, `run`, `idle`, `blocked`, `turn`,
+## event source either way — an `EventManager`, the city's or the building's, answering `instances()`,
+## with its excitement read off the world's sets (`WorldContext`) — so `near`, `chase`, `cue`, `freeze`, `run`, `idle`, `blocked`, `turn`,
 ## `frame` and the losing line read a section exactly as they read a day.
 
 ## How far off the committed heading counts as doubling back rather than turning a corner.
@@ -1319,8 +1319,8 @@ func _on_near_miss(at: Vector2) -> void:
 func _meters() -> String:
 	var here := _player.global_position
 	var source := _source()
-	var from_events: float = source.total_excitement_at(here) if source else 0.0
-	var from_crowd := _city.crowd.total_excitement_at(here) if _city and _city.crowd else 0.0
+	var from_events: float = source.sources.total_at(here) if source else 0.0
+	var from_crowd := _city.crowd.sources.total_at(here) if _city and _city.crowd else 0.0
 	return "exc %.0f, in %.1f/s (crowd %.1f, events %.1f), sleep %.0f" % [
 		_baby.excitement, _baby.last_incoming, from_crowd, from_events, _baby.sleepiness]
 

@@ -403,7 +403,7 @@ func _test_a_departure_leaves_round_a_building(t, city: City) -> void:
 		return
 	var instance := city.events.spawn_extra(dog, start)
 	instance.set_process(false)
-	instance.set_player_at(start - into * 80.0)
+	instance.excitement.set_player_at(start - into * 80.0)
 	instance._be_done()
 	instance._heading = into
 	var mover := EventInstance.mover_for(dog)
@@ -454,7 +454,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 		var left_from := Vector2.INF
 		walked += 1
 		for frame in 200:
-			instance.set_player_at(her)
+			instance.excitement.set_player_at(her)
 			if frame == 120 and not instance.is_leaving:
 				instance._be_done()
 			if instance.is_leaving:

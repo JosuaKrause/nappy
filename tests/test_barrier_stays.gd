@@ -171,14 +171,14 @@ func _test_the_barrier_costs_nothing_while_he_walks_away(t) -> void:
 	# She stands beside the barrier, inside the 420px he must clear, so the departure lasts.
 	while guard.is_leaving and leaving_frames < int(30.0 / STEP):
 		guard.player_at = beside
-		if guard.contribution_at(beside) > 0.0:
+		if guard.excitement.contribution_at(beside) > 0.0:
 			lit_frames += 1
 		leaving_frames += 1
 		guard.step(STEP)
 	t.check(leaving_frames > 60, "the departure lasts (%d frames)" % leaving_frames)
 	t.check(lit_frames == 0, "the barrier costs nothing beside it on any leaving frame (%d lit)"
 			% lit_frames)
-	t.check(guard.contribution_at(beside) == 0.0, "nor after it, as a roadblock's band never does")
+	t.check(guard.excitement.contribution_at(beside) == 0.0, "nor after it, as a roadblock's band never does")
 	t.check(guard.global_position.distance_to(beside) > Tuning.OUT_OF_SIGHT or guard.is_waiting(),
 			"he does not vanish beside her: he is out of sight before the barrier stands alone")
 	guard.free()
@@ -209,8 +209,8 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 	var post := Vector2(400.0, 0.0)
 	var made := _chasing(t, post)
 	var guard: EventInstance = made[0]
-	guard.set_halo_strength(0.8, Color.RED) # the chase's own rim, on the man
-	t.check(guard._halo != null, "the man holds a rim while he chases")
+	guard._rim.set_strength(0.8, Color.RED) # the chase's own rim, on the man
+	t.check(guard._rim.entity_halo() != null, "the man holds a rim while he chases")
 	guard.give_up_the_chase()
 	var beside := post + Vector2(0.0, 40.0)
 	var rim: EntityHalo = null
@@ -220,14 +220,14 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 	var frames := 0
 	while guard.is_leaving and frames < int(30.0 / STEP):
 		guard.player_at = beside
-		guard.set_halo_strength(0.8, Color.RED)
+		guard._rim.set_strength(0.8, Color.RED)
 		if rim == null:
-			rim = guard._band_halo
-		same = same and rim != null and guard._band_halo == rim
-		lit = lit and guard._band_halo != null and guard._band_halo._target_alpha > 0.0
-		man_free = man_free and guard._halo == null
+			rim = guard._rim.band.entity_halo()
+		same = same and rim != null and guard._rim.band.entity_halo() == rim
+		lit = lit and guard._rim.band.entity_halo() != null and guard._rim.band.entity_halo()._target_alpha > 0.0
+		man_free = man_free and guard._rim.entity_halo() == null
 		# What `ExcitementHalo` does to an unpicked source in between.
-		guard.set_halo_strength(0.8, Color.RED)
+		guard._rim.set_strength(0.8, Color.RED)
 		frames += 1
 		guard.step(STEP)
 	t.check(frames > 60, "the departure lasts (%d frames)" % frames)

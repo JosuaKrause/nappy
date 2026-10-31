@@ -174,9 +174,10 @@ signal pelican_spawned(instance)
 ## `EventSpawner.report_the_pelicans_in_view()`'s own first frame a pelican is on screen — once
 ## per pelican.
 signal pelican_sighted(instance)
-## `EventInstance.accumulate_landed()`'s own first share of the meter a pelican's field lands on
-## her — once per pelican. The cyclist's field reaches 90px and its lethal reach 33px, so a pelican
-## that strikes her has almost always sent this first.
+## The first share of the meter a pelican's field lands on her, heard through its source's
+## first-landing callback (`EventSpawner._ride_as_a_pelican()`) — once per pelican. The cyclist's
+## field reaches 90px and its lethal reach 33px, so a pelican that strikes her has almost always
+## sent this first.
 signal pelican_excited_her(instance)
 ## `EventManager._check_hard_fails()`'s own moment a pelican's lethal reach covers her, emitted
 ## just before the `hard_fail_triggered` that ends the day, so it is sent ahead of the loss.

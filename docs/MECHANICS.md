@@ -186,10 +186,10 @@ cap", for exactly what counts as that mass and what happens to it once she gets 
 source.
 
 **The entity halo reads this same subtraction, per source.** `ExcitementHalo` traces every live
-source's own gross points landed over the last `ExcitementHalo.WINDOW` (five seconds, the same
+source's own gross points landed over the last `ExcitementSource.WINDOW` (five seconds, the same
 figure `Baby.decay_in_window()` sums the decay above over) and subtracts that source's own share of
 the decay taken in the same window — shared between every source in proportion to what each landed,
-never below zero (`ExcitementHalo.net_landed()`). So the rims live at once sum to exactly what this
+never below zero (`ExcitementSource.net_landed()`). So the rims live at once sum to exactly what this
 section's net rate bought the bar over the window, and a source reads red only while the bar is
 actually climbing because of it — not merely because it is loud. See `docs/EVENTS.md`, "The visual
 vocabulary," for the whole cue and its colour and transparency curves.
@@ -272,8 +272,9 @@ is one mechanism for every `redetains` hold: the street doors' gatehouses and th
 **The hold charges its toll and nothing else.** While she is inside a door — inside the trigger of
 a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
 flat `Tuning.CHAT_EXCITEMENT` (25) over `Tuning.CHECKPOINT_DETAIN_SECONDS`. Every other event field
-and the whole crowd are off: `CheckpointController.door_holding_her_at()` is the one question both halves
-of `WorldContext.excitement_sources_at()` ask. She is in the gatehouse for those two seconds, not on the
+and the whole crowd are off: a set of sources that holds her alone is the whole of what
+`WorldContext.excitement_sources_at()` answers (`ExcitementSources.all_at()`), and the events' set
+holds her exactly while `CheckpointController.door_holding_her_at()` finds a door. She is in the gatehouse for those two seconds, not on the
 pavement, so what happens to stand beside that particular door is not part of what the crossing
 costs — *"it works in both directions with the same cost each time"*. Nothing gives back either,
 since `EXCITEMENT_DECAY_IDLE` is zero for a player held still, so the hold is exactly the toll.
@@ -336,7 +337,7 @@ the day on its own, while a source that keeps emitting once she is there keeps f
 moment incoming drops under decay, the bar falls back from 100 at its ordinary ground-and-motion
 rate exactly as it always has, and the sum itself never resets — it simply drains as its own
 entries age out of the three-second window, the same way the decay side of the meter already ages
-out of `ExcitementHalo.WINDOW`. Two constants, both in `src/autoload/tuning.gd`, tightened once
+out of `ExcitementSource.WINDOW`. Two constants, both in `src/autoload/tuning.gd`, tightened once
 from the player's own starting point of 10 over 3s to 9.5 over 3s (`docs/DECISIONS.md`, M96 and
 M100).
 
@@ -523,9 +524,9 @@ meter, none of which a data-level test can see:
 ### The bump is a source, not a write
 
 **Excitement stays a pure query.** A contact does not touch `Baby.excitement`; it *startles
-the person she walked into*, and `Crowd` sums that agent like it sums every other one. So
-contacts still compose by plain addition, there is still no ordering to get wrong, and
-`WorldContext.total_excitement_at` still adds exactly two things. See the **events** skill.
+the person she walked into*, and the crowd's set (`CrowdSources`) sums that agent like it sums
+every other one. So contacts still compose by plain addition, there is still no ordering to get
+wrong, and `WorldContext.total_excitement_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.
 
 ### A car is lethal
 
