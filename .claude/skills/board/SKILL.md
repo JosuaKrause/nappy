@@ -96,7 +96,7 @@ A question is settled when the player's answer leaves nothing open. Its Me line 
 moves to Recently done when its pull request merges, apart from a filing's (below).
 
 **An item that is fully filed leaves the board whole, with no record of it kept there**
-(inbox #877): once the filing pull request carrying its inbox note merges, its settled question,
+(inbox #877 in minty-dolphin): once the filing pull request carrying its inbox note merges, its settled question,
 its mention in the Running row of notes waiting to be filed, and any line about the filing go in the
 same turn, and no Recently done row or "filed" note stands in for them. The queue and the records
 hold it from then on, and the board holds open things only.
