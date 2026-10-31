@@ -284,7 +284,7 @@ of them still drawn, so a lorry reversing beside them is part of what it costs.
 inside, not the building he works in: a checkpoint that blinks out for two seconds reads as the
 door having been removed rather than as her having gone through it. The one row where the whole
 picture goes is `checkpoint_post`, an alley guard standing alone, since he *is* all of it —
-`EventInstance.is_suppressed_by_its_own_hold()` is that narrower question and the halo gates on it
+`EventFootprints.hidden_by_its_hold()` is that narrower question and the halo gates on it
 too.
 
 **The crowd is held at the same gatehouses, and none of it is her machinery.** *(Playtest 58: "walkers
