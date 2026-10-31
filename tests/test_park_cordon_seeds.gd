@@ -12,7 +12,9 @@ extends RefCounted
 ## and the clock, not against what the cordon says of itself. `tests/probes/plush_marten_cordon.gd`
 ## prints the same measurements as a table. And **a person walked out stays out**: with her
 ## standing a little past the way out's end, the busker walked out of the park never walks back
-## into it, nor across tape that is up, on the way on out of her sight. And **the officers walk
+## into it, nor across tape that is up, on the way on out of her sight, and **no tape goes up
+## through him** while he stands in the park waiting for his escort, nor while he walks out. And
+## **the officers walk
 ## round what stops her**: none steps onto ground a body takes on the map's record, and none stands
 ## at a solid with his walk still ahead of him, on every park and whatever the day put beside it —
 ## with nobody in the park, and with a busker in it, standing where the suite always puts him and
@@ -109,6 +111,8 @@ func _check(t, seed_value: int, m: Dictionary) -> void:
 				PAST_THE_END] + "never walks back into the park (%d frames back in)" % run.back_in)
 		t.check(run.person_through_tape == 0, "%s: nor across tape that is up (%d steps)"
 				% [who, run.person_through_tape])
+		t.check(run.taped_over_him == 0, "%s: and no tape goes up through him (%d stretches)"
+				% [who, run.taped_over_him])
 		t.check(run.closed_at >= 0.0, "%s: the cordon closes (at %.1fs, deadline %.1fs)"
 				% [who, run.closed_at, run.deadline])
 		t.check(run.onto_bodies == 0, "%s: no officer steps onto ground a body takes (%d steps)"
@@ -209,8 +213,10 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 ## by his escort, with her walking the same way out from `SET_OFF` after the start and stopping
 ## `PAST_THE_END` beyond its end, played until he is gone and the cordon has closed. Answers whether
 ## he was placed, whether he left the tape's line, the frames he spent back inside it after leaving
-## it, the steps he took across tape that was up, when the cordon closed and what it said it would,
-## and the officers' steps onto a body's ground, stalls and walks laid again (`_count_the_step()`).
+## it, the steps he took across tape that was up, the stretches taped with any part of him within
+## reach of them (`ParkCordon.WALKER_REACH`) and when each stretch went up, by its index, when the
+## cordon closed and what it said it would, and the officers' steps onto a body's ground, stalls and
+## walks laid again (`_count_the_step()`).
 func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i,
 		swing: Vector2, place: Array) -> Dictionary:
 	var area := city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(city.map, park))
@@ -232,6 +238,8 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	var left := false
 	var back_in := 0
 	var through_tape := 0
+	var taped_over_him := 0
+	var taped_at := {}
 	var counts := {"onto_bodies": 0, "stalled": 0}
 	while clock < PATIENCE * 2.0 and not (_gone(busker) and cordon.is_closed()):
 		if clock >= SET_OFF and not way.is_empty():
@@ -249,6 +257,14 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 		for officer in cordon.officers:
 			if before.has(officer):
 				_count_the_step(cordon, officer, before[officer][0], before[officer][1], counts)
+		for i in cordon.stretches.size():
+			var stretch := cordon.stretches[i]
+			if not stretch.taped or taped_at.has(i):
+				continue
+			taped_at[i] = clock
+			if not _gone(busker) and ParkCordon._body_on(stretch, busker.global_position,
+					ParkCordon.WALKER_REACH):
+				taped_over_him += 1
 		if _gone(busker):
 			continue
 		var now := busker.global_position
@@ -263,6 +279,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 		last = now
 	var result := {"person_placed": true, "place": place[0], "person_left": left,
 			"back_in": back_in, "person_through_tape": through_tape,
+			"taped_over_him": taped_over_him, "taped_at": taped_at,
 			"closed_at": cordon.closed_at, "deadline": cordon.deadline,
 			"onto_bodies": counts.onto_bodies, "stalled": counts.stalled, "relaid": cordon.relaid,
 			"walked_straight": cordon.walked_straight}

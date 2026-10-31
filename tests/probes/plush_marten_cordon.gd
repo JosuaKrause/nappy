@@ -10,8 +10,9 @@ extends RefCounted
 ## the gap's outside reaches home and the day's other calm ground with the park blocked and stands
 ## clear of the day's bodies and fields, and whether setting off at a walk a second after first
 ## sight gets her out. Then, for each spot the suite stands a busker at (`PLACES`), when the
-## cordon closed with him walked out and the close it said, and how often an officer's walk was laid
-## again or walked straight. Run it again after changing any `PARK_CLOSING_*` constant.
+## cordon closed with him walked out and the close it said, how often an officer's walk was laid
+## again or walked straight, how many stretches went up through him, and a `CORDON_STRETCHES` line
+## of when each stretch went up, by its index, to compare two revisions run for run. Run it again after changing any `PARK_CLOSING_*` constant.
 
 const SWEEP := preload("res://tests/test_park_cordon_seeds.gd")
 
@@ -45,8 +46,14 @@ func run(t) -> void:
 			if not run.person_placed:
 				print("            busker at %s: not placed" % run.place)
 				continue
-			print("            busker at %s: closed %5.1fs (said %4.1fs), relaid %d, straight %d"
-					% [run.place, run.closed_at, run.deadline, run.relaid, run.walked_straight])
+			print("            busker at %s: closed %5.1fs (said %4.1fs), relaid %d, straight %d, "
+					% [run.place, run.closed_at, run.deadline, run.relaid, run.walked_straight]
+					+ "taped through him %d" % run.taped_over_him)
+			var times: Array[String] = []
+			for i: int in run.taped_at:
+				times.append("%d:%.3f" % [i, run.taped_at[i]])
+			print("CORDON_STRETCHES seed %d busker at %s %s" % [seed_value, run.place,
+					" ".join(times)])
 	if not margins.is_empty():
 		print("over %d seeds: walk %.1f to %.1fs, closed %.1f to %.1fs, " % [margins.size(),
 				_least(walks), _most(walks), _least(closes), _most(closes)]
