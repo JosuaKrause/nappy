@@ -160,9 +160,8 @@ const DAY_BRIEF := {
 
 ## `%d` the day, `%d` the run's length in days.
 const SUMMARY_DAY := "Day %d of %d"
-## `%s` the nerves as stars.
+## `%s` the nerves as stars, by `nerve_stars()`: never a digit or a word for the count.
 const SUMMARY_NERVES := "Nerves left: %s"
-## The nerves are drawn as stars, never as a digit or a word for the count, by `nerve_stars()`.
 ## A lost day that is tried again; `%d` is the day.
 const SUMMARY_TRY_AGAIN := "You try day %d again."
 ## A normal run's last nerve, sent back to its checkpoint; `%d` is that day.
