@@ -319,7 +319,7 @@ func _playground_settles(t) -> void:
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))
 		var consumed: Array[String] = []
-		city.events.start_day(1, _rng(city_seed), consumed)
+		city.events.start_day(DaySpec.for_day(1), _rng(city_seed), consumed)
 		for rect in city.map.playgrounds:
 			var at: Vector2 = city.map.tile_rect_to_world(rect).get_center()
 			city.events.stream_around(at)

@@ -177,7 +177,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 	var events := RandomNumberGenerator.new()
 	events.seed = hash("m152-events:%d:%d" % [city_seed, day])
 	var consumed: Array[String] = []
-	city.events.start_day(day, events, consumed)
+	city.events.start_day(DaySpec.for_day(day), events, consumed)
 
 	var at := map.doorstep_world_position()
 	var crowd_rng := RandomNumberGenerator.new()

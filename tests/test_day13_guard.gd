@@ -839,7 +839,7 @@ func _start_the_day(t, city: City, seed_value: int) -> ResistanceDirector:
 	GameState.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
-	city.events.start_day(DAY, _rng(seed_value, "events"), [], city.map.doorstep_world_position())
+	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)

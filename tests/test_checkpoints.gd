@@ -329,7 +329,7 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("checkpoint-wiring-events:%d:%d" % [BASE_SEED, day])
 	var consumed: Array[String] = []
-	city.events.start_day(day, events_rng, consumed)
+	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var region_plan := city.region_plan()
 	t.check(region_plan.door_bodies.size() > 0,

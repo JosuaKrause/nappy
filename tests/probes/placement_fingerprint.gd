@@ -53,8 +53,8 @@ func _the_escape_city(t, seed_value: int, day: int) -> int:
 	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"),
 			spec)
 	var start := FinalePlanner.service_exit_world_position(city.map)
-	var plan := FinalePlanner.plan(city.map, GameState.day_rng(day, "finale"), spec)
-	city.events.start_planned(spec, plan.placements, start)
+	var none: Array[String] = []
+	city.events.start_day(spec, GameState.day_rng(day, "finale"), none, start)
 	var printed := _print("escape seed %d day %d" % [seed_value, day], city.map,
 			city.events.plans())
 	city.free()
@@ -85,8 +85,7 @@ func _a_day(t, seed_value: int, day: int) -> int:
 	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"),
 			spec)
 	var consumed: Array[String] = []
-	city.events.use_the_spec(spec)
-	city.events.start_day(day, GameState.day_rng(day), consumed,
+	city.events.start_day(spec, GameState.day_rng(day), consumed,
 			city.map.doorstep_world_position())
 	var printed := _print("day seed %d day %d" % [seed_value, day], city.map,
 			city.events.plans())

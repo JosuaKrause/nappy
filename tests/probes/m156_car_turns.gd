@@ -63,7 +63,7 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var events := RandomNumberGenerator.new()
 	events.seed = hash("m156-events:%d:%d" % [city_seed, day])
 	var consumed: Array[String] = []
-	city.events.start_day(day, events, consumed)
+	city.events.start_day(DaySpec.for_day(day), events, consumed)
 
 	var bodies := _bodies(map, city.events.plans())
 	var owner_of := {}

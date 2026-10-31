@@ -42,7 +42,7 @@ const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024, 7, 808, 421620
 const ROWS: Array[String] = ["military_convoy", "finale_explosion", "abduction", "roadblock"]
 ## The mixes planned: `slots` a street and the bag's marbles, trucks, explosions, vans, roadblocks
 ## and empty, in the player's order. `as built` is the city section's own spec, through
-## `FinalePlanner.plan()` exactly as the game plans it, and the one walked; the others are the
+## `DayPlanner.plan_the_escape_city()` exactly as the game plans it, and the one walked; the others are the
 ## candidates it was chosen against, and the last stands nothing at all. `ESCAPE_WINNABLE_MIX`
 ## replaces the list, as `as built` or `<slots>:<trucks>,<explosions>,<vans>,<roadblocks>,<empty>`
 ## mixes separated by `;`.
@@ -125,8 +125,8 @@ func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionar
 	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"), _city_spec())
 	var found: Array[Dictionary] = []
 	for mix in mixes:
-		var plan := _plan(city.map, day, mix)
-		var row := _street_counts(city.map, plan)
+		var walk := FinalePlanner.route(city.map)
+		var row := _street_counts(city.map, walk, _plan(city.map, walk, day, mix))
 		row["mix"] = mix["name"]
 		row["seed"] = seed_value
 		print("ESCAPE_WINNABLE [%s] seed %d | %d streets, %d with none, %d dangers | %s" % [
@@ -139,7 +139,8 @@ func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionar
 ## The section's plan, drawn the way a straight city boot draws it; for a mix other than `as built`,
 ## the same plan under a spec whose bag and slots are that mix's, drawn on the stream the game's own
 ## bag is drawn on (`EventScheduler.street_bag_seed()`).
-func _plan(map: CityMap, day: int, mix: Dictionary) -> FinalePlanner.Plan:
+func _plan(map: CityMap, walk: FinalePlanner.Plan, day: int,
+		mix: Dictionary) -> Array[EventScheduler.Planned]:
 	var rng := GameState.day_rng(day, "finale")
 	var spec := _city_spec()
 	if mix.has("slots"):
@@ -147,11 +148,12 @@ func _plan(map: CityMap, day: int, mix: Dictionary) -> FinalePlanner.Plan:
 		spec.bag = {"military_convoy": counts[0], "finale_explosion": counts[1],
 				"abduction": counts[2], "roadblock": counts[3], DaySpec.EMPTY_MARBLE: counts[4]}
 		spec.slots_per_street = int(mix["slots"])
-	return FinalePlanner.plan(map, rng, spec)
+	return DayPlanner.plan_the_escape_city(map, walk, rng, spec)
 
 ## `{streets, empty, dangers, rows}`: the open streets, those standing none of the four rows, how
 ## many of the four rows stand on them in all, and how many of each.
-func _street_counts(map: CityMap, plan: FinalePlanner.Plan) -> Dictionary:
+func _street_counts(map: CityMap, plan: FinalePlanner.Plan,
+		placements: Array[EventScheduler.Planned]) -> Dictionary:
 	var empty := 0
 	var dangers := 0
 	var rows := {}
@@ -160,7 +162,7 @@ func _street_counts(map: CityMap, plan: FinalePlanner.Plan) -> Dictionary:
 	for segment in plan.open_streets:
 		var rect := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
 		var here := 0
-		for placement in plan.placements:
+		for placement in placements:
 			if ROWS.has(placement.def.id) and rect.has_point(placement.position):
 				here += 1
 				rows[placement.def.id] = int(rows[placement.def.id]) + 1

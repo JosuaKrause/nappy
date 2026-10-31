@@ -5,7 +5,7 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/escape_density.gd      (prints ESCAPE_DENSITY lines)
 ##
-## The plan is `FinalePlanner.plan()` built the way `tests/test_finale.gd` builds it, on the seeds
+## The plan is `DayPlanner.plan_the_escape_city()`'s, built the way `tests/test_finale.gd` builds it, on the seeds
 ## below; "streets" is how many open streets the chains walk.
 
 const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024, 7, 808]
@@ -20,10 +20,11 @@ func run(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var started := Time.get_ticks_msec()
-		var plan := FinalePlanner.plan(map, rng, _city_spec())
+		var plan := FinalePlanner.route(map)
+		var placements := DayPlanner.plan_the_escape_city(map, plan, rng, _city_spec())
 		var took := Time.get_ticks_msec() - started
 		var counts := {}
-		for placement in plan.placements:
+		for placement in placements:
 			counts[placement.def.id] = int(counts.get(placement.def.id, 0)) + 1
 		var parts: Array[String] = []
 		for id in ROWS:

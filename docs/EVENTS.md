@@ -1911,10 +1911,11 @@ day 9")*.
 ### The escape — the walk filled before she sets off
 
 Four rows nothing but the escape ever places. All four are `SCRIPTED` with `scripted_day` 0, the
-same gate the seal pictures use, so the ordinary catalogue roll can never reach one:
-`FinalePlanner` places the first two on the city's open chains and the building places the last two
-inside it (`BuildingPlan`, its own placements, run by the day's `EventManager` on the building's
-map like any plan). Three rows the escape uses are not new —
+same gate the seal pictures use, so the ordinary catalogue roll can never reach one: the escape
+city's plan places the first two on the open chains `FinalePlanner` grows
+(`DayPlanner.plan_the_escape_city()`) and the building places the last two inside it
+(`BuildingPlan`, its own placements); both are planned and run by the day's `EventManager` like any
+walk (`start_day()` with the section's spec). Three rows the escape uses are not new —
 `military_convoy` is the army truck (with the barricade it ordinarily leaves stripped, since a
 convoy in the escape is traffic rather than the aftermath of something), `abduction` is the masked
 men in a van, and `roadblock` at full heat is the masked man on foot who leaves the post — the

@@ -1,6 +1,6 @@
 extends RefCounted
 ## Measurement probe for what the escape's plan costs on a restart of the city section, which
-## replans on the same city (`main._plan_the_finale_city()`): per seed, `FinalePlanner.plan()`'s
+## replans on the same city (`main._plan_the_finale_city()`): per seed, the escape plan's
 ## wall time on the city's first plan and on three restarts after it, each with the same rng the
 ## game hands it. Not a suite: it prints rather than asserts. Run by name:
 ##
@@ -22,9 +22,10 @@ func run(t) -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = seed_value
 			var started := Time.get_ticks_msec()
-			var plan := FinalePlanner.plan(map, rng, _city_spec())
+			var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
+					_city_spec())
 			took.append(Time.get_ticks_msec() - started)
-			placed.append(plan.placements.size())
+			placed.append(placements.size())
 		firsts.append(took[0])
 		restarts.append_array(took.slice(1))
 		print("ESCAPE_REPLAN seed %5d | first %d ms | restarts %s ms | placements %s"

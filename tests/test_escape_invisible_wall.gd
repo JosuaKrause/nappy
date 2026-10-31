@@ -77,7 +77,7 @@ func _test_she_can_walk_north_from_where_the_player_stood(t, main: Node2D) -> vo
 func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) -> void:
 	var city: City = main._city
 	var player: Stroller = main._player
-	var plan := FinalePlanner.plan(city.map, GameState.day_rng(GameState.header.day, "finale"), _city_spec(), false)
+	var plan := FinalePlanner.route(city.map)
 	var space := city.get_world_2d().direct_space_state
 	var query := PhysicsShapeQueryParameters2D.new()
 	var circle := CircleShape2D.new()

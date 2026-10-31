@@ -6,6 +6,7 @@ extends RefCounted
 
 const StrollerSteer := preload("res://tests/stroller_steer.gd")
 const BuildingEvents := preload("res://tests/building_events.gd")
+const GivenPlanner := preload("res://tests/given_planner.gd")
 
 func run(t) -> void:
 	_test_the_map_builds(t)
@@ -2247,7 +2248,9 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 	var once := EventScheduler.Planned.new(EventCatalogue.explosion_outside(),
 			scene.map.start_world_position())
 	once.repeat_every = 0.0
-	events.start_planned(BuildingEvents.spec(), [once] as Array[EventScheduler.Planned],
+	GivenPlanner.hand_in(events, [once] as Array[EventScheduler.Planned])
+	var none: Array[String] = []
+	events.start_day(BuildingEvents.spec(), RandomNumberGenerator.new(), none,
 			scene.map.start_world_position())
 	t.check(once.live != null and scene.windows_are_flashing(),
 			"a bang from outside that comes once lights every window as it comes")

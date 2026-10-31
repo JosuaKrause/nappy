@@ -532,7 +532,7 @@ func _test_the_manager_reads_the_controls_scheme(t) -> void:
 	city.build(CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
-	city.events.start_day(DAY, rng, [] as Array[String])
+	city.events.start_day(DaySpec.for_day(DAY), rng, [] as Array[String])
 	var events := city.events
 	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(stroller)
@@ -589,7 +589,7 @@ func _test_the_manager_watches_only_while_she_is_playing(t) -> void:
 	city.build(CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
-	city.events.start_day(DAY, rng, [] as Array[String])
+	city.events.start_day(DaySpec.for_day(DAY), rng, [] as Array[String])
 	var events := city.events
 	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(stroller)

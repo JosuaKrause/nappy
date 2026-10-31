@@ -40,7 +40,7 @@ func run(t) -> void:
 	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
-	_city.events.start_day(Tuning.RUN_TAUGHT_DAY, _day_rng(), [] as Array[String])
+	_city.events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _day_rng(), [] as Array[String])
 	_test_a_pelican_rides_as_one_to_the_end(t)
 	_test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t)
 	_test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t)

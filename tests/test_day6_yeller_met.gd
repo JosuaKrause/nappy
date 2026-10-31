@@ -51,7 +51,7 @@ func _walk(t, seed_value: int) -> String:
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DAY, _rng(seed_value, "events"), consumed)
+	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:

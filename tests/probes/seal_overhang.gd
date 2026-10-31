@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ## The measure is `tests/seal_reach_rig.gd`'s. A day's seals are `SealPlanner.plan_day()`'s, on
 ## `RouteTree.for_day()`'s tree and the rng `tests/test_seals.gd` seeds them with; the escape's are
-## every placement `FinalePlanner.plan()` makes, built the way `tests/test_finale.gd` builds it.
+## every placement `DayPlanner.plan_the_escape_city()` makes, built the way `tests/test_finale.gd` builds it.
 
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const FIRST_SEED := 1
@@ -32,7 +32,8 @@ func run(t) -> void:
 		map.repaint(GameState.attempt_spend.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		for plan in FinalePlanner.plan(map, rng, _city_spec()).placements:
+		for plan in DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
+				_city_spec()):
 			_count(escape_rows, map, ground, plan)
 	_print("day", day_rows)
 	_print("escape", escape_rows)

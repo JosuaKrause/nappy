@@ -33,7 +33,7 @@ func run(t) -> void:
 		var consumed: Array[String] = []
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = 2
-		city.events.start_day(day, events_rng, consumed)
+		city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 		var home := city.map.doorstep_world_position()
 		var crowd_rng := RandomNumberGenerator.new()
 		crowd_rng.seed = 3

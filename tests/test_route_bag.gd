@@ -435,7 +435,7 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("route-bag:%d:%d:events" % [SEED, day])
 	var consumed: Array[String] = []
-	city.events.start_day(day, events_rng, consumed)
+	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var saved_completed := GameState.resistance.completed_steps.duplicate()
 	var saved_failed := GameState.resistance.failed_steps.duplicate()

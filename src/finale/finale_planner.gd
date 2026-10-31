@@ -28,11 +28,10 @@ extends RefCounted
 ## a quiet square or a courtyard without this file having to know which. Distinctness is then
 ## automatic: two stops are different components or they are the same stop.
 ##
-## What this hands back is a `Plan`: the two chains, the union of their cells — the escape's walk,
-## which placement asks about as it asks a day's tree (`RouteSource`) — and every
-## `EventScheduler.Planned` the escape puts in the city, placed by the day's own code under the
-## section's spec (`DaySpec`): `SealPlanner.plan_day()`'s walls off the chains and
-## `EventScheduler.build_day()`'s trucks, vans, masked men and bursts on them.
+## What this hands back is a `Plan`: the two chains and the union of their cells — the escape's
+## walk, which placement asks about as it asks a day's tree (`RouteSource`). **The route only**:
+## what stands on and off it is planned by the day's own code under the section's spec, as every
+## walk is (`DayPlanner.plan_the_escape_city()`, from `EventManager.start_day()`).
 
 ## One calm area on the way: a connected component of calm ground, its tiles and the grid nodes
 ## that cover them.
@@ -55,15 +54,13 @@ class Chain extends RefCounted:
 	## gets a plan rather than a crash if one ever is.
 	var complete := true
 
-## **The escape's walk**: the two chains as the questions placement asks of a walk (`RouteSource`),
-## and what the escape places on the city.
+## **The escape's walk**: the two chains as the questions placement asks of a walk (`RouteSource`).
 class Plan extends RouteSource:
 	var chains: Array[Chain] = []
 	## The union of both chains' cells: what stays open, and what the seals are asked to spare.
 	var open_cells: Dictionary = {}
 	## Every street either chain runs through — where the finale's own events stand.
 	var open_streets: Array[StreetNetwork.Segment] = []
-	var placements: Array[EventScheduler.Planned] = []
 	## Where she comes out of the service exit, the street that is in, and the tunnel's and the
 	## bridge's tiles, in world space.
 	var _start := Vector2.INF
@@ -110,43 +107,24 @@ class Plan extends RouteSource:
 	func ends() -> Array[Vector2]:
 		return _ends
 
-	## One line for the run log: which way each chain goes and how much of the city is left open.
-	func summary() -> String:
+	## One line for the run log: which way each chain goes, how much of the city is left open and
+	## how many `placements` the walk was planned with.
+	func summary(placements: int) -> String:
 		var parts: Array[String] = []
 		for chain in chains:
 			parts.append("%s via %d calm, %d cells%s" % [
 				"tunnel" if chain.exit_kind == CityEdge.Kind.TUNNEL else "bridge",
 				chain.stops.size(), chain.cells.size(), "" if chain.complete else " (incomplete)"])
-		parts.append("%d open streets, %d placements" % [open_streets.size(), placements.size()])
+		parts.append("%d open streets, %d placements" % [open_streets.size(), placements])
 		return " | ".join(parts)
 
 # ------------------------------------------------------------------ the plan ---
 
-## **The escape city's whole plan**: its walk (`route()`), the seals off it and the events on it,
-## each placed by the day's own code under `spec`, the city section's (`DaySpec.for_section()`), on
-## `rng` — seals first, then the events on what is left of the same stream. A recipe asks for the
-## walk and the seals alone (`populate_events` false) and validates its own actors on the streets.
-##
-## **Every pass is handed the tile she is put down on.** *(2026-09-19: "the spawning shouldn't be a
-## check. the pathing should start from the position. then obstacles can never happen.")* The chains
-## already start there — `_grow()` enters the grid at her own cell — and the walk hands its start to
-## both passes that place things: the sealing spares the street she is standing in rather than the
-## one the front door opens onto (`RouteSource.street_it_starts_in()`), and the events are never
-## offered the ground she is on. Neither is a check on the spawn and neither moves anything
-## afterwards. The events are handed the seals too, because what they may not close is the walk from
-## where she stands to either exit with the seals already down.
-static func plan(map: CityMap, rng: RandomNumberGenerator, spec: DaySpec,
-		populate_events := true) -> Plan:
-	var result := route(map)
-	var seals := SealPlanner.plan_day(map, spec, result, rng)
-	result.placements.append_array(seals)
-	if populate_events:
-		result.placements.append_array(EventScheduler.build_day(spec, rng, map, [], [], [], result,
-				0, PackedVector2Array(), [], seals))
-	return result
-
-## The escape's walk alone: the two chains from the service exit, their cells and streets, where she
+## **The escape's walk**: the two chains from the service exit, their cells and streets, where she
 ## starts and the two exits. Deterministic from the city, so a replan walks the same chains.
+##
+## **The chains start on the tile she is put down on** (`_grow()` enters the grid at her own cell),
+## and what is placed on the walk is handed the same start (`DayPlanner.plan_the_escape_city()`).
 static func route(map: CityMap) -> Plan:
 	var grid := ReachabilityGrid.build(map)
 	var start := service_exit_tile(map)

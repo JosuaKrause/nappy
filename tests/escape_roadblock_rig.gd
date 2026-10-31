@@ -4,9 +4,9 @@ extends RefCounted
 ## that a lured-off roadblock is passable and a posted one is not, and
 ## `tests/probes/escape_roadblock_cost.gd`, which prints the table.
 ##
-## **What is real and what is stood in for.** The plan is the finale's own
-## (`FinalePlanner.plan()`), and the roadblocks on a street are `EventInstance`s built on the real
-## map from its placements, stepped by hand at 60Hz the way `EventManager` steps them: told where
+## **What is real and what is stood in for.** The plan is the finale's own (its walk,
+## `FinalePlanner.route()`, and what stands on it, `DayPlanner.plan_the_escape_city()`), and the
+## roadblocks on a street are `EventInstance`s built on the real map from its placements, stepped by hand at 60Hz the way `EventManager` steps them: told where
 ## she is and whether she runs (`_tell_them_where_she_is()`), asked whether one catches her
 ## (`is_lethal_at()`), and the meter fed from the strongest of them — they are
 ## `barrier_structure`, so only the strongest counts (`excitement_sources_at()`) — the way
@@ -24,22 +24,27 @@ const STEP := 1.0 / 60.0
 const BEYOND := 260.0
 const LANE_SCAN := 4.0
 
-## The finale's plan for a seed, built the way `tests/test_finale.gd` builds it.
+## The finale's plan for a seed, built the way `tests/test_finale.gd` builds it: the map, the walk
+## (`plan`) and what stands on it (`placements`).
 static func plan_for(seed_value: int) -> Dictionary:
 	var map := CityGenerator.generate(seed_value)
 	GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
 	map.repaint(GameState.attempt_spend.city_state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	return {"map": map, "plan": FinalePlanner.plan(map, rng, _city_spec())}
+	var walk := FinalePlanner.route(map)
+	return {"map": map, "plan": walk,
+			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec())}
 
-## The plan's roadblocks on each open street that carries any, `[segment, Array[Planned]]` pairs.
-static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan) -> Array:
+## The roadblocks among `placements` on each open street of the walk `plan` that carries any,
+## `[segment, Array[Planned]]` pairs.
+static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan,
+		placements: Array[EventScheduler.Planned]) -> Array:
 	var found: Array = []
 	for segment in plan.open_streets:
 		var rect := map.tile_rect_to_world(segment.tile_rect())
 		var group: Array[EventScheduler.Planned] = []
-		for placement in plan.placements:
+		for placement in placements:
 			if placement.def.id == "roadblock" and rect.grow(1.0).has_point(placement.position):
 				group.append(placement)
 		if not group.is_empty():

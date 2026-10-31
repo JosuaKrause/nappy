@@ -891,8 +891,11 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 	var doors := PackedVector2Array()
 	var finale: FinalePlanner.Plan
 	if data.get("kind", "city") == "escape":
-		finale = FinalePlanner.plan(map, _run.day_rng(_run.header.day, "finale"), walk_spec,
-				false)
+		finale = FinalePlanner.route(map)
+		# The escape's seals alone, which dress the map as the game's walk does (the tree pits a
+		# seal empties, the soft seals cleared); what they place is not the scene's.
+		DayPlanner.plan_the_escape_city(map, finale, _run.day_rng(_run.header.day, "finale"),
+				walk_spec, false)
 		for chain in finale.chains:
 			if not chain.complete:
 				errors.append("escape route construction could not complete its ordinary chains")

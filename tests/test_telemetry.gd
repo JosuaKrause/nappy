@@ -639,7 +639,7 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -
 	t.add_child(city)
 	city.build(map)
 	var consumed: Array[String] = []
-	city.events.start_day(3, _rng(3), consumed)
+	city.events.start_day(DaySpec.for_day(3), _rng(3), consumed)
 
 	var plan: EventScheduler.Planned = null
 	for candidate in city.events.plans():
@@ -692,7 +692,7 @@ func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 	t.add_child(city)
 	city.build(map)
 	var consumed: Array[String] = []
-	city.events.start_day(3, _rng(3), consumed)
+	city.events.start_day(DaySpec.for_day(3), _rng(3), consumed)
 
 	var plan: EventScheduler.Planned = null
 	for candidate in city.events.plans():

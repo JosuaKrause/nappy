@@ -146,11 +146,15 @@ src/
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      a day's events as the rest of the game sees them: handed the world, the
-	                       run, the player and the spec; holds one reference on the `events`
+	                       run and the player; starts every walk the one way, `start_day(spec)`,
+	                       a day, the escape's city or its building; holds one reference on the `events`
 	                       atlas page; steps the live instances once a physics tick in a fixed
 	                       order (tells them where she is, steps them, then the catches and hard
 	                       fails); answers total_excitement_at; hands its work to the parts below,
 	                       all working over one `EventWorld` (event_world.gd)
+	day_planner.gd        what a walk places before she sets off, chosen by its spec: a day's
+	                       holds, seals, rows and doors; the escape city's seals and rows on its
+	                       chains; the building's own placements
 	event_streaming.gd    the day's plan and the live instance each plan streams in as, carrying
 	                       its state out and back; the repeats, the masts, a finished plan spent
 	event_spawner.gd      every instance made, with its scar, its body and the bang outside;
@@ -234,11 +238,11 @@ src/
   finale/                 the escape: a won day 14 with every task complete goes here, and
 	                      --start-escape reaches the same sequence directly
 	finale_planner.gd     the two chains — service exit, three calm areas, tunnel or bridge — as
-	                      the escape city's walk, and the plan the day's seal planner and
-	                      scheduler build off them under the section's spec
-	building_plan.gd      what the building places and where, as plans the day's `EventManager`
-	                      runs on its map: the fire, the masked man who keeps coming back, the
-	                      mouse, the steam, and the explosions outside
+	                      the escape city's walk: the route only, which the day's planner places
+	                      the section's seals and rows against
+	building_plan.gd      what the building places and where, as plans the day's planner asks
+	                      for and the day's `EventManager` runs on its map: the fire, the masked
+	                      man who keeps coming back, the mouse, the steam, and the explosions outside
   ui/
 	hud.gd                the clock, the two bars, the teach line and the status line
 	texts.gd              `Texts`, every text the game shows on screen: one constant per line, grouped by

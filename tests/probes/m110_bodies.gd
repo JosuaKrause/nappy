@@ -40,7 +40,7 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var events := RandomNumberGenerator.new()
 	events.seed = hash("m110-events:%d:%d" % [city_seed, day])
 	var consumed: Array[String] = []
-	city.events.start_day(day, events, consumed)
+	city.events.start_day(DaySpec.for_day(day), events, consumed)
 
 	var tiles := map.obstructed_tiles.size()
 	var kept := map.obstructed_tiles.duplicate()
