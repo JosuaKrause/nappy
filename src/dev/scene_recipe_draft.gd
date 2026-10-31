@@ -74,7 +74,6 @@ func record(player: Node2D, city: City, neighbor: Node2D) -> void:
 ## The drafted recipe, built from `recipe` (the file as written, not `base_of()`'s copy) and the
 ## world `run` has left behind, `pinned` the places `setup.task` names. Fills `problems` with
 ## anything the draft could not place.
-
 func compose(recipe: Dictionary, run: RunState, city: City, start: Vector2,
 		pinned: Array[Vector2], problems: Array[String]) -> Dictionary:
 	var map := city.map

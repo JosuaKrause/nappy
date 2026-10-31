@@ -23,7 +23,6 @@ class RecordingCounter extends "res://src/autoload/visit_counter.gd":
 	func _send_event(name: String) -> void:
 		sent.append(name)
 
-
 func run(t) -> void:
 	_test_should_send_truth_table(t)
 	_test_day_event_name(t)
@@ -208,7 +207,6 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	t.check(not counter.should_send(),
 		"a counter handed no configuration sends nothing")
 	counter.configure(RunConfig.parse(PackedStringArray(), "", false), GameState)
-
 	t.check(not counter.should_send(),
 		"a headless test process is never the web, so nothing below can reach a real page")
 	var before := _gamestate_snapshot()

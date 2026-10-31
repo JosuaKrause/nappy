@@ -1291,7 +1291,6 @@ func _draw_posters() -> void:
 		draw_texture(PosterArt.texture_for(int(cell["kind"]), int(cell["tear"]), neighbor_taken),
 				at + over)
 
-
 ## The column(s) `civic_portico.svg` actually paints over, read back from `_cell()` rather than
 ## assumed: the portico is a fixed 32px overlay centred on the facade (`_draw_front_overlay()`),
 ## which straddles two columns whenever `columns()` is even rather than landing on one exactly.

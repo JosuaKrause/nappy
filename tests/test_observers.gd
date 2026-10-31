@@ -39,7 +39,6 @@ class RecordingCounter extends "res://src/autoload/visit_counter.gd":
 	func _send_event(name: String) -> void:
 		sent.append(name)
 
-
 func run(t) -> void:
 	var day_lines: Array[String] = await _test_a_day_lost_to_each_cause_won_and_the_next_begun(t)
 	var escape_lines: Array[String] = await _test_the_escape_handed_over_lost_and_left(t)

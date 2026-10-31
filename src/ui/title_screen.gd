@@ -140,7 +140,6 @@ var _run: RunState
 func use_run(run: RunState) -> void:
 	_run = run
 
-
 func _ready() -> void:
 	# **The title has a colour of its own**, or the screen is four labels in one warm off-white and
 	# the name of the game is only the biggest of them. `Palette.TITLE_TEXT` is the doorstep it is
@@ -237,7 +236,6 @@ func open(again := false, new_game := false, mode_decided := false) -> void:
 		_place_the_hard_mode_frame()
 	_mode_name.visible = mode_decided and not new_game
 	_mode_name.text = Texts.TITLE_MODE_HARD if _run.hard_mode else Texts.TITLE_MODE_NORMAL
-
 	_hint.text = Texts.TITLE_HINT_AGAIN if again else Texts.TITLE_HINT_BEGIN
 	# A press that closed this screen can leave a button's own forced-pressed look set — see
 	# `_acknowledge_and_begin()`'s own doc for why the release that would otherwise clear it may

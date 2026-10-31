@@ -22,6 +22,7 @@ func run(t) -> void:
 	_saved_posters = GameState.posters.to_data()
 	_test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t)
 	_test_the_wanted_notice_crosses_out_a_taken_neighbor(t)
+	_test_the_wall_draws_the_crossed_notice_from_the_run(t)
 	_test_the_state_survives_a_round_trip_and_a_lost_day(t)
 	_test_the_walls_fill_the_way_the_run_asks(t)
 	_test_the_marble_bag_is_exact_and_reproducible(t)
@@ -66,10 +67,70 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t) -> void:
 	t.check(PosterArt.sheet(PosterArt.Kind.WANTED, GameState.neighbor_was_taken()) == crossed,
 			"a taken neighbor's face is crossed out")
 	t.check(PosterArt.sheet(PosterArt.Kind.LEADER, GameState.neighbor_was_taken()) == AtlasLibrary.region(
-
 			PosterArt.SHEETS[PosterArt.Kind.LEADER]), "and no other kind changes")
 	GameState.header.day = saved_day
 	GameState.resistance.completed_steps = saved_completed
+	AtlasLibrary.release(PosterArt.ATLAS_GROUP)
+
+## **The crossed notice reaches the wall from the run's state.** No front holds a run:
+## `PosterWalls` asks the run whether the neighbor was taken and hands each `Building` the answer
+## with its cells (`Building.neighbor_taken`), at dawn and after a tear, and the building draws its
+## sheets through `PosterArt.texture_for()` with that flag. So a taken neighbor in the run is a
+## crossed notice on the wall, intact at dawn and torn after a tear, and a warned one is the plain
+## notice.
+func _test_the_wall_draws_the_crossed_notice_from_the_run(t) -> void:
+	AtlasLibrary.acquire(PosterArt.ATLAS_GROUP)
+	var saved_day := GameState.header.day
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var map := CityGenerator.generate(SEEDS[0])
+	var city: City = RunCity.of_the_run(CITY_SCENE)
+	t.add_child(city)
+	city.build(map)
+	GameState.header.run_seed = SEEDS[0]
+	GameState.posters.reset()
+	var day := ResistanceHappenings.NEIGHBOR_DAY + 2
+	GameState.header.day = day
+	# Every dawn up to today already pasted, so the day's own pasting leaves the one sheet alone.
+	GameState.posters.pasted_through = day
+	var walls := city.poster_walls()
+	var tiles: Array = walls.fronts().keys()
+	tiles.sort()
+	t.check(not tiles.is_empty(), "there is a front to paste the wanted notice on")
+	if tiles.is_empty():
+		city.free()
+		AtlasLibrary.release(PosterArt.ATLAS_GROUP)
+		return
+	var tile: Vector2i = tiles[0]
+	var building: Building = walls._walls[walls._by_tile[tile].x]["building"]
+	var plain := AtlasLibrary.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
+	var crossed := AtlasLibrary.region(PosterArt.WANTED_CROSSED)
+	var drawn := func() -> Texture2D:
+		var cell: Dictionary = GameState.posters.cells[tile]
+		return PosterArt.texture_for(int(cell["kind"]), int(cell["tear"]), building.neighbor_taken)
+	GameState.posters.paste(tile, PosterArt.Kind.WANTED, false, 1)
+
+	GameState.resistance.completed_steps = []
+	walls.start_day(day, null)
+	t.check(building.neighbor_taken, "at dawn, a taken neighbor in the run reaches the front")
+	t.check(drawn.call() == crossed, "and the front draws the crossed wanted notice")
+
+	GameState.resistance.completed_steps = [ResistanceSteps.warning_step().index]
+	walls.start_day(day, null)
+	t.check(not building.neighbor_taken and drawn.call() == plain,
+			"a warned neighbor's front draws the plain notice at dawn")
+
+	GameState.resistance.completed_steps = []
+	walls._tear(tile)
+	var which := int(GameState.posters.cells[tile]["tear"])
+	t.check(building.neighbor_taken, "after a tear, the run's taken neighbor reaches the front")
+	t.check(drawn.call() == PosterArt.torn(PosterArt.Kind.WANTED, which, true)
+			and drawn.call() != PosterArt.torn(PosterArt.Kind.WANTED, which, false),
+			"and the torn sheet is the crossed notice torn")
+
+	city.free()
+	GameState.header.day = saved_day
+	GameState.resistance.completed_steps = saved_completed
+	GameState.posters.reset()
 	AtlasLibrary.release(PosterArt.ATLAS_GROUP)
 
 # ----------------------------------------------------------------- the state ---

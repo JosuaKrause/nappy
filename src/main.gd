@@ -85,10 +85,8 @@ var _city: City
 ## The run this boot plays, taken off the `GameState` autoload once, here: the autoload is where the
 ## run lives, since it outlives the scene reloads, and this is where it is reached — besides the
 ## events and the resistance, which still read it off the autoload. This file
-
 ## reads the run through `_run` and hands it, typed `RunState`, to `GameSave` and to every reader
 ## it builds.
-
 var _run: RunState = GameState
 ## The parts of the run's state this node reads and writes most, taken off the run once and held.
 var _spend: AttemptSpendState = _run.attempt_spend
@@ -661,9 +659,9 @@ func _apply_the_parent_flag() -> void:
 
 ## `--hard` and `--nerves N` over the fresh run `GameState.start_run()` just made, so a rig can reach
 ## what running out of nerves does in either mode without spending four nerves first. `--hard` is
-## also what the title's checkbox opens on (`TitleScreen.open()` reads `GameState.hard_mode`), so
-## `--title --hard` photographs it checked. Called straight after each of this file's two
-## `start_run()` calls, beside `_apply_the_parent_flag()`.
+## also what the title's checkbox opens on (`TitleScreen.open()` reads the `hard_mode` of the run it
+## is handed), so `--title --hard` photographs it checked. Called straight after each of this file's
+## two `start_run()` calls, beside `_apply_the_parent_flag()`.
 func _apply_the_mode_flags() -> void:
 	if config.hard_mode_requested:
 		_run.choose_mode(true)
@@ -674,7 +672,6 @@ func _apply_the_mode_flags() -> void:
 ## What the HUD draws of the developer's furniture: its debug header on a debug build, the release
 ## shape under `--player-view`, and the invincible mark under `--invincible`; and the run its header
 ## and resistance line read. Set before `add_child()` runs the HUD's own `_ready()`.
-
 func _configure_the_hud() -> void:
 	_hud.configure(config.debug_build and not config.player_view_requested, config.invincible)
 	_hud.use_run(_run)
@@ -714,7 +711,6 @@ func _new_city() -> City:
 	var city: City = CITY.instantiate()
 	city.trace = _the_trace()
 	city.run = _run
-
 	city.ground_mode = config.ground_mode as SceneryGround.Mode
 	city.scenery_frame_locked = config.recipe_scripted
 	city.skip_shadows = config.skip_shadows
@@ -1010,7 +1006,6 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	add_child(_route_rig)
 	_pauses_with_the_game(_route_rig)
 	_route_rig.setup(_city, _player, _baby, resistance, _day, config.route_targets, _run)
-
 	_flow.day_planned.connect(_route_rig.start_day)
 
 ## `--route` in the escape's city: the game's own walker, built once the city stands — the first
@@ -2154,7 +2149,6 @@ func _raise_save_indicator() -> void:
 ## first — a callback bound here would be dropped and leave the symbol shown for good.
 func _save_now(day_under_way: bool) -> void:
 	GameSave.write(_run, day_under_way)
-
 
 func _quit() -> void:
 	if _session:

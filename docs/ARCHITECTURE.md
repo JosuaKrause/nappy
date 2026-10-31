@@ -600,8 +600,6 @@ on every call that reads or writes one (`write(run, …)`, `try_resume(run)`, `l
 call rather than held, because the web flush and the operation ids outlive the scene reloads that
 free the `main` holding a run. The events and the resistance still read it off the autoload.
 `tests/test_run_state.gd` replays a run against a
-
-
 save written before the parts existed (the fixture `tests/fixtures/run_state_saved_by_main.json`, dumped
 on commit e1cc7c7f) and checks every part is on the list.
 

@@ -209,7 +209,6 @@ func show_only() -> void:
 ## Hands every front the cells it draws, and whether the neighbor was taken, which its wanted notices
 ## are drawn by. Asked here, at each dawn and each tear, because a front holds no run; the answer
 ## moves only with the calendar, so what a front was last handed is today's.
-
 func refresh() -> void:
 	for i in _walls.size():
 		_refresh_wall(i)
@@ -469,7 +468,6 @@ func _tear(tile: Vector2i) -> void:
 func _the_bag() -> MarbleBag:
 	var tears := posters.tears
 	var seed_value := hash("%d:poster-tears" % _run.header.run_seed)
-
 	if _bag == null or _bag_seed != seed_value or _bag.drawn != tears:
 		_bag = MarbleBag.new(TEAR_PRE_BAG, TEAR_BAG, seed_value)
 		_bag_seed = seed_value

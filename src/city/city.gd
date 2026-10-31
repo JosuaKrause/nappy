@@ -1164,7 +1164,6 @@ func calm_summary() -> String:
 	for block in map.calm_blocks:
 		var name: String = GameEnums.BlockPurpose.keys()[
 			run.attempt_spend.city_state.purpose_of(map.block_plans, block)].to_lower()
-
 		counts[name] = counts.get(name, 0) + 1
 	var parts: Array[String] = []
 	for name: String in counts:

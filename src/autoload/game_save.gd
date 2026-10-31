@@ -627,6 +627,5 @@ static func _usable_checkpoint(run: RunState, raw: Variant) -> Dictionary:
 	var kept: Dictionary = raw
 	var state: Variant = kept.get("state", null)
 	if not state is Dictionary or not run.snapshot_is_complete(state):
-
 		return {}
 	return kept

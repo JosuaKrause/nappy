@@ -224,7 +224,6 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		if huts.is_empty():
 			push_warning("no region-wall checkpoint on day %d (doors start on day %d)"
 					% [run.header.day, Tuning.REGION_WALL_FIRST_DAY])
-
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, huts.size() - 1)
 		var hut: EventScheduler.Planned = huts[which]

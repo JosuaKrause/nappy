@@ -16,9 +16,6 @@ extends Node
 ## root, takes it once and hands it, typed `RunState`, to `GameSave` and to every reader it builds,
 ## so a test hands a reader whichever run it built; the events and the resistance (`src/events/`,
 ## `src/resistance/`) still read it off the autoload.
-
-
-
 var run_parts := RunStateRegistry.new()
 var header: RunHeader = run_parts.register(RunHeader.new())
 var resistance: ResistanceRunState = run_parts.register(ResistanceRunState.new())

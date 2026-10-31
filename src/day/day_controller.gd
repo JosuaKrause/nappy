@@ -185,7 +185,6 @@ func _remember_the_calm_she_found() -> void:
 		return
 	_run.remember_where_she_settled(_map.block_at(here))
 
-
 func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 	if not is_running():
 		return

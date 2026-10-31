@@ -812,7 +812,6 @@ func _target_shape_rig(t, fixture: Dictionary) -> RouteRig:
 	rig._city = fixture["city"]
 	rig._run = GameState
 	rig._cache_road_tiles()
-
 	rig._resistance = fixture["resistance"]
 	return rig
 
@@ -1374,7 +1373,6 @@ func _test_a_rig_run_never_walks_under_a_boom(t) -> void:
 	rig.set_physics_process(false)
 	var no_targets: Array[String] = []
 	rig.setup(city, _stroller, baby, null, day, no_targets, GameState)
-
 	rig.start_day(day.spec)
 	var reach := float(Tuning.TILE_SIZE) * 5.0
 	# On the carriageway either side of the boom, so the straight line — and the bare grid's

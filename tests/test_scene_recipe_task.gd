@@ -371,7 +371,6 @@ func _test_an_authored_mast_stands_only_where_the_days_masts_may(t) -> void:
 	var made := _day(t, 11)
 	runtime._run = GameState
 	runtime._city = made[0]
-
 	t.check(runtime._mast_placement(def, at, none, no_doors) != null,
 			"a mast stands on an eligible sidewalk of a day with masts")
 	t.check(runtime._mast_placement(def, at, none, PackedVector2Array([at + Vector2(40, 0)])) == null,

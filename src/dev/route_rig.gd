@@ -226,7 +226,6 @@ var _last_position := Vector2.INF
 var _teleported := false
 ## The day this rig's queue was started for, read once in `start_day()` off the spec it is handed
 ## (`DaySpec.number`: 1 to 14, or the escape's city, 16). The run's `header.day` has already moved to the
-
 ## next day by the time `DayController.day_finished` reports a win, so a line written from
 ## `_on_day_finished()` would otherwise name the wrong day.
 var _day_number := 0

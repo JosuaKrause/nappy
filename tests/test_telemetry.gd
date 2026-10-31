@@ -616,7 +616,6 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 	observer._player = player
 
 	observer.start_day()
-
 	observer._watch_the_trail(player.global_position + Vector2(200.0, 0.0))
 	t.check(not observer.trail().is_empty(), "the trail records a point during the day")
 

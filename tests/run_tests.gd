@@ -114,7 +114,6 @@ const RESET_SEED := 2
 ## that no suite starts on another's state: the run state and the trace it writes to (a silent
 ## one), the run configuration a booted `main` handed the observers (none, as before any boot, with
 ## the counter handed the live run, since the bus reaches it in suites that boot no `main`),
-
 ## and the static seams a suite sets by hand (the save's override hooks, the frame recorder, the
 ## remembered controls and the title's restart stamp). The run log and `VisitCounter`'s own state
 ## and the `EventBus` connections are left alone.
@@ -123,7 +122,6 @@ func _reset_globals() -> void:
 	Telemetry.configure(null)
 	GameState.use_trace(RunTrace.new())
 	VisitCounter.configure(null, GameState)
-
 	GameSave.configure(null)
 	GameSave._path_override = ""
 	GameSave._uses_save_override = null

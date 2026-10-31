@@ -109,7 +109,6 @@ func _exit_tree() -> void:
 	var path := "%s/trace-%s-seed%d-%d.json" % [directory,
 		Time.get_datetime_string_from_system().replace(":", "-"),
 		_run.header.run_seed, Time.get_ticks_usec()]
-
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		push_error("Cannot write frame trace: %s" % path)

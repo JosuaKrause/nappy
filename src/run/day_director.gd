@@ -116,7 +116,6 @@ func start_day(the_spec: DaySpec) -> void:
 	# merely by the time the day is shown to her.
 	resistance.start_day(today, run.day_rng(today, "resistance"), day_length)
 	var start_at := DevRig.for_spawn_target(config.spawn_target, city, resistance, run) \
-
 			if first_day else doorstep
 	city.events.stream_around(start_at)
 	_start_the_crowd(start_at, today)

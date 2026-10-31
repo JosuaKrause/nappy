@@ -126,7 +126,6 @@ static func texture_for(kind: int, tear: int, neighbor_taken: bool) -> Texture2D
 	return sheet(kind, neighbor_taken) if tear == PosterState.INTACT \
 			else torn(kind, tear, neighbor_taken)
 
-
 ## The recipe, per pixel: the poster's colour with its alpha multiplied by the mask's, then the
 ## overlay drawn over the result with ordinary source-over blending. All three images are the same
 ## size and registration. Pure, so a test can hold it without a page.

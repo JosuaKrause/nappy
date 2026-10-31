@@ -136,7 +136,6 @@ func _show_where_the_run_stands() -> void:
 	# Stars, drawn through `NerveDisplay.stars()` — the same text the HUD, the day brief and the
 	# day summary all read the count through, never a digit.
 	_standing.text = Texts.PAUSE_STANDING % [_run.header.day,
-
 			Tuning.RUN_LENGTH_DAYS, NerveDisplay.stars(nerves)]
 
 func open() -> void:

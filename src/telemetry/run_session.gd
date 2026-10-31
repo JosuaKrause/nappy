@@ -154,7 +154,6 @@ func _on_day_started(day: int) -> void:
 	if not _city:
 		return
 	_log.begin_day(day, Tuning.act_for_day(day), _run.header.run_seed, _city.map.seed_used,
-
 			_config.day_length_for(day))
 
 ## The shape of the day, written once everything has been placed: what is shut, where the calm is,

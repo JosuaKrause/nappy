@@ -563,7 +563,6 @@ func _test_the_environment_carries_the_view(t) -> void:
 	var recorder := FrameRecorder.new()
 	recorder.ledger = FrameLedger.new(8, 16667)
 	recorder._run = GameState
-
 	var environment: Dictionary = JSON.parse_string(recorder.report_text())["environment"]
 	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
 		t.check(environment.has(key), "the record's environment carries %s" % key)

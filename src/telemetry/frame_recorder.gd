@@ -266,7 +266,6 @@ func save() -> String:
 	if _native_path == "":
 		_native_path = "user://frame-records/record-%s-seed%d.json" % [
 			Time.get_datetime_string_from_system().replace(":", "-"), _run.header.run_seed]
-
 	if DirAccess.make_dir_recursive_absolute(_native_path.get_base_dir()) != OK:
 		push_error("Cannot create the frame record directory")
 		return ""

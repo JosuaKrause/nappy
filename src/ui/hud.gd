@@ -504,7 +504,6 @@ func _refresh_header() -> void:
 		# `NerveDisplay.stars()` — see its own class doc for why every screen that shows a nerve
 		# count reads through it rather than repeating this line.
 		NerveDisplay.stars(_run.header.nerves),
-
 	]
 	# So no capture from an --invincible run reads as a real one — appended to the same debug
 	# label rather than a mark of its own, since the cues vocabulary is for the world she is

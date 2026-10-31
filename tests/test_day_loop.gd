@@ -437,7 +437,6 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 	var session := RunSession.new()
 	t.add_child(session)
 	session.setup(Telemetry, RunConfig.parse(PackedStringArray(), "", true), EventBus, GameState)
-
 	session._city = city
 	t.check(session.observer() == null, "the session watches with no observer, as with the log off")
 
