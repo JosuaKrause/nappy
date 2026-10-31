@@ -127,9 +127,10 @@ const LATERAL_TILES := Tuning.STREET_WIDTH
 ## the timing rather than the city.
 static func down_her_line(map: CityMap, row: EventDef, her: Vector2, direction: Vector2,
 		in_view: VisibleView = null) -> Vector2:
-	var view := SpawnSiting.seen_from(in_view, her)
-	var box := EventFootprints.footprint_of(row)
-	var ahead := SpawnSiting.just_out_of_sight(view, box, her, direction)
+	var siting := SpawnSiting.over(map, in_view)
+	var asked := siting.ask_in_sight(EventFootprints.footprint_of(row),
+			EventInstance.mover_for(row), her)
+	var ahead := SpawnSiting.just_out_of_sight(asked.view, asked.box, her, direction)
 	if not map:
 		return ahead
 	var along := direction * Tuning.TILE_SIZE
@@ -139,7 +140,9 @@ static func down_her_line(map: CityMap, row: EventDef, her: Vector2, direction: 
 		for step in LATERAL_TILES + 1:
 			for side: float in [1.0, -1.0]:
 				var at := level + across * (float(step) * side)
-				if _is_its_ground(map, row, at) and SpawnSiting.is_out_of_sight(view, box, her, at):
+				if siting.allows(SpawnSiting.Rule.OPEN_TO_IT, asked, at) \
+						and row.placement.has(map.tile_at(map.world_to_tile(at))) \
+						and siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, at):
 					return at
 				if step == 0:
 					break
@@ -159,13 +162,6 @@ static func route_down_her_line(map: CityMap, place: Vector2, her: Vector2,
 			behind += direction * Tuning.TILE_SIZE
 	return PackedVector2Array([place, behind])
 
-## Whether `at` is ground the row is placed on (`EventDef.placement`) and may stand on today
-## (`CityMap.passable()`, as it walks): not closed, not under a body or a soft seal.
-static func _is_its_ground(map: CityMap, row: EventDef, at: Vector2) -> bool:
-	var tile := map.world_to_tile(at)
-	return map.in_bounds(tile) and row.placement.has(map.tile_at(tile)) \
-			and map.passable(tile, EventInstance.mover_for(row))
-
 # ---------------------------------------------------------- along her heading ---
 
 ## Where a pursuer the director sends at her down her heading (`charging_dog`, on the day it teaches
@@ -176,17 +172,17 @@ static func _is_its_ground(map: CityMap, row: EventDef, at: Vector2) -> bool:
 ## null is open ground.
 static func along_her_heading(map: CityMap, row: EventDef, her: Vector2, direction: Vector2,
 		in_view: VisibleView = null) -> Vector2:
-	var view := SpawnSiting.seen_from(in_view, her)
-	var box := EventFootprints.footprint_of(row)
-	var ahead := SpawnSiting.just_out_of_sight(view, box, her, direction)
+	var siting := SpawnSiting.over(map, in_view)
+	var asked := siting.ask_in_sight(EventFootprints.footprint_of(row),
+			EventInstance.mover_for(row), her)
+	var ahead := SpawnSiting.just_out_of_sight(asked.view, asked.box, her, direction)
 	if not map:
 		return ahead
 	var step := direction * (Tuning.TILE_SIZE * 0.5)
-	var mover := EventInstance.mover_for(row)
 	for further in FURTHER_TILES * 2 + 1:
 		var at := ahead + step * float(further)
-		if map.passable(map.world_to_tile(at), mover) \
-				and SpawnSiting.is_out_of_sight(view, box, her, at):
+		if siting.allows(SpawnSiting.Rule.OPEN_TO_IT, asked, at) \
+				and siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, at):
 			return at
 	return Vector2.INF
 
@@ -206,12 +202,12 @@ static func along_her_heading(map: CityMap, row: EventDef, her: Vector2, directi
 ## which is only ever her standing at its far end.
 static func on_its_route(row: EventDef, her: Vector2, stop: Vector2, travel: Vector2,
 		reach: float, in_view: VisibleView = null) -> Vector2:
-	var view := SpawnSiting.seen_from(in_view, her)
-	var box := EventFootprints.footprint_of(row)
+	var siting := SpawnSiting.over(null, in_view)
+	var asked := siting.ask_in_sight(EventFootprints.footprint_of(row), null, her)
 	var up := maxf(float(Tuning.TILE_SIZE), (stop - her).dot(travel))
 	while up <= reach:
 		var at := stop - travel * up
-		if SpawnSiting.is_out_of_sight(view, box, her, at):
+		if siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, at):
 			return at
 		up += ROUTE_STEP
 	return Vector2.INF
@@ -231,12 +227,14 @@ const ROUTE_STEP := Tuning.TILE_SIZE * 0.25
 ## rather than a truck appearing on screen.
 static func in_its_lane(row: EventDef, her: Vector2, lane_x: float, going: float, top: float,
 		bottom: float, in_view: VisibleView = null) -> Vector2:
-	var view := SpawnSiting.seen_from(in_view, her)
-	var box := EventFootprints.footprint_of(row)
+	var siting := SpawnSiting.over(null, in_view)
+	var asked := siting.ask_in_sight(EventFootprints.footprint_of(row), null, her)
 	var toward_her := Vector2(0.0, -going)
 	var level := Vector2(lane_x, her.y)
-	var out := view.clear_of_sight(level, toward_her, box, SpawnSiting.least_distance())
+	var out := asked.view.clear_of_sight(level, toward_her, asked.box,
+			SpawnSiting.least_distance())
 	var at := Vector2(lane_x, clampf(her.y + toward_her.y * out, top, bottom))
-	if at.y != her.y + toward_her.y * out and not SpawnSiting.is_out_of_sight(view, box, her, at):
+	if at.y != her.y + toward_her.y * out \
+			and not siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, at):
 		return Vector2.INF
 	return at

@@ -33,7 +33,14 @@ const DAY := 13
 const PLACEMENT_SEEDS: Array[int] = [4242, 90210, 555, 271828]
 
 ## What the test's camera shows: a `Rect2` of world ground, or an empty one for nothing at all.
-var _view := Rect2()
+## The camera's view as a test sets it: the city's one view (`_seen_through`) is looked at it, so the
+## director's `set_sight()` and the siting's `DRAWING_OFF_THE_VIEW` both read it.
+var _view := Rect2():
+	set(value):
+		_view = value
+		if _seen_through:
+			_seen_through.look(value, false)
+var _seen_through: VisibleView
 ## What each day's streams are named after: this suite's own, or, empty, the day-13 probes' own
 ## (`tests/probes/calm_pelican_day13_guard_walk.gd`), so a day the probes measured is built again.
 var _streams := "day13-guard:"
@@ -57,9 +64,6 @@ func run(t) -> void:
 	for seed_value in PLACEMENT_SEEDS:
 		_test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value)
 	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
-
-func _in_view(at: Vector2) -> bool:
-	return _view.has_area() and _view.has_point(at)
 
 func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	var saved_completed := GameState.resistance.completed_steps.duplicate()
@@ -343,7 +347,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 			% [lunged_at, standoff])
 	guard.free()
 
-## **`_on_her_side()` shuts what `_open_to_her()` shuts**: a soft-sealed tile or a tile with a body
+## **`_on_her_side()` shuts what `SpawnSiting.is_open_to()` shuts**: a soft-sealed tile or a tile with a body
 ## on it, added after the director's reachability first ran, is not her side, as it is not open to
 ## the fill.
 func _test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t) -> void:
@@ -370,7 +374,7 @@ func _test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t) -> void:
 		for dx in range(-radius, radius + 1):
 			var cand := centre + Vector2i(dx, radius)
 			var at := map.tile_to_world(cand)
-			if not director._open_to_her(cand) or not director._open_to_her(cand + Vector2i.RIGHT) \
+			if not SpawnSiting.is_open_to(map, cand, Mover.on_foot()) or not SpawnSiting.is_open_to(map, cand + Vector2i.RIGHT, Mover.on_foot()) \
 					or at.distance_to(body) < reach + 2.0 * Tuning.TILE_SIZE:
 				continue
 			var side := ResistanceDirector.HerSide.new(body, at)
@@ -383,14 +387,14 @@ func _test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t) -> void:
 	t.check(her != Vector2.INF, "there is open ground on her side of a roadblock to test with")
 	if her != Vector2.INF:
 		map.seal_soft_tile(tile)
-		t.check(not director._open_to_her(tile)
+		t.check(not SpawnSiting.is_open_to(map, tile, Mover.on_foot())
 				and not director._on_her_side(ResistanceDirector.HerSide.new(body, her), tile),
 				"a tile soft-sealed after the reachability was built is not her side")
 		map.soft_sealed_tiles.erase(tile)
 		var other := tile + Vector2i.RIGHT
 		if director._on_her_side(ResistanceDirector.HerSide.new(body, her), other):
 			map.obstructed_tiles[other] = 1
-			t.check(not director._open_to_her(other)
+			t.check(not SpawnSiting.is_open_to(map, other, Mover.on_foot())
 					and not director._on_her_side(ResistanceDirector.HerSide.new(body, her), other),
 					"a tile with a body on it is not her side")
 			map.obstructed_tiles.erase(other)
@@ -844,7 +848,9 @@ func _start_the_day(t, city: City, seed_value: int) -> ResistanceDirector:
 	t.add_child(director)
 	director.set_process(false)
 	director.setup(city, city.map)
-	director.set_sight(_in_view, _in_view)
+	_seen_through = city.events.visible_view()
+	_seen_through.look(_view, false)
+	director.set_sight(city.events.sees)
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	return director
 

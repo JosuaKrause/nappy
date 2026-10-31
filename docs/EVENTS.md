@@ -576,7 +576,15 @@ on the sidewalk".)* Each kind of row has its own ground:
   of sight, off the camera's whole view, clear of the region's wall and doors, a clear run at her,
   his own chase reaching her), one search answering a bearing list the caller draws
   (`SpawnSiting.start_out_of_sight()`) — see "The resistance's trap" and the poster tear's pursuer
-  below.
+  below. **Every other place the resistance and the director's half of a day put something asks the
+  same rules by the same names**: a contact, a guard, a mast's foot and the neighbor's start stand
+  on legal ground she can walk onto today (`SpawnSiting.CONTACT_GROUND`: legal ground, open to the
+  thing), a district door's crossing on legal ground with held ground allowed, and nothing is put
+  down or taken away where any part of its drawing would be on the camera's whole view
+  (`DRAWING_OFF_THE_VIEW`, so the raid of day 10 waits on the box of every van and the patrol car);
+  a row placed down her line, along her heading, on its route or in its lane asks out of sight and
+  open to the thing. Legal ground is on the map: a tile off it, which a scene recipe's exterior
+  reads as an alley, is not ground.
 
 **The day-3 dog keeps its gold timing, in the player's terms.** *(PLAYTEST-145: "the pursuit dog
 timing from the day 3 lesson is the correct timing ... this is the gold timing with warning time and

@@ -20,6 +20,9 @@ func run(t) -> void:
 	_test_one_search_answers_both_callers(t)
 	_test_the_boundary_refuses_a_start_even_as_the_fallback(t)
 	_test_across_the_street(t)
+	_test_the_ground_a_contact_stands_on(t)
+	_test_a_drawing_is_off_the_view_as_a_whole(t)
+	_test_a_siting_over_a_fixed_view(t)
 
 static func _yard(size := Vector2i(60, 40)) -> CityMap:
 	var map := CityMap.new(size)
@@ -220,3 +223,85 @@ func _test_across_the_street(t) -> void:
 	map.fill_rect(below, GameEnums.TileType.BUILDING)
 	t.check(siting.across_the_street(asked) == Vector2.INF,
 			"with nothing but building below her, there is no start across the street")
+
+## What the resistance asks of every tile it places on: legal ground she can walk onto today. A soft
+## seal or a stationary body leaves ground legal and closes it to her (`OPEN_TO_IT`); held ground is
+## legal only to the rule that allows it; and a tile off the map is neither, even where the map reads
+## it as an alley (a scene recipe's exterior).
+func _test_the_ground_a_contact_stands_on(t) -> void:
+	var map := _yard()
+	var her := _centre(HER_TILE)
+	var region := SpawnSiting.Region.new()
+	var walled := Rect2i(Vector2i(10, 30), Vector2i(2, 4))
+	region.walled_alleys = [walled]
+	var siting := _siting(map, _view_about(her), region)
+	var ground := siting.ask_of_ground(BOX)
+	var open := Vector2i(30, 30)
+	t.check(siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, _centre(open))
+			and siting.allows_every(SpawnSiting.HELD_CONTACT_GROUND, ground, _centre(open)),
+			"open sidewalk is ground a contact stands on, held or not")
+	t.check(not siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, _centre(walled.position))
+			and not siting.allows_every(SpawnSiting.HELD_CONTACT_GROUND, ground,
+					_centre(walled.position)),
+			"a walled-off alley is not, held ground allowed or not")
+	map.seal_soft_tile(open)
+	t.check(siting.allows(SpawnSiting.Rule.LEGAL_GROUND, ground, _centre(open))
+			and not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _centre(open)),
+			"a soft-sealed tile is legal ground and closed to her")
+	var body := Vector2i(31, 30)
+	map.obstructed_tiles[body] = 1
+	t.check(siting.allows(SpawnSiting.Rule.LEGAL_GROUND, ground, _centre(body))
+			and not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _centre(body)),
+			"so is a tile with a body on it")
+	var off := Vector2i(-3, 5)
+	map.recipe_exterior = true
+	map.recipe_bounds = Rect2i(Vector2i.ZERO, map.size)
+	t.check(Tile.is_walkable(map.tile_at(off)),
+			"a recipe's exterior reads a tile off the map as an alley")
+	t.check(not siting.allows(SpawnSiting.Rule.LEGAL_GROUND, ground, _centre(off))
+			and not siting.allows(SpawnSiting.Rule.GROUND_EVEN_IF_HELD, ground, _centre(off))
+			and not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _centre(off)),
+			"which is not ground a contact stands on, held or not")
+
+## A drawing is off the view when no part of its box, standing there, is on it: a point a step past
+## the view's edge is off the view, and a drawing standing there that reaches back over the edge is
+## not (`DRAWING_OFF_THE_VIEW`); a thing that draws nothing of its own is its feet.
+func _test_a_drawing_is_off_the_view_as_a_whole(t) -> void:
+	var map := _yard()
+	var her := _centre(HER_TILE)
+	var view := _view_about(her)
+	var siting := _siting(map, view)
+	var tall := siting.ask_of_drawing(Rect2(-14.0, -48.0, 28.0, 52.0))
+	var point := siting.ask_of_drawing(Rect2())
+	var edge := view.view.end.y
+	var feet := Vector2(her.x, edge + 8.0)
+	t.check(siting.allows(SpawnSiting.Rule.OFF_THE_VIEW, tall, feet),
+			"feet 8px below the view's bottom edge are off the view")
+	t.check(not siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, tall, feet),
+			"but the figure standing there, drawn above his feet, is on it")
+	t.check(siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, point, feet),
+			"and a thing that draws nothing of its own is off the view with its feet")
+	t.check(siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, tall,
+			Vector2(her.x, edge + 60.0)),
+			"the figure whose head clears the edge is off it")
+	t.check(not siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, tall, her),
+			"and standing in the view he is on it")
+	var unlooked := _siting(map, null)
+	t.check(unlooked.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, tall, her),
+			"nothing is on a view that does not exist")
+
+## The siting a placement builds when none is handed to it (`SpawnSiting.over()`): the sight rules
+## against the one view it is given, and the column's lead up a lane from the view's half height and
+## the drawing's own.
+func _test_a_siting_over_a_fixed_view(t) -> void:
+	var her := _centre(HER_TILE)
+	var view := _view_about(her)
+	var siting := SpawnSiting.over(null, view)
+	var asked := siting.ask_in_sight(BOX, null, her)
+	var above := SpawnSiting.just_out_of_sight(asked.view, BOX, her, Vector2.UP)
+	t.check(siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, above)
+			and not siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, her),
+			"over a fixed view, just out of sight is out of sight and her own spot is not")
+	t.check(is_equal_approx(SpawnSiting.lead_up_a_lane(BOX),
+			SpawnSiting.least_distance() + BOX.size.y),
+			"a column's lead up a lane is the view's half height and its drawing's height")

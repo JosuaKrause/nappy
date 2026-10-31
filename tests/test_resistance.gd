@@ -480,6 +480,27 @@ func _build_city(t, seed_value := SEED) -> void:
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(seed_value))
 
+## The day's one view looked at `rect` with no corner covered, which is what the director's
+## `set_sight(_city.events.sees)` and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
+func _look_at(rect: Rect2) -> void:
+	_city.events.visible_view().look(rect, false)
+
+## Looks the day's view at the unrotated 640x360 screen round `her` (in the tap scheme the visible
+## area is the whole view) and hands the director what she can see.
+func _watch_the_screen_round(director: ResistanceDirector, her: Vector2) -> void:
+	_look_at(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
+	director.set_sight(_city.events.sees)
+
+## Today's walled-off crossing alleys, as the city's siting has them.
+func _walled_alleys() -> Array[Rect2i]:
+	var region := _city.spawn_siting.region()
+	return region.walled_alleys if region else ([] as Array[Rect2i])
+
+## Whether a drawing of `box` about its feet, standing at `at`, would be drawn in the camera's view.
+func _would_show(box: Rect2, at: Vector2) -> bool:
+	return not _city.spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW,
+			_city.spawn_siting.ask_of_drawing(box), at)
+
 func _director(t) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
@@ -576,7 +597,7 @@ func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t) -> void:
 		GameState.resistance.sabotage_done = saved_sabotage)
 
 ## One attempt at `day` for the test above, with her standing at `her` and both of the director's
-## tests about her view (`ResistanceDirector.set_sight()`) answering `seen` for every point when the
+## views (the day's, which the siting and `ResistanceDirector.set_sight()` both read) answering `seen` for every point when the
 ## day starts: `[contact, its guard]` at dawn, then on a mark's day
 ## `[task contact, task guard]` once she reads it from the mark's own spot with nothing on screen.
 ## `Vector2.INF` for a guard that was not placed.
@@ -594,8 +615,8 @@ func _attempt_the_day(t, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
 	var player := _rig_player(t, her)
 	var director := _director(t)
 	director.use_player(player)
-	var on_screen := func(_p: Vector2) -> bool: return seen
-	director.set_sight(on_screen, on_screen)
+	_look_at(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6) if seen else Rect2())
+	director.set_sight(_city.events.sees)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var step := director.current_step()
 	var drawn: Array[Vector2] = [director.contact_position()]
@@ -603,8 +624,7 @@ func _attempt_the_day(t, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
 	drawn.append(guard.global_position if guard else Vector2.INF)
 	if step and step.is_pickup:
 		player.global_position = director.contact_position()
-		var nothing := func(_p: Vector2) -> bool: return false
-		director.set_sight(nothing, nothing)
+		_look_at(Rect2())
 		director._on_contact_completed(step.index)
 		drawn.append(director.contact_position())
 		var task_guard: EventInstance = director._task_guard
@@ -822,7 +842,7 @@ func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 ## M177, playtest 116's own day-6 shape: a mark on offer at (24,149), on screen from the doorstep
 ## at (80,84) — fifteen tiles away — moved to (65,83) two seconds in and was marked *seen* 0.4s
 ## later, so a fifteen-tile-distant alley froze it for the rest of the day. Both of the director's
-## view tests (`_sight` for the notice, `_on_screen` for placing) answering true near `mark_at`
+## view (`_sight` for the notice, the siting's `DRAWING_OFF_THE_VIEW` for placing) answering true near `mark_at`
 ## alone reproduces "on screen" there without a viewport, while leaving
 ## `far_alley` — the relocation target, over `NOTICE_RADIUS` away — answering false, the ground
 ## `_nearest_alley_within()` needs to still offer a candidate (never a tile she can currently
@@ -838,8 +858,8 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 		var mark_at := director.contact_position()
 		# The mark's own picture on screen and nothing else: its corners are 23px from its centre,
 		# and its guard stands at least 62px from it, so a relocation is never held back for him.
-		var near_the_mark := func(p: Vector2) -> bool: return p.distance_to(mark_at) < 30.0
-		director.set_sight(near_the_mark, near_the_mark)
+		_look_at(Rect2(mark_at - Vector2(20.0, 20.0), Vector2(40.0, 40.0)))
+		director.set_sight(_city.events.sees)
 
 		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
 		t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
@@ -877,8 +897,8 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t) -> void:
 		var raw_nearest := director._nearest_alley_within(far_alley)
 		t.check(raw_nearest.distance_to(far_alley) < 0.5,
 				"with no screen test at all, the nearest reachable alley is the one she stands on")
-		var on_that_tile := func(p: Vector2) -> bool: return p.distance_to(raw_nearest) < 0.5
-		director.set_sight(on_that_tile, on_that_tile)
+		_look_at(Rect2(raw_nearest - Vector2(0.5, 0.5), Vector2.ONE))
+		director.set_sight(_city.events.sees)
 
 		director.tick(STEP)
 		var new_at := director.contact_position()
@@ -914,7 +934,7 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 			for _attempt in 3:
 				checked += 1
 				var guard_at := director._draw_guard_position(rng, mark, Vector2.INF,
-						min_distance, max_distance, [], mark, robbery.notice_within())
+						min_distance, max_distance, mark, robbery.notice_within())
 				if guard_at == Vector2.INF:
 					continue
 				t.check(guard_at.distance_to(mark) > robbery.notice_within(),
@@ -933,7 +953,7 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 ## she reads the mark (`for_mark` false), asked of a contact just past the edge of her screen,
 ## never shows either.
 ## Every box is measured here from the screen's own edges rather than through the director's
-## `_box_shows()`, so the test does not ask the code whether the code is right.
+## the siting, so the test does not ask the code whether the code is right.
 func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
 	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	GameState.facts.completed_resistance_alley_tiles = []
@@ -941,17 +961,17 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
 	var tasks := 0
 	for seed_value in [4242, 555555]:
 		var map := CityGenerator.generate(seed_value)
+		var screen := VisibleView.new()
 		var director := ResistanceDirector.new()
-		director.setup(null, map, null, GameState)
+		director.setup(null, map, null, GameState, SpawnSiting.new(map, map.navigator(),
+				func() -> VisibleView: return screen))
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("off-screen:%d" % seed_value)
 		var through := _through_alley_tiles(map)
 		for i in range(0, through.size(), 2):
 			var her := map.tile_to_world(through[i])
-			var screen := func(p: Vector2) -> bool:
-				return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
-						and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y
-			director.set_sight(screen, screen)
+			screen.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), false)
+			director.set_sight(screen.sees)
 			var mark := director._nearest_alley_within(her)
 			if mark != Vector2.INF:
 				relocations += 1
@@ -1004,7 +1024,7 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
 			t.check(view.sees(mark_at) != joystick,
 					"the actual camera view covers the mark only in joystick mode")
 			_city.events.visible_view().look(view.view, joystick)
-			director.set_sight(_city.events.sees, _city.events.on_screen)
+			director.set_sight(_city.events.sees)
 			var player := _rig_player(t, her)
 			director.use_player(player)
 			for i in ceili((ResistanceDirector.SEEN_DWELL_SECONDS + 0.5) / STEP):
@@ -1053,15 +1073,29 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 					Vector2(0.2, 0.2), Vector2(0.8, 0.2)]:
 				var view_at := mark - corner_at - share * corner_size
 				var her := view_at + Tuning.VIEW_HALF_EXTENT
-				events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), true)
-				director.set_sight(Callable(), Callable())
+				# With the view nowhere near, the only mouth is the answer.
+				events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
+						Tuning.VIEW_HALF_EXTENT * 2.0), true)
 				if director._nearest_alley_within(her).distance_to(mark) > 0.5:
 					continue
-				director.set_sight(events.sees, events.sees)
-				if director._nearest_alley_within(her).distance_to(mark) > 0.5:
+				events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), true)
+				# Only a mouth the visible area alone would not refuse (its picture and its
+				# guard's body, each laid at its centre and four corners, all unseen under the
+				# covered corner or out of the view) is a case the whole view has to refuse.
+				var seen_by_the_visible_area := false
+				for box_at: Array in [[ResistanceDirector.MARK_BOX, mark],
+						[ResistanceDirector.GUARD_BOX, director._guard_spot(mark)]]:
+					var drawn: Rect2 = box_at[0]
+					var drawn_at: Vector2 = box_at[1]
+					var middle := drawn_at + drawn.get_center()
+					var half := drawn.size * 0.5
+					for point: Vector2 in [middle, middle + half, middle - half,
+							middle + Vector2(half.x, -half.y), middle + Vector2(-half.x, half.y)]:
+						seen_by_the_visible_area = seen_by_the_visible_area or events.sees(point)
+				if seen_by_the_visible_area:
 					continue
 				refused += 1
-				director.set_sight(events.sees, events.on_screen)
+				director.set_sight(events.sees)
 				t.check(director._nearest_alley_within(her) == Vector2.INF,
 						"the only alley mouth, %s, under the covered corner is refused (%s of it)"
 						% [tile, share])
@@ -1083,7 +1117,7 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 			events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), true)
 			t.check(events.on_screen(at) and not events.sees(at),
 					"the neighbor stands in the view, under the covered corner")
-			late.set_sight(events.sees, events.on_screen)
+			late.set_sight(events.sees)
 			late.tick(STEP)
 			t.check(late._taken_neighbor == walker and is_instance_valid(walker)
 					and not walker.is_finished,
@@ -1118,7 +1152,7 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 						Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
 
 			var late := _director_on_the_neighbor(t)
-			late.set_sight(events.sees, events.on_screen)
+			late.set_sight(events.sees)
 			var walker := late._rider
 			t.check(walker != null, "%s scheme: the neighbor is walking home" % scheme)
 			if walker:
@@ -1147,7 +1181,7 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 			GameState.resistance.completed_steps = []
 			GameState.resistance.failed_steps = []
 			var director := _director_on_the_neighbor(t)
-			director.set_sight(events.sees, events.on_screen)
+			director.set_sight(events.sees)
 			var happenings := director._happenings
 			var door := _city.map.doorstep_world_position()
 			var player := _rig_player(t, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0))
@@ -1189,8 +1223,8 @@ func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> v
 		var director := _director(t)
 		director.start_day(6, _rng(6, "resistance"), 300.0)
 		var mark_at := director.contact_position()
-		var everywhere := func(_p: Vector2) -> bool: return true
-		director.set_sight(everywhere, everywhere)
+		_look_at(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6))
+		director.set_sight(_city.events.sees)
 
 		# Within SEEN_DISTANCE the whole time, never merely "on screen".
 		var near_at := mark_at + Vector2(ResistanceDirector.SEEN_DISTANCE - 20.0, 0.0)
@@ -1357,15 +1391,14 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
 		director.use_player(player)
 
 		var feet := guard.global_position
-		var near_him := func(p: Vector2) -> bool: return p.distance_to(feet) < 40.0
-		director.set_sight(near_him, near_him)
+		_look_at(Rect2(feet - Vector2(40.0, 40.0), Vector2(80.0, 80.0)))
+		director.set_sight(_city.events.sees)
 		director.tick(STEP)
 		t.check(director.contact_position().distance_to(old_at) < 0.5,
 				"with him on her screen, the mark stays where it is")
 		t.check(not guard.is_finished, "and he is not retired in front of her")
 
-		var nothing := func(_p: Vector2) -> bool: return false
-		director.set_sight(nothing, nothing)
+		_look_at(Rect2())
 		guard._notice_her()
 		director.tick(STEP)
 		t.check(director.contact_position().distance_to(old_at) < 0.5,
@@ -1747,7 +1780,7 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void
 					"seed %d: the mark at %s has the courtyard's farthest tile as its inner end"
 					% [seed_value, tile])
 			var guard_at := director._draw_guard_position_near_far_mouth(rng, mark, far,
-					min_distance, max_distance, [], Vector2.INF, 0.0, false)
+					min_distance, max_distance, Vector2.INF, 0.0, false)
 			if guard_at == Vector2.INF:
 				continue
 			guarded += 1
@@ -2044,7 +2077,7 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 				var guard_rng := RandomNumberGenerator.new()
 				guard_rng.seed = hash("%d:guard:%d:%d:%d" % [seed_value, day, step.index, trial])
 				var guard_at := director._draw_guard_position(guard_rng, at, Vector2.INF,
-						min_distance, max_distance, walled_alleys)
+						min_distance, max_distance)
 				if guard_at != Vector2.INF:
 					var guard_tile := city.map.world_to_tile(guard_at)
 					t.check(not city.map.is_in_walled_alley(guard_tile, walled_alleys),
@@ -2342,7 +2375,7 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 			t.check(_city.map.is_walkable(_city.map.world_to_tile(her))
 					and her.distance_to(director.contact_position()) <= director._contact.reach,
 					"day %d: she stands on open ground within the touch's reach" % day)
-			director.set_sight(_the_screen_round(her), _the_screen_round(her))
+			_watch_the_screen_round(director, her)
 			var player := _rig_player(t, her)
 			director.use_player(player)
 			director._contact.complete_now()
@@ -2381,7 +2414,7 @@ func _check_day_nines_trap_from_where_she_is_let_out(t, director: ResistanceDire
 		t.check(_city.map.is_walkable(_city.map.world_to_tile(her)),
 				"day 9: the ground she is let out onto is open (%s)" % _city.map.world_to_tile(her))
 		player.global_position = her
-		director.set_sight(_the_screen_round(her), _the_screen_round(her))
+		_watch_the_screen_round(director, her)
 		director._trap = null
 		if director._contact.is_done:
 			director._set_the_trap_on_her(task)
@@ -2450,7 +2483,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 		_city.events.use_player(player)
 		var view := _city.events.visible_view()
 		view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
-		director.set_sight(_city.events.sees, _city.events.on_screen)
+		director.set_sight(_city.events.sees)
 		director._set_the_trap_on_her(director.current_step())
 		var warning := _warning_for(_city.events, "robber_giving_chase")
 		t.check(warning != null and director._trap == null,
@@ -2479,13 +2512,6 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 		director.free()
 	GameState.resistance.completed_steps = saved_completed
 	GameState.facts.completed_resistance_alley_tiles = saved_tiles
-
-## A view test answering the unrotated 640x360 screen round `her`, handed to the director for
-## both `_sight` and `_on_screen`: in the tap scheme the visible area is the whole view.
-func _the_screen_round(her: Vector2) -> Callable:
-	return func(at: Vector2) -> bool:
-		var off := (at - her).abs()
-		return off.x <= Tuning.VIEW_HALF_EXTENT.x and off.y <= Tuning.VIEW_HALF_EXTENT.y
 
 ## What every trap owes from the moment it is sent, on the real city. **Warned first**: the moment she
 ## does it a warning for `row_id` is up with nothing in the world, and stays up alone for the row's own
@@ -2590,7 +2616,7 @@ func _robbers_on_the_street() -> int:
 ## `Stroller` leads it when she faces what she is walking toward — the worst-case lead, since a
 ## start behind her would only pull the camera the other way. Asked of the tap scheme's
 ## `VisibleView`, whose whole view is what `EventManager.on_screen()` answers in either scheme — the
-## test the director places against (`ResistanceDirector.set_sight()`, as `main` wires it): the
+## test the director places against (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over the same view): the
 ## joystick's covered corners only ever take ground out of sight, so a point out of the whole view
 ## is out of both.
 func _is_really_on_screen(_t, her: Vector2, at: Vector2) -> bool:
@@ -2627,7 +2653,7 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
 				var director := _director_on_the_yeller_perform(t, seed_value)
 				var rider: EventInstance = director._rider
 				var her := director.contact_position()
-				director.set_sight(_the_screen_round(her), _the_screen_round(her))
+				_watch_the_screen_round(director, her)
 				var player := _rig_player(t, her)
 				director.use_player(player)
 				director._contact._physics_process(STEP)
@@ -2664,7 +2690,7 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 		_with_clean_run(func() -> void:
 			var director := _director_on_the_van_perform(t)
 			var her := director.contact_position()
-			director.set_sight(_the_screen_round(her), _the_screen_round(her))
+			_watch_the_screen_round(director, her)
 			var player := _rig_player(t, her)
 			director.use_player(player)
 			director._contact._physics_process(STEP)
@@ -4025,9 +4051,11 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	var door := _city.map.doorstep_world_position()
 	happenings.tick(STEP, door, Vector2.ZERO, Callable())
 	t.check(happenings.raid.is_empty(), "nothing arrives while she is at her door")
+	_look_at(Rect2(door - Vector2(400.0, 400.0), Vector2(800.0, 800.0)))
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
-			func(_row: EventDef, _at: Vector2) -> bool: return true)
+			Callable())
 	t.check(happenings.raid.is_empty(), "or while any of it would be on screen")
+	_look_at(Rect2())
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
 			Callable())
 	var vans := 0
@@ -4652,7 +4680,7 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 	var foot_tile := _city.map.world_to_tile(foot)
 	for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 		var tile := foot_tile + side
-		if SpawnSiting.is_legal_ground(_city.map, tile, director._walled_alleys()) \
+		if SpawnSiting.is_legal_ground(_city.map, tile, _walled_alleys()) \
 				and not _city.map.is_obstructed(tile):
 			return _city.map.tile_to_world(tile)
 	return Vector2.INF
@@ -5404,7 +5432,7 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 					if director._fell_back:
 						fell_back[0] += 1
 					if not mast:
-						t.check(not director._box_shows(target, ResistanceDirector.TASK_HALF_EXTENT),
+						t.check(not _would_show(ResistanceDirector.TASK_BOX, target),
 								"seed %d day %d: and was put in the world outside her view"
 								% [seed_value, day])
 				player.free()
@@ -5473,7 +5501,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 				for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 					var next := foot_tile + side
 					if not SpawnSiting.is_legal_ground(_city.map, next,
-							director._walled_alleys()) or _city.map.is_obstructed(next) \
+							_walled_alleys()) or _city.map.is_obstructed(next) \
 							or not director._reachable_from_home(next):
 						continue
 					if circle[0].has(next) or circle[1].has(next):
@@ -5485,7 +5513,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 				t.check(foot != Vector2.INF and circle[0].has(_city.map.world_to_tile(foot)),
 						"seed %d: the mast put up for the task stands where her path reaches the circle's edge"
 						% seed_value)
-				t.check(not director._box_shows(foot, ResistanceDirector.TASK_HALF_EXTENT),
+				t.check(not _would_show(ResistanceDirector.TASK_BOX, foot),
 						"seed %d: and out of her view" % seed_value)
 				var masts_before := _city.events.plans().filter(
 						func(plan: EventScheduler.Planned) -> bool: return plan.mast_id != "").size()
@@ -5556,7 +5584,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
 		var player: Stroller = read[2]
 		var map := _city.map
 		var lorry_def := EventCatalogue.by_id("reversing_lorry")
-		var walled := director._walled_alleys()
+		var walled := _walled_alleys()
 		var lorry_tile := Vector2i(-1, -1)
 		for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
 			if SpawnSiting.is_legal_ground(map, tile, walled) and not map.is_obstructed(tile) \
@@ -5613,13 +5641,12 @@ func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
 	var mark := director.contact_position()
 	var player := _rig_player(t, mark)
 	director.use_player(player)
-	var screen := func(p: Vector2) -> bool:
-		return absf(p.x - mark.x) <= Tuning.VIEW_HALF_EXTENT.x \
-				and absf(p.y - mark.y) <= Tuning.VIEW_HALF_EXTENT.y
-	director.set_sight(screen, screen)
+	_watch_the_screen_round(director, mark)
 	var step := director.current_step()
 	if step != null and step.is_pickup:
 		director._on_contact_completed(step.index)
+	# The view was the mark's for placing the task; what the test does next looks through her own.
+	_look_at(Rect2())
 	return [director, mark, player]
 
 const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]

@@ -96,7 +96,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 	director.trace = RunTrace.recording(_lines)
 	director.setup(city, city.map)
 	director.use_player(player)
-	director.set_sight(city.events.sees, city.events.on_screen)
+	director.set_sight(city.events.sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := "seed %d day %d" % [seed_value, day]
 	var printed := 0

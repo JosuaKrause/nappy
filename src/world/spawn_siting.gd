@@ -9,13 +9,20 @@ extends RefCounted
 ## **The rules** (`allows()`):
 ##
 ## - `LEGAL_GROUND`: ground the day leaves to her and to whatever is sent at her
-##   (`is_legal_ground()`): walkable, not behind a closure, not held, not the home block's own lot,
-##   not inside a walled-off crossing alley;
+##   (`is_legal_ground()`): on the map, walkable, not behind a closure, not held, not the home
+##   block's own lot, not inside a walled-off crossing alley;
+## - `GROUND_EVEN_IF_HELD`: the same, held ground allowed — a street the day holds so no row is
+##   sited on it, which is still ground she walks on (a district door's crossing);
+## - `OPEN_TO_IT`: ground the thing can stand on today (`is_open_to()`): on the map and passable for
+##   its `Mover` — no closure, no soft seal, no stationary body on it;
 ## - `OUT_OF_SIGHT`: everything the thing can draw, standing there, wholly outside the camera's
 ##   whole view and at least `least_distance()` from her (`is_out_of_sight()`);
 ## - `OFF_THE_VIEW`: the point itself nowhere in the camera's whole view right now, the covered
 ##   corners included (`on_the_view()`) *(olive-hedgehog, inbox #598, the player: "off screen is not
 ##   the same as visible -- the corners get removed for visible not for off screen")*;
+## - `DRAWING_OFF_THE_VIEW`: no part of what the thing draws, standing there, in that view
+##   (`draws_on_the_view()`): the box about its feet, its centre and four corners, so nothing is
+##   seen to appear or vanish;
 ## - `CLEAR_OF_THE_BOUNDARY`: the straight line from there to her passes through no body of the
 ##   day's region wall or of a district door (`runs_through()`) — a man walking through the
 ##   checkpoint she was inspected at is no run at her;
@@ -34,8 +41,11 @@ extends RefCounted
 ## A rule a start is held to, by name: see the class doc.
 enum Rule {
 	LEGAL_GROUND,
+	GROUND_EVEN_IF_HELD,
+	OPEN_TO_IT,
 	OUT_OF_SIGHT,
 	OFF_THE_VIEW,
+	DRAWING_OFF_THE_VIEW,
 	CLEAR_OF_THE_BOUNDARY,
 	CLEAR_RUN,
 	REACHES_HER,
@@ -45,6 +55,13 @@ enum Rule {
 ## a start that passes them and has a clear run at her decides a search, and the first that passes
 ## them without one stands in where none has (`start_out_of_sight()`).
 const STANDS: Array[Rule] = [Rule.LEGAL_GROUND, Rule.OFF_THE_VIEW, Rule.CLEAR_OF_THE_BOUNDARY]
+
+## The rules a contact, a guard, a mast's foot or a neighbor's start passes to stand where it does:
+## legal ground she can walk onto today. What the resistance asks of every tile it places on.
+const CONTACT_GROUND: Array[Rule] = [Rule.LEGAL_GROUND, Rule.OPEN_TO_IT]
+
+## `CONTACT_GROUND` with held ground allowed, for the contact on a held street (a district door).
+const HELD_CONTACT_GROUND: Array[Rule] = [Rule.GROUND_EVEN_IF_HELD, Rule.OPEN_TO_IT]
 
 ## **What the day's region shuts**, as the city hands it (`City.siting_region()`): the crossing
 ## alleys a wall closes, and each body of the wall and of the district doors as a disc, kerb to kerb
@@ -62,7 +79,10 @@ class Region:
 
 ## **What one placement asks**, worked out once for her standing where she is: the camera's whole
 ## view placed against, what the thing draws and how it walks, how far a start beside her is, and
-## the region bodies that could stand in a run at her from there (`ask()`).
+## the region bodies that could stand in a run at her from there (`ask()`). A placement that asks
+## less builds less: `ask_of_ground()` holds only what the ground rules read, `ask_in_sight()`
+## what the sight rules read too. A rule asked of an `Ask` that did not work out what it reads
+## (`CLEAR_OF_THE_BOUNDARY` and `REACHES_HER` read the bodies and `beside`) is answered wrongly.
 class Ask:
 	extends RefCounted
 	## Where she stands.
@@ -111,6 +131,12 @@ var _view: Callable
 ## wall's first day, a rig with no city).
 var _region: Callable
 
+## A siting over `map` and the one fixed view `in_view` (null for none) with no navigator and no
+## region: the ground and sight rules, for a placement that has no siting handed to it
+## (`PendingWarning`'s places). `map` null is open ground, where every point is ground.
+static func over(map: CityMap, in_view: VisibleView = null) -> SpawnSiting:
+	return SpawnSiting.new(map, null, func() -> VisibleView: return in_view)
+
 ## A siting over `map`, its starts walked by `navigator`, against the day's view `view` and region
 ## `region` (see the fields); either left empty for a rig that has neither.
 func _init(map: CityMap, navigator: Navigator, view := Callable(), region := Callable()) -> void:
@@ -130,32 +156,65 @@ func region() -> Region:
 ## What a placement of something drawing `box` and walking as `mover` asks with her standing at
 ## `her` (`Ask`).
 func ask(box: Rect2, mover: Mover, her: Vector2) -> Ask:
-	var asked := Ask.new()
-	asked.her = her
-	asked.box = box
-	asked.mover = mover
-	asked.view = seen_from(_view.call() if _view.is_valid() else null, her)
+	var asked := ask_in_sight(box, mover, her)
 	asked.beside = beside_distance(asked.view, box, her)
 	var today := region()
 	if today != null:
-		asked.walled_alleys = today.walled_alleys
 		for i in today.centres.size():
 			if today.centres[i].distance_to(her) <= asked.beside + today.radii[i]:
 				asked.centres.append(today.centres[i])
 				asked.radii.append(today.radii[i])
 	return asked
 
+## What a placement that asks the ground and the sight rules asks, with her standing at `her`: the
+## camera's whole view, what the thing draws and how it walks, and today's walled alleys. Without
+## the region's bodies and `beside`, so not for `CLEAR_OF_THE_BOUNDARY` or `REACHES_HER`.
+func ask_in_sight(box: Rect2, mover: Mover, her: Vector2) -> Ask:
+	var asked := ask_of_ground(box, mover)
+	asked.her = her
+	asked.view = seen_from(_view.call() if _view.is_valid() else null, her)
+	return asked
+
+## What a placement that asks the ground rules and the drawing's rule asks, with no one to keep out
+## of the way of: today's walled alleys, what the thing draws (`box`, none for a point) and how it
+## walks (`mover`, a figure on foot unless said). Builds no view.
+func ask_of_ground(box := Rect2(), mover: Mover = null) -> Ask:
+	var asked := ask_of_drawing(box)
+	asked.mover = mover if mover else Mover.on_foot()
+	var today := region()
+	if today != null:
+		asked.walled_alleys = today.walled_alleys
+	return asked
+
+## What a placement that asks only whether what a thing draws would show asks (`DRAWING_OFF_THE_VIEW`):
+## the box about its feet, none for a point. Reads no region, so it is cheap to build every frame.
+func ask_of_drawing(box: Rect2) -> Ask:
+	var asked := Ask.new()
+	asked.box = box
+	return asked
+
 # ---------------------------------------------------------------------- the rules ---
+
+## The rules about the ground itself, which a siting over no map (`over()`) answers yes to: open ground.
+const GROUND_RULES: Array[Rule] = [Rule.LEGAL_GROUND, Rule.GROUND_EVEN_IF_HELD, Rule.OPEN_TO_IT]
 
 ## Whether `at` passes `rule` for `asked` — see the class doc for each rule.
 func allows(rule: Rule, asked: Ask, at: Vector2) -> bool:
+	if _map == null and rule in GROUND_RULES:
+		return true
 	match rule:
 		Rule.LEGAL_GROUND:
 			return is_legal_ground(_map, _map.world_to_tile(at), asked.walled_alleys)
+		Rule.GROUND_EVEN_IF_HELD:
+			return is_legal_ground(_map, _map.world_to_tile(at), asked.walled_alleys, true)
+		Rule.OPEN_TO_IT:
+			return is_open_to(_map, _map.world_to_tile(at), asked.mover)
 		Rule.OUT_OF_SIGHT:
 			return is_out_of_sight(asked.view, asked.box, asked.her, at)
 		Rule.OFF_THE_VIEW:
 			return not on_the_view(at)
+		Rule.DRAWING_OFF_THE_VIEW:
+			return not draws_on_the_view(asked.box, at)
 		Rule.CLEAR_OF_THE_BOUNDARY:
 			return not runs_through(at, asked.her, asked.centres, asked.radii)
 		Rule.CLEAR_RUN:
@@ -181,7 +240,24 @@ func on_the_view(at: Vector2) -> bool:
 	var view: VisibleView = _view.call() if _view.is_valid() else null
 	return view != null and view.view.has_point(at)
 
-## **Ground the day leaves to her and to whatever is sent at her**: walkable, not behind a closure
+## Whether any part of a drawing of `box` about its feet, standing at `at`, is in the camera's whole
+## view right now, the covered corners included: the box's centre and its four corners
+## (`on_the_view()`). The screen is a rectangle far larger than the box and the same world box
+## however the window is turned, so a box that overlaps it has a corner or its centre inside it; a
+## bare centre test is what lets a picture whose centre is one pixel past the edge show half of
+## itself. A thing that draws nothing of its own (`box` with no area) is its feet.
+func draws_on_the_view(box: Rect2, at: Vector2) -> bool:
+	if not box.has_area():
+		return on_the_view(at)
+	var centre := at + box.get_center()
+	var half := box.size * 0.5
+	for corner: Vector2 in [centre, centre + half, centre - half,
+			centre + Vector2(half.x, -half.y), centre + Vector2(-half.x, half.y)]:
+		if on_the_view(corner):
+			return true
+	return false
+
+## **Ground the day leaves to her and to whatever is sent at her**: on the map, walkable, not behind a closure
 ## (`CityMap.passable()` for the city as built and today's closures), not on held ground unless
 ## `allow_held`, not on the home block's own lot, not in a walled-off crossing alley. Static, so the
 ## tiles the day's planning protects (`ResistanceDirector.target_ground()`) are exactly the ones a
@@ -198,11 +274,21 @@ func on_the_view(at: Vector2) -> bool:
 ##
 ## The bodies standing today and the soft seals are not asked here: a caller asks those after its
 ## draw, so a pool with nothing obstructed in it draws exactly what it would.
+##
+## **On the map.** A tile off the map reads as an alley in a scene recipe's exterior
+## (`CityMap.recipe_exterior`) and is refused here like any other ground off the map.
 static func is_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[Rect2i],
 		allow_held := false) -> bool:
-	return map.passable(tile, Mover.of(Mover.GROUND | Mover.POSTS | Mover.CLOSED)) \
+	return map.in_bounds(tile) \
+			and map.passable(tile, Mover.of(Mover.GROUND | Mover.POSTS | Mover.CLOSED)) \
 			and (allow_held or not map.is_held_at(tile)) \
 			and not map.is_on_home_block(tile) and not map.is_in_walled_alley(tile, walled_alleys)
+
+## Whether `mover` can stand on `tile` today: on the map and passable for it (`CityMap.passable()`),
+## which adds the soft seals and the stationary bodies to what `is_legal_ground()` asks. A tile off
+## the map is refused as `is_legal_ground()` refuses it.
+static func is_open_to(map: CityMap, tile: Vector2i, mover: Mover) -> bool:
+	return map.in_bounds(tile) and map.passable(tile, mover)
 
 ## Whether the straight line from `from` to `to` passes through one of the discs at `centres`, each
 ## within its own radius of `radii`.
@@ -294,6 +380,13 @@ static func least_distance() -> float:
 static func just_out_of_sight(view: VisibleView, box: Rect2, her: Vector2,
 		direction: Vector2) -> Vector2:
 	return her + direction * view.clear_of_sight(her, direction, box, least_distance())
+
+## About how far up a lane the front of a column is created from her, just out of sight: the
+## view's half height (`least_distance()`) and the height of what it draws (`box`). What a caller
+## asks to know whether the map holds a column's start before it asks where the start is
+## (`PendingWarning.in_its_lane()` answers that).
+static func lead_up_a_lane(box: Rect2) -> float:
+	return least_distance() + box.size.y
 
 ## The camera's whole view placement is measured against: `view`'s own rect with no covered
 ## corners, or, where there is none or it has never been looked through — a caller that only asks
