@@ -484,7 +484,7 @@ func _build_city(t, seed_value := SEED) -> void:
 ## The day's one view looked at `rect` with no corner covered, which is what the director's
 ## `set_sight(_city.events.sees)` and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
 func _look_at(rect: Rect2) -> void:
-	_city.events.visible_view().look(rect, false)
+	_city.events.visible_view().look(rect, null)
 
 ## Looks the day's view at the unrotated 640x360 screen round `her` (in the tap scheme the visible
 ## area is the whole view) and hands the director what she can see.
@@ -995,7 +995,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
 		var through := _through_alley_tiles(map)
 		for i in range(0, through.size(), 2):
 			var her := map.tile_to_world(through[i])
-			screen.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), false)
+			screen.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
 			director.set_sight(screen.sees)
 			var mark := director._nearest_alley_within(her)
 			if mark != Vector2.INF:
@@ -1045,10 +1045,10 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
 			# Camera look-ahead puts this nearby mark beneath the narrower focal-disc corner.
 			# Keep her within the 150px notice distance independently of the camera centre.
 			var her := mark_at + Vector2(135.0, -50.0)
-			var view := VisibleView.around(her + Vector2(45.0, 0.0), joystick)
+			var view := VisibleView.around(her + Vector2(45.0, 0.0), TouchControls.covered_screen() if joystick else null)
 			t.check(view.sees(mark_at) != joystick,
 					"the actual camera view covers the mark only in joystick mode")
-			_city.events.visible_view().look(view.view, joystick)
+			_city.events.visible_view().look(view.view, TouchControls.covered_screen() if joystick else null)
 			director.set_sight(_city.events.sees)
 			var player := _rig_player(t, her)
 			director.use_player(player)
@@ -1080,7 +1080,7 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 	_with_clean_run(func() -> void:
 		var events := _city.events
 		var scale := Tuning.VIEW_HALF_EXTENT * 2.0 / ScreenOrientation.DESIGN_SIZE
-		var corner := VisibleView.covered_left()
+		var corner := TouchControls.covered_left()
 		var corner_at := corner.position * scale
 		var corner_size := corner.size * scale
 		var director := _director(t)
@@ -1100,10 +1100,10 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 				var her := view_at + Tuning.VIEW_HALF_EXTENT
 				# With the view nowhere near, the only mouth is the answer.
 				events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
-						Tuning.VIEW_HALF_EXTENT * 2.0), true)
+						Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
 				if director._nearest_alley_within(her).distance_to(mark) > 0.5:
 					continue
-				events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), true)
+				events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
 				# Only a mouth the visible area alone would not refuse (its picture and its
 				# guard's body, each laid at its centre and four corners, all unseen under the
 				# covered corner or out of the view) is a case the whole view has to refuse.
@@ -1139,7 +1139,7 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 			t.check(late._taken_neighbor == walker, "reaching the door first, they are to be taken")
 			var at := walker.global_position
 			var view_at := at - corner_at - corner_size * 0.5
-			events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), true)
+			events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
 			t.check(events.on_screen(at) and not events.sees(at),
 					"the neighbor stands in the view, under the covered corner")
 			late.set_sight(events.sees)
@@ -1148,7 +1148,7 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 					and not walker.is_finished,
 					"under the covered corner, the neighbor is not taken where they are drawn")
 			events.visible_view().look(Rect2(at + Vector2(Tuning.VIEW_HALF_EXTENT.x * 4.0, 0.0),
-					Tuning.VIEW_HALF_EXTENT * 2.0), true)
+					Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
 			late.tick(STEP)
 			t.check(late._taken_neighbor == null, "once the camera is off them, they are taken")
 		late.free())
@@ -1174,7 +1174,7 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 			var events := _city.events
 			var away := func() -> void:
 				events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
-						Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
+						Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen() if joystick else null)
 
 			var late := _director_on_the_neighbor(t)
 			late.set_sight(events.sees)
@@ -1189,7 +1189,7 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 				var feet := walker.global_position
 				var view_at := feet - Vector2(Tuning.VIEW_HALF_EXTENT.x,
 						Tuning.VIEW_HALF_EXTENT.y * 2.0 + 2.0)
-				events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
+				events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen() if joystick else null)
 				var box := EventFootprints.box_of(walker.def)
 				t.check(not events.on_screen(feet)
 						and events.sees(feet + Vector2(0.0, box.position.y * 0.5)),
@@ -1220,7 +1220,7 @@ func _test_the_neighbor_and_the_raid_wait_until_nothing_of_them_shows(t) -> void
 					top = minf(top, at.y)
 				var view := Rect2(Vector2(door.x - Tuning.VIEW_HALF_EXTENT.x,
 						top - 2.0 - Tuning.VIEW_HALF_EXTENT.y * 2.0), Tuning.VIEW_HALF_EXTENT * 2.0)
-				events.visible_view().look(view, joystick)
+				events.visible_view().look(view, TouchControls.covered_screen() if joystick else null)
 				var car := EventFootprints.box_of(EventCatalogue.by_id("police_patrol"))
 				var start: Vector2 = happenings._raid_beat[0]
 				var any_feet := false
@@ -2470,7 +2470,7 @@ func _check_no_start_was_passed_over(t, director: ResistanceDirector, her: Vecto
 ## The four starts `_draw_arrival_position()` tries before any drawn bearing: just out of sight
 ## straight above and below her and either side along her street, with the camera on her.
 static func _fixed_starts(def: EventDef, her: Vector2) -> Array[Vector2]:
-	var view := VisibleView.around(her)
+	var view := VisibleView.around(her, null)
 	var starts: Array[Vector2] = []
 	for way: Vector2 in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
 		starts.append(SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
@@ -2507,7 +2507,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 		player.add_to_group("player")
 		_city.events.use_player(player)
 		var view := _city.events.visible_view()
-		view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
+		view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen() if joystick else null)
 		director.set_sight(_city.events.sees)
 		director._set_the_trap_on_her(director.current_step())
 		var warning := _warning_for(_city.events, "robber_giving_chase")
@@ -2517,7 +2517,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 			var initial := warning.place
 			var bearing := (initial - her).normalized()
 			view.look(Rect2(her + bearing * 30.0 - Tuning.VIEW_HALF_EXTENT,
-					Tuning.VIEW_HALF_EXTENT * 2.0), joystick)
+					Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen() if joystick else null)
 			_city.events.warnings.run(warning.left * 0.5, her)
 			t.check(warning.place == initial and director._trap == null,
 					"camera movement neither moves the badge nor creates its trap early")
@@ -2571,7 +2571,7 @@ func _check_the_trap_comes_from_off_screen(t, director: ResistanceDirector, her:
 	if chaser == null:
 		return Vector2.INF
 	var start := chaser.global_position
-	var view := VisibleView.around(her)
+	var view := VisibleView.around(her, null)
 	var siting := director._spawn_siting
 	var asked := siting.ask(EventFootprints.footprint_of(chaser.def), director._chaser, her)
 	var beside := asked.beside
@@ -2650,7 +2650,7 @@ func _is_really_on_screen(_t, her: Vector2, at: Vector2) -> bool:
 	if bearing.length() > 0.001:
 		var dir := bearing.normalized()
 		lead = Vector2(dir.x, dir.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
-	return VisibleView.around(her + lead).sees(at)
+	return VisibleView.around(her + lead, null).sees(at)
 
 ## *(PLAYTEST-71: "maybe spawn the robber in pursuing mode offscreen when she interacts with the
 ## yeller so it runs towards her from offscreen"; "we need a version of the robber that is not
@@ -2765,7 +2765,7 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 			and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 			"he is warned of before he exists, for %.2fs alone, and arrives chasing" % def.warned_for())
 	var her := Vector2.ZERO
-	var view_on_her := VisibleView.around(her)
+	var view_on_her := VisibleView.around(her, null)
 	var edge_of_cone := ResistanceDirector.ARRIVAL_CONE - 0.001
 	var box := EventFootprints.footprint_of(def)
 	var starts: Array[Vector2] = [
@@ -2842,7 +2842,7 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 		robber.player_at = her
 		robber.player_running = absf(velocity) > Tuning.WALK_SPEED
 		var box := robber.drawn_box()
-		var in_sight := VisibleView.around(her).sees_any(
+		var in_sight := VisibleView.around(her, null).sees_any(
 				Rect2(robber.global_position + box.position, box.size))
 		if in_sight and result["first_seen"] == INF:
 			result["first_seen"] = elapsed
@@ -4359,7 +4359,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 		# from the badge to the first frame its field reaches her.
 		if warning and not trucks.is_empty():
 			var front := trucks[0]
-			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her),
+			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her, null),
 					EventFootprints.footprint_of(front.def), her, front.global_position)
 					and absf(front.global_position.x - warning.place.x) < 1.0
 					and signf(front.global_position.y - her.y) == signf(warning.place.y - her.y),

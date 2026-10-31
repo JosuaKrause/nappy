@@ -120,6 +120,12 @@ var skip_shadows := false
 var skip_event_drawing := false
 var skip_crowd_drawing := false
 var skip_crowd_motion := false
+## What the crowd is handed of the screen (`CrowdView`) and of the frame record (`CrowdTiming`),
+## set by whoever builds the city (`main._new_city()`) before `build()` and handed on to the crowd
+## it makes: this layer names neither the viewport nor the telemetry. None for the view means a crowd
+## with no screen (always drawn); the timing is the null sink unless handed another.
+var crowd_view: CrowdView = null
+var crowd_timing := CrowdTiming.new()
 ## `--blackout`: the city counts as sabotaged. See `Blackout.forced`.
 var blackout_forced := false
 ## Dark from its first frame, every power off — the escape's city, which is the same night as the
@@ -305,6 +311,8 @@ func build(city_map: CityMap) -> void:
 	crowd.name = "Crowd"
 	crowd.skip_agent_drawing = skip_crowd_drawing
 	crowd.skip_motion = skip_crowd_motion
+	crowd.view = crowd_view
+	crowd.timing = crowd_timing
 	add_child(crowd)
 	crowd.setup(self, map, navigator)
 	# What charges her here, as the baby and the halo ask it: the events, then the crowd.

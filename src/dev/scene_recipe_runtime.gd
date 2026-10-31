@@ -1451,16 +1451,16 @@ func _in_the_picture(at: Vector2) -> bool:
 
 ## Whether any of the actor's drawing is visible (a tile-sized box for other named actors):
 ## the actual viewport transformed back through the current camera, less the corners the joystick
-## scheme's controls cover. Taking all four corners follows zoom and the quarter-turn used for a
+## scheme's controls cover (the cover `main` handed the city's events, the one every other
+## "can she see it" reads). Taking all four corners follows zoom and the quarter-turn used for a
 ## portrait presentation; using the actor's drawn box keeps this the same overlap question the
 ## page's encounter counter asks of what she meets.
 func _she_can_see(actor: Node2D) -> bool:
 	var at := actor.global_position
-	var controls := get_tree().get_first_node_in_group(HelpText.CONTROLS_GROUP) as TouchControls
-	var joystick := controls != null and controls.controls_mode() == ControlsMode.Mode.JOYSTICK
+	var covering := _city.events.world.visible.controls if _city else null
 	var box: Rect2 = actor.drawn_box() if actor is EventInstance else Rect2(-Vector2.ONE * 16, Vector2.ONE * 32)
 	box.position += at
-	return VisibleView.visible_share(box, _camera_world_rect(), joystick) > 0.0
+	return VisibleView.visible_share(box, _camera_world_rect(), covering) > 0.0
 
 ## The axis-aligned world rectangle the camera currently draws. The game's presentation is either
 ## unturned or a quarter-turn, so the inverse-transformed viewport corners still bound the exact

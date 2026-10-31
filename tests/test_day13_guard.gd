@@ -39,7 +39,7 @@ var _view := Rect2():
 	set(value):
 		_view = value
 		if _seen_through:
-			_seen_through.look(value, false)
+			_seen_through.look(value, null)
 var _seen_through: VisibleView
 ## What each day's streams are named after: this suite's own, or, empty, the day-13 probes' own
 ## (`tests/probes/calm_pelican_day13_guard_walk.gd`), so a day the probes measured is built again.
@@ -849,7 +849,7 @@ func _start_the_day(t, city: City, seed_value: int) -> ResistanceDirector:
 	director.set_process(false)
 	director.setup(city, city.map)
 	_seen_through = city.events.visible_view()
-	_seen_through.look(_view, false)
+	_seen_through.look(_view, null)
 	director.set_sight(city.events.sees)
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	return director

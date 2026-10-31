@@ -65,7 +65,8 @@ var _events: Node
 var _player: Node2D
 ## What she can see, when the event source does not keep the day's own (`EventManager.
 ## visible_view()`): a stand-in source a test hands over. Looked through once a frame from her
-## camera.
+## camera, in the tap scheme's whole view unless the test hands it the controls' `ScreenCover`
+## (`VisibleView.controls`).
 var _own_view := VisibleView.new()
 ## Which dangers get a badge, and when: handed this frame's inputs by `_measure()`, which is all
 ## this control does of it.

@@ -101,8 +101,10 @@ src/
 	agent_look.gd         how a crowd member is drawn and what its redraw key reads
 	walker_look.gd        a walker's picture: five views in two gait frames, its stride
 	car_look.gd           a car's picture: five views in three layers, its bob over its wheels
-	crowd_view.gd         what the crowd is handed of the screen: the camera, the drawn box
-	crowd_timing.gd       the crowd's handle on the frame record
+	crowd_view.gd         what the crowd is handed of the screen: the drawn box and the camera's
+	                      square, and the out-of-view rule built on them (`ScreenCrowdView` answers)
+	crowd_timing.gd       the sink the crowd charges its time and draws to; the null sink here,
+	                      `FrameRecordTiming` feeds the record
 	lane_strategy.gd      the questions the mover asks its kind, with the neutral answers
 	walker_strategy.gd    a walker's rules: footways, sidesteps, corners, checkpoint huts
 	car_strategy.gd       a car's rules: give-way, planned turns, the spine's tunnel and bridge
@@ -215,6 +217,7 @@ src/
 	telemetry_observer.gd watches the player: turns, runs, crossings, encounters, where she
 	                      went and which events she met
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
+	frame_record_timing.gd the crowd's sink for the frame record (`CrowdTiming` implemented)
   world/
 	world_map.gd          the one map interface the city's map and the building's implement and
 	                      everything in a world is handed: tile conversions, passability, the
@@ -255,6 +258,7 @@ src/
 	visible_view.gd       what she can see: the camera's view less the corners the joystick's
 	                      controls cover, the one answer to "can she see it", and how far along a
 	                      bearing a drawing is wholly out of it
+	screen_cover.gd       the corners the on-screen controls cover, as rectangles the UI hands in
 	spawn_siting.gd       where something sent at her may start (`SpawnSiting`): the rules a start
 	                      is held to, each by name (legal ground, open to the thing, out of sight,
 	                      off the camera's whole view, its whole drawing off that view, clear of
@@ -316,7 +320,9 @@ src/
 	                      through when it was not kept, then faded; it listens to GameSave's
 	                      announcements on EventBus
 	mode_button.gd        a circular icon-only button, drawn from a StyleBox and an icon
-	touch_controls.gd     the pointer scheme in its two modes, and the pause button
+	touch_controls.gd     the pointer scheme in its two modes, and the pause button; keeps the
+	                      `ScreenCover` of the corners it covers
+	screen_crowd_view.gd  the crowd's `CrowdView` answered from the viewport: drawn box, camera square
 	controls_mode.gd      which aiming origin a press is measured from
 	touch_input.gd        whether this device has a touchscreen, answered once, `--touch` handed in
 	screen_orientation.gd the one rotation applied when the window is portrait

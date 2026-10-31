@@ -181,7 +181,7 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 func _draw(director: ResistanceDirector, her: Vector2, def: EventDef,
 		front_door: bool) -> SpawnSiting.Start:
 	director._city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
-			Tuning.VIEW_HALF_EXTENT * 2.0), false)
+			Tuning.VIEW_HALF_EXTENT * 2.0), null)
 	return director._draw_arrival_position(director._rng, her, def, front_door)
 
 ## Whether the straight run from `start` to `her` crosses the line of any of today's district-door

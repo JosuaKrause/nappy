@@ -78,7 +78,7 @@ func _task_guards(t) -> void:
 			player.set_physics_process(false)
 			player.global_position = her
 			city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
-					Tuning.VIEW_HALF_EXTENT * 2.0), false)
+					Tuning.VIEW_HALF_EXTENT * 2.0), null)
 			director.set_sight(city.events.sees)
 			director._on_contact_completed(mark.index)
 			placed += 1
@@ -187,7 +187,7 @@ func _on_screen(t) -> void:
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
 			var her := map.tile_to_world(tile)
 			city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
-					Tuning.VIEW_HALF_EXTENT * 2.0), false)
+					Tuning.VIEW_HALF_EXTENT * 2.0), null)
 			director.set_sight(city.events.sees)
 			var mark := director._nearest_alley_within(her)
 			if mark == Vector2.INF:

@@ -669,7 +669,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 			wrong.append("between her and the fire")
 		if not Tile.is_road(_city.map.tile_type_at_world(at)):
 			wrong.append("off the carriageway")
-		if not SpawnSiting.is_out_of_sight(VisibleView.around(her_at[0]),
+		if not SpawnSiting.is_out_of_sight(VisibleView.around(her_at[0], null),
 				EventFootprints.footprint_of(engine.def), her_at[0], at):
 			wrong.append("in sight")
 		t.check(wrong.is_empty(), "created at %v with her at %v: on its road, on its way to the fire, "
@@ -856,7 +856,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
 	EventBus.event_sighted.connect(on_sighted)
 	# The view whose left corner holds the fire's point: the corner's middle is (-224, 108) world px
 	# off the view's centre at zoom 2.
-	var corner := VisibleView.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var corner := TouchControls.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	for joystick: bool in [true, false]:
 		var plan := EventScheduler.Planned.new(def, at)
@@ -867,7 +867,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
 		events.streaming._plans.append(plan)
 		sighted.clear()
 		var warnings_before := events.pending_warnings().size()
-		events.world.visible.look(view, joystick)
+		events.world.visible.look(view, TouchControls.covered_screen() if joystick else null)
 		events.spawner.summon_what_has_been_sighted(events.plans())
 		var summoned := events.pending_warnings().size() > warnings_before
 		t.check(sighted.has("burning_building") != joystick and summoned != joystick,
@@ -1061,7 +1061,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		if warning.def.id != "fire_truck":
 			continue
 		engines += 1
-		t.check(SpawnSiting.is_out_of_sight(VisibleView.around(rig.global_position),
+		t.check(SpawnSiting.is_out_of_sight(VisibleView.around(rig.global_position, null),
 				EventFootprints.footprint_of(warning.def), rig.global_position, warning.place),
 				"and its badge points just out of sight, where it will come from")
 		# **It is aimed at where the fire actually is**, which is the half a runtime siting could
@@ -1094,7 +1094,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 			# warning before it existed, and that is what is held — at least the row's own minimum
 			# (`EventDef.minimum_telegraph()`), from the badge to the first frame its field reaches
 			# her (or, for a lethal row, its lethal reach does).
-			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her_at),
+			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her_at, null),
 					EventFootprints.footprint_of(arrived.def), her_at, arrived.global_position),
 					"and it is created just out of sight (%.0fpx from her)"
 					% arrived.global_position.distance_to(her_at))

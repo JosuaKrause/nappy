@@ -40,7 +40,7 @@ static func _siting(map: CityMap, view: VisibleView,
 			func() -> SpawnSiting.Region: return region)
 
 static func _view_about(at: Vector2) -> VisibleView:
-	return VisibleView.around(at)
+	return VisibleView.around(at, null)
 
 ## Legal ground is walkable ground off the home block and outside a walled-off alley.
 func _test_legal_ground(t) -> void:
@@ -90,7 +90,7 @@ func _test_out_of_sight_and_off_the_view(t) -> void:
 	t.check(siting.allows(SpawnSiting.Rule.OFF_THE_VIEW, asked, her + Vector2(330.0, 0.0)),
 			"a point past its edge is off it")
 	view.look(Rect2(her + Vector2(100.0, 0.0) - Tuning.VIEW_HALF_EXTENT,
-			Tuning.VIEW_HALF_EXTENT * 2.0), true)
+			Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
 	t.check(not siting.allows(SpawnSiting.Rule.OFF_THE_VIEW, asked, her + Vector2(330.0, 0.0)),
 			"the view is asked as it is now: the camera led right puts that point back on it")
 	var corner := view.view.end - Vector2(4.0, 4.0)

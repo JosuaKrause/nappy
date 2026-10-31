@@ -451,6 +451,7 @@ func _ready() -> void:
 		return
 	if config.skips_the_title():
 		_flow.engage()
+		_hand_the_crowd_her()
 		return
 	_open_the_title()
 
@@ -695,6 +696,8 @@ func _new_city() -> City:
 	city.skip_event_drawing = config.skip_events
 	city.skip_crowd_drawing = config.skip_crowd
 	city.skip_crowd_motion = config.skip_motion
+	city.crowd_view = ScreenCrowdView.new(self)
+	city.crowd_timing = FrameRecordTiming.new()
 	city.blackout_forced = config.blackout_requested
 	city.all_cyclists_pelicans = config.pelican
 	city.forced_row = config.forced_row
@@ -745,15 +748,39 @@ var _escape_watched := false
 ## Hands her and the baby the map of the world she now walks (`WorldMap`): the stroller asks it how
 ## the ground under her turns a press (`Stroller.set_map()`), and the baby asks its world how loud it
 ## is and what the ground does to her (`Baby.set_world()`); and a city's events are handed her
-## (`EventManager.use_player()`). Called whenever she is put into a world, so neither ever asks a
-## world she has left.
+## (`EventManager.use_player()`), and each world's events are handed what the controls cover
+## (`_hand_the_controls_cover_to_the_events()`). Called whenever she is put into
+## a world, so neither ever asks a world she has left.
 func _put_her_in(map: WorldMap) -> void:
 	_player.set_map(map)
 	_baby.set_world(map.world)
 	if _city:
 		_city.events.use_player(_player)
+	_hand_the_controls_cover_to_the_events()
 	if _readout:
 		_readout.watch(_player, _baby, _day)
+
+## Hands the city's crowd the player, **from the moment she is in the `player` group and the world
+## is live**, which is when the crowd's old lookup by that group would first have found her: not
+## behind the title (`Stroller.stand_aside()` takes her out of the group, so a crowd handed her
+## then would step round and bump a pram nobody sees), but at `_engage_the_day()`, and where a day
+## is walked with no title in front of it. Never taken back, as the lookup's result never was.
+func _hand_the_crowd_her() -> void:
+	if _city and _city.crowd and _player:
+		_city.crowd.use_player(_player)
+
+## Hands each world's events what the on-screen controls cover of the screen, for their view of what
+## she can see (`VisibleView`, `EventManager.use_controls()`). Idempotent, and called wherever either
+## side comes to exist: the controls are built after a boot's first world (`_add_touch_controls()`),
+## and the building's events after the controls. Nothing to hand before the controls exist, which is
+## the tap scheme's whole view.
+func _hand_the_controls_cover_to_the_events() -> void:
+	if not _touch_controls:
+		return
+	if _city:
+		_city.events.use_controls(_touch_controls.covering)
+	if _building_events:
+		_building_events.use_controls(_touch_controls.covering)
 
 ## The map of the world the current spec is walked in — the building's in the escape's first
 ## section, the city's otherwise — the one the run flow hands down to her and asks each walking
@@ -792,6 +819,7 @@ func _build_the_escape_building() -> void:
 	_pauses_with_the_game(_building_events)
 	_building_events.setup_world(_interior.map, _run)
 	_building_events.use_player(_player)
+	_hand_the_controls_cover_to_the_events()
 	_interior.excitement_sources = [_building_events.sources]
 	_building_seed = _run.day_rng(_run.header.day, "finale-interior").randi()
 	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map)
@@ -1230,6 +1258,7 @@ func _resume_gate_note() -> String:
 func _engage_the_day() -> void:
 	_flow.engage()
 	_player.step_back_in()
+	_hand_the_crowd_her()
 	if _city:
 		_pauses_with_the_game(_city)
 	_hud.visible = true
@@ -1556,6 +1585,7 @@ func _add_touch_controls() -> void:
 	else:
 		_touch_controls.set_mode(ControlsMode.from_word(config.controls_word),
 				ControlsMode.side_from_word(config.controls_word))
+	_hand_the_controls_cover_to_the_events()
 
 ## Adds the final pass before raising the root render target. The engine's final root blit is a
 ## nearest sample, so a larger target alone would discard three quarters of its pixels. The shader
@@ -1714,6 +1744,7 @@ func _begin_the_scene(walks_a_day: bool) -> bool:
 	_flow.scene.begin()
 	if not walks_a_day:
 		_flow.engage()
+		_hand_the_crowd_her()
 	return true
 
 ## The authored scene could not be set up: its problems are printed and the game quits non-zero.

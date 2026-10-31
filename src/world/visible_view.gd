@@ -31,8 +31,9 @@ extends RefCounted
 ## whole rect, corners included *(olive-hedgehog, inbox #598: "off screen is not the same as visible
 ## -- the corners get removed for visible not for off screen")*.
 ##
-## The corners are worked out from `TouchControls`' own constants in the 1280x720 design box and
-## scaled onto the view, so moving a ring or a button moves what it covers.
+## The corners are handed in as a `ScreenCover` (rectangles in the controls' 1280x720 design box,
+## which `TouchControls` makes from its own constants) and scaled onto the view, so moving a ring or
+## a button moves what it covers and this class names no UI class or group.
 ##
 ## **The view is the world the camera shows**, `Tuning.VIEW_HALF_EXTENT` either side of where the
 ## camera is drawing from (`Stroller.camera_screen_center()`, which carries her look-ahead and the
@@ -44,8 +45,9 @@ extends RefCounted
 ## (`ScreenOrientation.to_design_space()`); a world box needs no undoing.
 ##
 ## Two ways to ask. `visible_share()` is the one-off question. A caller asking about many things in
-## one frame keeps an instance, sets it once a frame — `look_through()` from the camera, or `look()`
-## from a view a rig chose — which lays the two corners onto the view there and then, and asks
+## one frame keeps an instance, sets it once a frame — `look_through()` from the camera (given the
+## controls' `ScreenCover` in `controls`), or `look()` from a view a rig chose — which lays the two
+## corners onto the view there and then, and asks
 ## `sees()`, `share_of()` or `clear_of_sight()` for each thing, so the corners are worked out once a
 ## frame rather than once a thing. `EventManager` keeps the day's one instance, set at the top of its
 ## physics frame (`EventManager.visible_view()`).
@@ -58,39 +60,39 @@ var joystick := false
 ## The two covered corners laid onto `view`, while `joystick` holds.
 var _left := Rect2()
 var _right := Rect2()
-## The on-screen controls `look_through()` reads the scheme from, found once — `null` where nothing
-## built them (a rig, a test), which is the tap scheme's whole view.
-var _controls: TouchControls = null
+## What the on-screen controls cover and whether their scheme is in force, **handed in** by whoever
+## owns the controls (`EventManager.use_controls()`, from `main`) for `look_through()` to read the
+## scheme from each frame. `null` where nothing built them (a rig, a test), which is the tap scheme's
+## whole view.
+var controls: ScreenCover = null
 
-## A view of `Tuning.VIEW_HALF_EXTENT` either side of `centre`, in the scheme `joystick_in_force`
-## says — what a rig with no camera stands in for the camera's view with.
-static func around(centre: Vector2, joystick_in_force := false) -> VisibleView:
+## A view of `Tuning.VIEW_HALF_EXTENT` either side of `centre`, covered by `covering` — what a rig
+## with no camera stands in for the camera's view with. A `covering` that is null or not in force is
+## the tap scheme's whole view; the argument is required so that a forgotten one cannot mean it.
+static func around(centre: Vector2, covering: ScreenCover) -> VisibleView:
 	var made := VisibleView.new()
-	made.look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0),
-			joystick_in_force)
+	made.look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), covering)
 	return made
 
-## Sets the view and the scheme for this frame, and lays the covered corners onto it.
-func look(at_view: Rect2, joystick_in_force: bool) -> void:
+## Sets the view and the corners for this frame, and lays the covered corners onto it: `covering` is
+## what the controls cover, which counts only while their scheme is in force (`ScreenCover.in_force`);
+## `null` or a cover not in force is the whole view (tap).
+func look(at_view: Rect2, covering: ScreenCover) -> void:
 	view = at_view
-	joystick = joystick_in_force
+	joystick = covering != null and covering.in_force
 	if joystick:
-		var scale := view.size / ScreenOrientation.DESIGN_SIZE
-		_left = _onto(covered_left(), view, scale)
-		_right = _onto(covered_right(), view, scale)
+		var scale := view.size / covering.design_size
+		_left = _onto(covering.left, view, scale)
+		_right = _onto(covering.right, view, scale)
 
 ## Sets this frame's view from the camera on `player`: `Tuning.VIEW_HALF_EXTENT` about where it is
 ## drawing from — `Stroller.camera_screen_center()`, or the player's own position for a body with no
-## camera (a rig) — and the scheme from the on-screen controls, found once in the player's tree
-## (`HelpText.CONTROLS_GROUP`).
+## camera (a rig) — and the corners from the controls handed in `controls`, while their scheme is in
+## force.
 func look_through(player: Node2D) -> void:
 	var stroller := player as Stroller
 	var centre := stroller.camera_screen_center() if stroller else player.global_position
-	if (_controls == null or not is_instance_valid(_controls)) and player.is_inside_tree():
-		_controls = player.get_tree().get_first_node_in_group(HelpText.CONTROLS_GROUP) as TouchControls
-	var in_force := _controls != null and is_instance_valid(_controls) \
-			and _controls.controls_mode() == ControlsMode.Mode.JOYSTICK
-	look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), in_force)
+	look(Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), controls)
 
 ## `visible_share()` for `rect` against what `look()` was last told.
 func share_of(rect: Rect2) -> float:
@@ -161,28 +163,16 @@ static func _box_at(feet: Vector2, box: Rect2) -> Rect2:
 		return Rect2(feet - Vector2.ONE * 0.5, Vector2.ONE)
 	return Rect2(feet + box.position, box.size)
 
-## The left covered corner includes the painted ring or Run disc, never its invisible catch.
-static func covered_left() -> Rect2:
-	var top := TouchControls.FOCUS_LEFT.y - TouchControls.RUN_RADIUS
-	var right := TouchControls.FOCUS_LEFT.x + TouchControls.RUN_RADIUS
-	return Rect2(0.0, top, right, ScreenOrientation.DESIGN_SIZE.y - top)
-
-## The right covered corner mirrors the same disc footprint.
-static func covered_right() -> Rect2:
-	var top := TouchControls.FOCUS_RIGHT.y - TouchControls.RUN_RADIUS
-	var left := TouchControls.FOCUS_RIGHT.x - TouchControls.RUN_RADIUS
-	return Rect2(left, top, ScreenOrientation.DESIGN_SIZE.x - left, ScreenOrientation.DESIGN_SIZE.y - top)
-
 ## The share, 0 to 1, of `rect` (world space) the player can see in `view` (the world the camera
-## shows), leaving out the covered corners when `joystick` is the scheme in force. 0 for a rectangle
-## with no area. The two corners never overlap each other, so what they cover of `rect` is a plain
+## shows), leaving out the corners `covering` says are covered (`null` for the whole view, the tap
+## scheme, as is a cover not in force). 0 for a rectangle with no area. The two corners never overlap each other, so what they cover of `rect` is a plain
 ## sum. Allocates nothing, so a caller may ask it for every live thing every frame.
-static func visible_share(rect: Rect2, in_view: Rect2, joystick_in_force: bool) -> float:
-	if not joystick_in_force:
+static func visible_share(rect: Rect2, in_view: Rect2, covering: ScreenCover) -> float:
+	if covering == null or not covering.in_force:
 		return _share(rect, in_view, false, Rect2(), Rect2())
-	var scale := in_view.size / ScreenOrientation.DESIGN_SIZE
-	return _share(rect, in_view, true, _onto(covered_left(), in_view, scale),
-			_onto(covered_right(), in_view, scale))
+	var scale := in_view.size / covering.design_size
+	return _share(rect, in_view, true, _onto(covering.left, in_view, scale),
+			_onto(covering.right, in_view, scale))
 
 static func _share(rect: Rect2, in_view: Rect2, covered: bool, left: Rect2, right: Rect2) -> float:
 	var area := rect.get_area()

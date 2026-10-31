@@ -154,7 +154,7 @@ const BURST_MAIN_SPLASH_PERIOD := 0.5
 
 # ---------------------------------------------------------- eight-view families ---
 # Every family below shares the crowd walker's own convention (`docs/GRAPHICS.md`, "the crowd
-# walkers"; `CrowdAgent.WALKER_VIEW_BY_SECTOR`): N back, NE/NW back_diagonal, E/W side, SE/SW
+# walkers"; `WalkerLook.VIEW_BY_SECTOR`): N back, NE/NW back_diagonal, E/W side, SE/SW
 # front_diagonal, S front, the three west sectors mirroring their east-authored partner about the
 # feet anchor (`EightDirection.is_mirrored()`). `EIGHT_VIEW_BY_SECTOR` is that same table, copied
 # rather than shared — an event and a walker have no common base to hang one array on — and
@@ -1307,7 +1307,7 @@ static func _collect_views(sources: Dictionary, tables: Array) -> void:
 ## How much empty canvas each police car view leaves below its own drawn content, in px, read off
 ## the SVGs (`art/events/police_car*.svg`): the side view's tyres touch its bottom row, the front
 ## and back views' bodies end two rows above theirs and the diagonals' tyres two rows above theirs —
-## the same margins the crowd car's views leave (`CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN`).
+## the same margins the crowd car's views leave (`CarLook.CANVAS_BOTTOM_MARGIN`).
 const POLICE_CAR_CANVAS_BOTTOM_MARGIN := {
 	"front": 2.0,
 	"back": 2.0,

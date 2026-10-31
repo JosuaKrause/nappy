@@ -167,7 +167,7 @@ func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 		var her := Vector2.ZERO
 		var stop := her + travel * 600.0
 		var place := PendingWarning.on_its_route(def, her, stop, travel, 4000.0,
-				VisibleView.around(her))
+				VisibleView.around(her, null))
 		t.check(place != Vector2.INF, "from %s, there is a place out of sight to create it" % side)
 		if place == Vector2.INF:
 			continue

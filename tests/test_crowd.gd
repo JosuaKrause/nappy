@@ -501,6 +501,7 @@ func _test_the_horn_watches_further_than_the_strike_does(t) -> void:
 	rig.add_child(camera)
 	t.add_child(rig)
 	rig.set_physics_process(false)
+	_city.crowd.use_player(rig)
 
 	# Halfway between the two watches, so a few pixels of separation correction cannot land the
 	# test on the wrong side of either.
@@ -526,7 +527,7 @@ func _test_the_horn_watches_further_than_the_strike_does(t) -> void:
 				"and the give-way scan still does not see her from beyond its own watch")
 		break
 	t.check(tested, "there was a car with clear road ahead to test the wider watch on")
-	_city.crowd._player = null
+	_city.crowd.use_player(null)
 	rig.free()
 
 ## Playtest 05, finding 2: *"the cars are not consistently driving on the right side."* True, and
