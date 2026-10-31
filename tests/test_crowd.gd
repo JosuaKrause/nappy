@@ -67,6 +67,7 @@ func run(t) -> void:
 	_test_nothing_walks_into_a_hard_blocker(t)
 	_test_the_motion_skip_stops_an_agent_in_its_tracks(t)
 	_test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not(t)
+	_test_the_morning_resolve_is_not_drawn_as_a_slide(t)
 
 	_city.free()
 
@@ -1588,9 +1589,9 @@ func _test_a_car_can_honour_the_headway_it_keeps(t) -> void:
 			"and a stopped queue leaves a car's length between bumpers (%.0f > %.0f)"
 			% [Tuning.CAR_GAP_MIN, Tuning.CAR_STRIKE_HALF_LENGTH * 2.0])
 
-## `--skip motion` (docs/DECISIONS.md, M140, "the crowd's scripts parked"): an agent with
-## `skip_motion` set stands exactly where it was when `_process` is stepped by hand, and one
-## without it moves the same way it always did.
+## `--skip motion` (docs/DECISIONS.md, M140, "the crowd's scripts parked"):
+## the crowd's `skip_motion` set steps nobody on its physics tick, and with it off the same tick
+## moves the agents as it always did.
 func _test_the_motion_skip_stops_an_agent_in_its_tracks(t) -> void:
 	_city.crowd.start_day(1, _rng(1))
 	var agent: CrowdAgent = _city.crowd.agents()[1]
@@ -1641,6 +1642,38 @@ func _test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not(t) -> void:
 			% walker.resets_shown)
 	car.free()
 	walker.free()
+
+## The morning's overlap resolve nudges some cars apart after every agent has entered the tree, so
+## the drawing is reset after it: each agent's last reset (noted by a child that every agent is
+## handed as it enters the tree, since a reset reaches an agent's children) was made where the agent
+## stands now, never where it stood before the resolve moved it.
+func _test_the_morning_resolve_is_not_drawn_as_a_slide(t) -> void:
+	_city.crowd.start_day(1, _rng(3))
+	var layer := _city.crowd.agents()[0].get_parent()
+	var marks: Array[_ResetMark] = []
+	var hand_one_out := func(node: Node) -> void:
+		var mark := _ResetMark.new()
+		marks.append(mark)
+		node.add_child(mark)
+	layer.child_entered_tree.connect(hand_one_out)
+	_city.crowd.start_day(1, _rng(3))
+	layer.child_entered_tree.disconnect(hand_one_out)
+	var off := 0
+	for mark in marks:
+		var agent := mark.get_parent() as CrowdAgent
+		if mark.reset_at != agent.global_position:
+			off += 1
+	t.check(not marks.is_empty() and off == 0,
+			"after start_day no agent's drawing was last reset away from where it stands (%d of %d)"
+			% [off, marks.size()])
+
+## Notes where its parent stood each time the parent's physics interpolation was reset.
+class _ResetMark extends Node:
+	var reset_at := Vector2.INF
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESET_PHYSICS_INTERPOLATION:
+			reset_at = (get_parent() as Node2D).global_position
 
 ## A crowd agent that counts the interpolation resets that reach it while it is shown in the tree.
 class _ResetSpy extends CrowdAgent:

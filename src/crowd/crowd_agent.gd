@@ -96,7 +96,8 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 ## excitement's caret) changes only on a tick, and an interpolated node replays the list it was last
 ## drawn with wherever the frame puts it, so a drawn frame between two ticks has nothing to redraw.
 ## The one thing that moves between ticks is the camera, and the drawn box's margin
-## (`DrawnView.MARGIN`, two tiles) is far wider than it moves in a tick.
+## (`DrawnView.MARGIN`, two tiles) is far wider than it moves in a tick. **The one exception is a
+## marked car's caret while its horn runs**, redrawn every drawn frame by `_process()`.
 func _end_the_frame(delta: float) -> bool:
 	# The clocks only a crowd member keeps, its excitement's clock and the seconds of agitation a
 	# contact or a horn left, run here because every tick that is not skipped ends here.
@@ -130,6 +131,20 @@ func _end_the_frame(delta: float) -> bool:
 		queue_redraw()
 		return true
 	return false
+
+## The frames between two ticks of a marked car whose horn is still running: the caret's breathing
+## is redrawn at the screen's rate (`_draw_mark()`), the only crowd drawing that is. A car's bob
+## and the walkers' gait are drawn on the tick (30 times a second): redrawing every car on every
+## frame would cost the per-frame work the crowd's step on the tick gave up.
+func _ready() -> void:
+	super._ready()
+	set_process(false)
+
+func _process(_delta: float) -> void:
+	if not excitement.is_startled():
+		set_process(false)
+		return
+	queue_redraw()
 
 ## Builds this body's rim from its look, which a new kind changes.
 func _build_rim() -> EntityHalo:
@@ -242,7 +257,14 @@ func _draw_mark() -> void:
 	var strength := excitement.caret_strength()
 	if strength <= 0:
 		return
-	var swell := excitement.jolt_swell()
+	# **Breathes on every drawn frame, not only on the tick.** The jolt runs down by a tick at a time,
+	# and the swell is read a fraction of a tick further on (`Engine.get_physics_interpolation_fraction()`
+	# of one tick) so the caret shrinks smoothly on a screen faster than 30 frames a second. This is
+	# draw-only: nothing in the simulation reads it. `_process()` below redraws a marked car with a
+	# jolt running, which is a handful of cars, and stops when the jolt does.
+	var ahead := Engine.get_physics_interpolation_fraction() / float(Engine.physics_ticks_per_second)
+	var swell := excitement.jolt_swell_after(ahead)
+	set_process(excitement.is_startled())
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, -(MARK_HEIGHT + 10.0 * swell))
 	var colour := Palette.MARK_LETHAL if strength == 2 else Palette.MARK_COSTLY

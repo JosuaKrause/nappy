@@ -282,7 +282,18 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	# else has.** A car turning or recycling on that frame asks `TrafficIndex` whether the road it
 	# is about to take is free, and `clear()` has just emptied it — so without this every one of
 	# them is told yes. See `_index_the_queues()`. Like the resolve, it moves nobody.
+	_resolve_and_settle()
+
+## The overlap resolve and the index filled from it, outside a tick, then every agent's drawn
+## position put where the resolve left it: the agents' interpolation was reset when each entered the
+## tree, before the resolve nudged some of the cars apart, and a nudge made after that would be
+## drawn as a slide from the old spot across the first tick. Every path that resolves outside a
+## tick (the day's start, which a checkpoint retry runs again, and an actor placed by hand) goes
+## through here.
+func _resolve_and_settle() -> void:
 	_index_the_queues(_resolve_the_queues())
+	for agent in _agents:
+		agent.reset_physics_interpolation()
 
 ## Where the simulated patch of city is centred. `Crowd` moves it onto the player itself; this
 ## exists so `main` can put it on the doorstep before the player is standing there.
@@ -326,7 +337,7 @@ func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vecto
 	agent.name = actor_name
 	_city.add_entity(agent)
 	_agents.append(agent)
-	_index_the_queues(_resolve_the_queues())
+	_resolve_and_settle()
 	return {"actor": agent, "error": ""}
 
 func field() -> CrowdField:
