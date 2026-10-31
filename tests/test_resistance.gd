@@ -876,8 +876,7 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 
 ## **The region a siting reads is built once for a plan**: the relocation asks it for every candidate
 ## tile, so each ask handing out a freshly built copy of the wall's and the doors' discs was most of
-## its cost. It is rebuilt when the plan is another one, or when a list of the plan is another list
-## or a different length.
+## its cost. The same plan gives the same region; another plan, another region.
 func _test_the_siting_hands_the_same_region_until_the_plan_changes(t) -> void:
 	_build_city(t)
 	var state := CityState.new()
@@ -888,15 +887,16 @@ func _test_the_siting_hands_the_same_region_until_the_plan_changes(t) -> void:
 	t.check(_city.siting_region() == first and _city.spawn_siting.region() == first,
 			"asked again, the siting is handed the same region")
 	var plan := _city.region_plan()
-	var walls := plan.wall_bodies.size()
-	plan.alley_walls.append(Rect2i(1, 1, 1, 1))
+	var other := RegionPlanner.RegionPlan.new()
+	other.alley_walls.append(Rect2i(1, 1, 1, 1))
+	_city.set_region_plan(other)
 	var changed := _city.siting_region()
-	t.check(changed != first and changed.walled_alleys.size() == plan.alley_walls.size(),
-			"a wall alley added to the plan is a new region")
-	plan.door_bodies = plan.door_bodies.duplicate()
-	t.check(_city.siting_region() != changed and walls == plan.wall_bodies.size(),
-			"another list of doors is a new region")
-	plan.alley_walls.pop_back()
+	t.check(changed != first and changed.centres.is_empty()
+			and changed.walled_alleys == other.alley_walls and _city.siting_region() == changed,
+			"another plan is another region, itself handed again")
+	_city.set_region_plan(plan)
+	t.check(_city.siting_region() != changed and _city.siting_region().centres.size() \
+			== first.centres.size(), "and the first plan again is built afresh from it")
 
 ## brisk-wombat, "the mark and its robber never appear in front of her" — the mark's own half:
 ## *"I just had one appear out of nowhere while I was walking through an alley."* `_nearest_alley_

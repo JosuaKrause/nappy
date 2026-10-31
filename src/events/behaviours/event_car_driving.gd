@@ -231,7 +231,7 @@ func room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	# included. `to_the_box` is from the nose to its near edge.
 	var index := GiveWay.box_index(along, direction)
 	var near := GiveWay.box_near_edge(index, direction)
-	var to_the_box := (near - along) * direction - nose
+	var to_the_box := GiveWay.distance_to_box(along, direction, nose)
 	var box_line := GiveWay.stop_line(to_the_box)
 	var within_sight_of_the_box := to_the_box >= 0.0 and to_the_box <= Tuning.CAR_JUNCTION_SIGHT
 	# The red light.

@@ -93,13 +93,19 @@ func _test_a_zebra_past_the_box(t, map: CityMap) -> void:
 	if lane_y < 0:
 		return
 	var period := CityMap.period()
-	var c := map.main_road
 	var cross := (float(lane_y) + 0.5) * TILE
+	var c := -1
+	for candidate in range(1, map.main_road + 1):
+		if map.is_crossing(Vector2i(candidate * period + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH, lane_y)):
+			c = candidate
+			break
+	t.check(c >= 0, "found a box with paint on the far side of it, going up the axis")
+	if c < 0:
+		return
 	var first := c * period + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
 	var her := Vector2((float(first) + 0.5) * TILE, cross)
-	var crossing := map.is_crossing(Vector2i(first, lane_y))
-	t.check(GiveWay.waits_past_the_box(map, c, 1.0, cross, false, her) == crossing,
-			"waiting at the far zebra of the main road's box is past it, when it is paint")
+	t.check(GiveWay.waits_past_the_box(map, c, 1.0, cross, false, her),
+			"waiting on the paint past the box is past it")
 	t.check(not GiveWay.waits_past_the_box(map, c, 1.0, cross, false, her - Vector2(5.0 * TILE, 0.0)),
 			"and not from the near side of the box")
 

@@ -83,7 +83,6 @@ static func owes_her_way(map: WorldMap, vertical: bool, at: Vector2, her: Vector
 static func zebra_edge_ahead(map: WorldMap, at: Vector2, vertical: bool, direction: float,
 		her: Vector2) -> float:
 	var tile := float(Tuning.TILE_SIZE)
-	var along := at.y if vertical else at.x
 	var waiting_along := her.y if vertical else her.x
 	var step := Vector2i(0, signi(int(direction))) if vertical else Vector2i(signi(int(direction)), 0)
 	var here := map.world_to_tile(at)

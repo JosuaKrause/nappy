@@ -448,7 +448,7 @@ func _plan_a_turn(delta: float) -> void:
 		turn_round_cause = TurnRoundCause.OFF_THE_STREET
 		_mover._turn_round()
 		return
-	var band := _mover._junction_index()
+	var band := GiveWay.box_index(_mover._along(), _mover._direction)
 	if band < 0:
 		return
 	var box := _mover.junction_ahead()
@@ -600,7 +600,7 @@ func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> TurnRefusal:
 	# **The run-up is driving, and it has to be legal driving.** Only the arc's own ground is swept
 	# and checked; the straight before it is ordinary lane travel, so what says whether it is clear
 	# is the lookahead. Without this a car blocked in mid-street plans for the junction *beyond* the
-	# barrier — `_junction_index()` names the one it is heading for — and drives through the barrier
+	# barrier — `GiveWay.box_index()` names the one it is heading for — and drives through the barrier
 	# to reach it.
 	if run_up > _distance_to_the_blockage():
 		return TurnRefusal.PAST_THE_BLOCKAGE
