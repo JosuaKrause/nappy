@@ -3,7 +3,8 @@ extends RefCounted
 ## seeds, days and chain of `m159_crowd_tick_cost.gd` (every agent's position and speed after every
 ## tick, SHA-256 chained), plus a second chain over what the drawing reads (the redraw key, the
 ## drawn-heading key, visibility, lane key, velocity, heading and colour), and per run the median
-## per-tick time of the agents' own frames and of `Crowd._physics_process()`.
+## per-tick time of the agents' own frames and of `Crowd._physics_process()` (where the crowd steps
+## its agents inside its tick, the agents' column is empty and the tick's holds them).
 ##
 ## Run explicitly in each revision's checkout and compare the `LANE_PARITY_JSON` lines run for run:
 ## `LANE_PARITY_REPS=3 tools/test.sh probes/minty_quail_lane_parity.gd`. Reads only names both
@@ -71,8 +72,12 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 		rig.velocity = going * Tuning.WALK_SPEED
 		here += going * Tuning.WALK_SPEED * STEP
 		var began := Time.get_ticks_usec()
-		for agent in crowd.agents():
-			agent._process(STEP)
+		# A crowd that steps its own agents inside its tick (`_step_the_agents()`, from minty-quail
+		# shared-components C1) is stepped by the tick alone; before it, each agent's own frame came
+		# first, in the same order. Called by name so the one file runs on either revision.
+		if not crowd.has_method("_step_the_agents"):
+			for agent in crowd.agents():
+				agent.call("_process", STEP)
 		var moved := Time.get_ticks_usec()
 		crowd._physics_process(STEP)
 		var ended := Time.get_ticks_usec()

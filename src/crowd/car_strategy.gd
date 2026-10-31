@@ -216,7 +216,7 @@ func enter_at_an_end(_along_tile: int) -> bool:
 ## a pocket is legal ground it simply cannot leave, and the answer to that is to stand where the
 ## seal caught it and go when nobody is looking, rather than to turn on the spot at all. Folding it
 ## in would turn the whole pocket into a wall and give every car in one a reason to steer at it
-## every frame, which is exactly the state `_process()` avoids by asking this question ahead of the
+## every frame, which is exactly the state `step()` avoids by asking this question ahead of the
 ## step instead: nothing below it runs while this is true.
 func is_in_a_pocket() -> bool:
 	if _mover.pockets == null:

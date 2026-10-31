@@ -862,7 +862,7 @@ What each bucket catches, and what it cannot:
 | Bucket | What it holds | What it cannot catch |
 |---|---|---|
 | scenery | `SceneryResidency.update()`: the scenery queue under its 2ms budget, guard preparations included; and, in a deferred window around everything the update queues for the engine's flush, a new region's tile map update and a newly shown building's, shadow chunk's or decal's first `_draw()` | the renderer's own work on the new pictures, which is `draw`'s; a first draw that was already queued before the update made the item resident |
-| crowd | the crowd's pathing: `Crowd._physics_process()` and every `CrowdAgent._process()` | the agents' drawing (`draw`) and their halos' fades (`process_rest`) |
+| crowd | the crowd's tick, once a physics tick rather than once a drawn frame: `Crowd._physics_process()`, every agent's step inside it (`LaneMover.step()`: its motion, its clocks and its redraw gate), the traffic and the player half | the agents' drawing (`draw`), the engine's interpolation of them between ticks, and their halos' fades (`process_rest`) |
 | influence | the baby's influence sweep: `Baby._physics_process()`, whose cost is `excitement_sources_at()` over every live event and walker near her | — |
 | events | event updates: `EventManager._physics_process()`, every live event's step inside it (`EventInstance.step()`), and every `EventInstance._process()`, its look's redraw gate | the events' drawing (`draw`) |
 | cues | the danger cues: `ExcitementHalo._process()` (which source charges her, and the carets' predictions) and `DangerEdge._process()` (the badges for what is coming off screen) | the halos' and badges' drawing (`draw`) and the per-body halo fades (`process_rest`) |
@@ -889,8 +889,8 @@ largest.
 
 **A page's clock is coarse.** Without cross-origin isolation the browser's clock is reduced in
 precision, about 100µs in Chrome and about 1ms in Safari and Firefox, so every value in a page's
-record is quantized to that step: a crowd agent's few microseconds read as 0 or as a whole step,
-and a frame's `crowd` swings by the step's share of its two hundred or so intervals. The recorder
+record is quantized to that step: a live event's few microseconds of redraw gate read as 0 or as a
+whole step, and a frame's `events` swings by the step's share of its intervals. The recorder
 measures the step at setup and writes it as `timer_resolution_usec`.
 
 Each row also counts, for its frame, the physics steps, the timed entry points (`timer_calls`),
@@ -958,19 +958,19 @@ page was capped to, `min(the browser's ratio, x)`, and the drawn size is the win
 **Its own cost is in the file.** At setup the recorder times `FrameRecorder.CALIBRATION_PAIRS`
 enter/leave pairs on the device and records the mean as `timer_pair_usec`; a frame's
 `timer_calls` times that is what the timing pairs spent in that frame, most of it one pair per
-crowd agent. **That product is a lower bound on the record's cost, not the whole of it**: the
+live event. **That product is a lower bound on the record's cost, not the whole of it**: the
 recorder's own per-frame work — its phase callbacks, the counters it reads at the end of the
 process step, the post-draw callback's renderer reads and the row's copy into the ring — is not
 in it. On a desktop the whole cost, the record on against off, measured between about one and a
 half and four times the product (`docs/evidence/m159-frame-record-2026-10-04/`), so a reader who
 subtracts the product from a phone's frames subtracts too little.
 
-**Off, it costs every player as little as the wrap can.** The crowd's agents and the live events
-are timed a couple of hundred times a frame, so each copies `FrameRecord.on` when it is made (an
-agent when `Crowd` hands it its `CrowdTiming`, the crowd's handle on the record) and, off, pays one
-member read before its body, which stays in its own `_process()`; a static read and
-a call into a second function there made every player's frame measurably longer on a desktop,
-with the record off. The five systems timed
+**Off, it costs every player as little as the wrap can.** The live events are timed once each a
+frame, so each copies `FrameRecord.on` when it is made and, off, pays one member read before its
+body, which stays in its own `_process()`; a static read and a call into a second function there,
+on a couple of hundred timed bodies a frame, made every player's frame measurably longer on a
+desktop, with the record off. A crowd agent is not timed on its own: it steps inside the crowd's
+tick, which is. The five systems timed
 once a frame (the crowd's and the event manager's physics steps, the sweep, the halo and the edge)
 are built with the city, before the recorder starts, so they read `FrameRecord.on` each frame (the
 crowd's through its `CrowdTiming`). The
@@ -980,7 +980,8 @@ The game's own `_draw()` overrides each start with `if FrameRecord.on:` (a crowd
 `if frame_timing != null and frame_timing.running():`, through the `CrowdTiming` it is handed) and one
 call that adds 1 to a per-kind count, so off they pay one static read each. That is acceptable where the timing
 wrap's read was not, because of how often it runs: a frame runs about twenty `_draw()` calls (the
-retained canvas items redraw only when something changes) against some 270 timed bodies, so with
+retained canvas items redraw only when something changes) against the couple of hundred timed
+bodies a frame the wrap's read was measured on, so with
 the record off the guarded reads cost nothing the frame medians can see. The measured figures —
 the per-kind means, one guarded counter's cost against the same body without it (`drew_cost.gd`),
 and the frame medians with the record off against the base — are in

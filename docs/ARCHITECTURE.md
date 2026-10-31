@@ -87,14 +87,17 @@ src/
 	region_planner.gd     partitions the lattice into regions; turns the day's tree into a wall with doors, and stands the checkpoint structure and gate state at every door
   crowd/
 	crowd.gd              owns the day's agents and the `crowd` atlas page, held for its own life
-	                      rather than released between days; hands the world its agents as one
-	                      set of things that charge her
+	                      rather than released between days; steps every agent once a physics
+	                      tick, then spaces out the traffic and meets her; hands the world its
+	                      agents as one set of things that charge her
 	crowd_sources.gd      the crowd as one set of things that charge her (`CrowdSources`): the
 	                      sweep that skips a body out of earshot, and the widest jolt it skips by
 	crowd_excitement.gd   a crowd body as a thing that charges her (`CrowdExcitement`): its field,
 	                      the jolt a contact or a horn leaves, its clock, its reach, a car's strike box
 	lane_mover.gd         the lane movement a walker and a car share — lane state, look-ahead,
-	                      held step, placement and recycling — asking its kind's strategy what differs
+	                      held step, placement and recycling — stepped on the crowd's physics tick
+	                      (`step()`) and drawn interpolated between ticks, asking its kind's
+	                      strategy what differs
 	crowd_agent.gd        one walker or one car in the crowd, on the lane mover: its excitement (a
 	                      composed `CrowdExcitement`), its rim and caret and the redraw gate; drawn
 	                      by its look from the baked `crowd` page
@@ -962,5 +965,5 @@ a commit still rests on the unfiltered run.
 **A rig that steps the parts is not running the whole.** Several suites walk the crowd by hand so
 that a minute of traffic does not take a minute; what that skips is the frame *around* the agents,
 which is where the traffic queue is resolved and the `TrafficIndex` emptied. `Crowd.step()` is that
-frame, and it is what a rig calls — see the **verify** skill for what stepping only the
+tick, and it is what a rig calls — see the **verify** skill for what stepping only the
 agents cost, in both time and truth.

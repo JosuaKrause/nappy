@@ -696,7 +696,7 @@ reached only from a state that waiting cannot mend: the ground the arc would swe
 closure, a seal or a precinct's paving. It costs a stride before the car may reverse again. **A
 reversal that lands in the same state is not an escape** — it swaps the lane the car belongs to
 without moving it, and the ordinary steering then slides the body over to the other lane's centre at
-three pixels a frame, which is a car shaking its head rather than turning round. So a car with less
+three pixels a tick, which is a car shaking its head rather than turning round. So a car with less
 than a half turn's road at *both* ends of the piece of carriageway it is on does not reverse. It
 stands where it is and leaves the way any body with nowhere to go leaves — recycled at the first
 frame the camera is not on it, the same rule a body caught in a pocket already follows.
@@ -1422,7 +1422,9 @@ no lower time. The resistance's clocks — a task's deadline, the note's lingeri
 sight dwell, the red arrow's choice and its sweep, the day's happenings and the park cordon — run on
 the same tick (`ResistanceDirector.tick()`), before the day's, as the tree ordered them. The events
 step on every physics tick the city runs, which on a day includes the ticks behind the title screen,
-where the street plays on. The escape's clock,
+where the street plays on, and so does the crowd: every walker and car moves, gives way, sounds its
+horn and is bumped once a tick, on every machine, and is drawn interpolated between two ticks, as
+she is. The escape's clock,
 which reads to the hundredth, is drawn between two ticks as the tick's countdown advanced by how far
 the frame is into the next one (`Engine.get_physics_interpolation_fraction()`), so its label moves
 on every drawn frame without the countdown itself moving off the tick.
