@@ -49,18 +49,6 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 # `WarningBoard.warn_about_the_ground_she_is_on()` in: a per-frame method with no signal of its own to
 # trigger from outside.
 
-## A `WorldContext` whose `excitement_sources_at`/`total_excitement_at` read straight off a
-## hand-built `EventManager`, the same questions `City` answers for real. Lets a real `Baby` be
-## driven against the chat's own math without pulling in a whole generated city. `Baby` now sums
-## `excitement_sources_at()` rather than calling `total_excitement_at()` directly, so both have to
-## be forwarded or the mother's own conversation is invisible to a baby driven against this double.
-class _ChatWorld extends WorldContext:
-	var manager: EventManager
-	func excitement_sources_at(world_position: Vector2) -> Array:
-		return manager.excitement_sources_at(world_position)
-	func total_excitement_at(world_position: Vector2) -> float:
-		return manager.total_excitement_at(world_position)
-
 ## A manager with nothing in it but the map arithmetic
 ## `CheckpointController.check_detentions()`'s own telemetry line needs — see
 ## `TelemetryObserver._blocked_rig()` in `tests/test_telemetry.gd` for the same trick.
@@ -128,7 +116,9 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 
 	for awake in [true, false]:
-		var world := _ChatWorld.new()
+		# A bare world handed the hand-built manager: the same answer `City` gives for real
+		# (`WorldContext.excitement_sources_at()`), with no generated city to pull in.
+		var world := WorldContext.new()
 		t.add_child(world)
 		var stroller := Stroller.new()
 		var camera := Camera2D.new()
@@ -147,7 +137,7 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 
 		var mother := _instance(t, def, at, path)
 		var manager := _chat_manager()
-		world.manager = manager
+		world.events = manager
 		manager.world.instances.append(mother)
 		manager.use_player(stroller)
 		stroller.global_position = at

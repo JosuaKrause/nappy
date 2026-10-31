@@ -2159,7 +2159,7 @@ func field_shape() -> GroundShape:
 
 ## A flock is its birds, summed.
 ##
-## The same shape as `City.total_excitement_at` one level down: nothing is pushed anywhere, the
+## The same shape as `WorldContext.total_excitement_at` one level down: nothing is pushed anywhere, the
 ## sources compose by plain addition, and there is no ordering to get wrong. Each bird carries an
 ## equal share of the event's intensity over a radius that leaves room for the wheel, so the middle
 ## of the flock — where four or five fields overlap — comes out at about what the event says it is

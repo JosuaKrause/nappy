@@ -20,6 +20,12 @@ extends Node2D
 ## there — `total_excitement_at()` is kept only because a page of existing callers want a bare
 ## number and summing the pairs themselves would be the same loop repeated at every call site.
 ##
+## **How loud it is here is answered by what stands in the world, never summed by the world**: the
+## events' answer (`events`, `EventManager.excitement_sources_at()`) and the crowd's where there is
+## one (`crowd`, `Crowd.excitement_sources_at()`), each handed to the world by whoever builds it —
+## the city builds both, the run flow hands the building its events. The city and the building
+## answer the baby the same way, through this one combination.
+##
 ## `City` still has an `is_calm_zone` of its own, for the debug overlay and the telemetry, which
 ## genuinely do want the yes/no. It is not on this interface because `Baby` has no use for it.
 
@@ -39,16 +45,45 @@ func decay_multiplier(_world_position: Vector2) -> float:
 func is_alley(_world_position: Vector2) -> bool:
 	return false
 
+## The events standing in this world (`EventManager`), whose answer to what charges her is the
+## first half of this world's: the city's own, or the building's, handed in by the run flow. Null
+## where no events stand, as while the building is walked empty.
+var events: EventManager = null
+## The crowd on this world's streets (`Crowd`), the second half of the answer, or null where there
+## is none, as in the building.
+var crowd: Crowd = null
+
 ## Summed excitement per second from every active source at this point.
-func total_excitement_at(_world_position: Vector2) -> float:
-	return 0.0
+func total_excitement_at(world_position: Vector2) -> float:
+	var total := 0.0
+	for pair in excitement_sources_at(world_position):
+		total += pair[1]
+	return total
 
 ## Every active source contributing at this point, as `[source, contribution]` pairs — the same
 ## bodies `total_excitement_at()` sums, broken out so `Baby` can trace each point that lands on
-## the meter back to whatever body actually put it there, for `ExcitementHalo`'s colour. Empty for
-## the debug world, which has no bodies to attribute to.
-func excitement_sources_at(_world_position: Vector2) -> Array:
-	return []
+## the meter back to whatever body actually put it there, for `ExcitementHalo`'s colour: the
+## events' answer, then the crowd's. Empty for a world with neither, as the debug world is.
+##
+## Events and the crowd are the same kind of quantity to the baby, so they simply concatenate —
+## `Baby._update_excitement()` traces each pair back to `accumulate_landed()` on the body that put
+## it there, which is what lets an event's and a crowd body's colour come from the same place.
+##
+## **Inside a region door the crowd is off too, and that is the same sentence as the events half.**
+## `EventManager.door_holding_her_at()` answers whether this point is inside a running hold; she is
+## in the hut for those two seconds, not on the pavement, so the queue outside it charges her no
+## more than the street does. Without this the toll would still be the toll plus however busy the
+## door happened to be. The events' own answer is already the hold's flat rate alone — see
+## `EventManager.excitement_sources_at()` — so all this adds is leaving the crowd out.
+func excitement_sources_at(world_position: Vector2) -> Array:
+	var sources: Array = []
+	if events:
+		sources.append_array(events.excitement_sources_at(world_position))
+		if events.door_holding_her_at(world_position):
+			return sources
+	if crowd:
+		sources.append_array(crowd.excitement_sources_at(world_position))
+	return sources
 
 # ------------------------------------------------------------ the draw layers ---
 # Not a question the baby asks: the world's own service to whatever it is handed to — an event

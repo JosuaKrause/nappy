@@ -1018,7 +1018,7 @@ five promising the cost over again. Everything else in the catalogue still sums.
 **The hold charges its toll and nothing else.** She is inside the gatehouse, not on the pavement, so
 while a hold is running the meter sums that hold's own flat `Tuning.CHAT_EXCITEMENT` and no other
 event field and no crowd body — `CheckpointController.door_holding_her_at()`, asked by both halves of
-`City.excitement_sources_at()`. With `EXCITEMENT_DECAY_IDLE` at zero for a player held still, the
+`WorldContext.excitement_sources_at()`, the events' and the crowd's. With `EXCITEMENT_DECAY_IDLE` at zero for a player held still, the
 crossing therefore costs exactly the toll wherever the door happens to stand, which is what "the
 same cost each time" has to mean. `chatting_mother` keeps the ordinary sum: her conversation is in
 the street with both of them drawn.

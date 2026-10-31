@@ -466,7 +466,8 @@ func _strongest_barrier_at(world_position: Vector2) -> EventInstance:
 
 ## The region door whose hold is running right now and whose trigger circle `world_position` lies
 ## inside, or null: `CheckpointController.door_holding_her_at()`. Inside a door, the door's toll is
-## the only thing that charges (`excitement_sources_at()`), and `City` asks it for the crowd's half.
+## the only thing that charges (`excitement_sources_at()`), and the world asks it for the crowd's
+## half (`WorldContext.excitement_sources_at()`).
 func door_holding_her_at(world_position: Vector2) -> EventInstance:
 	return checkpoints.door_holding_her_at(world_position)
 

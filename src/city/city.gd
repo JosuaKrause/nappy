@@ -97,11 +97,9 @@ var map: CityMap
 ## How everything that moves over `map` moves (`Navigator`), built once with the map and handed to
 ## the event manager, the crowd and whatever else this city's world puts in motion — never fetched.
 var navigator: Navigator
-var events: EventManager
 ## Where the city, its posters, its events and the day's closures write their own account for the
 ## run log — set before `build()`, which hands it on; silent until then.
 var trace := RunTrace.new()
-var crowd: Crowd
 
 # ------------------------------------------------- handed in before build() reads them ---
 ## How this city draws and schedules itself, set by whoever builds it — `main`, from the run's
@@ -409,33 +407,6 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 
 func is_alley(world_position: Vector2) -> bool:
 	return Tile.is_alley(map.tile_type_at_world(world_position)) if map else false
-
-## Events and the crowd are the same kind of quantity to the baby, so they simply concatenate —
-## `Baby._update_excitement()` traces each pair back to accumulate_landed() on the body that put
-## it there, which is what lets an event's and a crowd body's colour come from the same place.
-##
-## **Inside a region door the crowd is off too, and that is the same sentence as the events half.**
-## `CheckpointController.door_holding_her_at()` answers whether this point is inside a running
-## hold; she is in the hut for those two seconds, not on the pavement, so the queue outside it
-## charges her no more than the street does. Without this the toll would still be the toll plus
-## however busy the door happened to be. The events half already answers with the hold's own
-## flat rate alone — see `EventManager.excitement_sources_at()` — so all this adds is skipping
-## the concatenation.
-func excitement_sources_at(world_position: Vector2) -> Array:
-	var sources: Array = []
-	if events:
-		sources.append_array(events.excitement_sources_at(world_position))
-		if events.door_holding_her_at(world_position):
-			return sources
-	if crowd:
-		sources.append_array(crowd.excitement_sources_at(world_position))
-	return sources
-
-func total_excitement_at(world_position: Vector2) -> float:
-	var total := 0.0
-	for pair in excitement_sources_at(world_position):
-		total += pair[1]
-	return total
 
 # ------------------------------------------------------------------ spawning ---
 
