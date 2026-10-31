@@ -73,7 +73,7 @@ Verification is **verify**'s: `./tools/check.sh`, `./tools/lint.sh` if you touch
 `./tools/pycheck.sh` if you touched Python, and the suites your change touches by name. The full
 suite is CI's, on the merge result, and `PARTIAL RUN` is expected — unless the brief says this is
 one of verify's local-full-run cases. Otherwise, once the touched suites say the change is done,
-push and open the PR, and CI's run is the full run (inbox #870). If CI goes red on your PR,
+push and open the PR, and CI's run is the full run (inbox #870 in minty-dolphin). If CI goes red on your PR,
 reproduce the failing suites locally and fix them.
 
 **A long wait gives one notification.** A run that outlasts a foreground call goes to the

@@ -9,5 +9,10 @@ charger's notice radius goes up, under **balance**, the new numbers shown to the
 ship.
 
 **Read as:** the stairwell guard's own warning is outside this, since the player called it "the
-exception to the regular warning anyway". **Open:** how much larger: "slightly larger" and "180px is
-way too small" pull different ways, so the size of the change is the player's to confirm.
+exception to the regular warning anyway".
+
+Asked on the board how much larger, since "slightly larger" and "180px is way too small" pull
+different ways (the orchestrator's pick: the builder proposes numbers under **balance** and shows
+the player before they ship), the player: "both say it should be bigger. we need to experiment"
+(minty-dolphin #834). **Read as:** the radius goes up by an amount found by trying values, which the
+builder offers the player to play before one ships.

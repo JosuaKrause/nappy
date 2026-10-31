@@ -154,7 +154,7 @@ When a pull request's reviews have come back *not ready* three times (woolly-pen
 approach is rethought, including whether the chosen solution is the right way at all. The count is
 per pull request.
 
-**Who writes it is decided case by case** (inbox #842). The orchestrating session asks the
+**Who writes it is decided case by case** (inbox #842 in minty-dolphin). The orchestrating session asks the
 builder for the rethink when it judges the builder has the context and the capability for it, and
 otherwise writes it itself or starts a fresh planning agent for it; a builder on a small model
 (Haiku) is the player's example of one that may not.

@@ -47,6 +47,18 @@ map, navigator, configuration, clock, event sink) through its setup or construct
 fetching it from an autoload, a scene-tree group or a static. Tests then hand it fakes instead of
 patching statics or reaching into private fields. Every item below applies it to what it extracts.
 
+**No legacy shape is kept** (minty-dolphin #852): the player, "Don't let legacy implementations
+prevent you from establishing a clean design". Read as: an old path, a forwarder kept for an old
+name so callers or tests need not change, or a rule that holds only "in practice" is replaced, not
+kept beside the new design.
+
+**The parts end up independent; sequential now is fine** (minty-dolphin #845): asked "why one PR at
+a time? no way to partition work?", the player, "okay, let's do the refactor in a way that things
+will ultimately be independent but it's okay if it needs to be sequential right now". Read as: the
+refactor leaves its parts independent of each other, so later work on them can be split across
+parallel agents; items that touch the same code now run one after another, and items already
+independent run in parallel.
+
 ## Order
 
 Each step leaves the game working and is its own PR, reviewed on its own. **A step is done at test
@@ -63,7 +75,11 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 5. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
-   step's record lists what its change needs remeasured.
+   step's record lists what its change needs remeasured. That includes the crowd tick, measured
+   about 4.5% slower once the walker and the car share a mover base the crowd member extends
+   (minty-quail-16), where the player chose "let's eat the cost for now and think about optimizing
+   later" (minty-dolphin #852): the step measures it again and says whether optimizing it is
+   worth an entry of its own.
 
 The PR that closes this entry rewrites **orchestrating**'s "Code is designed by layer", whose
 proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal

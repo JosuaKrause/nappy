@@ -1451,7 +1451,7 @@ it is the same screen showing what a load already charged rather than what a day
 physics ticks on which she walked a day — a section of the escape included — `WALKING` or
 `RETURNING`, with the tree unpaused and no screen in front of the walk and no scene reload on its
 way, read in seconds at the 30 Hz tick (`play_seconds()`). **Frame locked**
-(inbox #866): it counts the ticks the game stepped, never a drawn frame's length, so a machine that
+(inbox #866 in minty-dolphin): it counts the ticks the game stepped, never a drawn frame's length, so a machine that
 draws a frame late spends no extra time on the clock — a lag spike past the engine's steps per
 frame slows the game instead — and a faster machine reads no lower time. The save holds it in
 seconds and loads it to the nearest tick, whatever seconds an older save holds. Not wall time, and not
@@ -1619,7 +1619,7 @@ flight: from there a runner gets through to the first floor's door on every line
 walker is caught when she takes the flight holding plain left from the row level with its head tread
 or the row below, or down-left from the landing tile between the two flights. A walker who holds
 plain left from that landing tile gets through, and the margins are thin against his 23.5px catch
-*(inbox #865)* (on the tightest runner's line, walking until he runs, then running, and turning plain
+*(inbox #865 in minty-dolphin)* (on the tightest runner's line, walking until he runs, then running, and turning plain
 left at row 11's centre, he comes 24.6px from her centre on the tick, 1.1px outside it; the walker
 down-left from the landing tile comes 22.7px, 0.8px inside; she is caught if she starts running 0.3s
 late). In the stairwell his warning is off screen,

@@ -5,25 +5,25 @@ description: The Nappy board, the shared Claude Doc where the player and the orc
 
 # The Nappy board
 
-**Questions and steering live on one standing page, not in the chat** (inbox #830). In the chat a
+**Questions and steering live on one standing page, not in the chat** (inbox #830 in minty-dolphin). In the chat a
 question is drowned by the reports that follow it, gets repeated at the end of every message, and a
 numbered list renumbered between messages lets an answer land on the wrong question. The player
 asked for a standing list of tasks and questions, with their thoughts written under each one and
 the answers given in line, and chose a shared doc over GitHub issues, which are too slow for a
-conversation (inbox #830).
+conversation (inbox #830 in minty-dolphin).
 
 The board is the Claude Doc "Nappy board", https://claude.ai/artifact/UbMpXbepDzN4Mfgs7tAxqm (doc
 id `df72dcc8-963b-4b22-bf78-ca097d25c920`, its one tab `4560d3a5-7376`, the tab's body node
 `bdec01d2-2025`). Only a Claude Code session with the Claude Docs tools reaches it; Codex has no
 route to it. **Only the orchestrating Claude Code session acts on it**: any other session that opens
-it changes nothing and answers nothing (inbox #830), and the board says so. Claude is never
+it changes nothing and answers nothing (inbox #830 in minty-dolphin), and the board says so. Claude is never
 @-mentioned in it, since a mention summons a separate session that has none of this context.
 
 ## When it is read
 
 **On every turn the orchestrator takes, and whenever the player says "doc" or "check the doc".**
 Nothing notifies the terminal session of an edit, and the player gives a heads-up when it matters
-rather than have the board polled (inbox #830). A report from an agent, a merge or a review
+rather than have the board polled (inbox #830 in minty-dolphin). A report from an agent, a merge or a review
 verdict updates the Running table in the same turn.
 
 ## The layout
@@ -33,12 +33,13 @@ Top to bottom, every part present even when empty:
 1. The title, the date and the player's mention, and one line: comment on any block to steer it.
 2. `## Waiting on you`: the open questions, each as below, or the one line "Nothing is waiting on
    you right now." **A heads-up the player may want to act on goes here too, not only into a chat
-   report** (inbox #850), since a line in a report is read once and scrolled away: a review thread
+   report** (inbox #850 in minty-dolphin), since a line in a report is read once and scrolled away: a review thread
    resolved by mistake, a finding that slipped past a merge. *Proposed, not asked for, open to the
    player's correction:* it is written as a question, its My pick saying what happens if they leave
    it, and it stays until they answer it; a choice an agent made where the design was silent stays
    in its report and the pull request's description rather than coming here.
-3. `## Settled`: answered questions, kept until they are filed into the queue, each as below.
+3. `## Settled`: answered questions, kept until they are filed into the queue and gone the moment
+   they are (see "Settling"), each as below.
 4. `## Running`: a table `Item | What it is | State | Next`, one row per piece of work in flight —
    a refactor step, a fix, inbox notes waiting to be filed. A PR is a link in the State cell. Under
    it, one line on what comes after the running work.
@@ -58,8 +59,8 @@ nested exactly like this, the layout the player set on the board:
   - **Me:** 
 ```
 
-- **Lists, never paragraphs** (inbox #830): a loose paragraph under a heading is a format error.
-- **A bold label ends in a plain space** (inbox #830): `**You:** ` with the space outside the bold,
+- **Lists, never paragraphs** (inbox #830 in minty-dolphin): a loose paragraph under a heading is a format error.
+- **A bold label ends in a plain space** (inbox #830 in minty-dolphin): `**You:** ` with the space outside the bold,
   so the player's typing after it is not bold. A Me stub is the same.
 - **Context carries everything an answer needs**, as `CLAUDE.md`'s question rule says: what was
   asked and when, what it collides with, what each answer costs. A game thing is named the way the
@@ -69,19 +70,19 @@ nested exactly like this, the layout the player set on the board:
 
 ## Blocking, and no dialogs
 
-**No question is put to the player as a modal dialog in the chat** (inbox #830): a dialog stops
+**No question is put to the player as a modal dialog in the chat** (inbox #830 in minty-dolphin): a dialog stops
 the session and the player cannot scroll back while it is open, so they lose the context they need
-to answer. The board is where a question goes, apart from one about an inbox note, which may go on its issue (**inbox**). **A blocking question still blocks** (inbox #830):
+to answer. The board is where a question goes, apart from one about an inbox note, which may go on its issue (**inbox**). **A blocking question still blocks** (inbox #830 in minty-dolphin):
 the work it names stops until it is answered, and other work goes on. A question that does not
 block runs on My pick; work built on a pick changes to the player's answer before it merges, if the
 answer differs.
 
 ## Answering
 
-- **General discussion is on the You line; the answer goes on the Me line under it** (inbox #830).
+- **General discussion is on the You line; the answer goes on the Me line under it** (inbox #830 in minty-dolphin).
   The player's words are never written over, reworded or moved out of their line; a formatting fix
   the player asked for (unbolding their text) keeps every word.
-- **A question about specific words is a comment on them** (inbox #830), answered in the same
+- **A question about specific words is a comment on them** (inbox #830 in minty-dolphin), answered in the same
   thread with a Claude Docs `create` utterance whose parent is the thread's root; never the Artifact
   tool's comment actions, whose replies do not show on the doc. A thread the player wrote in is
   never resolved by the orchestrator.
@@ -91,10 +92,14 @@ answer differs.
 ## Settling
 
 A question is settled when the player's answer leaves nothing open. Its Me line then begins
-"settled:" and says what will be built, and the question moves under `## Settled`. **A settled
-question leaves the board once it is filed** — when the filing pull request carrying its inbox note
-merges — since the queue holds it from then on and the board holds open things only. A Running row
-moves to Recently done when its pull request merges.
+"settled:" and says what will be built, and the question moves under `## Settled`. A Running row
+moves to Recently done when its pull request merges, apart from a filing's (below).
+
+**An item that is fully filed leaves the board whole, with no record of it kept there**
+(inbox #877 in minty-dolphin): once the filing pull request carrying its inbox note merges, its settled question,
+its mention in the Running row of notes waiting to be filed, and any line about the filing go in the
+same turn, and no Recently done row or "filed" note stands in for them. The queue and the records
+hold it from then on, and the board holds open things only.
 
 ## Keeping it cheap
 
@@ -108,7 +113,7 @@ often:
   bookmark only; `session-cleanup`'s restart prompt carries both numbers.
 - **Write in one call.** Several ops go in one `update`, applied in order; a write's acknowledgement
   is the next write's anchor, with no read between.
-- **Keep the page small.** Settled questions leave once filed and Recently done keeps the last few;
+- **Keep the page small.** A filed item leaves whole and Recently done keeps the last few;
   the player's typed answers come back split into many small text runs, so a long-lived answer costs
   more on every full read.
 

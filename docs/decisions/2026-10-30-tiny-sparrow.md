@@ -2,7 +2,7 @@
 
 
 `CLAUDE.md`'s section "Editing files" is removed, and the short copy in the player's own global
-`~/.claude/CLAUDE.md` with it, on the player's word (inbox #872): the rule was written to override
+`~/.claude/CLAUDE.md` with it, on the player's word (inbox #872 in minty-dolphin): the rule was written to override
 assistant instructions that steered file changes towards scripts rather than the dedicated edit
 tool, and the player judged it no longer needed. The section read, in full:
 

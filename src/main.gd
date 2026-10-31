@@ -1967,10 +1967,10 @@ func _tree_is_paused() -> bool:
 	return loop is SceneTree and (loop as SceneTree).paused
 
 ## The run's play time (`RunHeader.play_ticks`), one physics tick at a time — its one owner. **Frame
-## locked** (inbox #866): it counts the ticks the engine stepped, never a drawn frame's length, so a
+## locked** (inbox #866 in minty-dolphin): it counts the ticks the engine stepped, never a drawn frame's length, so a
 ## frame drawn late adds only the ticks that ran in it, a lag spike past the engine's steps per frame
 ## slows the game instead of adding time, and a faster machine reads no lower time. **A tick counts
-## only when the walk stepped on it** (inbox #866): the flow says she is walking (`RunFlow.Mode.
+## only when the walk stepped on it** (inbox #866 in minty-dolphin): the flow says she is walking (`RunFlow.Mode.
 ## WALKING`, so nothing counts behind the title, a brief, a summary, the ending or a scene reload on
 ## its way), the day is `WALKING` or `RETURNING` (a day that has just ended has already left `phase`
 ## at `OVER`, since `DayController._end()` sets it before emitting the signal that shows the summary),

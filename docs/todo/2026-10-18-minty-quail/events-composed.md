@@ -32,7 +32,22 @@ vehicle shows (`_stationary_vehicle_uses_side()` on BURNT_OUT_CAR); `EventSpawne
 repeats the rank test for siting; `EventsAhead`'s `GUARDSMAN_GIVING_CHASE` tests choose only the
 run log's wording ("a guardsman" or "a policeman"). **Two clocks:**
 `ResistanceDirector` and `DayController` tick in `_process`, once per drawn frame, while the events
-step and their catches, hard fails and detentions are checked on the physics tick. **The tick still
+step and their catches, hard fails and detentions are checked on the physics tick. **Every clock is
+to be frame-locked** (minty-dolphin #866): the player, "actually we should make all clocks in the game
+frame locked. otherwise someone with a faster computer could get lower times over someone with many
+lag frames", and "if we build a "seed of the day" later and let people compete on a leaderboard the
+timing needs to be fair". Read back as "every clock that makes a time the player sees or decides an
+outcome counts the fixed 30-per-second physics ticks, never wall-clock time; on a lagging machine the
+game slows down instead of the clock running on", the player: "yes, that's what I meant -- also lag
+frames where nothing happens (I don't think we have those) shouldn't count"; read back again as a
+tick counting only when the walk's simulation actually stepped on it (not paused, no screen up, no
+load hold, the catch-up ticks after a hitch counting), "that works". **Read as:** the clocks this
+reaches are the day countdown, the resistance clocks and any other clock under `src/events/`,
+`src/resistance/` and `src/day/` that makes a shown time or decides an outcome. *Proposed, not asked
+for:* the traffic signals' cycle and the encounter watch counted in ticks too (the signals are
+`src/city/`'s, under **crowd-traffic**'s green wave); a test that one long drawn frame advances no
+clock beyond the ticks that ran; and the escape's hundredths label showing the tick clock advanced by
+the physics interpolation fraction, so it looks as it does now. The run's play time already counts ticks (minty-quail-23). **The tick still
 sets a drawing property:** a pursuer that warns over the street is put on the warning draw layer
 from its tick (`EventInstance._take_the_layer_it_warns_on()`, `DrawLayer.draw_on()`), since a look
 never writes the event. **Upward coupling:** the instance uses the red arrow's `ArrowField` as its
