@@ -478,7 +478,8 @@ func _tick_the_events(delta: float) -> void:
 		checkpoints.warn_at_the_doors()
 		checkpoints.watch_the_door_lines(delta)
 		checkpoints.check_detentions()
-	# Last, on the same tick as the step that caught her.
+	# Last, on the same tick as the step that caught her, and on every event's committed pose: each
+	# step above has been proposed, checked and committed (`EventInstance.step()`).
 	_check_hard_fails()
 
 ## **Every live event's step, once a physics tick, in the order they live in `world.instances`**

@@ -4,19 +4,20 @@ extends EventBehaviour
 ## her, giving way where the crowd's cars do, and a strike ahead of its nose while it drives. See
 ## `VehicleSpec` for why the body and the strike are separate things.
 ##
-## **Its frame is proposed, checked, then committed or taken back** (`begin_frame()`,
-## `end_frame()`): the event runs its ordinary tick once between the two, and whatever part of it
-## would have brought the body into her or her pram — the step along its route, the chase, the
-## departure and a turn onto a new heading alike — is taken back, so the car stands where it was,
-## facing the way it faced, until she moves. It stops rather than pushes: a car that shoved her
-## could shove her into a wall, which is the pin the mobile exemption from solidity exists to
-## prevent. **What the tick decided on the pose it would have ended on goes with it**: the end of
-## its route, reached or cut short (`EventRouteWalk`), is acted on — parking, leaving — only once
-## that pose is the one it keeps (`end_its_route()`), so a last step taken back never parks it
-## short of its kerb.
+## **It is the check on its event's step** (`EventInstance.step()`, which proposes, checks, then
+## commits every mover's step, `MoveProposal`): `note_the_pose()` as the step is proposed, the
+## event's ordinary tick, then `check()` on the pose the tick proposes, which takes back whatever part
+## of it would have brought the body into her or her pram — the step along its route, the chase, the
+## departure and a turn onto a new heading alike — so the car stands where it was, facing the way it
+## faced, until she moves. It stops rather than pushes: a car that shoved her could shove her into a
+## wall, which is the pin the mobile exemption from solidity exists to prevent. **What the tick
+## decided on the pose it would have ended on goes with it**: the end of its route, reached or cut
+## short (`EventRouteWalk`), is acted on — parking, leaving — only once that pose is committed
+## (`EventInstance._end_its_route()`, which keeps it while a car's step is open, and which `check()`
+## drops with a pose it takes back), so a last step taken back never parks it short of its kerb.
 ##
 ## **Positional, never a force**, the crowd's own rule for bodies (the **crowd-traffic** skill): the
-## pose the frame would end on is checked, rather than a brake asked to want something, because a
+## pose the step would end on is checked, rather than a brake asked to want something, because a
 ## brake arrives a frame late and a car a frame late is inside her.
 ##
 ## **A pose that leaves her no nearer is always allowed**, so a car she walked up against drives on
@@ -49,14 +50,14 @@ extends EventBehaviour
 ## box, the red light, the zebra and its exemption for the main road are asked of it, and what is
 ## the event car's alone stays here, the refusal of a step past the line.
 ##
-## **It saves nothing across a stream-out**: whether it stands is decided again every frame, and a
+## **It saves nothing across a stream-out**: whether it stands is decided again every step, and a
 ## car comes into the world standing, streamed back in as when it is first made.
 
 ## How near the car's body may be moved to her and her pram, in px. Above zero so the car stops a
 ## hair short of the contact her own collision already rests at rather than on it.
 const DRIVEN_CLEARANCE := 0.5
 
-## Whether the car is standing: its last frame's movement was taken back — it would have put the
+## Whether the car is standing: its last step's movement was taken back — it would have put the
 ## body into her, turned her into its path, or crossed a stop line it gives way at — or, on its
 ## route, she is still in its lane within its warning. **A car is made standing**, so it drives
 ## off only once she is out of its way: created just out of sight on a north-south street, the fire
@@ -65,11 +66,8 @@ const DRIVEN_CLEARANCE := 0.5
 ## warns nor strikes.
 var _standing := true
 
-## True between `begin_frame()` and `end_frame()`, while the tick it proposes runs.
-var _proposing := false
-## The pose and what was known of her when the frame began, to check the proposal against and to
-## put back if it is refused.
-var _at := Vector2.ZERO
+## The heading and what was known of her when the step was proposed, to check the proposal against
+## and to put back if it is refused; the pose itself is the step's (`MoveProposal.from`).
 var _heading_was := Vector2.ZERO
 var _travelled := 0.0
 var _gait_phase := 0.0
@@ -80,10 +78,6 @@ var _warning := 0.0
 var _known := false
 var _ahead_before := false
 var _was_leaving := false
-## The end of its route, reached or cut short this frame (`end_its_route()`), acted on only if the
-## frame is kept; with whether it may park there.
-var _ends_its_route := false
-var _may_park := true
 
 func _init() -> void:
 	steps_each_tick = false
@@ -97,76 +91,60 @@ func is_standing() -> bool:
 func stand() -> void:
 	_standing = true
 
-## Opens the frame: what it is checked against when it ends.
-func begin_frame() -> void:
-	_at = event.position
+## Notes, as its event's step is proposed at `at`, what the step will be checked against.
+func note_the_pose(at: Vector2) -> void:
 	_heading_was = event._heading
 	_travelled = event._path_travelled
 	_gait_phase = event._gait_phase
-	_was = gap_to_her(_at, _heading_was)
-	_line = room_to_its_line(_at, _heading_was)
+	_was = gap_to_her(at, _heading_was)
+	_line = room_to_its_line(at, _heading_was)
 	# Never further than the end of a route it stops at (`route_left()`): it never stands for her,
 	# nor turns onto her, where it cannot reach her.
 	_left = route_left(_travelled)
 	_warning = short_of_its_stop(Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME, _left)
 	_known = event.player_at != Vector2.INF
-	_ahead_before = _known and meets_her(_at, _heading_was, event.player_at, _warning)
+	_ahead_before = _known and meets_her(at, _heading_was, event.player_at, _warning)
 	_was_leaving = event.is_leaving
-	_ends_its_route = false
-	_may_park = true
-	_proposing = true
 
-## **The end of its route, reached or cut short by something solid** (`EventRouteWalk`): while a
-## frame is open it is kept until the frame is (`end_frame()`), so a car never parks or leaves on
-## a pose it never reached. Answers whether it was kept; outside a frame the event acts on it at
-## once.
-func end_its_route(may_park := true) -> bool:
-	if not _proposing:
-		return false
-	_ends_its_route = true
-	_may_park = _may_park and may_park
-	return true
-
-## Closes the frame: commits the pose the tick proposed, or takes it back.
-func end_frame() -> void:
-	_proposing = false
+## **Checks the pose its event's tick proposed** (`move.to`, the event's own position by now), and
+## takes it back where it is refused: the step to `move.from`, with the heading, the distance
+## travelled and the stride it began with. `ends_its_route` is whether the tick reached the end of
+## its route on the proposed pose. Answers whether the pose is kept; one taken back takes that end
+## with it, and the event drops it. A finished event is not checked, and stands no longer.
+func check(move: MoveProposal, ends_its_route: bool) -> bool:
 	if event.is_finished:
 		_standing = false
-		return
-	var on_its_route := drives_its_route() and not _ends_its_route
-	var now := gap_to_her(event.position, event._heading)
+		return true
+	var at := move.from
+	var on_its_route := drives_its_route() and not ends_its_route
+	var now := gap_to_her(move.to, event._heading)
 	var into_her := now < DRIVEN_CLEARANCE and now < _was - 0.001
 	var in_its_way := _standing and on_its_route and _ahead_before
 	var turns_onto_her := on_its_route and _known and not _ahead_before \
 			and not event._heading.is_equal_approx(_heading_was) \
-			and meets_her(event.position, event._heading, event.player_at, _warning)
+			and meets_her(move.to, event._heading, event.player_at, _warning)
 	var past_its_line := on_its_route and _line < INF \
-			and (event.position - _at).dot(_heading_was) > maxf(_line, 0.0) + 0.001
-	if into_her or in_its_way or turns_onto_her or past_its_line:
-		var departing: Vector2 = event._heading
-		event.position = _at
-		event._heading = _heading_was
-		# A departure that began this frame keeps the way it is leaving in, whatever else the frame
-		# did — the chase's last step into her is what is taken back, not the turn away from her,
-		# which `_be_done()` made where the car stands and which brings it no nearer.
-		if event.is_leaving and not _was_leaving \
-				and gap_to_her(_at, departing) >= minf(_was, DRIVEN_CLEARANCE) - 0.001:
-			event._heading = departing
-		event._path_travelled = _travelled
-		event._gait_phase = _gait_phase
-		event._gait_moving = false
-		var strikes_her := into_her and on_its_route and not _standing and not turns_onto_her \
-				and not past_its_line and meets_her(_at, _heading_was, event.player_at,
-						short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, _left))
-		_standing = not strikes_her
-		# The end it reached on the pose taken back is taken back with it.
-		_ends_its_route = false
-	else:
+			and (move.to - at).dot(_heading_was) > maxf(_line, 0.0) + 0.001
+	if not (into_her or in_its_way or turns_onto_her or past_its_line):
 		_standing = false
-	if _ends_its_route:
-		_ends_its_route = false
-		event._be_done(_may_park)
-	turn_the_body()
+		return true
+	var departing: Vector2 = event._heading
+	move.to = at
+	event._heading = _heading_was
+	# A departure that began this step keeps the way it is leaving in, whatever else the step did —
+	# the chase's last step into her is what is taken back, not the turn away from her, which
+	# `_be_done()` made where the car stands and which brings it no nearer.
+	if event.is_leaving and not _was_leaving \
+			and gap_to_her(at, departing) >= minf(_was, DRIVEN_CLEARANCE) - 0.001:
+		event._heading = departing
+	event._path_travelled = _travelled
+	event._gait_phase = _gait_phase
+	event._gait_moving = false
+	var strikes_her := into_her and on_its_route and not _standing and not turns_onto_her \
+			and not past_its_line and meets_her(at, _heading_was, event.player_at,
+					short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, _left))
+	_standing = not strikes_her
+	return false
 
 ## **Whether it strikes her at `her` now**: driving, with her in front of its nose on the carriageway
 ## within `Tuning.PATROL_STRIKE_LEAD` of its travel past the touch, short of the end of a route it

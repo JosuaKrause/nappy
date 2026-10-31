@@ -35,6 +35,9 @@ var size := Vector2i.ZERO
 ## stationary solid body — as the one record every mover asks through `passable()`
 ## (`BlockedLayer`). The ground's own type is the map's (`_ground_lets()`).
 var blocked := BlockedLayer.new()
+## Every mover's move while it stands in this world (`ProposedMoves`), each proposed, checked, then
+## committed (`MoveProposal`): the one list a pass over every mover's proposal goes over.
+var moves := ProposedMoves.new()
 ## Bumped by every write to a per-day record that is not a body (the city's holds, soft seals and
 ## closures): a version a reader only compares with the one its own answer was built from.
 var day_record_version := 0

@@ -188,6 +188,9 @@ class Officer extends RefCounted:
 	var person: EventInstance = null
 	var aim := Vector2.INF
 	var node: CordonOfficer = null
+	## His move each tick (`MoveProposal`), on the map's list of moves while he is out
+	## (`ParkCordon._take_on()`).
+	var move := MoveProposal.new()
 
 var _map: CityMap
 var _city: City
@@ -281,7 +284,7 @@ func clear() -> void:
 		if _map:
 			_map.release_obstruction(stretch.get_instance_id())
 	for officer in officers:
-		_free_figure(officer)
+		_let_go(officer)
 	officers.clear()
 	_leaving.clear()
 	for post in _posts:
@@ -548,8 +551,7 @@ func _set_out(her: Vector2, shows: Callable) -> void:
 			officer.at = behind
 		officer.path = _lay(officer.at, PackedVector2Array([kerb, door]), _rect)
 		officer.legs = _lay_the_round(officer)
-		officers.append(officer)
-		_make_figure(officer)
+		_take_on(officer)
 	_exit = _way_out_through_the_gap(her, shows)
 	_exit_crossing = _tiles_along(_exit[0], _exit.slice(1, 2))
 	_send_escorts()
@@ -946,8 +948,7 @@ func _send_escorts() -> void:
 		escort.person = live
 		escort.at = _exit[_exit.size() - 1]
 		escort.path = _lay(escort.at, _way_in(), escort.avoid)
-		officers.append(escort)
-		_make_figure(escort)
+		_take_on(escort)
 		sent += 1
 	if sent > 0 or not _leaving.is_empty():
 		trace.note("contact", "%d officers come to walk the park's people out, %d more sent off "
@@ -981,7 +982,14 @@ func _send_off(person: EventInstance) -> void:
 
 # ----------------------------------------------------------------- walking ---
 
+## **An officer's tick, proposed, checked, then committed** (`MoveProposal`, the world's shape for
+## every mover's step): opened where he stands, walked through the navigator, which checks each part
+## of the walk as he takes it, and committed where it ends, before his figure is shown there. What
+## the tick acts on as he walks — a stretch taped at the end of a leg, the edge reached, a person
+## sent off, gone out of her sight — is acted on at a pose the navigator has already let him take,
+## which nothing after takes back.
 func _move(officer: Officer, delta: float, her: Vector2, shows: Callable) -> void:
+	officer.move.propose(officer.at)
 	match officer.phase:
 		Officer.Phase.WAITING:
 			officer.wait -= delta
@@ -999,6 +1007,8 @@ func _move(officer: Officer, delta: float, her: Vector2, shows: Callable) -> voi
 		Officer.Phase.LEAVING:
 			_walk_path(officer, officer.speed * delta)
 			_maybe_gone(officer, her, shows)
+	officer.move.to = officer.at
+	officer.at = officer.move.commit()
 	_show(officer)
 
 ## Walks `step` pixels down the officer's path, dropping each point he reaches. True once the path
@@ -1369,9 +1379,21 @@ func _maybe_gone(officer: Officer, her: Vector2, shows: Callable) -> void:
 	if not shows.is_valid() and her == Vector2.INF and not officer.path.is_empty():
 		return
 	officer.phase = Officer.Phase.GONE
-	_free_figure(officer)
+	_let_go(officer)
 
 # ------------------------------------------------------------------ figures ---
+
+## Takes an officer on: one of the cordon's from now, his move on the map's list of moves
+## (`WorldMap.moves`) and his figure in the world.
+func _take_on(officer: Officer) -> void:
+	officers.append(officer)
+	_map.moves.join(officer.move)
+	_make_figure(officer)
+
+## Lets an officer go: his move off the map's list and his figure out of the world.
+func _let_go(officer: Officer) -> void:
+	_map.moves.leave(officer.move)
+	_free_figure(officer)
 
 func _make_figure(officer: Officer) -> void:
 	if not _city:

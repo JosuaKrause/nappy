@@ -630,13 +630,23 @@ func _become_solid_once_it_starts() -> void:
 ## city, which then has no red light to stop at.
 var signals: TrafficSignals = null
 
-## **The end of its route, reached or cut short** (`EventRouteWalk`): it is done there, unless a
-## car's frame is open, which acts on it only once the pose that reached it is kept
-## (`EventCarDriving.end_its_route()`).
+## **The end of its route, reached or cut short** (`EventRouteWalk`), acted on only for a committed
+## pose. A figure's step is checked as each part of it is taken (the navigator's swept step), so the
+## pose it reached the end on is already the one it keeps, and it is done there at once. A car's step
+## is checked once its whole tick is proposed (`EventCarDriving.check()`), which may take the pose
+## back: while that step is open the end is kept (`_ends_its_route_on_commit`) and acted on once the
+## step is committed (`_commit_the_step()`), never if the pose that reached it is taken back.
 func _end_its_route(may_park := true) -> void:
-	if car != null and car.end_its_route(may_park):
+	if car != null and _move.open:
+		_ends_its_route_on_commit = true
+		_may_park_on_commit = _may_park_on_commit and may_park
 		return
 	_be_done(may_park)
+
+## The end of its route reached during an open car step (`_end_its_route()`), with whether it may
+## park there, acted on once the step is committed.
+var _ends_its_route_on_commit := false
+var _may_park_on_commit := true
 
 ## Whether the frame record (`FrameRecord`) was running when this event was made, read once here
 ## so that, with the record off, `_process()` pays one member read rather than a static read and a
@@ -668,18 +678,51 @@ func _process(_delta: float) -> void:
 var held_by_hand := false
 
 ## **One physics tick of the event**, which its manager runs in a fixed order
-## (`EventManager._step_them()`): the tick, inside a car's proposed frame for a car that drives
-## (`EventCarDriving`), which commits the pose the tick ends on or takes it back. Nothing once it is
-## finished.
+## (`EventManager._step_them()`), **proposed, checked, then committed** (`MoveProposal`, the world's
+## shape for every mover's step): the step is opened at the pose it stands at
+## (`_propose_the_step()`), the tick works out where it goes, and the step is closed
+## (`_commit_the_step()`), checked by its checker and committed. A figure's checker is the
+## navigator, which every step of its walk, chase and departure goes through as it is taken, so its
+## proposal arrives at the close already checked; a car that drives is checked there by its own
+## checks (`EventCarDriving.check()`), which take the step back where it would bring the body into
+## her. Nothing once it is finished.
 func step(delta: float) -> void:
 	if is_finished:
 		return
-	if car == null:
-		_tick(delta)
-		return
-	car.begin_frame()
+	_propose_the_step()
 	_tick(delta)
-	car.end_frame()
+	_commit_the_step()
+
+## Its move this tick (`MoveProposal`), its own, on its map's list of moves (`WorldMap.moves`) while
+## it is in the world.
+var _move := MoveProposal.new()
+
+## Opens the step at the pose it stands at; a car notes what its check will hold the step to.
+func _propose_the_step() -> void:
+	_move.propose(position)
+	_ends_its_route_on_commit = false
+	_may_park_on_commit = true
+	if car != null:
+		car.note_the_pose(position)
+
+## **Closes the step**: the pose the tick proposed is checked (a car's own checks; a figure's were
+## made as each part was taken), committed, and only then is what the tick decided on it acted on —
+## the end of a car's route reached on a pose it keeps (`_end_its_route()`) — and a car's body laid
+## along its heading.
+func _commit_the_step() -> void:
+	_move.to = position
+	var ends := _ends_its_route_on_commit
+	_ends_its_route_on_commit = false
+	if car != null and not car.check(_move, ends):
+		ends = false
+	var at := _move.commit()
+	if position != at:
+		position = at
+	if car == null or is_finished:
+		return
+	if ends:
+		_be_done(_may_park_on_commit)
+	car.turn_the_body()
 
 ## What it does in one tick, run by `step()`.
 func _tick(delta: float) -> void:
@@ -1829,10 +1872,14 @@ func _draw() -> void:
 ## Builds the drawing nodes again when the instance comes back into the tree after leaving it,
 ## which took them with it.
 func _enter_tree() -> void:
+	if _map:
+		_map.moves.join(_move)
 	if look:
 		look.enter_tree()
 
 func _exit_tree() -> void:
+	if _map:
+		_map.moves.leave(_move)
 	_rim.band.forget()
 	if look:
 		look.release_nodes()
