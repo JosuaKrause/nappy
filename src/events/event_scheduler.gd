@@ -2351,7 +2351,7 @@ static func _is_a_corner(tile: Vector2i) -> bool:
 ## **A precinct is a retail street**, so it carries more of the day than a length of ordinary
 ## pavement does: it is where the cafés and the market stalls and the buskers are.
 ##
-## **Anything `EventInstance.has_a_spread()` is refused a corner outright**, cached under its own
+## **Anything `EventDef.has_a_spread` is refused a corner outright**, cached under its own
 ## key so the un-narrowed list stays shared with everything that has no orientation to get wrong on
 ## one — a yeller or a busker keeps every tile a plain sidewalk scan already found. This is an
 ## exclusion from the candidate pool rather than a repair after the fact, the same shape a barrier

@@ -156,21 +156,27 @@ enum SpawnMode {
 @export var id := ""
 @export var display_name := ""
 @export var kind := GameEnums.EventKind.RECURRING
-## Whether this row's drawing needs one street axis to lay its body out on. Derived eagerly from
-## `look`, because placement, collision and drawing ask it repeatedly per frame while the
-## authored look changes only when a definition is constructed or deliberately mutated.
+## **Whether this row draws itself as a spread** — segments or a whole scene fitted across
+## `obstructs_radius`, laid along whichever axis `EventInstance._spread_is_vertical()` picks for the
+## street it stands on: `SpreadLook._draw_spread` for `construction`, `burnt_shell`,
+## `market_stall`, `roadblock`, `barricade`, `scaffolding` and `collapsed_frontage`,
+## `RankLook._draw_cafe` for `cafe_tables`, and `SpreadLook._draw_wide_scene` for the three seal pictures
+## wide enough to span the whole street (the fallen tree, the crash, the burst main), each with an
+## authored east-west asset (`EventPictures.wide_scene_texture`). A protest and a firefight also fill
+## `obstructs_radius`-worth of ground, but stand along their street without being a spread
+## (`stands_along_its_street`), so a corner costs them nothing.
 ##
-## This stays a plain field rather than exported data: it is not a second authored decision. The
-## `look` setter below is the one source of the answer, including for duplicated resources.
-var has_a_spread := false
+## **This is the test `EventScheduler._open_ground_for` asks before it will offer a corner as a
+## site**: a junction has no single street for the spread's axis or
+## `EventInstance._centred_on_the_pavement_band` to answer about, so only a row that asks either
+## question has anything to lose by standing on one. Row data, set by each row that is one, and kept
+## by every copy (`duplicate()`, `at_heat()`).
+@export var has_a_spread := false
 
 ## No default worth having: it was `OBJECT` — a category, so a row that never chose was drawn as
 ## roadworks and looked deliberate. Every visible row states its own picture, and
 ## `tests/test_events.gd` names the three that are legitimately invisible.
-@export var look := Look.NONE:
-	set(value):
-		look = value
-		has_a_spread = _look_has_a_spread(value)
+@export var look := Look.NONE
 @export var ambient_source := AmbientSource.NONE
 
 ## **Whether this row stands along its street like a spread without being drawn as one**: a protest's
@@ -217,15 +223,6 @@ enum WarningPicture {
 ## other row.
 @export var noun := ""
 @export var noun_plural := ""
-
-static func _look_has_a_spread(value: Look) -> bool:
-	match value:
-		Look.ROADWORKS, Look.BURNT_SHELL, Look.STALL, Look.ROADBLOCK, Look.BARRICADE, \
-				Look.CAFE, Look.FALLEN_TREE, Look.CAR_ACCIDENT, Look.BURST_MAIN, \
-				Look.SCAFFOLDING, Look.COLLAPSED_FRONTAGE:
-			return true
-		_:
-			return false
 
 ## This row's own ground shape — the datum its shadow and its solid body (when it has one) are
 ## both derived from. A plain `var` rather than `@export`: `GroundShape` is a `RefCounted`, not a
@@ -573,10 +570,52 @@ func departure_speed() -> float:
 ## a row whose notice changes by day says so with `from_day_after` (`notice_on()`).
 @export var notice: NoticeSpec = null
 
-## **The pursuit its hunting copy takes**, for a row that only pursues once it hunts
-## (`HeatResponse.HUNTS` without `hunts_on_foot`, the roadblock): `at_heat()` gives the copy this
-## spec at `Tuning.HEAT_HUNTS_SPEED` and a notice at `Tuning.HEAT_HUNTS_WITHIN`. Null otherwise.
-@export var hunts_as: PursuitSpec = null
+## **How this row hunts her once the resistance has heated it** (`HuntSpec`): a vehicle that lets
+## men out, or a man who pursues her himself. Authored on the cold row of every `PRESSES` and `HUNTS`
+## row; `at_heat()` attaches it to the copy (`hunting`) at and past its rung's threshold. Null for a
+## row that answers to nothing.
+@export var hunts: HuntSpec = null
+
+## **The hunting behaviour this copy carries**: the row's `hunts`, attached by `at_heat()` at and past
+## its rung's threshold, or null — on every cold row, and on a heated copy below its threshold.
+@export var hunting: HuntSpec = null
+
+## Whether this copy is a vehicle that stops for her and lets men out (`hunting` with
+## `HuntSpec.lets_out`), which `EventInvestigation` runs.
+##
+## **A vehicle that investigates: once it notices her it stops and lets men out on foot, who pursue
+## her; the vehicle itself never chases.** *(merry-stork, the player: "an investigating police car
+## should not leave the street. it should stop if close to her and a policeman should emerge and
+## pursue her"; inbox #669 in coral-lark, on the night raid's van: "Van stops, men get out (Recommended)", and on
+## the unmarked van: "Same as the police".)* Heated copies carry it, each made by `at_heat()`, with
+## a `notice` it notices her within — along a clear line, as every notice is
+## (`EventInvestigation`):
+##
+## - **`police_patrol`'s heated copy past `Tuning.HEAT_INVESTIGATES_LEVEL`**, a car that drives: it
+##   drives its route until it notices her, and stops on its route at once — **never inside a
+##   junction box**: noticed with its body in one, it drives on until the body is clear of it and
+##   stops there, since nothing stands in a box it cannot leave (sunny-finch). It lets one man out;
+##   once he is back in, the car drives on along its route as a patrol does, and the end of its
+##   route is where it leaves. Its man's catch costs her and never ends the day by itself
+##   (`PursuitSpec.stop_excitement`).
+## - **`night_raid`'s and `abduction`'s hunting copies**, vans that stand at the kerb: they stop
+##   nowhere, since they never move, and let two men out, whose catch ends the day; men who give up
+##   walk back, and the van stands where it stood, as its cold row does. No vehicle chases her like a
+##   running man (azure-koala, finding 7: "police cars chasing the player behave like running
+##   people"; inbox #664: "I was chased by police cars still which is just silly"); the van keeps
+##   whatever `hard_fail` it has cold.
+##
+## **It is not a pursuer**, so `validate()` refuses the two together: the vehicle stands, as a car
+## stands for her, while its men — `EventCatalogue.out_of_the_car()`, a policeman through day 8 and
+## a guardsman from day 9, put down at its door on her side by `EventManager` — pursue her under the
+## pursuit contract, and walk back to it when they are done. While a car stands for them it is not
+## driving, so it neither warns nor strikes.
+func investigates() -> bool:
+	return hunting != null and hunting.lets_out > 0
+
+## How many men this copy lets out once it stops for her (`HuntSpec.lets_out`), or 0.
+func lets_out() -> int:
+	return hunting.lets_out if hunting else 0
 
 ## Its notice radius, or 0 for a row with no wait: the number every "how close before it notices"
 ## rule reads.
@@ -588,9 +627,11 @@ func chase_speed() -> float:
 	return pursuit.speed if pursuit else 0.0
 
 ## Whether its pursuer, cold or hunting, leaves its body standing when he sets off
-## (`PursuitSpec.leaves_its_body`): the roadblock's, whose cold row carries it on `hunts_as`.
+## (`PursuitSpec.leaves_its_body`): the roadblock's, whose cold row carries it on its hunt.
 func leaves_its_body() -> bool:
-	var chase := pursuit if pursuit else hunts_as
+	var chase := pursuit
+	if chase == null and hunts != null:
+		chase = hunts.pursuit
 	return chase != null and chase.leaves_its_body
 
 ## Whether it pursues with a chase that begins in `start`'s way.
@@ -619,14 +660,14 @@ enum HeatResponse {
 	## Answers to nothing. Everything in act I, and the default: a cat does not care who you know.
 	NONE,
 	## **More of them, and more expensive to stand near, and past a threshold it investigates**
-	## (`investigates`: it stops near her and a man on foot gets out and pursues her).
+	## (its `hunts`: it stops near her and a man on foot gets out and pursues her).
 	## The rung that does not hunt: it never gains `hard_fail`, whatever the heat, and the man it
 	## lets out costs her when he reaches her rather than ending the day (`PursuitSpec.stop_excitement`). (The
 	## patrol that carries it strikes as a car does at every heat — `vehicle` — which is not a rung.)
 	PRESSES,
 	## **It stops being a place and starts being a hunter.** The lethal rung: `roadblock`'s guard
 	## hunts her himself, and the two vans on it — `abduction` and `night_raid` — hunt on foot
-	## (`hunts_on_foot`), letting men out whose catch ends the day.
+	## (their `hunts` let men out), whose catch ends the day.
 	HUNTS,
 }
 
@@ -723,45 +764,6 @@ enum SolidWhen {
 ## **A car that drives**, or null for anything else — see `VehicleSpec`: `police_patrol` and every
 ## copy of it, and `fire_truck`.
 @export var vehicle: VehicleSpec = null
-
-## **A vehicle that investigates: once it notices her it stops and lets men out on foot, who pursue
-## her; the vehicle itself never chases.** *(merry-stork, the player: "an investigating police car
-## should not leave the street. it should stop if close to her and a policeman should emerge and
-## pursue her"; inbox #669 in coral-lark, on the night raid's van: "Van stops, men get out (Recommended)", and on
-## the unmarked van: "Same as the police".)* Heated copies carry it, each made by `at_heat()`, with
-## a `notice` it notices her within — along a clear line, as every notice is
-## (`EventInvestigation`):
-##
-## - **`police_patrol`'s heated copy past `Tuning.HEAT_INVESTIGATES_LEVEL`**, a car that drives: it
-##   drives its route until it notices her, and stops on its route at once — **never inside a
-##   junction box**: noticed with its body in one, it drives on until the body is clear of it and
-##   stops there, since nothing stands in a box it cannot leave (sunny-finch). It lets one man out;
-##   once he is back in, the car drives on along its route as a patrol does, and the end of its
-##   route is where it leaves. Its man's catch costs her and never ends the day by itself
-##   (`PursuitSpec.stop_excitement`).
-## - **`night_raid`'s and `abduction`'s hunting copies** (`hunts_on_foot`), vans that stand at the
-##   kerb: they stop nowhere, since they never move, and let `lets_out` men out, whose catch ends
-##   the day; men who give up walk back, and the van stands where it stood, as its cold row does.
-##
-## **It is not a pursuer**, so `validate()` refuses the two together: the vehicle stands, as a car
-## stands for her, while its men — `EventCatalogue.out_of_the_car()`, a policeman through day 8 and
-## a guardsman from day 9, put down at its door on her side by `EventManager` — pursue her under the
-## pursuit contract, and walk back to it when they are done. While a car stands for them it is not
-## driving, so it neither warns nor strikes.
-@export var investigates := false
-
-## How many men an investigating vehicle lets out (`investigates`). One for the patrol car; the
-## night raid's and the unmarked van let two out. *(Inbox #669 in coral-lark: "Van stops, men get out" — men, so
-## more than one; two is chosen while building, open to overturn.)*
-@export var lets_out := 1
-
-## **A `HUNTS` row whose hunting copy hunts on foot**: at `Tuning.HEAT_HUNTS_LEVEL` it does not
-## pursue her itself but `investigates`, letting `lets_out` men out who do, and whose catch ends the
-## day. `night_raid` and `abduction`, the two vans — after inbox #669 in coral-lark ("Van stops, men get out
-## (Recommended)" · "Same as the police") no vehicle chases her like a running man (azure-koala,
-## finding 7: "police cars chasing the player behave like running people"; inbox #664: "I was chased
-## by police cars still which is just silly"). The van keeps whatever `hard_fail` it has cold.
-@export var hunts_on_foot := false
 
 ## Which lane of a two-tile pavement an event wants.
 ##
@@ -1015,57 +1017,50 @@ func at_heat(level: int) -> EventDef:
 	# parts would quietly go back to one body spanning its whole shape.
 	hot.shape = shape
 	hot.solid_parts = solid_parts
-	match heat_response:
-		HeatResponse.PRESSES:
-			# More of them, and more expensive to be near. Population is the axis that changes the
-			# *route* — this row's whole design is that you start planning around it — and intensity
-			# is what makes one of them worth planning around in the first place.
-			hot.max_per_day = maxi(max_per_day,
-					roundi(max_per_day * lerpf(1.0, Tuning.HEAT_PRESSES_POPULATION, through)))
-			hot.intensity = intensity * lerpf(1.0, Tuning.HEAT_PRESSES_INTENSITY, through)
-			if level >= Tuning.HEAT_INVESTIGATES_LEVEL:
-				# **It runs its route until it notices her, and then it stops and a policeman gets
-				# out** (`investigates`): the car stays on its road, and the man is the pursuer.
-				hot.investigates = true
-				hot.notice = NoticeSpec.at(Tuning.HEAT_INVESTIGATE_WITHIN)
-			# The rung stays off the hard-fail ladder at every level. Stated rather than assumed,
-			# because only the top rung hunts her: a patrol car kills only as a car does, in front
-			# of it while it drives its route (`vehicle`), and never while it stands for the man it
-			# let out — whose catch costs her rather than ending the day (`PursuitSpec.stop_excitement`).
-			hot.hard_fail = false
-		HeatResponse.HUNTS:
-			# Below its own threshold a `HUNTS` row is untouched. Population and intensity are
-			# `PRESSES`'s axes — "more of them, more expensive" — and this rung answers a
-			# different question: not *how much does it cost to be near*, but *can I still be
-			# near it at all*.
-			if level >= Tuning.HEAT_HUNTS_LEVEL and hunts_on_foot:
-				# **A van hunts with its men, not its wheels** (`hunts_on_foot`): it stays where it
-				# stands and lets them out once it notices her (`investigates`), and their catch
-				# ends the day. The van itself keeps the cold row's `hard_fail`, whichever it is.
-				hot.investigates = true
-				hot.notice = NoticeSpec.at(Tuning.HEAT_HUNTS_WITHIN)
-			elif level >= Tuning.HEAT_HUNTS_LEVEL:
-				# It hunts as its row says (`hunts_as`), at the ladder's own speed and notice.
-				hot.pursuit = hunts_as.duplicate() as PursuitSpec
-				hot.pursuit.speed = Tuning.HEAT_HUNTS_SPEED
-				hot.notice = NoticeSpec.at(Tuning.HEAT_HUNTS_WITHIN)
-				# The shared trigger is authored once, against the widest cold field in the
-				# catalogue (`abduction`'s 250px) — a row whose own `outer_radius` sits under it
-				# would notice her from outside its own field, which `Tuning.validate_pursuit()`
-				# refuses. Widening only the hunting copy holds the contract for every `HUNTS` row
-				# without asking a row's author to pad its cold field past a constant that belongs
-				# to the ladder rather than to the row; the cold shape, and everything measured
-				# from it (`required_telegraph_time()`, the cost table), is untouched.
-				hot.outer_radius = maxf(outer_radius, Tuning.HEAT_HUNTS_WITHIN)
-				# For a pursuer `duration` is the length of the chase, not the length of the idle
-				# — see `notice` above. Cold, this row simply sits for `duration` seconds
-				# and is done.
-				hot.duration = Tuning.PURSUIT_TIME
-				# Stated explicitly rather than left to the copy, the way `PRESSES` states the
-				# opposite above: a pursuer is exempt from the rule that nothing else happens
-				# inside a lethal event's field (`EventScheduler._keeps_its_field_clear`), so this
-				# rung stays `hard_fail` rather than losing it to stay inside that rule.
-				hot.hard_fail = true
+	var hunts_from := Tuning.HEAT_HUNTS_LEVEL
+	var notices_within := Tuning.HEAT_HUNTS_WITHIN
+	if heat_response == HeatResponse.PRESSES:
+		# More of them, and more expensive to be near. Population is the axis that changes the
+		# *route* — this row's whole design is that you start planning around it — and intensity
+		# is what makes one of them worth planning around in the first place. Below its own
+		# threshold a `HUNTS` row is untouched: population and intensity are this rung's axes, and
+		# that rung answers a different question — not *how much does it cost to be near*, but *can
+		# I still be near it at all*.
+		hot.max_per_day = maxi(max_per_day,
+				roundi(max_per_day * lerpf(1.0, Tuning.HEAT_PRESSES_POPULATION, through)))
+		hot.intensity = intensity * lerpf(1.0, Tuning.HEAT_PRESSES_INTENSITY, through)
+		hunts_from = Tuning.HEAT_INVESTIGATES_LEVEL
+		notices_within = Tuning.HEAT_INVESTIGATE_WITHIN
+	if hunts == null or level < hunts_from:
+		return hot
+	# **At its rung's threshold the copy takes the row's hunt** (`hunts`, `HuntSpec`) and notices her
+	# at the rung's own distance: a vehicle stops on its road, or stands where it is, and lets its men
+	# out (`investigates()`), keeping its cold row's `hard_fail` — a patrol car kills only as a car
+	# does, in front of it while it drives its route (`vehicle`), and a van as it did cold; or a man
+	# pursues her himself.
+	hot.hunting = hunts
+	hot.notice = NoticeSpec.at(notices_within)
+	if hunts.pursuit != null:
+		# He hunts as the row says, at the ladder's own speed.
+		hot.pursuit = hunts.pursuit.duplicate() as PursuitSpec
+		hot.pursuit.speed = Tuning.HEAT_HUNTS_SPEED
+		# The shared trigger is authored once, against the widest cold field in the catalogue
+		# (`abduction`'s 250px) — a row whose own `outer_radius` sits under it would notice her from
+		# outside its own field, which `Tuning.validate_pursuit()` refuses. Widening only the
+		# hunting copy holds the contract for every hunt that pursues without asking a row's author
+		# to pad its cold field past a constant that belongs to the ladder rather than to the row;
+		# the cold shape, and everything measured from it (`required_telegraph_time()`, the cost
+		# table), is untouched.
+		hot.outer_radius = maxf(outer_radius, notices_within)
+		# For a pursuer `duration` is the length of the chase, not the length of the idle — see
+		# `notice` above. Cold, this row simply sits for `duration` seconds and is done.
+		hot.duration = Tuning.PURSUIT_TIME
+	# A hunt whose own catch ends the day says so (`HuntSpec.ends_the_day`, the roadblock's guard):
+	# a pursuer is exempt from the rule that nothing else happens inside a lethal event's field
+	# (`EventScheduler._keeps_its_field_clear`), so the copy is lethal rather than losing it to stay
+	# inside that rule.
+	if hunts.ends_the_day:
+		hot.hard_fail = true
 	return hot
 
 func available_on(day: int) -> bool:
@@ -1224,13 +1219,22 @@ func validate() -> bool:
 			push_error("event '%s' notices her at %.0fpx: a notice needs a distance" % [id,
 					each_notice.within])
 			return false
-	# **A row that hunts as a pursuer says how** (`hunts_as`), and only such a row does.
-	var hunts_as_a_pursuer := heat_response == HeatResponse.HUNTS and not hunts_on_foot
-	if hunts_as_a_pursuer and hunts_as == null:
-		push_error("event '%s' hunts as a pursuer without saying how it pursues (hunts_as)" % id)
+	# **A row that answers to the resistance says how it hunts** (`hunts`), and only such a row does:
+	# a vehicle that lets men out or a man who pursues, never both and never neither; the patrol
+	# rung never pursues and never kills, and only a hunt that pursues ends the day by its own catch.
+	if (heat_response == HeatResponse.NONE) != (hunts == null):
+		push_error("event '%s' answers to the resistance exactly when it says how it hunts (hunts)"
+				% id)
 		return false
-	if hunts_as and not hunts_as_a_pursuer:
-		push_error("event '%s' says how it hunts (hunts_as) but never hunts as a pursuer" % id)
+	if hunts != null and (hunts.lets_out > 0) == (hunts.pursuit != null):
+		push_error("event '%s' hunts either by letting men out or by pursuing her, one of the two"
+				% id)
+		return false
+	if hunts != null and hunts.ends_the_day and hunts.pursuit == null:
+		push_error("event '%s' hunts by letting men out, whose catch is their own row's" % id)
+		return false
+	if heat_response == HeatResponse.PRESSES and (hard_fail or hunts.pursuit != null):
+		push_error("event '%s' presses but would end the day or chase her itself" % id)
 		return false
 	var waits_on_some_day := notice != null \
 			or (from_day_after != null and from_day_after.notice != null)
@@ -1324,13 +1328,10 @@ func validate() -> bool:
 	# kill twice over, once by its whole field's core from behind and beside it.
 	# A vehicle that investigates notices her (`notice`) and lets men out: one that also
 	# pursued would be the vehicle chasing her like a running man, one with no reach never notices,
-	# one with no body has no door to let them out of, and one that lets nobody out does nothing.
-	if investigates and (pursuit or notice == null or shape == null or lets_out < 1):
+	# and one with no body has no door to let them out of.
+	if investigates() and (pursuit or notice == null or shape == null):
 		push_error("event '%s' investigates but is not a vehicle with a reach to notice her in, a "
 				% id + "body to let men out of and men to let out, that stays where it is")
-		return false
-	if hunts_on_foot and heat_response != HeatResponse.HUNTS:
-		push_error("event '%s' hunts on foot but is not on the hunting rung" % id)
 		return false
 	# A stop is a pursuer's catch made a cost: a row that also ended the day would do both at once,
 	# and one at or over the whole meter would end a calm day by itself, which is what it is not.

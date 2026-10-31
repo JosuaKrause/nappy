@@ -788,6 +788,7 @@ static func _cafe_tables() -> EventDef:
 	def.id = "cafe_tables"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CAFE
+	def.has_a_spread = true
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 12.0
 	def.inner_radius = 38.0
@@ -906,6 +907,7 @@ static func _construction() -> EventDef:
 	def.id = "construction"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROADWORKS
+	def.has_a_spread = true
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 0.0
@@ -1057,6 +1059,7 @@ static func _burnt_shell() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURNT_SHELL
+	def.has_a_spread = true
 	def.intensity = 2.5
 	def.inner_radius = 24.0
 	def.outer_radius = 78.0
@@ -1175,6 +1178,7 @@ static func _market_stall() -> EventDef:
 	def.id = "market_stall"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.STALL
+	def.has_a_spread = true
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.intensity = 14.0
 	def.inner_radius = 38.0
@@ -1749,7 +1753,7 @@ static func _charging_dog() -> EventDef:
 ## **The patrol rung of the resistance's ladder.** `heat_response = PRESSES`: past
 ## `RunState.resistance.progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
 ## it stops merely patrolling and starts investigating: it stops on its road once she is close and
-## a policeman gets out and pursues her (`EventDef.investigates`, `out_of_the_car()`), whose catch
+## a policeman gets out and pursues her (`EventDef.investigates()`, `out_of_the_car()`), whose catch
 ## costs her and never ends the day by itself. The car never gains `hard_fail`, whatever the heat,
 ## and never strikes her while it stands for him; the unmarked van is the rung that hunts.
 static func _police_patrol() -> EventDef:
@@ -1785,6 +1789,8 @@ static func _police_patrol() -> EventDef:
 	def.weight = 3.0
 	def.max_per_day = 12
 	def.heat_response = EventDef.HeatResponse.PRESSES
+	# Past the threshold it stops for her and lets one man out (`HuntSpec.letting_out()`).
+	def.hunts = HuntSpec.letting_out(1)
 	return def
 
 ## Cosmetic dread. Barely moves the meter; it is here so the walls change.
@@ -2014,6 +2020,7 @@ static func _roadblock() -> EventDef:
 	def.id = "roadblock"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROADBLOCK
+	def.has_a_spread = true
 	def.first_day = 7
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
@@ -2022,16 +2029,18 @@ static func _roadblock() -> EventDef:
 	def.outer_radius = 179.0
 	def.telegraph_time = 1.8
 	def.solid(GroundShape.band(60.0))
-	# **How his hunting copy pursues** (`EventDef.hunts_as`): he catches at a man's reach, taken
-	# from `masked_pursuer` since the guard who leaves this post and the masked man are the same
-	# figure, and warns at his post with his hand raised (woolly-penguin #748) on the clock every
-	# charger that waits for her keeps (inbox #788 in minty-lemur).
-	def.hunts_as = PursuitSpec.new()
-	def.hunts_as.catch_reach = MASKED_MAN_REACH
-	def.hunts_as.stands = true
-	def.hunts_as.warns_for = Tuning.CHARGER_WARNING
-	def.hunts_as.leaves_its_body = true
-	def.hunts_as.warns_over_the_street = true
+	# **How his hunting copy pursues** (`EventDef.hunts`, `HuntSpec.pursuing()`, a catch that ends
+	# the day): he catches at a man's reach, taken from `masked_pursuer` since the guard who leaves
+	# this post and the masked man are the same figure, and warns at his post with his hand raised
+	# (woolly-penguin #748) on the clock every charger that waits for her keeps (inbox #788 in
+	# minty-lemur).
+	var chase := PursuitSpec.new()
+	chase.catch_reach = MASKED_MAN_REACH
+	chase.stands = true
+	chase.warns_for = Tuning.CHARGER_WARNING
+	chase.leaves_its_body = true
+	chase.warns_over_the_street = true
+	def.hunts = HuntSpec.pursuing(chase)
 	def.barrier_structure = true
 	def.weight = 2.0
 	def.max_per_day = 6
@@ -2053,10 +2062,10 @@ static func _roadblock() -> EventDef:
 ## here changes `contribution_at()`, spawns a body, or reaches into the crowd.
 ##
 ## **`heat_response = HUNTS`, the lethal rung of the resistance's ladder, hunted on foot**
-## (`hunts_on_foot`). Below `Tuning.HEAT_HUNTS_LEVEL` it is untouched — population and intensity
+## (`EventDef.hunts`, letting men out). Below `Tuning.HEAT_HUNTS_LEVEL` it is untouched — population and intensity
 ## are `PRESSES`'s axes, not this one's. At and above it, the derived copy stops idling for a
 ## stranger and hunts her with its men instead: it stays parked, solid, and once she is within
-## `Tuning.HEAT_HUNTS_WITHIN` of it along a clear line it lets `lets_out` (two) men out at its door,
+## `Tuning.HEAT_HUNTS_WITHIN` of it along a clear line it lets two men out at its door,
 ## `out_of_the_car()`'s hunting copy, whose catch ends the day — the van's own lethality, kept.
 ## *(Inbox #669 in coral-lark, asked whether the unmarked van should stop and let men out as the police vehicles
 ## do: "Same as the police".)* The van keeps `hard_fail` throughout, so its own 54px still takes her
@@ -2080,7 +2089,7 @@ static func _abduction() -> EventDef:
 	def.telegraph_time = 4.6
 	# A van is a van: 22 + her own 14 leaves the 54 that takes her comfortably reachable, so the
 	# body never shields her from the van's own reach. It keeps the body at every heat: hunting, it
-	# stays parked and lets its men out (`hunts_on_foot`), so nothing about a moving wall applies.
+	# stays parked and lets its men out (`EventDef.hunts`, letting men out), so nothing about a moving wall applies.
 	def.solid(GroundShape.point(VEHICLE_BODY))
 	def.hard_fail = true
 	def.weight = 2.0
@@ -2090,8 +2099,7 @@ static func _abduction() -> EventDef:
 	def.max_per_day = 4
 	def.cost = 3
 	def.heat_response = EventDef.HeatResponse.HUNTS
-	def.hunts_on_foot = true
-	def.lets_out = 2
+	def.hunts = HuntSpec.letting_out(2)
 	return def
 
 ## **A man in an alley who is worth crossing the road for, and who comes after you if you do not.**
@@ -2382,7 +2390,7 @@ static func on_foot_on(day: int) -> EventDef:
 ## whether his catch is a stop. See `out_of_the_car()`.
 static var _out_of_the_car: Dictionary[String, EventDef] = {}
 
-## **The man an investigating vehicle lets out** (`EventDef.investigates`) — the patrol car's one,
+## **The man an investigating vehicle lets out** (`EventDef.investigates()`) — the patrol car's one,
 ## the hunting raid's and unmarked van's two: the day's pursuer on foot (`on_foot_on()`, a policeman
 ## through day 8, a guardsman from day 9), his own row, getting out at the vehicle's door in her
 ## view. *(merry-stork, the player: "it should stop if close to her and a policeman should emerge and
@@ -2454,10 +2462,10 @@ static var _task_guard_sent: EventDef = null
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##
 ## **`heat_response = HUNTS`, the same rung `abduction` climbs, but it hunts on foot**
-## (`hunts_on_foot`). Below `Tuning.HEAT_HUNTS_LEVEL` it is untouched, exactly as it stands here — a
+## (`EventDef.hunts`, letting men out). Below `Tuning.HEAT_HUNTS_LEVEL` it is untouched, exactly as it stands here — a
 ## closed block and nothing more. At and above it, the derived copy `investigates`: the van stays
 ## where it stands, and the moment she is within `Tuning.HEAT_HUNTS_WITHIN` (180px) of it along a
-## clear line it lets `lets_out` (two) men out at its door on her side, who pursue her under the
+## clear line it lets two men out at its door on her side, who pursue her under the
 ## pursuit contract — `EventCatalogue.out_of_the_car()`'s hunting copy, a guardsman on day 10 —
 ## and whose catch ends the day, as M56 built the hunting raid *(inbox #669 in coral-lark, the player: "Van stops,
 ## men get out (Recommended)" — no vehicle chases her like a running man, azure-koala's finding 7 —
@@ -2495,8 +2503,7 @@ static func _night_raid() -> EventDef:
 	def.solid(GroundShape.point(44.0))
 	def.cost = 4
 	def.heat_response = EventDef.HeatResponse.HUNTS
-	def.hunts_on_foot = true
-	def.lets_out = 2
+	def.hunts = HuntSpec.letting_out(2)
 	return def
 
 # ------------------------------------------------------------ Act IV: open (12+) ---
@@ -2546,6 +2553,7 @@ static func _barricade() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BARRICADE
+	def.has_a_spread = true
 	def.act_tag = 4
 	def.intensity = 0.0
 	def.inner_radius = 40.0
@@ -2666,6 +2674,7 @@ static func _fallen_tree() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.FALLEN_TREE
+	def.has_a_spread = true
 	def.act_tag = 1
 	def.intensity = 0.0
 	def.inner_radius = 40.0
@@ -2703,6 +2712,7 @@ static func _car_accident() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.CAR_ACCIDENT
+	def.has_a_spread = true
 	def.act_tag = 1
 	def.intensity = Tuning.CAR_ACCIDENT_INTENSITY
 	def.inner_radius = GroundShape.BAND_RADIUS
@@ -2769,6 +2779,7 @@ static func _scaffolding() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.SCAFFOLDING
+	def.has_a_spread = true
 	def.act_tag = 1
 	def.intensity = 0.0
 	def.inner_radius = 40.0
@@ -2789,6 +2800,7 @@ static func _burst_water_main() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURST_MAIN
+	def.has_a_spread = true
 	def.act_tag = 1
 	def.intensity = 0.0
 	def.inner_radius = 40.0
@@ -2860,6 +2872,7 @@ static func _collapsed_frontage() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.COLLAPSED_FRONTAGE
+	def.has_a_spread = true
 	def.act_tag = 2
 	def.intensity = 0.0
 	def.inner_radius = 40.0

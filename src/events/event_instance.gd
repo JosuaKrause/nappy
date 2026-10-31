@@ -8,28 +8,6 @@ extends Node2D
 ## at the baby, so there is no ordering to get wrong, events compose by simple addition, and
 ## the whole thing is testable without a scene.
 
-## Whether a def's instance draws itself as a **spread** — segments or a whole scene fitted across
-## `def.obstructs_radius`, laid along whichever axis `_spread_is_vertical` picks for the street it
-## stands on. That is `SpreadLook._draw_spread`, `RankLook._draw_cafe` or
-## `SpreadLook._draw_wide_scene`, nothing else in `EventLook.draw_body`'s dispatch: `ROADWORKS`,
-## `BURNT_SHELL`, `STALL`, `ROADBLOCK`, `BARRICADE`, `SCAFFOLDING` and `COLLAPSED_FRONTAGE` go to
-## the first, `CAFE` to the second. The three seal pictures wide enough to span the whole street
-## (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) use `SpreadLook._draw_wide_scene`, which fits one
-## scene to the obstruction and anchors vertical scenes at the far end so their centre sits on the
-## ground point. Each has an authored east-west asset selected by
-## `EventPictures.wide_scene_texture`. `PROTEST` and `FIREFIGHT` also fill `obstructs_radius`-worth
-## of ground but draw it with their own functions that never call `_spread_is_vertical` or
-## `spread_at` — a protest rank and a firefight's cover are laid along local X unconditionally, so a
-## corner costs them nothing and they are rightly outside this test.
-##
-## **This is the test `EventScheduler._open_ground_for` asks before it will offer a corner as a
-## site.** See that function and `docs/DECISIONS.md`, "a spread on a corner is placed as if the
-## corner were nothing" — a junction has no single street for `_spread_is_vertical` or
-## `_centred_on_the_pavement_band` to answer about, so only a row that actually asks either
-## question has anything to lose by standing on one.
-static func has_a_spread(def: EventDef) -> bool:
-	return def.has_a_spread
-
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
 var path: PackedVector2Array = PackedVector2Array()
@@ -68,7 +46,7 @@ var car: EventCarDriving
 ## A barrier its guards stand at and walk out of (`EventBarrierPost`): the roadblock's. Null for
 ## anything else.
 var barrier_post: EventBarrierPost
-## A vehicle that stops for her and lets men out (`EventDef.investigates`).
+## A vehicle that stops for her and lets men out (`EventDef.investigates()`).
 var investigation: EventInvestigation
 ## Coming after her: the notice, the stand-off and lunge, the charge, the give-up
 ## (`EventDef.pursuit`).
@@ -810,7 +788,7 @@ func _tick(delta: float) -> void:
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
 		# `_step`'s own note says why a moving pursuer may not keep a body: "giving a
 		# pursuer one would let a moving wall pin her against a building on a two-tile pavement."
-		# A hunting `abduction` or raid never gets here: it hunts on foot (`EventDef.hunts_on_foot`)
+		# A hunting `abduction` or raid never gets here: it lets its men out (`EventDef.hunts`)
 		# and stays parked, solid, while its men come after her.
 		#
 		# **`PursuitSpec.leaves_its_body` is the other case, and it is not an exception to that rule.** The

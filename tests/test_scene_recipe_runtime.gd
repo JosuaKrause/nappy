@@ -262,9 +262,9 @@ func _test_heat_installs_the_heated_row(t) -> void:
 		runtime.free()
 	var cold: EventDef = installed.get(null)
 	var hot: EventDef = installed.get(Tuning.HEAT_INVESTIGATES_LEVEL)
-	t.check(cold != null and not cold.investigates and is_zero_approx(cold.notice_within()),
+	t.check(cold != null and not cold.investigates() and is_zero_approx(cold.notice_within()),
 			"with no heat the recipe installs the cold patrol, no trigger")
-	t.check(hot != null and hot.investigates
+	t.check(hot != null and hot.investigates()
 			and is_equal_approx(hot.notice_within(), Tuning.HEAT_INVESTIGATE_WITHIN),
 			"at the investigating level it installs the copy that stops for her from %.0fpx"
 			% Tuning.HEAT_INVESTIGATE_WITHIN)

@@ -361,7 +361,7 @@ func is_driving() -> bool:
 ## Whether the car is on its route rather than in any other state: not standing still through a
 ## telegraph or parked, not leaving — it is over, and nothing that is over ends the day — and **not
 ## stopped to investigate**: the heated copy that has noticed her stands where it stopped while the
-## man it let out pursues her (`EventDef.investigates`, `EventInvestigation`), and a standing car
+## man it let out pursues her (`EventDef.investigates()`, `EventInvestigation`), and a standing car
 ## strikes nobody. Once he is back in it drives its route again, and is a car on it like any other.
 func drives_its_route() -> bool:
 	if event.is_finished or event.is_leaving or event.is_parked:
