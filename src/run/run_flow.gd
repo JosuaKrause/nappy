@@ -3,11 +3,13 @@ extends RefCounted
 ## The run's way through its screens: which screen stands in front of the walk (`mode`), and what
 ## that screen's continue leads to (`continued()`). `main` builds one per boot, tells it each time a
 ## screen comes up or a day ends, and carries out the `Step` its continue returns; the flow itself
-## builds nothing and shows nothing.
+## shows nothing, and builds a day only by having the `DayDirector` it is handed start it.
 ##
-## **A scene recipe is a configuration of it** (`authored`): an authored scene is one day, so every
-## continue plays that scene again, a lost escape section is retried by the scene's own runtime, and a
-## won last day hands over to nothing.
+## **A scene recipe is a configuration of it** (`author()`, `scene`): an authored scene is one day,
+## so every continue plays that scene again, a lost escape section is retried by the scene itself, a
+## won last day hands over to nothing, its day is installed by the scene rather than planned from the
+## run, its city is built on the scene's own map, the escape's city plans no finale of its own, and the
+## HUD says none of the control lessons the scene has learned.
 ##
 ## It also announces the day being walked to the observers that draw it — the developer readout, the
 ## HUD's clock and the route rig — through `day_started` and `day_planned`, which carry the day's
@@ -94,11 +96,19 @@ var mode := Mode.BOOTING
 var opening := Opening.FRESH
 ## The day or section being walked; an ordinary day until one starts.
 var spec := DaySpec.new()
-## An authored scene (a scene recipe) rather than the game's own run.
-var authored := false
+## The authored scene (a scene recipe's playback) this boot plays, or null for the game's own run.
+var scene: AuthoredScene
+## Whether an authored scene is played rather than the game's own run.
+var authored: bool:
+	get:
+		return scene != null
 
-func _init(is_authored := false) -> void:
-	authored = is_authored
+func _init(the_scene: AuthoredScene = null) -> void:
+	scene = the_scene
+
+## Configures the flow with the authored scene this boot plays, once it is built.
+func author(the_scene: AuthoredScene) -> void:
+	scene = the_scene
 
 ## Whether a run stands behind the escape this boot plays: its own ending, handed over or resumed,
 ## rather than the flag's walk, which settles nothing when she gets out.
@@ -109,6 +119,20 @@ func escape_from_a_run() -> bool:
 ## day plays the scene again.
 func escape_follows() -> bool:
 	return not authored
+
+## Whether the escape's city plans its own finale. An authored scene installs its own.
+func plans_the_finale() -> bool:
+	return not authored
+
+## The map the city is built on when it is an authored scene's own, or null for the one the run's
+## seed generates.
+func authored_map() -> CityMap:
+	return scene.city_map() if authored else null
+
+## Whether the run starts after the ordinary control lessons have been learned: an authored scene
+## that says so. The game's own run teaches them.
+func lessons_learned() -> bool:
+	return authored and scene.lessons_learned()
 
 func in_the_title() -> bool:
 	return mode == Mode.TITLE
@@ -129,6 +153,17 @@ func begin(the_spec: DaySpec) -> void:
 ## The day or section just begun has been built and placed.
 func planned() -> void:
 	day_planned.emit(spec)
+
+## A day begins and `director` starts it: announced, built, and announced planned once placed. An
+## authored scene's day is the director's `start_authored_day()`, begun and never planned. Returns
+## the problems that kept an authored scene's setup from standing, empty when the day stands.
+func start_day(director: DayDirector, the_spec: DaySpec) -> Array[String]:
+	begin(the_spec)
+	if authored:
+		return director.start_authored_day(the_spec, scene)
+	director.start_day(the_spec)
+	planned()
+	return []
 
 # ----------------------------------------------------------- the screens ---
 
@@ -172,11 +207,15 @@ func escape_won() -> void:
 func reload() -> void:
 	mode = Mode.RELOADING
 
-## The continue of whatever screen is up: the step it leads to, and the mode that step leaves the
-## run in. A continue with no screen up leads nowhere. `DaySummary` sends none (a tap's continue,
-## sent two frames late, is dropped once its screen is gone), so this is the flow's own rule, not
-## the guard against a tap and a key reaching one screen.
-func continued() -> Step:
+## The continue of the screen raised in `raised_in`: the step it leads to, and the mode that step
+## leaves the run in. **Answered by the mode the screen was raised in**, which `DaySummary` sends
+## with its continue: a continue from a screen the run has already left, and a continue with no
+## screen up, lead nowhere. `DaySummary` sends none of those (a tap's continue, sent two frames late,
+## is dropped once its screen is gone), so this is the flow's own rule, not the guard against a tap
+## and a key reaching one screen.
+func continued(raised_in: Mode) -> Step:
+	if raised_in != mode:
+		return Step.NONE
 	var step := _step_for(mode)
 	match step:
 		Step.ENGAGE, Step.NEXT_DAY:

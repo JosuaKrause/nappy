@@ -431,7 +431,6 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 			"the rig actually lost the day before asking the summary for anything")
 
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 
 	var session := RunSession.new()
@@ -457,7 +456,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 	player.free()
 	city.free()
 	# **Unpause, or this test silently disarms three of `tests/test_hud.gd`'s.** A summary coming up
-	# sets `get_tree().paused = true` (`DaySummary.show_day()`, so the city keeps its state behind
+	# sets `get_tree().paused = true` (`DaySummary.show_summary()`, so the city keeps its state behind
 	# it) and `.free()` on the node does not put it back — the whole suite shares one tree, so the
 	# flag outlives this function. `HUD._teach_the_pause()` treats a paused tree as being *held*
 	# rather than having stopped and resets its stand timer every frame, so the pause lesson simply
@@ -475,7 +474,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 ## The brief is drawn to be noticed, and it is a static fact about the calendar day rather than a
 ## queue that empties once read — `docs/TODO.md`, M181, the resistance has a reason, and a task
 ## is one day: the day brief carries no task and no mark's words, only the morning's own line from
-## `Texts.DAY_BRIEF`. `show_day()` reads it off `GameState.header.day` directly, whichever
+## `Texts.DAY_BRIEF`. `SummaryModel.day_over()` reads it off the run's day directly, whichever
 ## `DayResult` this is, so a lost day's own line reads exactly as it did this morning and a second
 ## call shows the same words again rather than nothing.
 func _test_the_day_brief_shows_the_days_own_line(t) -> void:
@@ -484,56 +483,54 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 	GameState.header.day = 6
 
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 
 	var expected := SentenceLines.break_for_label(Texts.DAY_BRIEF[6], summary._brief)
-	summary.show_day(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 2)
+	_show_day(summary, _ended(GameEnums.DayResult.LOST_CRYING, "She would not settle."))
 	t.check(summary._brief.text == expected,
 			"the morning's own line for the calendar day, whichever DayResult this is")
 	t.check(summary._brief.visible, "and the label showing it is actually on screen")
 
-	summary.show_day(GameEnums.DayResult.WON, "", 3)
+	_show_day(summary, _ended(GameEnums.DayResult.WON))
 	t.check(summary._brief.text == expected, "and it reads exactly the same the second time")
 
 	summary.free()
 	# See the same restoration in `_test_day_finished_shows_the_summary_with_no_observer_in_the_
-	# tree`, above: `show_day()` pauses the tree and freeing the node does not undo that.
+	# tree`, above: a summary coming up pauses the tree and freeing the node does not undo that.
 	t.get_tree().paused = saved_paused
 	GameState.header.day = saved_day
 
 ## M154: the summary carries the day's own clock at the instant it ended, phrased per outcome —
 ## `docs/TODO.md`'s M154 item, quoting the player: *"fell asleep after xx:xx or something like
 ## that"*. `elapsed_seconds` is a known value here (84.0, `1:24`) rather than anything a rig walks
-## to, since what is under test is the phrasing `show_day()` builds from it, not the capture in
-## `main._on_day_finished()`.
+## to, since what is under test is the phrasing `SummaryModel.clock_line()` builds from it, not the
+## capture in `DayDirector.finish_day()`.
 ##
 ## **`_title`, not `_body`**: the one line about the day that ended is the screen's own title,
 ## with everything under it — `_body`'s "Day N of N" and its nerve line, `_brief`'s morning
-## line — about the day that is coming instead. See `show_day()`'s own doc.
+## line — about the day that is coming instead. See `SummaryModel.day_over()`'s own doc.
 func _test_the_summary_shows_when_the_day_ended(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 
-	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
+	_show_day(summary, _ended(GameEnums.DayResult.WON, "", 84.0))
 	t.check(summary._title.text == "She fell asleep after 1:24.",
 			"a won day names the clock it ended on ('%s')" % summary._title.text)
 
-	summary.show_day(GameEnums.DayResult.LOST_CRYING,
-			"She started crying. There is no settling her now.", 2, 84.0)
+	_show_day(summary, _ended(GameEnums.DayResult.LOST_CRYING,
+			"She started crying. There is no settling her now.", 84.0))
 	t.check(summary._title.text == "She started crying after 1:24.\nThere is no settling her now.",
 			"a crying loss reads the clock into its own first sentence, breaking the line after " +
 			"it ('%s')" % summary._title.text)
 
-	summary.show_day(GameEnums.DayResult.LOST_HARD_FAIL,
-			"It never slowed down. You were in the road.", 1, 84.0)
+	_show_day(summary, _ended(GameEnums.DayResult.LOST_HARD_FAIL,
+			"It never slowed down. You were in the road.", 84.0))
 	t.check(summary._title.text == "It never slowed down.\nYou were in the road. After 1:24.",
 			"a hard fail keeps its own sentence whole, with the clock following it, and breaks " +
 			"the line at whichever sentence end splits it most evenly ('%s')" % summary._title.text)
 
-	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "Dusk. You are still out.", 3, 180.0)
+	_show_day(summary, _ended(GameEnums.DayResult.LOST_TIMEOUT, "Dusk. You are still out.", 180.0))
 	t.check(summary._title.text == "Dusk. You are still out.",
 			"a timeout still shows its own reason ('%s')" % summary._title.text)
 	t.check(not "3:00" in summary._title.text,
@@ -543,26 +540,28 @@ func _test_the_summary_shows_when_the_day_ended(t) -> void:
 	summary.free()
 	t.get_tree().paused = saved_paused
 
-## The day number `show_day()` prints is `GameState.header.day` — the day about to start — never
-## the day that just ended. A win has already moved `GameState.header.day` on by the time `show_day()`
-## runs (`main._on_day_finished()` calls `GameState.finish_day()` first), so day 4's own win shows
+## The day number the summary prints is the run's day — the day about to start — never the day
+## that just ended. A win has already moved `GameState.header.day` on by the time the summary comes up
+## (`DayDirector.finish_day()` calls `GameState.finish_day()` first), so day 4's own win shows
 ## day 5; a loss with nerves left leaves `GameState.header.day` on the day being retried, so it shows the
 ## same day again, with the retry line naming it too.
 func _test_the_summary_shows_the_coming_days_number(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var saved_day := GameState.header.day
+	var saved_nerves := GameState.header.nerves
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 
 	GameState.header.day = 5
-	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
+	GameState.header.nerves = 3
+	_show_day(summary, _ended(GameEnums.DayResult.WON, "", 84.0))
 	t.check("Day 5 of %d" % Tuning.RUN_LENGTH_DAYS in summary._body.text,
 			"a win shows the day it moved on to, not the day it left ('%s')" % summary._body.text)
 	t.check(not "Day 4" in summary._body.text, "never the day that just ended")
 
 	GameState.header.day = 4
-	summary.show_day(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 2, 84.0)
+	GameState.header.nerves = 2
+	_show_day(summary, _ended(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 84.0))
 	t.check("Day 4 of %d" % Tuning.RUN_LENGTH_DAYS in summary._body.text,
 			"a retry shows the same day again ('%s')" % summary._body.text)
 	t.check("You try day 4 again." in summary._body.text, "and says so")
@@ -570,50 +569,63 @@ func _test_the_summary_shows_the_coming_days_number(t) -> void:
 	summary.free()
 	t.get_tree().paused = saved_paused
 	GameState.header.day = saved_day
+	GameState.header.nerves = saved_nerves
 
 ## Nerves are stars everywhere they show, never a digit — on a win as much as a loss, since the
 ## count carried into the coming day matters whichever way the last one went — and on the day
 ## brief a resumed run opens on too, the first day's own brief included.
 func _test_nerves_are_stars_never_numbers(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
+	var saved_day := GameState.header.day
+	var saved_nerves := GameState.header.nerves
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 
-	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
+	GameState.header.nerves = 3
+	_show_day(summary, _ended(GameEnums.DayResult.WON, "", 84.0))
 	t.check("Nerves left: ***" in summary._body.text,
 			"a win shows the nerves it carries into the coming day too ('%s')" % summary._body.text)
 
-	summary.show_day(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 1, 84.0)
+	GameState.header.nerves = 1
+	_show_day(summary, _ended(GameEnums.DayResult.LOST_CRYING, "She would not settle.", 84.0))
 	t.check("Nerves left: *" in summary._body.text and not "1 nerve" in summary._body.text,
 			"a single nerve is one star, never the word or the digit ('%s')" % summary._body.text)
 
-	summary.show_day_brief(1, 4)
+	GameState.header.day = 1
+	GameState.header.nerves = 4
+	summary.show_summary(SummaryModel.brief_for(GameState), RunFlow.Mode.BRIEF)
 	t.check(summary._title.text == "Day 1 of %d" % Tuning.RUN_LENGTH_DAYS,
 			"the first day's own brief pins the number too ('%s')" % summary._title.text)
 	t.check("Nerves left: ****" in summary._body.text,
 			"and the day brief draws nerves as stars ('%s')" % summary._body.text)
 
-	summary.show_day_brief(Tuning.RUN_LENGTH_DAYS, 2, "", "Escape the building")
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.header.nerves = 2
+	summary.show_summary(SummaryModel.brief_for(GameState, "", "Escape the building"),
+			RunFlow.Mode.BRIEF)
 	t.check("Nerves left: **" in summary._body.text,
 			"and so does an escape section's own brief ('%s')" % summary._body.text)
 
 	summary.free()
 	t.get_tree().paused = saved_paused
+	GameState.header.day = saved_day
+	GameState.header.nerves = saved_nerves
 
 ## **The escape's epilogue never carries the note line a brief before it showed** — the one line a
 ## resumed run's day brief adds (`DaySummary._note`), which every other screen hides on the way in
-## and `show_finale()` hides too, so a section's brief or a resumed day's note cannot leak onto the
+## and the epilogue hides too, so a section's brief or a resumed day's note cannot leak onto the
 ## last screen of the run.
 func _test_the_epilogue_carries_no_brief_note(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
-	summary.show_day_brief(GameState.header.day, 3, Texts.RESUMED_DAY_LOST)
+	summary.show_summary(SummaryModel.brief_for(GameState, Texts.RESUMED_DAY_LOST),
+			RunFlow.Mode.BRIEF)
 	t.check(note.visible, "a resumed day's brief shows its note")
-	summary.show_finale(CityEdge.Kind.TUNNEL, 42.0)
+	var out := _ended(GameEnums.DayResult.WON, "", 42.0)
+	out.exit_reached = CityEdge.Kind.TUNNEL
+	summary.show_summary(SummaryModel.epilogue(out), RunFlow.Mode.EPILOGUE)
 	t.check(not note.visible, "and the epilogue after it does not carry it")
 	summary.free()
 	t.get_tree().paused = saved_paused
@@ -625,11 +637,10 @@ func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var saved_day := GameState.header.day
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 
 	GameState.header.day = 7
-	summary.show_day(GameEnums.DayResult.WON, "", 3, 84.0)
+	_show_day(summary, _ended(GameEnums.DayResult.WON, "", 84.0))
 	var lines: PackedStringArray = summary._brief.text.split("\n")
 	t.check(lines.size() == 2,
 			"day 7's brief is exactly two lines ('%s')" % summary._brief.text)
@@ -646,28 +657,47 @@ func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
 ## day 14 and say nothing about which day, since the run finished rather than stopped mid-day.
 func _test_the_bad_ending_names_the_day_it_reached(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
+	var saved_day := GameState.header.day
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 
-	summary.show_ending(GameEnums.Ending.BAD, 9)
+	GameState.header.day = 9
+	summary.show_summary(SummaryModel.ending(GameState, GameEnums.Ending.BAD), RunFlow.Mode.ENDING)
 	t.check("You made it to day 9." in summary._body.text,
 			"the bad ending names the day it reached ('%s')" % summary._body.text)
 
-	summary.show_ending(GameEnums.Ending.BAD, 1)
+	GameState.header.day = 1
+	summary.show_summary(SummaryModel.ending(GameState, GameEnums.Ending.BAD), RunFlow.Mode.ENDING)
 	t.check("You made it to day 1." in summary._body.text,
 			"dying on the first day says 1, not 0 ('%s')" % summary._body.text)
 
-	summary.show_ending(GameEnums.Ending.NEUTRAL, 14)
+	GameState.header.day = 14
+	summary.show_summary(SummaryModel.ending(GameState, GameEnums.Ending.NEUTRAL),
+			RunFlow.Mode.ENDING)
 	t.check(not "made it to day" in summary._body.text,
 			"the neutral ending says nothing about the day ('%s')" % summary._body.text)
 
-	summary.show_ending(GameEnums.Ending.GOOD, 14)
+	summary.show_summary(SummaryModel.ending(GameState, GameEnums.Ending.GOOD),
+			RunFlow.Mode.ENDING)
 	t.check(not "made it to day" in summary._body.text,
 			"and neither does the good ending ('%s')" % summary._body.text)
 
 	summary.free()
 	t.get_tree().paused = saved_paused
+	GameState.header.day = saved_day
+
+## The summary of the day `end` settled, as `main` raises it over the run as it stands.
+func _show_day(summary: CanvasLayer, end: DayEnd) -> void:
+	summary.show_summary(SummaryModel.day_over(GameState, end), RunFlow.Mode.DAY_OVER)
+
+## A day's end as `DayDirector.finish_day()` settles one: what ended it, the loss's own sentence
+## and the clock it ended on.
+func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0) -> DayEnd:
+	var end := DayEnd.new()
+	end.result = result
+	end.reason = reason
+	end.elapsed_seconds = elapsed
+	return end
 
 # ------------------------------------------------------- the resistance's own day ---
 

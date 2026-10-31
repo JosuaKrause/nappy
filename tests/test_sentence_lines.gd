@@ -3,7 +3,7 @@ extends RefCounted
 ## has to, and only between sentences — see `src/ui/sentence_lines.gd`'s own doc for the rule.
 ##
 ## Every one of these checks fails against the code before this file's own change: before
-## `SentenceLines` existed, `DaySummary.show_day()` wrote `_elapsed_line()`'s two sentences onto
+## `SentenceLines` existed, the day summary wrote its clock line's two sentences onto
 ## `_title` unbroken, and `Texts.DAY_BRIEF`'s day-1 entry had no break in it at all — both pinned checks
 ## below would have read the whole thing as a single line with no `\n` in it.
 
@@ -53,14 +53,17 @@ func _test_a_too_narrow_multi_sentence_text_breaks_between_every_sentence(t) -> 
 
 ## *(2026-09-27, the player: "if a text has multiple sentences like \"She started crying after
 ## 0:10. There is no settling now.\" the newline comes after the period".)* The exact line quoted
-## is `_elapsed_line()`'s own reconstruction of `DayController`'s `"She started crying. There is no
-## settling her now."` with the clock worked into the first sentence — see that function's own doc.
+## is `SummaryModel.clock_line()`'s own reconstruction of `DayController`'s `"She started crying.
+## There is no settling her now."` with the clock worked into the first sentence — see that
+## function's own doc.
 func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
-	summary.show_day(GameEnums.DayResult.LOST_CRYING,
-			"She started crying. There is no settling her now.", 3, 10.0)
+	var end := DayEnd.new()
+	end.result = GameEnums.DayResult.LOST_CRYING
+	end.reason = "She started crying. There is no settling her now."
+	end.elapsed_seconds = 10.0
+	summary.show_summary(SummaryModel.day_over(GameState, end), RunFlow.Mode.DAY_OVER)
 	var title: Label = summary.get_node("Root/Center/Lines/Title")
 	t.check(title.text == "She started crying after 0:10.\nThere is no settling her now.",
 			"the day summary's title breaks after the first sentence's own period, exactly where " +
@@ -73,9 +76,11 @@ func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t) -> void:
 ## latter.)* Day 1's own `Texts.DAY_BRIEF` entry is exactly this three-sentence text.
 func _test_day_ones_brief_breaks_after_the_park_not_after_every_sentence(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
-	summary.show_day_brief(1, 5)
+	var saved_day := GameState.header.day
+	GameState.header.day = 1
+	summary.show_summary(SummaryModel.brief_for(GameState), RunFlow.Mode.BRIEF)
+	GameState.header.day = saved_day
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
 	t.check(brief.text == "She won't settle indoors. It is quiet in the park.\n" +
 			"Walk until she sleeps, then bring her home.",
@@ -101,7 +106,6 @@ func _check_breaks_only_between_sentences(t, source: String, label: Label, descr
 
 func _test_every_day_brief_breaks_only_between_sentences(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
 	for day in Texts.DAY_BRIEF.keys():
@@ -111,7 +115,6 @@ func _test_every_day_brief_breaks_only_between_sentences(t) -> void:
 
 func _test_every_ending_and_finale_body_breaks_only_between_sentences(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
 	for ending in Texts.ENDING_BODY.keys():
@@ -126,7 +129,6 @@ func _test_every_ending_and_finale_body_breaks_only_between_sentences(t) -> void
 ## save said a day was under way: the two sentences the note is made of.
 func _test_the_resumed_day_note_breaks_only_between_sentences(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
 	_check_breaks_only_between_sentences(t,

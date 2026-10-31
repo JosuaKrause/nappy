@@ -10,7 +10,6 @@ const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 
 func run(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	var title: Label = summary.get_node("Root/Center/Lines/Title")
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
@@ -27,7 +26,7 @@ func run(t) -> void:
 			"the lost-day title")
 	var hard_fails: Dictionary = Texts.HARD_FAIL_TEXT
 	for reason in hard_fails.keys():
-		var line: String = summary._elapsed_line(GameEnums.DayResult.LOST_HARD_FAIL,
+		var line := SummaryModel.clock_line(GameEnums.DayResult.LOST_HARD_FAIL,
 				hard_fails[reason], "10:00")
 		_check_label(t, line, title, "the day summary title for %s" % reason)
 	_check_label(t, "Dusk. You are still out.", title, "the dusk title")

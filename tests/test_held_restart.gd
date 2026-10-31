@@ -176,15 +176,15 @@ func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t) -> void:
 ## (`_acknowledge_and_continue()`) exactly the same way.
 func _test_the_summary_restart_ignores_a_second_touch_mid_hold(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	var restarts := [0]
 	var continued := [0]
 	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
-	summary.continued.connect(func() -> void: continued[0] += 1)
+	summary.continued.connect(func(_raised_in: int) -> void: continued[0] += 1)
 
 	summary._touch = true
-	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_summary(SummaryModel.day_over(GameState, _ended(GameEnums.DayResult.LOST_TIMEOUT)),
+			RunFlow.Mode.DAY_OVER)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	var at: Vector2 = summary._restart_button.get_global_rect().get_center()
@@ -239,10 +239,10 @@ func _test_the_restart_discs_fill_climbs_through_a_real_touch_hold(t) -> void:
 	pause.queue_free()
 
 	var summary: CanvasLayer = SUMMARY.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	summary._touch = true
-	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_summary(SummaryModel.day_over(GameState, _ended(GameEnums.DayResult.LOST_TIMEOUT)),
+			RunFlow.Mode.DAY_OVER)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	var summary_at: Vector2 = summary._restart_button.get_global_rect().get_center()
@@ -341,10 +341,10 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 	pause.queue_free()
 
 	var summary: CanvasLayer = SUMMARY.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	summary._touch = true
-	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_summary(SummaryModel.day_over(GameState, _ended(GameEnums.DayResult.LOST_TIMEOUT)),
+			RunFlow.Mode.DAY_OVER)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	var summary_at: Vector2 = summary._restart_button.get_global_rect().get_center()
@@ -452,14 +452,14 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 
 	# Day summary, a real touch hold.
 	var summary: CanvasLayer = SUMMARY.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	restarts = [0]
 	var continued := [0]
 	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
-	summary.continued.connect(func() -> void: continued[0] += 1)
+	summary.continued.connect(func(_raised_in: int) -> void: continued[0] += 1)
 	summary._touch = true
-	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_summary(SummaryModel.day_over(GameState, _ended(GameEnums.DayResult.LOST_TIMEOUT)),
+			RunFlow.Mode.DAY_OVER)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	var summary_at: Vector2 = summary._restart_button.get_global_rect().get_center()
@@ -483,14 +483,14 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 
 	# Day summary, a real mouse hold.
 	summary = SUMMARY.instantiate()
-	summary.use_run(GameState)
 	t.add_child(summary)
 	restarts = [0]
 	continued = [0]
 	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
-	summary.continued.connect(func() -> void: continued[0] += 1)
+	summary.continued.connect(func(_raised_in: int) -> void: continued[0] += 1)
 	summary._touch = false
-	summary.show_day(GameEnums.DayResult.LOST_TIMEOUT, "", 3)
+	summary.show_summary(SummaryModel.day_over(GameState, _ended(GameEnums.DayResult.LOST_TIMEOUT)),
+			RunFlow.Mode.DAY_OVER)
 	summary._restart_button.position = Vector2(500.0, 400.0)
 	summary._restart_button.size = Vector2(92.0, 108.0)
 	summary_at = summary._restart_button.get_global_rect().get_center()
@@ -527,3 +527,13 @@ func _mouse_at(position: Vector2, pressed: bool) -> InputEventMouseButton:
 	event.pressed = pressed
 	event.button_index = MOUSE_BUTTON_LEFT
 	return event
+
+## A day's end as `DayDirector.finish_day()` settles one: what ended it, the loss's own sentence,
+## the clock it ended on, and whether it sent a normal run back to its checkpoint.
+func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0, goes_back := false) -> DayEnd:
+	var end := DayEnd.new()
+	end.result = result
+	end.reason = reason
+	end.elapsed_seconds = elapsed
+	end.goes_back = goes_back
+	return end

@@ -142,11 +142,6 @@ static func page_query() -> String:
 	var search: Variant = JavaScriptBridge.eval("window.location.search")
 	return search as String if search is String else ""
 
-## Whether a scene recipe stands in for the flags: one was handed in and this is a debug build,
-## since a release build keeps no recipe.
-func has_recipe() -> bool:
-	return not _recipe.is_empty()
-
 ## Whether the command-line half is readable at all: a debug build. A release build answers no
 ## flag of that half from anywhere, so the entry point to it stays what it is: run a debug build
 ## (2026-09-06, the player: "for dev you need it to be controllable from the getgo -- for release

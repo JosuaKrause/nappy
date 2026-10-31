@@ -17,7 +17,7 @@ extends RefCounted
 ## `RunState.new()`.
 ##
 ## It writes no save and shows no screen: `finish_day()` returns a `DayEnd` and `main` saves and
-## shows. A scene recipe's day is started by `main` itself.
+## shows. An authored scene's day (a scene recipe's) is `start_authored_day()`'s.
 
 ## The run, handed in.
 var run: RunState
@@ -144,6 +144,27 @@ func start_day(the_spec: DaySpec) -> void:
 	# writes its plan lines, its dawn picture and her `start` line here.
 	EventBus.day_planned.emit(today)
 
+## Starts the day of an authored scene (`AuthoredScene`, a scene recipe's playback), as `RunFlow`
+## configured with one has it started: the ordinary day's components, from the scene's own setup
+## rather than drawn from the run — the dawn photograph, the announcement, the city's day with no
+## closures grown, the act, the clock — and then the scene installs its events, actors and her start
+## before any actor is allowed to tick. The random scheduler does not fill an authored scene. Returns
+## the problems that kept the scene's setup from standing, empty when it stands.
+func start_authored_day(the_spec: DaySpec, scene: AuthoredScene) -> Array[String]:
+	var today: int = run.header.day
+	use_the_day(the_spec)
+	run.begin_day()
+	EventBus.day_started.emit(today)
+	spend.city_state.begin_day(city.map.block_plans, today)
+	city.start_recipe_day(spend.city_state, today, run.day_rng(today, "closures"))
+	city.set_act(run.current_act())
+	day.start(spec.length)
+	# The scene's events run under the very spec the clock and the HUD were just handed.
+	var errors := scene.install(city, player, baby, spec, resistance)
+	if errors.is_empty():
+		prepare_city_scenery(city, player)
+	return errors
+
 ## Today's crowd, as dense as the spec says (`DaySpec.crowd_density`), built round `at`: a day's
 ## whole crowd, or nobody at all — a cleared crowd that is never started, the escape's *"no regular
 ## cars or regular people on the street"*. Also the escape's city section's crowd.
@@ -171,6 +192,8 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	# the day actually ended. Clamped because `_process()` can call `_end()` one frame after
 	# `time_remaining` has gone slightly negative.
 	end.elapsed_seconds = clampf(day.time_total - day.time_remaining, 0.0, day.time_total)
+	end.reason = day.failure_reason
+	end.exit_reached = day.exit_reached
 	# **A day she wins with day 3's fire never met still burns.** The row's only day is day 3 and it
 	# is spent when it enters the world, so a won day on which every siting was refused would leave
 	# the run with no fire, no scar and no shell for day 4 to come out to. Lit here, off her path,

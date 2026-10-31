@@ -17,7 +17,7 @@ static func build() -> void:
 	GameState.begin_day()
 	GameState.header.day = 6
 	GameState.header.nerves = 3
-	GameState.header.play_seconds = 321.5
+	GameState.header.play_ticks = 9645  # 321.5 s at 30 ticks a second
 	GameState.complete_resistance_step(0)
 	GameState.complete_resistance_step(1)
 	GameState.fail_resistance_step(2)
