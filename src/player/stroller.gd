@@ -429,8 +429,9 @@ func _exit_tree() -> void:
 ## is the right switch rather than one more flag. Everything that happens *to* her is reached
 ## through that group and nothing else is: `EventManager`, handed her, streams, places what the
 ## director owes, tells the events where she is, warns her about the ground she is on and checks the
-## hard fails only while she is in it (`EventWorld.has_player()`); `Crowd` looks her up the same way
-## before it can bump her, honk at her or run her over. Out of the group, none of it can fire — so a lethal thing on the doorstep cannot
+## hard fails only while she is in it (`EventWorld.has_player()`); `Crowd` is handed her only when the
+## day is engaged (`Main._hand_the_crowd_her()`), so behind the title it has nobody to bump, honk at
+## or run over. Out of the group, none of it can fire — so a lethal thing on the doorstep cannot
 ## end a day nobody is playing, and the city in the background is genuinely only a city.
 ##
 ## **Her camera stays behind, and it has to keep running.** The view is hers, and the shot the title

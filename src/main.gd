@@ -361,7 +361,6 @@ func _ready() -> void:
 	_day.setup(_city.map if _city else null, _player, _run)
 	_day.day_finished.connect(_on_day_finished)
 	_session.watch_the_clock(_day)
-	_hand_the_controls_cover_to_the_events()
 	if _readout:
 		_readout.watch(_player, _baby, _day)
 
