@@ -197,7 +197,7 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t) -> void:
 ## of the mark's size, and the key has to carry it or a caret would freeze on whichever half of the
 ## beat it was last drawn in.
 ##
-## The strength is written straight into the per-frame cache `_caret_strength()` keeps against
+## The strength is written straight into the per-frame cache `caret_strength()` keeps against
 ## `age`, the same way `tests/test_event_strides.gd` writes `_gait_phase` to reach a state a rig
 ## cannot otherwise stand in: what is under test is the key, not the projection that feeds it.
 func _test_the_marks_flash_is_in_the_key(t) -> void:
@@ -231,7 +231,7 @@ func _test_the_caret_strength_is_in_the_key(t) -> void:
 	instance.free()
 
 ## **The gate asks for the caret once a tick, and that must not be the answer the rest of the frame
-## gets.** `_caret_strength()` caches its projection so that the four things wanting it in one
+## gets.** `caret_strength()` caches its projection so that the four things wanting it in one
 ## frame share one sampling loop — and the gate is now the *first* of the four to ask, at the end
 ## of this instance's own `_process()`, while `player_at` is written from outside by
 ## `EventManager` and `ExcitementHalo` at whatever point in the frame those nodes run. Keyed on

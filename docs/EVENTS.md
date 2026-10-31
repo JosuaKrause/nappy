@@ -831,7 +831,7 @@ stops for her — and a warning `Tuning.CAR_HORN_TIME` (1.6s) of its own travel 
 the exclamation mark over her head (`EventCarDriving.closes_on()`), which is longer than walking off
 the carriageway with the doubled margin, which `Tuning.validate_traffic()` holds on boot — the
 warning is stated in seconds of the car's own travel, so no row's numbers can break it. The doubled red caret is over the car whenever staying put in its lane
-would end the day (`EventInstance.will_be_lethal()`). `hard_fail` stays false: what it decides —
+would end the day (`EventExcitement.will_be_lethal()`). `hard_fail` stays false: what it decides —
 a route wall, a field kept clear, the doubled telegraph margin — is about a place that ends the day,
 and this is a car on a road. A loss to it names `police_patrol` as its cause.
 
@@ -1017,17 +1017,20 @@ rather than five. **And that one source's own rate is set against a door having 
 *(2026-09-20: "guard posts should emit less excitement by themselves, too" · "since there can be
 other obstacles around")*: a hold is spent standing still, where `Tuning.EXCITEMENT_DECAY_IDLE` is
 zero and nothing is earned back, so what the strongest barrier charges per second is most of what
-standing in a door costs. The rates are in [COSTS.md](COSTS.md). `EventManager.excitement_sources_at()` keeps the strongest of them at her position and drops
+standing in a door costs. The rates are in [COSTS.md](COSTS.md). `EventSources.sources_at()` keeps the strongest of them at her position and drops
 the rest from the pairs entirely, so what lands on the bar is attributed to the body that was the
 maximum, and the halo's colour — traced from that same sum — follows without a second rule.
-`EventInstance.outranked_by_a_stronger_barrier` is how the caret and the halo's own rim selection
-learn the same answer, so a corner draws one mark on the barrier that is charging her rather than
+`ExcitementSource.outranked`, told once a frame by `EventManager` from
+`EventSources.strongest_barrier_at()`, is how the caret and the halo's own rim selection learn the
+same answer, so a corner draws one mark on the barrier that is charging her rather than
 five promising the cost over again. Everything else in the catalogue still sums.
 
 **The hold charges its toll and nothing else.** She is inside the gatehouse, not on the pavement, so
 while a hold is running the meter sums that hold's own flat `Tuning.CHAT_EXCITEMENT` and no other
-event field and no crowd body — `CheckpointController.door_holding_her_at()`, asked by both halves of
-`WorldContext.excitement_sources_at()`, the events' and the crowd's. With `EXCITEMENT_DECAY_IDLE` at zero for a player held still, the
+event field and no crowd body — `CheckpointController.door_holding_her_at()`, asked by the events'
+set (`EventSources.holds_her_alone()`), whose own pairs are then the whole of
+`WorldContext.excitement_sources_at()` (`ExcitementSources.all_at()`, the one place the door rule is
+stated). With `EXCITEMENT_DECAY_IDLE` at zero for a player held still, the
 crossing therefore costs exactly the toll wherever the door happens to stand, which is what "the
 same cost each time" has to mean. `chatting_mother` keeps the ordinary sum: her conversation is in
 the street with both of them drawn.
@@ -2102,14 +2105,21 @@ own bodies. `docs/CITY.md`, "Guarantees", has the whole of it.
 ## The emission model
 
 An event never pushes a value at the baby. Each frame the baby asks the world for the total
-stimulus at its position, and the world sums `contribution_at()` over the live instances:
+stimulus at its position, and the world sums `contribution_at()` over every live source — an
+event's is the `ExcitementSource` it composes (`EventExcitement`), over the field the instance
+states:
 
 ```gdscript
-func contribution_at(world_position: Vector2, ...) -> float:
-    var velocity := travel_velocity()  # or the override expected_impact_at() passes
-    var field := def.emission_at_distance(_field_distance(world_position, velocity),
-            current_intensity())
-    return 0.0 if field > 0.0 and _walled_off(global_position, world_position) else field
+# EventInstance: the field alone, no wall asked
+func field_at(world_position: Vector2, intensity_override: float, velocity_override: Vector2) -> float:
+    ...  # finished or leaving: zero; a flock sums its birds
+    var velocity := velocity_override if velocity_override != Vector2.INF else travel_velocity()
+    return def.emission_at_distance(_field_distance(world_position, velocity), intensity)
+
+# ExcitementSource: what she is charged, the wall asked only of a positive field
+func contribution_at(at: Vector2) -> float:
+    var field := _field(at)  # an event's is field_at(), cached on its age
+    return 0.0 if field > 0.0 and _walled_off_now(body.global_position, at) else field
 ```
 
 A source further from the point than `EventDef.silent_beyond()` answers zero before any of that is
@@ -2132,7 +2142,7 @@ only one tile thick (`Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile), measured fro
 ground — `CityMap.wall_between()`. Thick or thin is decided tile by tile: a building tile is part of
 something thicker when one of its corners is a point where four building tiles meet, and otherwise
 it is part of a one-tile wall, the bend of an L of them included. Every source asks it, the crowd's
-walkers and cars too (`CrowdAgent.contribution_at()`), horn and bump jolts included. A line across
+walkers and cars too (`CrowdExcitement`, through the same `ExcitementSource.contribution_at()`), horn and bump jolts included. A line across
 a one-tile wall is blocked at its middle, square or slanted, except within half a tile of an open
 end of the wall. A building two tiles thick has its points a tile in only along its middle line, so
 it blocks a line across it only away from its ends: within a tile of an open end a line straight
@@ -2545,8 +2555,8 @@ decayed average, so a 35-point burst reads as 35 for the whole window and then d
 at `Tuning.EXPECTED_IMPACT_POINTS` (40 of the 100-point bar, the same line the caret goes amber at
 read the other way round). A protest she skirted the edge of and a protest she walked through are
 the same row and correctly different colours.
-`EventInstance.set_halo_strength()`, called by `ExcitementHalo` once a frame, is what carries both
-numbers to the shader. `.claude/skills/cues/SKILL.md`, "A glow, not a field" is the narrow version
+`SourceRim.set_strength()`, which `ExcitementHalo` calls once a frame on each source's rim, is what
+carries both numbers to the shader. `.claude/skills/cues/SKILL.md`, "A glow, not a field" is the narrow version
 of this exception, kept narrow enough to still refuse the next ring somebody wants.
 
 **The candidate set is every live event and the whole crowd — every walker and every car, not
@@ -2554,10 +2564,9 @@ only a startled body.** *(2026-09-08, the player: "a busy street is noisy becaus
 busy sidewalk is noisy because of people ... that will allow us to attribute the source
 exactly".)* The tabled question this answers — "The crowd has a halo" in `docs/TODO.md` — offered
 three shapes and none of them is this one: the crowd is not a floor to fold into events, not one
-combined outline, and not gated on a higher threshold. `ExcitementHalo.select_sources()` takes an
-untyped candidate array rather than one typed to `EventInstance` — a duck type, documented on
-`ExcitementHalo` itself since GDScript has no interface to lean on — so `Crowd.agents()` and
-`EventManager.instances()` are offered on the same terms. `CONTRIBUTION_FLOOR` and `MAX_SOURCES`
+combined outline, and not gated on a higher threshold. `ExcitementHalo.select_sources()` takes
+every `ExcitementSource` of the sets it is handed, an event's and a crowd body's alike since both
+compose one, so the crowd and the events are offered on the same terms. `CONTRIBUTION_FLOOR` and `MAX_SOURCES`
 (the eight strongest) are what keep a busy pavement legible rather than a special case admitting
 only the caret-worthy.
 
@@ -2573,10 +2582,10 @@ source lands on the meter and the five seconds either side of now, carry all of 
 | --- | --- | --- |
 | **Legible entity** | The thing itself reads as what it is: a crouched cat, an idling van, a scaffold, a burnt shell. **This carries most of the load, and everything below is for what it cannot carry.** It is a rule with a test rather than an aspiration — one picture per row, no two rows sharing one. See point 6 below. | the art, one `EventDef.Look` per row |
 | **Caret over the entity** | *If you both keep doing what you are doing, this will cost you*, or *end your day.* Raised by what the thing is **anticipated to net her — her own current velocity carried forward, not held still** — and by nothing else — see point 1 below. | `Sprites.draw_caret()`, from `EventLook._draw_mark()` and `CrowdAgent._draw_mark()` |
-| **Its colour** | **Amber** at `Tuning.EXPECTED_IMPACT_POINTS` net over the horizon — go round it, or slow down, or speed up. **Deep red, doubled**, when a step of the *source's own* projection (her position held fixed for this one, since it is an absolute claim about the day ending) puts her inside the thing's lethal reach on its current course. The amber threshold reads the same net quantity the halo reads back — points anticipated over the horizon less what her own current decay would give back over it, floored at zero — so a source is amber only while it is actually projected to cost more than walking is already earning back. | `EventLook.mark_colour()`, `CrowdAgent._caret_strength()` |
+| **Its colour** | **Amber** at `Tuning.EXPECTED_IMPACT_POINTS` net over the horizon — go round it, or slow down, or speed up. **Deep red, doubled**, when a step of the *source's own* projection (her position held fixed for this one, since it is an absolute claim about the day ending) puts her inside the thing's lethal reach on its current course. The amber threshold reads the same net quantity the halo reads back — points anticipated over the horizon less what her own current decay would give back over it, floored at zero — so a source is amber only while it is actually projected to cost more than walking is already earning back. | `EventLook.mark_colour()`, `ExcitementSource.caret_strength()` |
 | **Its flash** | *It has not started yet.* The telegraph phase, and the only channel carrying it — the colour cannot, because a telegraph is usually over before the event is on screen, so an amber that meant *telegraphing* would only ever be seen on the rows sited in front of the player and would read as *near*. | `EventLook._draw_mark()` |
 | **Breathing** | The caret's size and ride height track *current* emission, so a pulsing event visibly swells and settles and can be timed. A car with no jolt running holds full size, having no pulse of its own to breathe with. | `EventLook.mark_swell()`, `CrowdAgent._draw_mark()` |
-| **Entity halo** | *This is costing you now, and this much — and the bar is rising because of it.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius, and re-traced every frame so a turning car or a flying flock wears the rim of the body it is drawing now — for every live event and every startled crowd body (a honking car, a bumped walker) whose `contribution_at()` at her own position clears a floor. **Colour** is pale-to-red, linear over its own **net** — what it delivered to her in the last five seconds less its own share of the decay the bar took in that same five seconds, shared between every source in proportion to what each delivered, never below zero (`ExcitementHalo.net_landed()`) — so the halos of every source live at once sum to the bar's own rise over the window, and a rim reads red only while the bar is actually climbing because of it. **Transparency** is the same net on a curve that saturates by fifteen points, so it carries the low end colour cannot show yet. Both fade in and out over a third and four fifths of a second rather than switching. Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EntityHalo`, `assets/shaders/excitement_halo.gdshader` |
+| **Entity halo** | *This is costing you now, and this much — and the bar is rising because of it.* A thin rim hugging the thing's own silhouette — its own sprite re-drawn a few pixels out in a ring of offsets, never a radius, and re-traced every frame so a turning car or a flying flock wears the rim of the body it is drawing now — for every live event and every startled crowd body (a honking car, a bumped walker) whose `contribution_at()` at her own position clears a floor. **Colour** is pale-to-red, linear over its own **net** — what it delivered to her in the last five seconds less its own share of the decay the bar took in that same five seconds, shared between every source in proportion to what each delivered, never below zero (`ExcitementSource.net_landed()`) — so the halos of every source live at once sum to the bar's own rise over the window, and a rim reads red only while the bar is actually climbing because of it. **Transparency** is the same net on a curve that saturates by fifteen points, so it carries the low end colour cannot show yet. Both fade in and out over a third and four fifths of a second rather than switching. Drawn under the entities, the crowd and the player, and gone the instant she is out of reach of every candidate at once. | `ExcitementHalo`, `EntityHalo`, `assets/shaders/excitement_halo.gdshader` |
 | **Edge badge** | *Something lethal or faster than a walk is coming, and this is what.* Off-screen and closing **under its own steam**, or warned of before it exists, for the whole of that warning: a disc at the screen edge carrying the thing's own silhouette, a chevron pointing at it (or at where it will come from) and the distance. Says *what* is coming, not that something is. **Once up, a badge stays up until its danger is in sight or has left the world** (no timer, and neither turning away nor slowing ends it); a charger (the masked man on the stairs, the charging dog, the robbers, day 13's guards) is raised from the frame it runs, even from just outside the view. There is no cap: every badge is drawn, and where two overlap on an edge the soonest arrival lies on top. | `BadgeModel` decides, `DangerEdge` draws |
 | **Exclamation over the player** | *The clock on you has started.* A `hard_fail` event still telegraphing whose radius covers her, or a car closing on the lane she is standing in. Down the moment it stops being true. | `Stroller._draw_alert()` |
 | **Doubled red over the player** | *The clock on you has started, and it is nearly out.* Something lethal is live, she is within `LETHAL_MARK_LEAD` seconds of the radius that ends the day, **and the gap is closing at the speeds in play**. Not *inside the outer radius*, which for a cyclist is about seven times the area that can hurt her (90px against a 33px lethal reach) and stays true while the bike rides away. | `WarningBoard.warn_about_the_ground_she_is_on()` |
@@ -2599,11 +2608,11 @@ Three rules underneath the table, in the order they matter:
    *(2026-09-08, the player, closing the fork this rule used to leave open: "carets shouldn't be
    chosen by source value but by expected impact value".)* What a row is declared to cost on
    paper decides nothing; what a source is actually projected to land on her, from wherever she is
-   actually standing and headed, does. `EventInstance.expected_gross_at()` and
-   `CrowdAgent.expected_gross_at()` extrapolate the thing's own current velocity **and her own**
-   in quarter-second steps over `Tuning.EXPECTED_IMPACT_HORIZON` (5s), sample the thing's field at
-   her own projected position at each step, sum the points, subtract its present rate times the
-   horizon, then scale that gross figure by `Baby.current_sensitivity()` and floor it at zero.
+   actually standing and headed, does. Every source's `ExcitementSource.expected_gross_at()`
+   extrapolates the thing's own current velocity **and her own** in quarter-second steps over
+   `Tuning.EXPECTED_IMPACT_HORIZON` (5s), samples the thing's field at her own projected position at
+   each step, sums the points, subtracts its present rate times the horizon, then scales that gross
+   figure by `Baby.current_sensitivity()` and floors it at zero.
    `expected_impact_at()` is that gross figure less what her own current decay (`Baby.decay_rate()`)
    would give back over the same horizon — so two bodies both held still expect nothing, an
    approach either of them is making expects its approach less what walking is already earning
@@ -2631,7 +2640,7 @@ Three rules underneath the table, in the order they matter:
    crowd body once a frame — the same once-a-frame pass it already runs for the halo's own
    `total_landed` — and hands the sum to every source through `set_expected_total_gross()` before
    asking any of them for a caret; each source's own `expected_impact_at()` then takes its share of
-   the horizon's decay in proportion to its own gross, `ExcitementHalo.net_landed()`'s own
+   the horizon's decay in proportion to its own gross, `ExcitementSource.net_landed()`'s own
    arithmetic read forward instead of back, so summing every source's own answer back up reproduces
    the frame's total gross less the whole decay exactly rather than approximately. A caller that
    never tells a source the frame's total — a data-level test among them — keeps the old, simpler

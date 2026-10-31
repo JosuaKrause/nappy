@@ -329,7 +329,7 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	# `cyclist` is not `still_while_telegraphing`, so it is already riding its route through the
 	# whole telegraph — the player is placed relative to wherever it actually is once the
 	# telegraph clears rather than at a fixed point its own approach may have already ridden past.
-	# (A telegraphing cyclist is its own scenario below — `_caret_strength()` no longer needs the
+	# (A telegraphing cyclist is its own scenario below — `caret_strength()` no longer needs the
 	# telegraph to be over to read red.)
 	var on_course := _instance(def, route)
 	_advance(on_course, def.telegraph_time + STEP)

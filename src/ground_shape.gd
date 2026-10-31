@@ -12,8 +12,8 @@ extends RefCounted
 ## band, which is why `band()` below still hands out only those two. There is still no polygon.
 ##
 ## **The excitement field is the Minkowski sum of this datum and a kernel** — `field_distance()`
-## and `field_outline()` below, read by `EventInstance.contribution_at()`,
-## `CrowdAgent.contribution_at()` and the debug view's fields layer. A disc kernel for a stationary
+## and `field_outline()` below, read by an event's field (`EventInstance.field_at()`), a crowd
+## body's (`CrowdExcitement`) and the debug view's fields layer. A disc kernel for a stationary
 ## body (`distance_to_spine()`, the ordinary case) and an ellipse for a moving one
 ## (`eccentric_distance()`, eccentricity from speed) are the only two kernels built: nobody
 ## computes the general capsule-and-ellipse sum, because every emitting segment row in the

@@ -83,7 +83,7 @@ const MARK_COSTLY := Color("e8b64a")
 const MARK_LETHAL := Color("8f2f38")
 
 ## The halo's own colour ramp — pale for a source that has cost her almost nothing over its own
-## `ExcitementHalo.WINDOW`, red for one that has actually hurt. See `ExcitementHalo.colour_for()`.
+## `ExcitementSource.WINDOW`, red for one that has actually hurt. See `ExcitementHalo.colour_for()`.
 ##
 ## **Not `MARK_COSTLY`/`MARK_LETHAL`.** A mark colour is drawn small and opaque over a caret; a
 ## glow that dark under an entity reads as a shadow on the ground rather than as a glow around it,

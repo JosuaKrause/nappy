@@ -92,9 +92,9 @@ const _NO_TILE := Vector2i(-1, -1)
 ##
 ## **Chosen so the total plateaus near an ordinary pass, not so it is timed to hit one.** Walking
 ## away from his `inner_radius` at `Tuning.WALK_SPEED` clears his `outer_radius` (210px, past which
-## `EventInstance.contribution_at()` answers zero) in a little over two seconds; this sits past
-## that clearing point with a margin, so the total lands wherever the field's own falloff already
-## plateaus rather than depending on catching an exact frame.
+## his source's `ExcitementSource.contribution_at()` answers zero) in a little over two seconds;
+## this sits past that clearing point with a margin, so the total lands wherever the field's own
+## falloff already plateaus rather than depending on catching an exact frame.
 ## `tests/probes/m205_note_handover.gd` measures the plateau at ~11.1 points awake and ~-3.2 asleep
 ## against an ordinary pass's own ~11.1/~-3.2 (`M174Pass.pass_net_averaged()` at 0px) — felt, open
 ## to overturn against a played day rather than against that printout.

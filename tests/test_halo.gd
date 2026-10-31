@@ -464,8 +464,8 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 # ------------------------------------------------------ contribution_at is cached ---
 # `docs/TODO.md`, M124: `Baby._update_excitement()` (physics rate) and
 # `ExcitementHalo.select_sources()` (frame rate) both ask every live event for its
-# `contribution_at()` at essentially the same point, most frames -- so `EventInstance` caches the
-# plain query once per frame, the same `age`-keyed shape `_caret_strength()` already uses. The
+# `contribution_at()` at essentially the same point, most frames -- so an event's source caches the
+# plain query once per frame, the same `age`-keyed shape `caret_strength()` already uses. The
 # cache must never answer for the *wrong* point or the *wrong* frame: two different positions in
 # the same tick still have to answer independently, and a new frame must never hand back last
 # frame's number for a source that has since moved.
