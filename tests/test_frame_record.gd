@@ -331,7 +331,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	var recorder := FrameRecorder.new()
 	recorder.save_on_exit = false
 	main.add_child(recorder)
-	recorder.setup(main._flow.in_the_title, main._city, main._player, main._day)
+	recorder.setup(main._flow.in_the_title, main._city, main._player, main._day, main._run)
 	main._frame_recorder = recorder
 	main._readout.watch_frames(recorder)
 	t.check(FrameRecord.on and FrameRecord.ledger == recorder.ledger
@@ -562,6 +562,7 @@ func _test_the_view_size(t) -> void:
 func _test_the_environment_carries_the_view(t) -> void:
 	var recorder := FrameRecorder.new()
 	recorder.ledger = FrameLedger.new(8, 16667)
+	recorder._run = GameState
 	var environment: Dictionary = JSON.parse_string(recorder.report_text())["environment"]
 	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
 		t.check(environment.has(key), "the record's environment carries %s" % key)

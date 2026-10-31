@@ -10,6 +10,7 @@ const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 
 func run(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	var title: Label = summary.get_node("Root/Center/Lines/Title")
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
@@ -33,6 +34,7 @@ func run(t) -> void:
 	summary.queue_free()
 
 	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var pause_body: HelpText = pause.get_node("Root/Center/Lines/Body")
 	for joystick in [false, true]:
@@ -40,6 +42,7 @@ func run(t) -> void:
 	pause.queue_free()
 
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	hud.use_run(GameState)
 	t.add_child(hud)
 	var teach: HelpText = hud.get_node("Root/Teach")
 	for step in ResistanceSteps.all():

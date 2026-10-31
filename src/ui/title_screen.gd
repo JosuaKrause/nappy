@@ -24,12 +24,12 @@ extends CanvasLayer
 ## those is what this screen exists for. **The one option is the Hard Mode checkbox**, shown only
 ## when the title begins a new game. *(gentle-osprey, the player: "a "Hard Mode" checkbox on the
 ## title screen (if new game) that decides whether checkpoints are available".)* Checked, the run
-## has no checkpoints and its last nerve is the bad ending (`GameState.hard_mode`). It is quiet on
+## has no checkpoints and its last nerve is the bad ending (`RunState.hard_mode`). It is quiet on
 ## purpose — Godot's own `CheckBox`, in the tagline's colour, under the hint — because it is
 ## a setting, not a way in: **pressing it never starts the run**, which still begins only from the
 ## three buttons or a key, so the box can be set and changed freely first. `H` toggles it from a
 ## keyboard, unnamed on screen like every other key here. It opens unchecked on every new game
-## (it reads `GameState.hard_mode`, which a fresh run begins `false`, so only `--hard` opens it
+## (it reads the run's `hard_mode`, which a fresh run begins `false`, so only `--hard` opens it
 ## checked) and is never remembered between sittings: a mode kept outside the save would make a
 ## returning player's run depend on something the run does not hold.
 ##
@@ -131,6 +131,14 @@ func use_platform(touch: bool, can_quit: bool) -> void:
 	_touch = touch
 	_can_quit = can_quit
 
+## The run whose mode the checkbox opens on and the mode's name reads (`RunState.hard_mode`), handed
+## in by `use_run()` before the screen is first opened.
+var _run: RunState
+
+## Hands the screen the run it opens over. Called by `main` before the screen enters the tree, and
+## by a test that opens one.
+func use_run(run: RunState) -> void:
+	_run = run
 
 func _ready() -> void:
 	# **The title has a colour of its own**, or the screen is four labels in one warm off-white and
@@ -198,12 +206,12 @@ func is_open() -> bool:
 ## Shows the screen. `again` is whether a run has just ended, which is the only difference between
 ## the two times it is shown — besides `new_game`, which is whether pressing a button begins a new
 ## run rather than one a save brought back, and is the only time the Hard Mode checkbox shows. It
-## opens on the mode the run already holds, `GameState.hard_mode`: `false` for every fresh run, and
+## opens on the mode the run already holds, `RunState.hard_mode`: `false` for every fresh run, and
 ## `true` only under `--hard`.
 ##
 ## `mode_decided` is whether the mode is already fixed for this run, which is when a save brought
 ## it back (the title before a resumed day or a resumed escape): the checkbox has nothing to ask
-## then, so the mode's name, "Normal" or "Hard Mode" (`GameState.hard_mode`), stands in its place.
+## then, so the mode's name, "Normal" or "Hard Mode" (`RunState.hard_mode`), stands in its place.
 ## A new game shows the checkbox and no name; a title with neither (the escape flag's, which has
 ## no run) shows neither.
 ##
@@ -224,10 +232,10 @@ func open(again := false, new_game := false, mode_decided := false) -> void:
 	visible = true
 	if _hard_mode:
 		_hard_mode.visible = new_game
-		_hard_mode.button_pressed = new_game and GameState.hard_mode
+		_hard_mode.button_pressed = new_game and _run.hard_mode
 		_place_the_hard_mode_frame()
 	_mode_name.visible = mode_decided and not new_game
-	_mode_name.text = Texts.TITLE_MODE_HARD if GameState.hard_mode else Texts.TITLE_MODE_NORMAL
+	_mode_name.text = Texts.TITLE_MODE_HARD if _run.hard_mode else Texts.TITLE_MODE_NORMAL
 	_hint.text = Texts.TITLE_HINT_AGAIN if again else Texts.TITLE_HINT_BEGIN
 	# A press that closed this screen can leave a button's own forced-pressed look set — see
 	# `_acknowledge_and_begin()`'s own doc for why the release that would otherwise clear it may

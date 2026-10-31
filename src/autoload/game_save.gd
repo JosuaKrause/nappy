@@ -2,13 +2,17 @@ class_name GameSave
 extends RefCounted
 ## Persists a run to disk so the game can be closed and picked up again — see docs/MECHANICS.md,
 ## "Saving and resuming". Not an autoload: every member below is `static`, so the class is a
-## namespace for file I/O and format policy rather than an object with a lifetime of its own. Lives
-## beside `GameState`, the one thing it reads and writes, rather than under `src/ui/` with the
-## symbol that announces a write — a save module is data, the symbol is presentation, and the two
-## only meet through `EventBus`.
+## namespace for file I/O and format policy rather than an object with a lifetime of its own. **It is
+## handed the run it reads or writes** (`run: RunState`) on every call that touches one — `main` hands
+## the run it plays, a test whichever run it built, and `RunState` itself for its checkpoint — and
+## names no autoload for it. Handed per call rather than held: the web flush below and the operation
+## ids outlive the scene reloads that free the `main` holding a run, and the run's own checkpoint
+## calls `run_data()` and `restore_run_data()` too. Lives beside `RunState`, the one thing it reads
+## and writes, rather than under `src/ui/` with the symbol that announces a write — a save module is
+## data, the symbol is presentation, and the two only meet through `EventBus`.
 ##
 ## **The save is the run, never the moment inside a day.** The run's registered parts
-## (`GameState.run_parts`) say what a run holds and where in the file each part sits; this file
+## (`RunState.run_parts`) say what a run holds and where in the file each part sits; this file
 ## only adds the facts a run does not know about itself — whether a day was under way when the
 ## file was written, which section of the escape it is in, and which build
 ## wrote it — and turns the result into JSON. *Asked for "that exact state", the crowd included, and overturned by the player to a
@@ -17,7 +21,7 @@ extends RefCounted
 ##
 ## **The escape's section rides beside those, not inside the snapshot.** `"escape_section"` is a
 ## top-level key like `"day_under_way"`, so a file written before the escape was a run's ending is
-## still a complete snapshot (`GameState.snapshot_is_complete()` asks only about `"state"`) and
+## still a complete snapshot (`RunState.snapshot_is_complete()` asks only about `"state"`) and
 ## still resumes, reading as `DaySpec.Section.NONE` by absence. Putting it in
 ## the snapshot instead would have made every save on disk unreadable for the sake of one int.
 ## `"completed_resistance_alley_tiles"` rides the same way, for the same reason, reading as "none
@@ -28,7 +32,7 @@ extends RefCounted
 ## **The mode and the checkpoint ride the same way.** `"hard_mode"` is absent from a save written
 ## before there were two modes, which reads as normal mode; `"checkpoint"` is absent from one
 ## written before there were checkpoints, which reads as checkpoint zero, day 1 of the same city —
-## see `GameState.checkpoint`. **A checkpoint is the run in exactly the shape the file carries it**
+## see `RunState.checkpoint`. **A checkpoint is the run in exactly the shape the file carries it**
 ## (`run_data()`, every key below but the ones about the file itself), so a field a later build adds
 ## to the save is in every checkpoint the moment it is in `run_data()`, and `restore_run_data()` is
 ## the one function that reads both back.
@@ -55,7 +59,7 @@ extends RefCounted
 ## web, is not kept until IndexedDB has dropped the file too, which only a flush's own answer says
 ## — see `_flush()`. It tells `EventBus` what it came to (`save_deleted`, and
 ## `save_deletion_settled` for a web flush), which is how the symbol shows a deletion made by
-## `GameState._end_run()`, an autoload that cannot reach `main`'s indicator.
+## `RunState._end_run()`, which cannot reach `main`'s indicator.
 ##
 ## **Every write and every deletion is one operation with its own id**, from `_new_operation()`,
 ## carried on its announcement and on its later answer alike. *(golden-otter, 2026-10-02: "if a new
@@ -64,7 +68,7 @@ extends RefCounted
 ## change begun last decides what it shows, and an answer to a change a symbol never began — one
 ## announced before a scene reload, to a symbol that did not survive it — settles nothing there.
 
-## Bumped only when the shape `GameState.save_snapshot()` writes changes — never for an ordinary
+## Bumped only when the shape `RunState.save_snapshot()` writes changes — never for an ordinary
 ## release. **This is the whole of what makes a save "the running build cannot read": a newer
 ## build with the same format keeps finding an older build's save, and only a format change drops
 ## one.** The build string below is recorded for a person to read, not for this comparison.
@@ -255,7 +259,7 @@ static func has_save() -> bool:
 	return FileAccess.file_exists(_path())
 
 ## Deletes the save, if there is one, and answers what the deletion came to — which is also what
-## the save symbol shows, through `EventBus.save_deleted`. `GameState._end_run()` (a run that is
+## the save symbol shows, through `EventBus.save_deleted`. `RunState._end_run()` (a run that is
 ## over) and `main._restart_run()` (the held restart) both call this; a run that is over or has been
 ## thrown away leaves nothing to resume.
 ##
@@ -298,7 +302,7 @@ static func _clear_now() -> bool:
 	Telemetry.note("save", "deleted the save")
 	return true
 
-## Writes the current `GameState` to disk and answers what the save moment came to, which is also
+## Writes `run` to disk and answers what the save moment came to, which is also
 ## what the save symbol shows, through `EventBus.save_written` — `main._save_now()` is just the one
 ## place the game calls this from, and relays nothing. `Result.REFUSED` for a dev run, a headless
 ## run and a run that has already ended, which draw nothing for a write that was never meant to
@@ -307,15 +311,15 @@ static func _clear_now() -> bool:
 ## is called with `Result.CONFIRMED` or `Result.FAILED`, exactly once, and only if its object still
 ## exists then. `settled` is never called for any other answer. **The symbol is answered by the bus,
 ## not by `settled`**, because a scene reload may free the caller before the browser answers.
-static func write(day_under_way: bool, settled := Callable()) -> Result:
-	if not uses_save() or _run_has_ended():
+static func write(run: RunState, day_under_way: bool, settled := Callable()) -> Result:
+	if not uses_save() or _run_has_ended(run):
 		return Result.REFUSED
 	var operation := _new_operation()
 	var on_web := OS.has_feature("web")
 	# Read at every save moment rather than once, so the answer is the engine's own at the moment
 	# the save is meant to be kept.
 	var persistent := OS.is_userfs_persistent()
-	var wrote := _write_now(day_under_way)
+	var wrote := _write_now(run, day_under_way)
 	var result := _moment_result(wrote, on_web, persistent)
 	if result == Result.FAILED:
 		Telemetry.note("save", "the save was not kept (%s)"
@@ -348,9 +352,9 @@ static func _new_operation() -> int:
 	_last_operation += 1
 	return _last_operation
 
-## Whether the run has an ending, after which nothing is written — see `_write_now()`.
-static func _run_has_ended() -> bool:
-	return GameState.header.ending != GameEnums.Ending.NONE
+## Whether `run` has an ending, after which nothing is written — see `_write_now()`.
+static func _run_has_ended(run: RunState) -> bool:
+	return run.header.ending != GameEnums.Ending.NONE
 
 ## Starts a web flush for `operation` and settles it through `settled` — see `_FLUSH_JS` for the
 ## page's half and `FLUSH_TIMEOUT_SECONDS` for the backstop. The operation id is the flush's token,
@@ -470,23 +474,23 @@ static func _settle(token: int, result: Result, reason: String) -> void:
 ## exercise the actual file format — pointed at a scratch path with `set_path_override()` first,
 ## never at `_DEFAULT_PATH`.
 ##
-## **Refuses once `GameState.header.ending` is set**, checked here rather than only in `write()` so a test
+## **Refuses once `run.header.ending` is set**, checked here rather than only in `write()` so a test
 ## can drive it without also having to make `uses_save()` answer `true` under the headless runner.
-## A finished run already had its save cleared in `GameState._end_run()`; this is the second line
+## A finished run already had its save cleared in `RunState._end_run()`; this is the second line
 ## of the same reasoning `CLAUDE.md`'s "check before accepting, never repair afterwards" asks for
 ## elsewhere in this project — a stray write between the ending firing and the player being shown
 ## it must not resurrect a file that answering the ending question already deleted.
 ##
 ## Returns whether the file was written and closed; on the web that is not yet a kept save — see
 ## `write()`.
-static func _write_now(day_under_way: bool) -> bool:
-	if _run_has_ended():
+static func _write_now(run: RunState, day_under_way: bool) -> bool:
+	if _run_has_ended(run):
 		return false
 	var file := FileAccess.open(_path(), FileAccess.WRITE)
 	if not file:
 		push_warning("GameSave: could not open %s for writing" % _path())
 		return false
-	var stored := file.store_string(JSON.stringify(file_data(day_under_way)))
+	var stored := file.store_string(JSON.stringify(file_data(run, day_under_way)))
 	file.close()
 	if not stored:
 		push_warning("GameSave: could not write %s" % _path())
@@ -495,18 +499,18 @@ static func _write_now(day_under_way: bool) -> bool:
 	Telemetry.note("save", "wrote the save (%s)" % state_word)
 	return true
 
-## Everything the save file holds, as the plain JSON-safe dictionary `_write_now()` stringifies:
-## `run_data()`, plus the facts about the file and the run's mode rather than about where the run
+## Everything the save file holds of `run`, as the plain JSON-safe dictionary `_write_now()`
+## stringifies: `run_data()`, plus the facts about the file and the run's mode rather than about where the run
 ## stands — the format and the build that wrote it, whether a day was under way, the mode, and the
 ## checkpoint. `FILE_KEYS` names those, and `tests/test_run_checkpoints.gd` reads every other key
 ## off this function to check a checkpoint gives each one back.
-static func file_data(day_under_way: bool) -> Dictionary:
-	var data := run_data()
+static func file_data(run: RunState, day_under_way: bool) -> Dictionary:
+	var data := run_data(run)
 	data["format_version"] = FORMAT_VERSION
 	data["build"] = BuildInfo.build_text()
 	data["day_under_way"] = day_under_way
-	data["hard_mode"] = GameState.hard_mode
-	data["checkpoint"] = GameState.checkpoint.duplicate(true)
+	data["hard_mode"] = run.hard_mode
+	data["checkpoint"] = run.checkpoint.duplicate(true)
 	return data
 
 ## The keys of `file_data()` that are not the run's own state, and so are neither part of a
@@ -516,49 +520,49 @@ const FILE_KEYS: Array[String] = [
 	"format_version", "build", "day_under_way", "hard_mode", "checkpoint",
 ]
 
-## Where the run stands, in the shape the save carries it: `GameState.save_snapshot()` under
+## Where `run` stands, in the shape the save carries it: `RunState.save_snapshot()` under
 ## `"state"`, and the run's facts that ride beside it as top-level keys. This is also exactly what
-## a checkpoint is — `GameState._keep_a_checkpoint_if_one_is_due()` keeps it at a checkpoint day's
+## a checkpoint is — `RunState._keep_a_checkpoint_if_one_is_due()` keeps it at a checkpoint day's
 ## dawn — so the save and the checkpoint can never carry two different ideas of what a run is.
-static func run_data() -> Dictionary:
-	var data := GameState.run_parts.rider_data()
-	data["state"] = GameState.save_snapshot()
+static func run_data(run: RunState) -> Dictionary:
+	var data := run.run_parts.rider_data()
+	data["state"] = run.save_snapshot()
 	return data
 
-## The other half of `run_data()`: puts every field it carries back on `GameState`, from a save
-## read off disk or from a checkpoint alike. `data["state"]` must already have passed
-## `GameState.snapshot_is_complete()`. Each rider is read with a default for its absence, so a save
+## The other half of `run_data()`: puts every field it carries back on `run`, from a save read off
+## disk or from a checkpoint alike. `data["state"]` must already have passed
+## `RunState.snapshot_is_complete()`. Each rider is read with a default for its absence, so a save
 ## from a build that never wrote it loads with the value a run that has not got that far holds.
 ## Leaves `hard_mode` and `checkpoint` alone: they are the file's keys, not the run's state.
-static func restore_run_data(data: Dictionary) -> void:
-	GameState.restore_snapshot(data["state"])
+static func restore_run_data(run: RunState, data: Dictionary) -> void:
+	run.restore_snapshot(data["state"])
 	# After the snapshot, never before: the riders are read with a default for their absence, so a
 	# save from a build that never wrote a key leaves that part where a run that has not got that far
 	# holds it — the ordinary fourteen days with no escape, no used alleys, no fenced park, bare
 	# walls and a pelican bag at 0 — rather than half-restored.
-	GameState.run_parts.restore_riders(data)
+	run.run_parts.restore_riders(data)
 
-## Tries to resume a run. Returns `{}` when there is nothing to resume — no file, a file this build
-## cannot read, or a dev/headless run `uses_save()` already refused — and `{"day_under_way": bool}`
-## once `GameState` has been overwritten with the save's own fields. The caller (`main._ready()`)
-## still owns what a `true` costs: the same lost-day path an ordinary loss takes, through
-## `GameState.finish_day()`, so this function only ever reads and restores, never spends a nerve.
-static func try_resume() -> Dictionary:
+## Tries to resume a run into `run`. Returns `{}` when there is nothing to resume — no file, a file
+## this build cannot read, or a dev/headless run `uses_save()` already refused — and
+## `{"day_under_way": bool}` once `run` has been overwritten with the save's own fields. The caller
+## (`main._ready()`) still owns what a `true` costs: the same lost-day path an ordinary loss takes,
+## through `RunState.finish_day()`, so this function only ever reads and restores, never spends a
+## nerve.
+static func try_resume(run: RunState) -> Dictionary:
 	if not uses_save():
 		return {}
-	return _read_now()
+	return _read_now(run)
 
 ## The ungated mechanics `try_resume()` calls through — the seam `tests/test_save.gd` uses to
 ## exercise a garbled or version-mismatched file directly, since `uses_save()` always answers
 ## `false` under the headless test runner (see its own doc).
 ##
 ## Every way a file fails to become a resumable run answers the same "drop it for a fresh title
-## screen" the design asks for, rather than a half-loaded `GameState`: no file at that path,
-## text that is not valid JSON, JSON that is not an object, a `format_version` this build does not
-## carry, or a `"state"` missing a field this build's own `GameState.save_snapshot()` writes — see
-## `GameState.snapshot_is_complete()`. Only past every one of those does `GameState` actually
-## change.
-static func _read_now() -> Dictionary:
+## screen" the design asks for, rather than a half-loaded run: no file at that path, text that is
+## not valid JSON, JSON that is not an object, a `format_version` this build does not carry, or a
+## `"state"` missing a field this build's own `RunState.save_snapshot()` writes — see
+## `RunState.snapshot_is_complete()`. Only past every one of those does `run` actually change.
+static func _read_now(run: RunState) -> Dictionary:
 	var path := _path()
 	if not FileAccess.file_exists(path):
 		return {}
@@ -585,43 +589,43 @@ static func _read_now() -> Dictionary:
 	if typeof(data.get("state", null)) != TYPE_DICTIONARY:
 		return {}
 	var state: Dictionary = data["state"]
-	if not GameState.snapshot_is_complete(state):
+	if not run.snapshot_is_complete(state):
 		return {}
-	return _apply(data)
+	return _apply(run, data)
 
-## Everything a readable save puts back on `GameState`, from `_read_now()`'s file and from
+## Everything a readable save puts back on `run`, from `_read_now()`'s file and from
 ## `load_in_memory()`'s copy alike, and what it says about the day: `{"day_under_way": bool}`.
-static func _apply(data: Dictionary) -> Dictionary:
-	restore_run_data(data)
+static func _apply(run: RunState, data: Dictionary) -> Dictionary:
+	restore_run_data(run, data)
 	# The mode and the checkpoint, the same way again: a save from before there were two modes is a
 	# normal run, and one from before there were checkpoints goes back to day 1 of its own city.
-	GameState.hard_mode = bool(data.get("hard_mode", false))
+	run.hard_mode = bool(data.get("hard_mode", false))
 	var kept: Variant = data.get("checkpoint", {})
-	GameState.checkpoint = _usable_checkpoint(kept)
+	run.checkpoint = _usable_checkpoint(run, kept)
 	return {"day_under_way": bool(data.get("day_under_way", false))}
 
-## The run on `GameState` written out the way a save is and read straight back the way a save is —
+## `run` written out the way a save is and read straight back into it the way a save is —
 ## through JSON and `_apply()` — without touching the disk. **A normal run sent back to its
 ## checkpoint boots on this** (`main._carry_the_run_into_the_next_boot()`): the scene is reloaded,
 ## so no node remembers anything after the checkpoint, and the run it boots on is exactly what a
 ## load would give it, on every run, a dev-flagged or headless one with no save at all included.
 ## Never reads the file, so a write the storage did not keep cannot hand the reload an older run.
-static func load_in_memory() -> void:
+static func load_in_memory(run: RunState) -> void:
 	var parser := JSON.new()
-	if parser.parse(JSON.stringify(file_data(false))) != OK:
+	if parser.parse(JSON.stringify(file_data(run, false))) != OK:
 		push_error("GameSave: the run could not be written out as JSON")
 		return
-	_apply(parser.data)
+	_apply(run, parser.data)
 
 ## A checkpoint read off disk, kept only when it could be given back: a dictionary whose `"state"`
 ## carries every field this build's snapshot does. Anything else — absent, garbled, or from a
 ## snapshot shape this build no longer reads — falls back to checkpoint zero (`{}`) rather than a
 ## half-applied run, the same answer `_read_now()` gives a whole save it cannot read.
-static func _usable_checkpoint(raw: Variant) -> Dictionary:
+static func _usable_checkpoint(run: RunState, raw: Variant) -> Dictionary:
 	if not raw is Dictionary:
 		return {}
 	var kept: Dictionary = raw
 	var state: Variant = kept.get("state", null)
-	if not state is Dictionary or not GameState.snapshot_is_complete(state):
+	if not state is Dictionary or not run.snapshot_is_complete(state):
 		return {}
 	return kept

@@ -31,7 +31,7 @@ func _ready() -> void:
 		return
 	if "--probe-camera" in OS.get_cmdline_user_args():
 		var runtime := SceneRecipeRuntime.new()
-		runtime.configure({"data": {}, "manifest": {}, "anchors": {}}, _scripted())
+		runtime.configure({"data": {}, "manifest": {}, "anchors": {}}, _scripted(), GameState)
 		add_child(runtime)
 		var from := Camera2D.new()
 		from.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -80,7 +80,7 @@ func _ready() -> void:
 			"walk": str(seconds) + "e1p", "observations": [
 			{"tick": 1, "subject": "world", "condition": "near", "at": [1, 0], "distance": 0},
 			{"tick": 2, "subject": "world", "condition": "near", "at": [1, 0], "distance": 0}]}}
-		runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted())
+		runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted(), GameState)
 		var world := World.new()
 		add_child(world)
 		add_child(runtime)
@@ -96,7 +96,7 @@ func _ready() -> void:
 	var runtime := SceneRecipeRuntime.new()
 	var data := {"name": "failed observation", "playback": {"duration": 1.0 / 60.0,
 		"observations": [{"tick": 1, "subject": "missing", "condition": "moving"}]}}
-	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted())
+	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted(), GameState)
 	add_child(runtime)
 	runtime.set_physics_process(false)
 	runtime._active = true
@@ -252,7 +252,7 @@ func _test_heat_installs_the_heated_row(t) -> void:
 			entry["heat"] = heat
 		var runtime := SceneRecipeRuntime.new()
 		runtime.configure({"data": {"setup": {"day": GameState.header.day, "events": [entry]}},
-				"manifest": {}, "anchors": {}, "map": city.map}, _recipe_config(false))
+				"manifest": {}, "anchors": {}, "map": city.map}, _recipe_config(false), GameState)
 		runtime._city = city
 		var errors: Array[String] = []
 		for plan in runtime._event_plans(Vector2(4624, 3728), errors):
@@ -327,7 +327,7 @@ func _recipe_config(scripted: bool) -> RunConfig:
 func _task_runtime(director: ResistanceDirector) -> SceneRecipeRuntime:
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure({"data": {"setup": {"task": {"mark": "mark"}}}, "manifest": {},
-			"anchors": {}}, _recipe_config(false))
+			"anchors": {}}, _recipe_config(false), GameState)
 	runtime._resistance = director
 	runtime.manifest["task"] = {"mark": [0, 0]}
 	return runtime
@@ -356,7 +356,7 @@ func _test_arguments(t) -> void:
 func _test_inputs(t) -> void:
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure({"data": {"playback": {"duration": 3, "walk": "1e1N1p"}},
-			"anchors": {}, "manifest": {}}, _recipe_config(true))
+			"anchors": {}, "manifest": {}}, _recipe_config(true), GameState)
 	runtime.tick = 0
 	runtime._apply_input()
 	t.check(Input.is_action_pressed("move_right") and not Input.is_action_pressed("run"),

@@ -19,6 +19,9 @@ extends Node
 ## script has no `class_name` of its own.
 var _log
 var _config: RunConfig
+## The run this boot plays, handed in by `setup()`: whose seed each day's header names, and what the
+## day's observer is handed for the day it plans.
+var _run: RunState
 ## The trace handed to game logic: every line it is given goes into the run log, or nowhere while
 ## no log is open.
 var trace := RunTrace.new()
@@ -39,10 +42,12 @@ var _escape_world: Dictionary = {}
 ## from, with no corridor, since its walk is two chains and not a day's tree. Null in the building.
 var _escape_city: City
 
-## Hands the session the run log, the run's configuration and the bus whose events it writes down.
-func setup(run_log: Node, config: RunConfig, bus: Node) -> void:
+## Hands the session the run log, the run's configuration, the bus whose events it writes down and
+## the run it is the log of.
+func setup(run_log: Node, config: RunConfig, bus: Node, run: RunState) -> void:
 	_log = run_log
 	_config = config
+	_run = run
 	trace = RunTrace.new(run_log.note)
 	bus.day_started.connect(_on_day_started)
 	bus.day_planned.connect(_on_day_planned)
@@ -100,7 +105,7 @@ func watch_day(city: City, player: Stroller, baby: Baby, day: DayController,
 	if not _log.is_active():
 		return
 	_observer = _new_observer()
-	_observer.setup(city, player, baby, day, resistance, _config.spikes_requested, edge)
+	_observer.setup(_run, city, player, baby, day, resistance, _config.spikes_requested, edge)
 
 ## The day's clock, whose `spec` says what each day is, before the first one starts — the escape's
 ## boot hands it in ahead of `watch_escape()`, whose world is built only as its first section
@@ -144,11 +149,11 @@ func _new_observer() -> TelemetryObserver:
 func _on_day_started(day: int) -> void:
 	if _walking_a_section():
 		_escape_city = null
-		_log.begin_section(day, _clock.spec.title, GameState.header.run_seed, _clock.spec.length)
+		_log.begin_section(day, _clock.spec.title, _run.header.run_seed, _clock.spec.length)
 		return
 	if not _city:
 		return
-	_log.begin_day(day, Tuning.act_for_day(day), GameState.header.run_seed, _city.map.seed_used,
+	_log.begin_day(day, Tuning.act_for_day(day), _run.header.run_seed, _city.map.seed_used,
 			_config.day_length_for(day))
 
 ## The shape of the day, written once everything has been placed: what is shut, where the calm is,

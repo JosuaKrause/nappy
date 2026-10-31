@@ -32,6 +32,10 @@ const BOOT_FRAMES := 30
 class RecordingCounter extends "res://src/autoload/visit_counter.gd":
 	var sent: Array[String] = []
 
+	## Counts the live run, as `main` hands the real counter the run it plays.
+	func _init() -> void:
+		configure(null, GameState)
+
 	func _send_event(name: String) -> void:
 		sent.append(name)
 

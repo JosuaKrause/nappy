@@ -41,6 +41,15 @@ func configure(debug: bool, invincible: bool) -> void:
 	_debug = debug
 	_invincible = invincible
 
+## The run whose day, act, nerves and resistance the header and the resistance line read, handed in
+## by `use_run()`.
+var _run: RunState
+
+## Hands the HUD the run it reads. Called by `main` before the HUD enters the tree, since `_ready()`
+## draws both lines at once, and by a test that builds one.
+func use_run(run: RunState) -> void:
+	_run = run
+
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `DaySummary` and `PauseScreen` use. No longer chosen between two wordings for the walking,
 ## running and pause lessons — those now name the tap on every device, since nothing on screen
@@ -258,7 +267,7 @@ func _teach_the_pause(delta: float) -> void:
 ## run button (`_run_phrase()`): `Shift` still holds `run` on a keyboard, but nothing on screen
 ## names it — see `Texts.WALKING_LESSON_PAUSE`'s own doc.
 func _on_event_telegraphed(instance: EventInstance) -> void:
-	if _taught_run or instance.def.pursuit == null or GameState.header.day != Tuning.RUN_TAUGHT_DAY:
+	if _taught_run or instance.def.pursuit == null or _run.header.day != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
 	var phrase := _run_phrase(HelpText.joystick_in_force(get_tree()))
@@ -273,7 +282,7 @@ func _say_the_walking_lesson(joystick: bool) -> void:
 ## `joystick`: `main` emits this one line *before* it sets the scheme on `TouchControls`, so the
 ## tree still answers with the old one at this moment.
 func _on_controls_chosen(joystick: bool, _by_key: bool) -> void:
-	if GameState.header.day == 1:
+	if _run.header.day == 1:
 		_say_the_walking_lesson(joystick)
 
 ## How the run lessons put it. *(2026-10-04, the player, inbox #533: "joystick run should now say
@@ -359,12 +368,12 @@ func _refresh_state() -> void:
 	_state_label.text = text
 
 func _on_day_time_changed(remaining: float, total: float) -> void:
-	# A day reads to the second (`GameState.format_clock_seconds()`, shared with the day summary's
-	# elapsed-time line) and the escape reads to the hundredth (`GameState.format_clock_hundredths()`),
+	# A day reads to the second (`RunState.format_clock_seconds()`, shared with the day summary's
+	# elapsed-time line) and the escape reads to the hundredth (`RunState.format_clock_hundredths()`),
 	# which its `DayController` feeds on every frame (`DaySpec.clock_hundredths`). The ending
-	# screens' run length keeps the millisecond (`GameState.format_clock()`): it is a still number.
-	_clock.text = GameState.format_clock_hundredths(remaining) if _hundredths \
-			else GameState.format_clock_seconds(remaining)
+	# screens' run length keeps the millisecond (`RunState.format_clock()`): it is a still number.
+	_clock.text = RunState.format_clock_hundredths(remaining) if _hundredths \
+			else RunState.format_clock_seconds(remaining)
 	# The last minute is the one worth panicking about.
 	var urgent := remaining < 60.0 and total > 0.0
 	_clock.modulate = Color("e5765f") if urgent else Color(1, 1, 1)
@@ -410,7 +419,7 @@ func _on_resistance_step_completed(step_index: int) -> void:
 ##
 ## **The goal itself is silent until the first mark has been touched** (`CLAUDE.md`, "no quest
 ## log or marker for the resistance": *the first encounter comes with no hint at all*). A pickup
-## grants no progress, so `GameState.resistance.completed_steps` rather than
+## grants no progress, so the run's `resistance.completed_steps` rather than
 ## `has_joined_resistance()` is the test — it is non-empty the instant step 1 is touched, which
 ## is the pick-up itself rather than the perform half a day later.
 ##
@@ -423,7 +432,7 @@ func _on_resistance_step_completed(step_index: int) -> void:
 ## nothing to leak yet, since a pickup's whole content is the finding of it.
 func _refresh_resistance() -> void:
 	var step: ResistanceSteps.Step = null
-	if _contact_step > 0 and not GameState.resistance.completed_steps.is_empty():
+	if _contact_step > 0 and not _run.resistance.completed_steps.is_empty():
 		step = ResistanceSteps.by_index(_contact_step)
 	var named := ""
 	if step:
@@ -433,12 +442,12 @@ func _refresh_resistance() -> void:
 		_resistance_label.text = _task_text(named) if step else ""
 		return
 
-	if not GameState.has_joined_resistance() and _contact_step == 0:
+	if not _run.has_joined_resistance() and _contact_step == 0:
 		_resistance_label.text = ""
 		return
 
-	var marks := "*".repeat(GameState.resistance.progress) \
-			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - GameState.resistance.progress))
+	var marks := "*".repeat(_run.resistance.progress) \
+			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - _run.resistance.progress))
 	var line := "resistance %s" % marks
 	if step:
 		line += "   " + _task_text(named)
@@ -491,10 +500,10 @@ func _refresh_header() -> void:
 		_header.text = ""
 		return
 	var text := "day %d / %d      act %d      nerves %s" % [
-		GameState.header.day, Tuning.RUN_LENGTH_DAYS, GameState.current_act(),
+		_run.header.day, Tuning.RUN_LENGTH_DAYS, _run.current_act(),
 		# `NerveDisplay.stars()` — see its own class doc for why every screen that shows a nerve
 		# count reads through it rather than repeating this line.
-		NerveDisplay.stars(GameState.header.nerves),
+		NerveDisplay.stars(_run.header.nerves),
 	]
 	# So no capture from an --invincible run reads as a real one — appended to the same debug
 	# label rather than a mark of its own, since the cues vocabulary is for the world she is

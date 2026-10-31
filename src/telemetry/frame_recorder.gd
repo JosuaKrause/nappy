@@ -48,6 +48,9 @@ var _in_the_title: Callable
 var _city: City
 var _player: Stroller
 var _day: DayController
+## The run whose seed names the record and whose calendar day each frame carries, handed in by
+## `setup()`.
+var _run: RunState
 var _metadata: Dictionary = {}
 ## The window's viewport, whose render time the engine measures while the record is on.
 var _viewport: RID
@@ -60,7 +63,9 @@ static var _native_path := ""
 ## The page button's callback into the recorder. See `_add_page_button()`.
 static var _save_callback: JavaScriptObject
 
-func setup(in_the_title: Callable, city: City, player: Stroller, day: DayController) -> void:
+func setup(in_the_title: Callable, city: City, player: Stroller, day: DayController,
+		run: RunState) -> void:
+	_run = run
 	_in_the_title = in_the_title
 	_city = city
 	_player = player
@@ -109,7 +114,7 @@ func at_process_end() -> void:
 		ledger.set_counter(FrameLedger.LIVE_EVENTS, _city.events.active_count())
 		ledger.set_counter(FrameLedger.PLAYER_X, roundi(here.x))
 		ledger.set_counter(FrameLedger.PLAYER_Y, roundi(here.y))
-		ledger.set_counter(FrameLedger.DAY, GameState.header.day)
+		ledger.set_counter(FrameLedger.DAY, _run.header.day)
 		ledger.set_counter(FrameLedger.PROCESS_FRAME, Engine.get_process_frames())
 	ledger.process_end(Time.get_ticks_usec())
 
@@ -228,7 +233,7 @@ func report_text() -> String:
 			+ "counts, not times"
 	var metadata := _metadata.duplicate()
 	metadata["build"] = BuildInfo.build_text()
-	metadata["run_seed"] = GameState.header.run_seed
+	metadata["run_seed"] = _run.header.run_seed
 	# The mode the city was handed, or a city's default for a recorder that watches none.
 	metadata["ground_mode"] = int(_city.ground_mode if _city else SceneryGround.Mode.ONE)
 	metadata["scenery_budget_usec"] = SceneryResidency.BUDGET_USEC
@@ -254,13 +259,13 @@ func save() -> String:
 	var text := report_text()
 	ledger.keep = false
 	if OS.get_name() == "Web":
-		var file_name := "nappy-frames-seed%d-%s.json" % [GameState.header.run_seed,
+		var file_name := "nappy-frames-seed%d-%s.json" % [_run.header.run_seed,
 			Time.get_datetime_string_from_system().replace(":", "-")]
 		JavaScriptBridge.download_buffer(text.to_utf8_buffer(), file_name, "application/json")
 		return file_name
 	if _native_path == "":
 		_native_path = "user://frame-records/record-%s-seed%d.json" % [
-			Time.get_datetime_string_from_system().replace(":", "-"), GameState.header.run_seed]
+			Time.get_datetime_string_from_system().replace(":", "-"), _run.header.run_seed]
 	if DirAccess.make_dir_recursive_absolute(_native_path.get_base_dir()) != OK:
 		push_error("Cannot create the frame record directory")
 		return ""

@@ -33,6 +33,7 @@ func run(t) -> void:
 
 func _hud(t) -> CanvasLayer:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	hud.use_run(GameState)
 	t.add_child(hud)
 	hud.set_process(false)
 	return hud

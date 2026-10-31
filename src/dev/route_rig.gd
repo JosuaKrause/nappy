@@ -37,7 +37,7 @@ extends Node
 ## unreachable one (no path exists) are both logged and skipped rather than hung on forever — see
 ## `_try_resolve()` and `_begin_leg()`. **Day 14's `mark` and `task` are unavailable on a bare
 ## `--day 14` run with nothing else played first** — the last night has no mark of its own
-## (`ResistanceSteps._finale()`) and is only offered once `GameState.sabotage_available()` holds
+## (`ResistanceSteps._finale()`) and is only offered once `RunState.sabotage_available()` holds
 ## (`Tuning.RESISTANCE_GOAL`, 5 earlier tasks done), which an isolated day never carries. That is a
 ## measurement fact about the calendar, not a bug in this rig: `calm` and `home` still resolve and
 ## time normally, and the finale's own leg needs the goal met to be timed at all.
@@ -214,6 +214,9 @@ var _caught_tile := Vector2i.ZERO
 ## The resistance step on offer when a `mark` or `task` leg began, so the leg can end when the
 ## director records it completed — see `_step_completed()`. `null` on every other leg.
 var _leg_step: ResistanceSteps.Step
+## The run whose completed steps say a `mark` or `task` leg has been reached — see
+## `_step_completed()`. Handed in by `setup()`.
+var _run: RunState
 ## Whether a door was holding her at the last walking frame — see `_held_at_a_door()`.
 var _held := false
 ## Where she stood at the last physics frame, and whether she has moved further than
@@ -222,7 +225,7 @@ var _held := false
 var _last_position := Vector2.INF
 var _teleported := false
 ## The day this rig's queue was started for, read once in `start_day()` off the spec it is handed
-## (`DaySpec.number`: 1 to 14, or the escape's city, 16). `GameState.header.day` has already moved to the
+## (`DaySpec.number`: 1 to 14, or the escape's city, 16). The run's `header.day` has already moved to the
 ## next day by the time `DayController.day_finished` reports a win, so a line written from
 ## `_on_day_finished()` would otherwise name the wrong day.
 var _day_number := 0
@@ -236,7 +239,8 @@ var _road_tiles: Dictionary = {}
 var _done := false
 
 func setup(city: City, player: Stroller, baby: Baby, resistance: ResistanceDirector,
-		day: DayController, targets: Array[String]) -> void:
+		day: DayController, targets: Array[String], run: RunState) -> void:
+	_run = run
 	_city = city
 	_player = player
 	_baby = baby
@@ -362,7 +366,7 @@ func _resolve_target(word: String) -> Vector2:
 			return _day.spec.exits.get(CityEdge.Kind.BRIDGE, Vector2.INF)
 		_:
 			if word.begins_with("spawn:"):
-				return DevRig.for_spawn_target(word.get_slice(":", 1), _city, _resistance)
+				return DevRig.for_spawn_target(word.get_slice(":", 1), _city, _resistance, _run)
 			push_warning("--route: unknown target '%s'" % word)
 			return Vector2.INF
 
@@ -1638,7 +1642,7 @@ func _maybe_replan(delta: float) -> void:
 ## answer to whether she reached it (`ContactPoint.REACH`, 36px, or an any-instance task's wider
 ## reach), which is what the leg is timing.
 func _step_completed() -> bool:
-	return _leg_step != null and GameState.resistance.completed_steps.has(_leg_step.index)
+	return _leg_step != null and _run.resistance.completed_steps.has(_leg_step.index)
 
 ## A `mark` or `task` target further than this from where the leg is aimed has moved: a tile, so a
 ## pacing any-instance task drifting inside its own tile does not re-plan every check.

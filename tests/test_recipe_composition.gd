@@ -83,7 +83,7 @@ func run(t) -> void:
 			"uniform_walkers": true, "walker_multiplier": 4}}
 	built.data = oversized
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure(built, RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true))
+	runtime.configure(built, RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true), GameState)
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)

@@ -36,7 +36,7 @@ func _test_appeared_requires_sight(t) -> void:
 			{"tick": 20, "subject": "event", "condition": "appeared"}]}}
 	runtime.configure({"data": recipe, "manifest": {}, "anchors": {}},
 			RunConfig.parse(PackedStringArray(["--recipe", "test.json", "--recipe-mode", "scripted"]),
-				"", true))
+				"", true), GameState)
 	var event := Node2D.new()
 	runtime.add_child(event)
 	runtime.named["event"] = event

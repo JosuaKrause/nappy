@@ -502,6 +502,14 @@ var posters: Dictionary = {}:
 		posters = value
 		queue_redraw()
 
+## Whether the neighbor has been taken, which draws this front's wanted notices with her face
+## crossed out (`PosterArt.texture_for()`). Handed over with `posters` by `PosterWalls.refresh()`,
+## which asks the run; a front holds no run of its own.
+var neighbor_taken := false:
+	set(value):
+		neighbor_taken = value
+		queue_redraw()
+
 @export var condition := Condition.LIVED_IN:
 	set(value):
 		if condition == value:
@@ -1276,10 +1284,12 @@ func _draw_posters() -> void:
 		var side := float(cell["side"])
 		var over := Vector2.ZERO
 		if int(cell["under"]) != PosterState.NONE:
-			draw_texture(PosterArt.texture_for(int(cell["under"]), int(cell["under_tear"])),
+			draw_texture(PosterArt.texture_for(int(cell["under"]), int(cell["under_tear"]),
+					neighbor_taken),
 					at + PosterArt.UNDER_OFFSET * Vector2(side, 1.0))
 			over = PosterArt.OVER_OFFSET * Vector2(side, 1.0)
-		draw_texture(PosterArt.texture_for(int(cell["kind"]), int(cell["tear"])), at + over)
+		draw_texture(PosterArt.texture_for(int(cell["kind"]), int(cell["tear"]), neighbor_taken),
+				at + over)
 
 ## The column(s) `civic_portico.svg` actually paints over, read back from `_cell()` rather than
 ## assumed: the portico is a fixed 32px overlay centred on the facade (`_draw_front_overlay()`),

@@ -113,6 +113,7 @@ func _test_button_catches_and_hover_are_radial_when_rotated(t) -> void:
 
 func _test_a_canvas_layer_is_always_visible(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	t.check(not summary.is_showing(), "a fresh summary is not showing")
 	t.check(summary.visible,
@@ -124,6 +125,7 @@ func _test_a_canvas_layer_is_always_visible(t) -> void:
 ## That is true, and the answer is to not fight: whatever was found is what goes back.
 func _test_the_pause_puts_back_what_it_found(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	t.check(not pause.is_open(), "the pause starts closed")
 
@@ -154,6 +156,7 @@ func _test_the_pause_puts_back_what_it_found(t) -> void:
 ## carries on.**
 func _test_space_carries_on_from_every_screen(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var resumed := [0]
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
@@ -180,6 +183,7 @@ func _test_space_carries_on_from_every_screen(t) -> void:
 ## stopped cannot go stale, and a listener that has to stay correct across fourteen days will not.
 func _test_the_pause_says_where_the_run_stands(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var day := GameState.header.day
 	var nerves := GameState.header.nerves
@@ -219,6 +223,7 @@ func _test_the_pause_says_where_the_run_stands(t) -> void:
 ## exactly the difference the M36 bug turned on. `--press key:r` is the same check in a real window.
 func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var restarts := [0]
 	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
@@ -235,6 +240,7 @@ func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
 
 	# And the other end of the same dead end: the last screen of a run has a key on it.
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	summary.show_ending(GameEnums.Ending.BAD, GameState.header.day)
 	t.check(summary.is_showing(), "the ending screen is up")
@@ -254,6 +260,7 @@ func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
 ## it defers a real `reload_current_scene()`, which nothing in this suite can afford to trigger.
 func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	var started := [0]
 	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
@@ -280,6 +287,7 @@ func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
 ## title screen that paused the tree itself would take that decision away from it.
 func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	t.check(not title.is_open(), "the title starts hidden")
 
@@ -312,6 +320,7 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 ## same reasoning that makes `TAP` the mouse mode at all.
 func _test_every_walking_key_begins_the_run(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	var started_modes: Array[ControlsMode.Mode] = []
 	var by_keys: Array[bool] = []
@@ -337,6 +346,7 @@ func _test_every_walking_key_begins_the_run(t) -> void:
 ## just past its edge, in the button's own local frame so a rotated presentation does not matter.
 func _test_a_round_button_catches_its_old_square_and_five_percent_past_its_disc(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	title.open()
 	for button: ModeButton in [title._left_button, title._right_button, title._tap_button]:
@@ -375,6 +385,7 @@ func _test_a_round_button_catches_its_old_square_and_five_percent_past_its_disc(
 ## `_test_a_tap_advances_every_screen` for why both `process_frame`s are emitted manually.
 func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	var started: Array[Array] = []
 	var by_keys: Array[bool] = []
@@ -419,6 +430,7 @@ func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
 ## `get_viewport().push_input(event, true)` is the one call that would fail here if that regressed.
 func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	var started_modes: Array[ControlsMode.Mode] = []
 	var by_keys: Array[bool] = []
@@ -457,6 +469,7 @@ func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t) -> void:
 ## no longer names the key on either platform, so only the key's own effect is asserted here now.)*
 func _test_the_title_quit_key_matches_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	var quit := [0]
 	title.quit_requested.connect(func() -> void: quit[0] += 1)
@@ -478,6 +491,7 @@ func _test_the_title_quit_key_matches_the_platform(t) -> void:
 ## for why only the key's own effect is asserted, not a hint that no longer names it.
 func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var quit := [0]
 	pause.quit_requested.connect(func() -> void: quit[0] += 1)
@@ -502,6 +516,7 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 ## in place of the checkbox; a new game shows the checkbox and no name.
 func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	var was_hard: bool = GameState.hard_mode
 	GameState.hard_mode = false
@@ -530,6 +545,7 @@ func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 ## not change here at all (2026-09-07's M88 asked for the buttons back, not a new lesson).
 func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 
 	title.open()
@@ -696,6 +712,7 @@ func _test_mode_button_pressed_and_hovered_drive_the_stylebox(t) -> void:
 ## `DaySummary` shares the identical `_update_hover()` shape and is not re-checked here.
 func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	title._touch = false
 	title.open()
@@ -725,6 +742,7 @@ func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
 	title.queue_free()
 
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	t.get_tree().paused = false
 	pause.open()
@@ -755,6 +773,7 @@ func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
 ## the "DEBUG MODE ON" note carries after its words, so the note is read back here as well.
 func _test_the_title_names_a_version(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	title.open()
 
@@ -795,6 +814,7 @@ func _test_the_title_names_a_version(t) -> void:
 ## only the sentences naming them are gone.
 func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	t.get_tree().paused = false
 
@@ -839,6 +859,7 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 ## there too.
 func _test_the_buttons_show_on_every_device(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	t.get_tree().paused = false
 
@@ -861,6 +882,7 @@ func _test_the_buttons_show_on_every_device(t) -> void:
 ## name.
 func _test_the_restart_button_is_a_hold(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var restarts := [0]
 	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
@@ -926,6 +948,7 @@ func _test_the_restart_button_is_a_hold(t) -> void:
 ## against the button's actual on-screen shape rather than an assumption about it.
 func _test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var resumed := [0]
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
@@ -961,6 +984,7 @@ func _test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t) -> vo
 ## true)` is what exercises that layer at all.
 func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var restarts := [0]
 	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
@@ -1004,6 +1028,7 @@ func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t) 
 ## does.
 func _test_a_touch_away_from_restart_still_carries_on(t) -> void:
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var resumed := [0]
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
@@ -1051,6 +1076,7 @@ func _test_pause_keeps_the_last_heading_through_the_dismiss_press(t) -> void:
 	t.check(Input.is_action_pressed("move_right"), "walking east before the pause")
 
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	pause._touch = true
 	pause._refresh_buttons()
@@ -1111,6 +1137,7 @@ func _test_pause_stays_standing_through_the_dismiss_press(t) -> void:
 			"standing before the pause")
 
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	pause._touch = true
 	pause._refresh_buttons()
@@ -1168,6 +1195,7 @@ func _touch_at(position: Vector2, pressed: bool) -> InputEventScreenTouch:
 ## to the user.")* `space` still carries on regardless of what the hint says.
 func _test_the_summary_hint_matches_the_platform(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 
 	summary._touch = false
@@ -1197,6 +1225,7 @@ func _test_the_summary_hint_matches_the_platform(t) -> void:
 ## interaction learned everywhere it is met.
 func _test_an_ending_has_no_continue_button(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	summary._touch = true
 
@@ -1222,6 +1251,7 @@ func _test_an_ending_has_no_continue_button(t) -> void:
 ## machine through `ModeButton.begin_hold()`/`end_hold()`, so only the wiring differs here.
 func _test_the_summary_restart_button_is_a_hold(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	var restarts := [0]
 	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
@@ -1267,6 +1297,7 @@ func _test_the_summary_restart_button_is_a_hold(t) -> void:
 ## `get_viewport().push_input(event, true)` is the one call that would fail here if that regressed.
 func _test_a_real_touch_on_the_continue_button_reaches_the_summary(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	var carried_on := [0]
 	summary.continued.connect(func() -> void: carried_on[0] += 1)
@@ -1297,6 +1328,7 @@ func _test_a_real_touch_on_the_continue_button_reaches_the_summary(t) -> void:
 ## The other half: a hold has to survive the GUI layer on both its press and its matching release.
 func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	var restarts := [0]
 	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
@@ -1341,6 +1373,7 @@ func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t) -> vo
 ## — see `DaySummary._acknowledge_and_continue()`'s own doc for how that was found.
 func _test_a_continue_press_flashes_before_it_is_acted_on(t) -> void:
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	summary._touch = true
 	summary.show_day(GameEnums.DayResult.WON, "", 5)
@@ -1387,6 +1420,7 @@ func _test_a_continue_press_flashes_before_it_is_acted_on(t) -> void:
 ## case that does.
 func _test_a_tap_advances_every_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	var started := [0]
 	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
@@ -1400,6 +1434,7 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	title.queue_free()
 
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var resumed := [0]
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
@@ -1423,6 +1458,7 @@ func _test_a_tap_advances_every_screen(t) -> void:
 	pause.queue_free()
 
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	summary.show_day(GameEnums.DayResult.WON, "", 5)
 	# See above: kept off the origin for the same reason.
@@ -1452,6 +1488,7 @@ func _test_a_tap_advances_every_screen(t) -> void:
 ## own doc for why a bare click, same as a bare tap, now does nothing on this screen.
 func _test_a_mouse_click_advances_every_screen(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
+	title.use_run(GameState)
 	t.add_child(title)
 	var started := [0]
 	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
@@ -1467,6 +1504,7 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 	title.queue_free()
 
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	var resumed := [0]
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
@@ -1486,6 +1524,7 @@ func _test_a_mouse_click_advances_every_screen(t) -> void:
 	pause.queue_free()
 
 	var summary: CanvasLayer = SUMMARY.instantiate()
+	summary.use_run(GameState)
 	t.add_child(summary)
 	summary.show_day(GameEnums.DayResult.WON, "", 5)
 	summary._restart_button.position = Vector2(500.0, 400.0)
@@ -1539,6 +1578,7 @@ func _test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t) -> void
 	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
 	t.add_child(controls)
 	var pause: PauseScreen = PAUSE.instantiate()
+	pause.use_run(GameState)
 	t.add_child(pause)
 	pause.open()
 	t.check(pause._body.line.begins_with("Tap to walk, double tap to run."),

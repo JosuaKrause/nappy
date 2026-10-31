@@ -17,13 +17,17 @@ var _graph_on: Callable
 var _city: City
 var _player: Stroller
 var _day: DayController
+## The run whose seed names the trace and whose calendar day each sample records, handed in by
+## `setup()`.
+var _run: RunState
 var _started_usec := -1
 var _metadata: Dictionary = {}
 ## The developer flags the run was given, handed in by `main` from its `RunConfig`.
 var _user_flags: Array = []
 
 func setup(in_the_title: Callable, readout_on: Callable, graph_on: Callable, city: City,
-		player: Stroller, day: DayController, user_flags: Array) -> void:
+		player: Stroller, day: DayController, user_flags: Array, run: RunState) -> void:
+	_run = run
 	_in_the_title = in_the_title
 	_readout_on = readout_on
 	_graph_on = graph_on
@@ -33,7 +37,7 @@ func setup(in_the_title: Callable, readout_on: Callable, graph_on: Callable, cit
 	_user_flags = user_flags
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_metadata = environment()
-	_metadata["run_seed"] = GameState.header.run_seed
+	_metadata["run_seed"] = _run.header.run_seed
 	_metadata["build"] = BuildInfo.build_text()
 	_metadata["warmup_usec"] = WARMUP_USEC
 	RenderingServer.frame_post_draw.connect(_sample)
@@ -63,7 +67,7 @@ func _sample() -> void:
 		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
-		roundi(here.x * 1000.0), roundi(here.y * 1000.0), GameState.header.day,
+		roundi(here.x * 1000.0), roundi(here.y * 1000.0), _run.header.day,
 		int(_readout_on.call()), int(_graph_on.call()),
 		int(Telemetry.is_active())])
 	buffer.append(now, Engine.get_process_frames(), Engine.get_frames_drawn(), counters)
@@ -104,7 +108,7 @@ func _exit_tree() -> void:
 		return
 	var path := "%s/trace-%s-seed%d-%d.json" % [directory,
 		Time.get_datetime_string_from_system().replace(":", "-"),
-		GameState.header.run_seed, Time.get_ticks_usec()]
+		_run.header.run_seed, Time.get_ticks_usec()]
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		push_error("Cannot write frame trace: %s" % path)

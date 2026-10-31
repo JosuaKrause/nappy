@@ -84,7 +84,7 @@ func _build(t) -> void:
 	_day = DayController.new()
 	t.add_child(_day)
 	_day.set_process(false)
-	_day.setup(_map, _player)
+	_day.setup(_map, _player, GameState)
 	_day.day_finished.connect(func(result: GameEnums.DayResult) -> void: _results.append(result))
 
 func _teardown() -> void:
@@ -228,6 +228,7 @@ func _test_the_three_losses_still_end_the_day_with_the_flag_off(t) -> void:
 
 func _test_the_hud_names_the_mode_when_invincible(t) -> void:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	hud.use_run(GameState)
 	t.add_child(hud)
 	hud.set_process(false)
 	hud.configure(true, true)

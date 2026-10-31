@@ -122,9 +122,15 @@ func _ready() -> void:
 ## `?debug=1`.
 var _config: RunConfig
 
-## Hands the counter the run's configuration; `null` puts it back to none, which sends nothing.
-func configure(config: RunConfig) -> void:
+## The run this page is counting, handed in by `main` at boot (`configure()`): its mode, read as a
+## day begins, and its day, which names what is counted before any `day_started` has been heard.
+var _run: RunState
+
+## Hands the counter the run's configuration and the run; a `null` configuration puts it back to
+## none, which sends nothing.
+func configure(config: RunConfig, run: RunState) -> void:
 	_config = config
+	_run = run
 
 ## Whether an event may be sent at all, right now. `_should_send()` below is the pure truth table;
 ## this is the one place its four live inputs are actually read.
@@ -340,11 +346,11 @@ var _day := 0
 ## The day what happens now is counted under: the one `day_started` announced, or, before any has
 ## been heard on this page — a suite driving the counter by hand — the run's own day.
 func _counted_day() -> int:
-	return _day if _day > 0 else GameState.header.day
+	return _day if _day > 0 else _run.header.day
 
 func _on_day_started(day: int) -> void:
 	_day = day
-	for name in _day_began_names(day, GameState.hard_mode):
+	for name in _day_began_names(day, _run.hard_mode):
 		_send_event(name)
 
 ## A fresh run's mode, from its title. **The day behind that title has already begun** — the first

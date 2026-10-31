@@ -63,6 +63,15 @@ var _touch_controls: TouchControls
 func set_touch_controls(controls: TouchControls) -> void:
 	_touch_controls = controls
 
+## The run whose day and nerves the standing line reads, handed in by `use_run()` before the screen
+## is first opened.
+var _run: RunState
+
+## Hands the screen the run it stands over. Called by `main` before the screen enters the tree, and
+## by a test that opens one.
+func use_run(run: RunState) -> void:
+	_run = run
+
 ## The body as the scheme in force words it.
 static func body_for(joystick: bool) -> String:
 	return Texts.WALKING_LESSON_PAUSE % (Texts.RUN_JOYSTICK if joystick else Texts.RUN_TAP)
@@ -123,10 +132,10 @@ var _was_paused := false
 ## looked at while the game is stopped cannot go stale, and a listener that has to be kept correct
 ## across fourteen days is a listener that will not be.
 func _show_where_the_run_stands() -> void:
-	var nerves := GameState.header.nerves
+	var nerves := _run.header.nerves
 	# Stars, drawn through `NerveDisplay.stars()` — the same text the HUD, the day brief and the
 	# day summary all read the count through, never a digit.
-	_standing.text = Texts.PAUSE_STANDING % [GameState.header.day,
+	_standing.text = Texts.PAUSE_STANDING % [_run.header.day,
 			Tuning.RUN_LENGTH_DAYS, NerveDisplay.stars(nerves)]
 
 func open() -> void:

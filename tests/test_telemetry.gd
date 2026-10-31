@@ -610,6 +610,7 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 	player.facing = Vector2.DOWN
 
 	var observer := TelemetryObserver.new()
+	observer._run = GameState
 	observer._city = city
 	observer._map = city.map
 	observer._player = player

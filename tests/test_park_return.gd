@@ -25,7 +25,7 @@ const REACTION := 2.0
 const _SCRATCH_PATH := "user://test_park_return_scratch.json"
 
 func run(t) -> void:
-	var baseline := GameSave.file_data(false)
+	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)
 	for seed_value in SEEDS:
 		_test_asleep_in_the_park_and_out_through_the_gap(t, seed_value)
@@ -33,7 +33,7 @@ func run(t) -> void:
 		_test_shut_in_with_the_baby_asleep(t, seed_value)
 	GameSave._clear_now()
 	GameSave.set_path_override("")
-	GameSave.restore_run_data(baseline)
+	GameSave.restore_run_data(GameState, baseline)
 	GameState.hard_mode = bool(baseline["hard_mode"])
 	GameState.checkpoint = baseline["checkpoint"]
 
@@ -47,7 +47,7 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	# file this suite points `GameSave` at.
 	GameState.start_run(seed_value)
 	GameState.header.day = ResistanceSteps.swing_day()
-	GameSave._write_now(true)
+	GameSave._write_now(GameState, true)
 	GameSave._uses_save_override = true
 	var main: Node2D = MAIN_SCENE.instantiate()
 	# A run with no flag at all, whatever this process's own command line says.
