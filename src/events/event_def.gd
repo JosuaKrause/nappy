@@ -173,6 +173,51 @@ var has_a_spread := false
 		has_a_spread = _look_has_a_spread(value)
 @export var ambient_source := AmbientSource.NONE
 
+## **Whether this row stands along its street like a spread without being drawn as one**: a protest's
+## rank of placards and a firefight's cover, which fill `obstructs_radius`-worth of ground laid along
+## the street they stand on. Their drawn box and their solid body's spine follow the street's axis as
+## a spread's do (`EventFootprints.drawn_box_of()`, `EventFootprints.solid_axis_of()`); they never ask
+## `has_a_spread`'s corner question, so a corner costs them nothing.
+@export var stands_along_its_street := false
+
+## **Whether a stationary vehicle lies across its street rather than along it**: the burnt-out car,
+## left broadside across the carriageway, where the moving van stands along the kerb. Decides which
+## view it shows on a street (`EventFootprints.stands_side_on()`) and so which way its body lies.
+@export var lies_across_its_street := false
+
+## The pictures a row standing in its warning is drawn in, whose largest decides whether its warning
+## would stand in her view (`EventFootprints.warning_picture_size()`).
+enum WarningPicture {
+	## The guard's raised hand: every pursuer drawn standing in a warning that is not one of these.
+	GUARD_ALERT,
+	## The charging dog's alert.
+	DOG_ALERT,
+	## The alley robber's two alert frames.
+	ROBBER_ALERT,
+}
+
+@export var warning_picture := WarningPicture.GUARD_ALERT
+
+## **Whether it trails a slack lead behind it**: the loose dog, whose lead reaches
+## `EventFootprints.LOOSE_LEAD_REACH` behind it, which everything it can put on the screen includes
+## (`EventFootprints.footprint_of()`).
+@export var trails_a_lead := false
+
+## **Whether its own hold hides the whole of it**: `checkpoint_post`, one guard at an alley mouth and
+## nothing else, who goes in with her (`EventFootprints.hidden_by_its_hold()`). A hut or a gate is a
+## structure, drawn through its hold.
+@export var hides_in_its_hold := false
+
+## **Whether a rider on it may be drawn as the pelican** (`EventSpawner.rolls_a_pelican()`): the
+## cyclist, about one in 400 drawn as a pelican on the same bike. Only the picture changes.
+@export var may_be_a_pelican := false
+
+## What the run log calls one of it and several of it, for a pursuer on foot whose line names him
+## ("a policeman", "two guardsmen"): `EventsAhead`'s poster-tear and vehicle notes. Empty for any
+## other row.
+@export var noun := ""
+@export var noun_plural := ""
+
 static func _look_has_a_spread(value: Look) -> bool:
 	match value:
 		Look.ROADWORKS, Look.BURNT_SHELL, Look.STALL, Look.ROADBLOCK, Look.BARRICADE, \

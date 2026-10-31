@@ -30,7 +30,8 @@ static func box_of(row: EventDef) -> Rect2:
 
 ## The box, in an instance's own space, that what a row draws roughly fills: its own picture
 ## (`EventPictures.icon_for()`) standing on its feet at the origin, stretched along the run a
-## spread, a protest or a firefight covers on a street laid down the screen (`spread_vertical`) or
+## spread or a rank standing along its street (`EventDef.stands_along_its_street`) covers on a
+## street laid down the screen (`spread_vertical`) or
 ## across it, and grown by the wheel of a flock. An empty box for a row that draws nothing of its own
 ## (`Look.NONE`). Not pixel-exact — no halo, no badge, no bob, the view a mover is drawn in this frame
 ## aside — and it does not need to be: `EncounterWatch` asks only whether most of it is in view.
@@ -43,8 +44,7 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 	var half := maxf(11.0, row.obstructs_radius)
 	if row.has_a_spread and spread_vertical:
 		box = box.merge(Rect2(-size.x * 0.5, -half, size.x, half * 2.0))
-	elif row.has_a_spread or row.look == EventDef.Look.PROTEST \
-			or row.look == EventDef.Look.FIREFIGHT:
+	elif row.has_a_spread or row.stands_along_its_street:
 		box = box.merge(Rect2(-half, -size.y, half * 2.0, size.y))
 	if row.flock_size > 0:
 		box = box.grow(row.flock_spread)
@@ -77,7 +77,7 @@ static func footprint_of(row: EventDef) -> Rect2:
 	if row.draws_body_shadow and row.shape != null:
 		var r := row.obstructs_radius if row.obstructs_radius > 0.0 else row.shape.radius
 		box = box.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
-	if row.look == EventDef.Look.LOOSE_DOG:
+	if row.trails_a_lead:
 		box = box.merge(Rect2(-LOOSE_LEAD_REACH, -8.0, LOOSE_LEAD_REACH * 2.0, 8.0))
 	box = box.grow(EventPictures.BOB_HEIGHT + EntityHalo.HALO_MARGIN)
 	if row.intensity > 0.0 or row.hard_fail:
@@ -133,7 +133,7 @@ static func solid_axis_of(row: EventDef, heading: Vector2, spread_vertical: bool
 	# A car's body lies along the way it is driving, and turns with it (`EventCarDriving.turn_the_body()`).
 	if row.vehicle != null:
 		return heading.normalized() if not heading.is_zero_approx() else Vector2.RIGHT
-	if row.has_a_spread or row.look == EventDef.Look.PROTEST or row.look == EventDef.Look.FIREFIGHT:
+	if row.has_a_spread or row.stands_along_its_street:
 		return Vector2.DOWN if spread_vertical else Vector2.RIGHT
 	return Vector2.RIGHT if side_on else Vector2.DOWN
 
@@ -144,7 +144,7 @@ static func body_axis(map: WorldMap, row: EventDef, placed: Vector2, facing: Vec
 			stands_side_on(row, map, placed, facing))
 
 ## Whether a stationary vehicle is seen side-on at this point. The moving van faces along the
-## street and the burnt car lies perpendicular to it. A junction or ground outside the lattice has
+## street and the burnt car lies across it (`EventDef.lies_across_its_street`). A junction or ground outside the lattice has
 ## no single street axis, so the vehicle's own facing supplies the coherent default.
 static func stands_side_on(row: EventDef, map: WorldMap, at: Vector2, face: Vector2) -> bool:
 	var offsets := map.corridor_offsets(map.world_to_tile(at))
@@ -152,7 +152,7 @@ static func stands_side_on(row: EventDef, map: WorldMap, at: Vector2, face: Vect
 	var on_an_east_west_street := offsets.y >= 0
 	if on_a_north_south_street != on_an_east_west_street:
 		var parallel_side := on_an_east_west_street
-		return not parallel_side if row.look == EventDef.Look.BURNT_OUT_CAR else parallel_side
+		return not parallel_side if row.lies_across_its_street else parallel_side
 	return absf(face.x) >= absf(face.y)
 
 # ------------------------------------------------------------ the guard post ---
@@ -193,21 +193,22 @@ static func guard_post_heading(vertical: bool, side: int) -> Vector2:
 
 # ---------------------------------------------------------------- the warning ---
 
-## The largest of a row's warning pictures: the dog's alert, the robber's two alert frames, and the
-## guard's raised hand for anyone else drawn standing in a warning.
+## The largest of a row's warning pictures (`EventDef.warning_picture`): the dog's alert, the
+## robber's two alert frames, or the guard's raised hand for anyone else drawn standing in a warning.
 static func warning_picture_size(row: EventDef) -> Vector2:
-	if _warning_sizes.has(row.look):
-		return _warning_sizes[row.look]
+	if _warning_sizes.has(row.warning_picture):
+		return _warning_sizes[row.warning_picture]
 	var families: Array[Dictionary] = [EventPictures.GUARD_ALERT_BY_VIEW]
-	if row.look == EventDef.Look.CHARGING_DOG:
-		families = [EventPictures.CHARGING_DOG_ALERT_BY_VIEW]
-	elif row.look == EventDef.Look.ROBBER:
-		families = [EventPictures.ROBBER_ALERT_BY_VIEW, EventPictures.ROBBER_ALERT_BY_VIEW_B]
+	match row.warning_picture:
+		EventDef.WarningPicture.DOG_ALERT:
+			families = [EventPictures.CHARGING_DOG_ALERT_BY_VIEW]
+		EventDef.WarningPicture.ROBBER_ALERT:
+			families = [EventPictures.ROBBER_ALERT_BY_VIEW, EventPictures.ROBBER_ALERT_BY_VIEW_B]
 	var size := Vector2.ZERO
 	for family in families:
 		for view: String in family:
 			size = size.max(EventPictures.native_size(family[view]))
-	_warning_sizes[row.look] = size
+	_warning_sizes[row.warning_picture] = size
 	return size
 
 static var _warning_sizes := {}
@@ -230,7 +231,8 @@ static var _warning_guard := Vector2.ZERO
 
 ## Whether a checkpoint's own hold suppresses *every* drawing of `event`, halo included.
 ##
-## **True only where the guard is the whole of what this row draws.** `checkpoint_post` is one
+## **True only where the guard is the whole of what this row draws** (`EventDef.hides_in_its_hold`):
+## `checkpoint_post` is one
 ## man at an alley mouth and nothing else, so when he goes in there is nothing left to draw; a hut
 ## is a building and a gate is a boom across a road, and *(PLAYTEST-57: "the checkpoint house
 ## disappears ... all this is incorrect".)* A structure that blinks out while she is inside it
@@ -241,4 +243,4 @@ static var _warning_guard := Vector2.ZERO
 ## that function's doc for why the halo needs its own guard rather than inheriting
 ## `EventLook.draw()`'s), and by a test, so the three can never drift apart from each other.
 static func hidden_by_its_hold(event: EventInstance) -> bool:
-	return event.is_its_guard_inside() and event.def.look == EventDef.Look.CHECKPOINT_POST
+	return event.def.hides_in_its_hold and event.is_its_guard_inside()

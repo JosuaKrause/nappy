@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
 	_test_stationary_vehicles_face_their_street(t)
+	_test_what_a_picture_once_decided_is_row_data(t)
 	_test_a_spread_never_lands_on_a_corner(t)
 	_test_a_spread_cap_matches_what_it_obstructs(t)
 	_test_a_wide_scene_faces_its_street(t)
@@ -109,6 +110,41 @@ func _test_spread_classification_follows_every_look_and_copy(t) -> void:
 		copied.look = EventDef.Look.CAT
 		t.check(not copied.has_a_spread and def.has_a_spread,
 				"a duplicate(%s) recomputes independently when its look changes" % deep)
+
+## **What a picture once decided is the row's own data** (`EventDef.stands_along_its_street`,
+## `lies_across_its_street`, `warning_picture`, `trails_a_lead`, `hides_in_its_hold`,
+## `may_be_a_pelican`, `noun`): each set on exactly the rows that need it, so siting, the pelican
+## bag and the run log read the row rather than which picture it draws.
+func _test_what_a_picture_once_decided_is_row_data(t) -> void:
+	var expected := {
+		"stands_along_its_street": ["protest", "firefight"],
+		"lies_across_its_street": ["burnt_out_car"],
+		"trails_a_lead": ["loose_dog"],
+		"hides_in_its_hold": ["checkpoint_post"],
+		"may_be_a_pelican": ["cyclist"],
+	}
+	for field: String in expected:
+		var found: Array[String] = []
+		for row in EventCatalogue.all():
+			if row.get(field):
+				found.append(row.id)
+		found.sort()
+		var wanted: Array = expected[field]
+		wanted.sort()
+		t.check(found == wanted, "%s is set on %s and nothing else (%s)" % [field, wanted, found])
+	t.check(EventCatalogue.by_id("charging_dog").warning_picture
+			== EventDef.WarningPicture.DOG_ALERT
+			and EventCatalogue.by_id("alley_robbery").warning_picture
+			== EventDef.WarningPicture.ROBBER_ALERT
+			and EventCatalogue.by_id("robber_giving_chase").warning_picture
+			== EventDef.WarningPicture.GUARD_ALERT,
+			"the dog warns in its alert, the alley robber in his, a sent robber in the guard's")
+	var policeman := EventCatalogue.by_id("policeman_giving_chase")
+	var guardsman := EventCatalogue.by_id("guardsman_giving_chase")
+	t.check(policeman.noun == "policeman" and policeman.noun_plural == "policemen"
+			and guardsman.noun == "guardsman" and guardsman.noun_plural == "guardsmen"
+			and EventCatalogue.out_of_the_car(12, false).noun == "guardsman",
+			"the run log's pursuer on foot is named by his row, a copy out of a van included")
 
 ## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
 ## in total, and it is one piece of walkable ground rather than two lanes a body has to fit inside

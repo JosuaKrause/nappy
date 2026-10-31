@@ -114,6 +114,9 @@ src/
 	aftermath.gd          the rows one brings after it: its scar, what it leaves, what it calls in
 	vehicle_spec.gd       a car that drives: solid in every state, lethal only in front of it
 	abduction_spec.gd     the unmarked van's take of a bystander
+	event_footprints.gd   where a row's pictures and body stand, off the pictures themselves: the
+	                      box it draws, all it can put on the screen, its solid footprint and its
+	                      spine, the roadblock guard's post, a warning's picture, its hold's hiding
 	event_scenery.gd      pipe and crash static spans interleaved with independently moving parts
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,

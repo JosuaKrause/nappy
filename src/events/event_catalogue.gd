@@ -1133,6 +1133,7 @@ static func _loose_dog() -> EventDef:
 	def.id = "loose_dog"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.LOOSE_DOG
+	def.trails_a_lead = true
 	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
@@ -1447,6 +1448,7 @@ static func _cyclist() -> EventDef:
 	def.id = "cyclist"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CYCLIST
+	def.may_be_a_pelican = true
 	def.shape = GroundShape.point(12.0)
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
@@ -1671,6 +1673,7 @@ static func _charging_dog() -> EventDef:
 	def.id = "charging_dog"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CHARGING_DOG
+	def.warning_picture = EventDef.WarningPicture.DOG_ALERT
 	def.shape = GroundShape.point(13.0)
 	def.first_day = Tuning.RUN_TAUGHT_DAY
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
@@ -2123,6 +2126,7 @@ static func _alley_robbery() -> EventDef:
 	def.id = "alley_robbery"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROBBER
+	def.warning_picture = EventDef.WarningPicture.ROBBER_ALERT
 	def.shape = GroundShape.point(9.0)
 	def.first_day = 8
 	def.act_tag = 3
@@ -2343,6 +2347,8 @@ static func _policeman_giving_chase() -> EventDef:
 	def.id = "policeman_giving_chase"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POLICEMAN_GIVING_CHASE
+	def.noun = "policeman"
+	def.noun_plural = "policemen"
 	return def
 
 ## **The same pursuer from day 9, once guards are in the city** *(inbox #591, the player: "and a
@@ -2356,6 +2362,8 @@ static func _guardsman_giving_chase() -> EventDef:
 	def.id = "guardsman_giving_chase"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.GUARDSMAN_GIVING_CHASE
+	def.noun = "guardsman"
+	def.noun_plural = "guardsmen"
 	return def
 
 ## The first day the pursuer on foot is a guardsman rather than a policeman: the day the region's
@@ -2573,6 +2581,7 @@ static func _protest() -> EventDef:
 	def.id = "protest"
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.PROTEST
+	def.stands_along_its_street = true
 	def.first_day = 12
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.SQUARE, GameEnums.TileType.CROSSING]
@@ -2616,6 +2625,7 @@ static func _firefight() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 13
 	def.look = EventDef.Look.FIREFIGHT
+	def.stands_along_its_street = true
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.CROSSING, GameEnums.TileType.SQUARE]
 	def.intensity = 30.0
@@ -2829,6 +2839,7 @@ static func _burnt_out_car() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURNT_OUT_CAR
+	def.lies_across_its_street = true
 	def.act_tag = 2
 	def.intensity = 0.0
 	def.inner_radius = 40.0
@@ -2964,6 +2975,7 @@ static func _checkpoint_post() -> EventDef:
 	def.kind = GameEnums.EventKind.SCRIPTED
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_POST
+	def.hides_in_its_hold = true
 	def.act_tag = 2
 	def.intensity = 4.0
 	def.inner_radius = 84.0
