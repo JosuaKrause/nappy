@@ -18,7 +18,7 @@ extends RefCounted
 ## **Two modes over the same simulation.** `whole` times the real `EventManager._physics_process()`
 ## and `Baby._physics_process()` as one span each. `split` makes the events' step's own calls in its
 ## own order (`_tick_the_events()`), timing each apart, and times the sweep's three queries
-## (`EventManager.excitement_sources_at()`, `door_holding_her_at()`, `Crowd.excitement_sources_at()`)
+## (`EventSources.sources_at()`, `door_holding_her_at()`, `CrowdSources.sources_at()`)
 ## on their own before the baby's whole step — so the split's `baby` column is the step with the
 ## queries' caches already warm, and is not comparable with `whole`'s. Both modes chain a SHA-256
 ## over every event's and every agent's state, her alert and the baby's meters after every tick,
@@ -237,11 +237,11 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 ## microseconds in `SWEEP_PARTS` order.
 func _split_sweep(city: City, baby: Baby, her: Vector2) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	city.events.excitement_sources_at(her)
+	city.events.sources.sources_at(her)
 	stamps.append(Time.get_ticks_usec())
 	city.events.door_holding_her_at(her)
 	stamps.append(Time.get_ticks_usec())
-	city.crowd.excitement_sources_at(her)
+	city.crowd.sources.sources_at(her)
 	stamps.append(Time.get_ticks_usec())
 	baby._physics_process(STEP)
 	stamps.append(Time.get_ticks_usec())
@@ -292,14 +292,14 @@ func _chain(previous: PackedByteArray, city: City, rig: Stroller, baby: Baby) ->
 		state.append(float(instance.is_finished))
 		state.append(float(instance.is_leaving))
 		state.append(float(instance.is_telegraphing()))
-		state.append(instance.landed())
+		state.append(instance.excitement.landed())
 	state.append(float(city.events.pending_warnings().size()))
 	state.append(float(city.events.active_count()))
 	for agent in city.crowd.agents():
 		state.append(agent.global_position.x)
 		state.append(agent.global_position.y)
 		state.append(agent.speed())
-		state.append(agent.landed())
+		state.append(agent.excitement.landed())
 	state.append(rig.global_position.x)
 	state.append(rig.global_position.y)
 	state.append(float(rig._alert))

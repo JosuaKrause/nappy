@@ -312,7 +312,7 @@ func _test_a_built_building_carries_its_own_footprint_as_its_body(t) -> void:
 # -------------------------------------------------------------- the strike box ---
 
 ## `Tuning.CAR_STRIKE_HALF_LENGTH`/`CAR_STRIKE_HALF_WIDTH` is the lethal rectangle
-## `CrowdAgent.will_be_lethal()` reads — a different mechanism from this shape, on the player's own
+## `CrowdExcitement.will_be_lethal()` reads — a different mechanism from this shape, on the player's own
 ## "lethal != noise" — but the noise shape still has to be at least as big as what it stands next
 ## to, or a car would read (and cast a shadow) smaller than the box that actually kills. If this
 ## fails, the strike box is not this commit's to change — report it instead.

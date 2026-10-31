@@ -204,7 +204,7 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planne
 	var steps := int(from.distance_to(to) / (Tuning.WALK_SPEED * STEP))
 	for i in steps:
 		var at: Vector2 = from.lerp(to, float(i) / float(maxi(steps - 1, 1)))
-		cost += city.events.total_excitement_at(at) * STEP
+		cost += city.events.sources.total_at(at) * STEP
 	var parked := 0
 	for instance in city.events.instances():
 		parked += 1 if instance.def.id == "fire_truck" and instance.is_parked else 0

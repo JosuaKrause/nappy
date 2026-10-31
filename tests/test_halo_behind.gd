@@ -24,14 +24,14 @@ func _test_the_rim_is_painted_before_the_scene(t) -> void:
 		instance.step(instance.def.telegraph_time + 0.01)
 		t.check(not (instance.look as SpreadLook)._sceneries.is_empty(),
 				"the crash has its scenery (vertical %s)" % vertical)
-		instance.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
-		t.check(instance._halo != null, "a pick builds the crash's rim (vertical %s)" % vertical)
+		instance._rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+		t.check(instance._rim.entity_halo() != null, "a pick builds the crash's rim (vertical %s)" % vertical)
 		var scenery := (instance.look as SpreadLook)._sceneries[0]
-		t.check(instance._halo.get_parent() == scenery.get_parent(),
+		t.check(instance._rim.entity_halo().get_parent() == scenery.get_parent(),
 				"the rim and the first slice's scenery stand on the same slice")
-		t.check(instance._halo.show_behind_parent and scenery.show_behind_parent,
+		t.check(instance._rim.entity_halo().show_behind_parent and scenery.show_behind_parent,
 				"both are drawn behind the slice, so tree order is their painter order")
-		t.check(instance._halo.get_index() < scenery.get_index(),
+		t.check(instance._rim.entity_halo().get_index() < scenery.get_index(),
 				"the rim is painted before the cars, so it is behind them (vertical %s)" % vertical)
 		t.remove_child(instance)
 		instance.free()
@@ -47,7 +47,7 @@ func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
 	t.add_child(instance)
 	instance.look.attach_nodes()
 	instance.step(instance.def.telegraph_time + 0.01)
-	instance.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	instance._rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var rim := instance.rim()
 	t.check(rim != null and rim.get_parent() is SpreadLook.Slice,
 			"a pick builds the crash's rim behind its first slice")

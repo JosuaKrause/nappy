@@ -4,7 +4,7 @@ extends RefCounted
 ## The player's words *(2026-10-03, minty-hedgehog, statement 4: "cars should only be lethal in front
 ## of them while they're driving" and "when I walk behind a standing car right now and it starts
 ## moving I die -- that is not correct the car is driving away from me")*. The strike box runs from
-## the car's centre forward (`Crowd._strike()`, `CrowdAgent.will_be_lethal()`), so the rear half is
+## the car's centre forward (`Crowd._strike()`, `CrowdExcitement.will_be_lethal()`), so the rear half is
 ## harmless, and a car that sets off from a stand has nobody behind it to strike.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -56,9 +56,9 @@ func _test_the_rear_half_is_safe_and_the_front_half_is_not(t, car: CrowdAgent) -
 	t.check(not _strike(car, at - forward * (half * 0.5) + side * (wide - 2.0)),
 			"nor the sides of its rear half")
 	t.check(not _strike(car, at + forward * (half + 4.0)), "beyond its bumper is not")
-	t.check(not car.will_be_lethal(at - forward * (half - 2.0)),
+	t.check(not car.excitement.will_be_lethal(at - forward * (half - 2.0)),
 			"the danger prediction agrees: no red caret behind it")
-	t.check(car.will_be_lethal(at + forward * (half + 40.0)),
+	t.check(car.excitement.will_be_lethal(at + forward * (half + 40.0)),
 			"and has one for somebody it is driving at")
 
 func _test_a_car_pulling_away_from_a_stand_does_not_end_the_day(t, car: CrowdAgent) -> void:
@@ -91,8 +91,8 @@ func _test_a_fast_car_is_foreseen(t, car: CrowdAgent) -> void:
 	var top := Tuning.CAR_SPEED.y
 	car._speed = top
 	var ahead := 100.0 + Tuning.CAR_STRIKE_HALF_LENGTH
-	t.check(car.will_be_lethal(car.global_position + forward * ahead),
+	t.check(car.excitement.will_be_lethal(car.global_position + forward * ahead),
 			"a car at top speed is foreseen to strike her 126px ahead, between two samples")
 	var beyond := top * Tuning.EXPECTED_IMPACT_HORIZON + Tuning.CAR_STRIKE_HALF_LENGTH + 40.0
-	t.check(not car.will_be_lethal(car.global_position + forward * beyond),
+	t.check(not car.excitement.will_be_lethal(car.global_position + forward * beyond),
 			"and not one beyond the horizon")

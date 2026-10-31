@@ -137,7 +137,7 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 
 		var mother := _instance(t, def, at, path)
 		var manager := _chat_manager()
-		world.events = manager
+		world.excitement_sources = [manager.sources]
 		manager.world.instances.append(mother)
 		manager.use_player(stroller)
 		stroller.global_position = at
@@ -164,7 +164,7 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 			# rate does reach `contribution_at()` inside her field and land on the mother's own
 			# `landed()`, past `Tuning.EXPECTED_IMPACT_POINTS`'s own midpoint, so a dull colour on
 			# screen would have been the ramp and not the meter.
-			t.close_to(mother.landed(), Tuning.CHAT_EXCITEMENT,
+			t.close_to(mother.excitement.landed(), Tuning.CHAT_EXCITEMENT,
 					"and the mother's own landed() carries the same points, which is what " +
 					"colour_for() reads", 2.0)
 		else:

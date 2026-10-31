@@ -210,8 +210,7 @@ func _test_the_marks_flash_is_in_the_key(t) -> void:
 		instance.step(STEP)
 		if not instance.is_telegraphing():
 			break
-		instance.look._caret_strength_age = instance.age
-		instance.look._caret_strength_cache = 1
+		_force_the_caret(instance, 1)
 		seen[instance.look._picture_key()] = true
 	t.check(seen.size() >= 2,
 			"a marked, telegraphing event takes more than one key across one flash beat (%d)"
@@ -226,8 +225,7 @@ func _test_the_caret_strength_is_in_the_key(t) -> void:
 	instance.step(STEP)
 	var keys := {}
 	for strength in [0, 1, 2]:
-		instance.look._caret_strength_age = instance.age
-		instance.look._caret_strength_cache = strength
+		_force_the_caret(instance, strength)
 		keys[instance.look._picture_key()] = true
 	t.check(keys.size() == 3, "no caret, a caret and a doubled caret are three different keys")
 	instance.free()
@@ -252,9 +250,9 @@ func _test_asking_for_the_key_does_not_freeze_the_caret(t) -> void:
 	# before whoever writes `player_at`.
 	for i in int(ceil(def.telegraph_time / STEP)) + 1:
 		instance.step(STEP)
-	t.check(instance.look._caret_strength() == 0, "with nobody to aim at there is no caret")
-	instance.set_player_at(instance.global_position + Vector2(def.outer_radius, 0.0))
-	t.check(instance.look._caret_strength() == 2,
+	t.check(instance.excitement.caret_strength() == 0, "with nobody to aim at there is no caret")
+	instance.excitement.set_player_at(instance.global_position + Vector2(def.outer_radius, 0.0))
+	t.check(instance.excitement.caret_strength() == 2,
 			"and telling it where she is, inside the same tick, reads the doubled lethal caret")
 	instance.free()
 
@@ -500,3 +498,10 @@ func _test_a_masts_lamp_and_its_silence_move_its_key(t) -> void:
 	instance.silenced = true
 	t.check(instance.look._picture_key() != before, "silencing the mast moves its key")
 	instance.free()
+
+## Makes `instance`'s source answer `strength` for its caret this frame, as if it had worked it out.
+static func _force_the_caret(instance: EventInstance, strength: int) -> void:
+	var source := instance.excitement
+	source._caret_known = true
+	source._caret_key_was = source._caret_key()
+	source._caret = strength

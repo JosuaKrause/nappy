@@ -20,9 +20,9 @@ extends RefCounted
 ## and the probe fails if the two disagree.
 ##
 ## **Limits.** The events are not ticked: each is priced at its own live rate
-## (`EventInstance._caret_intensity_over_horizon()`, the telegraph's damping undone) where it
+## (`EventInstance.caret_intensity_over_horizon()`, the telegraph's damping undone) where it
 ## stands when streamed in, so a mobile row is met where it starts and nothing pursues. The
-## barrier structures charge as their strongest one, as `EventManager.excitement_sources_at()`
+## barrier structures charge as their strongest one, as `EventSources.sources_at()`
 ## does. Gross points only: the decay is the same with or without walls, so it is left out.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -145,11 +145,12 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 		var charged := 0.0
 		var charged_barrier := 0.0
 		for instance in city.events.instances():
-			var live := instance._caret_intensity_over_horizon()
-			var field := instance._field_at(here, live, Vector2.INF)
+			var live := instance.caret_intensity_over_horizon()
+			var field := instance.field_at(here, live, Vector2.INF)
 			if field <= 0.0:
 				continue
-			var actual := instance.contribution_at(here, live)
+			var actual := 0.0 if instance.excitement._walled_off(instance.global_position, here) \
+					else field
 			if instance.def.barrier_structure:
 				charged_barrier = maxf(charged_barrier, actual)
 			else:
@@ -169,10 +170,10 @@ func _walk(city: City, path: PackedVector2Array, day: int, rng: RandomNumberGene
 		var heard := 0.0
 		var noise := [0.0, 0.0, 0.0]
 		for agent in city.crowd.agents():
-			var field := agent.contribution_at(here, false)
+			var field := agent.excitement._field(here)
 			if field <= 0.0:
 				continue
-			heard += agent.contribution_at(here)
+			heard += agent.excitement.contribution_at(here)
 			for i in 3:
 				if i != NONE and map.wall_between(agent.global_position, here, _depths[i].x,
 						_depths[i].y):

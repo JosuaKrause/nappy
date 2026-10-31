@@ -253,8 +253,8 @@ func _test_the_registration_is_continuous_across_a_sector_boundary(t) -> void:
 ## — the same division `tests/test_checkpoints.gd` draws for the checkpoint hut's own suppression.
 func _test_the_rim_is_re_traced_under_a_steady_glow(t) -> void:
 	var agent := _car(t)
-	agent.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
-	var halo: EntityHalo = agent._halo
+	agent._rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	var halo: EntityHalo = agent._rim.entity_halo()
 	var step := 1.0 / 60.0
 	for i in int(round(EntityHalo.FADE_IN_SECONDS / step)) + 2:
 		halo._process(step)
@@ -295,9 +295,9 @@ func _silhouette(agent: CrowdAgent) -> Array:
 ## the ordinary picture automatically rather than needing a second lookup of its own.
 func _test_the_halo_redraws_the_same_body(t) -> void:
 	var agent := _car(t)
-	agent.set_halo_strength(1.0, Color.RED)
-	t.check(agent._halo != null, "a positive strength builds the halo lazily")
-	t.check(agent._halo._draw_body == agent._look.draw_body,
+	agent._rim.set_strength(1.0, Color.RED)
+	t.check(agent._rim.entity_halo() != null, "a positive strength builds the halo lazily")
+	t.check(agent._rim.entity_halo()._draw_body == agent._look.draw_body,
 			"the halo redraws exactly this agent's own look's `draw_body`, so a per-sector picture change "
 			+ "is a per-sector halo change with nothing else to wire up")
 	# Freed with the halo still attached rather than through `set_halo_strength(0.0, ...)`: with no
@@ -541,13 +541,13 @@ func _test_the_bob_is_driven_by_ground_covered(t) -> void:
 func _test_the_halo_rides_the_bob(t) -> void:
 	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
 	agent._look.advance(agent.velocity(), WheelBob.WAVELENGTH * 0.5 / Tuning.CAR_SPEED.x)
-	agent.set_halo_strength(1.0, Color.RED)
-	t.check(agent._halo._bob == agent._look.bob,
+	agent._rim.set_strength(1.0, Color.RED)
+	t.check(agent._rim.entity_halo()._bob == agent._look.bob,
 			"the halo reads this car's own bob rather than a flat zero")
 	var bob := agent._look.bob()
 	t.check(bob < -0.5 * WheelBob.HEIGHT, "the car is well up its rise (%.3f)" % bob)
 	var flat := EntityHalo.trace_offsets(0.0)
-	var lifted := EntityHalo.trace_offsets(agent._halo._bob.call())
+	var lifted := EntityHalo.trace_offsets(agent._rim.entity_halo()._bob.call())
 	var rides := flat.size() == lifted.size()
 	for i in flat.size():
 		rides = rides and lifted[i].is_equal_approx(flat[i] + Vector2(0.0, bob))

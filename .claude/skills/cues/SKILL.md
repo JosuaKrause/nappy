@@ -67,7 +67,7 @@ narrowness is what stops it from being the next ring somebody wants:**
   clipped at the silhouette's edge. **A radius that means anything about reach is the ring this
   exception does not authorise.**
 - **For the cost being charged right now, not for what exists.** Colour is `colour_for()`, linear
-  through `Palette.HALO_MID` over `ExcitementHalo.net_landed()`: the source's traced `landed()` less
+  through `Palette.HALO_MID` over `ExcitementSource.net_landed()`: the source's traced `landed()` less
   its share of the decay the bar took in the same window, floored at zero. A rim reads red only
   while the bar is climbing because of it (PLAYTEST-112 2). Transparency is `magnitude_for()` over
   the same net on a curve that saturates early *(asked on 2026-09-07 for brightness to show distance
@@ -99,21 +99,23 @@ row as far as any feedback is concerned. The crowd is the deliberate opposite; s
 ### A cue that marks everything says nothing
 
 **And a cue that marks the wrong things says something false** (PLAYTEST-37 5). What decides the
-mark is what the thing is **projected** to net her, not a row's declared cost: `EventInstance` and
-`CrowdAgent` each answer `expected_impact_at()` and `will_be_lethal()`. `tests/test_danger.gd` holds
+mark is what the thing is **projected** to net her, not a row's declared cost: every source
+(`ExcitementSource`, which `EventInstance` and `CrowdAgent` each compose) answers
+`expected_impact_at()` and `will_be_lethal()`. `tests/test_danger.gd` holds
 the scenarios: a cat dashing at her is unmarked, a cyclist or a car whose line reaches her is red
 and one passing wide is not, and a crowd at ordinary arterial density around a standing player marks
 nobody.
 
-- **The projection lives on the entity, not on a second table.** Both answer over the same
-  `contribution_at()` and `is_lethal_at()` every other caller uses, so there is no second formula
-  for what a thing costs to disagree with the first.
+- **The projection lives on the entity's source, not on a second table.** It is written once
+  (`ExcitementSource`) over the same field the present rate is (`contribution_at()`) and, for an
+  event, the reach `is_lethal_at()` uses, so there is no second formula for what a thing costs to
+  disagree with the first.
 - **A colour is the wrong channel for a phase.** `EVENT_STREAM_RADIUS` is 900px and a telegraph
   lasts a few seconds, so an "amber means telegraphing" rule would only ever be seen on the rows
   sited in front of her and would read as *near*. **The flash carries the phase.**
 - **Cache the projection once a frame.** `wants_a_mark()`, `mark_colour()` and the drawing all ask
-  in the same frame; `EventLook._caret_strength()` and `CrowdAgent._caret_strength()` compute
-  it once, keyed on the entity's own clock.
+  in the same frame; `ExcitementSource.caret_strength()` computes it once, keyed on the entity's
+  own clock, and for an event on where she is too.
 
 ### The mark breathes
 

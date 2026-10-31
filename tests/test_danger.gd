@@ -72,7 +72,7 @@ func _test_a_stationary_thing_she_stands_in_is_unmarked(t) -> void:
 	if not def:
 		return
 	var instance := _instance(def)
-	instance.set_player_at(instance.global_position)
+	instance.excitement.set_player_at(instance.global_position)
 	t.check(not instance.look.wants_a_mark(),
 			"a café she is standing in front of carries no caret at all")
 	instance.free()
@@ -89,8 +89,8 @@ func _test_walking_toward_a_stationary_thing_earns_a_caret(t) -> void:
 		return
 	var instance := _instance(def)
 	var approach := Vector2(-def.outer_radius - 30.0, 0.0)
-	instance.set_player_at(approach, Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
-	t.check(instance.expected_impact_at(approach) > 0.0,
+	instance.excitement.set_player_at(approach, Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
+	t.check(instance.excitement.expected_impact_at(approach) > 0.0,
 			"walking straight at a stationary café five seconds out nets something, unlike " +
 			"standing in front of it")
 	instance.free()
@@ -101,7 +101,7 @@ func _test_walking_toward_a_stationary_thing_earns_a_caret(t) -> void:
 ## one thing under test, since the caret's own projection freezes the row's rate at the moment it
 ## is asked and a live pulse or telegraph evolving underneath the walk is a second variable this
 ## test does not want — a straight pass at a constant `Tuning.WALK_SPEED` for the whole horizon,
-## exactly what the projection assumes. The halo's own backward-looking `ExcitementHalo.net_landed()`,
+## exactly what the projection assumes. The halo's own backward-looking `ExcitementSource.net_landed()`,
 ## read after the horizon has actually elapsed, comes out close to what `expected_impact_at()`
 ## said at the start of it. `total_landed` is `landed` itself: one source, so its whole share of
 ## the decay is its own, the same simplification `expected_impact_at()`'s own doc names.
@@ -117,19 +117,19 @@ func _test_the_caret_matches_the_halo_after_the_horizon(t) -> void:
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING
 	var lead := player_velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON * 0.5
 	var player_pos := Vector2(-lead, 20.0)
-	instance.set_player_at(player_pos, player_velocity, decay, 1.0)
-	var caret_now := instance.expected_impact_at(player_pos)
+	instance.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
+	var caret_now := instance.excitement.expected_impact_at(player_pos)
 	t.check(caret_now > 0.0, "a pass through the field projects a positive net gain")
 
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / STEP))
 	for i in steps:
 		instance.step(STEP)
 		player_pos += player_velocity * STEP
-		var contribution := instance.contribution_at(player_pos)
+		var contribution := instance.excitement.contribution_at(player_pos)
 		if contribution > 0.0:
-			instance.accumulate_landed(contribution * STEP)
-	var landed := instance.landed()
-	var halo_net := ExcitementHalo.net_landed(landed, landed, decay * Tuning.EXPECTED_IMPACT_HORIZON)
+			instance.excitement.accumulate_landed(contribution * STEP)
+	var landed := instance.excitement.landed()
+	var halo_net := ExcitementSource.net_landed(landed, landed, decay * Tuning.EXPECTED_IMPACT_HORIZON)
 	t.close_to(halo_net, caret_now,
 			"the halo's net after the horizon matches what the caret projected at the start of " +
 			"it, within a few points of a hundred-point bar", 3.0)
@@ -182,8 +182,8 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t) -> void:
 			var decay := Tuning.EXCITEMENT_DECAY_WALKING
 			var lead := player_velocity.length() * horizon * 0.5
 			var player_pos := Vector2(-lead, 20.0)
-			instance.set_player_at(player_pos, player_velocity, decay, 1.0)
-			var caret_now := instance.expected_impact_at(player_pos)
+			instance.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
+			var caret_now := instance.excitement.expected_impact_at(player_pos)
 			t.check(caret_now > 0.0,
 					"%s at phase %.2fs still projects a positive net gain" % [id, start_age])
 			carets.append(caret_now)
@@ -192,11 +192,11 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t) -> void:
 			for i in steps:
 				instance.step(STEP)
 				player_pos += player_velocity * STEP
-				var contribution := instance.contribution_at(player_pos)
+				var contribution := instance.excitement.contribution_at(player_pos)
 				if contribution > 0.0:
-					instance.accumulate_landed(contribution * STEP)
-			var landed := instance.landed()
-			reals.append(ExcitementHalo.net_landed(landed, landed, decay * horizon))
+					instance.excitement.accumulate_landed(contribution * STEP)
+			var landed := instance.excitement.landed()
+			reals.append(ExcitementSource.net_landed(landed, landed, decay * horizon))
 			instance.free()
 
 		var caret_average := 0.0
@@ -234,7 +234,7 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t) -> void:
 ##
 ## **The shared sum is checked directly against what the two actually land.** `expected_gross_at()`
 ## gathered over both sources first, told back with `set_expected_total_gross()`, is the same
-## once-a-frame shape `ExcitementHalo._process()` runs; summing `ExcitementHalo.net_landed()`'s own
+## once-a-frame shape `ExcitementHalo._process()` runs; summing `ExcitementSource.net_landed()`'s own
 ## arithmetic across every source reproduces the total gross less the whole decay exactly (its own
 ## doc proves this for the backward-looking halo), so the sum of the two shared carets is checked
 ## against `total_landed − decay` after the walk rather than against each source's own halo in
@@ -264,17 +264,17 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t) -> void:
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING
 	var lead := player_velocity.length() * horizon * 0.5
 	var player_pos := Vector2(-lead, 0.0)
-	a.set_player_at(player_pos, player_velocity, decay, 1.0)
-	b.set_player_at(player_pos, player_velocity, decay, 1.0)
+	a.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
+	b.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
 
-	var solo_sum := a.expected_impact_at(player_pos) + b.expected_impact_at(player_pos)
+	var solo_sum := a.excitement.expected_impact_at(player_pos) + b.excitement.expected_impact_at(player_pos)
 
-	var gross_a := a.expected_gross_at(player_pos)
-	var gross_b := b.expected_gross_at(player_pos)
+	var gross_a := a.excitement.expected_gross_at(player_pos)
+	var gross_b := b.excitement.expected_gross_at(player_pos)
 	var total_gross := gross_a + gross_b
-	a.set_expected_total_gross(total_gross)
-	b.set_expected_total_gross(total_gross)
-	var shared_sum := a.expected_impact_at(player_pos) + b.expected_impact_at(player_pos)
+	a.excitement.set_expected_total_gross(total_gross)
+	b.excitement.set_expected_total_gross(total_gross)
+	var shared_sum := a.excitement.expected_impact_at(player_pos) + b.excitement.expected_impact_at(player_pos)
 	t.check(shared_sum > solo_sum,
 			("sharing the decay reads higher in total than each netting the whole of it (%.1f " +
 					"solo vs %.1f shared)") % [solo_sum, shared_sum])
@@ -284,13 +284,13 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t) -> void:
 		a.step(STEP)
 		b.step(STEP)
 		player_pos += player_velocity * STEP
-		var contribution_a := a.contribution_at(player_pos)
+		var contribution_a := a.excitement.contribution_at(player_pos)
 		if contribution_a > 0.0:
-			a.accumulate_landed(contribution_a * STEP)
-		var contribution_b := b.contribution_at(player_pos)
+			a.excitement.accumulate_landed(contribution_a * STEP)
+		var contribution_b := b.excitement.contribution_at(player_pos)
 		if contribution_b > 0.0:
-			b.accumulate_landed(contribution_b * STEP)
-	var total_landed := a.landed() + b.landed()
+			b.excitement.accumulate_landed(contribution_b * STEP)
+	var total_landed := a.excitement.landed() + b.excitement.landed()
 	var actual_net := maxf(total_landed - decay * horizon, 0.0)
 	t.close_to(actual_net, shared_sum,
 			"the two shared carets sum to roughly what the bar actually nets from both sources " +
@@ -311,7 +311,7 @@ func _test_a_cat_dashing_at_her_is_unmarked(t) -> void:
 	# One frame past the telegraph is enough to turn the crouch into a heading — `cat_dash` is
 	# `still_while_telegraphing`, so `travel_velocity()` is zero until then.
 	_advance(instance, def.telegraph_time + STEP)
-	instance.set_player_at(Vector2(def.outer_radius, 0.0))
+	instance.excitement.set_player_at(Vector2(def.outer_radius, 0.0))
 	t.check(not instance.look.wants_a_mark(),
 			"a cat driving straight at a standing player still lands under the line")
 	instance.free()
@@ -333,7 +333,7 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	# telegraph to be over to read red.)
 	var on_course := _instance(def, route)
 	_advance(on_course, def.telegraph_time + STEP)
-	on_course.set_player_at(on_course.global_position + Vector2(def.outer_radius, 0.0))
+	on_course.excitement.set_player_at(on_course.global_position + Vector2(def.outer_radius, 0.0))
 	t.check(on_course.look.wants_a_mark() and on_course.look.mark_colour() == Palette.MARK_LETHAL,
 			"a cyclist whose line reaches her lethal radius is the doubled red caret")
 	on_course.free()
@@ -342,8 +342,8 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	_advance(wide, def.telegraph_time + STEP)
 	# 60px off its own line, inside the outer radius (90) so its field still reads along the way,
 	# but past the inner radius (33) it would have to cross to end the day.
-	wide.set_player_at(wide.global_position + Vector2(0.0, 60.0))
-	t.check(not wide.will_be_lethal(wide.player_at),
+	wide.excitement.set_player_at(wide.global_position + Vector2(0.0, 60.0))
+	t.check(not wide.excitement.will_be_lethal(wide.player_at),
 			"the same cyclist passing 60px wide of her own line never reaches her lethal radius")
 	wide.free()
 
@@ -364,7 +364,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		var cyclist := _instance(cyclist_def,
 				PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
 		t.check(cyclist.is_telegraphing(), "the cyclist is still telegraphing at age zero")
-		cyclist.set_player_at(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
+		cyclist.excitement.set_player_at(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
 		t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,
 				"a telegraphing cyclist on a course that reaches her lethal radius is already " +
 						"the doubled red caret")
@@ -380,7 +380,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		var dog := _instance(dog_def)
 		t.check(dog.is_telegraphing() and not dog.is_waiting(),
 				"the day-3 dog has already noticed her and is still telegraphing its charge")
-		dog.set_player_at(dog.global_position + Vector2(60.0, 0.0))
+		dog.excitement.set_player_at(dog.global_position + Vector2(60.0, 0.0))
 		t.check(dog.look.wants_a_mark() and dog.look.mark_colour() == Palette.MARK_LETHAL,
 				"a noticed dog holding its stand-off through the telegraph is already the " +
 						"doubled red caret")
@@ -391,7 +391,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		t.check(robber_def.notice_within() > 0.0, "alley_robbery waits for a trigger")
 		var robber := _instance(robber_def)
 		t.check(robber.is_waiting(), "and nobody has come near it yet")
-		robber.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
+		robber.excitement.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
 		t.check(not robber.look.wants_a_mark(),
 				"a waiting robber in an alley she is not in carries no mark at all")
 		robber.free()
@@ -402,16 +402,16 @@ func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t) -> void:
 	var ahead := CrowdAgent.new()
 	ahead.kind = CrowdAgent.Kind.CAR
 	ahead._speed = 100.0
-	ahead.set_player_at(Vector2(60.0, 0.0))
-	t.check(ahead.will_be_lethal(ahead.player_at),
+	ahead.excitement.set_player_at(Vector2(60.0, 0.0))
+	t.check(ahead.excitement.will_be_lethal(ahead.excitement.player_at),
 			"a car whose strike box reaches the lane she is standing in front of is red")
 	ahead.free()
 
 	var beside := CrowdAgent.new()
 	beside.kind = CrowdAgent.Kind.CAR
 	beside._speed = 100.0
-	beside.set_player_at(Vector2(60.0, 50.0))
-	t.check(not beside.will_be_lethal(beside.player_at),
+	beside.excitement.set_player_at(Vector2(60.0, 50.0))
+	t.check(not beside.excitement.will_be_lethal(beside.excitement.player_at),
 			"the same car passing beside her — she would have to step into it herself — is not")
 	beside.free()
 
@@ -423,8 +423,8 @@ func _test_a_walker_brushing_past_is_unmarked(t) -> void:
 	var walker := CrowdAgent.new()
 	walker.kind = CrowdAgent.Kind.WALKER
 	walker._speed = 60.0
-	walker.set_player_at(Vector2(20.0, 25.0))
-	t.check(walker._caret_strength() == 0,
+	walker.excitement.set_player_at(Vector2(20.0, 25.0))
+	t.check(walker.excitement.caret_strength() == 0,
 			"an ordinary walker brushing past her carries no caret at all")
 	walker.free()
 
@@ -449,8 +449,8 @@ func _test_the_arterial_at_ordinary_density_marks_nobody(t) -> void:
 	for i in int(round(40.0 / STEP)):
 		city.crowd.step(STEP)
 		for agent in city.crowd.agents():
-			agent.set_player_at(standing_at)
-			if agent._caret_strength() == 1:
+			agent.excitement.set_player_at(standing_at)
+			if agent.excitement.caret_strength() == 1:
 				amber += 1
 	t.check(amber == 0,
 			("a crowd at ordinary arterial density around a standing player marks nobody " +

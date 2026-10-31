@@ -255,8 +255,8 @@ func ground_for(mover: Mover) -> PackedInt32Array:
 ## **Whether a wall stands between two points deeply enough to keep a source's excitement at one from
 ## reaching the other**: true when the straight segment between them passes the middle of a wall one
 ## tile thick, or one tile deep into anything thicker, measured from the nearest open ground
-## (`_open()`) (plaid-wombat, inbox #554; inbox #568). `EventInstance.contribution_at()` and
-## `CrowdAgent.contribution_at()` ask it of every source whose field reaches her, so the meter, the
+## (`_open()`) (plaid-wombat, inbox #554; inbox #568). Every source's present rate
+## (`ExcitementSource.contribution_at()`) asks it of a field that reaches her, so the meter, the
 ## halo and the carets all read the same blocked contribution, in the city and in the building alike.
 ##
 ## **Stated over distance from open ground, not over tiles touched**: a pram whose body overlaps a

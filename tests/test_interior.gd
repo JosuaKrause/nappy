@@ -1955,7 +1955,7 @@ func _test_a_vent_never_closes_around_her(t: Node) -> void:
 			instance.player_at = inside
 			if instance.is_solid():
 				solid_while_she_was_in_it += 1
-			charged += instance.contribution_at(inside) * STEP
+			charged += instance.excitement.contribution_at(inside) * STEP
 			blowing = instance.age > steam.telegraph_time and not instance.is_finished
 		live += STEP
 	t.check(blow != null and blowing, "the vent she is standing in blew, and is past its notice")
@@ -2029,7 +2029,7 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
 	while not blow.is_finished and elapsed < 20.0:
 		blow.player_at = Vector2(STAND_AT, 0.0)
 		blow.step(STEP)
-		cost += blow.contribution_at(Vector2(STAND_AT, 0.0)) * STEP
+		cost += blow.excitement.contribution_at(Vector2(STAND_AT, 0.0)) * STEP
 		elapsed += STEP
 	print("One blow of steam, stood %.0fpx from the vent for %.2fs: %.1f points awake, %.1f asleep"
 			% [STAND_AT, elapsed, cost, cost * Tuning.SLEEPING_SENSITIVITY])
@@ -2419,18 +2419,19 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	var baby := Baby.new()
 	var halo := ExcitementHalo.new()
 	t.add_child(halo)
-	halo.setup(events, null, player, baby)
+	var sets: Array[ExcitementSources] = [events.sources]
+	halo.setup(sets, player, baby)
 	player.global_position = fire.global_position + Vector2(fire.def.inner_radius * 0.5, 0.0)
 	# Past its notice, the way the explosion outside comes: a fire still telegraphing
 	# emits nothing, and a rim on it would be the cue marking a thing that costs her nothing.
 	fire.resume(fire.def.telegraph_time, 0.0, INF)
-	t.check(fire.contribution_at(player.global_position) > ExcitementHalo.CONTRIBUTION_FLOOR,
+	t.check(fire.excitement.contribution_at(player.global_position) > ExcitementHalo.CONTRIBUTION_FLOOR,
 			"standing beside the fire, it reaches her")
-	fire.accumulate_landed(20.0)
+	fire.excitement.accumulate_landed(20.0)
 	halo._process(STEP)
-	t.check(fire.holds_a_halo() and fire._halo._target_alpha > 0.0,
+	t.check(fire._rim.is_held() and fire._rim.entity_halo()._target_alpha > 0.0,
 			"the fire she is standing beside wears a rim, read from the building's events, no crowd")
-	t.check(not man.holds_a_halo(),
+	t.check(not man._rim.is_held(),
 			"and the masked man on the other shaft, charging her nothing, holds no rim at all")
 
 	# **The badge.** Placed far off any screen and walked in towards her, so the only thing that

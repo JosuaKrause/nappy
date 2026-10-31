@@ -181,7 +181,7 @@ func _quietest_park() -> Vector2:
 	for block in _city.map.calm_blocks:
 		var centre := _city.map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
 		_city.events.stream_around(centre)
-		var here := _city.events.total_excitement_at(centre)
+		var here := _city.events.sources.total_at(centre)
 		if here < quietest:
 			quietest = here
 			best = centre

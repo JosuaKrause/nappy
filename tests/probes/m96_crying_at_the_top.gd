@@ -44,10 +44,9 @@ class FakeWorld extends WorldContext:
 		return false
 	func total_excitement_at(_world_position: Vector2) -> float:
 		return noise
+	var _noise := ExcitementSource.new(self)
 	func excitement_sources_at(_world_position: Vector2) -> Array:
-		return [[self, noise]] if noise > 0.0 else []
-	func accumulate_landed(_points: float) -> void:
-		pass
+		return [[_noise, noise]] if noise > 0.0 else []
 
 var _world: FakeWorld
 var _stroller: Stroller
@@ -184,7 +183,7 @@ func _one_bump_from(t, at: float) -> Dictionary:
 	var jolt := Tuning.BUMP_DURATION
 	while jolt > 0.0:
 		agent._jolt = jolt
-		_world.noise = agent.contribution_at(_stroller.global_position)
+		_world.noise = agent.excitement.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
 		jolt -= STEP
@@ -209,7 +208,7 @@ func _two_bumps_at_the_top(t) -> Dictionary:
 		var jolt := Tuning.BUMP_DURATION
 		while jolt > 0.0:
 			agent._jolt = jolt
-			_world.noise = agent.contribution_at(_stroller.global_position)
+			_world.noise = agent.excitement.contribution_at(_stroller.global_position)
 			_baby._update_excitement(STEP, _stroller.global_position, false)
 			_track_peaks(peaks)
 			jolt -= STEP
@@ -251,7 +250,7 @@ func _walk_past_row(t, id: String) -> Dictionary:
 	for _i in steps:
 		_stroller.global_position.x += Tuning.WALK_SPEED * STEP
 		instance.step(STEP)
-		_world.noise = instance.contribution_at(_stroller.global_position)
+		_world.noise = instance.excitement.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
 		elapsed += STEP
@@ -283,7 +282,7 @@ func _stand_in_row(t, id: String, seconds: float) -> Dictionary:
 	var elapsed := 0.0
 	for _i in steps:
 		instance.step(STEP)
-		_world.noise = instance.contribution_at(_stroller.global_position)
+		_world.noise = instance.excitement.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
 		elapsed += STEP

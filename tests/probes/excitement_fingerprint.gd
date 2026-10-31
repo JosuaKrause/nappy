@@ -126,7 +126,7 @@ func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Cr
 	var halo := ExcitementHalo.new()
 	t.add_child(halo)
 	halo.set_process(false)
-	halo.setup(events, crowd, rig, baby)
+	halo.setup(world.excitement_sources, rig, baby)
 	events.use_player(rig)
 	events.stream_around(start)
 	if crowd:
@@ -176,19 +176,22 @@ func _print_the_sources(walk: String, tick: int, events: EventManager, crowd: Cr
 	var instances := events.instances()
 	for i in instances.size():
 		var instance := instances[i]
-		var caret := instance.look._caret_strength() if instance.look else -1
+		var source := instance.excitement
+		var caret := source.caret_strength() if instance.look else -1
 		printed += _print_one(walk, tick, "E%d:%s" % [i, instance.logged_name()], [
-				instance.contribution_at(her), instance.expected_gross_at(her),
-				instance.expected_impact_at(her), instance.landed()],
-				instance.will_be_lethal(her), caret, instance.holds_a_halo())
+				source.contribution_at(her), source.expected_gross_at(her),
+				source.expected_impact_at(her), source.landed()],
+				source.will_be_lethal(her), caret, (source.rim as SourceRim).is_held())
 	if crowd:
 		var agents := crowd.agents()
 		for i in agents.size():
 			var agent := agents[i]
+			var source := agent.excitement
 			printed += _print_one(walk, tick, "A%d:%d" % [i, agent.kind], [
-					agent.contribution_at(her), agent.expected_gross_at(her),
-					agent.expected_impact_at(her), agent.landed()],
-					agent.will_be_lethal(her), agent._caret_strength(), agent.holds_a_halo())
+					source.contribution_at(her), source.expected_gross_at(her),
+					source.expected_impact_at(her), source.landed()],
+					source.will_be_lethal(her), source.caret_strength(),
+					(source.rim as SourceRim).is_held())
 	return printed
 
 func _print_one(walk: String, tick: int, label: String, values: Array, lethal: bool, caret: int,

@@ -77,7 +77,7 @@ func _test_a_city_event_reaches_her_meter(t, main: Node2D) -> void:
 	var spot := Vector2.INF
 	for instance in city.events.world.instances:
 		var at: Vector2 = instance.global_position
-		if instance.contribution_at(at) > 0.0 and not city.excitement_sources_at(at).is_empty():
+		if instance.excitement.contribution_at(at) > 0.0 and not city.excitement_sources_at(at).is_empty():
 			spot = at
 			break
 	t.check(spot != Vector2.INF, "the city has an event whose field can be stood in (%d live)"

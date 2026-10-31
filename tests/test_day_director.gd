@@ -80,8 +80,8 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 	var pelican := EventInstance.new()
 	pelican.setup(def, Vector2.ZERO)
 	pelican.is_pelican = true
-	kid.accumulate_landed(3.0)
-	pelican.accumulate_landed(5.0)
+	kid.excitement.accumulate_landed(3.0)
+	pelican.excitement.accumulate_landed(5.0)
 	director.events.world.instances.assign([kid, pelican])
 	t.check(director.landed_by_group() == {"cyclist": 3.0, "pelican": 5.0},
 			"the pelican's share is its own group (%s)" % [director.landed_by_group()])

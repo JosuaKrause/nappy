@@ -910,7 +910,7 @@ func _test_a_pursuer_can_wait(t) -> void:
 	t.close_to(instance.current_intensity(), def.intensity,
 			"he is loud from the moment she can see him, not damped to a telegraph", 0.05)
 	t.check(not instance.is_lethal_at(instance.player_at), "and he cannot end the day yet")
-	t.check(instance.contribution_at(Vector2(def.outer_radius - 10.0, 0.0)) > 0.0,
+	t.check(instance.excitement.contribution_at(Vector2(def.outer_radius - 10.0, 0.0)) > 0.0,
 			"his field reaches the far end of the alley")
 
 	# She steps inside the trigger: the notice starts *now*.
@@ -1564,8 +1564,8 @@ func _test_the_red_caret_is_measured_from_the_catch(t) -> void:
 	var heading := instance.facing_now()
 	var ahead := instance.global_position + heading * hot.chase_speed() * 0.5
 	var across := heading.orthogonal()
-	t.check(instance.will_be_lethal(ahead + across * 20.0), "his course 20px from her reads red")
-	t.check(not instance.will_be_lethal(ahead + across * 50.0),
+	t.check(instance.excitement.will_be_lethal(ahead + across * 20.0), "his course 20px from her reads red")
+	t.check(not instance.excitement.will_be_lethal(ahead + across * 50.0),
 			"his course 50px from her, beyond his reach, does not")
 	instance.free()
 

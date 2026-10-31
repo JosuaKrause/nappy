@@ -222,23 +222,23 @@ func _test_a_tenth_of_the_meter_is_one_influence_per_encounter(t) -> void:
 	var instances: Array[EventInstance] = [yeller]
 	var share := Tuning.ENCOUNTER_INFLUENCE_POINTS
 	_run(watch, instances, Vector2.ZERO, 1.0)
-	yeller.accumulate_landed(share * 0.6)
+	yeller.excitement.accumulate_landed(share * 0.6)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced.is_empty(), "six tenths of the threshold is no influence")
-	yeller.accumulate_landed(share * 0.5)
+	yeller.excitement.accumulate_landed(share * 0.5)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced == ["%d:homeless_yeller:seen" % DAY],
 			"crossing it within the encounter is one influence, a seen one (%s)" % [_influenced])
-	yeller.accumulate_landed(share * 3.0)
+	yeller.excitement.accumulate_landed(share * 3.0)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced.size() == 1, "and landing more in the same encounter sends nothing more")
 	_run(watch, instances, AWAY, Tuning.ENCOUNTER_GAP + 1.0)
 	_run(watch, instances, Vector2.ZERO, 0.5)
-	yeller.accumulate_landed(share * 0.6)
+	yeller.excitement.accumulate_landed(share * 0.6)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced.size() == 1,
 			"a new encounter counts its own landing from nothing, not the last one's")
-	yeller.accumulate_landed(share * 0.5)
+	yeller.excitement.accumulate_landed(share * 0.5)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced.size() == 2, "and crosses the threshold on its own (%d)" % _influenced.size())
 	yeller.free()
@@ -252,7 +252,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t) -> void:
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
 	var instances: Array[EventInstance] = [yeller]
 	_run(watch, instances, AWAY, 0.5)
-	yeller.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	yeller.excitement.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, instances, AWAY, 1.0)
 	t.check(_influenced.is_empty(), "an influence from off screen is not sent at once")
 	_run(watch, instances, Vector2.ZERO, 0.5)
@@ -262,7 +262,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t) -> void:
 	_run(watch, instances, AWAY, Tuning.ENCOUNTER_GAP + 1.0)
 
 	_clear()
-	yeller.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	yeller.excitement.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, instances, AWAY, 1.0)
 	t.check(_influenced.is_empty(), "nothing while the encounter might still be seen")
 	_run(watch, instances, AWAY, Tuning.ENCOUNTER_GAP)
@@ -270,7 +270,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t) -> void:
 			"over without being seen, it goes out as an unseen influence (%s)" % [_influenced])
 
 	_clear()
-	yeller.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	yeller.excitement.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, instances, AWAY, 0.5)
 	yeller.free()
 	_run(watch, [] as Array[EventInstance], AWAY, 0.1)
@@ -279,7 +279,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t) -> void:
 
 	_clear()
 	var other := _instance(t, "homeless_yeller", Vector2.ZERO)
-	other.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	other.excitement.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, [other] as Array[EventInstance], AWAY, 0.5)
 	watch.end_day()
 	watch.day = DAY + 1
@@ -297,8 +297,8 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 	var watch := _watch()
 	var dog := _chasing_dog(t, EventCatalogue.by_id("charging_dog"))
 	_run(watch, [dog] as Array[EventInstance], Vector2.ZERO, 0.5)
-	t.check(dog.is_chasing() and dog.landed_ever < Tuning.ENCOUNTER_INFLUENCE_POINTS,
-			"the dog is chasing her and has landed less than the threshold (%.1f)" % dog.landed_ever)
+	t.check(dog.is_chasing() and dog.excitement.landed_ever < Tuning.ENCOUNTER_INFLUENCE_POINTS,
+			"the dog is chasing her and has landed less than the threshold (%.1f)" % dog.excitement.landed_ever)
 	t.check(_influenced == ["%d:charging_dog:seen" % DAY],
 			"the chase is an influence all the same (%s)" % [_influenced])
 	dog.free()
@@ -321,7 +321,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 	t.check(not lorry.is_telegraphing() and lorry.is_lethal_at(inside),
 			"the lorry is now past its telegraph and the game's own test catches her")
 	_stand(watch, [lorry] as Array[EventInstance], inside)
-	t.check(_influenced.size() == 1 and lorry.landed_ever == 0.0,
+	t.check(_influenced.size() == 1 and lorry.excitement.landed_ever == 0.0,
 			"reversing_lorry: her inside its reach is, with nothing landed (%d)" % _influenced.size())
 	lorry.free()
 
@@ -340,7 +340,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 			"checkpoint_post: seen outside its hold is no influence (%s)" % [_influenced])
 	var held := Vector2(0.0, hold_reach - 2.0)
 	_stand(watch, [post] as Array[EventInstance], held, manager.checkpoints.hold_that_would_begin)
-	t.check(_influenced.size() == 1 and post.landed_ever == 0.0,
+	t.check(_influenced.size() == 1 and post.excitement.landed_ever == 0.0,
 			"checkpoint_post: her inside its hold is, with nothing landed (%d)" % _influenced.size())
 	manager.world.instances.clear()
 	post.free()

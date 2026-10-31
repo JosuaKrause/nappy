@@ -24,15 +24,14 @@ class FakeWorld extends WorldContext:
 	func total_excitement_at(_world_position: Vector2) -> float:
 		return noise
 
-	## `Baby` now sums `excitement_sources_at()` rather than calling `total_excitement_at()`
-	## directly, and traces each pair's own share back to `accumulate_landed()`. This fake has no
-	## real body to attribute `noise` to, so it hands out itself and answers the call with nothing —
-	## no test here reads a colour, only the meter arithmetic `noise` feeds.
-	func excitement_sources_at(_world_position: Vector2) -> Array:
-		return [[self, noise]] if noise > 0.0 else []
+	## `Baby` sums `excitement_sources_at()` and traces each pair's own share back to its source's
+	## `accumulate_landed()`. This fake has no real body to attribute `noise` to, so it hands out a
+	## source of no field of its own standing on itself — no test here reads a colour, only the
+	## meter arithmetic `noise` feeds.
+	var _noise := ExcitementSource.new(self)
 
-	func accumulate_landed(_points: float) -> void:
-		pass
+	func excitement_sources_at(_world_position: Vector2) -> Array:
+		return [[_noise, noise]] if noise > 0.0 else []
 
 var _world: FakeWorld
 var _stroller: Stroller
@@ -484,7 +483,7 @@ func _one_bump_from(t, at: float) -> Dictionary:
 	var jolt := Tuning.BUMP_DURATION
 	while jolt > 0.0:
 		agent._jolt = jolt
-		_world.noise = agent.contribution_at(_stroller.global_position)
+		_world.noise = agent.excitement.contribution_at(_stroller.global_position)
 		_baby._physics_process(STEP)
 		jolt -= STEP
 	var result := {"excitement": _baby.excitement,

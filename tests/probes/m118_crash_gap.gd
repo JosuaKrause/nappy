@@ -122,7 +122,7 @@ func _pass_cost(instance: EventInstance, offset: float) -> float:
 	while travelled < reach * 2.0:
 		walker += across * Tuning.WALK_SPEED * STEP
 		travelled += Tuning.WALK_SPEED * STEP
-		paid += (instance.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
+		paid += (instance.excitement.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
 	return paid
 
 ## The open lanes as readable spans, so a run says where the gaps are rather than how many samples

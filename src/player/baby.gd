@@ -50,17 +50,17 @@ var last_incoming := 0.0
 var last_decay := 0.0
 
 ## This baby's own simulated clock, advanced by `delta` in `_physics_process` — the same shape
-## `EventInstance._clock` and `landed()` use, so `decay_in_window()` below prunes against a clock
-## that keeps pace with every source's own, without depending on either one directly.
+## every source's `ExcitementSource.landed()` uses, so `decay_in_window()` below prunes against a
+## clock that keeps pace with every source's own, without depending on any one directly.
 var _clock := 0.0
 ## `[when, points]` entries of decay actually taken from the meter, pruned to
-## `ExcitementHalo.WINDOW` the same way a source's own `_landed_history` is — see
+## `ExcitementSource.WINDOW` the same way a source's own ledger is — see
 ## `decay_in_window()`, what `ExcitementHalo` shares this against.
 var _decay_history: Array = []
 
 ## `[when, points]` entries of her own running and alley share of `incoming`, in the same sliding
-## window every other source's `landed()` keeps — see `EventInstance._landed_history`,
-## `CrowdAgent._landed_history`. **Read by nothing in gameplay.** `EXCITEMENT_FROM_RUNNING` and
+## window every other source's `landed()` keeps (`ExcitementSource`). **Read by nothing in
+## gameplay.** `EXCITEMENT_FROM_RUNNING` and
 ## `EXCITEMENT_FROM_ALLEY` are folded into `incoming` with no source object of their own
 ## (`_update_excitement()` below), so this is where "what she did to herself" is kept for whatever
 ## names the cause of a crying day — see `DayDirector.landed_by_group()`.
@@ -176,7 +176,7 @@ func _update_excitement(delta: float, here: Vector2, in_alley: bool) -> void:
 	var sensitivity := current_sensitivity()
 	incoming *= sensitivity
 	for pair in sources:
-		var source = pair[0]
+		var source: ExcitementSource = pair[0]
 		var contribution: float = pair[1]
 		source.accumulate_landed(contribution * sensitivity * delta)
 	_record_self_landed(self_incoming * sensitivity * delta)
@@ -211,12 +211,12 @@ func _record_decay(points: float) -> void:
 		_decay_history.append([_clock, points])
 
 func _prune_decay_history() -> void:
-	var cutoff := _clock - ExcitementHalo.WINDOW
+	var cutoff := _clock - ExcitementSource.WINDOW
 	while not _decay_history.is_empty() and _decay_history[0][0] < cutoff:
 		_decay_history.pop_front()
 
 ## Folds this frame's running/alley share into the sliding window `self_landed()` reads, the same
-## `[when, points]` shape and the same `ExcitementHalo.WINDOW` prune every other source's own
+## `[when, points]` shape and the same `ExcitementSource.WINDOW` prune every other source's own
 ## `accumulate_landed()` keeps — see `_self_landed_history`'s own doc for why there is no source
 ## object to call that method on instead.
 func _record_self_landed(points: float) -> void:
@@ -225,11 +225,11 @@ func _record_self_landed(points: float) -> void:
 		_self_landed_history.append([_clock, points])
 
 func _prune_self_landed_history() -> void:
-	var cutoff := _clock - ExcitementHalo.WINDOW
+	var cutoff := _clock - ExcitementSource.WINDOW
 	while not _self_landed_history.is_empty() and _self_landed_history[0][0] < cutoff:
 		_self_landed_history.pop_front()
 
-## The sum of every entry still inside `ExcitementHalo.WINDOW` — her own running and alley share of
+## The sum of every entry still inside `ExcitementSource.WINDOW` — her own running and alley share of
 ## what has landed on her, the same sliding sum `landed()` gives every other source. Read only by
 ## `DayDirector.landed_by_group()`, naming what ended a crying day for `VisitCounter`.
 func self_landed() -> float:
@@ -239,7 +239,7 @@ func self_landed() -> float:
 		total += entry[1]
 	return total
 
-## The decay taken from the meter over the last `ExcitementHalo.WINDOW` seconds — what
+## The decay taken from the meter over the last `ExcitementSource.WINDOW` seconds — what
 ## `ExcitementHalo` divides among the sources that landed a point in the same window, in
 ## proportion to what each landed, so a source's own net can never disagree with what walking (or
 ## standing, or running) actually gave back while it was costing her.

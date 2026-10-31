@@ -293,14 +293,14 @@ func _test_an_event_is_silent_behind_a_wall(t) -> void:
 	var open := _map_with([])
 	var behind := _musician(def, at, walled)
 	var beside := _musician(def, at, open)
-	t.check(beside.contribution_at(her) > 0.0,
-			"on open ground the musician's field reaches her (%.2f/s)" % beside.contribution_at(her))
-	t.check(behind.contribution_at(her) == 0.0,
+	t.check(beside.excitement.contribution_at(her) > 0.0,
+			"on open ground the musician's field reaches her (%.2f/s)" % beside.excitement.contribution_at(her))
+	t.check(behind.excitement.contribution_at(her) == 0.0,
 			"with a building between them it does not")
-	t.check(behind._field_at(her, -1.0, Vector2.INF) == beside.contribution_at(her),
+	t.check(behind.field_at(her, -1.0, Vector2.INF) == beside.excitement.contribution_at(her),
 			"the field itself is unchanged; only what reaches her is")
-	var picked := ExcitementHalo.select_sources([behind, beside], her)
-	t.check(picked.size() == 1 and picked[0] == beside,
+	var picked := ExcitementHalo.select_sources([behind.excitement, beside.excitement], her)
+	t.check(picked.size() == 1 and picked[0] == beside.excitement,
 			"the halo picks the one that reaches her and not the one behind the wall")
 	behind.free()
 	beside.free()
@@ -323,13 +323,13 @@ func _test_a_crowd_body_is_silent_behind_a_wall(t) -> void:
 	car.kind = CrowdAgent.Kind.CAR
 	car.position = Vector2(176.0, 112.0)
 	car._map = walled
-	t.check(car.contribution_at(her, false) > 0.0, "the car's field reaches her distance (%.2f/s)"
-			% car.contribution_at(her, false))
-	t.check(car.contribution_at(her) == 0.0, "but not through the building between them")
+	t.check(car.excitement._field(her) > 0.0, "the car's field reaches her distance (%.2f/s)"
+			% car.excitement._field(her))
+	t.check(car.excitement.contribution_at(her) == 0.0, "but not through the building between them")
 	car.startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
-	t.check(car.contribution_at(her) == 0.0, "nor does its horn")
+	t.check(car.excitement.contribution_at(her) == 0.0, "nor does its horn")
 	car._map = _map_with([])
-	t.check(car.contribution_at(her) > 0.0, "and on open ground the same car is heard")
+	t.check(car.excitement.contribution_at(her) > 0.0, "and on open ground the same car is heard")
 	car.free()
 
 ## The caret projects both bodies forward. The wall is asked where they will be, not at the
@@ -350,19 +350,19 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t) -> void:
 	coming_out._speed = 140.0
 	coming_out._direction = 1.0
 	coming_out._map = ending
-	coming_out.set_player_at(Vector2(400.0, 200.0))
-	t.check(coming_out.contribution_at(Vector2(400.0, 200.0)) == 0.0
-			and coming_out.expected_gross_at(Vector2(400.0, 200.0)) > 0.0,
+	coming_out.excitement.set_player_at(Vector2(400.0, 200.0))
+	t.check(coming_out.excitement.contribution_at(Vector2(400.0, 200.0)) == 0.0
+			and coming_out.excitement.expected_gross_at(Vector2(400.0, 200.0)) > 0.0,
 			"a car about to clear the building's end expects what it lands once out (%.2f)"
-			% coming_out.expected_gross_at(Vector2(400.0, 200.0)))
+			% coming_out.excitement.expected_gross_at(Vector2(400.0, 200.0)))
 	coming_out.free()
 	var at := Vector2(400.0, 80.0)
 	var her := Vector2(240.0, 208.0)
 	var walk := Vector2(Tuning.WALK_SPEED, 0.0)
 	for map: CityMap in [walled, open]:
 		var musician := _musician(def, at, map)
-		musician.set_player_at(her, walk)
-		var expected := musician.expected_gross_at(her)
+		musician.excitement.set_player_at(her, walk)
+		var expected := musician.excitement.expected_gross_at(her)
 		if map == walled:
 			t.check(expected == 0.0, "walking past behind a building expects nothing (%.2f)"
 					% expected)
@@ -377,8 +377,8 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t) -> void:
 		car._speed = 140.0
 		car._direction = 1.0
 		car._map = map
-		car.set_player_at(Vector2(400.0, 200.0))
-		var expected := car.expected_gross_at(Vector2(400.0, 200.0))
+		car.excitement.set_player_at(Vector2(400.0, 200.0))
+		var expected := car.excitement.expected_gross_at(Vector2(400.0, 200.0))
 		if map == walled:
 			t.check(expected == 0.0, "a car on the far side of a building expects nothing (%.2f)"
 					% expected)
@@ -424,12 +424,12 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 		for tile in scene.map.stairwell_walk("stairwell_right"):
 			man.global_position = scene.map.tile_to_world(tile)
 			for her in shaft:
-				var field := man._field_at(her, -1.0, Vector2.INF)
+				var field := man.field_at(her, -1.0, Vector2.INF)
 				if field <= 0.0:
 					continue
-				# Uncached: the man is moved under a fixed `age`, which `contribution_at()`'s
-				# own cache is keyed on, so the public call would answer for where he last stood.
-				var landed := man._contribution_at_uncached(her, -1.0, Vector2.INF)
+				# Uncached: the man is moved under a fixed `age`, which the present rate's own
+				# cache is keyed on, so the public call would answer for where he last stood.
+				var landed := man.excitement._contribution_uncached(her)
 				var walled := grid.wall_between(man.global_position, her)
 				if walled:
 					stopped += 1
@@ -475,14 +475,14 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	t.check(burst != null and burst.global_position == stands,
 			"an explosion goes off where she stands")
 	if burst and behind != Vector2.INF:
-		t.check(burst.contribution_at(behind) > 0.0,
+		t.check(burst.excitement.contribution_at(behind) > 0.0,
 				"and the bang reaches her behind the wall: it came through the walls from outside"
-				+ " (%.1f)" % burst.contribution_at(behind))
-		t.check(not burst.wall_grid().wall_between(burst.global_position, behind),
+				+ " (%.1f)" % burst.excitement.contribution_at(behind))
+		t.check(not burst.excitement.wall_grid().wall_between(burst.global_position, behind),
 				"and the debug view's fields layer cuts it at no wall either, as the meter does")
 		var outline := GroundShape.field_outline_at(burst.global_position, Vector2.ZERO,
 				burst.def.outer_radius)
-		var runs := DebugLayers.open_runs(outline, burst.global_position, burst.wall_grid())
+		var runs := DebugLayers.open_runs(outline, burst.global_position, burst.excitement.wall_grid())
 		t.check(runs.size() == 1 and runs[0].size() == outline.size() + 1,
 				"so its outline is drawn whole, in one closed run (%d runs)" % runs.size())
 	player.free()
@@ -501,14 +501,14 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 	var behind := _musician(def, at, _map_with(_rect_tiles(Rect2i(11, 0, 2, 24)), 24, 24))
 	var beside := _musician(def, at, _map_with([], 24, 24))
 	var outline := GroundShape.field_outline_at(at, Vector2.ZERO, def.outer_radius)
-	var whole := DebugLayers.open_runs(outline, at, beside.wall_grid())
+	var whole := DebugLayers.open_runs(outline, at, beside.excitement.wall_grid())
 	t.check(whole.size() == 1 and whole[0].size() == outline.size() + 1
 			and whole[0][0] == whole[0][whole[0].size() - 1],
 			"on open ground the outline is drawn whole, closed")
-	var runs := DebugLayers.open_runs(outline, at, behind.wall_grid())
+	var runs := DebugLayers.open_runs(outline, at, behind.excitement.wall_grid())
 	var kept := 0
 	for point in outline:
-		if not behind._walled_off(at, point):
+		if not behind.excitement._walled_off(at, point):
 			kept += 1
 	t.check(kept > 0 and kept < outline.size(),
 			"the musician's outline runs both sides of the building (%d of %d points open)"
@@ -523,12 +523,12 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 	for run in runs:
 		for i in run.size() - 1:
 			for step in 5:
-				if behind._walled_off(at, run[i].lerp(run[i + 1], float(step) / 4.0)):
+				if behind.excitement._walled_off(at, run[i].lerp(run[i + 1], float(step) / 4.0)):
 					through += 1
 		var past_end := run[run.size() - 1] \
 				+ (run[run.size() - 1] - run[run.size() - 2]).normalized()
 		var past_start := run[0] + (run[0] - run[1]).normalized()
-		if not behind._walled_off(at, past_end) or not behind._walled_off(at, past_start):
+		if not behind.excitement._walled_off(at, past_end) or not behind.excitement._walled_off(at, past_start):
 			loose += 1
 	t.check(runs.size() == 1, "behind one building it is one open stretch (%d)" % runs.size())
 	t.check(corners == kept, "carrying every open corner of the outline (%d of %d)" % [corners, kept])

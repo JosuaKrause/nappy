@@ -1319,8 +1319,8 @@ func _on_near_miss(at: Vector2) -> void:
 func _meters() -> String:
 	var here := _player.global_position
 	var source := _source()
-	var from_events: float = source.total_excitement_at(here) if source else 0.0
-	var from_crowd := _city.crowd.total_excitement_at(here) if _city and _city.crowd else 0.0
+	var from_events: float = source.sources.total_at(here) if source else 0.0
+	var from_crowd := _city.crowd.sources.total_at(here) if _city and _city.crowd else 0.0
 	return "exc %.0f, in %.1f/s (crowd %.1f, events %.1f), sleep %.0f" % [
 		_baby.excitement, _baby.last_incoming, from_crowd, from_events, _baby.sleepiness]
 

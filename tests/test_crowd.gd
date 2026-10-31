@@ -245,9 +245,9 @@ func _test_a_park_is_out_of_earshot_of_the_traffic(t) -> void:
 		# Against what a park gives back rather than against the flat walking rate: calm ground
 		# has a multiplier of its own, so the raw constant is a number that is never applied here.
 		var calm_decay := Tuning.EXCITEMENT_DECAY_WALKING * _city.decay_multiplier(centre)
-		t.check(_city.crowd.total_excitement_at(centre) < calm_decay,
+		t.check(_city.crowd.sources.total_at(centre) < calm_decay,
 				"the middle of park %s recovers faster than the traffic loads it (%.1f of %.1f)"
-				% [block, _city.crowd.total_excitement_at(centre), calm_decay])
+				% [block, _city.crowd.sources.total_at(centre), calm_decay])
 
 # ------------------------------------------------------------------- the floor ---
 
@@ -410,7 +410,7 @@ func _crossing_the_main_road_costs() -> float:
 			walker.x += Tuning.WALK_SPEED * STEP
 			_city.crowd.set_focus(walker)
 			_city.crowd.step(STEP)
-			paid += (_city.crowd.total_excitement_at(walker)
+			paid += (_city.crowd.sources.total_at(walker)
 					- Tuning.EXCITEMENT_DECAY_WALKING * _city.decay_multiplier(walker)) * STEP
 			took += STEP
 		worst = maxf(worst, paid)
@@ -424,7 +424,7 @@ func _mean_excitement(at: Vector2, seconds: float) -> float:
 	var samples := 0
 	for i in int(round(seconds / STEP)):
 		_city.crowd.step(STEP)
-		total += _city.crowd.total_excitement_at(at)
+		total += _city.crowd.sources.total_at(at)
 		samples += 1
 	return total / maxi(1, samples)
 
@@ -700,7 +700,7 @@ func _test_walking_into_somebody_displaces_and_startles_them(t) -> void:
 		return
 
 	var here := walker.global_position
-	var quiet := walker.contribution_at(here)
+	var quiet := walker.excitement.contribution_at(here)
 	walker.global_position = here + Vector2(4.0, 0.0)
 	var share: Vector2 = _city.crowd._bump(walker, here)
 
@@ -733,7 +733,7 @@ func _test_walking_into_somebody_displaces_and_startles_them(t) -> void:
 	t.check(share.length() > 0.0 and share.dot(walker.global_position - here) < 0.0,
 			"and she is pushed the other way")
 	t.check(walker.is_startled(), "the person is startled")
-	t.check(walker.contribution_at(here) > quiet + Tuning.EXCITEMENT_DECAY_WALKING,
+	t.check(walker.excitement.contribution_at(here) > quiet + Tuning.EXCITEMENT_DECAY_WALKING,
 			"which is what reaches the baby — a source on a body, not a write to the meter")
 
 	# The property that actually matters: standing in somebody resolves rather than sticking.

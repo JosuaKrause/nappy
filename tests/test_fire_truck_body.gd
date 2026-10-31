@@ -141,7 +141,7 @@ func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 				"facing %s, warned %.2fs before the strike, at least the %.2fs to walk off the road"
 				% [facing, warning, Tuning.required_horn_time()])
 		t.check(not held, "and it did not stop against her first")
-		t.check(engine.will_be_lethal(player.global_position), "the doubled caret was up over it")
+		t.check(engine.excitement.will_be_lethal(player.global_position), "the doubled caret was up over it")
 		player.free()
 		engine.free()
 
@@ -222,7 +222,7 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 	for i in int(5.0 / STEP):
 		_step(engine, player)
 		warned = warned or engine.car.closes_on(player.global_position)
-		lethal = lethal or engine.will_be_lethal(player.global_position) \
+		lethal = lethal or engine.excitement.will_be_lethal(player.global_position) \
 				or engine.is_lethal_at(player.global_position)
 		if engine.is_parked:
 			break
@@ -319,7 +319,7 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 		if engine.is_parked:
 			break
 	t.check(engine.is_parked, "the truck parks where its route ends")
-	t.check(not engine.car.is_driving() and not engine.will_be_lethal(Vector2(40.0, 0.0)),
+	t.check(not engine.car.is_driving() and not engine.excitement.will_be_lethal(Vector2(40.0, 0.0)),
 			"and a parked truck is not driving")
 	for place in [Vector2(40.0, 0.0), Vector2(-40.0, 0.0), Vector2(0.0, 30.0), Vector2(0.0, -30.0)]:
 		t.check(not engine.is_lethal_at(place), "a parked truck strikes nobody at %s" % place)
@@ -362,11 +362,11 @@ func _test_parked_its_field_is_a_points(t) -> void:
 			"the truck has parked and stands still")
 	var same := true
 	for d: float in [40.0, 100.0, 250.0, def.outer_radius - 5.0]:
-		var along := engine.contribution_at(Vector2(d, 0.0), -1.0, Vector2.ZERO)
-		var abeam := engine.contribution_at(Vector2(0.0, d), -1.0, Vector2.ZERO)
+		var along := engine.field_at(Vector2(d, 0.0), -1.0, Vector2.ZERO)
+		var abeam := engine.field_at(Vector2(0.0, d), -1.0, Vector2.ZERO)
 		same = same and absf(along - abeam) < 0.0001 and along > 0.0
 	t.check(same, "along its street its field is what it is abeam, at every distance")
-	t.check(engine.contribution_at(Vector2(def.outer_radius + 5.0, 0.0), -1.0, Vector2.ZERO) == 0.0,
+	t.check(engine.field_at(Vector2(def.outer_radius + 5.0, 0.0), -1.0, Vector2.ZERO) == 0.0,
 			"and it ends at its 340px along the street, not past its body's end")
 	player.free()
 	engine.free()

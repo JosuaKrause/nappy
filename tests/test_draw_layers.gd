@@ -187,11 +187,11 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 			for i in range(1, slices.size()):
 				rising = rising and slices[i].global_position.y > slices[i - 1].global_position.y
 			t.check(rising, "end-on, each slice stands nearer the camera than the one before")
-		instance.set_halo_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
-		t.check(instance._halo != null and instance._halo.get_parent() == slices[0]
-				and (instance._halo.global_position - instance.global_position).is_zero_approx(),
+		instance._rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+		t.check(instance._rim.entity_halo() != null and instance._rim.entity_halo().get_parent() == slices[0]
+				and (instance._rim.entity_halo().global_position - instance.global_position).is_zero_approx(),
 				"%s: the rim stands behind the first slice, at the instance's own origin" % what)
-		instance.release_halo()
+		instance._rim.release()
 		world.free()
 	AtlasLibrary.release(&"events")
 

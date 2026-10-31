@@ -189,11 +189,15 @@ func _the_pelican_bag() -> MarbleBag:
 	return _pelican_bag
 
 ## Makes `instance` the pelican, as it is created: the picture (`EventInstance.is_pelican`) and the
-## pelican's own telemetry — `EventBus.pelican_spawned` now, and a place on the list
-## `report_the_pelicans_in_view()` watches until it is first on screen.
+## pelican's own telemetry — `EventBus.pelican_spawned` now, a place on the list
+## `report_the_pelicans_in_view()` watches until it is first on screen, and
+## `EventBus.pelican_excited_her` on the first share of the meter its field lands
+## (`ExcitementSource.on_first_landing`), told once and read back by nothing here.
 func _ride_as_a_pelican(instance: EventInstance) -> void:
 	instance.is_pelican = true
 	_unseen_pelicans.append(instance)
+	instance.excitement.on_first_landing = func() -> void:
+		EventBus.pelican_excited_her.emit(instance)
 	EventBus.pelican_spawned.emit(instance)
 
 ## Pelicans created and not yet on screen. Untyped, so a pelican freed before it was ever seen can

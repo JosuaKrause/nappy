@@ -262,7 +262,7 @@ step onto, and the **horn**, which must be long enough to walk the whole width o
 doubled hard-fail margin.
 
 **The rear half of a crowd car is safe on purpose.** `Crowd._strike()` and
-`CrowdAgent.will_be_lethal()` test only the box from the car's centre forward (26px long, 14px
+`CrowdExcitement.will_be_lethal()` test only the box from the car's centre forward (26px long, 14px
 either side), never its whole 52×28px body: a car is lethal only in front of it while it drives
 (minty-hedgehog #433), and one that starts moving while she walks behind it is driving away from
 her. Keep the horn, the caret and the strike on the same box, and do not widen it back to the body.

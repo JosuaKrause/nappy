@@ -792,7 +792,7 @@ func _build_the_escape_building() -> void:
 	_pauses_with_the_game(_building_events)
 	_building_events.setup_world(_interior.map, _run)
 	_building_events.use_player(_player)
-	_interior.events = _building_events
+	_interior.excitement_sources = [_building_events.sources]
 	_building_seed = _run.day_rng(_run.header.day, "finale-interior").randi()
 	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map)
 	# The building shows what the city shows: the same badge, halo and debug view, reading its
@@ -1288,12 +1288,12 @@ func _add_danger_edge() -> void:
 ## the building's events and no crowd, and walking out of the service door points it at the city.
 func _add_excitement_halo() -> void:
 	if _halo:
-		_halo.setup(_event_source(), _crowd_now(), _player, _baby)
+		_halo.setup(_excitement_now(), _player, _baby)
 		return
 	_halo = ExcitementHalo.new()
 	_halo.name = "ExcitementHalo"
 	DrawLayer.draw_on(_halo, DrawLayer.Layer.HALO)
-	_halo.setup(_event_source(), _crowd_now(), _player, _baby)
+	_halo.setup(_excitement_now(), _player, _baby)
 	add_child(_halo)
 	_pauses_with_the_game(_halo)
 
@@ -1309,6 +1309,16 @@ func _event_source() -> EventManager:
 ## The crowd, or null in the escape's building, which has nobody in it but its events.
 func _crowd_now() -> Crowd:
 	return _city.crowd if _city else null
+
+## What the halo reads the world's charges from (`WorldContext.excitement_sources`): a `City`'s
+## events and crowd once there is a city, and the building's events alone before.
+func _excitement_now() -> Array[ExcitementSources]:
+	if _city:
+		return _city.excitement_sources
+	var sets: Array[ExcitementSources] = []
+	if _building_events:
+		sets.append(_building_events.sources)
+	return sets
 
 ## The world whose subtree holds the bodies the debug view's bounding boxes trace.
 func _world_now() -> Node2D:

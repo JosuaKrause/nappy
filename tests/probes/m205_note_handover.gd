@@ -120,7 +120,7 @@ func _handover_net(def: EventDef, at_inner_radius: bool, decay: float, sensitivi
 			her_pos += to_instance.normalized() * Tuning.WALK_SPEED * STEP
 		var distance := her_pos.distance_to(instance.global_position)
 		if distance <= def.outer_radius:
-			incoming_sum += instance.contribution_at(her_pos) * sensitivity * STEP
+			incoming_sum += instance.excitement.contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
 		var stop_radius := def.inner_radius if at_inner_radius else ContactPoint.REACH
 		if distance <= stop_radius:
@@ -172,7 +172,7 @@ func _handover_then_linger_net(def: EventDef, decay: float, sensitivity: float,
 		her_pos += direction * Tuning.WALK_SPEED * STEP
 		var distance := her_pos.distance_to(instance.global_position)
 		if distance <= def.outer_radius:
-			incoming_sum += instance.contribution_at(her_pos) * sensitivity * STEP
+			incoming_sum += instance.excitement.contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
 		if not reached and distance <= def.inner_radius:
 			reached = true

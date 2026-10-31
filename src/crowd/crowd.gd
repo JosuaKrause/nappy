@@ -50,6 +50,9 @@ const _BEYOND_CONTACT_SQUARED := (Tuning.CROWD_YIELD_DISTANCE + Tuning.BUMP_CLEA
 var _atlas_held := false
 
 var _agents: Array[CrowdAgent] = []
+## **The crowd as one set of things that charge the baby** (`CrowdSources`), handed to the world
+## this crowd walks (`WorldContext.excitement_sources`) and to the halo through it.
+var sources := CrowdSources.new(self)
 ## `_agents`' cars and its walkers, each in `_agents`' own order, sorted by `_sort_by_kind()` at
 ## the top of `_resolve_the_queues()` — the first thing every frame's traffic pass does — and read by
 ## everything after it in the same frame that is about one kind only: the queue, the turns, the
@@ -285,6 +288,7 @@ func _make_an_agent() -> CrowdAgent:
 	agent.pockets = _pockets
 	agent.view = _view
 	agent.frame_timing = _timing
+	agent.heard_in = sources
 	return agent
 
 ## Exact authoring shares the live crowd's lane, pocket and junction machinery. A rejected
@@ -1027,7 +1031,7 @@ func _is_to_the_right_of(a: CrowdAgent, b: CrowdAgent) -> bool:
 #
 # All three mechanisms live here rather than in `CrowdAgent` because all three are about the
 # *player*, and an agent has no business knowing the player exists. One linear scan, the same
-# shape and cost as the `total_excitement_at` the baby already runs every physics frame.
+# shape and cost as the crowd's half of what the baby asks every physics frame (`CrowdSources`).
 
 func _physics_process(delta: float) -> void:
 	if _timing.running():
@@ -1271,38 +1275,6 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 	agent.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	return true
-
-# ------------------------------------------------------------ WorldContext ---
-
-## Every agent's own contribution at this point, as `[agent, contribution]` pairs, for every agent
-## whose contribution here is actually positive. **The whole crowd, not only a startled body** —
-## *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
-## because of people ... that will allow us to attribute the source exactly".)* The crowd is the
-## noise, and the noise is attributable, so an ordinary walker is exactly as much a source as a
-## honking car — `ExcitementHalo`'s own floor and cap are what keep a busy pavement legible rather
-## than a special case here.
-##
-## **A body past `CrowdAgent.silent_beyond()` is skipped without a call into it**: that is a reach
-## no agent's own early-out in `contribution_at()` exceeds, so the answer is the same and the
-## several hundred agents of a busy day out of earshot cost one distance each.
-func excitement_sources_at(world_position: Vector2) -> Array:
-	var sources: Array = []
-	var reach := CrowdAgent.silent_beyond()
-	var reach_squared := reach * reach
-	for agent in _agents:
-		if agent.global_position.distance_squared_to(world_position) > reach_squared:
-			continue
-		var contribution := agent.contribution_at(world_position)
-		if contribution > 0.0:
-			sources.append([agent, contribution])
-	return sources
-
-## Summed excitement per second from everyone within earshot.
-func total_excitement_at(world_position: Vector2) -> float:
-	var total := 0.0
-	for pair in excitement_sources_at(world_position):
-		total += pair[1]
-	return total
 
 func agent_count() -> int:
 	return _agents.size()

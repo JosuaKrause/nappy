@@ -471,7 +471,7 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 		elif not PendingWarning.is_out_of_sight(VisibleView.around(her), truck, her, place):
 			wrong.append("created in sight at %v with her at %v" % [place, her])
 		var to_reach := 0.0
-		while engine.contribution_at(her) <= 0.0 and to_reach < 10.0:
+		while engine.excitement.contribution_at(her) <= 0.0 and to_reach < 10.0:
 			engine.player_at = her
 			engine.step(STEP)
 			to_reach += STEP

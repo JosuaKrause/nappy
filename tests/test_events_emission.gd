@@ -44,14 +44,14 @@ func _test_telegraph_damps_emission(t) -> void:
 	t.check(instance.is_telegraphing(), "an event starts in its telegraph phase")
 	t.close_to(instance.current_intensity(), def.intensity * Tuning.TELEGRAPH_INTENSITY_FRACTION,
 			"a telegraphing event emits only a fraction of its intensity")
-	t.close_to(instance.contribution_at(Vector2(1000.0, 0.0)), 0.0,
+	t.close_to(instance.excitement.contribution_at(Vector2(1000.0, 0.0)), 0.0,
 			"an event contributes nothing beyond its outer radius")
 
 	_advance(instance, def.telegraph_time + 0.05)
 	t.check(not instance.is_telegraphing(), "the telegraph phase ends after telegraph_time")
 	t.close_to(instance.current_intensity(), def.intensity,
 			"an active event emits its full intensity", 0.05)
-	t.close_to(instance.contribution_at(Vector2(def.inner_radius * 0.5, 0.0)), def.intensity,
+	t.close_to(instance.excitement.contribution_at(Vector2(def.inner_radius * 0.5, 0.0)), def.intensity,
 			"inside the inner radius the full intensity applies", 0.05)
 	instance.free()
 
@@ -99,15 +99,15 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t) -> void:
 	t.check(near.length() < leaf.core_radius and far.length() > leaf.core_radius,
 			"32px is inside the core and 100px is outside it")
 
-	var blower_near := blower.contribution_at(near, leaf.intensity)
-	var busker_near := player.contribution_at(near, busker.intensity)
+	var blower_near := blower.field_at(near, leaf.intensity, Vector2.INF)
+	var busker_near := player.field_at(near, busker.intensity, Vector2.INF)
 	t.check(blower_near > busker_near + 1.0,
 			"a leaf blower charges more than a busker inside its core (%.2f/s against %.2f/s)"
 			% [blower_near, busker_near])
 	t.close_to(blower_near, leaf.core_intensity,
 			"and what it charges there is the core's own rate")
-	t.close_to(blower.contribution_at(far, leaf.intensity),
-			player.contribution_at(far, busker.intensity),
+	t.close_to(blower.field_at(far, leaf.intensity, Vector2.INF),
+			player.field_at(far, busker.intensity, Vector2.INF),
 			"past the core the two rows charge the same rate")
 
 	# The damping is the half a def-level check cannot see: a quarter of a beat has to be a quarter
@@ -117,7 +117,7 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t) -> void:
 	t.check(blower.is_telegraphing(), "an instance starts in its telegraph")
 	var fraction := blower.current_intensity() / leaf.intensity
 	t.check(fraction < 1.0, "and is emitting less than its catalogued peak while it does")
-	t.close_to(blower.contribution_at(near), leaf.core_intensity * fraction,
+	t.close_to(blower.excitement.contribution_at(near), leaf.core_intensity * fraction,
 			"the phase damps the core by exactly the fraction it damps the field by")
 	blower.free()
 	player.free()
@@ -205,7 +205,7 @@ func _test_duration_and_finish(t) -> void:
 	var instance := _instance(t, def)
 	_advance(instance, def.telegraph_time + def.duration + 0.1)
 	t.check(instance.is_finished, "an event with a duration finishes")
-	t.close_to(instance.contribution_at(Vector2.ZERO), 0.0,
+	t.close_to(instance.excitement.contribution_at(Vector2.ZERO), 0.0,
 			"a finished event contributes nothing")
 	instance.free()
 
@@ -226,7 +226,7 @@ func _test_an_event_leaves_rather_than_vanishing(t) -> void:
 	_advance(instance, def.telegraph_time + def.duration + 0.1)
 	t.check(not instance.is_finished, "a flock that is done is not deleted where it stands")
 	t.check(instance.is_leaving, "it is leaving")
-	t.close_to(instance.contribution_at(instance.player_at), 0.0,
+	t.close_to(instance.excitement.contribution_at(instance.player_at), 0.0,
 			"and it stops emitting the moment it does")
 
 	# Away from her, since a flock has no route to carry on along.
@@ -248,7 +248,7 @@ func _test_an_event_leaves_rather_than_vanishing(t) -> void:
 	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")
 	alone.free()
 
-## `EventInstance.contribution_at()` answers zero for a point past `EventDef.silent_beyond()`
+## `EventExcitement`'s present rate answers zero for a point past `EventDef.silent_beyond()`
 ## without working the field out, so for every row in the catalogue the field itself has to be
 ## zero there: at every bearing, standing or at a speed past the most a field stretches, with the
 ## body lying either way, and at a peak no row carries. A row that adds a radius to its field and
@@ -270,11 +270,11 @@ func _test_no_field_reaches_past_silent_beyond(t) -> void:
 			for heading in 8:
 				var moving := Vector2.RIGHT.rotated(heading * TAU / 8.0) * 10000.0
 				for velocity: Vector2 in [Vector2.ZERO, moving]:
-					if instance._field_at(Vector2.ZERO, peak, velocity) > 0.0:
+					if instance.field_at(Vector2.ZERO, peak, velocity) > 0.0:
 						heard_inside += 1
 					for bearing in 24:
 						var at := Vector2.RIGHT.rotated(bearing * TAU / 24.0) * past
-						if instance._field_at(at, peak, velocity) != 0.0:
+						if instance.field_at(at, peak, velocity) != 0.0:
 							heard_past += 1
 			instance.free()
 	t.check(rows > 0 and heard_inside > 0,
@@ -317,8 +317,8 @@ func _test_contribution_skips_only_silence(t) -> void:
 				var at := node + direction * reach * share
 				for velocity: Vector2 in [Vector2.INF, direction * -10000.0,
 						direction * 10000.0]:
-					var field := instance._field_at(at, -1.0, velocity)
-					if instance.contribution_at(at, -1.0, velocity) != field:
+					var field := instance.field_at(at, -1.0, velocity)
+					if instance.field_at(at, -1.0, velocity) != field:
 						differed += 1
 					if field > 0.0:
 						heard += 1
@@ -341,6 +341,6 @@ func _test_flocks_are_not_skipped(t) -> void:
 	flock.flock.build()
 	var far_bird := Vector2(flock.def.silent_beyond() * 3.0, 0.0)
 	flock.flock.birds[0].at = far_bird
-	t.check(flock.contribution_at(far_bird) > 0.0,
+	t.check(flock.excitement.contribution_at(far_bird) > 0.0,
 			"a bird far past its flock's silent_beyond() is still heard where it is")
 	flock.free()

@@ -306,7 +306,7 @@ func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t) -> void:
 	for ring in [0.0, 20.0, 40.0, 60.0, 85.0, 120.0]:
 		for step in 8:
 			var at: Vector2 = kid.global_position + Vector2.from_angle(TAU * step / 8.0) * ring
-			if pelican.contribution_at(at) != kid.contribution_at(at):
+			if pelican.excitement.contribution_at(at) != kid.excitement.contribution_at(at):
 				same_field = false
 			if pelican.is_lethal_at(at) != kid.is_lethal_at(at):
 				same_reach = false
@@ -413,12 +413,12 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	t.check(told["sighted"] == 1,
 			"on screen for three physics frames, its first is told once (%d)" % told["sighted"])
 
-	pelican.accumulate_landed(0.0)
+	pelican.excitement.accumulate_landed(0.0)
 	t.check(told["excited"] == 0, "nothing landed is nothing told")
-	pelican.accumulate_landed(1.5)
-	pelican.accumulate_landed(2.0)
+	pelican.excitement.accumulate_landed(1.5)
+	pelican.excitement.accumulate_landed(2.0)
 	var kid := events.spawn_warned(def, _ride(), false)
-	kid.accumulate_landed(4.0)
+	kid.excitement.accumulate_landed(4.0)
 	t.check(told["excited"] == 1,
 			"its first share of the meter is told once, and a kid's never (%d)" % told["excited"])
 

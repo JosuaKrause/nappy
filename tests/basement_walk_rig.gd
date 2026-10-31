@@ -121,5 +121,5 @@ func _tick(at: Vector2, awake: bool) -> float:
 		instance.player_at = at
 		instance.baby_awake = awake
 		instance.step(STEP)
-		incoming += instance.contribution_at(at)
+		incoming += instance.excitement.contribution_at(at)
 	return incoming

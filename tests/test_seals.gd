@@ -642,7 +642,7 @@ func _crash_pass_cost(instance: EventInstance, offset: float) -> float:
 	while travelled < reach * 2.0:
 		walker += across * Tuning.WALK_SPEED * step
 		travelled += Tuning.WALK_SPEED * step
-		paid += (instance.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * step
+		paid += (instance.excitement.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * step
 	return paid
 
 # ------------------------------------------------------------------ street trees ---
