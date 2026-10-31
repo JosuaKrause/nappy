@@ -61,8 +61,8 @@ var hard_mode := false
 var checkpoint: Dictionary = {}
 
 ## `%d:%02d.%03d` — minutes, seconds, milliseconds — the one format a run's own length is ever
-## shown in: the ending screens (`DaySummary.show_ending()`, the escape's own out line) and the
-## run log. A still number, so the millisecond is kept. The escape's live clock is not this: it
+## shown in: the ending screens (`SummaryModel.ending()`, the escape's epilogue,
+## `SummaryModel.epilogue()`) and the run log. A still number, so the millisecond is kept. The escape's live clock is not this: it
 ## ticks on screen, and a screen cannot show a thousandth, so it reads
 ## `format_clock_hundredths()`.
 static func format_clock(seconds: float) -> String:
@@ -83,7 +83,7 @@ static func format_clock_hundredths(seconds: float) -> String:
 
 ## `%d:%02d` — minutes and seconds, no millisecond term — the day clock's own shape wherever it is
 ## shown: the HUD corner while a day runs (`hud.gd`'s `_on_day_time_changed()`) and the day summary
-## once it ends (`DaySummary.show_day()`). Truncates rather than rounds, matching the HUD's own
+## once it ends (`SummaryModel.clock_line()`). Truncates rather than rounds, matching the HUD's own
 ## `int(remaining)` so a value read from the same clock a frame apart never disagrees by a second.
 ## Its own function rather than `format_clock()` with the millisecond term dropped, so the day
 ## clock and the run clock stay two callers of two small functions instead of one function two
