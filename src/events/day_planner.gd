@@ -45,6 +45,8 @@ func _init(the_world: EventWorld) -> void:
 ## **`spec`'s plan**, on `rng`, with `consumed` the one-shots the run has already spent (appended to
 ## in place by a day's plan, as `EventScheduler.build_day()` spends them).
 func plan(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) -> Plan:
+	assert(spec.closes_streets == (spec.section == DaySpec.Section.NONE),
+			"DayPlanner.plan(): a spec that closes streets is a day's, and only a day's does")
 	if spec.world == DaySpec.World.BUILDING:
 		return _plan_the_building(rng)
 	if not spec.closes_streets:

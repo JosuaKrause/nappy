@@ -227,16 +227,33 @@ func _owe_the_return() -> void:
 ## exactly the `aftermath.on_finish` mechanism a convoy leaves a barricade through.
 func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
 		focus := Vector2.ZERO) -> void:
+	_begin(spec)
+	streaming.consumed = consumed_one_shots
+	var plan := planner.plan(spec, rng, consumed_one_shots)
+	# One decision, the plan's: a day is keyed by its own number, and a day's spec is the day the
+	# run is on (a spec handed another day's would be planned under one number and streamed under
+	# another).
+	assert(not plan.is_a_day or spec.number == world.run.header.day,
+			"EventManager.start_day(%d) was handed day %d's spec" % [world.run.header.day, spec.number])
+	_take(spec, plan, focus)
+
+## **The first half of every walk's start**, before anything is planned: clears whatever was here
+## (so the planning sees the map without yesterday's holds and bodies) and takes the walk's settings.
+func _begin(spec: DaySpec) -> void:
 	_recipe_plan = false
 	clear()
 	set_physics_process(true)
 	_hard_failed = false
 	_struck_by = ""
 	use_the_spec(spec)
-	world.day = spec.number if spec.section == DaySpec.Section.NONE else world.run.header.day
+
+## **The second half, which every walk shares** (a day, a section of the escape, a scene's recipe):
+## takes `plan`'s placements and streams the events around `focus`. A day's plan records its bodies
+## and hands the director its budget; a walk planned whole hands it nothing. `world.day` is the
+## plan's: the day's own number for a day, the run's last day for the escape's sections.
+func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
+	world.day = spec.number if plan.is_a_day else world.run.header.day
 	_encounters.day = spec.number
-	streaming.consumed = consumed_one_shots
-	var plan := planner.plan(spec, rng, consumed_one_shots)
 	_walk = plan.walk
 	streaming.take(plan.placements)
 	if plan.is_a_day:
@@ -272,22 +289,15 @@ func walk() -> RouteSource:
 ## their bodies recorded as a day's are.
 func start_recipe(plans: Array[EventScheduler.Planned], spec: DaySpec, day: int,
 		focus: Vector2) -> void:
-	_recipe_plan = false
-	clear()
-	set_physics_process(true)
-	_hard_failed = false
-	_struck_by = ""
-	use_the_spec(spec)
-	world.day = world.run.header.day
-	_encounters.day = spec.number
-	_walk = null
-	streaming.take(plans)
-	streaming.find_what_repeats()
-	ahead.start_a_given_walk(world.day)
-	streaming.stream_around(focus)
-	for plan in plans:
-		if plan.is_placed():
-			spawner.record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
+	var plan := DayPlanner.Plan.new()
+	plan.placements = plans
+	plan.is_a_day = false
+	_begin(spec)
+	_take(spec, plan, focus)
+	for placed in plans:
+		if placed.is_placed():
+			spawner.record_the_body(placed.get_instance_id(), placed.def, placed.position,
+					placed.facing)
 	world.day = day
 	_encounters.day = day
 	_recipe_plan = true

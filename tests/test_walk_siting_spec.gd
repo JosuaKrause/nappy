@@ -13,6 +13,8 @@ const DAY := 1
 func run(t) -> void:
 	_test_a_siting_offers_the_home_street_only_where_the_walk_does_not_hold_it(t)
 	_test_the_director_reads_the_rule_off_the_walks_spec(t)
+	_test_the_siting_the_director_hands_out_carries_the_rule(t)
+	_test_every_place_that_builds_a_siting_copies_the_rule(t)
 
 func _test_a_siting_offers_the_home_street_only_where_the_walk_does_not_hold_it(t) -> void:
 	var map := CityGenerator.generate(SEED)
@@ -46,3 +48,40 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t) -> void:
 	t.check(not manager.ahead.holds_the_home_streets,
 			"and the escape city's spec does not, as its dawn placement does not")
 	manager.free()
+
+## The siting `EventsAhead` actually hands out (`_task_siting()`, the one the director's after-dawn
+## placements and a task's rows are sited against) carries the rule of the spec handed in last.
+func _test_the_siting_the_director_hands_out_carries_the_rule(t) -> void:
+	var map := CityGenerator.generate(SEED)
+	GameState.attempt_spend.city_state.begin_day(map.block_plans, DAY)
+	map.repaint(GameState.attempt_spend.city_state)
+	var manager := EventManager.new()
+	manager.use_run(GameState)
+	manager.world.city_map = map
+	manager.world.day = DAY
+	manager.ahead._day_tree = RouteTree.for_day(map, DAY)
+	manager.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS))
+	t.check(not manager.ahead._task_siting().holds_the_home_streets,
+			"the escape city's spec reaches the siting the director hands out")
+	manager.ahead._task_siting_cache = null
+	manager.use_the_spec(DaySpec.for_day(DAY))
+	t.check(manager.ahead._task_siting().holds_the_home_streets,
+			"and a day's spec reaches it again")
+	manager.free()
+
+## Four places in `EventsAhead` build a `WalkSiting` (the day's, a mast's, the task's, a rigged
+## route's), and the first two cannot be observed from outside; each must copy the rule onto what
+## it builds, read off the source so a dropped copy fails here rather than siting on a day's rule.
+func _test_every_place_that_builds_a_siting_copies_the_rule(t) -> void:
+	var lines := FileAccess.get_file_as_string("res://src/events/events_ahead.gd").split("\n")
+	var builds := 0
+	var copied := 0
+	for i in lines.size():
+		if "WalkSiting.new(" in lines[i]:
+			builds += 1
+			for j in range(i + 1, mini(i + 5, lines.size())):
+				if "holds_the_home_streets = holds_the_home_streets" in lines[j]:
+					copied += 1
+					break
+	t.check(builds == 4, "EventsAhead builds a WalkSiting in four places (%d)" % builds)
+	t.check(copied == builds, "and each copies holds_the_home_streets onto it (%d of %d)" % [copied, builds])

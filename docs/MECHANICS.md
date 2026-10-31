@@ -273,7 +273,7 @@ is one mechanism for every `redetains` hold: the street doors' gatehouses and th
 a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
 flat `Tuning.CHAT_EXCITEMENT` (25) over `Tuning.CHECKPOINT_DETAIN_SECONDS`. Every other event field
 and the whole crowd are off: `CheckpointController.door_holding_her_at()` is the one question both halves
-of `City.excitement_sources_at()` ask. She is in the gatehouse for those two seconds, not on the
+of `WorldContext.excitement_sources_at()` ask. She is in the gatehouse for those two seconds, not on the
 pavement, so what happens to stand beside that particular door is not part of what the crossing
 costs — *"it works in both directions with the same cost each time"*. Nothing gives back either,
 since `EXCITEMENT_DECAY_IDLE` is zero for a player held still, so the hold is exactly the toll.
@@ -525,7 +525,7 @@ meter, none of which a data-level test can see:
 **Excitement stays a pure query.** A contact does not touch `Baby.excitement`; it *startles
 the person she walked into*, and `Crowd` sums that agent like it sums every other one. So
 contacts still compose by plain addition, there is still no ordering to get wrong, and
-`City.total_excitement_at` still adds exactly two things. See the **events** skill.
+`WorldContext.total_excitement_at` still adds exactly two things. See the **events** skill.
 
 ### A car is lethal
 
