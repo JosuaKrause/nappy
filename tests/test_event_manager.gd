@@ -434,7 +434,7 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 ##
 ## Comparing "the manager alone" against "the manager after the city's own `start_day`" is the
 ## check, rather than counting seals directly: `RouteTree.for_day(map, day)` is deterministic and
-## `SealPlanner`'s own RNG stream (`GameState.day_rng(day, "seals")`) does not depend on `_city`
+## `SealPlanner`'s own RNG stream (`GameState.calendar.day_rng(day, "seals")`) does not depend on `_city`
 ## either, so every segment the fallback holds has to be held the real way too — a rig that skips
 ## `City.start_day` must not come out with less of it. **Not exact equality**: `_city.closures()`
 ## only ever has something to read once `City.start_day()` has run (see the comment in
@@ -788,7 +788,7 @@ func _retreat_from(from: Vector2i, blocked: Dictionary) -> Vector2i:
 ## The calm tiles of every area she has not settled in this act — what the siting's own acceptance
 ## check requires to stay reachable, worked out here from the map rather than asked of the check.
 func _calm_she_has_not_used() -> Array[Vector2i]:
-	var used := GameState.settled_this_act()
+	var used := GameState.calendar.settled_this_act()
 	var tiles: Array[Vector2i] = []
 	for block in _city.map.calm_blocks:
 		if used.has(block):
@@ -1170,7 +1170,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 	GameState.attempt_spend.scars = scars_before
 
 ## **A fire that was never lit was not spent.** *"What the run has spent stays spent ... a fire that
-## burnt a block down did happen"* (`GameState.finish_day`) — so a set piece the day owed her walk is
+## burnt a block down did happen"* (`RunCalendar.finish_day`) — so a set piece the day owed her walk is
 ## consumed where it becomes real rather than where it is planned, and a day 3 lost before she ever
 ## got near it is offered it again. A day on which it burned is not: the city remembers that one, and
 ## the shell is standing in it.

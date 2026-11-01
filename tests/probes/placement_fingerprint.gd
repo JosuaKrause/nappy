@@ -50,11 +50,11 @@ func _the_escape_city(t, seed_value: int, day: int) -> int:
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"),
+	city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"),
 			spec)
 	var start := FinalePlanner.service_exit_world_position(city.map)
 	var none: Array[String] = []
-	city.events.start_day(spec, GameState.day_rng(day, "finale"), none, start)
+	city.events.start_day(spec, GameState.calendar.day_rng(day, "finale"), none, start)
 	var printed := _print("escape seed %d day %d" % [seed_value, day], city.map,
 			city.events.plans())
 	city.free()
@@ -66,7 +66,7 @@ func _the_building(t, seed_value: int) -> int:
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var rng := GameState.day_rng(GameState.header.day, "finale-interior")
+	var rng := GameState.calendar.day_rng(GameState.header.day, "finale-interior")
 	var events := BuildingEvents.events_in(t, scene, rng)
 	var printed := _print("building seed %d" % seed_value, scene.map, events.plans())
 	events.free()
@@ -82,10 +82,10 @@ func _a_day(t, seed_value: int, day: int) -> int:
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"),
+	city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"),
 			spec)
 	var consumed: Array[String] = []
-	city.events.start_day(spec, GameState.day_rng(day), consumed,
+	city.events.start_day(spec, GameState.calendar.day_rng(day), consumed,
 			city.map.doorstep_world_position())
 	var printed := _print("day seed %d day %d" % [seed_value, day], city.map,
 			city.events.plans())

@@ -322,12 +322,12 @@ touch".)*
   last night's sabotage are all given back when the day is lost, and the retry starts at the mark
   again. So the errand is never spent on an attempt that failed, and a task cannot be lost to a
   day that did not happen; the price of a bad day is the nerve, not the subquest. See
-  `GameState.finish_day()`.
+  `RunCalendar.finish_day()`.
 
 ### The finale
 
 Reaching `RESISTANCE_GOAL` earns the *chance* at the good ending; the day-14 sabotage is
-the act. `GameState.earned_good_ending()` requires both, so a player who does all the
+the act. `RunCalendar.earned_good_ending()` requires both, so a player who does all the
 legwork and then walks straight home on the last night gets the neutral ending — and the same
 pair is what sends a won day 14 on to the escape rather than to an ending screen, so the good
 ending is the one ending nobody is simply told about.

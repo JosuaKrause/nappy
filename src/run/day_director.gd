@@ -11,16 +11,16 @@ extends RefCounted
 ## calls no observer: the developer readout, the HUD and the route rig hear the day from `RunFlow`,
 ## which announces it around `start_day()`.
 ##
-## `run` is the run's state and its calendar operations (the dawn photograph, `settled_this_act()`,
+## `calendar` is the run's calendar and its operations (the dawn photograph, `settled_this_act()`,
 ## `day_rng()`, a day's `finish_day()`), handed in by whoever builds the director rather than reached
-## for as a global. It is a `RunState`, the class of the `GameState` autoload, so a test hands a fresh
-## `RunState.new()`.
+## for as a global, with the run's facts and spend beside it. A test hands the parts of a fresh
+## `RunState.new()`; the director is never handed the run itself.
 ##
 ## It writes no save and shows no screen: `finish_day()` returns a `DayEnd` and `main` saves and
 ## shows. An authored scene's day (a scene recipe's) is `start_authored_day()`'s.
 
-## The run, handed in.
-var run: RunState
+## The run's calendar, handed in.
+var calendar: RunCalendar
 var config: RunConfig
 var city: City
 var events: EventManager
@@ -28,7 +28,7 @@ var resistance: ResistanceDirector
 var player: Stroller
 var baby: Baby
 var day: DayController
-## The facts and the spend the run holds, taken off its registered parts.
+## The facts and the spend the run holds, handed in beside the calendar.
 var facts: RunFacts
 var spend: AttemptSpendState
 ## Whether this is the boot's first day, the only one `--spawn` and `--meters` decide.
@@ -38,11 +38,12 @@ var escape_follows := true
 ## The day being walked, set by `use_the_day()`.
 var spec := DaySpec.new()
 
-func _init(the_run: RunState, the_config: RunConfig) -> void:
-	run = the_run
+func _init(the_calendar: RunCalendar, the_facts: RunFacts, the_spend: AttemptSpendState,
+		the_config: RunConfig) -> void:
+	calendar = the_calendar
 	config = the_config
-	facts = run.facts
-	spend = run.attempt_spend
+	facts = the_facts
+	spend = the_spend
 
 ## Hands the world the day is walked in. `events` is the events of whichever world she is in: the
 ## city's, or the escape's building's; they and the resistance are handed her too.
@@ -71,15 +72,15 @@ func start_day(the_spec: DaySpec) -> void:
 	# this path — planning the day's closures, placing every event, streaming the world around
 	# the doorstep — as one of the candidates for the wait after a summary's continue button.
 	var elapsed := Time.get_ticks_msec()
-	var today: int = run.header.day
+	var today: int = calendar.header.day
 	# Decided once, here, and handed to everything that runs on the day's clock as a number.
 	var day_length := config.day_length_for(today)
 	use_the_day(the_spec)
 	# Before the announcement and before anything is placed: this is where the run photographs
 	# what the resistance had done, and a lost day gives exactly that back — so the photograph has
 	# to be taken while it is still true of the attempt about to be played. See
-	# `GameState.begin_day()`.
-	run.begin_day()
+	# `RunCalendar.begin_day()`.
+	calendar.begin_day()
 	# The day is announced first, so listeners clear yesterday's state before anything is
 	# placed in today — announcing it afterwards wiped the contact the director had just
 	# reported, and the HUD showed nothing.
@@ -93,12 +94,12 @@ func start_day(the_spec: DaySpec) -> void:
 	# The calm areas she has used this act, handed to the repaint `city.start_day()` opens with, so
 	# the ones that can be shut are shut before the day's route tree is grown around them. See
 	# `CityMap.set_spent_calm()`.
-	city.map.set_spent_calm(run.settled_this_act())
+	city.map.set_spent_calm(calendar.settled_this_act())
 	# What the run already remembers about the one park barriers ever stand around this run,
 	# handed over the same way, so a fence chosen on an earlier day of this act stands again today
 	# rather than being re-decided. See `CityMap.set_fenced_park_state()`.
-	city.map.set_fenced_park_state(facts.fenced_park, facts.fenced_park_act, run.current_act())
-	city.start_day(spend.city_state, today, run.day_rng(today, "closures"), spec)
+	city.map.set_fenced_park_state(facts.fenced_park, facts.fenced_park_act, calendar.current_act())
+	city.start_day(spend.city_state, today, calendar.day_rng(today, "closures"), spec)
 	# Remember the first choice for the run. Today's physical fence disappears after its act,
 	# but that must not erase the history and allow tomorrow to choose another one.
 	facts.remember_fenced_park(city.map.fenced_park, city.map.fenced_park_act)
@@ -108,7 +109,7 @@ func start_day(the_spec: DaySpec) -> void:
 	# which is why the crowd is populated after the spawn position is settled rather than
 	# before it, and why the events are streamed a second time once it is known.
 	var doorstep := city.map.doorstep_world_position()
-	city.events.start_day(spec, run.day_rng(), spend.consumed_one_shots, doorstep)
+	city.events.start_day(spec, calendar.day_rng(), spend.consumed_one_shots, doorstep)
 	# The day's seals are planned inside the call above, and a `fallen_tree_seal` takes a street
 	# tree's own pit. `City.start_day` already emptied the pits its own closures took, so this is
 	# the second half of one refresh rather than a repair of it — see `City.refresh_street_trees`.
@@ -117,8 +118,8 @@ func start_day(the_spec: DaySpec) -> void:
 	# `resistance.contact_position()` directly, and on the first day — the only day `--spawn`
 	# decides where she starts — the mark has to already be on offer when this line runs, not
 	# merely by the time the day is shown to her.
-	resistance.start_day(today, run.day_rng(today, "resistance"), day_length)
-	var start_at := DevRig.for_spawn_target(config.spawn_target, city, resistance, run) \
+	resistance.start_day(today, calendar.day_rng(today, "resistance"), day_length)
+	var start_at := DevRig.for_spawn_target(config.spawn_target, city, resistance, calendar.header) \
 			if first_day else doorstep
 	city.events.stream_around(start_at)
 	_start_the_crowd(start_at, today)
@@ -126,7 +127,7 @@ func start_day(the_spec: DaySpec) -> void:
 	# (`city.start_day()` built it above), so the crowd just needs to be told where today's gates
 	# are — empty before `Tuning.REGION_WALL_FIRST_DAY`, which is a harmless no-op day for `Crowd`.
 	city.crowd.set_gates(city.region_plan().gates)
-	city.set_act(run.current_act())
+	city.set_act(calendar.current_act())
 	player.reset_at(start_at)
 	prepare_city_scenery(city, player)
 	baby.reset()
@@ -138,7 +139,7 @@ func start_day(the_spec: DaySpec) -> void:
 		DevRig.apply_meter_override(baby, config.meters_override)
 
 	print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
-			% [today, Time.get_ticks_msec() - elapsed, run.current_act(),
+			% [today, Time.get_ticks_msec() - elapsed, calendar.current_act(),
 			city.events.planned_count(), city.events.active_count(), city.events.owed_ahead(),
 			city.crowd.agent_count(), day.time_total]
 			+ "| calm: %s | closed: %s" % [city.calm_summary(), city.closure_summary()])
@@ -154,13 +155,13 @@ func start_day(the_spec: DaySpec) -> void:
 ## before any actor is allowed to tick. The random scheduler does not fill an authored scene. Returns
 ## the problems that kept the scene's setup from standing, empty when it stands.
 func start_authored_day(the_spec: DaySpec, scene: AuthoredScene) -> Array[String]:
-	var today: int = run.header.day
+	var today: int = calendar.header.day
 	use_the_day(the_spec)
-	run.begin_day()
+	calendar.begin_day()
 	EventBus.day_started.emit(today)
 	spend.city_state.begin_day(city.map.block_plans, today)
-	city.start_recipe_day(spend.city_state, today, run.day_rng(today, "closures"))
-	city.set_act(run.current_act())
+	city.start_recipe_day(spend.city_state, today, calendar.day_rng(today, "closures"))
+	city.set_act(calendar.current_act())
 	day.start(spec.length)
 	# The scene's events run under the very spec the clock and the HUD were just handed.
 	var errors := scene.install(city, player, baby, spec, resistance)
@@ -172,13 +173,13 @@ func start_authored_day(the_spec: DaySpec, scene: AuthoredScene) -> Array[String
 ## whole crowd, or nobody at all — a cleared crowd that is never started, the escape's *"no regular
 ## cars or regular people on the street"*. Also the escape's city section's crowd.
 func start_the_crowd(at: Vector2) -> void:
-	_start_the_crowd(at, run.header.day)
+	_start_the_crowd(at, calendar.header.day)
 
 func _start_the_crowd(at: Vector2, today: int) -> void:
 	if spec.crowd_density <= 0.0:
 		city.crowd.clear()
 		return
-	city.crowd.start_day(today, run.day_rng(today, "crowd"), at, true, false, false,
+	city.crowd.start_day(today, calendar.day_rng(today, "crowd"), at, true, false, false,
 			spec.crowd_density, spec.crowd_density)
 
 ## **The one place a day ends, the escape's sections included**: the won last night's fire, what
@@ -190,7 +191,7 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	var end := DayEnd.new()
 	end.result = result
 	# A day's number is the calendar's; a section's is its own, after the last day.
-	end.finished_day = run.header.day if spec.section == DaySpec.Section.NONE else spec.number
+	end.finished_day = calendar.header.day if spec.section == DaySpec.Section.NONE else spec.number
 	# Captured here, before anything below touches the clock, so the summary reads the instant
 	# the day actually ended. Clamped because `_process()` can call `_end()` one frame after
 	# `time_remaining` has gone slightly negative.
@@ -201,7 +202,7 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	# is spent when it enters the world, so a won day on which every siting was refused would leave
 	# the run with no fire, no scar and no shell for day 4 to come out to. Lit here, off her path,
 	# on a site the dawn rules accept — before the day's end below, since it happened in the day
-	# rather than after it, and before `GameState.finish_day()`, which is what commits a won
+	# rather than after it, and before `RunCalendar.finish_day()`, which is what commits a won
 	# day's spending. A lost day gives everything back, so it is asked of a win only. See
 	# `EventManager.light_what_she_never_met()`. Only a day walked home has one.
 	if result == GameEnums.DayResult.WON and player and city and spec.goal == DaySpec.Goal.HOME:
@@ -221,28 +222,28 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	# **The last night hands over rather than ending.** *(PLAYTEST-113: "the escape the building
 	# starts when the player has completed all tasks by the end of day 14".)* A won day 14 with
 	# every task complete is the good ending, and the good ending is a walk rather than a screen — so
-	# `GameState.finish_day()` is deliberately *not* called here: it would end the run on the spot,
+	# `RunCalendar.finish_day()` is deliberately *not* called here: it would end the run on the spot,
 	# set `ending`, and clear the save the escape's own checkpoints need.
 	if hands_over_to_the_escape(result):
 		# Day 14 is still an ordinary won day, so it still gives a normal run a nerve back — called
 		# directly because this is the one day whose win never reaches `finish_day()`.
-		run.regain_a_nerve_for_a_won_day()
+		calendar.regain_a_nerve_for_a_won_day()
 		end.hands_over_to_the_escape = true
 		return end
 	# Asked before `finish_day()`, which is what goes back: whether this loss spends a normal run's
 	# last nerve, so the summary says where she is going rather than that she tries the day again.
-	end.goes_back = result != GameEnums.DayResult.WON and run.a_loss_goes_back_to_the_checkpoint()
-	end.run_over = not run.finish_day(result)
+	end.goes_back = result != GameEnums.DayResult.WON and calendar.a_loss_goes_back_to_the_checkpoint()
+	end.run_over = not calendar.finish_day(result)
 	return end
 
 ## Whether the day that just ended is the one the escape follows: **won, the last day, and every
 ## task complete**. *"After completing all tasks"*, and what that already means in this game is
-## `GameState.earned_good_ending()` — so the escape is reached by exactly the runs the good ending was
+## `RunCalendar.earned_good_ending()` — so the escape is reached by exactly the runs the good ending was
 ## reached by. A recipe never hands over (`escape_follows`): its won day reloads the authored scene.
 func hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 	if not escape_follows:
 		return false
-	return result == GameEnums.DayResult.WON and run.is_final_day() and run.earned_good_ending()
+	return result == GameEnums.DayResult.WON and calendar.is_final_day() and calendar.earned_good_ending()
 
 ## What ended a crying or hard-fail day, or "" for a win or a timeout. Reads the world only for the
 ## result that needs it; the rules are `LossCause`'s.

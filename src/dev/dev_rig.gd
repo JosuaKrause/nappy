@@ -64,9 +64,9 @@ func update_follow_camera(city: City) -> void:
 ## `park`, `alley`, `square`, `playground`, `arterial`, `closure[:n]`, `zone[:n]`, `landmark`,
 ## `power_station`, `signal`, `edge[:s|e|w]`, `precinct`, `corner[:nw|ne|sw|se]`, `contact`,
 ## `door[:n]` and `event[:id]`; "" is the doorstep, and anything else warns and starts her there —
-## this is the one list, one branch per target. `run` is the run whose calendar day a warning names.
+## this is the one list, one branch per target. `header` is the run's, whose day a warning names.
 static func for_spawn_target(target: String, city: City, resistance: ResistanceDirector,
-		run: RunState) -> Vector2:
+		header: RunHeader) -> Vector2:
 	if target == "":
 		return city.map.doorstep_world_position()
 
@@ -85,7 +85,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	if target.begins_with("closure"):
 		var closures := city.closures()
 		if closures.is_empty():
-			push_warning("no streets are closed on day %d" % run.header.day)
+			push_warning("no streets are closed on day %d" % header.day)
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, closures.size() - 1)
 		var mouth: Vector2 = closures[which].mouth_centres(city.map)[0]
@@ -204,7 +204,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		# answers wherever it currently is, not wherever this call found it.
 		var contact := resistance.contact_position()
 		if contact == Vector2.INF:
-			push_warning("no resistance contact on day %d" % run.header.day)
+			push_warning("no resistance contact on day %d" % header.day)
 			return city.map.home_world_position()
 		# Off to one side, so the chalk mark is not hidden under the pram.
 		return contact + Vector2(70.0, 30.0)
@@ -223,7 +223,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 					huts.append(body)
 		if huts.is_empty():
 			push_warning("no region-wall checkpoint on day %d (doors start on day %d)"
-					% [run.header.day, Tuning.REGION_WALL_FIRST_DAY])
+					% [header.day, Tuning.REGION_WALL_FIRST_DAY])
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, huts.size() - 1)
 		var hut: EventScheduler.Planned = huts[which]

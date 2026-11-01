@@ -14,7 +14,7 @@ extends RefCounted
 ## main road on her way**, and the barricade it stops at stays for the rest of the run.
 ##
 ## **Deterministic from the run seed and the day**, like every other placement: its own stream
-## (`RunState.day_rng(day, "happenings")`), so nothing here moves a draw the director or the
+## (`RunState.calendar.day_rng(day, "happenings")`), so nothing here moves a draw the director or the
 ## scheduler makes.
 
 ## The day the neighbor is out in the city rather than leaving at dawn, and the day of the raid.
@@ -115,7 +115,7 @@ func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState 
 ## 12's park is taken when its swing is reached (`take_the_park()`).
 func start_day(day: int, with_its_events := true) -> void:
 	_day = day
-	_rng = _run.day_rng(day, "happenings")
+	_rng = _run.calendar.day_rng(day, "happenings")
 	morning_neighbor = null
 	raid.clear()
 	_raid_vans = PackedVector2Array()
@@ -289,7 +289,7 @@ static func market_candidates(map: CityMap, state: CityState) -> Array[Vector2i]
 func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.route_tree(),
-				_run.settled_this_act(), PackedVector2Array())
+				_run.calendar.settled_this_act(), PackedVector2Array())
 	var ahead := _siting.cells_ahead(her, _heading, INF)
 	var best := Vector2i(-1, -1)
 	var nearest := INF
@@ -491,7 +491,7 @@ func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going
 		return Vector2.INF
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.route_tree(),
-				_run.settled_this_act(), PackedVector2Array())
+				_run.calendar.settled_this_act(), PackedVector2Array())
 	var tile := _map.world_to_tile(Vector2(lane_x, wanted_y))
 	var step := Vector2i(0, 1 if going > 0.0 else -1)
 	# A block at a time once a stop is refused, three blocks at most: each refusal is a flood.

@@ -350,7 +350,7 @@ func _counted_day() -> int:
 
 func _on_day_started(day: int) -> void:
 	_day = day
-	for name in _day_began_names(day, _run.hard_mode):
+	for name in _day_began_names(day, _run.calendar.hard_mode):
 		_send_event(name)
 
 ## A fresh run's mode, from its title. **The day behind that title has already begun** — the first

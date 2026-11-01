@@ -190,7 +190,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## `consumed_one_shots` is read and appended to, so a one-shot fires once per run.
 ##
 ## `used_calm` is every calm area she has settled in so far this act, most recent first. See
-## `_spoil_the_park_she_used`, and `RunState.settled_this_act` for why it is an act rather than a
+## `_spoil_the_park_she_used`, and `RunCalendar.settled_this_act` for why it is an act rather than a
 ## night.
 ## `route` is the walk every placement below is stated against (`RouteSource`): a day's tree, whose
 ## corridor (`RouteSource.corridor()`) prices and places the catalogue's rows, or the escape's chains,
@@ -1134,7 +1134,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			# it, because planning it *is* siting it; this one has no position yet, so planning it
 			# promises nothing. It is spent where it becomes real instead —
 			# `EventStreaming.stream_in()`. What that buys is the retry: *"what the run has spent stays
-			# spent ... a fire that burnt a block down did happen"* (`RunState.finish_day`), and a
+			# spent ... a fire that burnt a block down did happen"* (`RunCalendar.finish_day`), and a
 			# fire that was never lit did not, so a lost day 3 is offered it again.
 			_note(trace, "roll", "one-shot %s: owed to her walk, sited when her heading is clear"
 					% def.id)
@@ -1276,7 +1276,7 @@ class WalkSiting extends RefCounted:
 	## spec the walk was started with; a day's rule until then.
 	var holds_the_home_streets := true
 
-	## `tree` is the day's corridor tree and `used_calm` is `RunState.settled_this_act()` — the two
+	## `tree` is the day's corridor tree and `used_calm` is `RunState.calendar.settled_this_act()` — the two
 	## arguments `build_day` states its own placements against, taken here rather than the finished
 	## `Corridor` and rect list so the caller passes what it already has and this stays the one place
 	## that turns them into the other. **The tree itself is kept as well as the corridor it makes**:

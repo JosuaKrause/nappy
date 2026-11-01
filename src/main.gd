@@ -65,7 +65,7 @@ var _escape_scene_requested := false
 ## Whether this boot reached the escape as **a run's own ending** (`RunFlow.escape_from_a_run()`)
 ## rather than through the flag changes three things: the run is already there, so no
 ## `GameState.start_run()`; the save is live, so the symbol that announces a write is built; and
-## getting out of the city settles the run (`GameState.finish_day()`) — the flag's run is a day-1
+## getting out of the city settles the run (`GameState.calendar.finish_day()`) — the flag's run is a day-1
 ## run that only jumped here, so its own way out settles nothing.
 var _flow := RunFlow.new()
 
@@ -101,7 +101,7 @@ var _interior: InteriorScene
 ## building's own placements (`BuildingPlan`).
 var _building_events: EventManager
 ## The seed the building's placements and its night are drawn from, once a boot
-## (`GameState.day_rng(day, "finale-interior")`), so every attempt is the same building.
+## (`GameState.calendar.day_rng(day, "finale-interior")`), so every attempt is the same building.
 var _building_seed := 0
 var _player: Stroller
 var _baby: Baby
@@ -300,8 +300,8 @@ func _ready() -> void:
 	if first.section == DaySpec.Section.NONE or _flow.escape_from_a_run():
 		_raise_save_indicator()
 	if _resume.get("day_under_way", false):
-		_resume_went_back = _run.a_loss_goes_back_to_the_checkpoint()
-		_run.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+		_resume_went_back = _run.calendar.a_loss_goes_back_to_the_checkpoint()
+		_run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 	# **One boot, and the first day decides its world.** A day is walked in the city, built here
 	# around her doorstep; the escape's sections build their own worlds when each begins
 	# (`_start_section()`), after the section is announced, so whatever the building or the city
@@ -636,7 +636,7 @@ func _apply_the_parent_flag() -> void:
 ## two `start_run()` calls, beside `_apply_the_parent_flag()`.
 func _apply_the_mode_flags() -> void:
 	if config.hard_mode_requested:
-		_run.choose_mode(true)
+		_run.calendar.choose_mode(true)
 	var nerves := config.nerves_override
 	if nerves > 0:
 		_run.header.nerves = nerves
@@ -817,7 +817,7 @@ func _build_the_escape_building() -> void:
 	_building_events.use_player(_player)
 	_hand_the_controls_cover_to_the_events()
 	_interior.excitement_sources = [_building_events.sources]
-	_building_seed = _run.day_rng(_run.header.day, "finale-interior").randi()
+	_building_seed = _run.calendar.day_rng(_run.header.day, "finale-interior").randi()
 	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map)
 	# The building shows what the city shows: the same badge, halo and debug view, reading its
 	# events as a day reads the city's — see `_event_source()`. The city's own build calls the same
@@ -842,8 +842,8 @@ func _build_the_finale_city() -> void:
 	_city.build(_city_map())
 	_spend.city_state.begin_day(_city.map.block_plans, _run.header.day)
 	_city.start_day(_spend.city_state, _run.header.day,
-			_run.day_rng(_run.header.day, "closures"), _flow.spec)
-	_city.set_act(_run.current_act())
+			_run.calendar.day_rng(_run.header.day, "closures"), _flow.spec)
+	_city.set_act(_run.calendar.current_act())
 	# Night, and fixed there: the escape happens after the last day and the clock is the tension
 	# rather than the light, so the sky does not run itself down over the sequence.
 	if not _flow.spec.daylight_runs_down:
@@ -900,7 +900,7 @@ func _plan_the_finale_city() -> void:
 	var elapsed := Time.get_ticks_msec()
 	# The escape spends none of the run's one-shots: a list of its own, empty.
 	var none: Array[String] = []
-	_city.events.start_day(_flow.spec, _run.day_rng(_run.header.day, "finale"), none,
+	_city.events.start_day(_flow.spec, _run.calendar.day_rng(_run.header.day, "finale"), none,
 			_finale_start_position())
 	var walk := _city.events.walk() as FinalePlanner.Plan
 	# The streets the chains run through carry the route's kerb tint, as a day's corridor does.
@@ -1191,8 +1191,8 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 	# checkbox shows only for a new game (`_open_the_title()`), and a resumed run keeps the mode
 	# its save carries.
 	if _resume.is_empty():
-		_run.choose_mode(_title.hard_mode_checked())
-		EventBus.run_mode_chosen.emit(_run.hard_mode, _run.header.day)
+		_run.calendar.choose_mode(_title.hard_mode_checked())
+		EventBus.run_mode_chosen.emit(_run.calendar.hard_mode, _run.header.day)
 	_title.close()
 	if not _resume.is_empty():
 		_show_the_resume_gate()
@@ -1212,7 +1212,7 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 func _show_the_resume_gate() -> void:
 	if _run.header.ending != GameEnums.Ending.NONE:
 		# The last nerve the load itself spent, in hard mode — same ending, same screen, as a hard
-		# run that reaches zero nerves any other way. `GameState.finish_day()` set the ending in
+		# run that reaches zero nerves any other way. `GameState.calendar.finish_day()` set the ending in
 		# `_ready()`, so nothing downstream can write a save naming this run again.
 		_flow.show_ending()
 		_summary.show_summary(SummaryModel.ending(_run, _run.header.ending), _flow.mode)
@@ -1228,7 +1228,7 @@ func _show_the_resume_gate() -> void:
 			_flow.mode)
 
 ## The day brief's one line about what opening the save cost: nothing, a nerve and the same dawn,
-## or — a normal run's last nerve — the checkpoint `GameState.finish_day()` already went back to,
+## or — a normal run's last nerve — the checkpoint `GameState.calendar.finish_day()` already went back to,
 ## whose day `GameState.header.day` now holds.
 func _resume_gate_note() -> String:
 	if not _resume.get("day_under_way", false):
@@ -1695,7 +1695,7 @@ func _start_day() -> bool:
 ## world's events, and the parts every day shares. Cheap and stateless, so built when a day starts
 ## or ends rather than kept in step with a world that is rebuilt between sections.
 func _new_director() -> DayDirector:
-	var director := DayDirector.new(_run, config)
+	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, config)
 	director.use_the_world(_city, _event_source(), _resistance, _player, _baby, _day)
 	director.first_day = _first_day
 	director.escape_follows = _flow.escape_follows()
@@ -1757,7 +1757,7 @@ func _scene_failed(errors: Array) -> void:
 ##
 ## **A resumed run whose save had a day under way writes `false` here**, before the title — and, on
 ## the way to the day brief, that screen too — is ever shown, so the nerve `_ready()` just charged
-## through `GameState.finish_day()` is on disk, with no day under way, the instant either gate
+## through `GameState.calendar.finish_day()` is on disk, with no day under way, the instant either gate
 ## appears rather than only once she presses past one. *(cozy-pelican, 2026-10-02, on what opening
 ## a saved game writes: "either it saves with one less nerve and a cleared "during active game"
 ## flag. or you defer saving to the actual day start".)* This is what the kill-at-any-instant
@@ -1809,7 +1809,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 ## What a section of the escape ending leads to, once `_on_day_finished()` has ended it as it ends
 ## any day — the section's `DaySpec` says the rest.
 ##
-## - **Lost:** the run spends what the section's rules say (`GameState.finish_day()`: nothing in a
+## - **Lost:** the run spends what the section's rules say (`GameState.calendar.finish_day()`: nothing in a
 ##   normal run, a Nerve in a hard one, whose last is the bad ending), the save is written, and the
 ##   day's outcome screen comes up with its reason and the section's own words where "Day N" stands.
 ##   Its continue is the retry, the same section from its own start behind its brief
@@ -1818,7 +1818,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 ## - **Won, into the next section** — out of the building's service exit: the city is built behind
 ##   the black the exit left, and its brief comes up over it.
 ## - **Won, out of the city** — the tunnel mouth or the bridge deck: for a run, the run itself ends
-##   here (`GameState.finish_day()` on the last day picks the ending, writes the `ending` entry and
+##   here (`GameState.calendar.finish_day()` on the last day picks the ending, writes the `ending` entry and
 ##   clears the save, which is also what keeps the save alive for every attempt before this one).
 ##   The sequence ends on a summary screen with the way out behind her and nothing triumphant on
 ##   it (`SummaryModel.epilogue()`), and its continue goes back to the title.
@@ -1835,13 +1835,13 @@ func _finish_the_section(end: DayEnd) -> void:
 		EventBus.escape_city_entered.emit()
 	else:
 		# Before `finish_day()`, whose `ending` line closes the run: the way out is part of how it
-		# ended. `EventBus.run_ended` fires a moment later, from `GameState.finish_day()` below.
+		# ended. `EventBus.run_ended` fires a moment later, from `GameState.calendar.finish_day()` below.
 		EventBus.escape_out.emit(_day.exit_reached)
 	# The flag's escape is a day-1 run that only jumped here, so getting out of it settles nothing;
 	# a lost section costs what it costs either way.
 	var run_over := false
 	if not won or _flow.escape_from_a_run():
-		run_over = not _run.finish_day(result, spec)
+		run_over = not _run.calendar.finish_day(result, spec)
 	if not won and _flow.section_lost(run_over) == RunFlow.Step.RETRY_AUTHORED:
 		# A scripted recipe fails on a lost attempt; a free one reloads every authored actor and
 		# progression field rather than taking the ordinary retry.
@@ -1916,7 +1916,7 @@ func _on_summary_continued(raised_in: int) -> void:
 ## A normal run back at its checkpoint goes on in a freshly booted scene, never on this one.
 ## *(gentle-osprey, the player: "store the exact state at the checkpoint -- continuing should not
 ## have anything that happened after the checkpoint".)* `GameState` was put back at the checkpoint's
-## dawn by `GameState.finish_day()`, but the world built on it remembers things the run's state
+## dawn by `GameState.calendar.finish_day()`, but the world built on it remembers things the run's state
 ## does not — day 11's boarded window over the neighbor's flat is drawn by her own building "for the
 ## rest of the run" — and a world rebuilt from scratch remembers nothing. So the continue on the
 ## lost-day screen reloads the scene, as the held restart and the escape's handover do, and the next

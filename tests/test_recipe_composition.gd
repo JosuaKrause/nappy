@@ -77,7 +77,7 @@ func run(t) -> void:
 	GameState.header.run_seed = 11
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
-	city.start_recipe_day(state, 1, GameState.day_rng())
+	city.start_recipe_day(state, 1, GameState.calendar.day_rng())
 	var oversized: Dictionary = recipe.duplicate(true)
 	oversized.setup = {"day": 1, "background": {"crowd": true, "crowd_scope": "city",
 			"uniform_walkers": true, "walker_multiplier": 4}}

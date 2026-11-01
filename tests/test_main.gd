@@ -1209,7 +1209,7 @@ func _test_return_window_is_off_under_the_override(t) -> void:
 ## come back to.
 ##
 ## Driven through `main._on_day_finished()` itself against a real city, day and summary, because
-## the thing that has to hold is an *omission* — that `GameState.finish_day()` is not called — and
+## the thing that has to hold is an *omission* — that `GameState.calendar.finish_day()` is not called — and
 ## an omission is only visible where the call would have been.
 func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) -> void:
 	var baseline := GameState.save_snapshot()
@@ -1250,7 +1250,7 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
 	GameState.resistance.sabotage_done = true
 	# Below the cap (`Tuning.STARTING_NERVES`, 5) so a missing or doubled
-	# `GameState.regain_a_nerve()` call in the hand-over branch (`DayDirector`'s
+	# `GameState.calendar.regain_a_nerve()` call in the hand-over branch (`DayDirector`'s
 	# `hands_over_to_the_escape()` path) would show up as a wrong count rather than being masked
 	# by the cap `GameState.start_run()` already sets `nerves` to.
 	GameState.header.nerves = 3
@@ -1266,9 +1266,9 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 			"day 14's win still gives a nerve back, and exactly once, through the direct call")
 
 	# The same hand-over in a hard run gives nothing back: reverting the branch to a bare
-	# `GameState.regain_a_nerve()` makes this the one that fails.
+	# `GameState.calendar.regain_a_nerve()` makes this the one that fails.
 	GameState.start_run(SEED)
-	GameState.choose_mode(true)
+	GameState.calendar.choose_mode(true)
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
 	GameState.resistance.sabotage_done = true
@@ -1291,7 +1291,7 @@ func _test_a_won_day_fourteen_with_every_task_hands_over_instead_of_ending(t) ->
 	t.check(GameState.facts.escape_section == DaySpec.Section.NONE,
 			"and never reaches the escape")
 	t.check(GameState.header.nerves == 4,
-			"and this path's win gains a nerve too, through the ordinary GameState.finish_day()")
+			"and this path's win gains a nerve too, through the ordinary GameState.calendar.finish_day()")
 
 	summary.free()
 	day.free()

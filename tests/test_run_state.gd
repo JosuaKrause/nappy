@@ -46,9 +46,9 @@ func run(t) -> void:
 	GameSave._clear_now()
 	GameSave.set_path_override("")
 	GameState.start_run(1)
-	GameSave.restore_run_data(GameState, baseline)
-	GameState.hard_mode = false
-	GameState.checkpoint = {}
+	GameSave.restore_run_data(GameState.run_parts, baseline)
+	GameState.calendar.hard_mode = false
+	GameState.calendar.checkpoint = {}
 
 ## Everything the file holds but the build that wrote it.
 func _without_build(file: Dictionary) -> Dictionary:
@@ -126,7 +126,7 @@ func _test_a_part_left_off_the_list_is_caught(t) -> void:
 func _test_every_part_gives_back_what_it_photographed(t) -> void:
 	SCENARIO.build()
 	GameState.run_parts.photograph()
-	var photographed := GameSave.run_data(GameState)
+	var photographed := GameSave.run_data(GameState.run_parts)
 	GameState.complete_resistance_step(9)
 	GameState.fail_resistance_step(8)
 	GameState.resistance.sabotage_done = not GameState.resistance.sabotage_done
@@ -136,11 +136,11 @@ func _test_every_part_gives_back_what_it_photographed(t) -> void:
 	GameState.posters.paste(Vector2i(40, 41), 2, false, 1)
 	GameState.posters.tears += 2
 	GameState.pelican.draws += 4
-	t.check(GameSave.run_data(GameState) != photographed, "the attempt spent something of every part")
+	t.check(GameSave.run_data(GameState.run_parts) != photographed, "the attempt spent something of every part")
 	GameState.run_parts.give_back()
-	t.check(GameSave.run_data(GameState) == photographed,
+	t.check(GameSave.run_data(GameState.run_parts) == photographed,
 			"and giving back puts every part back (%s)"
-			% _first_difference(GameSave.run_data(GameState), photographed))
+			% _first_difference(GameSave.run_data(GameState.run_parts), photographed))
 
 ## A part's variables and its data keys correspond one to one: a field added to a part and not to
 ## its `to_data()` is the mistake the old six places made easy.

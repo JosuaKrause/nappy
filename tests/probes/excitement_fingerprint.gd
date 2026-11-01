@@ -58,11 +58,11 @@ func _a_day(t, seed_value: int, day: int) -> int:
 	city.crowd_view = ScreenCrowdView.new(t)
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"),
+	city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"),
 			spec)
 	var start := city.map.doorstep_world_position()
 	var consumed: Array[String] = []
-	city.events.start_day(spec, GameState.day_rng(day), consumed, start)
+	city.events.start_day(spec, GameState.calendar.day_rng(day), consumed, start)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("excitement-fingerprint-crowd:%d:%d" % [seed_value, day])
 	city.crowd.start_day(day, rng, start)
@@ -84,11 +84,11 @@ func _the_escape_city(t, seed_value: int) -> int:
 	city.crowd_view = ScreenCrowdView.new(t)
 	city.build(CityGenerator.generate(seed_value))
 	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"),
+	city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"),
 			spec)
 	var start := FinalePlanner.service_exit_world_position(city.map)
 	var none: Array[String] = []
-	city.events.start_day(spec, GameState.day_rng(day, "finale"), none, start)
+	city.events.start_day(spec, GameState.calendar.day_rng(day, "finale"), none, start)
 	var printed := _walk(t, "escape seed %d" % seed_value, city, city.events, city.crowd, start)
 	city.events.clear()
 	city.free()
@@ -100,7 +100,7 @@ func _the_building(t, seed_value: int) -> int:
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var rng := GameState.day_rng(GameState.header.day, "finale-interior")
+	var rng := GameState.calendar.day_rng(GameState.header.day, "finale-interior")
 	var events := BuildingEvents.events_in(t, scene, rng)
 	var printed := _walk(t, "building seed %d" % seed_value, scene, events, null,
 			scene.map.start_world_position(), BUILDING_TICKS)

@@ -51,7 +51,7 @@ func _measure(t, seed_value: int, trial: int) -> void:
 		state.begin_day(map.block_plans, day)
 		city.set("spans", {})
 		started = Time.get_ticks_usec()
-		city.start_day(state, day, GameState.day_rng())
+		city.start_day(state, day, GameState.calendar.day_rng())
 		row = city.get("spans").duplicate()
 		row.merge({"seed": seed_value, "trial": trial, "stage": "day", "day": day,
 			"total_ms": (Time.get_ticks_usec() - started) / 1000.0,

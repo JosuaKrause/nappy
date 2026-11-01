@@ -41,7 +41,7 @@ signal nerves_changed(nerves: int)
 ## read `cause` from here, so the two name a lost day the same way.
 ##
 ## Emitted by `DayDirector.finish_day()` once the charges still running are closed and above the
-## calendar move `GameState.finish_day()` makes a moment later, so a lost day's retry and a won
+## calendar move `GameState.calendar.finish_day()` makes a moment later, so a lost day's retry and a won
 ## day's next dawn are both still "day N" here. Fires once per attempt, as `day_started` does: a
 ## retry begins and ends this pair again for the day it repeats — an escape section's included,
 ## under its own number.
@@ -57,7 +57,7 @@ signal run_ended(ending: GameEnums.Ending)
 ## for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal run_mode_chosen(hard: bool, day: int)
 ## A normal run spent its last nerve on `lost_day` and went back to its checkpoint, `day` — 1 for
-## checkpoint zero, otherwise 4, 8 or 12 — with every nerve. Emitted by `GameState.finish_day()`
+## checkpoint zero, otherwise 4, 8 or 12 — with every nerve. Emitted by `GameState.calendar.finish_day()`
 ## once the checkpoint is restored. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The
 ## page counts visits".
 signal went_back_to_a_checkpoint(day: int, lost_day: int)

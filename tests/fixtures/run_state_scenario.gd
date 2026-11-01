@@ -12,9 +12,9 @@ const SEED := 20261025
 ## to, `begin_day()` photographing it, and then more of everything after the dawn.
 static func build() -> void:
 	GameState.start_run(SEED)
-	GameState.choose_mode(false)
+	GameState.calendar.choose_mode(false)
 	GameState.header.day = 4
-	GameState.begin_day()
+	GameState.calendar.begin_day()
 	GameState.header.day = 6
 	GameState.header.nerves = 3
 	GameState.header.play_ticks = 9645  # 321.5 s at 30 ticks a second
@@ -29,7 +29,7 @@ static func build() -> void:
 	GameState.posters.pasted_through = 5
 	GameState.pelican.draws = 3
 	GameState.settled.settled_in[5] = Vector2i(7, 8)
-	GameState.begin_day()
+	GameState.calendar.begin_day()
 	GameState.complete_resistance_step(3)
 	GameState.fail_resistance_step(4)
 	GameState.resistance.sabotage_done = true
@@ -59,5 +59,5 @@ static func written() -> Dictionary:
 
 ## What the save file holds after the day was lost: the run given back to its dawn, a nerve spent.
 static func after_a_loss() -> Dictionary:
-	GameState.finish_day(GameEnums.DayResult.LOST_CRYING)
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
 	return JSON.parse_string(JSON.stringify(GameSave.file_data(GameState, false)))

@@ -267,7 +267,7 @@ func _test_heat_installs_the_heated_row(t) -> void:
 	city.build(CityGenerator.generate(4242))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, GameState.header.day)
-	city.start_day(state, GameState.header.day, GameState.day_rng(GameState.header.day, "closures"))
+	city.start_day(state, GameState.header.day, GameState.calendar.day_rng(GameState.header.day, "closures"))
 	var installed := {}
 	for heat: Variant in [null, Tuning.HEAT_INVESTIGATES_LEVEL]:
 		var entry := {"name": "car", "row": "police_patrol", "at": [4560, 3984]}

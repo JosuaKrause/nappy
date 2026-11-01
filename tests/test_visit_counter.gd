@@ -142,18 +142,18 @@ func _test_checkpoint_event_name(t) -> void:
 ## the title says the run is hard, so the counter sends that day's hard copy with the mode; every
 ## later day of a hard run sends it from `day_started` itself.
 func _test_a_hard_run_counts_its_days_twice_and_a_normal_run_once(t) -> void:
-	var saved := GameState.hard_mode
+	var saved := GameState.calendar.hard_mode
 	var counter := RecordingCounter.new()
-	GameState.hard_mode = false
+	GameState.calendar.hard_mode = false
 	counter._on_day_started(1)
 	counter._on_run_mode_chosen(true, 1)
-	GameState.hard_mode = true
+	GameState.calendar.hard_mode = true
 	counter._on_day_started(2)
 	t.check(counter.sent == ["nappy-day-1-began", "nappy-mode-hard", "nappy-day-1-began-hard",
 			"nappy-day-2-began", "nappy-day-2-began-hard"],
 			"a hard run's first day is counted hard once its mode is known (%s)" % [counter.sent])
 	counter.sent.clear()
-	GameState.hard_mode = false
+	GameState.calendar.hard_mode = false
 	counter._on_day_started(1)
 	counter._on_run_mode_chosen(false, 1)
 	counter._on_went_back_to_a_checkpoint(4, 7)
@@ -161,7 +161,7 @@ func _test_a_hard_run_counts_its_days_twice_and_a_normal_run_once(t) -> void:
 			"nappy-checkpoint-4-from-day-7"],
 			"a normal run's days are counted once, and its checkpoint restart named (%s)"
 					% [counter.sent])
-	GameState.hard_mode = saved
+	GameState.calendar.hard_mode = saved
 	counter.free()
 
 ## A key begins the run in the tap scheme, and is still reported as keys: the name comes from the

@@ -185,7 +185,7 @@ func wall_count() -> int:
 ## Today's walls. Pastes every dawn from `FIRST_DAY` up to `day` not yet pasted — one on an
 ## ordinary morning, all of them on a run started later under `--day`. `tree` is the day's route
 ## tree, what "the streets she uses most" is read against. Called by `City.start_day()` after the day's closures, which is after
-## `RunState.begin_day()` photographed the walls, so a retry pastes the same dawn again.
+## `RunState.calendar.begin_day()` photographed the walls, so a retry pastes the same dawn again.
 func start_day(day: int, tree: RouteTree) -> void:
 	_day = day
 	_day_running = true
@@ -231,7 +231,7 @@ func _refresh_wall(index: int) -> void:
 ## One morning's pasting, from that day's own `posters` stream, so no other roll moves. Every wall
 ## is asked in the same order every run, which is what makes the dawn reproducible from the seed.
 func _paste_the_dawn(day: int, corridor: Corridor) -> void:
-	var rng := _run.day_rng(day, "posters")
+	var rng := _run.calendar.day_rng(day, "posters")
 	var act := Tuning.act_for_day(day)
 	var first_morning := day == FIRST_DAY or Tuning.ACT_START_DAYS.has(day)
 	for i in _walls.size():

@@ -518,12 +518,12 @@ func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 	var title: TitleScreen = TITLE.instantiate()
 	title.use_run(GameState)
 	t.add_child(title)
-	var was_hard: bool = GameState.hard_mode
-	GameState.hard_mode = false
+	var was_hard: bool = GameState.calendar.hard_mode
+	GameState.calendar.hard_mode = false
 	title.open(false, false, true)
 	t.check(title.mode_name_shown() == "Normal", "a decided Normal run is named 'Normal'")
 	t.check(not title.hard_mode_shown(), "and the checkbox is not offered beside it")
-	GameState.hard_mode = true
+	GameState.calendar.hard_mode = true
 	title.open(false, false, true)
 	t.check(title.mode_name_shown() == "Hard Mode", "a decided Hard Mode run is named 'Hard Mode'")
 	title.open(false, true)
@@ -532,7 +532,7 @@ func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 	title.open(true)
 	t.check(title.mode_name_shown() == "" and not title.hard_mode_shown(),
 			"a title with no run behind it shows neither")
-	GameState.hard_mode = was_hard
+	GameState.calendar.hard_mode = was_hard
 	title.queue_free()
 
 ## **The hint has to name the thing that actually works.** *(2026-09-07, on review: "a bare tap no

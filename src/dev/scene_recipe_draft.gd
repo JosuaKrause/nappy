@@ -234,7 +234,7 @@ static func _starting_crowd(run: RunState, city: City, ground: Dictionary, start
 	for tile: Vector2i in ground:
 		box = Rect2i(tile, Vector2i.ONE) if not box.has_area() else box.expand(tile).expand(tile + Vector2i.ONE)
 	var centre := map.tile_rect_to_world(box).get_center()
-	city.crowd.start_day(day, run.day_rng(day, "crowd"), centre, true)
+	city.crowd.start_day(day, run.calendar.day_rng(day, "crowd"), centre, true)
 	var found: Array[Dictionary] = []
 	for agent in city.crowd.agents():
 		if not ground.has(map.world_to_tile(agent.position)):

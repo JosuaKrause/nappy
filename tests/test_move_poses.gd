@@ -55,9 +55,9 @@ func run(t) -> void:
 	EventBus.crowd_bumped.disconnect(bumped)
 	GameSave._clear_now()
 	GameSave.set_path_override("")
-	GameSave.restore_run_data(GameState, baseline)
-	GameState.hard_mode = bool(baseline["hard_mode"])
-	GameState.checkpoint = baseline["checkpoint"]
+	GameSave.restore_run_data(GameState.run_parts, baseline)
+	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
+	GameState.calendar.checkpoint = baseline["checkpoint"]
 
 ## A booted `Main` standing in day 12 on `seed_value`, a normal run under `--invincible`, with the
 ## mark read.

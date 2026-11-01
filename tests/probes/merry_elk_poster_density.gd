@@ -39,7 +39,7 @@ func run(t) -> void:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			state.begin_day(map.block_plans, day)
 			GameState.posters.photograph()
-			city.start_day(state, day, GameState.day_rng(day, "closures"))
+			city.start_day(state, day, GameState.calendar.day_rng(day, "closures"))
 			if day < PosterWalls.FIRST_DAY:
 				continue
 			_measure(city, map, day, rows)

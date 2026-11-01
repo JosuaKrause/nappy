@@ -460,9 +460,9 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
         "GameSave",
-        "the run's registry hands itself to the save at a checkpoint (hidden-statics moves the calendar off it)",
-        ("src/autoload/game_state.gd",),
-        more=(("src/autoload/game_state.gd", 3),),
+        "the calendar hands the save the registry at a checkpoint and clears the save when a run ends",
+        ("src/run/run_calendar.gd",),
+        more=(("src/run/run_calendar.gd", 3),),
     ),
     Exception_(
         "names",

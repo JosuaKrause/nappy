@@ -72,14 +72,14 @@ func start_day(day: int, tree: RouteTree, doors: PackedVector2Array) -> void:
 		if plan.def.on_her_way != null and not plan.is_placed():
 			if not _siting:
 				_siting = EventScheduler.WalkSiting.new(day, world.city_map, tree,
-						world.run.settled_this_act(), doors)
+						world.run.calendar.settled_this_act(), doors)
 				_siting.holds_the_home_streets = holds_the_home_streets
 				# Where a crew may paste: only the city's buildings know their blank walls.
 				if world.city and world.city.poster_walls():
 					_siting.fronts = world.city.poster_walls().fronts()
 			# The first attempt's one-time scans, done here rather than mid-walk. See `prepare()`.
 			_siting.prepare(plan.def, _streaming.everything_but(plan))
-	_director.start_day(day, _streaming.plans(), world.run.day_rng(day, "ahead"), _siting,
+	_director.start_day(day, _streaming.plans(), world.run.calendar.day_rng(day, "ahead"), _siting,
 			world.run.resistance.progress)
 
 ## Starts the director over a walk whose plan was handed in whole. It owes nothing — every such
@@ -88,7 +88,7 @@ func start_day(day: int, tree: RouteTree, doors: PackedVector2Array) -> void:
 func start_a_given_walk(day: int) -> void:
 	_siting = null
 	if _director:
-		_director.start_day(day, _streaming.plans(), world.run.day_rng(day, "finale-ahead"))
+		_director.start_day(day, _streaming.plans(), world.run.calendar.day_rng(day, "finale-ahead"))
 
 ## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns to
 ## `RETURNING`, for the day `day` at the run's heat.
@@ -301,7 +301,7 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	var siting := _siting
 	if not siting:
 		siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree,
-				world.run.settled_this_act(), _day_doors)
+				world.run.calendar.settled_this_act(), _day_doors)
 		siting.holds_the_home_streets = holds_the_home_streets
 	var plan := siting.among(def, rng, _streaming.plans(), offered)
 	if not plan:
@@ -348,7 +348,7 @@ func _task_siting() -> EventScheduler.WalkSiting:
 		return _siting
 	if not _task_siting_cache or _task_siting_tree != _day_tree:
 		_task_siting_cache = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree,
-				world.run.settled_this_act(), _day_doors)
+				world.run.calendar.settled_this_act(), _day_doors)
 		_task_siting_cache.holds_the_home_streets = holds_the_home_streets
 		_task_siting_tree = _day_tree
 	return _task_siting_cache
@@ -438,7 +438,7 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 		return []
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree if _day_tree \
-				else RouteTree.for_day(world.city_map, world.day), world.run.settled_this_act(), _day_doors)
+				else RouteTree.for_day(world.city_map, world.day), world.run.calendar.settled_this_act(), _day_doors)
 		_siting.holds_the_home_streets = holds_the_home_streets
 		if world.city and world.city.poster_walls():
 			_siting.fronts = world.city.poster_walls().fronts()
@@ -611,7 +611,7 @@ func light_what_she_never_met(at: Vector2) -> bool:
 				or plan.was_live or plan.spent:
 			continue
 		# Its own stream, so a dusk placement cannot move anything the day already rolled.
-		var rng := world.run.day_rng(world.day, "dusk-fire")
+		var rng := world.run.calendar.day_rng(world.day, "dusk-fire")
 		var sited := _siting.off_her_path(plan.def, rng, _streaming.everything_but(plan), at)
 		if not sited:
 			continue
