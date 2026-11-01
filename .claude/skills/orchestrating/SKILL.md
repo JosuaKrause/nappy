@@ -49,8 +49,9 @@ enough entries (inbox #900):*
 The measuring rows follow one comparison (inbox #900): Haiku and Sonnet ran C2b's measurements,
 pictures and conclusion on one brief. Their numbers matched exactly; Sonnet called a borderline rise
 unresolved where Haiku called it flat, and saw the change in three picture pairs where Haiku saw one,
-at about 10% more tokens. Running a task on both models again is how a row is tested further, now and
-then rather than by default, since it costs the task twice.
+at about 10% more tokens. No further side-by-side runs are made for now: the counter's statistics
+decide, and a row still ambiguous after a week of them, from 2026-11-01, may be tested by running one
+task on both models again (inbox #900).
 
 The contract is the same on either host: fresh context, a bounded scope and an isolated checkout for
 implementation. Create the worktree explicitly if the tool does not create one. Read-only review can
