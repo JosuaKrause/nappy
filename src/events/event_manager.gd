@@ -339,7 +339,7 @@ func clear() -> void:
 	end_the_charges_still_running()
 	ahead.clear()
 	for instance in world.instances:
-		instance.queue_free()
+		instance.take_out()
 	world.instances.clear()
 	streaming.clear()
 	# Yesterday's bodies go with yesterday's events, the same once-a-day sweep `clear_day_holds()`

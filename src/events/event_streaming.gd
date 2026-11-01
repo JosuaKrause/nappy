@@ -214,7 +214,7 @@ func stream_out(plan: EventScheduler.Planned) -> void:
 		world.map.release_obstruction(plan.get_instance_id())
 	world.map.release_obstruction(plan.live.get_instance_id())
 	world.instances.erase(plan.live)
-	plan.live.queue_free()
+	plan.live.take_out()
 	plan.live = null
 
 ## **Takes today's plans of the rows `ids` standing inside `rect` out of the day**, placed or live —
@@ -326,7 +326,7 @@ func retire_finished() -> void:
 			# The body is gone from the street, so the ground under it is open again. Its plan gives
 			# back its own copy in `_mark_plan_spent()`; this is the instance's.
 			world.map.release_obstruction(instance.get_instance_id())
-			instance.queue_free()
+			instance.take_out()
 		else:
 			survivors.append(instance)
 	if successors.is_empty() and survivors.size() == world.instances.size():

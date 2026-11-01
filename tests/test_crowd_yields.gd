@@ -23,6 +23,8 @@ var _rig = RIG.new()
 func run(t) -> void:
 	_test_a_row_hands_what_it_stands_as_to_its_move(t)
 	_test_a_row_hands_whether_it_has_parked_to_its_move(t)
+	_test_an_event_leaves_the_list_of_moves_where_it_goes(t)
+	_test_a_placement_is_not_a_walk(t)
 	var map := CityGenerator.generate(SEED)
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
@@ -204,6 +206,101 @@ func _test_a_row_hands_whether_it_has_parked_to_its_move(t) -> void:
 		if def.when_it_stops == EventDef.WhenItStops.UNDECLARED:
 			undeclared.append(def.id)
 	t.check(undeclared.is_empty(), "every row says whether it parks (undeclared: %s)" % [undeclared])
+
+# -------------------------------------------------- the list of moves keeps up ---
+
+## An event manager over a bare map, with `alley_robbery` planned at `at` and streamed in: the rig
+## `test_event_behaviours.gd` streams a plan with.
+func _a_manager_with_a_live_event(t, at: Vector2) -> Dictionary:
+	var world := WorldContext.new()
+	t.add_child(world)
+	var manager := EventManager.new()
+	manager.world.map = CityMap.new()
+	manager.world.map.world = world
+	t.add_child(manager)
+	var plan := EventScheduler.Planned.new(EventCatalogue.by_id("alley_robbery"), at)
+	manager.streaming._plans = [plan] as Array[EventScheduler.Planned]
+	manager.stream_around(at)
+	return {"world": world, "manager": manager, "plan": plan}
+
+func _free_the_manager(rig: Dictionary) -> void:
+	rig.manager.free()
+	rig.world.free()
+
+## **An event that goes leaves the list of moves at once** (minty-quail-34), not at the end of the
+## frame when its node leaves the tree: a finished one, one streamed out, and every one `clear()`
+## throws away. Nothing here ends a frame, as the probes' loops do not.
+func _test_an_event_leaves_the_list_of_moves_where_it_goes(t) -> void:
+	var at := Vector2(5000.0, 5000.0)
+	var rig := _a_manager_with_a_live_event(t, at)
+	var manager: EventManager = rig.manager
+	var moves: ProposedMoves = manager.world.map.moves
+	var live: EventInstance = rig.plan.live
+	t.check(live != null and moves.has(live._move), "a streamed-in event is on the list")
+	if live == null:
+		_free_the_manager(rig)
+		return
+	live._finish()
+	t.check(moves.has(live._move), "a finished event stays until the manager retires it")
+	manager.streaming.retire_finished()
+	t.check(not moves.has(live._move) and live.is_queued_for_deletion(),
+			"retired once finished, it is off the list in the same call, with no frame between")
+	_free_the_manager(rig)
+
+	rig = _a_manager_with_a_live_event(t, at)
+	manager = rig.manager
+	moves = manager.world.map.moves
+	live = rig.plan.live
+	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
+			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
+	manager.stream_around(far)
+	t.check(rig.plan.live == null and not moves.has(live._move),
+			"streamed out, it is off the list in the same call")
+	_free_the_manager(rig)
+
+	rig = _a_manager_with_a_live_event(t, at)
+	manager = rig.manager
+	moves = manager.world.map.moves
+	live = rig.plan.live
+	manager.world.instances.append(live)
+	manager.clear()
+	t.check(not moves.has(live._move) and moves.size() == 0,
+			"EventManager.clear() empties the list (%d left)" % moves.size())
+	_free_the_manager(rig)
+
+## **A resting figure stood on other ground by hand is placed, not walked there**
+## (`EventManager.move_extra()`, the task guard following her): the pass reads no velocity off a
+## step longer than `SeparationPass.PLACEMENT_STEP`, and the figure does not count as under way.
+func _test_a_placement_is_not_a_walk(t) -> void:
+	var at := Vector2(5000.0, 5000.0)
+	var rig := _a_manager_with_a_live_event(t, at)
+	var manager: EventManager = rig.manager
+	var moves: ProposedMoves = manager.world.map.moves
+	var live: EventInstance = rig.plan.live
+	var pass_over := SeparationPass.new(moves)
+	live._move.radius = EventInstance.FIGURE_RADIUS
+	pass_over.gather()
+	manager.move_extra(live, at + Vector2(400.0, 0.0))
+	pass_over.gather()
+	t.check(pass_over.walker_keepers().is_empty() and not pass_over.has_keepers_for_cars(),
+			"a 400px placement is no walk: no walker and no car gives way to the person put there")
+	var walker := _a_figure_move_for_the_walk(moves, at)
+	pass_over.gather()
+	walker.place(at + Vector2(PLACEMENT_WALK, 0.0))
+	pass_over.gather()
+	for keeper in pass_over.walker_keepers():
+		if keeper.move == walker:
+			t.check(keeper.step == Vector2(PLACEMENT_WALK, 0.0) and keeper.ticks_still == 0,
+					"a step under the placement limit is still a walk")
+	_free_the_manager(rig)
+
+const PLACEMENT_WALK := 8.0
+
+func _a_figure_move_for_the_walk(moves: ProposedMoves, at: Vector2) -> MoveProposal:
+	var move := MoveProposal.new()
+	move.radius = EventInstance.FIGURE_RADIUS
+	moves.join(move, at)
+	return move
 
 # ------------------------------------------------------ a walker meets one ---
 

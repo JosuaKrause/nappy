@@ -182,6 +182,8 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	if with_events:
 		figures = meeting.report()
 		city.events.use_player(null)
+		# The next run on this city starts with none of this run's events on the map's list.
+		city.events.clear()
 	return figures.merged({"seed": city_seed, "day": day, "walk": walk, "frames_per_tick": per_tick,
 		"steps_on_the_tick": steps_its_agents, "agents": crowd.agent_count(),
 		"window_seconds": WINDOW * STEP,

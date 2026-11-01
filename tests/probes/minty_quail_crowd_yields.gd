@@ -20,10 +20,17 @@ extends RefCounted
 ## - **day 13's column** sent down the main road toward her at the doorstep, `TICKS * 2` ticks.
 ##
 ## **An event figure** is a move on the map's list (`WorldMap.moves`) that does not give way
-## (`MoveProposal.yields` false), has a body (`radius` above zero) and has moved since the probe
-## first saw it; a walker overlaps one when their centres are nearer than the two radii less half a
-## pixel, a crowd car when the figure's circle reaches into the car's capsule (`GroundShape`'s
-## spine and radius along its heading). Counted per run: overlap entries (a pair coming into
+## (`MoveProposal.yields` false) and has a body (`radius` above zero), by the rules the crowd gives
+## way by (`SeparationPass`): **for a walker**, one under way (moved in the last
+## `SeparationPass.UNDER_WAY_TICKS` ticks) or standing with `stood_round`; **for a car**, one that
+## has moved since the probe first saw it, as long as it stands. A step longer than
+## `SeparationPass.PLACEMENT_STEP` is a placement and not a move. Every event the probe makes is
+## taken out through the game's own paths (`EventInstance.take_out()`), so no finished event stays
+## on the list as a figure. A walker overlaps one when their centres are nearer than the two radii
+## less half a pixel, a crowd car when the figure's circle reaches into the car's capsule (`GroundShape`'s
+## spine and radius along its heading). `most_figures` is the most figures at once (those a walker
+## or a car gives way to, together); `walker_overlap_*` count walkers inside the figures a walker
+## gives way to, `car_overlap_*` cars inside the figures a car gives way to. Counted per run: overlap entries (a pair coming into
 ## overlap) and overlap ticks, apart for walkers and cars; the seconds crowd cars stand (speed under
 ## 1px/s) with a figure ahead in their lane within `AHEAD`px, and the longest such stand; the
 ## longest a car stood still inside a junction box and how many such stands passed `STALL` seconds;
@@ -270,7 +277,8 @@ class Meeting extends RefCounted:
 	var _probe
 	var _city: City
 	var _label: Dictionary
-	var _first_pose := {}
+	## Every figure seen, by move: its last pose and how many ticks in a row it has stood still.
+	var _seen := {}
 	var _overlapping := {}
 	var _walker_entries := 0
 	var _walker_ticks := 0
@@ -330,13 +338,30 @@ class Meeting extends RefCounted:
 			line += "|o:%s,%s,%d" % [var_to_str(officer.at.x), var_to_str(officer.at.y),
 					officer.phase]
 		_chain.update(line.to_utf8_buffer())
-		var figures: Array[MoveProposal] = []
-		for move in _city.map.moves.all():
-			if move.yields or move.radius <= 0.0:
+		# The two lists of figures `SeparationPass` keeps (`SeparationPass.gather()`), by the same
+		# rules: walkers give way to one under way or standing round, cars to one that has moved.
+		var for_walkers: Array[MoveProposal] = []
+		var for_cars: Array[MoveProposal] = []
+		for move in _city.map.moves.keeping_their_course():
+			if move.radius <= 0.0:
 				continue
-			if not _first_pose.has(move):
-				_first_pose[move] = move.to
-			if _first_pose[move] != move.to:
+			var seen: Array = _seen.get(move, [move.to, SeparationPass.NEVER_MOVED])
+			var still: int = seen[1]
+			var step: float = move.to.distance_to(seen[0])
+			if step > SeparationPass.PLACEMENT_STEP:
+				step = 0.0
+			if step > 0.0:
+				still = 0
+			elif still < SeparationPass.NEVER_MOVED:
+				still += 1
+			_seen[move] = [move.to, still]
+			if still <= SeparationPass.UNDER_WAY_TICKS or move.stood_round:
+				for_walkers.append(move)
+			if still != SeparationPass.NEVER_MOVED:
+				for_cars.append(move)
+		var figures := for_walkers.duplicate()
+		for move in for_cars:
+			if not figures.has(move):
 				figures.append(move)
 		_most_figures = maxi(_most_figures, figures.size())
 		var now := {}
@@ -347,7 +372,7 @@ class Meeting extends RefCounted:
 			var side := Vector2(-forward.y, forward.x)
 			var standing := is_car and agent.speed() < 1.0
 			var for_a_figure := false
-			for figure in figures:
+			for figure in (for_cars if is_car else for_walkers):
 				var offset := figure.to - here
 				if offset.length() > 200.0:
 					continue

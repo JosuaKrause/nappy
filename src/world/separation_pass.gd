@@ -42,6 +42,12 @@ const NEVER_MOVED := 1 << 30
 ## not walked into for that moment, while one that has stopped (a dog crouched, a man standing for
 ## his notice) soon reads as standing.
 const UNDER_WAY_TICKS := 10
+## **How far a keeper may go between two gatherings and still have walked there**: 32px a tick. The
+## fastest figure there is, the cat at 240px/s, covers 8px of the 30Hz tick, so a longer step is a
+## placement, a resting figure stood on other ground by hand (`EventManager.move_extra()`, the task
+## guard following her): it did not walk, so it is not under way and has no velocity for a walker
+## to give way to or a car to project ahead.
+const PLACEMENT_STEP := 32.0
 ## A margin for the rectangle test in `walker_is_near()` that covers the reach of every keeper's
 ## body: the column's trucks are the widest, 26px round their centres.
 const _WIDEST_REACH := 64.0
@@ -71,8 +77,8 @@ func gather() -> void:
 	_for_walkers.clear()
 	_for_cars.clear()
 	var still_here := {}
-	for move in _moves.all():
-		if move.yields or move.radius <= 0.0:
+	for move in _moves.keeping_their_course():
+		if move.radius <= 0.0:
 			continue
 		var keeper: Keeper = _seen.get(move)
 		if keeper == null:
@@ -250,6 +256,8 @@ class Keeper extends RefCounted:
 		stood_round = move.stood_round
 		step = move.from - at
 		at = move.from
+		if step.length() > PLACEMENT_STEP:
+			step = Vector2.ZERO
 		if step != Vector2.ZERO:
 			ticks_still = 0
 		elif ticks_still < NEVER_MOVED:

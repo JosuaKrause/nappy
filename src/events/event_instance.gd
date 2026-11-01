@@ -1895,6 +1895,15 @@ func _enter_tree() -> void:
 	if look:
 		look.enter_tree()
 
+## **Takes it out of the world now**: its move leaves the map's list at once and the node is freed
+## at the end of the frame. Every place that frees an event goes through here, because the node
+## leaves the tree only at the frame's end and a move left on the list until then is a figure
+## standing where the event last was (a mover leaves the list on going, minty-quail-34).
+func take_out() -> void:
+	if _map:
+		_map.moves.leave(_move)
+	queue_free()
+
 func _exit_tree() -> void:
 	if _map:
 		_map.moves.leave(_move)
