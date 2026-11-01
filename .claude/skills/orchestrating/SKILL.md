@@ -110,6 +110,22 @@ before the refactor, which names itself as the exception in its entry, and **it 
 refactor**: the refactor replaces the code the fix touched, and the PR that closes the refactor entry
 removes the exception from this section, so it never outlives that PR (minty-lemur #799).
 
+**Every pull request that changes code answers the architecture questions** in
+**pr-review**'s `references/architecture-questions.md`, so the layering does not drift once the
+refactor is done (plush-egret #892): its layer, its dependencies, what it is handed and what it
+fetches, what it reuses, where a fix lands, how a test builds it, and the docs that say where it
+lives. A brief asks for them; the builder answers them in its report and under the description's
+`## Architecture questions`; CI checks they are there and the reviewer that they are true.
+**Which folder and file is in which layer is `tools/layer_map.py`**, which `tools/check_layers.py`
+holds the code to in CI; the list of breaks standing there only shrinks. *Proposed by its builder,
+open to overturn:* the composition root (`main.gd` and the developer's rigs) above everything, and
+each thing's own drawing on the layer of the thing it draws. *Two departures from minty-quail's
+filed layering, decided by the player* (inbox #904): the view (the HUD, the screens, the badges, the controls) and the observers are **siblings at one level**,
+neither above the other and neither naming the other, where minty-quail's README puts the UI inside
+the observers; and the map lookup (`WorldMap` and its records) stays **with the city maps in the
+domain model**, a correction to minty-quail's item 3, which puts one map interface in the world. A
+record the map holds is placed on the map's layer as it appears.
+
 ## The task description is the contract
 
 A vague prompt returns work that cannot be merged.
@@ -131,7 +147,9 @@ Then a blank line, then the brief. **The shared half of a brief is a file, not a
 PR kind and its fallback, the scope fence over the queue and the archive, verify's gate, headless
 first, `--no-save` and the dev flags, the visual-attempts rule, disk, forks, no merge and the
 report. A brief carries its task, its task-specific read-first items, the layer its work belongs to
-(proposed in "Code is designed by layer"), **the GitHub role the agent
+(proposed in "Code is designed by layer"), for a pull request that changes code the ask for the
+architecture questions' answers (**pr-review**'s `references/architecture-questions.md`) in the
+report and the description, **the GitHub role the agent
 acts as**, its fence, whether the evidence is a still or a burst, whether the capture may be
 invincible, whether this is a local-full-run case, and a paragraph on the other live agents and the
 files they own (written by hand from the briefs' fences; they are prose, so nothing generates it).
@@ -229,7 +247,8 @@ role named has nothing to check `status` against:
   record under `docs/decisions/` or a doc's stated rule rules out, the agent builds nothing that overturns
   it and reports the clash, quoting both.
 - **What the final report must contain**: per item, what was built and how it was verified; every
-  choice made where the design was silent; every fork left open. The report is the merge review's
+  choice made where the design was silent; every fork left open; and, for a pull request that
+  changes code, the answers to the architecture questions. The report is the merge review's
   input — an outcome it does not mention is an outcome that did not happen.
 - **Do not merge, do not delete the branch.** After the report, the orchestrator commits the
   queue's move on the PR branch — the finished items' files deleted, the entry's folder too when
