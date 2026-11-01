@@ -157,12 +157,15 @@ if [[ -n "$shard_arg" ]]; then
 fi
 
 # The atlas pages, before the import pass that has to see them; no work when they are current.
-"$PROJECT_DIR/tools/bake-atlases.sh" || exit 1
+# `--plan` runs nothing, so it needs neither the bake nor the import.
+if [[ $plan_only -eq 0 ]]; then
+    "$PROJECT_DIR/tools/bake-atlases.sh" || exit 1
 
-# The import pass, once and before anything runs in parallel. Several Godot processes importing
-# the same project at the same time race on `.godot/`, and the failure looks like a missing
-# `class_name` rather than like a race.
-"$GODOT" --headless --import --path "$PROJECT_DIR" >/dev/null 2>&1
+    # The import pass, once and before anything runs in parallel. Several Godot processes importing
+    # the same project at the same time race on `.godot/`, and the failure looks like a missing
+    # `class_name` rather than like a race.
+    "$GODOT" --headless --import --path "$PROJECT_DIR" >/dev/null 2>&1
+fi
 
 ## Runs one Godot test process and classifies it the way tools/check.sh already classifies a
 ## boot: Godot can print an engine `ERROR:`, a `push_error()` or a completed `SCRIPT ERROR` /

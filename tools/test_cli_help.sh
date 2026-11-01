@@ -789,7 +789,7 @@ tsl_plan="$(GODOT=/usr/bin/true TEST_SUITE_COSTS="$tsl_costs" TEST_SHARDS=2 ./to
 check_that "test.sh --plan prints a limit of 2.5x the planned time plus 120 s for the heavy shard" \
     '[[ "$tsl_plan" == *"shard 0  ~400s  limit 1120s"* || "$tsl_plan" == *"shard 1  ~400s  limit 1120s"* ]]'
 check_that "test.sh --plan gives the light shard a lower limit" \
-    '[[ "$tsl_plan" == *"limit  1"* || "$tsl_plan" == *"limit  2"* || "$tsl_plan" == *"limit  3"* ]]'
+    '[[ "$tsl_plan" == *"~  0s  limit  120s"* ]]'
 check_that "TEST_SHARD_TIMEOUT_S replaces every shard's limit in --plan" \
     '[[ "$(GODOT=/usr/bin/true TEST_SUITE_COSTS="$tsl_costs" TEST_SHARDS=2 TEST_SHARD_TIMEOUT_S=77 ./tools/test.sh --plan 2>&1)" == *"limit   77s"*"limit   77s"* ]]'
 
