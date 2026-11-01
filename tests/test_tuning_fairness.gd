@@ -81,15 +81,15 @@ func _test_the_side_streets_green_clears_the_carriageway(t) -> void:
 ## ends — the rows this owes have to be able to land inside the return leg they were sized against, not
 ## merely inside "the day" the ordinary pacing still covers.
 func _test_the_return_patrols_keep_their_shape(t) -> void:
-	t.check(Tuning.RETURN_PATROLS_PER_ACT.size() == 4,
-			"RETURN_PATROLS_PER_ACT has %d entries, not one per act" % Tuning.RETURN_PATROLS_PER_ACT.size())
-	for count in Tuning.RETURN_PATROLS_PER_ACT:
+	t.check(EventDirector.RETURN_PATROLS_PER_ACT.size() == 4,
+			"RETURN_PATROLS_PER_ACT has %d entries, not one per act" % EventDirector.RETURN_PATROLS_PER_ACT.size())
+	for count in EventDirector.RETURN_PATROLS_PER_ACT:
 		t.check(count >= 0,
-				"RETURN_PATROLS_PER_ACT carries a negative count: %s" % [Tuning.RETURN_PATROLS_PER_ACT])
-	t.check(Tuning.RETURN_PATROL_INTERVAL.x <= Tuning.RETURN_PATROL_INTERVAL.y,
-			"RETURN_PATROL_INTERVAL is not ordered: %s" % Tuning.RETURN_PATROL_INTERVAL)
-	t.check(Tuning.RETURN_PATROL_INTERVAL.x < Tuning.AHEAD_INTERVAL.x
-			and Tuning.RETURN_PATROL_INTERVAL.y < Tuning.AHEAD_INTERVAL.y,
+				"RETURN_PATROLS_PER_ACT carries a negative count: %s" % [EventDirector.RETURN_PATROLS_PER_ACT])
+	t.check(EventDirector.RETURN_PATROL_INTERVAL.x <= EventDirector.RETURN_PATROL_INTERVAL.y,
+			"RETURN_PATROL_INTERVAL is not ordered: %s" % EventDirector.RETURN_PATROL_INTERVAL)
+	t.check(EventDirector.RETURN_PATROL_INTERVAL.x < EventDirector.AHEAD_INTERVAL.x
+			and EventDirector.RETURN_PATROL_INTERVAL.y < EventDirector.AHEAD_INTERVAL.y,
 			("RETURN_PATROL_INTERVAL %s is not shorter than AHEAD_INTERVAL %s: the return "
-			% [Tuning.RETURN_PATROL_INTERVAL, Tuning.AHEAD_INTERVAL])
+			% [EventDirector.RETURN_PATROL_INTERVAL, EventDirector.AHEAD_INTERVAL])
 			+ "would owe patrols no faster than an ordinary walk already gets")

@@ -6,6 +6,45 @@ extends Resource
 ## are reviewable in a diff, they can be validated on load, and the fairness contract can be
 ## asserted over the whole catalogue in a test. Nothing here needs an editor to tune.
 
+## The progress at which a `HUNTS` row stops being a place and starts being a hunter. Its own
+## number rather than the patrol's `HEAT_INVESTIGATES_LEVEL`, deliberately: sharing one would put
+## both rungs of the ladder in the same moment, where neither reads as its own step. *(Player,
+## 2026-09-02, on when the van should start hunting: "after the patrol but still early enough to
+## happen more than just once".)* `Tuning.RESISTANCE_GOAL - 1` keeps the old ratio's own meaning — one
+## task's worth of progress left before the goal — rather than the fraction that produced it.
+const HEAT_HUNTS_LEVEL := Tuning.RESISTANCE_GOAL - 1
+## How close she has to come before it takes an interest, in px. Has to sit strictly between
+## `PursuitSpec.standoff(Tuning.HEAT_HUNTS_SPEED, 54)` (132px, against the van's own inner radius) and its
+## 250px field — under the stand-off the whole notice is spent standing still, over the field it
+## decides about her before she can feel it. 180 leaves room on both sides.
+const HEAT_HUNTS_WITHIN := 180.0
+## The progress at which a pressing row stops merely running its route and starts investigating —
+## stopping near her and letting a pursuer on foot out (`EventDef.investigates()`, read off its `HuntSpec`). As close to half
+## way through `Tuning.RESISTANCE_GOAL` as a whole task lets it land (`roundi(5 / 2.0)`), so the first half
+## of the subquest is the city being *denser* and the second is it being *interested* — two
+## escalations rather than one continuous number nobody can name the moment of.
+const HEAT_INVESTIGATES_LEVEL := 3
+## How close she has to come, along a clear line, before an investigating car stops and its
+## policeman gets out, in px — "close" in the player's "it should stop if close to her" (merry-stork).
+## **Inside the patrol's own 185px outer radius**, so it decides about her only once she can feel it,
+## and wider than the man's stand-off (116px), so he usually gets out with room to hold his ground
+## and the notice he owes her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER` covers him when she is
+## nearer).
+const HEAT_INVESTIGATE_WITHIN := 150.0
+## What the intensity of a pressing row is multiplied by at full heat: the patrol's 10/s at the
+## centre becomes 13.5/s. Deliberately the smaller of the two multipliers — an intensity rise is the
+## one the player feels without seeing anything change, so it is the seasoning rather than the meal.
+const HEAT_PRESSES_INTENSITY := 1.35
+## What the population of a pressing row is multiplied by at full heat. `police_patrol` is capped at
+## twelve a day cold, so nineteen hot — on an 11x11 lattice that is a patrol on one block in six
+## rather than one in ten.
+##
+## **Population is the axis that changes a route rather than a meter.** The row's own design is that
+## it is not dangerous and the danger is that you start planning around it; more of them is more
+## ground being planned around, and it costs nothing in fairness because each individual patrol is
+## exactly the event it was.
+const HEAT_PRESSES_POPULATION := 1.6
+
 ## How the instance is drawn. Data rather than a script per event, since most events differ
 ## only in their numbers.
 ##
@@ -591,7 +630,7 @@ func departure_speed() -> float:
 ## a `notice` it notices her within — along a clear line, as every notice is
 ## (`EventInvestigation`):
 ##
-## - **`police_patrol`'s heated copy past `Tuning.HEAT_INVESTIGATES_LEVEL`**, a car that drives: it
+## - **`police_patrol`'s heated copy past `HEAT_INVESTIGATES_LEVEL`**, a car that drives: it
 ##   drives its route until it notices her, and stops on its route at once — **never inside a
 ##   junction box**: noticed with its body in one, it drives on until the body is clear of it and
 ##   stops there, since nothing stands in a box it cannot leave (sunny-finch). It lets one man out;
@@ -965,7 +1004,7 @@ func standoff_reach() -> float:
 	return lethal_reach()
 
 ## Whether its lunge is measured from inside its own catch, which would leave her less than
-## `Tuning.PURSUIT_REACTION` of the pursuer's approach between its lunge and the moment it takes
+## `PursuitSpec.PURSUIT_REACTION` of the pursuer's approach between its lunge and the moment it takes
 ## her: the contract `PursuitSpec.standoff()` keeps. `validate()` refuses it; a predicate so
 ## a test can ask without raising the error.
 func lunge_is_inside_the_catch() -> bool:
@@ -1002,7 +1041,7 @@ enum Role {
 	## corridor nor weights it onto one: it lands on whatever tile the roll picks, the way an
 	## ambient event or a scar does. `pigeon_flock` is the row it exists for — *"flocks are basically
 	## free already — don't count it as block, just count is scenery"* — because a 42-over-168px
-	## field crosses `Tuning.WALL_WORTH_OF_COST` and would otherwise be pulled off every route like
+	## field crosses `EventScheduler.WALL_WORTH_OF_COST` and would otherwise be pulled off every route like
 	## any other expensive row.
 	SCENERY,
 	## **The loudspeaker mast**, which the masts' sites (`MastSites`), the day's masts and the
@@ -1071,8 +1110,8 @@ func at_heat(level: int) -> EventDef:
 	# parts would quietly go back to one body spanning its whole shape.
 	hot.shape = shape
 	hot.solid_parts = solid_parts
-	var hunts_from := Tuning.HEAT_HUNTS_LEVEL
-	var notices_within := Tuning.HEAT_HUNTS_WITHIN
+	var hunts_from := HEAT_HUNTS_LEVEL
+	var notices_within := HEAT_HUNTS_WITHIN
 	if heat_response == HeatResponse.PRESSES:
 		# More of them, and more expensive to be near. Population is the axis that changes the
 		# *route* — this row's whole design is that you start planning around it — and intensity
@@ -1081,10 +1120,10 @@ func at_heat(level: int) -> EventDef:
 		# that rung answers a different question — not *how much does it cost to be near*, but *can
 		# I still be near it at all*.
 		hot.max_per_day = maxi(max_per_day,
-				roundi(max_per_day * lerpf(1.0, Tuning.HEAT_PRESSES_POPULATION, through)))
-		hot.intensity = intensity * lerpf(1.0, Tuning.HEAT_PRESSES_INTENSITY, through)
-		hunts_from = Tuning.HEAT_INVESTIGATES_LEVEL
-		notices_within = Tuning.HEAT_INVESTIGATE_WITHIN
+				roundi(max_per_day * lerpf(1.0, HEAT_PRESSES_POPULATION, through)))
+		hot.intensity = intensity * lerpf(1.0, HEAT_PRESSES_INTENSITY, through)
+		hunts_from = HEAT_INVESTIGATES_LEVEL
+		notices_within = HEAT_INVESTIGATE_WITHIN
 	if hunts == null or level < hunts_from:
 		return hot
 	# **At its rung's threshold the copy takes the row's hunt** (`hunts`, `HuntSpec`) and notices her

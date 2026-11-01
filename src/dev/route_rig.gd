@@ -1534,7 +1534,7 @@ func _follow(delta: float) -> void:
 	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
 
 ## Whether a door is holding her (`Stroller.is_detained()` — a `checkpoint_hut` or `checkpoint_post`
-## she walked into, which talks to her for `Tuning.CHECKPOINT_DETAIN_SECONDS` and then sets her down
+## she walked into, which talks to her for `EventCatalogue.CHECKPOINT_DETAIN_SECONDS` and then sets her down
 ## on its far side), and the re-plan from wherever it set her down once it lets go. **A hold is not
 ## a stall**: she stands still because the door is doing what a door does, so the stall ladder is
 ## held at its first rung for as long as it lasts rather than spending the leg's episodes on it.

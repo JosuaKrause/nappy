@@ -106,7 +106,7 @@ func _test_coming_back_after_the_gap_is_a_second_encounter(t) -> void:
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
 	var instances: Array[EventInstance] = [yeller]
 	_run(watch, instances, Vector2.ZERO, 1.0)
-	_run(watch, instances, AWAY, Tuning.ENCOUNTER_GAP + 1.0)
+	_run(watch, instances, AWAY, EncounterWatch.ENCOUNTER_GAP + 1.0)
 	_run(watch, instances, Vector2.ZERO, 1.0)
 	t.check(_seen.size() == 2, "off screen for longer than the gap and back is a second seen (%d)"
 			% _seen.size())
@@ -118,7 +118,7 @@ func _test_coming_back_inside_the_gap_is_the_same_encounter(t) -> void:
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
 	var instances: Array[EventInstance] = [yeller]
 	_run(watch, instances, Vector2.ZERO, 1.0)
-	_run(watch, instances, AWAY, Tuning.ENCOUNTER_GAP - 1.0)
+	_run(watch, instances, AWAY, EncounterWatch.ENCOUNTER_GAP - 1.0)
 	_run(watch, instances, Vector2.ZERO, 1.0)
 	t.check(_seen.size() == 1, "off screen for less than the gap and back sends nothing more (%d)"
 			% _seen.size())
@@ -210,7 +210,7 @@ func _test_a_thing_under_the_joystick_controls_is_not_seen(t) -> void:
 	var watch := _watch()
 	_run(watch, instances, centre, 2.0, false, true)
 	t.check(_seen.is_empty(), "with the joystick scheme it is not seen")
-	_run(watch, instances, AWAY, Tuning.ENCOUNTER_GAP + 1.0)
+	_run(watch, instances, AWAY, EncounterWatch.ENCOUNTER_GAP + 1.0)
 	_run(watch, instances, centre, 1.0, false, false)
 	t.check(_seen.size() == 1, "with the tap scheme it is (%d)" % _seen.size())
 	yeller.free()
@@ -220,7 +220,7 @@ func _test_a_tenth_of_the_meter_is_one_influence_per_encounter(t) -> void:
 	var watch := _watch()
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
 	var instances: Array[EventInstance] = [yeller]
-	var share := Tuning.ENCOUNTER_INFLUENCE_POINTS
+	var share := EncounterWatch.ENCOUNTER_INFLUENCE_POINTS
 	_run(watch, instances, Vector2.ZERO, 1.0)
 	yeller.excitement.accumulate_landed(share * 0.6)
 	_run(watch, instances, Vector2.ZERO, 0.5)
@@ -232,7 +232,7 @@ func _test_a_tenth_of_the_meter_is_one_influence_per_encounter(t) -> void:
 	yeller.excitement.accumulate_landed(share * 3.0)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_influenced.size() == 1, "and landing more in the same encounter sends nothing more")
-	_run(watch, instances, AWAY, Tuning.ENCOUNTER_GAP + 1.0)
+	_run(watch, instances, AWAY, EncounterWatch.ENCOUNTER_GAP + 1.0)
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	yeller.excitement.accumulate_landed(share * 0.6)
 	_run(watch, instances, Vector2.ZERO, 0.5)
@@ -252,25 +252,25 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t) -> void:
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
 	var instances: Array[EventInstance] = [yeller]
 	_run(watch, instances, AWAY, 0.5)
-	yeller.excitement.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	yeller.excitement.accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, instances, AWAY, 1.0)
 	t.check(_influenced.is_empty(), "an influence from off screen is not sent at once")
 	_run(watch, instances, Vector2.ZERO, 0.5)
 	t.check(_seen.size() == 1 and _influenced == ["%d:homeless_yeller:seen" % DAY],
 			"seen in the same encounter, it goes out as an ordinary influence (%s, %s)"
 			% [_seen, _influenced])
-	_run(watch, instances, AWAY, Tuning.ENCOUNTER_GAP + 1.0)
+	_run(watch, instances, AWAY, EncounterWatch.ENCOUNTER_GAP + 1.0)
 
 	_clear()
-	yeller.excitement.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	yeller.excitement.accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, instances, AWAY, 1.0)
 	t.check(_influenced.is_empty(), "nothing while the encounter might still be seen")
-	_run(watch, instances, AWAY, Tuning.ENCOUNTER_GAP)
+	_run(watch, instances, AWAY, EncounterWatch.ENCOUNTER_GAP)
 	t.check(_seen.is_empty() and _influenced == ["%d:homeless_yeller:unseen" % DAY],
 			"over without being seen, it goes out as an unseen influence (%s)" % [_influenced])
 
 	_clear()
-	yeller.excitement.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	yeller.excitement.accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, instances, AWAY, 0.5)
 	yeller.free()
 	_run(watch, [] as Array[EventInstance], AWAY, 0.1)
@@ -279,7 +279,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t) -> void:
 
 	_clear()
 	var other := _instance(t, "homeless_yeller", Vector2.ZERO)
-	other.excitement.accumulate_landed(Tuning.ENCOUNTER_INFLUENCE_POINTS * 1.2)
+	other.excitement.accumulate_landed(EncounterWatch.ENCOUNTER_INFLUENCE_POINTS * 1.2)
 	_run(watch, [other] as Array[EventInstance], AWAY, 0.5)
 	watch.end_day()
 	watch.day = DAY + 1
@@ -297,7 +297,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 	var watch := _watch()
 	var dog := _chasing_dog(t, EventCatalogue.by_id("charging_dog"))
 	_run(watch, [dog] as Array[EventInstance], Vector2.ZERO, 0.5)
-	t.check(dog.is_chasing() and dog.excitement.landed_ever < Tuning.ENCOUNTER_INFLUENCE_POINTS,
+	t.check(dog.is_chasing() and dog.excitement.landed_ever < EncounterWatch.ENCOUNTER_INFLUENCE_POINTS,
 			"the dog is chasing her and has landed less than the threshold (%.1f)" % dog.excitement.landed_ever)
 	t.check(_influenced == ["%d:charging_dog:seen" % DAY],
 			"the chase is an influence all the same (%s)" % [_influenced])
@@ -511,10 +511,10 @@ func _test_runs_less_than_the_gap_apart_are_one_bout(t) -> void:
 	t.check(_ran.is_empty(), "walking is no bout")
 	_run(watch, none, AWAY, 2.0, true)
 	t.check(_ran == [DAY], "the day's first run is a bout, sent as it begins (%s)" % [_ran])
-	_run(watch, none, AWAY, Tuning.RUN_BOUT_GAP - 1.0)
+	_run(watch, none, AWAY, EncounterWatch.RUN_BOUT_GAP - 1.0)
 	_run(watch, none, AWAY, 1.0, true)
 	t.check(_ran.size() == 1, "running again less than the gap after stopping is the same bout")
-	_run(watch, none, AWAY, Tuning.RUN_BOUT_GAP + 0.5)
+	_run(watch, none, AWAY, EncounterWatch.RUN_BOUT_GAP + 0.5)
 	_run(watch, none, AWAY, 1.0, true)
 	t.check(_ran.size() == 2, "and the gap or more after stopping is a new one (%d)" % _ran.size())
 	watch.end_day()

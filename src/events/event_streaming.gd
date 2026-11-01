@@ -252,7 +252,7 @@ func mast_foot(mast_id: String) -> Vector2:
 ## arcs and no field, so this sets `Planned.silenced` and its live instance's own mirror rather
 ## than finishing it: `EventInstance._finish()` is for something that leaves, and a mast never
 ## does. Returns whether a mast with that id was found. Matches every plan whose `mast_id` is this
-## one — a mast's ordinary broadcast and, on `Tuning.CURFEW_ANNOUNCE_DAY`, its curfew announcement
+## one — a mast's ordinary broadcast and, on `EventScheduler.CURFEW_ANNOUNCE_DAY`, its curfew announcement
 ## too, so silencing a mast mid-announcement silences both at once.
 ##
 ## **Run-long, it is a scar.** Day 11's task silences one mast for the rest of the run: the

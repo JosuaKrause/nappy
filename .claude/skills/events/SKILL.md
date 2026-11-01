@@ -39,7 +39,7 @@ dawn; `EventDef.validate()` refuses any other combination.
 
 **The role is not a decision.** `EventScheduler._role_for` reads it off the def: scenery, ambient
 and director-sited rows get none; a one-shot is a **set piece** (sited where every route touches
-it); `hard_fail`, a `walk_through_cost()` at or over `Tuning.WALL_WORTH_OF_COST` (48 points), or a
+it); `hard_fail`, a `walk_through_cost()` at or over `EventScheduler.WALL_WORTH_OF_COST` (48 points), or a
 reach that leaves no line past it along a sidewalk makes a **wall** (zero copies on any cell a
 route runs along); anything else is **friction** (weighted onto the corridor). A `paces` row's role
 depends on where its beat runs, so `_a_pacing_beat_walls_a_sidewalk` decides it in the candidate
@@ -188,7 +188,7 @@ its own (`EventCarDriving.check()`): a step or turn that would bring the body in
 taken back, with whatever the step decided on that pose (the end of its route reached there), so the
 car stands for her until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its
 lethality is **a strike area ahead of its nose, only while it drives its route, only with her on
-the carriageway**, reaching `Tuning.PATROL_STRIKE_LEAD` past the touch so a car driving its nose
+the carriageway**, reaching `EventCarDriving.PATROL_STRIKE_LEAD` past the touch so a car driving its nose
 into her strikes rather than stands. It gives way where the crowd's cars do — short of a zebra she
 is waiting at off the main road, and at a red light — so the zebra stays the safe way over. Seven
 traps:
@@ -227,7 +227,7 @@ traps:
   straight route away from junctions cannot see this; `tests/test_pursuer_on_foot.gd` drives real
   routes on three seeds.
 
-**A body is a route cost, not a closure.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
+**A body is a route cost, not a closure.** `EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
 `obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can
 walk around does not close a park; one you have to route around does. **If a rule tests
 `obstructs_radius > 0`, ask whether it means *has a body* or *closes ground*.**
@@ -312,7 +312,7 @@ it was written from. The traps:
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
   (inbox #764 in minty-lemur, inbox #788 in minty-lemur). His warning comes before he exists — from the frame she crosses a
   door's line, the hut's guard across the road (or the post's) raises his hand for
-  `Tuning.CROSSING_WARNING`; back across first, it is called off — and once it has run with her
+  `CheckpointController.CROSSING_WARNING`; back across first, it is called off — and once it has run with her
   still across he charges from that hut or post, inside his own stand-off
   (`PursuitSpec.Start.CHARGES_AT_ONCE`: no notice of his own, telegraph 0). So his charge is not met at the
   stand-off: the answer is the warning — go back, or go on running — which

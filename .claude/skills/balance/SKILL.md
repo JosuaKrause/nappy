@@ -105,7 +105,7 @@ rather than a number nobody checked.
 **Raising the walking decay does not lower every row's cost by the same amount.** The decay is
 netted off over the *time* the crossing takes, so a wide, moderate row loses far more of its price
 than a narrow, intense one — `protest` is the case — which is how a wide field ends up friction
-rather than a wall. `Tuning.WALL_WORTH_OF_COST` is stated in points of the meter, so it is
+rather than a wall. `EventScheduler.WALL_WORTH_OF_COST` is stated in points of the meter, so it is
 re-derived from the cost table whenever a rate moves rather than left alone.
 
 Two consequences of the falloff shape that are easy to get wrong:

@@ -1911,7 +1911,7 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 	var map := CityGenerator.generate(SEEDS[0])
 	var an_act_iv_day := 13
 	t.check(Tuning.act_for_day(an_act_iv_day) >= 3
-			and Tuning.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(an_act_iv_day) - 1] > 0,
+			and EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(an_act_iv_day) - 1] > 0,
 			"day %d is a day that owes its return something" % an_act_iv_day)
 	var bare := EventDirector.new(map)
 	bare.owe_the_return(an_act_iv_day, 0)

@@ -517,7 +517,7 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 					"day %d: '%s' route follows a single corridor" % [day, plan.def.id])
 
 ## How far the share of the fill's walls a day keeps from the gatehouse day on may sit from
-## `Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE`, over the days the test below plans: a couple of hundred
+## `EventScheduler.GATEHOUSE_DAY_WALL_ROW_SHARE`, over the days the test below plans: a couple of hundred
 ## rolls, so a share honoured by the roll lands well
 ## inside it (about five standard deviations) and one not honoured at all, every wall kept or none,
 ## lands far outside it.
@@ -591,6 +591,6 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
 				% [day, removed.size(), back])
 	t.check(walls > 0, "the days from the gatehouse day had walls to thin (%d)" % walls)
 	var share := float(kept) / maxf(1.0, float(walls))
-	t.check(absf(share - Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE) <= _WALL_SHARE_TOLERANCE,
+	t.check(absf(share - EventScheduler.GATEHOUSE_DAY_WALL_ROW_SHARE) <= _WALL_SHARE_TOLERANCE,
 			"from the gatehouse day the fill keeps %.2f of its walls (%d of %d); the share asked "
-			% [share, kept, walls] + "for is %.2f" % Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE)
+			% [share, kept, walls] + "for is %.2f" % EventScheduler.GATEHOUSE_DAY_WALL_ROW_SHARE)

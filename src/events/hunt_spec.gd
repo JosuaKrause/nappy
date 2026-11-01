@@ -11,8 +11,8 @@ extends Resource
 ##   this `PursuitSpec` at the ladder's own speed and notice.
 ##
 ## Its numbers are the row's; when it starts and how far off it notices her are the rung's
-## (`Tuning.HEAT_INVESTIGATES_LEVEL` and `Tuning.HEAT_INVESTIGATE_WITHIN` for `PRESSES`,
-## `Tuning.HEAT_HUNTS_LEVEL` and `Tuning.HEAT_HUNTS_WITHIN` for `HUNTS`).
+## (`EventDef.HEAT_INVESTIGATES_LEVEL` and `EventDef.HEAT_INVESTIGATE_WITHIN` for `PRESSES`,
+## `EventDef.HEAT_HUNTS_LEVEL` and `EventDef.HEAT_HUNTS_WITHIN` for `HUNTS`).
 
 ## How many men the vehicle lets out once it stops for her, or 0 for a hunt that pursues.
 ## *(Inbox #669 in coral-lark: "Van stops, men get out" — men, so more than one; two for a van is

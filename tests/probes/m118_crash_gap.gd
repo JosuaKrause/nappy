@@ -1,6 +1,6 @@
 extends RefCounted
 ## What walking past a car crash costs, measured rather than derived — the number
-## `Tuning.CAR_ACCIDENT_INTENSITY` is set from.
+## `EventCatalogue.CAR_ACCIDENT_INTENSITY` is set from.
 ##
 ## The crash is solid only where its two cars are, so its picture's own gaps are ground she can
 ## walk. This walks every one of those gaps at `Tuning.WALK_SPEED`, straight across the sealed
@@ -51,7 +51,7 @@ func run(t) -> void:
 			instance.free()
 	print("CHEAPEST pass %.1f, dearest %.1f, of a %d meter (half is %.0f); intensity %.1f"
 			% [worst_pass, best_pass, int(Tuning.METER_MAX), Tuning.METER_MAX / 2.0,
-			Tuning.CAR_ACCIDENT_INTENSITY])
+			EventCatalogue.CAR_ACCIDENT_INTENSITY])
 	# The two figures `docs/EVENTS.md`'s cost table carries for this row, computed the way every
 	# other row in it is: the field integrated along a straight line through the centre, at each
 	# pace, less that pace's own decay. The crash is the one row where running is the cheaper of

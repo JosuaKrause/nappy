@@ -392,7 +392,7 @@ func _turn_at(degrees: float) -> CarTurn:
 	return turn
 
 ## **A redraw gate is a promise about everything the drawing reads.** `_draw()` is retained and
-## moving a `Node2D` does not invalidate its draw list, so `CrowdAgent._end_the_frame()` is
+## moving a `Node2D` does not invalidate its draw list, so `CrowdAgent.end_the_frame()` is
 ## what decides when a car's picture is rebuilt — and a car's picture is not only its sector and its
 ## mirror: `CarLook.body_anchor()` registers it off the **live** heading and `CrowdAgent.draw_shadow()`
 ## sweeps the capsule along the same one. Keyed on the quantised half alone, a car that has come

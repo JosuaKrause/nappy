@@ -4,7 +4,7 @@ The player: "the warnings should be shorter and the radii slightly larger", "I'm
 *every* charger in the game", and "yes 180px is way too small and 2s is too long -- *in general*"
 (curly-moose #803).
 
-**Build:** `Tuning.CHARGER_WARNING` (2.0s, read by every waiting charger) goes down and every
+**Build:** `EventCatalogue.CHARGER_WARNING` (2.0s, read by every waiting charger) goes down and every
 charger's notice radius goes up, under **balance**, the new numbers shown to the player before they
 ship.
 

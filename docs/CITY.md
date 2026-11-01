@@ -1354,7 +1354,7 @@ should only be the crashed cars but it should emanate an excitement field that p
 from walking past it".)* That row is a `SealPlanner` scene rather than a `RoadClosure` — see
 "Sealing the tree" — and it is now solid only where its two cars are, so the debris and the
 pavements either side of them are ground she can walk. What closes them is
-`Tuning.CAR_ACCIDENT_INTENSITY`, a field over the scene's own band that costs more than half the
+`EventCatalogue.CAR_ACCIDENT_INTENSITY`, a field over the scene's own band that costs more than half the
 meter to squeeze past. **It is still not a third thing to sum**: a seal is a catalogue row, so it
 emits the way every event does and `WorldContext.total_excitement_at` is unchanged. What has changed is
 that a seal may be loud, and only this one is — the fallen tree (one trunk kerb to kerb) and the

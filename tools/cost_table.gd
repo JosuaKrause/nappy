@@ -323,7 +323,7 @@ func _header_text() -> String:
 	lines.append("- `Tuning.EXCITEMENT_DECAY_WALKING` = %.1f points/s" % Tuning.EXCITEMENT_DECAY_WALKING)
 	lines.append("- `Tuning.SLEEPING_SENSITIVITY` = %.2f" % Tuning.SLEEPING_SENSITIVITY)
 	lines.append("- `Tuning.WALK_SPEED` = %.1f px/s" % Tuning.WALK_SPEED)
-	lines.append("- `Tuning.WALL_WORTH_OF_COST` = %.1f points" % Tuning.WALL_WORTH_OF_COST)
+	lines.append("- `EventScheduler.WALL_WORTH_OF_COST` = %.1f points" % EventScheduler.WALL_WORTH_OF_COST)
 	lines.append("")
 	lines.append("**`" + TITLE_GEOMETRY + "`** is what a row's own data says, unconditionally: " +
 			"`role` is `EventScheduler._role_for()` at day 0 (a row's cold shape, before any " +

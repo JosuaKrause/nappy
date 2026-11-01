@@ -4,7 +4,7 @@ service exit, and the same run continues into the city and ends at the tunnel or
 
 **What is in there now.** Rubble shuts the top floor east of her door, so the first descent is
 down the left shaft, where a fire closes one flight; the right shaft is the masked man's, and a
-new one starts up it `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` (6s) after the last leaves its top,
+new one starts up it `EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS` (6s) after the last leaves its top,
 standing through his whole warning every time. The basement is entered down a one-tile
 front-facing stair and holds a mouse and three steam vents, each where the corridor is one tile
 wide, blowing for `FINALE_STEAM_BLOWS_FOR` (2s) out of periods of 4, 4.5 and 5.5 seconds. The

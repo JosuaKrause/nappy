@@ -8,6 +8,31 @@ extends Resource
 ## roadblock, `EventDef.hunts`) carries the spec its hunting copy takes, and `EventDef.at_heat()`
 ## gives that copy its speed and its notice.
 
+## How long she is allowed to take to answer the lunge, at the speed the gap is actually closing.
+##
+## **A notice stated as a duration is not a notice**, because it says nothing about where the
+## pursuer spends it. Buying telegraph time alone gives a dog sited a couple of hundred pixels
+## across her line that closes the gap in three quarters of a second and then stands inside its own
+## lethal radius for the rest of a telegraph it is not allowed to kill her during. The instant it
+## ends, it does — from a standing start, with nothing she could have done after the first second.
+##
+## So the telegraph is spent **closing to a stand-off and holding there**, which is
+## `PursuitSpec.standoff()`, and this is the number that sets it: far enough out that the lunge
+## itself can be answered rather than merely watched.
+##
+## **This number is the one thing about the day-3 dog a player has said is right** — *"it was enough
+## time to react properly"* — so it is the wrong lever to reach for. The arithmetic that says the
+## real window is two tenths of a second once her walking speed and the about-turn are counted is
+## correct and answers a different complaint: *the dog kept following for too long* is the
+## **break-off**. See `Tuning.PURSUIT_SHAKEN_OFF`.
+##
+## What boxes it in, in both directions: **walking must still lose** and **running must still win**
+## inside `Tuning.PURSUIT_TIME`, both at 38px/s of authority against the day-3 dog, and the stand-off has to
+## be **on screen** — the visible world is 640x360 at zoom 2, so a dog standing much past 180px in
+## front of her telegraphs off the top of the screen when she walks north or south, and the sight of
+## it is the whole cue.
+const PURSUIT_REACTION := 0.6
+
 ## How a pursuer's chase begins.
 enum Start {
 	## **It notices her first.** One that waits for her (`EventDef.notice`) warns inside its one
@@ -19,7 +44,7 @@ enum Start {
 	## lunges early and never backs off, and it charges when its notice has run its whole length.
 	SETS_OFF_BESIDE_HER,
 	## **It charges from its first frame, because its warning came before it was set on her** — the
-	## checkpoint guard, whose warning is the hut guard's raised hand for `Tuning.CROSSING_WARNING`
+	## checkpoint guard, whose warning is the hut guard's raised hand for `CheckpointController.CROSSING_WARNING`
 	## after she crossed the door's line. It owes no notice of its own (inbox #788 in minty-lemur).
 	CHARGES_AT_ONCE,
 	## **It is warned of by its badge alone and created already chasing her** — the robber and the
@@ -87,7 +112,7 @@ static func at(chase_speed: float) -> PursuitSpec:
 ##
 ## Derived rather than authored, because it is the fairness contract in geometric form: between the
 ## moment it is allowed to end her day and the moment it can, she is owed
-## `Tuning.PURSUIT_REACTION` seconds of the thing's own approach. Anything nearer and the telegraph is a formality; anything much
+## `PURSUIT_REACTION` seconds of the thing's own approach. Anything nearer and the telegraph is a formality; anything much
 ## further and it is off the screen, which is worse — the sight of it closing is the whole cue.
 ##
 ## **The edge case it does not price, and it is a known gap.** At the instant of the lunge she is
@@ -104,4 +129,4 @@ static func at(chase_speed: float) -> PursuitSpec:
 ## the one part of the encounter a player has said was already right. What the answer costs is
 ## priced by `Tuning.PURSUIT_SHAKEN_OFF` instead.
 static func standoff(pursue_speed: float, inner: float) -> float:
-	return inner + pursue_speed * Tuning.PURSUIT_REACTION
+	return inner + pursue_speed * PURSUIT_REACTION

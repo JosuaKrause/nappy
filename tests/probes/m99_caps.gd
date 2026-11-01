@@ -7,7 +7,7 @@ extends RefCounted
 ##     tools/test.sh probes/m99_caps.gd
 ##
 ## Both rows carry `EventDef.max_per_day` (`cyclist` 14, `loose_dog` 24) but arrive through
-## `EventDirector`'s single FIFO queue at `Tuning.AHEAD_INTERVAL` (11-26s) pacing rather than
+## `EventDirector`'s single FIFO queue at `EventDirector.AHEAD_INTERVAL` (11-26s) pacing rather than
 ## being map-placed, sharing that queue with every other `AHEAD_OF_PLAYER`/`TOWARD_PLAYER` row a
 ## day budgets — `cat_dash`, `charging_dog`, and each other. `cyclist`'s own catalogue comment
 ## already states the claim this measures: *"how many of fourteen she could ever actually meet is
