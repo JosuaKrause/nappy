@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -25,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ci_classify
 import ci_code_pr_queue
 import ci_no_handoff
+import ci_pr_questions
 import ci_queue_update
 import ci_telemetry_kinds
 import ci_transcription
@@ -684,6 +686,138 @@ class FencedDescriptionTests(unittest.TestCase):
         description = FENCED + "Filed from #15\nNo queue item: a CI repair\n"
         self.assertEqual(ci_transcription.filed_numbers(description), ([15], []))
         self.assertEqual(ci_code_pr_queue.escape_reason(description), "a CI repair")
+
+
+class PrQuestionsTests(unittest.TestCase):
+    ASKED = ci_pr_questions.questions(ci_pr_questions.QUESTIONS_FILE.read_text(encoding="utf-8"))
+    CODE = modified("src/city/city.gd")
+
+    def run_check(self, description: str, changes: list[Change] | None = None) -> tuple[list[str], str]:
+        pull = ci_pr_questions.PullRequest(description=description, opened=None)
+        return ci_pr_questions.check(changes if changes is not None else [self.CODE], pull, self.ASKED, None)
+
+    def numbered(self, form: str = "{n}. the answer to {n}", count: int | None = None) -> str:
+        return "\n".join(form.format(n=number) for number in range(1, (count or len(self.ASKED)) + 1))
+
+    def answered(self, heading: str = "## Architecture questions", count: int | None = None) -> str:
+        return f"Summary.\n\n{heading}\n\n{self.numbered(count=count)}\n\n## Verification\n\nran it\n"
+
+    def test_the_questions_are_read_from_the_one_file_that_words_them(self) -> None:
+        self.assertGreaterEqual(len(self.ASKED), 7)
+        self.assertTrue(self.ASKED[0].startswith("Which layer does each new or changed piece belong to"))
+        # A question wrapped over two lines in the file is one question.
+        self.assertTrue(any(question.endswith("is named and justified.") for question in self.ASKED))
+
+    def test_out_of_order_or_missing_questions_are_an_error(self) -> None:
+        with self.assertRaises(lib_ci.CiError):
+            ci_pr_questions.questions("## The questions\n\n1. one\n3. three\n")
+        with self.assertRaises(lib_ci.CiError):
+            ci_pr_questions.questions("## Something else\n\n1. one\n")
+
+    def test_a_pr_outside_src_tests_and_tools_answers_nothing(self) -> None:
+        failures, passed = self.run_check("", [modified("docs/CITY.md"), modified(".github/workflows/ci.yml")])
+        self.assertEqual(failures, [])
+        self.assertIn("nothing under src/, tests/ or tools/", passed)
+
+    def test_tools_and_tests_are_in_scope_as_well_as_src(self) -> None:
+        for path in ("tools/lint.sh", "tests/test_x.gd", "src/main.gd"):
+            with self.subTest(path=path):
+                self.assertNotEqual(self.run_check("", [modified(path)])[0], [])
+
+    def test_every_question_answered_passes_at_any_heading_level(self) -> None:
+        for heading in ("## Architecture questions", "### Architecture questions", "# architecture questions ##"):
+            with self.subTest(heading=heading):
+                self.assertEqual(self.run_check(self.answered(heading=heading))[0], [])
+
+    def test_the_numbering_forms_an_answer_may_take(self) -> None:
+        for form in ("{n}. yes", "{n}) yes", "**{n}.** yes", "- {n}. yes", "Q{n}: yes", "**Q{n}** yes"):
+            with self.subTest(form=form):
+                self.assertEqual(self.run_check("## Architecture questions\n" + self.numbered(form))[0], [])
+
+    def test_no_heading_fails_naming_the_heading_and_the_one_line_form(self) -> None:
+        failures, _ = self.run_check("1. a\n2. b\n")
+        self.assertEqual(len(failures), 1)
+        self.assertIn("## Architecture questions", failures[0])
+        self.assertIn("No new piece or dependency:", failures[0])
+        self.assertIn("src/city/city.gd", failures[0])
+
+    def test_a_missing_answer_fails_naming_its_question(self) -> None:
+        failures, _ = self.run_check(self.answered(count=len(self.ASKED) - 1))
+        self.assertEqual(len(failures), 1)
+        self.assertIn(f"question {len(self.ASKED)} has no answer", failures[0])
+        self.assertIn(self.ASKED[-1], failures[0])
+
+    def test_answers_under_a_later_heading_are_not_under_this_one(self) -> None:
+        later = "\n".join(f"{number}. ran" for number in range(2, len(self.ASKED) + 1))
+        failures, _ = self.run_check(f"## Architecture questions\n\n1. yes\n\n## Verification\n\n{later}\n")
+        self.assertEqual(len(failures), len(self.ASKED) - 1)
+
+    def test_a_deeper_heading_stays_inside_the_section(self) -> None:
+        body = f"## Architecture questions\n\n### For the new piece\n\n{self.numbered()}\n"
+        self.assertEqual(self.run_check(body)[0], [])
+
+    def test_a_question_restated_but_not_answered_fails(self) -> None:
+        lines = "\n".join(f"{number}. **{question}**" for number, question in enumerate(self.ASKED, start=1))
+        failures, _ = self.run_check("## Architecture questions\n" + lines)
+        self.assertEqual(len(failures), len(self.ASKED))
+        self.assertIn("restated but not answered", failures[0])
+
+    def test_a_question_restated_then_answered_on_the_next_line_passes(self) -> None:
+        lines = "\n".join(f"{number}. *{question}*\n   It is." for number, question in enumerate(self.ASKED, start=1))
+        self.assertEqual(self.run_check("## Architecture questions\n" + lines)[0], [])
+
+    def test_a_placeholder_answer_fails(self) -> None:
+        failures, _ = self.run_check("## Architecture questions\n" + self.numbered("{n}. <answer>"))
+        self.assertEqual(len(failures), len(self.ASKED))
+
+    def test_the_one_line_form_passes_and_carries_its_reason(self) -> None:
+        failures, passed = self.run_check(
+            "## Architecture questions\n\n- No new piece or dependency: a bound fixed inside CarStrategy\n"
+        )
+        self.assertEqual(failures, [])
+        self.assertIn("a bound fixed inside CarStrategy", passed)
+
+    def test_the_one_line_form_with_a_placeholder_or_outside_the_section_does_not_count(self) -> None:
+        for description in (
+            "## Architecture questions\n\nNo new piece or dependency: <what the change is>\n",
+            "No new piece or dependency: a fix\n\n## Architecture questions\n",
+            "## Architecture questions\n\n```\nNo new piece or dependency: a fix\n```\n",
+        ):
+            with self.subTest(description=description):
+                self.assertNotEqual(self.run_check(description)[0], [])
+
+    def test_answers_inside_a_code_fence_do_not_count(self) -> None:
+        body = f"## Architecture questions\n\n```\n{self.numbered()}\n```\n"
+        self.assertEqual(len(self.run_check(body)[0]), len(self.ASKED))
+
+    def test_a_pull_request_opened_before_the_check_arrived_is_exempt(self) -> None:
+        moment = datetime.fromisoformat
+        arrived = moment("2026-11-01T12:00:00+00:00")
+        before = ci_pr_questions.PullRequest("", moment("2026-10-31T12:00:00Z"))
+        after = ci_pr_questions.PullRequest("", moment("2026-11-02T12:00:00Z"))
+        failures, passed = ci_pr_questions.check([self.CODE], before, self.ASKED, arrived)
+        self.assertEqual(failures, [])
+        self.assertIn("opened before", passed)
+        self.assertNotEqual(ci_pr_questions.check([self.CODE], after, self.ASKED, arrived)[0], [])
+        # Not on the base yet: the pull request that brings the check answers it too.
+        self.assertNotEqual(ci_pr_questions.check([self.CODE], before, self.ASKED, None)[0], [])
+
+    def test_arrival_is_the_first_parent_commit_on_the_base_that_added_the_check(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            git(repo, "init", "-q", "-b", "main")
+            (repo / "a.md").write_text("a\n")
+            git(repo, "add", ".")
+            git(repo, "commit", "-q", "-m", "base")
+            self.assertIsNone(ci_pr_questions.arrival("main", cwd=repo))
+            (repo / "tools").mkdir()
+            (repo / ci_pr_questions.SELF).write_text("x\n")
+            git(repo, "add", ".")
+            git(repo, "commit", "-q", "-m", "the check")
+            (repo / ci_pr_questions.SELF).write_text("y\n")
+            git(repo, "commit", "-q", "-am", "the check changed")
+            added_at = git(repo, "log", "-1", "--format=%cI", "HEAD~1").strip()
+            self.assertEqual(ci_pr_questions.arrival("main", cwd=repo), datetime.fromisoformat(added_at))
 
 
 if __name__ == "__main__":

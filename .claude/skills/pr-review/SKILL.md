@@ -88,6 +88,11 @@ touches (the path table in `CLAUDE.md`). Look for:
   player's); and, from that section's proposal (plush-kestrel), a fix keyed on one row's id or
   picture instead of landing in the shared mechanism, raised as a proposal-backed finding, not as
   the player's rule;
+- an answer to the architecture questions (`references/architecture-questions.md`, under the
+  description's `## Architecture questions`) that does not match the change: the reviewer checks
+  each answer against the diff, and an answer the diff contradicts, or that leaves out a piece or a
+  dependency the diff adds, is a finding (plush-egret #892). CI sees only that the answers are
+  there;
 - a doc the change made false and left as it was;
 - anything the description claims that the diff does not do.
 

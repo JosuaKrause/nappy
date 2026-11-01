@@ -240,6 +240,18 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: uv run python tools/ci_code_pr_queue.py --base "origin/${GITHUB_BASE_REF}"
 
+      # pr-review's architecture questions, made a check of presence: a pull request touching src/,
+      # tests/ or tools/ answers each question under `## Architecture questions`, or says
+      # `No new piece or dependency: <what>` there. Its scope is wider than touches_code (tools/ is
+      # in it), so it runs on every pull request and decides for itself; the reviewer still checks
+      # that the answers are true.
+      - name: A pull request that changes code answers the architecture questions
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: uv run python tools/ci_pr_questions.py --base "origin/${GITHUB_BASE_REF}"
+
   # The one check of the repository's consistency that needs the engine, so it runs on every run
   # with a Godot of its own, beside `gates` rather than after it. cost-table.sh bakes the atlases
   # and runs the import pass itself, the same preamble tools/test.sh runs on a fresh shard.

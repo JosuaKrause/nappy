@@ -18,6 +18,12 @@ Code follows **orchestrating**'s "Code is designed by layer": the five principle
 dependency injection, and a mode as configuration. Report any place the work had to depend the wrong
 way, as a fork; and, as that section proposes (plush-kestrel), which layer the work belongs to.
 
+**A pull request that changes code answers the architecture questions**
+(`../../pr-review/references/architecture-questions.md`): in the report and in the PR description
+under `## Architecture questions`, one numbered answer per question, or the one line that file gives
+for a change that adds no piece and no dependency. CI fails a description without them
+(`tools/ci_pr_questions.py`); run it on a draft with `--description-file` before opening the PR.
+
 ## Git
 
 You work in the worktree the brief names, already on your branch from `origin/main` with no
@@ -137,5 +143,6 @@ nothing that overturns it, report the clash quoting both.
 ## Final report
 
 Also the PR description: per item, what was built and how it was verified; every choice made
-where the design was silent; every fork left open; the PR URL. An outcome it does not mention is
+where the design was silent; every fork left open; the answers to the architecture questions, for a
+PR that changes code; the PR URL. An outcome it does not mention is
 an outcome that did not happen.
