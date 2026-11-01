@@ -5,7 +5,7 @@
   placement asks `SpawnSiting`'s named rules (minty-quail-29, minty-quail-30).
 - **Movers do not see each other:** event figures pass through walkers and cars and back.
 
-**Build:** a shared separation pass over every mover. **Who gives way** (inbox #884): asked whether, when
+**Build:** a shared separation pass over every mover. **Who gives way** (inbox #884 in plaid-raven): asked whether, when
 event figures and the crowd meet, the crowd yields, everyone separates, or only cars stop, the player:
 "(a) the crowd yields. a charging dog doesn't care but a pedestrian doesn't want to get overrun. same
 applies to other events." **Read as:** walkers step aside or are pushed and cars stand for an event
