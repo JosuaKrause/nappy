@@ -1,10 +1,10 @@
 extends RefCounted
 ## **The crowd gives way to the movers that keep their course** (inbox #884 in plaid-raven): a
 ## walker steps aside or is pushed, and a crowd car stands, while the event figure keeps its course.
-## What a walker does about a figure standing still depends on what it is (inbox #905): it walks
+## What a walker does about a figure standing still depends on what it is (inbox #905 in freckled-moose): it walks
 ## round an object or a vehicle and may walk through a person or an animal. A crowd car stands for a
 ## figure in its lane, moving or standing, never drives through one and never stands in a junction
-## box for one, and turns round behind one that has parked (inbox #909).
+## box for one, and turns round behind one that has parked (inbox #909 in freckled-moose).
 ##
 ## The rig is `test_crowd_bodies.gd`'s: a real generated city with no day planned on it, agents
 ## placed by hand on a straight stretch of street this seed's city has, and the crowd stepped as it
@@ -177,8 +177,8 @@ func _test_a_row_hands_what_it_stands_as_to_its_move(t) -> void:
 			undeclared.append(def.id)
 	t.check(undeclared.is_empty(), "every row says what it stands as (undeclared: %s)" % [undeclared])
 
-## **Each row's `when_it_stops` reaches its move as whether it has parked** (`EventInstance`, inbox
-## #909): a stall, which never moves, has parked from the start; the fire engine has not while it
+## **Each row's `when_it_stops` reaches its move as whether it has parked** (`EventInstance`, inbox #909 in freckled-moose):
+## a stall, which never moves, has parked from the start; the fire engine has not while it
 ## drives and has once it stops at its fire, and not once it leaves; the patrol car and the charging
 ## dog go on, so never. And every row of the catalogue declares it, which `EventDef.validate()` also
 ## refuses to load without.
@@ -304,7 +304,7 @@ func _a_figure_move_for_the_walk(moves: ProposedMoves, at: Vector2) -> MovePropo
 
 # ------------------------------------------------------ a walker meets one ---
 
-## **A walker walks round an object or a vehicle standing in its way** (inbox #905): placed on its
+## **A walker walks round an object or a vehicle standing in its way** (inbox #905 in freckled-moose): placed on its
 ## lane and never moved, like a parked van, its body is never entered, and the walker gets past it.
 func _test_a_walker_steps_round_a_standing_object(t, city: City, map: CityMap) -> void:
 	var got := _walk_at_a_standing_figure(city, map, true, false)
@@ -316,7 +316,7 @@ func _test_a_walker_steps_round_a_standing_object(t, city: City, map: CityMap) -
 			% [got["closest"], got["touching"]])
 	t.check(got["past"], "and it gets past the object rather than stopping at it")
 
-## **A walker may walk through a person or an animal standing still** (inbox #905): one that walked
+## **A walker may walk through a person or an animal standing still** (inbox #905 in freckled-moose): one that walked
 ## into place and has stood there since, like a dog crouched before its charge, is not stood round,
 ## and the walker keeps to its lane through it.
 func _test_a_walker_may_pass_through_a_standing_person(t, city: City, map: CityMap) -> void:
@@ -331,7 +331,7 @@ func _test_a_walker_may_pass_through_a_standing_person(t, city: City, map: CityM
 # --------------------------------------------------------- a crowd car meets one ---
 
 ## **A car stands behind a vehicle stopped in its lane for as long as it stands, and goes on when it
-## goes** (inbox #909): the patrol car at a red light or while its man is out is waited for, well past
+## goes** (inbox #909 in freckled-moose): the patrol car at a red light or while its man is out is waited for, well past
 ## a moment's pause, and the car never turns round for it.
 func _test_a_car_stands_behind_a_stopped_figure_and_goes_on_when_it_goes(t, city: City,
 		map: CityMap) -> void:
@@ -351,7 +351,7 @@ func _test_a_car_stands_behind_a_stopped_figure_and_goes_on_when_it_goes(t, city
 	t.check(got["deepest"] > (got["at"] as Vector2).y,
 			"and drives on past where it stood once it goes")
 
-## **A car behind a parked vehicle in its lane turns round** (inbox #909), as it does at a blocked
+## **A car behind a parked vehicle in its lane turns round** (inbox #909 in freckled-moose), as it does at a blocked
 ## street, rather than standing behind it for the rest of the day.
 func _test_a_car_turns_round_behind_a_parked_figure(t, city: City, map: CityMap) -> void:
 	var block := _a_block_before_a_box(map)
@@ -364,7 +364,7 @@ func _test_a_car_turns_round_behind_a_parked_figure(t, city: City, map: CityMap)
 	t.check(got["overlapping"] == 0, "without ever driving into it (%d frames it did)"
 			% got["overlapping"])
 
-## **A car never drives through a figure standing in its lane** (inbox #909): one that steps into
+## **A car never drives through a figure standing in its lane** (inbox #909 in freckled-moose): one that steps into
 ## the lane closer than the car can brake for and stands is held off by the car's step, every frame
 ## it stands, however long that is. The figure stands two tiles ahead of a car at full speed, inside
 ## its braking distance from the moment it appears, so the brake alone leaves the car in it and only
@@ -383,7 +383,7 @@ func _test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t, city
 			"a car never drives through a vehicle that stops right in front of it (%d frames it did)"
 			% got["overlapping"])
 
-## **A car never stands in a junction box for a figure standing past it** (inbox #909, the box rule
+## **A car never stands in a junction box for a figure standing past it** (inbox #909 in freckled-moose, the box rule
 ## of the **crowd-traffic** skill): it holds at the stop line, since a car standing in the box would
 ## hold the crossing street too.
 func _test_a_car_holds_at_the_line_for_a_figure_standing_past_the_box(t, city: City,

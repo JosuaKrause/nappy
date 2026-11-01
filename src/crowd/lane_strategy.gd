@@ -198,7 +198,7 @@ func road_before_a_figure(_reach := Tuning.CAR_ZEBRA_SIGHT) -> float:
 	return INF
 
 ## Whether a parked event figure ahead blocks its way the way a closed tile does, for a kind that
-## turns round at one (`CarStrategy.blocked_by_a_figure()`, inbox #909).
+## turns round at one (`CarStrategy.blocked_by_a_figure()`, inbox #909 in freckled-moose).
 func blocked_by_a_figure() -> bool:
 	return false
 

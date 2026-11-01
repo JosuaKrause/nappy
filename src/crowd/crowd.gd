@@ -997,7 +997,7 @@ func _can_clear_the_box(agent: CrowdAgent, distance: float) -> bool:
 	var far_side := distance + box
 	# **An event figure in its lane beyond the box is a car in front that does not move for it**: it
 	# keeps its course and the car stands for it (inbox #884 in plaid-raven), moving or standing
-	# (inbox #909), so a car that would have to stand in the box holds at the line instead, and no
+	# (inbox #909 in freckled-moose), so a car that would have to stand in the box holds at the line instead, and no
 	# leader's speed is credited. Looked for as far as the box's far side and a gap past it, which is
 	# further than a car's brake looks.
 	var needed := far_side + Tuning.CAR_GAP_MIN

@@ -467,7 +467,7 @@ func step(delta: float) -> void:
 		_recycle()
 		_end_the_frame(delta)
 		return
-	# A closed tile within reach, or for a car a parked figure in its lane (inbox #909): the same
+	# A closed tile within reach, or for a car a parked figure in its lane (inbox #909 in freckled-moose): the same
 	# turn round either way.
 	if _blocked_in <= _acts_within or strategy.blocked_by_a_figure():
 		strategy.divert(delta)

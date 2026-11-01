@@ -166,6 +166,8 @@ different files passes both gates and lands broken. Watch `main`'s own CI run af
 than assuming the last green PR spoke for it; `tools/land-prs.sh` names that run when it finishes,
 and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge commit gets one.
 
+**PRs still land without waiting for each other, and a break on `main` is fixed by a fix landed on `main`**: the player wants neither landing one at a time nor a required up-to-date branch, and asks instead for tests that are isolated and not flaky (freckled-moose #914).
+
 ## Releasing
 
 **A push is a check and a tag is a release.** `https://nappy.josuakrause.com/` serves the game.

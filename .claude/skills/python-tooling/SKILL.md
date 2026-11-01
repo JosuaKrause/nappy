@@ -57,7 +57,7 @@ check):
 echo '{"hook_event_name":"SessionStart","session_id":"x","cwd":"'"$PWD"'"}' | /usr/bin/python3 tools/codex-hooks.py
 ```
 
-**A change to a hook does not update the Codex adapter while Codex support is frozen** (inbox #901).
+**A change to a hook does not update the Codex adapter while Codex support is frozen** (inbox #901 in freckled-moose).
 The rule that a hook change checks `tools/codex-hooks.py`, `.codex/hooks.json` and
 `tools/test_codex_hooks.py` and updates them in the same PR (brisk-heron 6) is lifted until Codex
 works here again, so the adapter may lag; the pull request that brings Codex back brings them up to
