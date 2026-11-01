@@ -211,7 +211,7 @@ func force(row: String, interval: float) -> void:
 ## sections, which have no walk home). `Baby.force_sleep()` emits this signal, and the escape
 ## force-sleeps her at the top of every section and every retry, so without the setting a walk that
 ## is outbound from its first frame to its last would be handed the return leg's own pressure at the
-## moment it begins, and the director's pacing would tighten to `Tuning.RETURN_PATROL_INTERVAL` for
+## moment it begins, and the director's pacing would tighten to `EventDirector.RETURN_PATROL_INTERVAL` for
 ## the rest of it.
 func _owe_the_return() -> void:
 	if not _owes_a_return or _recipe_plan:

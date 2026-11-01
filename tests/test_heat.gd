@@ -86,7 +86,7 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
 		checked += 1
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
-			var should_hunt := level >= Tuning.HEAT_HUNTS_LEVEL
+			var should_hunt := level >= EventDef.HEAT_HUNTS_LEVEL
 			if def.hunts.lets_out > 0:
 				t.check(hot.investigates() == should_hunt and hot.pursuit == null
 						and hot.hard_fail == def.hard_fail,
@@ -126,7 +126,7 @@ func _cold_raid() -> EventDef:
 	return EventCatalogue.by_id("night_raid")
 
 ## The raid's own hot shape, named rather than left to the generic `HUNTS` loop above: untouched
-## below `Tuning.HEAT_HUNTS_LEVEL`, then letting its men out past it, the van itself never chasing
+## below `EventDef.HEAT_HUNTS_LEVEL`, then letting its men out past it, the van itself never chasing
 ## and never lethal, its men's catch ending the day (inbox #669 in coral-lark: "Van stops, men get out
 ## (Recommended)" · "Ends the day (M56)") — and still `SCRIPTED` for
 ## day 10 whatever the heat, since heat moves what a row does and never when it is allowed to
@@ -149,7 +149,7 @@ func _test_the_raid_hunts_past_its_own_threshold(t) -> void:
 				"heat %d: the raid still only ever appears on day 10" % level)
 		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
 				"heat %d: hunting moves neither population nor intensity" % level)
-		if level < Tuning.HEAT_HUNTS_LEVEL:
+		if level < EventDef.HEAT_HUNTS_LEVEL:
 			t.check(not hot.investigates() and hot.pursuit == null and not hot.hard_fail
 					and hot.duration == cold.duration,
 					"heat %d: below its own threshold the raid is untouched" % level)
@@ -162,7 +162,7 @@ func _cold_roadblock() -> EventDef:
 	return EventCatalogue.by_id("roadblock")
 
 ## The roadblock's own hot shape, named rather than left to the generic `HUNTS` loop above: below
-## `Tuning.HEAT_HUNTS_LEVEL` it is the band it always was — untouched, still merely `costly` — and
+## `EventDef.HEAT_HUNTS_LEVEL` it is the band it always was — untouched, still merely `costly` — and
 ## at or above it its guards leave the post: `EventDef.pursuit` and `hard_fail` turn on for the
 ## same body, and neither when it may appear nor its population nor its intensity moves, since
 ## heat sets what a row does and never when it is allowed to. The pursuit numbers themselves are
@@ -180,7 +180,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t) -> void:
 				"heat %d: hunting moves what it does, never when it may appear" % level)
 		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
 				"heat %d: hunting moves neither its population nor its intensity" % level)
-		if level < Tuning.HEAT_HUNTS_LEVEL:
+		if level < EventDef.HEAT_HUNTS_LEVEL:
 			t.check(hot.pursuit == null and not hot.hard_fail,
 					"heat %d: below its own threshold the roadblock is still just a band" % level)
 			continue
@@ -305,7 +305,7 @@ func _test_the_patrol_investigates_past_the_threshold(t) -> void:
 	var cold := _cold_patrol()
 	for level in EventCatalogue.heat_levels():
 		var hot := EventCatalogue.heated(cold, level)
-		var should_investigate := level >= Tuning.HEAT_INVESTIGATES_LEVEL
+		var should_investigate := level >= EventDef.HEAT_INVESTIGATES_LEVEL
 		t.check(hot.investigates() == should_investigate,
 				"heat %d: the patrol investigates iff it is at or past the threshold" % level)
 		t.check(hot.pursuit == null, "heat %d: and the car itself never pursues her" % level)

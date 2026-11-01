@@ -15,6 +15,25 @@ extends RefCounted
 ## player it was handed, synchronously, on the same tick.
 ## Its own door rules, as the player gave them, are in `docs/EVENTS.md`, "Checkpoints".
 
+## How far past a door body's own solid edge the released side of a detention sets her down, beyond
+## `obstructs_radius + Tuning.PLAYER_BODY_RADIUS` — a few pixels of daylight rather than a shove, so she
+## comes out **where the far side of the door is** and nowhere further.
+##
+## **Deliberately not enough to clear the hold's own trigger**, which reaches further than a body is
+## wide and so cannot be escaped by any release that does not throw her past the door
+## *(2026-09-12, the player: "she just spawns further away now? it should work that she has a flag
+## 'just spawned' that only resets once she leaves the area. that way she can't accidentally go back
+## and we don't need to place her far away".)* `ReleaseLatch` is what stops the trigger firing on
+## her there. Purely a spatial clearance, so it does not move with `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`. See
+## `CheckpointController.release_finished_holds()`.
+const CHECKPOINT_RELEASE_MARGIN := 8.0
+## **How long a door's guard warns once she has crossed its line**, in seconds (`door_guard` and its
+## alley copy, `CheckpointController.watch_the_door_lines()`). *(Inbox #788 in minty-lemur, the
+## player: "The actual crossing will start the timer and if the player goes back no charge
+## happens but if they stay crossed the charge will start. Warning starts when the player is
+## crossing".)* Measured the same way as `EventCatalogue.CHARGER_WARNING` (`tests/test_checkpoints.gd`).
+const CROSSING_WARNING := 2.0
+
 ## The world the doors stand in: the live instances, the map, the trace and the player.
 var world: EventWorld
 ## `func(def: EventDef, at: Vector2) -> EventInstance`: puts a guard in the world.
@@ -77,7 +96,7 @@ var _crossing_hut: EventInstance = null
 var _crossed_to := 0.0
 var _crossing_for := 0.0
 ## The crossing's warning (`Warning`), read against `_crossing_for`: running while `_crossing` is
-## warning her, `Tuning.CROSSING_WARNING` long.
+## warning her, `CROSSING_WARNING` long.
 var _crossing_warning := Warning.new()
 ## **Crossings held behind the one still warning her**: `[position, facing]` of each other door's
 ## line she walked across while `_crossing` was warning her, which starts no warning of its own.
@@ -273,7 +292,7 @@ func _on_a_booms_carriageway(door_body: EventInstance, at: Vector2) -> bool:
 ## The other half of `checkpoint_hut`/`checkpoint_post`'s own toll: the moment a redetaining
 ## instance's conversation ends, teleport her to the mirror of where she stood, reflected through
 ## the crossing's own cross-street line and set down **just clear of the body**, as close to the
-## door as she can stand — see `Tuning.CHECKPOINT_RELEASE_MARGIN`. Run *before* the ordinary
+## door as she can stand — see `CHECKPOINT_RELEASE_MARGIN`. Run *before* the ordinary
 ## detention pass in the same frame, so a distance check that would otherwise fire again this frame
 ## sees where she has just been put rather than where she was captured.
 ##
@@ -304,7 +323,7 @@ func release_finished_holds() -> void:
 		# Against the body, not against the trigger: the far side of the door is where the far side
 		# of the door is, and the latch below is what keeps her from being taken in again there.
 		var clearance := instance.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
-				+ Tuning.CHECKPOINT_RELEASE_MARGIN
+				+ CHECKPOINT_RELEASE_MARGIN
 		var offset := body.global_position - instance.global_position
 		var along := offset.dot(axis)
 		var released_along := -entry_sign * maxf(absf(along), clearance)
@@ -445,7 +464,7 @@ func watch_the_door_lines(delta := 0.0) -> void:
 ## crossed the charge will start. Warning starts when the player is crossing")*: the guard at
 ## the hut across the road from her (or an alley door's post) raises his hand at her
 ## (`EventInstance.guard_warns_her`, drawn by `warn_at_the_doors()`) from the frame she crosses.
-## Back across the line before `Tuning.CROSSING_WARNING` has run, the crossing is called off and
+## Back across the line before `CROSSING_WARNING` has run, the crossing is called off and
 ## nothing comes; still across it once it has run, a guard is set on her
 ## (`_set_a_guard_on_her()`). One crossing at a time, and none while a guard is already after
 ## her. Answers whether a warning started.
@@ -460,10 +479,10 @@ func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
 	_crossing_hut = hut
 	_crossed_to = signf((here - crossed.global_position).dot(crossed.facing_now()))
 	_crossing_for = 0.0
-	_crossing_warning.start(_crossing_for, Tuning.CROSSING_WARNING)
+	_crossing_warning.start(_crossing_for, CROSSING_WARNING)
 	world.trace.note("checkpoint", "%s at %s warns her: back across within %.1fs or a guard comes" % [
 		hut.def.id, RunTrace.tile(world.map.world_to_tile(hut.global_position)),
-		Tuning.CROSSING_WARNING])
+		CROSSING_WARNING])
 	return true
 
 ## The index in `_held_crossings` of the held crossing on `door`'s line (the same test as
@@ -491,7 +510,7 @@ func _crossing_is_on(door: EventInstance) -> bool:
 
 ## One frame of the crossing still warning her: called off once she is back on the side she came
 ## from or held at a hut (gone through the door the lawful way), and its guard set on her once
-## `Tuning.CROSSING_WARNING` has run with her still across, which is also when the crossing counts
+## `CROSSING_WARNING` has run with her still across, which is also when the crossing counts
 ## as crossing the door (`door_crossed`, day 9's task). Answers whether it was called off this
 ## frame, so the walk back that called it off starts no warning of its own.
 func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
@@ -546,7 +565,7 @@ func _call_off_the_crossing(why: String) -> void:
 ## one. A crossed alley post is its own door and its own guard, so he steps out of the post.
 ##
 ## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): the guard at that hut raised
-## his hand from her crossing for `Tuning.CROSSING_WARNING` (`_start_the_crossing_warning()`,
+## his hand from her crossing for `CROSSING_WARNING` (`_start_the_crossing_warning()`,
 ## `warn_at_the_doors()`), which was his warning, and he is set on her only once it has run with
 ## her still across. **The hut across the road, not the nearer one**: from the nearer hut's wall
 ## (about 57px from her as she crosses the near lane, 16px if she crosses beside it) his charge

@@ -18,7 +18,7 @@ extends RefCounted
 ## **An encounter is one instance's time on screen.** It opens the first frame any of what is drawn
 ## for the instance is visible (`EventInstance.drawn_box()`), or the instance
 ## lands something on her from off screen; it stays open while either goes on; and it is over once
-## the instance has been neither for `Tuning.ENCOUNTER_GAP` — so coming back sooner is the same
+## the instance has been neither for `ENCOUNTER_GAP` — so coming back sooner is the same
 ## encounter, and later a new one. Every instance is its own: a different yeller is a different
 ## encounter. A planned event streamed out and back in is a new instance, which changes nothing,
 ## because it streams out only past `Tuning.EVENT_STREAM_RADIUS`, far longer than the gap away.
@@ -28,7 +28,7 @@ extends RefCounted
 ## - **seen** at most once, the first frame `Tuning.ENCOUNTER_SEEN_SHARE` of its drawn box is
 ##   visible. A row that draws nothing of its own has nothing to be seen and is never seen.
 ## - **influenced** at most once, the first frame the encounter is meaningful, for every row alike:
-##   `Tuning.ENCOUNTER_INFLUENCE_POINTS` landed on her within the encounter
+##   `ENCOUNTER_INFLUENCE_POINTS` landed on her within the encounter
 ##   (`ExcitementSource.landed_ever`, since `landed()` keeps only the halo's window), or it chasing
 ##   her (`EventInstance.is_chasing()`), or it catching her or beginning a hold of her, whichever comes
 ##   first. **A catch and a hold are the game's own tests, called and not copied** *(inbox #586 in olive-hedgehog, the
@@ -46,7 +46,7 @@ extends RefCounted
 ##   ÷ seen counts only what she could see.
 ##
 ## **A bout of running** begins the first frame she runs (`Stroller.run_excess_ratio()` above 0, the
-## test `EventManager` already makes) after `Tuning.RUN_BOUT_GAP` or more without running, or the
+## test `EventManager` already makes) after `RUN_BOUT_GAP` or more without running, or the
 ## first time in a day.
 ##
 ## **Cheap by construction**, since it runs every physics frame for every player: one pass over
@@ -55,6 +55,18 @@ extends RefCounted
 ## (`VisibleView.look()`), not once an instance; a record made once per instance the first time it
 ## is present, and nothing allocated on a frame otherwise. The open encounters are a short list of their own, so an encounter can be closed after
 ## its instance has gone.
+
+## How long an event instance has to have been off screen, in seconds, before coming back counts as
+## a new encounter rather than the one it left. *(misty-newt, the player: "I would define the gap as
+## left the screen and encountered again at a later time (eg 5s). this should also apply to seen.")*
+const ENCOUNTER_GAP := 5.0
+## How much of a full meter an exciting instance has to land on her within one encounter for the
+## encounter to be meaningful — the player's "influence of the event reached a certain threshold".
+const ENCOUNTER_INFLUENCE_POINTS := Tuning.METER_MAX * 0.1
+## A run that starts again less than this many seconds after she stopped running is the same bout
+## of running. *(misty-newt: "we can count the number of running excluding gaps smaller than
+## 10s".)*
+const RUN_BOUT_GAP := 10.0
 
 ## One instance's encounters. Kept on the instance (`EventInstance.encounter`) so finding it costs
 ## nothing, and on `_open` while an encounter is open, so it can be closed after the instance is gone.
@@ -187,7 +199,7 @@ func _open_an_encounter(record: Record) -> void:
 ## The meaningful-encounter test — see the class doc. The same three ways in for every row: what a
 ## row cannot do (land anything, chase, catch or hold her) simply never happens.
 func _is_meaningful(instance: EventInstance, record: Record, her: Vector2) -> bool:
-	if instance.excitement.landed_ever - record.landed_at_open >= Tuning.ENCOUNTER_INFLUENCE_POINTS:
+	if instance.excitement.landed_ever - record.landed_at_open >= ENCOUNTER_INFLUENCE_POINTS:
 		return true
 	if instance.is_chasing():
 		return true
@@ -212,7 +224,7 @@ func _close_what_is_over() -> void:
 	while i < _open.size():
 		var record := _open[i]
 		var gone := record.last_frame != _frame or not is_instance_valid(record.instance)
-		if gone or _clock - record.last_present >= Tuning.ENCOUNTER_GAP:
+		if gone or _clock - record.last_present >= ENCOUNTER_GAP:
 			_close(record)
 			_open[i] = _open[_open.size() - 1]
 			_open.pop_back()
@@ -226,7 +238,7 @@ func _close(record: Record) -> void:
 		EventBus.encounter_influenced.emit(day, record.name, false)
 
 func _watch_the_running(running: bool) -> void:
-	if running and not _running and _clock - _ran_last >= Tuning.RUN_BOUT_GAP:
+	if running and not _running and _clock - _ran_last >= RUN_BOUT_GAP:
 		EventBus.run_bout_began.emit(day)
 	_running = running
 	if running:

@@ -58,7 +58,7 @@ const PEDESTRIAN_TURN_CHANCE := 0.35
 const WALKER_DOOR_COOLDOWN_RADIUS := 96.0
 
 ## Seconds a held walker spends inside the hut, not drawn — the player's *inspection*. Shorter than
-## her own `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s) on purpose and for the reason that number is itself
+## her own `EventCatalogue.CHECKPOINT_DETAIN_SECONDS` (2s) on purpose and for the reason that number is itself
 ## short: a walker is not the one being looked for, so the guard has less to do. One second is the
 ## recommendation rather than a number the player gave, and the relationship is what matters — a
 ## walker's hold under hers, so a player watching a door sees the crowd cycle through it faster

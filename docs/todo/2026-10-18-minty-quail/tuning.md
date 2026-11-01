@@ -16,22 +16,11 @@ move, grep the name inside `tuning.gd`: a doc comment naming it becomes `Owner.N
 
 ## Remaining work
 
-Single-owner constants still in `tuning.gd`, by owner file, 98 in all (events 48, resistance 13, player 12,
+Single-owner constants still in `tuning.gd`, by owner file, 50 in all (resistance 13, player 12,
 day 7, routes 7, interior 5, finale 2, `src/` root 2, visuals 1, world 1):
 
 - `src/day/day_controller.gd`: `FINALE_EXIT_REACH`
 - `src/day/day_spec.gd`: `FINALE_BAG_EMPTY`, `FINALE_BAG_EXPLOSIONS`, `FINALE_BAG_ROADBLOCKS`, `FINALE_BAG_TRUCKS`, `FINALE_BAG_VANS`, `FINALE_SLOTS_PER_STREET`
-- `src/events/behaviours/event_car_driving.gd`: `PATROL_STRIKE_LEAD`
-- `src/events/checkpoint_controller.gd`: `CHECKPOINT_RELEASE_MARGIN`, `CROSSING_WARNING`
-- `src/events/encounter_watch.gd`: `ENCOUNTER_GAP`, `ENCOUNTER_INFLUENCE_POINTS`, `RUN_BOUT_GAP`
-- `src/events/event_catalogue.gd`: `CAR_ACCIDENT_GAPS_ARE_LETHAL`, `CAR_ACCIDENT_INTENSITY`, `CAR_ACCIDENT_LETHAL_INNER_RADIUS`, `CHARGER_WARNING`, `CHECKPOINT_DETAIN_REACH`, `CHECKPOINT_DETAIN_SECONDS`, `FINALE_EXPLOSION_INTERVAL`, `FINALE_PURSUER_RESPAWN_SECONDS`, `FINALE_STEAM_BLOWS_FOR`, `OFFICER_STOP_EXCITEMENT`
-- `src/events/event_def.gd`: `HEAT_HUNTS_LEVEL`, `HEAT_HUNTS_WITHIN`, `HEAT_INVESTIGATES_LEVEL`, `HEAT_INVESTIGATE_WITHIN`, `HEAT_PRESSES_INTENSITY`, `HEAT_PRESSES_POPULATION`
-- `src/events/event_director.gd`: `AHEAD_INTERVAL`, `CHARGING_DOG_SPRINKLE_CHANCE`, `RETURN_PATROLS_PER_ACT`, `RETURN_PATROL_INTERVAL`, `RETURN_PATROL_WITHIN_THE_NEXT`, `ROUTE_BAG_MARBLES_OF`, `ROUTE_BAG_MARBLES_PER_WEIGHT`
-- `src/events/event_instance.gd`: `TELEGRAPH_INTENSITY_FRACTION`
-- `src/events/event_scheduler.gd`: `CALM_ZONE_DENIAL_RATE`, `CURFEW_ANNOUNCE_DAY`, `EVENT_CORRIDOR_WEIGHT`, `EVENT_PLACEMENT_TRIES`, `EVENT_PRECINCT_WEIGHT`, `EVENT_SPACING_ANY`, `EVENT_SPACING_SAME`, `EVENT_WALL_GAP_WEIGHT`, `EVENT_WALL_RIM_WEIGHT`, `GATEHOUSE_DAY_WALL_ROW_SHARE`, `OBSTRUCTION_A_PARK_CAN_HOLD`, `SPOILERS_TO_DENY_A_PARK`, `WALL_DEEP_WEIGHT`, `WALL_WORTH_OF_COST`
-- `src/events/mast_sites.gd`: `MAST_CALM_INTERIOR_MARGIN`, `MAST_HOME_STREET_MARGIN`
-- `src/events/pursuit_spec.gd`: `PURSUIT_REACTION`
-- `src/events/warning_board.gd`: `LETHAL_MARK_LEAD`
 - `src/field.gd`: `FIELD_ECCENTRICITY_SPEED`
 - `src/finale/building_plan.gd`: `FINALE_STEAM_PERIODS`
 - `src/finale/finale_planner.gd`: `FINALE_PARKS_PER_CHAIN`

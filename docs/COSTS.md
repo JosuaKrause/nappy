@@ -7,7 +7,7 @@ Every figure is on quiet sidewalk (ground multiplier 1.0) with nothing built bet
 - `Tuning.EXCITEMENT_DECAY_WALKING` = 6.0 points/s
 - `Tuning.SLEEPING_SENSITIVITY` = 0.55
 - `Tuning.WALK_SPEED` = 92.0 px/s
-- `Tuning.WALL_WORTH_OF_COST` = 48.0 points
+- `EventScheduler.WALL_WORTH_OF_COST` = 48.0 points
 
 **`Geometry and role`** is what a row's own data says, unconditionally: `role` is `EventScheduler._role_for()` at day 0 (a row's cold shape, before any resistance heat); `core_intensity`/`core_radius` are a dash where a row has no core; `pulse_trough` is `intensity * 0.25`, the low point of the pulse envelope `current_intensity()` uses, and a dash where a row does not pulse; `speed` is a pursuer's `PursuitSpec.speed` (almost always faster than its own cold `speed`, which is usually 0), a mobile row's own `speed`, and a dash for anything that does not move; `walk_through_cost()` is the field integrated along a straight line through the centre, less the walking decay over the same crossing.
 

@@ -5,7 +5,7 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/m96_dog_sprinkle.gd
 ##
-## `EventDirector._owe_the_sprinkled_dog()` rolls `Tuning.CHARGING_DOG_SPRINKLE_CHANCE` once a day
+## `EventDirector._owe_the_sprinkled_dog()` rolls `EventDirector.CHARGING_DOG_SPRINKLE_CHANCE` once a day
 ## past `Tuning.RUN_TAUGHT_DAY` and, on a hit, puts `charging_dog` at the **front** of its own queue
 ## in day 3's own shape — off her heading, already noticing her. This walks a whole run — every day
 ## past the teaching day, continuous walking on a real street, the same instrument `tests/probes/
@@ -17,7 +17,7 @@ extends RefCounted
 ## only ever drains a handful — measured here first: an *appended* roll was met in zero of 88
 ## sampled days, however often it was rolled. Pushed to the front instead, every rolled hit is met,
 ## which is what makes "offered" and "met" the same column below. `docs/DECISIONS.md`, M96, records
-## what a run against the current `Tuning.CHARGING_DOG_SPRINKLE_CHANCE` measured and why that rate
+## what a run against the current `EventDirector.CHARGING_DOG_SPRINKLE_CHANCE` measured and why that rate
 ## was chosen.
 
 const SEEDS := 8
@@ -31,7 +31,7 @@ func run(t) -> void:
 func _measure_sprinkle_rate() -> void:
 	print("\n== M96 dog sprinkle: %d seeds, days %d..%d, whole day of continuous walking, rate=%.2f =="
 			% [SEEDS, Tuning.RUN_TAUGHT_DAY + 1, Tuning.RUN_LENGTH_DAYS,
-					Tuning.CHARGING_DOG_SPRINKLE_CHANCE])
+					EventDirector.CHARGING_DOG_SPRINKLE_CHANCE])
 	var per_run: Array = []
 	var offered_per_run: Array = []
 	for i in SEEDS:

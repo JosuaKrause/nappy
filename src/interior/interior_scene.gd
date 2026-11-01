@@ -333,7 +333,7 @@ func bang_outside() -> void:
 # *(2026-09-19: "the flashing lights in the window are too rare.")* Between the bangs she is charged
 # for, something goes off far enough away that only the light reaches her: a picture and nothing
 # else. No event, no field, nothing on the meter — which is why it is not simply a shorter
-# `Tuning.FINALE_EXPLOSION_INTERVAL`: the player asked for the light and said nothing about the
+# `EventCatalogue.FINALE_EXPLOSION_INTERVAL`: the player asked for the light and said nothing about the
 # noise, and an explosion is loud by definition. The same call a near bang makes, so every window
 # lights together and goes dark together; what separates the far flashes from the near ones is how
 # often they happen and what they cost, never which windows they reach. Nothing is logged for one:

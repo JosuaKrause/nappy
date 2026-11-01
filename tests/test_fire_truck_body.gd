@@ -157,7 +157,7 @@ func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 ## after the full warning.
 func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 	var def := _truck()
-	var warning_reach := (Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME) * def.speed \
+	var warning_reach := (EventCarDriving.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME) * def.speed \
 			+ def.shape.half_length + def.shape.radius + Tuning.PLAYER_BODY_RADIUS
 	var nearer_than_its_warning := 0
 	var sides := {Vector2.DOWN: "the north", Vector2.UP: "the south", Vector2.RIGHT: "the west",
