@@ -96,8 +96,9 @@ src/
 	                      the jolt a contact or a horn leaves, its clock, its reach, a car's strike box
 	lane_mover.gd         the lane movement a walker and a car share — lane state, look-ahead,
 	                      held step, placement and recycling — stepped on the crowd's physics tick
-	                      (`step()`: its step proposed, held out of a tile it may not stand on,
-	                      then committed) and drawn interpolated between ticks, asking its kind's
+	                      (`step()`: its step proposed, given way to the event figures through
+	                      the map's separation pass, held out of a tile it may not stand on, then
+	                      committed) and drawn interpolated between ticks, asking its kind's
 	                      strategy what differs
 	crowd_agent.gd        one walker or one car in the crowd, on the lane mover: its excitement (a
 	                      composed `CrowdExcitement`), its rim and caret and the redraw gate; drawn
@@ -259,6 +260,12 @@ src/
 	proposed_moves.gd     one map's list of every mover's move while it stands in the world
 	                      (`ProposedMoves`, `WorldMap.moves`), the one list a pass over every
 	                      mover goes over, handed out as a copy; it names no mover
+	separation_pass.gd    the crowd gives way to the movers that keep their course
+	                      (`SeparationPass`, `WorldMap.separation`): which moves on the list are
+	                      event figures, event cars and cordon officers that have walked, how each
+	                      moved since the last tick, where a walker's step stands clear of them
+	                      and how much road a crowd car has before one; asked by each crowd body
+	                      at its own step
 	navigator.gd          the one way anything moves over a map: a swept step that keeps the
 	                      body clear, a walk down points, a way round, a way out, a route cut to
 	                      the ground, whether a chase reaches somebody, a `ChaseWay` to somebody a
@@ -769,7 +776,8 @@ navigator, the stroller and the run log — and asks it every question about the
 point is on, whether a mover may stand there (`passable()`), whether a line is clear
 (`clear_line()`), whether a wall keeps a field from her (`wall_between()`), a way round
 (`navigator()`), the list every mover's move for the tick stands on (`moves`, a `ProposedMoves`
-of `MoveProposal`s, each proposed, checked by its mover and then committed), adding something to
+of `MoveProposal`s, each proposed, checked by its mover and then committed) and the pass over it a
+crowd body gives way through (`separation`, a `SeparationPass`), adding something to
 the world on a draw layer (`add_entity()`, through the world node that draws the map), what the ground does to her walk (`process_player()`, the building's
 doors; `slope_dir_at()`, its flights), and the street questions, which a map with no streets answers
 "no street here". The line walk, the wall's depth, the blocked record and the tile conversions are

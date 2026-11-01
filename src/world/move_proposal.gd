@@ -29,7 +29,8 @@ extends RefCounted
 ## and an event figure keeps its course and its timing, so the crowd's moves are the ones a pass
 ## changes and everyone else's committed pose is what they yield to. **Each move carries what that
 ## pass reads about its mover**: how far its body reaches round its centre (`radius`) and whether it
-## is one that gives way (`yields`). Nothing makes such a pass yet.
+## is one that gives way (`yields`). The pass is the map's `SeparationPass`, which each crowd body
+## asks at its own step, between its proposal and its check.
 ##
 ## **Outside a step the move stands where its mover does** (`from` and `to` both at its pose): a
 ## mover joins at the pose it stands at, and anything that moves it outside its own step — a body

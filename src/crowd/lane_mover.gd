@@ -217,13 +217,19 @@ var _nose := 0.0
 var _acts_within := 1
 var _scans_from_its_lane := false
 
+## Takes its kind's ground shape (`shape`), and the reach round its centre its move carries for
+## whoever gives way or is given way to (`MoveProposal.radius`): once, at either setup, a rolled
+## morning's or a pinned actor's.
+func _take_the_shape() -> void:
+	shape = strategy.ground_shape()
+	_move.radius = shape.reach()
+
 ## Constructs a pinned actor through the same initial lane eligibility as a rolled morning.
 ## The cross coordinate must already be the lane center; authoring never snaps a placement.
 func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		at: Vector2, direction: Vector2, speed: float) -> String:
 	kind = agent_kind as Kind
-	shape = strategy.ground_shape()
-	_move.radius = shape.reach()
+	_take_the_shape()
 	_map = map
 	field = crowd_field
 	_rng.seed = seed_value
@@ -260,7 +266,7 @@ func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value
 func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: int,
 		axis_roll: float) -> void:
 	kind = agent_kind
-	shape = strategy.ground_shape()
+	_take_the_shape()
 	_map = map
 	field = crowd_field
 	_rng.seed = seed_value
@@ -446,11 +452,13 @@ func step(delta: float) -> void:
 		_end_the_frame(delta)
 		return
 	# **Proposed, checked, then committed** (`MoveProposal`, the world's shape for every mover's
-	# step): the along and cross step proposed from where it stands, held out of a tile its body may
-	# not stand on, and only then is it where it stands, so everything after — the look-ahead, the
-	# recycling, the kind's own end of the step — acts on the committed pose.
+	# step): the along and cross step proposed from where it stands, given way to the movers that
+	# keep their course (`LaneStrategy.give_way_on_the_step()`, the map's `SeparationPass`), held out
+	# of a tile its body may not stand on, and only then is it where it stands, so everything after —
+	# the look-ahead, the recycling, the kind's own end of the step — acts on the committed pose.
 	var stood_on := _map.world_to_tile(position)
 	_propose_the_step(delta)
+	strategy.give_way_on_the_step(delta)
 	_keep_out_of_a_body(stood_on)
 	position = _move.commit()
 	strategy.after_the_step(delta)

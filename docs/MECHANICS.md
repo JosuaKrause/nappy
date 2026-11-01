@@ -528,6 +528,36 @@ the person she walked into*, and the crowd's set (`CrowdSources`) sums that agen
 every other one. So contacts still compose by plain addition, there is still no ordering to get
 wrong, and `WorldContext.total_excitement_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.
 
+### The crowd gives way to event figures
+
+**When an event figure and the crowd meet, the crowd yields and the figure keeps its course and its
+timing** (inbox #884 in minty-dolphin): a charging dog does not care, and a pedestrian does not want
+to be overrun. An event figure, an event car and day 12's cordon officers are given way to; nothing
+about them changes for the crowd, so every catch, notice and departure is timed as it is with an
+empty street. Only a figure that has walked counts: a stall, a burnt-out car, a street musician or a
+mast stands where it was put, and the crowd goes round the solid ones by their tiles as before.
+
+- **A walker makes way for a figure coming at him as he does for her** (noticed within
+  `Tuning.CROWD_YIELD_DISTANCE`, 96px, a lane over within his own footway), and his step is then
+  moved clear of every figure's body, so a figure walking into him pushes him out of its way.
+  Pushed, he keeps going the way he was pushed for a couple of seconds, as her bump has him do.
+  Squeezed against a wall he cannot go aside: overtaken, he is moved on and hurries ahead; met head
+  on along his own line, he walks on and the figure brushes past him, the one overlap this leaves.
+  He is not startled, so a figure walking through the crowd costs her nothing the crowd did not
+  already cost.
+- **A crowd car stands for a figure in its lane ahead, or coming into it within half a second**,
+  braking toward a point a few pixels short of its body the way it brakes for a stop line, and its
+  step is held short of the body if the brake arrives late. It never swerves. It stands only for a
+  figure under way: one standing still in the carriageway for over a second (a parked fire engine,
+  the column's trucks at their stop) is driven past as before, or the lane would be held all day.
+  **And it does not drive into a junction box it would have to stand in**: a figure in its lane
+  beyond the box holds it at the line, as a stopped car beyond the box does. A car that stands for a
+  figure is a stopped car to the strike, the horn and the queue behind it.
+
+`SeparationPass` (`src/world/`) is the world's half: which movers are given way to and the geometry
+of clearing them. The crowd asks it at each body's own step, between the step's proposal and its
+check (`MoveProposal`).
+
 ### A car is lethal
 
 Stepping into the carriageway in front of a moving car ends the day (`hard_fail`

@@ -56,7 +56,7 @@
       {"tick":614,"subject":"row:cat_dash","condition":"appeared"},
       {"tick":618,"subject":"row:robber_giving_chase","condition":"pursuing"},
       {"tick":628,"subject":"row:robber_giving_chase","condition":"near_player","distance":240},
-      {"tick":370,"subject":"player","condition":"crowd","walkers":2,"cars":1}
+      {"tick":385,"subject":"player","condition":"crowd","walkers":2,"cars":1}
     ]
   },
   "stretch": {

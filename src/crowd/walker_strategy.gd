@@ -439,6 +439,120 @@ func step_aside(away: Vector2, distance: float, seconds: float) -> void:
 	_yield_hurry = signf(along) == signf(_mover._direction)
 	_yield_left = maxf(_yield_left, seconds)
 
+## **Somebody coming at `here`, going `velocity`, finds this walker moved over**: her, from the
+## crowd's tick (`Crowd._meet_the_player()`), and an event figure, from this walker's own step
+## (`give_way_on_the_step()`), since the crowd gives way to event figures as it does to her (inbox
+## #884 in minty-dolphin). Nobody steps round somebody standing still, which is what `velocity` zero
+## says.
+##
+## The counterpart to `Crowd._bump()`, and the reason the pair of them is the whole answer: a bump is
+## what happens when this fails. See `Tuning.CROWD_YIELD_DISTANCE` for why the crowd's "careful is free"
+## half is a *behaviour* rather than a two-pixel line to aim at.
+##
+## Three things keep it from being a crowd that simply evaporates in front of her (or of a figure):
+##
+## - **Only people actually in the way.** Ahead of her, within a lane's width of her line, and
+##   inside a second of walking. Somebody on the far side of the pavement carries on.
+## - **Only a lane, and never into the road.** `step_aside()` clamps to the footway.
+## - **Only if she gives them time.** The notice distance is fixed and their steering is not, so a
+##   run arrives before they have cleared — which is one more thing running is bad at, and it did
+##   not need a new rule to say so.
+func make_way_for(here: Vector2, velocity: Vector2) -> void:
+	if velocity == Vector2.ZERO:
+		return
+	var offset := _mover.global_position - here
+	var going := velocity.normalized()
+	if offset.dot(going) <= 0.0 or offset.length() > Tuning.CROWD_YIELD_DISTANCE:
+		return
+
+	# **Closest approach, not current distance from her line.** The first version asked whether a
+	# walker was already within a lane's width of her path, which is the right question for
+	# somebody walking the same pavement and a useless one for somebody crossing it: at 60px/s
+	# they enter that window a third of a second before the contact, and a probe said nine of
+	# every twelve contacts are exactly that walker. Predicting where the two of them will be is
+	# the only notice that arrives in time to be acted on.
+	var relative := _mover.velocity() - velocity
+	var speed_squared := relative.length_squared()
+	if speed_squared < 1.0:
+		return
+	var closest := clampf(-offset.dot(relative) / speed_squared, 0.0, Tuning.CROWD_YIELD_LEAD)
+	if (offset + relative * closest).length() > Tuning.CROWD_YIELD_LATERAL:
+		return
+
+	# Whichever side of her line they are on **now**, so nobody crosses in front of her to get out
+	# of the way — and so somebody already most of the way across carries on rather than reversing
+	# into her. `step_aside()` reads that as a sidestep or as hurrying-or-waiting
+	# depending on which of its own axes the direction lands on.
+	var side := Vector2(-going.y, going.x)
+	var lateral := offset.dot(side)
+	# **Except for somebody already standing on her line**, who has no side to be on. Told to
+	# get out of the way sideways, half of them read it as "wait" and stop dead in front of her —
+	# which is the one outcome worse than carrying on. Pointed along their own travel instead,
+	# they always read it as "hurry", which is the only move that clears her.
+	var away := side if lateral >= 0.0 else -side
+	if absf(lateral) < Tuning.BUMP_CLEAR_RADIUS:
+		away = _mover.heading()
+	step_aside(away, Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
+
+## **A walker gives way to an event figure** (inbox #884 in minty-dolphin: the crowd yields, and a
+## pedestrian does not want to be overrun): it makes way for each one coming at it as it does for
+## her (`make_way_for()`), so it moves over a lane within its own footway before the figure arrives;
+## and its proposed step is then moved clear of every figure's body (`SeparationPass.
+## clear_of_the_keepers()`), which is the guarantee, since a sidestep is an approach and an approach
+## arrives late (the **crowd-traffic** skill). A walker walking into a figure slides round it, and a
+## figure walking into a walker pushes him out of its way. **Pushed, he keeps going the way he was
+## pushed**, as her bump has him do, a lane over for a couple of seconds (`step_aside()`), or his own
+## steering would walk him straight back into the figure; pushed along his own line, he steps to the
+## side he is on instead, since being driven down his own line separates nobody. **Pushed toward
+## ground he may not stand on**, a figure squeezing him against a wall, he cannot go aside: overtaken,
+## he is moved on along his own line (`SeparationPass.clear_along()`) and hurries ahead of the
+## figure; met head on, he walks on and the figure brushes past him, the one overlap this allows.
+## The mover's own check runs after (`LaneMover._keep_out_of_a_body()`), so he is moved only over
+## ground he may stand on, as her bump moves him over nothing solid.
+##
+## Not startled, unlike her bump: a walker's jolt is noise the baby hears, and an event figure
+## walking through the crowd is not a reason for the street to cost her more than it did.
+func give_way_on_the_step(delta: float) -> void:
+	var separation := _mover._map.separation
+	if not separation.is_near(_mover._move.from, Tuning.CROWD_YIELD_DISTANCE):
+		return
+	var move := _mover._move
+	var near := false
+	for keeper in separation.keepers():
+		if keeper.at.distance_squared_to(move.from) > _FIGURE_NOTICE_SQUARED:
+			continue
+		near = true
+		make_way_for(keeper.at, keeper.step / delta)
+	if not near:
+		return
+	var forward := _mover.heading()
+	var side := Vector2(-forward.y, forward.x)
+	var cleared := separation.clear_of_the_keepers(move, side)
+	if cleared == move.to:
+		return
+	var away := (cleared - move.to).normalized()
+	if may_stand_on(_mover._map.world_to_tile(cleared)):
+		if absf(away.dot(forward)) > 0.5:
+			away = side if side.dot(away) >= 0.0 else -side
+	else:
+		# Squeezed against ground it may not stand on — a wall, the kerb of a shut road — it cannot
+		# go out to the side. Overtaken by the figure, it is moved on along its own line and hurries
+		# ahead of it (`step_aside()` read along its line); met head on, it keeps walking and the
+		# figure brushes past it, since pushing it back down its own street is being swept along in
+		# front of the figure for as long as their two lines are one.
+		cleared = separation.clear_along(move, forward)
+		away = (cleared - move.to).normalized()
+		if away.dot(forward) <= 0.0:
+			return
+	move.to = cleared
+	if away != Vector2.ZERO:
+		step_aside(away, Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
+
+## The squared distance beyond which a figure is too far to make way for (`make_way_for()` reaches
+## `Tuning.CROWD_YIELD_DISTANCE`) and, since no body reaches that far, to touch on this step: most
+## figures for most walkers, which then ask nothing more of the pass.
+const _FIGURE_NOTICE_SQUARED := Tuning.CROWD_YIELD_DISTANCE * Tuning.CROWD_YIELD_DISTANCE
+
 ## The stretch of cross-axis coordinate this walker's own pavement covers, as `(low, high)`.
 ##
 ## Clamped against the **band**, not against a symmetric distance from the lane centre, because

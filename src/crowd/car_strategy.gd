@@ -291,6 +291,12 @@ func _give_way(delta: float) -> void:
 	var blockage := _room_to_stop_in()
 	if blockage < INF:
 		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * blockage))
+	# **An event figure in its lane ahead, or coming into it** (inbox #884 in minty-dolphin: the crowd
+	# yields): braked for like a stop line, so the car stands short of the figure's body rather than
+	# driving through it. See `_distance_to_a_figure()`.
+	var figure := _distance_to_a_figure()
+	if figure < INF:
+		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * figure))
 	var to_line := _distance_to_stop_line()
 	if to_line < INF:
 		# The speed that runs out exactly at the line at the *approach* rate. **Braking toward a
@@ -323,6 +329,80 @@ func _distance_to_stop_line() -> float:
 	if crossing < Tuning.braking_distance(_mover._speed):
 		return INF
 	return maxf(0.0, GiveWay.stop_line(crossing))
+
+## **How far this car has to the point it stands at for an event figure**, or `INF` for none: a
+## figure, an event car or a cordon officer in its lane ahead, or coming into it within
+## `FIGURE_LEAD_TICKS` of its own travel, within `Tuning.CAR_ZEBRA_SIGHT` (the map's
+## `SeparationPass.edge_ahead()`), less the car's nose and `FIGURE_SETBACK`. **Only a figure under
+## way** — one that moved within the last `FIGURE_UNDER_WAY_TICKS` — since a figure standing in the
+## carriageway for good (a fire engine parked at the kerb, the column's trucks at their stop) would
+## hold the lane, and the box behind it, for the rest of the day; a car drives on past one of those
+## as it always did.
+##
+## **No commit rule, unlike her zebra's**: a car too close to stop for a figure brakes as hard as it
+## can and its step is then held short of the figure's body (`give_way_on_the_step()`), since a
+## figure crossing in front of it is not hers to step off the carriageway for, and the crowd yields
+## (inbox #884 in minty-dolphin). It never swerves: the brake and the hold are along its own lane.
+## Nothing on an arc, which keeps the path it checked before it started (`MoveProposal`'s doc).
+func _distance_to_a_figure() -> float:
+	var road := road_before_a_figure()
+	if road == INF:
+		return INF
+	return maxf(0.0, road - FIGURE_SETBACK)
+
+## **The clear road from its nose to the near edge of the event figure it would stand for**, or
+## `INF` for none (see `_distance_to_a_figure()` for which figures): what its brake aims short of,
+## and what the junction box rule reads beside the car in front (`Crowd._can_clear_the_box()`), so
+## a car does not drive into a box it would have to stand in for a figure beyond it.
+func road_before_a_figure() -> float:
+	var separation := _mover._map.separation
+	if not separation.has_keepers() or (_mover._turn and _mover._turn_run_up <= 0.0):
+		return INF
+	var edge := separation.edge_ahead(_mover.global_position, _mover.heading(), SHADOW_ACROSS * 0.5,
+			FIGURE_WIDEST, Tuning.CAR_ZEBRA_SIGHT, FIGURE_LEAD_TICKS, FIGURE_UNDER_WAY_TICKS)
+	if edge == INF:
+		return INF
+	return edge - nose
+
+## How far short of a figure's body a car means to stand, in px: a few pixels, since a figure
+## crossing in front is gone a moment later and a car stopped a lane's length off it holds the
+## street for nothing.
+const FIGURE_SETBACK := 6.0
+## How far ahead of a figure's own travel, in ticks, a car looks for it coming into its lane: half a
+## second, so a dog running across the carriageway is braked for before it is in the lane, while a
+## figure ambling along the kerb is not stood for on every tick it might step off it.
+const FIGURE_LEAD_TICKS := 15.0
+## The most of a figure's reach a car counts across its lane, in px: a crowd car's strike half width
+## (`Tuning.CAR_STRIKE_HALF_WIDTH`). A figure's reach is the circle round its whole body, which is
+## a dog's or a man's width but an event car's length, and an event car passing in the next lane,
+## one lane width off, is not in this one.
+const FIGURE_WIDEST := Tuning.CAR_STRIKE_HALF_WIDTH
+## How long a figure may stand still, in ticks, and still be one a car stands for: a second, so one
+## that stops a moment in the lane is waited out and one that stands there for good is not.
+const FIGURE_UNDER_WAY_TICKS := 30
+
+## **Holds its proposed step short of an event figure's body ahead** (the map's
+## `SeparationPass.room_ahead()`, over its own capsule): the guarantee under the brake in
+## `_give_way()`, since a brake aims at a point and arrives late (the **crowd-traffic** skill). Only
+## along its own lane, never across it, and only for a figure ahead of its centre — one that walks
+## into its flank or its tail is walking away from where it is going. Its speed falls to what the
+## held step covers, so everything that reads how fast it goes (the strike, the horn, its field)
+## reads a car that has stopped.
+func give_way_on_the_step(delta: float) -> void:
+	var separation := _mover._map.separation
+	if not separation.has_keepers():
+		return
+	var move := _mover._move
+	var forward := _mover.heading()
+	var step := (move.to - move.from).dot(forward)
+	if step <= 0.0:
+		return
+	var room := separation.room_ahead(move.from, forward, _mover.shape.half_length,
+			_mover.shape.radius, FIGURE_WIDEST, FIGURE_UNDER_WAY_TICKS)
+	if room >= step:
+		return
+	move.to -= forward * (step - room)
+	_mover._speed = minf(_mover._speed, room / delta)
 
 ## The fastest this car may go and still keep `CAR_HEADWAY_TIME` of clear road in front of it.
 ##

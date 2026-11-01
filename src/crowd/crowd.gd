@@ -39,7 +39,7 @@ const WARNING_SOURCE := &"traffic"
 const ATLAS_GROUP := &"crowd"
 
 ## The squared distance from her beyond which a walker can neither make way for her
-## (`_make_way()` reaches `Tuning.CROWD_YIELD_DISTANCE`) nor be in contact with her (`_bump()`
+## (`WalkerStrategy.make_way_for()` reaches `Tuning.CROWD_YIELD_DISTANCE`) nor be in contact with her (`_bump()`
 ## releases at `Tuning.BUMP_CLEAR_RADIUS`), read by the tick's player half to skip both. The sum of
 ## the two radii and a pixel more rather than the larger of them, so every walker it skips is one
 ## both functions' own `length()` tests already refuse, whatever the rounding of a square root;
@@ -503,15 +503,26 @@ func step(delta: float) -> void:
 ## Every agent's own step (`LaneMover.step()`), in the crowd's order: the last thing a tick does,
 ## live (`_tick_the_crowd()`) or in a rig (`step()`). Its own function so a probe can time it apart
 ## (`tests/probes/m159_crowd_tick_cost.gd`).
+##
+## Each agent gives way at its own step, between its proposal and its check, to the movers that keep
+## their course (`LaneStrategy.give_way_on_the_step()`, the map's `SeparationPass`, gathered at the
+## start of the tick in `_advance_the_world()`): the crowd yields (inbox #884 in minty-dolphin).
 func _step_the_agents(delta: float) -> void:
 	for agent in _agents:
 		agent.step(delta)
 
-## The tick's shared first half, whatever is driving it: the day's signal clock, the map's own
-## pockets, the traffic queue and the walkers' doors, in that order. `step()` (a rig's manual tick)
-## and `_physics_process()` (the live tick) both run exactly this before `_step_the_agents()`, so the
-## only difference between the two callers is the live tick's player half.
+## The tick's shared first half, whatever is driving it: the movers the crowd gives way to, the
+## day's signal clock, the map's own pockets, the traffic queue and the walkers' doors, in that
+## order. `step()` (a rig's manual tick) and `_physics_process()` (the live tick) both run exactly
+## this before `_step_the_agents()`, so the only difference between the two callers is the live
+## tick's player half.
 func _advance_the_world(delta: float) -> void:
+	# **First the map's separation pass takes this tick's movers that keep their course**
+	# (`SeparationPass.gather()`): the event figures, event cars and cordon officers, which have all
+	# stepped already this tick, since `City` adds the event manager before the crowd. The box rule
+	# below and every agent's own step read the one gathering.
+	if _map:
+		_map.separation.gather()
 	if _signals:
 		_signals.advance(delta)
 	# A no-op on every frame but the one after a seal moves — see `CrowdPockets.refresh()`. Beside
@@ -982,10 +993,15 @@ func _consider_the_hut(agent: CrowdAgent, forward: Vector2, vertical: bool, inde
 ## to the box, plus the box, plus a car's length of road beyond it. `distance` is the car's own
 ## `distance_to_junction()`, which its caller has already read.
 func _can_clear_the_box(agent: CrowdAgent, distance: float) -> bool:
-	if agent.gap_ahead == INF:
-		return true
 	var box := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var far_side := distance + box
+	# **An event figure in its lane beyond the box is a car in front that does not move for it**: it
+	# keeps its course and the car stands for it (inbox #884 in minty-dolphin), so a car that would
+	# have to stand in the box holds at the line instead, and no leader's speed is credited.
+	if agent.strategy.road_before_a_figure() < far_side + Tuning.CAR_GAP_MIN:
+		return false
+	if agent.gap_ahead == INF:
+		return true
 	var room := agent.gap_ahead
 	if room >= far_side:
 		room += agent.leader_speed * Tuning.CAR_HEADWAY_TIME
@@ -1097,14 +1113,14 @@ func _meet_the_player() -> void:
 
 	for agent in _agents:
 		if agent.kind == CrowdAgent.Kind.WALKER:
-			# Out of reach of both, which is most of the crowd: `_make_way()` would return at its
+			# Out of reach of both, which is most of the crowd: `make_way_for()` would return at its
 			# own distance test and `_bump()` would release the contact and return nothing, so this
 			# is the one thing either of them does for a walker this far off. See
 			# `_BEYOND_CONTACT_SQUARED` for why the test cannot disagree with theirs.
 			if (agent.global_position - here).length_squared() > _BEYOND_CONTACT_SQUARED:
 				agent.touching = false
 				continue
-			_make_way(agent, here, going)
+			agent.strategy.make_way_for(here, going)
 			shove += _bump(agent, here)
 			continue
 		# One query, two watches. `CAR_ZEBRA_SIGHT` is the strike's own reach and the give-way
@@ -1142,57 +1158,6 @@ func _meet_the_player() -> void:
 		_player.warn(Stroller.Alert.SOON, Tuning.CAR_WARNING_HOLD, WARNING_SOURCE)
 	elif not on_the_road:
 		_player.stand_down(WARNING_SOURCE)
-
-## Somebody standing in the way of where she is going moves over.
-##
-## The counterpart to `_bump`, and the reason the pair of them is the whole answer: a bump is what
-## happens when this fails. See `Tuning.CROWD_YIELD_DISTANCE` for why the crowd's "careful is free"
-## half is a *behaviour* rather than a two-pixel line to aim at.
-##
-## Three things keep it from being a crowd that simply evaporates in front of her:
-##
-## - **Only people actually in the way.** Ahead of her, within a lane's width of her line, and
-##   inside a second of walking. Somebody on the far side of the pavement carries on.
-## - **Only a lane, and never into the road.** `CrowdAgent.step_aside` clamps to the footway.
-## - **Only if she gives them time.** The notice distance is fixed and their steering is not, so a
-##   run arrives before they have cleared — which is one more thing running is bad at, and it did
-##   not need a new rule to say so.
-func _make_way(agent: CrowdAgent, here: Vector2, velocity: Vector2) -> void:
-	if velocity == Vector2.ZERO:
-		return
-	var offset := agent.global_position - here
-	var going := velocity.normalized()
-	if offset.dot(going) <= 0.0 or offset.length() > Tuning.CROWD_YIELD_DISTANCE:
-		return
-
-	# **Closest approach, not current distance from her line.** The first version asked whether a
-	# walker was already within a lane's width of her path, which is the right question for
-	# somebody walking the same pavement and a useless one for somebody crossing it: at 60px/s
-	# they enter that window a third of a second before the contact, and a probe said nine of
-	# every twelve contacts are exactly that walker. Predicting where the two of them will be is
-	# the only notice that arrives in time to be acted on.
-	var relative := agent.velocity() - velocity
-	var speed_squared := relative.length_squared()
-	if speed_squared < 1.0:
-		return
-	var closest := clampf(-offset.dot(relative) / speed_squared, 0.0, Tuning.CROWD_YIELD_LEAD)
-	if (offset + relative * closest).length() > Tuning.CROWD_YIELD_LATERAL:
-		return
-
-	# Whichever side of her line they are on **now**, so nobody crosses in front of her to get out
-	# of the way — and so somebody already most of the way across carries on rather than reversing
-	# into her. `CrowdAgent.step_aside` reads that as a sidestep or as hurrying-or-waiting
-	# depending on which of its own axes the direction lands on.
-	var side := Vector2(-going.y, going.x)
-	var lateral := offset.dot(side)
-	# **Except for somebody already standing on her line**, who has no side to be on. Told to
-	# get out of the way sideways, half of them read it as "wait" and stop dead in front of her —
-	# which is the one outcome worse than carrying on. Pointed along their own travel instead,
-	# they always read it as "hurry", which is the only move that clears her.
-	var away := side if lateral >= 0.0 else -side
-	if absf(lateral) < Tuning.BUMP_CLEAR_RADIUS:
-		away = agent.heading()
-	agent.step_aside(away, Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
 
 ## Displaces a pedestrian the player has walked into, startles them, and returns the share of
 ## the separation she takes herself.
