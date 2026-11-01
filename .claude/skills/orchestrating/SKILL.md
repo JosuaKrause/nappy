@@ -19,7 +19,9 @@ hierarchy and keeps its own tiering for art (woolly-finch 27). In Codex, pick th
 the task's remaining difficulty: see `references/codex-models.md`. **Generating a raster is Codex's
 alone**: Claude Code has no image generator (**illustrated-png**, "Asset contract"), so a brief
 whose work includes generating an illustrated PNG, a comic transfer included, goes to a Codex agent
-(which writes as `codex-coder`); the drawing rule above covers SVG and the review sheets.
+(which writes as `codex-coder`); the drawing rule above covers SVG and the review sheets. While
+Codex support is frozen (inbox #901), such a brief waits for Codex to come back, and the player is
+told.
 Installing, registering, rebaking and checking PNGs that already exist stays open to either host.
 The contract is the same on either host: fresh context, a bounded scope and an isolated checkout for
 implementation. Create the worktree explicitly if the tool does not create one. Read-only review can

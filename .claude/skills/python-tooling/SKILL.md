@@ -57,15 +57,11 @@ check):
 echo '{"hook_event_name":"SessionStart","session_id":"x","cwd":"'"$PWD"'"}' | /usr/bin/python3 tools/codex-hooks.py
 ```
 
-**A change to a hook is checked against the adapter, and updates it in the same PR when it needs
-to** (brisk-heron 6). A new or changed script under `.claude/hooks/`, or a changed hook entry in
-`.claude/settings.json`, asks whether Codex's side is affected: a new tool name, a new payload field
-read, a new hook event, a matcher Codex should share. Where it is, the same PR changes
-`tools/codex-hooks.py`, `.codex/hooks.json` and `tools/test_codex_hooks.py` to match. A change to a
-hook's own logic alone (the guard's jq, say) needs nothing from the adapter, and nor does a
-Claude-only tool such as `Monitor`, which Codex does not have. Codex names its tools differently — a
-patch arrives as `apply_patch` rather than `Edit`/`Write` — so a hook that is only checked against
-Claude Code's payloads leaves Codex unguarded without any test turning red.
+**A change to a hook does not update the Codex adapter while Codex support is frozen** (inbox #901).
+The rule that a hook change checks `tools/codex-hooks.py`, `.codex/hooks.json` and
+`tools/test_codex_hooks.py` and updates them in the same PR (brisk-heron 6) is lifted until Codex
+works here again, so the adapter may lag; the pull request that brings Codex back brings them up to
+date (`CLAUDE.md`, "Codex integration is frozen").
 
 ## Add a tooling dependency
 
