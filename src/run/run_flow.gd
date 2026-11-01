@@ -13,13 +13,17 @@ extends RefCounted
 ##
 ## It also announces the day being walked to the observers that draw it — the developer readout, the
 ## HUD's clock and the route rig — through `day_started` and `day_planned`, which carry the day's
-## `DaySpec`; `main` connects them.
+## `DaySpec`, and a brief going up through `brief_opened`; `main` connects them.
 
 ## A day or a section is about to be built: `spec` is what it is. Before anything is placed.
 signal day_started(spec: DaySpec)
 ## The day or section has been built and placed, and its shape announced on `EventBus.day_planned`.
 ## An authored scene's day is never planned, so it never sends this.
 signal day_planned(spec: DaySpec)
+## A brief has been raised (`open_brief()`) over `spec`, the day or section it leads into. The screen
+## itself is shown right after, by `main`; a dev rig that has nobody to press the brief's continue
+## answers it a frame later, through the screen's own input.
+signal brief_opened(spec: DaySpec)
 
 ## The screen in front of the walk, or that there is none.
 enum Mode {
@@ -172,6 +176,7 @@ func open_title() -> void:
 
 func open_brief() -> void:
 	mode = Mode.BRIEF
+	brief_opened.emit(spec)
 
 func engage() -> void:
 	mode = Mode.WALKING

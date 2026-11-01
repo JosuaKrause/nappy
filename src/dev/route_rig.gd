@@ -30,8 +30,9 @@ extends Node
 ##
 ## **The escape's city is walked the same way** (`--start-escape city --route tunnel`): `main` builds
 ## the rig when the city section starts, with no `ResistanceDirector` (the escape has no subquest, so
-## `mark` and `task` are unavailable there), and engages the section without its brief, since a rig
-## has nobody to press its continue.
+## `mark` and `task` are unavailable there), and the rig presses the section brief's continue itself
+## (`press_the_brief()`), as a key would. That is also how a run booted into the building walks on:
+## the city is built when the building is won, and its brief is answered the same way.
 ##
 ## An unresolved target (nothing to walk to yet, or nothing found within `_RESOLVE_TIMEOUT`) and an
 ## unreachable one (no path exists) are both logged and skipped rather than hung on forever — see
@@ -292,6 +293,26 @@ func start_day(spec: DaySpec) -> void:
 	_done = _targets.is_empty()
 	if not _done:
 		_begin_resolving(_targets[0])
+
+## What a continue on a screen does (`main._on_summary_continued()`, which takes the `RunFlow.Mode` the
+## screen was raised in), handed by `main`: the rig answers an escape brief by calling it
+## (`press_the_brief()`).
+var _continue: Callable
+
+func use_continue(continue_from: Callable) -> void:
+	_continue = continue_from
+
+## The run flow has raised a brief (`RunFlow.brief_opened`): in an escape section the rig answers
+## it with the continue a tap and a key both end in, which the run flow carries out like any other
+## (`RunFlow.continued()`). A key cannot be sent as an input event: a rig run has every real binding
+## erased (`RigLock`). One frame after the flow opens the brief, since `main` shows the screen right
+## after, and a frame signal ticks while the tree is paused behind it. A day's brief is left to the
+## player: a rig skips a day's by its own boot.
+func press_the_brief(spec: DaySpec) -> void:
+	if spec.section == DaySpec.Section.NONE or _continue.is_null():
+		return
+	await get_tree().process_frame
+	_continue.call(RunFlow.Mode.BRIEF)
 
 func _begin_resolving(word: String) -> void:
 	_current_word = word
