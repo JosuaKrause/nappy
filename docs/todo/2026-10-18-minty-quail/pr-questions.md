@@ -4,15 +4,19 @@
 intentionality, architecture, style, extensibility), the player: "I think the current process works
 well with finding potential bugs. what I'm worried about is that the architecture starts to drift again
 once the refactor is complete", then "I guess it could be framed as series of questions a PR needs to
-answer", adding "also \"can this be tested in isolation\" although there is some overlap to Q6", and to
-the first cut below "yeah I like this"; then "can we build this in parallel?" (plush-egret #892).
+answer", adding "also \"can this be tested in isolation\" although there is some overlap to Q6"; asked
+whether to file the first cut below as a minty-quail item built in the pull request that closes the
+refactor, with the layer-check script, retiring the board question reviewer-roles, "yeah I like this";
+then, while it was being filed, "can we build this in parallel?" (plush-egret #892).
 
 **Read as:** the review stays one adversarial reviewer; what is added is a fixed set of architecture
-questions every code pull request answers, which the author answers and the review verifies, built now,
-beside the refactor's remaining steps, not saved for its closing pull request.
+questions every code pull request answers, which the author answers and the review verifies. The
+question "can we build this in parallel?" is read as asking for it to be built now, beside the
+refactor's remaining steps, rather than in its closing pull request, which the orchestrating session
+answered yes to in the chat. The board question reviewer-roles leaves the board with this filing.
 
-**The questions** (the orchestrating session's first cut, which the player accepted, with the player's
-eighth):
+**The questions** (the orchestrating session's first cut, whose filing the player agreed to, with the
+player's eighth):
 1. Which layer does each new or changed piece belong to, and why there?
 2. What does it depend on, and is every dependency on its own layer or below?
 3. What is it handed, and what does it fetch? A group lookup, an autoload or a static read in a
@@ -32,7 +36,8 @@ eighth):
   `tools/ci_code_pr_queue.py` checks for a queue item.
 - A layer-check script answers the second and third mechanically: the layer map held as data (the
   target layers in **orchestrating**'s "Code is designed by layer": data and configuration, the domain
-  model, the world, simulation, run flow, observers, with the view and UI above), failing a pull request
+  model, the world, simulation, run flow, observers; where the view and UI sit among them is the
+  builder's to propose, since that section does not say), failing a pull request
   where a file names a class of a higher layer, or a simulation-layer file fetches through a group, an
   autoload or a static; every exception standing today listed by name, so the list only shrinks as the
   refactor's remaining items land.
