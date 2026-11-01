@@ -5,6 +5,176 @@ extends RefCounted
 ## Deterministic: the same seed and day always produce the same plan, which is what lets a
 ## player learn a run. Nothing here touches the global RNG.
 
+## The rate a source has to beat before it is counted as denying the calm ground near it —
+## `EventScheduler._denial_radius`, and `EventCatalogue`'s own reasoning for the one ambient row
+## that stands in a park.
+##
+## **Its own number rather than the calm ground's live decay, and the decoupling is the point.**
+## Read off the decay, every rise in the walking rate would quietly admit louder rows beside parks:
+## the pram settling faster is a statement about the pram, and *which events may stand next to a
+## park* is a statement about the parks. Tying the two put the second decision inside the first,
+## where nobody making it would see it.
+const CALM_ZONE_DENIAL_RATE := 7.7
+## The day the masts carry the curfew announcement instead of their ordinary broadcast — the day
+## `_curfew_announce()` used to be `scripted_day` for, kept as a named day rather than re-read off
+## the def so the two rows do not have to agree about which field means "when" any more.
+const CURFEW_ANNOUNCE_DAY := 6
+## How many times over a tile on the day's routes is offered to a **friction** placement.
+##
+## *"Benign blockers go on the route… to make it more challenging / force the player to think their
+## route through better."* About a quarter of the lattice is on the tree, so at 4 rather better
+## than half of the costly rows land on the corridor and the rest of the city keeps a scatter — a
+## city where every street off the route is empty would read as a set rather than as a place, and
+## nothing in the design asks for that.
+const EVENT_CORRIDOR_WEIGHT := 4
+## Candidate tiles tried per placement before taking the roomiest one that was offered. A
+## fallback rather than a failure: a scripted event has to happen, and on a full map the honest
+## answer is the best spot left, not no event.
+const EVENT_PLACEMENT_TRIES := 24
+## How many times over a precinct tile is offered to the event scheduler against an ordinary
+## pavement tile. Weighting the candidates rather than adding a rule: a precinct is where the cafés
+## and the market stalls and the buskers are, and the way to say that is to make the ground more
+## likely rather than to give the catalogue a new field.
+const EVENT_PRECINCT_WEIGHT := 4
+## And nothing of any kind lands inside this of anything else, which is about two tiles: close
+## enough that a café and a shouting man can share a corner, far enough that neither is drawn
+## inside the other.
+const EVENT_SPACING_ANY := 64.0
+## Two events of the same kind never land closer than this. A block is 256px across, so this
+## is "not on the same stretch of pavement" — the objection was never to seeing a second dog
+## walker, it is to seeing it thirty pixels from the first, which reads as a duplicate rather
+## than as a second incident.
+const EVENT_SPACING_SAME := 256.0
+## How many times over the street **between two adjacent strands of the day's corridor** is offered
+## to a wall, against the rest of the band it is in.
+##
+## Two strands running down neighbouring streets with a free step between them are one wide region
+## rather than two routes. `RouteTree.gaps()` is what a gap is; the placement is
+## `EventScheduler._copies_of`, where this multiplies the band weight rather than replacing it.
+##
+## **Set to leave about half of them open, which is the instruction rather than a compromise.** What
+## is asked for is *variety in what a gap is worth*, so a number that closed every gap would be as
+## wrong as one that closed none: it would turn the corridor into a set of separate corridors, which
+## is the star shape `RouteTree` deliberately does not grow.
+##
+## It is also the reason this is a weight and not the per-gap roll that reads more directly. A roll
+## needs a phase, a stream, a budget of its own and a share of the caps; a weight rides on the day's
+## existing budget, spacing and per-row caps unchanged, and *cannot place more than the day can
+## afford*.
+const EVENT_WALL_GAP_WEIGHT := 6
+## How many times over the **rim** is offered to a **wall** placement, against ground further out.
+##
+## A wall bounds the corridor, so it has to be somewhere the corridor can see; a lethal thing four
+## streets away bounds nothing. That is the preference. What is not a preference is the exclusion
+## beside it — the same reasoning as `Tuning.CLOSURE_WALL_BIAS`, which is this number's twin one system
+## over and deliberately the same value.
+##
+## **The rim is two kinds of ground, not one.** A turning off the corridor is the first: one street
+## out, seen from the junction where the wrong choice is made. The **far side of a route's own
+## street** is the second, and it is the nearer of the two — she reads it without leaving her line,
+## and a café or a stall standing there is what a street with a route down one side looks like.
+## *(2026-09-19: asked whether a wall across the street should be rare or common, "often".)*
+##
+## **It applies to the *costly* half of the wall band only.** A very costly row is what the rim is
+## for — she has strayed one turning and it is expensive — and a lethal row wants the ground beyond
+## it. See `EventScheduler._copies_of` and `WALL_DEEP_WEIGHT`.
+const EVENT_WALL_RIM_WEIGHT := 4
+## The share of the **wall**-role rows the day's fill placed that stay standing, rolled once per
+## placement (`EventScheduler._thin_the_walls`). A wall is only ever placed off the tree, so this is
+## the share of the catalogue's own blockers off it that the day keeps.
+const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
+## The widest body an event may have and still be allowed to stand on calm ground.
+##
+## A spoiler has to make the park loud rather than take the ground away. **Refusing *anything* with
+## a body is the reading to avoid**: once every stationary row is solid, a person is 18px across and
+## that rule empties the pool, so nothing can be put in a park at all.
+##
+## So it is stated as what it means. A body you can walk around does not close a 704px lot; one you
+## have to route around does. Sized to sit above a person and well under `construction`, which is
+## exactly the thing it is there to keep out.
+const OBSTRUCTION_A_PARK_CAN_HOLD := 16.0
+## The most things the day will put in the park she used yesterday.
+##
+## **One spoiler is three percent of a four-block calm zone** — see `EventScheduler._denial_radius`
+## for the arithmetic — so a single event does not spoil a park, it stands in one. A cap rather than
+## a target: the grid asks for as many as it takes to cover the ground and this is where it stops
+## asking, because the events come from the day's own pool and a park with a dozen things in it is
+## not a spoiled park, it is a different kind of city.
+##
+## Nine is a 3x3 grid, and it is measured: over twenty lots and five seeds it denies **99%** of a
+## four-block calm zone and 91% of a one-block courtyard, against 8-12% for the same lot on an
+## ordinary day. A 3x2 grid leaves 15% of the biggest zones standing, which is a hundred tiles of
+## usable park — enough to settle in, so the spoiling would not have happened.
+##
+## A small lot never asks for nine: the grid is sized from what one of them actually denies, so a
+## 46-tile courtyard takes one or two and this cap is never reached. What it costs is a day with
+## nine more events in it, all of them inside the one lot she is being asked not to use.
+const SPOILERS_TO_DENY_A_PARK := 9
+## How many times over ground two or more turnings off the corridor is offered to a **lethal** wall,
+## against the rim.
+##
+## The ground off the paths *"ranges from very costly to deadly"*, and the range is over distance
+## from the routes — so its two ends pull in opposite directions and this is the far one.
+## Deliberately the same strength as the rim weight it mirrors: the design is a gradient
+## rather than a preference for one band, and giving deadly a stronger pull than very costly would
+## make the rim the quiet part of the off-corridor city, which inverts the sentence.
+const WALL_DEEP_WEIGHT := 4
+## Where the line between *friction* and a *very costly* wall falls, in points of the meter it costs
+## to walk through the middle of a row.
+##
+## Below it a row is friction and is weighted **onto** the routes; at or above it the row is what
+## closes the ground **off** them. Stated over `EventDef.walk_through_cost()` — the same integral
+## the caret is ordered by — rather than over a field somebody sets per row, because a second answer
+## to *how expensive is this* is how two tables of the same fact drift apart.
+##
+## **Setting it to a row's own `walk_through_cost()` line for the caret is the mistake with the
+## good argument.** The caret's own threshold, `Tuning.EXPECTED_IMPACT_POINTS`, is a near neighbour of
+## this one and is not the same question: the caret is read off a **projected position** and this
+## is read off a row's own **static integral**, so the two move independently and have. It is where
+## the game raises a caret — *this is worth going round* — so sharing the
+## question, not merely the value, would make the cue and the placement say one sentence. What
+## sharing the question did instead was empty the routes: at 25 points, the caret's line before
+## this milestone raised it, **two thirds of every day becomes a wall**, and day 1's corridor drops
+## from 69.6 placements to 27.8 of 113. The ground off the paths is what was asked to be closed;
+## nobody asked for the paths to be cleared.
+##
+## The line is set by two rows instead, and by the right two. **`dog_walker` costs 42.7 and has to
+## stay friction**: the dog-walker decision arriving twice on day one is the route decision this
+## game is made of, and a dog walker that is never on her route is that decision deleted. **And
+## `leaf_blower` at 52.9 has to stay a wall**, because without it the non-lethal half of the range
+## is act III and later rows only, and *"very costly to deadly"* stops being a range anybody meets
+## — `tests/test_events.gd` samples five days and counts both kinds. The line goes between them,
+## same as it always has — what moved is where the two rows themselves sit.
+##
+## **It is in points of the meter, so it moves when the meter's own arithmetic does, and it moved
+## again for a different reason than the walking decay this time.** *(2026-09-20: "restore fully
+## now, raising leaf_blower by what the decay took from it and moving the line to sit between the
+## two again".)* `homeless_yeller` and `dog_walker` both lost the net gain a real pass past them
+## used to land once M117 raised the walking decay from 3.5 to 6.0/s, and restoring either of them
+## fully pushes its own `walk_through_cost()` past where the line used to sit — the intensity a
+## full restoration needs costs more than a dog walker used to, on its own numbers, before this
+## row is even touched. Raising the two rows without moving the line would have made one of them a
+## wall; raising the line without also raising `leaf_blower` would have let the non-lethal half of
+## the range go empty again. Both moved together, `leaf_blower`'s own core answering the same
+## walking-decay loss the other two rows answer, at `Tuning.EXCITEMENT_DECAY_WALKING`'s current
+## rate — this reading is not itself a re-derivation for the decay's own sake, only for the two
+## rows either side of it.
+##
+## **Raising the walking decay still lowers every row's cost unevenly**, the netting-off-over-time
+## effect this line's own history already carries: that is why `protest` (269px of 15/s) fell from
+## 42.3 to 27.6 and crossed under `dog_walker`'s **old** number (105px of 26/s), which no threshold
+## can undo — a protest now genuinely costs less to walk through than a dog walker's old field did,
+## so it is on the routes with the rest of the ordinary expensive city regardless of where this
+## line sits.
+##
+## What that leaves on the corridor is `cafe_tables`, `market_stall`, `homeless_yeller`,
+## `delivery_van`, `protest` and the dog walker, and what it puts off it is `leaf_blower`,
+## `burning_building`, `pigeon_flock`, `loose_dog`, `military_convoy`, `night_raid`, `fire_truck`
+## and every lethal row — the same two lists as before this line moved, checked catalogue-wide
+## rather than assumed: nothing else crosses it either way. Re-measure with
+## `tests/probes/m117_decay.gd` if the cost table moves; do not re-derive it.
+const WALL_WORTH_OF_COST := Tuning.METER_MAX * 0.48
+
 ## What the manager needs to spawn one instance.
 ##
 ## An `AHEAD_OF_PLAYER` plan has **no position**: the day decides that one more cat is owed and
@@ -26,7 +196,7 @@ class Planned extends RefCounted:
 	var gate_state: RegionPlanner.GateState = null
 
 	## `MastSites.Site.id` for a mast's own plan (its ordinary broadcast and, on
-	## `Tuning.CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
+	## `CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
 	## question `EventManager.silence_mast()` and the broadcast clock's own sync ask before
 	## touching a plan.
 	var mast_id := ""
@@ -285,7 +455,7 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 	return filled_from
 
 ## **From the gatehouse day on, the fill keeps only a share of the walls it placed** —
-## `Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE`, rolled once per `WALL`-role placement the fill made, from
+## `GATEHOUSE_DAY_WALL_ROW_SHARE`, rolled once per `WALL`-role placement the fill made, from
 ## `filled_from` on. *(azure-puffin, point 4: "when the guard houses are set up the city gets much
 ## harder to navigate let's loosen the density of the hard blocking events in that case"; "fewer of
 ## all three".)* A wall is one of the three hard blockers off the tree, with the seals and the
@@ -315,7 +485,7 @@ static func _thin_the_walls(day: int, rng: RandomNumberGenerator, planned: Array
 		var plan := planned[i]
 		if plan.role != GameEnums.BlockerRole.WALL or not plan.is_placed():
 			continue
-		if rng.randf() >= Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE:
+		if rng.randf() >= GATEHOUSE_DAY_WALL_ROW_SHARE:
 			planned.remove_at(i)
 
 ## The phase salt `_thin_the_walls` draws its stream from — after `build_day`'s own three phases and
@@ -657,7 +827,7 @@ static func _for_day(def: EventDef, day: int) -> EventDef:
 ## placement and the scheduler has chosen it a tile like any other lethal row.
 ##
 ## **A wall is not only the lethal rows.** The ground off the routes *ranges from very costly to
-## deadly*, so an expensive row is a wall too and `Tuning.WALL_WORTH_OF_COST` is where the line
+## deadly*, so an expensive row is a wall too and `WALL_WORTH_OF_COST` is where the line
 ## falls. Cheap rows stay friction and stay on the corridor, which is what keeps the routes worth
 ## walking rather than merely survivable.
 ##
@@ -688,7 +858,7 @@ static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 		return GameEnums.BlockerRole.NONE
 	if def.kind == GameEnums.EventKind.ONE_SHOT:
 		return GameEnums.BlockerRole.SET_PIECE
-	if def.hard_fail or def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST \
+	if def.hard_fail or def.walk_through_cost() >= WALL_WORTH_OF_COST \
 			or _takes_a_whole_sidewalk(def):
 		return GameEnums.BlockerRole.WALL
 	return GameEnums.BlockerRole.FRICTION
@@ -696,7 +866,7 @@ static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 ## **Whether a `WALL` earns the pull toward junction rims, as opposed to keeping only the one
 ## consequence every wall gets** (zero copies on a route-carrying cell, `_copies_of` below).
 ## *(2026-09-19, the player, asked whether `delivery_van` should also be weighted toward junctions
-## once it became a wall: "A. No (my recommendation). -- do that")* `Tuning.EVENT_WALL_RIM_WEIGHT`
+## once it became a wall: "A. No (my recommendation). -- do that")* `EVENT_WALL_RIM_WEIGHT`
 ## is for the rows meant to be seen from a distance before she commits to a street — lethal, or
 ## costly enough to cross `WALL_WORTH_OF_COST` — and `delivery_van` is neither: silent, and a wall
 ## only because its own body leaves no lane (`_closes_the_band_by_its_own_placement`), which the
@@ -704,7 +874,7 @@ static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 ## spread along streets the way friction is instead: `_copies_of` reads this before deciding which
 ## weight a `WALL` gets.
 static func _is_a_wall_by_cost(def: EventDef) -> bool:
-	return def.hard_fail or def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST \
+	return def.hard_fail or def.walk_through_cost() >= WALL_WORTH_OF_COST \
 			or _line_reach_of(def) >= _THE_FAR_LANE
 
 ## A private RNG for one phase of the day, derived from the day's seed and a salt.
@@ -791,7 +961,7 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ## **It has to cover the ground, not stand in it**, and one event does not.
 ##
 ## What denies calm ground is holding the meter above `EXCITEMENT_CALM_THRESHOLD` against
-## `Tuning.CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 19.3 has a *useful* radius of
+## `CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 19.3 has a *useful* radius of
 ## 157px whatever his 190px reach says, in a lot 704px across. That is a small share of one, and a
 ## day that rolls one spoiler for the block she used is still a day she settles in that same block.
 ## **The rate is fixed and the intensity is not**, so raising a row's intensity is the one thing
@@ -896,7 +1066,7 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 	# many can manage rather than densely in one corner.
 	var columns := maxi(1, ceili(ground.size.x / (reach * 2.0)))
 	var rows := maxi(1, ceili(ground.size.y / (reach * 2.0)))
-	while columns * rows > Tuning.SPOILERS_TO_DENY_A_PARK:
+	while columns * rows > SPOILERS_TO_DENY_A_PARK:
 		if columns >= rows:
 			columns -= 1
 		else:
@@ -913,7 +1083,7 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 ## How far from a source calm ground stops being usable.
 ##
 ## **Not the outer radius**, which is where it stops reaching at all. Anywhere a source emits less
-## than `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s) is somewhere she can still settle — and for every
+## than `CALM_ZONE_DENIAL_RATE` (7.7/s) is somewhere she can still settle — and for every
 ## act I row that is most of its own field. Getting this wrong is how one busker was ever thought
 ## to spoil a park.
 ##
@@ -927,7 +1097,7 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 ## down in is not denied — and wrong here: a source she is standing on top of keeps her awake
 ## whatever its rate does further out, so the floor is its own `inner_radius`.
 static func _denial_radius(def: EventDef) -> float:
-	return maxf(def.inner_radius, _reach_above(def, Tuning.CALM_ZONE_DENIAL_RATE))
+	return maxf(def.inner_radius, _reach_above(def, CALM_ZONE_DENIAL_RATE))
 
 static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 	var best := tiles[0]
@@ -956,7 +1126,7 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## the shortest side of the calm ground, floored at that constant. That is what lets a market take
 ## over a whole park and keeps it out of a back yard.
 static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> Array[EventDef]:
-	var allowed := maxf(Tuning.OBSTRUCTION_A_PARK_CAN_HOLD,
+	var allowed := maxf(OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(ground.size.x, ground.size.y) / 16.0)
 	var suitable: Array[EventDef] = []
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
@@ -993,7 +1163,7 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## exclusion cannot see (an alley door among them) rather than the rule's main work — see
 ## `_clear_of_the_doors()`, the same guarantee `tests/test_checkpoints.gd` holds for every row.
 ##
-## On `Tuning.CURFEW_ANNOUNCE_DAY` every standing site also gets a `curfew_announce` plan
+## On `CURFEW_ANNOUNCE_DAY` every standing site also gets a `curfew_announce` plan
 ## alongside its ordinary `loudspeaker` one — see that row's own doc for why a second, invisible
 ## plan is what "the masts carry the announcement" means rather than a second mast.
 ##
@@ -1014,7 +1184,7 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0,
 		return planned
 	var loudspeaker := EventCatalogue.heated(EventCatalogue.mast(), heat)
 	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
-			if day == Tuning.CURFEW_ANNOUNCE_DAY else null
+			if day == CURFEW_ANNOUNCE_DAY else null
 	var sites := MastSites.compute(map)
 	for scar in scars:
 		if String(scar["id"]) != SILENCED_MAST or int(scar["since_day"]) >= day:
@@ -2049,7 +2219,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 	return _best_of(def, rng, map, candidates, role, already, ground,
 			_calm_to_leave_alone(map, used), corridor, doors, standing)
 
-## The acceptance half of a placement: roll `Tuning.EVENT_PLACEMENT_TRIES` candidates out of
+## The acceptance half of a placement: roll `EVENT_PLACEMENT_TRIES` candidates out of
 ## `open_candidates`, refuse the ones that break a rule that cannot bend, and answer with the first
 ## perfect one or the roomiest of the rest.
 ##
@@ -2111,7 +2281,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# `WalkSiting`'s for one look, shared by every copy the look asks about. It is that caller's to
 	# drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
 	var verdicts: Dictionary = kept if kept != null else {}
-	for attempt in Tuning.EVENT_PLACEMENT_TRIES:
+	for attempt in EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
 		if not candidate:
@@ -2411,7 +2581,7 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 				open.append(candidate)
 				if map.street_kind_at(true, candidate) == GameEnums.StreetKind.PEDESTRIAN \
 						or map.street_kind_at(false, candidate) == GameEnums.StreetKind.PEDESTRIAN:
-					for _extra in Tuning.EVENT_PRECINCT_WEIGHT - 1:
+					for _extra in EVENT_PRECINCT_WEIGHT - 1:
 						open.append(candidate)
 		ground[key] = open
 	if not def.has_a_spread:
@@ -2495,15 +2665,15 @@ static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.Block
 			if corridor.carries_a_route(tile):
 				return 0
 			if not by_cost:
-				return Tuning.EVENT_CORRIDOR_WEIGHT if away == 0 else 1
+				return EVENT_CORRIDOR_WEIGHT if away == 0 else 1
 			if lethal:
-				return Tuning.WALL_DEEP_WEIGHT if away >= 2 else 1
+				return WALL_DEEP_WEIGHT if away >= 2 else 1
 			if away > 1:
 				return 1
-			return Tuning.EVENT_WALL_RIM_WEIGHT \
-					* (Tuning.EVENT_WALL_GAP_WEIGHT if corridor.is_in_a_gap(tile) else 1)
+			return EVENT_WALL_RIM_WEIGHT \
+					* (EVENT_WALL_GAP_WEIGHT if corridor.is_in_a_gap(tile) else 1)
 		GameEnums.BlockerRole.FRICTION:
-			return Tuning.EVENT_CORRIDOR_WEIGHT if away == 0 else 1
+			return EVENT_CORRIDOR_WEIGHT if away == 0 else 1
 		_:
 			return 1
 
@@ -2635,7 +2805,7 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 		var elsewhere := plan.set_piece_group != "" \
 				and plan.set_piece_group != candidate.set_piece_group
 		if not elsewhere:
-			if gap < Tuning.EVENT_SPACING_ANY:
+			if gap < EVENT_SPACING_ANY:
 				return -INF
 			if _keeps_its_field_clear(plan) and gap < plan.def.field_reach():
 				return -INF
@@ -2643,7 +2813,7 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 				room_same = minf(room_same, gap)
 		if _keeps_its_field_clear(candidate) and gap < candidate.def.field_reach():
 			return -INF
-	return INF if room_same >= Tuning.EVENT_SPACING_SAME else room_same
+	return INF if room_same >= EVENT_SPACING_SAME else room_same
 
 ## Whether the clearance rule is about this placement: a lethal event with nothing else inside
 ## its whole field — `EventDef.field_reach()`, not `outer_radius` alone, since a segment's field

@@ -312,7 +312,7 @@ func _some_calm_is_reached(map: CityMap, grid: ReachabilityGrid, blocked: Dictio
 
 ## Restates playtest 22's finding 5 as a number rather than a word: not merely "reachable", but
 ## reachable **without setting foot on the main road at all** — the one street whose excitement
-## decay multiplier is `Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` (0.6, against an ordinary
+## decay multiplier is `City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` (0.6, against an ordinary
 ## street's 1.0 and calm's 2.2), and the ground the reported run was forced onto: "the only way out
 ## was alongside the main road which basically ends the day."
 ##
@@ -335,7 +335,7 @@ func _test_a_day_is_reachable_without_the_main_road(t) -> void:
 			t.check(_some_calm_is_reached(map, grid, blocked),
 					("seed %d day %d: some calm area is reachable without the main road " +
 					"(decay ×%.1f, the ground playtest 22's run was forced onto)")
-					% [map.seed_used, day, Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
+					% [map.seed_used, day, City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
 
 # ------------------------------------------------------------------------ alleys ---
 
@@ -578,7 +578,7 @@ func _test_a_placed_crash_keeps_its_two_car_bodies(t) -> void:
 ## `Tuning.METER_MAX / 2` line `tests/test_crowd.gd` draws between *expensive* and *fatal*, taken
 ## deliberately on the fatal side.
 ##
-## **Walked, not asserted about the constant.** `Tuning.CAR_ACCIDENT_INTENSITY` is set from
+## **Walked, not asserted about the constant.** `EventCatalogue.CAR_ACCIDENT_INTENSITY` is set from
 ## `tests/probes/m118_crash_gap.gd`, which walks the same lines and prints them; this holds the
 ## thing that number was chosen for, so a change to the falloff shape, the radii or the parts fails
 ## here rather than passing a number back to itself. The **cheapest** open line is what it measures:

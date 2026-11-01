@@ -158,7 +158,7 @@ signal encounter_seen(day: int, name: String)
 ## that encounter: a meaningful encounter is held until it is seen, and sent with `seen` false only
 ## once it is over without having been.
 signal encounter_influenced(day: int, name: String, seen: bool)
-## She began running after at least `Tuning.RUN_BOUT_GAP` of not running, or for the first time in
+## She began running after at least `EncounterWatch.RUN_BOUT_GAP` of not running, or for the first time in
 ## the day.
 signal run_bout_began(day: int)
 

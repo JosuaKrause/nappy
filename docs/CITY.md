@@ -198,7 +198,7 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
   tiles from the nearest park. Both, together — see "The home".
 - Building rects tile the `BUILDING` tiles exactly, with no overlaps and no gaps.
 - Exactly one big building is the **power station**, its front door on a real street at least
-  `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home and outside the home's region.
+  `CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home and outside the home's region.
   See "The power station".
 - One **park with a playground is day 12's**, the park that day's task sends her to the swing of
   (`CityGenerator._plan_the_swing_park`, `BlockPlan.forced_open_on`). A park whose arc already
@@ -299,7 +299,7 @@ rather than an assumption.
 
 **Her home block's own three lots — the door's own and the two flanking the notch — are the same
 rects on every seed.** The notch is centred on the south edge of a fixed-size lot
-(`Tuning.HOME_SIZE_TILES`) inside a block whose own size (`Tuning.BLOCK_SIZE`) never rolls, so
+(`CityGenerator.HOME_SIZE_TILES`) inside a block whose own size (`Tuning.BLOCK_SIZE`) never rolls, so
 nothing about where the home sits or how big its lots are depends on the seed to begin with —
 only what a seed's own lattice puts around it does. `City` reaches past every per-seed roll on
 these three buildings as a result: a fixed wall/roof colour and window pattern
@@ -587,16 +587,16 @@ the one crossing this mostly does not apply to — a car brakes and queues for t
 diverting, because a door is a crossing the day's own structure means to keep open.
 
 **A walker's answer at a door is its own**, drawn once when it is placed so that it cannot change
-halfway down a street. One in four (`Tuning.WALKER_DOOR_TURN_BACK_FRACTION`) turns back at the last
+halfway down a street. One in four (`WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION`) turns back at the last
 junction exactly the way it would at a wall — it gets no carve-out, so the door reads to it as the
-wall either side of it does. One in eight (`Tuning.WALKER_DOOR_PASS_FRACTION`) walks straight
+wall either side of it does. One in eight (`WalkerStrategy.WALKER_DOOR_PASS_FRACTION`) walks straight
 through. Everybody else is **held at the gatehouse on their own sidewalk**, the way she is held at it,
 in four states: *walking* up to it, *waiting* stopped beside it in their last facing while whoever
 is inside is seen to, *inspection* inside the gatehouse and not drawn for
-`Tuning.WALKER_DOOR_HOLD_SECONDS` (1s, under her own two), and *emerging* on the far side on the
+`WalkerStrategy.WALKER_DOOR_HOLD_SECONDS` (1s, under her own two), and *emerging* on the far side on the
 same lane, carrying a cooldown that keeps that gatehouse from taking them again until they have left its
 area. One walker inside a gatehouse at a time, and the line behind it never grows past
-`Tuning.WALKER_DOOR_QUEUE_MAX`: a walker whose lookahead first sees a door that is already that
+`WalkerStrategy.WALKER_DOOR_QUEUE_MAX`: a walker whose lookahead first sees a door that is already that
 busy turns back at the last junction instead of joining it, so a busy door never grows a queue down
 the sidewalk.
 
@@ -797,7 +797,7 @@ holds for the whole run: a day can be bad, a run cannot be dead.
 ### The power station
 
 **One big building on every city is the power station**, and any other is an ordinary landmark.
-`Tuning.MIN_BIG_BUILDINGS` to `MAX_BIG_BUILDINGS` counts it, so the ordinary ones are one fewer
+`CityGenerator.MIN_BIG_BUILDINGS` to `MAX_BIG_BUILDINGS` counts it, so the ordinary ones are one fewer
 than the roll. The last day's task is its front door, so what is guaranteed is where it stands as
 well as that it does, and every clause is **checked when the footprint is accepted, never repaired
 afterwards** (`CityGenerator._place_power_station`):
@@ -807,7 +807,7 @@ afterwards** (`CityGenerator._place_power_station`):
   mass two blocks deep could not be seen.
 - **Every rule an ordinary landmark obeys**: the exclusions above and the calm-reachability gate.
 - **A front door on a real street**: the south street of one of its two blocks, still in the
-  lattice, with that block at least `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the
+  lattice, with that block at least `CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the
   home block in lattice (Manhattan) distance. A reasonable walk rather than the edge of the map:
   her routes need not pass it before the day she is sent there.
 - **Not in the home's region.** The door's street ground (`RegionPlanner.ground_region_of`)
@@ -853,7 +853,7 @@ guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pai
 faces and `power_station_door_position()` the point she stands on to reach it.
 
 **The station is where the city's power comes from, and the last night takes it away.** Once the
-sabotage is done (`GameState.resistance.sabotage_done`) and she is `Tuning.BLACKOUT_DISTANCE` (512px) from the
+sabotage is done (`GameState.resistance.sabotage_done`) and she is `Blackout.BLACKOUT_DISTANCE` (512px) from the
 station's lot — far enough that no part of it, stacks included, is on screen whichever way she
 leaves — `Blackout` puts out everything that runs on it in one frame: every lit window
 (`Building.powered`), every traffic light on the spine (`TrafficSignals.powered`, see "Traffic
@@ -1354,7 +1354,7 @@ should only be the crashed cars but it should emanate an excitement field that p
 from walking past it".)* That row is a `SealPlanner` scene rather than a `RoadClosure` — see
 "Sealing the tree" — and it is now solid only where its two cars are, so the debris and the
 pavements either side of them are ground she can walk. What closes them is
-`Tuning.CAR_ACCIDENT_INTENSITY`, a field over the scene's own band that costs more than half the
+`EventCatalogue.CAR_ACCIDENT_INTENSITY`, a field over the scene's own band that costs more than half the
 meter to squeeze past. **It is still not a third thing to sum**: a seal is a catalogue row, so it
 emits the way every event does and `WorldContext.total_excitement_at` is unchanged. What has changed is
 that a seal may be loud, and only this one is — the fallen tree (one trunk kerb to kerb) and the
@@ -2240,7 +2240,7 @@ Top-down camera with a fake vertical extrusion:
   (below) — no picture exists for a platform or brackets reaching a column nobody can stand in
   front of. Her own building is never asked: `City._spawn_buildings()` computes this only for a
   front that is not hers. **A column draws no facade only where a roof actually covers it**
-  (following the player's "Keep its facade"): `City._assign_roof_extensions()` keeps a column
+  (following the player's "Keep its facade"): `City.assign_roof_extensions()` keeps a column
   covered only where an extension reached it, so a column nothing covers — one facing the map's
   own edge (`CityMap.tile_at()` reads a tile past it as `BUILDING`), a power station's yard, or
   any south tile no lot owns — is an ordinary column with its windows, storefronts and door. A
@@ -2252,7 +2252,7 @@ Top-down camera with a fake vertical extrusion:
   `_subtract_all()`), each its own `Building` — so where one piece's front is covered by another,
   that is the same wall-meets-roof relationship the bullet above already extends a roof to fill,
   but the two pieces are physically one building's roof rather than a front covering a genuinely
-  separate one behind it. `City._assign_roof_extensions()` marks both sides of such a seam wherever
+  separate one behind it. `City.assign_roof_extensions()` marks both sides of such a seam wherever
   both rectangles were cut from the same courtyard lot (`map.lot_rect(block)`): the covering
   piece's column (`Building.roof_extension_seamless`) draws no `ROOF_EDGE_N` at its extension's
   top, and the covered piece's column (`Building.seamless_cover_cols`) draws no `ROOF_EDGE_S` on
@@ -2292,14 +2292,14 @@ Top-down camera with a fake vertical extrusion:
   `BOARDED_UP` overrides the roll and forces the shuttered pair, dark, the same shutter the
   degrading city's own storefronts use — see "The city degrades".
 - **Street trees stand only on a handful of tree-lined runs, and a run is a *place*.** A run is a
-  straight stretch of `Tuning.STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` (three to
+  straight stretch of `StreetTrees.STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` (three to
   five) consecutive blocks along one street line, horizontal or vertical, and there are
-  `Tuning.STREET_TREE_RUNS` of them placed at random across the map, well under the
-  `Tuning.STREET_TREE_MAX_LINED_FRACTION` (a quarter) ceiling `tests/test_blocks.gd` holds over a
+  `StreetTrees.STREET_TREE_RUNS` of them placed at random across the map, well under the
+  `StreetTrees.STREET_TREE_MAX_LINED_FRACTION` (a quarter) ceiling `tests/test_blocks.gd` holds over a
   seed sweep. Every street outside every run is bare. **Rare on purpose, and the reason is the
   events rather than the look**: a tree standing beside a van or a yeller is a second silhouette
   to read past, and a street full of them is a street where an obstacle is hard to spot.
-- **Inside a run, pits sit at `Tuning.STREET_TREE_PIT_SPACING` — two lot-lengths — on each kerb**,
+- **Inside a run, pits sit at `StreetTrees.STREET_TREE_PIT_SPACING` — two lot-lengths — on each kerb**,
   measured along the whole run rather than street by street, so a four-block run carries about two
   pits a side rather than two per street. **And two runs on the same kerb line keep the same floor
   between them**: `StreetTrees.runs()` refuses a candidate run closer to an already accepted run on

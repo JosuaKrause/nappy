@@ -304,7 +304,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 		t.check(out.id == own.id and out.look == own.look,
 				"day %d: the man out of a patrol car is %s" % [day, own.id])
 		t.check(not out.hard_fail and is_equal_approx(out.pursuit.stop_excitement,
-				Tuning.OFFICER_STOP_EXCITEMENT),
+				EventCatalogue.OFFICER_STOP_EXCITEMENT),
 				"day %d: and his catch is a stop of %.0f points, never the end of the day"
 				% [day, out.pursuit.stop_excitement])
 		t.check(not out.warns_before_it_exists() and not out.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
@@ -344,8 +344,8 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 ## reaches her takes little of it off — it is a moment, not a place; after the stop he charges
 ## nothing, walking back.
 func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
-	var stop := Tuning.OFFICER_STOP_EXCITEMENT
-	var contact := Tuning.BUMP_INTENSITY * Tuning.BUMP_DURATION * 0.5
+	var stop := EventCatalogue.OFFICER_STOP_EXCITEMENT
+	var contact := Crowd.BUMP_INTENSITY * Crowd.BUMP_DURATION * 0.5
 	t.check(stop > Tuning.CHAT_EXCITEMENT and stop > 3.0 * contact,
 			"a stop (%.0f) costs more than a conversation (%.0f) and three contacts (%.1f each)"
 			% [stop, Tuning.CHAT_EXCITEMENT, contact])
@@ -594,7 +594,7 @@ func _test_the_whole_encounter_from_calm_never_ends_the_day(t) -> void:
 	t.check(encounters >= 20, "%d whole encounters played out" % encounters)
 	t.check(worst < Tuning.METER_MAX - ENCOUNTER_MARGIN,
 			"the worst of them lands %.1f, under the whole meter by %.0f" % [worst, ENCOUNTER_MARGIN])
-	t.check(least > Tuning.OFFICER_STOP_EXCITEMENT,
+	t.check(least > EventCatalogue.OFFICER_STOP_EXCITEMENT,
 			"and the least costs her more than his stop alone (%.1f)" % least)
 
 ## How far under the whole meter the worst whole encounter has to stay: room for a source she
@@ -743,7 +743,7 @@ func _test_the_hunting_vans_hunt_on_foot(t) -> void:
 		t.check(cold.hunts.lets_out == 2, "'%s' hunts on foot, with two men" % id)
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(cold, level)
-			var hunts := level >= Tuning.HEAT_HUNTS_LEVEL
+			var hunts := level >= EventDef.HEAT_HUNTS_LEVEL
 			t.check(hot.pursuit == null and hot.hard_fail == cold.hard_fail,
 					"'%s' heat %d: the van itself never chases her, and is as lethal as cold"
 					% [id, level])

@@ -5,7 +5,7 @@ extends Node
 ## **Everything, in one frame, once she is far enough away.** *(The player, 2026-09-20: "just wait
 ## until a certain distance away -- then everything is off at once. the player wouldn't be able to
 ## see a rolling blackout anyway"; "yes all lights should go out".)* Once the sabotage is done
-## (`_city.run.resistance.sabotage_done`) and she is `Tuning.BLACKOUT_DISTANCE` from the power station, one
+## (`_city.run.resistance.sabotage_done`) and she is `BLACKOUT_DISTANCE` from the power station, one
 ## call to `go_dark()` puts out every lit window and the station's own hall (`Building.powered`),
 ## every traffic light (`TrafficSignals.powered`), and every loudspeaker mast
 ## (`EventManager.silence_all_masts()`), because the masts have no power of their own. The
@@ -23,6 +23,16 @@ extends Node
 ## **The escape is in the dark too**, since it is the same night: a city built for the escape
 ## (`dark_from_the_start`, its `DaySpec`'s) is dark from its first frame. `--blackout` stands in for
 ## the flag, for this class alone, so the moment can be photographed on any day.
+
+## How far from the power station she has to be, once the sabotage is done, for the city to go dark
+## — measured from the nearest point of the station's lot, in px. *(The player, 2026-09-20: "just
+## wait until a certain distance away -- then everything is off at once".)* Far enough that no part
+## of the station is on screen whichever way she leaves it, so the blackout is something she sees
+## happen to the city around her rather than to the building: the view is 640×360 at the camera's
+## zoom and leads her by `Stroller.CAMERA_LOOK_AHEAD` (46px), and the stacks rise four tiles past
+## the lot's north edge, so leaving past a corner needs the diagonal of (320 + 46) by
+## (180 + 46 + 128), which is 509px. Chosen where the design was silent, open to overturn.
+const BLACKOUT_DISTANCE := 512.0
 
 ## True from the frame the city went dark.
 var is_dark := false
@@ -67,7 +77,7 @@ func update(at: Vector2) -> void:
 		if is_dark:
 			restore()
 		return
-	if not is_dark and distance_from_station(at) >= Tuning.BLACKOUT_DISTANCE:
+	if not is_dark and distance_from_station(at) >= BLACKOUT_DISTANCE:
 		go_dark()
 
 ## How far `at` is from the nearest point of the station's lot, in px — `INF` on a city with none.

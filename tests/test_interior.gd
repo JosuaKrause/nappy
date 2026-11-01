@@ -1561,9 +1561,9 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 			break
 		gaps += 1
 		var gap: float = appeared[i] - left[i - 1]
-		t.check(absf(gap - Tuning.FINALE_PURSUER_RESPAWN_SECONDS) <= STEP * 3.0,
+		t.check(absf(gap - EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS) <= STEP * 3.0,
 				"the next man comes %.2fs after the last one ran out of the top, against %.2fs"
-				% [gap, Tuning.FINALE_PURSUER_RESPAWN_SECONDS])
+				% [gap, EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS])
 	t.check(gaps > 0, "there were gaps between his runs to measure (%d)" % gaps)
 	print("The masked man came %d times in %.0fs; gaps measured: %d"
 			% [appeared.size(), Tuning.FINALE_LENGTH_SECONDS, gaps])
@@ -1814,11 +1814,11 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 	# `Tuning.FINALE_STEAM_PERIODS`' own doc derives, asked of the numbers rather than restated.
 	var crossing := (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0 / Tuning.WALK_SPEED
 	for period: float in Tuning.FINALE_STEAM_PERIODS:
-		t.check(period - Tuning.FINALE_STEAM_BLOWS_FOR >= crossing + 1.0,
+		t.check(period - EventCatalogue.FINALE_STEAM_BLOWS_FOR >= crossing + 1.0,
 				("a %.1fs vent leaves %.2fs of open corridor against the %.2fs it takes to walk "
-				% [period, period - Tuning.FINALE_STEAM_BLOWS_FOR, crossing])
+				% [period, period - EventCatalogue.FINALE_STEAM_BLOWS_FOR, crossing])
 				+ "through its reach, a margin of %.2fs"
-				% (period - Tuning.FINALE_STEAM_BLOWS_FOR - crossing))
+				% (period - EventCatalogue.FINALE_STEAM_BLOWS_FOR - crossing))
 	print("Basement vents: %d, %.0fpx apart at the closest, periods %s; a crossing costs %.2fs"
 			% [vents.size(), spacing, Tuning.FINALE_STEAM_PERIODS, crossing])
 	events.free()
@@ -2055,7 +2055,7 @@ func _longest_both_shut(a: EventScheduler.Planned, b: EventScheduler.Planned, st
 	return longest
 
 ## Whether one vent's body is down at `at` seconds into the section. A vent's cycle is its notice,
-## then `Tuning.FINALE_STEAM_BLOWS_FOR` of blowing, then nothing until its own period comes round;
+## then `EventCatalogue.FINALE_STEAM_BLOWS_FOR` of blowing, then nothing until its own period comes round;
 ## `until_the_next_blow` is how far into the first cycle it starts.
 func _is_shut(vent: EventScheduler.Planned, at: float, steam: EventDef) -> bool:
 	var since := at - (vent.comes_in - vent.repeat_every)
@@ -2063,7 +2063,7 @@ func _is_shut(vent: EventScheduler.Planned, at: float, steam: EventDef) -> bool:
 		return false
 	var phase := fmod(since, vent.repeat_every)
 	return phase >= steam.telegraph_time \
-			and phase < steam.telegraph_time + Tuning.FINALE_STEAM_BLOWS_FOR
+			and phase < steam.telegraph_time + EventCatalogue.FINALE_STEAM_BLOWS_FOR
 
 ## *"Let's not replenish the meter in the basement it's a tense situation."* (inbox #765 in minty-lemur) The
 ## scene answers the baby's `decay_multiplier()` with `Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`
@@ -2235,7 +2235,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 	rng.seed = 4242
 	var events := BuildingEvents.events_in(t, scene, rng)
 	t.check(not scene.windows_are_flashing(), "the windows are dark to begin with")
-	events._physics_process(Tuning.FINALE_EXPLOSION_INTERVAL)
+	events._physics_process(EventCatalogue.FINALE_EXPLOSION_INTERVAL)
 	t.check(scene.windows_are_flashing(), "an explosion lights the hallway windows")
 	# *"All windows always need to flash together. A single window cannot flash by itself."*
 	t.check(scene.windows_lit() == scene.window_count(),
@@ -2268,7 +2268,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 ##   is the one property a symmetric mistake would still pass the mean check with.
 ## - **The rate on screen.** Over a minute of the section, far more flashes than the explosions
 ##   alone ever gave, which is what the player actually asked for. Stated against
-##   `Tuning.FINALE_EXPLOSION_INTERVAL` rather than as a count written here.
+##   `EventCatalogue.FINALE_EXPLOSION_INTERVAL` rather than as a count written here.
 ## - **All of them or none of them.** *(2026-09-19: "all windows always need to flash together. a
 ##   single window cannot flash by itself.")* Checked on every frame of the minute, so an overlap
 ##   between two flashes 0.1s apart cannot leave one lit or blink the corridor dark for a frame.
@@ -2336,7 +2336,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 			lit_while_dark += 1
 		scene._process(STEP)
 		at += STEP
-	var bangs := int(SPAN / Tuning.FINALE_EXPLOSION_INTERVAL)
+	var bangs := int(SPAN / EventCatalogue.FINALE_EXPLOSION_INTERVAL)
 	t.check(flashes > bangs * 5,
 			"far more flashes than the bangs alone gave (%d in %.0fs against %d explosions)"
 			% [flashes, SPAN, bangs])

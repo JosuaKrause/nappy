@@ -4,6 +4,117 @@ extends RefCounted
 ## assertable over the whole catalogue in a test. See docs/EVENTS.md for the catalogue table and
 ## the reasoning behind each row.
 
+## The other answer to *prevents the player from walking past it*: **off**, and one line from being
+## on. True makes the crash a `hard_fail` row — the mechanism a fire already uses — so the gaps end
+## the day rather than costing more of it than she can carry. It is a design question the player
+## has not answered yet, and the recommendation built is the expensive one, because a wall that
+## kills has no price to weigh and the whole verb of this game is *where do I walk*.
+##
+## Flipping it takes the row's `inner_radius` to `CAR_ACCIDENT_LETHAL_INNER_RADIUS` and its
+## telegraph to the doubled hard-fail margin — see `EventCatalogue._car_accident()`, which is the
+## only reader of either.
+const CAR_ACCIDENT_GAPS_ARE_LETHAL := false
+## What a car crash emits, per second at the middle of its own band — the one seal that makes any
+## noise at all, and the one place *a closure is silent* (`docs/CITY.md`) does not hold.
+## *(2026-09-12: "a car crash right now has a full bounding box even though there are gaps in the
+## sprite. the bounding box should only be the crashed cars but it should emanate an excitement
+## field that prevents the player from walking past it".)* Its body is now the two cars only
+## (`EventCatalogue._car_accident_parts`), so the picture's own gaps are walkable ground and this
+## is what stands in the way instead.
+##
+## **Set by the walk, not derived.** `tests/probes/m118_crash_gap.gd` walks the pavement gap and
+## the gap beside the cars at `Tuning.WALK_SPEED` across several seeds, and reports the **cheapest** line
+## through them, since a guarantee about a price is a guarantee about the price she can get. At
+## this number that line costs a little over 54 of the hundred-point meter, against the
+## `Tuning.METER_MAX / 2` line
+## `tests/test_crowd.gd` draws between *expensive* and *fatal* — deliberately on the fatal side, so
+## a meter that is not fresh cannot carry it. `tests/test_seals.gd` asserts that walk rather than
+## this number, so a change to `Field.falloff` or the geometry fails where it is felt.
+##
+## **What it buys is the meter, not the day**, which is the recommended reading of the player's
+## *prevents*: the pram's nearly-crying cue is the turn-back signal, and a fresh meter can still
+## force the pass at the price of the rest of the day. `CAR_ACCIDENT_GAPS_ARE_LETHAL` below is the
+## other reading, left switchable rather than argued about.
+const CAR_ACCIDENT_INTENSITY := 50.0
+## The radius that would end the day under `CAR_ACCIDENT_GAPS_ARE_LETHAL`, measured from the scene's
+## own centre. Above the cars' own 36.1px reach plus her 14px body, so she can actually reach the
+## thing that kills (`EventDef.validate()` refuses a lethal row whose body holds her outside its own
+## inner radius), and inside the 96px band so the gaps either side of the cars are what it covers.
+const CAR_ACCIDENT_LETHAL_INNER_RADIUS := 56.0
+## **How long a charger that waits for her warns before he charges**, in seconds, while she stays
+## inside his one radius (`PursuitSpec.warns_for`, `EventInstance.warns_by_radius()`). *(Inbox
+## #788 in minty-lemur, the player: "We should do one radius and warn inside it for 2s. If the
+## player leaves the radius nothing happens and the warning stops. If they stay within the
+## charge starts.")* The row reads it as its own `PursuitSpec.warns_for`, and the measurement
+## that keeps it fair is per row (`tests/probes/charger_warning.gd`): a walker who turns back
+## the moment his warning starts is out of his radius before it runs out, and one who stands in
+## it is caught.
+const CHARGER_WARNING := 2.0
+## How far past a door body's own solid edge the inspection starts — *(PLAYTEST-57: "the checkpoint
+## should activate when I get close. with the new stroller hitbox I cannot reach the checkpoint
+## entrance".)*
+##
+## **Stated over the hut, never over her, and that is the whole of the fix.** Her centre is stopped
+## `obstructs_radius + Tuning.PLAYER_BODY_RADIUS` (32 + 14 = 46px) from a door body's centre, and further
+## when the pram's own body is the thing between her and it — so a trigger stated as a radius from
+## the hut's *centre* has to be larger than whatever she happens to be pushing that day, and
+## changing the pram switched the mechanic off without touching it. Measured from the hut's wall,
+## one number covers every pram there has ever been: 48px clears her own body's 14px stand-off and
+## the widest the pram's own body has ever reached ahead of her, with room left over, and it starts
+## the inspection while she is still walking up rather than only once she is pressed against the
+## door. See `EventDef.detain_radius`.
+const CHECKPOINT_DETAIN_REACH := 48.0
+## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her — *(2026-09-10, playtest 55:
+## "the checkpoint itself, 2s should be enough".)* Short rather than heavier than
+## `chatting_mother`'s 5s: a toll paid at every crossing of a region wall has to stay cheap to
+## repeat, where a conversation is spent once. See `EventDef.detain_seconds`.
+const CHECKPOINT_DETAIN_SECONDS := 2.0
+## Seconds between two off-screen explosions inside the building. Section one is *"relatively
+## minimal"* and an explosion is its only city-wide beat, so it is spaced like the director's own
+## `EventDirector.AHEAD_INTERVAL` band rather than more often: eight of them over a 180s clock is enough for the
+## hallway windows to flash more than once without the basement becoming a drum.
+const FINALE_EXPLOSION_INTERVAL := 22.0
+## How long after the masked man has finished his run before another one comes up the same shaft,
+## in seconds. *(2026-09-19: "then the pursuing guy should respawn forcing to switch the side
+## again.")*
+##
+## **Stated against what one run costs her rather than against a feeling.** A shaft is three floors
+## of eight tiles (768px) and he runs it at `Tuning.HEAT_HUNTS_SPEED` (130px/s), so a run is about six
+## seconds, and before it he stands at the foot with his hand raised until she comes within
+## `masked_pursuer.notice.runs_within` of him. Six seconds of nothing between his runs is long
+## enough that stepping out of a door and straight back in is a real answer, short enough that
+## waiting one out and strolling down is not. It is a first number and the one to move if the
+## shaft reads as either a corridor with a man in it or a corridor with a man near it.
+const FINALE_PURSUER_RESPAWN_SECONDS := 6.0
+## How long one vent blows, in seconds, once its notice is over — the *on* half of the on/off
+## split, against the periods above.
+##
+## **Short against every period**, so a vent's corridor is open for longer than it is shut: this is
+## the whole of the shut half, and the shortest period leaves twice as long open again. A gap she
+## can walk through is the thing she is waiting for, and `Tuning.FINALE_STEAM_PERIODS` states the floor
+## under that gap. Short in its own right too, because a vent closes a corridor with no way round
+## it: the pocket between two of them is only ever shut at both ends for as long as the shorter of
+## the two overlaps, which is bounded by this.
+const FINALE_STEAM_BLOWS_FOR := 2.0
+## **What it costs when the man an investigating car let out reaches her**, in points of the
+## excitement meter, landed on her standing beside him: he stops her, and his own field charges this
+## over `Tuning.OFFICER_STOP_SECONDS`, fading, before he walks back to his car (`PursuitSpec.stop_excitement`).
+## *(Inbox #669 in coral-lark, the player on PR #663: "we make it somewhat costly. once the policeman reaches her
+## they stop and walk back to the car" · "it needs to give a substantial cost but not lethal
+## directly" · "well if the excitement meter is already high it can be lethal".)*
+##
+## **Substantial, and never the end of a day on its own** — the stop, and the whole encounter it
+## ends, since the car is quiet from its stop until it has left her
+## (`EventInstance.is_quiet_for_its_man()`): nearly four contacts' worth (eleven points each,
+## `Crowd.BUMP_INTENSITY`) and well over a conversation's 25 (`Tuning.CHAT_EXCITEMENT`), so being reached is a
+## thing she pays for rather than a bump; and under `Tuning.METER_MAX` with the rest of the encounter, so
+## from a calm meter it never ends the day — only on a meter already high enough that it carries
+## her to the cap and past `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` does it. It is his field, but it is spent in
+## a second at its full width, so walking away the instant he reaches her takes little of it off; a
+## sleeping baby takes `Tuning.SLEEPING_SENSITIVITY` of it, as of everything. Chosen while building, open
+## to overturn.
+const OFFICER_STOP_EXCITEMENT := 40.0
+
 # ------------------------------------------------------------------- bodies ---
 # A body is **half the silhouette**, never a number chosen for how it plays: the rule in
 # `EventDef.obstructs_radius` is that a thing that stands still is solid at the width it is drawn,
@@ -145,7 +256,7 @@ static func building_fire() -> EventDef:
 	return _building_fire
 
 ## **The explosion outside, as it reaches her inside the building**: `finale_explosion` without its
-## crater, coming every `Tuning.FINALE_EXPLOSION_INTERVAL` (`repeat_every`). Indoors there is no
+## crater, coming every `FINALE_EXPLOSION_INTERVAL` (`repeat_every`). Indoors there is no
 ## street for it to stand on and nothing of it to see, so what it is in there is a beat: every
 ## window lights (`from_outside`, `WorldContext.bang_outside()`) and the row's own field — its
 ## `intensity` for its `duration` — charges her wherever she stands, since a building is not a
@@ -156,7 +267,7 @@ static func explosion_outside() -> EventDef:
 	if _explosion_outside == null:
 		var variant := without_its_aftermath(by_id("finale_explosion"))
 		variant.from_outside = true
-		variant.repeat_every = Tuning.FINALE_EXPLOSION_INTERVAL
+		variant.repeat_every = FINALE_EXPLOSION_INTERVAL
 		_explosion_outside = variant
 	return _explosion_outside
 
@@ -642,7 +753,7 @@ static func _alley_mouse() -> EventDef:
 ## field instead buys more pass per point of `walk_through_cost()`, because the ground a passer-by
 ## spends real time inside is wider than any core worth drawing.
 ##
-## **Two ceilings bound him, not one.** `Tuning.WALL_WORTH_OF_COST` (35, already re-derived against
+## **Two ceilings bound him, not one.** `EventScheduler.WALL_WORTH_OF_COST` (35, already re-derived against
 ## today's 6.0/s decay when `dog_walker` and `leaf_blower` set its line) is the first: an intensity
 ## high enough to restore the pass fully over the old 210px reach costs well past it and turns him
 ## into a `WALL`, which would pull him **off** the corridor his own placement rule keeps him on —
@@ -730,7 +841,7 @@ static func _homeless_yeller() -> EventDef:
 ## **+14.7/s**: never the "under 3" the man shouting fell to, but a real loss all the same.
 ##
 ## **Restoring it fully is not available.** The intensity that matches +14.7/s against today's
-## decay costs past `Tuning.WALL_WORTH_OF_COST` (35) on `walk_through_cost()`, and that constant's
+## decay costs past `EventScheduler.WALL_WORTH_OF_COST` (35) on `walk_through_cost()`, and that constant's
 ## own docstring names `dog_walker` as one of the two rows that fixes the line **because** it has
 ## to stay `friction` — a dog-walker decision she cannot reach because the row sits off the
 ## corridor is the decision this row exists to be, deleted. So `intensity` moves only as far as the
@@ -1132,7 +1243,7 @@ static func _burnt_shell() -> EventDef:
 ## actually charges; what the pass nets at each offset is this row's line in `docs/COSTS.md`.
 ## **`TOWARD_PLAYER` never earns a `WALL` role** —
 ## `EventScheduler._role_for` answers `NONE` for anything the director sites rather than the
-## scheduler, so nothing here trades against `Tuning.WALL_WORTH_OF_COST` the way `dog_walker`'s
+## scheduler, so nothing here trades against `EventScheduler.WALL_WORTH_OF_COST` the way `dog_walker`'s
 ## retuning does. **But running still has to lose to it**, `tests/test_events.gd`'s own catalogue-
 ## wide rule, and intensity alone pushes a field loud enough to break that: at 42/s the shorter,
 ## faster crossing running buys costs less than walking it, which nothing in the catalogue but
@@ -1143,7 +1254,7 @@ static func _burnt_shell() -> EventDef:
 ## **It is loud while it passes her, because its warning is over before it exists.**
 ## *(2026-09-20: "unleashed dog still has too little influence -- needs to be more intense"; "but
 ## keep things in relation to each other".)* A telegraph damps a row to
-## `Tuning.TELEGRAPH_INTENSITY_FRACTION` (0.15) because *this has not started yet*, and a dog met
+## `EventInstance.TELEGRAPH_INTENSITY_FRACTION` (0.15) because *this has not started yet*, and a dog met
 ## inside its own telegraph is behind her before it is ever at 39. Its telegraph is its screen-edge
 ## warning instead, run with nothing in the world (`PendingWarning`), and the dog is created just out
 ## of sight with it spent, at its own intensity. Nothing about the field moved for this.
@@ -1242,7 +1353,7 @@ static func _market_stall() -> EventDef:
 ## closes one side of a street and never the street. A line past the core at `core_radius` costs
 ## what the same line past a busker costs, because past `core_radius` it is one.
 ##
-## **`core_intensity` is what anchors `Tuning.WALL_WORTH_OF_COST`'s own line, so it moved when the
+## **`core_intensity` is what anchors `EventScheduler.WALL_WORTH_OF_COST`'s own line, so it moved when the
 ## line did.** *(2026-09-20: "leaf_blower goes up by what the decay took from it" — the same
 ## walking-decay rise from 3.5 to 6.0/s that cost every row in M174, measured here by
 ## `tests/probes/m174_pass.gd`'s own walk-past simulation, the source held still since this row
@@ -1252,7 +1363,7 @@ static func _market_stall() -> EventDef:
 ## of it rather than all, which is the smaller of two costs weighed against raising a wall row's
 ## own number further than the line strictly needs. `walk_through_cost()` is what actually matters
 ## for the line itself, and it is the number re-derived against: comfortably past
-## `Tuning.WALL_WORTH_OF_COST`, which that constant's own docstring explains alongside
+## `EventScheduler.WALL_WORTH_OF_COST`, which that constant's own docstring explains alongside
 ## `dog_walker`'s.
 static func _leaf_blower() -> EventDef:
 	var def := EventDef.new()
@@ -1434,7 +1545,7 @@ static func _pigeon_flock() -> EventDef:
 	def.max_per_day = 5
 	# **A flock is scenery, not a block** — overturned on 2026-09-13, PLAYTEST-71: "flocks are
 	# basically free already — don't count it as block, just count is scenery." Left unset, a
-	# 42-over-168px field crosses `Tuning.WALL_WORTH_OF_COST` and `_role_for` would call this a
+	# 42-over-168px field crosses `EventScheduler.WALL_WORTH_OF_COST` and `_role_for` would call this a
 	# `WALL`, pulling it off every route the way any other expensive row is; `Role.SCENERY` answers
 	# `NONE` first, so it lands on a route corridor exactly as it lands anywhere else.
 	def.role = EventDef.Role.SCENERY
@@ -1512,7 +1623,7 @@ static func _cyclist() -> EventDef:
 	# Well under the ordinary act I rows, and the cap now does different work than its number
 	# suggests: `TOWARD_PLAYER` never puts it on a tile, so it cannot tile a street the way a `MAP`
 	# row could. What the cap still bounds is how much of the day's budget — `cost` 3 each — goes to
-	# cyclists rather than to cafés and construction, and `Tuning.AHEAD_INTERVAL` (11-26s apart)
+	# cyclists rather than to cafés and construction, and `EventDirector.AHEAD_INTERVAL` (11-26s apart)
 	# throttles the rest: the director draws one owed row at a time from a shared queue with the
 	# cat and the dog, so how many of fourteen she could ever actually meet is bounded by the day's
 	# own length long before the cap is.
@@ -1612,7 +1723,7 @@ static func _reversing_lorry() -> EventDef:
 ## **A paced pavement fixture, like `homeless_yeller`** — she is *at* a place rather than passing
 ## through it, and pacing is what guarantees streaming actually meets her rather than her running
 ## her whole beat unobserved. Her ambient field is person-scale (`intensity` near a passer-by's
-## `Tuning.PEDESTRIAN_INTENSITY`, 4.2) and its `outer_radius` is tight, so brushing past her without
+## `CrowdExcitement.PEDESTRIAN_INTENSITY`, 4.2) and its `outer_radius` is tight, so brushing past her without
 ## triggering a conversation costs about what an ordinary close pass does — no more.
 ##
 ## **The conversation is the new mechanic, and it is a trigger rather than a field**: entering
@@ -1712,7 +1823,7 @@ static func _chatting_mother() -> EventDef:
 ## ones: `EventScheduler` places it on a tile like `alley_robbery`, waiting inside its own field for
 ## her (`EventDef.from_day_after`, below); and `EventDirector` now and then still sends the
 ## day-3 shape itself — warned first from off screen, already noticing her, no tip —
-## `Tuning.CHARGING_DOG_SPRINKLE_CHANCE` of the time on a day it is eligible. One `EventDef` answers
+## `EventDirector.CHARGING_DOG_SPRINKLE_CHANCE` of the time on a day it is eligible. One `EventDef` answers
 ## both, since neither changes what the row *is*, only whether she is routed into it or walks into
 ## it while going about her day.
 static func _charging_dog() -> EventDef:
@@ -1768,7 +1879,7 @@ static func _charging_dog() -> EventDef:
 	# From day 4, once it notices her, it warns on the clock every charger that waits for her keeps
 	# and stands in its alert pose rather than closing (woolly-penguin #748); the day-3 dog has no
 	# wait, so its approach is still its telegraph (`EventInstance.is_standing_for_its_notice()`).
-	def.pursuit.warns_for = Tuning.CHARGER_WARNING
+	def.pursuit.warns_for = CHARGER_WARNING
 	def.pursuit.stands = true
 	# Its badge alone, sent at her down her heading, before it is placed just out of sight
 	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part, under the one-second
@@ -1796,7 +1907,7 @@ static func _charging_dog() -> EventDef:
 ## front of it, while it drives its route, with her on the carriageway.
 ##
 ## **The patrol rung of the resistance's ladder.** `heat_response = PRESSES`: past
-## `RunState.resistance.progress`, more of them and louder, and past `Tuning.HEAT_INVESTIGATES_LEVEL`
+## `RunState.resistance.progress`, more of them and louder, and past `EventDef.HEAT_INVESTIGATES_LEVEL`
 ## it stops merely patrolling and starts investigating: it stops on its road once she is close and
 ## a policeman gets out and pursues her (`EventDef.investigates()`, `out_of_the_car()`), whose catch
 ## costs her and never ends the day by itself. The car never gains `hard_fail`, whatever the heat,
@@ -1960,7 +2071,7 @@ static func _loudspeaker() -> EventDef:
 	def.max_per_day = Tuning.MAST_COUNT
 	return def
 
-## What the masts carry on `Tuning.CURFEW_ANNOUNCE_DAY` instead of their ordinary broadcast —
+## What the masts carry on `EventScheduler.CURFEW_ANNOUNCE_DAY` instead of their ordinary broadcast —
 ## `EventScheduler._place_masts()` places one of these at every mast site that morning, alongside
 ## the mast's own `loudspeaker` instance, which keeps drawing the pole, the lamp and the arcs: this
 ## row is `Look.NONE` and adds only the field, the same way a park's own playground frame draws
@@ -2065,7 +2176,7 @@ static func _curfew_announce() -> EventDef:
 ## **The 179px cold field sits under the shared 180px trigger, which the 24px `abduction` and
 ## `night_raid` never had to notice because their own fields (250/330) already cleared it.**
 ## `EventDef.at_heat()` widens only the hunting copy's `outer_radius` to `maxf(outer_radius,
-## Tuning.HEAT_HUNTS_WITHIN)` — the smallest fix that holds for every `HUNTS` row rather than one that asks
+## EventDef.HEAT_HUNTS_WITHIN)` — the smallest fix that holds for every `HUNTS` row rather than one that asks
 ## a row's cold field to carry a number that belongs to the ladder — so the roadblock's own 179px
 ## field is exactly what it was cold, and only the moment its guard starts hunting reaches 180px.
 ## `tests/test_heat.gd`'s generic loop (`_test_a_hunts_row_wakes_up_at_its_own_threshold`) is what
@@ -2096,7 +2207,7 @@ static func _roadblock() -> EventDef:
 	var chase := PursuitSpec.new()
 	chase.catch_reach = MASKED_MAN_REACH
 	chase.stands = true
-	chase.warns_for = Tuning.CHARGER_WARNING
+	chase.warns_for = CHARGER_WARNING
 	chase.leaves_its_body = true
 	chase.warns_over_the_street = true
 	def.hunts = HuntSpec.pursuing(chase)
@@ -2121,10 +2232,10 @@ static func _roadblock() -> EventDef:
 ## here changes `contribution_at()`, spawns a body, or reaches into the crowd.
 ##
 ## **`heat_response = HUNTS`, the lethal rung of the resistance's ladder, hunted on foot**
-## (`EventDef.hunts`, letting men out). Below `Tuning.HEAT_HUNTS_LEVEL` it is untouched — population and intensity
+## (`EventDef.hunts`, letting men out). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched — population and intensity
 ## are `PRESSES`'s axes, not this one's. At and above it, the derived copy stops idling for a
 ## stranger and hunts her with its men instead: it stays parked, solid, and once she is within
-## `Tuning.HEAT_HUNTS_WITHIN` of it along a clear line it lets two men out at its door,
+## `EventDef.HEAT_HUNTS_WITHIN` of it along a clear line it lets two men out at its door,
 ## `out_of_the_car()`'s hunting copy, whose catch ends the day — the van's own lethality, kept.
 ## *(Inbox #669 in coral-lark, asked whether the unmarked van should stop and let men out as the police vehicles
 ## do: "Same as the police".)* The van keeps `hard_fail` throughout, so its own 54px still takes her
@@ -2255,7 +2366,7 @@ static func _alley_robbery() -> EventDef:
 	# **He charges once his warning has run with her still inside his radius**, on the clock every
 	# charger that waits for her keeps (inbox #788 in minty-lemur), walking at her and holding
 	# at his stand-off while he warns.
-	def.pursuit.warns_for = Tuning.CHARGER_WARNING
+	def.pursuit.warns_for = CHARGER_WARNING
 	# And he walks off when he has lost her, rather than being deleted where he stood.
 	def.departs_at = 100.0
 	def.hard_fail = true
@@ -2469,7 +2580,7 @@ static var _out_of_the_car: Dictionary[String, EventDef] = {}
 ## unmarked van: "Same as the police".)*
 ##
 ## **Out of the patrol car (`stops`), his catch is a stop, not the end of the day**
-## (`PursuitSpec.stop_excitement`, `Tuning.OFFICER_STOP_EXCITEMENT`): when he reaches her he stops, his
+## (`PursuitSpec.stop_excitement`, `OFFICER_STOP_EXCITEMENT`): when he reaches her he stops, his
 ## field lands a substantial cost on her, and he and every man his vehicle let out walk back to it.
 ## *(Inbox #669 in coral-lark, the player: "once the policeman reaches her they stop and walk back to the car" ·
 ## "it needs to give a substantial cost but not lethal directly" · "well if the excitement meter is
@@ -2507,7 +2618,7 @@ static func out_of_the_car(day: int, stops := true) -> EventDef:
 		def.pursuit.stands = true
 		if stops:
 			def.hard_fail = false
-			def.pursuit.stop_excitement = Tuning.OFFICER_STOP_EXCITEMENT
+			def.pursuit.stop_excitement = OFFICER_STOP_EXCITEMENT
 		_out_of_the_car[key] = def
 	return _out_of_the_car[key]
 
@@ -2533,9 +2644,9 @@ static var _task_guard_sent: EventDef = null
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##
 ## **`heat_response = HUNTS`, the same rung `abduction` climbs, but it hunts on foot**
-## (`EventDef.hunts`, letting men out). Below `Tuning.HEAT_HUNTS_LEVEL` it is untouched, exactly as it stands here — a
+## (`EventDef.hunts`, letting men out). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched, exactly as it stands here — a
 ## closed block and nothing more. At and above it, the derived copy `investigates`: the van stays
-## where it stands, and the moment she is within `Tuning.HEAT_HUNTS_WITHIN` (180px) of it along a
+## where it stands, and the moment she is within `EventDef.HEAT_HUNTS_WITHIN` (180px) of it along a
 ## clear line it lets two men out at its door on her side, who pursue her under the
 ## pursuit contract — `EventCatalogue.out_of_the_car()`'s hunting copy, a guardsman on day 10 —
 ## and whose catch ends the day, as M56 built the hunting raid *(inbox #669 in coral-lark, the player: "Van stops,
@@ -2655,7 +2766,7 @@ static func _barricade() -> EventDef:
 ## and almost nothing else; 19.5 gives that back with a little over, which is what was asked for.
 ##
 ## **19.9 is where it stops, and the margin is thin on purpose rather than by oversight.** At that
-## rate `walk_through_cost()` crosses `Tuning.WALL_WORTH_OF_COST` and `EventScheduler._role_for`
+## rate `walk_through_cost()` crosses `EventScheduler.WALL_WORTH_OF_COST` and `EventScheduler._role_for`
 ## reclassifies the row as a `WALL`, which would pull it off every route the day carries — and a
 ## protest is where a resistance task sends her (*"Stand where they're standing"*,
 ## `ResistanceSteps`), so a protest off the corridor is a task she cannot reach. `docs/COSTS.md`
@@ -2779,7 +2890,7 @@ static func _fallen_tree() -> EventDef:
 ## fitted to, what the field is stated over, and the disc every planner clears the street by — while
 ## `solid_parts` puts a body under each car and leaves the debris and the two pavements open. The
 ## price of walking through one of those gaps is the field, not a wall: see
-## `Tuning.CAR_ACCIDENT_INTENSITY`, which is what overturns *a closure is silent* for this row alone
+## `CAR_ACCIDENT_INTENSITY`, which is what overturns *a closure is silent* for this row alone
 ## (`docs/CITY.md`, "A closure is silent").
 ##
 ## **The field is stated over the band and not over the cars.** `inner_radius` is
@@ -2799,18 +2910,18 @@ static func _car_accident() -> EventDef:
 	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.act_tag = 1
-	def.intensity = Tuning.CAR_ACCIDENT_INTENSITY
+	def.intensity = CAR_ACCIDENT_INTENSITY
 	def.inner_radius = GroundShape.BAND_RADIUS
 	def.outer_radius = 96.0
 	def.telegraph_time = 0.9
 	def.solid(GroundShape.band(96.0))
 	def.solid_parts = _car_accident_parts()
-	if Tuning.CAR_ACCIDENT_GAPS_ARE_LETHAL:
+	if CAR_ACCIDENT_GAPS_ARE_LETHAL:
 		# The other answer to *prevents*, off by default — see the constant. The lethal radius has
 		# to clear the cars' own bodies with her 14px to spare or the kill can never fire
 		# (`EventDef.validate()`), and the telegraph has to buy the walk out of the doubled margin.
 		def.hard_fail = true
-		def.inner_radius = Tuning.CAR_ACCIDENT_LETHAL_INNER_RADIUS
+		def.inner_radius = CAR_ACCIDENT_LETHAL_INNER_RADIUS
 		def.telegraph_time = 1.2
 	return def
 
@@ -2995,7 +3106,7 @@ static func _collapsed_frontage() -> EventDef:
 ## walks to the hut gets detained inside and then spawns on the other side."*
 ##
 ## **The hold starts a reach past the hut's own wall**, not a radius from the middle of it:
-## `detain_radius` is `Tuning.CHECKPOINT_DETAIN_REACH` (48px) measured from the solid edge, so
+## `detain_radius` is `CHECKPOINT_DETAIN_REACH` (48px) measured from the solid edge, so
 ## `EventDef.detain_distance()` comes out at 80px from the centre, and the guard steps out while
 ## she is still walking up rather than only once she is pressed against the hut — which, with a
 ## pram in front of her, she never was. It sits inside `inner_radius` (84px) the way every
@@ -3036,8 +3147,8 @@ static func _checkpoint_hut() -> EventDef:
 	def.outer_radius = 98.0
 	def.telegraph_time = 1.0
 	def.solid(GroundShape.point(32.0))
-	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
-	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
+	def.detain_seconds = CHECKPOINT_DETAIN_SECONDS
+	def.detain_radius = CHECKPOINT_DETAIN_REACH
 	def.redetains = true
 	def.barrier_structure = true
 	return def
@@ -3047,7 +3158,7 @@ static func _checkpoint_hut() -> EventDef:
 ## across the carriageway, and a raised one is ground she may walk under *(2026-09-24: "I didn't
 ## say it should stay solid when it's open")* — `EventDef.SolidWhen.WHILE_LOWERED`, so its collision body follows
 ## the arm and the cars decide the arm (`Crowd._stop_for_gates()`: up once a car has waited at it
-## `Tuning.GATE_STOP_SECONDS`, down the moment no car is within a length of it and she is not
+## `Crowd.GATE_STOP_SECONDS`, down the moment no car is within a length of it and she is not
 ## under it). The inspection is the two huts' alone, and a hut does not take her in from the
 ## carriageway this boom spans, so walking under a raised arm skips the toll — the unlawful
 ## crossing `EventManager` watches for and sets a `door_guard` on her for.
@@ -3098,8 +3209,8 @@ static func _checkpoint_post() -> EventDef:
 	def.outer_radius = 98.0
 	def.telegraph_time = 1.0
 	def.solid(GroundShape.point(32.0))
-	def.detain_seconds = Tuning.CHECKPOINT_DETAIN_SECONDS
-	def.detain_radius = Tuning.CHECKPOINT_DETAIN_REACH
+	def.detain_seconds = CHECKPOINT_DETAIN_SECONDS
+	def.detain_radius = CHECKPOINT_DETAIN_REACH
 	def.redetains = true
 	def.barrier_structure = true
 	return def
@@ -3126,7 +3237,7 @@ static func _checkpoint_post() -> EventDef:
 ## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): his warning came before he was
 ## set on her. From the frame she crosses the door's line, the guard at the hut across the road
 ## from her raises his hand (`EventInstance.guard_warns_her`), or an alley post's guard; back
-## across before `Tuning.CROSSING_WARNING` has run, nobody comes, and still across once it has,
+## across before `CheckpointController.CROSSING_WARNING` has run, nobody comes, and still across once it has,
 ## this man steps out of that hut or post and charges from his first frame. *(Inbox #788 in
 ## minty-lemur, the player: "The actual crossing will start the timer and if the player goes
 ## back no charge happens but if they stay crossed the charge will start. Warning starts when
@@ -3319,7 +3430,7 @@ static func _masked_pursuer() -> EventDef:
 	# should respawn forcing to switch the side again")*: a fresh one comes up the shaft this long
 	# after the last has run out of the top of it, so every run waits, warns and runs exactly as the
 	# first did (`EventManager`'s repeats).
-	def.repeat_after = Tuning.FINALE_PURSUER_RESPAWN_SECONDS
+	def.repeat_after = FINALE_PURSUER_RESPAWN_SECONDS
 	return def
 
 ## Steam in the basement: *"maybe some steam in the basement etc."* A vent that blows on a timer,
@@ -3340,7 +3451,7 @@ static func _masked_pursuer() -> EventDef:
 ##
 ## **One vent is a gate; the corridor is several of them on their own clocks.** The count, the
 ## periods and how long a blow lasts are `Tuning.FINALE_STEAM_PERIODS` and
-## `Tuning.FINALE_STEAM_BLOWS_FOR`; the building sites them on the basement's narrows
+## `FINALE_STEAM_BLOWS_FOR`; the building sites them on the basement's narrows
 ## (`BuildingPlan`), each plan coming again on its own period (`EventScheduler.Planned.
 ## repeat_every`). What this row owns is one blow: notice, body, field, over. Its plume billows over
 ## two frames (`EventPictures.STEAM_B`) for the whole blow.
@@ -3371,5 +3482,5 @@ static func _basement_steam() -> EventDef:
 	# times over by the notice she is owed for the noise.
 	def.telegraph_time = 1.2
 	def.pulse_period = 4.0
-	def.duration = Tuning.FINALE_STEAM_BLOWS_FOR
+	def.duration = FINALE_STEAM_BLOWS_FOR
 	return def

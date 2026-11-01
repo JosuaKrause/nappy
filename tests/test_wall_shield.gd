@@ -466,7 +466,7 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	const TICK := 1.0 / 30.0
 	var burst: EventInstance = null
 	var waited := 0.0
-	while burst == null and waited <= Tuning.FINALE_EXPLOSION_INTERVAL + 1.0:
+	while burst == null and waited <= EventCatalogue.FINALE_EXPLOSION_INTERVAL + 1.0:
 		events._physics_process(TICK)
 		waited += TICK
 		for instance in events.instances():

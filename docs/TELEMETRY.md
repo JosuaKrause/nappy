@@ -209,13 +209,13 @@ The events:
   - **An encounter** is one instance's time on screen: it opens the first frame any of what is
     drawn for it is visible (`EventInstance.drawn_box()`, its own picture stretched over the run a
     spread covers) or it lands something on her from off screen, and it is over once the instance has been neither for
-    `Tuning.ENCOUNTER_GAP` (5s). Coming back sooner is the same encounter; a different instance is
+    `EncounterWatch.ENCOUNTER_GAP` (5s). Coming back sooner is the same encounter; a different instance is
     always another.
   - **`seen`**, at most once per encounter: the first frame `Tuning.ENCOUNTER_SEEN_SHARE` (80%) of
     the instance's drawn box is visible, so a sliver at the edge, a thing under the joystick's
     controls, its halo or its badge does not count. A row that draws nothing of its own (`playground`, `curfew_announce`) is never seen.
   - **`influenced`**, at most once per encounter, the first frame it is meaningful, the same for
-    every row: `Tuning.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within the
+    every row: `EncounterWatch.ENCOUNTER_INFLUENCE_POINTS` (10% of a full meter) landed on her within the
     encounter (its source's `ExcitementSource.landed_ever`), or it chasing her (`EventInstance.is_chasing()`), or it
     catching her or beginning a hold of her *(inbox #577, the player: "let's count chases and catches
     as influenced always")*. A catch and a hold are the game's own tests, called and not copied
@@ -237,7 +237,7 @@ The events:
   `tools/goatcounter.sh --encounters` prints the three per event type with the ratio, overall and by
   day. `seen-fire` and `pelican-seen` above stay as they are beside these.
 - `nappy-day-N-ran` — a bout of her running, sent as it begins: she runs (`Stroller.run_excess_ratio()`
-  above 0, faster than walking pace) after `Tuning.RUN_BOUT_GAP` (10s) or more without running, or
+  above 0, faster than walking pace) after `EncounterWatch.RUN_BOUT_GAP` (10s) or more without running, or
   for the first time in the day (`EncounterWatch`). *(misty-newt: "we can count the number of running
   excluding gaps smaller than 10s".)*
 - `nappy-day-N-mark-seen` / `nappy-day-N-mark-read` / `nappy-day-N-mark-missed` — a chalk mark

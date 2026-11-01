@@ -92,7 +92,7 @@ func _coverage(city: City) -> void:
 		building_nodes += _nodes(building)
 		for col in building.columns():
 			max_roof_north_overhang = maxf(max_roof_north_overhang,
-				building._extension_rows(col) * 32.0)
+				building.extension_rows(col) * 32.0)
 		for layer: SceneryLayer in building._roof_layers:
 			roof_layers += 1
 			for rect: Rect2 in layer._rects:

@@ -27,10 +27,88 @@ enum DoorAnswer { HELD, PASSES, TURNS_BACK }
 ## - **WALKING** — on its way, or not crossing a door at all.
 ## - **WAITING** — stopped on its own lane beside the hut, in its last facing, the way a stopped
 ##   walker already stands. It shuffles forward as the line in front of it goes in.
-## - **INSPECTION** — inside the hut and not drawn, for `Tuning.WALKER_DOOR_HOLD_SECONDS`.
+## - **INSPECTION** — inside the hut and not drawn, for `WALKER_DOOR_HOLD_SECONDS`.
 ## - **EMERGING** — back on the far side of the door and walking again, but carrying the cooldown
 ##   that keeps the same hut from taking it a second time until it has left the hut's area.
 enum DoorState { WALKING, WAITING, INSPECTION, EMERGING }
+
+## How near they have to come to her — at their **closest approach**, not right now — to bother
+## getting out of the way. Wider than the lane-to-midline gap on an ordinary two-lane footway
+## (24px, half the 48px `CrowdLanes.SIDEWALK_LANE_SPREAD` puts between the footway's own two lanes),
+## so a walker holding an ordinary lane on an ordinary head-on pass steps aside instead of brushing
+## past at close to full intensity the whole way. Short of that 48px itself, so only the lane she is
+## actually closing on empties and a pavement does not part like the Red Sea in front of her.
+const CROWD_YIELD_LATERAL := 30.0
+
+## How far ahead that approach is predicted. Long enough to be worth acting on — a walker needs
+## 0.36s to clear a lane — and short enough that somebody two seconds away carries on as normal.
+const CROWD_YIELD_LEAD := 1.4
+
+## Chance a walker turns a corner rather than carrying straight on, rolled once per
+## junction. High enough that the crowd churns, low enough that streets still have flow.
+const PEDESTRIAN_TURN_CHANCE := 0.35
+
+## How far a walker has to get from a hut before that hut may take it again, in px. *(Playtest 58,
+## on her own release: "it should work that she has a flag 'just spawned' that only resets once she
+## leaves the area.")* A walker comes out `WALKER_DOOR_STOP_DISTANCE` (40px) along its own lane and
+## some 24px across from the hut's centre line — about 47px away — so anything at or under that
+## would clear the moment it was set and buy nothing. Three tiles is comfortably past the whole
+## door structure, so a walker turned round by the crowd's own steering just past a door walks on
+## instead of being inspected a second time.
+const WALKER_DOOR_COOLDOWN_RADIUS := 96.0
+
+## Seconds a held walker spends inside the hut, not drawn — the player's *inspection*. Shorter than
+## her own `EventCatalogue.CHECKPOINT_DETAIN_SECONDS` (2s) on purpose and for the reason that number is itself
+## short: a walker is not the one being looked for, so the guard has less to do. One second is the
+## recommendation rather than a number the player gave, and the relationship is what matters — a
+## walker's hold under hers, so a player watching a door sees the crowd cycle through it faster
+## than she is ever let through it herself.
+const WALKER_DOOR_HOLD_SECONDS := 1.0
+
+## The longest line a door is allowed to grow behind the walker inside it — the player's *"don't
+## want a queue that is long"*. Two is the recommendation rather than a number they gave, so a door
+## holds three people at the very most: one inside and two waiting. Anybody who first sees the door
+## while it is that busy turns back at the last junction instead of joining, so the line is short
+## **by construction** and never by a walker giving up once it is standing in one.
+const WALKER_DOOR_QUEUE_MAX := 2
+
+## And how much further back each walker behind the first one stands. Comfortably over
+## `Crowd.BUMP_RADIUS` (14px, where a crowd contact fires), so a line at a door is people standing near
+## each other rather than people standing inside each other — the separation between crowd bodies
+## is positional everywhere else in this file, and a queue placed at a spacing smaller than a body
+## would be asking a brake to open a gap that is not there.
+const WALKER_DOOR_QUEUE_SPACING := 26.0
+
+## How far short of a hut's own ground point the first walker in the line stops, in px. The hut's
+## solid body is `GroundShape.point(32.0)` and a walker's own is a 7px point, so 40 is the first
+## round number clear of the two of them touching — it stands beside the hut rather than inside its
+## footprint, which is what the frame reads as *waiting to be seen* rather than as *stuck on a
+## building*. It is also where a walker is put back down on the far side when it comes out, so the
+## two sides of a door are symmetric.
+const WALKER_DOOR_STOP_DISTANCE := 40.0
+
+## How far ahead a walker begins going round a body, in tiles. Four tiles is 128px, a second and
+## three quarters at the fastest a walker goes — long enough to read as *going round that* rather
+## than as a lane change taken a street early, and comfortably over what the crossing itself costs.
+##
+## **The floor under it is the crossing time, and `tests/test_tuning_fairness.gd` states it**: the two lanes of
+## one footway are `Tuning.TILE_SIZE + 2 * CrowdLanes.SIDEWALK_LANE_SPREAD` (48px) apart and a walker
+## closes on its lane at `CrowdAgent.STEER_SPEED`, so a walker that starts too late arrives beside
+## the body still halfway across — which is a walker clipping a café rather than avoiding one.
+const WALKER_BODY_SIDESTEP_TILES := 4
+
+## Of every walker placed, the fraction that walks through a door's hut without stopping — the
+## player's *"a small fraction can do that"*, one in eight. Small enough that walking through reads
+## as the exception rather than as the rule the hold is an exception to.
+const WALKER_DOOR_PASS_FRACTION := 0.125
+
+## And the fraction that turns back at the last junction instead, the way every walker turns away
+## from a wall — the player's *"others can turn back"*, one in four. Larger than the pass fraction
+## on purpose: a door that only ever collects people is a door with a permanent crowd at it, and
+## somebody who decides against the queue and goes another way is the cheapest thing there is to
+## read from a block away. Held is whatever is left, so these two must sum to under 1.0 —
+## `tests/test_tuning_fairness.gd` says so.
+const WALKER_DOOR_TURN_BACK_FRACTION := 0.25
 
 ## This walker's own answer at a door, from `DoorAnswer` — see that enum for why it is drawn once
 ## per placement.
@@ -241,9 +319,9 @@ func enter_at_an_end(along_tile: int) -> bool:
 ## differently at every junction it has ever turned at correctly.
 func draw_the_door_answer() -> void:
 	var roll := _mover._rng.randf()
-	if roll < Tuning.WALKER_DOOR_PASS_FRACTION:
+	if roll < WALKER_DOOR_PASS_FRACTION:
 		_door_answer = DoorAnswer.PASSES
-	elif roll < Tuning.WALKER_DOOR_PASS_FRACTION + Tuning.WALKER_DOOR_TURN_BACK_FRACTION:
+	elif roll < WALKER_DOOR_PASS_FRACTION + WALKER_DOOR_TURN_BACK_FRACTION:
 		_door_answer = DoorAnswer.TURNS_BACK
 	else:
 		_door_answer = DoorAnswer.HELD
@@ -263,7 +341,7 @@ func advance_the_door_hold(delta: float) -> void:
 			# past the door and inspected all over again, and how long that takes is not something
 			# a number of seconds can know.
 			if not _door_hold or _mover.global_position.distance_to(_door_hold.position) \
-					> Tuning.WALKER_DOOR_COOLDOWN_RADIUS:
+					> WALKER_DOOR_COOLDOWN_RADIUS:
 				_door_hold = null
 				_door_state = DoorState.WALKING
 		DoorState.WAITING:
@@ -296,7 +374,7 @@ func _consider_the_hut_ahead() -> void:
 		return
 	if _door_hold != _mover.door_ahead:
 		_let_go_of_the_hut()
-		if _mover.door_ahead.committed() > Tuning.WALKER_DOOR_QUEUE_MAX:
+		if _mover.door_ahead.committed() > WALKER_DOOR_QUEUE_MAX:
 			_refuse_the_door(_mover.door_ahead)
 			return
 		_door_hold = _mover.door_ahead
@@ -334,8 +412,8 @@ func _forget_the_refusal() -> void:
 ## walker at the front is let in.
 func _door_stop_distance() -> float:
 	var place := _door_hold.place_of(_mover) if _door_hold else 0
-	return Tuning.WALKER_DOOR_STOP_DISTANCE \
-			+ float(maxi(0, place)) * Tuning.WALKER_DOOR_QUEUE_SPACING
+	return WALKER_DOOR_STOP_DISTANCE \
+			+ float(maxi(0, place)) * WALKER_DOOR_QUEUE_SPACING
 
 ## Inside, and not drawn. **Standing on the hut's own ground point rather than hidden where it
 ## stopped**: the hut's solid body keeps her further from that point than a contact can ever fire
@@ -344,7 +422,7 @@ func _door_stop_distance() -> float:
 ## still there whether or not the player can see it.
 func _enter_the_hut() -> void:
 	_door_state = DoorState.INSPECTION
-	_inspection_left = Tuning.WALKER_DOOR_HOLD_SECONDS
+	_inspection_left = WALKER_DOOR_HOLD_SECONDS
 	_mover.visible = false
 	_mover._set_along(_door_hold.position.y if _mover._vertical else _door_hold.position.x)
 	_mover._set_cross(_door_hold.position.x if _mover._vertical else _door_hold.position.y)
@@ -361,7 +439,7 @@ func _emerge_from_the_hut() -> void:
 		return
 	_door_hold.release(_mover)
 	var door_along: float = _door_hold.position.y if _mover._vertical else _door_hold.position.x
-	_mover._set_along(door_along + Tuning.WALKER_DOOR_STOP_DISTANCE * _mover._direction)
+	_mover._set_along(door_along + WALKER_DOOR_STOP_DISTANCE * _mover._direction)
 	_mover._set_cross(_mover._lane_centre)
 	# Out from the hut's middle is a jump, so it is drawn from where it comes out rather than
 	# interpolated out of the hut; shown again above, so the reset is not the no-op it is on a node
@@ -475,8 +553,8 @@ func make_way_for(here: Vector2, velocity: Vector2) -> void:
 	var speed_squared := relative.length_squared()
 	if speed_squared < 1.0:
 		return
-	var closest := clampf(-offset.dot(relative) / speed_squared, 0.0, Tuning.CROWD_YIELD_LEAD)
-	if (offset + relative * closest).length() > Tuning.CROWD_YIELD_LATERAL:
+	var closest := clampf(-offset.dot(relative) / speed_squared, 0.0, CROWD_YIELD_LEAD)
+	if (offset + relative * closest).length() > CROWD_YIELD_LATERAL:
 		return
 
 	# Whichever side of her line they are on **now**, so nobody crosses in front of her to get out
@@ -632,7 +710,7 @@ func _consider_turning() -> void:
 	if crossing == _mover._junction:
 		return
 	_mover._junction = crossing
-	if _mover._rng.randf() >= Tuning.PEDESTRIAN_TURN_CHANCE:
+	if _mover._rng.randf() >= PEDESTRIAN_TURN_CHANCE:
 		return
 
 	# A turn is the one move that commits without looking, and that is free only while the only
@@ -839,7 +917,7 @@ func _walker_lane_is_open(tile: Vector2i) -> bool:
 ## How far a lane scan looks, in tiles: far enough past the distance a sidestep begins at that the
 ## lane chosen is the one with more road in it rather than the one that happens to be clear for a
 ## tile longer.
-const BODY_SCAN_TILES := Tuning.WALKER_BODY_SIDESTEP_TILES + LaneMover.LOOKAHEAD_TILES
+const BODY_SCAN_TILES := WALKER_BODY_SIDESTEP_TILES + LaneMover.LOOKAHEAD_TILES
 
 ## Steers this walker into whichever lane of its own footway has the most open road in front of it,
 ## so it goes round a body standing on its own lane and comes back to that lane afterwards.
@@ -874,7 +952,7 @@ func _step_around_a_body(here: Vector2i) -> void:
 	var base := _mover._corridor * CityMap.period()
 	var best := lane
 	var best_clear := _open_tiles_ahead(base + lane, along_tile, _mover._vertical, _mover._direction)
-	if best_clear > Tuning.WALKER_BODY_SIDESTEP_TILES:
+	if best_clear > WALKER_BODY_SIDESTEP_TILES:
 		_stop_going_round_a_body()
 		return
 	for lane_offset in _footway_of(offsets, lane):
@@ -897,7 +975,7 @@ func _step_around_a_body(here: Vector2i) -> void:
 	_body_detour_held = true
 
 ## How much of its own lane a walker needs in front of it to turn into an arm at all, in tiles: the
-## room `Tuning.WALKER_BODY_SIDESTEP_TILES`'s own floor says a sidestep costs, rounded up to a tile
+## room `WALKER_BODY_SIDESTEP_TILES`'s own floor says a sidestep costs, rounded up to a tile
 ## and given one more. A walker rounding a corner lands wherever its old along coordinate left it,
 ## which can be a few pixels from the next street's first tile, so this is the one case where the
 ## sidestep has no runway at all and the answer has to be not to turn here.
@@ -932,7 +1010,7 @@ func _sidewalk_after_a_turn(vertical: bool, corridor: int, direction: float) -> 
 	var base := corridor * CityMap.period()
 	var best := lane
 	var best_clear := _open_tiles_ahead(base + lane, along_tile, vertical, direction)
-	if best_clear > Tuning.WALKER_BODY_SIDESTEP_TILES:
+	if best_clear > WALKER_BODY_SIDESTEP_TILES:
 		return lane
 	if best_clear < BODY_TURN_CLEARANCE_TILES:
 		return -1

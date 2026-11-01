@@ -10,7 +10,7 @@ extends RefCounted
 ## Plus the van: `abduction` draws its own scripted victim rather than touching a real `CrowdAgent`
 ## (docs/TODO.md, M56) -- drawing and telemetry only, so a data-level rig can drive the whole scene
 ## by hand -- and `heat_response = HUNTS`, which turns the same row into a pursuer past
-## `Tuning.HEAT_HUNTS_LEVEL` (docs/EVENTS.md, "The heat"), stated against the fully heated copy.
+## `EventDef.HEAT_HUNTS_LEVEL` (docs/EVENTS.md, "The heat"), stated against the fully heated copy.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again".
 
@@ -348,7 +348,7 @@ static func _takes(lines: Array[String]) -> int:
 		takes += 1 if line.begins_with("taken ") else 0
 	return takes
 
-# `heat_response = HUNTS` turns the same row into a hunter on foot past `Tuning.HEAT_HUNTS_LEVEL` — see
+# `heat_response = HUNTS` turns the same row into a hunter on foot past `EventDef.HEAT_HUNTS_LEVEL` — see
 # docs/EVENTS.md, "The heat". Stated against the fully heated copy, the way `tests/test_heat.gd`'s
 # own pursuit tests are.
 

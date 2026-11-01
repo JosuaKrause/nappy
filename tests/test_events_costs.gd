@@ -396,13 +396,13 @@ func _test_two_of_a_kind_are_not_the_same_incident(t) -> void:
 				if b.def.kind == GameEnums.EventKind.AMBIENT:
 					continue
 				var gap := a.position.distance_to(b.position)
-				t.check(gap >= Tuning.EVENT_SPACING_ANY - 0.5,
+				t.check(gap >= EventScheduler.EVENT_SPACING_ANY - 0.5,
 						"day %d: '%s' and '%s' are not drawn inside each other (%.0fpx)"
 						% [day, a.def.id, b.def.id, gap])
 				if a.def.id != b.def.id:
 					continue
 				same_pairs += 1
-				if gap < Tuning.EVENT_SPACING_SAME:
+				if gap < EventScheduler.EVENT_SPACING_SAME:
 					crowded += 1
 		t.check(crowded * 20 <= same_pairs,
 				"day %d: %d of %d same-kind pairs share a stretch of pavement"
@@ -496,7 +496,7 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 	var used: Vector2i = map.calm_blocks[0]
 	var used_set: Array[Vector2i] = [used]
 	var lot := map.tile_rect_to_world(_calm_rect(map, used))
-	var allowed := maxf(Tuning.OBSTRUCTION_A_PARK_CAN_HOLD,
+	var allowed := maxf(EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(lot.size.x, lot.size.y) / 16.0)
 	var spoiled_days := 0
 	for day in range(2, 15):
@@ -529,7 +529,7 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 		# "Close the ground" is the test, not "have a body at all" — the two were the same thing
 		# until M34 made everything that stands still solid, and reading it as the stricter one
 		# would have emptied the pool of loud harmless things and retired this rule by accident.
-		# A busker is 22px of a 704px lot. See `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD`.
+		# A busker is 22px of a 704px lot. See `EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD`.
 		#
 		# And the allowance is the lot's, not a constant: `_things_to_put_in_a_park` lets a
 		# bigger park hold a bigger thing, because what matters is the share of the ground it

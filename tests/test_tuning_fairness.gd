@@ -36,18 +36,18 @@ func _test_the_horn_is_long_enough_to_cross_the_carriageway(t) -> void:
 ## `CAR_HORN_SIGHT`. Checked against the fastest car, since a slower one needs less reach.
 func _test_the_crowd_watches_far_enough_to_sound_the_horn(t) -> void:
 	var required := Tuning.required_horn_sight()
-	t.check(Tuning.CAR_HORN_SIGHT + 0.001 >= required,
+	t.check(Crowd.CAR_HORN_SIGHT + 0.001 >= required,
 			("Unfair traffic: CAR_HORN_SIGHT %.0fpx < %.0fpx the fastest car needs "
 			+ "(%.0fpx/s x %.2fs CAR_HORN_TIME)")
-			% [Tuning.CAR_HORN_SIGHT, required, Tuning.CAR_SPEED.y, Tuning.CAR_HORN_TIME])
+			% [Crowd.CAR_HORN_SIGHT, required, Tuning.CAR_SPEED.y, Tuning.CAR_HORN_TIME])
 
 ## The three answers a walker may be given at a door are one draw of one number, so the two fractions have
 ## to leave something over — held is the remainder, and a remainder of nothing is a door nobody is ever
 ## held at with no error anywhere to say so.
 func _test_a_door_holds_some_walkers(t) -> void:
-	t.check(Tuning.WALKER_DOOR_PASS_FRACTION + Tuning.WALKER_DOOR_TURN_BACK_FRACTION < 1.0,
+	t.check(WalkerStrategy.WALKER_DOOR_PASS_FRACTION + WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION < 1.0,
 			"No walker is ever held at a door: pass %.3f + turn back %.3f leaves nothing"
-			% [Tuning.WALKER_DOOR_PASS_FRACTION, Tuning.WALKER_DOOR_TURN_BACK_FRACTION])
+			% [WalkerStrategy.WALKER_DOOR_PASS_FRACTION, WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION])
 
 ## A walker going round a solid body has to have finished crossing to the other lane of its own footway by
 ## the time it gets there. Stated over the distance rather than the time, because what it is really about
@@ -55,7 +55,7 @@ func _test_a_door_holds_some_walkers(t) -> void:
 func _test_a_walker_can_get_round_a_body(t) -> void:
 	var lane_gap := float(Tuning.TILE_SIZE) + 2.0 * CrowdLanes.SIDEWALK_LANE_SPREAD
 	var crossing_run := lane_gap / CrowdAgent.STEER_SPEED * Tuning.PEDESTRIAN_SPEED.y
-	var start := float(Tuning.WALKER_BODY_SIDESTEP_TILES * Tuning.TILE_SIZE)
+	var start := float(WalkerStrategy.WALKER_BODY_SIDESTEP_TILES * Tuning.TILE_SIZE)
 	t.check(start >= crossing_run,
 			"A walker cannot get round a body: it starts %.0fpx out and needs %.0fpx to cross the %.0fpx "
 			% [start, crossing_run, lane_gap] + "to the other lane of its footway")
@@ -81,15 +81,15 @@ func _test_the_side_streets_green_clears_the_carriageway(t) -> void:
 ## ends — the rows this owes have to be able to land inside the return leg they were sized against, not
 ## merely inside "the day" the ordinary pacing still covers.
 func _test_the_return_patrols_keep_their_shape(t) -> void:
-	t.check(Tuning.RETURN_PATROLS_PER_ACT.size() == 4,
-			"RETURN_PATROLS_PER_ACT has %d entries, not one per act" % Tuning.RETURN_PATROLS_PER_ACT.size())
-	for count in Tuning.RETURN_PATROLS_PER_ACT:
+	t.check(EventDirector.RETURN_PATROLS_PER_ACT.size() == 4,
+			"RETURN_PATROLS_PER_ACT has %d entries, not one per act" % EventDirector.RETURN_PATROLS_PER_ACT.size())
+	for count in EventDirector.RETURN_PATROLS_PER_ACT:
 		t.check(count >= 0,
-				"RETURN_PATROLS_PER_ACT carries a negative count: %s" % [Tuning.RETURN_PATROLS_PER_ACT])
-	t.check(Tuning.RETURN_PATROL_INTERVAL.x <= Tuning.RETURN_PATROL_INTERVAL.y,
-			"RETURN_PATROL_INTERVAL is not ordered: %s" % Tuning.RETURN_PATROL_INTERVAL)
-	t.check(Tuning.RETURN_PATROL_INTERVAL.x < Tuning.AHEAD_INTERVAL.x
-			and Tuning.RETURN_PATROL_INTERVAL.y < Tuning.AHEAD_INTERVAL.y,
+				"RETURN_PATROLS_PER_ACT carries a negative count: %s" % [EventDirector.RETURN_PATROLS_PER_ACT])
+	t.check(EventDirector.RETURN_PATROL_INTERVAL.x <= EventDirector.RETURN_PATROL_INTERVAL.y,
+			"RETURN_PATROL_INTERVAL is not ordered: %s" % EventDirector.RETURN_PATROL_INTERVAL)
+	t.check(EventDirector.RETURN_PATROL_INTERVAL.x < EventDirector.AHEAD_INTERVAL.x
+			and EventDirector.RETURN_PATROL_INTERVAL.y < EventDirector.AHEAD_INTERVAL.y,
 			("RETURN_PATROL_INTERVAL %s is not shorter than AHEAD_INTERVAL %s: the return "
-			% [Tuning.RETURN_PATROL_INTERVAL, Tuning.AHEAD_INTERVAL])
+			% [EventDirector.RETURN_PATROL_INTERVAL, EventDirector.AHEAD_INTERVAL])
 			+ "would owe patrols no faster than an ordinary walk already gets")

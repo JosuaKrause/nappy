@@ -777,6 +777,22 @@ check_that "wait_or_kill refuses a limit that is not whole seconds and leaves th
 check_that "test.sh refuses a TEST_SHARD_TIMEOUT_S that is not whole seconds before any work" \
     '[[ "$(GODOT=/nonexistent TEST_SHARD_TIMEOUT_S=1.5 ./tools/test.sh 2>&1; echo "rc $?")" == *"must be whole seconds"*"rc 2" ]]'
 
+# The kill limit follows the plan: a fake cost table with one heavy suite makes its shard's limit
+# 2.5x its planned time plus the 120 s floor, a lighter shard's limit is lower, and the override
+# replaces both.
+tsl_costs="$work_dir/shard-limit-costs.txt"
+{
+    ls tests/test_*.gd | tail -n +2 | while read -r f; do echo "$(basename "$f") 0"; done
+    echo "$(basename "$(ls tests/test_*.gd | head -n 1)") 400000"
+} > "$tsl_costs"
+tsl_plan="$(GODOT=/usr/bin/true TEST_SUITE_COSTS="$tsl_costs" TEST_SHARDS=2 ./tools/test.sh --plan 2>&1)"
+check_that "test.sh --plan prints a limit of 2.5x the planned time plus 120 s for the heavy shard" \
+    '[[ "$tsl_plan" == *"shard 0  ~400s  limit 1120s"* || "$tsl_plan" == *"shard 1  ~400s  limit 1120s"* ]]'
+check_that "test.sh --plan gives the light shard a lower limit" \
+    '[[ "$tsl_plan" == *"~  0s  limit  120s"* ]]'
+check_that "TEST_SHARD_TIMEOUT_S replaces every shard's limit in --plan" \
+    '[[ "$(GODOT=/usr/bin/true TEST_SUITE_COSTS="$tsl_costs" TEST_SHARDS=2 TEST_SHARD_TIMEOUT_S=77 ./tools/test.sh --plan 2>&1)" == *"limit   77s"*"limit   77s"* ]]'
+
 # ------------------------------------------------ audit-pck.sh reads the artefact, not the tree ---
 # A minimal format-4 pack keeps this regression independent of Godot and export templates while
 # exercising the same directory and file bytes a real export exposes. The dirty fixture carries

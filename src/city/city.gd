@@ -59,7 +59,7 @@ const MAX_HEIGHT_FRACTION := 0.55
 ## to `rows() - 1`, which this still goes through.
 const HOME_BUILDING_WALL_ROWS := 4
 ## Wall rows every other home-block building (the two lots flanking the door notch) gets, fixed
-## the same way. Each lot is only `Tuning.HOME_SIZE_TILES.y` (2) deep, so `Building.wall_tiles()`'s
+## the same way. Each lot is only `CityGenerator.HOME_SIZE_TILES.y` (2) deep, so `Building.wall_tiles()`'s
 ## own cap (`rows() - 1`) always clamps this down to one row regardless of the value here — the
 ## constant only has to be something that cap can act on.
 const HOME_FLANKING_WALL_ROWS := 2
@@ -86,6 +86,59 @@ const _TREES := {
 ## drawn is 50px; two canopies planted any closer than their own width overlap and read as one
 ## shape rather than as two trees, which is the clump this spacing exists to stop.
 const MIN_TREE_SPACING := 40.0 * 1.25
+
+const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
+
+## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
+## package is picked up (`GameState.resistance.carrying_package`) — the one cost in the subquest
+## that is deferred and total rather than local, so it changes the afternoon's routing rather than
+## one minute of it. Chosen on the same severity as a main road's own 0.6, on the harsher side of
+## it: this is a decision she made, not ground she has to cross.
+const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
+
+const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
+
+## What the **ground** does to the decay, best to worst: calm, precinct, ordinary street, alley,
+## main road.
+##
+## This is what makes a route a **recovery rate** rather than only a set of things to walk past,
+## and what makes a precinct worth walking to although it is loud: a retail street is busy, and it
+## is still the best place in the city that is not a park to bring a meter down.
+##
+## **The multipliers are ratios and the absolute rates are the design**, so a change to the walking
+## rate above moves every one of these to keep its own ground where it was put:
+##
+##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 0.12/s
+##
+## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
+## the excitement visibly falling away as she walks in under the trees. **Its floor is that a park
+## must stay a place rather than a switch**: at 12.0/s a full meter takes eight and a third seconds
+## to clear, which is long enough to be somewhere she walks to and stays in. Much faster and the
+## park is a button she taps.
+##
+## The main road is the same sentence inverted, and nearly all the way there: it is the one ground
+## in the city that gives back next to nothing, at any density, which is most of what "a main road
+## is crossed, not walked" means arithmetically — walking it for any stretch is walking ground that
+## does not recover rather than ground that merely recovers slowly. `tests/probes/m117_decay.gd`'s
+## main-road leg reads +5.69/s net on day 1 and +1.36/s on day 9, three seeds each: even where the
+## spine has thinned to the lightest traffic of the run, it still costs rather than gives anything
+## back.
+##
+## **It is the lever that holds the spine's own price**, because it is the one number exclusive to
+## this corridor — the pedestrian field above only reaches `Tuning.PEDESTRIAN_OUTER_RADIUS` now, short
+## enough that the arterial's own crowd noise cannot carry that price alone, and a louder car would
+## be loud on every street it also drives down rather than only this one. Crossing the road stays a
+## soft block rather than a wall: `tests/test_crowd.gd`'s worst-of-eight crossing reads 27.76 of a
+## hundred-point meter, comfortably under half, because the same short pedestrian reach that costs
+## the ground its own recovery also lightens what a crossing itself loads.
+##
+## **An alley sits between the two** — pressured ground rather than a shortcut to recovery, which
+## is what keeps `Tuning.EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning something: it sits just
+## under the 3.5/s an alley gives back, so an empty alley is very nearly flat and is never quite
+## recovery.
+const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
+
+const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
 
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
@@ -406,7 +459,7 @@ func decay_multiplier(world_position: Vector2) -> float:
 		# The one cost in the game that is not a field at a place: picking the package up makes
 		# every street after it dearer for the rest of the day, rather than the street it was
 		# picked up on.
-		ground *= Tuning.RESISTANCE_PACKAGE_DECAY_MULTIPLIER
+		ground *= RESISTANCE_PACKAGE_DECAY_MULTIPLIER
 	return ground
 
 func _ground_decay_multiplier(world_position: Vector2) -> float:
@@ -414,19 +467,19 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 		return 1.0
 	var type := map.tile_type_at_world(world_position)
 	if Tile.is_calm(type):
-		return Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+		return EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
 	# An alley is cut through a block rather than laid out as a corridor, so no street kind answers
 	# for it and it would otherwise read as an ordinary street. It is asked before the corridors
 	# for that reason and not by precedence: the two cannot overlap.
 	if Tile.is_alley(type):
-		return Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
+		return EXCITEMENT_DECAY_ALLEY_MULTIPLIER
 	var tile := map.world_to_tile(world_position)
 	var across := map.street_kind_at(true, tile)
 	var along := map.street_kind_at(false, tile)
 	if across == GameEnums.StreetKind.PEDESTRIAN or along == GameEnums.StreetKind.PEDESTRIAN:
-		return Tuning.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER
+		return EXCITEMENT_DECAY_PRECINCT_MULTIPLIER
 	if across == GameEnums.StreetKind.MAIN or along == GameEnums.StreetKind.MAIN:
-		return Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
+		return EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
 	return 1.0
 
 func is_alley(world_position: Vector2) -> bool:
@@ -718,13 +771,13 @@ func _spawn_buildings() -> void:
 			# it to all of them costs nothing and needs no lookup for which one that is.
 			building.door_world_x_range = door_x_range
 		# Dressed here, before coverage and the roof extension below are computed, since
-		# `_assign_roof_extensions()` needs to know which buildings are the power station to keep an
+		# `assign_roof_extensions()` needs to know which buildings are the power station to keep an
 		# extension off its yard (no roof stands there to extend).
 		_dress_the_power_station(building, rect)
 		buildings.append(building)
 	# Coverage and the roof extension it needs both read every lot's own `wall_tiles()`, fixed by
 	# the generated or authored values above, so both run before any of them enters the tree — see
-	# `_covered_ground_cols()` and `_assign_roof_extensions()`. Never asked of her own building
+	# `_covered_ground_cols()` and `assign_roof_extensions()`. Never asked of her own building
 	# (`covered_ground_cols` stays empty) — her own building's front is the one the player knows
 	# as home and stays as it is, and the home block's own doorstep already exempts it from the
 	# route-redundancy guarantee the same way.
@@ -732,7 +785,7 @@ func _spawn_buildings() -> void:
 		if not buildings[i].is_home_building:
 			buildings[i].covered_ground_cols = _covered_ground_cols(map.building_rects[i])
 	var courtyard_of := _courtyard_lot_of(map.building_rects)
-	_assign_roof_extensions(buildings, courtyard_of)
+	assign_roof_extensions(buildings, courtyard_of)
 	_share_courtyard_tint(buildings, courtyard_of)
 	map.restore_edges(edges)
 	for building in buildings:
@@ -763,7 +816,7 @@ func _spawn_buildings() -> void:
 ## `GameEnums.TileType.BUILDING` rather than walkable ground. `map.is_walkable()` is the fixed
 ## lattice fact the **city** skill asks for — "no purpose change may move a walkable tile" — never
 ## `is_open()`'s per-day closures, so this is computed once here rather than in `start_day()`. This
-## is the candidate set only: `_assign_roof_extensions()` keeps a column covered only where a roof
+## is the candidate set only: `assign_roof_extensions()` keeps a column covered only where a roof
 ## actually reaches it, so a south tile past the map's own edge (`CityMap.tile_at()` reads it as
 ## `BUILDING`) or a power station's yard leaves its front's facade standing.
 func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
@@ -781,7 +834,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## is small and built once per run. The extension at that column is exactly the covered
 ## building's own `wall_tiles()`: precisely enough rows to reach the world row its roof already
 ## starts at, edge to edge. A power
-## station's yard columns (`_hall_cols()`, read after `_dress_the_power_station()` above has set
+## station's yard columns (`hall_cols()`, read after `_dress_the_power_station()` above has set
 ## `power_station`) are skipped since no roof stands there to extend — the yard is fenced ground,
 ## not a building mass.
 ##
@@ -803,7 +856,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## in `roof_extension_seamless`, the covered piece's in `seamless_cover_cols` — and
 ## `Building.roof_cell_edges()` withholds both lips there. A covered piece with no roof rows at all
 ## is never seamless: nothing of its own carries on above the extension, so the extension caps.
-func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]) -> void:
+func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var tile_to_index := {}
 	for i in map.building_rects.size():
 		var rect: Rect2i = map.building_rects[i]
@@ -845,7 +898,7 @@ func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int
 			var front_rect: Rect2i = map.building_rects[front_index]
 			var local_col := south.x - front_rect.position.x
 			if front.power_station:
-				var hall := front._hall_cols()
+				var hall := front.hall_cols()
 				if local_col < hall.x or local_col >= hall.y:
 					continue
 			var front_extension: Array[int] = extensions[front_index]

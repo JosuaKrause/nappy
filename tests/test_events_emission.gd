@@ -42,7 +42,7 @@ func _test_telegraph_damps_emission(t) -> void:
 	var instance := _instance(t, def)
 
 	t.check(instance.is_telegraphing(), "an event starts in its telegraph phase")
-	t.close_to(instance.current_intensity(), def.intensity * Tuning.TELEGRAPH_INTENSITY_FRACTION,
+	t.close_to(instance.current_intensity(), def.intensity * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
 			"a telegraphing event emits only a fraction of its intensity")
 	t.close_to(instance.excitement.contribution_at(Vector2(1000.0, 0.0)), 0.0,
 			"an event contributes nothing beyond its outer radius")
@@ -136,7 +136,7 @@ func _test_no_other_rows_field_moved(t) -> void:
 	for def in EventCatalogue.all():
 		if def.core_intensity > 0.0:
 			continue
-		var damped := def.intensity * Tuning.TELEGRAPH_INTENSITY_FRACTION
+		var damped := def.intensity * EventInstance.TELEGRAPH_INTENSITY_FRACTION
 		var d := 0.0
 		while d <= def.outer_radius + 32.0:
 			checked += 1
@@ -160,7 +160,7 @@ func _test_no_other_rows_field_moved(t) -> void:
 ## **A relationship, not a pinned value.** What must never quietly go false is that a pass costs
 ## something awake at an offset a sidewalk allows — not the exact figure, which the probe prints
 ## and `docs/EVENTS.md` records, and which moves as the catalogue is rebalanced. `dog_walker` does
-## not fully restore its pre-M117 pass without crossing `Tuning.WALL_WORTH_OF_COST` — see that
+## not fully restore its pre-M117 pass without crossing `EventScheduler.WALL_WORTH_OF_COST` — see that
 ## row's own docstring — so this asserts only what these rows actually clear, not a target the
 ## `WALL` line refuses one of them.
 ##
@@ -184,7 +184,7 @@ func _test_the_rows_she_walks_up_to_pass_positively_awake(t) -> void:
 ## `docs/COSTS.md` prints, so the two can never disagree about what a pass is.
 ##
 ## That the loose dog meets her at that intensity at all — created with its warning over rather than
-## still telegraphing at `Tuning.TELEGRAPH_INTENSITY_FRACTION` — is asked of the game's own warning
+## still telegraphing at `EventInstance.TELEGRAPH_INTENSITY_FRACTION` — is asked of the game's own warning
 ## and creation, on a real city: `tests/test_event_manager.gd`,
 ## `_test_a_row_warned_down_her_line_arrives_at_its_own_intensity`.
 func _test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t) -> void:

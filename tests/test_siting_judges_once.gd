@@ -1,7 +1,7 @@
 extends "res://tests/events_shared_city.gd"
 ## A placement asks each candidate its rules once, and every try still rolls.
 ##
-## `EventScheduler._best_of()` rolls `Tuning.EVENT_PLACEMENT_TRIES` candidates out of the pool it is
+## `EventScheduler._best_of()` rolls `EventScheduler.EVENT_PLACEMENT_TRIES` candidates out of the pool it is
 ## offered and asks each the whole rule chain against every plan of the day. The pool a walk
 ## siting offers is often one tile, and the director asks it once for every crew still owed in a
 ## look, so without the verdict kept per candidate a look that offers one tile to a dozen crews
@@ -38,7 +38,7 @@ func _judging_every_try(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	var best_room := -INF
 	var seen := {}
 	var no_calm: Array[Rect2] = []
-	for _try in Tuning.EVENT_PLACEMENT_TRIES:
+	for _try in EventScheduler.EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = pool[rng.randi_range(0, pool.size() - 1)]
 		var candidate := EventScheduler._build_placement(def, map, tile, rng)
 		if not candidate:
@@ -254,7 +254,7 @@ func _longest_route(day: int) -> PackedVector2Array:
 
 ## A crew accepted on a one-tile offer inside a look, and then a crew of the same row standing on
 ## that very tile: the next copy is refused (nothing is ever drawn inside anything else,
-## `Tuning.EVENT_SPACING_ANY`) — but only once the look's verdicts are dropped. Kept, they answer
+## `EventScheduler.EVENT_SPACING_ANY`) — but only once the look's verdicts are dropped. Kept, they answer
 ## from before the crew stood there and accept it, which is the placement no fresh judgement makes
 ## and why the director drops them.
 func _test_a_dropped_verdict_is_judged_again(t) -> void:

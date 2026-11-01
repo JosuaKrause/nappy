@@ -39,6 +39,60 @@ extends RefCounted
 ## interval or a spawn — a crossing is created on the spot and forgotten, and a place is written
 ## into the day's own plan for `EventManager` to stream like any other.
 
+## Seconds between two `AHEAD` events, so the day's allowance is spread over the walk rather
+## than spent in the first ten seconds. The director rolls within this band.
+const AHEAD_INTERVAL := Vector2(11.0, 26.0)
+## Chance, rolled once a day past `Tuning.RUN_TAUGHT_DAY`, that `EventDirector` sends `charging_dog` in
+## its day-3 shape again — off her heading, already noticing her, no tip and no guarantee. See
+## `EventDirector._owe_the_sprinkled_dog()`.
+##
+## **Measured with `tests/probes/m96_dog_sprinkle.gd`, not derived**, the same way `Tuning.
+## Tuning.CROWD_PEDESTRIANS_PER_ACT` and every other density number in this file is: eight seeds, every
+## day past the teaching day, a whole day of continuous walking. Pushed to the front of the
+## director's own queue rather than appended — `tests/probes/m99_caps.gd` already found that a busy
+## day's own `AHEAD_OF_PLAYER` pool is oversubscribed by design (dozens queued, a handful drained
+## before the day ends), so an appended roll was met **zero times in 88 sampled days** before this
+## was pushed to the front instead; pushed, every roll that lands is met. **0.15 measured a mean of
+## 1.00 met encounters per run** (one seed of eight rolled none, one rolled two); **0.25** — the
+## value kept — **measured 1.75** (one seed rolled none, one rolled three). "A few per run, not per
+## day" reads as a mean nearer two than one, so 0.25 is the choice.
+const CHARGING_DOG_SPRINKLE_CHANCE := 0.25
+## Extra `police_patrol` rows the return leg owes in acts III and IV, one entry per act —
+## `Tuning.act_for_day()` is 1-based, so `RETURN_PATROLS_PER_ACT[act - 1]`. Acts I and II carry
+## none, so the teaching days and the return she learns the mechanic on stay exactly as they were
+## measured. Sized against the return leg's own length (`docs/DECISIONS.md`, M98: a return leg
+## measured at 32.9s in act III and 47.3s in act IV) and the row's own cost — non-lethal, 74px/s,
+## a 185px outer radius — so a leg meets one or two of them rather than four: an amount the
+## sleeping baby can take, not a gauntlet.
+const RETURN_PATROLS_PER_ACT: Array[int] = [0, 0, 2, 3]
+## How far apart the return leg's own patrols land, once `EventDirector.owe_the_return()` has
+## fired for the day. Tighter than `AHEAD_INTERVAL` on purpose, so the rows it owes land inside
+## the 33-47s return leg they were sized against rather than arriving after she is already home.
+const RETURN_PATROL_INTERVAL := Vector2(9.0, 16.0)
+## The same for each of the return leg's patrols (`RETURN_PATROLS_PER_ACT`): rigged into a bag of
+## this many as the one before it is handed out, so they come one after another inside the leg.
+## *(inbox #561 in coral-bunny, of the return patrols: "they will need rigged bags".)* Two, with
+## `RETURN_PATROL_INTERVAL` between handouts, is a patrol every 18-32s of walking, which lands one or
+## two inside a return leg rather than all of them.
+const RETURN_PATROL_WITHIN_THE_NEXT := 2
+## Rows whose marbles in her route's bag are set here rather than by `ROUTE_BAG_MARBLES_PER_WEIGHT`
+## times their weight, because the weight is not only the bag's: the dawn's weighted roll reads it
+## on every day the row is placed. *(inbox #566 in feathery-stork: "if we want to change the probability then we can
+## change the bag -- I'd say we could do 2 dogs -- we don't need the charging dog that often and in
+## 17 rolls there are two guaranteed ones".)* `charging_dog` is in the bag only on day 3, the one
+## day it is director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`)
+## and takes none of these, so with the lesson and these two `max_per_day`'s 3 rarely binds.
+const ROUTE_BAG_MARBLES_OF := {"charging_dog": 2}
+## Marbles per unit of `EventDef.weight` in the bag the director draws her route's events from
+## (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row. *(olive-koala,
+## statement 2: "events should use the marble bag approach as well. that way we can control what
+## the player sees on their route".)* The bag is the stretch over which the mix is exact, so it is
+## sized to about a day's worth of what she meets: at 2 the rows' weights (2.5, 1.5 and 3.0) make a
+## bag of 14 — 16 on day 3, with `ROUTE_BAG_MARBLES_OF`'s dogs — against the ten or so a whole day
+## of walking at `AHEAD_INTERVAL` hands out (`tests/probes/olive_badger_route_mix.gd` counts them),
+## and every weight comes out whole.
+const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
+
 ## How far to either side of the crossing point the run reaches at most. A street's width, so the
 ## cat comes out of one kerb and is gone into the other; a run is cut where something solid stands
 ## sooner (`_crossing_ahead_of()`).
@@ -59,7 +113,7 @@ var _day := 0
 ## **What she meets on her route is drawn from a marble bag.** *(olive-koala, statement 2: "events
 ## should use the marble bag approach as well. that way we can control what the player sees on
 ## their route".)* Filled with each row the director sites today in proportion to its weight
-## (`Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT`), so over any stretch the length of a bag the mix she
+## (`ROUTE_BAG_MARBLES_PER_WEIGHT`), so over any stretch the length of a bag the mix she
 ## meets is the rows' own rather than a roll's streaks. The marbles are row ids, looked up in
 ## `_route_rows`. Its own stream, derived from the day's director stream rather than drawn from it,
 ## so the bag draws nothing from the director's stream; which row a handout is still moves the
@@ -86,7 +140,7 @@ var _next_in := 0.0
 ## never cleared until `start_day()`, so a baby that wakes and settles again does not owe a
 ## second batch — see that function's own doc.
 var _return_owed := false
-## Whether the queue is rolling `Tuning.RETURN_PATROL_INTERVAL` instead of `Tuning.AHEAD_INTERVAL`
+## Whether the queue is rolling `RETURN_PATROL_INTERVAL` instead of `AHEAD_INTERVAL`
 ## for the rest of the day. Set by `owe_the_return()` and never cleared until `start_day()`: once
 ## the return owes its pressure, the pacing stays tight even if the phase drops back to walking.
 var _return_pacing := false
@@ -252,7 +306,7 @@ func _take_the_forced_row() -> void:
 ## only the dog goes in front of the route's bag (`MarbleBag.rig()` at a size of one takes nothing
 ## from the bag behind it), and the first of the events the dawn bought for her route is the one
 ## drawn from it. The ordinary bag after it keeps every dog marble it was filled with
-## (`Tuning.ROUTE_BAG_MARBLES_OF`).
+## (`ROUTE_BAG_MARBLES_OF`).
 ##
 ## It is *not* a scripted event, and that is deliberate: it is one of the day's own budgeted
 ## `AHEAD_OF_PLAYER` plans, so teaching the run cannot quietly make day 3 denser than the budget
@@ -320,12 +374,12 @@ func _bag_the_next(count: int) -> void:
 ## **Rolled once a day, outside the scheduler's own budget** — the same shape `owe_the_return()`
 ## already is: a rare encounter added to the queue rather than competing with cafés and roadworks
 ## for it, because a lesson-sized moment that only happens when the density dice agree is not one a
-## player can point to. `Tuning.CHARGING_DOG_SPRINKLE_CHANCE` is the rate, set against
+## player can point to. `CHARGING_DOG_SPRINKLE_CHANCE` is the rate, set against
 ## `tests/probes/m96_dog_sprinkle.gd` — see that constant for what was measured and chosen.
 ##
 ## **Put at the front, not the back.** `tests/probes/m99_caps.gd` already measured that a busy
 ## day's own `AHEAD_OF_PLAYER` pool is oversubscribed by design — `cat_dash`, `cyclist` and
-## `loose_dog` between them queue dozens a day and the pacing (`Tuning.AHEAD_INTERVAL`) only ever
+## `loose_dog` between them queue dozens a day and the pacing (`AHEAD_INTERVAL`) only ever
 ## drains a handful before the day ends — so an item *appended* here would sit behind all of that
 ## and the roll below would almost never actually meet her. This is not a second chance at that same
 ## budget: the roll already made it rare, and stacking a second rare event on top of "reached before
@@ -340,7 +394,7 @@ func _owe_the_sprinkled_dog(day: int) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
 	if not dog or day <= (dog.from_day_after.after_day if dog.from_day_after else 0):
 		return
-	if _rng.randf() < Tuning.CHARGING_DOG_SPRINKLE_CHANCE:
+	if _rng.randf() < CHARGING_DOG_SPRINKLE_CHANCE:
 		_owed.push_front(dog)
 
 func owed() -> int:
@@ -373,14 +427,14 @@ static func route_rows_on(day: int, heat: int) -> Array[EventDef]:
 	return rows
 
 ## The marbles of `day`'s ordinary route bag: each of `route_rows_on()` in proportion to its weight
-## (`Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT`). A row `Tuning.ROUTE_BAG_MARBLES_OF` names comes as often
+## (`ROUTE_BAG_MARBLES_PER_WEIGHT`). A row `ROUTE_BAG_MARBLES_OF` names comes as often
 ## as it says rather than as its weight says: the weight is the dawn roll's too, on every day.
 static func ordinary_route_marbles(day: int, heat: int) -> Array:
 	var weights := {}
 	for def in route_rows_on(day, heat):
 		weights[def.id] = def.weight
-	return MarbleBag.in_proportion(weights, Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT,
-			Tuning.ROUTE_BAG_MARBLES_OF)
+	return MarbleBag.in_proportion(weights, ROUTE_BAG_MARBLES_PER_WEIGHT,
+			ROUTE_BAG_MARBLES_OF)
 
 ## **A scene's route, from the bag its recipe rigs** (`setup.route_bag`, `docs/SCENE_RECIPES.md`).
 ## *(polite-dolphin, inbox #555: "the events should still spawn using the same rules but the marble
@@ -390,7 +444,7 @@ static func ordinary_route_marbles(day: int, heat: int) -> Array:
 ## the pacing, the siting ahead of her or down her line, the doors, a row's `max_per_day` over the
 ## ordinary bag's rows, and a rig a task asks for later (`rig_her_route()`). `first_after` is the
 ## seconds of walking before the first is due, or a negative number for the ordinary roll
-## (`Tuning.AHEAD_INTERVAL`): a scene is a minute rather than a day, the same reason day 3's lesson
+## (`AHEAD_INTERVAL`): a scene is a minute rather than a day, the same reason day 3's lesson
 ## has `LESSON_DELAY`. A row the catalogue does not have is refused by the recipe before this runs.
 func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: float,
 		heat: int) -> void:
@@ -568,7 +622,7 @@ const ON_HER_WAY_BEHIND := -0.5
 ## to ask again a street later rather than to place it somewhere illegal. A placement already made
 ## is asked on the same beat whether the walk has left it behind, which is a walk of the route tree
 ## rather than a dot product and does not belong in a physics frame: a refused attempt scans her
-## branch, rolls `Tuning.EVENT_PLACEMENT_TRIES` candidates and floods the reachability grid, and
+## branch, rolls `EventScheduler.EVENT_PLACEMENT_TRIES` candidates and floods the reachability grid, and
 ## doing that sixty times a second while she walks into a corner is the one hitch on the beat of the
 ## day she is meant to be watching.
 const ON_HER_WAY_LOOK := 1.0
@@ -748,7 +802,7 @@ func _everything_but(plans: Array[EventScheduler.Planned],
 ## events, each rigged into the route's bag in turn (`_rig_the_next_patrol()`) and sited
 ## `TOWARD_PLAYER` down her own carriageway rather than crossed — see
 ## `_toward_her_on_the_road()` — and the interval the queue rolls for the rest of the day switches
-## from `Tuning.AHEAD_INTERVAL` to the tighter `Tuning.RETURN_PATROL_INTERVAL`, so the extra rows
+## from `AHEAD_INTERVAL` to the tighter `RETURN_PATROL_INTERVAL`, so the extra rows
 ## land inside the leg rather than after she is home.
 ##
 ## Acts I and II are untouched: the array's first two entries are 0, so the teaching days and the
@@ -766,7 +820,7 @@ func owe_the_return(day: int, heat: int) -> void:
 	var act := Tuning.act_for_day(day)
 	if act < 3:
 		return
-	var count: int = Tuning.RETURN_PATROLS_PER_ACT[act - 1]
+	var count: int = RETURN_PATROLS_PER_ACT[act - 1]
 	if count <= 0:
 		return
 	var for_return := _patrol_toward_her(heat)
@@ -795,7 +849,7 @@ var _return_patrols_left := 0
 ## size of the patrol's own bag, counted down as it is drawn.
 var _patrol_bag_left := 0
 
-## **Each return patrol is a rigged bag** of `Tuning.RETURN_PATROL_WITHIN_THE_NEXT` marbles, the
+## **Each return patrol is a rigged bag** of `RETURN_PATROL_WITHIN_THE_NEXT` marbles, the
 ## patrol and the rest drawn from the bag she was drawing from, and the next is rigged once that bag
 ## has been handed out — so each comes within its own bag's events and two never come back to back
 ## unless the second bag starts with what the first ended on. *(inbox #561 in coral-bunny: "The return patrols in acts III and IV are added at the back of the
@@ -806,7 +860,7 @@ func _rig_the_next_patrol() -> void:
 	if _return_patrols_left <= 0 or not _route:
 		return
 	_return_patrols_left -= 1
-	_route.rig([RETURN_PATROL], Tuning.RETURN_PATROL_WITHIN_THE_NEXT)
+	_route.rig([RETURN_PATROL], RETURN_PATROL_WITHIN_THE_NEXT)
 	_patrol_bag_left = _route.bag_in_front().size()
 	_bag_the_next(_patrol_bag_left)
 
@@ -935,8 +989,8 @@ func _roll_interval() -> float:
 	if _forced:
 		return _forced_interval
 	if _return_pacing:
-		return _rng.randf_range(Tuning.RETURN_PATROL_INTERVAL.x, Tuning.RETURN_PATROL_INTERVAL.y)
-	return _rng.randf_range(Tuning.AHEAD_INTERVAL.x, Tuning.AHEAD_INTERVAL.y)
+		return _rng.randf_range(RETURN_PATROL_INTERVAL.x, RETURN_PATROL_INTERVAL.y)
+	return _rng.randf_range(AHEAD_INTERVAL.x, AHEAD_INTERVAL.y)
 
 ## A run straight across her line, `AHEAD_LEAD_DISTANCE` in front of her.
 ##

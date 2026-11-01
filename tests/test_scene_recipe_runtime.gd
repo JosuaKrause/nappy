@@ -190,7 +190,7 @@ func _test_schema(t) -> void:
 				"settled_camera": true}}
 	t.check(SceneRecipeRuntime.validate_runtime(valid).is_empty(), "valid optional runtime defaults are accepted")
 	var heated := {"setup": {"day": 7, "events": [{"name": "block", "row": "roadblock", "at": [0, 0],
-			"heat": Tuning.HEAT_HUNTS_LEVEL}]}}
+			"heat": EventDef.HEAT_HUNTS_LEVEL}]}}
 	t.check(SceneRecipeRuntime.validate_runtime(heated).is_empty(),
 			"an event may name the resistance progress its row is installed at")
 	var mixed := {"setup": {"background": {"crowd": true, "uniform_walkers": true},
@@ -254,8 +254,8 @@ func _test_schema(t) -> void:
 				"malformed runtime data is rejected: %s" % [recipe])
 
 ## `heat` changes the row a recipe installs, not only what its schema accepts: the same patrol car
-## on the same road is the cold patrol with no trigger, and at `Tuning.HEAT_INVESTIGATES_LEVEL` the
-## investigating copy that stops for her from `Tuning.HEAT_INVESTIGATE_WITHIN`, the shape a played
+## on the same road is the cold patrol with no trigger, and at `EventDef.HEAT_INVESTIGATES_LEVEL` the
+## investigating copy that stops for her from `EventDef.HEAT_INVESTIGATE_WITHIN`, the shape a played
 ## day's dawn gives it (`EventCatalogue.heated()`). Installed through the runtime's own `_event_plans()`
 ## against a real city, so a field the runtime read and then ignored would fail here.
 func _test_heat_installs_the_heated_row(t) -> void:
@@ -269,7 +269,7 @@ func _test_heat_installs_the_heated_row(t) -> void:
 	state.begin_day(city.map.block_plans, GameState.header.day)
 	city.start_day(state, GameState.header.day, GameState.calendar.day_rng(GameState.header.day, "closures"))
 	var installed := {}
-	for heat: Variant in [null, Tuning.HEAT_INVESTIGATES_LEVEL]:
+	for heat: Variant in [null, EventDef.HEAT_INVESTIGATES_LEVEL]:
 		var entry := {"name": "car", "row": "police_patrol", "at": [4560, 3984]}
 		if heat != null:
 			entry["heat"] = heat
@@ -284,13 +284,13 @@ func _test_heat_installs_the_heated_row(t) -> void:
 		t.check(errors.is_empty(), "the patrol car is installed at heat %s: %s" % [heat, errors])
 		runtime.free()
 	var cold: EventDef = installed.get(null)
-	var hot: EventDef = installed.get(Tuning.HEAT_INVESTIGATES_LEVEL)
+	var hot: EventDef = installed.get(EventDef.HEAT_INVESTIGATES_LEVEL)
 	t.check(cold != null and not cold.investigates() and is_zero_approx(cold.notice_within()),
 			"with no heat the recipe installs the cold patrol, no trigger")
 	t.check(hot != null and hot.investigates()
-			and is_equal_approx(hot.notice_within(), Tuning.HEAT_INVESTIGATE_WITHIN),
+			and is_equal_approx(hot.notice_within(), EventDef.HEAT_INVESTIGATE_WITHIN),
 			"at the investigating level it installs the copy that stops for her from %.0fpx"
-			% Tuning.HEAT_INVESTIGATE_WITHIN)
+			% EventDef.HEAT_INVESTIGATE_WITHIN)
 	city.free()
 	GameState.header.day = saved_day
 

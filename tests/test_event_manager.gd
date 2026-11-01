@@ -699,7 +699,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 ## **A row warned of down her line is created with its telegraph spent, at its own intensity from
 ## its first frame.** *(2026-09-20: "unleashed dog still has too little influence -- needs to be more
 ## intense".)* `EventInstance.is_lethal_at()` refuses the whole telegraph and `_notice_damping()`
-## holds the field at `Tuning.TELEGRAPH_INTENSITY_FRACTION` through it, so a row that arrived still
+## holds the field at `EventInstance.TELEGRAPH_INTENSITY_FRACTION` through it, so a row that arrived still
 ## telegraphing would ride past her unable to do the one thing it is for — the kill for a `hard_fail`
 ## row, the noise for a loud one. The warning was the telegraph, so the thing it warned of is created
 ## past it.
@@ -749,7 +749,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 			continue
 		t.check(not arrived.is_telegraphing() and arrived._notice_damping() == 1.0,
 				("'%s' is created with its telegraph spent, emitting at its own intensity rather "
-				% def.id) + "than the telegraph's %.0f%%" % (Tuning.TELEGRAPH_INTENSITY_FRACTION * 100.0))
+				% def.id) + "than the telegraph's %.0f%%" % (EventInstance.TELEGRAPH_INTENSITY_FRACTION * 100.0))
 		if def.hard_fail:
 			t.check(arrived.is_lethal_at(arrived.global_position),
 					"and '%s', declared hard_fail, is lethal from its first frame" % def.id)

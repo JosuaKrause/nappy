@@ -5,8 +5,13 @@ description: Rules for changing any balance or density number — event density,
 
 # Balance
 
-**All balance numbers live in `src/autoload/tuning.gd` and nowhere else.** Prefer a named constant
-in `Tuning` over a literal anywhere gameplay can feel it.
+**Every balance number is a named constant, never a literal where gameplay can feel it.** Where it lives
+is decided by who reads it: only files under `src/` count, and a comment is not a read. A number two or more
+`src/` files read, or that a function or constant of `src/autoload/tuning.gd` (`Tuning`) itself reads, lives
+in `Tuning`. A number exactly one `src/` file reads is a `const` in that file (`CityGenerator.ALLEY_CHANCE`,
+`Crowd.BUMP_RADIUS`), and tests and probes that read it name it through that file's class, so a test read
+never makes it shared; a number only tests read stays in `Tuning`. Use
+`rg "\bNAME\b" src tests` to find where one lives.
 
 **Expect tests to push back.** Several encode *relationships*, not values — traffic noise must stay
 under the walking decay; a fast mover must telegraph across its whole radius. If a test fails,
@@ -100,7 +105,7 @@ rather than a number nobody checked.
 **Raising the walking decay does not lower every row's cost by the same amount.** The decay is
 netted off over the *time* the crossing takes, so a wide, moderate row loses far more of its price
 than a narrow, intense one — `protest` is the case — which is how a wide field ends up friction
-rather than a wall. `Tuning.WALL_WORTH_OF_COST` is stated in points of the meter, so it is
+rather than a wall. `EventScheduler.WALL_WORTH_OF_COST` is stated in points of the meter, so it is
 re-derived from the cost table whenever a rate moves rather than left alone.
 
 Two consequences of the falloff shape that are easy to get wrong:

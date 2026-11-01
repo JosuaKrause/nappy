@@ -10,6 +10,16 @@ extends RefCounted
 ## true without a day having to remember yesterday's roll. `EventScheduler.build_day()` calls
 ## `compute()` fresh every day it needs it.
 
+## A candidate site is refused if a mast's own field would reach inside a calm block's interior —
+## measured from the block's lot rect shrunk in by one tile on every side, so a field may still
+## brush a calm area's own pavement edge without being read as *inside* it.
+const MAST_CALM_INTERIOR_MARGIN := 32.0
+## A candidate site is refused if it is this close to the home's own doorstep, whether or not a
+## mast's field would reach that far — "never on the home street" is a stronger promise than "never
+## in range of it". One full block-and-street period, so a site has to be a street away from home
+## rather than merely outside the field.
+const MAST_HOME_STREET_MARGIN := 1.0
+
 ## One chosen site: a stable id a later slice can name — M181's day-11 task silences a mast by
 ## reaching its foot, the way she touches a chalk mark — and the ground point everything about the
 ## mast is measured from: `EventScheduler.Planned.position`, the field's own centre, and the point
@@ -189,12 +199,12 @@ static func _is_eligible(at: Vector2, map: CityMap,
 	return not _reaches_a_possible_door(at, points)
 
 static func _too_close_to_home(at: Vector2, map: CityMap) -> bool:
-	var margin := Tuning.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
+	var margin := MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
 	return at.distance_to(map.doorstep_world_position()) < margin \
 			or at.distance_to(map.home_world_position()) < margin
 
 ## Whether a mast's own field, planted here, would reach inside a calm block's interior — the lot
-## rect shrunk in by `Tuning.MAST_CALM_INTERIOR_MARGIN` on every side, so a field may still brush
+## rect shrunk in by `MAST_CALM_INTERIOR_MARGIN` on every side, so a field may still brush
 ## the block's own pavement edge without counting as reaching its interior. Read off the
 ## `loudspeaker` row's own `outer_radius` rather than a second copy of the number, so a balance
 ## pass that moves the field moves this refusal with it.
@@ -207,7 +217,7 @@ static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 			continue
 		seen[anchor] = true
 		var interior := map.tile_rect_to_world(map.lot_rect(block)).grow(
-				-Tuning.MAST_CALM_INTERIOR_MARGIN)
+				-MAST_CALM_INTERIOR_MARGIN)
 		if interior.has_area() and _circle_touches_rect(at, reach, interior):
 			return true
 	return false

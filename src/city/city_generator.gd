@@ -50,6 +50,130 @@ const _CALM_PURPOSES: Array[GameEnums.BlockPurpose] = [
 	GameEnums.BlockPurpose.COURTYARD,
 ]
 
+## Per-purpose chance a block is split by a through-alley.
+const ALLEY_CHANCE := {
+	GameEnums.BlockPurpose.RESIDENTIAL: 0.25,
+	# Commercial blocks already have a plaza carved out; a second hole through the same
+	# lot leaves slivers of building and an alley that opens onto a square.
+	GameEnums.BlockPurpose.COMMERCIAL: 0.0,
+	GameEnums.BlockPurpose.INDUSTRIAL: 0.5,
+	GameEnums.BlockPurpose.CIVIC: 0.0,
+	# A courtyard block has a court cut out of it already, and an alley through that court
+	# would open the one piece of calm that is supposed to be hidden.
+	GameEnums.BlockPurpose.COURTYARD: 0.0,
+	GameEnums.BlockPurpose.PARK: 0.0,
+	GameEnums.BlockPurpose.FOREST: 0.0,
+	GameEnums.BlockPurpose.QUIET_SQUARE: 0.0,
+	# A big building is chosen after the blocks are carved and replaces whatever was cut into
+	# it, so this is never actually read. It is here because the table is a statement about
+	# every purpose, and a purpose missing from it would be a crash rather than a default the
+	# day somebody assigns one earlier.
+	GameEnums.BlockPurpose.BIG_BUILDING: 0.0,
+}
+
+## A commercial block goes dark before anything else happens to it.
+const BOARDING_CHANCE := 0.5
+
+const BOARDING_FIRST_DAY := 8
+
+## Chance a built block's arc ends in ashes. Event-caused, so it only happens if something
+## actually burns there — most of these never fire, which is the point.
+const BURN_CHANCE := 0.45
+
+const BURN_FIRST_DAY := 3
+
+## Courtyards are cut into residential blocks rather than taking a block of their own.
+const COURTYARD_CHANCE := 0.35
+
+const COURTYARD_SIZE_TILES := 4
+
+## Chance a calm block that *may* be taken is scheduled to be, and the earliest day it can
+## happen. Act III, when the vans start: the parks go at the same time the people do.
+const REQUISITION_CHANCE := 0.55
+
+const REQUISITION_FIRST_DAY := 8
+
+## Tiles per side of the plaza carved out of a commercial block.
+const SQUARE_SIZE_TILES := 4
+
+## Calm **areas**, not calm blocks: an area may be a single block or a multi-block zone, and what
+## these count is places to go rather than lots. The name is what `calm_blocks` returns — one entry
+## per area — and renaming it would touch every guarantee stated over it without changing what any
+## of them mean.
+##
+## **The floor is an act's worth plus one.** A day spoils every calm area she has used so far this
+## act, so an act of four days burns four, and the plus one is what stops the last day of an act
+## being unwinnable rather than merely hard. It is derived from the act lengths below rather than
+## authored beside them, because the two would otherwise drift the first time either moved:
+## `calm_areas_needed()`.
+const MIN_CALM_BLOCKS := 5
+
+## The **apartment complex**: a courtyard lot four blocks across, with the streets between them
+## built over and frontages all the way round.
+##
+## **It is a calm zone's mechanism with the opposite ground.** A zone absorbs the streets between
+## four blocks and paints park over them; this absorbs them and builds over them, so what comes out
+## is a mass 22 tiles square with a court in the middle and one archway in. That is what makes it calm
+## you have to *find* rather than calm you can see from the street — the courtyard's whole idea, at
+## the size where the block around it is a landmark.
+##
+## The court is ten tiles rather than the four a single-block courtyard gets, because a hole four
+## tiles wide in a mass twenty-two across is a light well rather than somewhere to stand. Ten
+## leaves six tiles of building on every side and crosses in 4.9s against the 5.7s it fills in, so
+## it sits with every other calm area at about one traverse per meter.
+##
+## One per city at most. It is a landmark and a secret, and two of them in a city is neither.
+const APARTMENT_COURT_TILES := 10
+
+## How deep the wall across a dead end is, in tiles. Two rather than one: a one-tile slab is a
+## line rather than a building, and what has to read from the far end of the street is *this does
+## not go through* rather than *something is painted here*.
+const CUL_DE_SAC_WALL_TILES := 2
+
+## Big buildings: two neighbouring blocks plus the one street between them, built as a single mass
+## twenty-two tiles long. Every other street around the pair stays — it takes one road out of the
+## lattice, not the ring. One or two per city, because this is a **landmark** — a thing a player
+## says "past the big grey one" about — and a city with five of them has landmarks the way a forest
+## has notable trees. **The count includes the power station**, which every city has and which is
+## one of these: the rest are ordinary landmarks.
+const MIN_BIG_BUILDINGS := 1
+
+## The hard floor: this many blocks must still be calm on the last day. A day can only be
+## won on calm ground, so an arc set that takes all of it makes an unwinnable run rather
+## than a hard one. `CityGenerator.validate()` enforces it.
+const MIN_CALM_BLOCKS_AT_END := 2
+
+## How many of a city's calm areas are multi-block. At least one, because a city of nothing but
+## single blocks is a city of laps; and the first one placed is always the **square**, so *"every
+## city has a big park"* stays true word for word while the rest may be rectangles. The remainder of
+## the calm stays single-block, which is what keeps *which* calm area to head for a real question —
+## a small quiet square close by against a big park further out is the decision spoiling exists to
+## make matter.
+const MIN_CALM_ZONES := 1
+
+## How many streets in a city genuinely stop. A handful of a few hundred: enough that a run has a
+## shape somebody could describe, few enough that the lattice is still a lattice — the number is
+## what separates "this city has dead ends in it" from "this city is a maze", and a maze is the
+## thing the reachability gate exists to prevent.
+##
+## Measured rather than derived, like every other count in this file.
+const MIN_CUL_DE_SACS := 4
+
+const MAX_BIG_BUILDINGS := 2
+
+## Walking distance in tiles, not straight-line: the calm has to be earned.
+const MIN_HOME_TO_PARK_TILES := 30
+
+## The home is a notch in the south edge of a residential block.
+const HOME_SIZE_TILES := Vector2i(2, 2)
+
+## How far the power station's front door stands from the home, as the lattice (Manhattan) distance
+## in blocks from the home block to the block the door is on. A reasonable walk rather than the
+## far edge of the map: her routes need not pass it before the day she is sent there, and the
+## narrative has a region door between the two, which `CityGenerator._place_power_station` checks
+## beside this floor. Set by the orchestrator, open to overturn.
+const POWER_STATION_MIN_BLOCKS_FROM_HOME := 4
+
 ## Generates a city, retrying with adjacent seeds until the guarantees hold.
 static func generate(seed_value: int) -> CityMap:
 	var last: CityMap = null
@@ -358,7 +482,7 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator, choices: 
 			map.precinct_spans, pinned_zones, pinned_square) + pinned_calm
 	_place_apartment_complexes(purposes, zones, shuffled, rng, map.main_road, map.precinct_spans, pinned_complexes)
 
-	var calm_target := rng.randi_range(Tuning.MIN_CALM_BLOCKS, Tuning.MAX_CALM_BLOCKS)
+	var calm_target := rng.randi_range(MIN_CALM_BLOCKS, Tuning.MAX_CALM_BLOCKS)
 	for block in shuffled:
 		if areas >= calm_target:
 			break
@@ -419,7 +543,7 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator, choices: 
 static func _place_calm_zones(purposes: Dictionary, zones: Dictionary,
 		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int,
 		precinct_spans: Array[Vector4i], existing: int = 0, square_exists: bool = false) -> int:
-	var wanted := rng.randi_range(Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES)
+	var wanted := rng.randi_range(MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES)
 	var made := 0
 	for index in maxi(0, wanted - existing):
 		var shapes := _shapes_to_try(index + (1 if square_exists else 0), rng)
@@ -515,7 +639,7 @@ static func home_block() -> Vector2i:
 ## checks the tile guarantee, which is what catches the case this approximation is wrong about.
 static func _too_near_the_home(footprint: Rect2i) -> bool:
 	var home := home_block()
-	var clearance := ceili(float(Tuning.MIN_HOME_TO_PARK_TILES + Tuning.BLOCK_SIZE)
+	var clearance := ceili(float(MIN_HOME_TO_PARK_TILES + Tuning.BLOCK_SIZE)
 			/ float(CityMap.period()))
 	for block in _blocks_in(footprint):
 		var away: Vector2i = (block - home).abs()
@@ -649,7 +773,7 @@ static func _cut_courtyards(purposes: Dictionary, remaining: Array[Vector2i],
 			continue
 		if _has_calm_neighbour(purposes, Rect2i(block, Vector2i.ONE)):
 			continue
-		if rng.randf() >= Tuning.COURTYARD_CHANCE:
+		if rng.randf() >= COURTYARD_CHANCE:
 			continue
 		purposes[block] = GameEnums.BlockPurpose.COURTYARD
 		cut += 1
@@ -750,7 +874,7 @@ static func _plan_arcs(map: CityMap, purposes: Dictionary,
 			calm.append(block)
 	calm.sort()
 	_shuffle(calm, rng)
-	var may_be_taken := maxi(0, calm.size() - Tuning.MIN_CALM_BLOCKS_AT_END)
+	var may_be_taken := maxi(0, calm.size() - MIN_CALM_BLOCKS_AT_END)
 
 	var taken := 0
 	for block: Vector2i in purposes:
@@ -758,9 +882,9 @@ static func _plan_arcs(map: CityMap, purposes: Dictionary,
 		var plan := BlockPlan.of(purpose)
 		if BlockPlan.is_calm(purpose):
 			var index := calm.find(block)
-			if index >= 0 and index < may_be_taken and rng.randf() < Tuning.REQUISITION_CHANCE:
+			if index >= 0 and index < may_be_taken and rng.randf() < REQUISITION_CHANCE:
 				plan.then(GameEnums.BlockPurpose.REQUISITIONED,
-						rng.randi_range(Tuning.REQUISITION_FIRST_DAY, Tuning.RUN_LENGTH_DAYS - 1),
+						rng.randi_range(REQUISITION_FIRST_DAY, Tuning.RUN_LENGTH_DAYS - 1),
 						GameEnums.BlockCause.SCHEDULED)
 				taken += 1
 		else:
@@ -823,12 +947,12 @@ static func swing_park(map: CityMap) -> Vector2i:
 ## whose arc ends in ashes may finish the run untouched.
 static func _plan_built_arc(plan: BlockPlan, purpose: GameEnums.BlockPurpose,
 		rng: RandomNumberGenerator) -> void:
-	if purpose == GameEnums.BlockPurpose.COMMERCIAL and rng.randf() < Tuning.BOARDING_CHANCE:
+	if purpose == GameEnums.BlockPurpose.COMMERCIAL and rng.randf() < BOARDING_CHANCE:
 		plan.then(GameEnums.BlockPurpose.BOARDED_UP,
-				rng.randi_range(Tuning.BOARDING_FIRST_DAY, Tuning.RUN_LENGTH_DAYS - 1),
+				rng.randi_range(BOARDING_FIRST_DAY, Tuning.RUN_LENGTH_DAYS - 1),
 				GameEnums.BlockCause.SCHEDULED)
-	if rng.randf() < Tuning.BURN_CHANCE:
-		plan.then(GameEnums.BlockPurpose.BURNT_OUT, Tuning.BURN_FIRST_DAY,
+	if rng.randf() < BURN_CHANCE:
+		plan.then(GameEnums.BlockPurpose.BURNT_OUT, BURN_FIRST_DAY,
 				GameEnums.BlockCause.FIRE)
 
 static func _shuffle(array: Array, rng: RandomNumberGenerator) -> void:
@@ -888,9 +1012,9 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 	if purpose == GameEnums.BlockPurpose.COURTYARD:
 		# The court is sized from the **lot**, not from a constant: a four-block apartment complex
 		# is a mass twenty-two tiles square, and a hole four tiles wide in it is a light well
-		# rather than somewhere to stand. See `Tuning.APARTMENT_COURT_TILES`.
-		var court := Tuning.COURTYARD_SIZE_TILES if lot.size.x <= Tuning.BLOCK_SIZE \
-				else Tuning.APARTMENT_COURT_TILES
+		# rather than somewhere to stand. See `APARTMENT_COURT_TILES`.
+		var court := COURTYARD_SIZE_TILES if lot.size.x <= Tuning.BLOCK_SIZE \
+				else APARTMENT_COURT_TILES
 		layout.open_rect = _inset_rect(lot, court, rng)
 		layout.passage = _passage_rect(lot, layout.open_rect, rng)
 		map.fill_rect(layout.open_rect, GameEnums.TileType.COURTYARD)
@@ -900,7 +1024,7 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 		rects = _subtract_all(rects, layout.passage)
 
 	if purpose == GameEnums.BlockPurpose.COMMERCIAL:
-		layout.square = _corner_rect(lot, Tuning.SQUARE_SIZE_TILES, rng)
+		layout.square = _corner_rect(lot, SQUARE_SIZE_TILES, rng)
 		map.fill_rect(layout.square, GameEnums.TileType.SQUARE)
 		map.square_rects.append(layout.square)
 		rects = _subtract_all(rects, layout.square)
@@ -919,7 +1043,7 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 	# reseeding every block built after it with a shifted stream for a reason that has nothing to
 	# do with any of them. Drawing first and gating after costs one throwaway `randf()` on the
 	# home block and leaves everyone else's layout exactly what it already was for this seed.
-	var wants_an_alley := rng.randf() < float(Tuning.ALLEY_CHANCE[purpose])
+	var wants_an_alley := rng.randf() < float(ALLEY_CHANCE[purpose])
 	if block != home_block() and wants_an_alley:
 		layout.alley = _alley_rect(lot, rng)
 		map.fill_rect(layout.alley, GameEnums.TileType.ALLEY)
@@ -1062,7 +1186,7 @@ static func _place_home(map: CityMap, block_rects: Dictionary) -> void:
 ## creates; removed rather than left standing as dead ground to reason about.
 static func _home_rect(block: Vector2i) -> Rect2i:
 	var lot := CityMap.block_rect(block)
-	var size := Tuning.HOME_SIZE_TILES
+	var size := HOME_SIZE_TILES
 	return Rect2i(Vector2i(lot.position.x + (lot.size.x - size.x) / 2, lot.end.y - size.y), size)
 
 static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
@@ -1117,7 +1241,7 @@ static func _calm_blocks_set(map: CityMap) -> Dictionary:
 static func _place_dead_ends(map: CityMap, home: StreetNetwork.Segment,
 		areas: Array[ClosurePlanner.CalmArea], reference: RouteTree, calm: Dictionary,
 		rng: RandomNumberGenerator, choices: Dictionary = {}) -> void:
-	var wanted := rng.randi_range(Tuning.MIN_CUL_DE_SACS, Tuning.MAX_CUL_DE_SACS)
+	var wanted := rng.randi_range(MIN_CUL_DE_SACS, Tuning.MAX_CUL_DE_SACS)
 	var made := 0
 	var candidates := _dead_end_candidates(map, home, reference, calm, rng)
 	var ends := {}
@@ -1229,7 +1353,7 @@ static func _runs_beside_calm(segment: StreetNetwork.Segment, calm: Dictionary) 
 static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
 		home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea], reference: RouteTree,
 		calm: Dictionary, rng: RandomNumberGenerator, choices: Dictionary = {}) -> void:
-	var wanted := rng.randi_range(Tuning.MIN_BIG_BUILDINGS, Tuning.MAX_BIG_BUILDINGS)
+	var wanted := rng.randi_range(MIN_BIG_BUILDINGS, MAX_BIG_BUILDINGS)
 	var pool := _big_building_candidates(map, purposes, home, reference, calm, rng)
 	var made := 0
 	var station_pair := Rect2i()
@@ -1277,7 +1401,7 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 ##   draws and the front door on it can be seen (`Building` draws no east or west face at all).
 ## - **Every rule an ordinary landmark obeys** — `_the_pair_is_free` and the calm-reachability gate.
 ## - **A front door on a real street**: the south street of one of its two blocks, still in the
-##   lattice, at least `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home block in
+##   lattice, at least `POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home block in
 ##   lattice distance. See `_door_blocks`.
 ## - **Not in the home's region.** The narrative has a region door between the home and the station,
 ##   so the door's street ground (`RegionPlanner.ground_region_of`) must belong to another region
@@ -1390,7 +1514,7 @@ static func _industrial_blocks(purposes: Dictionary) -> Dictionary:
 
 ## The blocks of `pair` the front door may be on, best first: those whose south street is still in
 ## the lattice and whose lattice distance from the home block is at least
-## `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME`, the nearer to the home first and then west before
+## `POWER_STATION_MIN_BLOCKS_FROM_HOME`, the nearer to the home first and then west before
 ## east — an order and nothing more, since either one is a door on the same south face.
 static func _door_blocks(map: CityMap, pair: Rect2i) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
@@ -1398,7 +1522,7 @@ static func _door_blocks(map: CityMap, pair: Rect2i) -> Array[Vector2i]:
 		var street := StreetNetwork.beside_block(block, StreetNetwork.Side.SOUTH)
 		if not street or not map.has_street(street.key()):
 			continue
-		if blocks_from_home(block) < Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME:
+		if blocks_from_home(block) < POWER_STATION_MIN_BLOCKS_FROM_HOME:
 			continue
 		found.append(block)
 	found.sort_custom(func(x: Vector2i, y: Vector2i) -> bool:
@@ -1590,7 +1714,7 @@ static func _wall_off_one_end(map: CityMap, segment: StreetNetwork.Segment,
 	# Grown *into* the street, never into the junction: the crossroads keeps its zebras and its
 	# lights, and what is walled is the road beyond it. A wall inside the junction would take the
 	# crossing with it, which is a pedestrian route that has nothing to do with this street.
-	var into := Tuning.CUL_DE_SAC_WALL_TILES - 1
+	var into := CUL_DE_SAC_WALL_TILES - 1
 	var along := Vector2i.RIGHT if segment.horizontal else Vector2i.DOWN
 	if not at_a:
 		wall.position -= along * into
@@ -1617,9 +1741,9 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 		problems.append("no home was placed")
 		return problems # Remaining route checks require an actual home.
 
-	if map.calm_blocks.size() < Tuning.MIN_CALM_BLOCKS:
+	if map.calm_blocks.size() < MIN_CALM_BLOCKS:
 		problems.append("only %d calm blocks, need %d" % [
-			map.calm_blocks.size(), Tuning.MIN_CALM_BLOCKS])
+			map.calm_blocks.size(), MIN_CALM_BLOCKS])
 		if not all_problems:
 			return problems
 
@@ -1661,9 +1785,9 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 		open_zones += 1
 		if (map.zone_rects[anchor] as Rect2i).size == square:
 			squares += 1
-	if open_zones < Tuning.MIN_CALM_ZONES:
+	if open_zones < MIN_CALM_ZONES:
 		problems.append("only %d open multi-block calm zones, need %d" % [
-			open_zones, Tuning.MIN_CALM_ZONES])
+			open_zones, MIN_CALM_ZONES])
 		if not all_problems:
 			return problems
 	if squares < 1:
@@ -1677,9 +1801,9 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 	for block: Vector2i in map.block_plans:
 		if (map.block_plans[block] as BlockPlan).stays_calm():
 			lasting += 1
-	if lasting < Tuning.MIN_CALM_BLOCKS_AT_END:
+	if lasting < MIN_CALM_BLOCKS_AT_END:
 		problems.append("only %d blocks stay calm for the whole run, need %d" % [
-			lasting, Tuning.MIN_CALM_BLOCKS_AT_END])
+			lasting, MIN_CALM_BLOCKS_AT_END])
 		if not all_problems:
 			return problems
 
@@ -1702,9 +1826,9 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 			return problems
 
 	var calm_distance := map.home_to_nearest_calm()
-	if calm_distance < Tuning.MIN_HOME_TO_PARK_TILES:
+	if calm_distance < MIN_HOME_TO_PARK_TILES:
 		problems.append("home is only %d tiles from calm ground, need %d" % [
-			calm_distance, Tuning.MIN_HOME_TO_PARK_TILES])
+			calm_distance, MIN_HOME_TO_PARK_TILES])
 		if not all_problems:
 			return problems
 
@@ -1748,9 +1872,9 @@ static func _power_station_problem(map: CityMap) -> String:
 	# A segment key names the block it runs along the north edge of, so the block the door is on —
 	# the one the street runs along the south edge of — is one step north of it.
 	var door_block := Vector2i(street.key().x, street.key().y - 1)
-	if blocks_from_home(door_block) < Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME:
+	if blocks_from_home(door_block) < POWER_STATION_MIN_BLOCKS_FROM_HOME:
 		return "the power station's door is %d blocks from the home, need %d" % [
-			blocks_from_home(door_block), Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME]
+			blocks_from_home(door_block), POWER_STATION_MIN_BLOCKS_FROM_HOME]
 	if RegionPlanner.ground_region_of(map, street) == RegionPlanner.home_region(map):
 		return "the power station's door is in the home's region"
 	return ""

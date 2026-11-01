@@ -125,10 +125,10 @@ static func full_contribution(agent: CrowdAgent, at: Vector2) -> float:
 	var distance := GroundShape.eccentric_distance(agent.global_position, agent.velocity(), at)
 	var total := 0.0
 	if agent.kind == CrowdAgent.Kind.CAR:
-		total = Field.falloff(distance, Tuning.CAR_INTENSITY,
+		total = Field.falloff(distance, CrowdExcitement.CAR_INTENSITY,
 			Tuning.CAR_INNER_RADIUS, Tuning.CAR_OUTER_RADIUS)
 	else:
-		total = Field.falloff(distance, Tuning.PEDESTRIAN_INTENSITY,
+		total = Field.falloff(distance, CrowdExcitement.PEDESTRIAN_INTENSITY,
 			Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS)
 	var jolt := agent.excitement
 	if jolt._jolt > 0.0:

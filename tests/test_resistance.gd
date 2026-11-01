@@ -2431,7 +2431,7 @@ func _check_day_nines_trap_from_where_she_is_let_out(t, director: ResistanceDire
 	if hut == null or director._door_at == Vector2.INF:
 		return
 	var out := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
-			+ Tuning.CHECKPOINT_RELEASE_MARGIN
+			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	var player := _rig_player(t, hut.position)
 	director.use_player(player)
 	for side: float in [1.0, -1.0]:
@@ -2739,7 +2739,7 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 ## created there, his badge already spent and his telegraph with it:
 ##
 ## - **standing where she did it**, she is caught;
-## - **walking into him**, she is caught, and turning to run `Tuning.PURSUIT_REACTION` after his badge
+## - **walking into him**, she is caught, and turning to run `PursuitSpec.PURSUIT_REACTION` after his badge
 ##   rises gets her away;
 ## - **walking away** is caught from every start, beside her included — no pursuer gives up on a
 ##   walker (amendment 8: `Tuning.PURSUIT_TIME` is a long cap), so walking has to lose;
@@ -2787,10 +2787,10 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 		# The badge went up `warned_for()` before he exists, so a turn `PURSUIT_REACTION` after the
 		# badge is that much less after he appears.
 		var turned := _walk_the_trap(def, start, Tuning.WALK_SPEED,
-				maxf(0.0, Tuning.PURSUIT_REACTION - def.warned_for()))
+				maxf(0.0, PursuitSpec.PURSUIT_REACTION - def.warned_for()))
 		t.check(turned["caught_at"] == INF and turned["gave_up"],
 				"from %v: walking into him and turning to run %.1fs after the badge gets away"
-				% [start, Tuning.PURSUIT_REACTION])
+				% [start, PursuitSpec.PURSUIT_REACTION])
 		var away := _walk_the_trap(def, start, -Tuning.WALK_SPEED)
 		t.check(away["caught_at"] < INF,
 				"from %v (%.0fpx): walking straight away is caught (%.2fs)"
@@ -2953,7 +2953,7 @@ func _test_completing_the_package_makes_the_pram_heavier(t) -> void:
 		t.check(GameState.resistance.carrying_package, "picking up the package sets the flag")
 
 		var after := _city.decay_multiplier(somewhere)
-		t.close_to(after, before * Tuning.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
+		t.close_to(after, before * City.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
 				"and every street after it decays slower for the rest of the day", 0.001)
 		director.free())
 
@@ -3220,7 +3220,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 				"and the masts are still speaking at the door: they stop with the power")
 		var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))
 		_city.blackout.update(Vector2(lot.get_center().x,
-				lot.end.y + Tuning.BLACKOUT_DISTANCE + 8.0))
+				lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0))
 		t.check(quiet.size() == 1, "far enough away, the city goes quiet, once")
 		t.check(mast.silenced, "the mast is marked silenced")
 		t.close_to(mast.excitement.contribution_at(nearby), 0.0,
@@ -5077,7 +5077,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 
 ## Review 4 of PR #781, day 9: **a walked crossing counts only once it stands.** Under the named
 ## door's raised boom the crossing starts its warning
-## (`CheckpointController._start_the_crossing_warning()`, `Tuning.CROSSING_WARNING`); she steps
+## (`CheckpointController._start_the_crossing_warning()`, `CheckpointController.CROSSING_WARNING`); she steps
 ## back across the line halfway through it, so the crossing is called off and no guard comes,
 ## and the task is not done either, however long she then waits: `door_crossed` is sent only
 ## when the warning has run with her still across. Walked through and staying across, the same
@@ -5108,14 +5108,14 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
 			player.global_position = at + axis * 40.0 * direction
 			events.checkpoints.watch_the_door_lines()
 			t.check(events.checkpoints._crossing != null, "walking under the named boom starts its warning")
-			for i in int(round(Tuning.CROSSING_WARNING * 0.5 / STEP)):
+			for i in int(round(CheckpointController.CROSSING_WARNING * 0.5 / STEP)):
 				events.checkpoints.watch_the_door_lines(STEP)
 			t.check(not director._contact.is_done,
 					"halfway through the crossing's warning the task is not done yet")
 			player.global_position = at - axis * 40.0 * direction
 			events.checkpoints.watch_the_door_lines(STEP)
 			t.check(events.checkpoints._crossing == null, "stepping back across calls the crossing off")
-			for i in int(ceil(Tuning.CROSSING_WARNING * 2.0 / STEP)):
+			for i in int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)):
 				events.checkpoints.watch_the_door_lines(STEP)
 			var guard_before := events.checkpoints._guard_after_her
 			t.check(not director._contact.is_done and (not is_instance_valid(guard_before)
@@ -5195,7 +5195,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 				if not a_stays:
 					step_to.call(a_at + a_axis * 40.0 * a_dir, true)
 					step_to.call(a_at - a_axis * 40.0 * a_dir)
-				for i in int(ceil(Tuning.CROSSING_WARNING * 2.0 / STEP)):
+				for i in int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)):
 					events.checkpoints.watch_the_door_lines(STEP)
 				var guard := events.checkpoints._guard_after_her
 				var chased := is_instance_valid(guard) and not guard.is_finished and not guard.is_leaving
@@ -5274,7 +5274,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 				# So the hold is run out, she is released, and the warning a robber would send
 				# is run out before anything is counted.
 				var before := player.global_position
-				var guard_steps := int(round(Tuning.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
+				var guard_steps := int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
 				while hut.is_chatting() and guard_steps > 0:
 					guard_steps -= 1
 					for instance in events.instances():
@@ -5385,9 +5385,9 @@ func _walk_through(at: Vector2, axis: Vector2, direction: float, player: Strolle
 	events.checkpoints.watch_the_door_lines()
 	player.global_position = at + axis * 40.0 * direction
 	events.checkpoints.watch_the_door_lines()
-	# And stays across while the crossing's warning runs (`Tuning.CROSSING_WARNING`), so a crossing
+	# And stays across while the crossing's warning runs (`CheckpointController.CROSSING_WARNING`), so a crossing
 	# that sets a guard on her has set him by the time this returns.
-	for i in int(ceil(Tuning.CROSSING_WARNING / STEP)) + 1:
+	for i in int(ceil(CheckpointController.CROSSING_WARNING / STEP)) + 1:
 		events.checkpoints.watch_the_door_lines(STEP)
 
 # ------------------------------------------------------ M188: reachable targets ---
@@ -5620,7 +5620,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
 			if not SpawnSiting.is_legal_ground(map, tile, walled) or map.is_obstructed(tile):
 				continue
 			var gap := map.tile_to_world(tile).distance_to(lorry.position)
-			if gap > Tuning.EVENT_SPACING_ANY and gap < lorry_def.field_reach() - Tuning.TILE_SIZE:
+			if gap > EventScheduler.EVENT_SPACING_ANY and gap < lorry_def.field_reach() - Tuning.TILE_SIZE:
 				inside.append(tile)
 			elif gap > lorry_def.field_reach() + 600.0 and gap < lorry_def.field_reach() + 900.0:
 				clear.append(tile)

@@ -84,7 +84,7 @@ func _spine_junction() -> Vector2i:
 
 func _test_nothing_goes_dark_without_the_sabotage(t) -> void:
 	GameState.resistance.sabotage_done = false
-	_city.blackout.update(_south_of_the_station(Tuning.BLACKOUT_DISTANCE * 4.0))
+	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _city.blackout.is_dark, "far from the station with no sabotage, the city is lit")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the spine's lights are working")
 
@@ -93,7 +93,7 @@ func _test_nothing_goes_dark_beside_the_station(t) -> void:
 	GameState.resistance.sabotage_done = true
 	_city.blackout.update(_city.map.power_station_door_position())
 	t.check(not _city.blackout.is_dark, "at the door she has just touched, nothing is off yet")
-	_city.blackout.update(_south_of_the_station(Tuning.BLACKOUT_DISTANCE - 4.0))
+	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE - 4.0))
 	t.check(not _city.blackout.is_dark, "nor just short of the distance")
 
 func _test_everything_goes_dark_at_once(t) -> void:
@@ -110,7 +110,7 @@ func _test_everything_goes_dark_at_once(t) -> void:
 	EventBus.city_went_quiet.connect(handler)
 
 	GameState.resistance.sabotage_done = true
-	_city.blackout.update(_south_of_the_station(Tuning.BLACKOUT_DISTANCE + 4.0))
+	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE + 4.0))
 
 	t.check(_city.blackout.is_dark, "past the distance, with the sabotage done, the city is dark")
 	var still_lit := 0
@@ -141,7 +141,7 @@ func _test_it_stays_dark_walking_back(t) -> void:
 ## A lost day 14 gives the sabotage back at dawn, and with it the power: the retry is the same day.
 func _test_a_retry_gives_the_power_back(t) -> void:
 	GameState.resistance.sabotage_done = false
-	_city.blackout.update(_south_of_the_station(Tuning.BLACKOUT_DISTANCE * 4.0))
+	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _city.blackout.is_dark, "with the sabotage given back, the power is back")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the lights decide the spine again")
 	var lit_windows := 0
