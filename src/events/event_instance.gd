@@ -316,6 +316,9 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_navigator = navigator if navigator else _map.navigator()
 	_mover = mover_for(definition)
 	_move.radius = _mover.radius
+	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
+	# walked through as a person or an animal (`EventDef.stands_as`, inbox #905).
+	_move.stood_round = definition.stands_as == EventDef.StandsAs.SOMETHING
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	var start := route[0] if route.size() > 0 else at
 	if not definition.mobile and definition.obstructs_radius > 0.0 \

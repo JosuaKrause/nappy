@@ -534,17 +534,25 @@ wrong, and `WorldContext.total_excitement_at` still adds its sets (the events' a
 timing** (inbox #884 in plaid-raven): a charging dog does not care, and a pedestrian does not want
 to be overrun. An event figure, an event car and day 12's cordon officers are given way to; nothing
 about them changes for the crowd, so every catch, notice and departure is timed as it is with an
-empty street. Only a figure that has walked counts: a stall, a burnt-out car, a street musician or a
-mast stands where it was put, and the crowd goes round the solid ones by their tiles as before.
+empty street.
 
-- **A walker makes way for a figure coming at him as he does for her** (noticed within
+- **A walker gives way to every figure under way, and to an object or a vehicle standing still,
+  but may walk through a person or an animal standing still** (inbox #905): he walks round a
+  parked van, the patrol car at a light or the fire engine at its fire, and through a street
+  musician, a policeman standing for his notice or a dog waiting or crouched before its charge.
+  Each row says which it is (`EventDef.stands_as`); a figure counts as under way for a third of a
+  second after it last moved. An object with a solid body, a stall or a café's tables, is walked
+  round by its tiles as well.
+- **He makes way for a figure coming at him as he does for her** (noticed within
   `Tuning.CROWD_YIELD_DISTANCE`, 96px, a lane over within his own footway), and his step is then
-  moved clear of every figure's body, so a figure walking into him pushes him out of its way.
-  Pushed, he keeps going the way he was pushed for a couple of seconds, as her bump has him do.
-  Squeezed against a wall he cannot go aside: overtaken, he is moved on and hurries ahead; met head
-  on along his own line, he walks on and the figure brushes past him, the one overlap this leaves.
-  He is not startled, so a figure walking through the crowd costs her nothing the crowd did not
-  already cost.
+  moved clear of every figure's body he gives way to, so a figure walking into him pushes him out
+  of its way and he slides round one he walks into. Pushed, he keeps going the way he was pushed
+  for a couple of seconds, as her bump has him do; pushed back along his own line, he steps to the
+  side his footway has room on. Squeezed against a wall he cannot go aside: overtaken, he is moved
+  on and hurries ahead; met head on along his own line by a figure under way, he walks on and the
+  figure brushes past him, the one overlap this leaves; against a standing object or vehicle he
+  waits behind it. He is not startled, so a figure walking through the crowd costs her nothing the
+  crowd did not already cost.
 - **A crowd car stands for a figure in its lane ahead, or coming into it within half a second**,
   braking toward a point a few pixels short of its body the way it brakes for a stop line, and its
   step is held short of the body if the brake arrives late. It never swerves. It stands only for a

@@ -494,31 +494,36 @@ func make_way_for(here: Vector2, velocity: Vector2) -> void:
 		away = _mover.heading()
 	step_aside(away, Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
 
-## **A walker gives way to an event figure** (inbox #884 in minty-dolphin: the crowd yields, and a
-## pedestrian does not want to be overrun): it makes way for each one coming at it as it does for
-## her (`make_way_for()`), so it moves over a lane within its own footway before the figure arrives;
-## and its proposed step is then moved clear of every figure's body (`SeparationPass.
+## **A walker gives way to an event figure** (inbox #884 in plaid-raven: the crowd yields, and a
+## pedestrian does not want to be overrun): to every figure under way, and to a standing one that is
+## an object or a vehicle, while a person or an animal standing still may be walked through (inbox
+## #905; which figures, `SeparationPass`'s class doc). It makes way for each one coming at it as it
+## does for her (`make_way_for()`), so it moves over a lane within its own footway before the figure
+## arrives; and its proposed step is then moved clear of every figure's body (`SeparationPass.
 ## clear_of_the_keepers()`), which is the guarantee, since a sidestep is an approach and an approach
-## arrives late (the **crowd-traffic** skill). A walker walking into a figure slides round it, and a
-## figure walking into a walker pushes him out of its way. **Pushed, he keeps going the way he was
-## pushed**, as her bump has him do, a lane over for a couple of seconds (`step_aside()`), or his own
-## steering would walk him straight back into the figure; pushed along his own line, he steps to the
-## side he is on instead, since being driven down his own line separates nobody. **Pushed toward
-## ground he may not stand on**, a figure squeezing him against a wall, he cannot go aside: overtaken,
-## he is moved on along his own line (`SeparationPass.clear_along()`) and hurries ahead of the
-## figure; met head on, he walks on and the figure brushes past him, the one overlap this allows.
-## The mover's own check runs after (`LaneMover._keep_out_of_a_body()`), so he is moved only over
-## ground he may stand on, as her bump moves him over nothing solid.
+## arrives late (the **crowd-traffic** skill). A walker walking into a figure slides round it, the
+## same for a standing van as for a moving dog, and a figure walking into a walker pushes him out of
+## its way. **Pushed, he keeps going the way he was pushed**, as her bump has him do, a lane over for
+## a couple of seconds (`step_aside()`), or his own steering would walk him straight back into the
+## figure; pushed along his own line, he steps to a side instead, since being driven down his own
+## line separates nobody: the side he is on, unless his footway has no room on it and has more on
+## the other (`_side_to_step_to()`). **Pushed toward ground he may not stand on**, squeezed against
+## a wall, he cannot go aside: overtaken by a figure, he is moved on along his own line
+## (`SeparationPass.clear_along()`) and hurries ahead of it; met head on by a figure under way, he
+## walks on and the figure brushes past him, the one overlap this allows; and against a standing
+## object or vehicle he is held behind it and waits. The mover's own check runs after
+## (`LaneMover._keep_out_of_a_body()`), so he is moved only over ground he may stand on, as her bump
+## moves him over nothing solid.
 ##
 ## Not startled, unlike her bump: a walker's jolt is noise the baby hears, and an event figure
 ## walking through the crowd is not a reason for the street to cost her more than it did.
 func give_way_on_the_step(delta: float) -> void:
 	var separation := _mover._map.separation
-	if not separation.is_near(_mover._move.from, Tuning.CROWD_YIELD_DISTANCE):
+	if not separation.walker_is_near(_mover._move.from, Tuning.CROWD_YIELD_DISTANCE):
 		return
 	var move := _mover._move
 	var near := false
-	for keeper in separation.keepers():
+	for keeper in separation.walker_keepers():
 		if keeper.at.distance_squared_to(move.from) > _FIGURE_NOTICE_SQUARED:
 			continue
 		near = true
@@ -526,27 +531,52 @@ func give_way_on_the_step(delta: float) -> void:
 	if not near:
 		return
 	var forward := _mover.heading()
-	var side := Vector2(-forward.y, forward.x)
-	var cleared := separation.clear_of_the_keepers(move, side)
+	var cleared := separation.clear_of_the_keepers(move, _side_to_step_to(forward, Vector2.ZERO))
 	if cleared == move.to:
 		return
 	var away := (cleared - move.to).normalized()
 	if may_stand_on(_mover._map.world_to_tile(cleared)):
 		if absf(away.dot(forward)) > 0.5:
-			away = side if side.dot(away) >= 0.0 else -side
+			away = _side_to_step_to(forward, away)
 	else:
 		# Squeezed against ground it may not stand on — a wall, the kerb of a shut road — it cannot
 		# go out to the side. Overtaken by the figure, it is moved on along its own line and hurries
-		# ahead of it (`step_aside()` read along its line); met head on, it keeps walking and the
-		# figure brushes past it, since pushing it back down its own street is being swept along in
-		# front of the figure for as long as their two lines are one.
+		# ahead of it (`step_aside()` read along its line); met head on by one under way, it keeps
+		# walking and the figure brushes past it, since pushing it back down its own street is being
+		# swept along in front of the figure for as long as their two lines are one. Against a
+		# standing object or vehicle nothing sweeps it along, so it is held behind it and waits
+		# (`step_aside()` read back along its line).
 		cleared = separation.clear_along(move, forward)
 		away = (cleared - move.to).normalized()
-		if away.dot(forward) <= 0.0:
+		if away.dot(forward) <= 0.0 and not separation.overlaps_one_standing(move):
 			return
 	move.to = cleared
 	if away != Vector2.ZERO:
 		step_aside(away, Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
+
+## **The side of its own line a walker pushed along that line steps out to**, as a world direction:
+## the side `away` leans to (the side it already stands on of the figure), or, with no lean, the
+## side with more of its footway beside it; but never one with less than half a tile of footway left
+## when the other has more, since a step that the footway's edge stops short is a walker held in
+## front of the figure, a step from where it started.
+func _side_to_step_to(forward: Vector2, away: Vector2) -> Vector2:
+	var side := Vector2(-forward.y, forward.x)
+	var band := _pavement_band()
+	var cross := _mover._cross()
+	var toward_high := (side.x if _mover._vertical else side.y) > 0.0
+	var room := (band.y - cross) if toward_high else (cross - band.x)
+	var room_other := (cross - band.x) if toward_high else (band.y - cross)
+	var lean := away.dot(side)
+	if absf(lean) < 0.01:
+		return side if room >= room_other else -side
+	if lean < 0.0:
+		side = -side
+		var swapped := room
+		room = room_other
+		room_other = swapped
+	if room < float(Tuning.TILE_SIZE) * 0.5 and room_other > room:
+		return -side
+	return side
 
 ## The squared distance beyond which a figure is too far to make way for (`make_way_for()` reaches
 ## `Tuning.CROWD_YIELD_DISTANCE`) and, since no body reaches that far, to touch on this step: most

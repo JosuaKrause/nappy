@@ -356,7 +356,7 @@ func _distance_to_a_figure() -> float:
 ## a car does not drive into a box it would have to stand in for a figure beyond it.
 func road_before_a_figure() -> float:
 	var separation := _mover._map.separation
-	if not separation.has_keepers() or (_mover._turn and _mover._turn_run_up <= 0.0):
+	if not separation.has_keepers_for_cars() or (_mover._turn and _mover._turn_run_up <= 0.0):
 		return INF
 	var edge := separation.edge_ahead(_mover.global_position, _mover.heading(), SHADOW_ACROSS * 0.5,
 			FIGURE_WIDEST, Tuning.CAR_ZEBRA_SIGHT, FIGURE_LEAD_TICKS, FIGURE_UNDER_WAY_TICKS)
@@ -390,7 +390,7 @@ const FIGURE_UNDER_WAY_TICKS := 30
 ## reads a car that has stopped.
 func give_way_on_the_step(delta: float) -> void:
 	var separation := _mover._map.separation
-	if not separation.has_keepers():
+	if not separation.has_keepers_for_cars():
 		return
 	var move := _mover._move
 	var forward := _mover.heading()

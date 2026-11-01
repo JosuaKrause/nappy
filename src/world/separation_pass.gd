@@ -9,13 +9,20 @@ extends RefCounted
 ## (`LaneStrategy.give_way_on_the_step()`), asked at each crowd body's own step, between its
 ## proposal and its check (`MoveProposal`).
 ##
-## **Who is given way to** (a "keeper", a name of this class's, for a mover that keeps its course,
-## each held as a `Keeper`): every move on the list that does not give way (`MoveProposal.yields`
-## false), has a body (`radius` above zero) and has moved since this pass first saw it. The last
-## clause is what leaves out what stands where it was placed all day — a market stall, a burnt-out
-## car, a street musician, a puddle of a burst water main, a loudspeaker's mast — none of which walks
-## into anybody, and whose solid bodies the crowd already goes round (`CityMap.obstructed_tiles`). A
-## figure that has walked once is given way to from then on, standing or moving.
+## **The movers that keep their course** (a "keeper", a name of this class's, each held as a
+## `Keeper`) are the moves on the list that do not give way (`MoveProposal.yields` false) and have a
+## body (`radius` above zero). Which of them a body gives way to depends on the body:
+##
+## - **A walker gives way to a keeper under way**, one that moved within the last `UNDER_WAY_TICKS`
+##   gatherings, whatever it is; **and to a standing one only if its move says a walker goes round
+##   it** (`MoveProposal.stood_round`): an object or a vehicle — a parked van, the patrol car at a
+##   light, the fire engine at its fire — and not a person or an animal, whom a walker may walk
+##   through while they stand: a street musician, a policeman standing for his notice, a dog waiting
+##   or crouched before its charge (inbox #905). A standing object with a solid body is walked round
+##   by its tiles as well (`CityMap.obstructed_tiles`).
+## - **A crowd car gives way to a keeper that has moved since this pass first saw it**, moving or
+##   standing. What was placed and has never moved is left to the map: a solid body is a blockage
+##   the car brakes for and turns round at, and a door's boom has its own hold.
 ##
 ## **Read at each crowd body's own step, against the others' committed poses.** `gather()` takes the
 ## keepers off the list once a crowd tick, at its start, before any crowd body steps, and notes each
@@ -28,28 +35,39 @@ extends RefCounted
 
 ## `Keeper.ticks_still` for one that has not moved since this pass first saw it.
 const NEVER_MOVED := 1 << 30
-## A margin for the rectangle test in `is_near()` that covers the reach of every keeper's body: the
-## column's trucks are the widest, 26px round their centres.
+## **How many gatherings a keeper may stand still and still be under way to a walker**: a third of a
+## second at the 30Hz tick, so a figure that pauses mid-stride, or turns at the end of its beat, is
+## not walked into for that moment, while one that has stopped (a dog crouched, a man standing for
+## his notice) soon reads as standing.
+const UNDER_WAY_TICKS := 10
+## A margin for the rectangle test in `walker_is_near()` that covers the reach of every keeper's
+## body: the column's trucks are the widest, 26px round their centres.
 const _WIDEST_REACH := 64.0
 
 var _moves: ProposedMoves
 ## Every move this pass has seen that could be a keeper, by move, so its pose and stillness carry
 ## from one gathering to the next; one that leaves the list is dropped at the next gathering.
 var _seen := {}
-## This tick's keepers, in the order their moves joined the list.
-var _keepers: Array[Keeper] = []
-## The rectangle round every keeper's centre this tick, so a body far from all of them asks nothing
-## more (`is_near()`): most of the crowd on most ticks, since the figures stand round her and the
-## crowd's box is wider than that.
-var _bounds := Rect2()
+## This tick's keepers a walker gives way to, in the order their moves joined the list.
+var _for_walkers: Array[Keeper] = []
+## This tick's keepers a crowd car gives way to, in the order their moves joined the list.
+var _for_cars: Array[Keeper] = []
+## The rectangle round the centre of every keeper a walker gives way to this tick, so a walker far
+## from all of them asks nothing more (`walker_is_near()`): most of the crowd on most ticks, since
+## the figures stand round her and the crowd's box is wider than that.
+var _walker_bounds := Rect2()
+## The same rectangle round every keeper a crowd car gives way to (`edge_ahead()`, `room_ahead()`).
+var _car_bounds := Rect2()
 
 func _init(moves: ProposedMoves) -> void:
 	_moves = moves
 
 ## Takes this tick's keepers off the list (see the class doc), with how far each moved since the
-## last gathering. Once a crowd tick, at its start (`Crowd._advance_the_world()`).
+## last gathering, into the walkers' and the cars' lists. Once a crowd tick, at its start
+## (`Crowd._advance_the_world()`).
 func gather() -> void:
-	_keepers.clear()
+	_for_walkers.clear()
+	_for_cars.clear()
 	var still_here := {}
 	for move in _moves.all():
 		if move.yields or move.radius <= 0.0:
@@ -60,39 +78,43 @@ func gather() -> void:
 			_seen[move] = keeper
 		keeper.look()
 		still_here[move] = keeper
-		if keeper.ticks_still == NEVER_MOVED:
-			continue
-		if _keepers.is_empty():
-			_bounds = Rect2(keeper.at, Vector2.ZERO)
-		else:
-			_bounds = _bounds.expand(keeper.at)
-		_keepers.append(keeper)
+		if keeper.ticks_still <= UNDER_WAY_TICKS or keeper.stood_round:
+			_walker_bounds = _grown(_walker_bounds, _for_walkers.is_empty(), keeper.at)
+			_for_walkers.append(keeper)
+		if keeper.ticks_still != NEVER_MOVED:
+			_car_bounds = _grown(_car_bounds, _for_cars.is_empty(), keeper.at)
+			_for_cars.append(keeper)
 	_seen = still_here
 
-## Whether a point at `at` is within `reach` of the rectangle round every keeper this tick: false
-## for a body that no keeper can concern within that reach, which then asks nothing more.
-func is_near(at: Vector2, reach: float) -> bool:
-	return not _keepers.is_empty() and _bounds.grow(reach).has_point(at)
+## `bounds` grown to hold `at`, or a rectangle at `at` alone when `first`.
+static func _grown(bounds: Rect2, first: bool, at: Vector2) -> Rect2:
+	return Rect2(at, Vector2.ZERO) if first else bounds.expand(at)
 
-## Whether there is anybody to give way to this tick: false on most ticks of most days, and then a
-## crowd body asks nothing more.
-func has_keepers() -> bool:
-	return not _keepers.is_empty()
+## Whether a walker at `at` is within `reach` of the rectangle round every keeper a walker gives way
+## to this tick: false for one that no keeper can concern within that reach, which then asks
+## nothing more.
+func walker_is_near(at: Vector2, reach: float) -> bool:
+	return not _for_walkers.is_empty() and _walker_bounds.grow(reach).has_point(at)
 
-## This tick's keepers, for a body that looks at each in turn (a walker making way for one). Read,
-## never written.
-func keepers() -> Array[Keeper]:
-	return _keepers
+## Whether there is anybody a crowd car gives way to this tick: false on most ticks of most days,
+## and then a car asks nothing more.
+func has_keepers_for_cars() -> bool:
+	return not _for_cars.is_empty()
 
-## **Where a round body's proposed step (`move.to`) stands clear of every keeper's body**: moved
-## straight out from each keeper it would overlap to where the two bodies touch (`move.radius` plus
-## the keeper's), the keepers taken in turn; `move.to` itself when it overlaps none. A body exactly
-## on a keeper's centre goes out along `side`. Positional, never a force, as every separation
+## This tick's keepers a walker gives way to, for a walker that looks at each in turn (making way
+## for one). Read, never written.
+func walker_keepers() -> Array[Keeper]:
+	return _for_walkers
+
+## **Where a walker's proposed step (`move.to`) stands clear of every keeper's body it gives way
+## to**: moved straight out from each keeper it would overlap to where the two bodies touch
+## (`move.radius` plus the keeper's), the keepers taken in turn; `move.to` itself when it overlaps
+## none. A body exactly on a keeper's centre goes out along `side`. Positional, never a force, as every separation
 ## between bodies here is (the **crowd-traffic** skill): a body a figure walks into is pushed out of
 ## it on the tick it would be inside it.
 func clear_of_the_keepers(move: MoveProposal, side: Vector2) -> Vector2:
 	var at := move.to
-	for keeper in _keepers:
+	for keeper in _for_walkers:
 		var reach := move.radius + keeper.radius
 		var offset := at - keeper.at
 		var distance_squared := offset.length_squared()
@@ -102,13 +124,14 @@ func clear_of_the_keepers(move: MoveProposal, side: Vector2) -> Vector2:
 		at = keeper.at + (offset / distance if distance > 0.01 else side) * reach
 	return at
 
-## **Where a round body's proposed step stands clear of every keeper's body, moved along `axis`
-## only**: as `clear_of_the_keepers()`, but each keeper is cleared by moving ahead of it or back
-## behind it along `axis`, whichever side of it the body is on, the coordinate across `axis` kept.
+## **Where a walker's proposed step stands clear of every keeper's body it gives way to, moved
+## along `axis` only**: as `clear_of_the_keepers()`, but each keeper is cleared by moving ahead of
+## it or back behind it along `axis`, whichever side of it the body is on, the coordinate across
+## `axis` kept.
 ## For a body that cannot move across: one a figure squeezes against a wall.
 func clear_along(move: MoveProposal, axis: Vector2) -> Vector2:
 	var at := move.to
-	for keeper in _keepers:
+	for keeper in _for_walkers:
 		var reach := move.radius + keeper.radius
 		var offset := at - keeper.at
 		if offset.length_squared() >= reach * reach:
@@ -119,21 +142,34 @@ func clear_along(move: MoveProposal, axis: Vector2) -> Vector2:
 		at = keeper.at + across + axis * (needed if along >= 0.0 else -needed)
 	return at
 
+## **Whether a walker's proposed step (`move.to`) would overlap a keeper standing still**: an object
+## or a vehicle, the only standing keepers a walker gives way to. What tells a walker squeezed
+## against a wall to wait behind it rather than walk on through it.
+func overlaps_one_standing(move: MoveProposal) -> bool:
+	for keeper in _for_walkers:
+		if keeper.ticks_still <= UNDER_WAY_TICKS:
+			continue
+		var reach := move.radius + keeper.radius
+		if move.to.distance_squared_to(keeper.at) < reach * reach:
+			return true
+	return false
+
 ## **How far down a lane a body at `at` has before a keeper's body**, travelling `forward`: the
 ## distance along `forward` from `at` to the near edge of the first keeper whose body lies in, or
 ## within `lead_ticks` of its own travel comes into, the band `half_width` either side of the line,
-## ahead of `at` and within `reach` of it; `INF` for none. Only keepers that moved within the last
-## `under_way_within` ticks count. **Across the line a keeper's body counts for at most `widest`**:
+## ahead of `at` and within `reach` of it; `INF` for none. Only keepers a car gives way to count
+## (see the class doc), and of them only those that moved within the last `under_way_within` ticks.
+## **Across the line a keeper's body counts for at most `widest`**:
 ## a move's `radius` is the circle round its whole body, which for a car is its length, and a car
 ## passing in the next lane is not in this one. What a crowd car brakes for
 ## (`CarStrategy._give_way()`).
 func edge_ahead(at: Vector2, forward: Vector2, half_width: float, widest: float, reach: float,
 		lead_ticks: float, under_way_within: int) -> float:
-	if not is_near(at, reach + _WIDEST_REACH):
+	if _for_cars.is_empty() or not _car_bounds.grow(reach + _WIDEST_REACH).has_point(at):
 		return INF
 	var side := Vector2(-forward.y, forward.x)
 	var nearest := INF
-	for keeper in _keepers:
+	for keeper in _for_cars:
 		if keeper.ticks_still > under_way_within:
 			continue
 		var offset := keeper.at - at
@@ -157,17 +193,19 @@ func edge_ahead(at: Vector2, forward: Vector2, half_width: float, widest: float,
 
 ## **How far a capsule may move along `forward` from `at` before it touches a keeper ahead of its
 ## centre**: a body whose spine runs `half_length` either side of `at` along `forward`, rounded by
-## `radius`, against every keeper that moved within the last `under_way_within` ticks, whose centre
+## `radius`, against every keeper a car gives way to that moved within the last `under_way_within`
+## ticks, whose centre
 ## is ahead of `at` and nearer the line than `radius` and at most `widest` of its own (as in
 ## `edge_ahead()`); `INF` for none, `0.0` for one it touches already. What a crowd car's step is held
 ## to (`CarStrategy.give_way_on_the_step()`).
 func room_ahead(at: Vector2, forward: Vector2, half_length: float, radius: float, widest: float,
 		under_way_within: int) -> float:
-	if not is_near(at, half_length + radius + _WIDEST_REACH):
+	if _for_cars.is_empty() \
+			or not _car_bounds.grow(half_length + radius + _WIDEST_REACH).has_point(at):
 		return INF
 	var side := Vector2(-forward.y, forward.x)
 	var room := INF
-	for keeper in _keepers:
+	for keeper in _for_cars:
 		if keeper.ticks_still > under_way_within:
 			continue
 		var offset := keeper.at - at
@@ -183,8 +221,8 @@ func room_ahead(at: Vector2, forward: Vector2, half_length: float, radius: float
 	return room
 
 ## **One mover that keeps its course, as this pass sees it**: its move, the pose it stood at when
-## last gathered, how far it moved since the gathering before, and how many gatherings in a row it
-## has stood still.
+## last gathered, how far it moved since the gathering before, how many gatherings in a row it has
+## stood still, and whether a walker goes round it while it stands.
 class Keeper extends RefCounted:
 	## Its move on the map's list, read for its pose and reach.
 	var move: MoveProposal
@@ -198,6 +236,9 @@ class Keeper extends RefCounted:
 	var ticks_still := NEVER_MOVED
 	## How far its body reaches round its centre (`MoveProposal.radius`).
 	var radius := 0.0
+	## Whether a walker goes round it while it stands (`MoveProposal.stood_round`): an object or a
+	## vehicle.
+	var stood_round := false
 
 	func _init(of: MoveProposal) -> void:
 		move = of
@@ -206,6 +247,7 @@ class Keeper extends RefCounted:
 	## Reads its pose off its move: how far it went since the last look, and whether it stood.
 	func look() -> void:
 		radius = move.radius
+		stood_round = move.stood_round
 		step = move.from - at
 		at = move.from
 		if step != Vector2.ZERO:

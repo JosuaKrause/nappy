@@ -765,6 +765,34 @@ enum SolidWhen {
 ## copy of it, and `fire_truck`.
 @export var vehicle: VehicleSpec = null
 
+## **What the row's figure is to a crowd walker that meets it standing still** (inbox #905): a
+## walker may walk through a person or an animal standing still, and walks round an object or a
+## vehicle. A figure under way is given way to whatever it is, and a crowd car stands for any figure
+## in its lane once it has moved, whatever it is; this is only the walker's question about a figure
+## that stands (`MoveProposal.stood_round`, which `EventInstance.setup()` sets from it).
+##
+## Every row declares it, and `validate()` refuses one that does not: a row that left it to a
+## default would have walkers walk through a parked van, or round an invisible point, without
+## anybody having decided either.
+enum StandsAs {
+	## Not declared: refused by `validate()`. A row a test builds by hand reads as `SOMEBODY`.
+	UNDECLARED,
+	## A person or an animal — a street musician, a policeman, a dog, a flock of pigeons: walked
+	## through while it stands, as the player allowed, and given way to only while it moves.
+	SOMEBODY,
+	## An object or a vehicle — a café's tables, a stall, a van, a mast, the patrol car, the fire
+	## engine: walked round while it stands, as it is while it moves. One with a solid body is walked
+	## round by its tiles already (`CityMap.obstructed_tiles`); this is what also keeps a walker out
+	## of one that has none, a vehicle that drives.
+	SOMETHING,
+	## Nothing a walker meets on the ground: no picture of its own (`Look.NONE`), or a picture on a
+	## wall or flat on the ground — the fire on a facade, a burnt frontage, a crater, a steam vent.
+	## Walked through like a person while it stands; none of these moves.
+	NOTHING,
+}
+
+@export var stands_as := StandsAs.UNDECLARED
+
 ## Which lane of a two-tile pavement an event wants.
 ##
 ## Almost nothing cares, and `ANY` is the honest default: a café spills out of whichever frontage
@@ -1083,6 +1111,10 @@ func validate() -> bool:
 		return false
 	if (repeat_every > 0.0 or repeat_after > 0.0) and spawn_mode != SpawnMode.MAP:
 		push_error("event '%s' repeats but is not MAP-sited: only a plan can bring it again" % id)
+		return false
+	if stands_as == StandsAs.UNDECLARED:
+		push_error(("event '%s' does not say what it stands as (`stands_as`): a person or an animal, "
+				% id) + "an object or a vehicle, or nothing on the ground")
 		return false
 	# **The body is the shape, always.** A row that draws something has a shape to draw it from,
 	# and a row whose shape claims a reach has to claim the same one `obstructs_radius` does — the

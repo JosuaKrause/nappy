@@ -55,6 +55,12 @@ var radius := 0.0
 ## course and timing, as an event figure, an event car and a cordon officer do (inbox #884 in
 ## plaid-raven).
 var yields := false
+## **Whether a walker goes round it while it stands still**, not only while it moves: true for an
+## object or a vehicle, false for a person or an animal, whom a walker may walk through while they
+## stand (inbox #905). Read by the pass a walker gives way through (`SeparationPass`); a crowd car
+## stands for a figure in its lane whichever it is. Set by the mover from what it is: an event from
+## its row (`EventDef.stands_as`); a cordon officer is a person, so his stays false.
+var stood_round := false
 ## Whether it is on a world's list of moves (`ProposedMoves`) now: set when it joins, cleared when it
 ## leaves, so a pass over a copy of the list can tell a move whose mover has since gone.
 var on_the_list := false
