@@ -15,8 +15,21 @@ question "can we build this in parallel?" is read as asking for it to be built n
 refactor's remaining steps, rather than in its closing pull request, which the orchestrating session
 answered yes to in the chat. The board question reviewer-roles leaves the board with this filing.
 
-**The questions** (the orchestrating session's first cut, whose filing the player agreed to, with the
-player's eighth):
+**Since the filing** (plaid-raven #894): "I accept the wording of the questions (maybe we can expand Q6
+or have my question as additional question). okay, let's build this in parallel to other work that is
+currently going on. we want to use this as soon as possible." Asked five open points with the
+orchestrating session's picks: which pull requests answer, "whatever makes most sense" (the pick: every
+one that changes `src/`, `tests/` or `tools/`, in a line when nothing new is added; docs-only and
+queue-only exempt); whether the layer check blocks, "if it has few false positives we can make it
+blocking"; the layer map, "yes the layer was reasonable otherwise we wouldn't have started the
+refactoring. but sure let's review it in the PR"; from when, "yes" (the first pull request opened after
+this merges, C2b exempt); the file-size and near-copy watch and the drift audit, "let's see if the
+current thing works before adding more features on it". **Read as:** the questions below are worded as
+the player accepted; the eighth either widens the sixth or stands on its own, the builder's choice; the
+layer check blocks only if its false positives are few; the layer map is shown as a table in the pull
+request for the player's review; the two watches are not built.
+
+**The questions** (the first cut, whose wording the player accepted, with the player's eighth):
 1. Which layer does each new or changed piece belong to, and why there?
 2. What does it depend on, and is every dependency on its own layer or below?
 3. What is it handed, and what does it fetch? A group lookup, an autoload or a static read in a
@@ -48,5 +61,5 @@ player's eighth):
   record's statics, the crowd finding her through the `player` group), and on today's `main` only the
   listed exceptions; the questions answered for PRs #888 to #891 surface what their reviews found about
   layering.
-- Left for later, not in this item: a file-size and near-copy watch in CI, and a periodic drift audit
+- Not built, as the player said: a file-size and near-copy watch in CI, and a periodic drift audit
   that files what it finds into the queue.
