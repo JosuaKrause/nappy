@@ -1,8 +1,8 @@
 extends RefCounted
-## A car's frame is proposed, checked and then committed (`EventCarDriving`): what the frame decides on
-## the pose it would end on — parking at the end of its route, leaving off the end of it — holds
-## only once that pose is the one it keeps. A step the check takes back takes back what was decided
-## on it (likely-bugs.md, the car's taken-back frame).
+## A car's step is proposed, checked and then committed (`EventInstance.step()`, with the car's own
+## check in `EventCarDriving.check()`): what the step decides on the pose it would end on — parking
+## at the end of its route, leaving off the end of it — holds only once that pose is the one it
+## keeps, and a step the check takes back takes back what was decided on it.
 ##
 ## The fire engine is the rig, stepped a frame at a time and told where she and her pram are the
 ## way `EventManager` tells it, as `tests/test_fire_truck_body.gd` does.
