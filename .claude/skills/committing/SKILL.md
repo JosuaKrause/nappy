@@ -167,7 +167,7 @@ than assuming the last green PR spoke for it; `tools/land-prs.sh` names that run
 and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge commit gets one.
 
 **PRs land without waiting for each other or for `main`'s CI, and when `main` breaks after a
-merge, the next thing landed is a fix for it** (freckled-moose #914). Nothing requires landing
+merge, a fix for it is landed on `main`** (freckled-moose #914). Nothing requires landing
 one at a time or an up-to-date branch; the player asks for tests that are isolated and not flaky
 instead.
 
