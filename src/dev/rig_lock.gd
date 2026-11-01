@@ -98,11 +98,13 @@ static func is_the_rigs_own_press(event: InputEvent) -> bool:
 ## Every action `project.godot`'s `[input]` table defines, read live off `InputMap` so a new binding
 ## is covered without a second list, except Godot's own built-in `ui_*` actions, which nothing in
 ## this game reads and whose loss would cost the engine's debugging shortcuts. What it erases is kept
-## in `_erased_bindings` for `_exit_tree()` to put back.
+## in `_erased_bindings` for `_exit_tree()` to put back, **recorded only the first time**: a second
+## `setup()` finds the bindings already empty, and recording that would overwrite the real ones.
 func _erase_real_input() -> void:
 	for action in InputMap.get_actions():
 		if not String(action).begins_with("ui_"):
-			_erased_bindings[action] = InputMap.action_get_events(action)
+			if not _erased_bindings.has(action):
+				_erased_bindings[action] = InputMap.action_get_events(action)
 			InputMap.action_erase_events(action)
 
 ## **The lock gives the bindings back when it leaves the tree.** `InputMap` is process-wide, so a lock

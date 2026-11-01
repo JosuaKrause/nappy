@@ -160,20 +160,24 @@ func _test_the_gate_does_nothing_once_the_rig_unlocks(t) -> void:
 ## in `test_finale.gd`) and frees it must leave the bindings as it found them, or every later suite in
 ## the same process hears no key as any action: `test_touch.gd`'s check that a D press replaces a
 ## clicked heading failed that way, run after `test_finale.gd` in one CI shard. Fails without
-## `RigLock._exit_tree()` putting the bindings back.
+## `RigLock._exit_tree()` putting the bindings back. `setup()` is called twice, since a second call
+## finds the bindings already empty and must not record that over the real ones; that half fails
+## without `_erase_real_input()` recording an action only the first time.
 func _test_the_lock_gives_the_bindings_back_when_freed(t) -> void:
 	var before := _bindings()
 	t.check(not (before.get(&"move_right", []) as Array).is_empty(),
 			"the keys are bound when this starts, so the comparison below is not of two empty maps")
 	var gate := RigLock.new()
 	t.add_child(gate)
-	gate.setup(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry", "--route", "tunnel"]),
-			"", true))
+	var rig := RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry", "--route", "tunnel"]),
+			"", true)
+	gate.setup(rig)
 	t.check(gate.locked_out and InputMap.action_get_events(&"move_right").is_empty(),
 			"a rig's lock erases the real bindings while it stands")
+	gate.setup(rig)
 	gate.free()
 	t.check(_bindings() == before,
-			"and freeing the lock puts every action's bindings back as they were")
+			"and freeing the lock, set up twice, puts every action's bindings back as they were")
 
 ## Every game action's bindings as text, so two readings compare by value: an `InputEvent` is an
 ## object, and the restored events need only match, not be the same instances.
