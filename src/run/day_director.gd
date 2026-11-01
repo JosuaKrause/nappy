@@ -119,7 +119,8 @@ func start_day(the_spec: DaySpec) -> void:
 	# decides where she starts — the mark has to already be on offer when this line runs, not
 	# merely by the time the day is shown to her.
 	resistance.start_day(today, calendar.day_rng(today, "resistance"), day_length)
-	var start_at := DevRig.for_spawn_target(config.spawn_target, city, resistance, calendar.header) \
+	var start_at := DevRig.for_spawn_target(config.spawn_target, city, resistance,
+			calendar.header) \
 			if first_day else doorstep
 	city.events.stream_around(start_at)
 	_start_the_crowd(start_at, today)
@@ -222,8 +223,8 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	# **The last night hands over rather than ending.** *(PLAYTEST-113: "the escape the building
 	# starts when the player has completed all tasks by the end of day 14".)* A won day 14 with
 	# every task complete is the good ending, and the good ending is a walk rather than a screen — so
-	# `RunCalendar.finish_day()` is deliberately *not* called here: it would end the run on the spot,
-	# set `ending`, and clear the save the escape's own checkpoints need.
+	# `RunCalendar.finish_day()` is deliberately *not* called here: it would end the run on the
+	# spot, set `ending`, and clear the save the escape's own checkpoints need.
 	if hands_over_to_the_escape(result):
 		# Day 14 is still an ordinary won day, so it still gives a normal run a nerve back — called
 		# directly because this is the one day whose win never reaches `finish_day()`.
@@ -232,18 +233,21 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 		return end
 	# Asked before `finish_day()`, which is what goes back: whether this loss spends a normal run's
 	# last nerve, so the summary says where she is going rather than that she tries the day again.
-	end.goes_back = result != GameEnums.DayResult.WON and calendar.a_loss_goes_back_to_the_checkpoint()
+	end.goes_back = result != GameEnums.DayResult.WON \
+			and calendar.a_loss_goes_back_to_the_checkpoint()
 	end.run_over = not calendar.finish_day(result)
 	return end
 
 ## Whether the day that just ended is the one the escape follows: **won, the last day, and every
 ## task complete**. *"After completing all tasks"*, and what that already means in this game is
-## `RunCalendar.earned_good_ending()` — so the escape is reached by exactly the runs the good ending was
-## reached by. A recipe never hands over (`escape_follows`): its won day reloads the authored scene.
+## `RunCalendar.earned_good_ending()` — so the escape is reached by exactly the runs the good
+## ending was reached by. A recipe never hands over (`escape_follows`): its won day reloads the
+## authored scene.
 func hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 	if not escape_follows:
 		return false
-	return result == GameEnums.DayResult.WON and calendar.is_final_day() and calendar.earned_good_ending()
+	return result == GameEnums.DayResult.WON and calendar.is_final_day() \
+			and calendar.earned_good_ending()
 
 ## What ended a crying or hard-fail day, or "" for a win or a timeout. Reads the world only for the
 ## result that needs it; the rules are `LossCause`'s.

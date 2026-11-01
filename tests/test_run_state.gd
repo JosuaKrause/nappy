@@ -6,7 +6,7 @@ extends RefCounted
 ## run_state_saved_by_main.json` is `GameSave.file_data()` of the run `run_state_scenario.gd`
 ## builds, and of the same run after a lost day, dumped on commit e1cc7c7f — the build that kept
 ## every field by hand in `GameState.save_snapshot()`/`restore_snapshot()`, the `_dawn_*` copies and
-## `GameSave.run_data()` — by a throwaway probe that ran the scenario under `tools/test.sh`. The
+## `RunStateRegistry.run_data()` — by a throwaway probe that ran the scenario under `tools/test.sh`. The
 ## suite replays the scenario on this build and expects the same bytes (everything but the `build`
 ## string), loads the fixture and expects the same run back, and loses a day from the loaded run
 ## and expects the same give-back.
@@ -46,7 +46,7 @@ func run(t) -> void:
 	GameSave._clear_now()
 	GameSave.set_path_override("")
 	GameState.start_run(1)
-	GameSave.restore_run_data(GameState.run_parts, baseline)
+	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = false
 	GameState.calendar.checkpoint = {}
 
@@ -126,7 +126,7 @@ func _test_a_part_left_off_the_list_is_caught(t) -> void:
 func _test_every_part_gives_back_what_it_photographed(t) -> void:
 	SCENARIO.build()
 	GameState.run_parts.photograph()
-	var photographed := GameSave.run_data(GameState.run_parts)
+	var photographed := GameState.run_parts.run_data()
 	GameState.complete_resistance_step(9)
 	GameState.fail_resistance_step(8)
 	GameState.resistance.sabotage_done = not GameState.resistance.sabotage_done
@@ -136,11 +136,11 @@ func _test_every_part_gives_back_what_it_photographed(t) -> void:
 	GameState.posters.paste(Vector2i(40, 41), 2, false, 1)
 	GameState.posters.tears += 2
 	GameState.pelican.draws += 4
-	t.check(GameSave.run_data(GameState.run_parts) != photographed, "the attempt spent something of every part")
+	t.check(GameState.run_parts.run_data() != photographed, "the attempt spent something of every part")
 	GameState.run_parts.give_back()
-	t.check(GameSave.run_data(GameState.run_parts) == photographed,
+	t.check(GameState.run_parts.run_data() == photographed,
 			"and giving back puts every part back (%s)"
-			% _first_difference(GameSave.run_data(GameState.run_parts), photographed))
+			% _first_difference(GameState.run_parts.run_data(), photographed))
 
 ## A part's variables and its data keys correspond one to one: a field added to a part and not to
 ## its `to_data()` is the mistake the old six places made easy.

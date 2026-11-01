@@ -88,7 +88,8 @@ func start_day(day: int, tree: RouteTree, doors: PackedVector2Array) -> void:
 func start_a_given_walk(day: int) -> void:
 	_siting = null
 	if _director:
-		_director.start_day(day, _streaming.plans(), world.run.calendar.day_rng(day, "finale-ahead"))
+		_director.start_day(day, _streaming.plans(),
+				world.run.calendar.day_rng(day, "finale-ahead"))
 
 ## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns to
 ## `RETURNING`, for the day `day` at the run's heat.
@@ -438,7 +439,8 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 		return []
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree if _day_tree \
-				else RouteTree.for_day(world.city_map, world.day), world.run.calendar.settled_this_act(), _day_doors)
+				else RouteTree.for_day(world.city_map, world.day),
+				world.run.calendar.settled_this_act(), _day_doors)
 		_siting.holds_the_home_streets = holds_the_home_streets
 		if world.city and world.city.poster_walls():
 			_siting.fronts = world.city.poster_walls().fronts()

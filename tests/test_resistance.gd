@@ -3502,7 +3502,7 @@ func _start_the_day(t, day: int, resistance: ResistanceDirector,
 		prepare := Callable()) -> Dictionary:
 	# The whole run, not only the snapshot's state parts: `start_run()` also resets the riders
 	# (`facts`: the escape section, used alleys, fenced park), the checkpoint and the mode.
-	var baseline := {"run": GameSave.run_data(GameState.run_parts), "checkpoint": GameState.calendar.checkpoint.duplicate(true),
+	var baseline := {"run": GameState.run_parts.run_data(), "checkpoint": GameState.calendar.checkpoint.duplicate(true),
 			"hard_mode": GameState.calendar.hard_mode}
 	GameState.start_run(SEED)
 	GameState.header.day = day
@@ -3527,7 +3527,7 @@ func _end_the_day(the_day: Dictionary) -> void:
 	for node: Node in the_day["nodes"]:
 		node.free()
 	var baseline: Dictionary = the_day["baseline"]
-	GameSave.restore_run_data(GameState.run_parts, baseline["run"])
+	GameState.run_parts.restore_run_data(baseline["run"])
 	GameState.calendar.checkpoint = baseline["checkpoint"]
 	GameState.calendar.hard_mode = baseline["hard_mode"]
 

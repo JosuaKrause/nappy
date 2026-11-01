@@ -65,8 +65,8 @@ var _escape_scene_requested := false
 ## Whether this boot reached the escape as **a run's own ending** (`RunFlow.escape_from_a_run()`)
 ## rather than through the flag changes three things: the run is already there, so no
 ## `GameState.start_run()`; the save is live, so the symbol that announces a write is built; and
-## getting out of the city settles the run (`GameState.calendar.finish_day()`) — the flag's run is a day-1
-## run that only jumped here, so its own way out settles nothing.
+## getting out of the city settles the run (`GameState.calendar.finish_day()`) — the flag's run
+## is a day-1 run that only jumped here, so its own way out settles nothing.
 var _flow := RunFlow.new()
 
 ## `--no-focus-pause`, kept in a member so a test can set it directly and check the release shape.
@@ -482,6 +482,7 @@ func _settle_the_run() -> void:
 	# **A run carried on from a checkpoint reads no file**: `GameState` already holds it, and
 	# `GameSave.load_in_memory()` puts it back through the same JSON and the same `_apply()` a load
 	# does, so this boot builds on exactly what a load would give it, on any run.
+	GameSave.clear_when_a_run_ends()
 	var carried := _carry_the_run_over
 	_carry_the_run_over = false
 	if carried:
@@ -1212,8 +1213,8 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 func _show_the_resume_gate() -> void:
 	if _run.header.ending != GameEnums.Ending.NONE:
 		# The last nerve the load itself spent, in hard mode — same ending, same screen, as a hard
-		# run that reaches zero nerves any other way. `GameState.calendar.finish_day()` set the ending in
-		# `_ready()`, so nothing downstream can write a save naming this run again.
+		# run that reaches zero nerves any other way. `GameState.calendar.finish_day()` set the
+		# ending in `_ready()`, so nothing downstream can write a save naming this run again.
 		_flow.show_ending()
 		_summary.show_summary(SummaryModel.ending(_run, _run.header.ending), _flow.mode)
 		return
@@ -1228,8 +1229,8 @@ func _show_the_resume_gate() -> void:
 			_flow.mode)
 
 ## The day brief's one line about what opening the save cost: nothing, a nerve and the same dawn,
-## or — a normal run's last nerve — the checkpoint `GameState.calendar.finish_day()` already went back to,
-## whose day `GameState.header.day` now holds.
+## or — a normal run's last nerve — the checkpoint `GameState.calendar.finish_day()` already
+## went back to, whose day `GameState.header.day` now holds.
 func _resume_gate_note() -> String:
 	if not _resume.get("day_under_way", false):
 		return ""
@@ -1757,14 +1758,14 @@ func _scene_failed(errors: Array) -> void:
 ##
 ## **A resumed run whose save had a day under way writes `false` here**, before the title — and, on
 ## the way to the day brief, that screen too — is ever shown, so the nerve `_ready()` just charged
-## through `GameState.calendar.finish_day()` is on disk, with no day under way, the instant either gate
-## appears rather than only once she presses past one. *(cozy-pelican, 2026-10-02, on what opening
-## a saved game writes: "either it saves with one less nerve and a cleared "during active game"
-## flag. or you defer saving to the actual day start".)* This is what the kill-at-any-instant
-## argument in docs/MECHANICS.md, "Saving and resuming", rests on: nothing between this write and
-## `_engage_the_day()`'s own `true` ever depends on a notification catching anything. When the
-## charge ended the run, `GameState._end_run()` has already deleted the save and `GameSave.write()`
-## refuses an ended run, so nothing is written there.
+## through `GameState.calendar.finish_day()` is on disk, with no day under way, the instant
+## either gate appears rather than only once she presses past one. *(cozy-pelican, 2026-10-02,
+## on what opening a saved game writes: "either it saves with one less nerve and a cleared
+## "during active game" flag. or you defer saving to the actual day start".)* This is what the
+## kill-at-any-instant argument in docs/MECHANICS.md, "Saving and resuming", rests on: nothing
+## between this write and `_engage_the_day()`'s own `true` ever depends on a notification
+## catching anything. When the charge ended the run, `RunCalendar._end_run()` has already
+## deleted the save and `GameSave.write()` refuses an ended run, so nothing is written there.
 ##
 ## **A resumed run whose save was written between days writes nothing**: it charged nothing, and
 ## the file on disk already says `day_under_way: false`, so a rewrite would change no fact it holds
@@ -1799,7 +1800,7 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 		_summary.show_summary(SummaryModel.day_over(_run, end), _flow.mode)
 		return
 	# The end-of-day write — one of the two moments a run is saved. Skipped when the run just
-	# ended: `GameState._end_run()` (called from inside `finish_day()` above) already cleared the
+	# ended: `RunCalendar._end_run()` (called from inside `finish_day()` above) already cleared the
 	# save, and writing here would resurrect a file naming a run that is over. A normal run sent
 	# back to its checkpoint is written here like any other loss, already standing at that dawn.
 	if not end.run_over:
@@ -1809,7 +1810,8 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 ## What a section of the escape ending leads to, once `_on_day_finished()` has ended it as it ends
 ## any day — the section's `DaySpec` says the rest.
 ##
-## - **Lost:** the run spends what the section's rules say (`GameState.calendar.finish_day()`: nothing in a
+## - **Lost:** the run spends what the section's rules say (`GameState.calendar.finish_day()`:  
+## nothing in a
 ##   normal run, a Nerve in a hard one, whose last is the bad ending), the save is written, and the
 ##   day's outcome screen comes up with its reason and the section's own words where "Day N" stands.
 ##   Its continue is the retry, the same section from its own start behind its brief
@@ -1818,7 +1820,8 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 ## - **Won, into the next section** — out of the building's service exit: the city is built behind
 ##   the black the exit left, and its brief comes up over it.
 ## - **Won, out of the city** — the tunnel mouth or the bridge deck: for a run, the run itself ends
-##   here (`GameState.calendar.finish_day()` on the last day picks the ending, writes the `ending` entry and
+## here (`GameState.calendar.finish_day()` on the last day picks the ending, writes the  
+## `ending` entry and
 ##   clears the save, which is also what keeps the save alive for every attempt before this one).
 ##   The sequence ends on a summary screen with the way out behind her and nothing triumphant on
 ##   it (`SummaryModel.epilogue()`), and its continue goes back to the title.
@@ -1835,7 +1838,8 @@ func _finish_the_section(end: DayEnd) -> void:
 		EventBus.escape_city_entered.emit()
 	else:
 		# Before `finish_day()`, whose `ending` line closes the run: the way out is part of how it
-		# ended. `EventBus.run_ended` fires a moment later, from `GameState.calendar.finish_day()` below.
+		# ended. `EventBus.run_ended` fires a moment later, from
+		# `GameState.calendar.finish_day()` below.
 		EventBus.escape_out.emit(_day.exit_reached)
 	# The flag's escape is a day-1 run that only jumped here, so getting out of it settles nothing;
 	# a lost section costs what it costs either way.
@@ -1861,8 +1865,8 @@ func _finish_the_section(end: DayEnd) -> void:
 		_summary.show_summary(SummaryModel.epilogue(end), _flow.mode)
 		return
 	# The end-of-section write, as a lost day's is, so closing the game on this screen cannot take a
-	# hard run's spent nerve back. Skipped when the run just ended, whose save `GameState._end_run()`
-	# has already cleared.
+	# hard run's spent nerve back. Skipped when the run just ended, whose save
+	# `RunCalendar._end_run()` has already cleared.
 	if not run_over:
 		_save_now(false)
 	_summary.show_summary(SummaryModel.day_over(_run, end, spec.title), _flow.mode)
@@ -1916,13 +1920,13 @@ func _on_summary_continued(raised_in: int) -> void:
 ## A normal run back at its checkpoint goes on in a freshly booted scene, never on this one.
 ## *(gentle-osprey, the player: "store the exact state at the checkpoint -- continuing should not
 ## have anything that happened after the checkpoint".)* `GameState` was put back at the checkpoint's
-## dawn by `GameState.calendar.finish_day()`, but the world built on it remembers things the run's state
-## does not — day 11's boarded window over the neighbor's flat is drawn by her own building "for the
-## rest of the run" — and a world rebuilt from scratch remembers nothing. So the continue on the
-## lost-day screen reloads the scene, as the held restart and the escape's handover do, and the next
-## boot (`RunFlow.Opening.CARRIED_FROM_CHECKPOINT`) builds the checkpoint's day on the run exactly as a load would
-## give it, then starts it. The save already says that dawn: `_on_day_finished()` wrote it as the
-## lost-day screen came up.
+## dawn by `GameState.calendar.finish_day()`, but the world built on it remembers things the
+## run's state does not — day 11's boarded window over the neighbor's flat is drawn by her own
+## building "for the rest of the run" — and a world rebuilt from scratch remembers nothing. So
+## the continue on the lost-day screen reloads the scene, as the held restart and the escape's
+## handover do, and the next boot (`RunFlow.Opening.CARRIED_FROM_CHECKPOINT`) builds the
+## checkpoint's day on the run exactly as a load would give it, then starts it. The save already
+## says that dawn: `_on_day_finished()` wrote it as the lost-day screen came up.
 func _carry_the_run_into_the_next_boot() -> void:
 	_carry_the_run_over = true
 	_reload_the_scene()
@@ -1954,7 +1958,7 @@ func _restart_run() -> void:
 	# The held restart clears the save — the pause screen's and the day summary's own button both
 	# reach this one function, so no new control is drawn for it. A deletion is a change in the save
 	# state, which the symbol shows (`GameSave.clear()` announces it on `EventBus`); a restart after
-	# `GameState._end_run()` already deleted the save finds none and changes nothing, so it shows
+	# `RunCalendar._end_run()` already deleted the save finds none and changes nothing, so it shows
 	# nothing. **Before the session closes the run log**: the "deleted the save"
 	# line, and the "deletion was not kept" line when a deletion fails at once, belong to this run's
 	# log. A web deletion's later answer is logged only if a log is open when it arrives, so it
@@ -1965,7 +1969,7 @@ func _restart_run() -> void:
 	# And with it the run's record of being in the escape, which outlives the scene reload below
 	# because it lives on an autoload. Left set, the fresh boot would skip its own `start_run()` and
 	# open the escape again over a run that was just thrown away. A no-op for a restart from an
-	# ordinary day and for a finished run, which `GameState._end_run()` has already cleared.
+	# ordinary day and for a finished run, which `RunCalendar._end_run()` has already cleared.
 	_facts.escape_section = DaySpec.Section.NONE
 	TitleScreen.note_restart_requested()
 	_reload_the_scene()

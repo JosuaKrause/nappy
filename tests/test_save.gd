@@ -542,9 +542,9 @@ func _test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at
 	GameState.pelican.draws = 9
 	GameState.pelican.photograph()
 	GameState.pelican.draws = 12
-	var data := GameSave.run_data(GameState.run_parts)
+	var data := GameState.run_parts.run_data()
 	GameState.pelican.reset()
-	GameSave.restore_run_data(GameState.run_parts, data)
+	GameState.run_parts.restore_run_data(data)
 	t.check(GameState.pelican.draws == 12, "a save keeps the pelican bag's count (%d)"
 			% GameState.pelican.draws)
 	GameState.pelican.give_back()
@@ -552,7 +552,7 @@ func _test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at
 	GameState.pelican.draws = 12
 	var old: Dictionary = data.duplicate(true)
 	old.erase("pelican")
-	GameSave.restore_run_data(GameState.run_parts, old)
+	GameState.run_parts.restore_run_data(old)
 	t.check(GameState.pelican.draws == 0,
 			"a save written before the bag loads at 0 over a run with a count (%d)"
 			% GameState.pelican.draws)
@@ -1384,10 +1384,11 @@ func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
 			"a deletion the browser did not keep shows the struck picture")
 	later.free()
 
-## Statement 8: the run's end deletes the save through `GameState._end_run()`, an autoload with no
+## Statement 8: the run's end deletes the save through `GameSave.clear_when_a_run_ends()`, which has no
 ## way to reach `main`, and the symbol shows it anyway. A day that does not end the run deletes
 ## nothing and shows nothing.
 func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t) -> void:
+	GameSave.clear_when_a_run_ends()
 	GameState.start_run(61)
 	GameState.header.day = 3
 	_with_forced_save(func() -> void:
@@ -1412,6 +1413,7 @@ func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t) -> void:
 ## The charge a reopened run pays can end it: the lost day was the last nerve. That deletion shows
 ## the symbol too, provided a symbol is listening when `main._ready()` charges it.
 func _test_a_resumed_run_ended_by_its_charge_shows_the_symbol(t) -> void:
+	GameSave.clear_when_a_run_ends()
 	GameState.start_run(62)
 	GameState.calendar.choose_mode(true)
 	GameState.header.day = 4

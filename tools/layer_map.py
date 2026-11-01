@@ -459,13 +459,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "GameSave",
-        "the calendar hands the save the registry at a checkpoint and clears the save when a run ends",
-        ("src/run/run_calendar.gd",),
-        more=(("src/run/run_calendar.gd", 3),),
-    ),
-    Exception_(
-        "names",
         "GroundTiles",
         "the ground's picture builder reads which tile a cell gets",
         ("src/visuals/ground_layers.gd",),

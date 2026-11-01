@@ -46,7 +46,7 @@ func run(t) -> void:
 
 	GameSave._clear_now()
 	GameSave.set_path_override("")
-	GameSave.restore_run_data(GameState.run_parts, baseline)
+	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
 	GameState.calendar.checkpoint = baseline["checkpoint"]
 
@@ -74,7 +74,7 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	t.check(GameState.header.day == 4, "three won days reach day 4")
 	GameState.header.nerves = 3
 	GameState.calendar.begin_day()
-	var expected := GameSave.run_data(GameState.run_parts)
+	var expected := GameState.run_parts.run_data()
 	t.check(GameState.calendar.checkpoint == expected, "beginning day 4 keeps its dawn as the checkpoint")
 
 	# On past it: a lost attempt at day 4, a won one, and into day 5.

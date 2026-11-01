@@ -728,8 +728,9 @@ taken, the one thing `PosterArt` draws from the run), the HUD, the pause and tit
 `VisitCounter`, the route rig and the scene recipe runtime — so a test hands a reader whichever run
 it built. `GameSave` is a namespace of static functions, handed the run
 on every call that reads or writes one (`write(run, …)`, `try_resume(run)`, `load_in_memory(run)`,
-`file_data(run, …)`); `run_data(parts)` and `restore_run_data(parts, …)` take the registry alone, which
-is what the calendar hands for its checkpoint. Handed per call rather than held, because the web flush and the operation ids outlive the scene reloads that
+`file_data(run, …)`); the registry's own `run_data()` and `restore_run_data()` are what a save and a
+checkpoint carry, so the calendar needs no `GameSave`, and `GameSave` clears the save when `run_ended`
+fires. Handed per call rather than held, because the web flush and the operation ids outlive the scene reloads that
 free the `main` holding a run. The events and the resistance still read it off the autoload.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
 builds over the parts and exposes as `run.calendar`): the day and act, a day's attempt begun

@@ -55,7 +55,7 @@ func run(t) -> void:
 	EventBus.crowd_bumped.disconnect(bumped)
 	GameSave._clear_now()
 	GameSave.set_path_override("")
-	GameSave.restore_run_data(GameState.run_parts, baseline)
+	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
 	GameState.calendar.checkpoint = baseline["checkpoint"]
 

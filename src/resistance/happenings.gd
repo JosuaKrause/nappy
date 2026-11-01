@@ -14,8 +14,8 @@ extends RefCounted
 ## main road on her way**, and the barricade it stops at stays for the rest of the run.
 ##
 ## **Deterministic from the run seed and the day**, like every other placement: its own stream
-## (`RunState.calendar.day_rng(day, "happenings")`), so nothing here moves a draw the director or the
-## scheduler makes.
+## (`RunState.calendar.day_rng(day, "happenings")`), so nothing here moves a draw the director
+## or the scheduler makes.
 
 ## The day the neighbor is out in the city rather than leaving at dawn, and the day of the raid.
 ## Named here rather than read off `ResistanceSteps` because the neighbor's mornings are the story

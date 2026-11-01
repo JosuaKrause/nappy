@@ -9,7 +9,7 @@ extends RefCounted
 ## It holds the run's mode and its checkpoint, which are the calendar's state rather than any
 ## part's: both ride beside the snapshot as top-level keys of the save. It reads and writes the
 ## parts it is handed (the header's day and nerves, where she settled, the resistance's
-## photographed fields) and hands `GameSave` the registry itself for a checkpoint, never the run.
+## photographed fields) and reads and writes a checkpoint through the registry's own `run_data()`.
 
 var run_parts: RunStateRegistry
 var header: RunHeader
@@ -48,13 +48,13 @@ var hard_mode := false
 
 ## The run as it stood at the dawn of the latest checkpoint day it has reached — days 4, 8 and 12,
 ## the first days of acts II, III and IV, read off `Tuning.ACT_START_DAYS` — in exactly the shape
-## the save carries the run (`GameSave.run_data()`), or `{}` before day 4. *(gentle-osprey, the
-## player: "store the exact state at the checkpoint -- continuing should not have anything that
+## the save carries the run (`RunStateRegistry.run_data()`), or `{}` before day 4.
+## *(gentle-osprey, the player: "store the exact state at the checkpoint -- continuing should not have anything that
 ## happened after the checkpoint".)* Taken by `begin_day()` the first time a checkpoint day is
 ## begun, never on a retry of it, so nothing of that day can have happened yet; given back by
 ## `finish_day()` when a normal run spends its last nerve, with `Tuning.STARTING_NERVES`.
 ##
-## **`{}` is checkpoint zero**, day 1 of the same city: `start_run(run_seed)` rebuilds that dawn
+## **`{}` is checkpoint zero**, day 1 of the same city: the registry's reset rebuilds that dawn
 ## exactly, so nothing is stored for it — which is also what a save written before checkpoints
 ## existed reads as. Never taken in hard mode, which has none.
 ##
@@ -120,7 +120,7 @@ func choose_mode(hard: bool) -> void:
 
 ## Whether `for_day` is one of the days a normal run keeps a checkpoint at: the first day of every
 ## act after the first, read off `Tuning.ACT_START_DAYS` (days 4, 8 and 12). Day 1 is checkpoint
-## zero, which `start_run()` rebuilds rather than anything storing it — see `checkpoint`.
+## zero, which the registry's reset rebuilds rather than anything storing it — see `checkpoint`.
 static func is_checkpoint_day(for_day: int) -> bool:
 	return for_day > 1 and for_day in Tuning.ACT_START_DAYS
 
@@ -147,7 +147,7 @@ func a_loss_goes_back_to_the_checkpoint() -> bool:
 func _keep_a_checkpoint_if_one_is_due() -> void:
 	if hard_mode or not is_checkpoint_day(header.day) or header.day <= checkpoint_day():
 		return
-	checkpoint = GameSave.run_data(run_parts)
+	checkpoint = run_parts.run_data()
 	_trace.note("nerve", "day %d's dawn is the checkpoint a run out of nerves goes back to" % header.day)
 
 ## Record the outcome of the day. Returns true if the run continues.
@@ -268,25 +268,20 @@ func regain_a_nerve_for_a_won_day() -> void:
 ## A normal run's last nerve, spent: the run as it stood at its latest checkpoint's dawn, every
 ## field the save carries, with `Tuning.STARTING_NERVES`. *(gentle-osprey, the player: "store the
 ## exact state at the checkpoint -- continuing should not have anything that happened after the
-## checkpoint".)* **Restored rather than repaired**, through the same `GameSave.restore_run_data()`
-## a save is read back with, so nothing a later field adds to the save can be left out of a
+## checkpoint".)* **Restored rather than repaired**, through the same
+## `RunStateRegistry.restore_run_data()` a save is read back with, so nothing a later field adds to the save can be left out of a
 ## checkpoint by forgetting it here.
 ##
-## Checkpoint zero (`checkpoint` empty) is day 1 of the same city: a fresh run on the run's own
-## seed, keeping who is pushing the pram, since `--parent` may have chosen it over the seed's roll.
+## Checkpoint zero (`checkpoint` empty) is day 1 of the same city: the registry reset. The header
+## keeps the run's seed and who is pushing the pram, since `--parent` may have chosen it over the
+## seed's roll; a normal run has no checkpoint to clear and is not in hard mode.
 func _go_back_to_the_checkpoint() -> void:
 	var lost_on := header.day
 	var kept := checkpoint
 	if kept.is_empty():
-		var run_seed := header.run_seed
-		var parent_is_male := header.player_is_male
 		run_parts.reset()
-		header.run_seed = run_seed
-		header.player_is_male = parent_is_male
-		hard_mode = false
-		checkpoint = {}
 	else:
-		GameSave.restore_run_data(run_parts, kept)
+		run_parts.restore_run_data(kept)
 		checkpoint = kept
 	header.nerves = Tuning.STARTING_NERVES
 	EventBus.nerves_changed.emit(header.nerves)
@@ -307,15 +302,11 @@ func _end_run(which: GameEnums.Ending) -> void:
 	_trace.note("ending", "%s on day %d — resistance %d/%d, sabotage %s, played %s" % [
 		GameEnums.Ending.keys()[which].to_lower(), header.day,
 		resistance.progress, Tuning.RESISTANCE_GOAL,
-		"done" if resistance.sabotage_done else "not done", RunState.format_clock(header.play_seconds())])
+		"done" if resistance.sabotage_done else "not done",
+		RunState.format_clock(header.play_seconds())])
 	EventBus.run_ended.emit(which)
-	# A finished run leaves no save: there is nothing left to resume, and a
-	# save that named an ended run would have to be specially refused on load rather than simply
-	# not existing. Cleared here, at the one place a run ever actually ends, rather than only where
-	# a player presses on past the ending screen (`main._restart_run()` also clears it, for the
-	# held restart that abandons a run before it ends on its own) — a save must not survive between
-	# the two, however the process happens to close in that window.
-	GameSave.clear()
+	# A finished run leaves no save: `GameSave` clears it on `run_ended`
+	# (`clear_when_a_run_ends()`).
 
 func current_act() -> int:
 	return Tuning.act_for_day(header.day)

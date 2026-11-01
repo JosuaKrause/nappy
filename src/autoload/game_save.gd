@@ -32,9 +32,12 @@ extends RefCounted
 ## **The mode and the checkpoint ride the same way.** `"hard_mode"` is absent from a save written
 ## before there were two modes, which reads as normal mode; `"checkpoint"` is absent from one
 ## written before there were checkpoints, which reads as checkpoint zero, day 1 of the same city —
-## see `RunState.calendar.checkpoint`. **A checkpoint is the run in exactly the shape the file carries it**
-## (`run_data()`, every key below but the ones about the file itself), so a field a later build adds
-## to the save is in every checkpoint the moment it is in `run_data()`, and `restore_run_data()` is
+## see `RunState.calendar.checkpoint`. **A checkpoint is the run in exactly the shape the file
+## carries it**
+## (`RunStateRegistry.run_data()`, every key below but the ones about the file itself), so a
+## field a later build adds
+## to the save is in every checkpoint the moment it is in `run_data()`, and
+## `RunStateRegistry.restore_run_data()` is
 ## the one function that reads both back.
 ##
 ## **One save, no slots.** `_DEFAULT_PATH` is the only file this ever reads or writes on a real
@@ -500,12 +503,13 @@ static func _write_now(run: RunState, day_under_way: bool) -> bool:
 	return true
 
 ## Everything the save file holds of `run`, as the plain JSON-safe dictionary `_write_now()`
-## stringifies: `run_data()`, plus the facts about the file and the run's mode rather than about where the run
+## stringifies: `RunStateRegistry.run_data()`, plus the facts about the file and the run's mode
+## rather than about where the run
 ## stands — the format and the build that wrote it, whether a day was under way, the mode, and the
 ## checkpoint. `FILE_KEYS` names those, and `tests/test_run_checkpoints.gd` reads every other key
 ## off this function to check a checkpoint gives each one back.
 static func file_data(run: RunState, day_under_way: bool) -> Dictionary:
-	var data := run_data(run.run_parts)
+	var data := run.run_parts.run_data()
 	data["format_version"] = FORMAT_VERSION
 	data["build"] = BuildInfo.build_text()
 	data["day_under_way"] = day_under_way
@@ -520,33 +524,24 @@ const FILE_KEYS: Array[String] = [
 	"format_version", "build", "day_under_way", "hard_mode", "checkpoint",
 ]
 
-## Where `run` stands, in the shape the save carries it: `RunState.save_snapshot()` under
-## `"state"`, and the run's facts that ride beside it as top-level keys. This is also exactly what
-## a checkpoint is — `RunCalendar._keep_a_checkpoint_if_one_is_due()` keeps it at a checkpoint day's
-## dawn — so the save and the checkpoint can never carry two different ideas of what a run is.
-static func run_data(parts: RunStateRegistry) -> Dictionary:
-	var data := parts.rider_data()
-	data["state"] = parts.state_data()
-	return data
+## Connects the deletion of the save to the end of a run: **a finished run leaves no save**, since a
+## save that named an ended run would have to be specially refused on load rather than simply not
+## existing. `main` calls this once a boot, before anything can end the run, and a suite that ends a
+## run calls it too; connecting twice changes nothing. (`main._restart_run()` also clears the save,
+## for the held restart that abandons a run before it ends on its own.)
+static func clear_when_a_run_ends() -> void:
+	if not EventBus.run_ended.is_connected(_on_run_ended):
+		EventBus.run_ended.connect(_on_run_ended)
 
-## The other half of `run_data()`: puts every field it carries back on `run`, from a save read off
-## disk or from a checkpoint alike. `data["state"]` must already have passed
-## `RunState.snapshot_is_complete()`. Each rider is read with a default for its absence, so a save
-## from a build that never wrote it loads with the value a run that has not got that far holds.
-## Leaves `hard_mode` and `checkpoint` alone: they are the file's keys, not the run's state.
-static func restore_run_data(parts: RunStateRegistry, data: Dictionary) -> void:
-	parts.restore_state(data["state"])
-	# After the snapshot, never before: the riders are read with a default for their absence, so a
-	# save from a build that never wrote a key leaves that part where a run that has not got that far
-	# holds it — the ordinary fourteen days with no escape, no used alleys, no fenced park, bare
-	# walls and a pelican bag at 0 — rather than half-restored.
-	parts.restore_riders(data)
+static func _on_run_ended(_ending: GameEnums.Ending) -> void:
+	clear()
 
 ## Tries to resume a run into `run`. Returns `{}` when there is nothing to resume — no file, a file
 ## this build cannot read, or a dev/headless run `uses_save()` already refused — and
 ## `{"day_under_way": bool}` once `run` has been overwritten with the save's own fields. The caller
 ## (`main._ready()`) still owns what a `true` costs: the same lost-day path an ordinary loss takes,
-## through `RunState.calendar.finish_day()`, so this function only ever reads and restores, never spends a
+## through `RunState.calendar.finish_day()`, so this function only ever reads and restores,
+## never spends a
 ## nerve.
 static func try_resume(run: RunState) -> Dictionary:
 	if not uses_save():
@@ -596,7 +591,7 @@ static func _read_now(run: RunState) -> Dictionary:
 ## Everything a readable save puts back on `run`, from `_read_now()`'s file and from
 ## `load_in_memory()`'s copy alike, and what it says about the day: `{"day_under_way": bool}`.
 static func _apply(run: RunState, data: Dictionary) -> Dictionary:
-	restore_run_data(run.run_parts, data)
+	run.run_parts.restore_run_data(data)
 	# The mode and the checkpoint, the same way again: a save from before there were two modes is a
 	# normal run, and one from before there were checkpoints goes back to day 1 of its own city.
 	run.calendar.hard_mode = bool(data.get("hard_mode", false))

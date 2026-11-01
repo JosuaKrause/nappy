@@ -124,13 +124,14 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	for rect in region_plan.alley_doors:
 		boundary[rect.position] = true
 	# **Planned before `build_day`.** `SealPlanner.plan_day` is a pure function of the map, the day,
-	# `tree` and its own RNG stream (`world.run.calendar.day_rng(day, "seals")`, never shared with the
-	# catalogue's), so planning it first changes which seals a day gets not at all — only how soon
-	# `build_day` can see where they landed. `held` is `city_map.held_segments` itself: a hard seal's
-	# segment is marked there as it is placed, so the catalogue never offers a candidate row that same
-	# ground (`docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street").
-	var seals := SealPlanner.plan_day(city_map, spec, tree, world.run.calendar.day_rng(day, "seals"),
-			boundary, city_map.held_segments)
+	# `tree` and its own RNG stream (`world.run.calendar.day_rng(day, "seals")`, never shared
+	# with the catalogue's), so planning it first changes which seals a day gets not at all —
+	# only how soon `build_day` can see where they landed. `held` is `city_map.held_segments`
+	# itself: a hard seal's segment is marked there as it is placed, so the catalogue never
+	# offers a candidate row that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a
+	# fully blocked street").
+	var seals := SealPlanner.plan_day(city_map, spec, tree,
+			world.run.calendar.day_rng(day, "seals"), boundary, city_map.held_segments)
 	# Where today's doors stand, before a single candidate is rolled. `build_day` keeps
 	# `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around each of them — the ground she is let out
 	# onto, on either side — by refusing a candidate whose field or beat reaches inside it, which is

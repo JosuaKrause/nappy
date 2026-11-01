@@ -182,8 +182,8 @@ func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t) -> void:
 	t.check(GameState.pelican.draws == 7, "a lost day sets the count back to the day's dawn")
 	t.check(_rolls(cyclist, 20, seed_value) == day,
 			"and the retry draws the same cyclists and pelican the day first did")
-	t.check(GameSave.run_data(GameState.run_parts).has("pelican")
-			and int(GameSave.run_data(GameState.run_parts)["pelican"]["draws"]) == GameState.pelican.draws,
+	t.check(GameState.run_parts.run_data().has("pelican")
+			and int(GameState.run_parts.run_data()["pelican"]["draws"]) == GameState.pelican.draws,
 			"the standard save carries the count under its own key")
 	GameState.pelican.reset()
 	GameState.pelican.restore(JSON.parse_string(JSON.stringify(saved)))

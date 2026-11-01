@@ -24,14 +24,15 @@ extends CanvasLayer
 ## those is what this screen exists for. **The one option is the Hard Mode checkbox**, shown only
 ## when the title begins a new game. *(gentle-osprey, the player: "a "Hard Mode" checkbox on the
 ## title screen (if new game) that decides whether checkpoints are available".)* Checked, the run
-## has no checkpoints and its last nerve is the bad ending (`RunState.calendar.hard_mode`). It is quiet on
-## purpose — Godot's own `CheckBox`, in the tagline's colour, under the hint — because it is
-## a setting, not a way in: **pressing it never starts the run**, which still begins only from the
-## three buttons or a key, so the box can be set and changed freely first. `H` toggles it from a
-## keyboard, unnamed on screen like every other key here. It opens unchecked on every new game
-## (it reads the run's `hard_mode`, which a fresh run begins `false`, so only `--hard` opens it
-## checked) and is never remembered between sittings: a mode kept outside the save would make a
-## returning player's run depend on something the run does not hold.
+## has no checkpoints and its last nerve is the bad ending (`RunState.calendar.hard_mode`). It
+## is quiet on purpose — Godot's own `CheckBox`, in the tagline's colour, under the hint —
+## because it is a setting, not a way in: **pressing it never starts the run**, which still
+## begins only from the three buttons or a key, so the box can be set and changed freely first.
+## `H` toggles it from a keyboard, unnamed on screen like every other key here. It opens
+## unchecked on every new game (it reads the run's `hard_mode`, which a fresh run begins
+## `false`, so only `--hard` opens it checked) and is never remembered between sittings: a mode
+## kept outside the save would make a returning player's run depend on something the run does
+## not hold.
 ##
 ## **Starting is also the controls question, and the buttons are how it is answered.**
 ## *(2026-09-07, the player: "let's make the controls a player choice and bring back the two
@@ -131,8 +132,8 @@ func use_platform(touch: bool, can_quit: bool) -> void:
 	_touch = touch
 	_can_quit = can_quit
 
-## The run whose mode the checkbox opens on and the mode's name reads (`RunState.calendar.hard_mode`), handed
-## in by `use_run()` before the screen is first opened.
+## The run whose mode the checkbox opens on and the mode's name reads
+## (`RunState.calendar.hard_mode`), handed in by `use_run()` before the screen is first opened.
 var _run: RunState
 
 ## Hands the screen the run it opens over. Called by `main` before the screen enters the tree, and
@@ -206,14 +207,14 @@ func is_open() -> bool:
 ## Shows the screen. `again` is whether a run has just ended, which is the only difference between
 ## the two times it is shown — besides `new_game`, which is whether pressing a button begins a new
 ## run rather than one a save brought back, and is the only time the Hard Mode checkbox shows. It
-## opens on the mode the run already holds, `RunState.calendar.hard_mode`: `false` for every fresh run, and
-## `true` only under `--hard`.
+## opens on the mode the run already holds, `RunState.calendar.hard_mode`: `false` for every
+## fresh run, and `true` only under `--hard`.
 ##
 ## `mode_decided` is whether the mode is already fixed for this run, which is when a save brought
 ## it back (the title before a resumed day or a resumed escape): the checkbox has nothing to ask
-## then, so the mode's name, "Normal" or "Hard Mode" (`RunState.calendar.hard_mode`), stands in its place.
-## A new game shows the checkbox and no name; a title with neither (the escape flag's, which has
-## no run) shows neither.
+## then, so the mode's name, "Normal" or "Hard Mode" (`RunState.calendar.hard_mode`), stands in
+## its place. A new game shows the checkbox and no name; a title with neither (the escape
+## flag's, which has no run) shows neither.
 ##
 ## It does **not** touch `get_tree().paused`, which is where it differs from `PauseScreen` and why:
 ## a pause stops the world and this one deliberately does not. What stops, and what carries on

@@ -1825,7 +1825,7 @@ she took, to the millisecond, which is the only number that screen carries.
 ## Nerves
 
 The run-level health bar. Starts at 5. Every lost day costs one, and in a normal run a day she
-**wins** gives one back, up to the same five (`GameState.regain_a_nerve_for_a_won_day()`) — so a bad
+**wins** gives one back, up to the same five (`RunCalendar.regain_a_nerve_for_a_won_day()`) — so a bad
 single day is recoverable rather than a tight spot carried all the way to day 14. **A hard run's won
 day gives nothing back**: it starts with five and only loses them. **What 0 does is the run's
 mode**, chosen on the title as a new game begins (see "Two modes" below): a normal run goes back to
@@ -2052,7 +2052,7 @@ it appears, and for as long as any change is still unanswered; it then fades ove
 hold after the answer** *(cozy-pelican: "we should show it until it is fully confirmed saved", and
 "okay always show it. but show it for at least a second")*. **Deleting the save file is a change
 too** *("show deleting the save file with a save symbol as well. every change in the save state
-needs to show the symbol")*: a run's end deletes it (`GameState._end_run()`: a day that ends a
+needs to show the symbol")*: a run's end deletes it (`RunCalendar._end_run()`: a day that ends a
 hard run, the charge a reopened hard run's save pays when it was the last nerve, a hard run's last
 nerve lost in the escape, and the escape walked out), and
 so does the held restart, and each shows the symbol with the same timings and the same strike. On

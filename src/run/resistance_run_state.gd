@@ -13,7 +13,8 @@ var progress: int = 0
 var sabotage_done := false
 ## Whether the pram is carrying the package right now, for the rest of a day once it has been picked
 ## up: `City.decay_multiplier()` reads it, since the pram is heavier for every street after. Put down
-## at each dawn (`GameState.calendar.begin_day()`) so a loss gives back a pram that is not yet heavy.
+## at each dawn (`GameState.calendar.begin_day()`) so a loss gives back a pram that is not yet
+## heavy.
 var carrying_package := false
 
 var _dawn_completed_steps: Array[int] = []
