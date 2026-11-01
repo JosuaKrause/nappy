@@ -25,7 +25,8 @@ Installing, registering, rebaking and checking PNGs that already exist stays ope
 rounds, grade; `--redone` when it redid the agent's own conclusion), and the SubagentStop hook
 (`.claude/hooks/agent-stats.py`) records the tokens and tool calls beside it; `summary` shows what each
 kind and model cost and how it went. The data lives outside the repository, in
-`~/.claude/nappy-agent-stats/` (inbox #900).
+`~/.claude/nappy-agent-stats/` (inbox #900): a shared log in git would conflict between parallel pull
+requests and need a PR per entry, so the code is checked in and the data is not.
 
 *Proposed, not asked for, open to the player's correction, to be revised once the counter holds
 enough entries (inbox #900):*

@@ -28,6 +28,7 @@ DATA = Path.home() / ".claude" / "nappy-agent-stats"
 KINDS = ["build-parity", "build-play", "investigate", "measure", "capture", "fix", "review", "filing"]
 MODELS = ["haiku", "sonnet", "opus", "fable"]
 GRADES = ("good", "ok", "bad")
+MIN_PREFIX = 6
 
 Row = dict[str, Any]
 
@@ -43,19 +44,33 @@ def read_lines(name: str) -> list[Row]:
     return rows
 
 
+class AmbiguousAgentError(Exception):
+    """More than one run's agent id starts with the given prefix."""
+
+
 def run_for(agent: str, runs: list[Row]) -> Row | None:
-    """The latest run whose agent id starts with, or is started by, the given id."""
-    if not agent:
+    """The latest run of the one agent whose id starts with the given prefix.
+
+    A prefix shorter than MIN_PREFIX joins nothing; a prefix several distinct agents share raises.
+    """
+    if len(agent) < MIN_PREFIX:
         return None
-    for run in reversed(runs):
+    found: dict[str, Row] = {}
+    for run in runs:
         full = str(run.get("agent") or run.get("agent_id") or "")
-        if full and (full.startswith(agent) or agent.startswith(full)):
-            return run
-    return None
+        if full.startswith(agent):
+            found[full] = run
+    if len(found) > 1:
+        raise AmbiguousAgentError(f"agent prefix {agent!r} matches {', '.join(sorted(found))}")
+    return next(iter(found.values()), None)
 
 
 def add(args: argparse.Namespace) -> int:
-    run = run_for(args.agent, read_lines("runs.jsonl"))
+    try:
+        run = run_for(args.agent, read_lines("runs.jsonl"))
+    except AmbiguousAgentError as e:
+        print(f"agent-stats.py: {e}; give more of the id", file=sys.stderr)
+        return 2
     tokens = args.tokens if args.tokens is not None else (run or {}).get("tokens")
     tools = args.tools if args.tools is not None else (run or {}).get("tools")
     if tokens is None:
@@ -86,7 +101,10 @@ def summary() -> int:
     groups: defaultdict[tuple[str, str], list[Row]] = defaultdict(list)
     for row in read_lines("log.jsonl"):
         if row.get("tokens") is None:
-            row["tokens"] = (run_for(row.get("agent", ""), runs) or {}).get("tokens")
+            try:
+                row["tokens"] = (run_for(row.get("agent", ""), runs) or {}).get("tokens")
+            except AmbiguousAgentError:
+                row["tokens"] = None
         groups[(row["kind"], row["model"])].append(row)
     print(f"{'kind':14} {'model':7} {'n':>3} {'tokens':>8} {'rounds':>6} {'redone':>6}  good/ok/bad")
     for (kind, model), rows in sorted(groups.items()):

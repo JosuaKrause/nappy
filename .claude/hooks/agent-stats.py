@@ -46,8 +46,11 @@ def record(payload):
         row["agent"] = path.stem.removeprefix("agent-")
         meta = path.with_suffix(".meta.json")
         if meta.exists():
-            m = json.loads(meta.read_text())
-            row.update({k: m.get(k) for k in ("description", "model", "agentType")})
+            try:
+                m = json.loads(meta.read_text())
+                row.update({k: m.get(k) for k in ("description", "model", "agentType")})
+            except (OSError, ValueError, AttributeError):
+                row["meta_error"] = True
         tokens, tools, model_id = 0, 0, None
         for line in path.read_text().splitlines():
             try:

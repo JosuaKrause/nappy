@@ -64,10 +64,32 @@ class AgentStatsTests(unittest.TestCase):
         payload = json.dumps({"agent_id": "abc123def", "transcript_path": str(self.make_transcript())})
         self.run_script(HOOK, stdin=payload)
         added = self.run_script(
-            TOOL, "add", "--kind", "review", "--model", "sonnet", "--rounds", "0", "--grade", "good", "--agent", "abc12"
+            TOOL, "add", "--kind", "review", "--model", "sonnet", "--rounds", "0", "--grade", "good", "--agent", "abc123"
         )
         self.assertEqual(added.returncode, 0, added.stderr)
         row = json.loads((self.data / "log.jsonl").read_text())
+        self.assertEqual((row["tokens"], row["tools"]), (5000, 3))
+
+    def test_add_refuses_a_prefix_two_runs_share_and_a_short_one(self) -> None:
+        self.data.mkdir(parents=True)
+        runs = [{"agent": "abcdef111", "tokens": 1, "tools": 1}, {"agent": "abcdef222", "tokens": 2, "tools": 2}]
+        (self.data / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in runs))
+        base = ("add", "--kind", "review", "--model", "sonnet", "--rounds", "0", "--grade", "ok")
+        shared = self.run_script(TOOL, *base, "--agent", "abcdef")
+        self.assertEqual(shared.returncode, 2)
+        self.assertIn("abcdef111", shared.stderr)
+        short = self.run_script(TOOL, *base, "--agent", "abc")
+        self.assertEqual(short.returncode, 2)
+        self.assertFalse((self.data / "log.jsonl").exists())
+        self.assertEqual(self.run_script(TOOL, *base, "--agent", "abcdef2").returncode, 0)
+        self.assertEqual(json.loads((self.data / "log.jsonl").read_text())["tokens"], 2)
+
+    def test_hook_keeps_the_row_when_meta_is_unreadable(self) -> None:
+        session = self.make_transcript()
+        (session.with_suffix("") / "subagents" / "agent-abc123def.meta.json").write_text("{broken")
+        payload = json.dumps({"agent_id": "abc123def", "transcript_path": str(session)})
+        self.run_script(HOOK, stdin=payload)
+        row = json.loads((self.data / "runs.jsonl").read_text())
         self.assertEqual((row["tokens"], row["tools"]), (5000, 3))
 
     def test_add_without_tokens_or_a_run_is_refused(self) -> None:
