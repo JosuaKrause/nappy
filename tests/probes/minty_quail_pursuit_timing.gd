@@ -33,7 +33,6 @@ extends RefCounted
 ## `PROBE_NO_ROWS` set skips the rows.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const SWEEP := preload("res://tests/test_park_cordon_seeds.gd")
 const SEEDS: Array[int] = [4242, 1]
 const DAYS: Array[int] = [3, 6, 7, 8, 11, 12, 13]
 ## The days the rows are made on.
@@ -217,22 +216,25 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	director._on_contact_completed(task.index)
 	var happenings: ResistanceHappenings = director._happenings
 	var her := [swing]
-	var shows: Callable = SWEEP.new().call("_camera_on", her)
+	var camera := Rect2(swing - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	_stand(city, player, swing)
-	happenings.tick(STEP, swing, Vector2.ZERO, shows)
+	city.events.visible_view().look(camera, null)
+	happenings.tick(STEP, swing, Vector2.ZERO)
 	var park := happenings.cordon.park
 	happenings.cordon.clear()
 	var area := city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(city.map, park))
 	var before := city.events.instances().duplicate()
 	var busker := city.events.spawn_extra(EventCatalogue.by_id("busker"),
 			area.position + area.size * Vector2(0.25, 0.3))
-	var cordon := ParkCordon.new(city.map, city.navigator, city, park, director._reach_blocked)
+	var cordon := ParkCordon.new(city.map, city.navigator, city, park, city.spawn_siting,
+			director._reach_blocked)
 	var run := Run.new(before)
 	var chain := HashingContext.new()
 	chain.start(HashingContext.HASH_SHA256)
 	for tick in CORDON_TICKS:
 		_tick(city)
-		cordon.tick(STEP, swing, shows)
+		city.events.visible_view().look(camera, null)
+		cordon.tick(STEP, swing)
 		run.observe(city, swing, tick)
 		var line := "%d" % tick
 		for officer in cordon.officers:
