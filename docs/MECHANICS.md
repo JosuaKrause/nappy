@@ -531,7 +531,7 @@ wrong, and `WorldContext.total_excitement_at` still adds its sets (the events' a
 ### The crowd gives way to event figures
 
 **When an event figure and the crowd meet, the crowd yields and the figure keeps its course and its
-timing** (inbox #884 in minty-dolphin): a charging dog does not care, and a pedestrian does not want
+timing** (inbox #884 in plaid-raven): a charging dog does not care, and a pedestrian does not want
 to be overrun. An event figure, an event car and day 12's cordon officers are given way to; nothing
 about them changes for the crowd, so every catch, notice and departure is timed as it is with an
 empty street. Only a figure that has walked counts: a stall, a burnt-out car, a street musician or a

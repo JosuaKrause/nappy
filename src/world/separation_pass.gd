@@ -1,6 +1,6 @@
 class_name SeparationPass
 extends RefCounted
-## **The crowd gives way to the movers that keep their course** (inbox #884 in minty-dolphin): when
+## **The crowd gives way to the movers that keep their course** (inbox #884 in plaid-raven): when
 ## an event figure, an event car or a cordon officer and the crowd meet, a walker steps aside or is
 ## pushed and a crowd car stands, while the figure keeps its course and its timing. This is the
 ## world's half of it, the geometry over the map's list of moves (`ProposedMoves`): which of them a

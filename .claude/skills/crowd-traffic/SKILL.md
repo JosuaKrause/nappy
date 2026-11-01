@@ -14,7 +14,7 @@ them can open one that does not**, so two bodies that start inside each other st
 `Crowd.space_out_the_traffic()` resolves a lane of cars from the front backwards. **If a new pair of
 things must not be inside each other, move them apart; do not ask them to want to be apart.**
 
-**Between the crowd and an event figure only the crowd moves** (minty-quail-34): each
+**Between the crowd and an event figure only the crowd moves** (plaid-raven #884): each
 crowd body's proposed step is cleared of, or held short of, the event figures, event cars and
 cordon officers at its own step, before its check (`LaneStrategy.give_way_on_the_step()`, through
 the map's `SeparationPass`), and nothing an event does reads the crowd. **A move's `radius` is the
