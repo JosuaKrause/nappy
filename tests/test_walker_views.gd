@@ -7,25 +7,32 @@ extends RefCounted
 ## can never disagree about which view they are, that a stopped walker keeps its last facing, and
 ## that a fresh placement's own heading clears whatever was drawn before in one step.
 
-## How fast the along and cross components below are set, chosen so a diagonal sector's two
-## components are equal and its heading lands exactly on that sector's own 45°-multiple centre —
-## `CrowdAgent.STEER_SPEED`, the rate the cross term actually runs at while steering.
+## The speed of a clear heading handed to the selector directly: well above any idle threshold.
 const SPEED := 90.0
 
-## One `[vertical, direction, lane_centre]` triple per sector, `0` (east) to `7` (north-east),
-## that makes `CrowdAgent._look.heading_now()` land exactly on that sector's own centre angle with
-## the agent sitting at the world origin: `_lane_centre` alone opens the cross-lane gap
-## (`_cross()` reads `position`, held at zero throughout), and `_speed`/`_vertical`/`_direction`
-## supply the along-lane component `LaneMover.velocity()` reads.
-const SECTOR_STATE: Array = [
-	[false, 1.0, 0.0],     # 0 E
-	[true, 1.0, SPEED],    # 1 SE
-	[true, 1.0, 0.0],      # 2 S
-	[true, 1.0, -SPEED],   # 3 SW
-	[false, -1.0, 0.0],    # 4 W
-	[true, -1.0, -SPEED],  # 5 NW
-	[true, -1.0, 0.0],     # 6 N
-	[true, -1.0, SPEED],   # 7 NE
+## How far a sidestep asked of a walker moves its steering target (`CrowdAgent.step_aside()`), so
+## a diagonal sector is a walker whose lane has a gap to close, the way a bump or a narrow pavement
+## leaves it. Any distance does: the cross term is `LaneMover.STEER_SPEED` at either size.
+const SIDESTEP := 8.0
+
+## How far from a sector's own centre angle a placed walker's heading may be, in degrees, and still be
+## that sector's walker: a walker's pace is rolled, so its diagonal is the along pace against
+## `LaneMover.STEER_SPEED` rather than exactly 45 degrees, and the sector is wide enough for every
+## pace `Tuning.PEDESTRIAN_SPEED` allows.
+const WITHIN_SECTOR := 22.0
+
+## Every sector's `[lane heading, sidestep]`, `0` (east) to `7` (north-east): the cardinal sectors are a
+## walker on a lane with nothing to steer across, the diagonals one of the two lanes that lead to it
+## and the sidestep that opens the cross-lane gap.
+const SECTOR_LANES: Array = [
+	[Vector2.RIGHT, Vector2.ZERO],   # 0 E
+	[Vector2.RIGHT, Vector2.DOWN],   # 1 SE
+	[Vector2.DOWN, Vector2.ZERO],    # 2 S
+	[Vector2.DOWN, Vector2.LEFT],    # 3 SW
+	[Vector2.LEFT, Vector2.ZERO],    # 4 W
+	[Vector2.LEFT, Vector2.UP],      # 5 NW
+	[Vector2.UP, Vector2.ZERO],      # 6 N
+	[Vector2.UP, Vector2.RIGHT],     # 7 NE
 ]
 const EXPECTED_VIEW: Array[String] = [
 	"side", "front_diagonal", "front", "front_diagonal", "side",
@@ -33,7 +40,12 @@ const EXPECTED_VIEW: Array[String] = [
 ]
 const EXPECTED_MIRRORED: Array[bool] = [false, false, false, true, true, true, false, false]
 
+const ViewRig := preload("res://tests/view_rig.gd")
+
+var _rig: ViewRig
+
 func run(t) -> void:
+	_rig = ViewRig.new(t)
 	_test_selector_nearest_covers_all_eight(t)
 	_test_selector_boundary_hold(t)
 	_test_selector_wrap_boundary_holds(t)
@@ -49,6 +61,7 @@ func run(t) -> void:
 	_test_walker_gait_b_tables_agree_with_a(t)
 	_test_walker_gait_b_tables_cover_every_sector(t)
 	_test_every_walker_gait_b_svg_is_native_18x38(t)
+	_rig.free_city()
 
 # ------------------------------------------------------------------- selector ---
 
@@ -95,39 +108,47 @@ func _test_selector_mirrors(t) -> void:
 
 # --------------------------------------------------------------------- walker ---
 
-func _walker(t) -> CrowdAgent:
-	var agent := CrowdAgent.new()
-	agent.kind = CrowdAgent.Kind.WALKER
+## A walker the game placed on a lane running along `heading` (`CrowdAgent.setup()`), at the pace
+## that placement rolled.
+func _walker(t, heading: Vector2) -> CrowdAgent:
+	var agent := _rig.place(CrowdAgent.Kind.WALKER, heading)
+	t.check(agent != null, "a walker is placed heading %s" % heading)
 	return agent
 
-## Sets the state `WalkerLook.heading_now()` reads so it lands exactly on `sector`'s own centre angle —
-## see `SECTOR_STATE`'s own doc.
-func _face_sector(agent: CrowdAgent, sector: int) -> void:
-	var state: Array = SECTOR_STATE[sector]
-	agent.position = Vector2.ZERO
-	agent._vertical = state[0]
-	agent._direction = state[1]
-	agent._speed = SPEED
-	agent._lane_centre = state[2]
-	agent._detour = 0.0
-	agent.strategy._yield_left = 0.0
+## A walker facing `sector`: placed on the lane of `SECTOR_LANES`, and for a diagonal sidestepped
+## (`CrowdAgent.step_aside()`) so its steering target is a lane over and `WalkerLook.heading_now()`
+## swings onto the diagonal, as it does for a walker nudged aside by the player. Null when the
+## placement or the sidestep does not leave it facing that sector's own angle.
+func _walker_facing(t, sector: int) -> CrowdAgent:
+	var lane: Array = SECTOR_LANES[sector]
+	var agent := _walker(t, lane[0])
+	if agent == null:
+		return null
+	if lane[1] != Vector2.ZERO:
+		agent.step_aside(lane[1], SIDESTEP, 1.0)
+	var off := absf(rad_to_deg(agent.look.heading_now().angle_to(Vector2.from_angle(deg_to_rad(sector * 45.0)))))
+	t.check(off < WITHIN_SECTOR,
+			"the walker for sector %d heads within %.0f degrees of its centre (%.1f off)"
+			% [sector, WITHIN_SECTOR, off])
+	return agent
 
 func _test_walker_headings_select_the_expected_view(t) -> void:
-	var agent := _walker(t)
 	for sector in range(8):
-		_face_sector(agent, sector)
+		var agent := _walker_facing(t, sector)
+		if agent == null:
+			continue
 		# Started from the opposite sector every time, so the assertion below is never passing
 		# because the previous iteration's hold happened to already agree.
-		agent._look.view = (sector + 4) % 8
-		var frame := agent._look.sector()
+		agent.look.view = (sector + 4) % 8
+		var frame := agent.look.sector()
 		t.check(frame == sector,
 				"heading %d degrees selects sector %d (got %d)" % [sector * 45, sector, frame])
 		var view: String = WalkerLook.VIEW_BY_SECTOR[frame]
 		t.check(view == EXPECTED_VIEW[sector],
 				"sector %d draws the %s view" % [sector, EXPECTED_VIEW[sector]])
-		t.check(agent._look.flipped() == EXPECTED_MIRRORED[sector],
+		t.check(agent.look.flipped() == EXPECTED_MIRRORED[sector],
 				"sector %d mirror flag matches the west-mirror convention" % sector)
-	agent.free()
+		agent.free()
 
 ## `AgentLook.draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
 ## invariant structurally too: nothing can add a body without its trim, or the two would be able
@@ -154,45 +175,60 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 
 ## A give-way, a queue or a halt all reach the walker the same way: `WalkerStrategy._yield_factor()` zeroing
 ## `LaneMover.velocity()` while it has already arrived at its lane centre, which is exactly the "at rest"
-## `WalkerLook.heading_now()` returns `Vector2.ZERO` for.
+## `WalkerLook.heading_now()` returns `Vector2.ZERO` for. A walker is told to wait the way the player's
+## bump tells it (`CrowdAgent.step_aside()` along its own line of travel, away from where it is going).
 func _test_a_stopped_walker_keeps_its_view(t) -> void:
-	var agent := _walker(t)
-	_face_sector(agent, 0)
-	agent._look.view = 6  # start from the opposite sector so the frame below cannot pass by luck
-	var moving_frame := agent._look.sector()
+	var agent := _walker(t, Vector2.RIGHT)
+	if agent == null:
+		return
+	agent.look.view = 6  # start from the opposite sector so the frame below cannot pass by luck
+	var moving_frame := agent.look.sector()
 	t.check(moving_frame == 0, "walking east settles on the east view first")
 
 	# Stopped: no cross-lane gap, and the along term reads zero through the same yield the crowd
-	# actually stops a walker with — not by lowering `_speed` itself, which nothing else does.
-	agent.strategy._yield_left = 1.0
-	agent.strategy._yield_hurry = false
-	t.check(agent._look.heading_now() == Vector2.ZERO, "a yielding walker's own heading is zero")
-	var stopped_frame := agent._look.sector()
+	# actually stops a walker with.
+	_stop(agent)
+	t.check(agent.look.heading_now() == Vector2.ZERO, "a yielding walker's own heading is zero")
+	var stopped_frame := agent.look.sector()
 	t.check(stopped_frame == moving_frame,
 			"a stopped walker keeps the view it was last drawn with (%d, still %d)"
 			% [moving_frame, stopped_frame])
 	agent.free()
 
-## `LaneMover.setup()` and `LaneMover._recycle()` place a walker with no cross-lane steering yet
-## running (`WalkerLook.sector()`'s own doc), so this pins the property that stands in for a call into
-## either of them: both leave a walker's own heading exactly on a sector centre, 45 degrees clear
-## of its neighbours — twice the hold's own 27.5 degree reach — so whatever sector was drawn
-## before a placement or a recycle is always replaced on the very next frame, the same "no
-## prior-view hold" guarantee `Stroller.reset_at()` gives a new day.
-func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
-	var agent := _walker(t)
-	_face_sector(agent, 1)  # south-east, the kind of diagonal only real steering ever produces
-	agent._look.view = 1
-	t.check(agent._look.sector() == 1, "settled on southeast before the placement")
+## Tells `agent` to wait where it stands: asked to get out of the way of somebody ahead of it on its
+## own line of travel, it waits rather than hurrying across (`WalkerStrategy.step_aside()`).
+func _stop(agent: CrowdAgent) -> void:
+	var behind := -agent.heading()
+	agent.step_aside(behind, SIDESTEP, 1.0)
 
-	# A fresh placement/recycle: a new lane and direction, no detour or yield left running, sitting
-	# exactly on its own lane centre — `LaneMover._choose_lane()` and `_set_cross(_lane_centre)`'s own result,
-	# reproduced here directly since building the `CityMap`/`CrowdField` `LaneMover._recycle()` needs is out
-	# of scope for a focused view-selection rig.
-	_face_sector(agent, 6)  # north, an adjacent-ish sector to the stale one above
-	t.check(agent._look.sector() == 6,
+## `LaneMover.setup()` places a walker with no cross-lane steering yet running
+## (`WalkerLook.sector()`'s own doc), so this pins the property through the real placement: a walker
+## drawn as one sector, then placed again, shows the new lane's own heading on the very next frame,
+## because that heading is exactly on a sector centre, 45 degrees clear of its neighbours — twice the
+## hold's own 27.5 degree reach — the same "no prior-view hold" guarantee `Stroller.reset_at()`
+## gives a new day.
+func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
+	var agent := _walker_facing(t, 1)  # south-east, the kind of diagonal only real steering ever produces
+	if agent == null:
+		return
+	agent.look.view = 1
+	t.check(agent.look.sector() == 1, "settled on southeast before the placement")
+
+	# A fresh placement: a new lane and direction, no detour or yield left running, sitting exactly
+	# on its own lane centre. Placed again until it points north, an adjacent-ish sector to the
+	# stale one above.
+	var placed_north := false
+	for seed_value in range(1, ViewRig.ROLLS):
+		agent.look.view = 1
+		agent.setup(CrowdAgent.Kind.WALKER, _rig.city.map, _rig.city.crowd.field(), seed_value,
+				0.5 * float(seed_value % 2))
+		if agent.heading().is_equal_approx(Vector2.UP):
+			placed_north = true
+			break
+	t.check(placed_north, "a walker is placed again heading north")
+	t.check(agent.look.sector() == 6,
 			"the new north heading already wins over the stale southeast view (got %d)"
-			% agent._look.sector())
+			% agent.look.sector())
 	agent.free()
 
 # ---------------------------------------------------------------------- gait ---
@@ -202,44 +238,50 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 # turns `(0, PI/2)` and `(PI, 3*PI/2)` of a full `TAU` cycle and negative on the other two, so a
 # fixed phase is enough to pin the frame without going through `WalkerLook.advance()`'s own rate.
 
-## A fresh `_walker(t)` keeps every field at its class default, which already gives it a nonzero
-## `LaneMover.velocity()` (`_speed` 60, `_direction` 1, `_vertical` false, `_yield_left` 0) — the same
-## "moving by default" shape `_test_walker_headings_select_the_expected_view()` relies on.
+## A placed walker has a nonzero `LaneMover.velocity()` — the same "moving by default" shape
+## `_test_walker_headings_select_the_expected_view()` relies on. The stride is advanced with an
+## injected `delta`: this checks the arithmetic of one tick, which the crowd's tick hands the look
+## (`WalkerLook.advance()`).
 func _test_advancing_the_gait_tracks_distance_not_time(t) -> void:
-	var agent := _walker(t)
-	agent._look.gait_phase = 0.0
-	agent._look.advance(agent.velocity(), 1.0 / 60.0)
-	t.check(agent._look.gait_phase > 0.0, "a moving walker's stride phase actually advances")
+	var agent := _walker(t, Vector2.RIGHT)
+	if agent == null:
+		return
+	agent.look.gait_phase = 0.0
+	agent.look.advance(agent.velocity(), 1.0 / 60.0)
+	t.check(agent.look.gait_phase > 0.0, "a moving walker's stride phase actually advances")
 
-	agent._speed = 0.0
-	agent._look.gait_phase = 0.0
-	agent._look.advance(agent.velocity(), 1.0 / 60.0)
-	t.check(agent._look.gait_phase == 0.0,
+	_stop(agent)
+	agent.look.gait_phase = 0.0
+	agent.look.advance(agent.velocity(), 1.0 / 60.0)
+	t.check(agent.look.gait_phase == 0.0,
 			"a walker covering no distance advances no stride at all")
 	agent.free()
 
 func _test_a_moving_walker_alternates_gait_frames(t) -> void:
-	var agent := _walker(t)
-	agent._look.gait_phase = 0.0
-	t.check(agent._look.gait_frame() == 0, "phase zero draws the rest pose")
-	agent._look.gait_phase = PI / 4.0
-	t.check(agent._look.gait_frame() == 1, "a quarter into the cycle draws feet passing")
-	agent._look.gait_phase = 3.0 * PI / 4.0
-	t.check(agent._look.gait_frame() == 0, "past the half turn it returns to the rest pose")
-	agent._look.gait_phase = 5.0 * PI / 4.0
-	t.check(agent._look.gait_frame() == 1, "the second half of the cycle passes feet again")
+	var agent := _walker(t, Vector2.RIGHT)
+	if agent == null:
+		return
+	agent.look.gait_phase = 0.0
+	t.check(agent.look.gait_frame() == 0, "phase zero draws the rest pose")
+	agent.look.gait_phase = PI / 4.0
+	t.check(agent.look.gait_frame() == 1, "a quarter into the cycle draws feet passing")
+	agent.look.gait_phase = 3.0 * PI / 4.0
+	t.check(agent.look.gait_frame() == 0, "past the half turn it returns to the rest pose")
+	agent.look.gait_phase = 5.0 * PI / 4.0
+	t.check(agent.look.gait_frame() == 1, "the second half of the cycle passes feet again")
 	agent.free()
 
 ## The same give-way/queue/halt zeroing `_test_a_stopped_walker_keeps_its_view()` already reaches
 ## the view hold with also reaches the gait: `velocity()` is `heading() * _speed * WalkerStrategy._yield_factor()`,
 ## so a walker yielding reads zero regardless of what `WalkerLook.gait_phase` its stride was at.
 func _test_a_stopped_walker_holds_gait_frame_a(t) -> void:
-	var agent := _walker(t)
-	agent._look.gait_phase = PI / 4.0
-	t.check(agent._look.gait_frame() == 1, "moving, this phase draws frame b (sanity check)")
-	agent.strategy._yield_left = 1.0
-	agent.strategy._yield_hurry = false
-	t.check(agent._look.gait_frame() == 0,
+	var agent := _walker(t, Vector2.RIGHT)
+	if agent == null:
+		return
+	agent.look.gait_phase = PI / 4.0
+	t.check(agent.look.gait_frame() == 1, "moving, this phase draws frame b (sanity check)")
+	_stop(agent)
+	t.check(agent.look.gait_frame() == 0,
 			"a yielding walker holds frame a regardless of its own stride phase")
 	agent.free()
 

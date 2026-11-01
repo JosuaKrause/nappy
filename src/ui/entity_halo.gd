@@ -229,6 +229,16 @@ static func trace_offsets(bob: float) -> Array[Vector2]:
 		ring.append(Vector2(0.0, bob) + Vector2(cos(angle), sin(angle)) * HALO_MARGIN)
 	return ring
 
+## How far the ring rides above the ground right now, the owner's own bob: the amount every
+## offset of the ring is lifted by (`trace_offsets()`), so a rising body's ring rises with it.
+func lift() -> float:
+	return _bob.call()
+
+## The drawing the ring traces, called once per ring offset with the ring as its canvas: the
+## owner's own `draw_body`, so a change in the owner's picture is a change in its ring.
+func traced_body() -> Callable:
+	return _draw_body
+
 ## Re-runs the owner's own body drawing at a ring of offsets around it, flattened to a silhouette
 ## by the shared shader. Skipped entirely at zero drawn alpha, which is what lets `CrowdAgent` leave
 ## this node built and simply never pay for a redraw between one startle and the next.
@@ -244,11 +254,11 @@ func _on_draw() -> void:
 		FrameRecord.drew(FrameLedger.DRAWS_HALOS)
 	if not is_showing():
 		return
-	var bob: float = _bob.call()
-	for offset in trace_offsets(bob):
+	var body := traced_body()
+	for offset in trace_offsets(lift()):
 		var base := Transform2D(0.0, offset)
 		Sprites.set_base_transform(base)
 		draw_set_transform_matrix(base)
-		_draw_body.call(self)
+		body.call(self)
 	Sprites.set_base_transform(Transform2D.IDENTITY)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

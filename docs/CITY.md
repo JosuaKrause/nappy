@@ -2240,7 +2240,7 @@ Top-down camera with a fake vertical extrusion:
   (below) — no picture exists for a platform or brackets reaching a column nobody can stand in
   front of. Her own building is never asked: `City._spawn_buildings()` computes this only for a
   front that is not hers. **A column draws no facade only where a roof actually covers it**
-  (following the player's "Keep its facade"): `City._assign_roof_extensions()` keeps a column
+  (following the player's "Keep its facade"): `City.assign_roof_extensions()` keeps a column
   covered only where an extension reached it, so a column nothing covers — one facing the map's
   own edge (`CityMap.tile_at()` reads a tile past it as `BUILDING`), a power station's yard, or
   any south tile no lot owns — is an ordinary column with its windows, storefronts and door. A
@@ -2252,7 +2252,7 @@ Top-down camera with a fake vertical extrusion:
   `_subtract_all()`), each its own `Building` — so where one piece's front is covered by another,
   that is the same wall-meets-roof relationship the bullet above already extends a roof to fill,
   but the two pieces are physically one building's roof rather than a front covering a genuinely
-  separate one behind it. `City._assign_roof_extensions()` marks both sides of such a seam wherever
+  separate one behind it. `City.assign_roof_extensions()` marks both sides of such a seam wherever
   both rectangles were cut from the same courtyard lot (`map.lot_rect(block)`): the covering
   piece's column (`Building.roof_extension_seamless`) draws no `ROOF_EDGE_N` at its extension's
   top, and the covered piece's column (`Building.seamless_cover_cols`) draws no `ROOF_EDGE_S` on

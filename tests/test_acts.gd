@@ -164,7 +164,7 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 			for flame in flames:
 				if absf(at.x + flame.x - middle) <= flame.y * 0.5:
 					burning = true
-			var drawn := not behind._is_covered(col)
+			var drawn := not behind.is_covered(col)
 			if drawn and not burning:
 				bare.append(tile)
 				break

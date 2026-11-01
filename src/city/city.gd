@@ -771,13 +771,13 @@ func _spawn_buildings() -> void:
 			# it to all of them costs nothing and needs no lookup for which one that is.
 			building.door_world_x_range = door_x_range
 		# Dressed here, before coverage and the roof extension below are computed, since
-		# `_assign_roof_extensions()` needs to know which buildings are the power station to keep an
+		# `assign_roof_extensions()` needs to know which buildings are the power station to keep an
 		# extension off its yard (no roof stands there to extend).
 		_dress_the_power_station(building, rect)
 		buildings.append(building)
 	# Coverage and the roof extension it needs both read every lot's own `wall_tiles()`, fixed by
 	# the generated or authored values above, so both run before any of them enters the tree — see
-	# `_covered_ground_cols()` and `_assign_roof_extensions()`. Never asked of her own building
+	# `_covered_ground_cols()` and `assign_roof_extensions()`. Never asked of her own building
 	# (`covered_ground_cols` stays empty) — her own building's front is the one the player knows
 	# as home and stays as it is, and the home block's own doorstep already exempts it from the
 	# route-redundancy guarantee the same way.
@@ -785,7 +785,7 @@ func _spawn_buildings() -> void:
 		if not buildings[i].is_home_building:
 			buildings[i].covered_ground_cols = _covered_ground_cols(map.building_rects[i])
 	var courtyard_of := _courtyard_lot_of(map.building_rects)
-	_assign_roof_extensions(buildings, courtyard_of)
+	assign_roof_extensions(buildings, courtyard_of)
 	_share_courtyard_tint(buildings, courtyard_of)
 	map.restore_edges(edges)
 	for building in buildings:
@@ -816,7 +816,7 @@ func _spawn_buildings() -> void:
 ## `GameEnums.TileType.BUILDING` rather than walkable ground. `map.is_walkable()` is the fixed
 ## lattice fact the **city** skill asks for — "no purpose change may move a walkable tile" — never
 ## `is_open()`'s per-day closures, so this is computed once here rather than in `start_day()`. This
-## is the candidate set only: `_assign_roof_extensions()` keeps a column covered only where a roof
+## is the candidate set only: `assign_roof_extensions()` keeps a column covered only where a roof
 ## actually reaches it, so a south tile past the map's own edge (`CityMap.tile_at()` reads it as
 ## `BUILDING`) or a power station's yard leaves its front's facade standing.
 func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
@@ -834,7 +834,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## is small and built once per run. The extension at that column is exactly the covered
 ## building's own `wall_tiles()`: precisely enough rows to reach the world row its roof already
 ## starts at, edge to edge. A power
-## station's yard columns (`_hall_cols()`, read after `_dress_the_power_station()` above has set
+## station's yard columns (`hall_cols()`, read after `_dress_the_power_station()` above has set
 ## `power_station`) are skipped since no roof stands there to extend — the yard is fenced ground,
 ## not a building mass.
 ##
@@ -856,7 +856,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## in `roof_extension_seamless`, the covered piece's in `seamless_cover_cols` — and
 ## `Building.roof_cell_edges()` withholds both lips there. A covered piece with no roof rows at all
 ## is never seamless: nothing of its own carries on above the extension, so the extension caps.
-func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]) -> void:
+func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var tile_to_index := {}
 	for i in map.building_rects.size():
 		var rect: Rect2i = map.building_rects[i]
@@ -898,7 +898,7 @@ func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int
 			var front_rect: Rect2i = map.building_rects[front_index]
 			var local_col := south.x - front_rect.position.x
 			if front.power_station:
-				var hall := front._hall_cols()
+				var hall := front.hall_cols()
 				if local_col < hall.x or local_col >= hall.y:
 					continue
 			var front_extension: Array[int] = extensions[front_index]
