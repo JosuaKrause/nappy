@@ -291,7 +291,7 @@ func _give_way(delta: float) -> void:
 	var blockage := _room_to_stop_in()
 	if blockage < INF:
 		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * blockage))
-	# **An event figure in its lane ahead, or coming into it** (inbox #884 in minty-dolphin: the crowd
+	# **An event figure in its lane ahead, or coming into it** (inbox #884 in plaid-raven: the crowd
 	# yields): braked for like a stop line, so the car stands short of the figure's body rather than
 	# driving through it. See `_distance_to_a_figure()`.
 	var figure := _distance_to_a_figure()
@@ -343,7 +343,7 @@ func _distance_to_stop_line() -> float:
 ## **No commit rule, unlike her zebra's**: a car too close to stop for a figure brakes as hard as it
 ## can and its step is then held short of the figure's body (`give_way_on_the_step()`), since a
 ## figure crossing in front of it is not hers to step off the carriageway for, and the crowd yields
-## (inbox #884 in minty-dolphin). It never swerves: the brake and the hold are along its own lane.
+## (inbox #884 in plaid-raven). It never swerves: the brake and the hold are along its own lane.
 ## Nothing on an arc, which keeps the path it checked before it started (`MoveProposal`'s doc).
 func _distance_to_a_figure() -> float:
 	var road := road_before_a_figure()

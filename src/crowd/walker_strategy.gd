@@ -442,7 +442,7 @@ func step_aside(away: Vector2, distance: float, seconds: float) -> void:
 ## **Somebody coming at `here`, going `velocity`, finds this walker moved over**: her, from the
 ## crowd's tick (`Crowd._meet_the_player()`), and an event figure, from this walker's own step
 ## (`give_way_on_the_step()`), since the crowd gives way to event figures as it does to her (inbox
-## #884 in minty-dolphin). Nobody steps round somebody standing still, which is what `velocity` zero
+## #884 in plaid-raven). Nobody steps round somebody standing still, which is what `velocity` zero
 ## says.
 ##
 ## The counterpart to `Crowd._bump()`, and the reason the pair of them is the whole answer: a bump is

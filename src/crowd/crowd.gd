@@ -506,7 +506,7 @@ func step(delta: float) -> void:
 ##
 ## Each agent gives way at its own step, between its proposal and its check, to the movers that keep
 ## their course (`LaneStrategy.give_way_on_the_step()`, the map's `SeparationPass`, gathered at the
-## start of the tick in `_advance_the_world()`): the crowd yields (inbox #884 in minty-dolphin).
+## start of the tick in `_advance_the_world()`): the crowd yields (inbox #884 in plaid-raven).
 func _step_the_agents(delta: float) -> void:
 	for agent in _agents:
 		agent.step(delta)
@@ -996,7 +996,7 @@ func _can_clear_the_box(agent: CrowdAgent, distance: float) -> bool:
 	var box := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var far_side := distance + box
 	# **An event figure in its lane beyond the box is a car in front that does not move for it**: it
-	# keeps its course and the car stands for it (inbox #884 in minty-dolphin), moving or standing
+	# keeps its course and the car stands for it (inbox #884 in plaid-raven), moving or standing
 	# (inbox #909), so a car that would have to stand in the box holds at the line instead, and no
 	# leader's speed is credited. Looked for as far as the box's far side and a gap past it, which is
 	# further than a car's brake looks.

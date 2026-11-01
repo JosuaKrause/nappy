@@ -542,7 +542,11 @@ empty street.
   musician, a policeman standing for his notice or a dog waiting or crouched before its charge.
   Each row says which it is (`EventDef.stands_as`); a figure counts as under way for a third of a
   second after it last moved. An object with a solid body, a stall or a café's tables, is walked
-  round by its tiles as well.
+  round by its tiles as well. A person or an animal put on the map who has not yet taken a step, a dog
+  waiting for her or a policeman at his post, is a figure standing still, so he is walked through.
+  A figure set down on other ground by hand, as day 13's guard following her to her roadblock is,
+  has not walked there: a step of more than 32px in a tick (`SeparationPass.PLACEMENT_STEP`; the
+  fastest figure, the cat, covers 8) is a placement, with no speed and not under way.
 - **He makes way for a figure coming at him as he does for her** (noticed within
   `Tuning.CROWD_YIELD_DISTANCE`, 96px, a lane over within his own footway), and his step is then
   moved clear of every figure's body he gives way to, so a figure walking into him pushes him out
@@ -562,8 +566,11 @@ empty street.
   a red light or while its man is out, a dog standing for its notice — it waits until it moves.
   Each row says whether its figure parks (`EventDef.when_it_stops`), and the figure says when it
   has: one that drives to where it stops has parked only once it is there, so the fire engine at a
-  red light on its way is waited for. What was placed and never moved, a stall or a barricade, is a
-  blockage by its tiles, as it always was. **And it does not drive into a junction box it would have
+  red light on its way is waited for. What was placed and never moved, a stall or a barricade, is left
+  to the map: it is a blockage by its tiles, as it always was, and a thing standing there with no
+  solid body is not stood for by a car until it has moved. A car stands only for a figure ahead of
+  its centre, so one that walks into its side or tail is overlapped. **A car in the middle of a turn
+  stands for nobody**: it drives its arc through a figure crossing the junction. **And it does not drive into a junction box it would have
   to stand in**: a figure in its lane beyond the box, moving or standing, holds it at the line, as a
   stopped car beyond the box does. A car that stands for a figure is a stopped car to the strike,
   the horn and the queue behind it. No figure reads the crowd, so a car waiting on a figure is never
