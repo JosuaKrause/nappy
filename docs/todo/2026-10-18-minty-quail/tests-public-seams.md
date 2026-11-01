@@ -18,3 +18,10 @@ get public "place this at this site" entry points that the scheduler and recipes
 one pass after the last refactor item, "once the refactor is done let's rewrite the tests with
 dependency injection and through public APIs", and a step may convert the tests it touches early,
 "you can also do it as a bit with each step as long as the final result is the same" (inbox #813 in curly-moose).
+
+**The slice that rewrites `test_resistance.gd` also splits it by subject.** The file is the floor of the
+test suite's run time on CI: every test function stays called once and the check total unchanged, so the
+split costs the suite nothing it checks. The player: "yes, fold into the test refactor"
+([tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #931), answering whether splitting the resistance
+tests, left over from M125 (the test suite is slow again), is part of the refactor; "isn't that part of
+the refactor?" ([tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #930). Splitting the file is no separate entry.

@@ -1,0 +1,1 @@
+**Find which bodies hold a walker inside them on seed 67, days 2 and 7, and fix it.** A few walker-frames at x=24 sit inside bodies; they are identical on `main`. The work is finding which bodies and why, then fixing the cause or splitting it into an entry of its own once it is known.
