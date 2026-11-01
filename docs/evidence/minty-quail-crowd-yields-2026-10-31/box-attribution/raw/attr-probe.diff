@@ -1,0 +1,205 @@
+diff --git i/tests/probes/minty_quail_crowd_yields.gd w/tests/probes/minty_quail_crowd_yields.gd
+index e659cdd9..cc97c7d0 100644
+--- i/tests/probes/minty_quail_crowd_yields.gd
++++ w/tests/probes/minty_quail_crowd_yields.gd
+@@ -365,6 +365,7 @@ class Meeting extends RefCounted:
+ 				figures.append(move)
+ 		_most_figures = maxi(_most_figures, figures.size())
+ 		var now := {}
++		_attr_begin()
+ 		for agent in _city.crowd.agents():
+ 			var is_car := agent.kind == CrowdAgent.Kind.CAR
+ 			var here := agent.global_position
+@@ -413,6 +414,7 @@ class Meeting extends RefCounted:
+ 				_longest_figure_stand = maxi(_longest_figure_stand, _figure_stand_run[agent])
+ 			else:
+ 				_figure_stand_run.erase(agent)
++			_attr_car(agent, standing)
+ 			if standing and agent.junction_occupied() != Vector2i(-1, -1):
+ 				var run := int(_box_run.get(agent, 0)) + 1
+ 				_box_run[agent] = run
+@@ -422,8 +424,11 @@ class Meeting extends RefCounted:
+ 			else:
+ 				_box_run.erase(agent)
+ 		_overlapping = now
++		_attr_end()
+ 
+ 	func report() -> Dictionary:
++		_attr_close_all()
++		print("ATTR_JSON " + JSON.stringify({"label": _label, "stands": _a_done, "totals": _a_totals}))
+ 		var minutes := float(_ticks) * STEP / 60.0
+ 		var counts := {}
+ 		if _probe != null:
+@@ -444,3 +449,172 @@ class Meeting extends RefCounted:
+ 			"longest_box_stand": float(_longest_box_stand) * STEP,
+ 			"box_stalls": _stalls,
+ 			"events_chain": _chain.finish().hex_encode()})
++
++	# ---- ATTRIBUTION INSTRUMENTATION (measuring only; not committed) ----
++	## Every figure this tick: [move, row, state, radius].
++	var _a_figs: Array = []
++	var _a_last := {}
++	var _a_lanes := {}
++	var _a_box := {}
++	var _a_open := {}
++	var _a_done: Array = []
++	var _a_totals := {}
++
++	func _attr_begin() -> void:
++		var rows := {}
++		for instance in _city.events.instances():
++			if is_instance_valid(instance) and not instance.is_queued_for_deletion() \
++					and not instance.is_finished and instance.is_inside_tree():
++				rows[instance._move] = instance.def.id
++		_a_figs = []
++		for move in _city.map.moves.all():
++			if move.yields or move.radius <= 0.0:
++				continue
++			var last: Array = _a_last.get(move, [move.to, 0])
++			var still: int = last[1]
++			if move.to.distance_to(last[0]) > 0.05:
++				still = 0
++			else:
++				still += 1
++			_a_last[move] = [move.to, still]
++			var state := "moving"
++			if move.get("parked") == true:
++				state = "parked"
++			elif still >= 3:
++				state = "standing"
++			_a_figs.append([move, rows.get(move, "unmapped"), state, move.radius])
++		_a_lanes = {}
++		for agent in _city.crowd.agents():
++			if agent.kind != CrowdAgent.Kind.CAR:
++				continue
++			var key: int = agent.lane_key()
++			if not _a_lanes.has(key):
++				_a_lanes[key] = []
++			_a_lanes[key].append(agent)
++		for key in _a_lanes:
++			_a_lanes[key].sort_custom(func(a, b) -> bool: return a.queue_position() < b.queue_position())
++
++	## Nearest figure ahead in the car's lane within `reach`: [row, state, along] or [].
++	func _attr_fig_near(agent, reach: float) -> Array:
++		var here: Vector2 = agent.global_position
++		var forward: Vector2 = agent.heading()
++		var side := Vector2(-forward.y, forward.x)
++		var best: Array = []
++		var best_edge := INF
++		for fig in _a_figs:
++			var offset: Vector2 = fig[0].to - here
++			var along := offset.dot(forward)
++			if along <= 0.0 or along > reach + float(fig[3]):
++				continue
++			if absf(offset.dot(side)) >= agent.shape.radius + float(fig[3]) + 4.0:
++				continue
++			if along - float(fig[3]) < best_edge:
++				best_edge = along - float(fig[3])
++				best = [fig[1], fig[2], along]
++		return best
++
++	func _attr_leader(agent):
++		var queue: Array = _a_lanes.get(agent.lane_key(), [])
++		var i := queue.find(agent)
++		if i < 0 or i + 1 >= queue.size():
++			return null
++		var ahead = queue[i + 1]
++		if absf(ahead.queue_position() - agent.queue_position() - agent.gap_ahead) > 1.5:
++			return null
++		return ahead
++
++	## What a standing car stands for: {flags, direct, root, row, state}.
++	func _attr_cause(agent, depth: int) -> Dictionary:
++		if agent.speed() >= 1.0:
++			return {"flags": "moving", "direct": "moving", "root": "car_moving", "row": "", "state": ""}
++		var cs = agent.strategy
++		var flags: Array[String] = []
++		var brake := 2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE
++		var bound := 8.0
++		if cs.has_method("_distance_to_a_figure"):
++			var d: float = cs.call("_distance_to_a_figure")
++			if d < INF and sqrt(brake * d) < bound:
++				flags.append("figure")
++		var room: float = cs.call("_room_to_stop_in")
++		if room < INF and sqrt(brake * room) < bound:
++			var tile_or_figure: float = cs.call("_distance_to_the_blockage")
++			var parked: float = cs.call("road_before_a_parked_figure") if cs.has_method("road_before_a_parked_figure") else INF
++			flags.append("parked_figure" if parked < INF and parked <= tile_or_figure + 0.01 else "closed_tile")
++		var line: float = cs.call("_distance_to_stop_line")
++		if line < INF and sqrt(brake * line) < bound:
++			flags.append("zebra")
++		if agent.gate_hold < INF and sqrt(brake * agent.gate_hold) < bound:
++			flags.append("gate")
++		if agent.junction_hold < INF and sqrt(brake * agent.junction_hold) < bound:
++			flags.append("box_or_signal")
++		if float(cs.call("_following_speed")) < bound:
++			flags.append("car")
++		var direct := "other"
++		if not flags.is_empty():
++			direct = flags[0]
++		elif agent.is_turning():
++			direct = "turning"
++		var out := {"flags": "+".join(flags) if not flags.is_empty() else direct, "direct": direct,
++				"root": direct, "row": "", "state": ""}
++		if direct == "figure" or direct == "parked_figure":
++			var near := _attr_fig_near(agent, 400.0)
++			if not near.is_empty():
++				out.row = near[0]
++				out.state = near[1]
++			else:
++				out.row = "none_found"
++		elif direct == "car":
++			var lead = _attr_leader(agent)
++			if lead == null or depth > 14:
++				out.root = "car_unknown"
++			else:
++				var r := _attr_cause(lead, depth + 1)
++				out.root = r.root
++				out.row = r.row
++				out.state = r.state
++		return out
++
++	func _attr_bump(d: Dictionary, key: String, n: int = 1) -> void:
++		d[key] = int(d.get(key, 0)) + n
++
++	func _attr_car(agent, standing: bool) -> void:
++		var box: Vector2i = agent.junction_occupied()
++		var in_box := box != Vector2i(-1, -1)
++		if not in_box:
++			_a_box.erase(agent)
++		elif not _a_box.has(agent) or _a_box[agent][0] != box:
++			var near := _attr_fig_near(agent, 300.0)
++			_a_box[agent] = [box, _ticks, (near[0] + ":" + near[1]) if not near.is_empty() else ""]
++		if standing and in_box:
++			var cause := _attr_cause(agent, 0)
++			if not _a_open.has(agent):
++				_a_open[agent] = {"start": _ticks, "entered": _a_box[agent][1], "entry_fig": _a_box[agent][2],
++						"ticks": 0, "last": _ticks, "flags": {}, "root": {}, "geom": {}}
++			var stand: Dictionary = _a_open[agent]
++			stand.ticks += 1
++			stand.last = _ticks
++			_attr_bump(stand.flags, cause.flags)
++			_attr_bump(stand.root, "%s|%s|%s" % [cause.root, cause.row, cause.state])
++			var near := _attr_fig_near(agent, AHEAD)
++			if not near.is_empty():
++				_attr_bump(stand.geom, "%s|%s" % [near[0], near[1]])
++			_attr_bump(_a_totals, "flags:" + cause.flags)
++			_attr_bump(_a_totals, "root:%s|%s|%s" % [cause.root, cause.row, cause.state])
++			_attr_bump(_a_totals, "ticks")
++			if not near.is_empty():
++				_attr_bump(_a_totals, "geom:%s|%s" % [near[0], near[1]])
++
++	func _attr_end() -> void:
++		for agent in _a_open.keys():
++			if _a_open[agent].last != _ticks:
++				_attr_close(agent)
++
++	func _attr_close(agent) -> void:
++		var stand: Dictionary = _a_open[agent]
++		_a_open.erase(agent)
++		if stand.ticks >= 15:
++			_a_done.append(stand)
++
++	func _attr_close_all() -> void:
++		for agent in _a_open.keys():
++			_attr_close(agent)

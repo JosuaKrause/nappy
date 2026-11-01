@@ -123,11 +123,10 @@ box collisions 13/10/25 (98 to 102); longest box stand 19/9/20 (sum of the 48 lo
 car overlap seconds 7/31/10 (117 to 51); seconds standing for figures 38/2/8 (115 to 268); longest stand for a figure 30/2/16; walker overlap entries 1/47/0 (2510 to 711).
 A 60 s (the whole window) stand in a junction box is in the same two `road` runs on both revisions (seeds 2222 and 8008, day 1); seed 4242 `road` stands 53 s on both; seed 3003 `road` goes from 26 s to 41 s.
 
-## Turn-rounds behind a parked figure versus at closed streets
-`turn_round_cause` has one value (`STOPPED_NO_ROOM`) for both, so the scratch probe counts a rising edge of it per car and calls it behind a parked figure when the car's `road_before_a_parked_figure()` was under infinity
-that tick or the tick before, and otherwise "other" (closed streets, walls, queues). Over the 48 event runs: base 201 turn-rounds, all other; head 196 turn-rounds, **0 behind a parked figure**, 196 other.
-So in these runs no car turned round behind a parked figure, and the count of turn-rounds is flat. The parked-figure turn-round was not reached (the fire truck did not park in a lane these cars were driving in, or the classification missed it):
-this measurement does not show it working, and the suite that tests it does. Position could not be used: the probe has no position of the fire truck to compare with.
+## Turn-rounds behind a parked figure, and what cars in boxes stand for
+`box-attribution/` (its own README, analysis and probe diffs) answers both on the same 48 replayed pairs, with the cadence probe instrumented.
+- **Turn-rounds.** The scratch counter above (`raw/turns-probe.diff`) counted only `STOPPED_NO_ROOM`, the last-resort reversal on the spot, which an ordinary divert does not set, so its count says nothing about the parked-figure rule. Counting the diverts `blocked_by_a_figure()` triggers instead: 0 in the 48 event runs, since days 1 and 9 never park a figure in a crowd car's lane. In a scene built for it (a car at 130 px/s meeting a vehicle that parks in its lane), the car drives through it on base (33 overlapping frames) and on head brakes, takes the ordinary turn-round arc and heads north by 1.85 s with no overlap.
+- **Box stands.** Every tick a car stands in a box is put down to what the first car of its queue waits for. Figures are 58 of head's 1,396 s (0 of base's 1,193), in 45 stands of at most 2.1 s, mostly behind the dog walker and the shouting man while they move; the one patrol-car case is 1.0 s. Every stand of 5 s or more is a queue at a box, a zebra or the checkpoint gate, seed 3003's 41 s included. So figures do not explain the stall rise; head's extra stalls come from timing shifted by short stops for walkers, and no control run separates a real average effect from chaotic divergence.
 
 ## Cost (`m159_crowd_tick_cost.gd`, whole-tick mean, microseconds per tick, 6 pairs each)
 | agents | walk | pairs | base us/tick | head us/tick | diff | se | pairs up |
@@ -165,5 +164,5 @@ that is consistent with the same fixed amount (0.1 to 0.5 ms). Run-to-run spread
 - Under replay the walk is base's; head's crowd diverges anyway, so single-run values of a metric are chaotic and only the means over 48 pairs mean anything.
 - About 22 metrics per table with no multiplicity correction; only |t| of 3 or more is called real. The 48 pairs are 12 seeds x 4 conditions, not independent draws of the city.
 - Walker overlaps now count standing objects and vehicles (café tables, vans) as figures, since walkers give way to those; the base probe copy takes that set from head's ids by hand.
-- The turn-round attribution found no parked-figure case and so shows nothing about that rule; the cost probe has no figures.
+- The parked-figure turn-round never occurs in the 48 event runs; one built scene shows it. The cost probe has no figures.
 - The pictures are not remade here.
