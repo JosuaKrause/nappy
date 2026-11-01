@@ -1,0 +1,141 @@
+{
+ "version": 1,
+ "name": "C2b m3: day 13 column meeting walkers",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "start": {
+   "world": [
+    1824,
+    1990
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 13,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "south"
+  },
+  "background": {
+   "crowd": true,
+   "uniform_walkers": true,
+   "walker_multiplier": 2
+  },
+  "barriers": [
+   {
+    "segment": [
+     3,
+     5,
+     0
+    ],
+    "end": "a"
+   }
+  ],
+  "posters": [
+   {
+    "at": [
+     1712,
+     2256
+    ],
+    "kind": "rules"
+   },
+   {
+    "at": [
+     1744,
+     2256
+    ],
+    "kind": "curfew"
+   },
+   {
+    "at": [
+     1776,
+     2256
+    ],
+    "kind": "wanted"
+   },
+   {
+    "at": [
+     2000,
+     2256
+    ],
+    "kind": "leader"
+   },
+   {
+    "at": [
+     2064,
+     2256
+    ],
+    "kind": "uniform"
+   },
+   {
+    "at": [
+     2096,
+     2256
+    ],
+    "kind": "rules"
+   }
+  ],
+  "column": {
+   "at": [
+    1904,
+    2010
+   ],
+   "direction": "north"
+  },
+  "actors": [
+   {
+    "name": "w1",
+    "kind": "walker",
+    "at": [
+     1810,
+     1848
+    ],
+    "direction": "east",
+    "speed": 60
+   },
+   {
+    "name": "w2",
+    "kind": "walker",
+    "at": [
+     1990,
+     1928
+    ],
+    "direction": "west",
+    "speed": 60
+   },
+   {
+    "name": "w3",
+    "kind": "walker",
+    "at": [
+     1780,
+     1848
+    ],
+    "direction": "east",
+    "speed": 60
+   }
+  ]
+ },
+ "playback": {
+  "settled_camera": true,
+  "walk": "3p",
+  "duration": 4,
+  "capture_at": 1.5,
+  "camera": {
+   "zoom": 0.85,
+   "fixed": true,
+   "fixed_offset": [
+    40,
+    -60
+   ]
+  },
+  "observations": []
+ }
+}

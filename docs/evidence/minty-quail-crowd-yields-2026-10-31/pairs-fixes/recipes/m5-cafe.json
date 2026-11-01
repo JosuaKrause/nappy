@@ -1,0 +1,129 @@
+{
+ "version": 1,
+ "name": "C2b m5b: walkers meeting standing cafe tables on the sidewalk",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501,
+  "tree_moves": [
+   {
+    "from": [
+     50,
+     74
+    ],
+    "to": [
+     50,
+     71
+    ]
+   }
+  ]
+ },
+ "anchors": {
+  "start": {
+   "world": [
+    1536,
+    2384
+   ]
+  },
+  "stall": {
+   "world": [
+    1712,
+    2384
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 3,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "east",
+   "sleep": 100,
+   "excitement": 20
+  },
+  "background": {
+   "crowd": true,
+   "uniform_walkers": true,
+   "walker_multiplier": 2
+  },
+  "actors": [
+   {
+    "name": "a1",
+    "kind": "walker",
+    "at": [
+     1630,
+     2376
+    ],
+    "direction": "east",
+    "speed": 48
+   },
+   {
+    "name": "b1",
+    "kind": "walker",
+    "at": [
+     1610,
+     2424
+    ],
+    "direction": "east",
+    "speed": 48
+   }
+  ],
+  "roof_fixtures": [
+   {
+    "lot": [
+     48,
+     76,
+     8,
+     8
+    ],
+    "fixtures": [
+     {
+      "cell": [
+       1,
+       2
+      ],
+      "kind": "skylight_a"
+     },
+     {
+      "cell": [
+       3,
+       2
+      ],
+      "kind": "skylight_b"
+     },
+     {
+      "cell": [
+       5,
+       2
+      ],
+      "kind": "skylight_a"
+     }
+    ]
+   }
+  ],
+  "events": [
+   {
+    "name": "stall",
+    "row": "cafe_tables",
+    "at": "stall"
+   }
+  ]
+ },
+ "playback": {
+  "settled_camera": true,
+  "walk": "6p",
+  "duration": 7,
+  "capture_at": 3.0,
+  "camera": {
+   "fixed": true,
+   "fixed_offset": [
+    60,
+    0
+   ]
+  },
+  "observations": []
+ }
+}

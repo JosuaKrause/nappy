@@ -1,0 +1,113 @@
+{
+ "version": 1,
+ "name": "C2b: a crowd car and the charging dog crossing its lane, at 2.85s",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501,
+  "tree_moves": [
+   {
+    "from": [
+     50,
+     74
+    ],
+    "to": [
+     50,
+     71
+    ]
+   }
+  ]
+ },
+ "anchors": {
+  "start": {
+   "world": [
+    1504,
+    2530
+   ]
+  },
+  "dog": {
+   "world": [
+    1073,
+    2530
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 3,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "west",
+   "sleep": 100,
+   "excitement": 40
+  },
+  "actors": [
+   {
+    "name": "car_north",
+    "kind": "car",
+    "at": [
+     1456,
+     2938
+    ],
+    "direction": "north"
+   }
+  ],
+  "roof_fixtures": [
+   {
+    "lot": [
+     48,
+     76,
+     8,
+     8
+    ],
+    "fixtures": [
+     {
+      "cell": [
+       1,
+       2
+      ],
+      "kind": "skylight_a"
+     },
+     {
+      "cell": [
+       3,
+       2
+      ],
+      "kind": "skylight_b"
+     },
+     {
+      "cell": [
+       5,
+       2
+      ],
+      "kind": "skylight_a"
+     }
+    ]
+   }
+  ],
+  "events": [
+   {
+    "name": "dog",
+    "row": "charging_dog",
+    "at": "dog"
+   }
+  ]
+ },
+ "playback": {
+  "settled_camera": true,
+  "walk": "3.05p",
+  "duration": 3.05,
+  "capture_at": 2.85,
+  "camera": {
+   "fixed": true,
+   "fixed_offset": [
+    -40,
+    0
+   ]
+  },
+  "observations": []
+ }
+}

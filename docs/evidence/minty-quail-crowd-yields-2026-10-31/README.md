@@ -146,6 +146,8 @@ that is consistent with the same fixed amount (0.1 to 0.5 ms). Run-to-run spread
 ## Pictures
 `pairs/` stacks before over after stills made on the earlier revision pair (base `70ef44c6`, head `108ad850`); they were not remade here and the counts above carry the claim.
 
+`pairs-fixes/` holds side-by-side stills (base left, head right) made on base `21171ee0` and head `f9e82530`, the revisions measured above, with their recipes and a line per pair in `pairs-fixes/PICTURES.md`. Four moments show the yielding: day 13's column (clearest, at 1.4s), the policeman giving chase, a crowd car held behind the charging dog, and the dog itself (weakly). Two do not: a market stall and café tables fill the footway, so walkers turn back from them on base as well; and no car could be brought behind the parked fire truck, so a turn-round behind a parked figure is not pictured and rests on the tests in `tests/test_crowd_yields.gd`.
+
 ## Conclusion
 - **For the player:** walkers step round an oncoming figure or a standing object and cars stop for a figure in their lane; the figures' own paths are untouched. Overlaps fall by about 70% for walkers (entries 52 to 15 a run) and 65% for cars (3.4 to 1.2).
 - **Real** (|t| at least 3, same sign in most pairs): walker overlap entries and seconds (t -7.3, -7.2), car overlap entries (t -5.7), seconds cars stand for a figure (t +5.3), bumps (t -3.0, 14 down against 1 up),

@@ -1,0 +1,114 @@
+{
+ "version": 1,
+ "name": "C2b m4b: a torn poster draws a policeman on foot, through the crowd",
+ "seed": 13,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "start": {
+   "world": [
+    1668,
+    2262
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 8,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "north"
+  },
+  "posters": [
+   {
+    "at": [
+     1680,
+     2256
+    ],
+    "kind": "rules"
+   },
+   {
+    "at": [
+     1712,
+     2256
+    ],
+    "kind": "curfew"
+   },
+   {
+    "at": [
+     1744,
+     2256
+    ],
+    "kind": "rules"
+   },
+   {
+    "at": [
+     1776,
+     2256
+    ],
+    "kind": "leader"
+   }
+  ],
+  "background": {
+   "crowd": true,
+   "uniform_walkers": true,
+   "walker_multiplier": 4
+  },
+  "actors": [
+   {
+    "name": "e1",
+    "kind": "walker",
+    "at": [
+     1640,
+     2296
+    ],
+    "direction": "east",
+    "speed": 62
+   },
+   {
+    "name": "e2",
+    "kind": "walker",
+    "at": [
+     1600,
+     2296
+    ],
+    "direction": "east",
+    "speed": 62
+   },
+   {
+    "name": "w1",
+    "kind": "walker",
+    "at": [
+     2080,
+     2248
+    ],
+    "direction": "west",
+    "speed": 62
+   },
+   {
+    "name": "w2",
+    "kind": "walker",
+    "at": [
+     2120,
+     2248
+    ],
+    "direction": "west",
+    "speed": 62
+   }
+  ]
+ },
+ "playback": {
+  "walk": "2.6@45@6p",
+  "duration": 6,
+  "capture_at": 5,
+  "camera": {
+   "zoom": 1.0
+  },
+  "observations": []
+ }
+}
