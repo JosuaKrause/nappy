@@ -96,8 +96,8 @@ that already have one.
 
 **An entry whose work is mostly built is closed, and what is left of it is filed fresh** (inbox #926 in
 tiny-lark). When only a few leftover items hang on an entry otherwise built, its record is written,
-its folder goes, and each leftover becomes a new entry (`tools/new-name.sh todo`) dated the day it is
-filed, so the queue holds no entry that lingers for months on its last items. The fresh entry opens
+its folder goes, and what is left is filed as a fresh entry (`tools/new-name.sh todo`) dated the day
+it is filed (one entry, or more where the leftovers are separate work), so the queue holds no entry that lingers for months on its last items. The fresh entry opens
 with the player's words, names the old entry by its two words (or number) and title, and carries the
 old item's text where it still holds; a band the player did not name is the filer's proposal, as
 above. Closing an entry whose items the player has let go is a drop, and the pull request quotes the

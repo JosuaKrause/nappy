@@ -55,7 +55,7 @@ static drawing and composites the moving parts separately. A city block's static
 stays still. Static layers may overlap a moving layer where the source art supplies the background
 it uncovers or foreground occlusion that belongs in front of it; the moving pixels themselves do
 not appear in both owners. The roof rotor, south water, pipe spray and crash smoke follow this
-contract. [The remaining café, street-musician and poster-crew audit](todo/2026-09-19-M159/audit-remaining-partial-animation.md)
+contract. [The remaining café, street-musician and poster-crew audit](todo/2026-11-01-brisk-koala/audit-remaining-partial-animation.md)
 is queued explicitly, so these four cases do not claim that every partial animation is separated.
 
 ## Live SVG assets
@@ -304,7 +304,7 @@ arm direction; ordinary movement suffixes describe the body's facing.
 
 | Owning design | Prepared assets, dimensions and registration |
 |---|---|
-| M100 — Small, real, and nobody's (alley review) | `art/tiles/alley_draft.svg` is a 32×32 paving alternative for comparison; the live alley tile is the runtime alley. |
+| dotted-lemur, three cues on one screen (the alley's own tile picture) | `art/tiles/alley_draft.svg` is a 32×32 paving alternative for comparison; the live alley tile is the runtime alley. |
 
 ### Unbound, with nothing to bind them
 

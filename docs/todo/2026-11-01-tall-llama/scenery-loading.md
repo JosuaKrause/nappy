@@ -10,7 +10,7 @@ gameplay reads no evictable visual data, and no half-prepared ground is ever dra
   complete-frame median/tails/max, memory ... Accept only a measured benefit". `results.json`
   records `boot_main_usec` but compares it with nothing; the waiver rests on "the measurements were
   already done, no? in 444", and #444 measured a detached probe. Measure boot, day start, frame
-  tails and memory at the parent of #445's merge against `main`, and file it under M159 — or the
+  tails and memory at the parent of #445's merge against `main`, and file the result as an entry of its own — or the
   player waives it, in their words.
 - #444's parked probes `tests/probes/lazy_scenery_{city,measure,routes}.gd` no longer run, since
   `City/Ground` is no longer a `TileMapLayer`; delete them and their `.uid` files (the #444 reruns

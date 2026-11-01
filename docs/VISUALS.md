@@ -250,8 +250,8 @@ the complete runtime paving family against the registered materials and this fin
 
 Review the detail at gameplay size, consistency across animation frames, transparent gaps,
 ground contact and unchanged placement. Pixel registration alone does not establish acceptance.
-The remaining catalogue work is M109, convert the SVG catalogue to PNG, whose entry is
-[todo/2026-09-10-M109/](todo/2026-09-10-M109/). [PLAYTEST-51](playtests/PLAYTEST-51.md) records the
+The SVG catalogue is not converted to PNG wholesale; a conversion waits until the player finds a
+use for one. [PLAYTEST-51](playtests/PLAYTEST-51.md) records the
 approval and source-first requirement. Workflow approval does not replace each asset's review.
 
 Use the [illustrated PNG skill](../.claude/skills/illustrated-png/SKILL.md) for integration.

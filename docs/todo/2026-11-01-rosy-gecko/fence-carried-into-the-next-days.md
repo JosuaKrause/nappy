@@ -18,5 +18,5 @@ only an unrun start of that regression in `tests/test_spent_park.gd`. With it,
 `CITY.md` states that a day's path ends in an available calm area ("a path should end in an
 available calm zone"), which is why the tree refuses a branch ending at a used area; the
 night escape's repaint dropping a fence chosen on day 13 or 14 stays ("night escape doesn't
-need a fence in a park"); M129's queue title and record stop saying the park "is closed",
+need a fence in a park"); M129's record stops saying the park "is closed",
 and the "Amber otter" records in `DECISIONS.md` are renamed after M129.

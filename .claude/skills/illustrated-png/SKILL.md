@@ -9,7 +9,7 @@ description: Generate, register and install illustrated PNGs under art/illustrat
 and review the SVG before generating its PNG; do not create an SVG after the fact to legitimize
 a PNG-only asset. Keep the SVG as the editable source of subject and functional placement. Record
 the source/derivative pair in the family's evidence manifest, including UI and identity assets.
-The catalogue-wide conversion manifest is open work under M109, convert the SVG catalogue to PNG.
+The SVG catalogue is not converted to PNG wholesale; a conversion waits until the player finds a use for one (inbox #927 in tiny-lark).
 Raw generator outputs belong with generation evidence, not in the runtime asset catalogue.
 
 **The pelican cyclist is never converted.** `art/events/pelican_cyclist*.svg` stays SVG by the
@@ -24,7 +24,7 @@ raw generated source, prompt, hashes, deterministic registration, native anchors
 verdict in family evidence; list each direct PNG in atlas membership. This authorization does not
 make PNG-first the default for another family.
 
-Read `docs/VISUALS.md`, M109, convert the SVG catalogue to PNG, in its queue folder under `docs/todo/`, and
+Read `docs/VISUALS.md` and
 [the integration procedure](references/texture-integration.md) before working on this presentation.
 **The presentation is chosen by the bake, not by the running game.** The default
 `tools/bake-atlases.sh` takes the registered PNG wherever one exists beside its SVG, and the
@@ -161,7 +161,5 @@ Run the import/boot check in the exact checkout the player will use, then focuse
 (`tools/test.sh` always bakes PNG). Read the first resource error; passing assertions
 do not excuse script or import errors. Read `verify` before tests or captures and use at most one
 or two purposeful gameplay captures. Report source registration, appearance and player acceptance
-separately. SVG-first style transfer remains the default outside the authorized exceptions. M108,
-eight-direction entity graphics, and M109, convert the SVG catalogue to PNG, specify the remaining
-catalogue work. Review each family's visual result without treating workflow approval as proof
+separately. SVG-first style transfer remains the default outside the authorized exceptions. Review each family's visual result without treating workflow approval as proof
 that every generated image is correct.
