@@ -23,6 +23,9 @@ way, as a fork; and, as that section proposes (plush-kestrel), which layer the w
 under `## Architecture questions`, one numbered answer per question, or the one line that file gives
 for a change that adds no piece and no dependency. CI fails a description without them
 (`tools/ci_pr_questions.py`); run it on a draft with `--description-file` before opening the PR.
+Run `uv run python tools/check_layers.py` before pushing a change under `src/`: CI fails a new
+break of the layer map, and a listed break your change fixed until its line is deleted from
+`tools/layer_map.py`.
 
 ## Git
 

@@ -92,6 +92,11 @@ refactor is done (plush-egret #892): its layer, its dependencies, what it is han
 fetches, what it reuses, where a fix lands, how a test builds it, and the docs that say where it
 lives. A brief asks for them; the builder answers them in its report and under the description's
 `## Architecture questions`; CI checks they are there and the reviewer that they are true.
+**Which folder and file is in which layer is `tools/layer_map.py`**, which `tools/check_layers.py`
+holds the code to in CI; the list of breaks standing there only shrinks. *Proposed by its builder,
+open to overturn:* the view (the HUD, the screens, the badges, the controls) sits above the
+observers, the composition root (`main.gd` and the developer's rigs) above everything, and each
+thing's own drawing on the layer of the thing it draws.
 
 ## The task description is the contract
 

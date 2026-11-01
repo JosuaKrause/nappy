@@ -57,6 +57,7 @@ ENTRY_POINTS = (
     "ci_transcription.py",
     "ci_code_pr_queue.py",
     "ci_pr_questions.py",
+    "check_layers.py",
 )
 
 SOUND_FILES = (

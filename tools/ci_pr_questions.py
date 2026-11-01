@@ -20,7 +20,7 @@ when it arrived. The description is read through the API when the job runs, so a
 after a red check is seen by re-running the job.
 
 What a script cannot see -- that an answer is true -- is the reviewer's (pr-review, "Then the
-code"), against the diff.
+code"), against the diff and `tools/check_layers.py`.
 """
 
 from __future__ import annotations

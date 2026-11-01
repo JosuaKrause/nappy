@@ -21,7 +21,13 @@ are true. This file is the one place the questions are worded; every other text 
    scene tree?
 7. Which docs say where it lives (`docs/ARCHITECTURE.md`'s listing), and are they updated?
 
-The layers are **orchestrating**'s "Code is designed by layer".
+The layers are **orchestrating**'s "Code is designed by layer"; which folder and file sits in which
+is `tools/layer_map.py`. `tools/check_layers.py` answers the second and third questions
+mechanically: CI fails a new upward name, and a group lookup, an autoload or a stateful static read
+in the world or simulation layers, that its list of standing breaks does not name. An answer to
+either names every listed break in a file the pull request touches and every line it adds to or
+removes from that list, and says why; a pull request that puts a file in another layer says why the
+map was wrong.
 
 *Proposed, open to overturn:* the sixth carries the player's own question first, ahead of the
 question it overlaps, rather than standing as an eighth (plush-egret #892), so the two are answered
@@ -51,5 +57,8 @@ time the pull request was opened.
 - **CI** (`tools/ci_pr_questions.py`, in the `gates` job) fails a pull request in scope whose
   description has no `## Architecture questions` heading, or under it neither an answer to every
   question nor the one-line form. It sees that an answer is there, never whether it is true.
-- **The reviewer** checks each answer against the diff; an answer the diff contradicts is a
-  finding (**pr-review**, "Then the code").
+- **CI** (`tools/check_layers.py`, in the `gates` job, on every run) fails a new break of the
+  layer map and a listed break that is gone.
+- **The reviewer** checks each answer against the diff and against `tools/check_layers.py --list`
+  on the pull request's head; an answer the diff or the check contradicts is a finding
+  (**pr-review**, "Then the code").
