@@ -38,12 +38,19 @@ enough entries (inbox #900):*
 | Build at test parity | Sonnet |
 | Build that changes play or designs a seam | Opus |
 | Investigate an unexplained result | Opus |
-| Measure: a named probe batch, its analysis and conclusion | Haiku, compared against Sonnet on the same brief until the counter shows which holds |
-| Capture named moments for a PR | Haiku |
+| Measure: run a named probe batch into a fixed table, no conclusion | Haiku |
+| Measure with interpretation: what is noise, what is real, what a picture shows | Sonnet |
+| Capture named moments for a PR | Haiku, the pictures judged by the measurer or the reviewer |
 | Review fixes | the builder, while warm and not near the limit |
 | Review of a play-changing or design PR | Opus |
 | Review of queue, docs, skill wording or a small delta | Sonnet |
 | Waiting, merging, polling | no agent (a background shell) |
+
+The measuring rows follow one comparison (inbox #900): Haiku and Sonnet ran C2b's measurements,
+pictures and conclusion on one brief. Their numbers matched exactly; Sonnet called a borderline rise
+unresolved where Haiku called it flat, and saw the change in three picture pairs where Haiku saw one,
+at about 10% more tokens. Running a task on both models again is how a row is tested further, now and
+then rather than by default, since it costs the task twice.
 
 The contract is the same on either host: fresh context, a bounded scope and an isolated checkout for
 implementation. Create the worktree explicitly if the tool does not create one. Read-only review can
