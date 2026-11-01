@@ -81,11 +81,14 @@ func _pause(t, touch := false, can_quit := true) -> PauseScreen:
 	t.add_child(pause)
 	return pause
 
-## A title screen on a platform, in the tree and closed.
+## A title screen on a platform, in the tree and closed. Its clock runs well past any restart the
+## process stamped (the stamp is process-wide, and the guard test makes one), so only the guard
+## test meets the guard.
 func _title(t, touch := false, can_quit := true) -> TitleScreen:
 	var title: TitleScreen = TITLE.instantiate()
 	title.use_run(GameState)
 	title.use_platform(touch, can_quit)
+	title.use_clock(func() -> int: return Time.get_ticks_msec() + 100000)
 	t.add_child(title)
 	return title
 
@@ -340,14 +343,14 @@ func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
 			_side: ControlsMode.Side) -> void: started[0] += 1)
 	title.open()
 
+	# The title is handed a clock that runs ahead of the real one by whatever the test says.
+	var ahead := [0]
+	title.use_clock(func() -> int: return Time.get_ticks_msec() + ahead[0])
 	TitleScreen.note_restart_requested()
 	UI.push(title, _accept())
 	t.check(started[0] == 0, "a press right after a restart-triggered reload does not start a run")
 
-	# The stamp is process-wide, so it is left stamped long ago for every other test in this file
-	# that presses the title screen.
-	TitleScreen.note_restart_requested(Time.get_ticks_msec()
-			- int((TitleScreen.RESTART_GUARD_SECONDS + 1.0) * 1000.0))
+	ahead[0] = 10000 # well past the guard window
 	UI.push(title, _accept())
 	t.check(started[0] == 1, "and the same key works again once the guard window has passed")
 

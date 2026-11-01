@@ -342,11 +342,11 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 	var original_window_size: Vector2i = t.get_window().size
 	t.get_window().size = Vector2i(ScreenOrientation.DESIGN_SIZE)
 
-	# [screen, touch, what the screen's pointer is called, what carrying on is called]
-	for case: Array in [["pause", true, "pause screen's real touch hold", "finger", "resumed"],
-			["pause", false, "pause screen's real mouse hold", "button", "resumed"],
-			["summary", true, "day summary's real touch hold", "finger", "continued"],
-			["summary", false, "day summary's real mouse hold", "button", "continued"]]:
+	# [screen, touch, the hold's name in the message, what the pointer is called]
+	for case: Array in [["pause", true, "pause screen's real touch hold", "finger"],
+			["pause", false, "pause screen's real mouse hold", "button"],
+			["summary", true, "day summary's real touch hold", "finger"],
+			["summary", false, "day summary's real mouse hold", "button"]]:
 		var is_pause: bool = case[0] == "pause"
 		var touch: bool = case[1]
 		var clock := UI.FakeClock.new()
@@ -376,7 +376,7 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t) -> voi
 				"real mouse hold", "mouse release")
 		t.check(restarts[0] == 1,
 				"the %s does not restart it a second time" % release_name)
-		t.check(carried_on[0] == 0, "and never reads as carrying on")
+		t.check(carried_on[0] == 0, "and never reads as %s" % ("carrying on" if is_pause else "continuing"))
 
 		if is_pause:
 			screen.close()

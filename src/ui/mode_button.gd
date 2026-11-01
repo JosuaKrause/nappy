@@ -141,17 +141,6 @@ var _held_since := 0.0
 ## rather than a second of waiting.
 var _clock := Callable()
 
-## Hands the button the clock its holds are measured on — a `Callable` returning seconds as a
-## float. Called before the first `begin_hold()`; a button that is never handed one reads the wall
-## clock.
-func use_clock(clock: Callable) -> void:
-	_clock = clock
-
-func _now() -> float:
-	if _clock.is_valid():
-		var seconds: float = _clock.call()
-		return seconds
-	return Time.get_ticks_msec() / 1000.0
 ## Whether `hold_completed` has already fired for the hold currently in progress. Reset to `false`
 ## only by `begin_hold()`, so a hold kept down well past `RESTART_HOLD_SECONDS` before its release
 ## still raises the signal exactly once, at the moment it first reaches full rather than again on
@@ -224,6 +213,18 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_apply_disc_style()
 		_refresh_look()
+
+## Hands the button the clock its holds are measured on — a `Callable` returning seconds as a
+## float. Called before the first `begin_hold()`; a button that is never handed one reads the wall
+## clock.
+func use_clock(clock: Callable) -> void:
+	_clock = clock
+
+func _now() -> float:
+	if _clock.is_valid():
+		var seconds: float = _clock.call()
+		return seconds
+	return Time.get_ticks_msec() / 1000.0
 
 func _process(_delta: float) -> void:
 	if _held_by == -1:

@@ -1,11 +1,13 @@
 # Tests drive public seams and real frames
 
-Tests reach private members and call `_process`/`_physics_process` by hand. Count the lines of a suite
-that read a private member with `rg -c '^[^#]*\.\_[a-z][a-zA-Z0-9_]*' tests/test_*.gd` and its direct
-frame calls with `rg -c '\._(physics_)?process\(' tests/test_*.gd`. Many suites instantiate `main`;
+Tests reach private members and drive frames by hand. Count a suite's lines that read a private member,
+including one named in a string, with
+`rg -c '^[^#]*(\.\_[a-z][a-zA-Z0-9_]*|\.(call|callv|set|get|call_deferred)\("_)' tests/test_*.gd`, and its
+lines that call a frame function or emit the frame signal by hand with
+`rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests/test_*.gd`;
+both skip comment lines and neither sees access through a variable holding the name. Many suites instantiate `main`;
 `test_home_block.gd` (near 249) copies `City._height_for`'s random stream; `test_camera_start.gd` depends
-on `main._ready()` holding exactly two awaits. `test_pause.gd` and `test_held_restart.gd` are done and
-are named nowhere but their record (`tools/decisions.sh minty-quail-43`). `SceneRecipeRuntime`
+on `main._ready()` holding exactly two awaits. `SceneRecipeRuntime`
 rebuilds placement from other classes' private functions (`SealPlanner._eligible`, `_place`,
 `_seal_along_tile`, `_mark_soft_sealed`; `EventScheduler._build_placement`, `_room_around`,
 `_street_ground`; `RegionPlanner._add_door_bodies`; `instance._advance_gait`), so authored scenes drift from the game. `SceneRecipeRuntime.walk_spec` is a
