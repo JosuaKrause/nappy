@@ -41,7 +41,7 @@ func _ground_rates(t) -> void:
 	print("walking decay %.2f/s  ×  calm %.2f  precinct %.2f  street 1.00  main road %.2f"
 			% [Tuning.EXCITEMENT_DECAY_WALKING, City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER,
 			City.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER,
-			Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
+			City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
 	print("alley trickle %.2f/s" % Tuning.EXCITEMENT_FROM_ALLEY)
 
 	for day in SAMPLE_DAYS:

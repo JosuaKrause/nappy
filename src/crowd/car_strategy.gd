@@ -737,7 +737,7 @@ func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> TurnRefusal:
 	if run_up < 0.0:
 		# Past the entry the geometry would have chosen — a car that only found out it was turning
 		# once it was already in the box. What is left of the junction is a tighter arc, and one
-		# tighter than `Tuning.CAR_TURN_RADIUS_MIN` is refused rather than squeezed.
+		# tighter than `CarTurn.CAR_TURN_RADIUS_MIN` is refused rather than squeezed.
 		if not turn.tighten_to(_mover._along(), _mover._cross()):
 			return TurnRefusal.TOO_TIGHT
 		run_up = 0.0

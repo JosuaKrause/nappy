@@ -1,6 +1,53 @@
 class_name CrowdExcitement
 extends ExcitementSource
 
+## **A body in the crowd as a thing that charges the baby** (`ExcitementSource`), composed into its
+## `CrowdAgent` as `excitement`: what is a crowd body's own and nothing else — its field (the same
+## falloff as an event's, so the crowd and the events are the same kind of quantity to the baby, plus
+## the jolt a contact or a horn leaves, which it keeps), its own clock, how far it can reach, the
+## walls of the map it walks, whether a car's strike box lies ahead of her, and its caret keyed on
+## its clock.
+##
+## **Not cached the way an event's present rate is.** A crowd body's position and jolt are written
+## from outside its own frame — `Crowd._bump()` and `Crowd._horn()` move the body and call
+## `startle()` mid-tick — so a cache keyed on its clock could answer with the jolt or the position
+## from before the bump that tick, the one frame a fresh startle is meant to show on.
+
+## One person, close enough to brush past. Deliberately above the walking decay: a close
+## pass has to cost something or the crowd is scenery again. Walking wide of them does not
+## — the pavement is two tiles, so how close to pass is a real choice.
+##
+## **The radius is tight because `Field.falloff` has a shoulder on it.** Every source holds three quarters
+## of its intensity at the midpoint of its band, which is right for an **event** — a thing on the map
+## to route around — and wrong for a **body**, which is one of a couple of hundred and is supposed to
+## be inaudible from across the pavement. An event's kind of radius on a body puts the arterial floor
+## several times the walking decay, which is a main road that fills the meter in seconds rather than
+## one that is merely expensive to cross.
+##
+## So the crowd pays the shape back in radius, and what that defends is the measured character of
+## the street: **careless is expensive and careful is free.** A close pass costs 4.2/s, set by the
+## intensity and the inner radius; two tiles away is 0/s. What the tight outer radius removes is a
+## wide middle that would be worth a great deal for walking anywhere near anybody, and the narrower
+## it is, the more of an ordinary sidewalk that wide middle gives back: a quiet act I sidewalk, with
+## the day's own crowd on it and nothing authored in range, nets about −4.7/s against the empty
+## street's own −6.0/s (`tests/probes/m117_decay.gd`, three seeds), close to reading as recovery the
+## way the empty street already does. The main road's own price is untouched by this radius —
+## `City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` is what holds it, since that number is exclusive to the
+## one corridor it prices and this one is not.
+##
+## **"Two tiles away" is true of one walker and is only reachable if the lanes are spread.** A
+## footway is two tiles, so lanes on their tile centres are 32px apart — and the midline, the only
+## line with no head-on contact on it, is then 16px from two lane centres and inside the
+## **full-intensity core** of both — the careful line for contacts and the careless one for noise,
+## which is why `CrowdLanes.SIDEWALK_LANE_SPREAD` moves the lanes apart instead of narrowing this
+## radius: at 48px apart the midline is **24px from each lane and outside `Tuning.PEDESTRIAN_INNER_RADIUS`**,
+## worth 56 points per forty seconds against 74 unspread. **That is the one change to make if this
+## stops being true** — the intensity and the radii are pinned by the arterial floor and the shoulder,
+## and the geometry is not. A pass at that 24px still reads as close to full intensity even at the
+## shorter outer radius, which is why `WalkerStrategy.CROWD_YIELD_LATERAL` below widens far enough to send a walker
+## holding that lane out of it rather than leaving the noise floor to the radius alone.
+const PEDESTRIAN_INTENSITY := 4.2
+
 ## A car is louder than a person and passes much faster. No single car outruns the walking
 ## decay — the point is not that one car is dangerous, it is that on a main road there is
 ## always another one. The floor is the *street*, and it is emergent; the first pass at these
@@ -17,17 +64,6 @@ extends ExcitementSource
 ## an ordinary street is out of the traffic's earshot, which is most of why the noise floor measures
 ## flat across a pavement.
 const CAR_INTENSITY := 5.4
-## **A body in the crowd as a thing that charges the baby** (`ExcitementSource`), composed into its
-## `CrowdAgent` as `excitement`: what is a crowd body's own and nothing else — its field (the same
-## falloff as an event's, so the crowd and the events are the same kind of quantity to the baby, plus
-## the jolt a contact or a horn leaves, which it keeps), its own clock, how far it can reach, the
-## walls of the map it walks, whether a car's strike box lies ahead of her, and its caret keyed on
-## its clock.
-##
-## **Not cached the way an event's present rate is.** A crowd body's position and jolt are written
-## from outside its own frame — `Crowd._bump()` and `Crowd._horn()` move the body and call
-## `startle()` mid-tick — so a cache keyed on its clock could answer with the jolt or the position
-## from before the bump that tick, the one frame a fresh startle is meant to show on.
 
 var _agent: CrowdAgent
 
@@ -66,7 +102,7 @@ var _jolt_silent_squared := 0.0
 ## ordinary field is exactly zero (squared, `_silent_squared`), and how far forward its field grows at
 ## the top of its kind's speed range (`_reach_scale`).
 var _car := false
-var _intensity := Tuning.PEDESTRIAN_INTENSITY
+var _intensity := PEDESTRIAN_INTENSITY
 var _inner := Tuning.PEDESTRIAN_INNER_RADIUS
 var _outer := Tuning.PEDESTRIAN_OUTER_RADIUS
 var _silent_squared := 0.0
@@ -80,7 +116,7 @@ func _init(agent: CrowdAgent) -> void:
 ## Takes up the field of a body of `kind`, told by the body whenever its kind is installed.
 func take_kind(kind: CrowdAgent.Kind) -> void:
 	_car = kind == CrowdAgent.Kind.CAR
-	_intensity = CAR_INTENSITY if _car else Tuning.PEDESTRIAN_INTENSITY
+	_intensity = CAR_INTENSITY if _car else PEDESTRIAN_INTENSITY
 	_inner = Tuning.CAR_INNER_RADIUS if _car else Tuning.PEDESTRIAN_INNER_RADIUS
 	_outer = Tuning.CAR_OUTER_RADIUS if _car else Tuning.PEDESTRIAN_OUTER_RADIUS
 	var silent := _outer / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)

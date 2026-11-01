@@ -132,6 +132,11 @@ const BUMP_INTENSITY := 18.0
 ## car at boot, and the crowd-traffic skill's "The traffic fairness contract" states the same
 ## thing.
 const CAR_HORN_SIGHT := 296.0
+
+## Seconds a car has to have been stopped, dead level with a closed checkpoint gate, before it
+## opens for it. *(2026-09-02, the player: "cars need to slow down to a full stop before the gate
+## opens and they can go ahead again.")* See `Crowd._stop_for_gates()`.
+const GATE_STOP_SECONDS := 1.2
 ## Whether this crowd currently holds `ATLAS_GROUP` — guards two different calls rather than one:
 ## `start_day()`'s own acquire, taken once on the first day a crowd is built rather than every day
 ## (PLAYTEST-109, "don't unload anything that might be needed in one day and in the next" — a page
@@ -871,7 +876,7 @@ func give_way_at_junctions() -> void:
 ## `give_way_at_junctions()`'s own arbitration has nothing to arbitrate here — there is one axis
 ## of traffic and no crossing arm. What replaces the box is a timer: the nearest car within its own
 ## braking distance of the stop line holds there, and once it has been actually stopped (not merely
-## slowing) for `Tuning.GATE_STOP_SECONDS`, the gate raises and stays up for as long as any car
+## slowing) for `GATE_STOP_SECONDS`, the gate raises and stays up for as long as any car
 ## remains within a car's length of it — a following platoon passes without the boom slamming shut
 ## between cars — then lowers and the timer resets for whoever queues next.
 ##
@@ -941,7 +946,7 @@ func _stop_for_gates(delta: float) -> void:
 		closest.gate_hold = maxf(0.0, nearest_along[index] - Tuning.CAR_STOP_LINE_SETBACK)
 		if closest.speed() < Tuning.CAR_STOPPED_SPEED:
 			gate.stopped_for += delta
-			if gate.stopped_for >= Tuning.GATE_STOP_SECONDS:
+			if gate.stopped_for >= GATE_STOP_SECONDS:
 				gate.raised = true
 
 ## How wide a bucket of `_bucket_by_line()` is. Wider than a lane tolerance's whole span (64px for a

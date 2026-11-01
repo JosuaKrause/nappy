@@ -59,7 +59,7 @@ const MAX_HEIGHT_FRACTION := 0.55
 ## to `rows() - 1`, which this still goes through.
 const HOME_BUILDING_WALL_ROWS := 4
 ## Wall rows every other home-block building (the two lots flanking the door notch) gets, fixed
-## the same way. Each lot is only `Tuning.HOME_SIZE_TILES.y` (2) deep, so `Building.wall_tiles()`'s
+## the same way. Each lot is only `CityGenerator.HOME_SIZE_TILES.y` (2) deep, so `Building.wall_tiles()`'s
 ## own cap (`rows() - 1`) always clamps this down to one row regardless of the value here — the
 ## constant only has to be something that cap can act on.
 const HOME_FLANKING_WALL_ROWS := 2
@@ -137,6 +137,8 @@ const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
 ## under the 3.5/s an alley gives back, so an empty alley is very nearly flat and is never quite
 ## recovery.
 const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
+
+const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
 
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
@@ -477,7 +479,7 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 	if across == GameEnums.StreetKind.PEDESTRIAN or along == GameEnums.StreetKind.PEDESTRIAN:
 		return EXCITEMENT_DECAY_PRECINCT_MULTIPLIER
 	if across == GameEnums.StreetKind.MAIN or along == GameEnums.StreetKind.MAIN:
-		return Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
+		return EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
 	return 1.0
 
 func is_alley(world_position: Vector2) -> bool:

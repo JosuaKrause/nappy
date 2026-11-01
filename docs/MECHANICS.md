@@ -1,7 +1,7 @@
 # Nappy — Mechanics & Tuning
 
-The balance constants two or more files read live in `src/autoload/tuning.gd` (autoload name `Tuning`); one that
-exactly one file reads is a `const` in that file. Values below are the design intent; the script is the source of truth.
+The balance constants two or more `src/` files read, or that `tuning.gd` itself reads, live in
+`src/autoload/tuning.gd` (autoload name `Tuning`); one that exactly one `src/` file reads is a `const` in that file. Values below are the design intent; the script is the source of truth.
 
 ## The two meters
 
@@ -1575,7 +1575,7 @@ first.
 
 **Nothing about the last night is the easy half.** *([PLAYTEST-121](playtests/PLAYTEST-121.md):
 "the escape shouldn't be easy!")* The sabotage is a hand-over at the power station's door and
-changes nothing there; once she is `Tuning.BLACKOUT_DISTANCE` from the station the city's power
+changes nothing there; once she is `Blackout.BLACKOUT_DISTANCE` from the station the city's power
 goes (docs/CITY.md, "The power station"). Every mast stops with it, so the rest of the walk home
 has no loudspeaker anywhere — but it is walked under dead traffic lights, across a spine that no
 longer stops for anybody, with everything else the last day carries still out. The escape after it

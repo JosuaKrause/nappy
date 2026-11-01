@@ -290,7 +290,7 @@ func _test_only_motion_settles_her(t) -> void:
 	t.check(1.0 > City.EXCITEMENT_DECAY_ALLEY_MULTIPLIER,
 			"an ordinary street is better ground than an alley")
 	t.check(City.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
-			> Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER,
+			> City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER,
 			"and an alley better than the main road, which stays the worst ground in the city")
 
 	_build(t)

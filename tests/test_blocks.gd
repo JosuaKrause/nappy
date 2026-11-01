@@ -339,9 +339,9 @@ func _test_pits_keep_their_spacing_across_a_whole_run(t) -> void:
 			for i in range(row.size() - 1):
 				pairs += 1
 				var apart: float = row[i + 1] - row[i]
-				t.check(apart >= Tuning.STREET_TREE_PIT_SPACING,
+				t.check(apart >= StreetTrees.STREET_TREE_PIT_SPACING,
 						"seed %d: two pits on one kerb line %.0fpx apart, under the %.0fpx floor"
-						% [map.seed_used, apart, Tuning.STREET_TREE_PIT_SPACING])
+						% [map.seed_used, apart, StreetTrees.STREET_TREE_PIT_SPACING])
 	t.check(pairs > 0, "there were neighbouring pits to measure (%d)" % pairs)
 
 ## The mouth margin is what keeps a pit off a crossing and off a checkpoint's own doorway, and it

@@ -273,21 +273,21 @@ func _test_a_close_pass_costs_and_a_wide_one_does_not(t) -> void:
 	t.check(Crowd.BUMP_INTENSITY > Tuning.EXCITEMENT_DECAY_WALKING,
 			"walking into somebody (%.1f) outruns the walking decay (%.1f)"
 			% [Crowd.BUMP_INTENSITY, Tuning.EXCITEMENT_DECAY_WALKING])
-	t.check(Tuning.PEDESTRIAN_INTENSITY < Tuning.EXCITEMENT_DECAY_WALKING,
+	t.check(CrowdExcitement.PEDESTRIAN_INTENSITY < Tuning.EXCITEMENT_DECAY_WALKING,
 			"and one person at arm's length (%.1f) does not, so an empty pavement reads as "
-			% Tuning.PEDESTRIAN_INTENSITY + "recovery (%.1f)" % Tuning.EXCITEMENT_DECAY_WALKING)
+			% CrowdExcitement.PEDESTRIAN_INTENSITY + "recovery (%.1f)" % Tuning.EXCITEMENT_DECAY_WALKING)
 
 	var pavement := float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
-	var wide := Field.falloff(pavement, Tuning.PEDESTRIAN_INTENSITY,
+	var wide := Field.falloff(pavement, CrowdExcitement.PEDESTRIAN_INTENSITY,
 			Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS)
-	t.check(wide < Tuning.PEDESTRIAN_INTENSITY * 0.5,
+	t.check(wide < CrowdExcitement.PEDESTRIAN_INTENSITY * 0.5,
 			"giving somebody the width of the pavement costs less than half what standing "
-			+ "against them does (%.1f of %.1f)" % [wide, Tuning.PEDESTRIAN_INTENSITY])
+			+ "against them does (%.1f of %.1f)" % [wide, CrowdExcitement.PEDESTRIAN_INTENSITY])
 	t.check(Tuning.PEDESTRIAN_INNER_RADIUS < pavement,
 			"the close-pass band is narrower than the pavement, so it can be walked around")
 
 func _test_a_car_is_louder_and_carries_further_than_a_person(t) -> void:
-	t.check(CrowdExcitement.CAR_INTENSITY > Tuning.PEDESTRIAN_INTENSITY,
+	t.check(CrowdExcitement.CAR_INTENSITY > CrowdExcitement.PEDESTRIAN_INTENSITY,
 			"a car is louder than a person")
 	t.check(Tuning.CAR_OUTER_RADIUS > Tuning.PEDESTRIAN_OUTER_RADIUS,
 			"a car is heard from further away than a person")

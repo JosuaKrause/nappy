@@ -128,7 +128,7 @@ static func full_contribution(agent: CrowdAgent, at: Vector2) -> float:
 		total = Field.falloff(distance, CrowdExcitement.CAR_INTENSITY,
 			Tuning.CAR_INNER_RADIUS, Tuning.CAR_OUTER_RADIUS)
 	else:
-		total = Field.falloff(distance, Tuning.PEDESTRIAN_INTENSITY,
+		total = Field.falloff(distance, CrowdExcitement.PEDESTRIAN_INTENSITY,
 			Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS)
 	var jolt := agent.excitement
 	if jolt._jolt > 0.0:

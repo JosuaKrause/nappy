@@ -402,7 +402,7 @@ func overview_requested() -> bool:
 	return "--overview" in active_args()
 
 ## `--blackout` (or `?blackout=1` in the open bundle) stands in for the last night's sabotage, for
-## the blackout alone: `Blackout` goes dark the moment she is `Tuning.BLACKOUT_DISTANCE` from the
+## the blackout alone: `Blackout` goes dark the moment she is `Blackout.BLACKOUT_DISTANCE` from the
 ## power station, on whatever day is running. No task, ending or save sees a sabotage, which keeps
 ## it a way to photograph the moment rather than a way to reach the good ending.
 func blackout_requested() -> bool:

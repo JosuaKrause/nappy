@@ -69,9 +69,9 @@ func _test_its_door_is_a_reasonable_walk_from_home(t) -> void:
 		var key := map.power_station_door_key
 		var away := CityGenerator.blocks_from_home(Vector2i(key.x, key.y - 1))
 		spread[away] = spread.get(away, 0) + 1
-		t.check(away >= Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME,
+		t.check(away >= CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME,
 				"seed %d: the door is %d blocks from the home, at least %d"
-				% [map.seed_used, away, Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME])
+				% [map.seed_used, away, CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME])
 	print("[test_power_station] door distance from the home block, blocks: count — %s" % spread)
 
 ## The door is pavement, directly south of the mass, inside its width, on the street

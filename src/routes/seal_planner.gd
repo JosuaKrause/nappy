@@ -64,7 +64,7 @@ extends RefCounted
 ## a strand along it (see its own class doc, "The main road"), so the spine is off the tree on
 ## every day by construction — which would make the loop below seal every segment of it, sidewalk
 ## to sidewalk, on every day of the run. It is already the worst ground in the game to stand on
-## (`Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER`, a sliver of an ordinary street's 1.0), so making
+## (`City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER`, a sliver of an ordinary street's 1.0), so making
 ## it *not a route* is enough — sealing it on top would be the harm playtest 22 reported rather than
 ## the fix, and `docs/CITY.md`'s constraint that she may cross it wherever she likes stands unmoved.
 ##
@@ -402,7 +402,7 @@ static func _effective_first_day(def: EventDef) -> int:
 ## would have offered that tile. So the refusal is applied here instead, at the one place a seal's
 ## site is chosen — the tile nearest the street's own midpoint whose cross-section carries no
 ## standing tree, searched outward from the middle so an ordinary seal barely moves. A street is
-## eight tiles long and `Tuning.STREET_TREE_PIT_SPACING` allows at most one pit per kerb on it, so
+## eight tiles long and `StreetTrees.STREET_TREE_PIT_SPACING` allows at most one pit per kerb on it, so
 ## a clear tile always exists; the midpoint is the fallback rather than a promise.
 ##
 ## **The fallen tree is the exception, and it is the exception in the other direction**: it stands

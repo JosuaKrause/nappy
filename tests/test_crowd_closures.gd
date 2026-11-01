@@ -972,7 +972,7 @@ func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
 
 ## The boom over the roadway is the cars' own and is untouched by any of the above: a car still
 ## comes to a full stop at a lowered gate and the gate still raises for it once it has been stopped
-## for `Tuning.GATE_STOP_SECONDS`. *(2026-09-02, the player: "cars need to slow down to a full stop
+## for `Crowd.GATE_STOP_SECONDS`. *(2026-09-02, the player: "cars need to slow down to a full stop
 ## before the gate opens and they can go ahead again.")*
 func _test_a_car_still_stops_for_the_boom(t, scene: Dictionary) -> void:
 	if scene.is_empty():

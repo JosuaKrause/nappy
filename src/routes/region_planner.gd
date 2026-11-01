@@ -77,7 +77,7 @@ class GateState extends RefCounted:
 	## reads it, once a frame, to choose which of the four boom textures to draw.
 	var raised := false
 	## Seconds the car at the front of this gate's queue has been held at the stop line —
-	## `Crowd`'s own clock for `Tuning.GATE_STOP_SECONDS`, reset the moment nobody is held here.
+	## `Crowd`'s own clock for `Crowd.GATE_STOP_SECONDS`, reset the moment nobody is held here.
 	var stopped_for := 0.0
 
 ## One region growth's result: which crossings are wall today and which are doors, plus the

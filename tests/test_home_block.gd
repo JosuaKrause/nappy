@@ -11,7 +11,7 @@ extends RefCounted
 ## 4 revisited).
 ##
 ## **The home block's own lot geometry was already seed-independent before this change** —
-## `CityGenerator` carves it from `Tuning.BLOCK_SIZE`, `Tuning.HOME_SIZE_TILES` and the fixed
+## `CityGenerator` carves it from `Tuning.BLOCK_SIZE`, `CityGenerator.HOME_SIZE_TILES` and the fixed
 ## middle block alone, never from `map.seed_used` — which is what makes `City._variant_for()` and
 ## `City._height_for()` cheap to fix: each takes an early return for a home-block rect to a fixed
 ## choice (a hash of the rect's own position alone, or one of two fixed wall-row counts) and

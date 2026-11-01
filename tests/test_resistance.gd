@@ -3220,7 +3220,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 				"and the masts are still speaking at the door: they stop with the power")
 		var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))
 		_city.blackout.update(Vector2(lot.get_center().x,
-				lot.end.y + Tuning.BLACKOUT_DISTANCE + 8.0))
+				lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0))
 		t.check(quiet.size() == 1, "far enough away, the city goes quiet, once")
 		t.check(mast.silenced, "the mast is marked silenced")
 		t.close_to(mast.excitement.contribution_at(nearby), 0.0,

@@ -198,7 +198,7 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
   tiles from the nearest park. Both, together — see "The home".
 - Building rects tile the `BUILDING` tiles exactly, with no overlaps and no gaps.
 - Exactly one big building is the **power station**, its front door on a real street at least
-  `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home and outside the home's region.
+  `CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home and outside the home's region.
   See "The power station".
 - One **park with a playground is day 12's**, the park that day's task sends her to the swing of
   (`CityGenerator._plan_the_swing_park`, `BlockPlan.forced_open_on`). A park whose arc already
@@ -299,7 +299,7 @@ rather than an assumption.
 
 **Her home block's own three lots — the door's own and the two flanking the notch — are the same
 rects on every seed.** The notch is centred on the south edge of a fixed-size lot
-(`Tuning.HOME_SIZE_TILES`) inside a block whose own size (`Tuning.BLOCK_SIZE`) never rolls, so
+(`CityGenerator.HOME_SIZE_TILES`) inside a block whose own size (`Tuning.BLOCK_SIZE`) never rolls, so
 nothing about where the home sits or how big its lots are depends on the seed to begin with —
 only what a seed's own lattice puts around it does. `City` reaches past every per-seed roll on
 these three buildings as a result: a fixed wall/roof colour and window pattern
@@ -807,7 +807,7 @@ afterwards** (`CityGenerator._place_power_station`):
   mass two blocks deep could not be seen.
 - **Every rule an ordinary landmark obeys**: the exclusions above and the calm-reachability gate.
 - **A front door on a real street**: the south street of one of its two blocks, still in the
-  lattice, with that block at least `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the
+  lattice, with that block at least `CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the
   home block in lattice (Manhattan) distance. A reasonable walk rather than the edge of the map:
   her routes need not pass it before the day she is sent there.
 - **Not in the home's region.** The door's street ground (`RegionPlanner.ground_region_of`)
@@ -853,7 +853,7 @@ guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pai
 faces and `power_station_door_position()` the point she stands on to reach it.
 
 **The station is where the city's power comes from, and the last night takes it away.** Once the
-sabotage is done (`GameState.resistance.sabotage_done`) and she is `Tuning.BLACKOUT_DISTANCE` (512px) from the
+sabotage is done (`GameState.resistance.sabotage_done`) and she is `Blackout.BLACKOUT_DISTANCE` (512px) from the
 station's lot — far enough that no part of it, stacks included, is on screen whichever way she
 leaves — `Blackout` puts out everything that runs on it in one frame: every lit window
 (`Building.powered`), every traffic light on the spine (`TrafficSignals.powered`, see "Traffic
@@ -2299,7 +2299,7 @@ Top-down camera with a fake vertical extrusion:
   seed sweep. Every street outside every run is bare. **Rare on purpose, and the reason is the
   events rather than the look**: a tree standing beside a van or a yeller is a second silhouette
   to read past, and a street full of them is a street where an obstacle is hard to spot.
-- **Inside a run, pits sit at `Tuning.STREET_TREE_PIT_SPACING` — two lot-lengths — on each kerb**,
+- **Inside a run, pits sit at `StreetTrees.STREET_TREE_PIT_SPACING` — two lot-lengths — on each kerb**,
   measured along the whole run rather than street by street, so a four-block run carries about two
   pits a side rather than two per street. **And two runs on the same kerb line keep the same floor
   between them**: `StreetTrees.runs()` refuses a candidate run closer to an already accepted run on

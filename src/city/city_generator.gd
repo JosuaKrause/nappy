@@ -164,6 +164,16 @@ const MAX_BIG_BUILDINGS := 2
 ## Walking distance in tiles, not straight-line: the calm has to be earned.
 const MIN_HOME_TO_PARK_TILES := 30
 
+## The home is a notch in the south edge of a residential block.
+const HOME_SIZE_TILES := Vector2i(2, 2)
+
+## How far the power station's front door stands from the home, as the lattice (Manhattan) distance
+## in blocks from the home block to the block the door is on. A reasonable walk rather than the
+## far edge of the map: her routes need not pass it before the day she is sent there, and the
+## narrative has a region door between the two, which `CityGenerator._place_power_station` checks
+## beside this floor. Set by the orchestrator, open to overturn.
+const POWER_STATION_MIN_BLOCKS_FROM_HOME := 4
+
 ## Generates a city, retrying with adjacent seeds until the guarantees hold.
 static func generate(seed_value: int) -> CityMap:
 	var last: CityMap = null
@@ -1176,7 +1186,7 @@ static func _place_home(map: CityMap, block_rects: Dictionary) -> void:
 ## creates; removed rather than left standing as dead ground to reason about.
 static func _home_rect(block: Vector2i) -> Rect2i:
 	var lot := CityMap.block_rect(block)
-	var size := Tuning.HOME_SIZE_TILES
+	var size := HOME_SIZE_TILES
 	return Rect2i(Vector2i(lot.position.x + (lot.size.x - size.x) / 2, lot.end.y - size.y), size)
 
 static func _carve_home(map: CityMap, block_rects: Dictionary, block: Vector2i,
@@ -1391,7 +1401,7 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 ##   draws and the front door on it can be seen (`Building` draws no east or west face at all).
 ## - **Every rule an ordinary landmark obeys** — `_the_pair_is_free` and the calm-reachability gate.
 ## - **A front door on a real street**: the south street of one of its two blocks, still in the
-##   lattice, at least `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home block in
+##   lattice, at least `POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home block in
 ##   lattice distance. See `_door_blocks`.
 ## - **Not in the home's region.** The narrative has a region door between the home and the station,
 ##   so the door's street ground (`RegionPlanner.ground_region_of`) must belong to another region
@@ -1504,7 +1514,7 @@ static func _industrial_blocks(purposes: Dictionary) -> Dictionary:
 
 ## The blocks of `pair` the front door may be on, best first: those whose south street is still in
 ## the lattice and whose lattice distance from the home block is at least
-## `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME`, the nearer to the home first and then west before
+## `POWER_STATION_MIN_BLOCKS_FROM_HOME`, the nearer to the home first and then west before
 ## east — an order and nothing more, since either one is a door on the same south face.
 static func _door_blocks(map: CityMap, pair: Rect2i) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
@@ -1512,7 +1522,7 @@ static func _door_blocks(map: CityMap, pair: Rect2i) -> Array[Vector2i]:
 		var street := StreetNetwork.beside_block(block, StreetNetwork.Side.SOUTH)
 		if not street or not map.has_street(street.key()):
 			continue
-		if blocks_from_home(block) < Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME:
+		if blocks_from_home(block) < POWER_STATION_MIN_BLOCKS_FROM_HOME:
 			continue
 		found.append(block)
 	found.sort_custom(func(x: Vector2i, y: Vector2i) -> bool:
@@ -1862,9 +1872,9 @@ static func _power_station_problem(map: CityMap) -> String:
 	# A segment key names the block it runs along the north edge of, so the block the door is on —
 	# the one the street runs along the south edge of — is one step north of it.
 	var door_block := Vector2i(street.key().x, street.key().y - 1)
-	if blocks_from_home(door_block) < Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME:
+	if blocks_from_home(door_block) < POWER_STATION_MIN_BLOCKS_FROM_HOME:
 		return "the power station's door is %d blocks from the home, need %d" % [
-			blocks_from_home(door_block), Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME]
+			blocks_from_home(door_block), POWER_STATION_MIN_BLOCKS_FROM_HOME]
 	if RegionPlanner.ground_region_of(map, street) == RegionPlanner.home_region(map):
 		return "the power station's door is in the home's region"
 	return ""
