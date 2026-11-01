@@ -15,11 +15,19 @@ extends RefCounted
 ## `CADENCE_SEEDS` (comma-separated, default `SEEDS`) names more cities to run, to tell a difference
 ## from noise.
 ##
+## `CADENCE_EVENTS` set runs the day's own events beside the crowd: each run also starts the day's
+## events (`EventManager.start_day()`, no director) handed the rig, and runs the event manager's whole
+## tick (`EventManager._tick_the_events()`) before the crowd's, the order `City` adds the two in, so
+## the day's figures stream in round her and walk through the crowd; the line then also carries the
+## figures' counts (`minty_quail_crowd_yields.gd`'s `Meeting`: overlaps of a walker or a crowd car
+## with an event figure, the seconds cars stand for one, the longest stand in a junction box).
+##
 ## Each run starts the seed's city on the day as `m159_crowd_tick_cost.gd` does, and walks a player
 ## rig one of two ways (`WALKS`): `road`, back and forth across the carriageway nearest the doorstep,
 ## two kerbs apart, which is what the horns, the give-way and the strike answer; and `walkers`, at
 ## the nearest walker, which is what the bumps answer. The first `WARMUP` ticks are not counted.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const YIELDS := preload("res://tests/probes/minty_quail_crowd_yields.gd")
 const STEP := 1.0 / 30.0
 const SEEDS: Array[int] = [478156010, 4242]
 const DAYS: Array[int] = [1, Tuning.REGION_WALL_FIRST_DAY]
@@ -83,6 +91,14 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	crowd.start_day(day, rng, start)
 	crowd.set_gates(city.region_plan().gates)
 	crowd._player = rig
+	var with_events := OS.get_environment("CADENCE_EVENTS") != ""
+	var meeting = null
+	if with_events:
+		var events_rng := RandomNumberGenerator.new()
+		events_rng.seed = hash("crowd-cadence-events:%d:%d" % [city_seed, day])
+		city.events.start_day(DaySpec.for_day(day), events_rng, [], start)
+		city.events.use_player(rig)
+		meeting = YIELDS.Meeting.new(null, city, {"seed": city_seed, "day": day, "walk": walk})
 	var steps_its_agents := crowd.has_method("_step_the_agents")
 	var across := _crossing(city.map, start)
 	var here: Vector2 = across[0] if walk == "road" else start
@@ -105,7 +121,11 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 		rig.global_position = here
 		rig.velocity = going * Tuning.WALK_SPEED
 		here += going * Tuning.WALK_SPEED * STEP
+		if with_events:
+			city.events._tick_the_events(STEP)
 		crowd._physics_process(STEP)
+		if with_events and tick >= WARMUP:
+			meeting.observe([], [])
 		if not steps_its_agents:
 			for _frame in per_tick:
 				for agent in crowd.agents():
@@ -134,7 +154,11 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	gaps.sort()
 	var horns := _horns - horns_at_warmup
 	var minutes := WINDOW * STEP / 60.0
-	return {"seed": city_seed, "day": day, "walk": walk, "frames_per_tick": per_tick,
+	var figures := {}
+	if with_events:
+		figures = meeting.report()
+		city.events.use_player(null)
+	return figures.merged({"seed": city_seed, "day": day, "walk": walk, "frames_per_tick": per_tick,
 		"steps_on_the_tick": steps_its_agents, "agents": crowd.agent_count(),
 		"window_seconds": WINDOW * STEP,
 		"headway_p10": _quantile(gaps, 0.1), "headway_median": _quantile(gaps, 0.5),
@@ -142,7 +166,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 		"box_entries_per_minute": box_entries / minutes,
 		"mean_car_speed": speeds / maxf(1.0, float(speed_samples)),
 		"horns": horns, "box_collisions": car_startles - horns,
-		"bumps": _bumps - bumps_at_warmup, "strikes": _strikes - strikes_at_warmup}
+		"bumps": _bumps - bumps_at_warmup, "strikes": _strikes - strikes_at_warmup}, true)
 
 func _quantile(sorted: Array[float], q: float) -> float:
 	if sorted.is_empty():
