@@ -25,7 +25,7 @@ extends RefCounted
 ## for the others to read: an event figure and a cordon officer are walked through the navigator
 ## during the tick, so the move records a pose the figure already stands at, and an event car's
 ## check holds the step to her, the stop line and the turn onto her, never to a wall. That is the
-## seam the player's rule for who gives way needs (inbox #884 in minty-dolphin): the crowd yields,
+## seam the player's rule for who gives way needs (inbox #884 in plaid-raven): the crowd yields,
 ## and an event figure keeps its course and its timing, so the crowd's moves are the ones a pass
 ## changes and everyone else's committed pose is what they yield to. **Each move carries what that
 ## pass reads about its mover**: how far its body reaches round its centre (`radius`) and whether it
@@ -52,7 +52,7 @@ var open := false
 var radius := 0.0
 ## Whether its mover gives way to the others — a crowd walker or car — rather than keeping its own
 ## course and timing, as an event figure, an event car and a cordon officer do (inbox #884 in
-## minty-dolphin).
+## plaid-raven).
 var yields := false
 ## Whether it is on a world's list of moves (`ProposedMoves`) now: set when it joins, cleared when it
 ## leaves, so a pass over a copy of the list can tell a move whose mover has since gone.
