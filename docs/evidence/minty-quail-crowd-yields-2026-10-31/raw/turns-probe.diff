@@ -1,0 +1,19 @@
+109a110,112
+> 	var turns := {"edges": 0, "behind_parked": 0, "other": 0}
+> 	var last_cause := {}
+> 	var last_parked := {}
+148a152,163
+> 			for agent in crowd.agents():
+> 				if agent.kind != CrowdAgent.Kind.CAR:
+> 					continue
+> 				var cause: int = agent.strategy.turn_round_cause
+> 				if cause == 2 and int(last_cause.get(agent, 0)) != 2:
+> 					turns.edges += 1
+> 					if last_parked.get(agent, false) or (agent.strategy.has_method("road_before_a_parked_figure") and agent.strategy.road_before_a_parked_figure() < INF):
+> 						turns.behind_parked += 1
+> 					else:
+> 						turns.other += 1
+> 				last_cause[agent] = cause
+> 				last_parked[agent] = agent.strategy.has_method("road_before_a_parked_figure") and agent.strategy.road_before_a_parked_figure() < INF
+180a196
+> 	print("TURNS_JSON " + JSON.stringify({"seed": city_seed, "day": day, "walk": walk, "turns": turns}))
