@@ -734,6 +734,15 @@ class PrQuestionsTests(unittest.TestCase):
             with self.subTest(form=form):
                 self.assertEqual(self.run_check("## Architecture questions\n" + self.numbered(form))[0], [])
 
+    def test_an_indented_numbered_sub_list_is_not_a_set_of_answers(self) -> None:
+        nested = "## Architecture questions\n1. a\n2. b\n" + "\n".join(f"    {n}. {n}" for n in range(3, 8)) + "\n"
+        failures, _ = self.run_check(nested)
+        self.assertEqual(len(failures), 5)
+        self.assertIn("question 3 has no answer", failures[0])
+        # A nested `1.` is part of answer 1, not a second answer 1.
+        merged = ci_pr_questions.answers("1. first\n    1. inner\n2. second\n")
+        self.assertEqual(merged, {1: " first 1. inner", 2: " second"})
+
     def test_no_heading_fails_naming_the_heading_and_the_one_line_form(self) -> None:
         failures, _ = self.run_check("1. a\n2. b\n")
         self.assertEqual(len(failures), 1)

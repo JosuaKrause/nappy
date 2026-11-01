@@ -14,13 +14,18 @@ comment or a sentence is not a dependency -- and finds:
   - **autoload**: an autoload named in code, except one `CONSTANT_AUTOLOADS` reads as data;
   - **static**: a static var or static func of a class that holds state in a `static var`
     (every one not in `STATIC_CACHES`), read from outside that class, or such a static var
-    declared in the file itself.
+    declared in the file itself;
+  - **node**: a fetch by node path or from the root: `get_node`/`get_node_or_null`/`find_child`
+    with a path starting `/`, `$"/..."`, `get_tree().root`/`get_root()`, `current_scene` and
+    `Engine.get_main_loop()`. Her own children (`$Entities`, `get_node_or_null("Baby")`) are not.
 
-Each finding is matched against `EXCEPTIONS` by its file, its rule and what it names. One not
-listed fails; a listed one no longer found fails too, so the list only shrinks and is pruned in
-the pull request that fixes a break. A file in no layer fails, so a new folder is placed the day
-it appears. `--rev` reads the tree of any commit instead of the checkout, and `--list` prints every
-finding, listed or not, without failing.
+Every use is a finding. Each is matched against `EXCEPTIONS` by its file, its rule and what it
+names, and the file's listed count of that (one unless the exception says more). More uses than
+listed fail, so a second use of a listed name in a listed file is seen; fewer fail too, so the list
+only shrinks and is pruned in the pull request that fixes a break. A file in no layer fails, so a
+new folder is placed the day it appears. A `res://src/...gd` or `uid://` path (resolved through the
+`.uid` files) counts as the class it loads. `--rev` reads the tree of any commit instead of the
+checkout, and `--list` prints every finding with its file's layer, listed or not, without failing.
 """
 
 from __future__ import annotations
@@ -29,8 +34,9 @@ import argparse
 import re
 import subprocess
 import sys
+from collections import Counter
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -52,6 +58,10 @@ GROUP_CALL = re.compile(
     r"notify_group|notify_group_flags|set_group|set_group_flags)\s*\("
 )
 SRC_PATH = re.compile(r"^res://(src/.+\.gd)$")
+NODE_PATH_CALL = re.compile(r"\b(get_node|get_node_or_null|find_child|get_node_and_resource)\s*\(")
+ROOT_FETCH = re.compile(
+    r"get_tree\(\)\s*\.\s*(?:root\b|get_root\s*\()|\bEngine\s*\.\s*get_main_loop\s*\(|\bcurrent_scene\b"
+)
 
 EPILOG = """\
 examples:
@@ -159,6 +169,7 @@ class Tree:
 
     files: dict[str, str]
     autoloads: dict[str, str]
+    uids: dict[str, str] = field(default_factory=dict)  # `uid://...` -> the `.gd` path it names
 
 
 def git(*args: str, cwd: Path = ROOT, data: bytes | None = None) -> bytes:
@@ -176,7 +187,7 @@ def read_rev(rev: str, cwd: Path = ROOT) -> Tree:
         if not record:
             continue
         meta, _, path = record.partition("\t")
-        if path.endswith(".gd") or path == "project.godot":
+        if path.endswith((".gd", ".gd.uid")) or path == "project.godot":
             blobs[path] = meta.split()[2]
     batch = git("cat-file", "--batch", cwd=cwd, data="".join(f"{blob}\n" for blob in blobs.values()).encode())
     texts: dict[str, str] = {}
@@ -188,7 +199,8 @@ def read_rev(rev: str, cwd: Path = ROOT) -> Tree:
         texts[path] = batch[start : start + size].decode("utf-8", errors="replace")
         position = start + size + 1
     project = texts.pop("project.godot", "")
-    return Tree(files=texts, autoloads=autoloads_of(project))
+    uids = uids_of({path[: -len(".uid")]: texts.pop(path) for path in [p for p in texts if p.endswith(".gd.uid")]})
+    return Tree(files=texts, autoloads=autoloads_of(project), uids=uids)
 
 
 def read_checkout(root: Path = ROOT) -> Tree:
@@ -197,7 +209,16 @@ def read_checkout(root: Path = ROOT) -> Tree:
         for path in sorted((root / SRC).rglob("*.gd"))
     }
     project = (root / "project.godot").read_text(encoding="utf-8")
-    return Tree(files=files, autoloads=autoloads_of(project))
+    sidecars = {
+        path.relative_to(root).as_posix()[: -len(".uid")]: path.read_text(encoding="utf-8")
+        for path in sorted((root / SRC).rglob("*.gd.uid"))
+    }
+    return Tree(files=files, autoloads=autoloads_of(project), uids=uids_of(sidecars))
+
+
+def uids_of(sidecars: dict[str, str]) -> dict[str, str]:
+    """Each `uid://` a `.gd.uid` sidecar holds, by the script's path."""
+    return {text.strip(): path for path, text in sidecars.items() if text.strip().startswith("uid://")}
 
 
 def autoloads_of(project: str) -> dict[str, str]:
@@ -277,56 +298,66 @@ def scan(tree: Tree) -> tuple[list[Finding], list[str]]:
         code = blank(text)
         own = CLASS_NAME.search(text)
         own_name = own.group(1) if own else ""
-        findings.extend(names_upward(path, layer, code, targets, own_name))
+        findings.extend(names_upward(path, layer, code, targets, own_name, tree.uids))
         if layer in layer_map.HANDED:
             findings.extend(fetches(path, code, tree.autoloads, known, own_name))
     return findings, unplaced
 
 
-def names_upward(path: str, layer: str, code: Code, targets: dict[str, str], own_name: str) -> Iterable[Finding]:
-    seen: set[str] = set()
+def names_upward(
+    path: str, layer: str, code: Code, targets: dict[str, str], own_name: str, uids: dict[str, str]
+) -> Iterable[Finding]:
     for match in NAME.finditer(code.bare):
         name = match.group(1)
-        if name == own_name or name in seen or name not in targets:
+        if name == own_name or name not in targets:
             continue
         target_layer = layer_of(targets[name])
         if target_layer is not None and rank(target_layer) > rank(layer):
-            seen.add(name)
             yield Finding(path, line_of(code.bare, match.start()), "names", name, f"{layer} names {target_layer}")
     for literal in code.literals:
-        found = SRC_PATH.match(literal.text)
-        if not found or found.group(1) == path or found.group(1) in seen:
+        loaded = uids.get(literal.text)
+        if loaded is None:
+            found = SRC_PATH.match(literal.text)
+            loaded = found.group(1) if found else None
+        if loaded is None or loaded == path:
             continue
-        target_layer = layer_of(found.group(1))
+        target_layer = layer_of(loaded)
         if target_layer is not None and rank(target_layer) > rank(layer):
-            seen.add(found.group(1))
             line = line_of(code.bare, literal.offset)
-            yield Finding(path, line, "names", found.group(1), f"{layer} loads {target_layer}")
+            yield Finding(path, line, "names", loaded, f"{layer} loads {target_layer}")
 
 
 def fetches(path: str, code: Code, autoloads: dict[str, str], known: Classes, own_name: str) -> Iterable[Finding]:
-    seen: set[tuple[str, str]] = set()
     for match in GROUP_CALL.finditer(code.bare):
         group = first_argument(code, match.end())
-        if ("group", group) not in seen:
-            seen.add(("group", group))
-            yield Finding(path, line_of(code.bare, match.start()), "group", group, match.group(1))
+        yield Finding(path, line_of(code.bare, match.start()), "group", group, match.group(1))
     for match in NAME.finditer(code.bare):
         name = match.group(1)
-        if name in autoloads and name not in layer_map.CONSTANT_AUTOLOADS and ("autoload", name) not in seen:
-            seen.add(("autoload", name))
+        if name in autoloads and name not in layer_map.CONSTANT_AUTOLOADS:
             yield Finding(path, line_of(code.bare, match.start()), "autoload", name, "an autoload")
     for match in MEMBER.finditer(code.bare):
         owner, member = match.group(1), match.group(2)
-        if owner == own_name or member not in known.reaching.get(owner, set()):
-            continue
-        if ("static", owner) not in seen:
-            seen.add(("static", owner))
+        if owner != own_name and member in known.reaching.get(owner, set()):
             yield Finding(path, line_of(code.bare, match.start()), "static", owner, f"{owner}.{member}")
-    if own_name in known.stateful and ("static", own_name) not in seen:
+    if own_name in known.stateful:
         first = STATIC_VAR.search(code.bare)
         line = line_of(code.bare, first.start()) if first else 1
         yield Finding(path, line, "static", own_name, f"holds {', '.join(sorted(known.stateful[own_name]))}")
+    yield from node_fetches(path, code)
+
+
+def node_fetches(path: str, code: Code) -> Iterable[Finding]:
+    """A node fetched by an absolute path, from the root, or as the current scene."""
+    for match in NODE_PATH_CALL.finditer(code.bare):
+        target = first_argument(code, match.end())
+        if target.startswith("/"):
+            yield Finding(path, line_of(code.bare, match.start()), "node", target, match.group(1))
+    for literal in code.literals:
+        if literal.text.startswith("/") and code.bare[max(literal.offset - 1, 0)] == "$":
+            yield Finding(path, line_of(code.bare, literal.offset), "node", literal.text, "$ path")
+    for match in ROOT_FETCH.finditer(code.bare):
+        expression = " ".join(match.group(0).split())
+        yield Finding(path, line_of(code.bare, match.start()), "node", expression, "the root or the current scene")
 
 
 def first_argument(code: Code, start: int) -> str:
@@ -350,14 +381,19 @@ def first_argument(code: Code, start: int) -> str:
     return " ".join(code.bare[start:end].split())
 
 
-def listed() -> dict[tuple[str, str, str], str]:
-    keys: dict[tuple[str, str, str], str] = {}
+def listed() -> dict[tuple[str, str, str], tuple[int, str]]:
+    """Each listed (file, rule, name) with how many uses stand, and the reason."""
+    keys: dict[tuple[str, str, str], tuple[int, str]] = {}
     for exception in layer_map.EXCEPTIONS:
+        more = dict(exception.more)
         for path in exception.files:
             key = (path, exception.rule, exception.name)
             if key in keys:
                 raise LayerError(f"tools/layer_map.py lists {path} {exception.rule} {exception.name} twice")
-            keys[key] = exception.reason
+            keys[key] = (more.get(path, 1), exception.reason)
+        for path in more:
+            if path not in exception.files:
+                raise LayerError(f"tools/layer_map.py gives {path} a count for {exception.name} without listing it")
     return keys
 
 
@@ -381,18 +417,30 @@ def check(tree: Tree) -> tuple[list[str], list[Finding]]:
     findings, unplaced = scan(tree)
     failures += [f"{path}: in no layer; place it, or its folder, in tools/layer_map.py" for path in unplaced]
     allowed = listed()
-    found_keys = {finding.key for finding in findings}
-    for finding in findings:
-        if finding.key not in allowed:
-            failures.append(
-                f"{finding.path}:{finding.line}: {finding.rule} {finding.name} ({finding.detail}); hand it in, move "
-                "it to its layer, or say in the pull request why the map is wrong"
-            )
-    for key in sorted(set(allowed) - found_keys):
-        path, rule, name = key
+    counts = Counter(finding.key for finding in findings)
+    for key, used in sorted(counts.items()):
+        stands = allowed[key][0] if key in allowed else 0
+        if used <= stands:
+            continue
+        uses = [finding for finding in findings if finding.key == key]
+        extra = uses[stands]
+        detail = uses[0].detail if stands == 0 else f"{used} uses, {stands} listed"
         failures.append(
-            f"{path}: tools/layer_map.py lists {rule} {name} as an exception, and it is gone; delete it from the list"
+            f"{extra.path}:{extra.line}: {extra.rule} {extra.name} ({detail}); hand it in, move "
+            "it to its layer, or say in the pull request why the map is wrong"
         )
+    for key, (stands, _) in sorted(allowed.items()):
+        path, rule, name = key
+        used = counts.get(key, 0)
+        if used == 0:
+            failures.append(
+                f"{path}: tools/layer_map.py lists {rule} {name} as an exception, and it is gone; "
+                "delete it from the list"
+            )
+        elif used < stands:
+            failures.append(
+                f"{path}: tools/layer_map.py lists {stands} uses of {rule} {name}, and {used} stand; lower its count"
+            )
     return failures, findings
 
 
@@ -410,7 +458,7 @@ def parse(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument("--rev", default=None, help="read the tree of this commit instead of the checkout")
     parser.add_argument(
-        "--list", action="store_true", help="print every finding, listed or not, and the layer of each file; never fail"
+        "--list", action="store_true", help="print every finding, listed or not, with its file's layer; never fail"
     )
     return parser.parse_args(argv)
 
@@ -425,17 +473,26 @@ def main(argv: list[str]) -> int:
         return 1
     if args.list:
         allowed = listed()
+        seen: Counter[tuple[str, str, str]] = Counter()
+        new = 0
         for finding in sorted(findings, key=lambda found: (found.path, found.line)):
-            mark = "listed" if finding.key in allowed else "NEW"
-            print(f"{mark:6} {finding.path}:{finding.line}: {finding.rule} {finding.name} ({finding.detail})")
-        print(f"{len(findings)} finding(s), {sum(1 for f in findings if f.key not in allowed)} not listed")
+            seen[finding.key] += 1
+            stands = allowed[finding.key][0] if finding.key in allowed else 0
+            new += seen[finding.key] > stands
+            mark = "NEW" if seen[finding.key] > stands else "listed"
+            where = f"{finding.path}:{finding.line} [{layer_of(finding.path)}]"
+            print(f"{mark:6} {where}: {finding.rule} {finding.name} ({finding.detail})")
+        print(f"{len(findings)} finding(s), {new} not listed")
         return 0
     for failure in failures:
         print(f"FAILED: {failure}")
     if failures:
         print(f"tools/check_layers.py: {len(failures)} failure(s)")
         return 1
-    print(f"OK: every file under src/ is in its layer; {len(findings)} listed exception(s) still stand")
+    standing = len({finding.key for finding in findings})
+    print(
+        f"OK: every file under src/ is in its layer; {standing} listed exception(s) still stand ({len(findings)} uses)"
+    )
     return 0
 
 

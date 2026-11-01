@@ -47,7 +47,7 @@ ONE_LINE_FORM = "No new piece or dependency: <what the change is>"
 HEADING_LINE = re.compile(r"^(?P<level>#{1,6})[ \t]+(?P<text>.*?)[ \t]*#*[ \t]*$")
 ONE_LINE = re.compile(lib_ci.LIST_MARKER + r"No new piece or dependency:[ \t]*(?P<reason>\S.*?)[ \t]*$", re.MULTILINE)
 # An answer's number: optional list bullet, optional emphasis, an optional Q, the number, then `.`, `)` or `:`.
-ANSWER = re.compile(r"^[ \t]*(?:[-*+][ \t]+)?(?:\*\*|__)?(?:Q|q)?(?P<number>\d+)(?:[.):]|\*\*|__)+[ \t]*(?P<text>.*)$")
+ANSWER = re.compile(r"^ {0,3}(?:[-*+][ \t]+)?(?:\*\*|__)?(?:Q|q)?(?P<number>\d+)(?:[.):]|\*\*|__)+[ \t]*(?P<text>.*)$")
 QUESTION_ITEM = re.compile(r"^(?P<number>\d+)\.[ \t]+(?P<text>.*)$")
 PLACEHOLDER = re.compile(r"`?<[^>]*>`?")
 WORD = re.compile(r"[a-z0-9']+")

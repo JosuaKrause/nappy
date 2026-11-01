@@ -26,10 +26,11 @@ LAYERS: tuple[str, ...] = ("data", "model", "world", "simulation", "flow", "obse
 LAYER_TEXT: dict[str, str] = {
     "data": "data and configuration: the catalogue, the balance numbers, the run's configuration, the specs, the "
     "on-screen texts, the art's pages and the value types the rows are written in",
-    "model": "the domain model: pure state and plans with no scene of their own -- the map, its generation, the "
-    "routes, the closures, the run's sub-states, the building's plan",
-    "world": "the world: the map interface the city and the building implement, the navigator, passability, "
-    "the draw layers, and the scene nodes that draw the world's own ground and furniture",
+    "model": "the domain model: pure state and plans with no scene of their own -- the map and its interface "
+    "(WorldMap and its records), its generation, the routes, the closures, the run's sub-states, the building's plan",
+    "world": "the world: the navigator, passability, the draw layers, the screen cover and what the world can "
+    "see, and the scene nodes that draw the world's own ground and furniture (the map interface and its "
+    "records are the model's)",
     "simulation": "simulation: everything that moves or happens -- her, the baby, the crowd, the events and "
     "their behaviours and looks, the resistance -- and the drawing of each, which it composes",
     "flow": "run flow: a day started and finished from its spec, the screens' order",
@@ -194,6 +195,8 @@ class Exception_:
     name: str  # the class, group, autoload or `Class.member` named
     reason: str
     files: tuple[str, ...]
+    # Files with more than one use of the name, and how many: a file's count is one unless it is here.
+    more: tuple[tuple[str, int], ...] = ()
 
 
 EXCEPTIONS: tuple[Exception_, ...] = (
@@ -202,6 +205,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "Blackout",
         "the city scene builds the blackout itself, rather than the composition root handing it in",
         ("src/city/city.gd",),
+        more=(("src/city/city.gd", 2),),
     ),
     Exception_(
         "names",
@@ -223,6 +227,10 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/finale/finale_planner.gd",
             "src/ui/texts.gd",
         ),
+        more=(
+            ("src/finale/finale_planner.gd", 10),
+            ("src/ui/texts.gd", 2),
+        ),
     ),
     Exception_(
         "names",
@@ -241,6 +249,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "Crowd",
         "the city scene builds the day's crowd itself, rather than the composition root handing it in",
         ("src/city/city.gd",),
+        more=(("src/city/city.gd", 2),),
     ),
     Exception_(
         "names",
@@ -257,6 +266,10 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/city/city.gd",
             "src/city/city_generator.gd",
             "src/city/street_trees.gd",
+        ),
+        more=(
+            ("src/city/city.gd", 2),
+            ("src/city/city_generator.gd", 3),
         ),
     ),
     Exception_(
@@ -279,18 +292,24 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/telemetry/run_session.gd",
             "src/telemetry/telemetry_observer.gd",
         ),
+        more=(
+            ("src/telemetry/run_session.gd", 2),
+            ("src/telemetry/telemetry_observer.gd", 3),
+        ),
     ),
     Exception_(
         "names",
         "DayEnd",
         "the summary's model is built from the day's end, which sits with the run flow",
         ("src/run/summary_model.gd",),
+        more=(("src/run/summary_model.gd", 2),),
     ),
     Exception_(
         "names",
         "DevRig",
         "a day's start asks the dev rig where a --spawn target is",
         ("src/run/day_director.gd",),
+        more=(("src/run/day_director.gd", 2),),
     ),
     Exception_(
         "names",
@@ -303,6 +322,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "DrawnFrame",
         "the run log waits for a drawn frame before it photographs the map",
         ("src/autoload/telemetry.gd",),
+        more=(("src/autoload/telemetry.gd", 2),),
     ),
     Exception_(
         "names",
@@ -323,6 +343,10 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/events/event_instance.gd",
             "src/events/views/event_look.gd",
         ),
+        more=(
+            ("src/crowd/crowd_agent.gd", 2),
+            ("src/events/event_instance.gd", 5),
+        ),
     ),
     Exception_(
         "names",
@@ -341,12 +365,17 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/events/event_scheduler.gd",
             "src/events/walk_ground.gd",
         ),
+        more=(
+            ("src/events/event_scheduler.gd", 3),
+            ("src/events/walk_ground.gd", 3),
+        ),
     ),
     Exception_(
         "names",
         "EventManager",
         "the city scene builds the day's events itself, rather than the composition root handing them in",
         ("src/city/city.gd",),
+        more=(("src/city/city.gd", 2),),
     ),
     Exception_(
         "names",
@@ -377,6 +406,10 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/routes/closure_marker.gd",
             "src/routes/park_fence_marker.gd",
         ),
+        more=(
+            ("src/city/building.gd", 4),
+            ("src/city/scenery_residency.gd", 10),
+        ),
     ),
     Exception_(
         "names",
@@ -400,18 +433,38 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/routes/closure_marker.gd",
             "src/routes/park_fence_marker.gd",
         ),
+        more=(
+            ("src/city/building.gd", 8),
+            ("src/city/building_shadows.gd", 2),
+            ("src/city/city_decals.gd", 2),
+            ("src/city/city_edge.gd", 2),
+            ("src/city/prop.gd", 2),
+            ("src/city/scenery_layer.gd", 2),
+            ("src/city/scenery_residency.gd", 14),
+            ("src/city/scenery_water.gd", 2),
+            ("src/city/traffic_light.gd", 2),
+            ("src/events/event_instance.gd", 7),
+            ("src/events/event_manager.gd", 4),
+            ("src/player/baby.gd", 4),
+            ("src/player/stroller.gd", 2),
+            ("src/resistance/contact_point.gd", 2),
+            ("src/routes/closure_marker.gd", 2),
+            ("src/routes/park_fence_marker.gd", 2),
+        ),
     ),
     Exception_(
         "names",
         "GameSave",
         "the run's registry hands itself to the save at a checkpoint (hidden-statics moves the calendar off it)",
         ("src/autoload/game_state.gd",),
+        more=(("src/autoload/game_state.gd", 3),),
     ),
     Exception_(
         "names",
         "GroundTiles",
         "the ground's picture builder reads which tile a cell gets",
         ("src/visuals/ground_layers.gd",),
+        more=(("src/visuals/ground_layers.gd", 4),),
     ),
     Exception_(
         "names",
@@ -427,12 +480,14 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "Navigator",
         "the map interface hands out its navigator, the world's half of it",
         ("src/world/world_map.gd",),
+        more=(("src/world/world_map.gd", 3),),
     ),
     Exception_(
         "names",
         "PosterWalls",
         "the city scene builds the posters itself, rather than the composition root handing them in",
         ("src/city/city.gd",),
+        more=(("src/city/city.gd", 3),),
     ),
     Exception_(
         "names",
@@ -466,12 +521,14 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/crowd/crowd_agent.gd",
             "src/events/event_instance.gd",
         ),
+        more=(("src/events/event_instance.gd", 3),),
     ),
     Exception_(
         "names",
         "SpawnSiting",
         "a row's lead is checked against the siting's least distance",
         ("src/events/event_def.gd",),
+        more=(("src/events/event_def.gd", 2),),
     ),
     Exception_(
         "names",
@@ -488,6 +545,10 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/events/event_scheduler.gd",
             "src/interior/interior_scene.gd",
             "src/world/visible_view.gd",
+        ),
+        more=(
+            ("src/events/event_scheduler.gd", 3),
+            ("src/interior/interior_scene.gd", 2),
         ),
     ),
     Exception_(
@@ -518,6 +579,17 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/player/baby.gd",
             "src/resistance/park_cordon.gd",
             "src/resistance/resistance_director.gd",
+        ),
+        more=(
+            ("src/city/blackout.gd", 2),
+            ("src/crowd/crowd.gd", 3),
+            ("src/events/encounter_watch.gd", 5),
+            ("src/events/event_instance.gd", 3),
+            ("src/events/event_manager.gd", 5),
+            ("src/events/event_spawner.gd", 4),
+            ("src/events/events_ahead.gd", 2),
+            ("src/player/baby.gd", 9),
+            ("src/resistance/resistance_director.gd", 2),
         ),
     ),
     Exception_(
@@ -563,6 +635,30 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/routes/closure_marker.gd",
             "src/routes/park_fence_marker.gd",
         ),
+        more=(
+            ("src/city/building.gd", 33),
+            ("src/city/city.gd", 8),
+            ("src/city/city_decals.gd", 4),
+            ("src/city/city_edge.gd", 8),
+            ("src/city/poster_art.gd", 4),
+            ("src/city/prop.gd", 11),
+            ("src/city/scenery_water.gd", 3),
+            ("src/city/traffic_light.gd", 4),
+            ("src/crowd/car_look.gd", 5),
+            ("src/crowd/crowd.gd", 2),
+            ("src/crowd/walker_look.gd", 3),
+            ("src/events/event_manager.gd", 2),
+            ("src/events/event_scenery.gd", 4),
+            ("src/events/views/event_pictures.gd", 2),
+            ("src/interior/interior_scene.gd", 14),
+            ("src/interior/interior_tileset.gd", 2),
+            ("src/player/stroller.gd", 10),
+            ("src/resistance/contact_point.gd", 3),
+            ("src/resistance/cordon_officer.gd", 3),
+            ("src/resistance/cordon_tape.gd", 7),
+            ("src/routes/closure_marker.gd", 8),
+            ("src/routes/park_fence_marker.gd", 4),
+        ),
     ),
     Exception_(
         "static",
@@ -578,6 +674,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "EventScheduler",
         "the scheduler keeps its kept-ground memo and judgement count in statics (hidden-statics)",
         ("src/events/day_planner.gd",),
+        more=(("src/events/day_planner.gd", 2),),
     ),
     Exception_(
         "static",
@@ -601,6 +698,24 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/routes/closure_marker.gd",
             "src/routes/park_fence_marker.gd",
         ),
+        more=(
+            ("src/city/building.gd", 8),
+            ("src/city/building_shadows.gd", 2),
+            ("src/city/city_decals.gd", 2),
+            ("src/city/city_edge.gd", 2),
+            ("src/city/prop.gd", 2),
+            ("src/city/scenery_layer.gd", 2),
+            ("src/city/scenery_residency.gd", 13),
+            ("src/city/scenery_water.gd", 2),
+            ("src/city/traffic_light.gd", 2),
+            ("src/events/event_instance.gd", 6),
+            ("src/events/event_manager.gd", 3),
+            ("src/player/baby.gd", 3),
+            ("src/player/stroller.gd", 2),
+            ("src/resistance/contact_point.gd", 2),
+            ("src/routes/closure_marker.gd", 2),
+            ("src/routes/park_fence_marker.gd", 2),
+        ),
     ),
     Exception_(
         "static",
@@ -613,6 +728,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "SealPlanner",
         "the seal candidates are held in statics (hidden-statics)",
         ("src/events/day_planner.gd",),
+        more=(("src/events/day_planner.gd", 2),),
     ),
     Exception_(
         "static",
@@ -639,6 +755,24 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/routes/closure_marker.gd",
             "src/routes/park_fence_marker.gd",
             "src/sprites.gd",
+        ),
+        more=(
+            ("src/city/building.gd", 7),
+            ("src/city/prop.gd", 5),
+            ("src/city/traffic_light.gd", 2),
+            ("src/crowd/car_look.gd", 3),
+            ("src/crowd/crowd_agent.gd", 2),
+            ("src/crowd/walker_look.gd", 2),
+            ("src/events/views/event_look.gd", 6),
+            ("src/events/views/event_vehicle_look.gd", 2),
+            ("src/events/views/figure_look.gd", 9),
+            ("src/events/views/fire_look.gd", 3),
+            ("src/events/views/pursuer_look.gd", 2),
+            ("src/events/views/rank_look.gd", 4),
+            ("src/events/views/spread_look.gd", 3),
+            ("src/player/stroller.gd", 4),
+            ("src/routes/closure_marker.gd", 5),
+            ("src/routes/park_fence_marker.gd", 3),
         ),
     ),
     Exception_(

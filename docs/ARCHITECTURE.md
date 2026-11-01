@@ -456,8 +456,11 @@ The world and simulation are also handed what they read, never fetching it throu
 autoload or a static that holds state.
 
 `tools/layer_map.py` is the one place that says which folder and which file is in which layer, and
-lists by file every break that still stands, each with its reason; `tools/check_layers.py` holds
-the code to it in CI and fails on a new break and on a listed one that is gone.
+lists by file every break that still stands, each with its reason and, where a file uses the name
+more than once, how many times; `tools/check_layers.py` holds the code to it in CI and fails on a
+new break (a further use of a listed name included) and on a listed one that is gone. Besides group
+lookups, autoloads and stateful statics, the world and simulation also fetch nothing by an absolute
+node path, from the root or as the current scene.
 
 ### `GameEnums`
 

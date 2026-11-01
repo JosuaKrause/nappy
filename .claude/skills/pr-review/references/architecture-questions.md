@@ -30,8 +30,8 @@ removes from that list, and says why; a pull request that puts a file in another
 map was wrong.
 
 *Proposed, open to overturn:* the sixth carries the player's own question first, ahead of the
-question it overlaps, rather than standing as an eighth (plush-egret #892), so the two are answered
-once, together.
+question it overlaps, rather than standing as an eighth (plush-egret #892; the player offered the
+choice, plaid-raven #894), so the two are answered once, together.
 
 ## Where they are answered
 
@@ -58,7 +58,9 @@ time the pull request was opened.
   description has no `## Architecture questions` heading, or under it neither an answer to every
   question nor the one-line form. It sees that an answer is there, never whether it is true.
 - **CI** (`tools/check_layers.py`, in the `gates` job, on every run) fails a new break of the
-  layer map and a listed break that is gone.
+  layer map and a listed break that is gone. A listed break is matched by file, rule and name, with
+  the number of uses the list gives for it (one unless it says more), so a further use of a listed
+  name in a listed file fails, and so does one fewer until the count is lowered.
 - **The reviewer** checks each answer against the diff and against `tools/check_layers.py --list`
   on the pull request's head; an answer the diff or the check contradicts is a finding
   (**pr-review**, "Then the code").

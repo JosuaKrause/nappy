@@ -180,6 +180,46 @@ class FetchTests(unittest.TestCase):
         self.assertEqual(rules(found), {("src/world/navigator.gd", "static", "Navigator")})
         self.assertEqual(found[0].line, 4)
 
+    def test_a_node_fetched_by_absolute_path_or_from_the_root_is_a_fetch(self) -> None:
+        planted = {
+            "get_node": 'get_node("/root/Main/Hud")',
+            "get_node_or_null": 'get_node_or_null("/root/Main/Hud")',
+            "dollar": 'var h = $"/root/Main/Hud"',
+            "root": 'get_tree().root.find_child("Hud", true, false)',
+            "get_root": "get_tree().get_root()",
+            "current_scene": "get_tree().current_scene",
+            "main_loop": "Engine.get_main_loop()",
+        }
+        for label, line in planted.items():
+            walker = f"class_name Walker\nfunc f() -> void:\n\t{line}\n"
+            for folder in ("sim", "world"):
+                with self.subTest(label=label, folder=folder), the_map():
+                    files = dict(BASE, **{f"{folder}__walker": walker})
+                    _, found = check_layers.check(tree(**files))
+                    self.assertEqual({finding.rule for finding in found}, {"node"})
+                    self.assertEqual(found[0].line, 3)
+
+    def test_a_nodes_own_children_and_the_views_root_reads_are_not_fetches(self) -> None:
+        walker = (
+            'class_name Walker\nfunc f() -> void:\n\tvar a = $Entities\n\tvar b = get_node_or_null("Baby")\n'
+            '\tvar c = get_node("Entities/Layer")\n\tvar d = $"Entities/Layer"\n'
+        )
+        hud = "class_name Hud\nvar w: Walker\nfunc f() -> void:\n\tget_tree().current_scene\n"
+        with the_map():
+            self.assertEqual(check_layers.check(tree(**dict(BASE, sim__walker=walker, ui__hud=hud))), ([], []))
+
+    def test_a_uid_path_names_the_class_it_loads_like_a_res_path(self) -> None:
+        walker = 'class_name Walker\nfunc f() -> void:\n\tvar h = preload("uid://hud123")\n'
+        hud_file = check_layers.Tree(
+            files=tree(**dict(BASE, sim__walker=walker)).files,
+            autoloads=check_layers.autoloads_of(PROJECT),
+            uids=check_layers.uids_of({"src/ui/hud.gd": "uid://hud123\n"}),
+        )
+        with the_map():
+            _, found = check_layers.check(hud_file)
+        self.assertEqual(rules(found), {("src/sim/walker.gd", "names", "src/ui/hud.gd")})
+        self.assertEqual(found[0].detail, "simulation loads view")
+
     def test_fetches_outside_the_world_and_simulation_are_not_checked(self) -> None:
         model = 'class_name Map\nfunc f() -> void:\n\tget_tree().get_first_node_in_group("player")\n\tBus.x()\n'
         with the_map():
@@ -212,6 +252,31 @@ class ExceptionTests(unittest.TestCase):
             with self.subTest(listed=listed), the_map(exceptions=(listed,)):
                 failures, _ = check_layers.check(tree(**self.FILES))
                 self.assertEqual(len(failures), 2)
+
+    def test_a_second_use_of_a_listed_name_in_a_listed_file_fails(self) -> None:
+        listed = (Exception_("names", "Walker", "why", ("src/world/navigator.gd",)),)
+        twice = dict(self.FILES, world__navigator="class_name Navigator\nvar w: Walker\nvar v: Walker\n")
+        with the_map(exceptions=listed):
+            failures, found = check_layers.check(tree(**twice))
+        self.assertEqual(len(found), 2)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("src/world/navigator.gd:3: names Walker (2 uses, 1 listed)", failures[0])
+
+    def test_a_listed_count_covers_exactly_that_many_uses(self) -> None:
+        listed = (
+            Exception_("names", "Walker", "why", ("src/world/navigator.gd",), more=(("src/world/navigator.gd", 2),)),
+        )
+        twice = dict(self.FILES, world__navigator="class_name Navigator\nvar w: Walker\nvar v: Walker\n")
+        with the_map(exceptions=listed):
+            self.assertEqual(check_layers.check(tree(**twice))[0], [])
+            failures, _ = check_layers.check(tree(**self.FILES))
+        self.assertEqual(len(failures), 1)
+        self.assertIn("lists 2 uses of names Walker, and 1 stand; lower its count", failures[0])
+
+    def test_a_count_for_a_file_not_listed_is_an_error(self) -> None:
+        listed = (Exception_("names", "Walker", "why", ("src/world/navigator.gd",), more=(("src/ui/hud.gd", 2),)),)
+        with the_map(exceptions=listed), self.assertRaises(check_layers.LayerError):
+            check_layers.check(tree(**self.FILES))
 
     def test_a_file_listed_twice_for_one_finding_is_an_error(self) -> None:
         listed = (
