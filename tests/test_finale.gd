@@ -1808,6 +1808,10 @@ var _saved_section := 0
 func _free_the_escape(t, main: Node2D) -> void:
 	t.get_tree().paused = false
 	main.free()
+	# A `--route` boot is a rig, whose `RigLock` erases every action's `InputMap` bindings; freeing
+	# the scene must give them back, or every later suite in this process hears no key as an action.
+	t.check(not InputMap.action_get_events(&"move_right").is_empty(),
+			"freeing the escape leaves the keys bound to their actions")
 	GameState.facts.escape_section = _saved_section
 	GameState.start_run(SEEDS[0])
 

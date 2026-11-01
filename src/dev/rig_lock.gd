@@ -42,6 +42,9 @@ var _quit_deadline_msec := 0
 var _quit_game_seconds := 0.0
 ## What the quit lines name as the limit.
 var _limit_seconds := 0.0
+## Each action `_erase_real_input()` emptied, mapped to the `InputEvent`s it held, so
+## `_exit_tree()` can put them back. Empty for a run that is not a rig's.
+var _erased_bindings: Dictionary[StringName, Array] = {}
 
 ## Locks a rig's run out, from `config`. Nothing happens for a run that is not a rig.
 func setup(config: RunConfig) -> void:
@@ -94,8 +97,25 @@ static func is_the_rigs_own_press(event: InputEvent) -> bool:
 
 ## Every action `project.godot`'s `[input]` table defines, read live off `InputMap` so a new binding
 ## is covered without a second list, except Godot's own built-in `ui_*` actions, which nothing in
-## this game reads and whose loss would cost the engine's debugging shortcuts.
+## this game reads and whose loss would cost the engine's debugging shortcuts. What it erases is kept
+## in `_erased_bindings` for `_exit_tree()` to put back, **recorded only the first time**: a second
+## `setup()` finds the bindings already empty, and recording that would overwrite the real ones.
 func _erase_real_input() -> void:
 	for action in InputMap.get_actions():
 		if not String(action).begins_with("ui_"):
+			if not _erased_bindings.has(action):
+				_erased_bindings[action] = InputMap.action_get_events(action)
 			InputMap.action_erase_events(action)
+
+## **The lock gives the bindings back when it leaves the tree.** `InputMap` is process-wide, so a lock
+## that erased it and never restored it would outlive its own `main`: a rig's process quits with it
+## and never notices, but a test that boots a rig-flagged `main` and frees it would leave every later
+## test in the same process with no key bound to any action — `TouchControls` asking whether a key is
+## `move_right` would hear no. Out of the tree, `_input()` no longer runs either, so the lock is
+## off as a whole.
+func _exit_tree() -> void:
+	for action: StringName in _erased_bindings:
+		if InputMap.has_action(action):
+			for event: InputEvent in _erased_bindings[action]:
+				InputMap.action_add_event(action, event)
+	_erased_bindings.clear()

@@ -9,7 +9,8 @@ extends RefCounted
 ## handled outright: whether `event.device` carries `InputEvent.DEVICE_ID_EMULATION`, the constant
 ## `AutoScreenshot._tap()` tags its own events with before handing them to
 ## `Input.parse_input_event()`. The gate tests drive a real `RigLock` with `locked_out` set by hand,
-## never `setup()`, which would also erase this process's `InputMap` bindings.
+## never `setup()`, which also erases this process's `InputMap` bindings until the lock leaves the
+## tree; the one test that calls `setup()` is the one about those bindings coming back.
 
 const AUTO_SCREENSHOT: GDScript = preload("res://src/dev/auto_screenshot.gd")
 
@@ -26,6 +27,7 @@ func run(t) -> void:
 	_test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t)
 	_test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t)
 	_test_the_gate_does_nothing_once_the_rig_unlocks(t)
+	_test_the_lock_gives_the_bindings_back_when_freed(t)
 
 # ------------------------------------------------------------------ predicate ---
 
@@ -150,3 +152,41 @@ func _test_the_gate_does_nothing_once_the_rig_unlocks(t) -> void:
 
 	gate.free()
 	catcher.free()
+
+# ------------------------------------------------------------------- bindings ---
+
+## A rig's `setup()` erases every game action's `InputMap` bindings, and `InputMap` belongs to the
+## process, not to the `main` that built the lock. A suite that boots a rig-flagged `main` (`--route`
+## in `test_finale.gd`) and frees it must leave the bindings as it found them, or every later suite in
+## the same process hears no key as any action: `test_touch.gd`'s check that a D press replaces a
+## clicked heading failed that way, run after `test_finale.gd` in one CI shard. Fails without
+## `RigLock._exit_tree()` putting the bindings back. `setup()` is called twice, since a second call
+## finds the bindings already empty and must not record that over the real ones; that half fails
+## without `_erase_real_input()` recording an action only the first time.
+func _test_the_lock_gives_the_bindings_back_when_freed(t) -> void:
+	var before := _bindings()
+	t.check(not (before.get(&"move_right", []) as Array).is_empty(),
+			"the keys are bound when this starts, so the comparison below is not of two empty maps")
+	var gate := RigLock.new()
+	t.add_child(gate)
+	var rig := RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry", "--route", "tunnel"]),
+			"", true)
+	gate.setup(rig)
+	t.check(gate.locked_out and InputMap.action_get_events(&"move_right").is_empty(),
+			"a rig's lock erases the real bindings while it stands")
+	gate.setup(rig)
+	gate.free()
+	t.check(_bindings() == before,
+			"and freeing the lock, set up twice, puts every action's bindings back as they were")
+
+## Every game action's bindings as text, so two readings compare by value: an `InputEvent` is an
+## object, and the restored events need only match, not be the same instances.
+static func _bindings() -> Dictionary:
+	var found := {}
+	for action in InputMap.get_actions():
+		if not String(action).begins_with("ui_"):
+			var names: Array[String] = []
+			for event in InputMap.action_get_events(action):
+				names.append(event.as_text())
+			found[action] = names
+	return found
