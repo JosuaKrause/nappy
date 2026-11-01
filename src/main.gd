@@ -204,6 +204,8 @@ func configure(run_config: RunConfig) -> void:
 	_touch_available = TouchInput.available(config)
 
 func _ready() -> void:
+	# First, so every boot (the escape's and a recipe's too) deletes the save when its run ends.
+	GameSave.clear_when_a_run_ends()
 	if not config.recipe_path.is_empty() and not _author_the_scene():
 		return
 	# Before anything the observers watch can happen: the run log's header, the save's gate and
@@ -482,7 +484,6 @@ func _settle_the_run() -> void:
 	# **A run carried on from a checkpoint reads no file**: `GameState` already holds it, and
 	# `GameSave.load_in_memory()` puts it back through the same JSON and the same `_apply()` a load
 	# does, so this boot builds on exactly what a load would give it, on any run.
-	GameSave.clear_when_a_run_ends()
 	var carried := _carry_the_run_over
 	_carry_the_run_over = false
 	if carried:

@@ -42,17 +42,18 @@ func use_trace(sink: RunTrace) -> void:
 ## bad ending**: the last nerve sends the run back to its latest checkpoint (`checkpoint`). Nothing
 ## else differs — *"hard mode doesn't affect gameplay -- only restart pacing"*.
 ##
-## Not in the run snapshot: it rides beside `escape_section` as its own top-level save key, so a save
-## written before there were two modes loads as normal mode by absence.
+## Not in the run snapshot: it rides beside `escape_section` as its own top-level save key, so a
+## save written before there were two modes loads as normal mode by absence.
 var hard_mode := false
 
-## The run as it stood at the dawn of the latest checkpoint day it has reached — days 4, 8 and 12,
-## the first days of acts II, III and IV, read off `Tuning.ACT_START_DAYS` — in exactly the shape
-## the save carries the run (`RunStateRegistry.run_data()`), or `{}` before day 4.
-## *(gentle-osprey, the player: "store the exact state at the checkpoint -- continuing should not have anything that
-## happened after the checkpoint".)* Taken by `begin_day()` the first time a checkpoint day is
-## begun, never on a retry of it, so nothing of that day can have happened yet; given back by
-## `finish_day()` when a normal run spends its last nerve, with `Tuning.STARTING_NERVES`.
+## The run as it stood at the dawn of the latest checkpoint day it has reached — days 4, 8 and
+## 12, the first days of acts II, III and IV, read off `Tuning.ACT_START_DAYS` — in exactly the
+## shape the save carries the run (`RunStateRegistry.run_data()`), or `{}` before day 4.
+## *(gentle-osprey, the player: "store the exact state at the checkpoint -- continuing should
+## not have anything that happened after the checkpoint".)* Taken by `begin_day()` the first
+## time a checkpoint day is begun, never on a retry of it, so nothing of that day can have
+## happened yet; given back by `finish_day()` when a normal run spends its last nerve, with
+## `Tuning.STARTING_NERVES`.
 ##
 ## **`{}` is checkpoint zero**, day 1 of the same city: the registry's reset rebuilds that dawn
 ## exactly, so nothing is stored for it — which is also what a save written before checkpoints
@@ -266,11 +267,11 @@ func regain_a_nerve_for_a_won_day() -> void:
 		regain_a_nerve()
 
 ## A normal run's last nerve, spent: the run as it stood at its latest checkpoint's dawn, every
-## field the save carries, with `Tuning.STARTING_NERVES`. *(gentle-osprey, the player: "store the
-## exact state at the checkpoint -- continuing should not have anything that happened after the
-## checkpoint".)* **Restored rather than repaired**, through the same
-## `RunStateRegistry.restore_run_data()` a save is read back with, so nothing a later field adds to the save can be left out of a
-## checkpoint by forgetting it here.
+## field the save carries, with `Tuning.STARTING_NERVES`. *(gentle-osprey, the player: "store
+## the exact state at the checkpoint -- continuing should not have anything that happened after
+## the checkpoint".)* **Restored rather than repaired**, through the same
+## `RunStateRegistry.restore_run_data()` a save is read back with, so nothing a later field adds
+## to the save can be left out of a checkpoint by forgetting it here.
 ##
 ## Checkpoint zero (`checkpoint` empty) is day 1 of the same city: the registry reset. The header
 ## keeps the run's seed and who is pushing the pram, since `--parent` may have chosen it over the
@@ -323,10 +324,11 @@ func earned_good_ending() -> bool:
 ## arcs, the walls and the pelican bag, each by its part (`RunSubState.give_back()`) — and says so
 ## for the `nerve` entry: "" when the day touched none of the resistance's, which is most days.
 ##
-## **Restored rather than counted back**: the step lists are what the next attempt's planning reads
-## (`ResistanceSteps.for_day()` decides what is on offer from them, `EventScheduler._place_one_shots`
-## skips a consumed row, `build_day` stands a permanent body on every scar), so putting the
-## photograph back is the whole of it, and the retry meets the same mark again.
+## **Restored rather than counted back**: the step lists are what the next attempt's planning
+## reads (`ResistanceSteps.for_day()` decides what is on offer from them,
+## `EventScheduler._place_one_shots` skips a consumed row, `build_day` stands a permanent body
+## on every scar), so putting the photograph back is the whole of it, and the retry meets the
+## same mark again.
 ##
 ## `resistance_progress_changed` is emitted when the number actually moves, since the HUD's dots
 ## and the summary's tally are both drawn off it. Nothing announces a step *un*-completing,
