@@ -233,12 +233,12 @@ func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label
 		_stand(city, player, far)
 		city.events.visible_view().look(Rect2(focus - Tuning.VIEW_HALF_EXTENT * 0.5,
 				Tuning.VIEW_HALF_EXTENT), null)
-		happenings.tick(STEP, far, Vector2.ZERO, director._drawing_shows)
+		happenings.tick(STEP, far, Vector2.ZERO)
 		_print("%s raid with her screen on %s: %d" % [label, _point(focus),
 				happenings.raid.size()])
 		printed += 1
 	_stand(city, player, far)
-	happenings.tick(STEP, far, Vector2.ZERO, director._drawing_shows)
+	happenings.tick(STEP, far, Vector2.ZERO)
 	var at: Array[String] = []
 	for body in happenings.raid:
 		at.append(_point(body.global_position))

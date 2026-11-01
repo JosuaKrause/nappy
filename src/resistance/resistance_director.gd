@@ -1472,7 +1472,7 @@ var _task_drawn: SpawnSiting.Ask
 ## halo rim, and the caret of a row that can be marked — what `PendingWarning` places outside the
 ## view by) against `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`. A row that draws nothing of its own is
 ## its feet. What an event the director brings in or takes away asks, so nothing of it appears or
-## vanishes in view, and the form the park's cordon asks it in (`ResistanceHappenings.tick()`).
+## vanishes in view.
 func _drawing_shows(row: EventDef, feet: Vector2) -> bool:
 	return not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW,
 			_spawn_siting.ask_of_drawing(EventFootprints.footprint_of(row)), feet)
@@ -2563,7 +2563,7 @@ func _reachable_from_home(tile: Vector2i) -> bool:
 ## a drawn frame's length, so a lag spike slows the task's clocks with the game rather than running
 ## them on, and nothing here runs behind a pause, a screen or a load. `delta` is the tick's length.
 func tick(delta: float) -> void:
-	_happenings.tick(delta, _player_position(), _player_velocity(), _drawing_shows)
+	_happenings.tick(delta, _player_position(), _player_velocity())
 	if _taken_neighbor:
 		_take_the_neighbor_away()
 	if _lingering_rider:

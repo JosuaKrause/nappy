@@ -4074,15 +4074,13 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	happenings.setup(_city, _city.map)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var door := _city.map.doorstep_world_position()
-	happenings.tick(STEP, door, Vector2.ZERO, Callable())
+	happenings.tick(STEP, door, Vector2.ZERO)
 	t.check(happenings.raid.is_empty(), "nothing arrives while she is at her door")
 	_look_at(Rect2(door - Vector2(400.0, 400.0), Vector2(800.0, 800.0)))
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
-			Callable())
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(happenings.raid.is_empty(), "or while any of it would be on screen")
 	_look_at(Rect2())
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
-			Callable())
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	var vans := 0
 	var patrols := 0
 	var door_tile := _city.map.world_to_tile(door)
@@ -4102,8 +4100,7 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	for instance in happenings.raid:
 		_city.events.retire(instance)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY + 1)
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
-			Callable())
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(happenings.raid.is_empty(), "and only on day 10")
 	GameState.attempt_spend.scars = saved_scars
 
@@ -4124,8 +4121,7 @@ func _test_the_raid_seals_her_street_door(t) -> void:
 	var door := _city.map.doorstep_world_position()
 	t.check(_city._home_door.texture == AtlasLibrary.region(City.DOOR_TEXTURE),
 			"the door is ordinary at day 10's start")
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
-			Callable())
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(_city._home_door.texture == AtlasLibrary.region(City.SEALED_DOOR_TEXTURE),
 			"and sealed the moment the raid arrives, out of her sight")
 	var sealed := false
@@ -4165,8 +4161,7 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 	happenings.setup(_city, _city.map)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var door := _city.map.doorstep_world_position()
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO,
-			Callable())
+	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(_city._home_door.texture == AtlasLibrary.region(City.SEALED_DOOR_TEXTURE),
 			"sealed once the raid arrives")
 	for instance in happenings.raid:
@@ -4246,11 +4241,11 @@ func _test_the_market_is_found_gone(t) -> void:
 		var candidates := ResistanceHappenings.market_candidates(_city.map, state)
 		t.check(not candidates.is_empty(),
 				"the test city has a block waiting to board up, or this test checks nothing")
-		happenings.tick(STEP, door, Vector2.ZERO, Callable())
+		happenings.tick(STEP, door, Vector2.ZERO)
 		t.check(happenings.market_block.x < 0, "nothing is gone before she has walked anywhere")
 		happenings._elapsed = Tuning.MARKET_GONE_BY
 		happenings._walked = EventDirector.ON_HER_WAY_AFTER
-		happenings.tick(STEP, door, Vector2.ZERO, Callable())
+		happenings.tick(STEP, door, Vector2.ZERO)
 		var block := happenings.market_block
 		t.check(block in candidates, "by then a block waiting to board up is gone (%s)" % block)
 		if block.x >= 0:
@@ -4273,7 +4268,7 @@ func _test_the_market_is_found_gone(t) -> void:
 			state.begin_day(_city.map.block_plans, ResistanceHappenings.MARKET_DAY + 1)
 			t.check(state.purpose_of(_city.map.block_plans, block)
 					== GameEnums.BlockPurpose.BOARDED_UP, "and it stays boarded")
-		happenings.tick(STEP, door, Vector2.ZERO, Callable())
+		happenings.tick(STEP, door, Vector2.ZERO)
 		t.check(happenings.market_block == block, "and the market is gone once")
 		director.free())
 	GameState.attempt_spend.city_state = saved_state
@@ -4303,11 +4298,11 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 		var spine := happenings._spine_x()
 		var far_from_it := Vector2(spine + Tuning.COLUMN_WITHIN * 2.0, door.y)
 		happenings._walked = EventDirector.ON_HER_WAY_AFTER
-		happenings.tick(STEP, far_from_it, Vector2.ZERO, Callable())
+		happenings.tick(STEP, far_from_it, Vector2.ZERO)
 		t.check(happenings.column.is_empty(), "nothing comes while she is far from the main road")
 		var her := Vector2(spine - Tuning.STREET_WIDTH * 0.5 * Tuning.TILE_SIZE + Tuning.TILE_SIZE,
 				map.size.y * Tuning.TILE_SIZE * 0.5)
-		happenings.tick(STEP, her, Vector2.ZERO, Callable())
+		happenings.tick(STEP, her, Vector2.ZERO)
 		t.check(happenings.column.is_empty(),
 				"near it, the column's warning goes up with no truck in the world yet")
 		var warning := _warning_for(_city.events, "military_convoy")
@@ -4373,14 +4368,14 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 					("and from the badge to the earliest its field reaches her is %.2fs, at least "
 					% (warning.shown + to_reach))
 					+ "the %.2fs it is owed" % warning.def.minimum_telegraph())
-		happenings.tick(STEP, her, Vector2.ZERO, Callable())
+		happenings.tick(STEP, her, Vector2.ZERO)
 		t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS, "and it comes once")
 		for truck in trucks:
 			_city.events.retire(truck)
 
 		director.start_day(ResistanceHappenings.COLUMN_DAY, _rng(13, "resistance"), 300.0)
 		happenings._elapsed = Tuning.COLUMN_BY
-		happenings.tick(STEP, far_from_it, Vector2.ZERO, Callable())
+		happenings.tick(STEP, far_from_it, Vector2.ZERO)
 		_city.events.warnings.run(convoy.telegraph_time + STEP, far_from_it)
 		t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS,
 				"at COLUMN_BY it comes wherever she is")
