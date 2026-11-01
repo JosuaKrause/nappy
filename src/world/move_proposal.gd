@@ -57,11 +57,11 @@ var radius := 0.0
 var yields := false
 ## **Whether a walker goes round it while it stands still**, not only while it moves: true for an
 ## object or a vehicle, false for a person or an animal, whom a walker may walk through while they
-## stand (inbox #905). Read by the pass a walker gives way through (`SeparationPass`); a crowd car
+## stand (inbox #905 in freckled-moose). Read by the pass a walker gives way through (`SeparationPass`); a crowd car
 ## stands for a figure in its lane whichever it is. Set by the mover from what it is: an event from
 ## its row (`EventDef.stands_as`); a cordon officer is a person, so his stays false.
 var stood_round := false
-## **Whether it has parked: stands where it is for good** (inbox #909). A crowd car standing behind
+## **Whether it has parked: stands where it is for good** (inbox #909 in freckled-moose). A crowd car standing behind
 ## a parked figure in its lane turns round, as at a blocked street, and waits behind any other
 ## (`SeparationPass.edge_ahead()`). Set by the mover as it goes: an event from its row's
 ## `EventDef.when_it_stops` and where it is in its life (`EventInstance`); a cordon officer walks on,

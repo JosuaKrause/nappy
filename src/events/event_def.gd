@@ -765,7 +765,7 @@ enum SolidWhen {
 ## copy of it, and `fire_truck`.
 @export var vehicle: VehicleSpec = null
 
-## **What the row's figure is to a crowd walker that meets it standing still** (inbox #905): a
+## **What the row's figure is to a crowd walker that meets it standing still** (inbox #905 in freckled-moose): a
 ## walker may walk through a person or an animal standing still, and walks round an object or a
 ## vehicle. A figure under way is given way to whatever it is, and a crowd car stands for any figure
 ## in its lane once it has moved, whatever it is; this is only the walker's question about a figure
@@ -794,7 +794,7 @@ enum StandsAs {
 
 @export var stands_as := StandsAs.UNDECLARED
 
-## **Whether the row's figure, once it stands, stands there for good** (inbox #909): what tells a
+## **Whether the row's figure, once it stands, stands there for good** (inbox #909 in freckled-moose): what tells a
 ## crowd car behind it in its lane to turn round, as it does at a blocked street, rather than wait.
 ## A crowd car stands for any figure in its lane, moving or standing, and never drives through one;
 ## behind a figure that has parked it turns round, and behind one that is only stopping — the patrol

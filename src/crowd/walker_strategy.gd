@@ -496,8 +496,8 @@ func make_way_for(here: Vector2, velocity: Vector2) -> void:
 
 ## **A walker gives way to an event figure** (inbox #884 in plaid-raven: the crowd yields, and a
 ## pedestrian does not want to be overrun): to every figure under way, and to a standing one that is
-## an object or a vehicle, while a person or an animal standing still may be walked through (inbox
-## #905; which figures, `SeparationPass`'s class doc). It makes way for each one coming at it as it
+## an object or a vehicle, while a person or an animal standing still may be walked through (inbox #905 in freckled-moose;
+## which figures, `SeparationPass`'s class doc). It makes way for each one coming at it as it
 ## does for her (`make_way_for()`), so it moves over a lane within its own footway before the figure
 ## arrives; and its proposed step is then moved clear of every figure's body (`SeparationPass.
 ## clear_of_the_keepers()`), which is the guarantee, since a sidestep is an approach and an approach

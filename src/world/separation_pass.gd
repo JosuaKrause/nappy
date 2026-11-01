@@ -18,12 +18,12 @@ extends RefCounted
 ##   it** (`MoveProposal.stood_round`): an object or a vehicle — a parked van, the patrol car at a
 ##   light, the fire engine at its fire — and not a person or an animal, whom a walker may walk
 ##   through while they stand: a street musician, a policeman standing for his notice, a dog waiting
-##   or crouched before its charge (inbox #905). A standing object with a solid body is walked round
+##   or crouched before its charge (inbox #905 in freckled-moose). A standing object with a solid body is walked round
 ##   by its tiles as well (`CityMap.obstructed_tiles`).
 ## - **A crowd car gives way to a keeper that has moved since this pass first saw it**, moving or
 ##   standing, for as long as it stands, and never drives through one; **behind one that has parked**
 ##   (`MoveProposal.parked`, the fire engine at its fire) it turns round as at a blocked street
-##   (inbox #909). What was placed and has never moved is left to the map: a solid body is a
+##   (inbox #909 in freckled-moose). What was placed and has never moved is left to the map: a solid body is a
 ##   blockage the car brakes for and turns round at, and a door's boom has its own hold.
 ##
 ## **Read at each crowd body's own step, against the others' committed poses.** `gather()` takes the

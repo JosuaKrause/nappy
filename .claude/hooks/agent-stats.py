@@ -13,7 +13,7 @@ lines by agent id when the orchestrator grades the agent.
 The data stays outside the repository. The hook never fails or slows a session: any error goes to
 errors.log beside the data and the exit status is 0 (the timeout is in .claude/settings.json).
 
-Codex support is frozen (inbox #901) and the adapter, tools/codex-hooks.py, does not carry this hook.
+Codex support is frozen (inbox #901 in freckled-moose) and the adapter, tools/codex-hooks.py, does not carry this hook.
 """
 
 import json

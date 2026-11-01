@@ -4,7 +4,7 @@ The layers are orchestrating's "Code is designed by layer" (minty-quail's: data 
 the domain model, the world, simulation, run flow, observers), with the screen's own view beside the
 observers and the composition root at the top. A layer may name only what is on its own layer or
 below, and the observers and the view, which stand at one level, name neither the other (the
-player's, inbox #904);
+player's, inbox #904 in freckled-moose);
 the world and simulation layers are also handed what they read rather than fetching it through a
 group, an autoload or a static holding state.
 
