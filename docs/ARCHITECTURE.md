@@ -429,6 +429,8 @@ tools/
   cost_table.gd           the survey itself, run headless as a scene (needs the Tuning autoload)
   lint.sh                 the governed docs, for sentences that go stale on their own
   pycheck.sh              ruff, mypy and the unit tests for the Python here
+  check_layers.py         holds src/ to its layers; layer_map.py is the map, as data, and its
+                          list of the breaks that still stand
   split-scenes.py         regenerate or check the pipe/crash static and moving SVG spans,
                           runtime registration and atlas membership; evidence metadata is an
                           explicit output rather than an ordinary regeneration side effect
@@ -444,6 +446,31 @@ tools/
   codex-hooks.py          adapts Codex's hook payloads to the shared hooks in .claude/hooks/
   test_*.py               the unit tests pycheck.sh runs
 ```
+
+### Layers
+
+Every file under `src/` sits in one layer, and a layer names only its own and the ones below it
+(**orchestrating**, "Code is designed by layer"). Lowest first: **data and configuration** (the
+catalogue, `Tuning`, `RunConfig`, the specs, `Texts`, the art's pages, the value types rows are
+written in), **the domain model** (the map and its interface, generation, routes, closures, the
+run's sub-states, the building's plan), **the world** (the navigator, the world's context, the draw
+layers, siting, and the scene nodes that draw the city's and the building's ground and furniture),
+**simulation** (her, the baby, the crowd, the events, the resistance, each with the looks it draws
+itself by), **run flow** (the day's director and controller, the screens' order), **observers** (the
+run log, GoatCounter, the save, the developer's readouts) and **the view** (the HUD, the screens, the
+badges, the halo, the controls), **siblings at one level** that both read from the run flow and the
+simulation below and neither names the other (the player's, inbox #904), and **the composition
+root** (`main.gd` and the developer's rigs). The map's lookup (`WorldMap` and its records) is with
+the city maps in the domain model, as the player decided (inbox #904).
+The world and simulation are also handed what they read, never fetching it through a group, an
+autoload or a static that holds state.
+
+`tools/layer_map.py` is the one place that says which folder and which file is in which layer, and
+lists by file every break that still stands, each with its reason and, where a file uses the name
+more than once, how many times; `tools/check_layers.py` holds the code to it in CI and fails on a
+new break (a further use of a listed name included) and on a listed one that is gone. Besides group
+lookups, autoloads and stateful statics, the world and simulation also fetch nothing by an absolute
+node path, from the root or as the current scene.
 
 ### `GameEnums`
 

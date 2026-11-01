@@ -88,6 +88,13 @@ touches (the path table in `CLAUDE.md`). Look for:
   player's); and, from that section's proposal (plush-kestrel), a fix keyed on one row's id or
   picture instead of landing in the shared mechanism, raised as a proposal-backed finding, not as
   the player's rule;
+- an answer to the architecture questions (`references/architecture-questions.md`, under the
+  description's `## Architecture questions`) that does not match the change: the reviewer checks
+  each answer against the diff and `tools/check_layers.py --list` on the head, and an answer either
+  contradicts, or that leaves out a piece or a dependency the diff adds, is a finding (plush-egret
+  #892). So is a break added to `tools/layer_map.py`'s list, or a file moved to another layer
+  there, that no answer justifies. CI sees only that the answers are there and that the code keeps
+  to the map as it stands;
 - a doc the change made false and left as it was;
 - anything the description claims that the diff does not do.
 

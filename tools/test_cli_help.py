@@ -48,6 +48,7 @@ ENTRY_POINTS = (
     "convert-queue-edits.py",
     "release-notes.py",
     "inbox.py",
+    "agent-stats.py",
     "reddit.py",
     "check_citations.py",
     "ci_classify.py",
@@ -56,6 +57,8 @@ ENTRY_POINTS = (
     "ci_queue_update.py",
     "ci_transcription.py",
     "ci_code_pr_queue.py",
+    "ci_pr_questions.py",
+    "check_layers.py",
 )
 
 SOUND_FILES = (
