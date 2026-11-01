@@ -113,7 +113,7 @@ as the `construction` event. **Do not let a closure emit**; it would be a third 
 
 **One seal is loud, and it is the shape of the exception that matters.** `car_accident` is solid
 only where its two cars are (PLAYTEST-63), so its picture's own gaps are walkable and
-`Tuning.CAR_ACCIDENT_INTENSITY` is what stands in them, an excitement field that keeps her from
+`EventCatalogue.CAR_ACCIDENT_INTENSITY` is what stands in them, an excitement field that keeps her from
 walking past. **That is a catalogue row emitting, not a closure emitting** — a seal is an
 `EventDef`, so nothing is added to the sum. A `RoadClosure` contributes nothing, and a seal whose
 picture leaves no gap (`fallen_tree`, `burst_water_main`) carries `intensity = 0.0`. The test for a

@@ -183,7 +183,7 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 
 	# Walking does.
 	var due: Array = []
-	for i in int(round(Tuning.AHEAD_INTERVAL.y * 2.0 / STEP)):
+	for i in int(round(EventDirector.AHEAD_INTERVAL.y * 2.0 / STEP)):
 		due = director.due(STEP, at, north)
 		if not due.is_empty():
 			break
@@ -474,7 +474,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 		var north := Vector2(0.0, -Tuning.WALK_SPEED)
 
 		var due: Array = []
-		for i in int(round(Tuning.AHEAD_INTERVAL.y * 2.0 / STEP)):
+		for i in int(round(EventDirector.AHEAD_INTERVAL.y * 2.0 / STEP)):
 			due = director.due(STEP, at, north)
 			at += north * STEP
 			if not due.is_empty():

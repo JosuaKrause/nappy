@@ -178,5 +178,5 @@ func _test_a_hunting_copy_does_not_share_its_rows_pursuit(t) -> void:
 	t.check(is_equal_approx(hot.pursuit.speed, Tuning.HEAT_HUNTS_SPEED)
 			and is_equal_approx(cold.hunts.pursuit.speed, 0.0),
 			"at the ladder's speed, leaving the row's spec as it was")
-	t.check(hot.notice != null and is_equal_approx(hot.notice.within, Tuning.HEAT_HUNTS_WITHIN),
+	t.check(hot.notice != null and is_equal_approx(hot.notice.within, EventDef.HEAT_HUNTS_WITHIN),
 			"noticing her at the ladder's distance")

@@ -340,7 +340,7 @@ func _test_the_manager_streams_a_behaviours_state(t) -> void:
 ## **A roadblock's spent guard and the post he left come back across a stream-out**
 ## (`EventBarrierPost`), as only the barrier; a barrier whose guards both stand carries nothing.
 func _test_the_barrier_post_round_trips(t) -> void:
-	var def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.HEAT_HUNTS_LEVEL)
+	var def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
 	var first := _instance(t, def, Vector2.ZERO)
 	t.check(first.save_behaviours().get(&"EventBarrierPost", {}).is_empty(),
 			"both guards at their posts, there is nothing to carry")

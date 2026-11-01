@@ -578,7 +578,7 @@ func _test_a_placed_crash_keeps_its_two_car_bodies(t) -> void:
 ## `Tuning.METER_MAX / 2` line `tests/test_crowd.gd` draws between *expensive* and *fatal*, taken
 ## deliberately on the fatal side.
 ##
-## **Walked, not asserted about the constant.** `Tuning.CAR_ACCIDENT_INTENSITY` is set from
+## **Walked, not asserted about the constant.** `EventCatalogue.CAR_ACCIDENT_INTENSITY` is set from
 ## `tests/probes/m118_crash_gap.gd`, which walks the same lines and prints them; this holds the
 ## thing that number was chosen for, so a change to the falloff shape, the radii or the parts fails
 ## here rather than passing a number back to itself. The **cheapest** open line is what it measures:

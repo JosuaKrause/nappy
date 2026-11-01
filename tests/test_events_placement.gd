@@ -74,7 +74,7 @@ func run(t) -> void:
 ## **A floor is kept at the highest of the share's own ceiling (0.35 whole, 0.40 narrow) or a lower
 ## number the measurement clears by at least 1.5 points**, so a small future regression fails loudly
 ## rather than drifting under a floor nobody re-measured. Measured over the days sampled here, with
-## `Tuning.WALL_WORTH_OF_COST` at 48 and the last day carrying its spur to the power station's door
+## `EventScheduler.WALL_WORTH_OF_COST` at 48 and the last day carrying its spur to the power station's door
 ## (`RouteTree.for_day`) and a roadblock's band costing nothing: the whole share stands at 36.92%
 ## (127 of 344 rows), more than 1.5 points above its own 0.35 ceiling, so the floor is the ceiling —
 ## 0.35. The narrow share stands at 38.20% (34 of 89 rows), under its own 0.40 ceiling, so its floor
@@ -86,7 +86,7 @@ func run(t) -> void:
 ## corridor reshuffles it**: the roll draws over per-tile copies, so moving the weight of even two
 ## junction-box cells changes every
 ## later draw of the day. Re-measure rather than trust either number if the catalogue's
-## `pavement_side`/`obstructs_radius` pairing, `Tuning.WALL_WORTH_OF_COST`, which walls get
+## `pavement_side`/`obstructs_radius` pairing, `EventScheduler.WALL_WORTH_OF_COST`, which walls get
 ## `EVENT_WALL_RIM_WEIGHT`, or the corridor any sampled day grows, moves again.
 ##
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
@@ -154,7 +154,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 			if plan.role == GameEnums.BlockerRole.WALL:
 				walls += 1
 				t.check(plan.def.hard_fail
-						or plan.def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST
+						or plan.def.walk_through_cost() >= EventScheduler.WALL_WORTH_OF_COST
 						or EventScheduler._takes_a_whole_sidewalk(plan.def)
 						or EventScheduler._a_pacing_beat_walls_a_sidewalk(plan, map),
 						"day %d: '%s' is a wall because it is lethal, very costly, leaves no line"
@@ -203,7 +203,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	# deadly"* is a claim about which of the two is further from the routes, so that is what is
 	# asserted: a day where both bands happened to be equally deep would satisfy any pair of
 	# thresholds and would not be a gradient. `dog_walker` staying friction is the other half and is
-	# checked where the constant is set — see `Tuning.WALL_WORTH_OF_COST`.
+	# checked where the constant is set — see `EventScheduler.WALL_WORTH_OF_COST`.
 	t.check(placed[true] > 10 and placed[false] > 10,
 			"the sample has both kinds of wall in it (%d lethal, %d very costly)"
 			% [placed[true], placed[false]])
@@ -239,7 +239,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 ## **Anything the day still aims at the route can be walked past on the route's own sidewalk.**
 ## *(PLAYTEST-77: "on the side of the street where the path was chosen only obstacles that can be
 ## bypassed should be possible.")* Friction is the role weighted *onto* the corridor
-## (`Tuning.EVENT_CORRIDOR_WEIGHT`, four copies of an on-corridor tile in the roll), so what stays
+## (`EventScheduler.EVENT_CORRIDOR_WEIGHT`, four copies of an on-corridor tile in the roll), so what stays
 ## friction is what the guidance walks her into — and a sidewalk is two lanes of tile, so a row
 ## reaching across both of them from either has taken the last line along it.
 ##
@@ -864,7 +864,7 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 
 ## **A flock is scenery — overturned on 2026-09-13**, PLAYTEST-71: *"flocks are basically free
 ## already — don't count it as block, just count is scenery."* Under the plain cost rule a
-## 42-over-168px field crosses `Tuning.WALL_WORTH_OF_COST`, so without `EventDef.Role.SCENERY`
+## 42-over-168px field crosses `EventScheduler.WALL_WORTH_OF_COST`, so without `EventDef.Role.SCENERY`
 ## `_role_for` would call `pigeon_flock` a `WALL` and `_copies_of` would pull it off every route
 ## corridor the way any other expensive row is. `Role.SCENERY` is checked first and answers `NONE`.
 ##

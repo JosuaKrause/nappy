@@ -9,7 +9,7 @@ extends RefCounted
 ## each row's `weight` gives it among the rows the director sites that day (`AHEAD_OF_PLAYER` and
 ## `TOWARD_PLAYER`). It drives the director the way `tests/probes/m99_caps.gd` does — a whole day of
 ## continuous walking down a real pavement, bounced at the map's edges — so the count per day is the
-## pacing's own (`Tuning.AHEAD_INTERVAL`), and what differs between a roll and a bag is only which
+## pacing's own (`EventDirector.AHEAD_INTERVAL`), and what differs between a roll and a bag is only which
 ## row each handout is.
 ##
 ## Printed per day and over the whole sweep: how many route rows the dawn bought, how many she met,
@@ -27,7 +27,7 @@ const SEEDS := 12
 const DAYS: Array[int] = [1, 2, 3, 4, 6, 8, 10, 12, 14]
 const BASE_SEED := 772041
 const STEP := 0.2
-## Seconds of walking home, act III and act IV — the return legs `Tuning.RETURN_PATROLS_PER_ACT` names.
+## Seconds of walking home, act III and act IV — the return legs `EventDirector.RETURN_PATROLS_PER_ACT` names.
 const RETURN_LEG := {3: 33.0, 4: 47.0}
 
 func run(t) -> void:
@@ -156,7 +156,7 @@ func _measure_the_return() -> void:
 					vel.y = -vel.y
 					pos.y = clampf(pos.y, 0.0, y_max)
 				t += step
-			var count: int = Tuning.RETURN_PATROLS_PER_ACT[act - 1]
+			var count: int = EventDirector.RETURN_PATROLS_PER_ACT[act - 1]
 			owed += count
 			landed += in_leg
 			legs += 1

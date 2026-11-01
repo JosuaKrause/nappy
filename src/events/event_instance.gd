@@ -9,6 +9,9 @@ extends Node2D
 ## baby, so there is no ordering to get wrong, events compose by simple addition, and the whole
 ## thing is testable without a scene.
 
+## Fraction of full intensity an event emits while still telegraphing.
+const TELEGRAPH_INTENSITY_FRACTION := 0.15
+
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
 var path: PackedVector2Array = PackedVector2Array()
@@ -1597,9 +1600,9 @@ static func _pulse_mean_multiplier(age: float, horizon: float, period: float) ->
 ## telegraph.
 func _notice_damping() -> float:
 	if is_waiting():
-		return Tuning.TELEGRAPH_INTENSITY_FRACTION if def.notice.quiet else 1.0
+		return TELEGRAPH_INTENSITY_FRACTION if def.notice.quiet else 1.0
 	if is_telegraphing() and (def.notice == null or def.notice.quiet):
-		return Tuning.TELEGRAPH_INTENSITY_FRACTION
+		return TELEGRAPH_INTENSITY_FRACTION
 	return 1.0
 
 ## `current_intensity()` with the telegraph's own damping undone — the rate this row will
@@ -1724,7 +1727,7 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 ## **Cars that drive are the only rows lethal without `hard_fail`** (`EventDef.vehicle`): one strikes
 ## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
 ## else — not behind it, not beside it, not while it stands (`EventCarDriving.is_driving()`). A body touching her is
-## not enough, and not needed: the strike reaches `Tuning.PATROL_STRIKE_LEAD` of its travel past the
+## not enough, and not needed: the strike reaches `EventCarDriving.PATROL_STRIKE_LEAD` of its travel past the
 ## touch, so a car driving its nose into her strikes her rather than standing for her (`EventCarDriving`).
 ## Its telegraph is not asked: its warning is a car's, `EventCarDriving.closes_on()`, not a field coming up to
 ## strength.

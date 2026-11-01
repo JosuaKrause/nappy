@@ -54,7 +54,7 @@ func _test_no_row_is_city_wide(t) -> void:
 	t.check(loudspeaker.outer_radius > loudspeaker.inner_radius,
 			"the loudspeaker has an edge a route can go round")
 	t.check(curfew.outer_radius > curfew.inner_radius,
-			"so does the curfew announcement it carries on Tuning.CURFEW_ANNOUNCE_DAY")
+			"so does the curfew announcement it carries on EventScheduler.CURFEW_ANNOUNCE_DAY")
 
 # ------------------------------------------------------------------- sites ---
 
@@ -99,7 +99,7 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t) -> void:
 		var reach := EventCatalogue.by_id("loudspeaker").outer_radius
 		var doorstep := map.doorstep_world_position()
 		var home := map.home_world_position()
-		var home_margin := Tuning.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
+		var home_margin := MastSites.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
 		for site in MastSites.compute(map):
 			checked += 1
 			var tile_type := map.tile_at(map.world_to_tile(site.foot))
@@ -119,7 +119,7 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t) -> void:
 					continue
 				seen[anchor] = true
 				var interior := map.tile_rect_to_world(map.lot_rect(block)).grow(
-						-Tuning.MAST_CALM_INTERIOR_MARGIN)
+						-MastSites.MAST_CALM_INTERIOR_MARGIN)
 				if not interior.has_area():
 					continue
 				var closest := Vector2(clampf(site.foot.x, interior.position.x, interior.end.x),
@@ -249,7 +249,7 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
 		t.check(is_zero_approx(plan.live.current_intensity()), "still no field")
 
 func _test_silencing_every_mast_works_for_the_rest_of_the_day(t) -> void:
-	_city.events.start_day(DaySpec.for_day(Tuning.CURFEW_ANNOUNCE_DAY), _rng(Tuning.CURFEW_ANNOUNCE_DAY), [])
+	_city.events.start_day(DaySpec.for_day(EventScheduler.CURFEW_ANNOUNCE_DAY), _rng(EventScheduler.CURFEW_ANNOUNCE_DAY), [])
 	for site in _sites():
 		_city.events.stream_around(site.foot)
 	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `_place_masts()` skips a

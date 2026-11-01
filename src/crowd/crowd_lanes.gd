@@ -44,7 +44,7 @@ const PRECINCT_OFFSETS: Array[int] = [0, 1, 2, 3, 4, 5]
 ## How busy a precinct's pavement is against an ordinary street's. It is the other end of the same
 ## trade the main road is at: nothing on it can kill you, and there is a great deal more of it in
 ## your way. A retail street — *"a lot of foot traffic and restaurants"* — so this is the crowd
-## half of that and `Tuning.EVENT_PRECINCT_WEIGHT` is the other.
+## half of that and `EventScheduler.EVENT_PRECINCT_WEIGHT` is the other.
 const PRECINCT_BUSYNESS := 3.6
 
 ## The lanes a walker may use in a corridor: the whole width of a precinct, the two footways of

@@ -16,7 +16,7 @@ extends Resource
 ## How close she has to come, in px, before it notices her.
 @export var within := 0.0
 
-## Whether the wait and the notice emit `Tuning.TELEGRAPH_INTENSITY_FRACTION` of the row's
+## Whether the wait and the notice emit `EventInstance.TELEGRAPH_INTENSITY_FRACTION` of the row's
 ## intensity, as an ordinary telegraph does: birds pecking on a pavement are nearly nothing until
 ## they go up (`pigeon_flock`). Off for a row whose waiting state is itself the threat.
 @export var quiet := false

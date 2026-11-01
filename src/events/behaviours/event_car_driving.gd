@@ -28,7 +28,7 @@ extends EventBehaviour
 ## **Driving its nose into her on the carriageway is the strike, not a stop.** The step is still
 ## taken back — the body never goes into her — but a car that was driving its route does not stand
 ## for her then: it is still driving, and with her inside the strike area (`_in_front()`, which
-## reaches `Tuning.PATROL_STRIKE_LEAD` past the touch for exactly this) `strikes()` ends the day.
+## reaches `PATROL_STRIKE_LEAD` past the touch for exactly this) `strikes()` ends the day.
 ## What it stands for is the rest — a flank or a corner turned into her, a pram poking over the
 ## kerb, a car leaving.
 ##
@@ -52,6 +52,15 @@ extends EventBehaviour
 ##
 ## **It saves nothing across a stream-out**: whether it stands is decided again every step, and a
 ## car comes into the world standing, streamed back in as when it is first made.
+
+## How far past the touch a patrol car's strike reaches ahead of its nose, in seconds of its own
+## travel (`EventDef.vehicle`): a tenth of a second, 7px at the patrol's 74px/s. The strike has to
+## reach past the point where the car's body would first touch her, because the car never moves its
+## body into her — a step that would is refused — and a strike stated over the touch alone could
+## then never fire: a lethal reach a body stops her short of, which `EventDef.validate()` refuses for
+## a standing thing for the same reason. Seconds rather than pixels so a frame's step at any speed
+## the car drives at, down to ten frames a second, lands inside it.
+const PATROL_STRIKE_LEAD := 0.1
 
 ## How near the car's body may be moved to her and her pram, in px. Above zero so the car stops a
 ## hair short of the contact her own collision already rests at rather than on it.
@@ -101,7 +110,7 @@ func note_the_pose(at: Vector2) -> void:
 	# Never further than the end of a route it stops at (`route_left()`): it never stands for her,
 	# nor turns onto her, where it cannot reach her.
 	_left = route_left(_travelled)
-	_warning = short_of_its_stop(Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME, _left)
+	_warning = short_of_its_stop(PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME, _left)
 	_known = event.player_at != Vector2.INF
 	_ahead_before = _known and meets_her(at, _heading_was, event.player_at, _warning)
 	_was_leaving = event.is_leaving
@@ -142,16 +151,16 @@ func check(move: MoveProposal, ends_its_route: bool) -> bool:
 	event._gait_moving = false
 	var strikes_her := into_her and on_its_route and not _standing and not turns_onto_her \
 			and not past_its_line and meets_her(at, _heading_was, event.player_at,
-					short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, _left))
+					short_of_its_stop(PATROL_STRIKE_LEAD, _left))
 	_standing = not strikes_her
 	return false
 
 ## **Whether it strikes her at `her` now**: driving, with her in front of its nose on the carriageway
-## within `Tuning.PATROL_STRIKE_LEAD` of its travel past the touch, short of the end of a route it
+## within `PATROL_STRIKE_LEAD` of its travel past the touch, short of the end of a route it
 ## stops at. What `EventInstance.is_lethal_at()` answers for a car.
 func strikes(her: Vector2) -> bool:
 	return is_driving() and meets_her(event.global_position, event._heading, her,
-			short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, route_left(event._path_travelled)))
+			short_of_its_stop(PATROL_STRIKE_LEAD, route_left(event._path_travelled)))
 
 ## **Whether it will strike her if she stays where she is**: driving now, and her in front of its
 ## nose on the carriageway from some point of its next `Tuning.EXPECTED_IMPACT_HORIZON` straight
@@ -171,7 +180,7 @@ func will_strike(her: Vector2) -> bool:
 	for i in steps + 1:
 		var ahead := minf(float(i) * speed * 0.25, horizon)
 		if meets_her(event.global_position + event._heading * ahead, event._heading, her,
-				short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, left - ahead)):
+				short_of_its_stop(PATROL_STRIKE_LEAD, left - ahead)):
 			return true
 	return false
 
@@ -252,14 +261,14 @@ func short_of_its_line(seconds: float) -> float:
 	var line := room_to_its_line(event.global_position, event._heading)
 	if line == INF or event.def.speed <= 0.0:
 		return cut
-	return minf(cut, Tuning.PATROL_STRIKE_LEAD + maxf(line, 0.0) / event.def.speed)
+	return minf(cut, PATROL_STRIKE_LEAD + maxf(line, 0.0) / event.def.speed)
 
 ## **How far a car that stops where it arrives (`EventDef.stops_where_it_arrives`, the fire engine
 ## at its kerb) has still to go along its route** once it has `travelled`, in px; `INF` for every
 ## other row, which drives on past the end of its route as it leaves. The kerb is a place it stops,
 ## like a line it gives way at, but with nothing past it: where it parks it is not driving, so its
 ## warning, its strike and its standing for her end at the touch it would make there, without
-## `Tuning.PATROL_STRIKE_LEAD` past it. Uncut, an engine parking 7-17px short of her ended the day,
+## `PATROL_STRIKE_LEAD` past it. Uncut, an engine parking 7-17px short of her ended the day,
 ## and one created with her past its kerb stood off screen for as long as she stayed there.
 func route_left(travelled: float) -> float:
 	if not event.def.stops_where_it_arrives or event.def.paces or event.path.size() < 2:
@@ -361,4 +370,4 @@ func _on_the_carriageway(at: Vector2) -> bool:
 ## (`short_of_its_line()`): it will stop there.
 func closes_on(her: Vector2) -> bool:
 	return is_driving() and meets_her(event.global_position, event._heading, her,
-			short_of_its_line(Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME))
+			short_of_its_line(PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME))

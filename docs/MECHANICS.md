@@ -25,10 +25,10 @@ at all. It does not drain either — the baby is just too interested in the worl
 At `sleepiness = 100` the baby falls asleep and the day enters its **return phase**.
 
 **In acts III and IV, the return leg owes its own pressure.** `EventDirector.owe_the_return()`
-fires the moment `EventBus.return_phase_started` does, owing `Tuning.RETURN_PATROLS_PER_ACT`
+fires the moment `EventBus.return_phase_started` does, owing `EventDirector.RETURN_PATROLS_PER_ACT`
 (`[0, 0, 2, 3]`) extra `police_patrol` rows, each rigged into her route's bag so it comes within
-`Tuning.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before, and switching its pacing to
-`Tuning.RETURN_PATROL_INTERVAL` (9–16s, tighter than the ordinary 11–26s) for the rest of the day
+`EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before, and switching its pacing to
+`EventDirector.RETURN_PATROL_INTERVAL` (9–16s, tighter than the ordinary 11–26s) for the rest of the day
 — see `docs/EVENTS.md`, "The return owes her patrols", for the siting and the fairness. Acts I
 and II are untouched, so the days she is taught the mechanic on stay exactly as they were.
 
@@ -216,7 +216,7 @@ obstacle in each half of a day. See docs/EVENTS.md for the row itself.
 
 `checkpoint_hut` and `checkpoint_post` — the gatehouses and the alley guard a region wall's own door
 stands, see docs/DECISIONS.md, "M62 — Checkpoints that divide the map" — reuse the conversation
-mechanism above at a shorter hold, `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s): a toll paid at every
+mechanism above at a shorter hold, `EventCatalogue.CHECKPOINT_DETAIN_SECONDS` (2s): a toll paid at every
 crossing of the wall has to stay cheap to repeat, where a conversation is spent once.
 
 **The boom between a street door's gatehouses, `checkpoint_gate`, is not an inspection.** *(2026-09-24,
@@ -228,7 +228,7 @@ under it is unlawful: a guard steps out of the nearer gatehouse after her — ru
 does not — and a catch ends the day. See docs/EVENTS.md, "Checkpoints".
 
 **The inspection starts as she walks up, measured from the door body's own wall** —
-`Tuning.CHECKPOINT_DETAIN_REACH` (48px) past its solid edge, rather than a radius from its middle.
+`EventCatalogue.CHECKPOINT_DETAIN_REACH` (48px) past its solid edge, rather than a radius from its middle.
 A door body is something she cannot walk through, so a trigger stated from the middle has to be
 wider than her own body *and* than whatever she is pushing in front of it; stated from the wall,
 one number covers both, and the hold cannot be switched off by a change to the pram. Only the
@@ -271,7 +271,7 @@ is one mechanism for every `redetains` hold: the street doors' gatehouses and th
 
 **The hold charges its toll and nothing else.** While she is inside a door — inside the trigger of
 a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
-flat `Tuning.CHAT_EXCITEMENT` (25) over `Tuning.CHECKPOINT_DETAIN_SECONDS`. Every other event field
+flat `Tuning.CHAT_EXCITEMENT` (25) over `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`. Every other event field
 and the whole crowd are off: a set of sources that holds her alone is the whole of what
 `WorldContext.excitement_sources_at()` answers (`ExcitementSources.all_at()`), and the events' set
 holds her exactly while `CheckpointController.door_holding_her_at()` finds a door. She is in the gatehouse for those two seconds, not on the
@@ -1686,7 +1686,7 @@ hallway, which is why the two stair doors are at opposite ends; the right shaft 
 where the masked man is.
 
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
-of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
+of it, another comes up from the foot `EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
 as she is in the building. The answer is the one the row is built around — step through the
 nearest corridor door and let him pass. **He starts his run the moment she is within 426px of him**
 *(inbox #764 in minty-lemur, inbox #782 in minty-lemur)*, with no warning clock, the one waiting charger without one *(inbox
@@ -1733,7 +1733,7 @@ black. The city she walks out into is the same night, with every window and traf
 from its first frame (docs/CITY.md, "The power station").
 
 **The night outside is light and noise, and they are separate things.** Every
-`Tuning.FINALE_EXPLOSION_INTERVAL` a bomb goes off close enough to shake the building: every
+`EventCatalogue.FINALE_EXPLOSION_INTERVAL` a bomb goes off close enough to shake the building: every
 hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS` and the hallway she is in
 is lit with it, and the meter takes the hit, wherever she is standing. Between those, far more often, a distant flash lights the same
 windows the same way and does nothing else at all — no event, no field, nothing on the meter. A
@@ -1754,7 +1754,7 @@ bands and is one tile wide at three places on the way to the service exit
 stands on each, in the same place every attempt, blowing on its own period out of
 `Tuning.FINALE_STEAM_PERIODS` — 4, 4.5 and 5.5 seconds, pairwise coprime in half-seconds, so the
 three of them never fall into a rhythm. A blow shuts its cell outright for
-`Tuning.FINALE_STEAM_BLOWS_FOR` after a notice, and the shortest period still leaves twice as long
+`EventCatalogue.FINALE_STEAM_BLOWS_FOR` after a notice, and the shortest period still leaves twice as long
 open as walking through the vent's reach costs. Waiting is the answer; there is no line past one.
 Standing at a blowing vent costs the meter hard *("steam should be 40 to 50")*: one blow takes 40 to
 50 points awake at the 30px a vent holds her out, so waiting right at the gate is paid for, and the

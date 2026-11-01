@@ -29,7 +29,7 @@ func run(t) -> void:
 
 func _role_for_the_named_rows() -> void:
 	print("\n== _role_for and walk_through_cost() for the named rows (static, no city needed) ==")
-	print("WALL_WORTH_OF_COST = %.2f" % Tuning.WALL_WORTH_OF_COST)
+	print("WALL_WORTH_OF_COST = %.2f" % EventScheduler.WALL_WORTH_OF_COST)
 	var ids := ["cafe_tables", "market_stall", "construction", "delivery_van",
 			"dog_walker", "homeless_yeller", "loose_dog"]
 	for id in ids:
@@ -46,7 +46,7 @@ func _role_for_the_named_rows() -> void:
 
 func _role_and_depth_sweep() -> void:
 	print("\n== role x Corridor.depth() over %d seeds x days %s (EVENT_CORRIDOR_WEIGHT=%d) =="
-			% [SEEDS, SAMPLE_DAYS, Tuning.EVENT_CORRIDOR_WEIGHT])
+			% [SEEDS, SAMPLE_DAYS, EventScheduler.EVENT_CORRIDOR_WEIGHT])
 	# depth bucket 0 = on the corridor, 1 = rim, 2 = "deep" (2 or more, saturating at Corridor.DEEP)
 	var by_role_depth := {}   # "%s:%d" % [role_name, depth] -> count
 	var by_id_depth := {}     # "%s:%d" % [id, depth] -> count

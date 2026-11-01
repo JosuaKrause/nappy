@@ -146,7 +146,7 @@ const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TI
 ## is the check rather than a formality.** *(2026-09-20: "also protesters have very little
 ## excitement?"; "should be a bit more".)* A wide field at a moderate rate loses more of its price
 ## to the walking decay than a narrow fierce one does, so buying back what the decay took pushes
-## `walk_through_cost()` toward `Tuning.WALL_WORTH_OF_COST` — and a `WALL` is given zero copies on
+## `walk_through_cost()` toward `EventScheduler.WALL_WORTH_OF_COST` — and a `WALL` is given zero copies on
 ## any cell a route runs along (`EventScheduler._copies_of`), which would put a protest off every
 ## route a day plans rather than on one she can be sent to walk through.
 ##
@@ -156,7 +156,7 @@ func _test_a_protest_stays_something_she_can_be_routed_through(t) -> void:
 	var def := EventCatalogue.by_id("protest")
 	t.check(EventScheduler._role_for(def) == GameEnums.BlockerRole.FRICTION,
 			"a protest is friction, so the day may put one on a route she walks (%.1f against "
-			% def.walk_through_cost() + "the %.1f that makes a wall)" % Tuning.WALL_WORTH_OF_COST)
+			% def.walk_through_cost() + "the %.1f that makes a wall)" % EventScheduler.WALL_WORTH_OF_COST)
 
 ## **A door's price is the detention, not the field, and that has to stay true of the one source a
 ## door charges as.** *(2026-09-20: "guard posts should emit less excitement by themselves, too";
@@ -178,10 +178,10 @@ func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t) -> void:
 		if not def.barrier_structure:
 			continue
 		barriers += 1
-		var over_a_hold := def.intensity * Tuning.CHECKPOINT_DETAIN_SECONDS
+		var over_a_hold := def.intensity * EventCatalogue.CHECKPOINT_DETAIN_SECONDS
 		t.check(over_a_hold < Tuning.CHAT_EXCITEMENT,
 				("one '%s' bills %.1f over a %.0fs hold at its core rate, under the %.1f the hold "
-				+ "itself charges") % [def.id, over_a_hold, Tuning.CHECKPOINT_DETAIN_SECONDS,
+				+ "itself charges") % [def.id, over_a_hold, EventCatalogue.CHECKPOINT_DETAIN_SECONDS,
 				Tuning.CHAT_EXCITEMENT])
 	t.check(barriers > 0, "there were barrier structures to ask (%d)" % barriers)
 

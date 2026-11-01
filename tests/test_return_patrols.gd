@@ -34,7 +34,7 @@ func _director(map: CityMap) -> EventDirector:
 
 # ---------------------------------------------------------------------- owing ---
 
-## `Tuning.RETURN_PATROLS_PER_ACT` is `[0, 0, 2, 3]`: acts I and II owe nothing, so the teaching
+## `EventDirector.RETURN_PATROLS_PER_ACT` is `[0, 0, 2, 3]`: acts I and II owe nothing, so the teaching
 ## days and the return she learns the mechanic on are untouched; III and IV owe a small, fixed
 ## batch each.
 func _test_owed_count_per_act(t) -> void:
@@ -43,7 +43,7 @@ func _test_owed_count_per_act(t) -> void:
 		var act := Tuning.act_for_day(day)
 		var director := _director(map)
 		director.owe_the_return(day, 0)
-		var expected: int = Tuning.RETURN_PATROLS_PER_ACT[act - 1]
+		var expected: int = EventDirector.RETURN_PATROLS_PER_ACT[act - 1]
 		t.check(director.owed() == expected,
 				"day %d (act %d) owes %d return patrol(s), got %d"
 				% [day, act, expected, director.owed()])
@@ -60,7 +60,7 @@ func _test_no_double_batch_in_a_day(t) -> void:
 	t.check(director.owed() == once,
 			"a second 'return started' the same day owes nothing more (%d, then %d)"
 			% [once, director.owed()])
-	t.check(once == Tuning.RETURN_PATROLS_PER_ACT[3], "the one batch is the whole of act IV's count")
+	t.check(once == EventDirector.RETURN_PATROLS_PER_ACT[3], "the one batch is the whole of act IV's count")
 
 ## `--force <id>` replaces the day's own queue with nothing but the forced row — there is no
 ## ordinary queue left for the return to add to or re-pace, and the brief says leave it alone.
@@ -83,29 +83,29 @@ func _test_forced_queue_is_untouched(t) -> void:
 
 # --------------------------------------------------------------------- pacing ---
 
-## Before the return is owed the queue rolls `Tuning.AHEAD_INTERVAL`; once it is owed, the rest of
-## the day rolls the tighter `Tuning.RETURN_PATROL_INTERVAL` instead, so the extra rows have a
+## Before the return is owed the queue rolls `EventDirector.AHEAD_INTERVAL`; once it is owed, the rest of
+## the day rolls the tighter `EventDirector.RETURN_PATROL_INTERVAL` instead, so the extra rows have a
 ## chance to land inside the leg rather than after she is home.
 func _test_pacing_switches_after_the_return_is_owed(t) -> void:
 	var map := _map()
 	var director := _director(map)
 	for i in 20:
 		var interval: float = director._roll_interval()
-		t.check(interval >= Tuning.AHEAD_INTERVAL.x and interval <= Tuning.AHEAD_INTERVAL.y,
-				"before the return, %.2fs is inside AHEAD_INTERVAL %s" % [interval, Tuning.AHEAD_INTERVAL])
+		t.check(interval >= EventDirector.AHEAD_INTERVAL.x and interval <= EventDirector.AHEAD_INTERVAL.y,
+				"before the return, %.2fs is inside AHEAD_INTERVAL %s" % [interval, EventDirector.AHEAD_INTERVAL])
 
 	director.owe_the_return(13, 0) # act IV
 	for i in 20:
 		var interval: float = director._roll_interval()
-		t.check(interval >= Tuning.RETURN_PATROL_INTERVAL.x
-				and interval <= Tuning.RETURN_PATROL_INTERVAL.y,
+		t.check(interval >= EventDirector.RETURN_PATROL_INTERVAL.x
+				and interval <= EventDirector.RETURN_PATROL_INTERVAL.y,
 				"after the return, %.2fs is inside RETURN_PATROL_INTERVAL %s"
-				% [interval, Tuning.RETURN_PATROL_INTERVAL])
+				% [interval, EventDirector.RETURN_PATROL_INTERVAL])
 
 ## *(inbox #561 in coral-bunny: "The return patrols in acts III and IV are added at the back of the route queue --
 ## the marble bag approach will properly fix this" · "they will need rigged bags".)* On a real act
 ## IV day, whose dawn bought dozens of route events, the return's patrols are not left behind them:
-## each comes within `Tuning.RETURN_PATROL_WITHIN_THE_NEXT` events of the return or of the patrol
+## each comes within `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the return or of the patrol
 ## before it, so all of them are met within that many events each.
 func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
 	var map := _map()
@@ -120,8 +120,8 @@ func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 29
 	director.start_day(day, plans, rng)
-	var count: int = Tuning.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(day) - 1]
-	var x := Tuning.RETURN_PATROL_WITHIN_THE_NEXT
+	var count: int = EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(day) - 1]
+	var x := EventDirector.RETURN_PATROL_WITHIN_THE_NEXT
 	t.check(director.owed() > count * x, "the day owes more than the patrols' bags (%d)"
 			% director.owed())
 	var at := CrowdLanes.arterial_pavement(map)
@@ -170,7 +170,7 @@ func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t) -> void:
 	for id: String in director._ordinary_rows:
 		director._met_today[id] = (director._route_rows[id] as EventDef).max_per_day
 	director.owe_the_return(day, 0)
-	var count: int = Tuning.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(day) - 1]
+	var count: int = EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(day) - 1]
 	var at := CrowdLanes.arterial_pavement(map)
 	at.y = map.world_size().y * 0.5
 	var velocity := Vector2(0.0, -Tuning.WALK_SPEED)

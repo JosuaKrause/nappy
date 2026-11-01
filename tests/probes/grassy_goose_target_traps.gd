@@ -173,7 +173,7 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 	if hut == null:
 		return [her]
 	var out := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
-			+ Tuning.CHECKPOINT_RELEASE_MARGIN
+			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	return [hut.position + hut.facing * out, hut.position - hut.facing * out]
 
 ## `_draw_arrival_position()` asked with the day's view looked through about `her`, the

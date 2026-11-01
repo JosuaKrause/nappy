@@ -257,7 +257,7 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 		still_grounded = still_grounded and is_zero_approx(bird.lift)
 	t.check(still_grounded, "every bird is on the pavement, which is what she can see from there")
 	t.close_to(instance.current_intensity(),
-			def.intensity * Tuning.TELEGRAPH_INTENSITY_FRACTION,
+			def.intensity * EventInstance.TELEGRAPH_INTENSITY_FRACTION,
 			"and pecking costs a fraction of what going up does", 0.1)
 
 	# She comes inside the trigger: the notice starts here rather than at dawn.

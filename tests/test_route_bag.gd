@@ -243,7 +243,7 @@ func _test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t) -> void:
 # ------------------------------------------------------------- her route ---
 
 ## Over the first bag's length of what the director hands out, every row is met exactly as often as
-## the bag holds it — `Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight — whatever
+## the bag holds it — `EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight — whatever
 ## order they come in. A roll at the same weights misses that on most days (the probe
 ## `tests/probes/olive_badger_route_mix.gd` measures how far), so three seeds holding it is the bag.
 func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
@@ -265,8 +265,8 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 		for id: String in director._route_rows:
 			weights[id] = (director._route_rows[id] as EventDef).weight
 		var expected := {}
-		for marble: String in MarbleBag.in_proportion(weights, Tuning.ROUTE_BAG_MARBLES_PER_WEIGHT,
-				Tuning.ROUTE_BAG_MARBLES_OF):
+		for marble: String in MarbleBag.in_proportion(weights, EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT,
+				EventDirector.ROUTE_BAG_MARBLES_OF):
 			expected[marble] = int(expected.get(marble, 0)) + 1
 		var length := 0
 		for id: String in expected:
@@ -342,7 +342,7 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
 		# The next marble fills the ordinary bag: the lesson took none of it.
 		bag.peek()
 		var ordinary := bag.bag_in_front()
-		var dogs: int = Tuning.ROUTE_BAG_MARBLES_OF["charging_dog"]
+		var dogs: int = EventDirector.ROUTE_BAG_MARBLES_OF["charging_dog"]
 		t.check(ordinary.count("charging_dog") == dogs,
 				"seed %d: the ordinary bag after the lesson keeps all %d of its dog marbles (%d of %d)"
 				% [seed_value, dogs, ordinary.count("charging_dog"), ordinary.size()])
@@ -394,7 +394,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 	director.owe_the_return(day, 0)
 	var mast: Array[String] = ["loudspeaker"]
 	director.rig_her_route(mast, 1, 0, siting)
-	var count: int = Tuning.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(day) - 1]
+	var count: int = EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(day) - 1]
 	t.check(count > 0 and director.route_bag().peek() == "loudspeaker",
 			"day %d owes %d return patrols, and a mast is the next marble in front of them" % [day, count])
 	var at := CrowdLanes.arterial_pavement(map)
