@@ -20,5 +20,4 @@ The review removed each key field in turn and reran the suite; these survived:
   fails. Copy the audit script into a throwaway git repository and test the refusal there.
 - The two evidence runners (the classification one and the prediction one) are copies, the second
   weaker, and both are now load-bearing (the preflight test runs them; CI's sparse checkout keeps
-  them). Move the shared runner under `tools/` before a third experiment copies it. This was
-  raised before the merge as optional and left.
+  them). Move the shared runner under `tools/` before a third experiment copies it.

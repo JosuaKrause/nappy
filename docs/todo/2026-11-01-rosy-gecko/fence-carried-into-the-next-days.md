@@ -19,4 +19,4 @@ only an unrun start of that regression in `tests/test_spent_park.gd`. With it,
 available calm zone"), which is why the tree refuses a branch ending at a used area; the
 night escape's repaint dropping a fence chosen on day 13 or 14 stays ("night escape doesn't
 need a fence in a park"); M129's record stops saying the park "is closed",
-and the "Amber otter" records in `DECISIONS.md` are renamed after M129.
+and the "Amber otter" records under `docs/decisions/` are renamed after M129.
