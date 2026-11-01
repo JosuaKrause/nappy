@@ -21,7 +21,7 @@ const SEED := 4242
 const STEP := 1.0 / 60.0
 
 ## Run seeds the bag is measured over, and the cyclists a run is given in the measurement: a little
-## over the 26 a run meets on average (`docs/todo/2026-10-05-pebbly-ibis/README.md`), so the share of
+## over the 26 a run meets on average (`docs/evidence/pelican-cyclists-2026-10-05/README.md`), so the share of
 ## runs with a pelican is near 30/400, 7.5%: 400 runs, 30 expected, a standard deviation near 5.3.
 const SHARE_SEEDS := 400
 const CYCLISTS_PER_RUN := 30

@@ -142,7 +142,9 @@ tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer` (
 says whether the role is usable; the `gh` command that posts the review then runs through `uv run
 python tools/agent-identity.py run claude-reviewer -- <command>` (or `codex-reviewer`) instead of
 running it directly, so the comments and the review event show as `claude-reviewer[bot]` or
-`codex-reviewer[bot]`. **When the role is not usable (not created yet, not installed, or a cloud
+`codex-reviewer[bot]`. **A review's text is written to a file first and passed to the API with
+capital `-F`** (`-F body=@file`, as **using-tools** says): lowercase `-f` (`--raw-field`) sends the
+literal text `@file` as the body, and the review then has to be edited. **When the role is not usable (not created yet, not installed, or a cloud
 session), the review stops there and is reported to the player instead — it is never posted as the
 player** (tall-egret). That holds where the write guard can ask (**committing**, "Who a commit and a
 pull request are from"): a review's findings are never sent as a `gh pr comment` or any other write

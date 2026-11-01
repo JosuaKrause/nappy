@@ -261,9 +261,13 @@ each entry is still the same item until the player has what they asked for. The 
 probe found goes on that PR, whatever name or number the queue gave it; a new PR is for a new
 question.
 
-**A pull request carries every document its own changes make false.** Not a follow-up, not a
-cleanup pass afterwards, not a note for the next session: the doc edit is part of the change and
-lands in the same PR. That covers the queue — the entry's folder under `docs/todo/`, which goes
+**A pull request carries every consequence of its own changes, documents first** (minty-lemur #763).
+Not a follow-up, not a cleanup pass afterwards, not a note for the next session, and not left for
+whoever later merges `main` into another branch: the edit is part of the change and lands in the
+same PR. A doc the change makes false is the commonest case, but a picture it makes stale, a test it
+makes wrong and the text of another open PR it makes untrue (a sentence, a strip picture, a side
+view) are fixed the same way, by the change that made them; the reconciliation when `main` is
+merged into the other PR is not where the omission is meant to be found. That covers the queue — the entry's folder under `docs/todo/`, which goes
 stale fastest because it holds the work the PR just did — and every other governed doc the change
 touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`, `README`,
 `CLAUDE.md`, the skills, and the docstrings on anything edited. **A PR that finishes an item deletes
@@ -289,7 +293,8 @@ their own doc debt is how three files come to carry three different answers to o
 the pass that untangles it is a milestone rather than a review comment.
 
 **The test is the same one the docs rule uses:** if `main` at the squashed commit would hand a fresh
-reader a sentence that is no longer true, the PR is not finished. Read the entry's own folder
+reader a sentence that is no longer true, or a picture, a test or another PR's text that no longer
+matches what the change did, the PR is not finished. Read the entry's own folder
 before proposing, not after.
 
 **And every doc the change owes is in the PR before it merges. This is a hard requirement**

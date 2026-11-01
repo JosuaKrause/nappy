@@ -51,8 +51,9 @@ make the intro a slog. we want to start right into the action" (curly-moose #819
 bubbles (`thought-bubbles.md`) "might even make the text obsolete".
 
 **Items:** `hand-crafted-day-one.md`, `car-free-start.md`, `thought-bubbles.md`,
-`the-loss-shown.md`, `day-one-milestones.md`, `opening-shot.md` (an experiment), `junction-signs.md`,
-`day-two.md`.
+`the-loss-shown.md`, `opening-shot.md` (an experiment), `junction-signs.md`, `day-two.md`. The
+GoatCounter events measuring day one are their own entry, filed ahead of this one so a window
+before the change exists ([tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #927: "yes, split").
 
 **After the escape.** The player: "the task is clear refactor then escape then tutorial"
 (minty-dolphin #852), and earlier "the escape and day one fixes can go after the refactor"
