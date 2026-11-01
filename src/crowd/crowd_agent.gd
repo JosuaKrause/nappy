@@ -40,7 +40,7 @@ var excitement := CrowdExcitement.new(self)
 ## `CarLook.BOB_STEPS_PER_PX` — the two things each kind draws that move without the sector moving.
 ##
 ## **This is the quantised half of what the drawing reads, and a car has a continuous half too** —
-## `_drawn_heading` below. See `_end_the_frame()`.
+## `_drawn_heading` below. See `end_the_frame()`.
 var _picture := Vector3i(-1, -1, -1)
 ## The live heading a car's picture was last drawn at, quantised by `CarLook.HEADING_STEPS` — the other
 ## half of the redraw key. Always `Vector2i.ZERO` for a walker, whose drawing reads no heading at
@@ -58,7 +58,7 @@ var _picture_is_stale := false
 var _rim := SourceRim.new(_build_rim)
 
 ## Everything this agent's own drawing can cover, relative to its position — what
-## `_end_the_frame()` asks `CrowdView.drawn_box()` about. `ENTRY_PICTURE_ROOM` either side, and
+## `end_the_frame()` asks `CrowdView.drawn_box()` about. `ENTRY_PICTURE_ROOM` either side, and
 ## above that a car's doubled caret at its tallest (`_draw_mark()`): the upper chevron's top stands
 ## `MARK_HEIGHT + 10 + 1.65 × MARK_WIDTH` above the node, about 65px, with its outline's width on top.
 const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDTH * 1.65 + 4.0),
@@ -98,7 +98,7 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 ## The one thing that moves between ticks is the camera, and the drawn box's margin
 ## (`DrawnView.MARGIN`, two tiles) is far wider than it moves in a tick. **The one exception is a
 ## marked car's caret while its horn runs**, redrawn every drawn frame by `_process()`.
-func _end_the_frame(delta: float) -> bool:
+func end_the_frame(delta: float) -> bool:
 	# The clocks only a crowd member keeps, its excitement's clock and the seconds of agitation a
 	# contact or a horn left, run here because every tick that is not skipped ends here.
 	excitement.advance(delta)

@@ -22,3 +22,5 @@ get public "place this at this site" entry points that the scheduler and recipes
 one pass after the last refactor item, "once the refactor is done let's rewrite the tests with
 dependency injection and through public APIs", and a step may convert the tests it touches early,
 "you can also do it as a bit with each step as long as the final result is the same" (inbox #813 in curly-moose).
+
+**Where it stands:** the suites still to convert are the ones the first command above counts above zero; the largest are `test_resistance.gd`, `test_main.gd` and `test_save.gd`.

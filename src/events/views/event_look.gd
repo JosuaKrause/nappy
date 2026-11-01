@@ -39,7 +39,7 @@ var _picture := Vector4i(-1, 0, 0, 0)
 ##
 ## Moving a `Node2D` does not invalidate its draw list — the transform is applied when the list is
 ## replayed — so an event only redraws when its **picture** changes, exactly the gate
-## `CrowdAgent._end_the_frame()` already gives every walker and car. Most of a
+## `CrowdAgent.end_the_frame()` already gives every walker and car. Most of a
 ## day's live instances are scenery that never moves — the seals, a checkpoint's hut, a café
 ## frontage, a market stall, a barricade — and rebuilding their draw lists every drawn frame is the
 ## largest single drawing cost in a frame, for a picture that is identical every time. See
