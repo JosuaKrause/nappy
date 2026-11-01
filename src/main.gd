@@ -1962,10 +1962,10 @@ func _restart_run() -> void:
 	# reach this one function, so no new control is drawn for it. A deletion is a change in the save
 	# state, which the symbol shows (`GameSave.clear()` announces it on `EventBus`); a restart after
 	# the `run_ended` subscriber (`GameSave.clear_when_a_run_ends()`) already deleted the save
-	# finds none and changes nothing, so it shows nothing. **Before the session closes the run log**: the "deleted the save"
-	# line, and the "deletion was not kept" line when a deletion fails at once, belong to this run's
-	# log. A web deletion's later answer is logged only if a log is open when it arrives, so it
-	# may land in the next run's log after the reload.
+	# finds none and changes nothing, so it shows nothing. **Before the session closes the run
+	# log**: the "deleted the save" line, and the "deletion was not kept" line when a deletion
+	# fails at once, belong to this run's log. A web deletion's later answer is logged only if a
+	# log is open when it arrives, so it may land in the next run's log after the reload.
 	GameSave.clear()
 	if _session:
 		_session.close()
