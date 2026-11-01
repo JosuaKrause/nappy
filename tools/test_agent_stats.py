@@ -64,7 +64,18 @@ class AgentStatsTests(unittest.TestCase):
         payload = json.dumps({"agent_id": "abc123def", "transcript_path": str(self.make_transcript())})
         self.run_script(HOOK, stdin=payload)
         added = self.run_script(
-            TOOL, "add", "--kind", "review", "--model", "sonnet", "--rounds", "0", "--grade", "good", "--agent", "abc123"
+            TOOL,
+            "add",
+            "--kind",
+            "review",
+            "--model",
+            "sonnet",
+            "--rounds",
+            "0",
+            "--grade",
+            "good",
+            "--agent",
+            "abc123",
         )
         self.assertEqual(added.returncode, 0, added.stderr)
         row = json.loads((self.data / "log.jsonl").read_text())
