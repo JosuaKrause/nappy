@@ -102,8 +102,8 @@ func end_the_frame(delta: float) -> bool:
 	# The clocks only a crowd member keeps, its excitement's clock and the seconds of agitation a
 	# contact or a horn left, run here because every tick that is not skipped ends here.
 	excitement.advance(delta)
-	var picture := look.picture(velocity())
-	var drawn_heading := look.heading_key()
+	var picture := _look.picture(velocity())
+	var drawn_heading := _look.heading_key()
 	var changed := picture != _picture or drawn_heading != _drawn_heading
 	_picture = picture
 	_drawn_heading = drawn_heading
@@ -148,7 +148,7 @@ func _process(_delta: float) -> void:
 
 ## Builds this body's rim from its look, which a new kind changes.
 func _build_rim() -> EntityHalo:
-	var halo := EntityHalo.new(look.draw_body, look.bob)
+	var halo := EntityHalo.new(_look.draw_body, _look.bob)
 	add_child(halo)
 	return halo
 
@@ -169,10 +169,8 @@ func crashed_into() -> void:
 # ---------------------------------------------------------------- drawing ---
 
 ## How this agent is drawn, installed with `kind`: a `WalkerLook` or a `CarLook`. Everything the
-## drawing differs on between the two kinds asks it. A component the agent hands out the way it does
-## its `strategy` and its `excitement`, so what is drawn can be read, and driven by a stride or a
-## distance, without the agent.
-var look: AgentLook
+## drawing differs on between the two kinds asks it.
+var _look: AgentLook
 
 ## Whether this agent's look is marked by a caret, kept here by `_kind_installed()` as a plain
 ## member because the redraw gate reads it every frame of every agent.
@@ -180,29 +178,29 @@ var _carets := false
 
 func _init() -> void:
 	super()
-	look = WalkerLook.new(self)
+	_look = WalkerLook.new(self)
 	excitement.rim = _rim
 
 ## A new kind brings its look; a walker's stride and a car's travelled ground start afresh with it.
 func _kind_installed() -> void:
-	look = CarLook.new(self) if kind == Kind.CAR else WalkerLook.new(self)
-	_carets = look.carets()
+	_look = CarLook.new(self) if kind == Kind.CAR else WalkerLook.new(self)
+	_carets = _look.carets()
 	excitement.take_kind(kind)
 
 func restart_the_picture() -> void:
-	look.restart()
+	_look.restart()
 
 func advance_the_picture(delta: float) -> void:
-	look.advance(velocity(), delta)
+	_look.advance(velocity(), delta)
 
 ## The coat, or the paintwork. Authored near-white and multiplied, the same trick the buildings use,
 ## so a crowd is not one silhouette in one colour ninety times over.
 func _dress() -> void:
-	var palette := look.palette()
+	var palette := _look.palette()
 	colour = palette[_rng.randi_range(0, palette.size() - 1)]
 
 func _entry_picture_clearance() -> float:
-	return look.entry_clearance(_vertical)
+	return _look.entry_clearance(_vertical)
 
 ## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
 ## `EventLook._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
@@ -225,11 +223,11 @@ func _draw() -> void:
 	# Told to `Sprites` as well as to the canvas, for the reason `EventLook.draw()` gives: the
 	# mirror inside `draw_standing()` sets an absolute matrix, so a west-facing car not handed the
 	# lift would drop it.
-	var bob := look.bob()
+	var bob := _look.bob()
 	var lift := Transform2D(0.0, Vector2(0.0, bob))
 	Sprites.set_base_transform(lift)
 	draw_set_transform_matrix(lift)
-	look.draw_body(self)
+	_look.draw_body(self)
 	Sprites.set_base_transform(Transform2D.IDENTITY)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if _carets:

@@ -27,6 +27,16 @@ func free_city() -> void:
 	AtlasLibrary.release(Crowd.ATLAS_GROUP)
 	city.free()
 
+## A walker's look over `agent`: `WalkerLook` is a public class that reads the agent's heading and
+## velocity and writes nothing to it, so a suite that checks which view or stride frame a placed
+## walker would draw builds its own look over it and drives it with the agent's own `velocity()`.
+static func walker_look(agent: CrowdAgent) -> WalkerLook:
+	return WalkerLook.new(agent)
+
+## A car's look over `agent`, for the same reason (`CarLook`).
+static func car_look(agent: CrowdAgent) -> CarLook:
+	return CarLook.new(agent)
+
 ## A fresh agent of `kind` placed by `setup()`, as its rolled `seed_value` has it.
 func rolled(kind: CrowdAgent.Kind, seed_value: int) -> CrowdAgent:
 	var agent := CrowdAgent.new()

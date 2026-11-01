@@ -891,12 +891,6 @@ static func door_column_from(cols: int, escapes: Array[int], covered: Array[bool
 			return picked
 	return -1
 
-## The ground-floor column the `door:` stream rolled for this front, whether or not it ends up with a
-## door: `entrance_door_col()` is the column only where the front has no other way in. -1 where every
-## column is covered.
-func door_column_rolled() -> int:
-	return _door_col
-
 ## The ground-floor column this front's entrance door stands in, or -1 for a front that has none:
 ## a multi-story front is a way in, and a front that already has one gets no second. A storefront
 ## is a commercial front's way in and the portico is a civic front's; her own building keeps its
@@ -1217,18 +1211,6 @@ func ground_floor_texture(col: int) -> StringName:
 		return STOREFRONT_SHUTTERED_TEXTURES[index]
 	return STOREFRONT_AWNING_TEXTURES[index] if _storefront_awning[store] else STOREFRONT_TEXTURES[index]
 
-## The rolls behind each two-column storefront of a `COMMERCIAL` front, left to right: its picture's
-## index into `STOREFRONT_TEXTURES`, whether it carries an awning (`STOREFRONT_AWNING_SHARE`) and its
-## fixed shutter severity, which `ground_floor_texture()` weighs against the day's degradation. Empty
-## for every other front and for a one-row facade. Rolled whether or not the pair draws
-## (`_pair_is_storefront()`), so a covered pair keeps its roll.
-func storefront_rolls() -> Array[Dictionary]:
-	var rolls: Array[Dictionary] = []
-	for store in _storefront_variant.size():
-		rolls.append({"variant": _storefront_variant[store], "awning": _storefront_awning[store],
-				"shutter_severity": _storefront_shutter_severity[store]})
-	return rolls
-
 ## Whether the two-column pair starting at even column `first` actually draws as a storefront: a
 ## complete pair within `_storefront_variant`'s own range, inside the front's own width, and with
 ## neither of its own two columns covered (`is_covered()`) — a storefront's own two-column
@@ -1382,24 +1364,17 @@ func fire_escape_landings() -> Array[int]:
 ## alone on the lowest, the balcony and its flight on every other; the potted-plant picture or the
 ## plain one, per `_fire_escape_pots[col][row]` — rolled balcony by balcony rather than once for the
 ## whole escape, so the two pictures mix within one escape and between the two on a wide front.
+## `&""` where no balcony was rolled for that column and row — no escape stands there, which is every
+## column of a front without one and every column but the escape's own — the way
+## `ground_floor_texture()` answers `&""` for a column nothing is drawn in.
 func fire_escape_texture(col: int, row: int) -> StringName:
-	var pot := fire_escape_has_pot(col, row)
+	var pots: Dictionary = _fire_escape_pots.get(col, {})
+	if not pots.has(row):
+		return &""
+	var pot: bool = pots[row]
 	if row <= 1:
 		return FIRE_ESCAPE_PLATFORM_A if pot else FIRE_ESCAPE_PLATFORM_B
 	return FIRE_ESCAPE_A if pot else FIRE_ESCAPE_B
-
-## The column(s) the front's fire escape(s) climb, first-rolled first: empty for the share that rolled
-## none, for her own building, for a front too short to carry one and for a covered column, one entry
-## for the ordinary share and two for a wide front that also rolled the second
-## (`SECOND_FIRE_ESCAPE_MIN_COLUMNS`, `SECOND_FIRE_ESCAPE_SHARE`).
-func fire_escape_columns() -> Array[int]:
-	return _fire_escape_cols.duplicate()
-
-## Whether the balcony on `row`'s floor line of the escape standing in `col` shows the potted-plant
-## picture (`FIRE_ESCAPE_POT_SHARE`), which `fire_escape_texture()` draws.
-func fire_escape_has_pot(col: int, row: int) -> bool:
-	var pots: Dictionary = _fire_escape_pots.get(col, {})
-	return pots.get(row, false)
 
 ## Every fire escape the front carries, one picture per floor (`fire_escape_landings()`) per column
 ## (`_fire_escape_cols`). Each picture's balcony sits one row above its bottom edge and its flight
@@ -1484,12 +1459,6 @@ func _build_roof_furniture() -> void:
 	# Farthest (highest row) first, so the roof layers paint back to front without
 	# re-sorting on every redraw.
 	_roof_furniture.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
-
-## The roof's units, farthest (highest row) first, each `{"cell": Vector2i, "kind": int, "span": int,
-## "cells": Array[Vector2i]}`: what the roof layers paint. Empty while the building's scenery is not
-## resident (`set_scenery_resident()`) and for a roof with no interior to stand on.
-func roof_furniture() -> Array[Dictionary]:
-	return _roof_furniture
 
 ## Displayed bases up to one tile stand on one cell. Wider equipment is centered across two reserved
 ## cells; height is deliberately unrelated to this footprint and may extend several tiles north.

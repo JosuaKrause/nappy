@@ -3,9 +3,7 @@
 Tests reach into private members and call `_process`/`_physics_process` directly; count them with
 `rg -v '^\s*#' tests/*.gd | rg -o '\._[a-z]\w*' | wc -l` (private reads, per file with `rg -c`) and
 `rg -v '^\s*#' tests/*.gd | rg -c '\._(physics_)?process\('` (direct frame calls); `rg -l 'main\.tscn|main.gd'
-tests` finds the suites that instantiate `main`. `test_ground_floor.gd`, `test_car_views.gd` and
-`test_walker_views.gd` are done and live nowhere but the record (`tools/decisions.sh minty-quail-44`);
-`test_home_block.gd` (near 249) copies `City._height_for`'s random stream;
+tests` finds the suites that instantiate `main`; `test_home_block.gd` (near 249) copies `City._height_for`'s random stream;
 `test_camera_start.gd` depends on `main._ready()` holding exactly two awaits. `SceneRecipeRuntime`
 rebuilds placement from other classes' private functions (`SealPlanner._eligible`, `_place`,
 `_seal_along_tile`, `_mark_soft_sealed`; `EventScheduler._build_placement`, `_room_around`,
