@@ -17,8 +17,12 @@ are (`.agents/skills`, `.codex/`, the adapter `tools/codex-hooks.py` and its tes
 and `codex-reviewer` identities, the skills' Codex asides), and nothing keeps them in step: a change
 to a hook or to the hooks in `.claude/settings.json` does not update the adapter, which may lag.
 Before Codex works here again, the adapter and the asides are brought up to date in one pull
-request; what the section said while Codex was in use, including the rule this replaces, is in the
-record amber-penguin (`tools/decisions.sh amber-penguin`).
+request; what the section said while Codex was in use, including the lifted rule that a hook change
+updates the adapter (brisk-heron 6), is in the record amber-penguin (`tools/decisions.sh
+amber-penguin`).
+
+The post-edit lint hook does not replace `./tools/lint.sh` before committing a governed doc,
+`CLAUDE.md` included. A request for a PR ends with a reviewable PR.
 
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is the records under
