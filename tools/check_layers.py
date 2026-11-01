@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Holds the game's code to its layers: nothing names a higher layer, and the world and simulation fetch nothing.
+"""Holds the game's code to its layers: nothing names a higher or sibling layer; the world and simulation fetch nothing.
 
 The layers and which file sits in which are `tools/layer_map.py`'s, as data. For every `.gd` file
 under `src/` this reads its code -- comments and string contents blanked, so a class named in a
 comment or a sentence is not a dependency -- and finds:
 
-- **names**: a `class_name` or an autoload whose file is on a higher layer, or a `res://src/...gd`
+- **names**: a `class_name` or an autoload whose file is on a higher layer or on a sibling layer
+  (observers and the view stand at one level and neither may name the other), or a `res://src/...gd`
   path to one, named anywhere in the code (a type, a call, an `extends`, a preload);
 - in the world and simulation layers only, a fetch of what should be handed in:
   - **group**: `get_nodes_in_group`, `get_first_node_in_group`, `get_node_count_in_group` or
@@ -160,7 +161,22 @@ def layer_of(path: str) -> str | None:
 
 
 def rank(layer: str) -> int:
+    """A layer's level: siblings share the level of the first of them."""
+    for group in layer_map.SIBLINGS:
+        if layer in group:
+            return layer_map.LAYERS.index(group[0])
     return layer_map.LAYERS.index(layer)
+
+
+def breaks(layer: str, target: str) -> bool:
+    """Whether a file in `layer` may not name something in `target`: it is higher, or a sibling."""
+    if rank(target) > rank(layer):
+        return True
+    return target != layer and rank(target) == rank(layer)
+
+
+def relation(layer: str, target: str) -> str:
+    return f"{layer} names {target}" + (" (a sibling)" if rank(target) == rank(layer) else "")
 
 
 @dataclass(frozen=True)
@@ -312,8 +328,8 @@ def names_upward(
         if name == own_name or name not in targets:
             continue
         target_layer = layer_of(targets[name])
-        if target_layer is not None and rank(target_layer) > rank(layer):
-            yield Finding(path, line_of(code.bare, match.start()), "names", name, f"{layer} names {target_layer}")
+        if target_layer is not None and breaks(layer, target_layer):
+            yield Finding(path, line_of(code.bare, match.start()), "names", name, relation(layer, target_layer))
     for literal in code.literals:
         loaded = uids.get(literal.text)
         if loaded is None:
@@ -322,9 +338,9 @@ def names_upward(
         if loaded is None or loaded == path:
             continue
         target_layer = layer_of(loaded)
-        if target_layer is not None and rank(target_layer) > rank(layer):
+        if target_layer is not None and breaks(layer, target_layer):
             line = line_of(code.bare, literal.offset)
-            yield Finding(path, line, "names", loaded, f"{layer} loads {target_layer}")
+            yield Finding(path, line, "names", loaded, relation(layer, target_layer).replace(" names ", " loads "))
 
 
 def fetches(path: str, code: Code, autoloads: dict[str, str], known: Classes, own_name: str) -> Iterable[Finding]:
@@ -448,8 +464,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tools/check_layers.py",
         description=(
-            "Fails when a file under src/ names a class or autoload of a higher layer, or a file in the world or"
-            " simulation layers fetches through a group, an autoload or a static holding state, unless"
+            "Fails when a file under src/ names a class or autoload of a higher or a sibling layer, or a file in the"
+            " world or simulation layers fetches through a group, an autoload or a static holding state, unless"
             " tools/layer_map.py lists it as an exception; fails too when a listed exception is gone, or a file is"
             " in no layer."
         ),

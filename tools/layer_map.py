@@ -1,8 +1,10 @@
 """The layer map `tools/check_layers.py` holds the game's code to, as data.
 
 The layers are orchestrating's "Code is designed by layer" (minty-quail's: data and configuration,
-the domain model, the world, simulation, run flow, observers), with the screen's own view above
-them and the composition root at the top. A layer may name only what is on its own layer or below;
+the domain model, the world, simulation, run flow, observers), with the screen's own view beside the
+observers and the composition root at the top. A layer may name only what is on its own layer or
+below, and the observers and the view, which stand at one level, name neither the other (the
+player's, inbox #904);
 the world and simulation layers are also handed what they read rather than fetching it through a
 group, an autoload or a static holding state.
 
@@ -20,8 +22,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Lowest first. Each names only its own layer and those before it.
+# Lowest first. Each names only its own layer and those before it (siblings aside, below).
 LAYERS: tuple[str, ...] = ("data", "model", "world", "simulation", "flow", "observers", "view", "root")
+
+# Layers at one level: both sit on top of the run flow and the simulation and read from below, and
+# neither may name the other.
+SIBLINGS: tuple[tuple[str, ...], ...] = (("observers", "view"),)
 
 LAYER_TEXT: dict[str, str] = {
     "data": "data and configuration: the catalogue, the balance numbers, the run's configuration, the specs, the "
@@ -34,8 +40,10 @@ LAYER_TEXT: dict[str, str] = {
     "simulation": "simulation: everything that moves or happens -- her, the baby, the crowd, the events and "
     "their behaviours and looks, the resistance -- and the drawing of each, which it composes",
     "flow": "run flow: a day started and finished from its spec, the screens' order",
-    "observers": "observers: the run log, GoatCounter, the save and the developer's readouts, which only listen",
-    "view": "the view: the screen's own furniture -- the HUD, the screens, the badges, the halo, the controls",
+    "observers": "observers (a sibling of the view): the run log, GoatCounter, the save and the developer's "
+    "readouts, which only listen",
+    "view": "the view (a sibling of the observers): the screen's own furniture -- the HUD, the screens, the "
+    "badges, the halo, the controls",
     "root": "the composition root and the rigs: main, which builds every layer and hands each what it needs, "
     "and the developer's rigs that drive the game from outside",
 }
@@ -287,7 +295,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
         "DangerEdge",
-        "the run log is handed the badge node to read what it shows, rather than a domain event",
+        "telemetry to be handed what it reports",
         (
             "src/telemetry/run_session.gd",
             "src/telemetry/telemetry_observer.gd",
@@ -320,7 +328,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
         "DrawnFrame",
-        "the run log waits for a drawn frame before it photographs the map",
+        "telemetry to be handed what it reports",
         ("src/autoload/telemetry.gd",),
         more=(("src/autoload/telemetry.gd", 2),),
     ),
@@ -787,5 +795,48 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/events/day_planner.gd",
             "src/resistance/happenings.gd",
         ),
+    ),
+    Exception_(
+        "names",
+        "FrameLedger",
+        "the view times its own draw through the frame record, rather than being handed a timing sink",
+        (
+            "src/ui/danger_edge.gd",
+            "src/ui/entity_halo.gd",
+            "src/ui/home_arrow.gd",
+            "src/ui/meter_bar.gd",
+            "src/ui/mode_button.gd",
+            "src/ui/touch_controls.gd",
+        ),
+    ),
+    Exception_(
+        "names",
+        "FrameRecord",
+        "the view times its own draw through the frame record, rather than being handed a timing sink",
+        (
+            "src/ui/danger_edge.gd",
+            "src/ui/entity_halo.gd",
+            "src/ui/excitement_halo.gd",
+            "src/ui/home_arrow.gd",
+            "src/ui/meter_bar.gd",
+            "src/ui/mode_button.gd",
+            "src/ui/touch_controls.gd",
+        ),
+        more=(
+            ("src/ui/danger_edge.gd", 6),
+            ("src/ui/entity_halo.gd", 2),
+            ("src/ui/excitement_halo.gd", 4),
+            ("src/ui/home_arrow.gd", 2),
+            ("src/ui/meter_bar.gd", 2),
+            ("src/ui/mode_button.gd", 2),
+            ("src/ui/touch_controls.gd", 2),
+        ),
+    ),
+    Exception_(
+        "names",
+        "GameSave",
+        "the save indicator reads the save's state, rather than being handed it",
+        ("src/ui/save_indicator.gd",),
+        more=(("src/ui/save_indicator.gd", 2),),
     ),
 )

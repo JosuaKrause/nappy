@@ -114,6 +114,22 @@ class NamesTests(unittest.TestCase):
             rules(found), {("src/model/map.gd", "names", "Navigator"), ("src/model/map.gd", "names", "src/ui/hud.gd")}
         )
 
+    def test_a_sibling_layer_is_a_reference_that_fails_in_both_directions(self) -> None:
+        folders = {**FOLDERS, "src/obs": "observers"}
+        files = dict(
+            BASE,
+            obs__log="class_name Log\nextends Node\nvar h: Hud\n",
+            ui__hud="class_name Hud\nextends Control\nvar l: Log\n",
+        )
+        with the_map(), mock.patch.object(layer_map, "FOLDERS", folders):
+            _, found = check_layers.check(tree(**files))
+        self.assertEqual(rules(found), {("src/obs/log.gd", "names", "Hud"), ("src/ui/hud.gd", "names", "Log")})
+        self.assertTrue(all("(a sibling)" in finding.detail for finding in found))
+        # Without the sibling relation the view may name the observers, as a higher layer does.
+        with the_map(), mock.patch.object(layer_map, "FOLDERS", folders), mock.patch.object(layer_map, "SIBLINGS", ()):
+            _, found = check_layers.check(tree(**files))
+        self.assertEqual(rules(found), {("src/obs/log.gd", "names", "Hud")})
+
     def test_an_autoload_is_named_at_its_files_layer(self) -> None:
         files = dict(BASE, data__catalogue="class_name Catalogue\nfunc f() -> void:\n\tBus.happened.emit()\n")
         with the_map():

@@ -96,12 +96,11 @@ lives. A brief asks for them; the builder answers them in its report and under t
 holds the code to in CI; the list of breaks standing there only shrinks. *Proposed by its builder,
 open to overturn:* the composition root (`main.gd` and the developer's rigs) above everything, and
 each thing's own drawing on the layer of the thing it draws. *Two departures from minty-quail's
-filed layering, marked for the player to decide* (plaid-raven #894): the view (the HUD, the screens,
-the badges, the controls) sits above the observers, where minty-quail's README puts the UI inside
-the observers; and `WorldMap` and its records sit in the model, where minty-quail's item 3 puts one
-map interface in the world. Following minty-quail exactly would drop the exceptions of observers
-naming the view and add exceptions of the model's maps and planners naming the world. A record the
-map holds is placed on the map's layer as it appears.
+filed layering, decided by the player* (inbox #904): the view (the HUD, the screens, the badges, the controls) and the observers are **siblings at one level**,
+neither above the other and neither naming the other, where minty-quail's README puts the UI inside
+the observers; and the map lookup (`WorldMap` and its records) stays **with the city maps in the
+domain model**, a correction to minty-quail's item 3, which puts one map interface in the world. A
+record the map holds is placed on the map's layer as it appears.
 
 ## The task description is the contract
 

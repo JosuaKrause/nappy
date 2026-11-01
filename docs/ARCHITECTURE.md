@@ -450,8 +450,11 @@ run's sub-states, the building's plan), **the world** (the navigator, the world'
 layers, siting, and the scene nodes that draw the city's and the building's ground and furniture),
 **simulation** (her, the baby, the crowd, the events, the resistance, each with the looks it draws
 itself by), **run flow** (the day's director and controller, the screens' order), **observers** (the
-run log, GoatCounter, the save, the developer's readouts), **the view** (the HUD, the screens, the
-badges, the halo, the controls) and **the composition root** (`main.gd` and the developer's rigs).
+run log, GoatCounter, the save, the developer's readouts) and **the view** (the HUD, the screens, the
+badges, the halo, the controls), **siblings at one level** that both read from the run flow and the
+simulation below and neither names the other (the player's, inbox #904), and **the composition
+root** (`main.gd` and the developer's rigs). The map's lookup (`WorldMap` and its records) is with
+the city maps in the domain model, as the player decided (inbox #904).
 The world and simulation are also handed what they read, never fetching it through a group, an
 autoload or a static that holds state.
 
