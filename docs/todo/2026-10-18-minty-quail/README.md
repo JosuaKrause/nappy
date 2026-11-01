@@ -67,6 +67,7 @@ early to injected fakes and public APIs (`tests-public-seams.md`); nothing is re
 during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
 1. `shared-components.md`; `route-from-the-building.md` beside it.
+   `pr-questions.md` beside them too, built now rather than at the end (plush-egret #892).
 2. `tuning.md`, alongside the extractions it serves.
 3. `comments.md`: in whichever PR touches the code.
 4. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs;
