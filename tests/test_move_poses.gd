@@ -18,6 +18,13 @@ extends RefCounted
 ## The suite also checks the walk reached the cases it is for: a bump, a car's turn, a recycled body,
 ## an event that came into the world during the walk, and a cordon officer.
 ##
+## **The day runs under `--invincible`, so nothing she meets ends it.** The walk is a rig, not a
+## route: she goes in a straight line across roads and is stood against whichever walker is nearest,
+## so whether a car or a pursuer catches her depends on where the crowd happens to walk. A lost day
+## stops the tick that sets the cordon's officers out, and the cordon is what the walk is for, so the
+## suite would otherwise rest on a chance that any change to how the crowd moves can undo. The suite
+## checks the day still runs when the swing is touched.
+##
 ## `run()` snapshots the whole save first and puts it back last, and points `GameSave` at a scratch
 ## file, so nothing here leaks into the next suite or reaches the player's save.
 
@@ -52,14 +59,15 @@ func run(t) -> void:
 	GameState.hard_mode = bool(baseline["hard_mode"])
 	GameState.checkpoint = baseline["checkpoint"]
 
-## A booted `Main` standing in day 12 on `seed_value`, a normal run, with the mark read.
+## A booted `Main` standing in day 12 on `seed_value`, a normal run under `--invincible`, with the
+## mark read.
 func _day_twelve(t, seed_value: int) -> Node2D:
 	GameState.start_run(seed_value)
 	GameState.header.day = ResistanceSteps.swing_day()
 	GameSave._write_now(GameState, true)
 	GameSave._uses_save_override = true
 	var main: Node2D = MAIN_SCENE.instantiate()
-	main.configure(RunConfig.parse(PackedStringArray(), "", true))
+	main.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
 	t.add_child(main)
 	GameSave._uses_save_override = null
 	t.get_tree().process_frame.emit()
@@ -89,6 +97,8 @@ func _walk_the_day(t, seed_value: int) -> void:
 	_check_the_tick(t, main, seed_value, -1, counts, seen, last)
 	for tick in ticks:
 		if tick == swing_tick:
+			t.check(main._day.is_running(), "seed %d: the day still runs when the swing is touched"
+					% seed_value)
 			main._player.global_position = swing
 			var task := director.current_step()
 			director._on_contact_completed(task.index if task else -1)
