@@ -13,7 +13,7 @@ clear row (the review's words). The review's sweep
 of 207 precinct blockages on generated days (seed 67 days 1–14 and eight more seeds on days 3, 6, 9
 and 12) met no such shape, so no player has stood at one yet.
 
-*The reviewer's reading, not confirmed:* `CrowdAgent._keep_out_of_a_body()` undoes the sideways part
+*The reviewer's reading, not confirmed:* `LaneMover._keep_out_of_a_body()` undoes the sideways part
 of a step first, so a walker pressed against a body's edge cannot slide along it to the gap. That
 code is shared by every body on every street, and the order is decided: the
 [M110 every-solid-body record](../../decisions/2026-09-12-M110-the-crowd-goes-round-a-seal-every-solid-body.md)
