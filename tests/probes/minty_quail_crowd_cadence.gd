@@ -22,6 +22,14 @@ extends RefCounted
 ## figures' counts (`minty_quail_crowd_yields.gd`'s `Meeting`: overlaps of a walker or a crowd car
 ## with an event figure, the seconds cars stand for one, the longest stand in a junction box).
 ##
+## **The `walkers` walk heads for the nearest walker, so where she goes depends on where the crowd
+## is**, and with the day's events live, what streams in round her (`EventStreaming.stream_around()`,
+## handed her position each tick) follows her. A revision that moves the crowd therefore moves her
+## and, through her, the events, which is no event reading the crowd. `CADENCE_RIG_RECORD` (a
+## directory) writes each run's walk, her position and velocity every tick, to
+## `<seed>-<day>-<walk>-<frames>.var`; `CADENCE_RIG_REPLAY` (a directory) walks her along a recorded file
+## instead, so two revisions' events can be compared with her on the same walk.
+##
 ## Each run starts the seed's city on the day as `m159_crowd_tick_cost.gd` does, and walks a player
 ## rig one of two ways (`WALKS`): `road`, back and forth across the carriageway nearest the doorstep,
 ## two kerbs apart, which is what the horns, the give-way and the strike answer; and `walkers`, at
@@ -102,6 +110,13 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	var steps_its_agents := crowd.has_method("_step_the_agents")
 	var across := _crossing(city.map, start)
 	var here: Vector2 = across[0] if walk == "road" else start
+	var walk_file := "%d-%d-%s-%d.var" % [city_seed, day, walk, per_tick]
+	var recorded := PackedVector2Array()
+	var replayed := PackedVector2Array()
+	if OS.has_environment("CADENCE_RIG_REPLAY"):
+		var file := FileAccess.open(OS.get_environment("CADENCE_RIG_REPLAY").path_join(walk_file),
+				FileAccess.READ)
+		replayed = file.get_var()
 	var startled := {}
 	var boxed := {}
 	var gaps: Array[float] = []
@@ -121,6 +136,11 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 		rig.global_position = here
 		rig.velocity = going * Tuning.WALK_SPEED
 		here += going * Tuning.WALK_SPEED * STEP
+		if not replayed.is_empty():
+			rig.global_position = replayed[tick * 2]
+			rig.velocity = replayed[tick * 2 + 1]
+		recorded.append(rig.global_position)
+		recorded.append(rig.velocity)
 		if with_events:
 			city.events._tick_the_events(STEP)
 		crowd._physics_process(STEP)
@@ -154,6 +174,10 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	gaps.sort()
 	var horns := _horns - horns_at_warmup
 	var minutes := WINDOW * STEP / 60.0
+	if OS.has_environment("CADENCE_RIG_RECORD"):
+		var file := FileAccess.open(OS.get_environment("CADENCE_RIG_RECORD").path_join(walk_file),
+				FileAccess.WRITE)
+		file.store_var(recorded)
 	var figures := {}
 	if with_events:
 		figures = meeting.report()
