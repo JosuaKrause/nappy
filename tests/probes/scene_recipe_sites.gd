@@ -60,7 +60,7 @@ func run(_t) -> void:
 		if found >= 12:
 			break
 	var dog := EventCatalogue.by_id("charging_dog")
-	print("DOG_LEAD ", Tuning.offscreen_lead(Vector2.RIGHT,
+	print("DOG_LEAD ", Offscreen.lead(Vector2.RIGHT,
 			dog.chase_speed() + Tuning.WALK_SPEED, dog.offscreen_notice))
 
 ## The escape city's section spec, the one the run flow walks the city under.

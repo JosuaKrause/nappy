@@ -125,14 +125,14 @@ static func full_contribution(agent: CrowdAgent, at: Vector2) -> float:
 	var distance := GroundShape.eccentric_distance(agent.global_position, agent.velocity(), at)
 	var total := 0.0
 	if agent.kind == CrowdAgent.Kind.CAR:
-		total = Tuning.falloff(distance, Tuning.CAR_INTENSITY,
+		total = Field.falloff(distance, Tuning.CAR_INTENSITY,
 			Tuning.CAR_INNER_RADIUS, Tuning.CAR_OUTER_RADIUS)
 	else:
-		total = Tuning.falloff(distance, Tuning.PEDESTRIAN_INTENSITY,
+		total = Field.falloff(distance, Tuning.PEDESTRIAN_INTENSITY,
 			Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS)
 	var jolt := agent.excitement
 	if jolt._jolt > 0.0:
-		total += Tuning.falloff(distance, jolt._jolt_intensity * (jolt._jolt / jolt._jolt_for),
+		total += Field.falloff(distance, jolt._jolt_intensity * (jolt._jolt / jolt._jolt_for),
 			jolt._jolt_inner, jolt._jolt_outer)
 	# A building between them silences the whole of it; asked of every body, never only the near
 	# ones, so the oracle stays the unfiltered calculation on a real map too.

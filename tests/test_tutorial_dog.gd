@@ -155,7 +155,7 @@ func _test_the_notice_switches_after_the_teaching_day(t) -> void:
 			"on the teaching day itself it still charges the moment it streams in")
 	var waiting: float = def.notice_on(Tuning.RUN_TAUGHT_DAY + 1).within
 	t.check(waiting > 0.0, "the day after, it waits for her to come within its own field")
-	var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.inner_radius)
+	var standoff := PursuitSpec.standoff(def.chase_speed(), def.inner_radius)
 	t.check(waiting < def.outer_radius and waiting > standoff,
 			"inside its own outer radius, an 'on sight' band before the trigger — alley_robbery's " +
 					"shape — and past the stand-off, or the notice would be spent standing still")

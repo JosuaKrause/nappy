@@ -505,7 +505,7 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t) -> void:
 	var listening := _listen(counter)
 	var day := GameState.header.day
 	var def := EventScheduler._for_day(EventCatalogue.by_id("charging_dog"), Tuning.RUN_TAUGHT_DAY + 1)
-	var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
+	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var dog := _charger(t, def)
 	_walk(dog, Vector2(def.notice_within() - 10.0, 0.0), 1.0)
 	t.check(counter.sent == ["nappy-day-%d-dog-warned" % day],

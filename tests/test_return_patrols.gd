@@ -18,7 +18,6 @@ func run(t) -> void:
 	_test_a_marble_spent_unmet_counts_against_the_patrols_bag(t)
 	_test_sited_on_driveable_road_toward_her(t)
 	_test_empty_in_a_park(t)
-	_test_constants_validate(t)
 
 # ------------------------------------------------------------------------- rig ---
 
@@ -239,17 +238,3 @@ func _test_empty_in_a_park(t) -> void:
 	var at := map.tile_to_world(calm[0])
 	var path: PackedVector2Array = director._toward_her_on_the_road(at, Vector2(0.0, -1.0), def)
 	t.check(path.is_empty(), "no carriageway to drive on in a park, so the siting is empty")
-
-# ----------------------------------------------------------------- constants ---
-
-func _test_constants_validate(t) -> void:
-	t.check(Tuning.validate_return_patrols(), "the shipped shape is fair by its own rule")
-	t.check(Tuning.RETURN_PATROLS_PER_ACT.size() == 4, "one entry per act")
-	for count in Tuning.RETURN_PATROLS_PER_ACT:
-		t.check(count >= 0, "no act owes a negative number of patrols")
-	t.check(Tuning.RETURN_PATROL_INTERVAL.x <= Tuning.RETURN_PATROL_INTERVAL.y,
-			"RETURN_PATROL_INTERVAL is ordered")
-	t.check(Tuning.RETURN_PATROL_INTERVAL.x < Tuning.AHEAD_INTERVAL.x
-			and Tuning.RETURN_PATROL_INTERVAL.y < Tuning.AHEAD_INTERVAL.y,
-			"RETURN_PATROL_INTERVAL %s is strictly shorter than AHEAD_INTERVAL %s on both ends"
-			% [Tuning.RETURN_PATROL_INTERVAL, Tuning.AHEAD_INTERVAL])

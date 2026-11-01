@@ -594,7 +594,7 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 	t.check(instance.is_waiting() and pictures[0] == EventPictures.CHARGING_DOG_RESTING_BY_VIEW
 			and pictures[1].is_empty(), "waiting for her, the dog sits, with no stride frame")
 	# Inside its radius, where she stands through its warning.
-	var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
+	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var her := Vector2((def.notice_within() + standoff) * 0.5, 0.0)
 	_hold(instance, her, STEP)
 	t.check(instance.is_standing_for_its_notice(), "it notices her and stands for its notice")

@@ -6,7 +6,7 @@ extends RefCounted
 ##     tools/test.sh probes/tall_osprey_catch.gd
 ##
 ## **Two arrangements, measured side by side.** `follows`: the stand-off follows the catch
-## (`PursuitSpec.lunge_reach` 0), `Tuning.pursuit_standoff(130, catch)` is `catch + 78`, so the room
+## (`PursuitSpec.lunge_reach` 0), `PursuitSpec.standoff(130, catch)` is `catch + 78`, so the room
 ## between lunge and catch stays 78px whatever the catch. `held`: the lunge held at 108px
 ## (`PursuitSpec.lunge_reach` 30) whatever the catch, so the room is 108 minus the catch.
 ##
@@ -45,7 +45,7 @@ func _def(catch_radius: float, lunge: float) -> EventDef:
 	return def
 
 func _report(catch_radius: float, lunge: float) -> void:
-	var standoff := Tuning.pursuit_standoff(130.0, _def(catch_radius, lunge).standoff_reach())
+	var standoff := PursuitSpec.standoff(130.0, _def(catch_radius, lunge).standoff_reach())
 	var out := "catch %4.0f  standoff %5.1f  notice-to-lunge walking in %.3fs standing %.3fs |" % [
 			catch_radius, standoff, _notice_to_lunge(_def(catch_radius, lunge), true),
 			_notice_to_lunge(_def(catch_radius, lunge), false)]

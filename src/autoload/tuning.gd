@@ -3,14 +3,6 @@ extends Node
 ##
 ## See docs/MECHANICS.md for the reasoning behind these numbers.
 
-## The catalogue validates itself when it is first asked for; traffic, signals and the return
-## patrols have no catalogue to hang that on, so the three contracts that are not about an event
-## are checked here on boot instead.
-func _ready() -> void:
-	validate_traffic()
-	validate_signals()
-	validate_return_patrols()
-
 # ---------------------------------------------------------------- movement ---
 
 const WALK_SPEED := 92.0
@@ -253,7 +245,7 @@ const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
 ## emits, and the right move only against the things that follow you. This constant is what keeps
 ## that ordering true across the whole catalogue.
 ##
-## It is sensitive to the shape of `falloff` and not only to the radii. A fatter field makes
+## It is sensitive to the shape of `Field.falloff` and not only to the radii. A fatter field makes
 ## time-in-field matter more, so a shoulder that is too generous makes running *out* of the widest
 ## rows cheaper than walking — which is not "running works" but "running is a coin flip", the worst
 ## of the two. `tests/test_events.gd` asserts the ordering row by row rather than leaving it in a
@@ -453,7 +445,7 @@ const HEAT_HUNTS_LEVEL := RESISTANCE_GOAL - 1
 ## question a pursuit is allowed to ask.
 const HEAT_HUNTS_SPEED := 130.0
 ## How close she has to come before it takes an interest, in px. Has to sit strictly between
-## `pursuit_standoff(HEAT_HUNTS_SPEED, 54)` (132px, against the van's own inner radius) and its
+## `PursuitSpec.standoff(HEAT_HUNTS_SPEED, 54)` (132px, against the van's own inner radius) and its
 ## 250px field — under the stand-off the whole notice is spent standing still, over the field it
 ## decides about her before she can feel it. 180 leaves room on both sides.
 const HEAT_HUNTS_WITHIN := 180.0
@@ -577,7 +569,7 @@ const EVENT_PRECINCT_WEIGHT := 4
 ## main road is red, which is while the side street is green. So it has to be long enough to walk
 ## the carriageway with the doubled hard-fail margin a lethal thing owes — a light that turns
 ## while she is on the paint is the traffic contract broken by the one thing that was supposed to
-## be keeping it. `validate_signals()` states exactly that.
+## be keeping it. `tests/test_tuning_fairness.gd` states exactly that.
 ##
 ## The amber is a clearance period rather than a warning — the crossing arm stays red through it,
 ## and a car too close to stop is treated as already in the box — so it only has to be long
@@ -899,7 +891,7 @@ const ALLEY_MOUTH_SEAL_CHANCE := 0.15
 ## `METER_MAX / 2` line
 ## `tests/test_crowd.gd` draws between *expensive* and *fatal* — deliberately on the fatal side, so
 ## a meter that is not fresh cannot carry it. `tests/test_seals.gd` asserts that walk rather than
-## this number, so a change to the falloff or the geometry fails where it is felt.
+## this number, so a change to `Field.falloff` or the geometry fails where it is felt.
 ##
 ## **What it buys is the meter, not the day**, which is the recommended reading of the player's
 ## *prevents*: the pram's nearly-crying cue is the turn-back signal, and a fresh meter can still
@@ -1110,7 +1102,7 @@ const CAR_SPEED := Vector2(130.0, 185.0)
 ## pass has to cost something or the crowd is scenery again. Walking wide of them does not
 ## — the pavement is two tiles, so how close to pass is a real choice.
 ##
-## **The radius is tight because `falloff` has a shoulder on it.** Every source holds three quarters
+## **The radius is tight because `Field.falloff` has a shoulder on it.** Every source holds three quarters
 ## of its intensity at the midpoint of its band, which is right for an **event** — a thing on the map
 ## to route around — and wrong for a **body**, which is one of a couple of hundred and is supposed to
 ## be inaudible from across the pavement. An event's kind of radius on a body puts the arterial floor
@@ -1183,7 +1175,7 @@ const WALKER_DOOR_PASS_FRACTION := 0.125
 ## on purpose: a door that only ever collects people is a door with a permanent crowd at it, and
 ## somebody who decides against the queue and goes another way is the cheapest thing there is to
 ## read from a block away. Held is whatever is left, so these two must sum to under 1.0 —
-## `validate_traffic()` says so on boot.
+## `tests/test_tuning_fairness.gd` says so.
 const WALKER_DOOR_TURN_BACK_FRACTION := 0.25
 
 ## Seconds a held walker spends inside the hut, not drawn — the player's *inspection*. Shorter than
@@ -1246,7 +1238,7 @@ const WALKER_DOOR_LANE_TOLERANCE := 32.0
 ## three quarters at the fastest a walker goes — long enough to read as *going round that* rather
 ## than as a lane change taken a street early, and comfortably over what the crossing itself costs.
 ##
-## **The floor under it is the crossing time, and `validate_traffic()` states it**: the two lanes of
+## **The floor under it is the crossing time, and `tests/test_tuning_fairness.gd` states it**: the two lanes of
 ## one footway are `TILE_SIZE + 2 * CrowdLanes.SIDEWALK_LANE_SPREAD` (48px) apart and a walker
 ## closes on its lane at `CrowdAgent.STEER_SPEED`, so a walker that starts too late arrives beside
 ## the body still halfway across — which is a walker clipping a café rather than avoiding one.
@@ -1393,7 +1385,7 @@ const BUMP_INTENSITY := 18.0
 const BUMP_DURATION := 1.2
 const BUMP_INNER_RADIUS := 30.0
 ## Tight, for the reason every crowd radius is tight: the jolt is a body's own source, so it takes
-## the same shoulder from `falloff` as everything else, and a wide one charges a bump she is walking
+## the same shoulder from `Field.falloff` as everything else, and a wide one charges a bump she is walking
 ## away from for most of its tail. The cost at the moment of contact is set by the intensity.
 const BUMP_OUTER_RADIUS := 62.0
 
@@ -1417,7 +1409,7 @@ const CAR_STRIKE_MIN_SPEED := 20.0
 const PATROL_STRIKE_LEAD := 0.1
 
 ## Seconds of travel at which a car sounds its horn at somebody standing in its lane. This is
-## the traffic fairness contract, and `validate_traffic()` checks it: the warning has to be
+## the traffic fairness contract, and `tests/test_tuning_fairness.gd` checks it: the warning has to be
 ## long enough to walk out of the carriageway before the car arrives, with the same doubled
 ## margin every other hard fail gets.
 const CAR_HORN_TIME := 1.6
@@ -1426,7 +1418,7 @@ const CAR_HORN_TIME := 1.6
 ## warning has to reach as far as the car's own travel at `CAR_HORN_TIME`, so this has to be at
 ## least `CAR_SPEED.y * CAR_HORN_TIME` (296px) for the fastest car in the city — below that the
 ## watch clips the warning short of `CAR_HORN_TIME` rather than the car's speed doing it.
-## `validate_traffic()` checks it against the fastest
+## `tests/test_tuning_fairness.gd` checks it against the fastest
 ## car at boot, and the crowd-traffic skill's "The traffic fairness contract" states the same
 ## thing.
 const CAR_HORN_SIGHT := 296.0
@@ -1510,7 +1502,7 @@ const CAR_ZEBRA_WAIT_RADIUS := 56.0
 ## How far out a car starts watching the junction it is coming to.
 ##
 ## The relationship, the same one `CAR_ZEBRA_SIGHT` keeps and for the same reason: it has to
-## exceed `braking_distance(CAR_SPEED.y)` by the setback, or a car that has only just seen a box
+## exceed `CarStrategy.braking_distance(CAR_SPEED.y)` by the setback, or a car that has only just seen a box
 ## it must wait at cannot stop before it. Below that the give-way turns into a car standing in the
 ## middle of the junction, which is the failure it exists to prevent rather than a milder version
 ## of it.
@@ -1591,33 +1583,9 @@ const AHEAD_LEAD_DISTANCE := 184.0
 ## `SIGHT_AHEAD` (200px) put anything `EventDirector` sited on the horizontal axis 120px inside the
 ## boundary there — on screen the moment it appeared, whatever the vertical arithmetic said —
 ## which is exactly *"bikers / unleashed dogs all pop in in front of the player instead of starting
-## off screen"* (playtest 33, finding 8). `offscreen_boundary()` below asks the real question
-## instead: how far to the edge of this box *along the heading actually in play*.
+## off screen"* (playtest 33, finding 8). `Offscreen.boundary()` asks the real question
+## instead (`Offscreen.boundary()`): how far to the edge of this box *along the heading actually in play*.
 const VIEW_HALF_EXTENT := Vector2(320.0, 180.0)
-
-## Distance from her to the edge of the view along `heading` — a ray to the edge of the
-## `VIEW_HALF_EXTENT` box, the same arithmetic `DangerEdge._distance_to_edge` already draws the
-## screen-edge badge with, from her rather than from the camera. A thing created at once from off
-## screen — a patrol down the road — is at least this far out, so it starts genuinely off screen
-## whichever way she is walking rather than only on the one axis a flat number happened to cover. A
-## thing warned of first is placed by what she can see instead (`VisibleView.clear_of_sight()`),
-## which is the camera's view and the controls' corners.
-func offscreen_boundary(heading: Vector2) -> float:
-	var boundary := INF
-	if not is_zero_approx(heading.x):
-		boundary = minf(boundary, VIEW_HALF_EXTENT.x / absf(heading.x))
-	if not is_zero_approx(heading.y):
-		boundary = minf(boundary, VIEW_HALF_EXTENT.y / absf(heading.y))
-	return boundary
-
-## The least `offscreen_boundary()` can be for any heading — the vertical axis, since 180 is
-## smaller than the 320 the horizontal one gives — and the floor under where anything warned of
-## first is placed (`SpawnSiting.least_distance()`), which a covered corner of the joystick scheme
-## would otherwise bring nearer on a shallow way down to one side. What a fairness check needs when it
-## has no particular heading to ask about: `EventDef.validate()` checks a row's own geometry against the
-## worst case the director could ever site it in, not the case a given walk happens to produce.
-func min_offscreen_boundary() -> float:
-	return VIEW_HALF_EXTENT.y
 
 # The page's counter counts encounters (`EncounterWatch`, docs/TELEMETRY.md, "The page counts
 # visits"). None of these four changes anything a player can feel: they decide only what is sent.
@@ -1650,26 +1618,6 @@ const RUN_BOUT_GAP := 10.0
 ## notice (finding 3), which his own warning time now answers rather than this. This constant stays
 ## as the default every row gets unless it overrides.
 const OFFSCREEN_NOTICE := 0.2
-
-## How far out along `heading` something that travels toward her and is created at once starts — a
-## patrol the director sends down the road: outside the view (`offscreen_boundary()`) and `notice`
-## seconds further still, at `closing_speed`. Something warned of before it exists is placed just
-## out of sight instead (`SpawnSiting.just_out_of_sight()`).
-##
-## **`closing_speed` is the row's own speed plus `WALK_SPEED`, not the row's speed alone** — she is
-## usually walking into it, so the gap between the siting and the boundary closes at both speeds
-## together. At the default 200ms of `notice`, that is 51px of margin for `cyclist` (165px/s) and
-## 44px for `charging_dog` (130px/s pursuing) — neither number is authored anywhere else, this
-## function is where a row's own notice turns into pixels, per heading.
-func offscreen_lead(heading: Vector2, closing_speed: float, notice: float = OFFSCREEN_NOTICE) -> float:
-	return offscreen_boundary(heading) + closing_speed * notice
-
-## The least `offscreen_lead()` can be for a row closing at `closing_speed` and giving `notice`
-## seconds of it, whichever way she is heading — `min_offscreen_boundary()` plus the same margin.
-## What `EventDef.validate()` needs for the same reason `min_offscreen_boundary()` does: a per-row
-## floor that does not depend on a heading nothing at validation time has chosen yet.
-func min_offscreen_lead(closing_speed: float, notice: float = OFFSCREEN_NOTICE) -> float:
-	return min_offscreen_boundary() + closing_speed * notice
 
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".
@@ -2049,7 +1997,7 @@ const PURSUIT_MIN_NOTICE := 1.5
 ## ends, it does — from a standing start, with nothing she could have done after the first second.
 ##
 ## So the telegraph is spent **closing to a stand-off and holding there**, which is
-## `pursuit_standoff()` below, and this is the number that sets it: far enough out that the lunge
+## `PursuitSpec.standoff()`, and this is the number that sets it: far enough out that the lunge
 ## itself can be answered rather than merely watched.
 ##
 ## **This number is the one thing about the day-3 dog a player has said is right** — *"it was enough
@@ -2087,29 +2035,6 @@ const PURSUIT_REACTION := 0.6
 ## comes up to speed rather than after she has opened thirty pixels of daylight on it. That is most
 ## of what the whole answer costs her.
 const PURSUIT_SHAKEN_OFF := 0.35
-
-## How close a pursuer comes while it is still only telegraphing.
-##
-## Derived rather than authored, because it is the fairness contract in geometric form: between the
-## moment it is allowed to end her day and the moment it can, she is owed `PURSUIT_REACTION` seconds
-## of the thing's own approach. Anything nearer and the telegraph is a formality; anything much
-## further and it is off the screen, which is worse — the sight of it closing is the whole cue.
-##
-## **The edge case it does not price, and it is a known gap.** At the instant of the lunge she is
-## usually walking *into* it — a pursuer is sited in front of her, forward is where she was going,
-## and it is her walking into the stand-off that fires the lunge rather than her stopping — so the gap closes
-## at `pursue_speed + WALK_SPEED` and the notice is worth about a third of what this buys. Reversing
-## a walk into a run costs another `(WALK_SPEED + RUN_SPEED) / ACCELERATION` seconds on top, during
-## which the thing keeps coming. Measured against the day-3 dog the real window is about **two tenths
-## of a second**.
-##
-## **Both terms belong outside this function**, and folding them in is the tempting fix. The
-## stand-off they produce is 70px wider, and the extra ground is spent *reversing away from her*
-## through the telegraph, which reads as a dog that has changed its mind — a wider window bought on
-## the one part of the encounter a player has said was already right. What the answer costs is
-## priced by `PURSUIT_SHAKEN_OFF` instead.
-func pursuit_standoff(pursue_speed: float, inner: float) -> float:
-	return inner + pursue_speed * PURSUIT_REACTION
 
 ## **How long a charger that waits for her warns before he charges**, in seconds, while she stays
 ## inside his one radius (`PursuitSpec.warns_for`, `EventInstance.warns_by_radius()`). *(Inbox
@@ -2178,7 +2103,7 @@ const CROSSING_WARNING := 2.0
 ## **What this contract still cannot see**, and it is why the rig exists: every clause is about the
 ## pursuer, and none is about *her*. She is usually walking into the thing when it lunges, and
 ## turning round costs ground before the run gains any — so a row can satisfy every line below and
-## still leave a two-tenths-of-a-second window. See `pursuit_standoff()`. The rig in
+## still leave a two-tenths-of-a-second window. See `PursuitSpec.standoff()`. The rig in
 ## `tests/test_events.gd` that has to accelerate is what checks the half this cannot.
 func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		telegraph: float, notice_within := 0.0, outer := 0.0, standoff_from := 0.0,
@@ -2216,14 +2141,14 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		return false
 	# A pursuer that holds its stand-off outside its own forward reach emits nothing at her for the
 	# whole of the phase that is supposed to be the warning — no meter, no `!` over her head, and a
-	# telemetry entry that cannot say what raised the mark. Stated over `outer · field_scale(e)`
+	# telemetry entry that cannot say what raised the mark. Stated over `outer · Field.scale(e)`
 	# rather than the catalogued `outer` alone, since a pursuer's own approach is the one direction
-	# `field_scale` was built for — the check can only get easier to satisfy as the field grows
+	# `Field.scale` was built for — the check can only get easier to satisfy as the field grows
 	# forward, never harder.
-	var forward_reach := outer * field_scale(field_eccentricity(speed))
+	var forward_reach := outer * Field.scale(Field.eccentricity(speed))
 	# `standoff_from` is `EventDef.standoff_reach()`: the lunge is measured from the catch unless a row
 	# keeps it somewhere else, and 0 here means the catch.
-	var standoff := pursuit_standoff(speed, standoff_from if standoff_from > 0.0 else inner)
+	var standoff := PursuitSpec.standoff(speed, standoff_from if standoff_from > 0.0 else inner)
 	if standoff > forward_reach and outer > 0.0:
 		push_error("Unfair pursuit '%s': it stands off at %.0fpx and reaches %.0fpx, so its whole "
 				% [id, standoff, forward_reach] + "notice is spent outside its own field")
@@ -2260,114 +2185,15 @@ func signal_cycle_seconds() -> float:
 func signal_main_green_seconds() -> float:
 	return signal_cycle_seconds() - SIGNAL_SIDE_GREEN_SECONDS - SIGNAL_AMBER_SECONDS * 2.0
 
-## The signalled half of the traffic contract.
-##
-## A zebra on an ordinary street is kept by the drivers: traffic gives way to somebody standing
-## at the kerb, and `CAR_ZEBRA_SIGHT` is what makes that visible before she steps off. On a main
-## road nobody gives way, and the only thing standing between her and a hard fail is the length
-## of the light — so the side street's green has to be long enough to cross the carriageway with
-## the **same doubled margin** every other lethal thing in the game owes.
-##
-## Stated over the crossing she is making rather than over the light she is watching: it is the
-## side street that is green while the main road is stopped.
-##
-## **And with the power out there is no light at all** (`TrafficSignals.powered`, the last night's
-## blackout), so the spine's own contract has to stand without one. A dark junction is negotiated
-## the way a side street's is, and the spine's traffic does not give way at its zebras lit or dark,
-## so what is left between her and a hard fail is the side street's contract: the painted
-## carriageway and the horn. The spine's carriageway is `carriageway_width()`, the same as every
-## street's, and the horn is stated in seconds of the car's own travel, so `validate_traffic()`'s
-## own check — the horn covers that width with the same doubled margin — is the dark junction's
-## check as well.
-func validate_signals() -> bool:
-	var required := required_horn_time()
-	if SIGNAL_SIDE_GREEN_SECONDS + 0.001 < required:
-		push_error("Unfair signal: side green %.2fs < %.2fs needed to cross %.0fpx of carriageway"
-				% [SIGNAL_SIDE_GREEN_SECONDS, required, carriageway_width()])
-		return false
-	return true
-
-## The traffic fairness contract, and the one place it is stated.
-##
-## A car is not an event, so `validate_event()` never sees it: it has no telegraph, it is not
-## in the catalogue, and it is lethal. What stands in for the telegraph is the road itself —
-## the carriageway is painted, permanent and learnable, and stepping off the kerb is a choice
-## the player makes. On top of that, a car that is actually going to hit somebody sounds its
-## horn `CAR_HORN_TIME` out, and that warning must be long enough to walk the whole width of
-## the carriageway with the doubled margin a hard fail is owed.
-##
-## Returns true if the geometry is fair; pushes an error and returns false if it is not.
-func validate_traffic() -> bool:
-	var required := required_horn_time()
-	if CAR_HORN_TIME + 0.001 < required:
-		push_error("Unfair traffic: CAR_HORN_TIME %.2fs < required %.2fs (carriageway %.0fpx)"
-				% [CAR_HORN_TIME, required, carriageway_width()])
-		return false
-	# The duration above is only true if the crowd watches far enough to let a car sound it —
-	# see `CAR_HORN_SIGHT`. Checked against the fastest car, since a slower one needs less reach.
-	var required_sight := required_horn_sight()
-	if CAR_HORN_SIGHT + 0.001 < required_sight:
-		push_error(("Unfair traffic: CAR_HORN_SIGHT %.0fpx < %.0fpx the fastest car needs "
-				+ "(%.0fpx/s x %.2fs CAR_HORN_TIME)")
-				% [CAR_HORN_SIGHT, required_sight, CAR_SPEED.y, CAR_HORN_TIME])
-		return false
-	# The three answers a walker may be given at a door are one draw of one number, so the two
-	# fractions have to leave something over — held is the remainder, and a remainder of nothing is
-	# a door nobody is ever held at with no error anywhere to say so.
-	if WALKER_DOOR_PASS_FRACTION + WALKER_DOOR_TURN_BACK_FRACTION >= 1.0:
-		push_error("No walker is ever held at a door: pass %.3f + turn back %.3f leaves nothing"
-				% [WALKER_DOOR_PASS_FRACTION, WALKER_DOOR_TURN_BACK_FRACTION])
-		return false
-	# A walker going round a solid body has to have finished crossing to the other lane of its own
-	# footway by the time it gets there. Stated over the distance rather than the time, because what
-	# it is really about is where the walker is when it reaches the body.
-	var lane_gap := float(TILE_SIZE) + 2.0 * CrowdLanes.SIDEWALK_LANE_SPREAD
-	var crossing_run := lane_gap / CrowdAgent.STEER_SPEED * PEDESTRIAN_SPEED.y
-	if float(WALKER_BODY_SIDESTEP_TILES * TILE_SIZE) < crossing_run:
-		push_error("A walker cannot get round a body: it starts %.0fpx out and needs %.0fpx to "
-				% [float(WALKER_BODY_SIDESTEP_TILES * TILE_SIZE), crossing_run]
-				+ "cross the %.0fpx to the other lane of its footway" % lane_gap)
-		return false
-	return true
-
-## Shortest horn a lethal car may fairly give. Kept separate from `validate_traffic()` so a
-## test can check the contract without tripping the error it raises.
+## Shortest horn a lethal car may fairly give. What `tests/test_tuning_fairness.gd` holds `CAR_HORN_TIME` to, and
+## what the lethal vehicles' tests hold their warning to.
 func required_horn_time() -> float:
 	return carriageway_width() * TELEGRAPH_HARD_FAIL_MARGIN / WALK_SPEED
 
 ## Shortest reach the crowd's horn watch may fairly have: enough for the fastest car to sound
-## the whole of `CAR_HORN_TIME` before it arrives. Kept separate from `validate_traffic()` for
-## the same reason as `required_horn_time()`.
+## the whole of `CAR_HORN_TIME` before it arrives. What `tests/test_tuning_fairness.gd` holds `CAR_HORN_SIGHT` to.
 func required_horn_sight() -> float:
 	return CAR_SPEED.y * CAR_HORN_TIME
-
-## The return leg's own pacing is fair by construction as long as its shape holds: one entry per
-## act, none of them negative, and an interval that is ordered and strictly shorter than
-## `AHEAD_INTERVAL`'s on both ends — the rows this owes have to be able to land inside the return
-## leg they were sized against, not merely inside "the day" the ordinary pacing still covers.
-func validate_return_patrols() -> bool:
-	if RETURN_PATROLS_PER_ACT.size() != 4:
-		push_error("RETURN_PATROLS_PER_ACT has %d entries, not one per act"
-				% RETURN_PATROLS_PER_ACT.size())
-		return false
-	for count in RETURN_PATROLS_PER_ACT:
-		if count < 0:
-			push_error("RETURN_PATROLS_PER_ACT carries a negative count: %s" % [RETURN_PATROLS_PER_ACT])
-			return false
-	if RETURN_PATROL_INTERVAL.x > RETURN_PATROL_INTERVAL.y:
-		push_error("RETURN_PATROL_INTERVAL is not ordered: %s" % RETURN_PATROL_INTERVAL)
-		return false
-	if RETURN_PATROL_INTERVAL.x >= AHEAD_INTERVAL.x or RETURN_PATROL_INTERVAL.y >= AHEAD_INTERVAL.y:
-		push_error(("RETURN_PATROL_INTERVAL %s is not shorter than AHEAD_INTERVAL %s: the return "
-				% [RETURN_PATROL_INTERVAL, AHEAD_INTERVAL])
-				+ "would owe patrols no faster than an ordinary walk already gets")
-		return false
-	return true
-
-## Distance a car needs to stop from a given speed. Used by the crossing logic and asserted
-## against `CAR_ZEBRA_SIGHT` in `tests/test_crowd.gd`.
-func braking_distance(speed: float) -> float:
-	return speed * speed / (2.0 * CAR_BRAKE)
 
 ## People on the streets in a given act.
 func crowd_pedestrians(act: int) -> int:
@@ -2476,17 +2302,17 @@ func validate_warning(id: String, warning: float, minimum: float) -> bool:
 ## escape distance is the full radius. An event slower than walking pace (a dog walker)
 ## can simply be walked away from, so it uses the stationary rule.
 ##
-## **Both distances are stated over the row's own forward reach, `outer_radius · field_scale(e)`,
+## **Both distances are stated over the row's own forward reach, `outer_radius · Field.scale(e)`,
 ## not the catalogued `outer_radius` alone** — a moving field now reaches further ahead of itself
-## than it is wide (see `field_scale()`), and the escape she is owed is the ground she actually has
+## than it is wide (see `Field.scale()`), and the escape she is owed is the ground she actually has
 ## to clear, not the number the row was authored with. The band case scales the same way:
-## `(outer_radius − inner_radius) · field_scale(e)` is the band's own width stretched forward, since
+## `(outer_radius − inner_radius) · Field.scale(e)` is the band's own width stretched forward, since
 ## the near edge of an approaching field arrives sooner too. `e` is zero for a stationary row, where
-## `field_scale(0)` is 1.0 and both escapes are exactly what they always were.
+## `Field.scale(0)` is 1.0 and both escapes are exactly what they always were.
 func required_telegraph_time(inner_radius: float, outer_radius: float,
 		hard_fail: bool, speed: float = 0.0) -> float:
 	var margin := TELEGRAPH_HARD_FAIL_MARGIN if hard_fail else 1.0
-	var scale := field_scale(field_eccentricity(speed))
+	var scale := Field.scale(Field.eccentricity(speed))
 	var escape := outer_radius * scale if speed > WALK_SPEED \
 			else (outer_radius - inner_radius) * scale
 	return escape * margin / WALK_SPEED
@@ -2497,12 +2323,13 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## orthogonal. the entity itself lives in one of the focus points."* Zero at a standstill, which is
 ## the plain disc every field always was; rises with speed and is capped at
 ## `FIELD_ECCENTRICITY_MAX` so nothing ever flattens to a line. Fed to
-## `GroundShape.eccentric_distance()` and `field_scale()`, the polar conic and its own forward reach.
+## `Field.eccentricity()` and `Field.scale()`, the polar conic and its own forward reach
+## (`GroundShape.eccentric_distance()` draws it).
 ##
-## **The cap is stated over `field_scale()`, not over `e` on its own.** A moving field's forward
-## reach is `R · field_scale(e)` (see that function), so the cap has to be read as "how far past its
+## **The cap is stated over `Field.scale()`, not over `e` on its own.** A moving field's forward
+## reach is `R · Field.scale(e)` (see that function), so the cap has to be read as "how far past its
 ## own resting radius may a field reach" rather than as a shape of the ellipse in isolation — at
-## `FIELD_ECCENTRICITY_MAX` 0.5, `field_scale` is exactly 2.0, so nothing in the game reaches more
+## `FIELD_ECCENTRICITY_MAX` 0.5, `Field.scale` is exactly 2.0, so nothing in the game reaches more
 ## than twice its catalogued `outer_radius` ahead of itself. Nothing in the catalogue is fast enough
 ## to reach it — the ceiling is a safety bound for a future row, not a number any current one sits
 ## against.
@@ -2523,66 +2350,6 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## 0.48, just under the cap.
 const FIELD_ECCENTRICITY_MAX := 0.5
 const FIELD_ECCENTRICITY_SPEED := 500.0
-
-func field_eccentricity(speed: float) -> float:
-	return minf(FIELD_ECCENTRICITY_MAX, speed / FIELD_ECCENTRICITY_SPEED)
-
-## The moving field's growth over its resting disc: `L(e) = R / (1 − e)`, so a field at the
-## catalogued radius `R` reaches `R · field_scale(e)` dead ahead once it moves — the width the
-## player asked to keep. *(2026-09-10, overturning M61's field record: "the stretching should
-## retain the area so an unstretched car field should be the same width with shorter height" …
-## "if anything the moving size should be bigger than the rest size since moving causes more
-## excitement.")* `field_scale(0)` is 1.0, the plain disc M61 always gave a standing emitter.
-##
-## The one place this conic's own scale is computed — `GroundShape.eccentric_distance()` and
-## `GroundShape._eccentric_field_outline()` both go through it, so a future change to the growth
-## curve cannot update one and miss the other.
-func field_scale(e: float) -> float:
-	return 1.0 / (1.0 - e)
-
-## Excitement contribution of a source of `intensity` at distance `d` — `d` is
-## `GroundShape.field_distance()`/`eccentric_distance()` now, distance to a body's spine or to a
-## moving emitter's own elliptical kernel rather than always the plain distance to a centre, but
-## the arithmetic below is unchanged: whatever shape a field's `d` came from, `inner_radius` and
-## `outer_radius` still mean *that* distance's own near and far edge.
-##
-## **The shape has a shoulder on it**, because the meter has to go substantially up from some way
-## off rather than waiting for contact.
-##
-## `1 − t²`: full strength at the inner edge, three quarters of it at the midpoint, and zero only at
-## the outer edge, where the contract says it must be. **The whole catalogue gets its teeth from the
-## shape rather than from its radii** — thirty rows of hand-widened radii would be thirty chances to
-## break the fairness contract.
-##
-## **`power` is the exponent on `t` and a row may carry its own** (`EventDef.falloff_power`), for
-## the case a row's two radii cannot express: under 1 it drops fast and tails long, over 2 it holds
-## near full and then falls off a cliff. **Every row in the catalogue is at the 2.0 default**, which
-## is the curve above and the curve every number in `docs/EVENTS.md` was measured against — the knob
-## exists so that a shape is a row's decision rather than a change to this function.
-##
-## **`(1−t)²` is the shape that looks equally reasonable and inverts the game.** It puts a quarter of
-## the intensity at the midpoint of the band and six percent three quarters of the way out, so a café
-## at 12/s sits under the 6.0/s walking decay across the whole outer 70% of its own field — and a
-## `near` entry written at an event's outer radius reads `events 0.0`. An event you are not charged
-## for until you touch it is not a thing to route around, it is a thing to bump into.
-##
-## **The contract is untouched and this is why.** `required_telegraph_time` is stated over
-## *distance* — how far she has to walk to be outside the radius — and neither radius moved. What
-## changed is what she pays while she is inside one, which the contract has never had an opinion
-## about. `tests/test_events.gd` re-checks the whole catalogue either way.
-##
-## See docs/MECHANICS.md.
-func falloff(d: float, intensity: float, inner_radius: float, outer_radius: float,
-		power: float = 2.0) -> float:
-	if d <= inner_radius:
-		return intensity
-	if d >= outer_radius:
-		return 0.0
-	var t := (d - inner_radius) / (outer_radius - inner_radius)
-	# The default is written out rather than raised, so the curve every measured number in the
-	# catalogue was taken against is the same expression it has always been, bit for bit.
-	var drop := t * t if is_equal_approx(power, 2.0) else pow(t, power)
-	return intensity * (1.0 - drop)
 
 # ----------------------------------------------------------------- the finale ---
 # The fifteenth and sixteenth walks, which are not an ordinary day: escaping the building, then

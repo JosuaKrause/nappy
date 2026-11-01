@@ -265,7 +265,7 @@ local one if something upstream has already chosen the bracket.
 ## The traffic fairness contract
 
 A car is lethal and is **not** an event, so `validate_event()` never sees it.
-`Tuning.validate_traffic()` is its equivalent and runs on boot. Two things stand in for the
+`tests/test_tuning_fairness.gd`'s traffic check is its equivalent and fails the suite. Two things stand in for the
 telegraph: the **painted carriageway**, which is permanent and learnable and which she chooses to
 step onto, and the **horn**, which must be long enough to walk the whole width of it with the
 doubled hard-fail margin.
@@ -282,7 +282,7 @@ cars within `CAR_ZEBRA_SIGHT` (200px) of her — both are about a car that has a
 her, and neither needs more — but the horn's own contract needs more warning than 200px of travel
 gives a fast car, so it is checked against a second, wider watch instead: `CAR_HORN_SIGHT`
 (296px), at least `CAR_SPEED.y × CAR_HORN_TIME` (the fastest car's own warning distance) so the
-watch is never what clips a car's horn short of `CAR_HORN_TIME`. `Tuning.validate_traffic()`
+watch is never what clips a car's horn short of `CAR_HORN_TIME`. `tests/test_tuning_fairness.gd`'s traffic check
 checks `CAR_HORN_SIGHT` against the fastest car the same way it checks `CAR_HORN_TIME` against
 `required_horn_time()`, so **a change to the horn, to `CAR_SPEED`, or to either watch fails at
 boot rather than only on the street** if the two stop agreeing.
@@ -292,7 +292,7 @@ contract in the same place.** A hard fail with no written contract is a bug wait
 difficulty setting. **The patrol car and the fire engine are in the catalogue and keep this
 contract instead of a telegraph** (`EventDef.vehicle`, `EventCarDriving`): each strikes only on the carriageway, only
 ahead of its nose, and warns anybody standing in its lane `CAR_HORN_TIME` of its own travel before
-the strike, wherever it is created, so `validate_traffic()`'s check is its check too. Each also
+the strike, wherever it is created, so the fairness suite's traffic check is its check too. Each also
 gives way where the crowd's cars do — short
 of a zebra she is waiting at off the main road, and at a red light — and never inside a junction
 box: for a zebra beyond the box it holds at the box's entry line, since the crossing traffic cannot
@@ -303,7 +303,7 @@ itself committed, and stands there.
 
 **The main road replaces the courtesy with a clock, so the clock is the contract.** Traffic on the
 spine does not give way at a zebra — what stops it is the light — so the thing standing between her
-and a hard fail is the length of the **side street's** green, and `Tuning.validate_signals()` states
+and a hard fail is the length of the **side street's** green, and `tests/test_tuning_fairness.gd`'s signals check states
 it in the same shape: long enough to walk the carriageway with the doubled margin.
 
 Two things are easy to get backwards. The green that matters is the **other** arm's, because she
@@ -320,7 +320,7 @@ the street's kind rather than its light, so the clock is gone and nothing replac
 **what keeps a crossing of the dark spine fair is the painted carriageway and the horn**, and the
 horn has to be long enough, at the spine's speed, to walk the spine's whole carriageway with the
 doubled margin. The spine's carriageway is `carriageway_width()` like every street's and the horn is
-seconds of the car's own travel, so `validate_traffic()` is the check, and `validate_signals()` says
+seconds of the car's own travel, so the fairness suite's traffic check is the check, and the fairness suite's signals check says
 so beside the green it checks. **Anything that asks whether a spine junction has lights standing on
 it — where to put a head — asks `has_lights()`, never `is_signalled()`**, or a city built dark
 draws no heads at all.

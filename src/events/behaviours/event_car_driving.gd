@@ -355,7 +355,7 @@ func _on_the_carriageway(at: Vector2) -> bool:
 ## **The car's warning, a horn said with the mark over her head**: true while it drives at her where
 ## she stands on the carriageway, within `Tuning.CAR_HORN_TIME` of its travel of the strike — so the
 ## warning comes that long before the strike whatever the car's speed, the crowd car's contract
-## (`Tuning.validate_traffic()`, which holds it against walking off the carriageway with the
+## (`tests/test_tuning_fairness.gd`'s traffic check, which holds it against walking off the carriageway with the
 ## doubled margin). `WarningBoard.warn_about_the_ground_she_is_on()` raises the mark from it. Not
 ## while a line it gives way at, or the end of a route it parks at, stands between them
 ## (`short_of_its_line()`): it will stop there.

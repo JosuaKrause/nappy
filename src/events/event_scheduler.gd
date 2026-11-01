@@ -1474,7 +1474,7 @@ class WalkSiting extends RefCounted:
 						or absf(offset.cross(heading)) > _STREET_HALF_WIDTH:
 					continue
 				# Out of her view, the whole of what it draws: a thing created at once is placed past
-				# the view's own edge (`Tuning.offscreen_boundary()`'s rule).
+				# the view's own edge (`Offscreen.boundary()`'s rule).
 				if could_be_in_her_view(def, _map.tile_to_world(tile), at):
 					continue
 				var band := int(along / Tuning.TILE_SIZE)
@@ -2995,7 +2995,7 @@ static func _reach_above(def: EventDef, rate: float) -> float:
 			_band_crossing(def.core_intensity, def.inner_radius, def.core_radius, rate,
 			def.falloff_power))
 
-## Where one falloff band crosses `rate`, or zero if it is never above it — `Tuning.falloff`'s
+## Where one falloff band crosses `rate`, or zero if it is never above it — `Field.falloff`'s
 ## `1 − t^power` inverted for the `t` at which it equals `rate`. The row's own `falloff_power`
 ## rather than a squared constant, so a row that ever shapes its own drop-off is denied the ground
 ## it actually charges for rather than the ground a quadratic row of the same numbers would.
@@ -3004,7 +3004,7 @@ static func _band_crossing(intensity: float, inner: float, outer: float, rate: f
 	if intensity <= rate or outer <= inner:
 		return 0.0
 	var left := 1.0 - rate / intensity
-	# `sqrt` at the default rather than `pow(x, 0.5)`, for the reason `Tuning.falloff` writes its
+	# `sqrt` at the default rather than `pow(x, 0.5)`, for the reason `Field.falloff` writes its
 	# own default out: the two may differ in the last bit, and every radius the catalogue was
 	# measured at came from this one.
 	var t := sqrt(left) if is_equal_approx(power, 2.0) else pow(left, 1.0 / power)

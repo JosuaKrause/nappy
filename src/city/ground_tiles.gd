@@ -285,7 +285,7 @@ static func _road_variant(map: CityMap, tile: Vector2i) -> int:
 ##
 ## **On the main road it is not a zebra**, and that is a rule rather than a decoration. A zebra
 ## means *the traffic gives way to you*, and on the spine it does not — what stops it is the light,
-## which is `Tuning.validate_signals`' whole contract. Zebra paint there contradicts the rule at
+## which is the whole contract of the signals check in `tests/test_tuning_fairness.gd`. Zebra paint there contradicts the rule at
 ## every junction of the one street where getting it wrong ends the day.
 ##
 ## What stands in its place is **two dotted lines** and not nothing: paint the crossing away and a

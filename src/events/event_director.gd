@@ -972,7 +972,7 @@ func _roll_interval() -> float:
 ## and, of the day-3 dog specifically, "the run tutorial spawns inside the visible area making the
 ## headsup way too short now".)* A flat 200px sits inside the 320px horizontal boundary, so a dog
 ## sited while she walked east or west had no offscreen phase at all — it appeared already on
-## screen. `Tuning.offscreen_lead(heading, closing_speed, def.offscreen_notice)` asks the real
+## screen. `Offscreen.lead(heading, closing_speed, def.offscreen_notice)` asks the real
 ## question instead: how far to the edge of the view *this* heading actually reaches, plus how far
 ## it and she together cover in the row's own notice — for `charging_dog` at 130px/s pursuing,
 ## closing at 130 + `WALK_SPEED` (92) = 222px/s, `EventDef.offscreen_notice` of 0.5s buys 111px, sized
@@ -1009,7 +1009,7 @@ func _crossing_ahead_of(at: Vector2, heading: Vector2,
 ## an empty path).
 func _crossing_with_its_crouch(at: Vector2, heading: Vector2, def: EventDef = null) -> Array:
 	var none := [PackedVector2Array(), 0.0, Vector2.ZERO]
-	var lead := Tuning.offscreen_lead(heading, def.chase_speed() + Tuning.WALK_SPEED,
+	var lead := Offscreen.lead(heading, def.chase_speed() + Tuning.WALK_SPEED,
 				def.offscreen_notice) \
 			if def and def.pursuit != null \
 			else (def.ahead_of_player_lead() if def else Tuning.AHEAD_LEAD_DISTANCE)
@@ -1120,7 +1120,7 @@ func clear_of_the_doors(path: PackedVector2Array, def: EventDef) -> bool:
 ##
 ## **Created at once, not warned first.** A row on foot that `_toward_her()` sites goes up as a
 ## screen-edge warning before it exists (`EventDef.warns_before_it_exists()`); a patrol is sited
-## here in the world at the ordinary `Tuning.offscreen_lead()` margin instead, and telegraphs on its
+## here in the world at the ordinary `Offscreen.lead()` margin instead, and telegraphs on its
 ## way in (`telegraph_time` 1.97s) with no badge, since 74px/s is slower than a walk and it is never
 ## `hard_fail` (`EventDef.at_heat()` states it for the `PRESSES` rung) — that is why
 ## `BadgeModel.Subject.worth_an_arrow()` gives it no badge. Under the player's rule a thing telegraphs
@@ -1146,7 +1146,7 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef) -> Pa
 	var direction := -(site_heading.y if vertical else site_heading.x)
 	var lane_coordinate := CrowdLanes.lane_centre(index, CrowdLanes.road_lane(vertical, direction))
 	var closing := def.speed + Tuning.WALK_SPEED
-	var lead := Tuning.offscreen_lead(site_heading, closing, def.offscreen_notice)
+	var lead := Offscreen.lead(site_heading, closing, def.offscreen_notice)
 	var far := at + site_heading * lead
 	var behind := at - site_heading * lead
 	if vertical:

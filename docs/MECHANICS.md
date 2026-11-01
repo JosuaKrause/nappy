@@ -596,7 +596,7 @@ over, so a car halted at a zebra is scenery.
 
 A car is not an event: it has no telegraph, it is not in the catalogue, and
 `validate_event()` never sees it. Two things stand in for the telegraph, and
-`Tuning.validate_traffic()` checks the second on boot.
+`tests/test_tuning_fairness.gd`'s traffic check checks the second.
 
 1. **The road itself.** The carriageway is painted, permanent and learnable, and the kerb is
    an edge she chooses to step over. Same shape of contract as `alley_robbery`, where the
@@ -607,7 +607,7 @@ A car is not an event: it has no telegraph, it is not in the catalogue, and
    near miss costs something even when it stays a near miss. The crowd watches for it from
    `CAR_HORN_SIGHT` (296px) out — wider than the 200px the strike and the give-way scan use,
    since a fast car needs more than 200px of travel to sound the whole `1.6 s` — and
-   `Tuning.validate_traffic()` checks that reach against the fastest car on boot.
+   `tests/test_tuning_fairness.gd`'s traffic check checks that reach against the fastest car.
 
 The horn also raises the **exclamation mark over the player**, the load-bearing cue of the visual
 vocabulary. See docs/EVENTS.md.
@@ -624,7 +624,7 @@ warning — so the zebra below stays the safe way over with a patrol on the stre
 
 **On the main road the light is the contract, and with the power out the horn is.** The spine's
 traffic does not give way at a zebra, so what stands between her and a hard fail there is the length
-of the side street's green (`Tuning.validate_signals()`). On the last night, after the blackout, the
+of the side street's green (`tests/test_tuning_fairness.gd`'s signals check). On the last night, after the blackout, the
 lights are dead: a spine junction is negotiated the way a side street's is, and crossing the spine
 is kept by the same two things every other street's carriageway is — the paint and the horn. The
 spine's carriageway is the same 64px as every street's and the horn is stated in seconds of the
@@ -1019,9 +1019,9 @@ capsule about its own spine, `GroundShape.distance_to_spine()`. A moving emitter
 way — nobody builds the general capsule-and-ellipse sum, because the one emitting segment that
 moves, the patrol car, has its whole body inside its own field's core — and its field is
 `GroundShape.eccentric_distance()`: a conic with the emitter at one
-focus rather than at the centre, eccentricity from speed (`Tuning.field_eccentricity()`). **The
+focus rather than at the centre, eccentricity from speed (`Field.eccentricity()`). **The
 resting disc's own width is what the ellipse keeps**: it holds exactly `outer_radius` abeam of a
-moving thing whatever its speed, reaches `outer_radius · Tuning.field_scale(e)` ahead of it — more
+moving thing whatever its speed, reaches `outer_radius · Field.scale(e)` ahead of it — more
 than a disc's `outer_radius`, since motion only ever adds reach — and less far, `outer_radius /
 (1+e)`, behind. See docs/EVENTS.md, "The emission model", for the full derivation and the debug
 view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
@@ -1146,7 +1146,7 @@ after the first second.
 
 Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
-- **`Tuning.pursuit_standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
+- **`PursuitSpec.standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
   PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `PursuitSpec.lunge_reach`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
   front of her and forward is where she was going. Clamping the approach at zero instead leaves the
   contract true of the dog and false of the encounter — it stands politely still while she closes

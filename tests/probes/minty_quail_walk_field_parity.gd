@@ -69,7 +69,7 @@ func _the_guard(t, seed_value: int, walks: bool) -> void:
 	player.global_position = at
 	director._on_contact_completed(step.index)
 	var route := PROBE._walk_away_from(map, at) if walks else PackedVector2Array()
-	var standoff := Tuning.pursuit_standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var her := at
 	var next := 0
 	var clock := 0.0

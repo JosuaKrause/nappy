@@ -410,7 +410,7 @@ static func _playground() -> EventDef:
 	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.intensity = 0.0  # Free. See the note above.
 	# Kept at their old size for continuity — the debug field overlay still draws a disc here —
-	# even though `Tuning.falloff` answers zero at every distance now and nothing else reads them:
+	# even though `Field.falloff` answers zero at every distance now and nothing else reads them:
 	# shrinking a field nobody prices is a second change nobody asked for.
 	def.inner_radius = 40.0
 	def.outer_radius = 150.0
@@ -476,7 +476,7 @@ static func _cat_dash() -> EventDef:
 	# STREET_WIDTH tiles either side at 240px/s is 1.6s, and it must not expire mid-road.
 	def.duration = 1.8
 	# Faster than a walk, so the escape distance is the forward reach, not the plain radius —
-	# `outer_radius · Tuning.field_scale(e)` at the cat's own speed (240px/s, e = 0.48, just under
+	# `outer_radius · Field.scale(e)` at the cat's own speed (240px/s, e = 0.48, just under
 	# the eccentricity cap): 120 * 1.92 / 92 = 2.51s, plus the margin the row already carried.
 	def.telegraph_time = 2.81
 	def.mobile = true
@@ -589,7 +589,7 @@ static func _alley_mouse() -> EventDef:
 	def.intensity = 21.0
 	def.inner_radius = 15.0
 	def.outer_radius = 60.0
-	# `Tuning.required_telegraph_time(15, 60, false, 200)` is ~1.09s (outer_radius · field_scale(e)
+	# `Tuning.required_telegraph_time(15, 60, false, 200)` is ~1.09s (outer_radius · Field.scale(e)
 	# at e = min(0.5, 200/500) = 0.4, scale 1.667, over WALK_SPEED); this carries a margin the same
 	# shape as the cat's own.
 	def.telegraph_time = 1.4
@@ -1687,7 +1687,7 @@ static func _chatting_mother() -> EventDef:
 ## - **It comes through its own telegraph, and stops short.** A pursuer that waits politely hands
 ##   her more ground in two seconds than the whole chase can take back, so the notice is the sight
 ##   of it closing — but the sight of it closing *onto her* is not notice at all.
-##   `Tuning.pursuit_standoff()` is where it stops: 104px, six tenths of a second of its own speed
+##   `PursuitSpec.standoff()` is where it stops: 104px, six tenths of a second of its own speed
 ##   outside the radius that ends the day.
 ## - **A capped chase, and a break-off that pays for reacting early.** A run is fourteen points a
 ##   second, so the chase needs a cap — but the cap is not what prices the answer;
@@ -1826,7 +1826,7 @@ static func _police_patrol() -> EventDef:
 	def.inner_radius = 44.0
 	def.outer_radius = 185.0
 	# Slower than a walk, so the escape distance is the falloff band stretched forward by the
-	# patrol's own eccentricity: `(outer_radius - inner_radius) · Tuning.field_scale(e)` at 74px/s
+	# patrol's own eccentricity: `(outer_radius - inner_radius) · Field.scale(e)` at 74px/s
 	# (e = 0.148) is 165px, 1.80s, plus the margin the row already carried.
 	def.telegraph_time = 1.97
 	def.mobile = true
@@ -2601,7 +2601,7 @@ static func _military_convoy() -> EventDef:
 	def.inner_radius = 76.0
 	def.outer_radius = 300.0
 	# As a place the day planned, faster than a walk, so the escape distance is the forward reach:
-	# `outer_radius · Tuning.field_scale(e)` at 120px/s (e = 0.24) is 395px, 4.29s, plus the margin
+	# `outer_radius · Field.scale(e)` at 120px/s (e = 0.24) is 395px, 4.29s, plus the margin
 	# the row already carried. Day 13's column is this row warned first
 	# (`EventSpawner.as_warned()`): that copy's badge alone is cut to `Tuning.WARNING_ALONE_MAX`, and
 	# it is held to the flat `Tuning.OFFSCREEN_WARNING_MIN`.

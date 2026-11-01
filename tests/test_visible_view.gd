@@ -149,10 +149,10 @@ func _test_just_out_of_sight_may_be_a_covered_corner(t) -> void:
 			"straight up, away from the corners, the two schemes agree", 0.01)
 
 ## The floor holds whatever the corners allow: no direction, in either scheme, places a thing
-## nearer than `Tuning.min_offscreen_boundary()` when asked for it, which is the worst case
+## nearer than `Offscreen.min_boundary()` when asked for it, which is the worst case
 ## `EventDef.validate()` checks a row's field against.
 func _test_just_out_of_sight_is_never_nearer_than_its_floor(t) -> void:
-	var floor_px := Tuning.min_offscreen_boundary()
+	var floor_px := Offscreen.min_boundary()
 	for joystick: bool in [false, true]:
 		var view := VisibleView.around(Vector2.ZERO, TouchControls.covered_screen() if joystick else null)
 		var nearest := INF

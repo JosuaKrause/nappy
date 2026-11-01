@@ -2004,7 +2004,7 @@ which must not say *"at a zebra"* on a street that has none.
   restating the arithmetic.
 - **The side street's green is the fairness contract.** She crosses a main road while the main road
   is red, which is while the side street is green, so that green has to be longer than the walk
-  across the carriageway with the doubled hard-fail margin. `Tuning.validate_signals()` on boot.
+  across the carriageway with the doubled hard-fail margin. `tests/test_tuning_fairness.gd`'s signals check.
 - **The amber is a clearance period, not a warning.** The crossing arm stays red through it, and a
   car too close to stop is counted as already in the box.
 - **Four heads per junction, each beside the carriageway it stops.** From directly above a head has

@@ -25,6 +25,8 @@ src/
   run_trace.gd            the sink game logic writes its account of a decision into, handed in
   drawn_frame.gd          the wait for a frame the viewport has actually drawn, for any capture
   game_enums.gd           shared enums (see below)
+  field.gd                the arithmetic of a field: its falloff and a moving field's stretch (static)
+  offscreen.gd            how far out of her view something sent at her starts (static)
   autoload/
 	tuning.gd             all balance constants           (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
@@ -672,8 +674,10 @@ photographable — `tools/shot.sh out.png 3 --touch --tap 640 420`.
 ## Autoloads
 
 ### `Tuning`
-Pure constants + `validate_event()`. No state. Everything balance-related lives here so a
-designer touches one file.
+Pure constants + the fairness checks a row's own geometry is held to (`validate_event()`,
+`validate_pursuit()`). No state. Everything balance-related lives here so a designer touches one
+file. The contracts that are about shared numbers rather than about a row (traffic, the signals, the
+return patrols) are `tests/test_tuning_fairness.gd`'s checks, so an unfair number fails the suite.
 
 ### `EventBus`
 Global signal hub. Decouples systems that should not know about each other. Every signal is
@@ -981,6 +985,7 @@ non-zero on any failure.
 - `test_crowd.gd` — the crowd against a real city: population per act, determinism, agents
   staying on the right surface through a corner, and the emergent noise floor (a busy street
   never lets the meter fall; a back street does; a park is out of earshot).
+- `test_tuning_fairness.gd` — the traffic, signal and return-patrol contracts over `Tuning`'s numbers.
 - `test_acts.gd` — act gating, protest growth, scar persistence, and walkability under
   accumulated street closures.
 - `test_masts.gd` — the loudspeaker masts: fixed sites from `Tuning.MAST_FIRST_DAY`, none

@@ -94,7 +94,7 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
 						% [def.id, level] + "chasing her itself")
 				var man := EventCatalogue.out_of_the_car(10, false)
 				t.check(man.hard_fail, "'%s': and its men's catch ends the day" % def.id)
-				var reach := Tuning.pursuit_standoff(man.chase_speed(), man.standoff_reach())
+				var reach := PursuitSpec.standoff(man.chase_speed(), man.standoff_reach())
 				t.check(not should_hunt or (reach < hot.notice_within()
 						and hot.notice_within() <= hot.outer_radius),
 						"'%s' heat %d: its men's stand-off %.0f < its notice %.0f <= its field %.0f"
@@ -114,9 +114,9 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
 			# stand-off she is owed, then the trigger, then the edge of the field as it reaches
 			# ahead of him at his speed — each strictly inside the next, which is what
 			# `Tuning.validate_pursuit` also checks at boot.
-			var standoff := Tuning.pursuit_standoff(hot.chase_speed(), hot.inner_radius)
+			var standoff := PursuitSpec.standoff(hot.chase_speed(), hot.inner_radius)
 			var ahead := hot.outer_radius \
-					* Tuning.field_scale(Tuning.field_eccentricity(hot.chase_speed()))
+					* Field.scale(Field.eccentricity(hot.chase_speed()))
 			t.check(standoff < hot.notice_within() and hot.notice_within() <= ahead,
 					"'%s' heat %d: stand-off %.0f < trigger %.0f <= field ahead %.0f"
 					% [def.id, level, standoff, hot.notice_within(), ahead])
@@ -312,7 +312,7 @@ func _test_the_patrol_investigates_past_the_threshold(t) -> void:
 		if should_investigate:
 			for day: int in [8, 9]:
 				var officer := EventCatalogue.out_of_the_car(day)
-				var standoff := Tuning.pursuit_standoff(officer.chase_speed(),
+				var standoff := PursuitSpec.standoff(officer.chase_speed(),
 						officer.standoff_reach())
 				t.check(standoff < hot.notice_within() and hot.notice_within() <= hot.outer_radius,
 						"heat %d: the man's stand-off %.0f < its notice %.0f <= its field %.0f"

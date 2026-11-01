@@ -1168,7 +1168,7 @@ Six layers, each a number key, read as a raw keycode rather than an input-map ac
 build has nothing in `project.godot` to reach:
 
 - **`1` fields** — every emitter's actual falloff boundary, inner and outer level, for events,
-  walkers and cars alike, since all three run `Tuning.falloff()` through the same
+  walkers and cars alike, since all three run `Field.falloff()` through the same
   `GroundShape.field_outline()`/`field_outline_at()` arithmetic the falloff itself uses: a capsule
   about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one, a
   plain circle at zero speed — so its shapes are the meter's, and each is cut wherever a wall keeps

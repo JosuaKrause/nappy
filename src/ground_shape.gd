@@ -179,7 +179,7 @@ func distance_to_spine(local: Vector2) -> float:
 # standing still or an ellipse moving, eccentricity from speed. See docs/EVENTS.md, "The emission
 # model", and docs/MECHANICS.md, "Excitement falloff".
 
-## The distance `Tuning.falloff()` prices this shape's field at, from `at` (its own centre, in
+## The distance `Field.falloff()` prices this shape's field at, from `at` (its own centre, in
 ## world space) to `point`, given the emitter's current `velocity` — zero for a stationary body, in
 ## which case this is `distance_to_spine()` in the shape's own frame (rotated by `axis`, the same
 ## one the shadow and the collision body use): a point body's field is the circle it always was,
@@ -193,16 +193,16 @@ func field_distance(at: Vector2, axis: Vector2, velocity: Vector2, point: Vector
 
 ## The effective distance under a moving emitter's own field: a conic with its **focus at `from`**
 ## — *"the entity itself lives in one of the focus points"* — rather than its centre, so the field
-## reaches further ahead of the emitter than behind it. `e` is `Tuning.field_eccentricity()` of
+## reaches further ahead of the emitter than behind it. `e` is `Field.eccentricity()` of
 ## `velocity`'s own speed; `θ` is the angle between `velocity` and the vector to `point`.
 ##
 ## **The resting disc's own width is what the ellipse keeps** — *"the stretching should retain
 ## the area so an unstretched car field should be the same width with shorter height", "if anything
 ## the moving size should be bigger than the rest size"* — so the boundary at level `R` is
 ## `r(θ) = R / (1 − e·cosθ)`: exactly `R` abeam (`θ = π/2`) whatever the speed, `R · Tuning.
-## field_scale(e)` (`R/(1−e)`) dead ahead, `R/(1+e)` behind. Inverting that for the level a given
-## `r` sits on: `d_eff = r · (1 − e·cosθ)`, with no `field_scale()` term of its own — the growth
-## `field_scale()` gives the boundary is exactly what cancels out of its own inverse, which is why
+## Field.scale(e)` (`R/(1−e)`) dead ahead, `R/(1+e)` behind. Inverting that for the level a given
+## `r` sits on: `d_eff = r · (1 − e·cosθ)`, with no `Field.scale()` term of its own — the growth
+## `Field.scale()` gives the boundary is exactly what cancels out of its own inverse, which is why
 ## only `_eccentric_field_outline()` below calls it directly. Zero `velocity` (or a `point` sitting
 ## on `from`) falls back to the plain Euclidean distance a disc always used.
 static func eccentric_distance(from: Vector2, velocity: Vector2, point: Vector2) -> float:
@@ -212,17 +212,17 @@ static func eccentric_distance(from: Vector2, velocity: Vector2, point: Vector2)
 	var r := to_point.length()
 	if is_zero_approx(r):
 		return 0.0
-	var e := Tuning.field_eccentricity(velocity.length())
+	var e := Field.eccentricity(velocity.length())
 	var cos_theta := velocity.normalized().dot(to_point) / r
 	return r * (1.0 - e * cos_theta)
 
-## The level set `field_distance()` reaches `level` at — the actual boundary `Tuning.falloff()`
+## The level set `field_distance()` reaches `level` at — the actual boundary `Field.falloff()`
 ## draws for this shape, read by the debug view's fields layer (`DebugLayers`, see
 ## docs/TELEMETRY.md, "The debug view") so a screenshot cannot disagree with the arithmetic. Same
 ## split as `field_distance()`: stationary is this shape's own boundary (a circle for a point, a
 ## stadium for a segment, both at radius `level`); moving sets the shape aside and traces the polar
 ## ellipse `eccentric_distance()` inverts, focus at `at`, abeam reach `level` and forward reach
-## `level · Tuning.field_scale(e)` along `velocity`.
+## `level · Field.scale(e)` along `velocity`.
 func field_outline(at: Vector2, axis: Vector2, velocity: Vector2, level: float,
 		samples: int = _ELLIPSE_SAMPLES) -> PackedVector2Array:
 	if not velocity.is_zero_approx():
@@ -267,13 +267,13 @@ func _stadium_field_outline(at: Vector2, axis: Vector2, level: float, samples: i
 
 ## The polar ellipse `eccentric_distance()` inverts: `r(θ) = level / (1 − e·cosθ)`, sampled at
 ## `samples` angles `θ` around `velocity`'s own heading, so the drawn boundary is the exact level
-## set the falloff prices rather than a circle standing in for it. `level · Tuning.field_scale(e)`
+## set the falloff prices rather than a circle standing in for it. `level · Field.scale(e)`
 ## is the conic's own scale `L(e) = R/(1−e)` — see that function's docstring — so the boundary holds
-## `level` exactly abeam at every speed and reaches `level · field_scale(e)` dead ahead.
+## `level` exactly abeam at every speed and reaches `level · Field.scale(e)` dead ahead.
 func _eccentric_field_outline(at: Vector2, velocity: Vector2, level: float, samples: int
 		) -> PackedVector2Array:
-	var e := Tuning.field_eccentricity(velocity.length())
-	var l := level * Tuning.field_scale(e)
+	var e := Field.eccentricity(velocity.length())
+	var l := level * Field.scale(e)
 	var heading_angle := velocity.angle()
 	var points := PackedVector2Array()
 	for i in samples:

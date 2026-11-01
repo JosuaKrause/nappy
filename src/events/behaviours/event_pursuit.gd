@@ -3,7 +3,7 @@ extends EventBehaviour
 ## **Coming after her** (`EventDef.pursuit`): the notice along a clear line, the close to a
 ## stand-off and the lunge from it, the charge once a warning has run, giving up when she runs, and
 ## a walked route while it still waits. The one kind of thing running is the answer to; its
-## contract in seconds is `Tuning.validate_pursuit()`, and in distances `Tuning.pursuit_standoff()`.
+## contract in seconds is `Tuning.validate_pursuit()`, and in distances `PursuitSpec.standoff()`.
 ##
 ## **It comes through its own telegraph**, as a fire engine does: a telegraph spent standing still
 ## is a head start she simply walks away with, since a chase closes only about 56px a second on a

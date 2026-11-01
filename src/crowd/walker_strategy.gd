@@ -146,7 +146,7 @@ func paced(speed: float) -> float:
 ## **A walker held at a checkpoint is travelling at nothing**, which is what makes the stopped pose
 ## come out right for free: the stride and the facing both read `velocity()`, so a walker standing
 ## in a door's line holds its last facing and frame a the way every stopped walker in the crowd
-## already does, and its own field stops being stretched forward by `field_scale()`.
+## already does, and its own field stops being stretched forward by `Field.scale()`.
 func paced_velocity(moving: Vector2) -> Vector2:
 	return moving * (1.0 if _yield_left <= 0.0 else _yield_factor()) \
 			* (1.0 if _door_state == DoorState.WALKING else _hold_factor())

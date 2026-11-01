@@ -740,7 +740,7 @@ func give_way_at_junctions() -> void:
 		if distance > Tuning.CAR_JUNCTION_SIGHT:
 			continue
 		var junction := agent.junction_ahead()
-		if distance < Tuning.braking_distance(agent.speed()):
+		if distance < CarStrategy.braking_distance(agent.speed()):
 			occupied[junction] = int(occupied.get(junction, 0)) | axis
 			continue
 		if not approaching.has(junction):
@@ -848,7 +848,7 @@ func _stop_for_gates(delta: float) -> void:
 			if not gate.raised:
 				gate.stopped_for = 0.0
 			continue
-		if not closest or nearest_along[index] >= Tuning.braking_distance(closest.speed()) \
+		if not closest or nearest_along[index] >= CarStrategy.braking_distance(closest.speed()) \
 				+ Tuning.CAR_STOP_LINE_SETBACK:
 			gate.stopped_for = 0.0
 			continue
@@ -1130,7 +1130,7 @@ func _meet_the_player() -> void:
 		# scan's (`pedestrian_ahead`) — both are about a car that has already noticed her, and
 		# neither changes here. The horn's watch is wider (`CAR_HORN_SIGHT`), because a fast
 		# car's fairness contract needs more warning than 200px of travel gives it; see
-		# `Tuning.validate_traffic()` and the crowd-traffic skill's "The traffic fairness
+		# `tests/test_tuning_fairness.gd`'s traffic check and the crowd-traffic skill's "The traffic fairness
 		# contract" (`DECISIONS.md`, M191, the horn watches as far as the contract needs).
 		var distance := agent.global_position.distance_to(here)
 		agent.pedestrian_ahead = here if distance <= Tuning.CAR_ZEBRA_SIGHT else Vector2.INF
@@ -1233,7 +1233,7 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 ## half of the car the player can see (from its centre forward, so she is safe behind a car that
 ## pulls away from her), and it only counts while she is standing on the carriageway. The kerb
 ## is the edge she chose to step over — the same shape of contract the alley robbery has,
-## where the alley is the warning. See `Tuning.validate_traffic()`.
+## where the alley is the warning. See `tests/test_tuning_fairness.gd`'s traffic check.
 func _strike(agent: CrowdAgent, here: Vector2) -> bool:
 	if _struck or agent.speed() < Tuning.CAR_STRIKE_MIN_SPEED:
 		return false
