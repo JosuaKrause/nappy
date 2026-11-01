@@ -133,9 +133,25 @@ const RESTART_HOLD_SECONDS := 1.0
 ## `TouchControls._pause_touch` already tracks a touch by. Only ever non‑`-1` for
 ## `Symbol.RESTART`; the other symbol never calls `begin_hold()`.
 var _held_by := -1
-## `Time.get_ticks_msec() / 1000.0` when `_held_by` was grabbed, so `_process()` can measure the
+## The clock's reading (`_now()`) when `_held_by` was grabbed, so `_process()` can measure the
 ## hold against `RESTART_HOLD_SECONDS` without keeping its own delta accumulator.
 var _held_since := 0.0
+## The seconds the hold is measured on: empty reads `Time.get_ticks_msec() / 1000.0`, the wall
+## clock; `use_clock()` hands in another, so a hold of a full second is a clock that moved a second
+## rather than a second of waiting.
+var _clock := Callable()
+
+## Hands the button the clock its holds are measured on — a `Callable` returning seconds as a
+## float. Called before the first `begin_hold()`; a button that is never handed one reads the wall
+## clock.
+func use_clock(clock: Callable) -> void:
+	_clock = clock
+
+func _now() -> float:
+	if _clock.is_valid():
+		var seconds: float = _clock.call()
+		return seconds
+	return Time.get_ticks_msec() / 1000.0
 ## Whether `hold_completed` has already fired for the hold currently in progress. Reset to `false`
 ## only by `begin_hold()`, so a hold kept down well past `RESTART_HOLD_SECONDS` before its release
 ## still raises the signal exactly once, at the moment it first reaches full rather than again on
@@ -212,7 +228,7 @@ func _notification(what: int) -> void:
 func _process(_delta: float) -> void:
 	if _held_by == -1:
 		return
-	hold_progress = (Time.get_ticks_msec() / 1000.0 - _held_since) / RESTART_HOLD_SECONDS
+	hold_progress = (_now() - _held_since) / RESTART_HOLD_SECONDS
 	# **Where the pressed flash actually drops — see `begin_hold()`'s own doc for why it is not
 	# dropped there.** *(Playtest 35 finding 2: "the light up of the reset button conflicts with the
 	# bar filling up.")* The instant `hold_progress` moves past zero is the instant `_draw()` starts
@@ -244,7 +260,7 @@ func begin_hold(touch_index: int) -> bool:
 	if _held_by != -1:
 		return false
 	_held_by = touch_index
-	_held_since = Time.get_ticks_msec() / 1000.0
+	_held_since = _now()
 	_fired = false
 	hold_progress = 0.0
 	force_pressed_look()
@@ -279,7 +295,7 @@ func is_held() -> bool:
 func end_hold(touch_index: int) -> bool:
 	if _held_by != touch_index:
 		return false
-	var held := Time.get_ticks_msec() / 1000.0 - _held_since
+	var held := _now() - _held_since
 	_held_by = -1
 	hold_progress = 0.0
 	clear_forced_press()

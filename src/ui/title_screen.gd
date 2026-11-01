@@ -51,7 +51,7 @@ extends CanvasLayer
 ## **A pointer press begins a run only when it lands on one of them**, never on the bare scrim: with
 ## the buttons as the only pointer way in, a stray tap that dismissed the ending screen a frame
 ## earlier can no longer restart the game just by landing anywhere on this one — the restart guard
-## (`_RESTART_GUARD_SECONDS`) stays for the narrower case that remains, a stray press landing
+## (`RESTART_GUARD_SECONDS`) stays for the narrower case that remains, a stray press landing
 ## squarely on a button. A keyboard has no button to press, so
 ## `space` and every direction key still begin the run outright — see `_unhandled_input()`'s own
 ## doc for why that always chooses `Mode.TAP`.
@@ -73,15 +73,17 @@ signal quit_requested()
 static var _restarted_at_msec := -INF
 
 ## Called by `main._restart_run()`, immediately before it defers the reload — see that function's
-## own doc and this class's `_unhandled_input()`.
-static func note_restart_requested() -> void:
-	_restarted_at_msec = Time.get_ticks_msec()
+## own doc and this class's `_unhandled_input()`. `at_msec` is the `Time.get_ticks_msec()` reading
+## the restart is stamped with, the moment of the call unless a caller says another: a restart
+## stamped further back than `RESTART_GUARD_SECONDS` is one the guard has already let go of.
+static func note_restart_requested(at_msec: int = Time.get_ticks_msec()) -> void:
+	_restarted_at_msec = at_msec
 
 ## How long after a restart-triggered reload a press is swallowed rather than started — see
 ## `_unhandled_input()`'s own doc. Reuses `TouchControls.DOUBLE_TAP_SECONDS` rather than a number
 ## invented for this file, since both ask the same question of a press this close in time to
 ## another: is this the same gesture as the one just before it.
-const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
+const RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 
 @onready var _root: Control = $Root
 @onready var _name: Label = $Root/Top/Lines/Title
@@ -386,14 +388,14 @@ func hard_mode_target() -> Rect2:
 ## catch-all left, that particular race is gone by construction — see `_handle_mode_button_press()`.
 ##
 ## **The restart guard still stays, for the narrower case that remains.** A press within
-## `_RESTART_GUARD_SECONDS` of the last scene reload is swallowed rather than started — the route is
+## `RESTART_GUARD_SECONDS` of the last scene reload is swallowed rather than started — the route is
 ## `DaySummary` emitting `continued` → `main._on_summary_continued()` → `_restart_run()` →
 ## `get_tree().call_deferred("reload_current_scene")` → this screen's own fresh `_ready()` →
 ## `main._open_the_title()`, and this screen is up within a frame or two of the press that dismissed
 ## the ending. A stray press can still land squarely on a button — they are drawn in the same
 ## screen region a catch-all used to cover — so the guard answers exactly that case now rather than
 ## every press on the screen. See `_restarted_at_msec`'s own doc for what survives the reload and
-## `_RESTART_GUARD_SECONDS`'s for the window's own size.
+## `RESTART_GUARD_SECONDS`'s for the window's own size.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
@@ -510,6 +512,6 @@ func _acknowledge_and_begin(mode: ControlsMode.Mode, side: ControlsMode.Side,
 ## which of them fired. See `_unhandled_input()`'s own doc for what the guard still answers now
 ## that a bare press elsewhere on the screen can no longer reach this function at all.
 func _begin(mode: ControlsMode.Mode, side: ControlsMode.Side, by_key := false) -> void:
-	if (Time.get_ticks_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
+	if (Time.get_ticks_msec() - _restarted_at_msec) / 1000.0 < RESTART_GUARD_SECONDS:
 		return
 	start_requested.emit(mode, by_key, side)
