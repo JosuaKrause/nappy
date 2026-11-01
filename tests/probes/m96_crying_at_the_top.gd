@@ -175,12 +175,12 @@ func _one_bump_from(t, at: float) -> Dictionary:
 	_build(t)
 	var agent := CrowdAgent.new()
 	agent.global_position = _stroller.global_position
-	agent.excitement.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
-			Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
+	agent.excitement.startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
+			Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
 	_baby.excitement = at
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var peaks := _new_peaks()
-	var jolt := Tuning.BUMP_DURATION
+	var jolt := Crowd.BUMP_DURATION
 	while jolt > 0.0:
 		agent.excitement._jolt = jolt
 		_world.noise = agent.excitement.contribution_at(_stroller.global_position)
@@ -200,12 +200,12 @@ func _two_bumps_at_the_top(t) -> Dictionary:
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var peaks := _new_peaks()
 	var gap := 0.3
-	for bump_start in [0.0, Tuning.BUMP_DURATION + gap]:
+	for bump_start in [0.0, Crowd.BUMP_DURATION + gap]:
 		var agent := CrowdAgent.new()
 		agent.global_position = _stroller.global_position
-		agent.excitement.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
-				Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
-		var jolt := Tuning.BUMP_DURATION
+		agent.excitement.startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
+				Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
+		var jolt := Crowd.BUMP_DURATION
 		while jolt > 0.0:
 			agent.excitement._jolt = jolt
 			_world.noise = agent.excitement.contribution_at(_stroller.global_position)

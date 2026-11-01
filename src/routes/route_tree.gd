@@ -735,7 +735,7 @@ func _grow_a_spur_to(tiles: Array[Vector2i]) -> void:
 ## far side, and `_adopt()` would give a home node a parent. The trunk hangs off that same home
 ## node, so its chain would run back into itself, and `_resettle_the_tails()`, which walks the tree
 ## outward from the home nodes, would never finish. The station's door stands at least
-## `Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home, so the guard costs it nothing.
+## `CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home, so the guard costs it nothing.
 func _spur_path(sources: Array[int], avoid_spine: bool) -> Array[int]:
 	var previous := {}
 	var queue: Array[int] = []

@@ -1,7 +1,7 @@
 # Nappy — Mechanics & Tuning
 
-All constants live in `src/autoload/tuning.gd` (autoload name `Tuning`) so they can be
-balanced in one place. Values below are the design intent; the script is the source of truth.
+The balance constants two or more `src/` files read, or that `tuning.gd` itself reads, live in
+`src/autoload/tuning.gd` (autoload name `Tuning`); one that exactly one `src/` file reads is a `const` in that file. Values below are the design intent; the script is the source of truth.
 
 ## The two meters
 
@@ -294,12 +294,12 @@ fraction can do that"; "others can turn back"; "don't want a queue that is long"
 its answer once, when it is placed: one in eight walks through, one in four turns back at the last
 junction the way it does at a wall, and the rest are held. A held walker walks up to the gatehouse on its
 own sidewalk, waits stopped beside it in its last facing behind whoever is already in the line,
-goes **inside** for `Tuning.WALKER_DOOR_HOLD_SECONDS` (1s, shorter than her own two, because a
+goes **inside** for `WalkerStrategy.WALKER_DOOR_HOLD_SECONDS` (1s, shorter than her own two, because a
 walker is not the one being looked for) and is not drawn, and comes out on the far side of the door
 on the same lane with a cooldown that keeps that gatehouse from taking it again until it has left the
 gatehouse's area — so the crowd's own steering turning it round just past a door cannot put it through a
 second inspection. One inside at a time, and **the line is short by construction**: a door holds
-one walker inside and `Tuning.WALKER_DOOR_QUEUE_MAX` (2) behind it, and the next walker to see it
+one walker inside and `WalkerStrategy.WALKER_DOOR_QUEUE_MAX` (2) behind it, and the next walker to see it
 turns back at the last junction instead of joining. The decision is taken where the lookahead first
 sees the door — the same seven tiles the crowd sees a wall from — rather than at the gatehouse, because a
 walker has no about-face to make once it is standing in a queue.
@@ -859,7 +859,7 @@ which turned every car on that street for something parked on the pavement.
 
 **A walker steps round it and a car turns at the junction, and the difference is that a walker has
 another lane.** A footway is two lanes wide, so a walker whose own lane is taken steers into the
-other one `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles, 128px) before it gets there and steers back
+other one `WalkerStrategy.WALKER_BODY_SIDESTEP_TILES` (4 tiles, 128px) before it gets there and steers back
 once it is past — the same sidestep a bump gives it, aimed at a lane rather than away from a person.
 Only a body that takes **every** lane of one footway at the same point along the street shuts that
 footway, and then the walker walks up to it and about-faces in front of it — with the other footway
@@ -1575,7 +1575,7 @@ first.
 
 **Nothing about the last night is the easy half.** *([PLAYTEST-121](playtests/PLAYTEST-121.md):
 "the escape shouldn't be easy!")* The sabotage is a hand-over at the power station's door and
-changes nothing there; once she is `Tuning.BLACKOUT_DISTANCE` from the station the city's power
+changes nothing there; once she is `Blackout.BLACKOUT_DISTANCE` from the station the city's power
 goes (docs/CITY.md, "The power station"). Every mast stops with it, so the rest of the walk home
 has no loudspeaker anywhere — but it is walked under dead traffic lights, across a spine that no
 longer stops for anybody, with everything else the last day carries still out. The escape after it

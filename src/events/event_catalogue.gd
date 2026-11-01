@@ -1612,7 +1612,7 @@ static func _reversing_lorry() -> EventDef:
 ## **A paced pavement fixture, like `homeless_yeller`** — she is *at* a place rather than passing
 ## through it, and pacing is what guarantees streaming actually meets her rather than her running
 ## her whole beat unobserved. Her ambient field is person-scale (`intensity` near a passer-by's
-## `Tuning.PEDESTRIAN_INTENSITY`, 4.2) and its `outer_radius` is tight, so brushing past her without
+## `CrowdExcitement.PEDESTRIAN_INTENSITY`, 4.2) and its `outer_radius` is tight, so brushing past her without
 ## triggering a conversation costs about what an ordinary close pass does — no more.
 ##
 ## **The conversation is the new mechanic, and it is a trigger rather than a field**: entering
@@ -3047,7 +3047,7 @@ static func _checkpoint_hut() -> EventDef:
 ## across the carriageway, and a raised one is ground she may walk under *(2026-09-24: "I didn't
 ## say it should stay solid when it's open")* — `EventDef.SolidWhen.WHILE_LOWERED`, so its collision body follows
 ## the arm and the cars decide the arm (`Crowd._stop_for_gates()`: up once a car has waited at it
-## `Tuning.GATE_STOP_SECONDS`, down the moment no car is within a length of it and she is not
+## `Crowd.GATE_STOP_SECONDS`, down the moment no car is within a length of it and she is not
 ## under it). The inspection is the two huts' alone, and a hut does not take her in from the
 ## carriageway this boom spans, so walking under a raised arm skips the toll — the unlawful
 ## crossing `EventManager` watches for and sets a `door_guard` on her for.

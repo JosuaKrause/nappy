@@ -217,7 +217,7 @@ func _busker_denial_and_inner_floor(t) -> void:
 	# pulse shape) is what a peak-only floor missed — a row cleared only at the top of its beat
 	# still nets negative on average, because the beat spends more of its seven seconds below the
 	# peak than at it.
-	var calm_decay := Tuning.EXCITEMENT_DECAY_WALKING * Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+	var calm_decay := Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
 	var mean_multiplier := _pulse_mean_multiplier()
 	print("\n== net rate at inner_radius on grass, over a whole beat (must not trend down) ==")
 	print("calm ground gives back %.2f/s; the beat's own mean multiplier is %.4f"

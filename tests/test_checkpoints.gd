@@ -1131,7 +1131,7 @@ func _planned_field_at(plans: Array[EventScheduler.Planned], at: Vector2) -> flo
 ## ground in the city, so the answer is a ceiling rather than a measurement of one street.
 func _peak_walking_out(plans: Array[EventScheduler.Planned], from: Vector2,
 		heading: Vector2) -> float:
-	var decay := Tuning.EXCITEMENT_DECAY_WALKING * Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
+	var decay := Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
 	var step := 4.0
 	var seconds_per_step := step / Tuning.WALK_SPEED
 	# Only what could possibly reach any point of this walk. A whole day is several hundred plans
@@ -1754,9 +1754,9 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:
 
 	t.check(ever_stopped, "the car comes to a full stop before the gate opens (%.1fs held)"
 			% stopped_seconds)
-	t.check(stopped_seconds >= Tuning.GATE_STOP_SECONDS - STEP,
-			"held for at least Tuning.GATE_STOP_SECONDS before the gate could have opened for it "
-			+ "(%.2fs held, %.2fs required)" % [stopped_seconds, Tuning.GATE_STOP_SECONDS])
+	t.check(stopped_seconds >= Crowd.GATE_STOP_SECONDS - STEP,
+			"held for at least Crowd.GATE_STOP_SECONDS before the gate could have opened for it "
+			+ "(%.2fs held, %.2fs required)" % [stopped_seconds, Crowd.GATE_STOP_SECONDS])
 	t.check(passed_at < INF, "and it eventually passes the gate (at %.1fs)" % passed_at)
 	t.check(raised_while_passing, "the gate reads raised while it passes")
 

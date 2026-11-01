@@ -2953,7 +2953,7 @@ func _test_completing_the_package_makes_the_pram_heavier(t) -> void:
 		t.check(GameState.resistance.carrying_package, "picking up the package sets the flag")
 
 		var after := _city.decay_multiplier(somewhere)
-		t.close_to(after, before * Tuning.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
+		t.close_to(after, before * City.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
 				"and every street after it decays slower for the rest of the day", 0.001)
 		director.free())
 
@@ -3220,7 +3220,7 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 				"and the masts are still speaking at the door: they stop with the power")
 		var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))
 		_city.blackout.update(Vector2(lot.get_center().x,
-				lot.end.y + Tuning.BLACKOUT_DISTANCE + 8.0))
+				lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0))
 		t.check(quiet.size() == 1, "far enough away, the city goes quiet, once")
 		t.check(mast.silenced, "the mast is marked silenced")
 		t.close_to(mast.excitement.contribution_at(nearby), 0.0,

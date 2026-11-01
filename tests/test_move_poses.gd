@@ -141,7 +141,7 @@ func _stand_against_a_walker(main: Node2D) -> void:
 				< nearest.global_position.distance_squared_to(here):
 			nearest = agent
 	if nearest != null:
-		main._player.global_position = nearest.global_position + Vector2(Tuning.BUMP_RADIUS * 0.5, 0.0)
+		main._player.global_position = nearest.global_position + Vector2(Crowd.BUMP_RADIUS * 0.5, 0.0)
 
 func _check_the_tick(t, main: Node2D, seed_value: int, tick: int, counts: Dictionary,
 		seen: Dictionary, last: Dictionary) -> void:

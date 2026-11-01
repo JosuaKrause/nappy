@@ -36,18 +36,18 @@ func _test_the_horn_is_long_enough_to_cross_the_carriageway(t) -> void:
 ## `CAR_HORN_SIGHT`. Checked against the fastest car, since a slower one needs less reach.
 func _test_the_crowd_watches_far_enough_to_sound_the_horn(t) -> void:
 	var required := Tuning.required_horn_sight()
-	t.check(Tuning.CAR_HORN_SIGHT + 0.001 >= required,
+	t.check(Crowd.CAR_HORN_SIGHT + 0.001 >= required,
 			("Unfair traffic: CAR_HORN_SIGHT %.0fpx < %.0fpx the fastest car needs "
 			+ "(%.0fpx/s x %.2fs CAR_HORN_TIME)")
-			% [Tuning.CAR_HORN_SIGHT, required, Tuning.CAR_SPEED.y, Tuning.CAR_HORN_TIME])
+			% [Crowd.CAR_HORN_SIGHT, required, Tuning.CAR_SPEED.y, Tuning.CAR_HORN_TIME])
 
 ## The three answers a walker may be given at a door are one draw of one number, so the two fractions have
 ## to leave something over — held is the remainder, and a remainder of nothing is a door nobody is ever
 ## held at with no error anywhere to say so.
 func _test_a_door_holds_some_walkers(t) -> void:
-	t.check(Tuning.WALKER_DOOR_PASS_FRACTION + Tuning.WALKER_DOOR_TURN_BACK_FRACTION < 1.0,
+	t.check(WalkerStrategy.WALKER_DOOR_PASS_FRACTION + WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION < 1.0,
 			"No walker is ever held at a door: pass %.3f + turn back %.3f leaves nothing"
-			% [Tuning.WALKER_DOOR_PASS_FRACTION, Tuning.WALKER_DOOR_TURN_BACK_FRACTION])
+			% [WalkerStrategy.WALKER_DOOR_PASS_FRACTION, WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION])
 
 ## A walker going round a solid body has to have finished crossing to the other lane of its own footway by
 ## the time it gets there. Stated over the distance rather than the time, because what it is really about
@@ -55,7 +55,7 @@ func _test_a_door_holds_some_walkers(t) -> void:
 func _test_a_walker_can_get_round_a_body(t) -> void:
 	var lane_gap := float(Tuning.TILE_SIZE) + 2.0 * CrowdLanes.SIDEWALK_LANE_SPREAD
 	var crossing_run := lane_gap / CrowdAgent.STEER_SPEED * Tuning.PEDESTRIAN_SPEED.y
-	var start := float(Tuning.WALKER_BODY_SIDESTEP_TILES * Tuning.TILE_SIZE)
+	var start := float(WalkerStrategy.WALKER_BODY_SIDESTEP_TILES * Tuning.TILE_SIZE)
 	t.check(start >= crossing_run,
 			"A walker cannot get round a body: it starts %.0fpx out and needs %.0fpx to cross the %.0fpx "
 			% [start, crossing_run, lane_gap] + "to the other lane of its footway")

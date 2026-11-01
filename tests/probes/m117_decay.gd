@@ -39,9 +39,9 @@ func run(t) -> void:
 func _ground_rates(t) -> void:
 	print("\n== net excitement rate by ground, %.0fs walks, %d seeds ==" % [SECONDS, SEEDS.size()])
 	print("walking decay %.2f/s  ×  calm %.2f  precinct %.2f  street 1.00  main road %.2f"
-			% [Tuning.EXCITEMENT_DECAY_WALKING, Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER,
-			Tuning.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER,
-			Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
+			% [Tuning.EXCITEMENT_DECAY_WALKING, City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER,
+			City.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER,
+			City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
 	print("alley trickle %.2f/s" % Tuning.EXCITEMENT_FROM_ALLEY)
 
 	for day in SAMPLE_DAYS:

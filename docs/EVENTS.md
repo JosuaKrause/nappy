@@ -939,7 +939,7 @@ shouldn't inspect her. It should block her." · "I didn't say it should stay sol
 open".)* The gate over the road between a door's two gatehouses carries no field of its own — a car
 passing under it costs her nothing — and no detention: it is `SolidWhen.WHILE_LOWERED`, so its collision
 body follows the arm the cars work (`Crowd._stop_for_gates()`: up once a car has waited at it
-`Tuning.GATE_STOP_SECONDS`, 1.2s, down the moment no car is within a length of it). Lowered, it is a
+`Crowd.GATE_STOP_SECONDS`, 1.2s, down the moment no car is within a length of it). Lowered, it is a
 wall across the carriageway; raised, it is ground she may walk under, and the price is the car that
 raised it — she is on its carriageway, and the horn and the strike apply as on any street, under the
 traffic fairness contract `tests/test_tuning_fairness.gd`'s traffic check states for every carriageway.

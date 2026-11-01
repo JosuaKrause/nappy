@@ -21,6 +21,8 @@ extends RefCounted
 ## swept body before the car commits to it, because the answer is about ground rather than
 ## about geometry.
 
+const CAR_TURN_RADIUS_MIN := 16.0
+
 ## The axis the car is travelling along when the arc begins, and which way it points along it.
 var entry_vertical := false
 var entry_direction := 1.0
@@ -158,7 +160,7 @@ func landing() -> float:
 
 ## Tightens the arc so that it starts where the car already is, for a car that learns it has to turn
 ## after it has passed the entry the geometry would have chosen. False when what is left is tighter
-## than `Tuning.CAR_TURN_RADIUS_MIN`, which is a turn the car cannot make and has to be refused
+## than `CAR_TURN_RADIUS_MIN`, which is a turn the car cannot make and has to be refused
 ## rather than squeezed — an arc tighter than the body's own half width sweeps its inner flank
 ## backwards through the centre of the circle, which is a pivot and not a turn.
 ##
@@ -169,7 +171,7 @@ func tighten_to(along: float, cross: float) -> bool:
 		return false
 	var lane_along := CrowdLanes.lane_centre(exit_corridor, exit_lane)
 	var tighter := absf(lane_along - along)
-	if tighter < Tuning.CAR_TURN_RADIUS_MIN:
+	if tighter < CAR_TURN_RADIUS_MIN:
 		return false
 	radius = tighter
 	entry_along = along
@@ -184,7 +186,7 @@ func tighten_to(along: float, cross: float) -> bool:
 ## reached when the car is broadside. **A car has to stop this far short of a barrier to have
 ## anywhere to turn round in**, which is why the brake aims at that point rather than at the barrier.
 static func about_face_reach() -> float:
-	var radial := Tuning.CAR_TURN_RADIUS_MIN + Tuning.CAR_STRIKE_HALF_WIDTH
+	var radial := CAR_TURN_RADIUS_MIN + Tuning.CAR_STRIKE_HALF_WIDTH
 	return sqrt(radial * radial + Tuning.CAR_STRIKE_HALF_LENGTH * Tuning.CAR_STRIKE_HALF_LENGTH)
 
 ## Which way across a corridor the kerb on a car's own side of the road lies, as +1 or -1 on the

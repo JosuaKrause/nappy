@@ -45,9 +45,9 @@ func _test_every_city_has_exactly_one(t) -> void:
 				matching += 1
 		t.check(matching == 1,
 				"seed %d: exactly one big building is the power station (%d)" % [map.seed_used, matching])
-		t.check(map.big_buildings.size() <= Tuning.MAX_BIG_BUILDINGS,
+		t.check(map.big_buildings.size() <= CityGenerator.MAX_BIG_BUILDINGS,
 				"seed %d: the station is counted among at most %d big buildings (%d)"
-				% [map.seed_used, Tuning.MAX_BIG_BUILDINGS, map.big_buildings.size()])
+				% [map.seed_used, CityGenerator.MAX_BIG_BUILDINGS, map.big_buildings.size()])
 
 ## The door's own street ground belongs to another region than the home street's, which with the
 ## wall standing means reaching it takes a door crossing — the day-14 half of this suite walks it.
@@ -69,9 +69,9 @@ func _test_its_door_is_a_reasonable_walk_from_home(t) -> void:
 		var key := map.power_station_door_key
 		var away := CityGenerator.blocks_from_home(Vector2i(key.x, key.y - 1))
 		spread[away] = spread.get(away, 0) + 1
-		t.check(away >= Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME,
+		t.check(away >= CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME,
 				"seed %d: the door is %d blocks from the home, at least %d"
-				% [map.seed_used, away, Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME])
+				% [map.seed_used, away, CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME])
 	print("[test_power_station] door distance from the home block, blocks: count — %s" % spread)
 
 ## The door is pavement, directly south of the mass, inside its width, on the street

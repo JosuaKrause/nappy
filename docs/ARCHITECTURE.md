@@ -28,7 +28,7 @@ src/
   field.gd                the arithmetic of a field: its falloff and a moving field's stretch (static)
   offscreen.gd            how far out of her view something sent at her starts (static)
   autoload/
-	tuning.gd             all balance constants           (autoload: Tuning)
+	tuning.gd             the shared balance constants    (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
 	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
 	game_state.gd         the run, as a registry of its parts (autoload: GameState)

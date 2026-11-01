@@ -155,14 +155,14 @@ func _test_a_walker_draws_its_own_answer_at_a_door(t) -> void:
 	var passing := float(counts[WalkerStrategy.DoorAnswer.PASSES]) / float(maxi(1, walkers))
 	var turning := float(counts[WalkerStrategy.DoorAnswer.TURNS_BACK]) / float(maxi(1, walkers))
 	var held := float(counts[WalkerStrategy.DoorAnswer.HELD]) / float(maxi(1, walkers))
-	t.check(absf(passing - Tuning.WALKER_DOOR_PASS_FRACTION) < DOOR_ANSWER_TOLERANCE,
+	t.check(absf(passing - WalkerStrategy.WALKER_DOOR_PASS_FRACTION) < DOOR_ANSWER_TOLERANCE,
 			"about WALKER_DOOR_PASS_FRACTION of walkers walk through a door (%.3f vs %.3f)"
-			% [passing, Tuning.WALKER_DOOR_PASS_FRACTION])
-	t.check(absf(turning - Tuning.WALKER_DOOR_TURN_BACK_FRACTION) < DOOR_ANSWER_TOLERANCE,
+			% [passing, WalkerStrategy.WALKER_DOOR_PASS_FRACTION])
+	t.check(absf(turning - WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION) < DOOR_ANSWER_TOLERANCE,
 			"about WALKER_DOOR_TURN_BACK_FRACTION of them turn back (%.3f vs %.3f)"
-			% [turning, Tuning.WALKER_DOOR_TURN_BACK_FRACTION])
-	t.check(absf(held - (1.0 - Tuning.WALKER_DOOR_PASS_FRACTION
-			- Tuning.WALKER_DOOR_TURN_BACK_FRACTION)) < DOOR_ANSWER_TOLERANCE,
+			% [turning, WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION])
+	t.check(absf(held - (1.0 - WalkerStrategy.WALKER_DOOR_PASS_FRACTION
+			- WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION)) < DOOR_ANSWER_TOLERANCE,
 			"and everybody else is held (%.3f)" % held)
 	# A car's own answer is never drawn — the boom is what stops a car, and a car that spent a
 	# number here would turn differently at every junction it has ever turned at. The walkers'
@@ -270,24 +270,24 @@ func _test_a_park_is_out_of_earshot_of_the_traffic(t) -> void:
 ## decay would raise what crossing the main road costs with them, which is a different decision
 ## nobody made.
 func _test_a_close_pass_costs_and_a_wide_one_does_not(t) -> void:
-	t.check(Tuning.BUMP_INTENSITY > Tuning.EXCITEMENT_DECAY_WALKING,
+	t.check(Crowd.BUMP_INTENSITY > Tuning.EXCITEMENT_DECAY_WALKING,
 			"walking into somebody (%.1f) outruns the walking decay (%.1f)"
-			% [Tuning.BUMP_INTENSITY, Tuning.EXCITEMENT_DECAY_WALKING])
-	t.check(Tuning.PEDESTRIAN_INTENSITY < Tuning.EXCITEMENT_DECAY_WALKING,
+			% [Crowd.BUMP_INTENSITY, Tuning.EXCITEMENT_DECAY_WALKING])
+	t.check(CrowdExcitement.PEDESTRIAN_INTENSITY < Tuning.EXCITEMENT_DECAY_WALKING,
 			"and one person at arm's length (%.1f) does not, so an empty pavement reads as "
-			% Tuning.PEDESTRIAN_INTENSITY + "recovery (%.1f)" % Tuning.EXCITEMENT_DECAY_WALKING)
+			% CrowdExcitement.PEDESTRIAN_INTENSITY + "recovery (%.1f)" % Tuning.EXCITEMENT_DECAY_WALKING)
 
 	var pavement := float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
-	var wide := Field.falloff(pavement, Tuning.PEDESTRIAN_INTENSITY,
+	var wide := Field.falloff(pavement, CrowdExcitement.PEDESTRIAN_INTENSITY,
 			Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS)
-	t.check(wide < Tuning.PEDESTRIAN_INTENSITY * 0.5,
+	t.check(wide < CrowdExcitement.PEDESTRIAN_INTENSITY * 0.5,
 			"giving somebody the width of the pavement costs less than half what standing "
-			+ "against them does (%.1f of %.1f)" % [wide, Tuning.PEDESTRIAN_INTENSITY])
+			+ "against them does (%.1f of %.1f)" % [wide, CrowdExcitement.PEDESTRIAN_INTENSITY])
 	t.check(Tuning.PEDESTRIAN_INNER_RADIUS < pavement,
 			"the close-pass band is narrower than the pavement, so it can be walked around")
 
 func _test_a_car_is_louder_and_carries_further_than_a_person(t) -> void:
-	t.check(Tuning.CAR_INTENSITY > Tuning.PEDESTRIAN_INTENSITY,
+	t.check(CrowdExcitement.CAR_INTENSITY > CrowdExcitement.PEDESTRIAN_INTENSITY,
 			"a car is louder than a person")
 	t.check(Tuning.CAR_OUTER_RADIUS > Tuning.PEDESTRIAN_OUTER_RADIUS,
 			"a car is heard from further away than a person")
@@ -450,9 +450,9 @@ func _test_the_traffic_contract_is_fair(t) -> void:
 	# M191: the duration above is only true if the crowd watches far enough out to let a car
 	# sound it. `CAR_HORN_SIGHT` is that watch, wider than the strike's own `CAR_ZEBRA_SIGHT`
 	# so the fastest car is not clipped short of `CAR_HORN_TIME` by the watch itself.
-	t.check(Tuning.CAR_HORN_SIGHT >= Tuning.required_horn_sight(),
+	t.check(Crowd.CAR_HORN_SIGHT >= Tuning.required_horn_sight(),
 			"the horn's watch (%.0fpx) reaches as far as the fastest car's own horn needs "
-			% Tuning.CAR_HORN_SIGHT + "(%.0fpx/s x %.2fs = %.0fpx)"
+			% Crowd.CAR_HORN_SIGHT + "(%.0fpx/s x %.2fs = %.0fpx)"
 			% [Tuning.CAR_SPEED.y, Tuning.CAR_HORN_TIME, Tuning.required_horn_sight()])
 
 ## Giving way has to be *visible from the kerb*, which means the braking starts well before
@@ -475,11 +475,11 @@ func _test_a_car_can_always_stop_for_a_zebra_it_can_see(t) -> void:
 	# The approach has to *start* in sight of the kerb, or giving way is invisible until it has
 	# already happened. Shaped by the gentle rate, not by `CAR_BRAKE` — with the hard rate the
 	# onset of braking and the commit point are the same instant and no car ever stops.
-	var eases_from := sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * Tuning.CAR_ZEBRA_SIGHT)
+	var eases_from := sqrt(2.0 * CarStrategy.CAR_ZEBRA_APPROACH_BRAKE * Tuning.CAR_ZEBRA_SIGHT)
 	t.check(eases_from >= Tuning.CAR_SPEED.y,
 			"the fastest car eases off as the zebra comes into sight (%.0f against %.0f)"
 			% [eases_from, Tuning.CAR_SPEED.y])
-	t.check(Tuning.CAR_ZEBRA_APPROACH_BRAKE < Tuning.CAR_BRAKE,
+	t.check(CarStrategy.CAR_ZEBRA_APPROACH_BRAKE < CarStrategy.CAR_BRAKE,
 			"and the approach is gentler than the brake it keeps in reserve")
 
 ## M191: the horn's own watch reaches further than the strike's, so a fast car sounds it before
@@ -506,7 +506,7 @@ func _test_the_horn_watches_further_than_the_strike_does(t) -> void:
 
 	# Halfway between the two watches, so a few pixels of separation correction cannot land the
 	# test on the wrong side of either.
-	var distance := Tuning.CAR_ZEBRA_SIGHT + (Tuning.CAR_HORN_SIGHT - Tuning.CAR_ZEBRA_SIGHT) * 0.5
+	var distance := Tuning.CAR_ZEBRA_SIGHT + (Crowd.CAR_HORN_SIGHT - Tuning.CAR_ZEBRA_SIGHT) * 0.5
 	var tested := false
 	for agent in _city.crowd.agents():
 		if agent.kind != CrowdAgent.Kind.CAR:
@@ -523,7 +523,7 @@ func _test_the_horn_watches_further_than_the_strike_does(t) -> void:
 		t.check(agent.excitement.is_startled(),
 				("a car %.0fpx off — beyond the strike's own watch (CAR_ZEBRA_SIGHT %.0fpx) but "
 				+ "inside the horn's (CAR_HORN_SIGHT %.0fpx) — sounds its horn")
-				% [distance, Tuning.CAR_ZEBRA_SIGHT, Tuning.CAR_HORN_SIGHT])
+				% [distance, Tuning.CAR_ZEBRA_SIGHT, Crowd.CAR_HORN_SIGHT])
 		t.check(agent.pedestrian_ahead == Vector2.INF,
 				"and the give-way scan still does not see her from beyond its own watch")
 		break
@@ -644,10 +644,10 @@ func _test_the_car_picture_agrees_with_its_strike_box(t) -> void:
 ## is a toll rather than a decision. The second check is the one that keeps a crowded pavement
 ## playable: a crowd is expensive, one person is not.
 func _test_a_bump_costs_and_one_of_them_is_survivable(t) -> void:
-	t.check(Tuning.BUMP_INTENSITY > Tuning.EXCITEMENT_DECAY_WALKING,
+	t.check(Crowd.BUMP_INTENSITY > Tuning.EXCITEMENT_DECAY_WALKING,
 			"a contact outruns the walking decay, so it is a spike and not a ripple")
 	# The jolt fades linearly over its duration, so the area under it is half the rectangle.
-	var one := Tuning.BUMP_INTENSITY * Tuning.BUMP_DURATION * 0.5
+	var one := Crowd.BUMP_INTENSITY * Crowd.BUMP_DURATION * 0.5
 	t.check(one < Tuning.EXCITEMENT_CALM_THRESHOLD,
 			"one bump (%.0f) does not on its own freeze the meter (%.0f)"
 			% [one, Tuning.EXCITEMENT_CALM_THRESHOLD])
@@ -669,9 +669,9 @@ func _test_a_bump_costs_and_one_of_them_is_survivable(t) -> void:
 	# seconds however carefully it was done. Under half a lane spacing there is one, and
 	# holding it takes the same forty seconds down to two.
 	var spacing := float(Tuning.TILE_SIZE) + CrowdLanes.SIDEWALK_LANE_SPREAD * 2.0
-	t.check(Tuning.BUMP_RADIUS < spacing * 0.5,
+	t.check(Crowd.BUMP_RADIUS < spacing * 0.5,
 			"there is a line between two pavement lanes with no contact on it (%.0f < %.0f)"
-			% [Tuning.BUMP_RADIUS, spacing * 0.5])
+			% [Crowd.BUMP_RADIUS, spacing * 0.5])
 	# **And it has to be wide enough to aim at.** *(M46, playtest 13 finding 1.)* The line is
 	# `spacing - 2 * BUMP_RADIUS` across, and while the lanes sat on their tile centres that was
 	# **four pixels** — something a player is occasionally on rather than something she can
@@ -680,7 +680,7 @@ func _test_a_bump_costs_and_one_of_them_is_survivable(t) -> void:
 	# `CrowdLanes.SIDEWALK_LANE_SPREAD` widens the *street* instead of narrowing the body, which is
 	# the half of this that must not be traded away — `BUMP_RADIUS` is what makes a contact mean
 	# walking into somebody.
-	var clear_line := spacing - Tuning.BUMP_RADIUS * 2.0
+	var clear_line := spacing - Crowd.BUMP_RADIUS * 2.0
 	t.check(clear_line >= Tuning.PLAYER_BODY_RADIUS,
 			"and it is wide enough to aim at rather than to land on (%.0fpx against a %.0fpx pram)"
 			% [clear_line, Tuning.PLAYER_BODY_RADIUS])
@@ -710,12 +710,12 @@ func _test_walking_into_somebody_displaces_and_startles_them(t) -> void:
 	# them both — finding 2 asked for exactly that, and it is why a crowd is somewhere you get
 	# pushed around rather than a wall you bounce off.
 	t.close_to(walker.global_position.distance_to(here),
-			4.0 + (Tuning.BUMP_CLEAR_RADIUS - 4.0) * (1.0 - Tuning.BUMP_PLAYER_SHARE),
+			4.0 + (Tuning.BUMP_CLEAR_RADIUS - 4.0) * (1.0 - Crowd.BUMP_PLAYER_SHARE),
 			"the person she walked into takes most of the separation", 0.01)
 	# *(Playtest 07, finding 5.)* Resolved **past** the radius that releases the contact, not to
 	# it. Resolving to it leaves the pair sitting on their own threshold, flickering across it and
 	# firing a fresh jolt every other frame, which is the "instant death" the player reported.
-	t.check(Tuning.BUMP_CLEAR_RADIUS > Tuning.BUMP_RADIUS,
+	t.check(Tuning.BUMP_CLEAR_RADIUS > Crowd.BUMP_RADIUS,
 			"a resolved contact is pushed past the radius that counts as touching")
 	# Held against her — she is not moving in this rig, so only the walker's share of each
 	# separation lands — the pair still converge on the clear radius and let go, and the
@@ -743,13 +743,13 @@ func _test_walking_into_somebody_displaces_and_startles_them(t) -> void:
 	var frames := 0
 	while _city.crowd._bump(walker, here) != Vector2.ZERO and frames < 60:
 		frames += 1
-	t.check(frames < 60 and walker.global_position.distance_to(here) >= Tuning.BUMP_RADIUS,
+	t.check(frames < 60 and walker.global_position.distance_to(here) >= Crowd.BUMP_RADIUS,
 			"and a few frames of contact push them clear of each other (%d)" % frames)
 
 	# A contact well outside the radius does nothing at all.
 	var other := _first_of(CrowdAgent.Kind.WALKER, walker)
 	if other:
-		other.global_position = here + Vector2(Tuning.BUMP_RADIUS * 3.0, 0.0)
+		other.global_position = here + Vector2(Crowd.BUMP_RADIUS * 3.0, 0.0)
 		var was := other.global_position
 		t.check(_city.crowd._bump(other, here) == Vector2.ZERO
 				and other.global_position == was,
@@ -852,7 +852,7 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		var room: float = agent.strategy._room_to_stop_in()
 		if room < INF:
 			pulling_away = minf(pulling_away,
-					sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * room))
+					sqrt(2.0 * CarStrategy.CAR_ZEBRA_APPROACH_BRAKE * room))
 		t.check(agent.speed() >= pulling_away * 0.99,
 				"and pulls away again once the crossing is clear (%.0fpx/s)" % agent.speed())
 	t.check(tested > 0, "at least one car had a zebra ahead of it to give way at")
@@ -1389,8 +1389,8 @@ func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
 	# heading north or south looks along it), a row by y.
 	var lines := crowd._bucket_by_line([Vector2(edge + 20.0, edge - 20.0),
 			Vector2(edge - 20.0, edge + 20.0)])
-	var walker_tolerance := Tuning.WALKER_DOOR_LANE_TOLERANCE
-	for tolerance in [walker_tolerance, Tuning.GATE_LANE_TOLERANCE]:
+	var walker_tolerance := Crowd.WALKER_DOOR_LANE_TOLERANCE
+	for tolerance in [walker_tolerance, Crowd.GATE_LANE_TOLERANCE]:
 		var from_below: Array[int] = crowd._near_a_line(lines, 2, Vector2.DOWN,
 				Vector2(edge - 10.0, 0.0), tolerance)
 		t.check(from_below.has(0),
@@ -1582,7 +1582,7 @@ func _closest_two_cars_in_a_lane() -> float:
 ## *reach* the speed its gap allows. If the headway were shorter than the time it takes to brake
 ## from cruise, the queue would resolve by interpenetration again however good the controller is.
 func _test_a_car_can_honour_the_headway_it_keeps(t) -> void:
-	var braking := Tuning.CAR_SPEED.y / Tuning.CAR_BRAKE
+	var braking := Tuning.CAR_SPEED.y / CarStrategy.CAR_BRAKE
 	t.check(Tuning.CAR_HEADWAY_TIME > braking,
 			"the headway (%.2fs) outlasts the time to stop from full speed (%.2fs)"
 			% [Tuning.CAR_HEADWAY_TIME, braking])

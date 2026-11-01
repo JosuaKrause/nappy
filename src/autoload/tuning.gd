@@ -152,7 +152,7 @@ const EXCITEMENT_OVERFLOW_WINDOW := 3.0
 ## street she has no business being on.
 ##
 ## The counterplay this removes has a better replacement: **walk somewhere quiet**, which is what
-## `EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` is for and what the whole route is about.
+## `City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` is for and what the whole route is about.
 ##
 ## Running still decays, barely — it is motion, and `EXCITEMENT_FROM_RUNNING` is what makes it a
 ## bad idea. The ordering is motion-shaped rather than arbitrary: walking calms most, running calms
@@ -172,48 +172,6 @@ const EXCITEMENT_DECAY_IDLE := 0.0
 ## says so out loud.
 const EXCITEMENT_DECAY_WALKING := 6.0
 const EXCITEMENT_DECAY_RUNNING := 0.5
-## What the **ground** does to the decay, best to worst: calm, precinct, ordinary street, alley,
-## main road.
-##
-## This is what makes a route a **recovery rate** rather than only a set of things to walk past,
-## and what makes a precinct worth walking to although it is loud: a retail street is busy, and it
-## is still the best place in the city that is not a park to bring a meter down.
-##
-## **The multipliers are ratios and the absolute rates are the design**, so a change to the walking
-## rate above moves every one of these to keep its own ground where it was put:
-##
-##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 0.12/s
-##
-## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
-## the excitement visibly falling away as she walks in under the trees. **Its floor is that a park
-## must stay a place rather than a switch**: at 12.0/s a full meter takes eight and a third seconds
-## to clear, which is long enough to be somewhere she walks to and stays in. Much faster and the
-## park is a button she taps.
-##
-## The main road is the same sentence inverted, and nearly all the way there: it is the one ground
-## in the city that gives back next to nothing, at any density, which is most of what "a main road
-## is crossed, not walked" means arithmetically — walking it for any stretch is walking ground that
-## does not recover rather than ground that merely recovers slowly. `tests/probes/m117_decay.gd`'s
-## main-road leg reads +5.69/s net on day 1 and +1.36/s on day 9, three seeds each: even where the
-## spine has thinned to the lightest traffic of the run, it still costs rather than gives anything
-## back.
-##
-## **It is the lever that holds the spine's own price**, because it is the one number exclusive to
-## this corridor — the pedestrian field above only reaches `PEDESTRIAN_OUTER_RADIUS` now, short
-## enough that the arterial's own crowd noise cannot carry that price alone, and a louder car would
-## be loud on every street it also drives down rather than only this one. Crossing the road stays a
-## soft block rather than a wall: `tests/test_crowd.gd`'s worst-of-eight crossing reads 27.76 of a
-## hundred-point meter, comfortably under half, because the same short pedestrian reach that costs
-## the ground its own recovery also lightens what a crossing itself loads.
-##
-## **An alley sits between the two** — pressured ground rather than a shortcut to recovery, which
-## is what keeps `EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning something: it sits just
-## under the 3.5/s an alley gives back, so an empty alley is very nearly flat and is never quite
-## recovery.
-const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
-const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
-const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
-const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
 ## **The meter does not fall in the escape's basement** *(inbox #765 in minty-lemur: "let's not replenish the meter
 ## in the basement it's a tense situation")*: walking there earns no decay, awake or asleep, so a
 ## blow's 40 to 50 points stay on the meter and the blows add up. It is the ground's
@@ -231,13 +189,6 @@ const EXCITEMENT_DECAY_BASEMENT_MULTIPLIER := 0.0
 ## park* is a statement about the parks. Tying the two put the second decision inside the first,
 ## where nobody making it would see it.
 const CALM_ZONE_DENIAL_RATE := 7.7
-
-## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
-## package is picked up (`GameState.resistance.carrying_package`) — the one cost in the subquest
-## that is deferred and total rather than local, so it changes the afternoon's routing rather than
-## one minute of it. Chosen on the same severity as a main road's own 0.6, on the harsher side of
-## it: this is a decision she made, not ground she has to cross.
-const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
 
 ## Excitement per second at full sprint, scaled by how far above walk speed we are.
 ##
@@ -416,7 +367,7 @@ const HEAT_INVESTIGATE_WITHIN := 150.0
 ## **Substantial, and never the end of a day on its own** — the stop, and the whole encounter it
 ## ends, since the car is quiet from its stop until it has left her
 ## (`EventInstance.is_quiet_for_its_man()`): nearly four contacts' worth (eleven points each,
-## `BUMP_INTENSITY`) and well over a conversation's 25 (`CHAT_EXCITEMENT`), so being reached is a
+## `Crowd.BUMP_INTENSITY`) and well over a conversation's 25 (`CHAT_EXCITEMENT`), so being reached is a
 ## thing she pays for rather than a bump; and under `METER_MAX` with the rest of the encounter, so
 ## from a calm meter it never ends the day — only on a meter already high enough that it carries
 ## her to the cap and past `EXCITEMENT_OVERFLOW_TO_CRY` does it. It is his field, but it is spent in
@@ -466,7 +417,7 @@ const SIDEWALK_WIDTH := 2
 ## order to have a middle you can get lost in the middle of.
 ##
 ## The size is what lets the two rules about the home both hold. It has to be central, and it has to
-## be `MIN_HOME_TO_PARK_TILES` of walking from calm ground — and those pull against each other, so
+## be `CityGenerator.MIN_HOME_TO_PARK_TILES` of walking from calm ground — and those pull against each other, so
 ## the lattice has to be wide enough that the centre is still a long walk from the edge of anything.
 ## On a lattice too small for both, the home gets walked outward until it is far enough, landing
 ## against the boundary, where most directions are a wall.
@@ -475,13 +426,6 @@ const SIDEWALK_WIDTH := 2
 ## population per corridor, the arterial index — so a change here is a change to the whole density
 ## table. **Re-measure rather than convert.**
 const CITY_BLOCKS := Vector2i(11, 11)
-
-## Alpha of the one-tile shadow every building casts (`BuildingShadows`) — the same black every
-## other shadow in the game draws (`Palette.SHADOW`), at its own alpha rather than that constant's,
-## since a shadow covering a whole tile reads differently than a small contact ellipse. A flat dark
-## rather than a darkened ground colour, so this number is the whole of the look and can be tuned
-## by eye alone.
-const BUILDING_SHADOW_ALPHA := 0.22
 
 ## How far a route curbstone's own pixels are blended toward `Palette.ROUTE_KERB_TINT`
 ## (`GroundLayers._tint_opaque`/`_tint_matching`, `City.tint_the_route()`) — the whole of the
@@ -500,43 +444,6 @@ const ROUTE_KERB_TINT_ALPHA := 0.45
 # tree and an event never share ground, so every pit here is a tile the day's vans, cafés,
 # yellers and seals may not use. These four are what keeps that bill small.
 
-## How many tree-lined runs the city plants. A run is one straight stretch of consecutive blocks
-## along a single street line, so this is the whole of "how much of the city has trees": at
-## `STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` streets each, six runs is well under
-## the quarter of ordinary streets `STREET_TREE_MAX_LINED_FRACTION` caps it at.
-##
-## **The count is per city, not per block**, unlike the event budget: a tree-lined street is
-## meant to be a *place* you recognise, and a number of places does not grow with the lattice the
-## way a density does.
-const STREET_TREE_RUNS := 6
-
-## The shortest and longest a run may be, in blocks — *(2026-09-11, the player: "it should be
-## continuous segments of 3/4/5 blocks randomly placed on the map in both directions")*. Three is
-## long enough to read as deliberate planting rather than two stray trees; five is short enough
-## that a run still ends somewhere she can see.
-const STREET_TREE_RUN_MIN_BLOCKS := 3
-const STREET_TREE_RUN_MAX_BLOCKS := 5
-
-## Least distance between two pits along one pavement, in px — **two lot-lengths**, a lot-length
-## being one block plus the street beside it, which is the distance from a pit to the same spot
-## on the next block. Measured along the whole run rather than within one street, so a run of
-## four blocks carries about two pits a side rather than two per street.
-##
-## The spacing is what keeps a tree-lined street walkable *and* legible: a yeller or a dog walker
-## standing between two pits is still the only silhouette in a hundred pixels of pavement.
-const STREET_TREE_PIT_SPACING := 2.0 * float((BLOCK_SIZE + STREET_WIDTH) * TILE_SIZE)
-
-## Chance a candidate pit inside a run is actually planted, rolled in scan order. What stops a run
-## from being a perfectly regular colonnade — the first roll to succeed sets the phase and
-## `STREET_TREE_PIT_SPACING` sets the rest, so the row jitters without ever crowding.
-const STREET_TREE_PLANT_CHANCE := 0.55
-
-## The most of the city's ordinary streets that may carry trees, as a fraction. Not a dial — the
-## runs are — but the ceiling the run count is chosen under, asserted over a seed sweep in
-## `tests/test_blocks.gd` so that raising `STREET_TREE_RUNS` cannot quietly make a tree-lined
-## street the ordinary case again.
-const STREET_TREE_MAX_LINED_FRACTION := 0.25
-
 # -------------------------------------------------------- the street hierarchy ---
 # Three kinds of street: a main road, two retail precincts, and ordinary streets everywhere else.
 # With one kind, the only route question a junction asks is *which way*; with three it also asks
@@ -549,12 +456,6 @@ const STREET_TREE_MAX_LINED_FRACTION := 0.25
 ## be a place rather than a kind of street.** A whole corridor of it is not a precinct — a kind of
 ## street you meet every third block is simply what a street is.
 const PRECINCT_BLOCKS := 3
-
-## How busy a precinct's pavement is against an ordinary street's. It is the other end of the same
-## trade the main road is at: nothing on it can kill you, and there is a great deal more of it in
-## your way. A retail street — *"a lot of foot traffic and restaurants"* — so this is the crowd
-## half of that and `EVENT_PRECINCT_WEIGHT` is the other.
-const PRECINCT_BUSYNESS := 3.6
 
 ## How many times over a precinct tile is offered to the event scheduler against an ordinary
 ## pavement tile. Weighting the candidates rather than adding a rule: a precinct is where the cafés
@@ -608,20 +509,7 @@ const SIGNAL_AMBER_SECONDS := 2.0
 ## share stops being long enough to cross on, longer and a red is a wait a player will not spend.
 const SIGNAL_PROGRESSION_BLOCKS := 3
 
-## Calm **areas**, not calm blocks: an area may be a single block or a multi-block zone, and what
-## these count is places to go rather than lots. The name is what `calm_blocks` returns — one entry
-## per area — and renaming it would touch every guarantee stated over it without changing what any
-## of them mean.
-##
-## **The floor is an act's worth plus one.** A day spoils every calm area she has used so far this
-## act, so an act of four days burns four, and the plus one is what stops the last day of an act
-## being unwinnable rather than merely hard. It is derived from the act lengths below rather than
-## authored beside them, because the two would otherwise drift the first time either moved:
-## `calm_areas_needed()`.
-const MIN_CALM_BLOCKS := 5
 const MAX_CALM_BLOCKS := 7
-## Walking distance in tiles, not straight-line: the calm has to be earned.
-const MIN_HOME_TO_PARK_TILES := 30
 
 # ---------------------------------------------------- multi-block calm zones ---
 # A calm area has to be big enough to have a *route* through it. Progress requires motion —
@@ -661,13 +549,6 @@ const CALM_ZONE_SHAPES: Array[Vector2i] = [
 	Vector2i(1, CALM_ZONE_BLOCKS),
 ]
 
-## How many of a city's calm areas are multi-block. At least one, because a city of nothing but
-## single blocks is a city of laps; and the first one placed is always the **square**, so *"every
-## city has a big park"* stays true word for word while the rest may be rectangles. The remainder of
-## the calm stays single-block, which is what keeps *which* calm area to head for a real question —
-## a small quiet square close by against a big park further out is the decision spoiling exists to
-## make matter.
-const MIN_CALM_ZONES := 1
 const MAX_CALM_ZONES := 2
 
 # ------------------------------------------------------------- hard blockers ---
@@ -675,71 +556,12 @@ const MAX_CALM_ZONES := 2
 # big buildings. Soft blockers re-cut the map every morning; these hold still and are therefore the
 # part of the city a player can **learn**. See docs/CITY.md, "Diversions — the design".
 
-## How many streets in a city genuinely stop. A handful of a few hundred: enough that a run has a
-## shape somebody could describe, few enough that the lattice is still a lattice — the number is
-## what separates "this city has dead ends in it" from "this city is a maze", and a maze is the
-## thing the reachability gate exists to prevent.
-##
-## Measured rather than derived, like every other count in this file.
-const MIN_CUL_DE_SACS := 4
 const MAX_CUL_DE_SACS := 8
-
-## How deep the wall across a dead end is, in tiles. Two rather than one: a one-tile slab is a
-## line rather than a building, and what has to read from the far end of the street is *this does
-## not go through* rather than *something is painted here*.
-const CUL_DE_SAC_WALL_TILES := 2
-
-## Big buildings: two neighbouring blocks plus the one street between them, built as a single mass
-## twenty-two tiles long. Every other street around the pair stays — it takes one road out of the
-## lattice, not the ring. One or two per city, because this is a **landmark** — a thing a player
-## says "past the big grey one" about — and a city with five of them has landmarks the way a forest
-## has notable trees. **The count includes the power station**, which every city has and which is
-## one of these: the rest are ordinary landmarks.
-const MIN_BIG_BUILDINGS := 1
-const MAX_BIG_BUILDINGS := 2
-
-## How far the power station's front door stands from the home, as the lattice (Manhattan) distance
-## in blocks from the home block to the block the door is on. A reasonable walk rather than the
-## far edge of the map: her routes need not pass it before the day she is sent there, and the
-## narrative has a region door between the two, which `CityGenerator._place_power_station` checks
-## beside this floor. Set by the orchestrator, open to overturn.
-const POWER_STATION_MIN_BLOCKS_FROM_HOME := 4
 
 ## The day she is sent to the power station's front door, which is the last day of the run. On this
 ## day only, the corridor reaches the door (`RouteTree.for_day`) and the closures may not cut it off
 ## (`ClosurePlanner`); on every other day nothing leads her there.
 const POWER_STATION_DAY := RUN_LENGTH_DAYS
-
-## How far from the power station she has to be, once the sabotage is done, for the city to go dark
-## — measured from the nearest point of the station's lot, in px. *(The player, 2026-09-20: "just
-## wait until a certain distance away -- then everything is off at once".)* Far enough that no part
-## of the station is on screen whichever way she leaves it, so the blackout is something she sees
-## happen to the city around her rather than to the building: the view is 640×360 at the camera's
-## zoom and leads her by `Stroller.CAMERA_LOOK_AHEAD` (46px), and the stacks rise four tiles past
-## the lot's north edge, so leaving past a corner needs the diagonal of (320 + 46) by
-## (180 + 46 + 128), which is 509px. Chosen where the design was silent, open to overturn.
-const BLACKOUT_DISTANCE := 512.0
-
-## Per-purpose chance a block is split by a through-alley.
-const ALLEY_CHANCE := {
-	GameEnums.BlockPurpose.RESIDENTIAL: 0.25,
-	# Commercial blocks already have a plaza carved out; a second hole through the same
-	# lot leaves slivers of building and an alley that opens onto a square.
-	GameEnums.BlockPurpose.COMMERCIAL: 0.0,
-	GameEnums.BlockPurpose.INDUSTRIAL: 0.5,
-	GameEnums.BlockPurpose.CIVIC: 0.0,
-	# A courtyard block has a court cut out of it already, and an alley through that court
-	# would open the one piece of calm that is supposed to be hidden.
-	GameEnums.BlockPurpose.COURTYARD: 0.0,
-	GameEnums.BlockPurpose.PARK: 0.0,
-	GameEnums.BlockPurpose.FOREST: 0.0,
-	GameEnums.BlockPurpose.QUIET_SQUARE: 0.0,
-	# A big building is chosen after the blocks are carved and replaces whatever was cut into
-	# it, so this is never actually read. It is here because the table is a statement about
-	# every purpose, and a purpose missing from it would be a crash rather than a default the
-	# day somebody assigns one earlier.
-	GameEnums.BlockPurpose.BIG_BUILDING: 0.0,
-}
 
 # ---------------------------------------------------- block purposes and arcs ---
 # A city that becomes a different city while you walk around in it. Every block is generated with an
@@ -747,53 +569,11 @@ const ALLEY_CHANCE := {
 # whole run can be checked at generation instead of rescued day by day. See docs/CITY.md, "Block
 # purposes".
 
-## Courtyards are cut into residential blocks rather than taking a block of their own.
-const COURTYARD_CHANCE := 0.35
 const MAX_COURTYARD_BLOCKS := 3
-const COURTYARD_SIZE_TILES := 4
 
-## The **apartment complex**: a courtyard lot four blocks across, with the streets between them
-## built over and frontages all the way round.
-##
-## **It is a calm zone's mechanism with the opposite ground.** A zone absorbs the streets between
-## four blocks and paints park over them; this absorbs them and builds over them, so what comes out
-## is a mass 22 tiles square with a court in the middle and one archway in. That is what makes it calm
-## you have to *find* rather than calm you can see from the street — the courtyard's whole idea, at
-## the size where the block around it is a landmark.
-##
-## The court is ten tiles rather than the four a single-block courtyard gets, because a hole four
-## tiles wide in a mass twenty-two across is a light well rather than somewhere to stand. Ten
-## leaves six tiles of building on every side and crosses in 4.9s against the 5.7s it fills in, so
-## it sits with every other calm area at about one traverse per meter.
-##
-## One per city at most. It is a landmark and a secret, and two of them in a city is neither.
-const APARTMENT_COURT_TILES := 10
 const MAX_APARTMENT_COMPLEXES := 1
 
-## The hard floor: this many blocks must still be calm on the last day. A day can only be
-## won on calm ground, so an arc set that takes all of it makes an unwinnable run rather
-## than a hard one. `CityGenerator.validate()` enforces it.
-const MIN_CALM_BLOCKS_AT_END := 2
-
-## Chance a calm block that *may* be taken is scheduled to be, and the earliest day it can
-## happen. Act III, when the vans start: the parks go at the same time the people do.
-const REQUISITION_CHANCE := 0.55
-const REQUISITION_FIRST_DAY := 8
-
-## A commercial block goes dark before anything else happens to it.
-const BOARDING_CHANCE := 0.5
-const BOARDING_FIRST_DAY := 8
-
-## Chance a built block's arc ends in ashes. Event-caused, so it only happens if something
-## actually burns there — most of these never fire, which is the point.
-const BURN_CHANCE := 0.45
-const BURN_FIRST_DAY := 3
 const ALLEY_WIDTH_TILES := 2
-
-## Tiles per side of the plaza carved out of a commercial block.
-const SQUARE_SIZE_TILES := 4
-## The home is a notch in the south edge of a residential block.
-const HOME_SIZE_TILES := Vector2i(2, 2)
 
 # ----------------------------------------------------------- road closures ---
 # The road network is pruned per day, so the route is a real decision — avoidable, but clearly "not
@@ -1029,23 +809,11 @@ const CHECKPOINT_EVENT_GAP := 176.0
 ## is spent settled on the hut rather than still travelling to it. See `Stroller.focus_camera_on()`.
 const CAMERA_EASE_SECONDS := 0.5
 
-## Seconds a car has to have been stopped, dead level with a closed checkpoint gate, before it
-## opens for it. *(2026-09-02, the player: "cars need to slow down to a full stop before the gate
-## opens and they can go ahead again.")* See `Crowd._stop_for_gates()`.
-const GATE_STOP_SECONDS := 1.2
-
 ## Below this speed a car counts as actually stopped rather than still easing toward the line —
-## `Crowd._stop_for_gates()`'s own clock for `GATE_STOP_SECONDS` only runs while a car is this
+## `Crowd._stop_for_gates()`'s own clock for `Crowd.GATE_STOP_SECONDS` only runs while a car is this
 ## slow, or a car that merely eased off on its approach would bank wait time it never spent
 ## waiting.
 const CAR_STOPPED_SPEED := 5.0
-
-## How far to either side of a checkpoint gate's own line a car may sit and still count as *in its
-## lane*, so `Crowd._stop_for_gates()` can tell a car on the gate's own street from one on a
-## different, unrelated corridor. Half the carriageway (`STREET_WIDTH - 2*SIDEWALK_WIDTH` tiles,
-## 64px, so 32px each side of the centre line) plus a small margin for the two lanes either side of
-## it.
-const GATE_LANE_TOLERANCE := 40.0
 
 # --------------------------------------------------------------- the crowd ---
 # The crowd is why a street is loud and a park is quiet, and it is the base noise floor a day needs
@@ -1098,65 +866,11 @@ const PEDESTRIAN_SPEED := Vector2(46.0, 74.0)
 ## urgency and starts reading as ordinary traffic.
 const CAR_SPEED := Vector2(130.0, 185.0)
 
-## One person, close enough to brush past. Deliberately above the walking decay: a close
-## pass has to cost something or the crowd is scenery again. Walking wide of them does not
-## — the pavement is two tiles, so how close to pass is a real choice.
-##
-## **The radius is tight because `Field.falloff` has a shoulder on it.** Every source holds three quarters
-## of its intensity at the midpoint of its band, which is right for an **event** — a thing on the map
-## to route around — and wrong for a **body**, which is one of a couple of hundred and is supposed to
-## be inaudible from across the pavement. An event's kind of radius on a body puts the arterial floor
-## several times the walking decay, which is a main road that fills the meter in seconds rather than
-## one that is merely expensive to cross.
-##
-## So the crowd pays the shape back in radius, and what that defends is the measured character of
-## the street: **careless is expensive and careful is free.** A close pass costs 4.2/s, set by the
-## intensity and the inner radius; two tiles away is 0/s. What the tight outer radius removes is a
-## wide middle that would be worth a great deal for walking anywhere near anybody, and the narrower
-## it is, the more of an ordinary sidewalk that wide middle gives back: a quiet act I sidewalk, with
-## the day's own crowd on it and nothing authored in range, nets about −4.7/s against the empty
-## street's own −6.0/s (`tests/probes/m117_decay.gd`, three seeds), close to reading as recovery the
-## way the empty street already does. The main road's own price is untouched by this radius —
-## `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` is what holds it, since that number is exclusive to the
-## one corridor it prices and this one is not.
-##
-## **"Two tiles away" is true of one walker and is only reachable if the lanes are spread.** A
-## footway is two tiles, so lanes on their tile centres are 32px apart — and the midline, the only
-## line with no head-on contact on it, is then 16px from two lane centres and inside the
-## **full-intensity core** of both — the careful line for contacts and the careless one for noise,
-## which is why `CrowdLanes.SIDEWALK_LANE_SPREAD` moves the lanes apart instead of narrowing this
-## radius: at 48px apart the midline is **24px from each lane and outside `PEDESTRIAN_INNER_RADIUS`**,
-## worth 56 points per forty seconds against 74 unspread. **That is the one change to make if this
-## stops being true** — the intensity and the radii are pinned by the arterial floor and the shoulder,
-## and the geometry is not. A pass at that 24px still reads as close to full intensity even at the
-## shorter outer radius, which is why `CROWD_YIELD_LATERAL` below widens far enough to send a walker
-## holding that lane out of it rather than leaving the noise floor to the radius alone.
-const PEDESTRIAN_INTENSITY := 4.2
 const PEDESTRIAN_INNER_RADIUS := 22.0
 const PEDESTRIAN_OUTER_RADIUS := 30.0
 
-## A car is louder than a person and passes much faster. No single car outruns the walking
-## decay — the point is not that one car is dangerous, it is that on a main road there is
-## always another one. The floor is the *street*, and it is emergent; the first pass at these
-## numbers put the arterial at +15/s, which filled the meter in seven seconds and made the
-## main road not expensive but impassable.
-##
-## The radius is tight for the same reason the pedestrian's is, and pinned the same way: the
-## arterial has to stay between the walking decay and three times it, which is `tests/test_crowd.gd`
-## and is the one place the noise floor is pinned to anything.
-##
-## **And 104 is still wider than the street it is on.** A corridor is six tiles — 192px — and a
-## car's field is 208px across, so every tile of both footways is inside it, and the frontage lane,
-## the furthest place from a carriageway there is, sits 64px from the nearer lane centre. Nowhere on
-## an ordinary street is out of the traffic's earshot, which is most of why the noise floor measures
-## flat across a pavement.
-const CAR_INTENSITY := 5.4
 const CAR_INNER_RADIUS := 38.0
 const CAR_OUTER_RADIUS := 104.0
-
-## Chance a walker turns a corner rather than carrying straight on, rolled once per
-## junction. High enough that the crowd churns, low enough that streets still have flow.
-const PEDESTRIAN_TURN_CHANCE := 0.35
 
 # ------------------------------------------------- walkers at a region door ---
 # What a walker does when its street crosses a region wall at a door. *(Playtest 58: "walkers walk
@@ -1165,67 +879,6 @@ const PEDESTRIAN_TURN_CHANCE := 0.35
 # drawn once per walker, when it is placed, so a walker's answer at a door can never change halfway
 # down the street it is walking.
 
-## Of every walker placed, the fraction that walks through a door's hut without stopping — the
-## player's *"a small fraction can do that"*, one in eight. Small enough that walking through reads
-## as the exception rather than as the rule the hold is an exception to.
-const WALKER_DOOR_PASS_FRACTION := 0.125
-
-## And the fraction that turns back at the last junction instead, the way every walker turns away
-## from a wall — the player's *"others can turn back"*, one in four. Larger than the pass fraction
-## on purpose: a door that only ever collects people is a door with a permanent crowd at it, and
-## somebody who decides against the queue and goes another way is the cheapest thing there is to
-## read from a block away. Held is whatever is left, so these two must sum to under 1.0 —
-## `tests/test_tuning_fairness.gd` says so.
-const WALKER_DOOR_TURN_BACK_FRACTION := 0.25
-
-## Seconds a held walker spends inside the hut, not drawn — the player's *inspection*. Shorter than
-## her own `CHECKPOINT_DETAIN_SECONDS` (2s) on purpose and for the reason that number is itself
-## short: a walker is not the one being looked for, so the guard has less to do. One second is the
-## recommendation rather than a number the player gave, and the relationship is what matters — a
-## walker's hold under hers, so a player watching a door sees the crowd cycle through it faster
-## than she is ever let through it herself.
-const WALKER_DOOR_HOLD_SECONDS := 1.0
-
-## How far short of a hut's own ground point the first walker in the line stops, in px. The hut's
-## solid body is `GroundShape.point(32.0)` and a walker's own is a 7px point, so 40 is the first
-## round number clear of the two of them touching — it stands beside the hut rather than inside its
-## footprint, which is what the frame reads as *waiting to be seen* rather than as *stuck on a
-## building*. It is also where a walker is put back down on the far side when it comes out, so the
-## two sides of a door are symmetric.
-const WALKER_DOOR_STOP_DISTANCE := 40.0
-
-## And how much further back each walker behind the first one stands. Comfortably over
-## `BUMP_RADIUS` (14px, where a crowd contact fires), so a line at a door is people standing near
-## each other rather than people standing inside each other — the separation between crowd bodies
-## is positional everywhere else in this file, and a queue placed at a spacing smaller than a body
-## would be asking a brake to open a gap that is not there.
-const WALKER_DOOR_QUEUE_SPACING := 26.0
-
-## How far a walker has to get from a hut before that hut may take it again, in px. *(Playtest 58,
-## on her own release: "it should work that she has a flag 'just spawned' that only resets once she
-## leaves the area.")* A walker comes out `WALKER_DOOR_STOP_DISTANCE` (40px) along its own lane and
-## some 24px across from the hut's centre line — about 47px away — so anything at or under that
-## would clear the moment it was set and buy nothing. Three tiles is comfortably past the whole
-## door structure, so a walker turned round by the crowd's own steering just past a door walks on
-## instead of being inspected a second time.
-const WALKER_DOOR_COOLDOWN_RADIUS := 96.0
-
-## The longest line a door is allowed to grow behind the walker inside it — the player's *"don't
-## want a queue that is long"*. Two is the recommendation rather than a number they gave, so a door
-## holds three people at the very most: one inside and two waiting. Anybody who first sees the door
-## while it is that busy turns back at the last junction instead of joining, so the line is short
-## **by construction** and never by a walker giving up once it is standing in one.
-const WALKER_DOOR_QUEUE_MAX := 2
-
-## How far to either side of its own line of travel a walker will look for a hut, in px. A tile: a
-## walker's lane sits exactly 24px across from the hut on its own sidewalk (the hut is on the
-## sidewalk band's centre line, the two walker lanes are `CrowdLanes.SIDEWALK_LANE_SPREAD` either
-## side of their tile centres), and the boom over the road is 64px further still — so a tile picks
-## out the hut on the walker's own sidewalk and nothing else. The car's own equivalent is
-## `GATE_LANE_TOLERANCE`, which is wide where this is narrow, because a carriageway is one lane of
-## traffic and a sidewalk has a door structure standing across it.
-const WALKER_DOOR_LANE_TOLERANCE := 32.0
-
 # ------------------------------------------------- walkers round a solid body ---
 # What a walker does about a stationary solid body standing on its own lane — a café's tables, a
 # construction band, a kerbed van, a stall. *("yes every solid body should do that -- not
@@ -1233,16 +886,6 @@ const WALKER_DOOR_LANE_TOLERANCE := 32.0
 # its own footway and steps back after; only a body that takes **every** lane of that footway turns
 # it at the last junction, the way a seal does. See `WalkerStrategy._step_around_a_body()` and
 # `CityMap.obstructed_tiles`.
-
-## How far ahead a walker begins going round a body, in tiles. Four tiles is 128px, a second and
-## three quarters at the fastest a walker goes — long enough to read as *going round that* rather
-## than as a lane change taken a street early, and comfortably over what the crossing itself costs.
-##
-## **The floor under it is the crossing time, and `tests/test_tuning_fairness.gd` states it**: the two lanes of
-## one footway are `TILE_SIZE + 2 * CrowdLanes.SIDEWALK_LANE_SPREAD` (48px) apart and a walker
-## closes on its lane at `CrowdAgent.STEER_SPEED`, so a walker that starts too late arrives beside
-## the body still halfway across — which is a walker clipping a café rather than avoiding one.
-const WALKER_BODY_SIDESTEP_TILES := 4
 
 # ------------------------------------------------------- bodies on the street ---
 # A crowd you can walk through is a field with a picture attached: every pavement is identical, none
@@ -1253,7 +896,7 @@ const WALKER_BODY_SIDESTEP_TILES := 4
 ## the copy the rules that reason *about* it can read, and `tests/test_events.gd` asserts the two
 ## agree, because a duplicated number that nothing checks is a lie waiting to happen.
 ##
-## It is the same 14 as `BUMP_RADIUS` and they are not the same quantity: that one is a tuning of
+## It is the same 14 as `Crowd.BUMP_RADIUS` and they are not the same quantity: that one is a tuning of
 ## when a *crowd contact* fires and is stated against the lane spacing, this one is how much room
 ## she physically takes up. Either may move without the other.
 const PLAYER_BODY_RADIUS := 14.0
@@ -1280,30 +923,13 @@ const WALL_SHIELD_DEPTH := float(TILE_SIZE)
 ## `tests/test_wall_shield.gd` holds both.
 const THIN_WALL_SHIELD_DEPTH := TILE_SIZE * 0.5
 
-## Centre-to-centre distance at which the player and a pedestrian are touching.
-##
-## It has to be **under half a lane spacing**, and that is the whole of why it is 14 rather than a
-## body's width. The only line with no contact on it is the midline between two lanes; at 18 there
-## is no such line anywhere on a two-tile pavement, and walking the arterial costs eleven bumps in
-## forty seconds however carefully it is done. At 14, holding that line takes the same walk down to
-## two, which is the difference between a toll and a decision.
-##
-## **How *wide* that clear line is matters as much as whether it exists**, and it is the half that
-## is easy to leave unchecked. With lanes a tile apart it is `32 - 2 × 14` — four pixels, something
-## a player is occasionally on rather than something she can aim at, worth 15.3 contacts down an
-## arterial lane centre against the midline's none. The fix belongs in
-## `CrowdLanes.SIDEWALK_LANE_SPREAD`, which moves the lanes apart, and deliberately **not** here:
-## this number is what makes a contact mean *walking into somebody*, and buying the line by
-## shrinking it would make one require a near-perfect overlap.
-const BUMP_RADIUS := 14.0
-
 ## How far apart a contact is pushed, and how far apart it has to get before it counts as over.
 ##
 ## **The two numbers that make a bump end**, and they have to be two.
 ##
-## Resolving the separation to exactly `BUMP_RADIUS` — the distance at which `touching` flips back
+## Resolving the separation to exactly `Crowd.BUMP_RADIUS` — the distance at which `touching` flips back
 ## to false — parks a resolved contact precisely on its own release threshold, where it flickers
-## across it and fires a fresh `BUMP_INTENSITY` jolt every couple of frames for as long as the pair
+## across it and fires a fresh `Crowd.BUMP_INTENSITY` jolt every couple of frames for as long as the pair
 ## are near each other. A contact that costs its jolt once is a decision; one that costs it ten
 ## times in two seconds is being stuck to somebody, and three of those in half a minute is a lost
 ## day.
@@ -1313,12 +939,8 @@ const BUMP_RADIUS := 14.0
 ## genuine second approach.
 ##
 ## Deliberately a small band. Widening it would widen the corridor she has to thread down a
-## pavement, and the note on `BUMP_RADIUS` is what happens when that number grows.
+## pavement, and the note on `Crowd.BUMP_RADIUS` is what happens when that number grows.
 const BUMP_CLEAR_RADIUS := 19.0
-
-## How much of the separation the player takes; the pedestrian takes the rest. She is pushing
-## a pram and they are not, and being shoved by strangers must never take the verb away.
-const BUMP_PLAYER_SHARE := 0.3
 
 ## How far across their own pavement somebody she walked into steps, and for how long.
 ##
@@ -1356,38 +978,6 @@ const BUMP_STEP_ASIDE_TIME := 2.5
 ## (`WalkerStrategy._pavement_band`), and at `RUN_SPEED` she covers the notice distance in 0.57s against
 ## the 0.36s they need to clear a lane, so **running still hits people**.
 const CROWD_YIELD_DISTANCE := 96.0
-## How near they have to come to her — at their **closest approach**, not right now — to bother
-## getting out of the way. Wider than the lane-to-midline gap on an ordinary two-lane footway
-## (24px, half the 48px `CrowdLanes.SIDEWALK_LANE_SPREAD` puts between the footway's own two lanes),
-## so a walker holding an ordinary lane on an ordinary head-on pass steps aside instead of brushing
-## past at close to full intensity the whole way. Short of that 48px itself, so only the lane she is
-## actually closing on empties and a pavement does not part like the Red Sea in front of her.
-const CROWD_YIELD_LATERAL := 30.0
-## How far ahead that approach is predicted. Long enough to be worth acting on — a walker needs
-## 0.36s to clear a lane — and short enough that somebody two seconds away carries on as normal.
-const CROWD_YIELD_LEAD := 1.4
-## Speed of the deflection a contact gives the player. Well under `WALK_SPEED`, so a bump
-## knocks her off her line without steering her.
-const BUMP_SHOVE_SPEED := 55.0
-
-## A contact is not a write to `Baby.excitement` — it agitates the *person* she walked into, and
-## the crowd sums them like any other body. Excitement stays a pure query; a bump startles the
-## agent, never the meter — the invariant the **events** skill and `docs/MECHANICS.md` hold.
-##
-## **A contact is about eleven points of a hundred-point meter**, so four or five of them lose a day
-## on the crowd alone. It is the single most expensive instant on a pavement and it must not be the
-## only thing in the game with an opinion: at sixteen points the crowd supplies nearly all of the
-## excitement in a lost day and the authored content is decoration.
-##
-## Read it with `CROWD_YIELD_DISTANCE`: people get out of her way, so a contact is what
-## carelessness costs, and it costs less when it happens because it is not the whole game.
-const BUMP_INTENSITY := 18.0
-const BUMP_DURATION := 1.2
-const BUMP_INNER_RADIUS := 30.0
-## Tight, for the reason every crowd radius is tight: the jolt is a body's own source, so it takes
-## the same shoulder from `Field.falloff` as everything else, and a wide one charges a bump she is walking
-## away from for most of its tail. The cost at the moment of contact is set by the intensity.
-const BUMP_OUTER_RADIUS := 62.0
 
 ## The car's body, as a box rather than a circle: a car is two tiles long and one wide, and a
 ## radius that covered its length would kill people standing beside it. The body is symmetric about
@@ -1413,15 +1003,6 @@ const PATROL_STRIKE_LEAD := 0.1
 ## long enough to walk out of the carriageway before the car arrives, with the same doubled
 ## margin every other hard fail gets.
 const CAR_HORN_TIME := 1.6
-## How far out the crowd watches a car so it can sound this horn — separate from
-## `CAR_ZEBRA_SIGHT`, which stays the strike's own reach and the give-way scan's. The horn's
-## warning has to reach as far as the car's own travel at `CAR_HORN_TIME`, so this has to be at
-## least `CAR_SPEED.y * CAR_HORN_TIME` (296px) for the fastest car in the city — below that the
-## watch clips the warning short of `CAR_HORN_TIME` rather than the car's speed doing it.
-## `tests/test_tuning_fairness.gd` checks it against the fastest
-## car at boot, and the crowd-traffic skill's "The traffic fairness contract" states the same
-## thing.
-const CAR_HORN_SIGHT := 296.0
 ## The horn itself, as a jolt on the car that sounded it. A near miss costs something even
 ## when it is only a near miss.
 const CAR_HORN_INTENSITY := 18.0
@@ -1430,9 +1011,6 @@ const CAR_HORN_INNER_RADIUS := 45.0
 ## Tight for the same reason as the rest of the crowd's radii, and still a good deal wider than the
 ## car itself: a horn is meant to be heard from further away than an engine.
 const CAR_HORN_OUTER_RADIUS := 132.0
-## How long the exclamation mark stays up over the player after the last horn. Long enough to
-## survive the gap between two cars in the same lane.
-const CAR_WARNING_HOLD := 1.4
 
 ## How near the end of the day, in seconds, the doubled mark means *now*.
 ##
@@ -1453,17 +1031,11 @@ const LETHAL_MARK_LEAD := 0.7
 ##
 ## The relationship that matters, and the one `tests/test_crowd.gd` states: the headway has to
 ## be longer than the *braking* time from cruise, or a car physically cannot honour it and the
-## queue resolves by interpenetration again. `CAR_BRAKE` is shared with the zebra, so this is
+## queue resolves by interpenetration again. `CarStrategy.CAR_BRAKE` is shared with the zebra, so this is
 ## free to check and cheap to get wrong.
 const CAR_HEADWAY_TIME := 0.85
 const CAR_GAP_MIN := 66.0
 
-## Deceleration when a car gives way at a crossing, and how far ahead it looks for one. The
-## relationship that matters is `CAR_ZEBRA_SIGHT > braking_distance(CAR_SPEED.y) +
-## CAR_STOP_LINE_SETBACK`: a car always has room to stop **at the line** for a zebra it can see,
-## so giving way is never a screech.
-const CAR_BRAKE := 320.0
-const CAR_ACCELERATE := 150.0
 const CAR_ZEBRA_SIGHT := 200.0
 ## How far before the paint a car giving way comes to rest, measured to the car's centre. Its
 ## nose is `CAR_STRIKE_HALF_LENGTH` in front of that, so it stops a few pixels short of the
@@ -1480,21 +1052,6 @@ const CAR_ZEBRA_SIGHT := 200.0
 ## `CAR_STRIKE_MIN_SPEED` and cannot hurt anybody — but it is *unreadable* scenery sitting on the
 ## one place the game has told the player is the safe way across.
 const CAR_STOP_LINE_SETBACK := 34.0
-## The deceleration a car *aims* at when it eases up to a stop line, as opposed to `CAR_BRAKE`,
-## which is the hardest it can push. Giving way has to be **visible from the kerb**, which is why
-## the looking starts at `CAR_ZEBRA_SIGHT` rather than at the line, and why the approach is shaped
-## by a gentle rate with only the emergency using the hard one.
-##
-## The relationship, and the one `tests/test_crowd.gd` states:
-## `sqrt(2 · CAR_ZEBRA_APPROACH_BRAKE · CAR_ZEBRA_SIGHT) >= CAR_SPEED.y` — the fastest car in the
-## city begins easing at the moment the zebra comes into sight, rather than holding speed and
-## then grabbing the brake at the last legal instant.
-##
-## **Getting this wrong in the obvious way makes no car ever stop**: shaping the approach with
-## `CAR_BRAKE` itself puts the onset of braking and the commit point at the *same* moment, so a car
-## glides up to the line at full speed, decides it can no longer stop, and drives through. The test
-## that catches it is the one that says *where* a car stops rather than whether.
-const CAR_ZEBRA_APPROACH_BRAKE := 90.0
 ## How close to the crossing the player has to be for the traffic to yield. Roughly "standing
 ## at the kerb waiting", which is the gesture the crossing is for.
 const CAR_ZEBRA_WAIT_RADIUS := 56.0
@@ -1507,14 +1064,6 @@ const CAR_ZEBRA_WAIT_RADIUS := 56.0
 ## middle of the junction, which is the failure it exists to prevent rather than a milder version
 ## of it.
 const CAR_JUNCTION_SIGHT := 200.0
-## How close two arrivals have to be for the box to be a *conflict* rather than a queue, and
-## therefore for right-before-left to decide it instead of distance.
-##
-## A car's own length, near enough: closer than that and the second car is behind the first
-## through the box rather than beside it. Wider and a car yields to somebody who was never in its
-## way; narrower and a symmetric arrival is settled by a couple of pixels of float noise, which is
-## right-before-left never actually running.
-const CAR_JUNCTION_TIE := 60.0
 
 ## How fast a car takes a turn, and the tightest arc it will take one on.
 ##
@@ -1531,17 +1080,16 @@ const CAR_JUNCTION_TIE := 60.0
 ## road, so 60px/s spends 0.42s in it and the far-side arm 1.25s — both long enough to watch, where
 ## a car taking the same corner at its 130px/s cruise is through it in 0.19s and reads as the swap
 ## this replaced. The relationship under it, which `tests/test_turns.gd` states: `CAR_TURN_SPEED² /
-## CAR_TURN_RADIUS_MIN` is 225px/s² of lateral acceleration, under `CAR_BRAKE`'s 320 — a car is
+## CarTurn.CAR_TURN_RADIUS_MIN` is 225px/s² of lateral acceleration, under `CarStrategy.CAR_BRAKE`'s 320 — a car is
 ## never asked to corner harder than it can brake. It is also well over `CAR_STRIKE_MIN_SPEED`, so a
 ## turning car is still a lethal one and a junction is not a safe place to stand.
 ##
 ## **A car does not always reach it.** The approach eases from the moment the car knows it is
-## turning, at `CAR_ZEBRA_APPROACH_BRAKE`, and what it knows is bounded by `CrowdAgent.LOOKAHEAD` —
+## turning, at `CarStrategy.CAR_ZEBRA_APPROACH_BRAKE`, and what it knows is bounded by `CrowdAgent.LOOKAHEAD` —
 ## about a hundred pixels of warning at an ordinary closure, which from cruise leaves it entering
 ## the arc at around 130px/s and still braking. Lengthening the lookahead would buy the rest, and
 ## would also move which junction a car turns at, which is a route decision rather than a turn.
 const CAR_TURN_SPEED := 60.0
-const CAR_TURN_RADIUS_MIN := 16.0
 
 # ------------------------------------------------------- the world near you ---
 # The world is populated around the player rather than authored across a map she mostly never
@@ -2191,7 +1739,7 @@ func required_horn_time() -> float:
 	return carriageway_width() * TELEGRAPH_HARD_FAIL_MARGIN / WALK_SPEED
 
 ## Shortest reach the crowd's horn watch may fairly have: enough for the fastest car to sound
-## the whole of `CAR_HORN_TIME` before it arrives. What `tests/test_tuning_fairness.gd` holds `CAR_HORN_SIGHT` to.
+## the whole of `CAR_HORN_TIME` before it arrives. What `tests/test_tuning_fairness.gd` holds `Crowd.CAR_HORN_SIGHT` to.
 func required_horn_sight() -> float:
 	return CAR_SPEED.y * CAR_HORN_TIME
 
@@ -2218,7 +1766,7 @@ func longest_act_days() -> int:
 	return longest
 
 ## How many calm areas a city has to have: one per day of the longest act, plus one in reserve.
-## See `MIN_CALM_BLOCKS`, which this is asserted against on boot.
+## See `CityGenerator.MIN_CALM_BLOCKS`, which this is asserted against on boot.
 func calm_areas_needed() -> int:
 	return longest_act_days() + 1
 

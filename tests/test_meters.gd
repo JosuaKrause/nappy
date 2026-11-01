@@ -171,7 +171,7 @@ func _test_one_calm_stretch_wins_a_day(t) -> void:
 ## mean the day is over before it starts, and a floor over the grace would mean dusk is the
 ## real opponent again, which is what M18 was undoing.
 func _test_a_day_is_a_minute_of_play_with_a_grace_of_three(t) -> void:
-	var leg := Tuning.MIN_HOME_TO_PARK_TILES * float(Tuning.TILE_SIZE) / Tuning.WALK_SPEED
+	var leg := CityGenerator.MIN_HOME_TO_PARK_TILES * float(Tuning.TILE_SIZE) / Tuning.WALK_SPEED
 	var banked := Tuning.SLEEPINESS_GAIN_WALKING * leg
 	var stretch := (Tuning.METER_MAX - banked) / Tuning.sleepiness_gain_calm()
 	var shortest := leg + stretch + leg
@@ -282,15 +282,15 @@ func _test_only_motion_settles_her(t) -> void:
 	# grounds, best to worst, asserted as the ordering rather than as five numbers — the absolute
 	# rates are what a rig measures and this is what the route decision is made of. A ground that
 	# swapped places with its neighbour would make some street the wrong answer everywhere.
-	t.check(Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
-			> Tuning.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER,
+	t.check(City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+			> City.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER,
 			"a park settles her faster than a precinct")
-	t.check(Tuning.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER > 1.0,
+	t.check(City.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER > 1.0,
 			"and a precinct faster than an ordinary street, which is why it is worth walking to")
-	t.check(1.0 > Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER,
+	t.check(1.0 > City.EXCITEMENT_DECAY_ALLEY_MULTIPLIER,
 			"an ordinary street is better ground than an alley")
-	t.check(Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
-			> Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER,
+	t.check(City.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
+			> City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER,
 			"and an alley better than the main road, which stays the worst ground in the city")
 
 	_build(t)
@@ -319,7 +319,7 @@ func _test_alley_trickle(t) -> void:
 	# on the strength of a number that is never applied in one. What has to stay true is that an
 	# empty alley is very nearly flat: it cannot build excitement on its own, and it is never quite
 	# recovery either, which is the pressure the row is for.
-	var alley_decay := Tuning.EXCITEMENT_DECAY_WALKING * Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
+	var alley_decay := Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
 	t.check(Tuning.EXCITEMENT_FROM_ALLEY < alley_decay,
 			"walking an empty alley should not by itself build excitement (%.1f against %.1f)"
 			% [Tuning.EXCITEMENT_FROM_ALLEY, alley_decay])
@@ -476,11 +476,11 @@ func _one_bump_from(t, at: float) -> Dictionary:
 	_build(t)
 	var agent := CrowdAgent.new()
 	agent.global_position = _stroller.global_position
-	agent.excitement.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
-			Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
+	agent.excitement.startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
+			Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
 	_baby.excitement = at
 	_walk()
-	var jolt := Tuning.BUMP_DURATION
+	var jolt := Crowd.BUMP_DURATION
 	while jolt > 0.0:
 		agent.excitement._jolt = jolt
 		_world.noise = agent.excitement.contribution_at(_stroller.global_position)
