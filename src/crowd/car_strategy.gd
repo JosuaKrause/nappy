@@ -333,11 +333,12 @@ func _distance_to_stop_line() -> float:
 ## **How far this car has to the point it stands at for an event figure**, or `INF` for none: a
 ## figure, an event car or a cordon officer in its lane ahead, or coming into it within
 ## `FIGURE_LEAD_TICKS` of its own travel, within `Tuning.CAR_ZEBRA_SIGHT` (the map's
-## `SeparationPass.edge_ahead()`), less the car's nose and `FIGURE_SETBACK`. **Only a figure under
-## way** — one that moved within the last `FIGURE_UNDER_WAY_TICKS` — since a figure standing in the
-## carriageway for good (a fire engine parked at the kerb, the column's trucks at their stop) would
-## hold the lane, and the box behind it, for the rest of the day; a car drives on past one of those
-## as it always did.
+## `SeparationPass.edge_ahead()`), less the car's nose and `FIGURE_SETBACK`. **Moving or standing,
+## for as long as it stands** (inbox #909): a car never drives through a figure. One that has parked
+## (`MoveProposal.parked`, the fire engine at its fire) is also a blockage the car turns round at,
+## as at a blocked street (`_distance_to_the_blockage()`), so it does not hold the lane for the rest
+## of the day; one that is only stopping — the patrol car at a red light or while its man is out —
+## is waited for.
 ##
 ## **No commit rule, unlike her zebra's**: a car too close to stop for a figure brakes as hard as it
 ## can and its step is then held short of the figure's body (`give_way_on_the_step()`), since a
@@ -351,18 +352,41 @@ func _distance_to_a_figure() -> float:
 	return maxf(0.0, road - FIGURE_SETBACK)
 
 ## **The clear road from its nose to the near edge of the event figure it would stand for**, or
-## `INF` for none (see `_distance_to_a_figure()` for which figures): what its brake aims short of,
-## and what the junction box rule reads beside the car in front (`Crowd._can_clear_the_box()`), so
-## a car does not drive into a box it would have to stand in for a figure beyond it.
-func road_before_a_figure() -> float:
+## `INF` for none (see `_distance_to_a_figure()` for which figures), looking `reach` ahead of its
+## centre: what its brake aims short of, and what the junction box rule reads beside the car in
+## front (`Crowd._can_clear_the_box()`), so a car does not drive into a box it would have to stand in
+## for a figure beyond it. **The box rule looks past the box's far side**, further than the brake's
+## `Tuning.CAR_ZEBRA_SIGHT`: a car at the stop line is a box's width and more from a figure standing
+## just beyond it, and one that saw the figure only from inside the box would stand there.
+func road_before_a_figure(reach := Tuning.CAR_ZEBRA_SIGHT) -> float:
 	var separation := _mover._map.separation
 	if not separation.has_keepers_for_cars() or (_mover._turn and _mover._turn_run_up <= 0.0):
 		return INF
 	var edge := separation.edge_ahead(_mover.global_position, _mover.heading(), SHADOW_ACROSS * 0.5,
-			FIGURE_WIDEST, Tuning.CAR_ZEBRA_SIGHT, FIGURE_LEAD_TICKS, FIGURE_UNDER_WAY_TICKS)
+			FIGURE_WIDEST, reach, FIGURE_LEAD_TICKS)
 	if edge == INF:
 		return INF
 	return edge - nose
+
+## **The clear road from its nose to the near edge of a parked figure in its lane ahead**
+## (`MoveProposal.parked`, inbox #909), or `INF` for none: a blockage like a closed tile, met at
+## the distance a car meets a wall at (`LaneMover.LOOKAHEAD`), since what it does about one is the
+## same turn round. Read into `_distance_to_the_blockage()`, so the brake that leaves it room to
+## turn and every arc the planner tries stop short of it.
+func road_before_a_parked_figure() -> float:
+	var separation := _mover._map.separation
+	if not separation.has_keepers_for_cars() or (_mover._turn and _mover._turn_run_up <= 0.0):
+		return INF
+	var edge := separation.edge_ahead(_mover.global_position, _mover.heading(), SHADOW_ACROSS * 0.5,
+			FIGURE_WIDEST, float(LaneMover.LOOKAHEAD), 0.0, true)
+	if edge == INF:
+		return INF
+	return maxf(0.0, edge - nose)
+
+## Whether a parked figure in its lane ahead is within the distance a car acts on a blockage at:
+## what sends it to `divert()` beside a closed tile (`LaneMover.step()`).
+func blocked_by_a_figure() -> bool:
+	return road_before_a_parked_figure() < INF
 
 ## How far short of a figure's body a car means to stand, in px: a few pixels, since a figure
 ## crossing in front is gone a moment later and a car stopped a lane's length off it holds the
@@ -377,9 +401,6 @@ const FIGURE_LEAD_TICKS := 15.0
 ## a dog's or a man's width but an event car's length, and an event car passing in the next lane,
 ## one lane width off, is not in this one.
 const FIGURE_WIDEST := Tuning.CAR_STRIKE_HALF_WIDTH
-## How long a figure may stand still, in ticks, and still be one a car stands for: a second, so one
-## that stops a moment in the lane is waited out and one that stands there for good is not.
-const FIGURE_UNDER_WAY_TICKS := 30
 
 ## **Holds its proposed step short of an event figure's body ahead** (the map's
 ## `SeparationPass.room_ahead()`, over its own capsule): the guarantee under the brake in
@@ -398,7 +419,7 @@ func give_way_on_the_step(delta: float) -> void:
 	if step <= 0.0:
 		return
 	var room := separation.room_ahead(move.from, forward, _mover.shape.half_length,
-			_mover.shape.radius, FIGURE_WIDEST, FIGURE_UNDER_WAY_TICKS)
+			_mover.shape.radius, FIGURE_WIDEST)
 	if room >= step:
 		return
 	move.to -= forward * (step - room)
@@ -887,7 +908,8 @@ func _claim_the_turn() -> void:
 	_mover.traffic.claim(_mover.turn_lane_key(), _mover._turn.landing())
 
 ## How far this car has to the near edge of the first thing it cannot drive past, or `INF` when the
-## road ahead is clear as far as it looks.
+## road ahead is clear as far as it looks: a tile it cannot go on, or a parked figure in its lane
+## (`road_before_a_parked_figure()`, inbox #909), which it turns round at the same way.
 ##
 ## **Braking for it is what makes a turnaround possible at all.** Nothing used to brake for a
 ## blockage, because reversing the heading on the spot was always available however close the wall
@@ -896,16 +918,17 @@ func _claim_the_turn() -> void:
 func _distance_to_the_blockage() -> float:
 	# Nothing to answer on the arc itself: the lookahead is a cached scan down the lane the car has
 	# left, and the ground the curve covers was checked before it started.
-	if _mover._blocked_in > LaneMover.LOOKAHEAD_TILES:
-		return INF
 	if _mover._turn and _mover._turn_run_up <= 0.0:
 		return INF
+	var figure := road_before_a_parked_figure()
+	if _mover._blocked_in > LaneMover.LOOKAHEAD_TILES:
+		return figure
 	var here := floori(_mover._along() / float(Tuning.TILE_SIZE))
 	var tile := here + _mover._blocked_in * signi(int(_mover._direction))
 	var edge := float(tile * Tuning.TILE_SIZE)
 	if _mover._direction < 0.0:
 		edge += float(Tuning.TILE_SIZE)
-	return maxf(0.0, (edge - _mover._along()) * _mover._direction - nose)
+	return minf(figure, maxf(0.0, (edge - _mover._along()) * _mover._direction - nose))
 
 ## Where a car braking for a blockage aims to come to rest: a half turn's worth of road short of it,
 ## so that a car which has to turn round has somewhere to do it. A driver meeting a dead end stops a

@@ -111,6 +111,12 @@ func transition(to: Phase) -> void:
 		_telegraph_ended = true
 	phase = to
 	excitement.invalidate_contribution()
+	# **Parked while it stands for good, and only then** (`MoveProposal.parked`): a row that parks
+	# has once it stops where it arrives, and nothing leaving or gone stands anywhere for good.
+	if to == Phase.PARKED:
+		_move.parked = def.when_it_stops == EventDef.WhenItStops.PARKS
+	elif to == Phase.LEAVING or to == Phase.DONE:
+		_move.parked = false
 
 ## **A telegraph or notice that has run its time is over**: asked wherever the notice clock or
 ## the age moves, so the stored phase is never behind the clock.
@@ -319,6 +325,10 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
 	# walked through as a person or an animal (`EventDef.stands_as`, inbox #905).
 	_move.stood_round = definition.stands_as == EventDef.StandsAs.SOMETHING
+	# Whether it has parked, for a crowd car behind it in its lane (`EventDef.when_it_stops`, inbox
+	# #909): a figure that never moves has parked from the start; one that drives to where it stops
+	# parks once it is there (`transition()`).
+	_move.parked = definition.when_it_stops == EventDef.WhenItStops.PARKS and not definition.mobile
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	var start := route[0] if route.size() > 0 else at
 	if not definition.mobile and definition.obstructs_radius > 0.0 \

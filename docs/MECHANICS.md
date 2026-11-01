@@ -555,12 +555,19 @@ empty street.
   crowd did not already cost.
 - **A crowd car stands for a figure in its lane ahead, or coming into it within half a second**,
   braking toward a point a few pixels short of its body the way it brakes for a stop line, and its
-  step is held short of the body if the brake arrives late. It never swerves. It stands only for a
-  figure under way: one standing still in the carriageway for over a second (a parked fire engine,
-  the column's trucks at their stop) is driven past as before, or the lane would be held all day.
-  **And it does not drive into a junction box it would have to stand in**: a figure in its lane
-  beyond the box holds it at the line, as a stopped car beyond the box does. A car that stands for a
-  figure is a stopped car to the strike, the horn and the queue behind it.
+  step is held short of the body if the brake arrives late. It never swerves and never drives
+  through a figure, moving or standing, for as long as it stands (inbox #909). **Behind a figure
+  that has parked it turns round**, as it does at a blocked street, rather than hold the lane all
+  day: the fire engine once it is at its fire. Behind one that is only stopping — the patrol car at
+  a red light or while its man is out, a dog standing for its notice — it waits until it moves.
+  Each row says whether its figure parks (`EventDef.when_it_stops`), and the figure says when it
+  has: one that drives to where it stops has parked only once it is there, so the fire engine at a
+  red light on its way is waited for. What was placed and never moved, a stall or a barricade, is a
+  blockage by its tiles, as it always was. **And it does not drive into a junction box it would have
+  to stand in**: a figure in its lane beyond the box, moving or standing, holds it at the line, as a
+  stopped car beyond the box does. A car that stands for a figure is a stopped car to the strike,
+  the horn and the queue behind it. No figure reads the crowd, so a car waiting on a figure is never
+  one the figure waits on.
 
 `SeparationPass` (`src/world/`) is the world's half: which movers are given way to and the geometry
 of clearing them. The crowd asks it at each body's own step, between the step's proposal and its

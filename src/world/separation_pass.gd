@@ -21,8 +21,10 @@ extends RefCounted
 ##   or crouched before its charge (inbox #905). A standing object with a solid body is walked round
 ##   by its tiles as well (`CityMap.obstructed_tiles`).
 ## - **A crowd car gives way to a keeper that has moved since this pass first saw it**, moving or
-##   standing. What was placed and has never moved is left to the map: a solid body is a blockage
-##   the car brakes for and turns round at, and a door's boom has its own hold.
+##   standing, for as long as it stands, and never drives through one; **behind one that has parked**
+##   (`MoveProposal.parked`, the fire engine at its fire) it turns round as at a blocked street
+##   (inbox #909). What was placed and has never moved is left to the map: a solid body is a
+##   blockage the car brakes for and turns round at, and a door's boom has its own hold.
 ##
 ## **Read at each crowd body's own step, against the others' committed poses.** `gather()` takes the
 ## keepers off the list once a crowd tick, at its start, before any crowd body steps, and notes each
@@ -158,19 +160,20 @@ func overlaps_one_standing(move: MoveProposal) -> bool:
 ## distance along `forward` from `at` to the near edge of the first keeper whose body lies in, or
 ## within `lead_ticks` of its own travel comes into, the band `half_width` either side of the line,
 ## ahead of `at` and within `reach` of it; `INF` for none. Only keepers a car gives way to count
-## (see the class doc), and of them only those that moved within the last `under_way_within` ticks.
+## (see the class doc), moving or standing; with `parked_only`, only those that have parked and
+## stood still since the last gathering (`MoveProposal.parked`), which a car turns round behind.
 ## **Across the line a keeper's body counts for at most `widest`**:
 ## a move's `radius` is the circle round its whole body, which for a car is its length, and a car
-## passing in the next lane is not in this one. What a crowd car brakes for
-## (`CarStrategy._give_way()`).
+## passing in the next lane is not in this one. What a crowd car brakes for, and turns round at
+## (`CarStrategy._give_way()`, `CarStrategy._distance_to_the_blockage()`).
 func edge_ahead(at: Vector2, forward: Vector2, half_width: float, widest: float, reach: float,
-		lead_ticks: float, under_way_within: int) -> float:
+		lead_ticks: float, parked_only := false) -> float:
 	if _for_cars.is_empty() or not _car_bounds.grow(reach + _WIDEST_REACH).has_point(at):
 		return INF
 	var side := Vector2(-forward.y, forward.x)
 	var nearest := INF
 	for keeper in _for_cars:
-		if keeper.ticks_still > under_way_within:
+		if parked_only and not (keeper.move.parked and keeper.step == Vector2.ZERO):
 			continue
 		var offset := keeper.at - at
 		var along := offset.dot(forward)
@@ -193,21 +196,18 @@ func edge_ahead(at: Vector2, forward: Vector2, half_width: float, widest: float,
 
 ## **How far a capsule may move along `forward` from `at` before it touches a keeper ahead of its
 ## centre**: a body whose spine runs `half_length` either side of `at` along `forward`, rounded by
-## `radius`, against every keeper a car gives way to that moved within the last `under_way_within`
-## ticks, whose centre
-## is ahead of `at` and nearer the line than `radius` and at most `widest` of its own (as in
-## `edge_ahead()`); `INF` for none, `0.0` for one it touches already. What a crowd car's step is held
-## to (`CarStrategy.give_way_on_the_step()`).
-func room_ahead(at: Vector2, forward: Vector2, half_length: float, radius: float, widest: float,
-		under_way_within: int) -> float:
+## `radius`, against every keeper a car gives way to, moving or standing, whose centre is ahead of
+## `at` and nearer the line than `radius` and at most `widest` of its own (as in `edge_ahead()`);
+## `INF` for none, `0.0` for one it touches already. What a crowd car's step is held to
+## (`CarStrategy.give_way_on_the_step()`).
+func room_ahead(at: Vector2, forward: Vector2, half_length: float, radius: float,
+		widest: float) -> float:
 	if _for_cars.is_empty() \
 			or not _car_bounds.grow(half_length + radius + _WIDEST_REACH).has_point(at):
 		return INF
 	var side := Vector2(-forward.y, forward.x)
 	var room := INF
 	for keeper in _for_cars:
-		if keeper.ticks_still > under_way_within:
-			continue
 		var offset := keeper.at - at
 		var along := offset.dot(forward)
 		if along <= 0.0:

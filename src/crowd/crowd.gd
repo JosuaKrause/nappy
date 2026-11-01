@@ -996,9 +996,12 @@ func _can_clear_the_box(agent: CrowdAgent, distance: float) -> bool:
 	var box := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var far_side := distance + box
 	# **An event figure in its lane beyond the box is a car in front that does not move for it**: it
-	# keeps its course and the car stands for it (inbox #884 in minty-dolphin), so a car that would
-	# have to stand in the box holds at the line instead, and no leader's speed is credited.
-	if agent.strategy.road_before_a_figure() < far_side + Tuning.CAR_GAP_MIN:
+	# keeps its course and the car stands for it (inbox #884 in minty-dolphin), moving or standing
+	# (inbox #909), so a car that would have to stand in the box holds at the line instead, and no
+	# leader's speed is credited. Looked for as far as the box's far side and a gap past it, which is
+	# further than a car's brake looks.
+	var needed := far_side + Tuning.CAR_GAP_MIN
+	if agent.strategy.road_before_a_figure(needed + agent.strategy.nose) < needed:
 		return false
 	if agent.gap_ahead == INF:
 		return true

@@ -467,7 +467,9 @@ func step(delta: float) -> void:
 		_recycle()
 		_end_the_frame(delta)
 		return
-	if _blocked_in <= _acts_within:
+	# A closed tile within reach, or for a car a parked figure in its lane (inbox #909): the same
+	# turn round either way.
+	if _blocked_in <= _acts_within or strategy.blocked_by_a_figure():
 		strategy.divert(delta)
 	# A car with no road either way goes when nobody is looking, which is the rule a body a pocket
 	# has caught already follows. It is the same situation read off the lane instead of off the

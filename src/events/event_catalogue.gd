@@ -344,6 +344,7 @@ static func _neighbor() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.NEIGHBOR
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.act_tag = 1
 	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -377,6 +378,7 @@ static func neighbor_heading_home() -> EventDef:
 	def.shape = row.shape
 	def.solid_parts = row.solid_parts
 	def.stops_where_it_arrives = true
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.departs_at = NEIGHBOR_RUN_SPEED
 	return def
 
@@ -405,6 +407,7 @@ static func _playground() -> EventDef:
 	def.ambient_source = EventDef.AmbientSource.PLAYGROUND
 	def.look = EventDef.Look.NONE  # The park's swing frame already draws it.
 	def.stands_as = EventDef.StandsAs.NOTHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.intensity = 0.0  # Free. See the note above.
 	# Kept at their old size for continuity — the debug field overlay still draws a disc here —
 	# even though `Tuning.falloff` answers zero at every distance now and nothing else reads them:
@@ -458,6 +461,7 @@ static func _cat_dash() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CAT
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.shape = GroundShape.point(7.0)
 	def.placement = [GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING]
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
@@ -564,6 +568,7 @@ static func _alley_mouse() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.MOUSE
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.path_mode = EventDef.PathMode.ACROSS_ITS_ALLEY
 	def.shape = GroundShape.point(4.0)
 	def.placement = [GameEnums.TileType.ALLEY]
@@ -675,6 +680,7 @@ static func _homeless_yeller() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.YELLER
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.intensity = 20.0
@@ -741,6 +747,7 @@ static func _dog_walker() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.DOG_WALKER
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	# The walker's own point, not the dog's — the dog on its lead is a per-part shadow drawn at
 	# its own literal radius directly, the same as the abduction's victim or the checkpoint hut's
 	# guard, since a two-body composite has no single shape to be either of its bodies.
@@ -795,6 +802,7 @@ static func _cafe_tables() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CAFE
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 12.0
@@ -832,6 +840,7 @@ static func _delivery_van() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.DELIVERY_VAN
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.intensity = 0.0
@@ -884,6 +893,7 @@ static func _busker() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.BUSKER
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.PARK, GameEnums.TileType.SQUARE]
 	# The lowest tenth, with a small margin above the sweep's own crossing, whose day never fills
@@ -917,6 +927,7 @@ static func _construction() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROADWORKS
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -952,6 +963,7 @@ static func _fire_truck() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.FIRE_ENGINE
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	# **The body is the drawing's ground contact**: 58px long (`fire_engine.svg`, x 2 to 60, bumper
 	# to bumper) and 26px wide (`fire_engine_front.svg`, x 4 to 30, flank to flank), a capsule laid
 	# along its heading — the patrol car's own construction, which `vehicle` makes the body. It is
@@ -1027,6 +1039,7 @@ static func _burning_building() -> EventDef:
 	def.kind = GameEnums.EventKind.ONE_SHOT
 	def.look = EventDef.Look.BURNING_BUILDING
 	def.stands_as = EventDef.StandsAs.NOTHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.first_day = 3
 	def.last_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -1072,6 +1085,7 @@ static func _burnt_shell() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURNT_SHELL
 	def.stands_as = EventDef.StandsAs.NOTHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.intensity = 2.5
 	def.inner_radius = 24.0
@@ -1150,6 +1164,7 @@ static func _loose_dog() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.LOOSE_DOG
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.trails_a_lead = true
 	def.shape = GroundShape.point(9.0)
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
@@ -1193,6 +1208,7 @@ static func _market_stall() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.STALL
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE]
 	def.intensity = 14.0
@@ -1244,6 +1260,7 @@ static func _leaf_blower() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.LEAF_BLOWER
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.placement = [GameEnums.TileType.SIDEWALK, GameEnums.TileType.PARK,
 			GameEnums.TileType.SQUARE]
 	# The busker's field exactly — see `_busker()` for how 19.3 over 45/190 was measured and why
@@ -1374,6 +1391,7 @@ static func _pigeon_flock() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.BIRDS
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	# A flock has no single body — each bird casts its own shadow at its own faded radius (see
 	# `FlockLook._draw_birds`) — so this is a nominal point at one bird's own base radius
 	# (5.0, before the height fade), carried only to satisfy "a row with a look has a shape".
@@ -1470,6 +1488,7 @@ static func _cyclist() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CYCLIST
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.may_be_a_pelican = true
 	def.shape = GroundShape.point(12.0)
 	def.first_day = 2
@@ -1520,6 +1539,7 @@ static func _ice_cream_van() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ICE_CREAM_VAN
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.first_day = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
@@ -1559,6 +1579,7 @@ static func _reversing_lorry() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.LORRY
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.first_day = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.pavement_side = EventDef.Pavement.AGAINST_THE_BUILDING
@@ -1624,6 +1645,7 @@ static func _chatting_mother() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CHATTING_MOTHER
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.shape = GroundShape.point(14.0)
 	def.first_day = 1
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -1699,6 +1721,7 @@ static func _charging_dog() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.CHARGING_DOG
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.warning_picture = EventDef.WarningPicture.DOG_ALERT
 	def.shape = GroundShape.point(13.0)
 	def.first_day = Tuning.RUN_TAUGHT_DAY
@@ -1789,6 +1812,7 @@ static func _police_patrol() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POLICE_CAR
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	# **The body is its drawn ground contact** — 42px long, the side view's body from bumper to
 	# bumper (`police_car.svg`, x 2 to 44), and 24px wide, the end views' body from flank to flank
 	# (`police_car_front.svg`, x 3 to 27) — as a capsule laid along its heading, the same datum its
@@ -1847,6 +1871,7 @@ static func _poster_crew() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POSTER_CREW
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.SIDEWALK]
@@ -1887,6 +1912,7 @@ static func _poster_crew_square() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POSTER_CREW_SQUARE
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.first_day = 4
 	def.act_tag = 2
 	def.placement = [GameEnums.TileType.SQUARE]
@@ -1917,6 +1943,7 @@ static func _loudspeaker() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.LOUDSPEAKER_MAST
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.act_tag = 2
 	def.solid(GroundShape.point(MAST_BODY))
 	def.intensity = 20.0
@@ -1949,6 +1976,7 @@ static func _curfew_announce() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.NONE
 	def.stands_as = EventDef.StandsAs.NOTHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.act_tag = 2
 	def.inner_radius = 45.0
 	def.outer_radius = 210.0
@@ -2048,6 +2076,7 @@ static func _roadblock() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROADBLOCK
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.has_a_spread = true
 	def.first_day = 7
 	def.act_tag = 2
@@ -2104,6 +2133,7 @@ static func _abduction() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.UNMARKED_VAN
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.abduction = AbductionSpec.new()
 	def.first_day = 8
 	def.act_tag = 3
@@ -2164,6 +2194,7 @@ static func _alley_robbery() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROBBER
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.warning_picture = EventDef.WarningPicture.ROBBER_ALERT
 	def.shape = GroundShape.point(9.0)
 	def.first_day = 8
@@ -2284,6 +2315,7 @@ static func _robber_giving_chase() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.ROBBER_GIVING_CHASE
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.shape = alley.shape
 	def.act_tag = 2
 	def.intensity = alley.intensity
@@ -2339,6 +2371,7 @@ static func _van_guard_giving_chase() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.VAN_GUARD_GIVING_CHASE
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.shape = guard.shape
 	def.act_tag = 2
 	def.intensity = guard.intensity
@@ -2388,6 +2421,7 @@ static func _policeman_giving_chase() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.POLICEMAN_GIVING_CHASE
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.noun = "policeman"
 	def.noun_plural = "policemen"
 	return def
@@ -2404,6 +2438,7 @@ static func _guardsman_giving_chase() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.GUARDSMAN_GIVING_CHASE
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.noun = "guardsman"
 	def.noun_plural = "guardsmen"
 	return def
@@ -2528,6 +2563,7 @@ static func _night_raid() -> EventDef:
 	def.scripted_day = 10
 	def.look = EventDef.Look.RIOT_VAN
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.act_tag = 3
 	def.placement = [GameEnums.TileType.SIDEWALK]
 	def.intensity = 24.0
@@ -2554,6 +2590,7 @@ static func _military_convoy() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ARMY_TRUCK
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.shape = GroundShape.point(26.0)
 	def.first_day = 13
 	def.act_tag = 4
@@ -2590,6 +2627,7 @@ static func _barricade() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.BARRICADE
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.act_tag = 4
 	def.intensity = 0.0
@@ -2627,6 +2665,7 @@ static func _protest() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.PROTEST
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.stands_along_its_street = true
 	def.first_day = 12
 	def.act_tag = 4
@@ -2672,6 +2711,7 @@ static func _firefight() -> EventDef:
 	def.scripted_day = 13
 	def.look = EventDef.Look.FIREFIGHT
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.stands_along_its_street = true
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.CROSSING, GameEnums.TileType.SQUARE]
@@ -2714,6 +2754,7 @@ static func _fallen_tree() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.FALLEN_TREE
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.act_tag = 1
 	def.intensity = 0.0
@@ -2753,6 +2794,7 @@ static func _car_accident() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CAR_ACCIDENT
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.act_tag = 1
 	def.intensity = Tuning.CAR_ACCIDENT_INTENSITY
@@ -2802,6 +2844,7 @@ static func _skip() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.SKIP
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.act_tag = 1
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.intensity = 0.0
@@ -2822,6 +2865,7 @@ static func _scaffolding() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.SCAFFOLDING
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.act_tag = 1
 	def.intensity = 0.0
@@ -2844,6 +2888,7 @@ static func _burst_water_main() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURST_MAIN
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.act_tag = 1
 	def.intensity = 0.0
@@ -2873,6 +2918,7 @@ static func _moving_van() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.MOVING_VAN
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.act_tag = 1
 	def.pavement_side = EventDef.Pavement.AT_THE_KERB
 	def.intensity = 0.0
@@ -2897,6 +2943,7 @@ static func _burnt_out_car() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.BURNT_OUT_CAR
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.lies_across_its_street = true
 	def.act_tag = 2
 	def.intensity = 0.0
@@ -2919,6 +2966,7 @@ static func _collapsed_frontage() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.COLLAPSED_FRONTAGE
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.has_a_spread = true
 	def.act_tag = 2
 	def.intensity = 0.0
@@ -2979,6 +3027,7 @@ static func _checkpoint_hut() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_HUT
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.act_tag = 2
 	def.intensity = 4.0
 	def.inner_radius = 84.0
@@ -3016,6 +3065,7 @@ static func _checkpoint_gate() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_GATE
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.act_tag = 2
 	def.intensity = 0.0
 	def.inner_radius = 84.0
@@ -3038,6 +3088,7 @@ static func _checkpoint_post() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.CHECKPOINT_POST
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.hides_in_its_hold = true
 	def.act_tag = 2
 	def.intensity = 4.0
@@ -3087,6 +3138,7 @@ static func _door_guard() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.DOOR_GUARD
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.shape = GroundShape.point(9.0)
 	def.act_tag = 3
 	def.intensity = 18.0
@@ -3141,6 +3193,7 @@ static func _finale_explosion() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.NONE
 	def.stands_as = EventDef.StandsAs.NOTHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.act_tag = 4
 	def.placement = [GameEnums.TileType.ROAD]
 	def.intensity = 24.0
@@ -3178,6 +3231,7 @@ static func _impact_crater() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.IMPACT_CRATER
 	def.stands_as = EventDef.StandsAs.NOTHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.act_tag = 4
 	def.intensity = 0.0
 	def.inner_radius = 40.0
@@ -3213,6 +3267,7 @@ static func _masked_pursuer() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.MASKED_PURSUER
 	def.stands_as = EventDef.StandsAs.SOMEBODY
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.shape = GroundShape.point(9.0)
 	def.act_tag = 4
 	def.intensity = 18.0
@@ -3295,6 +3350,7 @@ static func _basement_steam() -> EventDef:
 	def.scripted_day = 0
 	def.look = EventDef.Look.STEAM
 	def.stands_as = EventDef.StandsAs.NOTHING
+	def.when_it_stops = EventDef.WhenItStops.PARKS
 	def.solid(GroundShape.point(STEAM_VENT_BODY))
 	def.solid_when = EventDef.SolidWhen.ONCE_IT_STARTS
 	def.act_tag = 4

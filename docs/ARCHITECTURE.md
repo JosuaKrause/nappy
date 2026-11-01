@@ -265,7 +265,8 @@ src/
 	                      cars and cordon officers on the list a walker gives way to and which a
 	                      crowd car does, how each moved since the last tick, where a walker's
 	                      step stands clear of them and how much road a crowd car has before
-	                      one; asked by each crowd body at its own step
+	                      one, and before one that has parked, which it turns round at; asked by
+	                      each crowd body at its own step
 	navigator.gd          the one way anything moves over a map: a swept step that keeps the
 	                      body clear, a walk down points, a way round, a way out, a route cut to
 	                      the ground, whether a chase reaches somebody, a `ChaseWay` to somebody a

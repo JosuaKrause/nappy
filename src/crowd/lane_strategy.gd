@@ -192,10 +192,15 @@ func forget_the_detour() -> void:
 func step_aside(_away: Vector2, _distance: float, _seconds: float) -> void:
 	pass
 
-## The clear road from its nose to an event figure it would stand for, `INF` for none or for a kind
-## that does not stand for one.
-func road_before_a_figure() -> float:
+## The clear road from its nose to an event figure it would stand for, looking `_reach` ahead of
+## its centre, `INF` for none or for a kind that does not stand for one.
+func road_before_a_figure(_reach := Tuning.CAR_ZEBRA_SIGHT) -> float:
 	return INF
+
+## Whether a parked event figure ahead blocks its way the way a closed tile does, for a kind that
+## turns round at one (`CarStrategy.blocked_by_a_figure()`, inbox #909).
+func blocked_by_a_figure() -> bool:
+	return false
 
 ## Gets out of the way of somebody at `here` going `velocity`, for a kind that does.
 func make_way_for(_here: Vector2, _velocity: Vector2) -> void:

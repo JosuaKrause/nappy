@@ -61,6 +61,12 @@ var yields := false
 ## stands for a figure in its lane whichever it is. Set by the mover from what it is: an event from
 ## its row (`EventDef.stands_as`); a cordon officer is a person, so his stays false.
 var stood_round := false
+## **Whether it has parked: stands where it is for good** (inbox #909). A crowd car standing behind
+## a parked figure in its lane turns round, as at a blocked street, and waits behind any other
+## (`SeparationPass.edge_ahead()`). Set by the mover as it goes: an event from its row's
+## `EventDef.when_it_stops` and where it is in its life (`EventInstance`); a cordon officer walks on,
+## so his stays false.
+var parked := false
 ## Whether it is on a world's list of moves (`ProposedMoves`) now: set when it joins, cleared when it
 ## leaves, so a pass over a copy of the list can tell a move whose mover has since gone.
 var on_the_list := false
