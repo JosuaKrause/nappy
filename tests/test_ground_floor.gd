@@ -95,12 +95,15 @@ static func _new_building(t, district: int, footprint: Vector2, height: float, i
 ## `roof_equipment_scale()` included; a duct run is always one) with its foot a tile above the cell's floor line, so the cell
 ## is read back from the object's place. A live `City` parents the objects under its entity layer
 ## (`roof_object_parent`), shared by every building, so an object is this building's when that read
-## lands on a whole cell inside its columns. Empty while the building's scenery is not resident and
+## lands on a whole cell inside its columns and its roof, extension included. Empty while the building's scenery is not resident and
 ## for a roof with no interior.
 static func _roof_units(building: Building) -> Array[Dictionary]:
 	var units: Array[Dictionary] = []
 	var parent: Node = building.roof_object_parent if building.roof_object_parent != null else building
 	var left_edge := -building.columns() * Building.TILE * 0.5
+	var deepest := building.roof_tiles()
+	for col in building.columns():
+		deepest = maxi(deepest, building.roof_tiles() + building.extension_rows(col))
 	for child in parent.get_children():
 		if not child is Building.RoofObject:
 			continue
@@ -114,7 +117,7 @@ static func _roof_units(building: Building) -> Array[Dictionary]:
 		var row := -at.y / Building.TILE - building.wall_tiles()
 		if not (is_equal_approx(col, roundf(col)) and is_equal_approx(row, roundf(row))):
 			continue
-		if col < 0.0 or roundi(col) + span > building.columns() or row < 0.0:
+		if col < 0.0 or roundi(col) + span > building.columns() or row < 0.0 or row >= deepest:
 			continue
 		units.append({"cell": Vector2i(roundi(col), roundi(row)), "span": span, "texture": key})
 	return units
@@ -940,6 +943,7 @@ func _test_a_shallow_roof_carries_furniture_on_its_extension(t) -> void:
 ## shorter column to leave out, and every unit rolled lands inside the pool.
 func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
 	var extension: Array[int] = [0, 2, 4, 4, 2, 0]
+	var found_units := 0
 	for lot_rows: int in [4, 5, 6]:
 		var building := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL,
 				Vector2(6 * Building.TILE, lot_rows * Building.TILE), 64.0, false,
@@ -959,12 +963,19 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
 		t.check(lipped > 0, "roof of %d rows: there were step cells to leave out (%d)" % [roof, lipped])
 		t.check(building.roof_interior_cells() == expected,
 				"roof of %d rows: the pool is exactly the lip-free interior" % roof)
+		var drawn := 0
+		for child in building.get_children():
+			drawn += 1 if child is Building.RoofObject else 0
+		t.check(_roof_units(building).size() == drawn,
+				"roof of %d rows: every roof object the building stands is read back as a unit" % roof)
+		found_units += drawn
 		for unit: Dictionary in _roof_units(building):
 			var cell: Vector2i = unit["cell"]
 			for step in int(unit["span"]):
 				t.check(expected.has(cell + Vector2i(step, 0)),
 						"roof of %d rows: a unit at %s stands inside the pool" % [roof, cell])
 		building.free()
+	t.check(found_units > 0, "the sweep met roof units to check (%d)" % found_units)
 
 ## A roof with nothing to cover lands its units on exactly the cells `main` rolls for it: its pool
 ## is the interior in row-major order, the order the shuffle has always permuted, so an extension
