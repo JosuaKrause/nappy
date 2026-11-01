@@ -318,7 +318,7 @@ worktrees — merging is what collides — so parallelism is planned at the file
   are the repo's convergence points; two agents adding rows or checks to the same file will not
   auto-merge.
 - **Merging follows committing** (explicit permission in this session). As each agent lands,
-  push and open its PR. Once merging is authorized, merge one at a time; a second PR merges as it
+  push and open its PR. Once merging is authorized, issue the merges in turn, without waiting for `main`'s CI between them; a second PR merges as it
   stands unless the new `main` now conflicts with it, in which case the conflict is resolved on
   its own branch under **merging-main** and the resolution is reviewed under **pr-review** before
   it lands — the ruleset's checks are not strict, so a PR merely

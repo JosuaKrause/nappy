@@ -11,8 +11,8 @@ another can see, whichever order the suites run in, and a check that passes or f
 a seed it does not control is made deterministic. The landing process stays as it is: the same
 statement says "we don't need either" of the two options (freckled-moose #914).
 
-**The incident.** An order-dependent `test_touch` failure on `main` after #911 and #912 were both
-merged: each passed alone, the pair did not. A fix PR for it is in flight.
+**The incident.** An order-dependent `test_touch` failure on `main`: a suite run alone passes, but
+fails in a shard behind another suite that leaves shared state behind.
 
 **Proposed, not asked for:** the test runner checks shared state before and after each suite
 (`InputMap` bindings, which actions `Input` holds pressed, autoload fields, static variables) and
