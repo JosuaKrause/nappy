@@ -792,8 +792,9 @@ is drawn over it — the bottom of each view on the body's southern edge, the cr
 registration (`EventLook._body_anchor()`) — so where she is stopped is where the car is
 drawn. She walks round it whether it drives or stands.
 
-**It answers the pin the mobile exemption exists for, by never moving into her.** Each frame
-is proposed, checked and then committed or taken back (`EventCarDriving`): whatever part of it would
+**It answers the pin the mobile exemption exists for, by never moving into her.** Each step, as
+every event's is (`EventInstance.step()`), is proposed, checked and then committed, and a car's is
+checked by its own checks, which take it back (`EventCarDriving.check()`): whatever part of it would
 bring the body into contact with her or her pram — a step along its route, a turn onto a new
 heading, its departure — is taken back, with the end of its route it would have reached there, and
 the car stands where it was until she moves: it stops for her rather than

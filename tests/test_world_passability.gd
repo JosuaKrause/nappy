@@ -326,8 +326,8 @@ func _test_a_closure_barrier_stands_on_closed_ground(t, city: City) -> void:
 	t.check(outside == 0, "every barrier's tiles are closed ground (%d are not)" % outside)
 
 ## The cat's crossing, sited ahead of her as she walks, starts and ends on ground a cat may stand on
-## and runs clear between, never out of or into a lot (`likely-bugs.md`); so does the scheduler's
-## own crossing from any road tile a cat may stand on.
+## and runs clear between, never out of or into a lot; so does the scheduler's own crossing from any
+## road tile a cat may stand on.
 func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
 	var map := city.map
 	var cat := EventCatalogue.by_id("cat_dash")

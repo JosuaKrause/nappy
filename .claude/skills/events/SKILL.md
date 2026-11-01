@@ -182,10 +182,11 @@ is the event). `tests/test_events.gd` requires everything else to have one.
 ## A car that drives is a body that moves, and its strike is not the body
 
 `EventDef.vehicle` (`police_patrol` and every copy of it, and `fire_truck`) makes the only bodies
-that move, and it answers the pin the mobile exemption is for by **never moving into her**: a car's
-frame is proposed, checked and then committed (`EventCarDriving`), and a step or turn that would
-bring the body into her or her pram is taken back, with whatever the frame decided on that pose (the
-end of its route reached there), so the car stands for her until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its
+that move, and it answers the pin the mobile exemption is for by **never moving into her**: every
+event's step is proposed, checked and then committed (`EventInstance.step()`), and a car's check is
+its own (`EventCarDriving.check()`): a step or turn that would bring the body into her or her pram is
+taken back, with whatever the step decided on that pose (the end of its route reached there), so the
+car stands for her until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its
 lethality is **a strike area ahead of its nose, only while it drives its route, only with her on
 the carriageway**, reaching `Tuning.PATROL_STRIKE_LEAD` past the touch so a car driving its nose
 into her strikes rather than stands. It gives way where the crowd's cars do — short of a zebra she

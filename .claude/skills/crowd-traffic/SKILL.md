@@ -129,8 +129,9 @@ slot handed back in only the expected case is a leak with a picture on it.
 
 **A brake and a sidestep both aim at a point and get there a frame after they should.** So *"nothing
 ever stands inside a solid body"* cannot be bought by tuning either of them —
-`CrowdAgent._keep_out_of_a_body()` holds the step inside the tile the agent started the frame on,
-which is the same shape `nudge_back()` already has for the backward direction.
+`LaneMover._keep_out_of_a_body()` holds the proposed step inside the tile the agent started the step
+on, before the step is committed (`MoveProposal`), which is the same shape `nudge_back()` already
+has for the backward direction.
 
 **The sideways half is given up before the forward half, and the ordering is the whole of it.**
 Refusing both at once wedges a walker crossing a sidewalk beside a body for good, because its

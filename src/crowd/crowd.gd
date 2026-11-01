@@ -1248,6 +1248,7 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	# a barrier or a body they slide along it or stay, and she takes her own share as she always does.
 	var push := direction * overlap * (1.0 - Tuning.BUMP_PLAYER_SHARE)
 	agent.global_position += _navigator.step(agent.global_position, push, _pushed)
+	agent.place_its_move()
 	if not agent.touching:
 		agent.touching = true
 		agent.excitement.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,

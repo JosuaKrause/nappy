@@ -11,10 +11,6 @@ event figures and the crowd meet, the crowd yields, everyone separates, or only 
 applies to other events." **Read as:** walkers step aside or are pushed and cars stand for an event
 figure, while every event figure keeps its course and timing.
 
-**Carry-over from events-composed (minty-quail-26), the orchestrating session's rather than the
-player's ask:** movement proposed, validated, then committed for every mover, as a car's frame is
-(minty-quail-17), built so far for the car alone.
-
 **Open question, the orchestrating session's carry-over from minty-quail-5 rather than the player's
 ask:** whether the crowd's lane movement goes onto the map's one `Navigator`. It is not part of the
 walker-and-car split, because a lane-following held step is a different motion model from the

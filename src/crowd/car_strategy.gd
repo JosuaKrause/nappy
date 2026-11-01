@@ -647,6 +647,7 @@ func _follow_the_turn(delta: float) -> void:
 	_mover._turn.travelled += travel
 	if _mover._turn.travelled < _mover._turn.length():
 		_mover.position = _mover._turn.point_at(_mover._turn.travelled)
+		_mover.place_its_move()
 		return
 	var overshoot := _mover._turn.travelled - _mover._turn.length()
 	_land_the_turn()
@@ -685,6 +686,7 @@ func _land_the_turn() -> void:
 	if _mover.traffic:
 		_mover.traffic.give_back(_mover.turn_lane_key(), _mover._turn.landing())
 	_mover.position = _mover._turn.point_at(_mover._turn.length())
+	_mover.place_its_move()
 	_mover._vertical = _mover._turn.exit_vertical
 	_mover._corridor = _mover._turn.exit_corridor
 	_mover._lane = _mover._turn.exit_lane

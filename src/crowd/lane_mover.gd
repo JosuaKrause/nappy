@@ -188,6 +188,16 @@ var _turn_back_hold := 0.0
 func _ready() -> void:
 	reset_physics_interpolation()
 
+## On its map's list of moves (`WorldMap.moves`) while it is in the world, so a pass over every
+## mover's proposal sees it.
+func _enter_tree() -> void:
+	if _map:
+		_map.moves.join(_move, position)
+
+func _exit_tree() -> void:
+	if _map:
+		_map.moves.leave(_move)
+
 func _init() -> void:
 	_install(WalkerStrategy.new(self))
 
@@ -213,6 +223,7 @@ func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value
 		at: Vector2, direction: Vector2, speed: float) -> String:
 	kind = agent_kind as Kind
 	shape = strategy.ground_shape()
+	_move.radius = shape.reach()
 	_map = map
 	field = crowd_field
 	_rng.seed = seed_value
@@ -434,10 +445,14 @@ func step(delta: float) -> void:
 	if strategy.begin_frame(delta):
 		_end_the_frame(delta)
 		return
+	# **Proposed, checked, then committed** (`MoveProposal`, the world's shape for every mover's
+	# step): the along and cross step proposed from where it stands, held out of a tile its body may
+	# not stand on, and only then is it where it stands, so everything after — the look-ahead, the
+	# recycling, the kind's own end of the step — acts on the committed pose.
 	var stood_on := _map.world_to_tile(position)
-	_set_along(_along() + strategy.paced(_speed) * _direction * delta)
-	_set_cross(move_toward(_cross(), _lane_centre + _detour, STEER_SPEED * delta))
+	_propose_the_step(delta)
 	_keep_out_of_a_body(stood_on)
+	position = _move.commit()
 	strategy.after_the_step(delta)
 	_look_ahead()
 	if field.has_stretch() and _walks_off_the_stretch() and _out_of_view():
@@ -453,8 +468,29 @@ func step(delta: float) -> void:
 		_recycle()
 	_end_the_frame(delta)
 
-## Keeps an agent's own centre out of a tile it may not stand on, when the step it has just taken
-## would have carried it in. `stood_on` is the tile it was on before that step.
+## Its move this tick (`MoveProposal`), its own, on its map's list of moves (`WorldMap.moves`) while
+## it is in the world: a crowd body's, the one kind that gives way (`MoveProposal.yields`), reaching
+## as far round its centre as its ground shape does (set in `setup_at()`).
+var _move := MoveProposal.new(true)
+
+## **Puts its move where it stands, after something outside its step has moved it**: a car carried
+## along a turn (`CarStrategy._follow_the_turn()`), a walker pushed by her bump (`Crowd._bump()`).
+## Its own setters (`_set_along()`, `_set_cross()`) and a placement taken back already do, so outside
+## a step its move is always where it stands.
+func place_its_move() -> void:
+	_move.place(position)
+
+## Proposes the tick's step from where it stands (`_move`): along its lane at its kind's pace, and
+## across toward its lane's centre and any detour at `STEER_SPEED`.
+func _propose_the_step(delta: float) -> void:
+	_move.propose(position)
+	var along := _along() + strategy.paced(_speed) * _direction * delta
+	var cross := move_toward(_cross(), _lane_centre + _detour, STEER_SPEED * delta)
+	_move.to = Vector2(cross, along) if _vertical else Vector2(along, cross)
+
+## **The check on its proposed step**: keeps an agent's own centre out of a tile it may not stand on,
+## when the step proposed (`_move.to`) would carry it in. `stood_on` is the tile it was on before
+## that step.
 ##
 ## **A brake and a sidestep are both approaches, and an approach arrives late.** A car easing toward
 ## a blockage overshoots by whatever the last frame's speed bought it, and a walker crossing to the
@@ -470,26 +506,27 @@ func step(delta: float) -> void:
 ## along half is given up only when there is nowhere legal left at all, and an agent already
 ## standing somewhere it may not be is left alone, since there is nothing there to preserve.
 func _keep_out_of_a_body(stood_on: Vector2i) -> void:
-	var now := _map.world_to_tile(position)
+	var now := _map.world_to_tile(_move.to)
 	if now == stood_on or strategy.may_stand_on(now) or not strategy.may_stand_on(stood_on):
 		return
 	_hold_inside_the_tile(stood_on, false)
-	if strategy.may_stand_on(_map.world_to_tile(position)):
+	if strategy.may_stand_on(_map.world_to_tile(_move.to)):
 		return
 	_hold_inside_the_tile(stood_on, true)
 
-## Pulls one axis back inside the tile band this agent started the frame in. A pixel short of the
-## far edge, the same fencepost `_recycle` gives up so a clamp cannot land exactly on the line and
-## read as the next tile along.
+## Pulls one axis of the proposed step back inside the tile band this agent started the step in. A
+## pixel short of the far edge, the same fencepost `_recycle` gives up so a clamp cannot land exactly
+## on the line and read as the next tile along.
 func _hold_inside_the_tile(stood_on: Vector2i, along_axis: bool) -> void:
 	var band := stood_on.y if (_vertical == along_axis) else stood_on.x
 	var low := float(band * Tuning.TILE_SIZE)
-	var held := clampf(_along() if along_axis else _cross(), low,
+	var on_y := _vertical == along_axis
+	var held := clampf(_move.to.y if on_y else _move.to.x, low,
 			low + float(Tuning.TILE_SIZE) - 1.0)
-	if along_axis:
-		_set_along(held)
+	if on_y:
+		_move.to.y = held
 	else:
-		_set_cross(held)
+		_move.to.x = held
 
 ## How fast it is actually going, for the strike test. A car that has stopped for a crossing
 ## cannot run anybody over.
@@ -680,17 +717,23 @@ func _along() -> float:
 func _cross() -> float:
 	return position.x if _vertical else position.y
 
+## Stands it at `value` along its lane, outside the step's own move, so its move stands there too
+## (`place_its_move()`).
 func _set_along(value: float) -> void:
 	if _vertical:
 		position.y = value
 	else:
 		position.x = value
+	_move.place(position)
 
+## Stands it at `value` across its lane, outside the step's own move, so its move stands there too
+## (`place_its_move()`).
 func _set_cross(value: float) -> void:
 	if _vertical:
 		position.x = value
 	else:
 		position.y = value
+	_move.place(position)
 
 ## Picks a corridor, a lane in it, a direction and a speed — the kind's own roll
 ## (`LaneStrategy.choose_lane()`: a car picks its axis by weight, a walker splits it evenly, and
@@ -1094,6 +1137,7 @@ func _take_the_placement(taken: Array) -> void:
 	_lane_centre = float(taken[5])
 	var at: Vector2 = taken[6]
 	position = at
+	_move.place(at)
 
 ## However the rolls above landed, an entry point may not sit further past the map's true edge
 ## than `entry_room()` allows this kind to arrive at — zero for everybody but a car on the spine —

@@ -96,7 +96,8 @@ src/
 	                      the jolt a contact or a horn leaves, its clock, its reach, a car's strike box
 	lane_mover.gd         the lane movement a walker and a car share — lane state, look-ahead,
 	                      held step, placement and recycling — stepped on the crowd's physics tick
-	                      (`step()`) and drawn interpolated between ticks, asking its kind's
+	                      (`step()`: its step proposed, held out of a tile it may not stand on,
+	                      then committed) and drawn interpolated between ticks, asking its kind's
 	                      strategy what differs
 	crowd_agent.gd        one walker or one car in the crowd, on the lane mover: its excitement (a
 	                      composed `CrowdExcitement`), its rim and caret and the redraw gate; drawn
@@ -133,7 +134,8 @@ src/
 	event_scenery_parts.gd registered bounds and atlas names for those source-art spans
 	event_instance.gd     runtime node: position, its phase (one `transition()`), telegraph,
 	                       its field (`field_at()`), and the behaviours it is composed of, stepped
-	                       in order on its manager's physics tick (`step()`); drawn by its look,
+	                       in order on its manager's physics tick (`step()`: proposed, checked, then
+	                       committed, a car's by its own checks); drawn by its look,
 	                       which each drawn frame redraws it if its picture changed, interpolated
 	                       between ticks; its excitement is a composed `EventExcitement`
 	event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
@@ -248,6 +250,15 @@ src/
 	                      mover (`WorldMap.passable()`, `WorldMap.clear_line()`)
 	footprint.gd          one solid's ground contact, the one datum its physics body and its
 	                      tiles on the record are both built from
+	move_proposal.gd      one mover's move for one tick (`MoveProposal`): proposed from where it
+	                      stands, checked by the mover's own checker, then committed, and only
+	                      then acted on; kept by every event, crowd body and cordon officer, with
+	                      how far its body reaches and whether it gives way; only a crowd body's
+	                      can be changed before its check, and outside a step it stands where
+	                      its mover does
+	proposed_moves.gd     one map's list of every mover's move while it stands in the world
+	                      (`ProposedMoves`, `WorldMap.moves`), the one list a pass over every
+	                      mover goes over, handed out as a copy; it names no mover
 	navigator.gd          the one way anything moves over a map: a swept step that keeps the
 	                      body clear, a walk down points, a way round, a way out, a route cut to
 	                      the ground, whether a chase reaches somebody, a `ChaseWay` to somebody a
@@ -757,8 +768,9 @@ handed its map by whoever builds it, never fetches it — the event manager and 
 navigator, the stroller and the run log — and asks it every question about the ground: which tile a
 point is on, whether a mover may stand there (`passable()`), whether a line is clear
 (`clear_line()`), whether a wall keeps a field from her (`wall_between()`), a way round
-(`navigator()`), adding something to the world on a draw layer (`add_entity()`, through the world
-node that draws the map), what the ground does to her walk (`process_player()`, the building's
+(`navigator()`), the list every mover's move for the tick stands on (`moves`, a `ProposedMoves`
+of `MoveProposal`s, each proposed, checked by its mover and then committed), adding something to
+the world on a draw layer (`add_entity()`, through the world node that draws the map), what the ground does to her walk (`process_player()`, the building's
 doors; `slope_dir_at()`, its flights), and the street questions, which a map with no streets answers
 "no street here". The line walk, the wall's depth, the blocked record and the tile conversions are
 written once in `WorldMap`, over each map's own answer about its ground. A rig with no world stands
