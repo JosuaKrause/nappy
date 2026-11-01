@@ -21,6 +21,27 @@ alone**: Claude Code has no image generator (**illustrated-png**, "Asset contrac
 whose work includes generating an illustrated PNG, a comic transfer included, goes to a Codex agent
 (which writes as `codex-coder`); the drawing rule above covers SVG and the review sheets.
 Installing, registering, rebaking and checking PNGs that already exist stays open to either host.
+**The orchestrator grades every finished agent with `tools/agent-stats.py add`** (kind, model, PR,
+rounds, grade; `--redone` when it redid the agent's own conclusion), and the SubagentStop hook
+(`.claude/hooks/agent-stats.py`) records the tokens and tool calls beside it; `summary` shows what each
+kind and model cost and how it went. The data lives outside the repository, in
+`~/.claude/nappy-agent-stats/` (inbox #900).
+
+*Proposed, not asked for, open to the player's correction, to be revised once the counter holds
+enough entries (inbox #900):*
+
+| Task kind | Model |
+|---|---|
+| Build at test parity | Sonnet |
+| Build that changes play or designs a seam | Opus |
+| Investigate an unexplained result | Opus |
+| Measure: a named probe batch, its analysis and conclusion | Haiku, compared against Sonnet on the same brief until the counter shows which holds |
+| Capture named moments for a PR | Haiku |
+| Review fixes | the builder, while warm and not near the limit |
+| Review of a play-changing or design PR | Opus |
+| Review of queue, docs, skill wording or a small delta | Sonnet |
+| Waiting, merging, polling | no agent (a background shell) |
+
 The contract is the same on either host: fresh context, a bounded scope and an isolated checkout for
 implementation. Create the worktree explicitly if the tool does not create one. Read-only review can
 share a checkout. If delegation is unavailable, do the bounded work locally and retain the same
