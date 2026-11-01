@@ -23,6 +23,4 @@ one pass after the last refactor item, "once the refactor is done let's rewrite 
 dependency injection and through public APIs", and a step may convert the tests it touches early,
 "you can also do it as a bit with each step as long as the final result is the same" (inbox #813 in curly-moose).
 
-**Where it stands:** `test_pause.gd`, `test_held_restart.gd`, `test_ground_floor.gd`, `test_car_views.gd` and
-`test_walker_views.gd` drive public seams and read no private member. The rest of the suites still do not, the big
-ones `test_resistance.gd`, `test_main.gd` and `test_save.gd` among them.
+**Where it stands:** the suites still to convert are the ones the first command above counts above zero; the largest are `test_resistance.gd`, `test_main.gd` and `test_save.gd`.
