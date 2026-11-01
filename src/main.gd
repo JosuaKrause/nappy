@@ -1766,7 +1766,8 @@ func _scene_failed(errors: Array) -> void:
 ## kill-at-any-instant argument in docs/MECHANICS.md, "Saving and resuming", rests on: nothing
 ## between this write and `_engage_the_day()`'s own `true` ever depends on a notification
 ## catching anything. When the charge ended the run, the `run_ended` subscriber
-## (`GameSave.clear_when_a_run_ends()`) has already deleted the save and `GameSave.write()` refuses an ended run, so nothing is written there.
+## (`GameSave.clear_when_a_run_ends()`) has already deleted the save and `GameSave.write()`
+## refuses an ended run, so nothing is written there.
 ##
 ## **A resumed run whose save was written between days writes nothing**: it charged nothing, and
 ## the file on disk already says `day_under_way: false`, so a rewrite would change no fact it holds
@@ -1802,8 +1803,9 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 		return
 	# The end-of-day write — one of the two moments a run is saved. Skipped when the run just
 	# ended: the `run_ended` subscriber (`GameSave.clear_when_a_run_ends()`, fired from inside
-	# `finish_day()` above) already cleared the save, and writing here would resurrect a file naming a run that is over. A normal run sent
-	# back to its checkpoint is written here like any other loss, already standing at that dawn.
+	# `finish_day()` above) already cleared the save, and writing here would resurrect a file
+	# naming a run that is over. A normal run sent back to its checkpoint is written here like any
+	# other loss, already standing at that dawn.
 	if not end.run_over:
 		_save_now(false)
 	_summary.show_summary(SummaryModel.day_over(_run, end), _flow.mode)
@@ -1959,8 +1961,8 @@ func _restart_run() -> void:
 	# The held restart clears the save — the pause screen's and the day summary's own button both
 	# reach this one function, so no new control is drawn for it. A deletion is a change in the save
 	# state, which the symbol shows (`GameSave.clear()` announces it on `EventBus`); a restart after
-	# the `run_ended` subscriber (`GameSave.clear_when_a_run_ends()`) already deleted the save finds none and changes nothing, so it shows
-	# nothing. **Before the session closes the run log**: the "deleted the save"
+	# the `run_ended` subscriber (`GameSave.clear_when_a_run_ends()`) already deleted the save
+	# finds none and changes nothing, so it shows nothing. **Before the session closes the run log**: the "deleted the save"
 	# line, and the "deletion was not kept" line when a deletion fails at once, belong to this run's
 	# log. A web deletion's later answer is logged only if a log is open when it arrives, so it
 	# may land in the next run's log after the reload.

@@ -602,8 +602,8 @@ func site_what_is_on_her_way(delta: float) -> void:
 ## does a fire do to a run".
 ##
 ## Called by `DayDirector.finish_day()` on a won day only. A lost day gives everything back
-## (`world.run.finish_day`), so lighting a fire on one would be handing the retry a shell it never
-## earned.
+## (`world.run.calendar.finish_day`), so lighting a fire on one would be handing the retry a
+## shell it never earned.
 func light_what_she_never_met(at: Vector2) -> bool:
 	if not _siting:
 		return false
