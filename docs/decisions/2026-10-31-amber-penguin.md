@@ -1,7 +1,7 @@
 # amber-penguin — Codex support frozen while it is not in use · 2026-10-31 · not from an entry
 
 
-The player froze Codex support on 2026-10-31, not using Codex at the time (inbox #901). Codex's last
+The player froze Codex support on 2026-10-31, not using Codex at the time (inbox #901 in freckled-moose). Codex's last
 commit here was on 2026-10-08, 23 commits in all. Measured that day: `tools/codex-hooks.py` 252 lines
 and its tests 887, `.codex/hooks.json` and `config.toml`, the Codex model reference, the `codex-coder`
 and `codex-reviewer` identities, about 98 mentions across twelve skills, and CLAUDE.md's Codex section,

@@ -20,18 +20,18 @@ the task's remaining difficulty: see `references/codex-models.md`. **Generating 
 alone**: Claude Code has no image generator (**illustrated-png**, "Asset contract"), so a brief
 whose work includes generating an illustrated PNG, a comic transfer included, goes to a Codex agent
 (which writes as `codex-coder`); the drawing rule above covers SVG and the review sheets. While
-Codex support is frozen (inbox #901), such a brief waits for Codex to come back, and the player is
+Codex support is frozen (inbox #901 in freckled-moose), such a brief waits for Codex to come back, and the player is
 told.
 Installing, registering, rebaking and checking PNGs that already exist stays open to either host.
 **The orchestrator grades every finished agent with `tools/agent-stats.py add`** (kind, model, PR,
 rounds, grade; `--redone` when it redid the agent's own conclusion), and the SubagentStop hook
 (`.claude/hooks/agent-stats.py`) records the tokens and tool calls beside it; `summary` shows what each
 kind and model cost and how it went. The data lives outside the repository, in
-`~/.claude/nappy-agent-stats/` (inbox #900): a shared log in git would conflict between parallel pull
+`~/.claude/nappy-agent-stats/` (inbox #900 in freckled-moose): a shared log in git would conflict between parallel pull
 requests and need a PR per entry, so the code is checked in and the data is not.
 
 *Proposed, not asked for, open to the player's correction, to be revised once the counter holds
-enough entries (inbox #900):*
+enough entries (inbox #900 in freckled-moose):*
 
 | Task kind | Model |
 |---|---|
@@ -46,12 +46,12 @@ enough entries (inbox #900):*
 | Review of queue, docs, skill wording or a small delta | Sonnet |
 | Waiting, merging, polling | no agent (a background shell) |
 
-The measuring rows follow one comparison (inbox #900): Haiku and Sonnet ran C2b's measurements,
+The measuring rows follow one comparison (inbox #900 in freckled-moose): Haiku and Sonnet ran C2b's measurements,
 pictures and conclusion on one brief. Their numbers matched exactly; Sonnet called a borderline rise
 unresolved where Haiku called it flat, and saw the change in three picture pairs where Haiku saw one,
 at about 10% more tokens. No further side-by-side runs are made for now: the counter's statistics
 decide, and a row still ambiguous after a week of them, from 2026-11-01, may be tested by running one
-task on both models again (inbox #900).
+task on both models again (inbox #900 in freckled-moose).
 
 The contract is the same on either host: fresh context, a bounded scope and an isolated checkout for
 implementation. Create the worktree explicitly if the tool does not create one. Read-only review can
@@ -128,7 +128,7 @@ lives. A brief asks for them; the builder answers them in its report and under t
 holds the code to in CI; the list of breaks standing there only shrinks. *Proposed by its builder,
 open to overturn:* the composition root (`main.gd` and the developer's rigs) above everything, and
 each thing's own drawing on the layer of the thing it draws. *Two departures from minty-quail's
-filed layering, decided by the player* (inbox #904): the view (the HUD, the screens, the badges, the controls) and the observers are **siblings at one level**,
+filed layering, decided by the player* (inbox #904 in freckled-moose): the view (the HUD, the screens, the badges, the controls) and the observers are **siblings at one level**,
 neither above the other and neither naming the other, where minty-quail's README puts the UI inside
 the observers; and the map lookup (`WorldMap` and its records) stays **with the city maps in the
 domain model**, a correction to minty-quail's item 3, which puts one map interface in the world. A
@@ -318,7 +318,7 @@ worktrees — merging is what collides — so parallelism is planned at the file
   are the repo's convergence points; two agents adding rows or checks to the same file will not
   auto-merge.
 - **Merging follows committing** (explicit permission in this session). As each agent lands,
-  push and open its PR. Once merging is authorized, merge one at a time; a second PR merges as it
+  push and open its PR. Once merging is authorized, issue the merges in turn, without waiting for `main`'s CI between them; a second PR merges as it
   stands unless the new `main` now conflicts with it, in which case the conflict is resolved on
   its own branch under **merging-main** and the resolution is reviewed under **pr-review** before
   it lands — the ruleset's checks are not strict, so a PR merely

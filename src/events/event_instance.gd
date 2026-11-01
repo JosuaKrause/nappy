@@ -323,10 +323,10 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_mover = mover_for(definition)
 	_move.radius = _mover.radius
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
-	# walked through as a person or an animal (`EventDef.stands_as`, inbox #905).
+	# walked through as a person or an animal (`EventDef.stands_as`, inbox #905 in freckled-moose).
 	_move.stood_round = definition.stands_as == EventDef.StandsAs.SOMETHING
-	# Whether it has parked, for a crowd car behind it in its lane (`EventDef.when_it_stops`, inbox
-	# #909): a figure that never moves has parked from the start; one that drives to where it stops
+	# Whether it has parked, for a crowd car behind it in its lane (`EventDef.when_it_stops`, inbox #909 in freckled-moose):
+	# a figure that never moves has parked from the start; one that drives to where it stops
 	# parks once it is there (`transition()`).
 	_move.parked = definition.when_it_stops == EventDef.WhenItStops.PARKS and not definition.mobile
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)

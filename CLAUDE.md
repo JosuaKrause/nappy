@@ -12,7 +12,7 @@ directory. The system, developer and user instructions take precedence over repo
 
 ## Codex integration is frozen
 
-**Codex support is frozen while the player is not using Codex** (inbox #901). Its files stay as they
+**Codex support is frozen while the player is not using Codex** (inbox #901 in freckled-moose). Its files stay as they
 are (`.agents/skills`, `.codex/`, the adapter `tools/codex-hooks.py` and its tests, the `codex-coder`
 and `codex-reviewer` identities, the skills' Codex asides), and nothing keeps them in step: a change
 to a hook or to the hooks in `.claude/settings.json` does not update the adapter, which may lag.

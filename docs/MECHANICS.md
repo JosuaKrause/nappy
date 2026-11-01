@@ -537,7 +537,7 @@ about them changes for the crowd, so every catch, notice and departure is timed 
 empty street.
 
 - **A walker gives way to every figure under way, and to an object or a vehicle standing still,
-  but may walk through a person or an animal standing still** (inbox #905): he walks round a
+  but may walk through a person or an animal standing still** (inbox #905 in freckled-moose): he walks round a
   parked van, the patrol car at a light or the fire engine at its fire, and through a street
   musician, a policeman standing for his notice or a dog waiting or crouched before its charge.
   Each row says which it is (`EventDef.stands_as`); a figure counts as under way for a third of a
@@ -560,7 +560,7 @@ empty street.
 - **A crowd car stands for a figure in its lane ahead, or coming into it within half a second**,
   braking toward a point a few pixels short of its body the way it brakes for a stop line, and its
   step is held short of the body if the brake arrives late. It never swerves and never drives
-  through a figure, moving or standing, for as long as it stands (inbox #909). **Behind a figure
+  through a figure, moving or standing, for as long as it stands (inbox #909 in freckled-moose). **Behind a figure
   that has parked it turns round**, as it does at a blocked street, rather than hold the lane all
   day: the fire engine once it is at its fire. Behind one that is only stopping — the patrol car at
   a red light or while its man is out, a dog standing for its notice — it waits until it moves.
