@@ -330,13 +330,32 @@ worktrees — merging is what collides — so parallelism is planned at the file
 - **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
   for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
-  Where the balance falls is *proposed, not asked for, open to the player's correction*:
-  - A builder's task is one pull request. It stays with it through review fixes and merges of
-    `main` while it is warm (the cold-resume rule below), since that work reuses the context it
-    built. Past the cache window, or once it has run long (about 100–150 turns, or about 300k
-    tokens of context), a fresh agent takes the same pull request, briefed from its brief file
-    and the review threads. Re-reading grows with the square of the turns, so two agents of 150
-    turns cost well under one of 300.
+- **A task is scoped to stay under the limit by construction, never policed** (inbox #896 in plaid-raven). A brief
+  carries no size line asking the agent to count its turns or tokens, and the orchestrator does not
+  watch an agent's count while it runs, since either spends tokens on bookkeeping instead of the
+  work; the orchestrator sizes every task before spawning it so that it finishes well under the
+  limit.
+- **A warm agent is reused while rebriefing would cost more** (inbox #896 in plaid-raven). Briefing a fresh agent
+  costs tokens too, so follow-up work on a pull request (review fixes, the next step of the same
+  change) goes back to its agent while it is warm (the cold-resume rule below) and not huge, which
+  saves the rebriefing. What the orchestrator is told for free, such as the token count in an agent's
+  finishing notification, is used: it says whether the agent is far enough under the limit to
+  reuse, and how the next brief should be sized.
+- Where the limit and the sizing fall is *proposed, not asked for, open to the player's correction*:
+  - The limit is about 150 turns or 300k tokens of context. Re-reading grows with the square of the
+    turns, so two agents of 150 turns cost well under one of 300.
+  - One kind of work per agent: building, measuring (long probe runs, many-seed statistics) and
+    capturing pictures are separate agents on the one pull request, each briefed from the brief
+    file, the review threads and what the one before it left. A measurement
+    or a capture is what makes an agent huge, since every run's output stays in its context.
+  - One mechanism per build: a change that reaches several mechanisms, or whose reading list runs
+    past a handful of files, is split into pull requests, or into agents on one pull request.
+  - The brief names every probe, suite and evidence rig the work needs, with its command, so no
+    turns go on finding them.
+  - A cold or near-limit agent's follow-up goes to a fresh agent briefed from the brief file, the
+    review threads and what the one before it left.
+  - A builder stays with its pull request through merges of `main` while it is warm (the
+    cold-resume rule below), since that work reuses the context it built.
   - A plan split across several pull requests is built by a fresh agent per pull request, each
     briefed with its part, not by the agent that wrote the plan.
   - A brief names the files and the records to read rather than asking for the whole history,
