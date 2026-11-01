@@ -2,7 +2,7 @@
 
 Working guidelines for this repo. The *game* is documented in `docs/`.
 
-**These guidelines and `.claude/skills/` are shared by Claude Code and Codex.** Hooks inject
+**These guidelines and `.claude/skills/` are written for Claude Code; Codex support is frozen (below).** Hooks inject
 **orchestrating** at session start and the path rules before each edit (the table below); if a
 rule did not arrive, or is no longer in context, read its skill file before the governed work.
 Every matching skill applies, to edits through any tool, patches and scripts included, and so
@@ -10,28 +10,15 @@ does any skill whose description matches the task; one asked for by name is read
 even if the skill picker does not list it. A skill's relative resource paths resolve from its own
 directory. The system, developer and user instructions take precedence over repository guidance.
 
-## Codex integration
+## Codex integration is frozen
 
-Codex finds the skills through `.agents/skills`, a link to `.claude/skills`, and runs the same hook
-scripts through `.codex/hooks.json` and the adapter `tools/codex-hooks.py`: it loads the rules for
-every path a patch touches, rename destinations included, lints each edited doc, denies an unbounded
-`git grep` on Codex's own Bash calls the same way Claude Code's does and a GitHub write outside an
-agent's own identity every time, even an ordinary one that Claude Code's guard, once the player
-switches its asking on, asks them about instead, and reloads the startup rules on session start,
-resume, compaction and subagent start. **A change to a hook script under `.claude/hooks/` or to the
-hooks in `.claude/settings.json` checks whether the adapter and its tests need to change — a new
-tool name, payload field or hook event — and updates them in the same PR when they do** (brisk-heron
-6), because Codex names its tools differently (`apply_patch` rather than `Edit`/`Write`) and a hook
-that works only in Claude Code leaves Codex unguarded; a change to a hook's own logic alone needs
-nothing from the adapter. The hooks need Python 3.9+, Bash and jq, and run only once the repository
-is trusted and the hooks are reviewed through `/hooks`; restart Codex if new hooks or skills do not
-appear. Where a rule says `Read`, Codex uses file-reading tools or shell reads; where it says `Edit`
-or `Write`, `apply_patch`, which keeps the diff reviewable, fails on a stale match and is what the
-path rules load on — shell scripts are for tools, git and inspection. Where a skill names Claude's
-`Agent`/`Task` tools or Sonnet, use the Codex delegation tools and models with the same scope fences
-and verification; an agent has an isolated worktree only if one was actually created. The post-edit
-lint hook does not replace `./tools/lint.sh` before committing a governed doc, `CLAUDE.md` included.
-A request for a PR ends with a reviewable PR.
+**Codex support is frozen while the player is not using Codex** (inbox #901). Its files stay as they
+are (`.agents/skills`, `.codex/`, the adapter `tools/codex-hooks.py` and its tests, the `codex-coder`
+and `codex-reviewer` identities, the skills' Codex asides), and nothing keeps them in step: a change
+to a hook or to the hooks in `.claude/settings.json` does not update the adapter, which may lag.
+Before Codex works here again, the adapter and the asides are brought up to date in one pull
+request; what the section said while Codex was in use, including the rule this replaces, is in the
+record amber-penguin (`tools/decisions.sh amber-penguin`).
 
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is the records under
