@@ -2076,6 +2076,8 @@ static func _roadblock() -> EventDef:
 	def.display_name = Texts.EVENT_NAMES[def.id]
 	def.look = EventDef.Look.ROADBLOCK
 	def.stands_as = EventDef.StandsAs.SOMETHING
+	# `GOES_ON` and not `PARKS`: his guard leaves his post and gives chase, and `validate()` refuses
+	# `PARKS` for a row that chases. The concrete band turns cars by its tiles.
 	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.has_a_spread = true
 	def.first_day = 7

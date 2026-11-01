@@ -570,9 +570,11 @@ empty street.
   to the map: it is a blockage by its tiles, as it always was, and a thing standing there with no
   solid body is not stood for by a car until it has moved. A car stands only for a figure ahead of
   its centre, so one that walks into its side or tail is overlapped. **A car in the middle of a turn
-  stands for nobody**: it drives its arc through a figure crossing the junction. **And it does not drive into a junction box it would have
-  to stand in**: a figure in its lane beyond the box, moving or standing, holds it at the line, as a
-  stopped car beyond the box does. A car that stands for a figure is a stopped car to the strike,
+  stands for nobody**: it drives its arc through a figure crossing the junction. **And a car that can still stop does not drive into a junction box it would
+  have to stand in**: a figure in its lane beyond the box, moving or standing, holds it at the line,
+  as a stopped car beyond the box does. Two cars are not held: one already within its braking distance
+  of the box, which counts as in it, and one already inside the box when a figure comes into its lane,
+  which stands there for as long as the figure stands. A car that stands for a figure is a stopped car to the strike,
   the horn and the queue behind it. No figure reads the crowd, so a car waiting on a figure is never
   one the figure waits on.
 

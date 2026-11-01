@@ -366,7 +366,10 @@ func _test_a_car_turns_round_behind_a_parked_figure(t, city: City, map: CityMap)
 
 ## **A car never drives through a figure standing in its lane** (inbox #909): one that steps into
 ## the lane closer than the car can brake for and stands is held off by the car's step, every frame
-## it stands, however long that is.
+## it stands, however long that is. The figure stands two tiles ahead of a car at full speed, inside
+## its braking distance from the moment it appears, so the brake alone leaves the car in it and only
+## the step hold (`CarStrategy.give_way_on_the_step()`) keeps the overlap at 0: with that hold removed
+## this check fails.
 func _test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t, city: City,
 		map: CityMap) -> void:
 	var block := _a_block_before_a_box(map)
@@ -374,7 +377,7 @@ func _test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t, city
 		return
 	var tile := float(Tuning.TILE_SIZE)
 	var car_along := (float(block.y) + 1.5) * tile
-	var got := _drive_at_a_vehicle(city, map, block.x, car_along, car_along + 3.0 * tile, false,
+	var got := _drive_at_a_vehicle(city, map, block.x, car_along, car_along + 2.0 * tile, false,
 			5.0, 0.0)
 	t.check(got["overlapping"] == 0,
 			"a car never drives through a vehicle that stops right in front of it (%d frames it did)"

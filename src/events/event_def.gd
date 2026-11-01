@@ -775,7 +775,8 @@ enum SolidWhen {
 ## default would have walkers walk through a parked van, or round an invisible point, without
 ## anybody having decided either.
 enum StandsAs {
-	## Not declared: refused by `validate()`. A row a test builds by hand reads as `SOMEBODY`.
+	## Not declared: refused by `validate()`, a row a test builds by hand included, which declares it
+	## (`setup()` alone reads an undeclared row as `SOMEBODY`).
 	UNDECLARED,
 	## A person or an animal — a street musician, a policeman, a dog, a flock of pigeons: walked
 	## through while it stands, as the player allowed, and given way to only while it moves.
@@ -806,7 +807,8 @@ enum StandsAs {
 ## one that does not, and one whose declaration its motion contradicts: a row that stops where it
 ## arrives parks, and a row that moves any other way, chases her or wheels as a flock does not.
 enum WhenItStops {
-	## Not declared: refused by `validate()`. A row a test builds by hand reads as `GOES_ON`.
+	## Not declared: refused by `validate()`, a row a test builds by hand included, which declares it
+	## (`setup()` alone reads an undeclared row as `GOES_ON`).
 	UNDECLARED,
 	## It goes on: a stand is a pause, and a car behind it waits for it to move — the patrol car, a
 	## dog, a cyclist, a pursuer, the column's trucks, anything that leaves or chases her.
