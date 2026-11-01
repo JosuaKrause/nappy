@@ -117,7 +117,7 @@ def blank(text: str) -> Code:
             continue
         if char in "\"'":
             quote = char * 3 if text.startswith(char * 3, index) else char
-            start = len(out)
+            start = index
             out.append(" " * len(quote))
             index += len(quote)
             body: list[str] = []

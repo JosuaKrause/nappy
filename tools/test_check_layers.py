@@ -208,6 +208,30 @@ class FetchTests(unittest.TestCase):
         with the_map():
             self.assertEqual(check_layers.check(tree(**dict(BASE, sim__walker=walker, ui__hud=hud))), ([], []))
 
+    def test_a_string_with_an_escape_or_triple_quotes_does_not_blind_later_fetches(self) -> None:
+        walker = (
+            "class_name Walker\n"
+            'var _s := "x \\"/root/z\\" y"\n'
+            'var _t := """a\n/root/b"""\n'
+            "func f() -> void:\n"
+            '\tget_node("/root/Main/Hud")\n'
+            '\tget_node_or_null("/root/Main/Hud2")\n'
+            '\tvar c = $"/root/Main/Hud3"\n'
+            '\tget_tree().call_group("sirens", "go")\n'
+        )
+        with the_map():
+            _, found = check_layers.check(tree(**dict(BASE, sim__walker=walker)))
+        got = {(f.rule, f.name): f.line for f in found}
+        self.assertEqual(
+            got,
+            {
+                ("node", "/root/Main/Hud"): 6,
+                ("node", "/root/Main/Hud2"): 7,
+                ("node", "/root/Main/Hud3"): 8,
+                ("group", "sirens"): 9,
+            },
+        )
+
     def test_a_uid_path_names_the_class_it_loads_like_a_res_path(self) -> None:
         walker = 'class_name Walker\nfunc f() -> void:\n\tvar h = preload("uid://hud123")\n'
         hud_file = check_layers.Tree(

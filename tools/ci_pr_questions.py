@@ -47,7 +47,9 @@ ONE_LINE_FORM = "No new piece or dependency: <what the change is>"
 HEADING_LINE = re.compile(r"^(?P<level>#{1,6})[ \t]+(?P<text>.*?)[ \t]*#*[ \t]*$")
 ONE_LINE = re.compile(lib_ci.LIST_MARKER + r"No new piece or dependency:[ \t]*(?P<reason>\S.*?)[ \t]*$", re.MULTILINE)
 # An answer's number: optional list bullet, optional emphasis, an optional Q, the number, then `.`, `)` or `:`.
-ANSWER = re.compile(r"^ {0,3}(?:[-*+][ \t]+)?(?:\*\*|__)?(?:Q|q)?(?P<number>\d+)(?:[.):]|\*\*|__)+[ \t]*(?P<text>.*)$")
+ANSWER = re.compile(
+    r"^(?P<indent>[ \t]*)(?:[-*+][ \t]+)?(?:\*\*|__)?(?:Q|q)?(?P<number>\d+)(?:[.):]|\*\*|__)+[ \t]*(?P<text>.*)$"
+)
 QUESTION_ITEM = re.compile(r"^(?P<number>\d+)\.[ \t]+(?P<text>.*)$")
 PLACEHOLDER = re.compile(r"`?<[^>]*>`?")
 WORD = re.compile(r"[a-z0-9']+")
@@ -124,9 +126,13 @@ def answers(body: str) -> dict[int, str]:
     """Each numbered item's text under the heading, its continuation lines joined, by number."""
     found: dict[int, str] = {}
     current: int | None = None
+    indent: str | None = None
     for line in body.split("\n"):
         match = ANSWER.match(line)
-        if match:
+        # Only the indent of the first numbered answer counts; a deeper number belongs to the answer above it.
+        if match and indent is None:
+            indent = match.group("indent")
+        if match and match.group("indent") == indent:
             current = int(match.group("number"))
             found[current] = found.get(current, "") + " " + match.group("text")
         elif current is not None and line.strip():

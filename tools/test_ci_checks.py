@@ -739,6 +739,8 @@ class PrQuestionsTests(unittest.TestCase):
         failures, _ = self.run_check(nested)
         self.assertEqual(len(failures), 5)
         self.assertIn("question 3 has no answer", failures[0])
+        three = "## Architecture questions\n1. a\n2. b\n" + "\n".join(f"   {n}. {n}" for n in range(3, 8)) + "\n"
+        self.assertEqual(len(self.run_check(three)[0]), 5)
         # A nested `1.` is part of answer 1, not a second answer 1.
         merged = ci_pr_questions.answers("1. first\n    1. inner\n2. second\n")
         self.assertEqual(merged, {1: " first 1. inner", 2: " second"})

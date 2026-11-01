@@ -96,13 +96,12 @@ lives. A brief asks for them; the builder answers them in its report and under t
 holds the code to in CI; the list of breaks standing there only shrinks. *Proposed by its builder,
 open to overturn:* the composition root (`main.gd` and the developer's rigs) above everything, and
 each thing's own drawing on the layer of the thing it draws. *Two departures from minty-quail's
-filed layering, marked for the player to decide* (minty-quail-5): the view (the HUD, the screens,
+filed layering, marked for the player to decide* (plaid-raven #894): the view (the HUD, the screens,
 the badges, the controls) sits above the observers, where minty-quail's README puts the UI inside
 the observers; and `WorldMap` and its records sit in the model, where minty-quail's item 3 puts one
-map interface in the world. Following minty-quail exactly changes the exceptions the check lists:
-the view inside the observers leaves 3 fewer of them (164 findings instead of 167), the map in the
-world adds 8 and removes 3 (172). A record the map holds, such as `SeparationPass` in #895, is
-placed by hand on the map's layer, in `FILES`, as it appears.
+map interface in the world. Following minty-quail exactly would drop the exceptions of observers
+naming the view and add exceptions of the model's maps and planners naming the world. A record the
+map holds is placed on the map's layer as it appears.
 
 ## The task description is the contract
 
