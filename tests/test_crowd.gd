@@ -278,7 +278,7 @@ func _test_a_close_pass_costs_and_a_wide_one_does_not(t) -> void:
 			% Tuning.PEDESTRIAN_INTENSITY + "recovery (%.1f)" % Tuning.EXCITEMENT_DECAY_WALKING)
 
 	var pavement := float(Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
-	var wide := Tuning.falloff(pavement, Tuning.PEDESTRIAN_INTENSITY,
+	var wide := Field.falloff(pavement, Tuning.PEDESTRIAN_INTENSITY,
 			Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS)
 	t.check(wide < Tuning.PEDESTRIAN_INTENSITY * 0.5,
 			"giving somebody the width of the pavement costs less than half what standing "
@@ -439,7 +439,6 @@ func _mean_excitement(at: Vector2, seconds: float) -> float:
 ## what stands in for the telegraph is the painted road plus the horn, and the horn has to be
 ## long enough to walk the whole carriageway with the doubled margin a hard fail is owed.
 func _test_the_traffic_contract_is_fair(t) -> void:
-	t.check(Tuning.validate_traffic(), "a lethal car gives the player time to reach the kerb")
 	t.check(Tuning.CAR_HORN_TIME >= Tuning.required_horn_time(),
 			"horn %.2fs >= the %.2fs it takes to walk %.0fpx of carriageway, doubled"
 			% [Tuning.CAR_HORN_TIME, Tuning.required_horn_time(),
@@ -462,7 +461,7 @@ func _test_the_traffic_contract_is_fair(t) -> void:
 func _test_a_car_can_always_stop_for_a_zebra_it_can_see(t) -> void:
 	# Since M29 the target is the stop line, not the paint, so the setback is part of the room
 	# a car needs. Without it the guarantee is about a place no car is aiming for any more.
-	var worst := Tuning.braking_distance(Tuning.CAR_SPEED.y) + Tuning.CAR_STOP_LINE_SETBACK
+	var worst := CarStrategy.braking_distance(Tuning.CAR_SPEED.y) + Tuning.CAR_STOP_LINE_SETBACK
 	t.check(Tuning.CAR_ZEBRA_SIGHT > worst,
 			"a car sees a zebra %.0fpx out and needs %.0fpx to stop at the line"
 			% [Tuning.CAR_ZEBRA_SIGHT, worst])
@@ -942,7 +941,6 @@ func _test_a_main_road_is_kept_by_its_lights(t) -> void:
 ## The contract the light replaces the courtesy with. Stated over the **side** street's green,
 ## because that is what is running while the main road is stopped and she is on the paint.
 func _test_a_signal_gives_her_time_to_cross(t) -> void:
-	t.check(Tuning.validate_signals(), "the side street's green clears the carriageway fairly")
 	t.check(Tuning.SIGNAL_SIDE_GREEN_SECONDS > Tuning.required_horn_time(),
 			"a green is longer than the walk across it (%.2fs vs %.2fs)"
 			% [Tuning.SIGNAL_SIDE_GREEN_SECONDS, Tuning.required_horn_time()])
@@ -1717,7 +1715,7 @@ func _step(agent: CrowdAgent, seconds: float) -> void:
 ## the car legitimately cannot stop for, which read as the give-way being broken.
 func _crossing_ahead_of(agent: CrowdAgent) -> Vector2:
 	var forward := agent.heading()
-	var floor_px := Tuning.braking_distance(Tuning.CAR_SPEED.y) + Tuning.CAR_STOP_LINE_SETBACK
+	var floor_px := CarStrategy.braking_distance(Tuning.CAR_SPEED.y) + Tuning.CAR_STOP_LINE_SETBACK
 	var first := ceili((floor_px + Tuning.TILE_SIZE) / float(Tuning.TILE_SIZE))
 	var was_paint := false
 	for step in range(0, ceili(Tuning.CAR_ZEBRA_SIGHT / float(Tuning.TILE_SIZE)) + 1):

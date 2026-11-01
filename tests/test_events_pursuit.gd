@@ -239,7 +239,7 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t) -> void:
 	for id: String in robbers:
 		var def := EventCatalogue.by_id(id)
 		t.close_to(def.lethal_reach(), 26.0, "'%s' catches at 26px" % id, 0.01)
-		t.close_to(Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach()), 116.0,
+		t.close_to(PursuitSpec.standoff(def.chase_speed(), def.standoff_reach()), 116.0,
 				"'%s' lunges from 116px" % id, 0.01)
 	for def in EventCatalogue.all():
 		t.check(not def.lunge_is_inside_the_catch(), "'%s' does not lunge from inside its catch" % def.id)
@@ -285,7 +285,7 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
 		pursuers += 1
-		var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
+		var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 		t.check(standoff > def.inner_radius,
 				"'%s' holds off outside the radius that ends the day" % def.id)
 		# One that waits for her charges on its warning's clock, not at its stand-off; it is walked
@@ -416,7 +416,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
 		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
-		var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
+		var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 		var floor_lead := SpawnSiting.least_distance()
 		t.check(standoff < floor_lead,
 				"'%s' stands off at %.0fpx, inside the %.0fpx it is sited at even on the worst axis"
@@ -1028,7 +1028,7 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 ## docs/TELEMETRY.md, "The page counts visits") is sent at the charge and never for a warning alone.
 func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
 	var def := EventScheduler._for_day(EventCatalogue.by_id("charging_dog"), Tuning.RUN_TAUGHT_DAY + 1)
-	var standoff := Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
+	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var began: Array[String] = []
 	var listen := func(id: String) -> void: began.append(id)
 	EventBus.pursuit_began.connect(listen)

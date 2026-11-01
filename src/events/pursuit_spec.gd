@@ -2,7 +2,7 @@ class_name PursuitSpec
 extends Resource
 ## **How a row comes after her**: faster than her walk and slower than her run, so walking away
 ## loses and running away wins. `Tuning.validate_pursuit()` is its fairness contract, stated over
-## the numbers here and the row's notice (`NoticeSpec`).
+## the numbers here and the row's notice (`NoticeSpec`); `standoff()` is that contract in distance.
 ##
 ## A row has a `PursuitSpec` only when it pursues; one that only pursues once it hunts (the
 ## roadblock, `EventDef.hunts`) carries the spec its hunting copy takes, and `EventDef.at_heat()`
@@ -82,3 +82,26 @@ static func at(chase_speed: float) -> PursuitSpec:
 	var spec := PursuitSpec.new()
 	spec.speed = chase_speed
 	return spec
+
+## How close a pursuer comes while it is still only telegraphing.
+##
+## Derived rather than authored, because it is the fairness contract in geometric form: between the
+## moment it is allowed to end her day and the moment it can, she is owed
+## `Tuning.PURSUIT_REACTION` seconds of the thing's own approach. Anything nearer and the telegraph is a formality; anything much
+## further and it is off the screen, which is worse — the sight of it closing is the whole cue.
+##
+## **The edge case it does not price, and it is a known gap.** At the instant of the lunge she is
+## usually walking *into* it — a pursuer is sited in front of her, forward is where she was going,
+## and it is her walking into the stand-off that fires the lunge rather than her stopping — so the gap closes
+## at `pursue_speed + WALK_SPEED` and the notice is worth about a third of what this buys. Reversing
+## a walk into a run costs another `(WALK_SPEED + RUN_SPEED) / ACCELERATION` seconds on top, during
+## which the thing keeps coming. Measured against the day-3 dog the real window is about **two tenths
+## of a second**.
+##
+## **Both terms belong outside this function**, and folding them in is the tempting fix. The
+## stand-off they produce is 70px wider, and the extra ground is spent *reversing away from her*
+## through the telegraph, which reads as a dog that has changed its mind — a wider window bought on
+## the one part of the encounter a player has said was already right. What the answer costs is
+## priced by `Tuning.PURSUIT_SHAKEN_OFF` instead.
+static func standoff(pursue_speed: float, inner: float) -> float:
+	return inner + pursue_speed * Tuning.PURSUIT_REACTION

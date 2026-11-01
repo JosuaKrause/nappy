@@ -68,7 +68,7 @@ func take_kind(kind: CrowdAgent.Kind) -> void:
 	_outer = Tuning.CAR_OUTER_RADIUS if _car else Tuning.PEDESTRIAN_OUTER_RADIUS
 	var silent := _outer / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
 	_silent_squared = silent * silent
-	_reach_scale = Tuning.field_scale(Tuning.field_eccentricity(
+	_reach_scale = Field.scale(Field.eccentricity(
 			Tuning.CAR_SPEED.y if _car else Tuning.PEDESTRIAN_SPEED.y))
 
 ## The body's own simulation clock.
@@ -141,9 +141,9 @@ func _field(at: Vector2) -> float:
 
 ## The field at an eccentric distance: the kind's falloff, and the running jolt's on top.
 func _falloff_at(distance: float) -> float:
-	var total := Tuning.falloff(distance, _intensity, _inner, _outer)
+	var total := Field.falloff(distance, _intensity, _inner, _outer)
 	if _jolt > 0.0:
-		total += Tuning.falloff(distance, _jolt_intensity * (_jolt / _jolt_for), _jolt_inner,
+		total += Field.falloff(distance, _jolt_intensity * (_jolt / _jolt_for), _jolt_inner,
 				_jolt_outer)
 	return total
 
@@ -157,7 +157,7 @@ func _projection_velocity() -> Vector2:
 
 ## The furthest this body's field can currently reach: its ordinary outer radius, or the jolt's if
 ## one is running and reaches further (a car's `CAR_HORN_OUTER_RADIUS` past its `CAR_OUTER_RADIUS`),
-## grown forward by `Tuning.field_scale()` at the fastest its kind ever moves — the top of its speed
+## grown forward by `Field.scale()` at the fastest its kind ever moves — the top of its speed
 ## range rather than its current speed, so a body mid-approach is not skipped early on a reach that
 ## no longer describes it. No body to add a segment's length for, unlike an event's
 ## `EventDef.field_reach()`.

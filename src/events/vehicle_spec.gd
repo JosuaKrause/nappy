@@ -21,7 +21,7 @@ extends Resource
 ## **What kills is not the body**: a strike area ahead of the nose, only while it drives its route,
 ## and only with her on the carriageway (`EventInstance.is_lethal_at()`) — a crowd car's own
 ## contract, the painted carriageway she chooses to step onto and a warning `Tuning.CAR_HORN_TIME`
-## of its travel ahead of the strike (`EventCarDriving.closes_on()`), which `Tuning.validate_traffic()`
+## of its travel ahead of the strike (`EventCarDriving.closes_on()`), which `tests/test_tuning_fairness.gd`'s traffic check
 ## holds against the time it takes to walk off the carriageway. `hard_fail` stays false: every rule
 ## it drives — a route wall, a field kept clear, the doubled telegraph margin — is about a place
 ## that ends the day, and this is a car on a road.

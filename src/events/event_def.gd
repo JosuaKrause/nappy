@@ -363,7 +363,7 @@ func solid_reach() -> float:
 ## but the leaf blower.
 ##
 ## `core_intensity` is the rate out to `inner_radius` and `core_radius` is where it has fallen to
-## nothing, on the same curve the field itself uses — so a core is `Tuning.falloff` over the
+## nothing, on the same curve the field itself uses — so a core is `Field.falloff` over the
 ## shorter band and `emission_at()` answers **the larger of the two**. That is what makes it add
 ## rather than replace: inside `core_radius` the row is as loud as the core says, and past it the
 ## row is its plain field with nothing about it changed, which is what lets the same row price
@@ -382,7 +382,7 @@ func solid_reach() -> float:
 ## falls off a cliff.
 ##
 ## **Nothing sets it.** It is here so that the shape of a field is a decision a row may take rather
-## than a change to `Tuning.falloff` that moves all thirty of them; a row that does take it owes the
+## than a change to `Field.falloff` that moves all thirty of them; a row that does take it owes the
 ## same fairness contract, which is stated over distance and does not care.
 @export var falloff_power := 2.0
 ## **Something outside the walls of the world she is in**, which reaches her through them: what
@@ -445,7 +445,7 @@ func notice_on(day: int) -> NoticeSpec:
 ##   (`warned_for()`). Its `telegraph_time` is then the approach she watches.
 ## - **A row created at once from off screen** (the patrol a torn poster or the return sends down
 ##   the road, `EventDirector._toward_her_on_the_road()`): seconds of closing beyond the edge of the
-##   view where it is created (`Tuning.offscreen_lead()`).
+##   view where it is created (`Offscreen.lead()`).
 ##
 ## A non-pursuer warned of before it exists (`cyclist`, the fire engine, day 13's
 ## column) does not read it: its badge is its `telegraph_time` (`warned_for()`), and it is placed just
@@ -957,7 +957,7 @@ func lethal_reach() -> float:
 		return catch_reach
 	return inner_radius
 
-## What `Tuning.pursuit_standoff()` is stated over for this row: its `PursuitSpec.lunge_reach`
+## What `PursuitSpec.standoff()` is stated over for this row: its `PursuitSpec.lunge_reach`
 ## where it sets one, the catch (`lethal_reach()`) otherwise.
 func standoff_reach() -> float:
 	if pursuit and pursuit.lunge_reach > 0.0:
@@ -966,7 +966,7 @@ func standoff_reach() -> float:
 
 ## Whether its lunge is measured from inside its own catch, which would leave her less than
 ## `Tuning.PURSUIT_REACTION` of the pursuer's approach between its lunge and the moment it takes
-## her: the contract `Tuning.pursuit_standoff()` keeps. `validate()` refuses it; a predicate so
+## her: the contract `PursuitSpec.standoff()` keeps. `validate()` refuses it; a predicate so
 ## a test can ask without raising the error.
 func lunge_is_inside_the_catch() -> bool:
 	return pursuit != null and pursuit.lunge_reach > 0.0 and pursuit.lunge_reach < lethal_reach()
@@ -1339,13 +1339,13 @@ func validate() -> bool:
 		return false
 	# A `TOWARD_PLAYER` row is created at least `SpawnSiting.least_distance()` from her when it is
 	# warned of first — just out of sight, never nearer than the view's half height, whatever she is
-	# facing and in either control scheme — and at least `Tuning.min_offscreen_lead()` at its own
+	# facing and in either control scheme — and at least `Offscreen.min_lead()` at its own
 	# closing speed and notice when it is created at once (a patrol down the road). So a row whose own
 	# field reaches that far would be created already on her on the one heading and moment the
 	# director cannot avoid, which is the one thing "she gets close and it arrives" cannot mean.
 	if spawn_mode == SpawnMode.TOWARD_PLAYER:
 		var floor_lead := SpawnSiting.least_distance() if comes_down_her_line() \
-				else Tuning.min_offscreen_lead(speed + Tuning.WALK_SPEED, offscreen_notice)
+				else Offscreen.min_lead(speed + Tuning.WALK_SPEED, offscreen_notice)
 		if outer_radius >= floor_lead:
 			push_error("event '%s' comes toward the player with a %.0fpx field, at or past the "
 					% [id, outer_radius] + "%.0fpx it is created at on the worst axis: it would arrive "
@@ -1426,7 +1426,7 @@ func validate() -> bool:
 					+ "in front of it")
 			return false
 		# Its warning is the crowd car's contract, `CAR_HORN_TIME` of its own travel ahead of the
-		# strike whatever its speed, so `Tuning.validate_traffic()`'s check on boot is its check:
+		# strike whatever its speed, so `tests/test_tuning_fairness.gd`'s traffic check is its check:
 		# nothing about one row's numbers can break it.
 	# *(busy-quail, inbox #569: "1s warning should be enough".)* A badge up alone is up for at most
 	# `Tuning.WARNING_ALONE_MAX`, whatever the row.
@@ -1637,7 +1637,7 @@ func as_warned_first() -> EventDef:
 ## of its field standing.
 ## A row whose field is priced from its centre (`VehicleSpec.field_from_its_centre`, the fire engine) is a
 ## point for it, whatever its body. Otherwise `outer_radius ·
-## Tuning.field_scale(e)`, `e` from whichever speed the row's own motion actually uses —
+## Field.scale(e)`, `e` from whichever speed the row's own motion actually uses —
 ## its chase speed for a pursuer, `speed` for an ordinary mobile row, zero (the plain disc) for
 ## anything standing still. A row cannot be both: `EventInstance.travel_velocity()` picks the chase
 ## speed whenever the row pursues and never reads `speed` for the same instance.
@@ -1651,7 +1651,7 @@ func field_reach() -> float:
 			and not (vehicle and vehicle.field_from_its_centre):
 		return shape.half_length + outer_radius
 	var moving_speed := pursuit.speed if pursuit else (speed if mobile else 0.0)
-	return outer_radius * Tuning.field_scale(Tuning.field_eccentricity(moving_speed))
+	return outer_radius * Field.scale(Field.eccentricity(moving_speed))
 
 # ------------------------------------------------------------ what a row costs ---
 # The integral behind the cost table in `docs/EVENTS.md` and behind the assertion that nothing is
@@ -1712,7 +1712,7 @@ func emission_at(at: Vector2) -> float:
 	for i in flock_size:
 		var angle := TAU * float(i) / float(flock_size)
 		var bird := Vector2(cos(angle), sin(angle)) * flock_spread * 0.65
-		total += Tuning.falloff(bird.distance_to(at), share, inner_radius, outer, falloff_power)
+		total += Field.falloff(bird.distance_to(at), share, inner_radius, outer, falloff_power)
 	return total
 
 ## What a row emits at a distance from its centre — the field, and the core over the top of it
@@ -1727,19 +1727,19 @@ func emission_at(at: Vector2) -> float:
 ## quiet field. Left out, it is the row's own peak, which is what a cost integrated from the
 ## catalogue wants.
 ##
-## A row with no core is `Tuning.falloff` on its own field and nothing else, bit for bit — the
+## A row with no core is `Field.falloff` on its own field and nothing else, bit for bit — the
 ## fraction is applied to the peak that is handed in rather than divided back out of it, so nothing
 ## uncored moves by so much as a last bit. `tests/test_events.gd` walks the whole catalogue at 16px
 ## steps and holds that.
 func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> float:
 	var peak := intensity if at_intensity < 0.0 else at_intensity
-	var field := Tuning.falloff(at_distance, peak, inner_radius, outer_radius, falloff_power)
+	var field := Field.falloff(at_distance, peak, inner_radius, outer_radius, falloff_power)
 	if core_intensity <= 0.0:
 		return field
 	var core := core_intensity
 	if at_intensity >= 0.0 and intensity > 0.0:
 		core *= at_intensity / intensity
-	return maxf(field, Tuning.falloff(at_distance, core, inner_radius, core_radius, falloff_power))
+	return maxf(field, Field.falloff(at_distance, core, inner_radius, core_radius, falloff_power))
 
 ## A straight-line distance from a live instance's node beyond which its field is exactly zero,
 ## whatever its intensity, speed, heading or the way its shape lies — so

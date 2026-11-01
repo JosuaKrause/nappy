@@ -1448,13 +1448,13 @@ func warns_by_radius() -> bool:
 	return def.notice != null and (def.pursuit != null or def.notice.runs_within > 0.0) \
 			and not def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and _chase_way == null
 
-## **The stand-off a pursuer closes to and holds**, `Tuning.pursuit_standoff()` over
+## **The stand-off a pursuer closes to and holds**, `PursuitSpec.standoff()` over
 ## `EventDef.standoff_reach()`: the distance a pursuer that comes for her through its telegraph
 ## lunges from (the day-3 dog's gold timing is spent at it), and where one that walks at her through
 ## its warning (the robber) stops. A charger that waits for her charges on its warning's clock, not
 ## on this distance (`warns_by_radius()`).
 func charge_radius() -> float:
-	return Tuning.pursuit_standoff(def.chase_speed(), def.standoff_reach())
+	return PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 
 ## **It stops warning and waits again, where it stands**: she has gone back out of its warning
 ## radius. Its notice is forgotten, so the next time she comes inside the radius it notices her and
@@ -1648,7 +1648,7 @@ func field_at(world_position: Vector2, intensity_override: float,
 	if not birds().is_empty():
 		return _flock_contribution_at(world_position, intensity)
 	var velocity := velocity_override if velocity_override != Vector2.INF else travel_velocity()
-	# `EventDef.emission_at_distance()` rather than `Tuning.falloff` direct, so the one row with a
+	# `EventDef.emission_at_distance()` rather than `Field.falloff` direct, so the one row with a
 	# two-part field is charged for both parts here and not only in the cost table — and so that a
 	# row shaping its own drop-off (`EventDef.falloff_power`) is felt as the shape it is priced at.
 	# The peak handed over is this phase's, so the telegraph and the pulse damp the core and the
@@ -1704,7 +1704,7 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 		var d := GroundShape.eccentric_distance(global_position + bird.at,
 				bird.heading * bird.speed,
 				world_position)
-		total += Tuning.falloff(d, share, def.inner_radius, outer, def.falloff_power)
+		total += Field.falloff(d, share, def.inner_radius, outer, def.falloff_power)
 	return total
 
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is

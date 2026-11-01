@@ -331,7 +331,7 @@ static func encounters() -> Array[Dictionary]:
 			"heading": up, "warm": 0.0})
 
 	# `police_patrol` on the return leg: `EventDirector._toward_her_on_the_road()` — the plain
-	# `offscreen_lead()`, down the carriageway lane that drives toward her. She is on the kerb lane
+	# `Offscreen.lead()`, down the carriageway lane that drives toward her. She is on the kerb lane
 	# of the north sidewalk (offset 1), walking east; the car is in whichever road lane
 	# `CrowdLanes.road_lane()` says runs west.
 	# The copy `EventDirector._patrol_toward_her()` makes, at no heat.
@@ -340,7 +340,7 @@ static func encounters() -> Array[Dictionary]:
 	patrol.spawn_mode = EventDef.SpawnMode.TOWARD_PLAYER
 	var lane := CrowdLanes.road_lane(false, -1.0)
 	var lateral := float(lane - 1) * Tuning.TILE_SIZE
-	var patrol_lead := Tuning.offscreen_lead(right, patrol.speed + Tuning.WALK_SPEED,
+	var patrol_lead := Offscreen.lead(right, patrol.speed + Tuning.WALK_SPEED,
 			patrol.offscreen_notice)
 	list.append({"def": patrol, "how": "return leg, director, down the road toward her",
 			"path": PackedVector2Array([Vector2(patrol_lead, lateral), Vector2(-patrol_lead, lateral)]),

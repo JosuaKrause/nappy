@@ -64,21 +64,21 @@ func run(t) -> void:
 # ------------------------------------------------------------- pure numbers ---
 
 func _test_falloff(t) -> void:
-	t.close_to(Tuning.falloff(0.0, 10.0, 40.0, 150.0), 10.0, "falloff at centre is full")
-	t.close_to(Tuning.falloff(40.0, 10.0, 40.0, 150.0), 10.0, "falloff at inner edge is full")
-	t.close_to(Tuning.falloff(150.0, 10.0, 40.0, 150.0), 0.0, "falloff at outer edge is zero")
-	t.close_to(Tuning.falloff(200.0, 10.0, 40.0, 150.0), 0.0, "falloff beyond outer is zero")
+	t.close_to(Field.falloff(0.0, 10.0, 40.0, 150.0), 10.0, "falloff at centre is full")
+	t.close_to(Field.falloff(40.0, 10.0, 40.0, 150.0), 10.0, "falloff at inner edge is full")
+	t.close_to(Field.falloff(150.0, 10.0, 40.0, 150.0), 0.0, "falloff at outer edge is zero")
+	t.close_to(Field.falloff(200.0, 10.0, 40.0, 150.0), 0.0, "falloff beyond outer is zero")
 	# `1 - t^2`, so the midpoint sits at three quarters rather than at the quarter the old
 	# quadratic gave. *(Playtest 07, finding 18.)* The shape is the design — an obstacle has to
 	# cost something from a distance or it is a thing to bump into rather than to route around —
-	# so this is asserted as the number it is, and the note on `Tuning.falloff` says why.
-	t.close_to(Tuning.falloff(95.0, 10.0, 40.0, 150.0), 7.5, "falloff midpoint is three quarters")
-	t.check(Tuning.falloff(130.0, 10.0, 40.0, 150.0) > 2.0,
+	# so this is asserted as the number it is, and the note on `Field.falloff` says why.
+	t.close_to(Field.falloff(95.0, 10.0, 40.0, 150.0), 7.5, "falloff midpoint is three quarters")
+	t.check(Field.falloff(130.0, 10.0, 40.0, 150.0) > 2.0,
 			"and three quarters of the way out it is still worth more than the walking decay")
 
 	var previous := 11.0
 	for d in range(0, 160, 5):
-		var value := Tuning.falloff(float(d), 10.0, 40.0, 150.0)
+		var value := Field.falloff(float(d), 10.0, 40.0, 150.0)
 		t.check(value <= previous + 0.0001, "falloff never rises with distance (d=%d)" % d)
 		previous = value
 

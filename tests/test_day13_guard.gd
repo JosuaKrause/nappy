@@ -319,7 +319,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 	guard.setup(robbery, Vector2.ZERO, PackedVector2Array())
 	t.add_child(guard)
 	guard.set_process(false)
-	var standoff := Tuning.pursuit_standoff(robbery.chase_speed(), robbery.standoff_reach())
+	var standoff := PursuitSpec.standoff(robbery.chase_speed(), robbery.standoff_reach())
 	var her := Vector2(60.0, 0.0)
 	t.check(her.length() < standoff and her.length() > robbery.lethal_reach(),
 			"she stands inside his %.0fpx stand-off and outside his catch" % standoff)
@@ -487,7 +487,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 		return
 	var start := guard.global_position.distance_to(at)
-	var standoff := Tuning.pursuit_standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var nearest := start
 	var walked := 0.0
 	var lethal := false
@@ -579,7 +579,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 		_restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
 		return
 	var map := city.map
-	var standoff := Tuning.pursuit_standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var away := Vector2.ZERO
 	var her := Vector2.INF
 	for i in 16:
@@ -647,7 +647,7 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 	# the director's cache of it, which must equal a fresh layout of what blocks her now.
 	t.check(director._ground_for_the_arrow() == WalkField.ground_for(map),
 			"(round a building) the red arrow's cached ground is the guard's walk's ground")
-	var standoff := Tuning.pursuit_standoff(guard.def.chase_speed(), guard.def.standoff_reach())
+	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var from := guard.global_position
 	# His walk to her goes round what stops a figure on foot today, as his sweep does.
 	var walk := map.walk_field(map.world_to_tile(from), map.blocked.tiles_of(Mover.TODAY))

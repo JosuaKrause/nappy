@@ -548,7 +548,7 @@ func speed() -> float:
 ## **A walker held at a checkpoint is travelling at nothing**, which is what makes the stopped pose
 ## come out right for free: `WalkerLook.gait_frame()` and `WalkerLook.sector()` both read this, so a
 ## walker standing in a door's line holds its last facing and frame the way every stopped walker
-## in the crowd already does, and its own field stops being stretched forward by `field_scale()`.
+## in the crowd already does, and its own field stops being stretched forward by `Field.scale()`.
 ##
 ## **A body a pocket has caught reads the same way**, through `CarStrategy._pocket_factor()`: it is not going
 ## anywhere either, so its field is a plain falloff rather than one stretched forward, and its

@@ -193,7 +193,6 @@ func _test_a_dark_junction_is_negotiated(t) -> void:
 ## The contract a dark crossing of the spine keeps is the side street's: the painted carriageway
 ## and the horn, since the spine's traffic does not give way at its zebras lit or dark.
 func _test_the_dark_spine_is_crossed_on_the_horn(t) -> void:
-	t.check(Tuning.validate_signals(), "the spine is fair to cross with the lights on and off")
 	t.check(Tuning.CAR_HORN_TIME >= Tuning.required_horn_time(),
 			"the horn %.2fs covers the spine's %.0fpx of carriageway doubled (%.2fs)"
 			% [Tuning.CAR_HORN_TIME, Tuning.carriageway_width(), Tuning.required_horn_time()])

@@ -76,9 +76,11 @@ FILES: dict[str, str] = {
     # src/ itself has no folder layer: each file is placed.
     "src/build_info.gd": "data",
     "src/drawn_frame.gd": "view",
+    "src/field.gd": "data",
     "src/game_enums.gd": "data",
     "src/ground_shape.gd": "data",
     "src/main.gd": "root",
+    "src/offscreen.gd": "data",
     "src/palette.gd": "data",
     "src/run_config.gd": "data",
     "src/run_trace.gd": "model",
@@ -263,16 +265,9 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "CrowdAgent",
-        "Tuning's validators read the crowd's own constants (the tuning item moves them to tests)",
-        ("src/autoload/tuning.gd",),
-    ),
-    Exception_(
-        "names",
         "CrowdLanes",
-        "the lane geometry's constants live on the crowd's class, and the city's generation and Tuning need them",
+        "the lane geometry's constants live on the crowd's class, and the city's generation needs them",
         (
-            "src/autoload/tuning.gd",
             "src/city/city.gd",
             "src/city/city_generator.gd",
             "src/city/street_trees.gd",

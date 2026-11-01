@@ -84,6 +84,11 @@ func _init(mover: LaneMover) -> void:
 const SHADOW_ALONG := 52.0
 const SHADOW_ACROSS := 30.0
 
+## Distance a car needs to stop from a given speed. Used by the crossing logic and asserted
+## against `Tuning.CAR_ZEBRA_SIGHT` in `tests/test_crowd.gd`.
+static func braking_distance(speed: float) -> float:
+	return speed * speed / (2.0 * Tuning.CAR_BRAKE)
+
 ## A car's ground shape — a capsule along its travel axis, sized from `SHADOW_ALONG` and
 ## `SHADOW_ACROSS`: `radius` is half the across measurement and `half_length` is what is left of
 ## half the along once the two end caps are accounted for.
@@ -326,7 +331,7 @@ func _distance_to_stop_line() -> float:
 	# the rule exists to prevent. Written the other way round — commit when it cannot stop at
 	# the *line* — a car that has come to rest exactly there has a braking distance of nothing,
 	# decides it is too late, and drives off over the crossing it just stopped for.
-	if crossing < Tuning.braking_distance(_mover._speed):
+	if crossing < braking_distance(_mover._speed):
 		return INF
 	return maxf(0.0, GiveWay.stop_line(crossing))
 

@@ -69,7 +69,7 @@ func has_lights(junction: Vector2i) -> bool:
 ## before left — takes it, exactly as it takes every side street's. The spine's traffic still does
 ## not give way at a zebra (that is the street's kind, not its light), so what keeps a crossing of
 ## it fair in the dark is the side street's contract, the painted carriageway and the horn; see
-## `Tuning.validate_signals()`.
+## `tests/test_tuning_fairness.gd`'s signals check.
 func is_signalled(junction: Vector2i) -> bool:
 	return powered and has_lights(junction)
 

@@ -74,7 +74,7 @@ func _test_shadow_outline_matches_a_rectangles_squashed_corners(t) -> void:
 			"and squashed on Y by SHADOW_SQUASH, applied after the rotation", 0.5)
 
 # --------------------------------------------------------------------- field_outline ---
-# The fields layer's own geometry — the same `Tuning.falloff()` prices, so a screenshot of this
+# The fields layer's own geometry — the same `Field.falloff()` prices, so a screenshot of this
 # layer cannot disagree with the meter. See docs/TODO.md, M61, "the field, the shadow and the body".
 
 func _test_field_outline_of_a_stationary_point_is_a_circle(t) -> void:
@@ -101,20 +101,20 @@ func _test_field_outline_of_a_stationary_segment_is_a_stadium(t) -> void:
 
 ## M114, the moving field grows forward: the drawn boundary holds `level` exactly abeam (theta =
 ## pi/2, sample `_ELLIPSE_SAMPLES / 4` of `_eccentric_field_outline`'s own even spacing) and reaches
-## `level * Tuning.field_scale(e)` dead ahead (sample zero), further than `level` rather than equal
+## `level * Field.scale(e)` dead ahead (sample zero), further than `level` rather than equal
 ## to it — the picture `DebugLayers`' layer `1` draws has to agree with the same growth the meter
 ## prices.
 func _test_field_outline_of_a_moving_point_is_the_eccentric_ellipse(t) -> void:
 	var speed := 130.0
 	var velocity := Vector2(speed, 0.0)
 	var level := 100.0
-	var scale := Tuning.field_scale(Tuning.field_eccentricity(speed))
+	var scale := Field.scale(Field.eccentricity(speed))
 	var points := GroundShape.field_outline_at(Vector2.ZERO, velocity, level)
 	t.check(points.size() > 0, "the moving boundary actually samples some points")
 	# Sample zero is theta=0 in `_eccentric_field_outline` — dead ahead, along `velocity` — where
-	# the effective distance is `level * field_scale(e)`, further than a disc's plain `level`.
+	# the effective distance is `level * Field.scale(e)`, further than a disc's plain `level`.
 	t.close_to(points[0].distance_to(Vector2.ZERO), level * scale,
-			"the foremost sampled point sits at level * field_scale(e) (%.1f) from the emitter — "
+			"the foremost sampled point sits at level * Field.scale(e) (%.1f) from the emitter — "
 			% (level * scale) + "forward reach grew past the resting radius", 0.5)
 	t.check(points[0].x > 0.0, "and it lies ahead, in the direction of travel")
 	# A quarter of the way round the even spacing is theta = pi/2, abeam.

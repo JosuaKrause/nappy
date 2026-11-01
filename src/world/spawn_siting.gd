@@ -365,10 +365,10 @@ const ACROSS: Array[Rule] = [Rule.LEGAL_GROUND, Rule.OFF_THE_VIEW, Rule.REACHES_
 # ------------------------------------------------------------------ sight geometry ---
 
 ## The least distance from her anything arriving from off screen is created at:
-## `Tuning.min_offscreen_boundary()`, the view's half height — the worst case `EventDef.validate()`
+## `Offscreen.min_boundary()`, the view's half height — the worst case `EventDef.validate()`
 ## checks a row's field against.
 static func least_distance() -> float:
-	return Tuning.min_offscreen_boundary()
+	return Offscreen.min_boundary()
 
 ## **Just off screen** along `direction` (unit) from `her`: the nearest point at which a drawing of
 ## `box` about its feet is wholly outside the camera's view, never nearer than `least_distance()`.

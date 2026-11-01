@@ -352,19 +352,19 @@ func _test_field_distance_of_a_stationary_segment_is_a_capsule(t) -> void:
 			+ "no half_length added, which is the capsule's whole point")
 
 ## M114, the moving field grows forward: the resting disc's own width is what the ellipse keeps
-## (`R` abeam at every speed), and motion only adds reach *ahead* of it — `R · Tuning.field_scale(e)`
+## (`R` abeam at every speed), and motion only adds reach *ahead* of it — `R · Field.scale(e)`
 ## dead ahead, `R/(1+e)` behind, both derived from `GroundShape.eccentric_distance()`'s own
 ## docstring.
 func _test_field_distance_of_a_moving_point_is_an_ellipse(t) -> void:
 	var speed := 130.0
-	var e := Tuning.field_eccentricity(speed)
-	var scale := Tuning.field_scale(e)
+	var e := Field.eccentricity(speed)
+	var scale := Field.scale(e)
 	var velocity := Vector2(speed, 0.0)
 	var outer := 100.0
 	var forward_r := outer * scale
 	var forward := Vector2(forward_r, 0.0)
 	t.check(is_equal_approx(GroundShape.eccentric_distance(Vector2.ZERO, velocity, forward), outer),
-			("dead ahead, the level set at 'outer' sits at outer * field_scale(e) (%.1f) — the field "
+			("dead ahead, the level set at 'outer' sits at outer * Field.scale(e) (%.1f) — the field "
 					% forward_r) + "reaches further ahead of itself than it is wide")
 	var rear_r := outer / (1.0 + e)
 	var behind := Vector2(-rear_r, 0.0)
@@ -397,7 +397,7 @@ func _test_forward_reach_grows_monotonically_with_speed(t) -> void:
 	var outer := 120.0
 	var previous := outer
 	for speed in [0.0, 50.0, 100.0, 130.0, 165.0, 240.0, 390.0, 500.0]:
-		var scale := Tuning.field_scale(Tuning.field_eccentricity(speed))
+		var scale := Field.scale(Field.eccentricity(speed))
 		var forward_reach := outer * scale
 		t.check(forward_reach >= previous - 0.001,
 				("forward reach at %.0fpx/s (%.1f) is not less than the previous speed's (%.1f) — " % [

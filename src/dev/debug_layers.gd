@@ -30,7 +30,7 @@ extends Node2D
 ##
 ## **Every field is the real level set**, not a circle standing in for it —
 ## `GroundShape.field_outline()` and `field_outline_at()`, the same effective-distance arithmetic
-## `Tuning.falloff()` prices, so this layer cannot disagree with what the meter does: a capsule
+## `Field.falloff()` prices, so this layer cannot disagree with what the meter does: a capsule
 ## about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one.
 ## **And cut where a wall stops it**: an outline is drawn only where the emitter's own walls
 ## (`ExcitementSource.wall_grid()`) let its field reach, so behind a
@@ -150,7 +150,7 @@ func _draw() -> void:
 # ------------------------------------------------------------------ fields ---
 
 ## Every emitter's actual falloff boundary — `GroundShape.field_outline()`, the same effective-
-## distance arithmetic `Tuning.falloff()` prices, so this layer cannot disagree with what the
+## distance arithmetic `Field.falloff()` prices, so this layer cannot disagree with what the
 ## meter does: a capsule about a stationary body's own spine, an ellipse (focus at the emitter)
 ## about a moving one, and a plain circle at zero speed, exactly as it always drew — a mast's field
 ## included, now that it stands somewhere. A flock draws one pair per bird, at its own position and
@@ -518,7 +518,7 @@ func _polygon_world_points(node: CollisionPolygon2D) -> PackedVector2Array:
 
 # ------------------------------------------------------------------ geometry ---
 # Unsquashed — a bounding body and a field are both stated in the plain 2D plane the physics and
-# `Tuning.falloff()` already use; only a shadow (`GroundShape.shadow_outline()`) carries the
+# `Field.falloff()` already use; only a shadow (`GroundShape.shadow_outline()`) carries the
 # oblique view's own foreshortening.
 
 func _rect_corners(at: Vector2, axis: Vector2, half_extents: Vector2) -> PackedVector2Array:

@@ -109,7 +109,7 @@ and finding out it is there is what walking a street is for.
 budgets it at the same cost as everything else, and `EventDirector` sites it while she is walking. A
 crossing row — the cat — is sited across her line, `AHEAD_LEAD_DISTANCE` in front of her.
 A pursuer — `charging_dog`, on `Tuning.RUN_TAUGHT_DAY` — is sited down her line instead, outside the
-view along the heading she is actually walking (`Tuning.offscreen_boundary()`), so it has an
+view along the heading she is actually walking (`Offscreen.boundary()`), so it has an
 offscreen approach to close before it reaches its stand-off; see "Everything arrives from off
 screen" below.
 
@@ -179,7 +179,7 @@ Three rules on it, in the order they matter:
 
 **`TOWARD_PLAYER`, which is the cyclist and the loose dog.** Also no tile, also sited by
 `EventDirector` while she walks — but *down* her own line instead of across it, outside the view
-along her heading (`Tuning.offscreen_boundary()`) and coming the other way, so she meets it by
+along her heading (`Offscreen.boundary()`) and coming the other way, so she meets it by
 continuing to walk rather than by being crossed. It is neither of the other two: `MAP` sites it at
 dawn, on a street the day has no way of knowing she will ever walk, so a bike sited that way is a
 bike she may never see; and an `AHEAD_OF_PLAYER` crossing is gone in three seconds and asks her to
@@ -623,7 +623,7 @@ exists so a pursuer stuck against a wall lets go in the end.
 
 **Two kinds of thing that come from off screen are not warned first:**
 
-- **A patrol sent toward her on the road** (the return leg's) **is created at once**, `Tuning.offscreen_lead()` ahead of her, and telegraphs on its way in (1.97s) with no badge:
+- **A patrol sent toward her on the road** (the return leg's) **is created at once**, `Offscreen.lead()` ahead of her, and telegraphs on its way in (1.97s) with no badge:
   the badge goes only to something `hard_fail` or faster than a walk, and a patrol is neither
   (slower than a walk, never `hard_fail` at any heat — its strike is a car's, in front of it on the
   carriageway, and warned as a car warns, "Solid things are solid"). It does not telegraph its
@@ -845,7 +845,7 @@ a crowd car's** ("The traffic fairness contract" in `docs/MECHANICS.md`): the pa
 she chooses to step onto — with her on the sidewalk and her pram poking over the kerb, the car
 stops for her — and a warning `Tuning.CAR_HORN_TIME` (1.6s) of its own travel before the strike,
 the exclamation mark over her head (`EventCarDriving.closes_on()`), which is longer than walking off
-the carriageway with the doubled margin, which `Tuning.validate_traffic()` holds on boot — the
+the carriageway with the doubled margin, which `tests/test_tuning_fairness.gd`'s traffic check holds — the
 warning is stated in seconds of the car's own travel, so no row's numbers can break it. The doubled red caret is over the car whenever staying put in its lane
 would end the day (`EventExcitement.will_be_lethal()`). `hard_fail` stays false: what it decides —
 a route wall, a field kept clear, the doubled telegraph margin — is about a place that ends the day,
@@ -942,7 +942,7 @@ body follows the arm the cars work (`Crowd._stop_for_gates()`: up once a car has
 `Tuning.GATE_STOP_SECONDS`, 1.2s, down the moment no car is within a length of it). Lowered, it is a
 wall across the carriageway; raised, it is ground she may walk under, and the price is the car that
 raised it — she is on its carriageway, and the horn and the strike apply as on any street, under the
-traffic fairness contract `Tuning.validate_traffic()` states for every carriageway.
+traffic fairness contract `tests/test_tuning_fairness.gd`'s traffic check states for every carriageway.
 
 **And a gatehouse never takes her in from the carriageway its own door's boom spans.** A gatehouse's trigger
 reaches a reach past its wall, which is further than the kerb, so without this the gatehouse beside the
@@ -1748,7 +1748,7 @@ standing at his. Two fields make that work and both are general rather than writ
   at `inner_radius` 86, while what ends the day is a pair of arms at 28px, the same
   `EventCatalogue.MASKED_MAN_REACH` the escape's own `masked_pursuer` catches at. One figure, one
   reach, stated once. **His stand-off is measured from that reach too** — every pursuer's is,
-  `Tuning.pursuit_standoff(PursuitSpec.speed, standoff_reach())` (`lethal_reach()` unless a row sets
+  `PursuitSpec.standoff(PursuitSpec.speed, standoff_reach())` (`lethal_reach()` unless a row sets
   `PursuitSpec.lunge_reach`, as the alley robber's does), the number `Tuning.validate_pursuit()`
   states the contract over — while his one radius stays measured from the band's centre, inside
   the field cored there. His post beside the band is nearer her than the centre, which costs her
@@ -2201,10 +2201,10 @@ read what a row denies, and `contribution_at()` above, which is what the baby is
 The instance hands it `current_intensity()` rather than the catalogued peak, so **the telegraph and
 the pulse damp the core by the same fraction they damp the field by** — a leaf blower between
 bursts is a quarter of a wall inside a quarter of a busker, not a full wall inside a quiet field.
-A row with no core comes back as `Tuning.falloff` on its own field and nothing else, bit for bit;
+A row with no core comes back as `Field.falloff` on its own field and nothing else, bit for bit;
 `tests/test_events.gd` walks the whole catalogue at 16px steps and holds that.
 
-**The field is the Minkowski sum of the body and a kernel.** `Tuning.falloff()` is still the one
+**The field is the Minkowski sum of the body and a kernel.** `Field.falloff()` is still the one
 arithmetic home and still prices a plain distance `d` — what changed is what `d` means.
 `GroundShape.field_distance()` supplies it: `distance_to_spine()` in the emitter's own frame for
 a stationary body (a point's field is exactly the circle it always was; a segment's is a capsule
@@ -2212,7 +2212,7 @@ about the spine, so `inner_radius`/`outer_radius` mean distance *from the spine*
 centre), or `eccentric_distance()` for a moving one — a conic with the emitter at one focus rather
 than at the centre, per the player's own *"the entity itself lives in one of the focus points"*.
 `GroundShape.eccentric_distance()`'s docstring carries the polar form and the derivation;
-`Tuning.field_eccentricity()` turns a speed into the conic's own eccentricity, capped at
+`Field.eccentricity()` turns a speed into the conic's own eccentricity, capped at
 `FIELD_ECCENTRICITY_MAX` so nothing flattens to a line.
 
 **The ellipse keeps the resting disc's own width, and motion only adds reach ahead of it.**
@@ -2222,8 +2222,8 @@ should retain the area so an unstretched car field should be the same width with
 height" — and, asked to choose between retaining the area and retaining the width, "if anything
 the moving size should be bigger than the rest size since moving causes more excitement.")* So the
 boundary at the catalogued radius `R` is `r(θ) = R / (1 − e·cosθ)`: exactly `R` abeam whatever the
-speed, `R · Tuning.field_scale(e)` (`R/(1−e)`) dead ahead, `R/(1+e)` behind. `field_scale()` is the
-one function that states the growth, beside `field_eccentricity()` itself; a car at `CAR_SPEED.x`
+speed, `R · Field.scale(e)` (`R/(1−e)`) dead ahead, `R/(1+e)` behind. `Field.scale()` is the
+one function that states the growth, beside `Field.eccentricity()` itself; a car at `CAR_SPEED.x`
 (130px/s) sits at `e` = 0.26, forward reach 1.35R and rear 0.79R, and the eccentricity cap
 (`FIELD_ECCENTRICITY_MAX` 0.5) holds every field in the game to at most twice its own catalogued
 radius ahead of itself — `FIELD_ECCENTRICITY_SPEED` is chosen so nothing catalogued reaches it: the
@@ -2302,9 +2302,9 @@ a band width, and subtracting a segment's `half_length` from both radii (see "So
 solid") leaves that width untouched; every emitting segment row but the patrol car is stationary,
 so its own forward reach never grows past `half_length + outer_radius`, and the patrol car's moving
 field is priced from its centre as a point's is. For a moving point — a cat, a dog, a cyclist, a
-pursuer — the escape she is owed is stated over `outer_radius · Tuning.field_scale(e)` (a full
+pursuer — the escape she is owed is stated over `outer_radius · Field.scale(e)` (a full
 forward-reach clearance for a row faster than a walk) or `(outer_radius − inner_radius) ·
-Tuning.field_scale(e)` (a band clearance for a slower one), `e` from the row's own `speed` or
+Field.scale(e)` (a band clearance for a slower one), `e` from the row's own `speed` or
 `PursuitSpec.speed`: `Tuning.required_telegraph_time()` and `Tuning.validate_pursuit()` are the two
 places this is stated, and every row in the catalogue whose forward reach grew past what its
 telegraph already bought had its `telegraph_time` re-derived — never its radii — to the new minimum
@@ -2352,7 +2352,7 @@ CI) fails and names every row and column that moved when a balance change touche
 a decay constant without regenerating it. What follows here is the reasoning the table's own numbers
 rest on — regenerate the table itself, do not hand-edit numbers back into it.
 
-**The shape of `Tuning.falloff` is `1−t^power`, and every row is at the 2.0 default**, so a field
+**The shape of `Field.falloff` is `1−t^power`, and every row is at the 2.0 default**, so a field
 holds three quarters of its intensity at the midpoint of its band. The middle distances are what cost: the meter has to go substantially up from
 some way off rather than waiting for contact, and a `(1−t)²` field — a quarter of its intensity at
 the midpoint — is one you can stand almost inside for free.
