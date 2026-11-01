@@ -412,7 +412,11 @@ worktrees — merging is what collides — so parallelism is planned at the file
   - A brief names the files and the records to read rather than asking for the whole history,
     so a fresh agent's start stays small.
   - A reviewer is fresh per pull request and is resumed, while warm, for that pull request's
-    delta reviews; a review aims at about 30–60 turns.
+    delta reviews; a review aims at about 30–60 turns. A reviewer is never resumed for another
+    pull request, however small: Claude Code's permission check judges a sub-agent's GitHub
+    writes against the task it was started for, so a reviewer started for one pull request is
+    refused its post on the next, and a fresh reviewer started to post that same verdict is
+    refused as a second route to it.
 - **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent that
   reported an hour ago replays its whole transcript at full price, because the prompt cache behind
   it has expired (woolly-finch 5). Resume only while the cache is live, and the windows are exact:
