@@ -205,7 +205,7 @@ func make_way_for(_here: Vector2, _velocity: Vector2) -> void:
 ## cordon officers (`SeparationPass`, the map's): changes the step its mover has proposed
 ## (`LaneMover._move`) before the mover's own check holds it to the tiles it may stand on, for a kind
 ## that gives way. The crowd yields and an event figure keeps its course (inbox #884 in
-## minty-dolphin), so this is the only half of a meeting that moves anybody.
+## plaid-raven), so this is the only half of a meeting that moves anybody.
 func give_way_on_the_step(_delta: float) -> void:
 	pass
 

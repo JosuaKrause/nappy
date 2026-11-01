@@ -3,7 +3,7 @@ extends RefCounted
 ## an event figure's, how long crowd cars stand for one, whether a junction stalls, and the crowd's
 ## own numbers (horns, bumps, strikes, speed), with the events and the crowd both live. Written for
 ## minty-quail shared-components C2b (the crowd yields to event figures, inbox #884 in
-## minty-dolphin) and run in each revision's checkout; not a suite, it prints rather than asserts:
+## plaid-raven) and run in each revision's checkout; not a suite, it prints rather than asserts:
 ##
 ##     tools/test.sh probes/minty_quail_crowd_yields.gd > out.txt
 ##     grep '^CROWD_YIELDS_JSON ' out.txt
