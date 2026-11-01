@@ -460,16 +460,12 @@ func _ready() -> void:
 ## `_escape_section_came_from_the_file()`), which opens on the title first, exactly as a resumed day
 ## does, and the title's start then shows the brief (`_show_the_resume_gate()`). Either screen
 ## pauses the tree, so the section's clock, started by `_start_section()`, stands still behind it.
-## A walker on the city's boot (`--route`) opens on neither and walks. Its own function so a test
-## booting the real scene can drive every answer.
+## A walker (`--route`) has the brief's continue pressed for it by the route rig (`RouteRig.press_the_brief()`),
+## through the run flow's own `brief_opened`. Its own function so a test booting the real scene can
+## drive every answer.
 func _open_the_first_screen_of_the_escape(resumed_from_disk: bool) -> void:
 	if resumed_from_disk:
 		_open_the_title()
-	elif _route_rig:
-		# A walker on the escape boot has nobody to press the brief's continue, so the section is
-		# engaged the way that continue engages it.
-		AtlasLibrary.close_loading_window()
-		_engage_the_day()
 	else:
 		_show_the_section_brief()
 
@@ -1027,12 +1023,14 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	_pauses_with_the_game(_route_rig)
 	_route_rig.setup(_city, _player, _baby, resistance, _day, config.route_targets, _run)
 	_flow.day_planned.connect(_route_rig.start_day)
+	_route_rig.use_continue(_on_summary_continued)
+	_flow.brief_opened.connect(_route_rig.press_the_brief)
 
 ## `--route` in the escape's city: the game's own walker, built once the city stands — the first
 ## time a city section starts — and started on every attempt, with no `ResistanceDirector`. Its
 ## targets are the city's two ways out (`tunnel`, `bridge`) as much as anything a day offers. A rig
-## the building section was booted with waits at the city's brief, since nobody presses its
-## continue; `--start-escape city` is the boot it walks from.
+## the building section was booted with is built here, when the building has been won, and presses
+## the city's brief's continue itself (`RouteRig.press_the_brief()`).
 func _add_the_route_rig_in_the_city() -> void:
 	if config.route_targets.is_empty() or not _city or _route_rig:
 		return

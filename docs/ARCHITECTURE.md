@@ -371,7 +371,7 @@ src/
 	                       live City, handed the values, testable without booting main
 	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/tunnel/
 	                       bridge/spawn:<name>) along a real, kerb-preferring path, through the
-	                       ordinary input path
+	                       ordinary input path; presses an escape brief's continue as a key would
 	debug_readout.gd      the developer's furniture: the right-hand readout, the frame graph, the
 	                      debug overlays and routes, their keys and the snapshot keys
 	debug_layers.gd       the fields, shadows and bounding-box overlays, one number key apiece

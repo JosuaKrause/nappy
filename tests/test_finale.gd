@@ -76,6 +76,10 @@ func run(t) -> void:
 	_test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t)
 	_test_escape_section_came_from_the_file(t)
 	_test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t)
+	_test_a_route_rig_carries_the_building_on_into_the_city(t)
+	_test_a_route_rig_boots_the_city_section_and_walks(t)
+	_test_without_a_route_the_briefs_wait_for_a_person(t)
+	_test_a_route_rig_presses_only_the_first_brief_of_a_section(t)
 	_test_a_handover_does_not_open_on_the_title(t)
 	_test_the_held_restart_from_the_escape_clears_the_section(t)
 
@@ -1786,13 +1790,14 @@ static func _section(section: int) -> DaySpec:
 ## Boots the real `main.tscn` on `section` of a normal run's own escape, on seed `SEEDS[0]` and its
 ## last day — the way a won day 14's handover and a game closed in a section both reach the boot —
 ## and returns it with its first screen up. `_free_the_escape()` puts the run back.
-func _boot_the_escape(t, section: int) -> Node2D:
+func _boot_the_escape(t, section: int, flags: PackedStringArray = PackedStringArray()) -> Node2D:
 	_saved_section = GameState.facts.escape_section
 	GameState.start_run(SEEDS[0])
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.facts.escape_section = section
 	var main: Node2D = MAIN_SCENE.instantiate()
-	main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry"]), "", true))
+	main.configure(RunConfig.parse(
+			PackedStringArray(["--no-save", "--no-telemetry"]) + flags, "", true))
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
@@ -2228,6 +2233,70 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	GameSave.set_path_override("")
 	AtlasLibrary.close_loading_window()
 	_free_the_escape(t, main)
+
+## `--route` booted into the building: nothing presses the building's own brief, and once the
+## building is won the city is built, its brief raised, and the route rig presses that brief's
+## continue the way a key does — through the run flow's own continue, with no special case in `main`.
+func _test_a_route_rig_carries_the_building_on_into_the_city(t) -> void:
+	var main := _boot_the_escape(t, DaySpec.Section.BUILDING, PackedStringArray(["--route", "tunnel"]))
+	t.check(main._route_rig == null and main._flow.mode == RunFlow.Mode.BRIEF,
+			"a route booted into the building has no city to walk yet, and the building's brief stands")
+	main._summary.continued.emit(RunFlow.Mode.BRIEF)
+	var end := DayEnd.new()
+	end.result = GameEnums.DayResult.WON
+	main._finish_the_section(end)
+	t.check(main._route_rig != null, "winning the building builds the rig with the city")
+	_let_frames_pass(t, 4)
+	t.check(main._flow.spec.section == DaySpec.Section.CITY and main._flow.mode == RunFlow.Mode.WALKING
+			and not main._summary.is_showing(),
+			"the rig pressed the city brief's continue: the city is walked (mode %d)" % main._flow.mode)
+	t.check(not t.get_tree().paused, "and the tree runs")
+	_free_the_escape(t, main)
+
+## `--start-escape city --route`: the city's brief is pressed by the rig too, rather than skipped by
+## a branch in `main`, so the section walks without anyone pressing anything. **A parity check**: it
+## held before the branch in `main` was removed, and guards that the removal changed nothing.
+func _test_a_route_rig_boots_the_city_section_and_walks(t) -> void:
+	var main := _boot_the_escape(t, DaySpec.Section.CITY, PackedStringArray(["--route", "tunnel"]))
+	_let_frames_pass(t, 4)
+	t.check(main._route_rig != null and main._flow.mode == RunFlow.Mode.WALKING
+			and not main._summary.is_showing(),
+			"a route booted into the city walks it with no one pressing the brief (mode %d)" % main._flow.mode)
+	_free_the_escape(t, main)
+
+## Without `--route` nothing presses a brief: the city's brief stands until a person does. **A parity
+## check**: it held before the rig pressed anything.
+func _test_without_a_route_the_briefs_wait_for_a_person(t) -> void:
+	var main := _boot_the_escape(t, DaySpec.Section.CITY)
+	_let_frames_pass(t, 4)
+	t.check(main._flow.mode == RunFlow.Mode.BRIEF and main._summary.is_showing(),
+			"with no --route the city's brief waits for a person")
+	_free_the_escape(t, main)
+
+## The rig presses a section's first brief only: a retry brief, raised after a loss, stays up, so a
+## lost city section stops there instead of retrying forever. Fails without the `_pressed` guard.
+func _test_a_route_rig_presses_only_the_first_brief_of_a_section(t) -> void:
+	var rig := RouteRig.new()
+	t.add_child(rig)
+	var presses := [0]
+	rig.use_continue(func(_raised_in: int) -> void: presses[0] += 1)
+	var city := _section(DaySpec.Section.CITY)
+	rig.press_the_brief(city)
+	_let_frames_pass(t, 2)
+	rig.press_the_brief(city)
+	_let_frames_pass(t, 2)
+	t.check(presses[0] == 1, "the city's first brief is pressed and its retry brief is not (%d)" % presses[0])
+	rig.press_the_brief(_section(DaySpec.Section.BUILDING))
+	_let_frames_pass(t, 2)
+	t.check(presses[0] == 2, "another section's first brief is pressed")
+	rig.press_the_brief(DaySpec.new())
+	_let_frames_pass(t, 2)
+	t.check(presses[0] == 2, "a day's brief is left alone")
+	rig.free()
+
+func _let_frames_pass(t, frames: int) -> void:
+	for i in frames:
+		t.get_tree().process_frame.emit()
 
 ## The handover reload from a won day 14 reaches the boot as `RunFlow.Opening.ESCAPE_HANDED_OVER`
 ## rather than `ESCAPE_RESUMED` — the latter only when `GameState.facts.escape_section` was `NONE`

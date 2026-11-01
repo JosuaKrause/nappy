@@ -30,8 +30,9 @@ extends Node
 ##
 ## **The escape's city is walked the same way** (`--start-escape city --route tunnel`): `main` builds
 ## the rig when the city section starts, with no `ResistanceDirector` (the escape has no subquest, so
-## `mark` and `task` are unavailable there), and engages the section without its brief, since a rig
-## has nobody to press its continue.
+## `mark` and `task` are unavailable there), and the rig presses the section brief's continue itself
+## (`press_the_brief()`), as a key would. A building won by other means builds the city and its brief
+## is answered the same way; the rig does not walk the building and is not built before the city.
 ##
 ## An unresolved target (nothing to walk to yet, or nothing found within `_RESOLVE_TIMEOUT`) and an
 ## unreachable one (no path exists) are both logged and skipped rather than hung on forever — see
@@ -292,6 +293,31 @@ func start_day(spec: DaySpec) -> void:
 	_done = _targets.is_empty()
 	if not _done:
 		_begin_resolving(_targets[0])
+
+## What a continue on a screen does (`main._on_summary_continued()`, which takes the `RunFlow.Mode` the
+## screen was raised in), handed by `main`: the rig answers an escape brief by calling it
+## (`press_the_brief()`).
+var _continue: Callable
+
+func use_continue(continue_from: Callable) -> void:
+	_continue = continue_from
+
+## The escape sections whose first brief the rig has pressed. A section's retry brief, raised after a
+## loss, is a person's: the loss stops the rig there, as it always has.
+var _pressed: Dictionary = {}
+
+## The run flow has raised a brief (`RunFlow.brief_opened`): the first brief of an escape section is
+## answered with the continue a tap and a key both end in, which the run flow carries out like any
+## other (`RunFlow.continued()`). A key cannot be sent as an input event: a rig run has every real
+## binding erased (`RigLock`). One frame after the flow opens the brief, since `main` shows the
+## screen right after, and a frame signal ticks while the tree is paused behind it. A day's brief
+## (`Section.NONE`) is left alone, and so is any brief of a section already pressed once.
+func press_the_brief(spec: DaySpec) -> void:
+	if spec.section == DaySpec.Section.NONE or _continue.is_null() or _pressed.has(spec.section):
+		return
+	_pressed[spec.section] = true
+	await get_tree().process_frame
+	_continue.call(RunFlow.Mode.BRIEF)
 
 func _begin_resolving(word: String) -> void:
 	_current_word = word

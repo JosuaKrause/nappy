@@ -10,6 +10,7 @@ const BOOT_FRAMES := 30
 var _saved_paused := false
 
 func run(t) -> void:
+	_test_raising_a_brief_announces_it(t)
 	_test_each_screen_continues_to_its_step(t)
 	_test_a_continue_from_a_screen_the_run_has_left_leads_nowhere(t)
 	_test_a_day_end_raises_the_screen_its_end_asks_for(t)
@@ -24,6 +25,17 @@ func run(t) -> void:
 	await _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t)
 
 # ------------------------------------------------------------ the transitions ---
+
+## A brief raised tells whoever listens which day or section it leads into, so a dev rig can answer it.
+func _test_raising_a_brief_announces_it(t) -> void:
+	var flow := RunFlow.new()
+	var heard: Array[DaySpec] = []
+	flow.brief_opened.connect(func(spec: DaySpec) -> void: heard.append(spec))
+	var spec := DaySpec.for_section(DaySpec.Section.CITY, 60.0)
+	flow.begin(spec)
+	flow.open_brief()
+	t.check(heard.size() == 1 and heard[0] == spec and flow.mode == RunFlow.Mode.BRIEF,
+			"raising a brief announces it with the spec it leads into")
 
 ## Every mode's continue: the step `main` carries out, and the mode that step leaves the run in. A
 ## mode with no screen up answers nothing and stays where it is.
