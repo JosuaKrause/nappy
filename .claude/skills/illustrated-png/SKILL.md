@@ -9,7 +9,7 @@ description: Generate, register and install illustrated PNGs under art/illustrat
 and review the SVG before generating its PNG; do not create an SVG after the fact to legitimize
 a PNG-only asset. Keep the SVG as the editable source of subject and functional placement. Record
 the source/derivative pair in the family's evidence manifest, including UI and identity assets.
-The SVG catalogue is not converted to PNG wholesale; a conversion waits until the player finds a use for one (inbox #927 in tiny-lark).
+Nothing is converted to PNG for now; a conversion waits until the player finds a use for one (inbox #927 in tiny-lark).
 Raw generator outputs belong with generation evidence, not in the runtime asset catalogue.
 
 **The pelican cyclist is never converted.** `art/events/pelican_cyclist*.svg` stays SVG by the

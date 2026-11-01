@@ -33,5 +33,5 @@ overhead bollard cap and rooftop equipment use the source mappings and extractio
 `docs/evidence/comic-city-props-2026-09-12/`.
 
 SVG-first authoring followed by style transfer is the approved workflow. Every PNG asset needs
-a corresponding SVG authored and reviewed first. The SVG catalogue is not
-converted to PNG wholesale; a conversion waits until the player finds a use for one.
+a corresponding SVG authored and reviewed first. Nothing is
+converted to PNG for now; a conversion waits until the player finds a use for one.

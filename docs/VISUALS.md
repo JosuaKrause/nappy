@@ -250,7 +250,7 @@ the complete runtime paving family against the registered materials and this fin
 
 Review the detail at gameplay size, consistency across animation frames, transparent gaps,
 ground contact and unchanged placement. Pixel registration alone does not establish acceptance.
-The SVG catalogue is not converted to PNG wholesale; a conversion waits until the player finds a
+Nothing is converted to PNG for now; a conversion waits until the player finds a
 use for one. [PLAYTEST-51](playtests/PLAYTEST-51.md) records the
 approval and source-first requirement. Workflow approval does not replace each asset's review.
 

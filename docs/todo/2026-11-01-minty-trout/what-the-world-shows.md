@@ -1,3 +1,3 @@
 **What the world shows when she finishes this task.** Today: the waiting guard is set on her; the band is unchanged.
 
-*Proposed, not asked for:* the options below are the filer's; the player has said the answers come when the tasks get picked up and the question is not settled (inbox #931 in tiny-lark). Open, for the player when the task is picked up: does the guard leave his post, or does the band change?
+Open, for the player when the task is picked up (the answers come then, and the player does not consider it settled, inbox #930 in tiny-lark). *Proposed, not asked for:* the options in this question are the filer's: does the guard leave his post, or does the band change?

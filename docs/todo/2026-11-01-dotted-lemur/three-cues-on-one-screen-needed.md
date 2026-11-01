@@ -4,4 +4,4 @@ standing beside an alley.)* The baby's unsettled cue over the pram, the alert ov
 honking car's halo were all up at once on `asked/016s-attempt1-asked.png` of playtest 50's
 run, and none of them named itself; the two-tile alley behind a building read as its roof.
 Whether each mark is told apart on sight is not a rig question; the alley's own tile picture
-is a drawing item if the reading persists
+is a drawing item if the reading persists (the draft is `art/tiles/alley_draft.svg`, a 32×32 paving alternative for the alley's tile picture, described in `docs/GRAPHICS.md`).
