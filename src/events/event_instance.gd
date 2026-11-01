@@ -1541,7 +1541,7 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# by construction (`detain_distance() < inner_radius`), so there is no distance to shape.
 		# Gated on `baby_awake`, read and never written — see the field's own comment — which is
 		# what makes "asleep, it is a pure time loss" true of the meter and not only of the words:
-		# nothing here scales through `Tuning.SLEEPING_SENSITIVITY`, it emits exactly zero.
+		# nothing here scales through `Baby.SLEEPING_SENSITIVITY`, it emits exactly zero.
 		return (Tuning.CHAT_EXCITEMENT / def.detain_seconds) if baby_awake else 0.0
 	var value := def.intensity
 	if not is_equal_approx(def.intensity_ramp, 1.0) and def.duration > 0.0:

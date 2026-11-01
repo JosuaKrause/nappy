@@ -78,7 +78,7 @@ func _the_escape_city(t, seed_value: int) -> int:
 	var day := Tuning.RUN_LENGTH_DAYS
 	GameState.start_run(seed_value)
 	GameState.header.day = day
-	var spec := DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.crowd_view = ScreenCrowdView.new(t)

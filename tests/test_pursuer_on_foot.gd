@@ -207,7 +207,7 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t) -> void:
 			"once he has given up, the next marble sends the next one")
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
 	city.events.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY,
-			Tuning.FINALE_LENGTH_SECONDS))
+			RunConfig.FINALE_LENGTH_SECONDS))
 	city.events.warnings._pending.clear()
 	city.events.ahead._sent_after_her = null
 	city.events.send_a_pursuer()
@@ -339,7 +339,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 ## to give a substantial cost but not lethal directly" · "well if the excitement meter is already
 ## high it can be lethal")*: substantial — over a conversation's cost and over three contacts — and
 ## under the whole meter, so it never ends a calm day by itself, but more than the push at the cap
-## that ends a high one (`Tuning.EXCITEMENT_OVERFLOW_TO_CRY`). Measured off his own field: standing
+## that ends a high one (`Baby.EXCITEMENT_OVERFLOW_TO_CRY`). Measured off his own field: standing
 ## beside him through the stop she takes the whole of it, and walking straight away the moment he
 ## reaches her takes little of it off — it is a moment, not a place; after the stop he charges
 ## nothing, walking back.
@@ -350,7 +350,7 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
 			"a stop (%.0f) costs more than a conversation (%.0f) and three contacts (%.1f each)"
 			% [stop, Tuning.CHAT_EXCITEMENT, contact])
 	t.check(stop < Tuning.METER_MAX, "and less than the whole meter, so a calm day survives it")
-	t.check(stop > Tuning.EXCITEMENT_OVERFLOW_TO_CRY,
+	t.check(stop > Baby.EXCITEMENT_OVERFLOW_TO_CRY,
 			"but more than the push at the cap, so a meter already high can be ended by it")
 	var out := EventCatalogue.out_of_the_car(8)
 	for walks_away: bool in [false, true]:
@@ -529,13 +529,13 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) ->
 ## from the heated patrol coming up her street until the car, done with its man, has left her field
 ## or is gone: the car's approach, the man's notice and chase, his stop, his walk back, and the car
 ## driving on past her. No lights, so no car is held beside her by one. Standing still nothing
-## decays (`Tuning.EXCITEMENT_DECAY_IDLE` is 0), so the sum is the meter from 0. Over the hand-made
+## decays (`Baby.EXCITEMENT_DECAY_IDLE` is 0), so the sum is the meter from 0. Over the hand-made
 ## lane on days 8 and 9 and over real `_along_street_path()` routes on three seeds, her standing
 ## beside each at several places, the worst must stay under `Tuning.METER_MAX` by
 ## `ENCOUNTER_MARGIN` — the cap never reached, let alone the push past it that ends the day — and
 ## every encounter must cost more than his stop alone.
 func _test_the_whole_encounter_from_calm_never_ends_the_day(t) -> void:
-	t.check(is_zero_approx(Tuning.EXCITEMENT_DECAY_IDLE), "standing still, nothing decays")
+	t.check(is_zero_approx(Baby.EXCITEMENT_DECAY_IDLE), "standing still, nothing decays")
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
 	var worst := 0.0
 	var least := INF
@@ -598,7 +598,7 @@ func _test_the_whole_encounter_from_calm_never_ends_the_day(t) -> void:
 			"and the least costs her more than his stop alone (%.1f)" % least)
 
 ## How far under the whole meter the worst whole encounter has to stay: room for a source she
-## passes on the way, on top of the push at the cap (`Tuning.EXCITEMENT_OVERFLOW_TO_CRY`) that
+## passes on the way, on top of the push at the cap (`Baby.EXCITEMENT_OVERFLOW_TO_CRY`) that
 ## would end the day.
 const ENCOUNTER_MARGIN := 10.0
 

@@ -257,11 +257,11 @@ func _build_tables(rows: Array[EventDef]) -> Array[TableModel]:
 		distance_awake.order.append(def.id)
 		distance_awake.rows[def.id] = _distance_row(def, 1.0)
 		distance_asleep.order.append(def.id)
-		distance_asleep.rows[def.id] = _distance_row(def, Tuning.SLEEPING_SENSITIVITY)
+		distance_asleep.rows[def.id] = _distance_row(def, Baby.SLEEPING_SENSITIVITY)
 		pass_awake.order.append(def.id)
 		pass_awake.rows[def.id] = _pass_row(def, 1.0)
 		pass_asleep.order.append(def.id)
-		pass_asleep.rows[def.id] = _pass_row(def, Tuning.SLEEPING_SENSITIVITY)
+		pass_asleep.rows[def.id] = _pass_row(def, Baby.SLEEPING_SENSITIVITY)
 
 	return [geometry, distance_awake, distance_asleep, pass_awake, pass_asleep]
 
@@ -321,7 +321,7 @@ func _header_text() -> String:
 			"a change to any of them shows here as this line moving:")
 	lines.append("")
 	lines.append("- `Tuning.EXCITEMENT_DECAY_WALKING` = %.1f points/s" % Tuning.EXCITEMENT_DECAY_WALKING)
-	lines.append("- `Tuning.SLEEPING_SENSITIVITY` = %.2f" % Tuning.SLEEPING_SENSITIVITY)
+	lines.append("- `Baby.SLEEPING_SENSITIVITY` = %.2f" % Baby.SLEEPING_SENSITIVITY)
 	lines.append("- `Tuning.WALK_SPEED` = %.1f px/s" % Tuning.WALK_SPEED)
 	lines.append("- `EventScheduler.WALL_WORTH_OF_COST` = %.1f points" % EventScheduler.WALL_WORTH_OF_COST)
 	lines.append("")

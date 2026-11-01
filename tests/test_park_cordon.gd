@@ -299,7 +299,7 @@ func _gaps_in(cordon: ParkCordon) -> int:
 	return runs
 
 ## Standing at the swing: the last gap is taped with her inside — on this seed's small park, where
-## an officer is in her view almost at once, `Tuning.PARK_CLOSING_SECONDS` after the touch — and
+## an officer is in her view almost at once, `ParkCordon.PARK_CLOSING_SECONDS` after the touch — and
 ## that ends the day with the cordon's own reason, which has a sentence.
 func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t) -> void:
 	var listener := _listen_for_hard_fails()
@@ -309,10 +309,10 @@ func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t) -> void:
 	_run_until_closed(happenings, her, _camera_on(her))
 	var cordon := happenings.cordon
 	t.check(cordon.is_closed() and cordon.trapped, "standing at the swing, she is shut in")
-	t.check(cordon.closed_at >= Tuning.PARK_CLOSING_SECONDS - 0.05
-			and cordon.closed_at <= Tuning.PARK_CLOSING_SECONDS + 0.5,
+	t.check(cordon.closed_at >= ParkCordon.PARK_CLOSING_SECONDS - 0.05
+			and cordon.closed_at <= ParkCordon.PARK_CLOSING_SECONDS + 0.5,
 			"the last gap is taped about %.0fs after the touch (%.1fs)"
-			% [Tuning.PARK_CLOSING_SECONDS, cordon.closed_at])
+			% [ParkCordon.PARK_CLOSING_SECONDS, cordon.closed_at])
 	var fails: Array[String] = listener[0]
 	t.check(fails.size() == 1 and fails[0] == ParkCordon.TRAPPED,
 			"and it ends the day as the cordon's own hard fail (%s)" % [fails])
@@ -575,7 +575,7 @@ func _busker_in_the_park() -> EventInstance:
 ## seen to go on past her, and is gone only where the camera on her cannot see him. **And he walks
 ## on at his pace while she can see him**, never standing at a wall or the city's edge: once the
 ## way is walked he is in her view no longer than walking out of the view box square to its sides
-## takes at `Tuning.PARK_CLOSING_LEAVE_SPEED`, never slower than half that pace in it, and never
+## takes at `ParkCordon.PARK_CLOSING_LEAVE_SPEED`, never slower than half that pace in it, and never
 ## across tape that is up.
 func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 	for set_off: float in [4.0, 8.0]:
@@ -613,7 +613,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 			elif walked and shows.call(busker.def, busker.global_position):
 				in_view_after += STEP
 				if last.distance_to(busker.global_position) \
-						< Tuning.PARK_CLOSING_LEAVE_SPEED * STEP * 0.5:
+						< ParkCordon.PARK_CLOSING_LEAVE_SPEED * STEP * 0.5:
 					slow_in_view += STEP
 			walked = walked or (busker.is_leaving and busker.way_left().is_empty())
 			was_leaving = was_leaving or busker.is_leaving
@@ -624,7 +624,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 		t.check(not ended_in_view, "and not where she can see him (%.0fpx from her)"
 				% last.distance_to(her[0]))
 		var out_of_view := (Tuning.VIEW_HALF_EXTENT.x + Tuning.VIEW_HALF_EXTENT.y) \
-				/ Tuning.PARK_CLOSING_LEAVE_SPEED
+				/ ParkCordon.PARK_CLOSING_LEAVE_SPEED
 		t.check(in_view_after <= out_of_view,
 				"once the way is walked he is in her view %.1fs, " % in_view_after
 				+ "no longer than walking out of it takes (%.1fs)" % out_of_view)
@@ -685,7 +685,7 @@ func _set_off_on_their_own(person: EventInstance, her: Vector2) -> void:
 	var walking: EventDef = person.def.duplicate()
 	walking.shape = person.def.shape
 	walking.solid_parts = person.def.solid_parts
-	walking.departs_at = Tuning.PARK_CLOSING_LEAVE_SPEED
+	walking.departs_at = ParkCordon.PARK_CLOSING_LEAVE_SPEED
 	person.def = walking
 	person.player_at = her
 	person.leave_for_a_completed_task()

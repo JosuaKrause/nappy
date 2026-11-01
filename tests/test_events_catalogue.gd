@@ -164,7 +164,7 @@ func _test_a_protest_stays_something_she_can_be_routed_through(t) -> void:
 ## to the strongest of them at her position (`EventSources.sources_at()`), so a hut, a
 ## gate and a wall's roadblocks at one corner charge one rate between them. What that rate has to
 ## stay under is the **toll the hold itself charges**: a detention is spent standing still, where
-## `Tuning.EXCITEMENT_DECAY_IDLE` is zero and nothing is earned back, so the field bills for every
+## `Baby.EXCITEMENT_DECAY_IDLE` is zero and nothing is earned back, so the field bills for every
 ## second of it on top of `Tuning.CHAT_EXCITEMENT`. Once the field over one hold outweighs the
 ## toll, the field is what a door costs and the detention is the decoration — which is the
 ## arrangement the player met coming out of a gate into three roadblocks and a patrol.

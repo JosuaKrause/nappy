@@ -60,7 +60,7 @@ func run(t) -> void:
 	var mean := crash.mean_emission_along_the_line()
 	print("COST TABLE car_accident: walk %+.1f, run %+.1f"
 			% [crash.walk_through_cost(),
-			(mean - Tuning.EXCITEMENT_DECAY_RUNNING + Tuning.EXCITEMENT_FROM_RUNNING)
+			(mean - Baby.EXCITEMENT_DECAY_RUNNING + Baby.EXCITEMENT_FROM_RUNNING)
 			* (crash.outer_radius * 2.0 / Tuning.RUN_SPEED)])
 	t.check(lanes_found > 0, "there were gaps to walk (%d)" % lanes_found)
 

@@ -12,7 +12,7 @@ extends RefCounted
 ## cannot be disconnected by removing any single corridor — and the two cuts above are what take
 ## that guarantee away, so it is checked by search instead. What is checked is deliberately weaker:
 ## **every calm area stays reachable**, with the second route an offer rather than a promise. See
-## `Tuning.MIN_CALM_AREAS_REACHABLE`.
+## `ClosurePlanner.MIN_CALM_AREAS_REACHABLE`.
 
 ## How many seeds to try before accepting a map that fails the soft guarantees.
 const MAX_ATTEMPTS := 64
@@ -1682,7 +1682,7 @@ static func _make_the_pair_solid(map: CityMap, purposes: Dictionary, block_rects
 ## dead end takes one of an area's ways in — the strong gate refuses exactly the interesting
 ## candidates. What a hard blocker may never do is make a calm area unreachable, because it holds
 ## for the whole run: a day can be bad, a run cannot be dead. See
-## `Tuning.MIN_CALM_AREAS_REACHABLE` for the day-level half.
+## `ClosurePlanner.MIN_CALM_AREAS_REACHABLE` for the day-level half.
 ##
 ## It stays stated over **every** area rather than over a count, unlike the day-level invariant,
 ## for the same reason: a closure is gone tomorrow and this is not.

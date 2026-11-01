@@ -9,6 +9,12 @@ extends CharacterBody2D
 ##
 ## The parent/pram sources below select the complete drawing in either presentation mode.
 
+## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto
+## the hut and back — takes to arrive. The move is smooth-stepped rather than linear so it reads
+## as an ease rather than a slide or a cut; short enough that most of `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`
+## is spent settled on the hut rather than still travelling to it. See `Stroller.focus_camera_on()`.
+const CAMERA_EASE_SECONDS := 0.5
+
 ## The illustrated family keeps different amounts of empty canvas around each projection, so its
 ## functional hand-to-handle placement uses three screen-axis distances. Scaling `facing` by these
 ## axes keeps the pram moving continuously through a turn; selecting offsets from the eight texture
@@ -373,7 +379,7 @@ var _alert_source := &""
 var _camera_focused := false
 var _camera_focus_point := Vector2.ZERO
 ## Where the current ease started and how long it has been running — smooth-stepped over
-## `Tuning.CAMERA_EASE_SECONDS` rather than snapped, whether easing onto a focus or back to her.
+## `CAMERA_EASE_SECONDS` rather than snapped, whether easing onto a focus or back to her.
 var _camera_ease_from := Vector2.ZERO
 var _camera_ease_elapsed := 0.0
 ## Whether the camera is easing back to her after a focus ended, as opposed to the ordinary
@@ -636,7 +642,7 @@ func camera_screen_center() -> Vector2:
 	return _camera.global_position
 
 ## Eases the camera onto `point` instead of following her — a checkpoint's hut, gate or post,
-## currently the only caller — over `Tuning.CAMERA_EASE_SECONDS`, smooth-stepped rather than
+## currently the only caller — over `CAMERA_EASE_SECONDS`, smooth-stepped rather than
 ## snapped or slid. `release_camera_focus()` is what hands it back.
 ##
 ## **The ease starts from where the camera was drawing, and the camera is put there in the same
@@ -872,13 +878,13 @@ func _turn_toward(target: Vector2, delta: float) -> void:
 func _update_camera(delta: float) -> void:
 	if _camera_focused:
 		_camera_ease_elapsed += delta
-		var t := clampf(_camera_ease_elapsed / Tuning.CAMERA_EASE_SECONDS, 0.0, 1.0)
+		var t := clampf(_camera_ease_elapsed / CAMERA_EASE_SECONDS, 0.0, 1.0)
 		_camera.global_position = _camera_ease_from.lerp(
 				_camera_focus_point, smoothstep(0.0, 1.0, t))
 		return
 	if _camera_easing_back:
 		_camera_ease_elapsed += delta
-		var t := clampf(_camera_ease_elapsed / Tuning.CAMERA_EASE_SECONDS, 0.0, 1.0)
+		var t := clampf(_camera_ease_elapsed / CAMERA_EASE_SECONDS, 0.0, 1.0)
 		_camera.global_position = _camera_ease_from.lerp(global_position, smoothstep(0.0, 1.0, t))
 		if t >= 1.0:
 			# Arrived: hand the camera back to the ordinary parented follow rather than keep

@@ -1472,13 +1472,13 @@ func _test_the_whole_hold_reads_as_one_move(t) -> void:
 	t.check(not EventFootprints.hidden_by_its_hold(hut), "the hut is still drawn through the hold")
 	t.check(hut.is_its_guard_inside(), "and its guard is not")
 
-	_advance_hold(manager, stroller, Tuning.CAMERA_EASE_SECONDS)
+	_advance_hold(manager, stroller, Stroller.CAMERA_EASE_SECONDS)
 	var onto := stroller._camera.global_position.distance_to(hut.global_position)
 	t.check(onto < 1.0, "the camera arrives on the hut (%.1fpx away)" % onto)
 	t.check(hut.is_chatting(), "with time left on the hold once it gets there")
 
 	# **The camera not coming back.** The rest of the hold, then the ease home.
-	_advance_hold(manager, stroller, EventCatalogue.CHECKPOINT_DETAIN_SECONDS + Tuning.CAMERA_EASE_SECONDS)
+	_advance_hold(manager, stroller, EventCatalogue.CHECKPOINT_DETAIN_SECONDS + Stroller.CAMERA_EASE_SECONDS)
 	t.check(not hut.is_chatting(), "the hold ends on its own clock")
 	t.check(stroller.visible, "and she comes back out")
 	var released := stroller.global_position

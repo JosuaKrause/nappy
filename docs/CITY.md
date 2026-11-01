@@ -649,7 +649,7 @@ a shut street is the street with nobody on it, and that is legible from a block 
 - **There is no cue of any kind toward calm, except one faint trial.** No marker, no map, no HUD
   line, nothing on the ground — bar M145, which tints the route's own curbstones, the stone strip
   along the pavement's edge, a faint yellow (`Palette.ROUTE_KERB_TINT`, blended in by
-  `Tuning.ROUTE_KERB_TINT_ALPHA`). The tint marks the whole street the day's route tree runs
+  `GroundLayers.ROUTE_KERB_TINT_ALPHA`). The tint marks the whole street the day's route tree runs
   along, both kerb lines, from intersection to intersection (`Corridor.depth() == 0`) — never a
   street the tree only crosses at a junction, since a junction cell belongs to no street segment
   (`StreetNetwork.segment_containing`). In the escape it marks the streets the two chains run
@@ -1375,7 +1375,7 @@ route pressure the player actually feels is at the scale of a *block*, and it co
 standing on the street rather than from what is shut.
 
 **From the gatehouse day on, the day closes only a share of that**
-(`Tuning.GATEHOUSE_DAY_CLOSURE_SHARE`, rounded to the nearest street, a half up —
+(`ClosurePlanner.GATEHOUSE_DAY_CLOSURE_SHARE`, rounded to the nearest street, a half up —
 `ClosurePlanner.closures_wanted`). *(azure-puffin, point 4: "when the guard houses are set up the
 city gets much harder to navigate let's loosen the density of the hard blocking events in that
 case"; "fewer of all three".)* The region wall divides the city from `Tuning.REGION_WALL_FIRST_DAY`,
@@ -1452,7 +1452,7 @@ day's tiles with every barrier tile added on top; what the flood never reaches i
 
 **A road closure is not what makes off-corridor ground closed.** `ClosurePlanner` shuts a handful
 of streets a day — `Tuning.CLOSURES_PER_ACT`'s one in act I, rising act by act, and from the
-gatehouse day on a share of that (`Tuning.GATEHOUSE_DAY_CLOSURE_SHARE`, applied in
+gatehouse day on a share of that (`ClosurePlanner.GATEHOUSE_DAY_CLOSURE_SHARE`, applied in
 `ClosurePlanner.closures_wanted()`) — which is guidance at the scale of a route decision, not a
 wall around the whole city. `SealPlanner` (`src/routes/seal_planner.gd`) is the
 separate pass that does that: every street off the day's tree, real and not the home's own —
@@ -1498,20 +1498,20 @@ it *not a route* is the whole of the fix.
 sometimes.** An alley that touches the tree at either end stays open outright, which is the way
 round a wall the design asks for; one that touches it at neither end is a *candidate* to be walled
 at both mouths, so it can never bridge two sealed streets into a second city behind them — but only
-`Tuning.ALLEY_MOUTH_SEAL_CHANCE` of those candidates actually are, rolled once per qualifying alley,
+`SealPlanner.ALLEY_MOUTH_SEAL_CHANCE` of those candidates actually are, rolled once per qualifying alley,
 so an alley reads as the occasional exception rather than a wall of its own.
 
 **From the gatehouse day on, only a share of those streets is sealed.** *(azure-puffin, point 4:
 "when the guard houses are set up the city gets much harder to navigate"; "fewer of all three".)*
 From `Tuning.REGION_WALL_FIRST_DAY` the region wall divides the city, and a seal on every street off
 the tree as well made it too hard to find a way through. So `SealPlanner` rolls each street it would
-seal against `Tuning.GATEHOUSE_DAY_SEAL_SHARE` — an independent roll per street, spread evenly
+seal against `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE` — an independent roll per street, spread evenly
 across the off-tree ground rather than kept near the rim, the same way the thinning below picks — and
 the alley-mouth chance is multiplied by the same share. The tree, the routing and the region plan
 are untouched: a street left unsealed is still off the tree, it is only no longer walled, and a
 barrier left out only adds ground she can reach.
 
-**A final pass thins the seals.** A small `Tuning.SEAL_THINNING_FRACTION` of the day's soft pairs
+**A final pass thins the seals.** A small `SealPlanner.SEAL_THINNING_FRACTION` of the day's soft pairs
 lose one body — never a hard seal, never an alley mouth — so a wrong turn stays open long enough to
 be taken and discovered rather than reading as a wall on sight the moment she glances down it.
 
@@ -1765,9 +1765,9 @@ police cordon it off (`ParkCordon`): its ground stays grass, and its edge is tap
 time from the side opposite the last gap until only that gap is open. The gap is checked before it
 is accepted, as a closure is: of the edges whose outside ground still reaches home with the park
 blocked under the day's obstruction, and stands clear of every body and field, the one nearest
-where she stood. It closes `Tuning.PARK_CLOSING_SECONDS` after the touch, or later where the first
+where she stood. It closes `ParkCordon.PARK_CLOSING_SECONDS` after the touch, or later where the first
 officer would come into her view too late for her to walk to it with
-`Tuning.PARK_CLOSING_WARNING` to spare. A taped stretch is solid and obstructs its edge tiles; she
+`ParkCordon.PARK_CLOSING_WARNING` to spare. A taped stretch is solid and obstructs its edge tiles; she
 is shut in, which ends the day, if she is still inside when the last gap closes. The
 tape stands for the rest of that day; no tile changes. `docs/NARRATIVE.md` says what each is; `ResistanceHappenings` is where they
 live.

@@ -25,10 +25,6 @@ const METER_MAX := 100.0
 ## `tests/test_meters.gd` holds both halves in terms of `day_length()` rather than in numbers,
 ## so a change to the length of a day cannot quietly make the street sufficient again.
 const SLEEPINESS_GAIN_WALKING := 0.42
-## Standing still has to be strictly worse than walking, or waiting is a strategy. It also
-## has to stay cheaper than a calm zone gives, because stopping is the counterplay to a loud
-## event and pricing it above the park's own rate would take that move away.
-const SLEEPINESS_DRAIN_IDLE := 1.0
 ## How much faster calm ground fills the meter than an ordinary street. A four-block zone is
 ## **11.3s from empty**, against a whole day of clean pavement reaching three quarters of the bar.
 ##
@@ -60,10 +56,6 @@ const SLEEPINESS_CALM_ZONE_MULTIPLIER := 21.0
 func sleepiness_calm_multiplier(blocks: int) -> float:
 	var side := sqrt(float(maxi(blocks, 1)))
 	return SLEEPINESS_CALM_ZONE_MULTIPLIER * float(CALM_ZONE_BLOCKS) / side
-## Sleepiness the baby keeps after being woken up. Half the bar, which is now about twelve
-## seconds of park — a fifth of a well-played day, which is what it was before and should
-## stay whatever the rates are.
-const WAKE_SLEEPINESS_PENALTY := 50.0
 
 ## Sleepiness per second on calm ground, for a lot of `blocks` blocks. The default is the
 ## `CALM_ZONE_BLOCKS`-square zone, which is the size every other constant here is pitched against.
@@ -77,87 +69,7 @@ const EXCITEMENT_CALM_THRESHOLD := 35.0
 ## A sleeping baby woken above this goes back to AWAKE.
 const EXCITEMENT_WAKE_THRESHOLD := 60.0
 
-## The two the *pram* says out loud, stated as **states with an instruction attached** rather than
-## as points on a gauge — which is the whole difference between a cue and the HUD moved over the
-## player's head. The other two states the pram shows need no constant at all, because the game
-## already has them: the calm threshold, where the day stops progressing, and asleep.
-##
-## Nearly crying is the last band before `METER_MAX` ends the day. Far enough up that it is not
-## a second name for "loud street" — a pavement sits under the calm threshold and a bad moment
-## reaches the fifties — and far enough from 100 to be worth acting on: the forty-five points back
-## to the calm threshold are about four seconds of a park, or seven and a half of a quiet street.
-const EXCITEMENT_NEARLY_CRYING := 80.0
-## And how far below the wake threshold a sleeping baby starts to stir. Waking costs
-## `WAKE_SLEEPINESS_PENALTY` — half the bar — so this is the most expensive thing in the return
-## phase, and without a cue at the pram the only warning is a bar climbing in a corner.
-const EXCITEMENT_STIR_MARGIN := 12.0
-## Incoming excitement multiplier while the baby is asleep.
-const SLEEPING_SENSITIVITY := 0.55
 
-## The bar may reach and sit at `METER_MAX`; the day ends crying only once a further mass of
-## excitement this many points has arrived **while she is already sitting at the cap**, within
-## `EXCITEMENT_OVERFLOW_WINDOW`. *(2026-09-23, playtest 126, statement 1: "the bar can reach 100
-## but we need also like 10 over 3s to actually end the day … those numbers are just me
-## spitballing -- we would need to test it".)* That gave 10 over 3s, `docs/DECISIONS.md`'s M96
-## measurement.
-##
-## **Tightened once**, on playtest 128's "we can make the extra push needed to end the day a tiny
-## bit more aggressive/tighter" (M100, `docs/TODO.md`). `tests/probes/m96_crying_at_the_top.gd`
-## swept 9.5/3s, 10/4s and 9.5/4s against one bump at the cap and the loudest stationary rows
-## (`night_raid`, `curfew_announce`, `abduction`), walked past and stood in: widening the window to
-## 4s changed no measured outcome, since every scenario's own mass already clears its threshold
-## well inside 3s once she is actually in a source's field, so only the mass moved. 9.5 still
-## leaves one bump at the cap (8.9 points of overflow, the same measurement M96 made) a real 0.6
-## points short of crying, and shortens every loud row's own time to cry over the shipped 10.
-##
-## **What it counts, and why.** `Baby._update_excitement()` already nets `incoming − decay` every
-## frame; while the bar is below the cap that net is simply added and clamped, same as always.
-## Once she is sitting at `METER_MAX`, a further positive net is what the clamp would otherwise
-## have piled on top of 100 — the bar's own would-be overflow, in the same units the bar itself
-## already uses — and that is what this mass sums, in a sliding window the same shape
-## `Baby.decay_in_window()` already sums the decay side in. **Not the raw incoming**: charging the
-## raw arriving points would make a loud but well-recovering street cry exactly as fast as a
-## source with nothing fighting it, which is the "undeserved failure" the player asked to remove
-## in the first place. One walker's bump barely reaches the cap and leaves almost nothing for the
-## clamp to eat; a sustained source at the top keeps feeding it every frame it stays loud.
-const EXCITEMENT_OVERFLOW_TO_CRY := 9.5
-
-## The window `EXCITEMENT_OVERFLOW_TO_CRY` is summed over, in seconds — the player's own "3s".
-## Long enough that two contacts in quick succession at the top add up to one push; short enough
-## that leaving the source behind lets the mass drain out of the window at close to the pace she
-## walked away in, rather than a push from a minute ago still counting against her.
-##
-## **Left at 3s** measuring playtest 128's "a tiny bit more aggressive/tighter" (M100,
-## `docs/TODO.md`): `tests/probes/m96_crying_at_the_top.gd` swept a 4s window alongside 3s against
-## one bump at the cap and the loudest stationary rows, and it changed no measured outcome — each
-## scenario's mass already clears its own threshold well inside 3s once she is actually in a
-## source's field, so the extra second of history never has anything old enough to matter yet.
-## `EXCITEMENT_OVERFLOW_TO_CRY` carries the tightening instead.
-##
-## **The bar itself is untouched by any of this.** The moment incoming drops under decay, the net
-## rate goes negative and `excitement` falls back from 100 at its ordinary ground-and-motion rate,
-## exactly as it always has — nothing here freezes the bar at the cap or holds it up. The mass is
-## a second, independent quantity read alongside it, and it drains the same way `decay_in_window()`
-## already does: no reset, just entries aging out of the window as `Baby._clock` advances, whether
-## or not she is still at the cap to add to it.
-const EXCITEMENT_OVERFLOW_WINDOW := 3.0
-
-## **What settles a baby is being pushed.** The pram is a rocking chair with wheels on, and
-## rocking it is the only thing that calms her.
-##
-## **Zero and not merely low**, because standing still must *freeze* the excitement rather than
-## clear it: the day then stops moving in both directions at once, which is the honest version of
-## "waiting is not a plan". Any positive idle decay makes standing the strongest move in the game
-## — a full meter cleared for a few points of sleepiness, anywhere, including the middle of a
-## street she has no business being on.
-##
-## The counterplay this removes has a better replacement: **walk somewhere quiet**, which is what
-## `City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` is for and what the whole route is about.
-##
-## Running still decays, barely — it is motion, and `EXCITEMENT_FROM_RUNNING` is what makes it a
-## bad idea. The ordering is motion-shaped rather than arbitrary: walking calms most, running calms
-## a little, standing calms nothing.
-const EXCITEMENT_DECAY_IDLE := 0.0
 ## **The bar has to be seen falling on ground with nothing on it.** The walking rate is set from a
 ## *net* measurement rather than from taste: the quietest ordinary pavement with the day's own
 ## crowd on it and nothing authored in range loads about 2.5/s, so this is what is left over, and
@@ -171,30 +83,7 @@ const EXCITEMENT_DECAY_IDLE := 0.0
 ## free and the catalogue loses two rows rather than gaining a rate; `tests/test_events.gd` is what
 ## says so out loud.
 const EXCITEMENT_DECAY_WALKING := 6.0
-const EXCITEMENT_DECAY_RUNNING := 0.5
-## **The meter does not fall in the escape's basement** *(inbox #765 in minty-lemur: "let's not replenish the meter
-## in the basement it's a tense situation")*: walking there earns no decay, awake or asleep, so a
-## blow's 40 to 50 points stay on the meter and the blows add up. It is the ground's
-## multiplier like the others, `InteriorScene.decay_multiplier()`, and it is the only ground inside
-## the building that is not 1.0.
-const EXCITEMENT_DECAY_BASEMENT_MULTIPLIER := 0.0
 
-## Excitement per second at full sprint, scaled by how far above walk speed we are.
-##
-## **The run button is a trap by design**: running is the wrong move against every row that merely
-## emits, and the right move only against the things that follow you. This constant is what keeps
-## that ordering true across the whole catalogue.
-##
-## It is sensitive to the shape of `Field.falloff` and not only to the radii. A fatter field makes
-## time-in-field matter more, so a shoulder that is too generous makes running *out* of the widest
-## rows cheaper than walking — which is not "running works" but "running is a coin flip", the worst
-## of the two. `tests/test_events.gd` asserts the ordering row by row rather than leaving it in a
-## document, because that is how it can break silently.
-const EXCITEMENT_FROM_RUNNING := 14.0
-## Constant dread while standing in an alley, and it is set against the ground it is felt on: an
-## alley gives back 3.5/s, so the trickle sits just under its own decay and an empty alley is very
-## nearly flat rather than a place to recover in. The pressure is that it is never quite recovery.
-const EXCITEMENT_FROM_ALLEY := 3.0
 
 ## What a `chatting_mother` conversation adds over its whole `detain_seconds`, while the baby is
 ## awake — "consumes 25%" in the player's own words (`docs/playtests/PLAYTEST-18.md` finding 4, read as
@@ -263,51 +152,10 @@ const CURFEW_DAY_LENGTH_SECONDS := 180.0
 ## sabotage is a must on top of it: `GameState.earned_good_ending()` asks for both.
 const RESISTANCE_GOAL := 5
 
-## How long the neighbor's walk home takes on day 10, from the moment her mark is touched: the
-## director starts them this far from her door along the walk (`ResistanceDirector.
-## _send_the_neighbor_home()`), and reaching the door is the deadline — walked home into the
-## vans. Chosen, not measured, and open to overturn once the late days are timed: at
-## `EventCatalogue.NEIGHBOR_WALK_SPEED` (46px/s) it is about eighty tiles of walk, which puts
-## them several blocks out in the city on every city, while she, at twice that pace, can
-## still meet them on their way in from anywhere she found the mark. A curfew day is 180s.
-const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 
-## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
-## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
-##
-## Day 11's market is sited ahead of her on her route once she has walked as long as day 3's fire
-## waits (`EventDirector.ON_HER_WAY_AFTER`); if nothing on her way has qualified by this far into
-## the day, it goes where she is not looking, so the city has lost it whichever way she walked.
-const MARKET_GONE_BY := 90.0
-## Day 12's park is cordoned off by the police once she has reached its swing (`ParkCordon`): the
-## last gap in their tape closes at the soonest this long after the touch, however long their walk
-## in took — the taping is paced to it. It closes later where the first officer would come into
-## her view of the swing too late for `PARK_CLOSING_WARNING` (a park larger than the view), or
-## where the taping would go faster than `PARK_CLOSING_STRETCH_MIN` a stretch. Staying in the park
-## until then shuts her in, which ends the day. Open to overturn once the day is played.
-const PARK_CLOSING_SECONDS := 12.0
-## How long, beyond the walk from where she stood at the touch to the cordon's last gap, the first
-## officer is in her view before the gap closes: time to see him and decide, so the officers'
-## arrival is a warning she can act on at a walk on every park (`ParkCordon._time_the_close()`).
-const PARK_CLOSING_WARNING := 2.0
-## The fastest the cordon is taped: a stretch (about a tile of the edge) in no less than this.
-const PARK_CLOSING_STRETCH_MIN := 0.3
-## How fast the cordon's officers walk in and away: a brisk walk, slower than hers
-## (`WALK_SPEED`), so they never read as coming after her.
-const PARK_CLOSING_OFFICER_SPEED := 80.0
-## How many officers come to walk the park's people out; anyone past that many is sent off when
-## the cordon starts.
-const PARK_CLOSING_ESCORTS := 2
-## How fast the park's people walk out once an officer has sent them off: an unhurried walk, under
-## the officers' own pace so the officer walks out behind them.
-const PARK_CLOSING_LEAVE_SPEED := 50.0
 ## Day 13's column: this many army trucks down the main road, one behind the other this far apart.
 const COLUMN_TRUCKS := 3
 const COLUMN_SPACING := 128.0
-## The column comes once she is this close to the main road's middle, across it — about a screen's
-## half-width and a block — or at `COLUMN_BY` into the day whatever she is doing.
-const COLUMN_WITHIN := 480.0
-const COLUMN_BY := 100.0
 
 # ---------------------------------------------------------------- the heat ---
 # **How much worse the city gets for a player who is doing well at the optional path.** A row says
@@ -358,15 +206,6 @@ const SIDEWALK_WIDTH := 2
 ## table. **Re-measure rather than convert.**
 const CITY_BLOCKS := Vector2i(11, 11)
 
-## How far a route curbstone's own pixels are blended toward `Palette.ROUTE_KERB_TINT`
-## (`GroundLayers._tint_opaque`/`_tint_matching`, `City.tint_the_route()`) — the whole of the
-## M145 trial's own dial. The player sets it by eye against a still, not this comment: raise it
-## while the cast reads as invisible, lower it while it reads as a drawn hint rather than a cast,
-## and zero is the trial's off switch, with nothing else to change. The strip the blend applies to
-## is two or three pixels wide (the SVG art's 2px band, the illustrated `curbstone.png`'s 3px one),
-## so the number that read as nothing spread over a whole tile has to run higher to register within
-## its own width.
-const ROUTE_KERB_TINT_ALPHA := 0.45
 
 # ------------------------------------------------------------- street trees ---
 # How rare a street tree is, in four numbers. **Trees read like obstacles** — *(2026-09-12, the
@@ -511,35 +350,6 @@ const ALLEY_WIDTH_TILES := 2
 ## not a city under siege.
 const CLOSURES_PER_ACT: Array[int] = [1, 2, 3, 4]
 
-## How much likelier a closure is to land on a turning off the day's corridor than on a street
-## somewhere else entirely. **A closure never lands on the corridor at all** — that is a rule in
-## `ClosurePlanner._shuffled_candidates` rather than a weight, because a wall across the route is
-## not a worse wall, it is the opposite of one.
-##
-## **The same number pointing the other way is a different design**, and it is the easy mistake:
-## aiming closures **at** the streets the player would have used treats a closure as an obstacle,
-## and an obstacle nobody meets is scenery. A wall's job is to prune the ways that lead nowhere she
-## should go. What survives from the obstacle reading is the reason for the rim: a wall nobody can
-## see from the route prunes nothing, so the far corner of the map is what this weight exists to
-## avoid.
-const CLOSURE_WALL_BIAS := 5.0
-
-## The day-level invariant, and the whole reason the planner is allowed to close anything:
-## **at least this many calm areas are still reachable.** Two areas, because a choice of
-## destination is what makes a choice of route mean anything — and because one of them may be the
-## one she used yesterday, which the day has deliberately spoiled.
-##
-## **It does not demand two *distinct routes* to each of them.** Edge-disjointness is a **stand-in**
-## for winnability, by Menger: two routes means no single street is a cut. That protection comes
-## instead from where a wall is *placed* — off the day's tree, so it cannot cut the tree — and the
-## second route is a niceness the day offers when the map allows one, measured by `RouteTree` (241
-## areas of 241 that the map allowed one to) and gating nothing. Sealing off a section of the map is
-## allowed, and it is the point.
-##
-## What is deliberately **not** weakened is the count. Dropping to one reachable area lets a day
-## arrive where the only calm left is the one it spoiled this morning, which is the unwinnable day
-## this constant exists to prevent.
-const MIN_CALM_AREAS_REACHABLE := 2
 
 ## How deep the barrier across a closed street's mouth is, in pixels. Thin enough to read as
 ## a line drawn across the road, thick enough that nothing walks through it in one frame.
@@ -551,35 +361,9 @@ func closures_for_day(day: int) -> int:
 
 # ------------------------------------------------------------------- the seals ---
 # `SealPlanner` closes the streets off the day's route tree — every one of them before
-# `REGION_WALL_FIRST_DAY`, `GATEHOUSE_DAY_SEAL_SHARE` of them from it. See docs/CITY.md, "Sealing the
+# `REGION_WALL_FIRST_DAY`, `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE` of them from it. See docs/CITY.md, "Sealing the
 # tree".
 
-## The fraction of the day's **soft** seal pairs that lose one body in the final thinning pass, so
-## a wrong turn stays open long enough to be taken and discovered rather than reading as a wall on
-## sight. *(Playtest 22, finding 6: "the guidance is there and properly pushes the player in the
-## right direction but it feels a bit on guardrails… subtlety is key".)*
-##
-## **This is the dial the whole pass is about, and it is started small on purpose.** Too low and
-## the walls stay too visible to ever be walked into by accident; too high and the corridor stops
-## being the way through, which is M64's central claim. `SealPlanner._thin_soft_pairs` is the pass;
-## move this against a played day rather than an argument.
-const SEAL_THINNING_FRACTION := 0.08
-
-## The chance a through-alley disconnected from the day's tree actually gets walled at both mouths,
-## rolled once per qualifying alley. *(Playtest 25, finding 5: "the probability of blocking off
-## alleys should be way lower" — and, on which half of "alley" that covers, "at least for full
-## blockages -- robbers can be frequent".)* Before this it was 1.0 in code rather than in a
-## constant: `SealPlanner._seal_alley_mouths` walled every qualifying alley, every day, with no roll
-## at all.
-##
-## **Started low rather than derived**, the same way `SEAL_THINNING_FRACTION` was: too high and
-## alleys read as closed off wholesale again, which is the complaint; too low and the class doc's
-## own reason for sealing one at all — an alley walled at neither end, with both its streets sealed,
-## is a shortcut between two places the day has already said no to — stops mattering. Move this
-## against a played day rather than an argument. `alley_robbery`'s own frequency is untouched: the
-## player was explicit that the event and the physical blockage are two different things wearing one
-## word.
-const ALLEY_MOUTH_SEAL_CHANCE := 0.15
 
 # ------------------------------------------------------------------- regions ---
 # `RegionPlanner` partitions the lattice's junctions once at generation and turns that partition
@@ -601,26 +385,6 @@ const REGION_COUNT := 4
 ## gets through.
 const REGION_WALL_FIRST_DAY := 9
 
-## **From the gatehouse day on, fewer hard blockers off the day's route tree** — *(azure-puffin,
-## point 4: "when the guard houses are set up the city gets much harder to navigate let's loosen the
-## density of the hard blocking events in that case"; asked which, "fewer of all three. gatehouses
-## stay and remain on the actual paths".)* The region wall and its doors divide the city into regions
-## from `REGION_WALL_FIRST_DAY`, so the three things that close the ground off the tree are thinned
-## from that day on, each by one share below. Nothing about the tree, the routing or the region plan
-## changes: these only take blockers away, and a blocker taken away only adds ground she can reach
-## (the **city** skill's one monotonic exception), so every reachability guarantee stays true.
-##
-## **How much is a proposal, not something the player asked for** — they said *fewer*, not how many
-## — so each share is a half and each is its own constant, to be moved against a played day.
-##
-## The share of off-tree streets `SealPlanner.plan_day` still seals, rolled once per street that
-## would otherwise carry a seal; the same share multiplies `ALLEY_MOUTH_SEAL_CHANCE` for a
-## through-alley's mouths.
-const GATEHOUSE_DAY_SEAL_SHARE := 0.5
-
-## The share of `closures_for_day()` that `ClosurePlanner` still closes, rounded to the nearest
-## street, a half up (`ClosurePlanner.closures_wanted`).
-const GATEHOUSE_DAY_CLOSURE_SHARE := 0.5
 
 ## How much clear ground a region door keeps around each of its own bodies — a hut, a boom or an
 ## alley post. No event may be sited so that its own field (`EventDef.field_reach()`) reaches inside
@@ -649,11 +413,6 @@ const GATEHOUSE_DAY_CLOSURE_SHARE := 0.5
 ## `EventDef.barrier_structure` instead.
 const CHECKPOINT_EVENT_GAP := 176.0
 
-## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto
-## the hut and back — takes to arrive. The move is smooth-stepped rather than linear so it reads
-## as an ease rather than a slide or a cut; short enough that most of `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`
-## is spent settled on the hut rather than still travelling to it. See `Stroller.focus_camera_on()`.
-const CAMERA_EASE_SECONDS := 0.5
 
 ## Below this speed a car counts as actually stopped rather than still easing toward the line —
 ## `Crowd._stop_for_gates()`'s own clock for `Crowd.GATE_STOP_SECONDS` only runs while a car is this
@@ -877,9 +636,6 @@ const CAR_ZEBRA_SIGHT := 200.0
 ## `CAR_STRIKE_MIN_SPEED` and cannot hurt anybody — but it is *unreadable* scenery sitting on the
 ## one place the game has told the player is the safe way across.
 const CAR_STOP_LINE_SETBACK := 34.0
-## How close to the crossing the player has to be for the traffic to yield. Roughly "standing
-## at the kerb waiting", which is the gesture the crossing is for.
-const CAR_ZEBRA_WAIT_RADIUS := 56.0
 
 ## How far out a car starts watching the junction it is coming to.
 ##
@@ -985,30 +741,6 @@ const OFFSCREEN_NOTICE := 0.2
 ## there is no "in front".
 const AHEAD_MIN_SPEED := 40.0
 
-## How many of the events handed out on her route after day 6's mark a man shouting's marble is one
-## of: the route's bag is rigged (`MarbleBag.rig()`) with a bag of this many marbles, one
-## `homeless_yeller` and the rest drawn from the bag she was drawing from, and he is put on her route
-## once her walk finds him a site (`EventDirector._place_on_her_route()`). *(olive-koala, statement 2: "after touching
-## the mark a marble bag with 1/3 chance of yeller should be put in so the yeller is guaranteed to
-## encounter a yeller in the next three events" · inbox #561 in coral-bunny, on the size of a rigged bag: "x
-## defines how soon we want to get the guaranteed event", and, told how sparse the route's events
-## are: "maybe let's make the other rigged bags smaller, too".)* The second of the next two: at
-## `EventDirector.AHEAD_INTERVAL`, within a minute of walking.
-const TASK_CONTACT_WITHIN_THE_NEXT := 2
-
-## The same for day 11: once she has read its mark, a second loudspeaker mast's marble is one of
-## the next this many events, and the mast is put on her route once her walk finds it a site, beside
-## the one near the mark the task points at first. *(inbox #561 in coral-bunny:
-## "day 11 is going to be a x=3", then "let's make the other rigged bags smaller".)*
-const MAST_WITHIN_THE_NEXT := 2
-
-## The same for day 7: once she has read its mark, a second `delivery_van`'s marble is one of the
-## next this many events, and the van is put on her route once her walk finds it a site, besides the
-## one near the mark the task points at. *(inbox #586 in olive-hedgehog: "each olive badger rigged
-## bag should be 2 or 3. use your own judgement on how soon the events should happen"; inbox #650 in
-## mossy-beaver, of which forced cases get one: "I guess that leaves only the van?")* Two is the
-## filer's proposal inside the player's "2 or 3", the size day 6's and day 11's rigs have.
-const VAN_WITHIN_THE_NEXT := 2
 
 # ------------------------------------------------------ one event per block ---
 # The density target is one event per block, so the decision a player makes about an obstacle
@@ -1039,16 +771,6 @@ const VAN_WITHIN_THE_NEXT := 2
 # ground; the weights below are still read off the street's depth, so the rim is still where a wall
 # is pulled.
 
-## How much likelier a closure is to land in a gap between two adjacent strands than on the rest of
-## the rim it is already biased toward.
-##
-## The other half of *"wall or event"*, and it is the **impassable** half: an event in a gap makes
-## switching strands expensive and a closure makes it impossible, which is why having both is
-## variety rather than two names for the same thing. A day closes a handful of streets at most
-## (`ClosurePlanner.closures_wanted()`: `CLOSURES_PER_ACT`, and from `REGION_WALL_FIRST_DAY` on
-## `GATEHOUSE_DAY_CLOSURE_SHARE` of it), so this can be strong without closing many gaps — the quota
-## is the limit.
-const CLOSURE_GAP_BIAS := 4.0
 
 # ----------------------------------------------------- solid things are solid ---
 # The rule is in `EventDef.obstructs_radius`: **anything that stands still is solid at the width it
@@ -1140,7 +862,7 @@ const PURSUIT_MIN_NOTICE := 1.5
 ## How long she has to be **running** before it gives up, in seconds.
 ##
 ## The half that makes running **payable**, and the whole of what the chase costs when it is
-## answered. Running is `EXCITEMENT_FROM_RUNNING` a second, so a chase priced by its own clock costs
+## answered. Running is `Baby.EXCITEMENT_FROM_RUNNING` a second, so a chase priced by its own clock costs
 ## the same whether she reacted on the first frame or the last — a toll rather than a lesson.
 ##
 ## **Stated over the player, not over the gap**, and the two are not the same rule in a real street.
@@ -1441,7 +1163,7 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## to reach it — the ceiling is a safety bound for a future row, not a number any current one sits
 ## against.
 ##
-## **`FIELD_ECCENTRICITY_SPEED` is set against placement, not against taste.** A row's forward
+## **`Field.FIELD_ECCENTRICITY_SPEED` is set against placement, not against taste.** A row's forward
 ## reach growing past what its telegraph already priced is a fairness question; growing far enough
 ## to touch an unvisited calm area it used to clear is a different one — `EventScheduler` refuses
 ## that placement outright (`_calm_to_leave_alone`, `_reaches_any`), so a row whose whole path is
@@ -1456,7 +1178,6 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## (`PEDESTRIAN_SPEED`, 46-74px/s) at 0.09-0.15; the cyclist (165px/s) at 0.33; the cat (240px/s) at
 ## 0.48, just under the cap.
 const FIELD_ECCENTRICITY_MAX := 0.5
-const FIELD_ECCENTRICITY_SPEED := 500.0
 
 # ----------------------------------------------------------------- the finale ---
 # The fifteenth and sixteenth walks, which are not an ordinary day: escaping the building, then
@@ -1466,131 +1187,9 @@ const FIELD_ECCENTRICITY_SPEED := 500.0
 # one exception: it is chosen on its own rather than reused from the ordinary day, because the
 # escape is asked to stay exactly as hard as it always was while the ordinary day grows around it.
 
-## How long one section of the escape runs, on top of a real `DayController`'s own clock — each
-## section is its own day with a brief and a restart checkpoint of its own, and the player's
-## answer was *"180s per section"*. Stated on its own rather than reused from the ordinary day's
-## length: the player asked that *"the escape shouldn't be easy!"* (`docs/playtests/PLAYTEST-121.md`),
-## so the escape does not grow when the ordinary day does. Asked alongside the ordinary day's
-## length and not yet answered whether it should grow too — open to overturn.
-const FINALE_LENGTH_SECONDS := 180.0
 
-## How many calm blocks each chain runs through between the service exit and its edge — *"a single
-## path through the city that crosses three parks"*. The chains are built one street-walk at a
-## time between consecutive stops, so this is also how many intermediate stops each chain has.
-const FINALE_PARKS_PER_CHAIN := 3
-
-## How close her own centre has to come to the last walkable tile of the spine, at either end of
-## the map, for the sequence to be over. One tile and a half — comfortably past her own body
-## (`PLAYER_BODY_RADIUS`, 14px) so standing anywhere on that tile is out, and under two tiles so
-## the tile before it is not. The same reasoning, and the same figure, as the radius the building's
-## own doors hold her with.
-const FINALE_EXIT_REACH := TILE_SIZE * 1.5
-
-## How long **every** hallway window holds its lit picture when something goes off outside — *"one
-## or two frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
-## The same length for the near bang and the far ones, and they light and go dark together:
-## *(2026-09-19: "all windows always need to flash together. a single window cannot flash by
-## itself.")*
-const FINALE_WINDOW_FLASH_SECONDS := 0.12
-
-## The wait between two **distant** flashes in the hallway windows, as a bounded distribution
-## rather than a period. *(2026-09-19: "the flashing lights in the window are too rare"; and, on
-## how often: "do a biased random distribution between 100ms and 5s between flashes where the mean
-## is 1.3s and the rest of the curve is smooth.")*
-##
-## **Light without noise, and that is the whole of why these exist.** A flash was only ever the
-## near bang's own cue, one every `EventCatalogue.FINALE_EXPLOSION_INTERVAL` (22s), which is eight over the
-## whole clock — and an explosion is loud: shortening that interval would have made the windows
-## flash more often and made the building cost more in the same stroke, which the player did not
-## ask for. A distant flash is a picture and nothing else: no instance, no field, nothing on the
-## meter. So the night outside reads as a city being shelled, while what she is *charged* for is
-## still only the bangs close enough to shake the building.
-##
-## **A scaled Kumaraswamy draw**, because it is the short-biased smooth curve on a closed interval
-## whose inverse CDF is one line — no rejection loop, no table, and a draw that cannot fall outside
-## the bounds. With `u` uniform in `[0, 1)` from the section's own seeded stream:
-##
-##     t = MIN + (MAX − MIN) · sqrt(1 − (1 − u)^(1 / B))
-##
-## The `sqrt` is the first shape parameter fixed at 2, which is what makes the density zero at both
-## ends rather than piling up against them; **`FINALE_DISTANT_FLASH_SHAPE_B` is the only thing that
-## sets the mean**, solved numerically so that the mean lands on
-## `FINALE_DISTANT_FLASH_MEAN_SECONDS` — so moving the mean means solving `B` again, not editing it
-## by feel. At `B = 12.343` the curve measures out at a mean of 1.298s, a median of 1.24s, a mode
-## near 1.1s and a 95th percentile of 2.37s: mostly quick double-taps with the occasional long
-## dark gap, and no step anywhere in it.
-##
-## **The interval runs start to start**, so a 0.1s draw against a
-## `FINALE_WINDOW_FLASH_SECONDS` (0.12s) flash means two of them overlap. That is wanted — it reads
-## as a double flash — and the lit state is a single countdown that the second flash simply
-## restarts, so an overlap never blinks dark for a frame and never leaves a window lit.
-##
-## **How often is the only thing that separates a far flash from a near one.** Both light every
-## window in the building together (`InteriorScene.flash_windows()`); what a bang adds is the
-## charge on the meter.
-const FINALE_DISTANT_FLASH_MIN_SECONDS := 0.1
-const FINALE_DISTANT_FLASH_MAX_SECONDS := 5.0
 const FINALE_DISTANT_FLASH_MEAN_SECONDS := 1.3
-const FINALE_DISTANT_FLASH_SHAPE_B := 12.343
 
-## The basement's steam vents, one entry per vent: how often each one blows, in seconds.
-##
-## *"Have multiple fixed locations with steam that fully block the path and have them turn off an
-## on in different intervals so it becomes a timing puzzle."* **The count is the length of this
-## list rather than a second constant**, so a vent without a period of its own is not a thing that
-## can be written down.
-##
-## **Three, and no two periods share a factor with each other**, which is the whole of what makes
-## the corridor a puzzle instead of a rhythm: 8, 9 and 11 half-seconds are pairwise coprime, so the
-## pattern the three of them make together only repeats after their product — 396s, more than twice
-## the whole sequence's own clock — and she never walks the same corridor twice. Three rather than
-## more because the basement's corridor is about forty tiles end to end and a vent closes it
-## outright: a fourth would make the walk a queue of gates rather than a route with waits in it.
-##
-## **The floor under all three is what one crossing costs, not taste.** *(2026-09-19: "the steam
-## frequencies are too slow.")* A vent stands on a one-tile cell and holds her centre
-## `EventCatalogue.STEAM_VENT_BODY` + `PLAYER_BODY_RADIUS` (16 + 14 = 30px) out, so clearing it
-## means covering 60px — 0.65s at `WALK_SPEED` (92px/s). A vent's corridor is shut for
-## `EventCatalogue.FINALE_STEAM_BLOWS_FOR` and open for the rest of its period, so the shortest period leaves
-## `4.0 − 2.0 = 2.0s` of open corridor against that 0.65s: a second and a third of margin, which is
-## the "at least a second" a gate owes somebody who started walking a moment too late. Anything
-## under 3.7s would stop owing it.
-const FINALE_STEAM_PERIODS: Array[float] = [4.0, 4.5, 5.5]
-
-## How many slots each open street of the escape's walk has, each filled by one draw from the
-## escape's marble bag below (`DaySpec.slots_per_street`, which the city section's spec takes from
-## here; `EventScheduler._fill_the_walk_from_the_bag()` draws them). **One keeps the section the
-## climax and every walk out of it walkable**, measured by walking the shortest walk
-## from the service exit to each exit through the plan's own events, on two sets of 24 seeds
-## (measured by `tests/probes/escape_winnable.gd` at f8172b7ccb7f, whose own stand-in walker and
-## meter produced `docs/evidence/winnable-escape-2026-10-19/`; the probe walks with the game's own
-## walker, `RouteRig`, and its numbers are not comparable with those):
-## at one slot a walk to an exit meets about eight dangers, one every eight seconds of walking, and
-## a plain walk gets out on 95 of 96 with the baby woken on 4; at two slots it meets about twelve,
-## the baby wakes on about one walk in five, and one walk in sixteen to one in nine ends in crying.
-## One slot also stands one roadblock a street at most, so a crossing is one band and one guard on
-## her side of it to lure *(inbox #771 in minty-lemur: "Luring away one guard (the challenge) is not
-## enough to make the obstacle survivable")*, which the notice spacing
-## (`EventScheduler._keeps_its_notice_to_itself()`) would hold at any slot count, since no street is
-## long enough for two bands' notices.
-const FINALE_SLOTS_PER_STREET := 1
-## The escape's marble bag, in the player's order of how many *(inbox #785 in minty-lemur:
-## "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks, off-screen
-## explosions, unmarked vans, roadblocks (the barriers) and empty marbles, where the slot that draws
-## one stands nothing. **The two rows that take her have the fewest marbles the order allows**, vans
-## 3 and roadblocks 2 over the one empty marble, and the trucks and explosions, which only wake the
-## baby, make up the rest: a van's catch and a guard's end the section, and a van's field is most of
-## what the probe's walks that cried had landed. With these a walk to an exit meets about three
-## trucks, three explosions, one van and one roadblock; the order's smallest bag, 5, 4, 3, 2 and 1,
-## meets a van and a roadblock more often and gets out on 44 walks of 48. A fill is 24 marbles and
-## a plan has about 31 open streets, so an escape draws one whole fill and about seven marbles of
-## the next. About a third of the streets stand nothing all the same, since a danger the placement
-## rules refuse is spent unmet.
-const FINALE_BAG_TRUCKS := 10
-const FINALE_BAG_EXPLOSIONS := 8
-const FINALE_BAG_VANS := 3
-const FINALE_BAG_ROADBLOCKS := 2
-const FINALE_BAG_EMPTY := 1
 
 # --------------------------------------------------------------------- masts ---
 # M180, posters she notices, and loudspeakers that are somewhere: a loudspeaker is a mast on a

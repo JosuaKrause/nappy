@@ -717,7 +717,7 @@ func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t) -> vo
 			== Vector2.INF, "a day has no tunnel or bridge to walk to")
 	var tunnel := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.TUNNEL))
 	var bridge := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.BRIDGE))
-	clock.spec = DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	clock.spec = DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	clock.spec.exits = {CityEdge.Kind.TUNNEL: tunnel, CityEdge.Kind.BRIDGE: bridge}
 	t.check(rig._resolve_target("tunnel") == tunnel, "'tunnel' resolves to the spec's tunnel")
 	t.check(rig._resolve_target("bridge") == bridge, "'bridge' resolves to the spec's bridge")

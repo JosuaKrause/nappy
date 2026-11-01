@@ -66,7 +66,7 @@ const EVENT_WALL_GAP_WEIGHT := 6
 ##
 ## A wall bounds the corridor, so it has to be somewhere the corridor can see; a lethal thing four
 ## streets away bounds nothing. That is the preference. What is not a preference is the exclusion
-## beside it — the same reasoning as `Tuning.CLOSURE_WALL_BIAS`, which is this number's twin one system
+## beside it — the same reasoning as `ClosurePlanner.CLOSURE_WALL_BIAS`, which is this number's twin one system
 ## over and deliberately the same value.
 ##
 ## **The rim is two kinds of ground, not one.** A turning off the corridor is the first: one street

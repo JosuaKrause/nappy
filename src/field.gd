@@ -6,11 +6,13 @@ extends RefCounted
 ## (`GroundShape`), price it (`EventDef`, `EventInstance`, `CrowdExcitement`) and check it (the tests) cannot
 ## disagree.
 
+const FIELD_ECCENTRICITY_SPEED := 500.0
+
 ## Eccentricity of a moving emitter's field kernel, from its own speed: zero at a standstill, the plain disc
 ## every field always was, rising with speed and capped at `Tuning.FIELD_ECCENTRICITY_MAX` so nothing ever
-## flattens to a line (the numbers and why they are what they are: `Tuning.FIELD_ECCENTRICITY_SPEED`).
+## flattens to a line (the numbers and why they are what they are: `FIELD_ECCENTRICITY_SPEED`).
 static func eccentricity(speed: float) -> float:
-	return minf(Tuning.FIELD_ECCENTRICITY_MAX, speed / Tuning.FIELD_ECCENTRICITY_SPEED)
+	return minf(Tuning.FIELD_ECCENTRICITY_MAX, speed / FIELD_ECCENTRICITY_SPEED)
 
 ## The moving field's growth over its resting disc: `L(e) = R / (1 − e)`, so a field at the
 ## catalogued radius `R` reaches `R · Field.scale(e)` dead ahead once it moves — the width the

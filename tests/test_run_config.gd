@@ -128,7 +128,7 @@ func _test_the_day_and_the_section_lengths(t) -> void:
 	for day in [1, Tuning.RUN_LENGTH_DAYS]:
 		t.check(is_equal_approx(plain.day_length_for(day), Tuning.day_length(day)),
 				"day %d runs its own length with no flag" % day)
-	t.check(is_equal_approx(plain.escape_section_length(), Tuning.FINALE_LENGTH_SECONDS),
+	t.check(is_equal_approx(plain.escape_section_length(), RunConfig.FINALE_LENGTH_SECONDS),
 			"and an escape section its own")
 	var short := RunConfig.parse(_words(["--day-length", "30"]), "", true)
 	t.check(is_equal_approx(short.day_length_for(1), 30.0)

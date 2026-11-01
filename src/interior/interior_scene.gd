@@ -38,6 +38,57 @@ extends WorldContext
 ## her nothing; leaving that radius clears it and every door, including the one she came through,
 ## can take her again.
 
+## **The meter does not fall in the escape's basement** *(inbox #765 in minty-lemur: "let's not replenish the meter
+## in the basement it's a tense situation")*: walking there earns no decay, awake or asleep, so a
+## blow's 40 to 50 points stay on the meter and the blows add up. It is the ground's
+## multiplier like the others, `InteriorScene.decay_multiplier()`, and it is the only ground inside
+## the building that is not 1.0.
+const EXCITEMENT_DECAY_BASEMENT_MULTIPLIER := 0.0
+const FINALE_DISTANT_FLASH_MAX_SECONDS := 5.0
+## The wait between two **distant** flashes in the hallway windows, as a bounded distribution
+## rather than a period. *(2026-09-19: "the flashing lights in the window are too rare"; and, on
+## how often: "do a biased random distribution between 100ms and 5s between flashes where the mean
+## is 1.3s and the rest of the curve is smooth.")*
+##
+## **Light without noise, and that is the whole of why these exist.** A flash was only ever the
+## near bang's own cue, one every `EventCatalogue.FINALE_EXPLOSION_INTERVAL` (22s), which is eight over the
+## whole clock — and an explosion is loud: shortening that interval would have made the windows
+## flash more often and made the building cost more in the same stroke, which the player did not
+## ask for. A distant flash is a picture and nothing else: no instance, no field, nothing on the
+## meter. So the night outside reads as a city being shelled, while what she is *charged* for is
+## still only the bangs close enough to shake the building.
+##
+## **A scaled Kumaraswamy draw**, because it is the short-biased smooth curve on a closed interval
+## whose inverse CDF is one line — no rejection loop, no table, and a draw that cannot fall outside
+## the bounds. With `u` uniform in `[0, 1)` from the section's own seeded stream:
+##
+##     t = MIN + (MAX − MIN) · sqrt(1 − (1 − u)^(1 / B))
+##
+## The `sqrt` is the first shape parameter fixed at 2, which is what makes the density zero at both
+## ends rather than piling up against them; **`FINALE_DISTANT_FLASH_SHAPE_B` is the only thing that
+## sets the mean**, solved numerically so that the mean lands on
+## `Tuning.FINALE_DISTANT_FLASH_MEAN_SECONDS` — so moving the mean means solving `B` again, not editing it
+## by feel. At `B = 12.343` the curve measures out at a mean of 1.298s, a median of 1.24s, a mode
+## near 1.1s and a 95th percentile of 2.37s: mostly quick double-taps with the occasional long
+## dark gap, and no step anywhere in it.
+##
+## **The interval runs start to start**, so a 0.1s draw against a
+## `FINALE_WINDOW_FLASH_SECONDS` (0.12s) flash means two of them overlap. That is wanted — it reads
+## as a double flash — and the lit state is a single countdown that the second flash simply
+## restarts, so an overlap never blinks dark for a frame and never leaves a window lit.
+##
+## **How often is the only thing that separates a far flash from a near one.** Both light every
+## window in the building together (`InteriorScene.flash_windows()`); what a bang adds is the
+## charge on the meter.
+const FINALE_DISTANT_FLASH_MIN_SECONDS := 0.1
+const FINALE_DISTANT_FLASH_SHAPE_B := 12.343
+## How long **every** hallway window holds its lit picture when something goes off outside — *"one
+## or two frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
+## The same length for the near bang and the far ones, and they light and go dark together:
+## *(2026-09-19: "all windows always need to flash together. a single window cannot flash by
+## itself.")*
+const FINALE_WINDOW_FLASH_SECONDS := 0.12
+
 signal exit_requested
 
 ## Every picture below is a region name on the `interior` atlas group; `_enter_tree()`/
@@ -298,7 +349,7 @@ var _window_flash_left := 0.0
 ## one map with three hallways 64 tiles apart, and the two she is not in are off screen and cost
 ## two texture assignments.
 func flash_windows() -> void:
-	_window_flash_left = Tuning.FINALE_WINDOW_FLASH_SECONDS
+	_window_flash_left = FINALE_WINDOW_FLASH_SECONDS
 	var texture := AtlasLibrary.region(HALLWAY_WINDOW_FLASH)
 	for sprite in _window_sprites:
 		sprite.texture = texture
@@ -371,7 +422,7 @@ func _physics_process(delta: float) -> void:
 	flash_windows()
 
 ## How long until the next one: a scaled Kumaraswamy draw, short-biased and smooth, bounded by
-## `Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape
+## `FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape
 ## constant — see that constant's own doc for the formula and for why `B` is not a number to edit by
 ## feel. **Its inverse CDF is closed form**, which is why this is one expression and not a rejection
 ## loop: a loop would draw a variable number of values from the stream and make how many times the
@@ -379,9 +430,9 @@ func _physics_process(delta: float) -> void:
 ## same night.
 func _wait_for_the_next_distant_flash() -> float:
 	var u := _flashes.randf()
-	var span := Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS - Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS
-	return Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS \
-			+ span * sqrt(1.0 - pow(1.0 - u, 1.0 / Tuning.FINALE_DISTANT_FLASH_SHAPE_B))
+	var span := FINALE_DISTANT_FLASH_MAX_SECONDS - FINALE_DISTANT_FLASH_MIN_SECONDS
+	return FINALE_DISTANT_FLASH_MIN_SECONDS \
+			+ span * sqrt(1.0 - pow(1.0 - u, 1.0 / FINALE_DISTANT_FLASH_SHAPE_B))
 
 func _process(delta: float) -> void:
 	if _window_flash_left <= 0.0:
@@ -543,11 +594,11 @@ func _layer_node(layer: int, name: String, y_sorted := false) -> Node2D:
 # the building's map, or none while the building is walked empty), and the basement's decay.
 
 ## **The basement gives nothing back**: the meter does not fall while she is in it, awake or asleep
-## (`Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`), so what a vent charges her with stays until she
+## (`EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`), so what a vent charges her with stays until she
 ## is out. Every other part of the building is an ordinary 1.0.
 func decay_multiplier(world_position: Vector2) -> float:
 	if InteriorMap.part_at(map.world_to_tile(world_position)) == "basement":
-		return Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER
+		return EXCITEMENT_DECAY_BASEMENT_MULTIPLIER
 	return 1.0
 
 # ------------------------------------------------------------------ transitions ---

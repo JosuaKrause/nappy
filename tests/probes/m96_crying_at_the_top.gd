@@ -12,12 +12,12 @@ extends RefCounted
 ## steer a body through.
 ##
 ## **`Baby._update_excitement()` is called directly rather than `_physics_process()`.** That skips
-## `_update_state()`, so the live `Tuning.EXCITEMENT_OVERFLOW_TO_CRY`/`_WINDOW` never freeze the
+## `_update_state()`, so the live `Baby.EXCITEMENT_OVERFLOW_TO_CRY`/`_WINDOW` never freeze the
 ## rig mid-scenario the way reaching a real `CRYING` state would — which would otherwise stop a
 ## setting *looser* than the shipped one from ever being measured, since the shared rig would have
 ## already latched. What each setting below actually decides is read back afterwards, from
 ## `Baby.overflow_mass(window)`'s own history — see that function's doc for why a window no wider
-## than the shipped `Tuning.EXCITEMENT_OVERFLOW_WINDOW` (3s, the widest swept here) is always a
+## than the shipped `Baby.EXCITEMENT_OVERFLOW_WINDOW` (3s, the widest swept here) is always a
 ## true subset of what is stored, so this sweeps settings without ever touching `Tuning`.
 
 const STEP := 1.0 / 60.0
@@ -77,7 +77,7 @@ func run(t) -> void:
 	var fall := _fall_from_the_top(t)
 	print("\n-- the fall --")
 	print("  a baby at 100 with nothing near falls under the nearly-crying cue (%.0f) in %.2fs"
-			% [Tuning.EXCITEMENT_NEARLY_CRYING, fall])
+			% [Baby.EXCITEMENT_NEARLY_CRYING, fall])
 
 	t.check(true, "zz_m96 crying-at-the-top probe ran")
 
@@ -295,7 +295,7 @@ func _stand_in_row(t, id: String, seconds: float) -> Dictionary:
 # ---------------------------------------------------------------------- the fall ---
 
 ## Seconds for a baby at 100 with nothing near, walking ordinary ground, to fall under
-## `Tuning.EXCITEMENT_NEARLY_CRYING` — independent of the two new constants, since nothing is
+## `Baby.EXCITEMENT_NEARLY_CRYING` — independent of the two new constants, since nothing is
 ## adding to the mass once the source is gone.
 func _fall_from_the_top(t) -> float:
 	_build(t)
@@ -303,7 +303,7 @@ func _fall_from_the_top(t) -> float:
 	_world.noise = 0.0
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var elapsed := 0.0
-	while _baby.excitement >= Tuning.EXCITEMENT_NEARLY_CRYING:
+	while _baby.excitement >= Baby.EXCITEMENT_NEARLY_CRYING:
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		elapsed += STEP
 	_teardown()

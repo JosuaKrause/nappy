@@ -327,7 +327,7 @@ func _test_a_won_day_gives_a_nerve_back(t) -> void:
 	GameState.header.nerves = 3
 	GameState.facts.escape_section = DaySpec.Section.CITY
 	GameState.finish_day(GameEnums.DayResult.WON,
-			DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS))
+			DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
 	t.check(GameState.header.nerves == 3, "the escape's own win gives no nerve back")
 
 	# Hard Mode: a won day gives nothing back through `finish_day()`, and the wrapper day 14's

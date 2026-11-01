@@ -11,6 +11,13 @@ extends Node
 ## exit and the city's two ways out are goals of this clock exactly as her front door is, and a
 ## lost section ends here through the same three losing paths a day does.
 
+## How close her own centre has to come to the last walkable tile of the spine, at either end of
+## the map, for the sequence to be over. One tile and a half — comfortably past her own body
+## (`Tuning.PLAYER_BODY_RADIUS`, 14px) so standing anywhere on that tile is out, and under two tiles so
+## the tile before it is not. The same reasoning, and the same figure, as the radius the building's
+## own doors hold her with.
+const FINALE_EXIT_REACH := Tuning.TILE_SIZE * 1.5
+
 signal day_finished(result: GameEnums.DayResult)
 
 ## What this day is: its goal and its clock. Handed in by whoever starts the day, before `start()`;
@@ -153,14 +160,14 @@ func _reached_the_goal() -> bool:
 			return _reached_an_exit()
 	return false
 
-## Whether she has reached the tunnel mouth or the bridge deck — within `Tuning.FINALE_EXIT_REACH`
+## Whether she has reached the tunnel mouth or the bridge deck — within `FINALE_EXIT_REACH`
 ## of the last walkable tile of the spine at either end (`spec.exits`), past her body and under two
 ## tiles — and which, kept in `exit_reached`.
 func _reached_an_exit() -> bool:
 	if not _player:
 		return false
 	for kind: int in spec.exits:
-		if _player.global_position.distance_to(spec.exits[kind]) <= Tuning.FINALE_EXIT_REACH:
+		if _player.global_position.distance_to(spec.exits[kind]) <= FINALE_EXIT_REACH:
 			exit_reached = kind
 			return true
 	return false

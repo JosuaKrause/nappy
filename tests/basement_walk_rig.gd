@@ -8,7 +8,7 @@ extends RefCounted
 ## `EventInstance` themselves, ticked the way the game ticks them; the corridor is `InteriorScene.basement_walk()`; the decay is the baby's own
 ## rule (`Baby.decay_rate()`: `Tuning.EXCITEMENT_DECAY_WALKING` times the scene's
 ## `decay_multiplier()` while she walks, `EXCITEMENT_DECAY_IDLE` while she waits) and the
-## sensitivity is `Tuning.SLEEPING_SENSITIVITY` asleep. Her body is a point moving at
+## sensitivity is `Baby.SLEEPING_SENSITIVITY` asleep. Her body is a point moving at
 ## `Tuning.WALK_SPEED` and held `HELD_OUT` from a vent whose body is down, which is what the
 ## physics does to her at a one-tile gate. **Steam alone**: the basement's mouse, the fire and the
 ## bangs are not ticked, so the figures are what the vents cost.
@@ -54,7 +54,7 @@ func walk(arrival: float, delay: float, asleep: bool) -> Dictionary:
 	while time < arrival:
 		_tick(far, true)
 		time += STEP
-	var sensitivity := Tuning.SLEEPING_SENSITIVITY if asleep else 1.0
+	var sensitivity := Baby.SLEEPING_SENSITIVITY if asleep else 1.0
 	var pos := _points[0]
 	var next := 1
 	var meter := 0.0
@@ -73,7 +73,7 @@ func walk(arrival: float, delay: float, asleep: bool) -> Dictionary:
 				if not held.has(by):
 					held.append(by)
 		var incoming := _tick(candidate, not asleep)
-		var rate := Tuning.EXCITEMENT_DECAY_IDLE if stopped else Tuning.EXCITEMENT_DECAY_WALKING
+		var rate := Baby.EXCITEMENT_DECAY_IDLE if stopped else Tuning.EXCITEMENT_DECAY_WALKING
 		var decay := rate * _scene.decay_multiplier(candidate)
 		meter = clampf(meter + (incoming * sensitivity - decay) * STEP, 0.0, Tuning.METER_MAX)
 		peak = maxf(peak, meter)

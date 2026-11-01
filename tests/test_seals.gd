@@ -116,13 +116,13 @@ func _sealed_segments(map: CityMap, planned: Array[EventScheduler.Planned]) -> D
 # ---------------------------------------------------------------------- the core ---
 
 ## How far the share of streets sealed from the gatehouse day on may sit from
-## `Tuning.GATEHOUSE_DAY_SEAL_SHARE`, over one seed's days from it to the end of the run — about a
+## `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE`, over one seed's days from it to the end of the run — about a
 ## thousand rolls, so a share honoured by the roll lands well inside this and one not honoured at
 ## all (every street sealed, or none) lands well outside it.
 const _SEAL_SHARE_TOLERANCE := 0.1
 
 ## The whole point: a seal stands on every off-tree, real, non-home street, and nowhere else —
-## before the gatehouse day. From `Tuning.REGION_WALL_FIRST_DAY` on, `Tuning.GATEHOUSE_DAY_SEAL_SHARE`
+## before the gatehouse day. From `Tuning.REGION_WALL_FIRST_DAY` on, `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE`
 ## of those streets carry one (azure-puffin, point 4: "fewer of all three"), so there the check is
 ## the share sealed over the seed's late days, and still never a seal off the candidates.
 func _test_off_tree_streets_are_sealed(t) -> void:
@@ -159,10 +159,10 @@ func _test_off_tree_streets_are_sealed(t) -> void:
 				"seed %d: the days from the gatehouse day had off-tree streets to seal (%d)"
 				% [map.seed_used, late_candidates])
 		var share := float(late_sealed) / maxf(1.0, float(late_candidates))
-		t.check(absf(share - Tuning.GATEHOUSE_DAY_SEAL_SHARE) <= _SEAL_SHARE_TOLERANCE,
+		t.check(absf(share - SealPlanner.GATEHOUSE_DAY_SEAL_SHARE) <= _SEAL_SHARE_TOLERANCE,
 				"seed %d: from the gatehouse day %.2f of the off-tree streets are sealed (%d of %d), "
 				% [map.seed_used, share, late_sealed, late_candidates]
-				+ "the share asked for is %.2f" % Tuning.GATEHOUSE_DAY_SEAL_SHARE)
+				+ "the share asked for is %.2f" % SealPlanner.GATEHOUSE_DAY_SEAL_SHARE)
 
 func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
 	for map in _maps:
@@ -341,7 +341,7 @@ func _test_a_day_is_reachable_without_the_main_road(t) -> void:
 
 ## An alley that touches the tree at either end is **never** walled — that half of the rule is
 ## still absolute. One that touches it at neither end is only a *candidate*, sealed with chance
-## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` rather than certainly — *(playtest 25, finding 5: "the
+## `SealPlanner.ALLEY_MOUTH_SEAL_CHANCE` rather than certainly — *(playtest 25, finding 5: "the
 ## probability of blocking off alleys should be way lower")* — so the second half is checked as a
 ## rate over many days and seeds rather than as a per-alley certainty. Re-derives the same rule
 ## `SealPlanner._seal_alley_mouths` uses, which is what catches the rule and the placement drifting
@@ -387,9 +387,9 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
 		# A wide band around the constant: this is a Bernoulli rate over a few hundred draws, not
 		# an exact fraction, and the point of the change is that it is well short of 1.0 rather than
 		# that it hits a precise number.
-		t.check(rate < Tuning.ALLEY_MOUTH_SEAL_CHANCE + 0.15,
+		t.check(rate < SealPlanner.ALLEY_MOUTH_SEAL_CHANCE + 0.15,
 				"disconnected alleys are sealed at about the configured rate (%.2f of %d, chance %.2f)"
-				% [rate, candidates, Tuning.ALLEY_MOUTH_SEAL_CHANCE])
+				% [rate, candidates, SealPlanner.ALLEY_MOUTH_SEAL_CHANCE])
 		t.check(rate < 0.5,
 				"disconnected alleys are the exception now, not the rule (%.2f of %d sealed)"
 				% [rate, candidates])

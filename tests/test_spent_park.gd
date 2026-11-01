@@ -372,10 +372,10 @@ func _test_the_guarantees_hold_with_the_fenced_park(t) -> void:
 					if Tile.is_calm(map.tile_at(tile)) and map.reaches(field, tile):
 						reachable += 1
 						break
-			t.check(reachable >= Tuning.MIN_CALM_AREAS_REACHABLE,
+			t.check(reachable >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
 					"seed %d day %d: %d open calm areas reachable with the park fenced and the "
 					% [map.seed_used, day, reachable] + "streets closed, need %d"
-					% Tuning.MIN_CALM_AREAS_REACHABLE)
+					% ClosurePlanner.MIN_CALM_AREAS_REACHABLE)
 	t.check(checked > 0, "the sweep had a fenced park to check guarantees against (%d)" % checked)
 
 ## A calm area she has not used is untouched: still calm, none of its ground touched by the
@@ -475,10 +475,10 @@ func _test_shutting_is_refused_rather_than_breaking_a_guarantee(t) -> void:
 		for day in [1, 5, 9, 12, 14]:
 			var calm := _calm_on(map, day)
 			_repaint(map, day, calm, Vector2i(-1, -1), 0)
-			t.check(calm.size() - map.shut_calm.size() >= Tuning.MIN_CALM_AREAS_REACHABLE,
+			t.check(calm.size() - map.shut_calm.size() >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
 					"seed %d day %d: %d of %d calm areas kept fully on the tree, need %d"
 					% [map.seed_used, day, calm.size() - map.shut_calm.size(), calm.size(),
-					Tuning.MIN_CALM_AREAS_REACHABLE])
+					ClosurePlanner.MIN_CALM_AREAS_REACHABLE])
 			var fenced_count := 1 if map.fenced_park.x >= 0 else 0
 			t.check(map.calm_blocks.size() == calm.size() - fenced_count,
 					"seed %d day %d: only the fenced park, if any, leaves calm_blocks (%d calm, "
