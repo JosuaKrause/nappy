@@ -91,7 +91,8 @@ var _run: RunState
 ## the director's own, or the map's (`WorldMap.navigator()`) for a rig that hands none — and the run
 ## they belong to: `run`, or the city's (`City.run`) — and the siting the raid is held to
 ## (`spawn_siting`), or the city's (`City.spawn_siting`) over the same map, or none for a rig with
-## neither, where nothing the raid puts down is ever held back for being in view.
+## neither, where nothing the raid puts down or the cordon's officers walk in as is ever held back
+## for being in view.
 func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState = null,
 		spawn_siting: SpawnSiting = null) -> void:
 	_city = city
@@ -145,10 +146,8 @@ func start_day(day: int, with_its_events := true) -> void:
 
 ## Once a tick the walk stepped, from the director (`ResistanceDirector.tick()`): brings in
 ## whatever the day is waiting to bring in. `her` is her
-## position, `Vector2.INF` with no player, and `velocity` hers; `shows(row, feet)` is whether any
-## of what `row` draws, standing at `feet`, would be in the camera's whole view, covered corners
-## included, which the park's cordon asks of the officers it brings in and a rig may leave unset.
-func tick(delta: float, her: Vector2, velocity: Vector2, shows: Callable) -> void:
+## position, `Vector2.INF` with no player, and `velocity` hers.
+func tick(delta: float, her: Vector2, velocity: Vector2) -> void:
 	_elapsed += delta
 	if her != Vector2.INF and velocity.length() >= Tuning.AHEAD_MIN_SPEED:
 		_heading = velocity.normalized()
@@ -158,7 +157,7 @@ func tick(delta: float, her: Vector2, velocity: Vector2, shows: Callable) -> voi
 	if _market_owed:
 		_maybe_the_market(delta, her)
 	if cordon:
-		cordon.tick(delta, her, shows)
+		cordon.tick(delta, her)
 	if _column_owed:
 		_maybe_the_column(her)
 
@@ -368,7 +367,8 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	_map.recompute_calm(state)
 	if cordon:
 		cordon.clear()
-	cordon = ParkCordon.new(_map, _navigator, _city, park, blocked)
+	var siting := _spawn_siting if _spawn_siting else SpawnSiting.new(_map, _navigator)
+	cordon = ParkCordon.new(_map, _navigator, _city, park, siting, blocked)
 	cordon.trace = trace
 	trace.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
 			% park)

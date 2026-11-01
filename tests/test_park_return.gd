@@ -88,10 +88,19 @@ func _camera_on(main: Node2D) -> Callable:
 			return view.has_point(feet)
 		return view.intersects(Rect2(feet + box.position, box.size))
 
+## The city's own view looked through about her, as the game's camera does, or about nothing: what
+## the cordon's officers are placed out of sight of (`SpawnSiting`'s).
+func _look(main: Node2D, camera: bool) -> void:
+	var at: Vector2 = main._player.global_position
+	main._city.events.visible_view().look(
+			Rect2(at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0) if camera
+			else Rect2(), null)
+
 ## One frame of the day: the happenings and the day's own clock and win check.
 func _frame(main: Node2D, shows: Callable) -> void:
 	var happenings: ResistanceHappenings = main._resistance._happenings
-	happenings.tick(STEP, main._player.global_position, Vector2.ZERO, shows)
+	_look(main, shows.is_valid())
+	happenings.tick(STEP, main._player.global_position, Vector2.ZERO)
 	main._day.tick(STEP)
 
 ## Walks her toward `to` at the walking speed for `seconds`, a frame at a time.

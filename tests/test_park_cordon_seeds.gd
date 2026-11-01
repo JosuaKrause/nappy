@@ -176,11 +176,12 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 		happenings: ResistanceHappenings, swing: Vector2) -> Dictionary:
 	var her := [swing]
 	var shows := _camera_on(her)
-	happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+	_look(city, her[0])
+	happenings.tick(STEP, her[0], Vector2.ZERO)
 	var cordon := happenings.cordon
 	var result := {"park_size": cordon.area.size, "walk": swing.distance_to(cordon.last_gap)}
 	_measure_the_gap(city, director, cordon, result)
-	var standing := _play(cordon, her, shows, false)
+	var standing := _play(city, cordon, her, shows, false)
 	result.first_seen = standing.first_seen
 	result.closed_at = standing.closed_at
 	result.trapped_standing = standing.trapped
@@ -196,10 +197,10 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.people = people
 	cordon.clear()
 	var again := ParkCordon.new(city.map, city.navigator, city, cordon.park,
-			director._reach_blocked)
+			city.spawn_siting, director._reach_blocked)
 	her[0] = swing
-	again.tick(STEP, her[0], shows)
-	var walking := _play(again, her, shows, true)
+	_tick(city, again, her[0])
+	var walking := _play(city, again, her, shows, true)
 	result.walked_out = walking.closed_at >= 0.0 and not walking.trapped
 	again.clear()
 	var runs: Array[Dictionary] = []
@@ -225,10 +226,10 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	if not busker:
 		return {"person_placed": false, "place": place[0]}
 	var cordon := ParkCordon.new(city.map, city.navigator, city, park,
-			director._reach_blocked)
+			city.spawn_siting, director._reach_blocked)
 	var her := [swing]
 	var shows := _camera_on(her)
-	cordon.tick(STEP, her[0], shows)
+	_tick(city, cordon, her[0])
 	var way := PackedVector2Array(cordon._exit)
 	if way.size() >= 2:
 		var last_leg := (way[way.size() - 1] - way[way.size() - 2]).normalized()
@@ -252,7 +253,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 		if not _gone(busker):
 			busker.player_at = her[0]
 			busker.step(STEP)
-		cordon.tick(STEP, her[0], shows)
+		_tick(city, cordon, her[0])
 		clock += STEP
 		for officer in cordon.officers:
 			if before.has(officer):
@@ -346,7 +347,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 ## (the one he stands on left out, since anyone may walk off a solid he stands in), and every frame
 ## an officer already walking in or round the edge, waiting for nobody, did not move with his walk
 ## ahead of him.
-func _play(cordon: ParkCordon, her: Array, shows: Callable, walks: bool) -> Dictionary:
+func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: bool) -> Dictionary:
 	var row := EventCatalogue.by_id(ParkCordon.OFFICER_ROW)
 	var first_seen := -1.0
 	var clock := STEP
@@ -367,7 +368,7 @@ func _play(cordon: ParkCordon, her: Array, shows: Callable, walks: bool) -> Dict
 			var target := gap if (her[0] as Vector2).distance_to(gap) > 1.0 \
 					and cordon.line.has_point(her[0]) else out
 			her[0] = (her[0] as Vector2).move_toward(target, Tuning.WALK_SPEED * STEP)
-		cordon.tick(STEP, her[0], shows)
+		_tick(city, cordon, her[0])
 		clock += STEP
 		for officer in cordon.officers:
 			if before.has(officer):
@@ -398,7 +399,7 @@ func _count_the_step(cordon: ParkCordon, officer: ParkCordon.Officer, from: Vect
 		counts.stalled += 1
 
 ## What the camera sees with her at `her[0]`: the game's own view box round her, against the whole
-## of what `row` draws standing at `feet` — `ResistanceDirector._drawing_shows()`'s question.
+## of what `row` draws standing at `feet` — `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`'s question.
 func _camera_on(her: Array) -> Callable:
 	return func(row: EventDef, feet: Vector2) -> bool:
 		var centre: Vector2 = her[0]
@@ -407,6 +408,16 @@ func _camera_on(her: Array) -> Callable:
 		if not box.has_area():
 			return view.has_point(feet)
 		return view.intersects(Rect2(feet + box.position, box.size))
+
+## The city's own view looked through about `at`, as the game's camera does, then one tick of
+## the cordon: what its officers are placed out of sight of is that view (`SpawnSiting`'s).
+func _tick(city: City, cordon: ParkCordon, at: Vector2) -> void:
+	_look(city, at)
+	cordon.tick(STEP, at)
+
+func _look(city: City, at: Vector2) -> void:
+	city.events.visible_view().look(
+			Rect2(at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
 
 func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
