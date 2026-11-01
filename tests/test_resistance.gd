@@ -2953,7 +2953,7 @@ func _test_completing_the_package_makes_the_pram_heavier(t) -> void:
 		t.check(GameState.resistance.carrying_package, "picking up the package sets the flag")
 
 		var after := _city.decay_multiplier(somewhere)
-		t.close_to(after, before * Tuning.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
+		t.close_to(after, before * City.RESISTANCE_PACKAGE_DECAY_MULTIPLIER,
 				"and every street after it decays slower for the rest of the day", 0.001)
 		director.free())
 

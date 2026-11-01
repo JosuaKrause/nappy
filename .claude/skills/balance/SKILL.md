@@ -5,8 +5,10 @@ description: Rules for changing any balance or density number — event density,
 
 # Balance
 
-**All balance numbers live in `src/autoload/tuning.gd` and nowhere else.** Prefer a named constant
-in `Tuning` over a literal anywhere gameplay can feel it.
+**Every balance number is a named constant, never a literal where gameplay can feel it.** A number two or more files
+read lives in `src/autoload/tuning.gd` (`Tuning`); a number exactly one file reads is a `const` in that file
+(`CityGenerator.ALLEY_CHANCE`, `Crowd.BUMP_RADIUS`), and tests name it through that file's class. Use
+`rg "\bNAME\b" src tests` to find where one lives.
 
 **Expect tests to push back.** Several encode *relationships*, not values — traffic noise must stay
 under the walking decay; a fast mover must telegraph across its whole radius. If a test fails,

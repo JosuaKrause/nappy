@@ -3,7 +3,7 @@ extends RefCounted
 ## car for its horn and its strike over the same reach, `Tuning.CAR_ZEBRA_SIGHT` (200px), so a
 ## horn capped at 200px of travel arrived later than `CAR_HORN_TIME` (1.6s) for every car in
 ## `Tuning.CAR_SPEED`'s range — even the slowest, at 130px/s, already wants 208px. `Crowd.
-## _physics_process` now checks the horn against its own watch (`Tuning.CAR_HORN_SIGHT`, 296px)
+## _physics_process` now checks the horn against its own watch (`Crowd.CAR_HORN_SIGHT`, 296px)
 ## instead, so the horn sounds the full `CAR_HORN_TIME` out at every speed in the city.
 ##
 ## **Pure arithmetic, not a live crowd.** `Crowd._horn()`'s own cap is `speed * CAR_HORN_TIME` and
@@ -27,7 +27,7 @@ const _HORN_CALLS := 200000
 func run(t) -> void:
 	print("\n== M191 — first horn distance and time, per car speed ==")
 	var old_watch := Tuning.CAR_ZEBRA_SIGHT
-	var new_watch := Tuning.CAR_HORN_SIGHT
+	var new_watch := Crowd.CAR_HORN_SIGHT
 	print("CAR_HORN_TIME %.2fs, old watch (CAR_ZEBRA_SIGHT) %.0fpx, new watch (CAR_HORN_SIGHT) %.0fpx"
 			% [Tuning.CAR_HORN_TIME, old_watch, new_watch])
 

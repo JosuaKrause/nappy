@@ -46,6 +46,92 @@ const ATLAS_GROUP := &"crowd"
 ## a walker inside it is asked by the two functions exactly as before.
 const _BEYOND_CONTACT_SQUARED := (Tuning.CROWD_YIELD_DISTANCE + Tuning.BUMP_CLEAR_RADIUS + 1.0) \
 		* (Tuning.CROWD_YIELD_DISTANCE + Tuning.BUMP_CLEAR_RADIUS + 1.0)
+
+## Speed of the deflection a contact gives the player. Well under `Tuning.WALK_SPEED`, so a bump
+## knocks her off her line without steering her.
+const BUMP_SHOVE_SPEED := 55.0
+
+## How close two arrivals have to be for the box to be a *conflict* rather than a queue, and
+## therefore for right-before-left to decide it instead of distance.
+##
+## A car's own length, near enough: closer than that and the second car is behind the first
+## through the box rather than beside it. Wider and a car yields to somebody who was never in its
+## way; narrower and a symmetric arrival is settled by a couple of pixels of float noise, which is
+## right-before-left never actually running.
+const CAR_JUNCTION_TIE := 60.0
+
+## How long the exclamation mark stays up over the player after the last horn. Long enough to
+## survive the gap between two cars in the same lane.
+const CAR_WARNING_HOLD := 1.4
+
+## How much of the separation the player takes; the pedestrian takes the rest. She is pushing
+## a pram and they are not, and being shoved by strangers must never take the verb away.
+const BUMP_PLAYER_SHARE := 0.3
+
+## How far to either side of a checkpoint gate's own line a car may sit and still count as *in its
+## lane*, so `Crowd._stop_for_gates()` can tell a car on the gate's own street from one on a
+## different, unrelated corridor. Half the carriageway (`Tuning.STREET_WIDTH - 2*Tuning.SIDEWALK_WIDTH` tiles,
+## 64px, so 32px each side of the centre line) plus a small margin for the two lanes either side of
+## it.
+const GATE_LANE_TOLERANCE := 40.0
+
+## How far to either side of its own line of travel a walker will look for a hut, in px. A tile: a
+## walker's lane sits exactly 24px across from the hut on its own sidewalk (the hut is on the
+## sidewalk band's centre line, the two walker lanes are `CrowdLanes.SIDEWALK_LANE_SPREAD` either
+## side of their tile centres), and the boom over the road is 64px further still — so a tile picks
+## out the hut on the walker's own sidewalk and nothing else. The car's own equivalent is
+## `GATE_LANE_TOLERANCE`, which is wide where this is narrow, because a carriageway is one lane of
+## traffic and a sidewalk has a door structure standing across it.
+const WALKER_DOOR_LANE_TOLERANCE := 32.0
+
+const BUMP_INNER_RADIUS := 30.0
+
+## Tight, for the reason every crowd radius is tight: the jolt is a body's own source, so it takes
+## the same shoulder from `Field.falloff` as everything else, and a wide one charges a bump she is walking
+## away from for most of its tail. The cost at the moment of contact is set by the intensity.
+const BUMP_OUTER_RADIUS := 62.0
+
+## Centre-to-centre distance at which the player and a pedestrian are touching.
+##
+## It has to be **under half a lane spacing**, and that is the whole of why it is 14 rather than a
+## body's width. The only line with no contact on it is the midline between two lanes; at 18 there
+## is no such line anywhere on a two-tile pavement, and walking the arterial costs eleven bumps in
+## forty seconds however carefully it is done. At 14, holding that line takes the same walk down to
+## two, which is the difference between a toll and a decision.
+##
+## **How *wide* that clear line is matters as much as whether it exists**, and it is the half that
+## is easy to leave unchecked. With lanes a tile apart it is `32 - 2 × 14` — four pixels, something
+## a player is occasionally on rather than something she can aim at, worth 15.3 contacts down an
+## arterial lane centre against the midline's none. The fix belongs in
+## `CrowdLanes.SIDEWALK_LANE_SPREAD`, which moves the lanes apart, and deliberately **not** here:
+## this number is what makes a contact mean *walking into somebody*, and buying the line by
+## shrinking it would make one require a near-perfect overlap.
+const BUMP_RADIUS := 14.0
+
+const BUMP_DURATION := 1.2
+
+## A contact is not a write to `Baby.excitement` — it agitates the *person* she walked into, and
+## the crowd sums them like any other body. Excitement stays a pure query; a bump startles the
+## agent, never the meter — the invariant the **events** skill and `docs/MECHANICS.md` hold.
+##
+## **A contact is about eleven points of a hundred-point meter**, so four or five of them lose a day
+## on the crowd alone. It is the single most expensive instant on a pavement and it must not be the
+## only thing in the game with an opinion: at sixteen points the crowd supplies nearly all of the
+## excitement in a lost day and the authored content is decoration.
+##
+## Read it with `Tuning.CROWD_YIELD_DISTANCE`: people get out of her way, so a contact is what
+## carelessness costs, and it costs less when it happens because it is not the whole game.
+const BUMP_INTENSITY := 18.0
+
+## How far out the crowd watches a car so it can sound this horn — separate from
+## `Tuning.CAR_ZEBRA_SIGHT`, which stays the strike's own reach and the give-way scan's. The horn's
+## warning has to reach as far as the car's own travel at `Tuning.CAR_HORN_TIME`, so this has to be at
+## least `Tuning.CAR_SPEED.y * Tuning.CAR_HORN_TIME` (296px) for the fastest car in the city — below that the
+## watch clips the warning short of `Tuning.CAR_HORN_TIME` rather than the car's speed doing it.
+## `tests/test_tuning_fairness.gd` checks it against the fastest
+## car at boot, and the crowd-traffic skill's "The traffic fairness contract" states the same
+## thing.
+const CAR_HORN_SIGHT := 296.0
 ## Whether this crowd currently holds `ATLAS_GROUP` — guards two different calls rather than one:
 ## `start_day()`'s own acquire, taken once on the first day a crowd is built rather than every day
 ## (PLAYTEST-109, "don't unload anything that might be needed in one day and in the next" — a page
@@ -825,11 +911,11 @@ func _stop_for_gates(delta: float) -> void:
 	for agent in _cars:
 		var forward := agent.heading()
 		var here := agent.global_position
-		for index in _near_a_line(lines, count, forward, here, Tuning.GATE_LANE_TOLERANCE):
+		for index in _near_a_line(lines, count, forward, here, GATE_LANE_TOLERANCE):
 			var offset: Vector2 = _gates[index].position - here
 			var along := offset.dot(forward)
 			var across := (offset - forward * along).length()
-			if across > Tuning.GATE_LANE_TOLERANCE:
+			if across > GATE_LANE_TOLERANCE:
 				continue
 			if absf(along) <= car_length:
 				anybody_within_a_length[index] = 1
@@ -916,7 +1002,7 @@ func _near_a_line(lines: Array[Dictionary], count: int, forward: Vector2, here: 
 ##
 ## Two clauses in the filter below are load-bearing:
 ##
-## - **A hut has to be on the walker's own line**, within `Tuning.WALKER_DOOR_LANE_TOLERANCE` of
+## - **A hut has to be on the walker's own line**, within `WALKER_DOOR_LANE_TOLERANCE` of
 ##   it. That is what makes a door's two huts one each rather than both belonging to everybody, and
 ##   what leaves the boom to the cars on an ordinary street.
 ## - **And it has to stand in a corridor.** An alley door's guards stand at the alley's two mouths,
@@ -955,8 +1041,8 @@ func _find_the_hut_in_front_of(agent: CrowdAgent, lines: Array[Dictionary]) -> v
 	# `_consider_the_hut()`; a pixel of margin keeps a float on a bucket's edge in.
 	var buckets: Dictionary = lines[0] if forward.x == 0.0 else lines[1]
 	var centre := agent.global_position.x if forward.x == 0.0 else agent.global_position.y
-	var first := floori((centre - Tuning.WALKER_DOOR_LANE_TOLERANCE - 1.0) / _LINE_BUCKET)
-	var last := floori((centre + Tuning.WALKER_DOOR_LANE_TOLERANCE + 1.0) / _LINE_BUCKET)
+	var first := floori((centre - WALKER_DOOR_LANE_TOLERANCE - 1.0) / _LINE_BUCKET)
+	var last := floori((centre + WALKER_DOOR_LANE_TOLERANCE + 1.0) / _LINE_BUCKET)
 	for bucket in range(first, last + 1):
 		if buckets.has(bucket):
 			for index: int in buckets[bucket]:
@@ -973,7 +1059,7 @@ func _consider_the_hut(agent: CrowdAgent, forward: Vector2, vertical: bool, inde
 		return
 	if along == agent.door_ahead_along and _door_holds.find(agent.door_ahead) < index:
 		return
-	if (offset - forward * along).length() > Tuning.WALKER_DOOR_LANE_TOLERANCE:
+	if (offset - forward * along).length() > WALKER_DOOR_LANE_TOLERANCE:
 		return
 	var across_coordinate: float = hold.position.x if vertical else hold.position.y
 	if CityMap.corridor_offset(floori(across_coordinate / float(Tuning.TILE_SIZE))) < 0:
@@ -1053,7 +1139,7 @@ func _first_through(queue: Array[CrowdAgent], distance_of: Array[float]) -> Crow
 ## car's own `distance_to_junction()`.
 func _goes_first(a: CrowdAgent, a_distance: float, b: CrowdAgent, b_distance: float) -> bool:
 	var difference := a_distance - b_distance
-	if absf(difference) > Tuning.CAR_JUNCTION_TIE:
+	if absf(difference) > CAR_JUNCTION_TIE:
 		return difference < 0.0
 	return _is_to_the_right_of(a, b)
 
@@ -1138,11 +1224,11 @@ func _meet_the_player() -> void:
 			continue
 		if distance <= Tuning.CAR_ZEBRA_SIGHT and _strike(agent, here):
 			return
-		if distance <= Tuning.CAR_HORN_SIGHT:
+		if distance <= CAR_HORN_SIGHT:
 			closing = _horn(agent, here) or closing
 
 	if shove != Vector2.ZERO:
-		_player.shove(shove.normalized() * Tuning.BUMP_SHOVE_SPEED)
+		_player.shove(shove.normalized() * BUMP_SHOVE_SPEED)
 	# The exclamation mark says *the fairness contract is now about you and the clock has
 	# started* — the load-bearing cue of the danger vocabulary, raised here because this is
 	# where the danger it warns about is created. See docs/EVENTS.md, "The visual vocabulary".
@@ -1158,7 +1244,7 @@ func _meet_the_player() -> void:
 	# cars* and *over the kerb*, and the kerb is a fact this loop already has in hand. Only the
 	# warning the traffic itself raised is taken down; see `Stroller.stand_down`.
 	if closing:
-		_player.warn(Stroller.Alert.SOON, Tuning.CAR_WARNING_HOLD, WARNING_SOURCE)
+		_player.warn(Stroller.Alert.SOON, CAR_WARNING_HOLD, WARNING_SOURCE)
 	elif not on_the_road:
 		_player.stand_down(WARNING_SOURCE)
 
@@ -1197,7 +1283,7 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	if distance >= Tuning.BUMP_CLEAR_RADIUS:
 		agent.touching = false
 		return Vector2.ZERO
-	if distance >= Tuning.BUMP_RADIUS and not agent.touching:
+	if distance >= BUMP_RADIUS and not agent.touching:
 		# Inside the release band but never actually touched: this is somebody she is walking
 		# alongside, not somebody she walked into.
 		return Vector2.ZERO
@@ -1214,13 +1300,13 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	var overlap := Tuning.BUMP_CLEAR_RADIUS - distance
 	# Their share of the separation moves them only over ground they may stand on: against a wall,
 	# a barrier or a body they slide along it or stay, and she takes her own share as she always does.
-	var push := direction * overlap * (1.0 - Tuning.BUMP_PLAYER_SHARE)
+	var push := direction * overlap * (1.0 - BUMP_PLAYER_SHARE)
 	agent.global_position += _navigator.step(agent.global_position, push, _pushed)
 	agent.place_its_move()
 	if not agent.touching:
 		agent.touching = true
-		agent.excitement.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
-				Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
+		agent.excitement.startle(BUMP_INTENSITY, BUMP_DURATION,
+				BUMP_INNER_RADIUS, BUMP_OUTER_RADIUS)
 		EventBus.crowd_bumped.emit(here)
 	# Whichever way they were pushed, keep going that way: the walker's own steering is what
 	# would otherwise undo the separation the instant it is made.
@@ -1251,7 +1337,7 @@ func _strike(agent: CrowdAgent, here: Vector2) -> bool:
 
 ## The horn, sounded at somebody standing in the lane this car is about to occupy. Returns
 ## true while the car is closing, which is what puts the mark over the player's head. Only ever
-## called from within `Tuning.CAR_HORN_SIGHT` of her (`_physics_process`), which is wider than
+## called from within `CAR_HORN_SIGHT` of her (`_physics_process`), which is wider than
 ## the strike's own `CAR_ZEBRA_SIGHT` so a fast car's own cap on this — `speed * CAR_HORN_TIME`
 ## below — is never the watch clipping it short instead.
 func _horn(agent: CrowdAgent, here: Vector2) -> bool:

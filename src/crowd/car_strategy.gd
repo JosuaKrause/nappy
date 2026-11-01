@@ -38,6 +38,30 @@ enum TurnRoundCause {
 	STOPPED_NO_ROOM,  ## At rest with less than a nose's length of manoeuvring room in front.
 }
 
+const CAR_ACCELERATE := 150.0
+
+## The deceleration a car *aims* at when it eases up to a stop line, as opposed to `CAR_BRAKE`,
+## which is the hardest it can push. Giving way has to be **visible from the kerb**, which is why
+## the looking starts at `Tuning.CAR_ZEBRA_SIGHT` rather than at the line, and why the approach is shaped
+## by a gentle rate with only the emergency using the hard one.
+##
+## The relationship, and the one `tests/test_crowd.gd` states:
+## `sqrt(2 · CAR_ZEBRA_APPROACH_BRAKE · Tuning.CAR_ZEBRA_SIGHT) >= Tuning.CAR_SPEED.y` — the fastest car in the
+## city begins easing at the moment the zebra comes into sight, rather than holding speed and
+## then grabbing the brake at the last legal instant.
+##
+## **Getting this wrong in the obvious way makes no car ever stop**: shaping the approach with
+## `CAR_BRAKE` itself puts the onset of braking and the commit point at the *same* moment, so a car
+## glides up to the line at full speed, decides it can no longer stop, and drives through. The test
+## that catches it is the one that says *where* a car stops rather than whether.
+const CAR_ZEBRA_APPROACH_BRAKE := 90.0
+
+## Deceleration when a car gives way at a crossing, and how far ahead it looks for one. The
+## relationship that matters is `Tuning.CAR_ZEBRA_SIGHT > braking_distance(Tuning.CAR_SPEED.y) +
+## Tuning.CAR_STOP_LINE_SETBACK`: a car always has room to stop **at the line** for a zebra it can see,
+## so giving way is never a screech.
+const CAR_BRAKE := 320.0
+
 ## Why each arc `_plan_a_turn()` tried on its last run was refused, one `TurnRefusal` per
 ## `TurnCandidate` slot — the planner's own record of a decision that otherwise leaves no trace.
 ##
@@ -87,7 +111,7 @@ const SHADOW_ACROSS := 30.0
 ## Distance a car needs to stop from a given speed. Used by the crossing logic and asserted
 ## against `Tuning.CAR_ZEBRA_SIGHT` in `tests/test_crowd.gd`.
 static func braking_distance(speed: float) -> float:
-	return speed * speed / (2.0 * Tuning.CAR_BRAKE)
+	return speed * speed / (2.0 * CAR_BRAKE)
 
 ## A car's ground shape — a capsule along its travel axis, sized from `SHADOW_ALONG` and
 ## `SHADOW_ACROSS`: `radius` is half the across measurement and `half_length` is what is left of
@@ -279,9 +303,9 @@ func _axis_weight(vertical: bool) -> float:
 func _give_way(delta: float) -> void:
 	var wanted := _mover._cruise
 	if _mover.junction_hold < INF:
-		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * _mover.junction_hold))
+		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * _mover.junction_hold))
 	if _mover.gate_hold < INF:
-		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * _mover.gate_hold))
+		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * _mover.gate_hold))
 	# A turn it has committed to: ease toward the speed the arc is taken at over whatever run-up is
 	# left, and hold that speed for the whole curve. When the junction came into sight too late for
 	# the easing to finish — which the lookahead makes the ordinary case rather than the unlucky one
@@ -289,19 +313,19 @@ func _give_way(delta: float) -> void:
 	# does. See `Tuning.CAR_TURN_SPEED`.
 	if _mover._turn:
 		wanted = minf(wanted, sqrt(Tuning.CAR_TURN_SPEED * Tuning.CAR_TURN_SPEED
-				+ 2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * _mover._turn_run_up))
+				+ 2.0 * CAR_ZEBRA_APPROACH_BRAKE * _mover._turn_run_up))
 	# And the wall itself, for the car that has no manoeuvre that fits. Nothing used to brake for a
 	# blockage at all, because reversing on the spot was always available; refusing that has to leave
 	# the car somewhere it could have stopped.
 	var blockage := _room_to_stop_in()
 	if blockage < INF:
-		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * blockage))
+		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * blockage))
 	# **An event figure in its lane ahead, or coming into it** (inbox #884 in plaid-raven: the crowd
 	# yields): braked for like a stop line, so the car stands short of the figure's body rather than
 	# driving through it. See `_distance_to_a_figure()`.
 	var figure := _distance_to_a_figure()
 	if figure < INF:
-		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * figure))
+		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * figure))
 	var to_line := _distance_to_stop_line()
 	if to_line < INF:
 		# The speed that runs out exactly at the line at the *approach* rate. **Braking toward a
@@ -309,9 +333,9 @@ func _give_way(delta: float) -> void:
 		# the curve happens to end, which is most of a block early.
 		# The gentle rate is what makes the easing start in sight of the kerb — see
 		# `CAR_ZEBRA_APPROACH_BRAKE` for what shaping it with `CAR_BRAKE` does instead.
-		wanted = minf(wanted, sqrt(2.0 * Tuning.CAR_ZEBRA_APPROACH_BRAKE * to_line))
+		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * to_line))
 	wanted = minf(wanted, _following_speed())
-	var rate := Tuning.CAR_BRAKE if wanted < _mover._speed else Tuning.CAR_ACCELERATE
+	var rate := CAR_BRAKE if wanted < _mover._speed else CAR_ACCELERATE
 	_mover._speed = move_toward(_mover._speed, wanted, rate * delta)
 
 ## How far this car has to the stop line of a crossing it should give way at, or `INF` when

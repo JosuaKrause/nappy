@@ -587,16 +587,16 @@ the one crossing this mostly does not apply to — a car brakes and queues for t
 diverting, because a door is a crossing the day's own structure means to keep open.
 
 **A walker's answer at a door is its own**, drawn once when it is placed so that it cannot change
-halfway down a street. One in four (`Tuning.WALKER_DOOR_TURN_BACK_FRACTION`) turns back at the last
+halfway down a street. One in four (`WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION`) turns back at the last
 junction exactly the way it would at a wall — it gets no carve-out, so the door reads to it as the
-wall either side of it does. One in eight (`Tuning.WALKER_DOOR_PASS_FRACTION`) walks straight
+wall either side of it does. One in eight (`WalkerStrategy.WALKER_DOOR_PASS_FRACTION`) walks straight
 through. Everybody else is **held at the gatehouse on their own sidewalk**, the way she is held at it,
 in four states: *walking* up to it, *waiting* stopped beside it in their last facing while whoever
 is inside is seen to, *inspection* inside the gatehouse and not drawn for
-`Tuning.WALKER_DOOR_HOLD_SECONDS` (1s, under her own two), and *emerging* on the far side on the
+`WalkerStrategy.WALKER_DOOR_HOLD_SECONDS` (1s, under her own two), and *emerging* on the far side on the
 same lane, carrying a cooldown that keeps that gatehouse from taking them again until they have left its
 area. One walker inside a gatehouse at a time, and the line behind it never grows past
-`Tuning.WALKER_DOOR_QUEUE_MAX`: a walker whose lookahead first sees a door that is already that
+`WalkerStrategy.WALKER_DOOR_QUEUE_MAX`: a walker whose lookahead first sees a door that is already that
 busy turns back at the last junction instead of joining it, so a busy door never grows a queue down
 the sidewalk.
 
@@ -797,7 +797,7 @@ holds for the whole run: a day can be bad, a run cannot be dead.
 ### The power station
 
 **One big building on every city is the power station**, and any other is an ordinary landmark.
-`Tuning.MIN_BIG_BUILDINGS` to `MAX_BIG_BUILDINGS` counts it, so the ordinary ones are one fewer
+`CityGenerator.MIN_BIG_BUILDINGS` to `MAX_BIG_BUILDINGS` counts it, so the ordinary ones are one fewer
 than the roll. The last day's task is its front door, so what is guaranteed is where it stands as
 well as that it does, and every clause is **checked when the footprint is accepted, never repaired
 afterwards** (`CityGenerator._place_power_station`):
@@ -2292,10 +2292,10 @@ Top-down camera with a fake vertical extrusion:
   `BOARDED_UP` overrides the roll and forces the shuttered pair, dark, the same shutter the
   degrading city's own storefronts use — see "The city degrades".
 - **Street trees stand only on a handful of tree-lined runs, and a run is a *place*.** A run is a
-  straight stretch of `Tuning.STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` (three to
+  straight stretch of `StreetTrees.STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` (three to
   five) consecutive blocks along one street line, horizontal or vertical, and there are
-  `Tuning.STREET_TREE_RUNS` of them placed at random across the map, well under the
-  `Tuning.STREET_TREE_MAX_LINED_FRACTION` (a quarter) ceiling `tests/test_blocks.gd` holds over a
+  `StreetTrees.STREET_TREE_RUNS` of them placed at random across the map, well under the
+  `StreetTrees.STREET_TREE_MAX_LINED_FRACTION` (a quarter) ceiling `tests/test_blocks.gd` holds over a
   seed sweep. Every street outside every run is bare. **Rare on purpose, and the reason is the
   events rather than the look**: a tree standing beside a van or a yeller is a second silhouette
   to read past, and a street full of them is a street where an obstacle is hard to spot.

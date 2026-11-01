@@ -70,9 +70,9 @@ func run(t) -> void:
 ## than as the values — see `Tuning.CAR_TURN_SPEED`.
 func _test_the_turn_constants_hold_their_relationships(t) -> void:
 	var lateral := Tuning.CAR_TURN_SPEED * Tuning.CAR_TURN_SPEED / Tuning.CAR_TURN_RADIUS_MIN
-	t.check(lateral <= Tuning.CAR_BRAKE,
+	t.check(lateral <= CarStrategy.CAR_BRAKE,
 			"a car is never asked to corner harder than it can brake (%.0f against %.0f px/s²)"
-			% [lateral, Tuning.CAR_BRAKE])
+			% [lateral, CarStrategy.CAR_BRAKE])
 	t.check(Tuning.CAR_TURN_SPEED > Tuning.CAR_STRIKE_MIN_SPEED,
 			"a car taking a corner is still fast enough to be lethal, so a junction is not a safe "
 			+ "place to stand (%.0f over %.0f)"

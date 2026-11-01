@@ -35,6 +35,13 @@ const TILE := float(Tuning.TILE_SIZE)
 ## shadow commands.
 const CHUNK_TILES := 16
 
+## Alpha of the one-tile shadow every building casts (`BuildingShadows`) — the same black every
+## other shadow in the game draws (`Palette.SHADOW`), at its own alpha rather than that constant's,
+## since a shadow covering a whole tile reads differently than a small contact ellipse. A flat dark
+## rather than a darkened ground colour, so this number is the whole of the look and can be tuned
+## by eye alone.
+const BUILDING_SHADOW_ALPHA := 0.22
+
 ## One shadow tile set: tiles fully covered, and tiles cut on the diagonal from their north-east
 ## corner to their south-west corner with the upper-left half filled.
 class Tiles extends RefCounted:
@@ -200,7 +207,7 @@ func _draw_chunk(canvas: CanvasItem, tiles: Tiles) -> void:
 	if skip_draw:
 		return
 	var colour := Color(Palette.SHADOW.r, Palette.SHADOW.g, Palette.SHADOW.b,
-			Tuning.BUILDING_SHADOW_ALPHA)
+			BUILDING_SHADOW_ALPHA)
 	for tile in tiles.full:
 		canvas.draw_rect(Rect2(Vector2(tile) * TILE, Vector2.ONE * TILE), colour)
 	for tile in tiles.triangles:

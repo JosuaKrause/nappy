@@ -90,9 +90,9 @@ func _test_enough_calm_survives_the_whole_run(t) -> void:
 		var map := _map(i)
 		var state := _worst_case(map)
 		var calm := state.calm_blocks(map.block_plans)
-		t.check(calm.size() >= Tuning.MIN_CALM_BLOCKS_AT_END,
+		t.check(calm.size() >= CityGenerator.MIN_CALM_BLOCKS_AT_END,
 				"seed %d ends the run with %d calm blocks, needs %d"
-				% [map.seed_used, calm.size(), Tuning.MIN_CALM_BLOCKS_AT_END])
+				% [map.seed_used, calm.size(), CityGenerator.MIN_CALM_BLOCKS_AT_END])
 
 ## A fire in a block whose plan has no fire in it leaves the shell and changes nothing else.
 ## Without this a scar anywhere would drag every block it touched along somebody else's arc.
@@ -248,11 +248,11 @@ func _test_tree_runs_are_straight_runs_of_three_to_five(t) -> void:
 			total += 1
 			horizontal_seen = horizontal_seen or run.horizontal
 			vertical_seen = vertical_seen or not run.horizontal
-			t.check(run.length >= Tuning.STREET_TREE_RUN_MIN_BLOCKS \
-					and run.length <= Tuning.STREET_TREE_RUN_MAX_BLOCKS,
+			t.check(run.length >= StreetTrees.STREET_TREE_RUN_MIN_BLOCKS \
+					and run.length <= StreetTrees.STREET_TREE_RUN_MAX_BLOCKS,
 					"seed %d: a run is %d blocks long, outside %d-%d"
-					% [map.seed_used, run.length, Tuning.STREET_TREE_RUN_MIN_BLOCKS,
-					Tuning.STREET_TREE_RUN_MAX_BLOCKS])
+					% [map.seed_used, run.length, StreetTrees.STREET_TREE_RUN_MIN_BLOCKS,
+					StreetTrees.STREET_TREE_RUN_MAX_BLOCKS])
 			var keys := run.segment_keys()
 			t.check(keys.size() == run.length, "seed %d: a run names one street per block"
 					% map.seed_used)
@@ -294,7 +294,7 @@ func _test_tree_runs_are_fixed_for_the_seed(t) -> void:
 	t.check(same, "the same seed plants the same trees in the same pits")
 
 ## **Rare, in the player's word** *(2026-09-12: "trees must be quite rare to be able to still place
-## vans restaurants etc.")*. This is the ceiling `Tuning.STREET_TREE_RUNS` is chosen under, not a
+## vans restaurants etc.")*. This is the ceiling `StreetTrees.STREET_TREE_RUNS` is chosen under, not a
 ## restatement of it: raising the run count is allowed right up to the point where a tree-lined
 ## street stops being the exception, and this is the point.
 func _test_tree_lined_streets_stay_rare(t) -> void:
@@ -310,10 +310,10 @@ func _test_tree_lined_streets_stay_rare(t) -> void:
 		var lined := StreetTrees.segment_keys_with_trees(map).size()
 		var fraction := float(lined) / float(maxi(1, ordinary))
 		worst = maxf(worst, fraction)
-		t.check(fraction <= Tuning.STREET_TREE_MAX_LINED_FRACTION,
+		t.check(fraction <= StreetTrees.STREET_TREE_MAX_LINED_FRACTION,
 				"seed %d: %d of %d ordinary streets are tree-lined (%.1f%%), over the %.0f%% cap"
 				% [map.seed_used, lined, ordinary, 100.0 * fraction,
-				100.0 * Tuning.STREET_TREE_MAX_LINED_FRACTION])
+				100.0 * StreetTrees.STREET_TREE_MAX_LINED_FRACTION])
 	t.check(ordinary_total > 0, "there were ordinary streets to ask about (%d)" % ordinary_total)
 	t.check(worst > 0.0, "and at least one seed had trees at all (worst %.3f)" % worst)
 

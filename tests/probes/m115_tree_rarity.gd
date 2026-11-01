@@ -1,6 +1,6 @@
 extends RefCounted
 ## How much of the city carries street trees, over a seed sweep — the measurement
-## `Tuning.STREET_TREE_RUNS` is set from. Prints the fraction of ordinary streets that are
+## `StreetTrees.STREET_TREE_RUNS` is set from. Prints the fraction of ordinary streets that are
 ## tree-lined, the runs actually placed, and how many pits a run carries.
 ##
 ## Run it with `tools/test.sh probes/m115_tree_rarity.gd`.
@@ -27,7 +27,7 @@ func run(t) -> void:
 		var lined := StreetTrees.segment_keys_with_trees(map).size()
 		var runs := StreetTrees.runs(map)
 		var pits := StreetTrees.planted(map).size()
-		if runs.size() < Tuning.STREET_TREE_RUNS:
+		if runs.size() < StreetTrees.STREET_TREE_RUNS:
 			short_runs += 1
 		total_ordinary += ordinary
 		total_lined += lined

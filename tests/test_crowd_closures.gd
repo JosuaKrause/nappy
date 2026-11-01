@@ -874,9 +874,9 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 			% drawn_during_inspection)
 	# Beside the hut rather than inside its footprint, and short of the body that would otherwise
 	# stop her — a frame of travel either side of the distance it aims at.
-	t.check(absf(waited_at - Tuning.WALKER_DOOR_STOP_DISTANCE) < 4.0,
+	t.check(absf(waited_at - WalkerStrategy.WALKER_DOOR_STOP_DISTANCE) < 4.0,
 			"it stops short of the hut's own body (%.1fpx against %.1f)"
-			% [waited_at, Tuning.WALKER_DOOR_STOP_DISTANCE])
+			% [waited_at, WalkerStrategy.WALKER_DOOR_STOP_DISTANCE])
 	t.check(came_out_at > 0.0,
 			"and it comes out on the far side of the door (%.1fpx)" % came_out_at)
 	t.check(hut.inside == null and hut.waiting() == 0,
@@ -887,7 +887,7 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 	var held_again := _walker_approaching(scene, hut, 0.0, WalkerStrategy.DoorAnswer.HELD)
 	held_again.strategy._door_state = WalkerStrategy.DoorState.EMERGING
 	held_again.strategy._door_hold = hut
-	held_again._set_along(held_again._along() + Tuning.WALKER_DOOR_STOP_DISTANCE
+	held_again._set_along(held_again._along() + WalkerStrategy.WALKER_DOOR_STOP_DISTANCE
 			* held_again._direction)
 	city.crowd.step(STEP)
 	t.check(held_again.strategy._door_state == WalkerStrategy.DoorState.EMERGING and hut.inside == null,
@@ -911,7 +911,7 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 	t.check(_past_the_hut(passing, hut) > 0.0, "and it is through the door")
 
 ## M110, the last item's own third clause: *"don't want a queue that is long"*. A door's line is
-## short **by construction** — one walker inside, `Tuning.WALKER_DOOR_QUEUE_MAX` standing behind it,
+## short **by construction** — one walker inside, `WalkerStrategy.WALKER_DOOR_QUEUE_MAX` standing behind it,
 ## and the next walker to see the door turns away at the door rather than joining. The line is
 ## asserted against the constant rather than against a count, so moving the cap moves the test with
 ## it; what would fail is a line that grows past whatever the cap says.
@@ -923,7 +923,7 @@ func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
 	var hut: WalkerDoorHold = scene["huts"][0]
 	# One at the hut, `WALKER_DOOR_QUEUE_MAX` behind it, and one more than the door will take.
 	var line: Array[CrowdAgent] = []
-	for i in Tuning.WALKER_DOOR_QUEUE_MAX + 2:
+	for i in WalkerStrategy.WALKER_DOOR_QUEUE_MAX + 2:
 		line.append(_walker_approaching(scene, hut, 60.0 + 40.0 * float(i),
 				WalkerStrategy.DoorAnswer.HELD))
 	var turned_away: CrowdAgent = line[line.size() - 1]
@@ -954,12 +954,12 @@ func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
 			var second: CrowdAgent = hut.queue[1]
 			if first.velocity().is_zero_approx() and second.velocity().is_zero_approx():
 				var gap := absf(_past_the_hut(second, hut)) - absf(_past_the_hut(first, hut))
-				if absf(gap - Tuning.WALKER_DOOR_QUEUE_SPACING) < 6.0:
+				if absf(gap - WalkerStrategy.WALKER_DOOR_QUEUE_SPACING) < 6.0:
 					spacing_seen += 1
-	t.check(longest <= Tuning.WALKER_DOOR_QUEUE_MAX + 1,
+	t.check(longest <= WalkerStrategy.WALKER_DOOR_QUEUE_MAX + 1,
 			"a door never holds more than one walker inside and WALKER_DOOR_QUEUE_MAX behind it "
 			+ "(the most it held was %d)" % longest)
-	t.check(longest == Tuning.WALKER_DOOR_QUEUE_MAX + 1,
+	t.check(longest == WalkerStrategy.WALKER_DOOR_QUEUE_MAX + 1,
 			"and it does fill up, so the cap above was actually asked about (%d)" % longest)
 	t.check(not ever_joined, "the walker the door has no room for never joins the line")
 	t.check(ever_refused, "it decides against that door rather than walking up to the queue")

@@ -1,5 +1,22 @@
 class_name CrowdExcitement
 extends ExcitementSource
+
+## A car is louder than a person and passes much faster. No single car outruns the walking
+## decay — the point is not that one car is dangerous, it is that on a main road there is
+## always another one. The floor is the *street*, and it is emergent; the first pass at these
+## numbers put the arterial at +15/s, which filled the meter in seven seconds and made the
+## main road not expensive but impassable.
+##
+## The radius is tight for the same reason the pedestrian's is, and pinned the same way: the
+## arterial has to stay between the walking decay and three times it, which is `tests/test_crowd.gd`
+## and is the one place the noise floor is pinned to anything.
+##
+## **And 104 is still wider than the street it is on.** A corridor is six tiles — 192px — and a
+## car's field is 208px across, so every tile of both footways is inside it, and the frontage lane,
+## the furthest place from a carriageway there is, sits 64px from the nearer lane centre. Nowhere on
+## an ordinary street is out of the traffic's earshot, which is most of why the noise floor measures
+## flat across a pavement.
+const CAR_INTENSITY := 5.4
 ## **A body in the crowd as a thing that charges the baby** (`ExcitementSource`), composed into its
 ## `CrowdAgent` as `excitement`: what is a crowd body's own and nothing else — its field (the same
 ## falloff as an event's, so the crowd and the events are the same kind of quantity to the baby, plus
@@ -63,7 +80,7 @@ func _init(agent: CrowdAgent) -> void:
 ## Takes up the field of a body of `kind`, told by the body whenever its kind is installed.
 func take_kind(kind: CrowdAgent.Kind) -> void:
 	_car = kind == CrowdAgent.Kind.CAR
-	_intensity = Tuning.CAR_INTENSITY if _car else Tuning.PEDESTRIAN_INTENSITY
+	_intensity = CAR_INTENSITY if _car else Tuning.PEDESTRIAN_INTENSITY
 	_inner = Tuning.CAR_INNER_RADIUS if _car else Tuning.PEDESTRIAN_INNER_RADIUS
 	_outer = Tuning.CAR_OUTER_RADIUS if _car else Tuning.PEDESTRIAN_OUTER_RADIUS
 	var silent := _outer / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)

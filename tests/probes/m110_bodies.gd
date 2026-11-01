@@ -12,7 +12,7 @@ extends RefCounted
 ## body in a car's lane turns it at the last junction, and a turn that never fits is a car that parks
 ## itself and takes the street behind it with it — that is the failure this number is watching for.
 ## `tests/test_crowd_bodies.gd` holds the occupancy as an assertion; this is where the numbers behind
-## `Tuning.WALKER_BODY_SIDESTEP_TILES` are taken again.
+## `WalkerStrategy.WALKER_BODY_SIDESTEP_TILES` are taken again.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0

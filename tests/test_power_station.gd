@@ -45,9 +45,9 @@ func _test_every_city_has_exactly_one(t) -> void:
 				matching += 1
 		t.check(matching == 1,
 				"seed %d: exactly one big building is the power station (%d)" % [map.seed_used, matching])
-		t.check(map.big_buildings.size() <= Tuning.MAX_BIG_BUILDINGS,
+		t.check(map.big_buildings.size() <= CityGenerator.MAX_BIG_BUILDINGS,
 				"seed %d: the station is counted among at most %d big buildings (%d)"
-				% [map.seed_used, Tuning.MAX_BIG_BUILDINGS, map.big_buildings.size()])
+				% [map.seed_used, CityGenerator.MAX_BIG_BUILDINGS, map.big_buildings.size()])
 
 ## The door's own street ground belongs to another region than the home street's, which with the
 ## wall standing means reaching it takes a door crossing — the day-14 half of this suite walks it.

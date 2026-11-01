@@ -87,6 +87,57 @@ const _TREES := {
 ## shape rather than as two trees, which is the clump this spacing exists to stop.
 const MIN_TREE_SPACING := 40.0 * 1.25
 
+const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
+
+## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
+## package is picked up (`GameState.resistance.carrying_package`) — the one cost in the subquest
+## that is deferred and total rather than local, so it changes the afternoon's routing rather than
+## one minute of it. Chosen on the same severity as a main road's own 0.6, on the harsher side of
+## it: this is a decision she made, not ground she has to cross.
+const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
+
+const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
+
+## What the **ground** does to the decay, best to worst: calm, precinct, ordinary street, alley,
+## main road.
+##
+## This is what makes a route a **recovery rate** rather than only a set of things to walk past,
+## and what makes a precinct worth walking to although it is loud: a retail street is busy, and it
+## is still the best place in the city that is not a park to bring a meter down.
+##
+## **The multipliers are ratios and the absolute rates are the design**, so a change to the walking
+## rate above moves every one of these to keep its own ground where it was put:
+##
+##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 0.12/s
+##
+## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
+## the excitement visibly falling away as she walks in under the trees. **Its floor is that a park
+## must stay a place rather than a switch**: at 12.0/s a full meter takes eight and a third seconds
+## to clear, which is long enough to be somewhere she walks to and stays in. Much faster and the
+## park is a button she taps.
+##
+## The main road is the same sentence inverted, and nearly all the way there: it is the one ground
+## in the city that gives back next to nothing, at any density, which is most of what "a main road
+## is crossed, not walked" means arithmetically — walking it for any stretch is walking ground that
+## does not recover rather than ground that merely recovers slowly. `tests/probes/m117_decay.gd`'s
+## main-road leg reads +5.69/s net on day 1 and +1.36/s on day 9, three seeds each: even where the
+## spine has thinned to the lightest traffic of the run, it still costs rather than gives anything
+## back.
+##
+## **It is the lever that holds the spine's own price**, because it is the one number exclusive to
+## this corridor — the pedestrian field above only reaches `Tuning.PEDESTRIAN_OUTER_RADIUS` now, short
+## enough that the arterial's own crowd noise cannot carry that price alone, and a louder car would
+## be loud on every street it also drives down rather than only this one. Crossing the road stays a
+## soft block rather than a wall: `tests/test_crowd.gd`'s worst-of-eight crossing reads 27.76 of a
+## hundred-point meter, comfortably under half, because the same short pedestrian reach that costs
+## the ground its own recovery also lightens what a crossing itself loads.
+##
+## **An alley sits between the two** — pressured ground rather than a shortcut to recovery, which
+## is what keeps `Tuning.EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning something: it sits just
+## under the 3.5/s an alley gives back, so an empty alley is very nearly flat and is never quite
+## recovery.
+const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
+
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
 @onready var _ground: SceneryGround = $Ground
@@ -406,7 +457,7 @@ func decay_multiplier(world_position: Vector2) -> float:
 		# The one cost in the game that is not a field at a place: picking the package up makes
 		# every street after it dearer for the rest of the day, rather than the street it was
 		# picked up on.
-		ground *= Tuning.RESISTANCE_PACKAGE_DECAY_MULTIPLIER
+		ground *= RESISTANCE_PACKAGE_DECAY_MULTIPLIER
 	return ground
 
 func _ground_decay_multiplier(world_position: Vector2) -> float:
@@ -414,17 +465,17 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 		return 1.0
 	var type := map.tile_type_at_world(world_position)
 	if Tile.is_calm(type):
-		return Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+		return EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
 	# An alley is cut through a block rather than laid out as a corridor, so no street kind answers
 	# for it and it would otherwise read as an ordinary street. It is asked before the corridors
 	# for that reason and not by precedence: the two cannot overlap.
 	if Tile.is_alley(type):
-		return Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
+		return EXCITEMENT_DECAY_ALLEY_MULTIPLIER
 	var tile := map.world_to_tile(world_position)
 	var across := map.street_kind_at(true, tile)
 	var along := map.street_kind_at(false, tile)
 	if across == GameEnums.StreetKind.PEDESTRIAN or along == GameEnums.StreetKind.PEDESTRIAN:
-		return Tuning.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER
+		return EXCITEMENT_DECAY_PRECINCT_MULTIPLIER
 	if across == GameEnums.StreetKind.MAIN or along == GameEnums.StreetKind.MAIN:
 		return Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
 	return 1.0

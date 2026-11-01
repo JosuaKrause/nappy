@@ -345,7 +345,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 ## nothing, walking back.
 func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
 	var stop := Tuning.OFFICER_STOP_EXCITEMENT
-	var contact := Tuning.BUMP_INTENSITY * Tuning.BUMP_DURATION * 0.5
+	var contact := Crowd.BUMP_INTENSITY * Crowd.BUMP_DURATION * 0.5
 	t.check(stop > Tuning.CHAT_EXCITEMENT and stop > 3.0 * contact,
 			"a stop (%.0f) costs more than a conversation (%.0f) and three contacts (%.1f each)"
 			% [stop, Tuning.CHAT_EXCITEMENT, contact])
