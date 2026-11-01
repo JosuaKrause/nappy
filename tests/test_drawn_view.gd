@@ -71,7 +71,7 @@ func _test_a_hand_built_agent_with_no_screen_is_always_drawn(t) -> void:
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
 	car.position = Vector2(-5000.0, -5000.0)
-	t.check(car._end_the_frame(0.0),
+	t.check(car.end_the_frame(0.0),
 			"an agent in no tree still redraws its first picture, wherever it stands")
 	car.free()
 
@@ -138,7 +138,7 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 		car.excitement.set_player_at(car.position + Vector2(60.0, 0.0))
 		car.excitement._clock += STEP
 		var before: Variant = car.excitement._caret_key_was
-		var asked := car._end_the_frame(0.0)
+		var asked := car.end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
 				Rect2(car.position + CrowdAgent.DRAWN_REACH.position, CrowdAgent.DRAWN_REACH.size))
 		if not in_box:
@@ -171,15 +171,15 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t) -> voi
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
 	walker.view = ScreenCrowdView.new(screen)
 	walker.position = Vector2(320.0, 180.0)
-	walker._end_the_frame(0.0)
-	t.check(not walker._end_the_frame(0.0),
+	walker.end_the_frame(0.0)
+	t.check(not walker.end_the_frame(0.0),
 			"on screen, a walker whose picture did not change asks for nothing")
 	_look_from(screen, Vector2(2000.0, 0.0))
-	t.check(not walker._end_the_frame(0.0), "off screen it asks for nothing either")
+	t.check(not walker.end_the_frame(0.0), "off screen it asks for nothing either")
 	_look_from(screen, Vector2.ZERO)
-	t.check(walker._end_the_frame(0.0),
+	t.check(walker.end_the_frame(0.0),
 			"back on screen it redraws once, though nothing in its key moved")
-	t.check(not walker._end_the_frame(0.0), "and then only on a change again")
+	t.check(not walker.end_the_frame(0.0), "and then only on a change again")
 	screen.free()
 	DrawnView.forget()
 

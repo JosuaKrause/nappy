@@ -77,6 +77,20 @@ static var _restarted_at_msec := -INF
 static func note_restart_requested() -> void:
 	_restarted_at_msec = Time.get_ticks_msec()
 
+## The milliseconds the guard measures a restart against: empty reads `Time.get_ticks_msec()`;
+## `use_clock()` hands in another `Callable` returning milliseconds, so the guard window passing is
+## a clock that moved on rather than a wait.
+var _clock := Callable()
+
+func use_clock(clock: Callable) -> void:
+	_clock = clock
+
+func _now_msec() -> int:
+	if _clock.is_valid():
+		var msec: int = _clock.call()
+		return msec
+	return Time.get_ticks_msec()
+
 ## How long after a restart-triggered reload a press is swallowed rather than started — see
 ## `_unhandled_input()`'s own doc. Reuses `TouchControls.DOUBLE_TAP_SECONDS` rather than a number
 ## invented for this file, since both ask the same question of a press this close in time to
@@ -510,6 +524,6 @@ func _acknowledge_and_begin(mode: ControlsMode.Mode, side: ControlsMode.Side,
 ## which of them fired. See `_unhandled_input()`'s own doc for what the guard still answers now
 ## that a bare press elsewhere on the screen can no longer reach this function at all.
 func _begin(mode: ControlsMode.Mode, side: ControlsMode.Side, by_key := false) -> void:
-	if (Time.get_ticks_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
+	if (_now_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
 		return
 	start_requested.emit(mode, by_key, side)

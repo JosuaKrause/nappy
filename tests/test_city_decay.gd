@@ -180,16 +180,16 @@ func _test_boarded_storefronts_and_windows_shutter(t) -> void:
 	building.day = Tuning.RUN_LENGTH_DAYS
 	t.check(building._storefront_variant.size() == building.columns() / 2,
 			"a three-column facade has one storefront variant per complete pair")
-	t.check(building._ground_floor_texture(1) == &"",
+	t.check(building.ground_floor_texture(1) == &"",
 			"the second column of a storefront pair draws no duplicate texture")
-	t.check(building._ground_floor_texture(2) == Building.WALL_BASE,
+	t.check(building.ground_floor_texture(2) == Building.WALL_BASE,
 			"an odd final commercial column keeps the ordinary wall base")
 	for col in range(0, building.columns() - 1, 2):
-		var texture := building._ground_floor_texture(col)
+		var texture := building.ground_floor_texture(col)
 		t.check(Building.STOREFRONT_SHUTTERED_TEXTURES.has(texture),
 				"a boarded commercial ground floor shows a shuttered storefront")
 	for index in building.columns() * building.wall_tiles():
-		var texture := building._window_texture(index)
+		var texture := building.window_texture(index)
 		t.check(texture == Building.WINDOW_SHUTTERED_DARK,
 				"a boarded building's windows are shuttered and dark, never lit")
 	building.free()
@@ -221,17 +221,17 @@ func _test_a_burnt_building_shows_nothing_intact(t) -> void:
 		building.day = Tuning.RUN_LENGTH_DAYS
 		var shown: Array[StringName] = []
 		for index in building.columns() * building.wall_tiles():
-			if building._draws_window_at(index / building.columns()):
-				shown.append(building._window_texture(index))
+			if building.draws_window_at(index / building.columns()):
+				shown.append(building.window_texture(index))
 				windows += 1
 		for col in building.columns():
-			var ground := building._ground_floor_texture(col)
+			var ground := building.ground_floor_texture(col)
 			shown.append(ground)
 			if ground == Building.STOREFRONT_BURNT:
 				shops += 1
 			shown.append(building._front_parapet_texture(col))
 		if building.entrance_door_col() >= 0:
-			shown.append(building._entrance_door_texture())
+			shown.append(building.entrance_door_texture())
 			doors += 1
 		for texture in shown:
 			t.check(not intact.has(texture),
@@ -254,11 +254,11 @@ func _test_ambient_shuttering_waits_for_the_curve(t) -> void:
 		building.condition = Building.Condition.LIVED_IN
 		building.day = 1
 		for col in building.columns():
-			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(building._ground_floor_texture(col)):
+			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(building.ground_floor_texture(col)):
 				any_shuttered_early = true
 		building.day = Tuning.RUN_LENGTH_DAYS
 		for col in building.columns():
-			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(building._ground_floor_texture(col)):
+			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(building.ground_floor_texture(col)):
 				any_shuttered_late = true
 		building.free()
 	t.check(not any_shuttered_early, "a lived-in block shows no shuttered storefront on day 1")
@@ -327,7 +327,7 @@ func _test_storefront_variants_use_seeded_bags(t) -> void:
 	t.add_child(shallow)
 	t.check(shallow._storefront_variant.is_empty(),
 			"a one-row commercial facade keeps its ordinary wall base")
-	t.check(shallow._ground_floor_texture(0) == Building.WALL_BASE,
+	t.check(shallow.ground_floor_texture(0) == Building.WALL_BASE,
 			"a one-row commercial facade returns its ordinary wall base")
 	for building in sampled:
 		building.free()

@@ -747,8 +747,7 @@ func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> TurnRefusal:
 		return TurnRefusal.EXIT_PLUGGED
 	if not _has_room_to_land(turn):
 		return TurnRefusal.LANDING_TAKEN
-	_mover._turn = turn
-	_mover._turn_run_up = run_up
+	_mover.take_the_turn(turn, run_up)
 	turned_on_this_approach = true
 	_waited_to_turn = 0.0
 	_claim_the_turn()
@@ -822,8 +821,7 @@ func _land_the_turn() -> void:
 	_mover._lane = _mover._turn.exit_lane
 	_mover._direction = _mover._turn.exit_direction
 	_mover._junction = _mover._turn.entry_corridor
-	_mover._turn = null
-	_mover._turn_run_up = 0.0
+	_mover.drop_the_turn()
 	_mover._lane_centre = _mover._lane_centre_here()
 	_mover._forget_the_detour()
 	_mover._scan_at = Vector2i(-9999, -9999)

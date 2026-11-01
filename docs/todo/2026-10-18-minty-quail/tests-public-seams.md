@@ -1,9 +1,13 @@
 # Tests drive public seams and real frames
 
-Tests make 5,748 accesses to private members (`test_resistance.gd` 479, `test_main.gd` 322,
-`test_save.gd` 310, `test_pause.gd` 224) and 497 direct `_process`/`_physics_process` calls; 21 suites
-instantiate `main`; `test_home_block.gd` (near 249) copies `City._height_for`'s random stream;
-`test_camera_start.gd` depends on `main._ready()` holding exactly two awaits. `SceneRecipeRuntime`
+Tests reach private members and drive frames by hand. Count a suite's lines that read a private member,
+including one named in a string, with
+`rg -c '^[^#]*(\.\_[a-z][a-zA-Z0-9_]*|\.(call|callv|set|get|call_deferred)\("_)' tests/test_*.gd`, and its
+lines that call a frame function or emit the frame signal by hand with
+`rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests/test_*.gd`;
+both skip comment lines and neither sees access through a variable holding the name. Many suites instantiate `main`;
+`test_home_block.gd` (near 249) copies `City._height_for`'s random stream; `test_camera_start.gd` depends
+on `main._ready()` holding exactly two awaits. `SceneRecipeRuntime`
 rebuilds placement from other classes' private functions (`SealPlanner._eligible`, `_place`,
 `_seal_along_tile`, `_mark_soft_sealed`; `EventScheduler._build_placement`, `_room_around`,
 `_street_ground`; `RegionPlanner._add_door_bodies`; `instance._advance_gait`), so authored scenes drift from the game. `SceneRecipeRuntime.walk_spec` is a
@@ -18,6 +22,8 @@ get public "place this at this site" entry points that the scheduler and recipes
 one pass after the last refactor item, "once the refactor is done let's rewrite the tests with
 dependency injection and through public APIs", and a step may convert the tests it touches early,
 "you can also do it as a bit with each step as long as the final result is the same" (inbox #813 in curly-moose).
+
+**Where it stands:** the suites still to convert are the ones the first command above counts above zero; the largest are `test_resistance.gd`, `test_main.gd` and `test_save.gd`.
 
 **The slice that rewrites `test_resistance.gd` also splits it by subject.** The file is the floor of the
 test suite's run time on CI: every test function stays called once and the check total unchanged, so the

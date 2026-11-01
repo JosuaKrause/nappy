@@ -17,7 +17,7 @@ extends Node2D
 ## it: it adds the field it contributes to the baby's meter, the halo and caret that warn of it, and
 ## the drawing, and answers six hooks that do nothing here: `_entry_picture_clearance()`, beside the
 ## placement code that asks it, and at the foot of this file `_kind_installed()`,
-## `restart_the_picture()`, `advance_the_picture()`, `_dress()` and `_end_the_frame()`.
+## `restart_the_picture()`, `advance_the_picture()`, `_dress()` and `end_the_frame()`.
 
 enum Kind { WALKER, CAR }
 
@@ -449,7 +449,7 @@ func step(delta: float) -> void:
 	# It also ends the frame for a body held where it stands — a walker inside a checkpoint hut, a
 	# car a pocket has caught — recycled, if it has to be, by the kind's own rule.
 	if strategy.begin_frame(delta):
-		_end_the_frame(delta)
+		end_the_frame(delta)
 		return
 	# **Proposed, checked, then committed** (`MoveProposal`, the world's shape for every mover's
 	# step): the along and cross step proposed from where it stands, given way to the movers that
@@ -465,7 +465,7 @@ func step(delta: float) -> void:
 	_look_ahead()
 	if field.has_stretch() and _walks_off_the_stretch() and _out_of_view():
 		_recycle()
-		_end_the_frame(delta)
+		end_the_frame(delta)
 		return
 	# A closed tile within reach, or for a car a parked figure in its lane (inbox #909 in freckled-moose): the same
 	# turn round either way.
@@ -476,7 +476,7 @@ func step(delta: float) -> void:
 	# junction — see `LaneStrategy.nowhere_to_turn`.
 	if _has_left_the_field() or (strategy.nowhere_to_turn and _out_of_view()):
 		_recycle()
-	_end_the_frame(delta)
+	end_the_frame(delta)
 
 ## Its move this tick (`MoveProposal`), its own, on its map's list of moves (`WorldMap.moves`) while
 ## it is in the world: a crowd body's, the one kind that gives way (`MoveProposal.yields`), reaching
@@ -618,6 +618,19 @@ func heading() -> Vector2:
 		return _turn.heading_at(_turn.travelled)
 	return Vector2(0.0, _direction) if _vertical else Vector2(_direction, 0.0)
 
+## Commits this car to `turn`: straight on for `run_up` more pixels, then round the arc, with
+## `heading()` following the arc's tangent from then on. `CarStrategy` calls it once a turn has been
+## planned and checked (`CarStrategy._commit_to_a_turn()` once the turn fits), and a suite that wants a car on an
+## arc hands it the arc.
+func take_the_turn(turn: CarTurn, run_up: float) -> void:
+	_turn = turn
+	_turn_run_up = run_up
+
+## Gives up the turn it was committed to, if any: back to travelling its lane, `heading()` cardinal.
+func drop_the_turn() -> void:
+	_turn = null
+	_turn_run_up = 0.0
+
 ## Everything about where this agent is travelling that decides whether another agent is *in
 ## front of it* — the axis, the corridor, the lane and the way it is pointing. Two agents share
 ## a queue exactly when they share this. `Crowd` buckets on it once per frame rather than
@@ -758,8 +771,7 @@ func _choose_lane(roll: float) -> void:
 	_junction = -1
 	# A planned turn is about a junction on a corridor this agent is no longer on, and so is the
 	# stride an about-face there was still owed.
-	_turn = null
-	_turn_run_up = 0.0
+	drop_the_turn()
 	_turn_back_hold = 0.0
 	_forget_the_detour()
 
@@ -1100,8 +1112,7 @@ func _enter_at_a_stretch_end() -> void:
 		_lane_centre = _lane_centre_here()
 		_set_cross(_lane_centre)
 		_junction = -1
-		_turn = null
-		_turn_run_up = 0.0
+		drop_the_turn()
 		_turn_back_hold = 0.0
 		_forget_the_detour()
 		if not _stands_on_a_street() or strategy.is_in_a_pocket() or not strategy.has_room_here():
@@ -1224,5 +1235,5 @@ func _dress() -> void:
 ## Ends every frame that is not skipped, once: the crowd member runs its clocks down by `delta` and
 ## redraws what changed in its picture, answering whether it asked for a redraw. A hook rather than
 ## two, because each hook is a call every agent pays every frame.
-func _end_the_frame(_delta: float) -> bool:
+func end_the_frame(_delta: float) -> bool:
 	return false
