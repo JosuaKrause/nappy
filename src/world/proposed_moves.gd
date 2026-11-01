@@ -8,6 +8,9 @@ extends RefCounted
 ## the event, the walker or the officer making it.
 
 var _moves: Array[MoveProposal] = []
+## The same list's moves that do not give way (`MoveProposal.yields` false), in the order they
+## joined, so a pass that cares only for the figures does not walk the whole crowd.
+var _keepers: Array[MoveProposal] = []
 
 ## Puts a mover's own move on the list at `at`, the pose it stands at: it stands in this world from
 ## now, until it `leave()`s. A move already on it is not put on twice, and is placed at `at` all the
@@ -17,12 +20,16 @@ func join(move: MoveProposal, at: Vector2) -> void:
 	if not move.on_the_list:
 		move.on_the_list = true
 		_moves.append(move)
+		if not move.yields:
+			_keepers.append(move)
 
 ## Takes a mover's move off the list: it no longer stands in this world.
 func leave(move: MoveProposal) -> void:
 	if move.on_the_list:
 		move.on_the_list = false
 		_moves.erase(move)
+		if not move.yields:
+			_keepers.erase(move)
 
 ## How many moves stand on the list.
 func size() -> int:
@@ -41,3 +48,9 @@ func has(move: MoveProposal) -> bool:
 ## than an empty loop over them.
 func all() -> Array[MoveProposal]:
 	return _moves.duplicate()
+
+## **The moves on the list that keep their course** (`MoveProposal.yields` false), in the order they
+## joined, as a copy under the same rule as `all()`: the event figures and the cordon's officers,
+## a handful against the crowd's hundreds.
+func keeping_their_course() -> Array[MoveProposal]:
+	return _keepers.duplicate()

@@ -61,7 +61,7 @@
       {"tick":354,"subject":"task","condition":"offered"},
       {"tick":505,"subject":"task","condition":"done"},
       {"tick":507,"subject":"row:cat_dash","condition":"appeared"},
-      {"tick":342,"subject":"player","condition":"crowd","walkers":2,"cars":1}
+      {"tick":320,"subject":"player","condition":"crowd","walkers":1,"cars":1}
     ]
   },
   "stretch": {

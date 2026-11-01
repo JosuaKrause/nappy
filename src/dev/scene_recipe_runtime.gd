@@ -1203,6 +1203,9 @@ func _process(delta: float) -> void:
 		var before := instance._path_travelled
 		var step := instance.departure.speed() * delta
 		instance.position += instance._heading * step
+		# Moved outside its own step, so its move stands where it now does (`MoveProposal.place()`):
+		# the crowd's separation pass reads the move, not the node.
+		instance._move.place(instance.position)
 		instance._path_travelled += step
 		instance._advance_gait(instance._path_travelled - before)
 

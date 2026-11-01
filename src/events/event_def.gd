@@ -765,6 +765,61 @@ enum SolidWhen {
 ## copy of it, and `fire_truck`.
 @export var vehicle: VehicleSpec = null
 
+## **What the row's figure is to a crowd walker that meets it standing still** (inbox #905): a
+## walker may walk through a person or an animal standing still, and walks round an object or a
+## vehicle. A figure under way is given way to whatever it is, and a crowd car stands for any figure
+## in its lane once it has moved, whatever it is; this is only the walker's question about a figure
+## that stands (`MoveProposal.stood_round`, which `EventInstance.setup()` sets from it).
+##
+## Every row declares it, and `validate()` refuses one that does not: a row that left it to a
+## default would have walkers walk through a parked van, or round an invisible point, without
+## anybody having decided either.
+enum StandsAs {
+	## Not declared: refused by `validate()`, a row a test builds by hand included, which declares it
+	## (`setup()` alone reads an undeclared row as `SOMEBODY`).
+	UNDECLARED,
+	## A person or an animal — a street musician, a policeman, a dog, a flock of pigeons: walked
+	## through while it stands, as the player allowed, and given way to only while it moves.
+	SOMEBODY,
+	## An object or a vehicle — a café's tables, a stall, a van, a mast, the patrol car, the fire
+	## engine: walked round while it stands, as it is while it moves. One with a solid body is walked
+	## round by its tiles already (`CityMap.obstructed_tiles`); this is what also keeps a walker out
+	## of one that has none, a vehicle that drives.
+	SOMETHING,
+	## Nothing a walker meets on the ground: no picture of its own (`Look.NONE`), or a picture on a
+	## wall or flat on the ground — the fire on a facade, a burnt frontage, a crater, a steam vent.
+	## Walked through like a person while it stands; none of these moves.
+	NOTHING,
+}
+
+@export var stands_as := StandsAs.UNDECLARED
+
+## **Whether the row's figure, once it stands, stands there for good** (inbox #909): what tells a
+## crowd car behind it in its lane to turn round, as it does at a blocked street, rather than wait.
+## A crowd car stands for any figure in its lane, moving or standing, and never drives through one;
+## behind a figure that has parked it turns round, and behind one that is only stopping — the patrol
+## car at a red light or while its man is out, a dog standing for its notice — it waits.
+##
+## The row says whether its figure parks; the instance says when it has (`EventInstance` sets
+## `MoveProposal.parked` from this and its phase): a figure that never moves has parked from the
+## start, and one that drives to where it stops (`stops_where_it_arrives`) has parked once it is
+## there, not while it waits at a light on the way. Every row declares it, and `validate()` refuses
+## one that does not, and one whose declaration its motion contradicts: a row that stops where it
+## arrives parks, and a row that moves any other way, chases her or wheels as a flock does not.
+enum WhenItStops {
+	## Not declared: refused by `validate()`, a row a test builds by hand included, which declares it
+	## (`setup()` alone reads an undeclared row as `GOES_ON`).
+	UNDECLARED,
+	## It goes on: a stand is a pause, and a car behind it waits for it to move — the patrol car, a
+	## dog, a cyclist, a pursuer, the column's trucks, anything that leaves or chases her.
+	GOES_ON,
+	## It parks: once it stands it stays for the rest of its time in the world, and a car behind it
+	## turns round — the fire engine at its fire, a van set up for the day, a stall, a barricade.
+	PARKS,
+}
+
+@export var when_it_stops := WhenItStops.UNDECLARED
+
 ## Which lane of a two-tile pavement an event wants.
 ##
 ## Almost nothing cares, and `ANY` is the honest default: a café spills out of whichever frontage
@@ -1084,6 +1139,27 @@ func validate() -> bool:
 	if (repeat_every > 0.0 or repeat_after > 0.0) and spawn_mode != SpawnMode.MAP:
 		push_error("event '%s' repeats but is not MAP-sited: only a plan can bring it again" % id)
 		return false
+	if stands_as == StandsAs.UNDECLARED:
+		push_error(("event '%s' does not say what it stands as (`stands_as`): a person or an animal, "
+				% id) + "an object or a vehicle, or nothing on the ground")
+		return false
+	if when_it_stops == WhenItStops.UNDECLARED:
+		push_error("event '%s' does not say whether it parks once it stands (`when_it_stops`)" % id)
+		return false
+	# **The declaration has to agree with how the row moves**: a car turns round behind a parked
+	# figure, so a figure that will move again must never read as parked, and one that will not must
+	# never be waited for.
+	if stops_where_it_arrives and when_it_stops != WhenItStops.PARKS:
+		push_error("event '%s' stops where it arrives and says it goes on: it parks there" % id)
+		return false
+	if when_it_stops == WhenItStops.PARKS:
+		if mobile and not stops_where_it_arrives:
+			push_error("event '%s' parks and moves without stopping where it arrives: it has no " % id
+					+ "stand to park at")
+			return false
+		if pursuit != null or flock_size > 0:
+			push_error("event '%s' parks and chases her or wheels as a flock: it moves again" % id)
+			return false
 	# **The body is the shape, always.** A row that draws something has a shape to draw it from,
 	# and a row whose shape claims a reach has to claim the same one `obstructs_radius` does — the
 	# two are one datum read two ways, not two numbers that happen to agree today.

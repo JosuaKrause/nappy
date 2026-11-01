@@ -518,6 +518,8 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 func _test_hard_fail_only_when_active(t) -> void:
 	var def := EventDef.new()
 	def.id = "test_hard_fail"
+	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.intensity = 20.0
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0

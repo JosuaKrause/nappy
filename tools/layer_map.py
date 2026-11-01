@@ -144,11 +144,13 @@ FILES: dict[str, str] = {
     "src/routes/park_fence_marker.gd": "world",
     # world: the map's interface, who asks it, and the records it keeps (what stands on its ground,
     # every mover's move) are what the domain's maps implement and hold -- CityMap and the
-    # building's plan extend WorldMap -- so they sit with the maps in the model.
+    # building's plan extend WorldMap -- so they sit with the maps in the model. The map's separation
+    # pass is the geometry over its list of moves, which the map holds and which reads only that list.
     "src/world/blocked_layer.gd": "model",
     "src/world/move_proposal.gd": "model",
     "src/world/mover.gd": "model",
     "src/world/proposed_moves.gd": "model",
+    "src/world/separation_pass.gd": "model",
     "src/world/world_map.gd": "model",
     # run: the day's director, its end, the screens' flow and an authored scene's ask are flow.
     "src/run/authored_scene.gd": "flow",

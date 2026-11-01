@@ -111,6 +111,12 @@ func transition(to: Phase) -> void:
 		_telegraph_ended = true
 	phase = to
 	excitement.invalidate_contribution()
+	# **Parked while it stands for good, and only then** (`MoveProposal.parked`): a row that parks
+	# has once it stops where it arrives, and nothing leaving or gone stands anywhere for good.
+	if to == Phase.PARKED:
+		_move.parked = def.when_it_stops == EventDef.WhenItStops.PARKS
+	elif to == Phase.LEAVING or to == Phase.DONE:
+		_move.parked = false
 
 ## **A telegraph or notice that has run its time is over**: asked wherever the notice clock or
 ## the age moves, so the stored phase is never behind the clock.
@@ -316,6 +322,13 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_navigator = navigator if navigator else _map.navigator()
 	_mover = mover_for(definition)
 	_move.radius = _mover.radius
+	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
+	# walked through as a person or an animal (`EventDef.stands_as`, inbox #905).
+	_move.stood_round = definition.stands_as == EventDef.StandsAs.SOMETHING
+	# Whether it has parked, for a crowd car behind it in its lane (`EventDef.when_it_stops`, inbox
+	# #909): a figure that never moves has parked from the start; one that drives to where it stops
+	# parks once it is there (`transition()`).
+	_move.parked = definition.when_it_stops == EventDef.WhenItStops.PARKS and not definition.mobile
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	var start := route[0] if route.size() > 0 else at
 	if not definition.mobile and definition.obstructs_radius > 0.0 \
@@ -1881,6 +1894,15 @@ func _enter_tree() -> void:
 		_map.moves.join(_move, position)
 	if look:
 		look.enter_tree()
+
+## **Takes it out of the world now**: its move leaves the map's list at once and the node is freed
+## at the end of the frame. Every place that frees an event goes through here, because the node
+## leaves the tree only at the frame's end and a move left on the list until then is a figure
+## standing where the event last was (a mover leaves the list on going, minty-quail-34).
+func take_out() -> void:
+	if _map:
+		_map.moves.leave(_move)
+	queue_free()
 
 func _exit_tree() -> void:
 	if _map:

@@ -528,6 +528,60 @@ the person she walked into*, and the crowd's set (`CrowdSources`) sums that agen
 every other one. So contacts still compose by plain addition, there is still no ordering to get
 wrong, and `WorldContext.total_excitement_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.
 
+### The crowd gives way to event figures
+
+**When an event figure and the crowd meet, the crowd yields and the figure keeps its course and its
+timing** (inbox #884 in plaid-raven): a charging dog does not care, and a pedestrian does not want
+to be overrun. An event figure, an event car and day 12's cordon officers are given way to; nothing
+about them changes for the crowd, so every catch, notice and departure is timed as it is with an
+empty street.
+
+- **A walker gives way to every figure under way, and to an object or a vehicle standing still,
+  but may walk through a person or an animal standing still** (inbox #905): he walks round a
+  parked van, the patrol car at a light or the fire engine at its fire, and through a street
+  musician, a policeman standing for his notice or a dog waiting or crouched before its charge.
+  Each row says which it is (`EventDef.stands_as`); a figure counts as under way for a third of a
+  second after it last moved. An object with a solid body, a stall or a café's tables, is walked
+  round by its tiles as well. A person or an animal put on the map who has not yet taken a step, a dog
+  waiting for her or a policeman at his post, is a figure standing still, so he is walked through.
+  A figure set down on other ground by hand, as day 13's guard following her to her roadblock is,
+  has not walked there: a step of more than 32px in a tick (`SeparationPass.PLACEMENT_STEP`; the
+  fastest figure, the cat, covers 8) is a placement, with no speed and not under way.
+- **He makes way for a figure coming at him as he does for her** (noticed within
+  `Tuning.CROWD_YIELD_DISTANCE`, 96px, a lane over within his own footway), and his step is then
+  moved clear of every figure's body he gives way to, so a figure walking into him pushes him out
+  of its way and he slides round one he walks into. Pushed, he keeps going the way he was pushed
+  for a couple of seconds, as her bump has him do; pushed back along his own line, he steps to the
+  side his footway has room on. Squeezed against a wall he cannot go aside: overtaken, he is moved
+  on and hurries ahead; met head on along his own line by a figure under way, he walks on and the
+  figure brushes past him, the one overlap this leaves; against a standing object or vehicle he
+  waits behind it. He is not startled, so a figure walking through the crowd costs her nothing the
+  crowd did not already cost.
+- **A crowd car stands for a figure in its lane ahead, or coming into it within half a second**,
+  braking toward a point a few pixels short of its body the way it brakes for a stop line, and its
+  step is held short of the body if the brake arrives late. It never swerves and never drives
+  through a figure, moving or standing, for as long as it stands (inbox #909). **Behind a figure
+  that has parked it turns round**, as it does at a blocked street, rather than hold the lane all
+  day: the fire engine once it is at its fire. Behind one that is only stopping — the patrol car at
+  a red light or while its man is out, a dog standing for its notice — it waits until it moves.
+  Each row says whether its figure parks (`EventDef.when_it_stops`), and the figure says when it
+  has: one that drives to where it stops has parked only once it is there, so the fire engine at a
+  red light on its way is waited for. What was placed and never moved, a stall or a barricade, is left
+  to the map: it is a blockage by its tiles, as it always was, and a thing standing there with no
+  solid body is not stood for by a car until it has moved. A car stands only for a figure ahead of
+  its centre, so one that walks into its side or tail is overlapped. **A car in the middle of a turn
+  stands for nobody**: it drives its arc through a figure crossing the junction. **And a car that can still stop does not drive into a junction box it would
+  have to stand in**: a figure in its lane beyond the box, moving or standing, holds it at the line,
+  as a stopped car beyond the box does. Two cars are not held: one already within its braking distance
+  of the box, which counts as in it, and one already inside the box when a figure comes into its lane,
+  which stands there for as long as the figure stands. A car that stands for a figure is a stopped car to the strike,
+  the horn and the queue behind it. No figure reads the crowd, so a car waiting on a figure is never
+  one the figure waits on.
+
+`SeparationPass` (`src/world/`) is the world's half: which movers are given way to and the geometry
+of clearing them. The crowd asks it at each body's own step, between the step's proposal and its
+check (`MoveProposal`).
+
 ### A car is lethal
 
 Stepping into the carriageway in front of a moving car ends the day (`hard_fail`

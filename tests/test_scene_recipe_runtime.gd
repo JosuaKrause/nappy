@@ -114,6 +114,7 @@ func _ready() -> void:
 func run(t) -> void:
 	_test_schema(t)
 	_test_hold_is_for_a_straight_departure(t)
+	_test_a_held_departure_places_its_move(t)
 	_test_charging_is_for_a_pursuer_that_waits(t)
 	_test_relentless_is_for_a_pursuer(t)
 	_test_heat_installs_the_heated_row(t)
@@ -138,6 +139,28 @@ func _test_hold_is_for_a_straight_departure(t) -> void:
 	var message := SceneRecipeRuntime.hold_refusal_message("post", EventCatalogue.by_id("roadblock"))
 	t.check(message.contains("post") and message.contains("roadblock") and not message.contains("%s"),
 			"the refusal names the event and the row: %s" % message)
+
+## A held event walked away by hand (`_process()`) is moved outside its own step, so its move stands
+## where it now does (`MoveProposal.place()`): the crowd's separation pass reads the move, not the
+## node, and a move left behind would have the crowd step round a dog that is no longer there.
+func _test_a_held_departure_places_its_move(t) -> void:
+	var runtime := SceneRecipeRuntime.new()
+	t.add_child(runtime)
+	runtime.set_physics_process(false)
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("charging_dog"), Vector2(100.0, 100.0))
+	instance._be_done()
+	instance._heading = Vector2.RIGHT
+	t.check(instance.is_leaving, "the dog is leaving")
+	runtime._held.append(instance)
+	runtime._process(0.5)
+	t.check(instance.position.x > 100.0, "the held dog is walked on: %s" % instance.position)
+	t.check(instance._move.from == instance.position and instance._move.to == instance.position,
+			"its move stands where it does: at %s, from %s to %s" % [instance.position,
+			instance._move.from, instance._move.to])
+	runtime._held.clear()
+	instance.free()
+	runtime.free()
 
 ## `charging` starts a pursuer that waits for her already set on her, so it is refused for a row with
 ## no radius to skip and for one that sets off beside her on its own clock.

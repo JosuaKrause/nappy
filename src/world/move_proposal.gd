@@ -29,7 +29,8 @@ extends RefCounted
 ## and an event figure keeps its course and its timing, so the crowd's moves are the ones a pass
 ## changes and everyone else's committed pose is what they yield to. **Each move carries what that
 ## pass reads about its mover**: how far its body reaches round its centre (`radius`) and whether it
-## is one that gives way (`yields`). Nothing makes such a pass yet.
+## is one that gives way (`yields`). The pass is the map's `SeparationPass`, which each crowd body
+## asks at its own step, between its proposal and its check.
 ##
 ## **Outside a step the move stands where its mover does** (`from` and `to` both at its pose): a
 ## mover joins at the pose it stands at, and anything that moves it outside its own step — a body
@@ -54,6 +55,18 @@ var radius := 0.0
 ## course and timing, as an event figure, an event car and a cordon officer do (inbox #884 in
 ## plaid-raven).
 var yields := false
+## **Whether a walker goes round it while it stands still**, not only while it moves: true for an
+## object or a vehicle, false for a person or an animal, whom a walker may walk through while they
+## stand (inbox #905). Read by the pass a walker gives way through (`SeparationPass`); a crowd car
+## stands for a figure in its lane whichever it is. Set by the mover from what it is: an event from
+## its row (`EventDef.stands_as`); a cordon officer is a person, so his stays false.
+var stood_round := false
+## **Whether it has parked: stands where it is for good** (inbox #909). A crowd car standing behind
+## a parked figure in its lane turns round, as at a blocked street, and waits behind any other
+## (`SeparationPass.edge_ahead()`). Set by the mover as it goes: an event from its row's
+## `EventDef.when_it_stops` and where it is in its life (`EventInstance`); a cordon officer walks on,
+## so his stays false.
+var parked := false
 ## Whether it is on a world's list of moves (`ProposedMoves`) now: set when it joins, cleared when it
 ## leaves, so a pass over a copy of the list can tell a move whose mover has since gone.
 var on_the_list := false

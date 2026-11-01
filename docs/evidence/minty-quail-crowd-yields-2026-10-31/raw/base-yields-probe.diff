@@ -1,0 +1,47 @@
+55a56,61
+> ## BASE COPY: head's `SeparationPass` constants, and the ids of the rows whose `EventDef.stands_as` is
+> ## `SOMETHING` on head (the figure a walker goes round while it stands), which base has no field for.
+> const NEVER_MOVED := 1 << 30
+> const UNDER_WAY_TICKS := 10
+> const PLACEMENT_STEP := 32.0
+> const STOOD_ROUND := ["cafe_tables","delivery_van","construction","fire_truck","market_stall","ice_cream_van","reversing_lorry","police_patrol","loudspeaker","roadblock","abduction","night_raid","military_convoy","barricade","fallen_tree","car_accident","skip","scaffolding","burst_water_main","moving_van","burnt_out_car","collapsed_frontage","checkpoint_hut","checkpoint_gate"]
+341,342c347,356
+< 		# The two lists of figures `SeparationPass` keeps (`SeparationPass.gather()`), by the same
+< 		# rules: walkers give way to one under way or standing round, cars to one that has moved.
+---
+> 		# BASE COPY: base has no `SeparationPass`, so its rules are restated here with the same numbers,
+> 		# and a move counts only if its mover is live (a ghost is a move left on the list by an event
+> 		# freed, finished or out of the tree, which only leaves it at the end of the frame).
+> 		var live := {}
+> 		for instance in _city.events.instances():
+> 			if is_instance_valid(instance) and not instance.is_queued_for_deletion() \
+> 					and not instance.is_finished and instance.is_inside_tree():
+> 				live[instance._move] = STOOD_ROUND.has(instance.def.id)
+> 		for officer in officers:
+> 			live[officer.move] = false
+345,346c359,360
+< 		for move in _city.map.moves.keeping_their_course():
+< 			if move.radius <= 0.0:
+---
+> 		for move in _city.map.moves.all():
+> 			if move.yields or move.radius <= 0.0 or not live.has(move):
+348c362
+< 			var seen: Array = _seen.get(move, [move.to, SeparationPass.NEVER_MOVED])
+---
+> 			var seen: Array = _seen.get(move, [move.to, NEVER_MOVED])
+351c365
+< 			if step > SeparationPass.PLACEMENT_STEP:
+---
+> 			if step > PLACEMENT_STEP:
+355c369
+< 			elif still < SeparationPass.NEVER_MOVED:
+---
+> 			elif still < NEVER_MOVED:
+358c372
+< 			if still <= SeparationPass.UNDER_WAY_TICKS or move.stood_round:
+---
+> 			if still <= UNDER_WAY_TICKS or live[move]:
+360c374
+< 			if still != SeparationPass.NEVER_MOVED:
+---
+> 			if still != NEVER_MOVED:

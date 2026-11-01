@@ -38,6 +38,9 @@ var blocked := BlockedLayer.new()
 ## Every mover's move while it stands in this world (`ProposedMoves`), each proposed, checked, then
 ## committed (`MoveProposal`): the one list a pass over every mover's proposal goes over.
 var moves := ProposedMoves.new()
+## The pass a body that gives way asks at its own step about the movers on `moves` that keep their
+## course (`SeparationPass`): the crowd gives way to event figures (inbox #884 in plaid-raven).
+var separation := SeparationPass.new(moves)
 ## Bumped by every write to a per-day record that is not a body (the city's holds, soft seals and
 ## closures): a version a reader only compares with the one its own answer was built from.
 var day_record_version := 0

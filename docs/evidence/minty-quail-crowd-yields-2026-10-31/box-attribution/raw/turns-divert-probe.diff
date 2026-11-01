@@ -1,0 +1,129 @@
+diff --git i/src/crowd/lane_mover.gd w/src/crowd/lane_mover.gd
+index d9834270..362ab4a0 100644
+--- i/src/crowd/lane_mover.gd
++++ w/src/crowd/lane_mover.gd
+@@ -441,6 +441,7 @@ var frame_timing: CrowdTiming = null
+ ## The node is drawn interpolated between two ticks (see `_ready()`). A rig steps the whole crowd
+ ## with `Crowd.step()`; a suite may step one agent by hand.
+ func step(delta: float) -> void:
++	probe_watch(self)
+ 	# The stride an about-face owes its new heading, run down here rather than where it is spent, so
+ 	# that a body held at a gate or stopped behind a queue works it off too. See `_turn_round()`.
+ 	_turn_back_hold = maxf(0.0, _turn_back_hold - delta)
+@@ -469,7 +470,9 @@ func step(delta: float) -> void:
+ 		return
+ 	# A closed tile within reach, or for a car a parked figure in its lane (inbox #909): the same
+ 	# turn round either way.
+-	if _blocked_in <= _acts_within or strategy.blocked_by_a_figure():
++	var by_figure: bool = strategy.blocked_by_a_figure()
++	if _blocked_in <= _acts_within or by_figure:
++		probe_note(self, by_figure, _blocked_in <= _acts_within)
+ 		strategy.divert(delta)
+ 	# A car with no road either way goes when nobody is looking, which is the rule a body a pocket
+ 	# has caught already follows. It is the same situation read off the lane instead of off the
+@@ -1226,3 +1229,41 @@ func _dress() -> void:
+ ## two, because each hook is a call every agent pays every frame.
+ func _end_the_frame(_delta: float) -> bool:
+ 	return false
++
++
++# ---- PROBE INSTRUMENTATION (measuring only; not committed) ----
++static var PROBE := {"diverts_fig_only": 0, "diverts_fig_and_tile": 0, "diverts_tile_only": 0,
++		"episodes": [], "tracked": {}, "resolve": Callable()}
++
++static func probe_note(agent, by_figure: bool, by_tile: bool) -> void:
++	if not (by_figure or by_tile):
++		return
++	if by_figure and by_tile:
++		PROBE.diverts_fig_and_tile += 1
++	elif by_figure:
++		PROBE.diverts_fig_only += 1
++	else:
++		PROBE.diverts_tile_only += 1
++	if not by_figure:
++		return
++	var id: int = agent.get_instance_id()
++	if PROBE.tracked.has(id):
++		return
++	var near := {"row": "?", "state": "?", "dist": -1.0}
++	if PROBE.resolve.is_valid():
++		near = PROBE.resolve.call(agent)
++	PROBE.tracked[id] = {"agent": agent, "frame": Engine.get_physics_frames(), "heading": agent.heading(),
++			"pos": agent.global_position, "tile_too": by_tile, "figure": near, "turned_at": -1,
++			"arc_at": -1, "speed0": agent.speed(), "cause": ""}
++
++static func probe_watch(agent) -> void:
++	var id: int = agent.get_instance_id()
++	if not PROBE.tracked.has(id):
++		return
++	var rec: Dictionary = PROBE.tracked[id]
++	var frame := Engine.get_physics_frames()
++	if rec.arc_at < 0 and agent._turn:
++		rec.arc_at = frame - rec.frame
++	if rec.turned_at < 0 and agent.heading().dot(rec.heading) < -0.5:
++		rec.turned_at = frame - rec.frame
++		rec.cause = str(agent.strategy.turn_round_cause)
+diff --git i/tests/probes/minty_quail_crowd_cadence.gd w/tests/probes/minty_quail_crowd_cadence.gd
+index e7895a0d..aebad402 100644
+--- i/tests/probes/minty_quail_crowd_cadence.gd
++++ w/tests/probes/minty_quail_crowd_cadence.gd
+@@ -62,6 +62,7 @@ func run(t) -> void:
+ 	EventBus.hard_fail_triggered.connect(func(cause: String) -> void:
+ 		if cause == "car_strike":
+ 			_strikes += 1)
++	LaneMover.PROBE.resolve = _resolve_figure
+ 	var rig := Stroller.new()
+ 	var camera := Camera2D.new()
+ 	camera.name = "Camera2D"
+@@ -73,6 +74,7 @@ func run(t) -> void:
+ 	for city_seed in seeds:
+ 		var city: City = RunCity.of_the_run(CITY_SCENE)
+ 		t.add_child(city)
++		_the_city = city
+ 		city.crowd_view = ScreenCrowdView.new(t)
+ 		city.build(CityGenerator.generate(city_seed))
+ 		for day in DAYS:
+@@ -178,6 +180,18 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
+ 		var file := FileAccess.open(OS.get_environment("CADENCE_RIG_RECORD").path_join(walk_file),
+ 				FileAccess.WRITE)
+ 		file.store_var(recorded)
++	var recs: Array = []
++	for id in LaneMover.PROBE.tracked:
++		var r: Dictionary = LaneMover.PROBE.tracked[id]
++		recs.append({"frame": r.frame, "tile_too": r.tile_too, "figure": r.figure, "turned_at": r.turned_at,
++				"arc_at": r.arc_at, "cause": r.cause, "speed0": r.speed0})
++	print("TURNS_JSON " + JSON.stringify({"seed": city_seed, "day": day, "walk": walk,
++			"fig_only": LaneMover.PROBE.diverts_fig_only, "fig_and_tile": LaneMover.PROBE.diverts_fig_and_tile,
++			"tile_only": LaneMover.PROBE.diverts_tile_only, "episodes": recs}))
++	LaneMover.PROBE.diverts_fig_only = 0
++	LaneMover.PROBE.diverts_fig_and_tile = 0
++	LaneMover.PROBE.diverts_tile_only = 0
++	LaneMover.PROBE.tracked = {}
+ 	var figures := {}
+ 	if with_events:
+ 		figures = meeting.report()
+@@ -248,3 +262,24 @@ func _heading_at_the_nearest_walker(crowd: Crowd, here: Vector2) -> Vector2:
+ 	if best < 4.0:
+ 		return Vector2.ZERO
+ 	return (target - here).normalized()
++
++## The parked figure nearest ahead of a car (PROBE instrumentation): its row, state and distance.
++func _resolve_figure(agent) -> Dictionary:
++	return {"row": _row_of_nearest_parked(agent), "state": "parked", "dist": 0.0}
++
++var _the_city: City
++
++func _row_of_nearest_parked(agent) -> String:
++	var best := INF
++	var row := "unmapped"
++	for instance in _the_city.events.instances():
++		if not is_instance_valid(instance) or instance.is_queued_for_deletion():
++			continue
++		var move: MoveProposal = instance._move
++		if not move.parked:
++			continue
++		var d: float = (move.to - agent.global_position).length()
++		if d < best:
++			best = d
++			row = instance.def.id
++	return row
