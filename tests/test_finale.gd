@@ -79,6 +79,7 @@ func run(t) -> void:
 	_test_a_route_rig_carries_the_building_on_into_the_city(t)
 	_test_a_route_rig_boots_the_city_section_and_walks(t)
 	_test_without_a_route_the_briefs_wait_for_a_person(t)
+	_test_a_route_rig_presses_only_the_first_brief_of_a_section(t)
 	_test_a_handover_does_not_open_on_the_title(t)
 	_test_the_held_restart_from_the_escape_clears_the_section(t)
 
@@ -2253,7 +2254,8 @@ func _test_a_route_rig_carries_the_building_on_into_the_city(t) -> void:
 	_free_the_escape(t, main)
 
 ## `--start-escape city --route`: the city's brief is pressed by the rig too, rather than skipped by
-## a branch in `main`, so the section walks without anyone pressing anything.
+## a branch in `main`, so the section walks without anyone pressing anything. **A parity check**: it
+## held before the branch in `main` was removed, and guards that the removal changed nothing.
 func _test_a_route_rig_boots_the_city_section_and_walks(t) -> void:
 	var main := _boot_the_escape(t, DaySpec.Section.CITY, PackedStringArray(["--route", "tunnel"]))
 	_let_frames_pass(t, 4)
@@ -2262,13 +2264,35 @@ func _test_a_route_rig_boots_the_city_section_and_walks(t) -> void:
 			"a route booted into the city walks it with no one pressing the brief (mode %d)" % main._flow.mode)
 	_free_the_escape(t, main)
 
-## Without `--route` nothing presses a brief: the city's brief stands until a person does.
+## Without `--route` nothing presses a brief: the city's brief stands until a person does. **A parity
+## check**: it held before the rig pressed anything.
 func _test_without_a_route_the_briefs_wait_for_a_person(t) -> void:
 	var main := _boot_the_escape(t, DaySpec.Section.CITY)
 	_let_frames_pass(t, 4)
 	t.check(main._flow.mode == RunFlow.Mode.BRIEF and main._summary.is_showing(),
 			"with no --route the city's brief waits for a person")
 	_free_the_escape(t, main)
+
+## The rig presses a section's first brief only: a retry brief, raised after a loss, stays up, so a
+## lost city section stops there instead of retrying forever. Fails without the `_pressed` guard.
+func _test_a_route_rig_presses_only_the_first_brief_of_a_section(t) -> void:
+	var rig := RouteRig.new()
+	t.add_child(rig)
+	var presses := [0]
+	rig.use_continue(func(_raised_in: int) -> void: presses[0] += 1)
+	var city := _section(DaySpec.Section.CITY)
+	rig.press_the_brief(city)
+	_let_frames_pass(t, 2)
+	rig.press_the_brief(city)
+	_let_frames_pass(t, 2)
+	t.check(presses[0] == 1, "the city's first brief is pressed and its retry brief is not (%d)" % presses[0])
+	rig.press_the_brief(_section(DaySpec.Section.BUILDING))
+	_let_frames_pass(t, 2)
+	t.check(presses[0] == 2, "another section's first brief is pressed")
+	rig.press_the_brief(DaySpec.new())
+	_let_frames_pass(t, 2)
+	t.check(presses[0] == 2, "a day's brief is left alone")
+	rig.free()
 
 func _let_frames_pass(t, frames: int) -> void:
 	for i in frames:

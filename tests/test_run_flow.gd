@@ -26,8 +26,6 @@ func run(t) -> void:
 
 # ------------------------------------------------------------ the transitions ---
 
-## Every mode's continue: the step `main` carries out, and the mode that step leaves the run in. A
-## mode with no screen up answers nothing and stays where it is.
 ## A brief raised tells whoever listens which day or section it leads into, so a dev rig can answer it.
 func _test_raising_a_brief_announces_it(t) -> void:
 	var flow := RunFlow.new()
@@ -39,6 +37,8 @@ func _test_raising_a_brief_announces_it(t) -> void:
 	t.check(heard.size() == 1 and heard[0] == spec and flow.mode == RunFlow.Mode.BRIEF,
 			"raising a brief announces it with the spec it leads into")
 
+## Every mode's continue: the step `main` carries out, and the mode that step leaves the run in. A
+## mode with no screen up answers nothing and stays where it is.
 func _test_each_screen_continues_to_its_step(t) -> void:
 	var M := RunFlow.Mode
 	var S := RunFlow.Step

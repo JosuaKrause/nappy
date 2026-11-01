@@ -21,8 +21,8 @@ signal day_started(spec: DaySpec)
 ## An authored scene's day is never planned, so it never sends this.
 signal day_planned(spec: DaySpec)
 ## A brief has been raised (`open_brief()`) over `spec`, the day or section it leads into. The screen
-## itself is shown right after, by `main`; a dev rig that has nobody to press the brief's continue
-## answers it a frame later, through the screen's own input.
+## itself is shown right after, by `main`; the route rig answers the first brief of an escape section a
+## frame later by calling `main`'s continue handler.
 signal brief_opened(spec: DaySpec)
 
 ## The screen in front of the walk, or that there is none.
