@@ -2263,6 +2263,10 @@ func _test_a_route_rig_boots_the_city_section_and_walks(t) -> void:
 			and not main._summary.is_showing(),
 			"a route booted into the city walks it with no one pressing the brief (mode %d)" % main._flow.mode)
 	_free_the_escape(t, main)
+	# `--route` makes this a rig, whose `RigLock` erases every action's `InputMap` bindings; freeing
+	# the scene must give them back, or every later suite in this process hears no key as an action.
+	t.check(not InputMap.action_get_events(&"move_right").is_empty(),
+			"freeing a rig-flagged escape leaves the keys bound to their actions again")
 
 ## Without `--route` nothing presses a brief: the city's brief stands until a person does. **A parity
 ## check**: it held before the rig pressed anything.
