@@ -12,7 +12,7 @@ both carry on. **Did the bar do what the caret said?** Against a pulsing source 
 average of a pass, not any one pass, since the caret projects the pulse's mean. And on day
 1, **are there still enough things on her route to choose between**: friction placed on the
 corridor measures about a tenth lower on day 1 and a twentieth lower over five days than
-it did with these rows cheaper: `Tuning.WALL_WORTH_OF_COST` is 48 points, which keeps the dog
+it did with these rows cheaper: `EventScheduler.WALL_WORTH_OF_COST` is 48 points, which keeps the dog
 walker and the man shouting on her route and `leaf_blower` off it. The dials are the three rows' `intensity`,
 `leaf_blower`'s `core_intensity` and that line, all open to overturn and meant to be tuned
 by feel. Record is `DECISIONS.md`, M174, the rows are corrected for the decay.

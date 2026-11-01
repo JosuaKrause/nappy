@@ -149,8 +149,8 @@ func _reproduce_zero_density_visits() -> void:
 	print("valid visits (calm, open, and a pool to draw from): %d" % valid)
 
 	if valid > 0:
-		print("\n-- the roll alone (Tuning.SPOILERS_TO_DENY_A_PARK = %d cells at most) --"
-				% Tuning.SPOILERS_TO_DENY_A_PARK)
+		print("\n-- the roll alone (EventScheduler.SPOILERS_TO_DENY_A_PARK = %d cells at most) --"
+				% EventScheduler.SPOILERS_TO_DENY_A_PARK)
 		_print_int_distribution("placements", roll_counts)
 		_print_float_distribution("open ground denied", roll_denied)
 

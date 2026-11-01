@@ -708,7 +708,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 	sent.free()
 
 func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.HEAT_HUNTS_LEVEL)
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
 	var guard := EventInstance.new()
 	guard.setup(hot, Vector2.ZERO)
 	t.add_child(guard)

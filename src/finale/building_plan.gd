@@ -107,7 +107,7 @@ static func _place_the_basement(map: InteriorMapPlan, rng: RandomNumberGenerator
 		vent.comes_in = periods[i] * float(i + 1) / float(sites.size())
 		plans.append(vent)
 
-## The explosions outside: every `Tuning.FINALE_EXPLOSION_INTERVAL`, the first one interval in, the
+## The explosions outside: every `EventCatalogue.FINALE_EXPLOSION_INTERVAL`, the first one interval in, the
 ## row's charge where she is with its notice over (`EventCatalogue.explosion_outside()`), and every
 ## window lit as it comes.
 static func _place_the_explosions_outside(plans: Array[EventScheduler.Planned]) -> void:

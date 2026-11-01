@@ -1555,7 +1555,7 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 ## the core: not red. Both points sit on a quarter-second step of the projection, so neither answer
 ## depends on where its samples fall.
 func _test_the_red_caret_is_measured_from_the_catch(t) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.HEAT_HUNTS_LEVEL)
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
 	t.check(hot.pursuit != null and hot.hard_fail and hot.lethal_reach() < hot.inner_radius,
 			"the hunting roadblock catches inside its field's core (%.0fpx < %.0fpx)"
 			% [hot.lethal_reach(), hot.inner_radius])

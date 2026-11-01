@@ -51,13 +51,13 @@ func _test_spawn_mode_switches_after_the_teaching_day(t) -> void:
 
 ## Walks a director until it hands out `charging_dog`, or returns two `Vector2.INF`s if a real
 ## street's worth of walking never gets one. `due()` sites relative to wherever she has walked to
-## by the time it fires — `Tuning.AHEAD_INTERVAL` is up to 26s of walking, hundreds of pixels past
+## by the time it fires — `EventDirector.AHEAD_INTERVAL` is up to 26s of walking, hundreds of pixels past
 ## the start — so the second return is her position *at the moment of siting*, which is what a
 ## heading has to be measured from, not the start of the walk.
 func _site_the_dog(director: EventDirector, at: Vector2, heading: Vector2) -> Array:
 	var due: Array = []
 	var walked := at
-	for i in int(round(Tuning.AHEAD_INTERVAL.y * 2.0 / STEP)):
+	for i in int(round(EventDirector.AHEAD_INTERVAL.y * 2.0 / STEP)):
 		due = director.due(STEP, walked, heading * Tuning.WALK_SPEED)
 		walked += heading * Tuning.WALK_SPEED * STEP
 		if not due.is_empty():
@@ -279,7 +279,7 @@ func _test_only_the_teaching_days_first_dog_is_the_lesson(t) -> void:
 	t.check(first == ["charging_dog_tutorial"],
 			"day %d hands out the lesson's dog first (%s)" % [Tuning.RUN_TAUGHT_DAY, first])
 	director._owed.push_front(dog)
-	var second := _handed_out(director, at, Vector2.UP, Tuning.AHEAD_INTERVAL.y + 1.0)
+	var second := _handed_out(director, at, Vector2.UP, EventDirector.AHEAD_INTERVAL.y + 1.0)
 	t.check(not second.is_empty() and second[0] == "charging_dog",
 			"and a second dog owed that day is the ordinary dog (%s)" % [second])
 
@@ -304,7 +304,7 @@ func _test_no_other_day_hands_out_the_lesson(t) -> void:
 	director.start_day(day, plans, rng)
 	var at := CrowdLanes.arterial_pavement(map)
 	at.y = map.world_size().y * 0.5
-	var ids := _handed_out(director, at, Vector2.UP, Tuning.AHEAD_INTERVAL.y * 3.0)
+	var ids := _handed_out(director, at, Vector2.UP, EventDirector.AHEAD_INTERVAL.y * 3.0)
 	t.check(not ids.is_empty() and not ids.has("charging_dog_tutorial"),
 			"day %d hands out rows and none of them is the lesson's dog (%s)" % [day, ids])
 
@@ -322,7 +322,7 @@ func _test_a_sprinkled_dog_is_never_the_lesson(t) -> void:
 		director.start_day(Tuning.RUN_TAUGHT_DAY + 1, [], rng)
 		if director.owed() == 0:
 			continue
-		var ids := _handed_out(director, at, Vector2.UP, Tuning.AHEAD_INTERVAL.y * 2.0)
+		var ids := _handed_out(director, at, Vector2.UP, EventDirector.AHEAD_INTERVAL.y * 2.0)
 		t.check(not ids.is_empty() and ids[0] == "charging_dog",
 				"seed %d: the dog sprinkled on day %d is the ordinary dog (%s)"
 				% [seed, Tuning.RUN_TAUGHT_DAY + 1, ids])

@@ -10,6 +10,19 @@ extends RefCounted
 ## Handed the world the events stand in (`EventWorld`): the live instances, the player, the map the
 ## run-log lines name tiles on and the trace they go to.
 
+## How near the end of the day, in seconds, the doubled mark means *now*.
+##
+## The mark over her head is the one cue in the game that gives an **instruction**, and its second
+## level says *it is bad now and you are in it: one step left*. That is a claim about a moment, so it
+## needs a clock rather than a radius: raised anywhere inside a lethal event's **outer** radius it
+## covers about seven times the area that can end the day for a cyclist (a 90px outer radius against
+## a 33px lethal reach), and stays up while the bike rides away.
+##
+## Read it as the step: at `Tuning.WALK_SPEED` it is 64px, which is two tiles, which is the width of the
+## pavement she would have to leave. Long enough to be an instruction she can still obey and short
+## enough that it is never up while the answer is "carry on walking".
+const LETHAL_MARK_LEAD := 0.7
+
 ## The world the events stand in, the player and the live instances.
 var world: EventWorld
 
@@ -187,7 +200,7 @@ func warn_about_the_ground_she_is_on() -> void:
 			body.warn(Stroller.Alert.NOW, WARNING_HOLD, WARNING_SOURCE)
 			continue
 		var closing := (instance.travel_velocity() - body.velocity).dot(to_her.normalized())
-		if closing > 0.0 and gap <= closing * Tuning.LETHAL_MARK_LEAD:
+		if closing > 0.0 and gap <= closing * LETHAL_MARK_LEAD:
 			body.warn(Stroller.Alert.NOW, WARNING_HOLD, WARNING_SOURCE)
 
 ## How long a raised warning stays up. A shade longer than a physics frame, so the mark does not
