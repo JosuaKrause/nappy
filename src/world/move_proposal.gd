@@ -11,15 +11,30 @@ extends RefCounted
 ## 2. **Check**: the mover's own checker passes the proposal or changes it — the navigator's swept
 ##    step for a figure, taken as each part of the step is, which is why a figure's proposal reaches
 ##    its end already checked; a car's own checks once its whole tick is proposed
-##    (`EventCarDriving`), which take the step back; the crowd's hold on a step into a tile its body
-##    may not stand on (`LaneMover._keep_out_of_a_body()`).
+##    (`EventCarDriving.check()`), which take the step back where it would bring the body into her or
+##    her pram, past a red light's stop line or into a turn across her, and check no wall; the
+##    crowd's hold on a step into a tile its body may not stand on
+##    (`LaneMover._keep_out_of_a_body()`).
 ## 3. **Commit** (`commit()`): the pose the mover stands at from now, which it acts on — the end of
 ##    a route reached, a departure begun or ended, a catch — only once it is committed.
 ##
-## **Between the proposal and the check is where another pass may change it**: a pass over the
-## world's whole list (`ProposedMoves.all()`), which sees every mover's proposal and its committed
-## pose, and whose change the mover's own check still holds to what may stand there. Nothing makes
-## such a pass yet.
+## **Only a crowd body's move can be changed between its proposal and its check.** `LaneMover`
+## proposes its along and cross step without moving, and its check (`_keep_out_of_a_body()`) is what
+## then holds whatever the move says to the tiles its body may stand on; a pass that changed `to` in
+## between would be checked like the step itself. Every other mover's move is the pose it publishes
+## for the others to read: an event figure and a cordon officer are walked through the navigator
+## during the tick, so the move records a pose the figure already stands at, and an event car's
+## check holds the step to her, the stop line and the turn onto her, never to a wall. That is the
+## seam the player's rule for who gives way needs (inbox #884 in minty-dolphin): the crowd yields,
+## and an event figure keeps its course and its timing, so the crowd's moves are the ones a pass
+## changes and everyone else's committed pose is what they yield to. **Each move carries what that
+## pass reads about its mover**: how far its body reaches round its centre (`radius`) and whether it
+## is one that gives way (`yields`). Nothing makes such a pass yet.
+##
+## **Outside a step the move stands where its mover does** (`from` and `to` both at its pose): a
+## mover joins at the pose it stands at, and anything that moves it outside its own step — a body
+## recycled or pushed, a car through a turn, an event stood somewhere else — puts its move there too
+## (`place()`). The list holds no mover, so its moves are the only poses a pass over it has.
 ##
 ## Positions are `Vector2`, a node's own type, so a proposal worked out here lands where the same
 ## sum written straight onto the node always did.
@@ -31,6 +46,20 @@ var from := Vector2.ZERO
 var to := Vector2.ZERO
 ## Whether the move is open: proposed and not yet committed.
 var open := false
+## How far its mover's body reaches round its centre, in px: the circle that holds the whole body
+## (`GroundShape.reach()` for a crowd body, the radius an event walks or drives through the navigator
+## at, a cordon officer's figure).
+var radius := 0.0
+## Whether its mover gives way to the others — a crowd walker or car — rather than keeping its own
+## course and timing, as an event figure, an event car and a cordon officer do (inbox #884 in
+## minty-dolphin).
+var yields := false
+## Whether it is on a world's list of moves (`ProposedMoves`) now: set when it joins, cleared when it
+## leaves, so a pass over a copy of the list can tell a move whose mover has since gone.
+var on_the_list := false
+
+func _init(gives_way := false) -> void:
+	yields = gives_way
 
 ## Opens a move at `at`, proposing to stay there until the mover says where it would go.
 func propose(at: Vector2) -> void:
@@ -43,3 +72,9 @@ func commit() -> Vector2:
 	open = false
 	from = to
 	return to
+
+## **The mover stands at `at`, moved outside its own step**: joining a world, recycled, pushed, or
+## carried along a turn. Both ends of the move are there, and an open move stays open.
+func place(at: Vector2) -> void:
+	from = at
+	to = at

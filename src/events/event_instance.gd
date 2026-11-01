@@ -315,6 +315,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_map = map if map else WorldMap.open_ground()
 	_navigator = navigator if navigator else _map.navigator()
 	_mover = mover_for(definition)
+	_move.radius = _mover.radius
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	var start := route[0] if route.size() > 0 else at
 	if not definition.mobile and definition.obstructs_radius > 0.0 \
@@ -694,7 +695,10 @@ func step(delta: float) -> void:
 	_commit_the_step()
 
 ## Its move this tick (`MoveProposal`), its own, on its map's list of moves (`WorldMap.moves`) while
-## it is in the world.
+## it is in the world: one that keeps its course rather than giving way (`MoveProposal.yields`),
+## reaching as far round its centre as it walks or drives through the navigator (`mover_for()`).
+## Outside a step it stands where the event does: it joins there (`_enter_tree()`), and a move to
+## other ground (`move_to()`) puts it there too.
 var _move := MoveProposal.new()
 
 ## Opens the step at the pose it stands at; a car notes what its check will hold the step to.
@@ -1155,6 +1159,7 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 ## afresh. `EventManager.move_extra()` is the caller, which records its body again.
 func move_to(at: Vector2) -> void:
 	global_position = at
+	_move.place(position)
 	_spread_vertical = _spread_is_vertical(_map, at)
 	_stationary_vehicle_side = EventFootprints.stands_side_on(def, _map, at, _heading)
 	_idle_phase_offset = _position_roll(101)
@@ -1873,7 +1878,7 @@ func _draw() -> void:
 ## which took them with it.
 func _enter_tree() -> void:
 	if _map:
-		_map.moves.join(_move)
+		_map.moves.join(_move, position)
 	if look:
 		look.enter_tree()
 

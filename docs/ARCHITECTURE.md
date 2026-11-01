@@ -252,10 +252,13 @@ src/
 	                      tiles on the record are both built from
 	move_proposal.gd      one mover's move for one tick (`MoveProposal`): proposed from where it
 	                      stands, checked by the mover's own checker, then committed, and only
-	                      then acted on; kept by every event, crowd body and cordon officer
+	                      then acted on; kept by every event, crowd body and cordon officer, with
+	                      how far its body reaches and whether it gives way; only a crowd body's
+	                      can be changed before its check, and outside a step it stands where
+	                      its mover does
 	proposed_moves.gd     one map's list of every mover's move while it stands in the world
 	                      (`ProposedMoves`, `WorldMap.moves`), the one list a pass over every
-	                      mover's proposal goes over; it names no mover
+	                      mover goes over, handed out as a copy; it names no mover
 	navigator.gd          the one way anything moves over a map: a swept step that keeps the
 	                      body clear, a walk down points, a way round, a way out, a route cut to
 	                      the ground, whether a chase reaches somebody, a `ChaseWay` to somebody a

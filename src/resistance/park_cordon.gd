@@ -190,8 +190,8 @@ class Officer extends RefCounted:
 	var person: EventInstance = null
 	var aim := Vector2.INF
 	var node: CordonOfficer = null
-	## His move each tick (`MoveProposal`), on the map's list of moves while he is out
-	## (`ParkCordon._take_on()`).
+	## His move each tick (`MoveProposal`), on the map's list of moves while he is out, joined where
+	## he stands (`ParkCordon._take_on()`).
 	var move := MoveProposal.new()
 
 var _map: CityMap
@@ -202,6 +202,10 @@ var _navigator: Navigator
 ## her, with no reach ahead of him. His walks keep to tile-centre ways and to the park's edge, where
 ## a reach would only stop him short of a point beside a solid that his feet can stand on.
 var _officer_walks := Mover.on_foot()
+## How far an officer's body reaches round his feet, for his move (`MoveProposal.radius`): the
+## policeman's own figure, as he walks when he is an event (`EventInstance.mover_for()` of
+## `OFFICER_ROW`), though his own walks go at no reach.
+var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW)).radius
 ## The day's obstruction as the director's reachability answer has it (`EventScheduler.
 ## blocked_by()`: today's closures plus every body's disc), which the last gap is checked under.
 var _blocked: Dictionary
@@ -984,12 +988,14 @@ func _send_off(person: EventInstance) -> void:
 
 # ----------------------------------------------------------------- walking ---
 
-## **An officer's tick, proposed, checked, then committed** (`MoveProposal`, the world's shape for
-## every mover's step): opened where he stands, walked through the navigator, which checks each part
-## of the walk as he takes it, and committed where it ends, before his figure is shown there. What
-## the tick acts on as he walks — a stretch taped at the end of a leg, the edge reached, a person
-## sent off, gone out of her sight — is acted on at a pose the navigator has already let him take,
-## which nothing after takes back.
+## **An officer's tick, recorded and committed** (`MoveProposal`, the world's shape for every
+## mover's step): his move is opened where he stands, he is walked through the navigator, which
+## checks each part of the walk as he takes it, and the pose the walk ended on is recorded on the
+## move and committed, before his figure is shown there. Nothing can change the move between: it is
+## the pose he publishes for the others to read, since he keeps his course (`MoveProposal.yields`
+## false). What the tick acts on as he walks — a stretch taped at the end of a leg, the edge reached,
+## a person sent off, gone out of her sight — is acted on at a pose the navigator has already let
+## him take, which nothing after takes back.
 func _move(officer: Officer, delta: float, her: Vector2, shows: Callable) -> void:
 	officer.move.propose(officer.at)
 	match officer.phase:
@@ -1395,7 +1401,8 @@ func _maybe_gone(officer: Officer, her: Vector2, shows: Callable) -> void:
 ## (`WorldMap.moves`) and his figure in the world.
 func _take_on(officer: Officer) -> void:
 	officers.append(officer)
-	_map.moves.join(officer.move)
+	officer.move.radius = _officer_reach
+	_map.moves.join(officer.move, officer.at)
 	_make_figure(officer)
 
 ## Lets an officer go: his move off the map's list and his figure out of the world.

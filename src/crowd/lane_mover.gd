@@ -192,7 +192,7 @@ func _ready() -> void:
 ## mover's proposal sees it.
 func _enter_tree() -> void:
 	if _map:
-		_map.moves.join(_move)
+		_map.moves.join(_move, position)
 
 func _exit_tree() -> void:
 	if _map:
@@ -223,6 +223,7 @@ func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value
 		at: Vector2, direction: Vector2, speed: float) -> String:
 	kind = agent_kind as Kind
 	shape = strategy.ground_shape()
+	_move.radius = shape.reach()
 	_map = map
 	field = crowd_field
 	_rng.seed = seed_value
@@ -468,8 +469,16 @@ func step(delta: float) -> void:
 	_end_the_frame(delta)
 
 ## Its move this tick (`MoveProposal`), its own, on its map's list of moves (`WorldMap.moves`) while
-## it is in the world.
-var _move := MoveProposal.new()
+## it is in the world: a crowd body's, the one kind that gives way (`MoveProposal.yields`), reaching
+## as far round its centre as its ground shape does (set in `setup_at()`).
+var _move := MoveProposal.new(true)
+
+## **Puts its move where it stands, after something outside its step has moved it**: a car carried
+## along a turn (`CarStrategy._follow_the_turn()`), a walker pushed by her bump (`Crowd._bump()`).
+## Its own setters (`_set_along()`, `_set_cross()`) and a placement taken back already do, so outside
+## a step its move is always where it stands.
+func place_its_move() -> void:
+	_move.place(position)
 
 ## Proposes the tick's step from where it stands (`_move`): along its lane at its kind's pace, and
 ## across toward its lane's centre and any detour at `STEER_SPEED`.
@@ -708,17 +717,23 @@ func _along() -> float:
 func _cross() -> float:
 	return position.x if _vertical else position.y
 
+## Stands it at `value` along its lane, outside the step's own move, so its move stands there too
+## (`place_its_move()`).
 func _set_along(value: float) -> void:
 	if _vertical:
 		position.y = value
 	else:
 		position.x = value
+	_move.place(position)
 
+## Stands it at `value` across its lane, outside the step's own move, so its move stands there too
+## (`place_its_move()`).
 func _set_cross(value: float) -> void:
 	if _vertical:
 		position.x = value
 	else:
 		position.y = value
+	_move.place(position)
 
 ## Picks a corridor, a lane in it, a direction and a speed — the kind's own roll
 ## (`LaneStrategy.choose_lane()`: a car picks its axis by weight, a walker splits it evenly, and
@@ -1122,6 +1137,7 @@ func _take_the_placement(taken: Array) -> void:
 	_lane_centre = float(taken[5])
 	var at: Vector2 = taken[6]
 	position = at
+	_move.place(at)
 
 ## However the rolls above landed, an entry point may not sit further past the map's true edge
 ## than `entry_room()` allows this kind to arrive at — zero for everybody but a car on the spine —
