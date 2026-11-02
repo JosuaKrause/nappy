@@ -89,9 +89,9 @@ const TRAP_DRAW_LIMIT := 24
 ## doc for why. The same shape of budget as `TRAP_DRAW_LIMIT`.
 const PICK_REACHABLE_REDRAW_LIMIT := 24
 
-## The sentinel `_nearest_legal_in_pool()` answers for "nothing
-## qualified" — off the grid, since every real tile this director ever asks about is non-negative.
-const _NO_TILE := Vector2i(-1, -1)
+## The tile `draw_reachable()` and the neighbor's start answer for "nothing qualified" — off the
+## grid, since every real tile this director ever asks about is non-negative.
+const NO_TILE := Vector2i(-1, -1)
 
 ## How long the man shouting stays and keeps shouting after day 6's note is handed over, before
 ## `_lingering_rider` actually leaves (M205, "the note costs, and the ordinary day" — the player,
@@ -221,6 +221,9 @@ var _player: Stroller
 var _run: RunState
 ## What the story puts in the street besides the task — see `ResistanceHappenings`.
 var _happenings := ResistanceHappenings.new()
+## The calendar the steps are offered from (`ResistanceSteps.Step`, chained mark to task by index):
+## the run's own (`ResistanceSteps.all()`) unless a caller hands another (`use_steps()`).
+var _steps: Array[ResistanceSteps.Step] = ResistanceSteps.all()
 
 ## Where this director writes its own account of what it placed and why, for the run log — handed
 ## in before `setup()`, which passes it on to the happenings; silent until then.
@@ -291,6 +294,12 @@ func use_player(player: Stroller) -> void:
 func set_sight(sees: Callable) -> void:
 	_sight = sees
 
+## Hands the director the calendar it offers steps from, in place of the run's own
+## (`ResistanceSteps.all()`): a step a later slice will build, such as one with a deadline, offered
+## through the same `start_day()` and touch as every built step. The game never hands one.
+func use_steps(steps: Array[ResistanceSteps.Step]) -> void:
+	_steps = steps
+
 func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_clear()
 	# The mark she read, if any, stands crossed through until the day ends (`_read_mark`) — here,
@@ -326,11 +335,12 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_happenings.start_day(day, not _scene_task)
 
 	var step := ResistanceSteps.for_day(day, _run.resistance.completed_steps,
-			_run.resistance.failed_steps, _run.sabotage_available())
+			_run.resistance.failed_steps, _run.sabotage_available(), _steps)
 	_begin_step(step, true)
 	# Day 13's roadblock is placed under the day's rules the moment she reads the mark; the scans that
 	# placement needs once a day are done now, at dawn, rather than on that frame.
-	var task := ResistanceSteps.by_index(step.index + 1) if step and step.is_pickup else null
+	var task := ResistanceSteps.by_index(step.index + 1, _steps) if step and step.is_pickup \
+			else null
 	if task and task.is_a_guarded_band and _city and _city.events:
 		_city.events.prepare_a_task_row(EventCatalogue.by_id(task.task_event_id))
 
@@ -1246,8 +1256,13 @@ static func is_at_a_front_door(step: ResistanceSteps.Step) -> bool:
 	return step != null and (step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR
 			or step.at_a_front_door)
 
-## What a pursuer the director sends at her walks as: a man on foot (`EventInstance.mover_for()`).
-var _chaser := Mover.on_foot(EventInstance.FIGURE_RADIUS)
+## What a pursuer the director sends at her walks as: a man on foot of a figure's radius
+## (`EventInstance.FIGURE_RADIUS`), whatever row he is — the walker every start the director draws
+## for him is asked about (`_draw_arrival_position()`).
+static func sent_pursuer() -> Mover:
+	return Mover.on_foot(EventInstance.FIGURE_RADIUS)
+
+var _chaser := sent_pursuer()
 
 ## A bearing and a distance from `at`, redrawn until the point is walkable ground the day's
 ## catalogue and the home-block exemption both leave alone — rejected rather than repaired, the
@@ -1400,8 +1415,8 @@ func _guard_two_thirds_through(at: Vector2, span: Array[Vector2], min_distance: 
 ## Where the guard a mark at `at` sets would stand before anything refused his ground: two-thirds
 ## through a through-alley (`_guard_two_thirds_through()`), the courtyard's inner end past a
 ## passage, `Vector2.INF` off an alley. What a relocation asks the screen about
-## (`_nearest_alley_within()`).
-func _guard_spot(at: Vector2) -> Vector2:
+## (`_nearest_alley_within()`), and what a guard standing by a mark is measured against.
+func guard_spot(at: Vector2) -> Vector2:
 	var span := _through_alley_span(at)
 	if span.is_empty():
 		return _far_alley_mouth(at)
@@ -2257,7 +2272,7 @@ func _send_the_neighbor_home() -> EventInstance:
 	for blocked: Dictionary in [on_foot, _reach_blocked]:
 		var field := _map.walk_field(door, blocked)
 		var start := _a_neighbor_start(field, wanted)
-		if start == _NO_TILE:
+		if start == NO_TILE:
 			continue
 		var path := _walk_home(field, start)
 		trace.note("contact", "the neighbor is %d tiles of walk from home at %s"
@@ -2270,7 +2285,7 @@ func _send_the_neighbor_home() -> EventInstance:
 	return null
 
 ## A sidewalk tile whose walk home is within `NEIGHBOR_WALK_BAND_TILES` of `wanted`, off screen
-## from her and on ground a contact may stand on, drawn by the day's RNG — or `_NO_TILE`.
+## from her and on ground a contact may stand on, drawn by the day's RNG — or `NO_TILE`.
 func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
 	var her := _player.global_position if _player and is_instance_valid(_player) else Vector2.INF
 	var ground := _spawn_siting.ask_of_ground()
@@ -2290,9 +2305,9 @@ func _a_neighbor_start(field: PackedInt32Array, wanted: int) -> Vector2i:
 		# none — never the nearest one standing in for it.
 		var pinned := _map.world_to_tile(_pinned_neighbor)
 		return pinned if pinned in offered \
-				and _map.tile_to_world(pinned).is_equal_approx(_pinned_neighbor) else _NO_TILE
+				and _map.tile_to_world(pinned).is_equal_approx(_pinned_neighbor) else NO_TILE
 	if offered.is_empty():
-		return _NO_TILE
+		return NO_TILE
 	return offered[_rng.randi_range(0, offered.size() - 1)]
 
 ## The walk from `start` down `field` to the doorstep, as the corners of it: each step goes to a
@@ -2450,48 +2465,57 @@ func _pick_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
 	var ground := _spawn_siting.ask_of_ground()
 	var legal := SpawnSiting.Rule.GROUND_EVEN_IF_HELD if allow_held \
 			else SpawnSiting.Rule.LEGAL_GROUND
+	var stands := func(tile: Vector2i) -> bool:
+		return _spawn_siting.allows(legal, ground, _map.tile_to_world(tile))
+	var open := func(tile: Vector2i) -> bool:
+		return _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(tile)) \
+				and _reachable_from_home(tile)
+	var tile := draw_reachable(candidates, rng, stands, open,
+			_run.facts.completed_resistance_alley_tiles)
+	return _map.tile_to_world(tile) if tile != NO_TILE else Vector2.INF
+
+## **The draw `_pick_reachable()` makes, as a pure function of what it is handed**: the
+## candidates, the day's stream, whether a tile is legal ground to stand on (`stands`), whether
+## a drawn tile is open to it today — no body standing there, not sealed off from home (`open`) —
+## and the tiles completed steps used (`used`). The legal candidates not used are the pool, or all
+## the legal ones when every one is used; **one uniform draw over the whole pool**, exactly as
+## before `is_obstructed()` (or reachability) was ever checked, so a pool with nothing shut in it
+## draws the same index it always has. Only a drawn tile `open` refuses is rejected and redrawn, up
+## to `PICK_REACHABLE_REDRAW_LIMIT` times, the nearest open tile in the pool standing in if every
+## redraw lands on another refused one (`_nearest_open_in_pool()`). `NO_TILE` when the pool is
+## empty or nothing in it is open.
+static func draw_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerator,
+		stands: Callable, open: Callable, used: Array[Vector2i]) -> Vector2i:
 	var reachable: Array[Vector2i] = []
 	var unused: Array[Vector2i] = []
 	for tile in candidates:
-		if not _spawn_siting.allows(legal, ground, _map.tile_to_world(tile)):
+		if not stands.call(tile):
 			continue
 		reachable.append(tile)
-		if tile not in _run.facts.completed_resistance_alley_tiles:
+		if tile not in used:
 			unused.append(tile)
 	var pool := unused if not unused.is_empty() else reachable
 	if pool.is_empty():
-		return Vector2.INF
-	# One uniform draw over the whole pool, exactly as before `is_obstructed()` (or reachability)
-	# was ever checked — so a pool with nothing obstructed or sealed off in it draws the same index
-	# it always has. Only a drawn tile a real body actually stands on, or that the day's whole
-	# obstruction seals off from home, is rejected and redrawn, up to `PICK_REACHABLE_REDRAW_LIMIT`
-	# times, the nearest still-legal tile in the pool standing in if every redraw lands on another
-	# one (`_nearest_legal_in_pool()`'s own doc).
+		return NO_TILE
 	var drawn := pool[rng.randi_range(0, pool.size() - 1)]
-	if _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(drawn)) \
-			and _reachable_from_home(drawn):
-		return _map.tile_to_world(drawn)
+	if open.call(drawn):
+		return drawn
 	for _attempt in PICK_REACHABLE_REDRAW_LIMIT:
 		drawn = pool[rng.randi_range(0, pool.size() - 1)]
-		if _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(drawn)) \
-				and _reachable_from_home(drawn):
-			return _map.tile_to_world(drawn)
-	var nearest := _nearest_legal_in_pool(pool, drawn)
-	return _map.tile_to_world(nearest) if nearest != _NO_TILE else Vector2.INF
+		if open.call(drawn):
+			return drawn
+	return _nearest_open_in_pool(pool, drawn, open)
 
-## The pool's own nearest tile to `from` that is neither `CityMap.is_obstructed()` nor sealed off
-## from home (`_reachable_from_home()`) — the fallback once `PICK_REACHABLE_REDRAW_LIMIT` redraws
-## all landed on one or the other, which only ever happens on a pool where that is common: a narrow
-## target whose planning kept a route to only a few of its tiles. `_NO_TILE` if every tile in
-## `pool` fails, which `_pick_reachable` then reads the same way it reads an empty pool: nowhere to
-## go today.
-func _nearest_legal_in_pool(pool: Array[Vector2i], from: Vector2i) -> Vector2i:
-	var ground := _spawn_siting.ask_of_ground()
-	var nearest := _NO_TILE
+## The pool's own nearest tile to `from` that `open` answers for — the fallback once
+## `PICK_REACHABLE_REDRAW_LIMIT` redraws all landed on refused tiles, which only ever happens on a
+## pool where that is common: a narrow target whose planning kept a route to only a few of its
+## tiles. `NO_TILE` if every tile in `pool` is refused, which `_pick_reachable()` then reads the
+## same way it reads an empty pool: nowhere to go today.
+static func _nearest_open_in_pool(pool: Array[Vector2i], from: Vector2i, open: Callable) -> Vector2i:
+	var nearest := NO_TILE
 	var nearest_distance := INF
 	for tile in pool:
-		if not _spawn_siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _map.tile_to_world(tile)) \
-				or not _reachable_from_home(tile):
+		if not open.call(tile):
 			continue
 		var distance: float = (tile - from).length_squared()
 		if distance < nearest_distance:
@@ -2665,7 +2689,7 @@ func _follow_her_between_look_alikes() -> void:
 		if instance.def.id != _step.task_event_id or instance.is_finished:
 			continue
 		var distance := here.distance_to(instance.global_position)
-		if distance > _reach_distance(instance) or distance >= best_distance:
+		if distance > touch_reach(instance) or distance >= best_distance:
 			continue
 		best_distance = distance
 		best = instance
@@ -2681,7 +2705,7 @@ func _follow_her_between_look_alikes() -> void:
 ## for a figure with no body it is `ContactPoint.REACH` past her own body. Asked of an arbitrary
 ## look-alike rather than only the seeded rider, so a solid body's own clearance is respected
 ## whichever candidate this is asked about.
-func _reach_distance(instance: EventInstance) -> float:
+static func touch_reach(instance: EventInstance) -> float:
 	return _body_touch_reach(instance) if ContactPoint.has_a_body(instance) \
 			else Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH
 
@@ -2917,7 +2941,7 @@ func _track_sight_and_reposition(delta: float) -> void:
 ## of nowhere and instakilled me"*): the nearest reachable alley to `here` is, by construction,
 ## wherever she is standing or just beside it, which is on screen more often than not. The mark's
 ## picture is asked with its own size (`MARK_BOX`), and the spot in its alley where
-## `_move_the_mark()` would stand the guard (`_guard_spot()`), with his (`GUARD_BOX`), so a
+## `_move_the_mark()` would stand the guard (`guard_spot()`), with his (`GUARD_BOX`), so a
 ## relocation never lands where its guard could only be placed in view or not at all. Both are
 ## asked only of a tile nearer than the best found so far, which keeps this cheap enough for every
 ## frame.
@@ -2941,7 +2965,7 @@ func _nearest_alley_within(here: Vector2) -> Vector2:
 			continue
 		if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _mark_drawn, world) \
 				or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn,
-						_guard_spot(world)):
+						guard_spot(world)):
 			continue
 		if distance < nearest_any_distance:
 			nearest_any_distance = distance
@@ -2974,7 +2998,7 @@ func _expire(message: String) -> void:
 ## `start_day()`'s RNG and guard state rather than waiting for tomorrow's dawn.
 func _on_contact_completed(step_index: int) -> void:
 	trace.note("contact", "step %d completed" % step_index)
-	var step := ResistanceSteps.by_index(step_index)
+	var step := ResistanceSteps.by_index(step_index, _steps)
 	_run.complete_resistance_step(step_index, step == null or step.grants_progress)
 	# Only a pickup's mark ever stands on a mark tile (an `ALLEY` tile, or a courtyard tile past a
 	# one-tile passage) — every other kind of contact sits on a rider or a computed point — so this is the one completion worth recording for
@@ -2987,7 +3011,7 @@ func _on_contact_completed(step_index: int) -> void:
 		# to flash the mark's own words — see `Hud._on_resistance_step_completed()`. Activating
 		# the perform half here, rather than waiting for a `start_day()` that will not come
 		# until tomorrow, is what makes the task the same day as the mark.
-		var task := ResistanceSteps.by_index(step_index + 1)
+		var task := ResistanceSteps.by_index(step_index + 1, _steps)
 		_begin_step(task, false)
 		_rig_her_route_for(task)
 		return
@@ -3107,6 +3131,22 @@ func current_step() -> ResistanceSteps.Step:
 
 func contact_position() -> Vector2:
 	return _contact.global_position if _contact else Vector2.INF
+
+## **What the director has in the world for the step on offer**, read by whoever names it: a scene
+## recipe's `mark`, `task` and `rider` (`SceneRecipeRuntime`), and a test that hands her touch to
+## the contact. `contact()` is what she touches to complete the step on offer now (the mark, or the
+## task a read mark unlocked; null with nothing on offer), `read_mark()` the mark she has read today,
+## standing crossed through until the day ends (null before she reads one), and `rider()` what the
+## task's contact rides on: the man shouting, the van, the neighbor, the roadblock or the burnt
+## building (null for a mark, a task on a bare point, or none).
+func contact() -> ContactPoint:
+	return _contact
+
+func read_mark() -> ContactPoint:
+	return _read_mark
+
+func rider() -> EventInstance:
+	return _rider
 
 ## Where a protester should point, or `Vector2.INF` when there is nothing to point at: no step
 ## today, or today's step is a chalk-mark pickup. *(2026-09-11, the player: "the mark is
@@ -3245,7 +3285,7 @@ func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 	for instance in _city.events.instances():
 		if instance.def.id == step.task_event_id and not instance.is_finished:
 			found.append({"key": instance.get_instance_id(), "at": instance.global_position,
-					"reach": _reach_distance(instance),
+					"reach": touch_reach(instance),
 					"beat": instance.path if instance.def.paces else PackedVector2Array()})
 	return found
 

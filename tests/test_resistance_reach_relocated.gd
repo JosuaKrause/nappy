@@ -30,7 +30,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 			var director: ResistanceDirector = read[0]
 			var mark: Vector2 = read[1]
 			var player: Stroller = read[2]
-			var circle := _edge_of_her_circle(director, mark)
+			var circle := _edge_of_her_circle(mark)
 			var site_near := false
 			for plan in _city.events.plans():
 				if plan.def.id != "loudspeaker" or plan.mast_id.begins_with("added-") or plan.silenced:

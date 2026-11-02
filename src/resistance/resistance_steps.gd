@@ -139,10 +139,12 @@ static func all() -> Array[Step]:
 
 ## Only ever returns a pickup or the finale — a perform step is never offered at dawn, it is
 ## activated the instant its own mark is touched (`ResistanceDirector._on_contact_completed()`),
-## so `for_day()` has nothing to say about one.
+## so `for_day()` has nothing to say about one. Asked of `steps`, or of the run's own calendar
+## (`all()`) when none is handed: a director handed another calendar (`ResistanceDirector.
+## use_steps()`) asks of that one.
 static func for_day(day: int, completed: Array[int], failed: Array[int],
-		goal_met: bool) -> Step:
-	for step in all():
+		goal_met: bool, steps: Array[Step] = []) -> Step:
+	for step in (steps if not steps.is_empty() else all()):
 		if step.day != day:
 			continue
 		if not step.is_pickup and not step.needs_goal:
@@ -201,8 +203,10 @@ static func sits_on_a_bare_point(step: Step) -> bool:
 static func stands_on_held_ground(step: Step) -> bool:
 	return step != null and step.target_kind in [TargetKind.DOOR, TargetKind.STATION_DOOR]
 
-static func by_index(index: int) -> Step:
-	for step in all():
+## The step numbered `index` in `steps`, or in the run's own calendar (`all()`) when none is
+## handed, or null.
+static func by_index(index: int, steps: Array[Step] = []) -> Step:
+	for step in (steps if not steps.is_empty() else all()):
 		if step.index == index:
 			return step
 	return null
