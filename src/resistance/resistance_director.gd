@@ -1644,7 +1644,7 @@ func place_contact(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 	if step.is_pickup:
 		if _pinned_mark != Vector2.INF:
 			return _the_pinned_mark()
-		return _pick_reachable(mark_tiles(), rng)
+		return _pick_reachable(_marks(), rng)
 	var candidates: Array[Vector2i] = []
 	for type in step.placement:
 		candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
@@ -1677,7 +1677,14 @@ func _alley_mouths() -> Array[Vector2i]:
 ## alley so I actually have to enter the alley to activate it".)* Reachability, legal ground and the
 ## tiles a completed step used (`RunState.facts.completed_resistance_alley_tiles`) are all asked of
 ## these tiles. In `_alley_mouths()`'s order, so a seeded draw over them is the same every time.
+## A copy, since the director keeps its own list for every later draw and relocation; the list is
+## a few hundred tiles at most, copied once per asking and never per frame (the director's own
+## readers use `_marks()`).
 func mark_tiles() -> Array[Vector2i]:
+	return _marks().duplicate()
+
+## The director's own list of `mark_tiles()`, built once per map.
+func _marks() -> Array[Vector2i]:
 	_alley_mouths()
 	return _mark_tiles_of_mouths
 
@@ -2957,13 +2964,20 @@ func _track_sight_and_reposition(delta: float) -> void:
 ## asked only of a tile nearer than the best found so far, which keeps this cheap enough for every
 ## frame.
 func nearest_alley_within(here: Vector2) -> Vector2:
+	return nearest_alley_among(_marks(), here)
+
+## `nearest_alley_within()` over the mark tiles it is handed instead of all of them, the way
+## `draw_reachable()` is handed its candidates: every refusal above is asked of each, so a caller
+## that hands in one tile learns whether the game would ever relocate a mark onto it (`Vector2.INF`
+## when not).
+func nearest_alley_among(candidates: Array[Vector2i], here: Vector2) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground()
 	var used := _run.facts.completed_resistance_alley_tiles
 	var nearest := Vector2.INF
 	var nearest_distance := NOTICE_RADIUS
 	var nearest_any := Vector2.INF
 	var nearest_any_distance := NOTICE_RADIUS
-	for tile in mark_tiles():
+	for tile in candidates:
 		var world := _map.tile_to_world(tile)
 		var distance := here.distance_to(world)
 		var unused := tile not in used

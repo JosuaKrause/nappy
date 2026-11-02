@@ -14,7 +14,7 @@ extends RefCounted
 ##
 ## - **the director's contact placements**: the day's mark and its guard, the task's contact and
 ##   its guard (a door, a swing, a mast, a roadblock, the neighbor), each placed again from a
-##   fresh stream (`_place()`, so `_pick_reachable()` and `_pick_near()`), and the guard spots
+##   fresh stream (`place_contact()`, so `_pick_reachable()` and `_pick_near()`), and the guard spots
 ##   asked directly from a few places she may stand (`guard_position()`,
 ##   `_roadblock_guard_spot()`), with and without her screen counted;
 ## - **the relocation and the extras**: `nearest_alley_within()`, `_nearest_to_the_mark()`,

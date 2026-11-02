@@ -351,11 +351,11 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
 ## off screen" · "I don't want any pop in")*. Joystick scheme, asked through the day's own view as
 ## `main` wires it (`EventManager.sees()` for the notice, `EventManager.on_screen()` for placing):
 ## **a relocation to a mouth under the bottom-left corner is refused.** Each alley mouth of the
-## test city in turn has its mark's picture laid at several places inside the corner, and every case
-## is kept where that mouth is the nearest one in reach with no screen test at all (legal ground,
-## within `NOTICE_RADIUS`) and the visible area alone would not refuse it (its guard's spot is
-## under the corner or out of the view too) — the case `main`'s wiring has to refuse, so with the
-## whole view the answer is some other mouth or none.
+## test city in turn is handed to the director as the only candidate (`nearest_alley_among()`), its
+## mark's picture laid at several places inside the corner, and every case is kept where it is the
+## answer both with no screen test at all (legal ground, within `NOTICE_RADIUS`) and with the
+## visible area alone (its guard's spot is under the corner or out of the view too) — the case
+## `main`'s wiring has to refuse.
 func _test_nothing_appears_under_a_covered_corner(t) -> void:
 	var director := _on_day_six(t)
 	var events := _city.events
@@ -366,15 +366,16 @@ func _test_nothing_appears_under_a_covered_corner(t) -> void:
 	var refused := 0
 	for tile: Vector2i in director.mark_tiles():
 		var mark := _city.map.tile_to_world(tile)
+		var only: Array[Vector2i] = [tile]
 		# The mark's centre at these shares of the corner, its whole picture inside it.
 		for share: Vector2 in [Vector2(0.2, 0.8), Vector2(0.5, 0.5), Vector2(0.8, 0.8),
 				Vector2(0.2, 0.2), Vector2(0.8, 0.2)]:
 			var view_at := mark - corner_at - share * corner_size
 			var her := view_at + Tuning.VIEW_HALF_EXTENT
-			# With the view nowhere near, this mouth is the nearest one in reach: the answer.
+			# With the view nowhere near, the only mouth is the answer.
 			events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
 					Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
-			if director.nearest_alley_within(her).distance_to(mark) > 0.5:
+			if director.nearest_alley_among(only, her).distance_to(mark) > 0.5:
 				continue
 			events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
 			# Only a mouth the visible area alone would not refuse (its picture and its
@@ -394,8 +395,8 @@ func _test_nothing_appears_under_a_covered_corner(t) -> void:
 				continue
 			refused += 1
 			director.set_sight(events.sees)
-			t.check(director.nearest_alley_within(her).distance_to(mark) > 0.5,
-					"the alley mouth %s under the covered corner is refused (%s of it)"
+			t.check(director.nearest_alley_among(only, her) == Vector2.INF,
+					"the only alley mouth %s under the covered corner is refused (%s of it)"
 					% [tile, share])
 	t.check(refused > 0, "relocations under the covered corner were asked (%d)" % refused)
 	director.free()

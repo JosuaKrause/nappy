@@ -68,26 +68,30 @@ func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 ## The relocation rule (`nearest_alley_within()`) applies the same avoidance, with the same
 ## fallback: marking the nearest alley to a chosen spot as "used" sends an unseen mark she walks
 ## away from to some other alley still in reach instead, rather than to `Vector2.INF`. She stands on
-## a mark tile that is its own nearest with nothing used and has another mark tile in reach once it
-## is used (both asked of the director, `nearest_alley_within()`), more than `NOTICE_RADIUS` from the
+## a mark tile that is its own nearest with nothing used (asked of the director,
+## `nearest_alley_within()`) and has another such tile within `NOTICE_RADIUS` of it, more than `NOTICE_RADIUS` from the
 ## day's mark, and the tick that follows moves the mark off her tile.
 func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var scout := _director(t)
 	scout.start_day(6, _rng(6, "resistance"), 300.0)
-	var candidates: Array[Vector2i] = []
+	# Chosen without the avoidance: tiles that are their own nearest with nothing used and have
+	# another mark tile within `NOTICE_RADIUS`, so that using one leaves another in reach.
+	var eligible: Array[Vector2i] = []
 	for tile in scout.mark_tiles():
 		var at := _city.map.tile_to_world(tile)
-		if scout.nearest_alley_within(at).distance_to(at) > 0.5:
-			continue
-		run.facts.completed_resistance_alley_tiles.append(tile)
-		var instead := scout.nearest_alley_within(at)
-		run.facts.completed_resistance_alley_tiles.clear()
-		if instead != Vector2.INF and instead.distance_to(at) > 0.5:
-			candidates.append(tile)
+		if scout.nearest_alley_within(at).distance_to(at) <= 0.5:
+			eligible.append(tile)
+	var candidates: Array[Vector2i] = []
+	for tile in eligible:
+		var at := _city.map.tile_to_world(tile)
+		for other in eligible:
+			if other != tile and _city.map.tile_to_world(other).distance_to(at) < ResistanceDirector.NOTICE_RADIUS:
+				candidates.append(tile)
+				break
 	scout.free()
 	t.check(not candidates.is_empty(), "the test city has a mark tile that is its own nearest " +
-			"with another one in reach once it is used")
+			"with another such tile in reach")
 
 	var tried := 0
 	for nearer_tile in candidates:
@@ -273,7 +277,7 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 ## 2026-10-03, quiet-yak, inbox #486, asked whether a mark may sit in the middle of its alley), and
 ## feathery-hare, the mark stands one tile in from it (azure-puffin, inbox #664: "let's move the
 ## chalk mark one tile into the alley so I actually have to enter the alley to activate it"). Over six cities, forty dawn
-## draws each (`_place()`, the call `start_day()` makes) and a relocation asked from every
+## draws each (`place_contact()`, the call `start_day()` makes) and a relocation asked from every
 ## twentieth alley tile and from a point 300px off it in four directions (`nearest_alley_within()`,
 ## the call every move makes): every mark lands one tile in from a mouth, found here independently
 ## of the director — a through-alley's end tile along its long axis, or a passage tile beside ground

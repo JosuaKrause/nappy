@@ -5,10 +5,9 @@ extends "res://tests/resistance_rig.gd"
 ## and sets on that run what the day it asks about needs; none reads what another left. What the
 ## director put in the street is read from the street (`contact()`, `rider()`, `read_mark()`, the
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
-## (`raid_vans()`, `frontage_of()`, `spine_x()`, `tick()`). Five tests still read a private: three call
+## (`raid_vans()`, `frontage_of()`, `spine_x()`, `tick()`). Four tests still read a private: three call
 ## `EventScheduler._open_ground_for()` (the two burnt-shell tests and the every-front sweep), one
-## `EventScheduler._place_masts()`, one the director's `weighted_mast_index()` (the
-## near-mast test); and `_start_the_day()` hands the baby its stroller with `baby._stroller = player`.
+## `EventScheduler._place_masts()`; and `_start_the_day()` hands the baby its stroller with `baby._stroller = player`.
 ## They move with a public form of each.
 func run(t) -> void:
 	t.gives_back_observers()
