@@ -36,6 +36,9 @@ var player: Node2D
 var day := 0
 ## `--skip events`: every instance made here skips its own drawing.
 var skip_drawing := false
+## Where every instance this world makes charges its time to the frame record; the null sink until
+## the manager is handed one.
+var timing := FrameTiming.new()
 ## What a protest points at, answering a world point or `Vector2.INF` for nothing: handed in by the
 ## resistance (`ResistanceDirector.setup()`, its `pointable_objective()`). Unset where there is no
 ## resistance, and a protest then points at nothing.

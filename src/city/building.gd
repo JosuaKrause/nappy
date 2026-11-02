@@ -493,6 +493,10 @@ func _is_seamlessly_covered(col: int) -> bool:
 		neighbor_window_col = value
 		queue_redraw()
 
+## The torn pictures this front draws its sheets through, handed over by `PosterWalls.setup()` to
+## every front it dresses; a front with no posters needs none.
+var poster_art: PosterArt = null
+
 ## The posters on this front's blank ground-floor cells: column -> a cell as `PosterState` holds
 ## it (`kind`, `tear`, `under`, `under_tear`, `side`). Handed over whole by `PosterWalls.refresh()`,
 ## which owns what is pasted where; this only draws it. A column that is not blank is never handed
@@ -984,8 +988,6 @@ func neighbor_window_row() -> int:
 	return 3
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	if not scenery_resident:
 		return
 	var cols := columns()
@@ -1289,11 +1291,11 @@ func _draw_posters() -> void:
 		var side := float(cell["side"])
 		var over := Vector2.ZERO
 		if int(cell["under"]) != PosterState.NONE:
-			draw_texture(PosterArt.texture_for(int(cell["under"]), int(cell["under_tear"]),
+			draw_texture(poster_art.texture_for(int(cell["under"]), int(cell["under_tear"]),
 					neighbor_taken),
 					at + PosterArt.UNDER_OFFSET * Vector2(side, 1.0))
 			over = PosterArt.OVER_OFFSET * Vector2(side, 1.0)
-		draw_texture(PosterArt.texture_for(int(cell["kind"]), int(cell["tear"]), neighbor_taken),
+		draw_texture(poster_art.texture_for(int(cell["kind"]), int(cell["tear"]), neighbor_taken),
 				at + over)
 
 ## The column(s) `civic_portico.svg` actually paints over, read back from `_cell()` rather than
@@ -1613,6 +1615,7 @@ func _build_roof_layers() -> void:
 	if power_station:
 		_station_layer = Node2D.new()
 		add_child(_station_layer)
+		_station_layer.set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.SCENERY)
 		_station_layer.draw.connect(_draw_station_layer)
 
 func _clear_roof_layers() -> void:
@@ -1628,8 +1631,6 @@ func _clear_roof_objects() -> void:
 	_roof_objects.clear()
 
 func _draw_station_layer() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	_draw_station_yard(hall_cols(), _station_layer)
 
 func _furniture_texture(kind: int) -> StringName:
@@ -1674,8 +1675,6 @@ class RoofObject extends Node2D:
 		AtlasLibrary.release(&"buildings")
 
 	func _draw() -> void:
-		if FrameRecord.on:
-			FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 		var texture := AtlasLibrary.region(texture_key)
 		if duct_links >= 0:
 			_draw_duct(texture)
@@ -1735,8 +1734,6 @@ class StationStack extends ScenerySprite:
 		AtlasLibrary.release(&"buildings")
 
 	func _draw() -> void:
-		if FrameRecord.on:
-			FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 		if not scenery_resident:
 			return
 		Sprites.draw_standing(self, AtlasLibrary.region(Building.POWER_STATION_STACK), Vector2.ZERO)

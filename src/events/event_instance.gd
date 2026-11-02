@@ -665,13 +665,12 @@ func _end_its_route(may_park := true) -> void:
 var _ends_its_route_on_commit := false
 var _may_park_on_commit := true
 
-## Whether the frame record (`FrameRecord`) was running when this event was made, read once here
-## so that, with the record off, `_process()` pays one member read rather than a static read and a
-## call into a second function: with the crowd's agents beside the live events, that difference
-## made every player's frame measurably longer on a desktop
-## (docs/evidence/m159-frame-record-2026-10-04/). An event is made per day, after the recorder has
-## started, so every one made under a record is timed.
-var _timed := FrameRecord.on
+## Where this event charges its time to the frame record, handed in by whoever makes it
+## (`EventSpawner.create()`, from its manager's own). With the record off, `_process()` pays two
+## member reads and no call: with the crowd's agents beside the live events, a static read and a
+## call into a second function made every player's frame measurably longer on a desktop
+## (docs/evidence/m159-frame-record-2026-10-04/).
+var timing := FrameTiming.new()
 
 ## **A drawn frame only redraws.** What the event does is stepped on the physics tick by its manager
 ## (`step()`); here it takes the draw layer its warning puts it on (`_take_the_layer_it_warns_on()`),
@@ -683,10 +682,10 @@ func _process(_delta: float) -> void:
 	if look == null:
 		return
 	_take_the_layer_it_warns_on()
-	if _timed and FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.EVENTS)
+	if timing.on:
+		var outer := timing.enter(FrameTiming.EVENTS)
 		look.redraw_if_the_picture_changed()
-		FrameRecord.leave(outer)
+		timing.leave(outer)
 		return
 	look.redraw_if_the_picture_changed()
 
@@ -1886,8 +1885,6 @@ var look: EventLook
 var points_at := Callable()
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_EVENTS)
 	look.draw()
 
 ## Builds the drawing nodes again when the instance comes back into the tree after leaving it,

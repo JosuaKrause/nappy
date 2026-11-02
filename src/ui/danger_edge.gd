@@ -59,6 +59,8 @@ const ICON := 34.0
 ## sight needs no such turn: `VisibleView` asks it of the world box the camera shows, the same
 ## whichever way the window presents it.
 var rotated := false
+## Where this charges its time to the frame record, handed in by `main`; the null sink until then.
+var timing := FrameTiming.new()
 
 ## The event source — see `setup()`.
 var _events: Node
@@ -71,6 +73,12 @@ var _own_view := VisibleView.new()
 ## Which dangers get a badge, and when: handed this frame's inputs by `_measure()`, which is all
 ## this control does of it.
 var model := BadgeModel.new()
+
+## Counted by the frame record under `FrameTiming.Draw.BADGES`, which the recorder reads off this meta
+## since it may not name the view.
+func _init() -> void:
+	set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.BADGES)
+
 ## `events` is anything that answers `instances() -> Array[EventInstance]`: an `EventManager`, the
 ## city's on a day and in the escape's city, the building's in the escape's building. **Called
 ## again when the escape walks out of the service door**, with the city's source in place of the
@@ -121,14 +129,14 @@ func _warnings() -> Array[PendingWarning]:
 	return _events.pending_warnings()
 
 func _process(delta: float) -> void:
-	if FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.CUES)
+	if timing.on:
+		var outer := timing.enter(FrameTiming.CUES)
 		_watch_the_edge(delta)
-		FrameRecord.leave(outer)
+		timing.leave(outer)
 	else:
 		_watch_the_edge(delta)
 
-## The badges' measurement, timed under `FrameRecord.CUES`, and their redraw; answers whether it
+## The badges' measurement, timed under `FrameTiming.CUES`, and their redraw; answers whether it
 ## asked for one.
 ##
 ## The camera moves under the badges every frame, so while any is up the edge redraws every frame —
@@ -212,8 +220,6 @@ func announcing() -> Array[Dictionary]:
 	return model.announcing()
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_BADGES)
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()

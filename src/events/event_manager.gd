@@ -73,6 +73,12 @@ var skip_drawing := false:
 	set(value):
 		skip_drawing = value
 		world.skip_drawing = value
+## Where the manager and every instance it creates charge their time to the frame record, handed in
+## before `setup()` by whoever builds it (`City`, `main`); the null sink until then.
+var timing := FrameTiming.new():
+	set(value):
+		timing = value
+		world.timing = value
 ## How close the player has to be for a planned event to exist (`EventStreaming.stream_radius`).
 ## `INF` turns streaming off and puts the whole day in the world at once, which is what the escape's
 ## building and a test rig with no player want.
@@ -441,14 +447,14 @@ func door_holding_her_at(world_position: Vector2) -> EventInstance:
 # ------------------------------------------------------------------ ticking ---
 
 func _physics_process(delta: float) -> void:
-	if FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.EVENTS)
+	if timing.on:
+		var outer := timing.enter(FrameTiming.EVENTS)
 		_tick_the_events(delta)
-		FrameRecord.leave(outer)
+		timing.leave(outer)
 	else:
 		_tick_the_events(delta)
 
-## The manager's own tick, timed under `FrameRecord.EVENTS`.
+## The manager's own tick, timed under `FrameTiming.EVENTS`.
 func _tick_the_events(delta: float) -> void:
 	streaming.broadcast_clock += delta
 	streaming.retire_finished()

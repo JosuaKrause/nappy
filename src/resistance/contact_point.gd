@@ -180,8 +180,6 @@ func _complete() -> void:
 # ------------------------------------------------------------------ drawing ---
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not draws_a_mark():
 		return
 	_draw_chalk()

@@ -91,8 +91,6 @@ func occludes() -> bool:
 	return kind == Kind.TUNNEL
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	if not scenery_resident:
 		return
 	match kind:

@@ -157,6 +157,11 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	AtlasLibrary.release(&"ui")
 
+## Counted by the frame record under `FrameTiming.Draw.OTHER`, which the recorder reads off this meta
+## since it may not name the view.
+func _init() -> void:
+	set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.OTHER)
+
 func _ready() -> void:
 	# A plain diameter square for both symbols — the extra height `RESTART`'s own hold bar used to
 	# reserve below the disc is gone along with the bar itself; the fill now lives inside the disc.
@@ -373,8 +378,6 @@ func _refresh_look() -> void:
 ## 1.0 and the sweep has closed the whole circle. Segment count scales with `hold_progress` rather
 ## than always drawing `_HOLD_FILL_SEGMENTS` wedges, so a `hold_progress` of 0 needs no fan at all.
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if symbol != Symbol.RESTART or hold_progress <= 0.0:
 		return
 	# The rect's own middle and the rect's own radius, for the same reason the stylebox reads them

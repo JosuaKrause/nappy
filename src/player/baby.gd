@@ -143,6 +143,8 @@ enum Cue {
 }
 
 var sleepiness := 0.0
+## Where this charges its time to the frame record, handed in by `main`; the null sink until then.
+var timing := FrameTiming.new()
 var excitement := 0.0
 var state := GameEnums.BabyState.AWAKE
 ## Nothing adds to `excitement` while this holds; decay still runs. Handed in by whoever places
@@ -232,14 +234,14 @@ func _physics_process(delta: float) -> void:
 ## One frame of her meters, the body of `_physics_process()`: what the engine runs every physics
 ## frame, public so a scene-level run steps her the same way with no engine tick.
 func step(delta: float) -> void:
-	if FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.INFLUENCE)
+	if timing.on:
+		var outer := timing.enter(FrameTiming.INFLUENCE)
 		_feel_the_frame(delta)
-		FrameRecord.leave(outer)
+		timing.leave(outer)
 	else:
 		_feel_the_frame(delta)
 
-## The influence sweep and the meters, timed under `FrameRecord.INFLUENCE`.
+## The influence sweep and the meters, timed under `FrameTiming.INFLUENCE`.
 func _feel_the_frame(delta: float) -> void:
 	if state == GameEnums.BabyState.CRYING:
 		return
