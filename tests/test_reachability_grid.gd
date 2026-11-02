@@ -33,7 +33,7 @@ func _test_the_mask_table(t) -> void:
 		8: 1, 9: 2, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1,
 	}
 	for mask in 16:
-		var components: Array = ReachabilityGrid._components_of_mask(mask)
+		var components: Array = ReachabilityGrid._components_by_mask()[mask]
 		t.check(components.size() == counts[mask],
 				"mask %d has %d component(s) (got %d)" % [mask, counts[mask], components.size()])
 		var seen := {}
