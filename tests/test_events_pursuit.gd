@@ -1027,7 +1027,7 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 ## **A warning she walks out of is not a chase**, so the page's `dog-chased` (`EventBus.pursuit_began`,
 ## docs/TELEMETRY.md, "The page counts visits") is sent at the charge and never for a warning alone.
 func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
-	var def := EventScheduler._for_day(EventCatalogue.by_id("charging_dog"), Tuning.RUN_TAUGHT_DAY + 1)
+	var def := EventCatalogue.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
 	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var began: Array[String] = []
 	var listen := func(id: String) -> void: began.append(id)
@@ -1129,7 +1129,7 @@ func _run_inside_the_warning_rig(t, def: EventDef) -> Dictionary:
 	return result
 
 ## Every pursuer that waits for her, in each state it is met in: every catalogue row on every day
-## of a run (`EventScheduler._for_day()`, which is where the dog's trigger switches on past
+## of a run (`EventDef.for_day()`, which is where the dog's trigger switches on past
 ## `Tuning.RUN_TAUGHT_DAY`) at every heat (`EventCatalogue.heated()`, which is where the roadblock's
 ## guard starts to pursue), kept where it pursues and waits (`EventDef.notice`) and `keep` says yes,
 ## once per distinct set of the numbers the walk reads. One that sets off beside her or arrives
@@ -1140,7 +1140,7 @@ func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 	for row in EventCatalogue.all():
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-				var def := EventScheduler._for_day(EventCatalogue.heated(row, level), day)
+				var def := EventCatalogue.heated(row, level).for_day(day)
 				if def.pursuit == null or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
 						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or not keep.call(def):
 					continue

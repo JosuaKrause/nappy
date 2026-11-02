@@ -67,6 +67,7 @@ func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
 ## that an unseen fire follows the branch she actually took.
 func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
 	var tree := RouteTree.for_day(_map(), day)
+	var siting := _fire_siting(day)
 	var carries := tree.branches_on(_map().world_to_tile(unlike))
 	for branch in tree.branches:
 		for route: Array in branch.routes:
@@ -79,8 +80,7 @@ func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
 				continue
 			var points := PackedVector2Array()
 			for i in route.size():
-				points.append(EventScheduler.WalkSiting._cell_centre(_map(),
-						route[route.size() - 1 - i]))
+				points.append(siting.cell_centre(route[route.size() - 1 - i]))
 			return points
 	return PackedVector2Array()
 
@@ -95,9 +95,10 @@ func _fire_route(day: int, outward := true) -> PackedVector2Array:
 			if route.size() > best.size():
 				best = route
 	var points := PackedVector2Array()
+	var siting := _fire_siting(day)
 	for i in best.size():
 		var cell: Vector2i = best[best.size() - 1 - i] if outward else best[i]
-		points.append(EventScheduler.WalkSiting._cell_centre(_map(), cell))
+		points.append(siting.cell_centre(cell))
 	return points
 
 ## Day 3's plan, built fresh rather than taken from `_planned()`. These tests site the fire, which
@@ -383,11 +384,11 @@ func _test_a_site_that_shuts_her_out_is_refused(t) -> void:
 	var at: Vector2 = route[route.size() / 2]
 
 	var far_off := EventScheduler.Planned.new(def, route[route.size() - 2])
-	t.check(siting._still_leaves_a_park_reachable(nothing_else, far_off, at),
+	t.check(siting.leaves_her_a_way(nothing_else, far_off, at),
 			"a fire at the far end of the branch she is walking leaves the day working around it")
 
 	var on_the_doorstep := EventScheduler.Planned.new(def, map.doorstep_world_position())
-	t.check(not siting._still_leaves_a_park_reachable(nothing_else, on_the_doorstep, at),
+	t.check(not siting.leaves_her_a_way(nothing_else, on_the_doorstep, at),
 			"and a fire whose field swallows the doorstep is refused, because the way home is what "
 			+ "she would have no way round")
 

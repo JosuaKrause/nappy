@@ -7,7 +7,7 @@ extends Resource
 ##
 ## Never a mutation of the shared row: `EventDef.spawn_mode_on()` and `EventDef.notice_on()` answer
 ## by day, and a placement that needs the later notice is handed a copy carrying it
-## (`EventScheduler._for_day()`), as a heated row is a copy.
+## (`EventDef.for_day()`), as a heated row is a copy.
 
 ## The last day the row's own `spawn_mode` and `notice` answer for.
 @export var after_day := 0

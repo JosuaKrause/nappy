@@ -363,7 +363,7 @@ class Planned extends RefCounted:
 	## walking decay, which is a crossing the walk takes without planning around it.
 	##
 	## The lethal-clearance rule's wall exemption is a different rule about a different thing and is
-	## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
+	## untouched — `Planned.keeps_its_field_clear()` is about keeping other events out of a lethal field, not
 	## about whether a line exists past one.
 	func counts_against_the_line() -> bool:
 		return is_placed() and mast_id == "" and def.role != EventDef.Role.MAST \
@@ -396,6 +396,54 @@ class Planned extends RefCounted:
 			if grown.has_point(point):
 				return true
 		return false
+
+	## Whether the clearance rule is about this placement: a lethal event with nothing else inside
+	## its whole field — `EventDef.field_reach()`, not `outer_radius` alone, since a segment's field
+	## reaches `half_length` further along its own spine than a disc's would.
+	##
+	## **The rule is now stated over the ground she is being guided along, and off it there is an
+	## exemption**, which was the player's own call when the two collided.
+	##
+	## Read the rule's own reason and the exemption falls out of it. The rule exists because *the
+	## contract is stated per event and the player experiences the sum* — walking out of one field can
+	## mean walking into another, and where that second field ends the day it is a death arriving out of
+	## something she was already reading. That is an argument about **a route she is meant to take**.
+	## Off the corridor there is no route she is meant to take; the whole point of the ground is that
+	## she should not be on it, and a lethal field overlapping another one is the city saying so rather
+	## than a fairness failure. With the rule applied out there, *deadly all over* is not merely hard to
+	## achieve — it is arithmetically impossible: six lethal rows capped in single figures, at radii of
+	## 145 to 380px, cannot tile anything.
+	##
+	## **A `WALL` is exactly the off-route set and that is by construction, not by coincidence.**
+	## `_copies_of` offers a wall zero copies of any tile a route actually runs along, so a placement
+	## carrying this role is off the routes or it does not exist — including the far sidewalk of a
+	## route's own street, which is ground no route walks. What keeps its clearance is everything else: a
+	## set piece, which is sited where every route passes, and anything the day placed for a reason that
+	## is not about the corridor at all.
+	##
+	## The telegraph contract is untouched by this and must not be "fixed" alongside it. That one is
+	## stated over a single event's own geometry, `Tuning.validate_event()` checks it on load, and
+	## nothing here changes what any event owes the player who sees it coming.
+	##
+	## **A pursuer is the third exemption, and the reason is the same one the `WALL` case is stated
+	## over: the rule is about a *place* being kept clear, and a pursuer has no place.** It goes
+	## wherever she goes, so placement can never keep anything clear of it — the argument the `WALL`
+	## case makes about the corridor does not even apply, because there is no ground to be off of in
+	## the first place.
+	##
+	## This was already true for every lethal pursuer in the catalogue, but by accident rather than by
+	## name: `_role_for` gives any placed `hard_fail` row that is not a `ONE_SHOT` the `WALL` role
+	## before it ever asks whether the row pursues, so `alley_robbery` (placed, `hard_fail`, therefore
+	## always `WALL`) and `charging_dog` past `Tuning.RUN_TAUGHT_DAY` (`spawn_mode_on()` answers `MAP`
+	## from there, placed and `hard_fail` the same way) are both exempt without this line doing
+	## anything. On `RUN_TAUGHT_DAY` itself `charging_dog` is never placed at all — it is
+	## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about — which is
+	## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursuit` rather than
+	## leaving the exemption to follow from the `WALL` classification is what makes it survive a future
+	## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
+	## say, which `_role_for` would classify ahead of the `hard_fail` check.
+	func keeps_its_field_clear() -> bool:
+		return def.hard_fail and role != GameEnums.BlockerRole.WALL and def.pursuit == null
 
 ## Budget grows with the day, so late days are denser as well as nastier. The target is **one event
 ## per block**, and the escalation is linear in the day: day 14 carries about half again as many
@@ -894,21 +942,6 @@ static func _clearance_around_her(def: EventDef) -> float:
 		return 0.0
 	return reach + Tuning.TILE_SIZE * 0.5
 
-## A `MAP` placement's own answer to `EventDef.notice_on(day)` — a derived copy for the same reason
-## `at_heat()`'s is one: the catalogue's rows are shared by every day of the run, so a placement
-## past `EventDef.from_day_after` cannot set the shared row's `notice` without changing what
-## every other day sees. An instance reads `EventDef.notice` off the def it was handed, so the
-## day's answer arrives as a different def. `def` itself for every row whose notice does not
-## change by day.
-static func _for_day(def: EventDef, day: int) -> EventDef:
-	var notice := def.notice_on(day)
-	if notice == def.notice:
-		return def
-	var variant: EventDef = def.duplicate()
-	variant.shape = def.shape
-	variant.solid_parts = def.solid_parts
-	variant.notice = notice
-	return variant
 
 ## What the day is placing a row **for**, which is the only thing that makes *wall* and *friction*
 ## mean anything. See `docs/CITY.md`, "The words for it".
@@ -2285,7 +2318,7 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	# for.
 	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 		return Planned.new(def, Vector2.INF)
-	def = _for_day(def, day)
+	def = def.for_day(day)
 
 	var open_candidates := _ground_for(def, map, ground, corridor, role, site,
 			rules.holds_the_home_streets if rules else true)
@@ -2306,7 +2339,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 		doors: PackedVector2Array, standing: Array[Planned] = []) -> Planned:
 	if not def.available_on(day) or def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 		return null
-	def = _for_day(def, day)
+	def = def.for_day(day)
 	var ground := {}
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):
@@ -2909,11 +2942,11 @@ static func room_around(candidate: Planned, already: Array[Planned]) -> float:
 		if not elsewhere:
 			if gap < EVENT_SPACING_ANY:
 				return -INF
-			if _keeps_its_field_clear(plan) and gap < plan.def.field_reach():
+			if plan.keeps_its_field_clear() and gap < plan.def.field_reach():
 				return -INF
 			if plan.def.id == candidate.def.id:
 				room_same = minf(room_same, gap)
-		if _keeps_its_field_clear(candidate) and gap < candidate.def.field_reach():
+		if candidate.keeps_its_field_clear() and gap < candidate.def.field_reach():
 			return -INF
 	return INF if room_same >= EVENT_SPACING_SAME else room_same
 
@@ -2929,54 +2962,6 @@ static func place_at(def: EventDef, map: CityMap, tile: Vector2i, rng: RandomNum
 	if not candidate or room_around(candidate, already) == -INF:
 		return null
 	return candidate
-
-## Whether the clearance rule is about this placement: a lethal event with nothing else inside
-## its whole field — `EventDef.field_reach()`, not `outer_radius` alone, since a segment's field
-## reaches `half_length` further along its own spine than a disc's would.
-##
-## **The rule is now stated over the ground she is being guided along, and off it there is an
-## exemption**, which was the player's own call when the two collided.
-##
-## Read the rule's own reason and the exemption falls out of it. The rule exists because *the
-## contract is stated per event and the player experiences the sum* — walking out of one field can
-## mean walking into another, and where that second field ends the day it is a death arriving out of
-## something she was already reading. That is an argument about **a route she is meant to take**.
-## Off the corridor there is no route she is meant to take; the whole point of the ground is that
-## she should not be on it, and a lethal field overlapping another one is the city saying so rather
-## than a fairness failure. With the rule applied out there, *deadly all over* is not merely hard to
-## achieve — it is arithmetically impossible: six lethal rows capped in single figures, at radii of
-## 145 to 380px, cannot tile anything.
-##
-## **A `WALL` is exactly the off-route set and that is by construction, not by coincidence.**
-## `_copies_of` offers a wall zero copies of any tile a route actually runs along, so a placement
-## carrying this role is off the routes or it does not exist — including the far sidewalk of a
-## route's own street, which is ground no route walks. What keeps its clearance is everything else: a
-## set piece, which is sited where every route passes, and anything the day placed for a reason that
-## is not about the corridor at all.
-##
-## The telegraph contract is untouched by this and must not be "fixed" alongside it. That one is
-## stated over a single event's own geometry, `Tuning.validate_event()` checks it on load, and
-## nothing here changes what any event owes the player who sees it coming.
-##
-## **A pursuer is the third exemption, and the reason is the same one the `WALL` case is stated
-## over: the rule is about a *place* being kept clear, and a pursuer has no place.** It goes
-## wherever she goes, so placement can never keep anything clear of it — the argument the `WALL`
-## case makes about the corridor does not even apply, because there is no ground to be off of in
-## the first place.
-##
-## This was already true for every lethal pursuer in the catalogue, but by accident rather than by
-## name: `_role_for` gives any placed `hard_fail` row that is not a `ONE_SHOT` the `WALL` role
-## before it ever asks whether the row pursues, so `alley_robbery` (placed, `hard_fail`, therefore
-## always `WALL`) and `charging_dog` past `Tuning.RUN_TAUGHT_DAY` (`spawn_mode_on()` answers `MAP`
-## from there, placed and `hard_fail` the same way) are both exempt without this line doing
-## anything. On `RUN_TAUGHT_DAY` itself `charging_dog` is never placed at all — it is
-## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about — which is
-## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursuit` rather than
-## leaving the exemption to follow from the `WALL` classification is what makes it survive a future
-## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
-## say, which `_role_for` would classify ahead of the `hard_fail` check.
-static func _keeps_its_field_clear(plan: Planned) -> bool:
-	return plan.def.hard_fail and plan.role != GameEnums.BlockerRole.WALL and plan.def.pursuit == null
 
 
 # ------------------------------------------------- a path never has to cost (M129) ---

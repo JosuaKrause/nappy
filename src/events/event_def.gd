@@ -466,11 +466,27 @@ func spawn_mode_on(day: int) -> SpawnMode:
 
 ## How this row notices her on `day`: `notice` through `from_day_after.after_day`, the switch's own
 ## past it. An instance reads `notice` off the def it was handed, so a placement past the switch is
-## handed a copy carrying this (`EventScheduler._for_day()`); a director-sited row keeps its own.
+## handed a copy carrying this (`for_day()`); a director-sited row keeps its own.
 func notice_on(day: int) -> NoticeSpec:
 	if from_day_after and day > from_day_after.after_day:
 		return from_day_after.notice
 	return notice
+
+## A `MAP` placement's own answer to `notice_on(day)` — a derived copy for the same reason
+## `at_heat()`'s is one: the catalogue's rows are shared by every day of the run, so a placement
+## past `from_day_after` cannot set the shared row's `notice` without changing what
+## every other day sees. An instance reads `notice` off the def it was handed, so the
+## day's answer arrives as a different def. This row itself for every row whose notice does not
+## change by day.
+func for_day(day: int) -> EventDef:
+	var that_day := notice_on(day)
+	if that_day == notice:
+		return self
+	var variant: EventDef = duplicate()
+	variant.shape = shape
+	variant.solid_parts = solid_parts
+	variant.notice = that_day
+	return variant
 
 ## **Where her walk sites this row**, or null for a row the dawn places — see `OnHerWay`.
 @export var on_her_way: OnHerWay = null
@@ -1150,7 +1166,7 @@ func at_heat(level: int) -> EventDef:
 		hot.duration = Tuning.PURSUIT_TIME
 	# A hunt whose own catch ends the day says so (`HuntSpec.ends_the_day`, the roadblock's guard):
 	# a pursuer is exempt from the rule that nothing else happens inside a lethal event's field
-	# (`EventScheduler._keeps_its_field_clear`), so the copy is lethal rather than losing it to stay
+	# (`Planned.keeps_its_field_clear()`), so the copy is lethal rather than losing it to stay
 	# inside that rule.
 	if hunts.ends_the_day:
 		hot.hard_fail = true
@@ -1667,7 +1683,7 @@ func as_warned_first() -> EventDef:
 ## The field's own furthest reach from this row's centre — what every "how far" rule needs instead
 ## of `outer_radius` alone now that a segment's field is a capsule rather than a disc, and now that
 ## a moving point's own forward reach outgrows its resting radius:
-## `EventScheduler._keeps_its_field_clear`'s clearance, the streaming rect, and
+## `Planned.keeps_its_field_clear()`'s clearance, the streaming rect, and
 ## `ExcitementSource.expected_gross_at()`'s early-out (`EventExcitement._projection_reach()`).
 ## `half_length + outer_radius` for a segment (the along-axis reach, which is exactly the old flat
 ## `outer_radius` a row's radii were derived *against* — see the catalogue's own docstrings) whose

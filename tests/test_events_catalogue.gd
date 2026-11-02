@@ -292,7 +292,7 @@ func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
 	edge.free()
 
 ## **`as_warned_first()` carries `solid_parts` across by hand, the way every other copy of a row
-## does** (`at_heat()`, `EventScheduler._for_day()`, `EventCatalogue.neighbor_heading_home()`,
+## does** (`at_heat()`, `EventDef.for_day()`, `EventCatalogue.neighbor_heading_home()`,
 ## `SealPlanner`'s variants) — a copy that lost its parts would quietly go back to one body spanning
 ## its whole shape. `car_accident` is the row with more than one piece, so it stands in for a
 ## multi-part row sent through a warning first; its own telegraph is too short to clear the flat
