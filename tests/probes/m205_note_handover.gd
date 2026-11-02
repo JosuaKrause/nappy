@@ -47,21 +47,21 @@ func run(t) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
 	var reach_awake := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 	var reach_asleep := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING,
-			Tuning.SLEEPING_SENSITIVITY)
+			Baby.SLEEPING_SENSITIVITY)
 	var inner_awake := _handover_net_averaged(def, true, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 	var inner_asleep := _handover_net_averaged(def, true, Tuning.EXCITEMENT_DECAY_WALKING,
-			Tuning.SLEEPING_SENSITIVITY)
+			Baby.SLEEPING_SENSITIVITY)
 	var linger := ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS
 	var linger_awake := _handover_then_linger_net_averaged(def, Tuning.EXCITEMENT_DECAY_WALKING,
 			1.0, linger)
 	var linger_asleep := _handover_then_linger_net_averaged(def, Tuning.EXCITEMENT_DECAY_WALKING,
-			Tuning.SLEEPING_SENSITIVITY, linger)
+			Baby.SLEEPING_SENSITIVITY, linger)
 	# The ordinary full pass -- "what walking past him costs" -- is `M174Pass`'s own 0px figure,
 	# the same simulation `docs/COSTS.md`'s "the pass — awake"/"the pass — asleep" rows are
 	# generated from (re-run rather than trust a number quoted here).
 	var pass_awake := M174Pass.pass_net_averaged(def, 0.0, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 	var pass_asleep := M174Pass.pass_net_averaged(def, 0.0, Tuning.EXCITEMENT_DECAY_WALKING,
-			Tuning.SLEEPING_SENSITIVITY)
+			Baby.SLEEPING_SENSITIVITY)
 
 	print("\n== homeless_yeller : the note handover ==")
 	print("  %28s | %10s %10s" % ["", "awake", "asleep"])

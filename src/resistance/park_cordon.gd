@@ -42,7 +42,7 @@ extends RefCounted
 ##   escorts is — a person still standing where they stood, waiting for the escort coming for them,
 ##   as much as one already walking out; and the last gap waits until everyone being walked out is
 ##   through it.
-## - **Other officers walk the park's people out**: up to `Tuning.PARK_CLOSING_ESCORTS`, one to
+## - **Other officers walk the park's people out**: up to `PARK_CLOSING_ESCORTS`, one to
 ##   each event standing in the park when it starts, who comes in from out of her sight along the
 ##   way out (`_exit`: through the last gap and along the ground outside it to where she cannot
 ##   see), sends them off down that same way (`EventInstance.leave_along()`, which walks on past
@@ -57,14 +57,37 @@ extends RefCounted
 ##   touch; the tape is what keeps her from settling the baby in it afterwards.
 ##
 ## **Timing: she sees them in time on every park** (`_time_the_close()`). The last gap closes no
-## sooner than `Tuning.PARK_CLOSING_SECONDS` after the touch, and no sooner than the walk from where
-## she stood to the gap plus `Tuning.PARK_CLOSING_WARNING` after the first officer comes into the
+## sooner than `PARK_CLOSING_SECONDS` after the touch, and no sooner than the walk from where
+## she stood to the gap plus `PARK_CLOSING_WARNING` after the first officer comes into the
 ## camera's view of where she stood — on a park larger than the view they come into it late, so it
-## closes later — and never faster than `Tuning.PARK_CLOSING_STRETCH_MIN` a stretch. Each taper
+## closes later — and never faster than `PARK_CLOSING_STRETCH_MIN` a stretch. Each taper
 ## paces himself to that moment. `tests/test_park_cordon_seeds.gd` holds both the gap and the
 ## warning on every seed of a sweep, and `tests/probes/plush_marten_cordon.gd` measures them.
 ##
 ## **Deterministic from the moment she touched the swing**: nothing here draws a random number.
+
+## How many officers come to walk the park's people out; anyone past that many is sent off when
+## the cordon starts.
+const PARK_CLOSING_ESCORTS := 2
+## How fast the park's people walk out once an officer has sent them off: an unhurried walk, under
+## the officers' own pace so the officer walks out behind them.
+const PARK_CLOSING_LEAVE_SPEED := 50.0
+## How fast the cordon's officers walk in and away: a brisk walk, slower than hers
+## (`Tuning.WALK_SPEED`), so they never read as coming after her.
+const PARK_CLOSING_OFFICER_SPEED := 80.0
+## Day 12's park is cordoned off by the police once she has reached its swing (`ParkCordon`): the
+## last gap in their tape closes at the soonest this long after the touch, however long their walk
+## in took — the taping is paced to it. It closes later where the first officer would come into
+## her view of the swing too late for `PARK_CLOSING_WARNING` (a park larger than the view), or
+## where the taping would go faster than `PARK_CLOSING_STRETCH_MIN` a stretch. Staying in the park
+## until then shuts her in, which ends the day. Open to overturn once the day is played.
+const PARK_CLOSING_SECONDS := 12.0
+## The fastest the cordon is taped: a stretch (about a tile of the edge) in no less than this.
+const PARK_CLOSING_STRETCH_MIN := 0.3
+## How long, beyond the walk from where she stood at the touch to the cordon's last gap, the first
+## officer is in her view before the gap closes: time to see him and decide, so the officers'
+## arrival is a warning she can act on at a walk on every park (`ParkCordon._time_the_close()`).
+const PARK_CLOSING_WARNING := 2.0
 
 ## The row whose drawing an officer is — the policeman on foot's (`art/events/policeman_*`) — held
 ## to `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW` for where an officer may be placed, so nothing of him
@@ -183,7 +206,7 @@ class Officer extends RefCounted:
 	var stuck := 0
 	var straight := false
 	## A taper's pace along the edge, set at the start of each leg (`_pace()`), and the most it may
-	## be: his whole round at `Tuning.PARK_CLOSING_STRETCH_MIN` a stretch, set when he reaches it.
+	## be: his whole round at `PARK_CLOSING_STRETCH_MIN` a stretch, set when he reaches it.
 	var tape_speed := 0.0
 	var top_speed := INF
 	## An escort's person, and where they stood when his way up to them was laid (`Vector2.INF`
@@ -227,7 +250,7 @@ var officers: Array[Officer] = []
 ## Seconds since she touched the swing.
 var elapsed := 0.0
 ## When the last gap is to close, seconds after the touch (`_time_the_close()`).
-var deadline := Tuning.PARK_CLOSING_SECONDS
+var deadline := PARK_CLOSING_SECONDS
 ## When the first officer is due to come into the camera's view of where she stood at the touch,
 ## and the walk from there to the last gap, in seconds: what `deadline` was solved from.
 ## `tests/test_park_cordon_seeds.gd` holds the first against when one is first seen, and the probe
@@ -558,7 +581,7 @@ func _set_out(her: Vector2) -> void:
 	for officer: Officer in [first, second]:
 		officer.job = Officer.Job.TAPE
 		officer.phase = Officer.Phase.APPROACH
-		officer.speed = Tuning.PARK_CLOSING_OFFICER_SPEED
+		officer.speed = PARK_CLOSING_OFFICER_SPEED
 		officer.avoid = _rect
 		officer.at = spawn_at
 		var behind := spawn_at + away * TAPER_SPACING
@@ -624,24 +647,24 @@ func _seen(feet: Vector2) -> bool:
 
 # ---------------------------------------------------------------- the timing ---
 
-## **When the last gap closes**: `Tuning.PARK_CLOSING_SECONDS` after the touch, or later where the
+## **When the last gap closes**: `PARK_CLOSING_SECONDS` after the touch, or later where the
 ## first officer would come into the camera's view of where she stood too late for her to walk from
-## there to the gap with `Tuning.PARK_CLOSING_WARNING` to spare. Each taper's whole walk is known
+## there to the gap with `PARK_CLOSING_WARNING` to spare. Each taper's whole walk is known
 ## here, laid round the day's bodies (`_lay()`) — the walk in, then round the edge at the pace that
 ## ends it at the deadline — so the point of it where he first comes into view is a fraction of it,
 ## and the deadline is solved for rather than searched: walking in, he is seen at a fixed time;
 ## going round, at `t_edge + f·(T − t_edge)`, so `T − t_seen ≥ W` needs `T ≥ t_edge + W / (1 − f)`.
 ## The earlier of the two tapers sets it.
 ## A park neither of them comes into view of from where she stood closes on the plain clock, and
-## the run log says so. **And never faster than `Tuning.PARK_CLOSING_STRETCH_MIN` a stretch**, the
+## the run log says so. **And never faster than `PARK_CLOSING_STRETCH_MIN` a stretch**, the
 ## floor `_reach_the_edge()` paces to, folded in here so that `deadline` is when the gap closes and
 ## `first_in_view` is read off that, not off a close the floor then pushes later.
 func _time_the_close(her: Vector2) -> void:
 	walk_to_the_gap = her.distance_to(last_gap) / Tuning.WALK_SPEED if her != Vector2.INF \
 			else 0.0
-	var wanted := walk_to_the_gap + Tuning.PARK_CLOSING_WARNING
+	var wanted := walk_to_the_gap + PARK_CLOSING_WARNING
 	var soonest := INF
-	var paced := Tuning.PARK_CLOSING_SECONDS
+	var paced := PARK_CLOSING_SECONDS
 	# Per taper, `[seen walking in at, reaches the edge at, share of the round walked when seen]`,
 	# so when he is first in view can be read off the deadline once it is set.
 	var sightings: Array[PackedFloat32Array] = []
@@ -651,7 +674,7 @@ func _time_the_close(her: Vector2) -> void:
 		var walk_in := PackedVector2Array([officer.at])
 		walk_in.append_array(officer.path)
 		var t_edge := _length_of(walk_in) / officer.speed
-		paced = maxf(paced, t_edge + Tuning.PARK_CLOSING_STRETCH_MIN * officer.stretches.size())
+		paced = maxf(paced, t_edge + PARK_CLOSING_STRETCH_MIN * officer.stretches.size())
 		var seen := _first_seen_along(walk_in)
 		if seen >= 0.0:
 			sightings.append(PackedFloat32Array([seen / officer.speed, t_edge, 0.0]))
@@ -931,7 +954,7 @@ func _way_in() -> PackedVector2Array:
 
 # ------------------------------------------------------------- the park's people ---
 
-## One escort to each person standing in the park, up to `Tuning.PARK_CLOSING_ESCORTS`, the rest
+## One escort to each person standing in the park, up to `PARK_CLOSING_ESCORTS`, the rest
 ## sent off at once; what the day planned in the park that has not streamed in is taken out of it.
 ## A person is anything live in the park that stands or strolls there: not the playground (an
 ## ambient row with no figure), and not anything that came for her or drives (a pursuer, a car).
@@ -952,14 +975,14 @@ func _send_escorts() -> void:
 	for live in _city.events.instances():
 		if not _walks_out(live):
 			continue
-		if live.is_leaving or sent >= Tuning.PARK_CLOSING_ESCORTS:
+		if live.is_leaving or sent >= PARK_CLOSING_ESCORTS:
 			_send_off(live)
 			continue
 		var escort := Officer.new()
 		escort.job = Officer.Job.ESCORT
 		escort.phase = Officer.Phase.WAITING
-		escort.wait = sent * TAPER_SPACING / Tuning.PARK_CLOSING_OFFICER_SPEED
-		escort.speed = Tuning.PARK_CLOSING_OFFICER_SPEED
+		escort.wait = sent * TAPER_SPACING / PARK_CLOSING_OFFICER_SPEED
+		escort.speed = PARK_CLOSING_OFFICER_SPEED
 		escort.person = live
 		escort.at = _exit[_exit.size() - 1]
 		escort.path = _lay(escort.at, _way_in(), escort.avoid)
@@ -984,11 +1007,11 @@ func _walks_out(live: EventInstance) -> bool:
 ## watching, never at the way's end), or the manager's own retirement for one that cannot leave. One
 ## already leaving on their own is turned onto the way rather than left to walk straight away from
 ## her, through the tape. A row that stands where it was placed has no departure of its own, so it
-## walks out at `Tuning.PARK_CLOSING_LEAVE_SPEED`.
+## walks out at `PARK_CLOSING_LEAVE_SPEED`.
 func _send_off(person: EventInstance) -> void:
 	if not person or not is_instance_valid(person) or person.is_finished or _leaving.has(person):
 		return
-	var speed := Tuning.PARK_CLOSING_LEAVE_SPEED if person.def.departure_speed() <= 0.0 else 0.0
+	var speed := PARK_CLOSING_LEAVE_SPEED if person.def.departure_speed() <= 0.0 else 0.0
 	if not person.leave_along(_way_out_from(person.global_position), speed, _rect):
 		if _city and _city.events:
 			_city.events.retire(person)
@@ -1099,13 +1122,13 @@ func _take_the_walk(officer: Officer, walked: Navigator.Walked) -> void:
 
 ## A taper at the edge: his pace round it is set so his last stretch is taped at `deadline`,
 ## counting the corners and the ways round bodies he walks — so the two finish together and the
-## last gap closes then — never faster than `Tuning.PARK_CLOSING_STRETCH_MIN` a stretch.
+## last gap closes then — never faster than `PARK_CLOSING_STRETCH_MIN` a stretch.
 func _reach_the_edge(officer: Officer) -> void:
 	officer.phase = Officer.Phase.TAPING
 	if officer.stretches.is_empty():
 		return
 	officer.top_speed = _length_of(_round_path(officer)) \
-			/ (Tuning.PARK_CLOSING_STRETCH_MIN * officer.stretches.size())
+			/ (PARK_CLOSING_STRETCH_MIN * officer.stretches.size())
 	_plant_a_post(_start_of(officer, officer.stretches[0]))
 	_begin_stretch(officer)
 

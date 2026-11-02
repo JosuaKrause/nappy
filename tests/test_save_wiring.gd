@@ -2,10 +2,15 @@ extends RefCounted
 ## What `main` does with the save: the focus loss that writes nothing, the dawn a resumed boot writes,
 ## the title and the resume gate that lead to the day brief or the ending, the day engaged writing the
 ## run as under way, the day-14 hand-over that carries the save symbol over a reload, and the two
-## orderings read off `main.gd`'s source. Split from `tests/test_save.gd` (the save file, its flush
-## and its symbol, all through `GameSave` and `SaveIndicator`'s public calls) because every check here
-## builds a script-only `main` and reaches its members: `main` has no public seam for the title, the
-## resume gate or the reload yet, and the slice that gives it one converts this file with it.
+## orderings read off `main.gd`'s source, plus the three checks of what `main._save_now()` adds to a
+## write. Split from `tests/test_save.gd` (the save file, its flush and its symbol, all through
+## `GameSave` and `SaveIndicator`'s public calls) because every check here builds a script-only `main`
+## and reaches its members. What stops them being converted is cost, not a missing seam: they are
+## converted the way `tests/test_main.gd` is, by booting a real `main` (`main.configure()` with a
+## windowed `RunConfig`, then `add_child`), pressing the title and the continue button with real input
+## and letting real frames pass, with `Main.use_reload()` for the day-14 reload. The save symbol a
+## booted `main` raises is found as its child. That work is in `tests-public-seams.md`'s remaining
+## list, with this file's name on it.
 ##
 ## `GameSave` is pointed at a scratch file and handed the configuration of a windowed release run, so
 ## its ordinary `write()`, `try_resume()` and `clear()` reach it; `run()` puts both back.
@@ -32,6 +37,9 @@ func run(t) -> void:
 	_test_main_builds_the_symbol_before_the_charge_that_can_end_the_run(t)
 	_test_the_held_restart_deletes_the_save_before_the_run_log_closes(t)
 	_test_the_hand_over_to_the_escape_carries_a_pending_save_over(t)
+	_test_main_draws_nothing_for_a_refused_run(t)
+	_test_main_shows_a_desktop_save_confirmed_at_once(t)
+	_test_main_adds_nothing_to_what_the_bus_carried_to_the_symbol(t)
 
 	GameSave.clear()
 	GameSave.set_path_override("")
@@ -401,7 +409,7 @@ func _test_the_held_restart_deletes_the_save_before_the_run_log_closes(t) -> voi
 ## when the player continues. The hand-over must carry the symbol to the tree's root like the held
 ## restart does, so it outlives the reload, keeps showing A, and the escape's boot adopts it. There
 ## the escape's first save (B) begins, and A's answer, arriving late, must settle A and never B: B's
-## failure afterwards still strikes the symbol. The reload itself goes to `_reload_override`, since a
+## failure afterwards still strikes the symbol. The reload itself goes to what `use_reload()` was handed, since a
 ## real one would throw away the test runner's own scene.
 func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	var tree: SceneTree = t.get_tree()
@@ -422,7 +430,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	# Day 14's summary after the hand-over (`DayEnd.hands_over_to_the_escape`).
 	main._flow.mode = RunFlow.Mode.INTO_ESCAPE
 	var reloads: Array[int] = []
-	main._reload_override = func() -> void: reloads.append(1)
+	main.use_reload(func() -> void: reloads.append(1))
 
 	var day_fourteen := _next_operation()
 	EventBus.save_written.emit(day_fourteen, int(GameSave.Result.PENDING))
@@ -458,3 +466,58 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	t.get_tree().paused = false
 	SaveIndicator.use_home(null)
 	home.free()
+
+## The whole path through `main._save_now()`: a run `GameSave.uses_save()` refuses — here the
+## headless runner — leaves the symbol dark rather than struck. The same write straight through
+## `GameSave.write()` is `tests/test_save.gd`'s `_test_a_refused_save_leaves_the_symbol_dark()`.
+func _test_main_draws_nothing_for_a_refused_run(t) -> void:
+	var timeline := SaveIndicator.Showing.new()
+	var indicator := SaveIndicator.new(timeline)
+	t.add_child(indicator)
+	var main: Node2D = _MAIN_SCRIPT.new()
+	main._save_indicator = indicator
+	GameSave.configure(RunConfig.parse(PackedStringArray(), "", false))
+	main._save_now(true)
+	GameSave.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
+	t.check(timeline.is_idle() and not timeline.struck, "a refused save leaves the symbol dark")
+	main.free()
+	indicator.free()
+
+func _test_main_shows_a_desktop_save_confirmed_at_once(t) -> void:
+	_with_a_scratch_save(func() -> void:
+		var timeline := SaveIndicator.Showing.new()
+		var indicator := SaveIndicator.new(timeline)
+		t.add_child(indicator)
+		var main: Node2D = _MAIN_SCRIPT.new()
+		main._save_indicator = indicator
+		main._save_now(true)
+		t.check(timeline.pending == 0 and not timeline.is_idle(),
+				"a desktop save is answered at once and the symbol is already showing")
+		t.check(not timeline.struck and not indicator.shows_struck(), "showing the plain picture")
+		main.free()
+		indicator.free()
+	)
+
+## A write tells `EventBus` what it came to, so the symbol hears it without `main` relaying it, and
+## begins exactly once for one save: `main._save_now()` adds nothing to what the bus carried. The
+## `GameSave.write()` half, with its refused cases, is `tests/test_save.gd`'s
+## `_test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once()`.
+func _test_main_adds_nothing_to_what_the_bus_carried_to_the_symbol(t) -> void:
+	var heard: Array[int] = []
+	var listen := func(_operation: int, result: int) -> void: heard.append(result)
+	EventBus.save_written.connect(listen)
+	_with_a_scratch_save(func() -> void:
+		var timeline := SaveIndicator.Showing.new()
+		var indicator := SaveIndicator.new(timeline)
+		t.add_child(indicator)
+		var main: Node2D = _MAIN_SCRIPT.new()
+		main._save_indicator = indicator
+		main._save_now(true)
+		t.check(heard == [int(GameSave.Result.CONFIRMED)], "a write announces what it came to")
+		t.check(timeline.begun == 1, "and the symbol began once for it, not a second time by main")
+		t.check(indicator.is_showing() and timeline.pending == 0,
+				"and that one change is already answered")
+		main.free()
+		indicator.free()
+	)
+	EventBus.save_written.disconnect(listen)

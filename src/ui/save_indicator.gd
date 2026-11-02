@@ -303,11 +303,13 @@ static func carried(tree: SceneTree) -> SaveIndicator:
 
 ## Where a symbol that outlives its scene lives: the tree's root, which a scene reload leaves alone.
 ## `use_home()` points it at a plain node instead, since a suite runs while the root is still busy
-## adding the runner and cannot take a child.
+## adding the runner and cannot take a child. This is process-wide static state only tests set, not
+## an injected dependency: `carried()` is static, so a symbol cannot be handed its home. It is left
+## for the hidden-statics work, and the runner puts it back after every suite.
 static var _home_override: Node = null
 
 ## Parks every symbol that outlives its scene at `home` instead of the tree's root; `null`, the
-## default, is the root again.
+## default, is the root again. Only tests call it.
 static func use_home(home: Node) -> void:
 	_home_override = home
 

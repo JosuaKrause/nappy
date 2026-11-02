@@ -1923,7 +1923,7 @@ func _arrive() -> void:
 ## still is the wrong way to settle her.** `Baby._update_sleepiness()` (`src/player/baby.gd`) only
 ## fills the sleepiness meter while she is walking, scaled by the ground's own
 ## `sleepiness_multiplier()` (`Tuning.SLEEPINESS_GAIN_WALKING`, 0.42/s); standing idle *drains* it
-## instead, at `Tuning.SLEEPINESS_DRAIN_IDLE` (1.0/s) — faster than walking on calm ground fills it
+## instead, at `Baby.SLEEPINESS_DRAIN_IDLE` (1.0/s) — faster than walking on calm ground fills it
 ## at any lot size under the multiplier's own cap. An earlier build of this class had her stop and
 ## wait the way a played day's own doorstep return does, which cannot reach `ASLEEP` from any
 ## sleepiness below the max: the meter only ever drains from there, so she stood at a park forever.

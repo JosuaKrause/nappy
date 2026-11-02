@@ -185,9 +185,9 @@ func _test_a_day_is_a_minute_of_play_with_a_grace_of_three(t) -> void:
 				% [day, Tuning.day_length(day), shortest])
 
 func _test_standing_still_is_worse_than_walking_but_affordable(t) -> void:
-	t.check(Tuning.SLEEPINESS_DRAIN_IDLE > Tuning.SLEEPINESS_GAIN_WALKING,
+	t.check(Baby.SLEEPINESS_DRAIN_IDLE > Tuning.SLEEPINESS_GAIN_WALKING,
 			"standing still loses ground rather than merely failing to gain it")
-	t.check(Tuning.SLEEPINESS_DRAIN_IDLE < Tuning.sleepiness_gain_calm(),
+	t.check(Baby.SLEEPINESS_DRAIN_IDLE < Tuning.sleepiness_gain_calm(),
 			"a pause in a park costs less than the park gives, so stopping stays a move")
 
 ## The claim end to end, on a fake world where nothing is happening at all. Even with no
@@ -232,7 +232,7 @@ func _test_idle_drains_sleepiness(t) -> void:
 	_baby.sleepiness = 50.0
 	_stand()
 	_simulate(10.0)
-	t.close_to(_baby.sleepiness, 50.0 - Tuning.SLEEPINESS_DRAIN_IDLE * 10.0,
+	t.close_to(_baby.sleepiness, 50.0 - Baby.SLEEPINESS_DRAIN_IDLE * 10.0,
 			"standing still drains sleepiness", 0.1)
 	_teardown()
 
@@ -243,7 +243,7 @@ func _test_running_blocks_sleep_and_excites(t) -> void:
 	_simulate(1.0)
 	t.close_to(_baby.sleepiness, 50.0, "running neither fills nor drains sleepiness", 0.1)
 	t.close_to(_baby.excitement,
-			(Tuning.EXCITEMENT_FROM_RUNNING - Tuning.EXCITEMENT_DECAY_RUNNING) * 1.0,
+			(Baby.EXCITEMENT_FROM_RUNNING - Baby.EXCITEMENT_DECAY_RUNNING) * 1.0,
 			"a full sprint raises excitement at the net rate", 0.15)
 	_teardown()
 
@@ -271,11 +271,11 @@ func _test_calm_threshold_freezes_sleepiness(t) -> void:
 ## Asserted as a **relationship** rather than as the three numbers, because the ordering is the
 ## design and the values are not.
 func _test_only_motion_settles_her(t) -> void:
-	t.check(Tuning.EXCITEMENT_DECAY_IDLE <= 0.0,
+	t.check(Baby.EXCITEMENT_DECAY_IDLE <= 0.0,
 			"standing still does not settle her at all")
-	t.check(Tuning.EXCITEMENT_DECAY_WALKING > Tuning.EXCITEMENT_DECAY_RUNNING,
+	t.check(Tuning.EXCITEMENT_DECAY_WALKING > Baby.EXCITEMENT_DECAY_RUNNING,
 			"walking settles her faster than running does")
-	t.check(Tuning.EXCITEMENT_DECAY_RUNNING > Tuning.EXCITEMENT_DECAY_IDLE,
+	t.check(Baby.EXCITEMENT_DECAY_RUNNING > Baby.EXCITEMENT_DECAY_IDLE,
 			"even running is motion, so it settles her more than standing does")
 
 	# **And the other axis of the same table: what she is standing on.** *(Playtest 63.)* Five
@@ -320,14 +320,14 @@ func _test_alley_trickle(t) -> void:
 	# empty alley is very nearly flat: it cannot build excitement on its own, and it is never quite
 	# recovery either, which is the pressure the row is for.
 	var alley_decay := Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
-	t.check(Tuning.EXCITEMENT_FROM_ALLEY < alley_decay,
+	t.check(Baby.EXCITEMENT_FROM_ALLEY < alley_decay,
 			"walking an empty alley should not by itself build excitement (%.1f against %.1f)"
-			% [Tuning.EXCITEMENT_FROM_ALLEY, alley_decay])
-	t.check(Tuning.EXCITEMENT_FROM_ALLEY > alley_decay * 0.5,
+			% [Baby.EXCITEMENT_FROM_ALLEY, alley_decay])
+	t.check(Baby.EXCITEMENT_FROM_ALLEY > alley_decay * 0.5,
 			"but it is close enough underneath that an alley is not somewhere she recovers")
 	# Where the alley's ground sits among the other four is `_test_only_motion_settles_her`'s.
 	_simulate(1.0)
-	t.close_to(_baby.last_incoming, Tuning.EXCITEMENT_FROM_ALLEY,
+	t.close_to(_baby.last_incoming, Baby.EXCITEMENT_FROM_ALLEY,
 			"an alley contributes its trickle to incoming excitement")
 	_teardown()
 
@@ -354,7 +354,7 @@ func _test_sleeping_baby_is_less_sensitive(t) -> void:
 	_world.noise = 20.0
 	_walk()
 	_simulate(STEP)
-	t.close_to(_baby.last_incoming, 20.0 * Tuning.SLEEPING_SENSITIVITY,
+	t.close_to(_baby.last_incoming, 20.0 * Baby.SLEEPING_SENSITIVITY,
 			"incoming excitement is damped while the baby sleeps")
 	_teardown()
 
@@ -367,7 +367,7 @@ func _test_wakes_up_with_penalty(t) -> void:
 	_walk()
 	_simulate(0.5)
 	t.check(_baby.state == GameEnums.BabyState.AWAKE, "loud enough noise wakes a sleeping baby")
-	t.close_to(_baby.sleepiness, Tuning.WAKE_SLEEPINESS_PENALTY,
+	t.close_to(_baby.sleepiness, Baby.WAKE_SLEEPINESS_PENALTY,
 			"waking costs the sleepiness penalty")
 	_teardown()
 
@@ -399,7 +399,7 @@ func _test_full_excitement_cries(t) -> void:
 ## `Tuning.EXCITEMENT_DECAY_WALKING` cannot quietly reopen it without a test noticing.
 ##
 ## **From 95**, close enough that the bump does reach the cap (about 100), is the actual case this
-## rule was built for: what is left over for `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` to catch is only
+## rule was built for: what is left over for `Baby.EXCITEMENT_OVERFLOW_TO_CRY` to catch is only
 ## the part of the jolt that landed *after* the bar was already clamped, which a jolt this short
 ## barely has any of.
 func _test_one_bump_no_longer_ends_the_day(t) -> void:
@@ -410,9 +410,9 @@ func _test_one_bump_no_longer_ends_the_day(t) -> void:
 	t.check(not from_95["crying"],
 			"one contact from 95 does not end the day either, though it reaches the cap (overflow %.2f)"
 			% from_95["overflow"])
-	t.check(from_95["overflow"] < Tuning.EXCITEMENT_OVERFLOW_TO_CRY,
+	t.check(from_95["overflow"] < Baby.EXCITEMENT_OVERFLOW_TO_CRY,
 			"its own overflow mass (%.2f) stays under the %.1f threshold"
-			% [from_95["overflow"], Tuning.EXCITEMENT_OVERFLOW_TO_CRY])
+			% [from_95["overflow"], Baby.EXCITEMENT_OVERFLOW_TO_CRY])
 
 ## The other half of the same rule: a source that keeps emitting once she is already at the cap
 ## does end the day, because the mass it leaves behind keeps accruing rather than being spent
@@ -423,7 +423,7 @@ func _test_a_sustained_source_at_the_top_cries(t) -> void:
 	# Comfortably net-positive while walking, so the whole window's worth clears the threshold.
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0
 	_walk()
-	_simulate(Tuning.EXCITEMENT_OVERFLOW_WINDOW)
+	_simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW)
 	t.check(_baby.state == GameEnums.BabyState.CRYING,
 			"a source that keeps emitting at the cap for the whole window ends the day")
 	_teardown()
@@ -435,7 +435,7 @@ func _test_the_overflow_mass_needs_both_size_and_time(t) -> void:
 	_baby.excitement = Tuning.METER_MAX
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0  # net +10/s, well above the threshold
 	_walk()
-	_simulate(0.5)  # 0.5s of it is 5 points of mass, under `Tuning.EXCITEMENT_OVERFLOW_TO_CRY`
+	_simulate(0.5)  # 0.5s of it is 5 points of mass, under `Baby.EXCITEMENT_OVERFLOW_TO_CRY`
 	t.check(_baby.state != GameEnums.BabyState.CRYING,
 			"not enough time at the cap yet, however loud the source")
 	_teardown()
@@ -444,7 +444,7 @@ func _test_the_overflow_mass_needs_both_size_and_time(t) -> void:
 	_baby.excitement = Tuning.METER_MAX
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 2.0  # net +2/s: 6 points over the whole window
 	_walk()
-	_simulate(Tuning.EXCITEMENT_OVERFLOW_WINDOW)
+	_simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW)
 	t.check(_baby.state != GameEnums.BabyState.CRYING,
 			"and a source too quiet to clear the mass in the window never ends the day, however "
 			+ "long she stays")
@@ -458,14 +458,14 @@ func _test_the_overflow_mass_drains_with_the_window(t) -> void:
 	_baby.excitement = Tuning.METER_MAX
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 2.0  # stays under the threshold throughout
 	_walk()
-	_simulate(Tuning.EXCITEMENT_OVERFLOW_WINDOW * 0.5)
+	_simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW * 0.5)
 	var mid := _baby.overflow_mass()
 	t.check(mid > 0.0, "the source has left some mass behind")
 	_world.noise = 0.0
 	_simulate(STEP)
 	t.close_to(_baby.overflow_mass(), mid,
 			"the mass does not clear the instant the source is gone", 0.1)
-	_simulate(Tuning.EXCITEMENT_OVERFLOW_WINDOW + 1.0)
+	_simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW + 1.0)
 	t.close_to(_baby.overflow_mass(), 0.0,
 			"and it has fully aged out of the window well after she has left", 0.01)
 	_teardown()

@@ -15,6 +15,14 @@ extends RefCounted
 ## `DevFlags` is the parser and the flag manifest the shell tools read; what each flag means is
 ## its getter's doc there.
 
+## How long one section of the escape runs, on top of a real `DayController`'s own clock — each
+## section is its own day with a brief and a restart checkpoint of its own, and the player's
+## answer was *"180s per section"*. Stated on its own rather than reused from the ordinary day's
+## length: the player asked that *"the escape shouldn't be easy!"* (`docs/playtests/PLAYTEST-121.md`),
+## so the escape does not grow when the ordinary day does. Asked alongside the ordinary day's
+## length and not yet answered whether it should grow too — open to overturn.
+const FINALE_LENGTH_SECONDS := 180.0
+
 ## What a refused write says. A warning rather than an error: a test can watch for it through a
 ## `Logger` without the engine's error line failing the run it is in.
 const REFUSED := "RunConfig is resolved once at boot and never changes; a write was refused"
@@ -307,7 +315,7 @@ func day_length_for(day: int) -> float:
 ## How long one escape section runs: a day's own clock, compressed by `--day-length` exactly as a
 ## day is, since each section is a day.
 func escape_section_length() -> float:
-	return day_length_override if day_length_override > 0.0 else Tuning.FINALE_LENGTH_SECONDS
+	return day_length_override if day_length_override > 0.0 else FINALE_LENGTH_SECONDS
 
 ## Seconds until a rig quits itself: `--after` when given, else the length of the day it plays.
 func rig_quit_seconds() -> float:

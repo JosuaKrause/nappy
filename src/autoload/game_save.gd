@@ -196,13 +196,14 @@ static func set_path_override(path: String) -> void:
 static func _path() -> String:
 	return _path_override if _path_override != "" else _DEFAULT_PATH
 
-## Set by a suite that boots a real `main` to force `uses_save()`'s own answer: `main` hands
-## `configure()` its own configuration when it boots, which the suite cannot make a windowed run, so
-## the gated names `main` calls (`write()`, `try_resume()`) refuse its headless run unless this says
-## otherwise. A suite that only drives `GameSave` itself hands `configure()` a windowed
-## `RunConfig` instead (`RunConfig.parse()` with `headless_display` false) and needs no override.
-## `null` (the default) means "answer normally"; a suite sets this to `true` against a scratch file
-## (`set_path_override()` first, never `_DEFAULT_PATH`) and clears it back to `null` when done, or
+## Set by a suite that boots a real `main` under a debug flag, to force `uses_save()`'s own answer:
+## `main` hands `configure()` whatever `RunConfig` the suite gave it, and a config carrying a dev flag
+## (`--invincible`, `--no-save`) is kept off the save by the debug policy however windowed it is, so
+## the gated names `main` calls (`write()`, `try_resume()`) would refuse it unless this says otherwise.
+## A suite whose `RunConfig` is windowed and carries no flag (`RunConfig.parse()` with
+## `headless_display` false) needs no override, and neither does one that only drives `GameSave`
+## itself. `null` (the default) means "answer normally"; a suite sets this to `true` against a scratch
+## file (`set_path_override()` first, never `_DEFAULT_PATH`) and clears it back to `null` when done, or
 ## the override leaks into every suite that runs after it.
 static var _uses_save_override: Variant = null
 
@@ -490,20 +491,14 @@ class Flushes extends RefCounted:
 		if settled.is_valid():
 			settled.call(result)
 
-## The ungated mechanics `write()` calls through.
-##
-## **Refuses once `run.header.ending` is set**, checked here as well as in `write()` so no path to
-## the file can skip it. A finished run already had its save cleared by `clear_when_a_run_ends()`; this is the
-## second line of the same reasoning `CLAUDE.md`'s "check before accepting, never repair
-## afterwards" asks for elsewhere in this project — a stray write between the ending firing and
-## the player being shown it must not resurrect a file that answering the ending question
-## already deleted.
+## The ungated mechanics `write()` calls through. `write()` has already refused a run whose
+## `run.header.ending` is set (`_run_has_ended()`), the one path to the file, so this does not
+## check again: a stray write between the ending firing and the player being shown it must not
+## resurrect a file that `clear_when_a_run_ends()` deleted, and `write()` is where that is held.
 ##
 ## Returns whether the file was written and closed; on the web that is not yet a kept save — see
 ## `write()`.
 static func _write_now(run: RunState, day_under_way: bool) -> bool:
-	if _run_has_ended(run):
-		return false
 	var file := FileAccess.open(_path(), FileAccess.WRITE)
 	if not file:
 		push_warning("GameSave: could not open %s for writing" % _path())

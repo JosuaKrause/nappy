@@ -239,7 +239,7 @@ func _test_each_section_is_won_at_its_own_goal(t) -> void:
 	city.tick(0.016)
 	t.check(results.is_empty(), "the city is won by neither its building's exit nor standing away "
 			+ "from its two ways out (%s)" % [results])
-	city._player.global_position = Vector2(-1000.0 + Tuning.FINALE_EXIT_REACH - 1.0, 0.0)
+	city._player.global_position = Vector2(-1000.0 + DayController.FINALE_EXIT_REACH - 1.0, 0.0)
 	city.tick(0.016)
 	t.check(results == [GameEnums.DayResult.WON] and city.exit_reached == CityEdge.Kind.BRIDGE,
 			"at the bridge deck, awake, the city section is won by the bridge (%s, %d)"

@@ -47,6 +47,13 @@ static func remember(mode: ControlsMode.Mode, side: ControlsMode.Side) -> void:
 	_remembered_mode = mode
 	_remembered_side = side
 
+## Forgets the title's answer, as a new sitting begins without one: the next escape boot takes the
+## rig's default again.
+static func forget() -> void:
+	_remembered = false
+	_remembered_mode = Mode.TAP
+	_remembered_side = Side.LEFT
+
 ## Whether the title has answered this sitting — see `_remembered`.
 static func has_remembered() -> bool:
 	return _remembered

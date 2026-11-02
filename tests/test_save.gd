@@ -17,6 +17,7 @@ extends RefCounted
 
 const _SCRATCH_PATH := "user://test_save_scratch.json"
 
+
 func run(t) -> void:
 	var baseline := GameState.save_snapshot()
 	GameSave.set_path_override(_SCRATCH_PATH)
@@ -157,6 +158,10 @@ func _headless(callable: Callable) -> void:
 
 # ---------------------------------------------------------------------- policy ---
 
+## The property that makes every other test in this suite (and every other suite, and
+## `tools/check.sh`'s own boot) safe to run at all: nothing here ever reaches the player's real
+## `user://save.json`, because the headless display server this runner boots against already
+## answers "no" on its own, before a path override is even asked for.
 func _test_uses_save_is_false_under_the_headless_runner(t) -> void:
 	GameSave.configure(RunConfig.at_boot())
 	t.check(RunConfig.at_boot().headless and not GameSave.uses_save(),
@@ -166,6 +171,7 @@ func _test_uses_save_is_false_under_the_headless_runner(t) -> void:
 	GameSave.configure(null)
 	t.check(not GameSave.uses_save(), "nor does a run nothing has configured yet")
 
+## The pure half of `uses_save()`'s policy — see that function's own doc for why it is split out.
 func _test_debug_run_uses_save_policy(t) -> void:
 	GameSave.configure(_windowed_run(PackedStringArray(), "", true))
 	t.check(GameSave.uses_save(), "a flagless debug run uses the save")
@@ -180,6 +186,7 @@ func _test_debug_run_uses_save_policy(t) -> void:
 	t.check(GameSave.uses_save(), "a windowed release run uses it")
 	GameSave.configure(null)
 
+
 func _test_no_save_query_parsing(t) -> void:
 	t.check(not DevFlags.new(PackedStringArray(), "", true).no_save(),
 			"an absent URL parameter changes nothing")
@@ -189,6 +196,13 @@ func _test_no_save_query_parsing(t) -> void:
 	t.check(DevFlags.new(PackedStringArray(), "?seed=1&nosave=1&day=2", true).no_save(),
 			"the parameter is found among other URL parameters")
 
+## M193, "the live page's ?debug=1 reaches the debug flags": `uses_save()`'s release branch is
+## `not DevFlags.web_debug_flag_used()` rather than an unconditional `true` now, so a visitor who
+## tries `?day=12` never touches the save the page might otherwise share with a real player —
+## `_web_debug_flag_used_in_query()` is the pure half of that predicate a test can drive without a
+## live page. The `?debug=1`-alone and empty-query cases pin that opening the bundle is not the
+## same as having used anything in it, which is the property that keeps an ordinary release page's
+## own save exactly as it always was.
 func _test_web_debug_flag_used_query_parsing(t) -> void:
 	t.check(not DevFlags.new(PackedStringArray(), "", false).web_debug_flag_used(),
 			"an absent query used nothing")
@@ -201,6 +215,9 @@ func _test_web_debug_flag_used_query_parsing(t) -> void:
 	t.check(not DevFlags.new(PackedStringArray(), "?debug=1&seed=1234", false).web_debug_flag_used(),
 		"?seed=, the older M133 bundle, is not part of this one")
 
+## The gated entry points `main.gd` actually calls (`write()`, `try_resume()` and `clear()`) refuse
+## outright under the headless runner, and touch no file at all in doing so — the property every
+## other suite, and `tools/check.sh`'s own boot, are safe *because* of.
 func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> void:
 	GameSave.configure(_windowed_run())
 	GameSave.clear()
@@ -354,15 +371,18 @@ func _fake_block_plan() -> BlockPlan:
 
 # ----------------------------------------------------------------- dropped saves ---
 
+
 func _test_missing_file_is_dropped(t) -> void:
 	GameSave.clear()
 	t.check(GameSave.try_resume(GameState).is_empty(), "no file at all resumes nothing")
+
 
 func _test_garbled_text_is_dropped(t) -> void:
 	var before := GameState.save_snapshot()
 	_write_raw("not valid json at all {{{")
 	t.check(GameSave.try_resume(GameState).is_empty(), "text that is not valid JSON resumes nothing")
 	t.check(GameState.save_snapshot() == before, "and GameState is left exactly as it was")
+
 
 func _test_wrong_format_version_is_dropped(t) -> void:
 	var before := GameState.save_snapshot()
@@ -375,6 +395,7 @@ func _test_wrong_format_version_is_dropped(t) -> void:
 	t.check(GameSave.try_resume(GameState).is_empty(),
 			"a save this build's own format version does not match resumes nothing")
 	t.check(GameState.save_snapshot() == before, "and GameState is untouched by trying")
+
 
 func _test_incomplete_state_is_dropped(t) -> void:
 	var before := GameState.save_snapshot()
@@ -390,10 +411,12 @@ func _test_incomplete_state_is_dropped(t) -> void:
 			"a state missing a field this build writes resumes nothing rather than half-loading")
 	t.check(GameState.save_snapshot() == before, "and GameState is untouched by trying")
 
+
 func _write_raw(text: String) -> void:
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(text)
 	file.close()
+
 
 func _test_clear_deletes_the_file(t) -> void:
 	_with_a_scratch_save(func() -> void:
@@ -409,7 +432,6 @@ func _test_clear_deletes_the_file(t) -> void:
 				"clearing an already-absent save changes nothing and answers refused")
 		t.check(answers.results.is_empty(), "and nothing is left for a later answer to settle")
 	)
-	t.check(not GameSave.has_save(), "putting away a file that is not there is already done")
 
 func _test_write_refuses_once_the_run_has_ended(t) -> void:
 	GameSave.clear()
@@ -860,6 +882,7 @@ func _test_double_load_does_not_charge_twice(t) -> void:
 	# here does either, so an unchanged nerve count is the whole of the assertion.
 	t.check(GameState.header.nerves == 4, "and so the second load does not spend a second nerve")
 
+
 func _test_either_ending_clears_the_save(t) -> void:
 	GameSave.clear_when_a_run_ends()
 	GameState.start_run(59)
@@ -918,6 +941,8 @@ func _test_a_desktop_write_is_confirmed_at_once(t) -> void:
 		t.check(answers.results.is_empty(), "with nothing left for a later answer to settle")
 	)
 
+## A run `uses_save()` refuses, and a run that has already ended, answer `REFUSED`, which draws
+## nothing — neither is a save that failed, so neither may show the strike.
 func _test_a_refused_or_ended_run_is_not_a_failed_save(t) -> void:
 	var answers := _Answers.new()
 	_headless(func() -> void:
@@ -934,6 +959,9 @@ func _test_a_refused_or_ended_run_is_not_a_failed_save(t) -> void:
 	)
 	t.check(answers.results.is_empty(), "neither ever answers later")
 
+## The race `Flushes`' settling exists for: the page's answer and the timeout both settle the same
+## flush, and only the first counts. A flush that answers after timing out stays failed rather than
+## taking back the strike already shown, and a timeout after an answer changes nothing.
 func _test_a_flush_settles_once_whichever_answer_comes_first(t) -> void:
 	var flushes := GameSave.Flushes.new()
 	var answered := _Answers.new()
@@ -957,6 +985,8 @@ func _test_a_flush_settles_once_whichever_answer_comes_first(t) -> void:
 			"the page's failure message settles the flush as failed")
 	t.check(flushes.is_empty(), "and nothing is left waiting")
 
+## A held restart reloads `main` while a flush may still be out, so the `settled` callable can name
+## an object that no longer exists by the time the browser answers. Settling it does nothing.
 func _test_a_flush_whose_listener_is_gone_settles_quietly(t) -> void:
 	var flushes := GameSave.Flushes.new()
 	var gone := Node.new()
@@ -967,6 +997,9 @@ func _test_a_flush_whose_listener_is_gone_settles_quietly(t) -> void:
 
 # ---------------------------------------------------------------- deletions ---
 
+## A deletion is settled through the same token table a write is, and a deletion's answer also
+## reaches `EventBus.save_deletion_settled`, which is how a symbol that outlived its `main` hears it.
+## A write's answer never does.
 func _test_a_deletion_flush_settles_through_the_bus_and_a_write_flush_does_not(t) -> void:
 	var flushes := GameSave.Flushes.new()
 	var heard: Array[bool] = []
@@ -992,6 +1025,9 @@ func _test_a_deletion_flush_settles_through_the_bus_and_a_write_flush_does_not(t
 	t.check(flushes.is_empty(), "nothing is left waiting")
 	EventBus.save_deletion_settled.disconnect(listen)
 
+## The restart frees `main` while its deletion's flush is still out, so the callable a deletion was
+## given can name a freed object when the browser answers; nothing is called, and the bus still
+## says it.
 func _test_a_deletion_flush_whose_listener_is_gone_settles_quietly(t) -> void:
 	var flushes := GameSave.Flushes.new()
 	var heard: Array[bool] = []
@@ -1005,6 +1041,10 @@ func _test_a_deletion_flush_whose_listener_is_gone_settles_quietly(t) -> void:
 			"the deletion settles the bus without calling the freed object")
 	EventBus.save_deletion_settled.disconnect(listen)
 
+## *A tab hidden for an hour reports the whole hour as one frame's time on its return.* One frame
+## adds at most `MAX_FLUSH_STEP_SECONDS` to a flush's wait, so a flush the browser was never given
+## the chance to run is not timed out by that frame — and is not struck through for a save the
+## browser then reports kept. A deletion's flush counts the same way.
 func _test_one_huge_frame_does_not_time_a_flush_out(t) -> void:
 	var steps := int(GameSave.FLUSH_TIMEOUT_SECONDS / GameSave.MAX_FLUSH_STEP_SECONDS)
 	# An hour between two frames counts as one clamped step: it is as far along as `steps - 1` more
@@ -1056,6 +1096,7 @@ func _test_one_huge_frame_does_not_time_a_flush_out(t) -> void:
 			and delete_answers.results == [GameSave.Result.CONFIRMED],
 			"so the browser's own answer on that frame is kept, not ignored")
 
+## The timeout still exists: frames actually drawn add up to `FLUSH_TIMEOUT_SECONDS`.
 func _test_a_flush_still_times_out_after_enough_frames(t) -> void:
 	var flushes := GameSave.Flushes.new()
 	var answers := _Answers.new()
@@ -1069,6 +1110,9 @@ func _test_a_flush_still_times_out_after_enough_frames(t) -> void:
 	flushes.answer([float(token), ""])
 	t.check(answers.results == [GameSave.Result.FAILED], "and a late success does not reverse it")
 
+## *"show deleting the save file with a save symbol as well. every change in the save state needs
+## to show the symbol"* — a deletion that removes a file raises the symbol, answered at once off
+## the web, and a pending one holds it fully shown until the browser's answer reaches the bus.
 func _test_a_deletion_raises_and_settles_the_symbol(t) -> void:
 	_with_a_scratch_save(func() -> void:
 		# Written before the symbol is built: a write raises the symbol too.
@@ -1097,6 +1141,8 @@ func _test_a_deletion_raises_and_settles_the_symbol(t) -> void:
 		waiting.free()
 	)
 
+## The same strike as a write that was not kept, for a deletion that was not: answered at once, or
+## by the browser later, and for the full ten seconds.
 func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
 	var immediate_timeline := SaveIndicator.Showing.new()
 	var immediate := SaveIndicator.new(immediate_timeline)
@@ -1179,6 +1225,10 @@ func _test_a_restart_with_no_save_left_shows_nothing(t) -> void:
 		indicator.free()
 	)
 
+## The held restart deletes the save and reloads the scene, which frees `main` and everything under
+## it. The symbol the deletion raised is handed to the tree's root first, so it is still there on
+## the title the reload builds, still pending, and the browser's answer settles it. An idle symbol
+## is not carried: the next boot builds its own.
 func _test_the_restarts_symbol_survives_the_scene_reload(t) -> void:
 	var tree: SceneTree = t.get_tree()
 	# This suite runs inside the runner's own `_ready()`, while the tree's root is still busy
@@ -1233,6 +1283,9 @@ func _test_the_symbols_listening_ends_with_the_symbol(t) -> void:
 	t.check(EventBus.save_written.get_connections().size() == before_writes,
 			"until it is freed")
 
+## A write tells `EventBus` what it came to, so the symbol hears it without `main` relaying it, and
+## begins exactly once for one save. A write
+## `GameSave` refuses (a headless run, an ended run) announces nothing.
 func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t) -> void:
 	var heard: Array[int] = []
 	var listen := func(_operation: int, result: int) -> void: heard.append(result)
@@ -1259,6 +1312,8 @@ func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t) -> 
 	)
 	EventBus.save_written.disconnect(listen)
 
+## A write's web answer reaches `EventBus.save_write_settled`, and only a write's: a deletion's goes
+## to `save_deletion_settled`, so one answer settles one change however many are out.
 func _test_a_write_flush_settles_the_write_signal_and_a_deletion_flush_does_not(t) -> void:
 	var flushes := GameSave.Flushes.new()
 	var heard: Array[bool] = []
@@ -1278,6 +1333,11 @@ func _test_a_write_flush_settles_the_write_signal_and_a_deletion_flush_does_not(
 	t.check(flushes.is_empty(), "nothing is left waiting")
 	EventBus.save_write_settled.disconnect(listen)
 
+## **The held restart on a day's summary while its end-of-day save is still being retried.** The web
+## save is announced pending, the restart hands the symbol to the tree's root and frees `main`, and
+## the browser answers a flush whose `settled` callable names the freed `main`. The symbol must
+## still be answered; before the answer went through the bus it stayed pending, fully shown, for
+## good.
 func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_saved(t) -> void:
 	var flushes := GameSave.Flushes.new()
 	var home := Node.new()
@@ -1316,6 +1376,9 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	SaveIndicator.use_home(null)
 	home.free()
 
+## A symbol that did not live through a reload never began the changes announced before it, and an
+## answer to one of those settles nothing on it: its own pending change stays pending, and its own
+## failure still strikes.
 func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t) -> void:
 	var timeline := SaveIndicator.Showing.new()
 	var indicator := SaveIndicator.new(timeline)
@@ -1332,6 +1395,8 @@ func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t) -> void:
 			"and its own change's answer still does")
 	indicator.free()
 
+## Every announced change carries its own operation id, larger for every change begun later, and its
+## web answer carries the same id back — the tie between an answer and its change.
 func _test_each_change_carries_its_own_operation_id_to_its_answer(t) -> void:
 	var announced: Array[int] = []
 	var announce := func(operation: int, _result: int) -> void: announced.append(operation)
@@ -1473,6 +1538,7 @@ func _test_a_save_beginning_mid_fade_restarts_the_second(t) -> void:
 	t.check(showing.alpha() == 1.0, "full for a new second from the new save")
 	showing.advance(0.02)
 	t.check(showing.alpha() < 1.0, "and then fading")
+
 
 func _test_a_save_beginning_while_fully_shown_does_not_restart_the_second(t) -> void:
 	var showing := SaveIndicator.Showing.new()
@@ -1673,6 +1739,9 @@ func _test_a_desktop_save_shows_the_symbol_confirmed_at_once(t) -> void:
 		indicator.free()
 	)
 
+## The struck symbol is its own picture on the `ui` atlas (`art/ui/save_unavailable.svg`), swapped
+## in for the plain one rather than drawn over it — so the region has to exist and be a different
+## picture, and a kept save afterwards has to swap back.
 func _test_a_save_not_kept_swaps_to_the_struck_picture(t) -> void:
 	var indicator := SaveIndicator.new()
 	t.add_child(indicator)

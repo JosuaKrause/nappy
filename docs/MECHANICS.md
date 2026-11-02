@@ -179,7 +179,7 @@ to walk down, which is what a route is made of.
 
 **The bar may reach and sit at `excitement = 100` without ending the day.** The day ends crying
 only once a further mass of excitement has arrived while she is already sitting at the cap —
-`Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points inside `Tuning.EXCITEMENT_OVERFLOW_WINDOW` (3s) —
+`Baby.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points inside `Baby.EXCITEMENT_OVERFLOW_WINDOW` (3s) —
 so a single contact that only just reaches 100 leaves almost nothing behind it and does not end
 the day, and a source that keeps her at the cap does. See "Baby state machine", "A push at the
 cap", for exactly what counts as that mass and what happens to it once she gets away from the
@@ -328,8 +328,8 @@ half-second move read as a cut.
 
 **A push at the cap.** The bar may reach and sit at `Tuning.METER_MAX` without ending the day —
 `_update_excitement()` still nets `incoming − decay` every frame the way it always has, and the
-day only ends once `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points of that net have arrived
-**while she is already sitting at the cap**, summed over the last `Tuning.EXCITEMENT_OVERFLOW_WINDOW`
+day only ends once `Baby.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points of that net have arrived
+**while she is already sitting at the cap**, summed over the last `Baby.EXCITEMENT_OVERFLOW_WINDOW`
 (3s). That sum is the bar's own would-be overflow — the part of a positive net rate the clamp would
 otherwise have piled on top of 100 — not the raw incoming: a single contact from just under the cap
 spends nearly all of itself getting *to* 100 and leaves almost nothing over, so it no longer ends
@@ -1533,7 +1533,7 @@ frame slows the game instead — and a faster machine reads no lower time. The s
 seconds and loads it to the nearest tick, whatever seconds an older save holds. Not wall time, and not
 the day timer above, which resets every day — a retried day's first attempt counts toward it, and
 neither the pause screen, the day summary nor the title screen do. It only ever grows during a run
-(inbox #920): going back to a checkpoint, day 1's included, keeps it and does not put it back to
+(inbox #920 in plaid-penguin): going back to a checkpoint, day 1's included, keeps it and does not put it back to
 that dawn's reading (see "Two modes"); only a new game from the title starts it at zero.
 
 It is hidden throughout play — no HUD, no pause screen, no day summary — and the ending screen is
@@ -1582,7 +1582,7 @@ has no loudspeaker anywhere — but it is walked under dead traffic lights, acro
 longer stops for anybody, with everything else the last day carries still out. The escape after it
 is in the dark as well.
 
-**A full clock per section, `Tuning.FINALE_LENGTH_SECONDS` (180s), stated on its own rather than
+**A full clock per section, `RunConfig.FINALE_LENGTH_SECONDS` (180s), stated on its own rather than
 reused from the ordinary day's length** — the player asked that the escape not be easy, so it does
 not grow when the ordinary day does. Each section starts one as it begins, standing still behind its
 brief the way a day's stands still behind the title, so the time spent walking down three floors is
@@ -1591,7 +1591,7 @@ city's begins with a whole clock. The countdown, the three losing paths, the
 `EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the clock still are all
 a day's and none of them change; **the goal is the section's own**: the building's service exit,
 reached once its fade has covered the screen, and the city's tunnel mouth or bridge deck, within
-`Tuning.FINALE_EXIT_REACH` of the last walkable tile of the spine at either end, reached however
+`DayController.FINALE_EXIT_REACH` of the last walkable tile of the spine at either end, reached however
 the baby is.
 
 **The clock reads to the hundredth** — `%d:%02d.%02d` through `GameState.format_clock_hundredths()`,
@@ -1735,7 +1735,7 @@ from its first frame (docs/CITY.md, "The power station").
 
 **The night outside is light and noise, and they are separate things.** Every
 `EventCatalogue.FINALE_EXPLOSION_INTERVAL` a bomb goes off close enough to shake the building: every
-hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS` and the hallway she is in
+hallway window in it goes white for `InteriorScene.FINALE_WINDOW_FLASH_SECONDS` and the hallway she is in
 is lit with it, and the meter takes the hit, wherever she is standing. Between those, far more often, a distant flash lights the same
 windows the same way and does nothing else at all — no event, no field, nothing on the meter. A
 shelled city is what she can see out of the window; what she is charged for is only what is close
@@ -1744,7 +1744,7 @@ enough to hear.
 **Every window flashes together, always** — near bang or far flash, one call and no way to light a
 subset, because a window lighting while the one beside it stays dark reads as a broken sprite
 rather than as a city under fire. The waits between distant flashes are a short-biased smooth
-draw on `[Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS, _MAX_SECONDS]` (0.1s to 5s) with its mean at
+draw on `[InteriorScene.FINALE_DISTANT_FLASH_MIN_SECONDS, _MAX_SECONDS]` (0.1s to 5s) with its mean at
 `_MEAN_SECONDS` (1.3s), taken from the section's own seeded stream so a seed replays the same
 night: mostly quick double-taps, with the occasional long dark gap. Two flashes close enough to
 overlap run together as one longer one rather than blinking.
@@ -1753,7 +1753,7 @@ overlap run together as one longer one rather than blinking.
 bands and is one tile wide at three places on the way to the service exit
 (`InteriorMap.BASEMENT_NARROWS`), each of them a cell the walk cannot go round. A steam vent
 stands on each, in the same place every attempt, blowing on its own period out of
-`Tuning.FINALE_STEAM_PERIODS` — 4, 4.5 and 5.5 seconds, pairwise coprime in half-seconds, so the
+`BuildingPlan.FINALE_STEAM_PERIODS` — 4, 4.5 and 5.5 seconds, pairwise coprime in half-seconds, so the
 three of them never fall into a rhythm. A blow shuts its cell outright for
 `EventCatalogue.FINALE_STEAM_BLOWS_FOR` after a notice, and the shortest period still leaves twice as long
 open as walking through the vent's reach costs. Waiting is the answer; there is no line past one.
@@ -1762,7 +1762,7 @@ Standing at a blowing vent costs the meter hard *("steam should be 40 to 50")*: 
 pocket between two vents is still never shut at both ends for long enough to fill the meter.
 **And the meter does not fall in the basement** *("let's not replenish the meter in the basement it's a
 tense situation")*: walking there earns no decay, awake or asleep, because the building answers the
-ground's decay multiplier with `Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER` (0) on the basement's
+ground's decay multiplier with `InteriorScene.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER` (0) on the basement's
 tiles and 1.0 elsewhere. What a blow charges her with stays until she is out, so a mistimed vent
 is paid for at the next one; the rest of the escape recovers as it always did.
 
@@ -1773,9 +1773,9 @@ so the line on the screen and the line in the HUD are one instruction rather tha
 **Section two is the city she knows with the men in it.** Army trucks, off-screen explosions,
 unmarked vans and roadblocks at full resistance progress stand on the streets either chain walks,
 drawn from one marble bag for the whole escape: each street has one slot
-(`Tuning.FINALE_SLOTS_PER_STREET`), and the bag holds the most trucks, then explosions, then vans,
+(`DaySpec.FINALE_SLOTS_PER_STREET`), and the bag holds the most trucks, then explosions, then vans,
 then roadblocks, and fewest of all the empty marbles that leave a slot with nothing
-(`Tuning.FINALE_BAG_TRUCKS` and the four after it), so most streets stand one danger and some stand
+(`DaySpec.FINALE_BAG_TRUCKS` and the four after it), so most streets stand one danger and some stand
 none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
 happening) as well. we need a fair mix"; "frequency order is trucks > explosions > vans >
 barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk filled before she sets off". A roadblock
@@ -1819,7 +1819,7 @@ street either chain runs through. *(Inbox #747: "yes, of course the yellow tint.
 game establishing that why would it be different in the last section?")* A street a chain only
 turns at is sealed and plain.
 
-**It ends on the tunnel or the bridge**, within `Tuning.FINALE_EXIT_REACH` of the exit `CityEdge`
+**It ends on the tunnel or the bridge**, within `DayController.FINALE_EXIT_REACH` of the exit `CityEdge`
 draws, on a summary screen with the way out behind her and nothing triumphant on it — and the clock
 she took, to the millisecond, which is the only number that screen carries.
 
@@ -1931,7 +1931,7 @@ retry of a checkpoint day, or a run sent back to one, keeps the checkpoint it ha
 checkpoint day replaces it. Day 1 is not stored: the run's own seed rebuilds that dawn exactly. **The
 run's play time is the one thing that does not go back**: going back to a checkpoint, day 1's
 included, keeps the time played, since the game sent her back and she did not start over; only a new
-game from the title starts it at zero (inbox #920).
+game from the title starts it at zero (inbox #920 in plaid-penguin).
 
 **A checkpoint cannot strand the good ending any more than the run already had.** Tasks belong to
 their days and a checkpoint restores exactly what the run had done by that dawn, so a run that

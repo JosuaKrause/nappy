@@ -91,7 +91,7 @@ const FINALE_PURSUER_RESPAWN_SECONDS := 6.0
 ##
 ## **Short against every period**, so a vent's corridor is open for longer than it is shut: this is
 ## the whole of the shut half, and the shortest period leaves twice as long open again. A gap she
-## can walk through is the thing she is waiting for, and `Tuning.FINALE_STEAM_PERIODS` states the floor
+## can walk through is the thing she is waiting for, and `BuildingPlan.FINALE_STEAM_PERIODS` states the floor
 ## under that gap. Short in its own right too, because a vent closes a corridor with no way round
 ## it: the pocket between two of them is only ever shut at both ends for as long as the shorter of
 ## the two overlaps, which is bounded by this.
@@ -109,9 +109,9 @@ const FINALE_STEAM_BLOWS_FOR := 2.0
 ## `Crowd.BUMP_INTENSITY`) and well over a conversation's 25 (`Tuning.CHAT_EXCITEMENT`), so being reached is a
 ## thing she pays for rather than a bump; and under `Tuning.METER_MAX` with the rest of the encounter, so
 ## from a calm meter it never ends the day — only on a meter already high enough that it carries
-## her to the cap and past `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` does it. It is his field, but it is spent in
+## her to the cap and past `Baby.EXCITEMENT_OVERFLOW_TO_CRY` does it. It is his field, but it is spent in
 ## a second at its full width, so walking away the instant he reaches her takes little of it off; a
-## sleeping baby takes `Tuning.SLEEPING_SENSITIVITY` of it, as of everything. Chosen while building, open
+## sleeping baby takes `Baby.SLEEPING_SENSITIVITY` of it, as of everything. Chosen while building, open
 ## to overturn.
 const OFFICER_STOP_EXCITEMENT := 40.0
 
@@ -628,7 +628,7 @@ static func _cat_dash() -> EventDef:
 ##
 ## **Lower intensity than the cat's 17, because it is a startle rather than a threat** — 9, roughly
 ## half, on the same 4:1 outer:inner ratio the cat uses (120:30) scaled down to the alley's own
-## smaller stage (60:15). The alley she is standing in is already worth `Tuning.EXCITEMENT_FROM_ALLEY`
+## smaller stage (60:15). The alley she is standing in is already worth `Baby.EXCITEMENT_FROM_ALLEY`
 ## (+3.0/s) of ambient dread on its own; the mouse only has to add a spike on top of ground that is
 ## already tense, where the cat has to make the whole case for itself on an open street.
 ##
@@ -687,7 +687,7 @@ static func _alley_mouse() -> EventDef:
 	# "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat
 	# is usually not".)* A cat is met on an ordinary street, where 6.0/s is given back; a mouse is
 	# only ever met in an alley, where 3.5/s is given back and the alley's own
-	# `Tuning.EXCITEMENT_FROM_ALLEY` (+3.0/s) is being charged on top. So the alley hands this row
+	# `Baby.EXCITEMENT_FROM_ALLEY` (+3.0/s) is being charged on top. So the alley hands this row
 	# most of the gap for nothing, and 21.0 is what is left to buy: it walks to +19.9 in an alley
 	# against the cat's +17.6 on a street.
 	#
@@ -3450,7 +3450,7 @@ static func _masked_pursuer() -> EventDef:
 ## see that field, and `EventInstance._become_solid_once_it_starts()`.
 ##
 ## **One vent is a gate; the corridor is several of them on their own clocks.** The count, the
-## periods and how long a blow lasts are `Tuning.FINALE_STEAM_PERIODS` and
+## periods and how long a blow lasts are `BuildingPlan.FINALE_STEAM_PERIODS` and
 ## `FINALE_STEAM_BLOWS_FOR`; the building sites them on the basement's narrows
 ## (`BuildingPlan`), each plan coming again on its own period (`EventScheduler.Planned.
 ## repeat_every`). What this row owns is one blow: notice, body, field, over. Its plume billows over

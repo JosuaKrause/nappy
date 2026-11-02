@@ -48,12 +48,10 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	GameState.start_run(seed_value)
 	GameState.header.day = ResistanceSteps.swing_day()
 	GameSave._write_now(GameState, true)
-	GameSave._uses_save_override = true
 	var main: Node2D = MAIN_SCENE.instantiate()
 	# A run with no flag at all, whatever this process's own command line says.
-	main.configure(RunConfig.parse(PackedStringArray(), "", true))
+	main.configure(RunConfig.parse(PackedStringArray(), "", true, false, {}, false))
 	t.add_child(main)
-	GameSave._uses_save_override = null
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	main._on_title_start(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.RIGHT)
