@@ -18,7 +18,7 @@ var ending: GameEnums.Ending = GameEnums.Ending.NONE
 ## shown during play; the ending screen is the only place it is read, through `play_seconds()`.
 ## **Only ever grows during a run**: a lost day's retry does not give it back (the header is not
 ## spent by an attempt) and going back to a checkpoint, zero included, keeps it instead of taking
-## the dawn's value; only a new game from the title starts it at zero (inbox #920). A save holds
+## the dawn's value; only a new game from the title starts it at zero (inbox #920 in plaid-penguin). A save holds
 ## and loads it as it is.
 var play_ticks: int = 0
 
