@@ -11,6 +11,12 @@ extends RefCounted
 ## own, before the first day is drawn. A city nobody handed one (a suite's hand-built city) holds its
 ## own and reads the file once for itself.
 
+## The composition recipe: which shared base and which transparent overlays each source id wants,
+## which severity pool each damage source draws from, and the grass features. **A data file the
+## game reads at runtime, so it lives under `assets/` and is named in the Web preset's
+## `include_filter`** — a `.json` is not a resource and would otherwise not be exported at all.
+## Its filenames are the illustrated PNGs' own; `_layer_image()` turns each one into a region name
+## and the pixels come off the page.
 const PATH := "res://assets/ground_layers.json"
 
 var _manifest: Dictionary = {}

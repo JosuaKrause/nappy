@@ -37,13 +37,6 @@ extends RefCounted
 ## its own width.
 const ROUTE_KERB_TINT_ALPHA := 0.45
 
-## The composition recipe: which shared base and which transparent overlays each source id wants,
-## which severity pool each damage source draws from, and the grass features. **A data file the
-## game reads at runtime, so it lives under `assets/` and is named in the Web preset's
-## `include_filter`** — a `.json` is not a resource and would otherwise not be exported at all.
-## Its filenames are the illustrated PNGs' own; `_layer_image()` turns each one into a region name
-## and the pixels come off the page.
-const MANIFEST_PATH := GroundRecipe.PATH
 ## The region prefix the manifest's component filenames sit under: a manifest naming
 ## `curbstone.png` means the region `tiles/layers/curbstone`.
 const LAYER_REGION_ROOT := "tiles/layers/"
@@ -99,7 +92,7 @@ static func build_tile_set(authored: TileSet, recipe: GroundRecipe) -> TileSet:
 		# and nothing whole is on the page to draw instead. Stopping here says that once;
 		# continuing would say it again for each of the 46 sources and bury the reason.
 		push_error("The ground composition recipe %s did not load; a default bake's page carries "
-				% MANIFEST_PATH + "no whole tile to draw instead, so the ground cannot be composed")
+				% GroundRecipe.PATH + "no whole tile to draw instead, so the ground cannot be composed")
 		return null
 	var result := authored.duplicate(true) as TileSet
 	# Water belongs to its animated surface. Keep its baked region available to that owner,
@@ -160,7 +153,7 @@ static func _layer_recipe(recipe: GroundRecipe) -> Dictionary:
 	var manifest := recipe.manifest()
 	if manifest.is_empty() or int(manifest.get("tile_size", 0)) != TILE_SIZE.x:
 		push_error("The ground composition recipe %s is missing, unreadable or not a version 1 "
-				% MANIFEST_PATH + "recipe at %dpx tiles" % TILE_SIZE.x)
+				% GroundRecipe.PATH + "recipe at %dpx tiles" % TILE_SIZE.x)
 		return {}
 	return manifest
 

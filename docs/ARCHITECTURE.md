@@ -790,11 +790,13 @@ escape, a run carried on to its checkpoint and a recipe's lost section played ag
 `reload_current_scene()` frees every node `main` built. It holds these facts and is one home: the run
 carried over (`carry_the_run_over`), the title's answer (`controls_word`), the instant of the last
 held restart, which the title's restart guard measures a press against (`restarted_at_msec`), the
-desktop frame record's one file (`frame_record_path`), and the save symbol a reload carries, which
+desktop frame record's one file (`frame_record_path`), the ground's composition recipe, read once
+per process (`ground_recipe`), and the save symbol a reload carries, which
 `SaveIndicator.outlive_the_scene()` reparents under it. Process memory only, never saved. `main`
 takes the one the boot before parked at the tree's root, or builds one as its own child on the
 sitting's first boot, parks it at the root just before every reload (`main._park_the_sitting()`),
-and hands it to the title (`use_sitting()`), the frame recorder (`setup()`) and the save symbol;
+and hands it to the title (`use_sitting()`), the frame recorder (`setup()`) and the save symbol, and
+its recipe to every city it builds (`main._new_city()` sets `City.ground_recipe`);
 nothing below the composition root fetches it. A test hands its boots a node of its own in place
 of the root (`main.use_sitting_home()`), so the boot standing for a reload takes the sitting the
 boot before parked there, and hands a `main` it drives off the tree one directly

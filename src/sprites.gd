@@ -10,7 +10,7 @@ extends RefCounted
 ## The key a canvas item's drawing pass is recorded under: the canvas transform whoever is drawing
 ## has already put on it around the `draw_standing()` calls it is about to make -- the offset a ring
 ## of re-drawn bodies is at, the lift a bobbing entity rides -- so the mirror below can **compose**
-## with it instead of replacing it. No meta means `Transform2D.IDENTITY`, the ordinary case.
+## with it instead of replacing it. A canvas never told anything has no meta, which means `Transform2D.IDENTITY`, the ordinary case.
 ##
 ## **`draw_set_transform` replaces, and nothing can read back what it replaced.** Godot exposes no
 ## way to ask a `CanvasItem` for its current custom transform, so a helper that has to mirror about
@@ -34,12 +34,9 @@ const BASE_TRANSFORM_META := &"sprites_base_transform"
 ## `Transform2D.IDENTITY` when the pass ends** -- the two say the same thing to two different places,
 ## and a caller that sets one without the other leaves a later mirrored sprite drawing through an
 ## offset nobody asked for. `EntityHalo._on_draw()`, `EventLook.draw()` and `CrowdAgent._draw()` are
-## the callers. Identity removes the record rather than storing it.
+## the callers. Identity is stored, not erased: updating an entry already there costs less per draw than inserting and erasing one.
 static func set_base_transform(canvas: CanvasItem, base: Transform2D) -> void:
-	if base == Transform2D.IDENTITY:
-		canvas.remove_meta(BASE_TRANSFORM_META)
-	else:
-		canvas.set_meta(BASE_TRANSFORM_META, base)
+	canvas.set_meta(BASE_TRANSFORM_META, base)
 
 ## The transform `set_base_transform()` last told about `canvas`, identity if none is set.
 static func base_transform_of(canvas: CanvasItem) -> Transform2D:
