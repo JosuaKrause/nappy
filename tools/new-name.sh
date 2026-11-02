@@ -16,7 +16,7 @@
 #
 # A decision and a review item usually take the name of the entry they come from (`--entry`), as
 # `<entry name>.md`; when that is taken, a second one is named `<entry name>-<adjective>-<animal>.md`,
-# a pair drawn like any other and never a number (inbox #937 in plaid-penguin, inbox #941; read
+# a pair drawn like any other and never a number (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca; read
 # as: two branches building at once draw the same next number). `--entry` accepts the full name,
 # its two words, or an old entry's milestone number (M210). One drawn without `--entry` gets a new
 # pair, and its heading ends "· not from an entry", which tools/lint.sh reads.
