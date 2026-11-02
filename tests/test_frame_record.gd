@@ -154,7 +154,7 @@ func _test_the_ring_keeps_the_latest_frames(t) -> void:
 	_drive(ledger, 21000, 12000, FrameRecord.CROWD, 1000)
 	ledger.process_start(33000)
 	var rows := ledger.rows()
-	t.check(ledger._rows.size() == 2 * FrameLedger.WIDTH, "a full ring never grows")
+	t.check(ledger.storage_size() == 2 * FrameLedger.WIDTH, "a full ring never grows")
 	t.check(rows.size() == 2 and ledger.overwritten == 1
 			and rows[0][FrameLedger.START] == 10000 and rows[1][FrameLedger.START] == 21000,
 			"a full ring keeps the latest frames, oldest first, and counts what it overwrote")
@@ -228,10 +228,10 @@ func _test_the_record_charges_its_ledger(t) -> void:
 	t.check(record.on, "a started record is on")
 	ledger.process_start(Time.get_ticks_usec())
 	var outer := record.enter(FrameRecord.INFLUENCE)
-	t.check(outer == FrameRecord.PROCESS_REST and ledger._current == FrameRecord.INFLUENCE,
+	t.check(outer == FrameRecord.PROCESS_REST and ledger.current_bucket() == FrameRecord.INFLUENCE,
 			"enter answers the bucket that was running and starts its own")
 	record.leave(outer)
-	t.check(ledger._current == FrameRecord.PROCESS_REST, "leave goes back to it")
+	t.check(ledger.current_bucket() == FrameRecord.PROCESS_REST, "leave goes back to it")
 	t.check(FrameRecorder.calibrate() >= 0.0 and record.ledger == ledger,
 			"calibrating the timer's cost leaves the live record in place")
 	record.stop()
@@ -247,14 +247,14 @@ func _test_the_record_charges_its_ledger(t) -> void:
 		var each := FrameRecord.new()
 		each.start(fresh)
 		each.drew(FrameTiming.Draw[kind])
-		kinds_line_up = kinds_line_up and fresh._counters[FrameLedger.COUNTER_NAMES.find("draws_" + kind.to_lower())] == 1
+		kinds_line_up = kinds_line_up and fresh.counter(FrameLedger.COUNTER_NAMES.find("draws_" + kind.to_lower())) == 1
 	for kind: String in FrameTiming.Job.keys():
 		var fresh := FrameLedger.new(1)
 		var each := FrameRecord.new()
 		each.start(fresh)
 		each.scenery_job(FrameTiming.Job[kind])
 		var counter := "guard_preparations" if kind == "GUARD" else "jobs_" + kind.to_lower()
-		kinds_line_up = kinds_line_up and fresh._counters[FrameLedger.COUNTER_NAMES.find(counter)] == 1
+		kinds_line_up = kinds_line_up and fresh.counter(FrameLedger.COUNTER_NAMES.find(counter)) == 1
 	t.check(kinds_line_up, "every draw and job kind lands on the counter of its own name")
 
 ## The recorder counts the nodes' own `_draw()` calls by listening to their `draw` signal: a node of
@@ -279,21 +279,20 @@ func _test_draws_are_counted_by_listening(t) -> void:
 	t.add_child(chunk)
 	var marker := ClosureMarker.new()
 	t.add_child(marker)
-	var counters := ledger._counters
 	prop.draw.emit()
 	chunk.draw.emit()
 	label.draw.emit()
 	marker.draw.emit()
-	t.check(counters[FrameLedger.DRAWS_SCENERY] == 2 and counters[FrameLedger.DRAWS_OTHER] == 1
-			and counters[FrameLedger.DRAWS_PLAYER] == 0,
+	t.check(ledger.counter(FrameLedger.DRAWS_SCENERY) == 2 and ledger.counter(FrameLedger.DRAWS_OTHER) == 1
+			and ledger.counter(FrameLedger.DRAWS_PLAYER) == 0,
 			"a prop and a tagged canvas count as scenery, a marker as other, a label as nothing")
 	t.remove_child(prop)
 	t.add_child(prop)
 	prop.draw.emit()
-	t.check(counters[FrameLedger.DRAWS_SCENERY] == 3, "a node that re-enters the tree is counted once")
+	t.check(ledger.counter(FrameLedger.DRAWS_SCENERY) == 3, "a node that re-enters the tree is counted once")
 	record.on = false
 	prop.draw.emit()
-	t.check(counters[FrameLedger.DRAWS_SCENERY] == 3, "a record that is off counts nothing")
+	t.check(ledger.counter(FrameLedger.DRAWS_SCENERY) == 3, "a record that is off counts nothing")
 	var kinds := {Prop.new(): FrameTiming.Draw.SCENERY, SceneryLayer.new(): FrameTiming.Draw.SCENERY,
 		SceneryWater.new(): FrameTiming.Draw.SCENERY, TrafficLight.new(): FrameTiming.Draw.OTHER,
 		ParkFenceMarker.new(): FrameTiming.Draw.OTHER, MeterBar.new(): FrameTiming.Draw.OTHER,
@@ -416,9 +415,9 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	main._readout.watch_frames(recorder)
 	t.check(record.on and record.ledger == recorder.ledger and recorder.ledger == restarted,
 			"setting up the recorder switches the timing on, keeping the record a restart left")
-	var drawn_before := restarted._counters[FrameLedger.DRAWS_PLAYER]
+	var drawn_before := restarted.counter(FrameLedger.DRAWS_PLAYER)
 	main._player.draw.emit()
-	t.check(restarted._counters[FrameLedger.DRAWS_PLAYER] == drawn_before + 1,
+	t.check(restarted.counter(FrameLedger.DRAWS_PLAYER) == drawn_before + 1,
 			"her stroller's drawn frame is counted by the recorder's listening")
 	var end := recorder.get_node("ProcessEnd")
 	var nodes := 0
@@ -491,19 +490,19 @@ func _check_the_crowd_is_timed_once(t, crowd: Crowd, record: FrameRecord) -> voi
 		once = once and is_equal_approx(agents[i].excitement._clock, clocks[i] + STEP)
 	t.check(once, "the crowd's timed tick steps every agent once, not twice and not never (%d agents)"
 			% agents.size())
-	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 1,
-			"as one timed call for the whole crowd (%d)" % scratch._counters[FrameLedger.TIMER_CALLS])
-	t.check(scratch._spent[FrameRecord.CROWD] > 0
-			and scratch._current == FrameRecord.PROCESS_REST,
+	t.check(scratch.counter(FrameLedger.TIMER_CALLS) == 1,
+			"as one timed call for the whole crowd (%d)" % scratch.counter(FrameLedger.TIMER_CALLS))
+	t.check(scratch.spent(FrameRecord.CROWD) > 0
+			and scratch.current_bucket() == FrameRecord.PROCESS_REST,
 			"charged to crowd, and the clock goes back to what was running")
 	record.stop()
-	var spent := scratch._spent.duplicate()
+	var spent := scratch.spent_all()
 	crowd._physics_process(STEP)
 	once = true
 	for i in agents.size():
 		once = once and is_equal_approx(agents[i].excitement._clock, clocks[i] + 2.0 * STEP)
-	t.check(once and scratch._counters[FrameLedger.TIMER_CALLS] == 1
-			and scratch._spent == spent,
+	t.check(once and scratch.counter(FrameLedger.TIMER_CALLS) == 1
+			and scratch.spent_all() == spent,
 			"once the record stops, the tick steps every agent once and times nothing")
 
 ## A live event made with the record off is never timed, even once it is on; one made under it runs
@@ -519,7 +518,7 @@ func _test_a_timed_body_runs_once(t) -> void:
 	record.start(scratch)
 	scratch.process_start(Time.get_ticks_usec())
 	untimed_event._process(STEP)
-	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 0 and untimed_look.charged.size() == 1,
+	t.check(scratch.counter(FrameLedger.TIMER_CALLS) == 0 and untimed_look.charged.size() == 1,
 			"an event handed no record is not timed while another is on")
 	var event := _event(t, def)
 	event.timing = record
@@ -528,26 +527,26 @@ func _test_a_timed_body_runs_once(t) -> void:
 	t.check(look.charged == [FrameRecord.EVENTS],
 			"a timed event's drawn frame redraws once a call, inside the events bucket (%s)"
 			% [look.charged])
-	t.check(scratch._counters[FrameLedger.TIMER_CALLS] == 1
-			and scratch._current == FrameRecord.PROCESS_REST,
+	t.check(scratch.counter(FrameLedger.TIMER_CALLS) == 1
+			and scratch.current_bucket() == FrameRecord.PROCESS_REST,
 			"as one timed call, and the clock goes back to what was running")
 	# Past its telegraph, so its first step announces it, in whatever bucket was running: its step
 	# times nothing itself.
 	event.age = def.telegraph_time + 0.01
 	var age := event.age
 	var charged: Array[int] = []
-	var listen := func(_instance: Variant) -> void: charged.append(scratch._current)
+	var listen := func(_instance: Variant) -> void: charged.append(scratch.current_bucket())
 	EventBus.event_activated.connect(listen)
 	event.step(STEP)
 	EventBus.event_activated.disconnect(listen)
 	t.check(is_equal_approx(event.age, age + STEP) and charged == [FrameRecord.PROCESS_REST]
-			and scratch._counters[FrameLedger.TIMER_CALLS] == 1,
+			and scratch.counter(FrameLedger.TIMER_CALLS) == 1,
 			"its step runs once a call and times nothing of its own (%s)" % [charged])
 	record.stop()
-	var spent := scratch._spent.duplicate()
+	var spent := scratch.spent_all()
 	event._process(STEP)
 	t.check(look.charged.size() == 2
-			and scratch._counters[FrameLedger.TIMER_CALLS] == 1 and scratch._spent == spent,
+			and scratch.counter(FrameLedger.TIMER_CALLS) == 1 and scratch.spent_all() == spent,
 			"once the record stops, an event made under it redraws once and times nothing")
 	untimed_event.free()
 	event.free()
@@ -566,7 +565,7 @@ class _BucketLook extends EventLook:
 		return look
 
 	func redraw_if_the_picture_changed() -> bool:
-		charged.append(record.ledger._current if record.on else -1)
+		charged.append(record.ledger.current_bucket() if record.on else -1)
 		return false
 
 ## A live event standing alone, its process callback left to the test, as `tests/test_acts.gd`
@@ -629,7 +628,9 @@ func _test_the_view_size(t) -> void:
 func _test_the_environment_carries_the_view(t) -> void:
 	var recorder := FrameRecorder.new()
 	recorder.ledger = FrameLedger.new(8, 16667)
-	recorder._run = GameState
+	recorder.save_on_exit = false
+	t.add_child(recorder)
+	recorder.setup(func() -> bool: return false, null, null, null, GameState, Sitting.new())
 	var environment: Dictionary = JSON.parse_string(recorder.report_text())["environment"]
 	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
 		t.check(environment.has(key), "the record's environment carries %s" % key)
