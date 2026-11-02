@@ -80,8 +80,10 @@ const MOMENT_OUTSIDE := &"OUTSIDE"
 ## no frame a load could stutter; `main`'s boot is the only thing that ever claims them.
 const MOMENT_UNMANAGED := &"unmanaged"
 
-## The region table this library's pages are cut by (`AtlasTable`), handed in at construction.
-var table: AtlasTableScript
+## The region table this library's pages are cut by: the baked one (`AtlasTable.baked()`), the
+## same object every geometry reader asks, so a page and the rects read off it can never come from
+## two tables.
+var _table: AtlasTableScript
 ## Group -> its `Page`, one per group the table names, built with the library.
 var _pages: Dictionary = {}
 ## Whether a boot sequence owns the loading moments. False until `claim_the_loading_moments()`
@@ -110,13 +112,12 @@ class Page extends RefCounted:
 	## The region names handed out over this page (`AtlasLibrary._textures`), dropped with it.
 	var handed_out: Array[StringName] = []
 
-## A library over `region_table`, the baked one unless a caller hands another, with nothing
-## acquired and no moments claimed.
-func _init(region_table: AtlasTableScript = AtlasTableScript.baked()) -> void:
-	table = region_table
-	for group: StringName in table.groups():
+## A library over the baked region table, with nothing acquired and no moments claimed.
+func _init() -> void:
+	_table = AtlasTableScript.baked()
+	for group: StringName in _table.groups():
 		var page := Page.new()
-		page.size = table.page_size(group)
+		page.size = _table.page_size(group)
 		_pages[group] = page
 
 # ------------------------------------------------------------------ the names ---
@@ -583,7 +584,7 @@ func region(name: StringName) -> AtlasTexture:
 	var cached: AtlasTexture = _textures.get(name)
 	if cached != null:
 		return cached
-	var group := table.group_of(name)
+	var group := _table.group_of(name)
 	if group == &"":
 		push_error("No baked region '%s'" % name)
 		return null
@@ -593,7 +594,7 @@ func region(name: StringName) -> AtlasTexture:
 		return null
 	var texture := AtlasTexture.new()
 	texture.atlas = page.texture
-	texture.region = Rect2(table.region_rect(name))
+	texture.region = Rect2(_table.region_rect(name))
 	# So a neighbour's pixel is never sampled across a region's own edge — see `PADDING`.
 	texture.filter_clip = true
 	_textures[name] = texture
