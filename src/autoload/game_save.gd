@@ -1,13 +1,15 @@
 class_name GameSave
-extends RefCounted
+extends Node
 ## Persists a run to disk so the game can be closed and picked up again — see docs/MECHANICS.md,
-## "Saving and resuming". Not an autoload: every member below is `static`, so the class is a
-## namespace for file I/O and format policy rather than an object with a lifetime of its own. **It is
+## "Saving and resuming". Not an autoload and no static holds its state: **one `GameSave` is
+## held by the `Sitting`**, which outlives the scene reloads that free the `main` using it, because
+## the web flush below, the operation ids and the file's path outlive those reloads. `main` hands it
+## the run's configuration each boot (`configure()`) and uses it; a suite builds its own, at a
+## scratch path (`GameSave.new(path)`), and hands it to the boot it drives (`main.use_save()`). The
+## pure policy and format (the `Result` words, `file_data()`, `moment_result()`) stay `static`. **It is
 ## handed the run it reads or writes** (`run: RunState`) on every call that touches one — `main` hands
 ## the run it plays, a test whichever run it built, and `RunState` itself for its checkpoint — and
-## names no autoload for it. Handed per call rather than held: the web flush below and the operation
-## ids outlive the scene reloads that free the `main` holding a run, and the run's own checkpoint
-## calls `run_data()` and `restore_run_data()` too. Lives beside `RunState`, the one thing it reads
+## names no autoload for it. Lives beside `RunState`, the one thing it reads
 ## and writes, rather than under `src/ui/` with the symbol that announces a write — a save module is
 ## data, the symbol is presentation, and the two only meet through `EventBus`.
 ##
@@ -39,7 +41,7 @@ extends RefCounted
 ## that reads both back.
 ##
 ## **One save, no slots.** `_DEFAULT_PATH` is the only file this ever reads or writes on a real
-## run; `set_path_override()` is the one seam a test uses to point at a scratch file instead, and
+## run; a suite hands the constructor a scratch path instead, and
 ## `uses_save()` is the one gate every read and write goes through so a dev flag, a headless boot
 ## or the test runner never touches either.
 ##
@@ -75,6 +77,9 @@ extends RefCounted
 ## build with the same format keeps finding an older build's save, and only a format change drops
 ## one.** The build string below is recorded for a person to read, not for this comparison.
 const FORMAT_VERSION := 1
+
+## The name `main` gives it under the `Sitting`, and what the next boot looks for there.
+const NODE_NAME := "GameSave"
 
 const _DEFAULT_PATH := "user://save.json"
 
@@ -169,39 +174,40 @@ window.nappySaveFlush = function (token, answer) {
 ## The two page-side objects a web flush needs, made once and **held for the page's lifetime**: a
 ## `JavaScriptObject` made by `create_callback()` stops answering the moment GDScript lets go of
 ## it, silently, so a callback held only by a local would never settle a flush.
-static var _window: JavaScriptObject = null
-static var _flush_answer: JavaScriptObject = null
+var _window: JavaScriptObject = null
+var _flush_answer: JavaScriptObject = null
 
 ## Every flush still waiting for its answer — see `Flushes`.
-static var _flushes := Flushes.new()
-## The id `_new_operation()` handed out last. Only ever grows, for the life of the process, so a
-## larger id is always a change begun later — which is how `SaveIndicator` knows the newest — and
-## no id is reused across the scene reloads a held restart and the day-14 hand-over make.
-static var _last_operation := 0
+var _flushes := Flushes.new()
+## The id `_new_operation()` handed out last. Only ever grows, for the life of this node. In the
+## game that is the life of the process, because the `Sitting` that holds the node is never freed
+## and `main` parks it across every reload; a second `GameSave` (every suite builds its own) starts
+## again at 0. A larger id is always a change begun later — which is how `SaveIndicator` knows the
+## newest — and no id is reused across the scene reloads a held restart and the day-14 hand-over make.
+var _last_operation := 0
 ## When the last frame ticked the flushes' clocks, in `Time.get_ticks_usec()`. Set when the first
 ## flush begins waiting, so the step it first counts is the time since then.
-static var _last_tick_usec := 0
+var _last_tick_usec := 0
 
-## Where a run redirected at a scratch file keeps its save, instead of the player's own — see the
-## **verify** skill's testing policy: an agent's run never lands in a saved game. `""` (the
-## default) means "the player's own".
-static var _path_override := ""
+## Where this save lives: the player's own (`_DEFAULT_PATH`) unless the one that makes it hands in
+## another. A suite makes its own with a scratch file and hands it to the boot it drives
+## (`main.use_save()`), so an agent's run never lands in a saved game — see the **verify** skill's
+## testing policy.
+var _file_path: String
 
-## Points every read, write and deletion at `path` instead of the player's own save, or back at it
-## with `""`. A run whose `RunConfig` is not headless (`configure()`) reaches that file through the
-## ordinary `write()`, `try_resume()` and `clear()`.
-static func set_path_override(path: String) -> void:
-	_path_override = path
+## A save at `file_path`; the game builds one with none, which is the player's own.
+func _init(file_path := _DEFAULT_PATH) -> void:
+	_file_path = file_path
 
-static func _path() -> String:
-	return _path_override if _path_override != "" else _DEFAULT_PATH
+func _path() -> String:
+	return _file_path
 
 ## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then,
 ## which `uses_save()` answers with no save at all: nothing reads or writes the player's save
 ## before the run has said which flags it carries.
-static var _config: RunConfig
+var _config: RunConfig
 
-static func configure(config: RunConfig) -> void:
+func configure(config: RunConfig) -> void:
 	_config = config
 
 ## The one function every read and write of the player's save goes through. Every checkout and
@@ -227,7 +233,7 @@ static func configure(config: RunConfig) -> void:
 ## `config.web_debug_flag_used` answers that — `false` for the ordinary release page everyone else
 ## gets, and for `?debug=1` alone with none of the bundle's own parameters named, since neither one
 ## is a run built any differently from the one every other visitor gets.
-static func uses_save() -> bool:
+func uses_save() -> bool:
 	if _config == null or _config.headless:
 		return false
 	if not _config.debug_build:
@@ -244,7 +250,7 @@ static func _debug_run_uses_save(args: PackedStringArray, no_save: bool) -> bool
 
 ## Whether a save file is currently on disk — read by `main.gd` for nothing gameplay-facing; a
 ## test's own way to check `clear()`/`write()` actually touched the filesystem.
-static func has_save() -> bool:
+func has_save() -> bool:
 	return FileAccess.file_exists(_path())
 
 ## Deletes the save, if there is one, and answers what the deletion came to — which is also what
@@ -260,7 +266,7 @@ static func has_save() -> bool:
 ## `Result.FAILED`, exactly once, and only if its object still exists then — `EventBus`
 ## `save_deletion_settled` says the same to anything listening, which is how a symbol outlives the
 ## `main` that raised it. `settled` is never called for any other answer.
-static func clear(settled := Callable()) -> Result:
+func clear(settled := Callable()) -> Result:
 	if not uses_save() or not has_save():
 		return Result.REFUSED
 	var operation := _new_operation()
@@ -279,7 +285,7 @@ static func clear(settled := Callable()) -> Result:
 
 ## The ungated mechanics `clear()` calls through. Returns whether the file is gone; a file that was
 ## not there to begin with is already gone, so that is `true` and writes nothing to the run log.
-static func _clear_now() -> bool:
+func _clear_now() -> bool:
 	if not has_save():
 		return true
 	var removed := DirAccess.remove_absolute(ProjectSettings.globalize_path(_path())) == OK
@@ -298,7 +304,7 @@ static func _clear_now() -> bool:
 ## is called with `Result.CONFIRMED` or `Result.FAILED`, exactly once, and only if its object still
 ## exists then. `settled` is never called for any other answer. **The symbol is answered by the bus,
 ## not by `settled`**, because a scene reload may free the caller before the browser answers.
-static func write(run: RunState, day_under_way: bool, settled := Callable()) -> Result:
+func write(run: RunState, day_under_way: bool, settled := Callable()) -> Result:
 	if not uses_save() or _run_has_ended(run):
 		return Result.REFUSED
 	var operation := _new_operation()
@@ -335,7 +341,7 @@ static func moment_result(done: bool, on_web: bool, persistent: bool) -> Result:
 
 ## A fresh id for one write or deletion — see the class doc. Called only for a change that is
 ## announced, never for a refused one, which announces nothing.
-static func _new_operation() -> int:
+func _new_operation() -> int:
 	_last_operation += 1
 	return _last_operation
 
@@ -362,7 +368,7 @@ static func _run_has_ended(run: RunState) -> bool:
 ## gap is why every write carries the whole run rather than a change to it: the next write lands
 ## during the next ordinary session, long before the following quit, so a save that never reached
 ## IndexedDB on one close is caught up by the time the game is closed again.
-static func _flush(operation: int, settled: Callable, deleting := false) -> void:
+func _flush(operation: int, settled: Callable, deleting := false) -> void:
 	var token := _flushes.register(operation, settled, deleting)
 	_start_the_clock()
 	if _flush_answer == null:
@@ -378,16 +384,16 @@ static func _flush(operation: int, settled: Callable, deleting := false) -> void
 
 ## Starts counting frames for the flushes' timeout, if no flush is already being counted. The
 ## `SceneTree`'s `process_frame` fires every frame whether or not the tree is paused, so a flush
-## started as the summary pauses the tree still times out, and it needs no node of its own to
-## survive the held restart's scene reload.
-static func _start_the_clock() -> void:
+## started as the summary pauses the tree still times out. The connection is on this node, which
+## survives the held restart's scene reload because `main` parks it with the `Sitting`.
+func _start_the_clock() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree == null or tree.process_frame.is_connected(_tick):
 		return
 	_last_tick_usec = Time.get_ticks_usec()
 	tree.process_frame.connect(_tick)
 
-static func _tick() -> void:
+func _tick() -> void:
 	var now := Time.get_ticks_usec()
 	var elapsed := float(now - _last_tick_usec) / 1000000.0
 	_last_tick_usec = now
@@ -399,7 +405,7 @@ static func _tick() -> void:
 
 ## The flushes waiting for the browser's answer, as a table of their own: **registered** when a
 ## write or deletion hands its change to the browser, **answered** by the page's callback or
-## **timed out** by the frames that pass, whichever comes first. Apart from `GameSave`'s statics
+## **timed out** by the frames that pass, whichever comes first. Apart from `GameSave`'s fields
 ## and the `JavaScriptBridge`, so a desktop run, or a test, drives the whole of a flush's life
 ## by registering one and giving it the page's answer or the frames' time: `GameSave` holds the one
 ## the game uses, and each flush is keyed by the operation id of its change, which is also the token
@@ -485,7 +491,7 @@ class Flushes extends RefCounted:
 ##
 ## Returns whether the file was written and closed; on the web that is not yet a kept save — see
 ## `write()`.
-static func _write_now(run: RunState, day_under_way: bool) -> bool:
+func _write_now(run: RunState, day_under_way: bool) -> bool:
 	var file := FileAccess.open(_path(), FileAccess.WRITE)
 	if not file:
 		push_warning("GameSave: could not open %s for writing" % _path())
@@ -526,11 +532,11 @@ const FILE_KEYS: Array[String] = [
 ## simply not existing. `main` calls this once a boot, before anything can end the run, and a
 ## suite that ends a run calls it too; connecting twice changes nothing. (`main._restart_run()`
 ## also clears the save, for the held restart that abandons a run before it ends on its own.)
-static func clear_when_a_run_ends() -> void:
+func clear_when_a_run_ends() -> void:
 	if not EventBus.run_ended.is_connected(_on_run_ended):
 		EventBus.run_ended.connect(_on_run_ended)
 
-static func _on_run_ended(_ending: GameEnums.Ending) -> void:
+func _on_run_ended(_ending: GameEnums.Ending) -> void:
 	clear()
 
 ## Tries to resume a run into `run`. Returns `{}` when there is nothing to resume — no file, a
@@ -539,7 +545,7 @@ static func _on_run_ended(_ending: GameEnums.Ending) -> void:
 ## caller (`main._ready()`) still owns what a `true` costs: the same lost-day path an ordinary
 ## loss takes, through `RunCalendar.finish_day()`, so this function only ever reads and
 ## restores, never spends a nerve.
-static func try_resume(run: RunState) -> Dictionary:
+func try_resume(run: RunState) -> Dictionary:
 	if not uses_save():
 		return {}
 	return _read_now(run)
@@ -551,7 +557,7 @@ static func try_resume(run: RunState) -> Dictionary:
 ## not valid JSON, JSON that is not an object, a `format_version` this build does not carry, or a
 ## `"state"` missing a field this build's own `RunState.save_snapshot()` writes — see
 ## `RunState.snapshot_is_complete()`. Only past every one of those does `run` actually change.
-static func _read_now(run: RunState) -> Dictionary:
+func _read_now(run: RunState) -> Dictionary:
 	var path := _path()
 	if not FileAccess.file_exists(path):
 		return {}
@@ -599,7 +605,7 @@ static func _apply(run: RunState, data: Dictionary) -> Dictionary:
 ## so no node remembers anything after the checkpoint, and the run it boots on is exactly what a
 ## load would give it, on every run, a dev-flagged or headless one with no save at all included.
 ## Never reads the file, so a write the storage did not keep cannot hand the reload an older run.
-static func load_in_memory(run: RunState) -> void:
+func load_in_memory(run: RunState) -> void:
 	var parser := JSON.new()
 	if parser.parse(JSON.stringify(file_data(run, false))) != OK:
 		push_error("GameSave: the run could not be written out as JSON")

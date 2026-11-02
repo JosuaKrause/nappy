@@ -18,15 +18,20 @@ func _scripted() -> RunConfig:
 			"", true)
 func _ready() -> void:
 	var config := RunConfig.at_boot()
-	GameSave.configure(config)
+	var save := GameSave.new()
+	save.configure(config)
 	if config.is_rig != config.recipe_scripted:
+		save.free()
 		get_tree().quit(12)
 		return
 	# The desktop policy is checked independently of headless's unconditional no-save gate.
 	if GameSave._debug_run_uses_save(config.active_args, false):
+		save.free()
 		get_tree().quit(13)
 		return
-	if GameSave.uses_save():
+	var saves := save.uses_save()
+	save.free()
+	if saves:
 		get_tree().quit(14)
 		return
 	if "--probe-camera" in OS.get_cmdline_user_args():
