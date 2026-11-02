@@ -14,10 +14,10 @@ extends RefCounted
 ##
 ## - **the director's contact placements**: the day's mark and its guard, the task's contact and
 ##   its guard (a door, a swing, a mast, a roadblock, the neighbor), each placed again from a
-##   fresh stream (`_place()`, so `_pick_reachable()` and `_pick_near()`), and the guard spots
-##   asked directly from a few places she may stand (`_guard_position()`,
+##   fresh stream (`place_contact()`, so `_pick_reachable()` and `_pick_near()`), and the guard spots
+##   asked directly from a few places she may stand (`guard_position()`,
 ##   `_roadblock_guard_spot()`), with and without her screen counted;
-## - **the relocation and the extras**: `_nearest_alley_within()`, `_nearest_to_the_mark()`,
+## - **the relocation and the extras**: `nearest_alley_within()`, `_nearest_to_the_mark()`,
 ##   `_door_can_be_touched()`, the neighbor's start (`_send_the_neighbor_home()`), the mast added
 ##   near the mark (`_add_a_mast_near()`) and day 13's roadblock placed near it
 ##   (`_place_the_roadblock_near()`);
@@ -132,7 +132,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 	printed += 1
 	# The task placed again from a fresh stream, as the day's order draws it.
 	var again := _rng(seed_value, day, "placed-again")
-	var placed := director._place(task, again, mark)
+	var placed := director.place_contact(task, again, mark)
 	_print("%s task %s placed again %s rng %d fell back %s" % [label, task.index,
 			_point(placed), again.state, director._fell_back])
 	printed += 1
@@ -155,7 +155,7 @@ func _the_guard_spots(city: City, director: ResistanceDirector, label: String, a
 			if on_screen and her != Vector2.INF:
 				city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 						Tuning.VIEW_HALF_EXTENT * 2.0), null)
-			var spot := director._guard_position(rng, at, for_mark, her, on_screen)
+			var spot := director.guard_position(rng, at, for_mark, her, on_screen)
 			_print("%s %s guard spot her %s screen %s -> %s rng %d" % [label,
 					"mark" if for_mark else "roadblock", _point(her), on_screen, _point(spot),
 					rng.state])
@@ -177,7 +177,7 @@ func _the_relocation(city: City, director: ResistanceDirector, player: Stroller,
 	var spots := _spots(city)
 	for spot in spots:
 		_stand(city, player, spot)
-		var found := director._nearest_alley_within(spot)
+		var found := director.nearest_alley_within(spot)
 		_print("%s relocation from %s -> %s" % [label, _point(spot), _point(found)])
 		printed += 1
 	_stand(city, player, mark)

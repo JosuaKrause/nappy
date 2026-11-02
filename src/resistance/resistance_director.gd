@@ -76,10 +76,10 @@ const SEEN_DISTANCE := 150.0
 ## while stopping to read a wall would. Felt, open to overturn.
 const SEEN_DWELL_SECONDS := 1.0
 
-## How many bearings `_draw_guard_position` tries before giving up on the day's guard. A
+## How many bearings `draw_guard_position` tries before giving up on the day's guard. A
 ## `barricade`-scale alley is 64px wide against a band that can reach past 150px out — most
 ## bearings land in the building on either side of it — so this is generous rather than tight;
-## what bounds it at all is that a draw has to stop somewhere; see `_draw_guard_position`'s own
+## what bounds it at all is that a draw has to stop somewhere; see `draw_guard_position`'s own
 ## doc for the fallback when it does.
 const TRAP_DRAW_LIMIT := 24
 
@@ -416,7 +416,7 @@ var _pinned_mark := Vector2.INF
 var _pinned_neighbor := Vector2.INF
 
 ## A scene's mark at `_pinned_mark`, on the same ground the day's own draw keeps a mark to
-## (`_pick_reachable()` over `_mark_tiles()`): the centre of the tile one step in from an alley's
+## (`_pick_reachable()` over `mark_tiles()`): the centre of the tile one step in from an alley's
 ## mouth that is legal, unobstructed ground reachable from home. `Vector2.INF`, with the reason recorded, otherwise —
 ## a recipe's pin is refused rather than moved.
 func _the_pinned_mark() -> Vector2:
@@ -459,7 +459,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		no_recorded_scar = _recorded_scar(_step.task_event_id) == Vector2.INF
 		scar_instance = _ride_the_recorded_scar(_step.task_event_id)
 		if no_recorded_scar:
-			# A run with no recorded scar still has a burnt building to go to: `_place()` picks
+			# A run with no recorded scar still has a burnt building to go to: `place_contact()` picks
 			# a front day 3's fire could have caught on, and `_burn_a_front_for_the_task()`
 			# below records the scar there and burns the building behind it — never a step with
 			# nowhere to go, and never bare sidewalk.
@@ -490,7 +490,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	elif placed_row:
 		at = placed_row.global_position
 	else:
-		at = _place(_step, _rng, mark)
+		at = place_contact(_step, _rng, mark)
 	if at == Vector2.INF:
 		# A scene's task says why in what `start_recipe_task()` answers instead.
 		if not _scene_task:
@@ -802,7 +802,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		_guard = null
 	else:
 		_task_guard = null
-	var guard_at := _guard_position(rng, at, for_mark, her, on_screen_matters, reach)
+	var guard_at := guard_position(rng, at, for_mark, her, on_screen_matters, reach)
 	var placement := "band"
 	if for_mark and not _through_alley_span(at).is_empty():
 		placement = "two-thirds in"
@@ -829,10 +829,10 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 ## Where `_maybe_set_a_trap()` stands a guard for the contact at `at`, without spawning him: for a
 ## chalk mark, two-thirds through its alley (`_guard_two_thirds_through()`), at a courtyard's inner
 ## end (`_draw_guard_position_near_far_mouth()`), or else the whole-circle band
-## `_draw_guard_position()` draws; for the roadblock, `_roadblock_guard_spot()`, in its band with a
+## `draw_guard_position()` draws; for the roadblock, `_roadblock_guard_spot()`, in its band with a
 ## clear line to it. All measured from the contact's own `reach` (see `_maybe_set_a_trap()`).
 ## `Vector2.INF` when no candidate qualifies. Split out so a rig can ask where he would stand.
-func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, her: Vector2,
+func guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, her: Vector2,
 		on_screen_matters: bool, reach := ContactPoint.REACH) -> Vector2:
 	if not for_mark:
 		return _roadblock_guard_spot(rng, at, reach, her, on_screen_matters)
@@ -848,7 +848,7 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 	if far != Vector2.INF:
 		return _draw_guard_position_near_far_mouth(rng, at, far, min_distance, max_distance,
 				her, her_refuse_within, on_screen_matters)
-	return _draw_guard_position(rng, at, Vector2.INF, min_distance, max_distance,
+	return draw_guard_position(rng, at, Vector2.INF, min_distance, max_distance,
 			her, her_refuse_within, on_screen_matters)
 
 ## **Where the roadblock's guard stands**, for a roadblock whose body is at `body`, touched from
@@ -1286,7 +1286,7 @@ var _chaser := pursuer_walker()
 ## a building is an invisible fatal spot rather than a cosmetic one.
 ##
 ## **Used for a chalk mark in neither a through-alley nor a courtyard's passage**, drawn from the
-## whole circle: `_guard_position()` sends a mark's own guard two-thirds through its alley or to
+## whole circle: `guard_position()` sends a mark's own guard two-thirds through its alley or to
 ## `_draw_guard_position_near_far_mouth()` first, and the roadblock's guard to
 ## `_roadblock_guard_spot()`. The director always passes `toward` as `Vector2.INF` (a rig may pass
 ## a point to lean the bearing to the half-circle facing it). An `ALLEY` tile by preference, since the
@@ -1305,7 +1305,7 @@ var _chaser := pursuer_walker()
 ## to keep away from — the bare-map rigs in `tests/test_resistance_*.gd` that call this directly —
 ## which never rejects anything on either count; a dawn placement passes the doorstep and `false`
 ## (`_begin_step()`).
-func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vector2,
+func draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vector2,
 		min_distance: float, max_distance: float, her: Vector2 = Vector2.INF,
 		her_refuse_within: float = 0.0, on_screen_matters: bool = false) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground(GUARD_BOX)
@@ -1356,7 +1356,7 @@ func _through_alley_span(at: Vector2) -> Array[Vector2]:
 	for rect in _map.alley_rects:
 		if not rect.has_point(tile):
 			continue
-		var ends := _alley_ends(at)
+		var ends := alley_ends(at)
 		if ends.size() < 2:
 			return span
 		var axis := (ends[1] - ends[0]).normalized()
@@ -1380,7 +1380,7 @@ func _depth_of_the_mark(at: Vector2, near: Vector2, axis: Vector2) -> float:
 ## reason, and as far from the mark as when it stood on the mouth. Where that point is
 ## `notice_within() + ContactPoint.REACH` (216px) or more from the mark, a touch of the mark
 ## from its own end never wakes him; in an alley too short for both — every one-block alley: a
-## mark stands one tile in from its end tile (`_mark_tiles()`), 48px in, so he stands about
+## mark stands one tile in from its end tile (`mark_tiles()`), 48px in, so he stands about
 ## 155px from it — he still stands two-thirds in, and reading the mark may wake him:
 ## *"Two-thirds wins"* (quiet-yak, inbox #471), which overturns M213's floor of 176px for those
 ## alleys.
@@ -1430,7 +1430,7 @@ func _guard_two_thirds_through(at: Vector2, span: Array[Vector2], min_distance: 
 ## Where the guard a mark at `at` sets would stand before anything refused his ground: two-thirds
 ## through a through-alley (`_guard_two_thirds_through()`), the courtyard's inner end past a
 ## passage, `Vector2.INF` off an alley. What a relocation asks the screen about
-## (`_nearest_alley_within()`), and what a guard standing by a mark is measured against.
+## (`nearest_alley_within()`), and what a guard standing by a mark is measured against.
 func guard_spot(at: Vector2) -> Vector2:
 	var span := _through_alley_span(at)
 	if span.is_empty():
@@ -1528,7 +1528,7 @@ func _drawing_shows(row: EventDef, feet: Vector2) -> bool:
 ## `ContactPoint.REACH` of a mark in it, so the robber stands in the courtyard beyond. *(2026-09-27,
 ## the player: "robber at inner end of the courtyard is fine. I encountered it in game and it worked
 ## well for me. you just have to lure the robber out first.")*
-func _alley_ends(at: Vector2) -> Array[Vector2]:
+func alley_ends(at: Vector2) -> Array[Vector2]:
 	var ends: Array[Vector2] = []
 	if not _map:
 		return ends
@@ -1607,13 +1607,13 @@ func _courtyard_inner_end(at: Vector2, entrance: Vector2i) -> Vector2:
 	return Vector2.INF
 
 ## The far end of the mark's alley from `at` — the far end tile of a through-alley, or the inner
-## end of a courtyard past a passage (`_alley_ends()`) — or `Vector2.INF` when `at` is on no
+## end of a courtyard past a passage (`alley_ends()`) — or `Vector2.INF` when `at` is on no
 ## `ALLEY` ground, which a mark never is and the roadblock always is. A courtyard
 ## mark's guard stands there, or as near it as the ground allows
 ## (`_draw_guard_position_near_far_mouth()`); a through-alley mark's stands two-thirds through
 ## (`_guard_two_thirds_through()`).
 func _far_alley_mouth(at: Vector2) -> Vector2:
-	var ends := _alley_ends(at)
+	var ends := alley_ends(at)
 	return ends[1] if not ends.is_empty() else Vector2.INF
 
 ## Where a step's contact — or, for an `EVENT`/`SCAR`-fallback perform step, the event it rides
@@ -1630,7 +1630,7 @@ func _far_alley_mouth(at: Vector2) -> Vector2:
 ## district door, day 12's swing park and the last night's station door are drawn from their own
 ## pools as before, day 10's neighbor walks home from wherever `_send_the_neighbor_home()` starts
 ## them, and day 8's burnt building is where day 3's fire burned whenever the run has one.
-func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
+func place_contact(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 		mark := Vector2.INF) -> Vector2:
 	if step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR:
 		# The same pool the day's planning kept a route to (`target_ground()`), so the draw is
@@ -1650,15 +1650,15 @@ func _place(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 	if step.is_pickup:
 		if _pinned_mark != Vector2.INF:
 			return _the_pinned_mark()
-		return _pick_reachable(_mark_tiles(), rng)
+		return _pick_reachable(_marks(), rng)
 	var candidates: Array[Vector2i] = []
 	for type in step.placement:
 		candidates.append_array(_map.tiles_of_type(type as GameEnums.TileType))
 	return _pick_near(candidates, rng, mark)
 
-## **A chalk mark's alley is chosen by its mouth**: every mouth the dawn draw (`_place()`) and every
-## relocation (`_nearest_alley_within()`) may choose, the mark standing one tile in from it
-## (`_mark_tiles()`). *(2026-10-03, quiet-yak, inbox #486, the player, asked whether a mark may sit
+## **A chalk mark's alley is chosen by its mouth**: every mouth the dawn draw (`place_contact()`) and every
+## relocation (`nearest_alley_within()`) may choose, the mark standing one tile in from it
+## (`mark_tiles()`). *(2026-10-03, quiet-yak, inbox #486, the player, asked whether a mark may sit
 ## in the middle of its alley: "Mouth only".)* A through-alley's mouths are
 ## its end tiles along its long axis, both of them across its two-tile width
 ## (`CityMap.alley_rects`), so four to an alley; a courtyard passage's is its tile that opens onto
@@ -1683,7 +1683,14 @@ func _alley_mouths() -> Array[Vector2i]:
 ## alley so I actually have to enter the alley to activate it".)* Reachability, legal ground and the
 ## tiles a completed step used (`RunState.facts.completed_resistance_alley_tiles`) are all asked of
 ## these tiles. In `_alley_mouths()`'s order, so a seeded draw over them is the same every time.
-func _mark_tiles() -> Array[Vector2i]:
+## A copy, since the director keeps its own list for every later draw and relocation; the list is
+## a few hundred tiles at most, copied once per asking and never per frame (the director's own
+## readers use `_marks()`).
+func mark_tiles() -> Array[Vector2i]:
+	return _marks().duplicate()
+
+## The director's own list of `mark_tiles()`, built once per map.
+func _marks() -> Array[Vector2i]:
 	_alley_mouths()
 	return _mark_tiles_of_mouths
 
@@ -2075,7 +2082,7 @@ static func station_door_point(map: CityMap) -> Vector2:
 
 ## Where day 11's task points: beside the foot of one of today's live loudspeaker masts
 ## (`EventManager.mast_foot()`'s own point, the plan's position), drawn by the day's RNG among the
-## masts she can reach, weighted toward the nearer ones (`_weighted_mast_index()`). `Vector2.INF`
+## masts she can reach, weighted toward the nearer ones (`weighted_mast_index()`). `Vector2.INF`
 ## when no mast stands near her and none can be put up there, and none stands anywhere else either —
 ## from `Tuning.MAST_FIRST_DAY` on, only a day whose holds took every site, or a scene recipe, which
 ## installs no mast it does not name.
@@ -2091,7 +2098,7 @@ static func station_door_point(map: CityMap) -> Vector2:
 ## after a won attempt could meet; the draw is over the plans in the day's own order, so the same
 ## day draws the same mast every time.
 ##
-## **Near the mark she read** (`mark`; `_place()` says why): only the masts she reaches by following
+## **Near the mark she read** (`mark`; `place_contact()` says why): only the masts she reaches by following
 ## a path from where she read it to the edge of the circle round her (`_follow_the_paths_to_the_edge()`,
 ## the tile beside the foot inside the circle or on its edge) are drawn among. **When none is, a mast is queued as the next event the day generates** near her
 ## (`_add_a_mast_near()`, `EventManager.queue_a_mast()`) — the city's six fixed sites (M180's "the
@@ -2152,7 +2159,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 			near_beside.append(beside[nearest])
 		offered = near_plans
 		beside = near_beside
-	var index := _weighted_mast_index(beside, rng)
+	var index := weighted_mast_index(beside, rng)
 	_mast_id = offered[index].mast_id
 	return offered[index].position
 
@@ -2220,7 +2227,7 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 ## pool — so the draw is still random and still exactly reproducible for the same seed and the same
 ## route: her position at the moment of the draw is itself determined by the route that got her
 ## there.
-func _weighted_mast_index(beside: Array[Vector2i], rng: RandomNumberGenerator) -> int:
+func weighted_mast_index(beside: Array[Vector2i], rng: RandomNumberGenerator) -> int:
 	var from := _player_position()
 	if from == Vector2.INF:
 		from = _map.doorstep_world_position()
@@ -2918,12 +2925,12 @@ func _track_sight_and_reposition(delta: float) -> void:
 	var here := _player.global_position
 	if here.distance_to(at) <= NOTICE_RADIUS:
 		return
-	var nearest := _nearest_alley_within(here)
+	var nearest := nearest_alley_within(here)
 	if nearest == Vector2.INF:
 		return
 	_move_the_mark(nearest)
 
-## The nearest mark tile to `here` (`_mark_tiles()`, one step in from an alley mouth), a through-alley's
+## The nearest mark tile to `here` (`mark_tiles()`, one step in from an alley mouth), a through-alley's
 ## or a courtyard passage's, that is not closed, is walkable, and is not held, on the home block, inside a walled-off crossing alley,
 ## standing on a solid event body, or sealed off from home by the day's whole obstruction (see
 ## `_pick_reachable`'s own doc — the relocation is the same placement question as the initial
@@ -2962,14 +2969,21 @@ func _track_sight_and_reposition(delta: float) -> void:
 ## relocation never lands where its guard could only be placed in view or not at all. Both are
 ## asked only of a tile nearer than the best found so far, which keeps this cheap enough for every
 ## frame.
-func _nearest_alley_within(here: Vector2) -> Vector2:
+func nearest_alley_within(here: Vector2) -> Vector2:
+	return nearest_alley_among(_marks(), here)
+
+## `nearest_alley_within()` over the mark tiles it is handed instead of all of them, the way
+## `draw_reachable()` is handed its candidates: every refusal above is asked of each, so a caller
+## that hands in one tile learns whether the game would ever relocate a mark onto it (`Vector2.INF`
+## when not).
+func nearest_alley_among(candidates: Array[Vector2i], here: Vector2) -> Vector2:
 	var ground := _spawn_siting.ask_of_ground()
 	var used := _run.facts.completed_resistance_alley_tiles
 	var nearest := Vector2.INF
 	var nearest_distance := NOTICE_RADIUS
 	var nearest_any := Vector2.INF
 	var nearest_any_distance := NOTICE_RADIUS
-	for tile in _mark_tiles():
+	for tile in candidates:
 		var world := _map.tile_to_world(tile)
 		var distance := here.distance_to(world)
 		var unused := tile not in used
@@ -3019,7 +3033,7 @@ func _on_contact_completed(step_index: int) -> void:
 	_run.complete_resistance_step(step_index, step == null or step.grants_progress)
 	# Only a pickup's mark ever stands on a mark tile (an `ALLEY` tile, or a courtyard tile past a
 	# one-tile passage) — every other kind of contact sits on a rider or a computed point — so this is the one completion worth recording for
-	# `_pick_reachable()`/`_nearest_alley_within()` to avoid reusing later (M177).
+	# `_pick_reachable()`/`nearest_alley_within()` to avoid reusing later (M177).
 	if step and step.is_pickup and _contact:
 		_run.facts.record_completed_alley_tile(_map.world_to_tile(_contact.global_position))
 	if step and step.is_pickup:

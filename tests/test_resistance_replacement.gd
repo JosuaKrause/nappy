@@ -6,9 +6,8 @@ extends "res://tests/resistance_rig.gd"
 ## read off the street (`ResistanceDirector.contact_position()`), the neighbor and the raid off the
 ## street and the happenings' public queries (`ResistanceHappenings.raid_vans()`, `raid_beat()`),
 ## and what the director did on a tick off the run's trace (`RunTrace.recording()`). Three tests
-## still call the director's own draws (`_nearest_alley_within()`, `_guard_position()`,
-## `_draw_guard_position()`, the mouths it keeps) over bare maps and a run of their own: they move
-## with a public form of those draws on `ResistanceDirector`.
+## call the director's own draws (`nearest_alley_within()`, `guard_position()`,
+## `draw_guard_position()`) over bare maps and a run of their own.
 func run(t) -> void:
 	t.gives_back_observers()
 	_test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t)
@@ -117,7 +116,7 @@ func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 ## view (`_sight` for the notice, the siting's `DRAWING_OFF_THE_VIEW` for placing) answering true near `mark_at`
 ## alone reproduces "on screen" there without a viewport, while leaving
 ## `far_alley` — the relocation target, over `NOTICE_RADIUS` away — answering false, the ground
-## `_nearest_alley_within()` needs to still offer a candidate (never a tile she can currently
+## `nearest_alley_within()` needs to still offer a candidate (never a tile she can currently
 ## see, brisk-wombat's "the mark and its robber never appear in front of her"); standing
 ## at `far_alley` (beyond `NOTICE_RADIUS`, so certainly beyond the far narrower `SEEN_DISTANCE`)
 ## reproduces the distance. A single frame is enough to show the old bug is gone: the old rule
@@ -211,7 +210,7 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t) -> void:
 ## mark relocating right up to where she stands (or a dawn placement near a wandering player)
 ## could put him inside his own `EventDef.notice`, or worse `inner_radius` (a `hard_fail` with no
 ## warning), of wherever she actually is unless the draw is also asked to refuse that. Checked
-## directly against `_draw_guard_position()`, the draw the roadblock's guard uses, with
+## directly against `draw_guard_position()`, the draw the roadblock's guard uses, with
 ## `her` forced onto the mark itself — the closest a real guard's own band ever gets to her.
 func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
@@ -232,7 +231,7 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 			var mark := map.tile_to_world(tile)
 			for _attempt in 3:
 				checked += 1
-				var guard_at := director._draw_guard_position(rng, mark, Vector2.INF,
+				var guard_at := director.draw_guard_position(rng, mark, Vector2.INF,
 						min_distance, max_distance, mark, robbery.notice_within())
 				if guard_at == Vector2.INF:
 					continue
@@ -246,9 +245,9 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 ## brisk-wombat, both halves: *"I just had one appear out of nowhere while I was walking through an
 ## alley and then a robber also appeared out of nowhere and instakilled me."* She stands on every
 ## other through-alley tile of two cities; the screen is the unrotated 640x360 world px around her
-## (`Tuning.VIEW_HALF_EXTENT`). Wherever `_nearest_alley_within()` relocates the mark, no part of
+## (`Tuning.VIEW_HALF_EXTENT`). Wherever `nearest_alley_within()` relocates the mark, no part of
 ## its 32px picture is on that screen, and the guard `_move_the_mark()` stands for it
-## (`_guard_position()`, as `_maybe_set_a_trap()` calls it for a relocation) exists and shows no
+## (`guard_position()`, as `_maybe_set_a_trap()` calls it for a relocation) exists and shows no
 ## part of his 22x44px body on it either. The guard the roadblock's task sets at its contact when
 ## she reads the mark (`for_mark` false), asked of a contact just past the edge of her screen,
 ## never shows either.
@@ -272,13 +271,13 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
 			var her := map.tile_to_world(through[i])
 			screen.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
 			director.set_sight(screen.sees)
-			var mark := director._nearest_alley_within(her)
+			var mark := director.nearest_alley_within(her)
 			if mark != Vector2.INF:
 				relocations += 1
 				t.check(not _box_on_screen(mark, Vector2(16.0, 16.0), her),
 						"seed %d: from %s, no part of the relocated mark at %s is on screen"
 						% [seed_value, through[i], map.world_to_tile(mark)])
-				var guard_at := director._guard_position(rng, mark, true, her, true)
+				var guard_at := director.guard_position(rng, mark, true, her, true)
 				t.check(guard_at != Vector2.INF,
 						"seed %d: the mark relocated to %s is guarded"
 						% [seed_value, map.world_to_tile(mark)])
@@ -288,7 +287,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
 							"seed %d: from %s, no part of the relocated mark's guard at %s is on screen"
 							% [seed_value, through[i], map.world_to_tile(guard_at)])
 			var contact := her + Vector2(Tuning.VIEW_HALF_EXTENT.x + 40.0, 0.0)
-			var task_guard := director._guard_position(rng, contact, false, her, true)
+			var task_guard := director.guard_position(rng, contact, false, her, true)
 			if task_guard != Vector2.INF:
 				tasks += 1
 				t.check(not _box_on_screen(task_guard + Vector2(0.0, -22.0), Vector2(11.0, 22.0),
@@ -351,11 +350,12 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
 ## player: "off screen is not the same as visible -- the corners get removed for visible not for
 ## off screen" · "I don't want any pop in")*. Joystick scheme, asked through the day's own view as
 ## `main` wires it (`EventManager.sees()` for the notice, `EventManager.on_screen()` for placing):
-## **a relocation whose only candidate lies under the bottom-left corner is refused.** Each alley
-## mouth of the test city in turn is made the only candidate, its mark's picture laid at several
-## places inside the corner, and every case kept where it is the answer both with no screen test
-## at all (legal ground, within `NOTICE_RADIUS`) and with the visible area alone (its guard's spot
-## is under the corner or out of the view too) — the case `main`'s wiring has to refuse.
+## **a relocation to a mouth under the bottom-left corner is refused.** Each alley mouth of the
+## test city in turn is handed to the director as the only candidate (`nearest_alley_among()`), its
+## mark's picture laid at several places inside the corner, and every case is kept where it is the
+## answer both with no screen test at all (legal ground, within `NOTICE_RADIUS`) and with the
+## visible area alone (its guard's spot is under the corner or out of the view too) — the case
+## `main`'s wiring has to refuse.
 func _test_nothing_appears_under_a_covered_corner(t) -> void:
 	var director := _on_day_six(t)
 	var events := _city.events
@@ -364,13 +364,9 @@ func _test_nothing_appears_under_a_covered_corner(t) -> void:
 	var corner_at := corner.position * scale
 	var corner_size := corner.size * scale
 	var refused := 0
-	var all_marks := director._mark_tiles().duplicate()
-	for tile: Vector2i in all_marks:
+	for tile: Vector2i in director.mark_tiles():
 		var mark := _city.map.tile_to_world(tile)
 		var only: Array[Vector2i] = [tile]
-		director._mouths = only
-		director._mark_tiles_of_mouths = only
-		director._mouths_of = _city.map
 		# The mark's centre at these shares of the corner, its whole picture inside it.
 		for share: Vector2 in [Vector2(0.2, 0.8), Vector2(0.5, 0.5), Vector2(0.8, 0.8),
 				Vector2(0.2, 0.2), Vector2(0.8, 0.2)]:
@@ -379,7 +375,7 @@ func _test_nothing_appears_under_a_covered_corner(t) -> void:
 			# With the view nowhere near, the only mouth is the answer.
 			events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
 					Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
-			if director._nearest_alley_within(her).distance_to(mark) > 0.5:
+			if director.nearest_alley_among(only, her).distance_to(mark) > 0.5:
 				continue
 			events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
 			# Only a mouth the visible area alone would not refuse (its picture and its
@@ -399,8 +395,8 @@ func _test_nothing_appears_under_a_covered_corner(t) -> void:
 				continue
 			refused += 1
 			director.set_sight(events.sees)
-			t.check(director._nearest_alley_within(her) == Vector2.INF,
-					"the only alley mouth, %s, under the covered corner is refused (%s of it)"
+			t.check(director.nearest_alley_among(only, her) == Vector2.INF,
+					"the only alley mouth %s under the covered corner is refused (%s of it)"
 					% [tile, share])
 	t.check(refused > 0, "relocations under the covered corner were asked (%d)" % refused)
 	director.free()

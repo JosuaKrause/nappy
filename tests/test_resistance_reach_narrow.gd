@@ -83,7 +83,7 @@ const NARROW_TARGET_SEEDS: Array[int] = [196838, 355218, 323542, 252271]
 ## **The day keeps a route to its narrow resistance target** (`docs/CITY.md`, "Guarantees"): day
 ## 9's door, day 12's swing and the power station's front door, planned through the real day
 ## order —
-## `City.start_day()`, `EventManager.start_day()`, then the director's own `_place()` of the day's
+## `City.start_day()`, `EventManager.start_day()`, then the director's own `place_contact()` of the day's
 ## step — and asked of an independent flood (`_day_reachability()`). Two things per day: some tile
 ## of the pool is legal, unobstructed and reachable from home, and the tile the director actually
 ## picks is one of them.
@@ -140,7 +140,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 				t.add_child(director)
 				director.set_process(false)
 				director.setup(city, city.map)
-				var at := director._place(step, _production_rng(seed_value, day, "resistance"))
+				var at := director.place_contact(step, _production_rng(seed_value, day, "resistance"))
 				var at_tile := city.map.world_to_tile(at) if at != Vector2.INF else Vector2i(-1, -1)
 				# The station's contact stands on its door, on the facade, and is touched from the
 				# pavement straight below it, which is the ground asked about.
