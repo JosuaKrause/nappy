@@ -6,7 +6,8 @@ the statics read across the tree.
 
 **Built.**
 - `Sprites._base_transform` is gone: `Sprites.set_base_transform(canvas, base)` records the base
-  transform on the canvas item being drawn on (identity removes it), and `draw_standing()` and
+  transform on the canvas item being drawn on (identity included, so no draw inserts or erases an
+  entry), and `draw_standing()` and
   `mirrored_transform(canvas, at)` read it back from their own canvas, so one canvas's transform
   never reaches another's draw. `CrowdAgent`, `EventLook` and `EntityHalo` set it on themselves.
 - `DrawnView._frame`, `_viewport_id` and `_box` are gone: the frame's on-screen box is held on the
@@ -21,6 +22,10 @@ the statics read across the tree.
   read by every halo built across the crowd and the events.
 - The layer map loses its three static exceptions for these, and the runner's shared-state list its
   six entries.
+
+**Not measured:** the base transform kept on the canvas costs about 0.6 µs more per crowd, event or
+halo redraw than the old static by the review's headless benchmark (1.20 µs against 0.62 µs); the
+remeasuring step reads it in the frame record's `draw` bucket on the phone.
 
 **Open to overturn** (the builder's choices where the brief was silent): the base transform kept on
 the canvas rather than passed as an argument through `draw_standing()`'s callers; the recipe held by
