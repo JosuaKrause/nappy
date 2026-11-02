@@ -91,9 +91,6 @@ func run(t) -> void:
 	_test_return_window_is_off_under_the_override(t)
 	_test_is_rig_from_args(t)
 	_test_rig_quit_seconds_from(t)
-	ControlsMode.forget()
-	# The restart wiring the suite drove stamped the title's guard; give it back.
-	TitleScreen._restarted_at_msec = -INF
 	GameState.start_run(SEED)
 
 # ------------------------------------------------------------------ finding and booting ---
@@ -154,8 +151,10 @@ func _enter(t, main: Node2D) -> void:
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
 
-func _boot(t, words: Array, calls: Calls) -> Node2D:
+func _boot(t, words: Array, calls: Calls, sitting: Sitting = null) -> Node2D:
 	var main := _instance(words, calls)
+	if sitting:
+		main.use_sitting(sitting)
 	await _enter(t, main)
 	return main
 
@@ -515,17 +514,21 @@ func _test_a_right_joystick_press_on_the_title_sets_the_controls_mode(t) -> void
 
 ## **A joystick-right player reaches the escape still joystick-right.** *(2026-10-10, the player:
 ## "permanently for the sitting".)* The day-14 hand-over reloads the scene and the escape's boot
-## opens no title, so its fresh controls take the title's answer this process remembers rather than
-## the rig's default. The previous test's right joystick press is that answer.
+## opens no title, so its fresh controls take the title's answer the sitting keeps rather than the
+## rig's default. A first boot's right joystick press is that answer; the boot standing for the
+## reload is handed the same sitting, as the root hands a real reload's boot the one parked there.
 func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
-	t.check(ControlsMode.has_remembered() and ControlsMode.remembered_mode() == ControlsMode.Mode.JOYSTICK
-			and ControlsMode.remembered_side() == ControlsMode.Side.RIGHT,
-			"the title's answer is remembered for the sitting")
+	var sitting := Sitting.new()
+	t.add_child(sitting)
+	var first := await _boot(t, [], Calls.new(), sitting)
+	await _press_on_the_title(t, first, "Right")
+	_shut(t, first)
+	t.check(sitting.controls_word == "joystick-right", "the title's answer is kept for the sitting")
 	GameState.start_run(SEED)
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.facts.escape_section = DaySpec.Section.CITY
 	var calls := Calls.new()
-	var main := await _boot(t, [], calls)
+	var main := await _boot(t, [], calls, sitting)
 	var controls := _one(main, "TouchControls") as TouchControls
 	t.check(controls.controls_mode() == ControlsMode.Mode.JOYSTICK
 			and controls.run_button_center() == TouchControls.FOCUS_LEFT,
@@ -542,6 +545,7 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 			"and a brief in front of the walk adds no tick, with the tree running behind it")
 	GameState.facts.escape_section = DaySpec.Section.NONE
 	_shut(t, main)
+	sitting.free()
 	GameState.start_run(SEED)
 
 ## **A session on one booted game, in the order a session meets the screens.** The title opens once

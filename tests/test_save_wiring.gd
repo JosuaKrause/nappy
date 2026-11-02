@@ -16,10 +16,12 @@ extends RefCounted
 ## A save a boot resumes from is laid down through `GameSave.write()` before the boot, the way a game
 ## closed earlier left it.
 ##
-## Where a check reads the symbol's internal count (`Showing.pending`, `begun`), a symbol built with a
-## timeline of the test's own is parked at the tree's home, which is what an earlier `main` leaves
-## for the next boot (`SaveIndicator.outlive_the_scene()`), and the booted `main` adopts it
-## (`SaveIndicator.carried()`) as it adopts the one a reload carries over.
+## Where a check follows something across a reload, the boots are handed one `Sitting` of the
+## test's own (`main.use_sitting()`), which stands for the one a real reload leaves at the tree's
+## root. Where a check reads the symbol's internal count (`Showing.pending`, `begun`), a symbol
+## built with a timeline of the test's own is parked under that sitting, which is what an earlier
+## `main` leaves for the next boot (`SaveIndicator.outlive_the_scene()`), and the booted `main`
+## adopts it (`SaveIndicator.carried()`) as it adopts the one a reload carries over.
 ##
 ## `GameSave` is pointed at a scratch file and handed the configuration of a windowed release run (a
 ## booted `main` hands it its own, which is that) so its ordinary `write()`, `try_resume()` and
@@ -58,9 +60,6 @@ func run(t) -> void:
 	GameState.facts.escape_section = DaySpec.Section.NONE
 	GameState.calendar.hard_mode = false
 	GameState.calendar.checkpoint = {}
-	ControlsMode.forget()
-	# The restart wiring the suite drove stamped the title's guard; give it back.
-	TitleScreen._restarted_at_msec = -INF
 	GameState.start_run(_SEED)
 
 # ------------------------------------------------------------------ finding and booting ---
@@ -101,22 +100,20 @@ class Calls:
 	func quit() -> void:
 		quits.append(1)
 
-## A symbol with a timeline of the test's own, parked at a plain node standing for the tree's root
-## where an earlier `main` leaves one, for the next booted `main` to adopt.
+## A symbol with a timeline of the test's own, parked under a sitting of the test's own where an
+## earlier `main` leaves one, for the next booted `main` handed that sitting to adopt.
 class Parked:
-	var home := Node.new()
+	var sitting := Sitting.new()
 	var timeline := SaveIndicator.Showing.new()
 	var indicator: SaveIndicator
 
 	func _init(t) -> void:
-		t.add_child(home)
-		SaveIndicator.use_home(home)
+		t.add_child(sitting)
 		indicator = SaveIndicator.new(timeline)
-		home.add_child(indicator)
+		sitting.add_child(indicator)
 
 	func free_all() -> void:
-		SaveIndicator.use_home(null)
-		home.free()
+		sitting.free()
 
 ## Every node under `root` that is a `type_name`: a script class by its `class_name` (the scene
 ## root of a screen is one), anything else by the engine's class.
@@ -144,13 +141,15 @@ func _one(root: Node, type_name: String) -> Node:
 	var found := _all(root, type_name)
 	return found[0] if found.size() == 1 else null
 
-## The real `main.tscn` handed `config` and `calls`, put in the tree, with the two frames its
-## `_ready()` awaits let pass: the run, the day and the title are built.
-func _boot(t, config: RunConfig, calls: Calls) -> Node2D:
+## The real `main.tscn` handed `config`, `calls` and, when given, `sitting`, put in the tree, with
+## the two frames its `_ready()` awaits let pass: the run, the day and the title are built.
+func _boot(t, config: RunConfig, calls: Calls, sitting: Sitting = null) -> Node2D:
 	var main: Node2D = MAIN_SCENE.instantiate()
 	main.configure(config)
 	main.use_reload(calls.reload)
 	main.use_quit(calls.quit)
+	if sitting:
+		main.use_sitting(sitting)
 	t.add_child(main)
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
@@ -267,15 +266,15 @@ func _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t) -> void:
 ##
 ## **The restart deletes the save before the run log closes**, so the "deleted the save" line is
 ## written into the run being abandoned: a log held in memory stands in for the run's, and is the
-## `Telemetry` log the restart closes.
+## `Telemetry` log the restart closes. **And it stamps the sitting** the reloaded boot's title
+## measures its restart guard against (`Sitting.restarted_at_msec`), since that title is a fresh one.
 func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 	_begin()
-	# The restart hands the symbol showing its deletion to the tree's root, here a plain node.
-	var home := Node.new()
-	t.add_child(home)
-	SaveIndicator.use_home(home)
+	# The restart hands the symbol showing its deletion to the sitting, here the test's own.
+	var sitting := Sitting.new()
+	t.add_child(sitting)
 	var calls := Calls.new()
-	var main := await _boot(t, _windowed(), calls)
+	var main := await _boot(t, _windowed(), calls, sitting)
 	await _press_on_the_title(t, main, "Tap")
 	t.check(GameSave.has_save(), "a save exists before the restart")
 	Telemetry.begin_memory_log()
@@ -287,17 +286,18 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 	t.check(log.lines.any(func(line: String) -> bool: return "deleted the save" in line),
 			"the restart's deletion is logged")
 	t.check(Telemetry.current_log() == null, "and the log is closed after it, not before")
+	t.check(sitting.restarted_at_msec > -INF, "the restart is stamped on the sitting")
+	t.check(SaveIndicator.carried(sitting) != null, "and the symbol showing the deletion is under it")
 	_shut(t, main)
 
 	var resume := GameSave.try_resume(GameState)
 	t.check(resume.is_empty(), "the reloaded boot's own try_resume() finds nothing to resume")
-	var reloaded := await _boot(t, _windowed(), calls)
+	var reloaded := await _boot(t, _windowed(), calls, sitting)
 	t.check(not GameSave.has_save(), "and its own dawn write does nothing either")
 	t.check((_one(reloaded, "TitleScreen") as TitleScreen).is_open(), "it opens on the title")
 	_shut(t, reloaded)
 	Telemetry.end_run()
-	SaveIndicator.use_home(null)
-	home.free()
+	sitting.free()
 
 ## *"either it saves with one less nerve and a cleared "during active game" flag. or you defer
 ## saving to the actual day start"* — a game closed between days charged nothing when it was
@@ -441,24 +441,22 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 
 ## **The day-14 hand-over's reload to the escape, through the summary's own continue.** Day 14's own
 ## save (A) is written as its summary appears and may still be waiting for the browser when the player
-## continues. The hand-over must carry the symbol to the tree's root like the held restart does, so
+## continues. The hand-over must carry the symbol to the sitting like the held restart does, so
 ## it outlives the reload, keeps showing A, and the escape's boot adopts it. There the escape's first
 ## save (B) begins, and A's answer, arriving late, must settle A and never B: B's failure afterwards
 ## still strikes the symbol. The reload itself goes to what `use_reload()` was handed, since a real
-## one would throw away the test runner's own scene; the tree's root is a plain node here
-## (`SaveIndicator.use_home()`), which a suite running while the root is busy cannot use.
+## one would throw away the test runner's own scene; the sitting the symbol is carried to is the
+## test's own (`main.use_sitting()`), standing for the one a real reload parks at the tree's root.
 ##
-## Two halves. The booted game's own symbol is handed to the root by the continue and survives the
-## game being freed. A symbol of the test's own timeline, parked where that one is, is then adopted by
-## a second booted game, and the escape's two saves are played on it with its counts read.
+## Two halves. The booted game's own symbol is handed to the sitting by the continue and survives
+## the game being freed. A symbol of the test's own timeline, parked where that one is, is then
+## adopted by a second booted game, and the escape's two saves are played on it with its counts read.
 func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	_begin()
-	var tree: SceneTree = t.get_tree()
-	var home := Node.new()
-	t.add_child(home)
-	SaveIndicator.use_home(home)
+	var sitting := Sitting.new()
+	t.add_child(sitting)
 	var calls := Calls.new()
-	var main := await _boot(t, _windowed(), calls)
+	var main := await _boot(t, _windowed(), calls, sitting)
 	await _press_on_the_title(t, main, "Tap")
 	var indicator := _one(main, "SaveIndicator") as SaveIndicator
 	t.check(indicator != null and indicator.get_parent() == main,
@@ -479,10 +477,10 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	t.check(indicator.is_showing(), "and the symbol shows day 14's pending save")
 	await _press_continue(t, main)
 	t.check(calls.reloads.size() == 1, "continuing past day 14's summary reloads into the escape")
-	t.check(indicator.get_parent() == home,
-			"and hands the symbol showing day 14's pending save to the tree's root first")
+	t.check(indicator.get_parent() == sitting,
+			"and hands the symbol showing day 14's pending save to the sitting first")
 	_shut(t, main)
-	t.check(is_instance_valid(indicator) and SaveIndicator.carried(tree) == indicator,
+	t.check(is_instance_valid(indicator) and SaveIndicator.carried(sitting) == indicator,
 			"so the reload does not free it, and the escape's boot adopts it")
 	t.check(is_instance_valid(indicator) and indicator.is_showing() and not indicator.shows_struck(),
 			"still shown, not struck, for day 14's save after the reload")
@@ -492,9 +490,9 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	# The adoption, on a symbol whose counts the test can read.
 	GameState.facts.escape_section = DaySpec.Section.NONE
 	var parked := Parked.new(t)
-	var escape_boot := await _boot(t, _windowed(), calls)
+	var escape_boot := await _boot(t, _windowed(), calls, parked.sitting)
 	t.check(_one(escape_boot, "SaveIndicator") == null
-			and SaveIndicator.carried(tree) == parked.indicator,
+			and SaveIndicator.carried(parked.sitting) == parked.indicator,
 			"the next boot adopts the carried symbol and builds none of its own")
 	var timeline := parked.timeline
 	var begun := timeline.begun
@@ -514,7 +512,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 
 	_shut(t, escape_boot)
 	parked.free_all()
-	home.free()
+	sitting.free()
 	GameState.facts.escape_section = DaySpec.Section.NONE
 	GameSave.clear()
 

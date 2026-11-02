@@ -30,39 +30,15 @@ enum Mode { JOYSTICK, TAP }
 ## `Mode.TAP`, where nothing is drawn to choose between.
 enum Side { LEFT, RIGHT }
 
-## The title's last answer this sitting, kept across a scene reload. `static var`s on the class
-## rather than members on a node, for the reason `TitleScreen._restarted_at_msec` is one:
-## `reload_current_scene()` frees every node, and the script class is never unloaded, so this is the
-## one place the answer survives the day-14 hand-over to the escape, whose boot builds its controls
-## afresh *(2026-10-10, the player: "permanently for the sitting")*. Process memory only, never saved:
-## a page opened again asks on its title. `remember()` writes it; `main._add_touch_controls()` reads
-## it on the escape's hand-over boot alone, since every other boot's title asks anyway.
-static var _remembered := false
-static var _remembered_mode := Mode.TAP
-static var _remembered_side := Side.LEFT
-
-## Keeps the title's answer for the rest of the sitting — see `_remembered`.
-static func remember(mode: ControlsMode.Mode, side: ControlsMode.Side) -> void:
-	_remembered = true
-	_remembered_mode = mode
-	_remembered_side = side
-
-## Forgets the title's answer, as a new sitting begins without one: the next escape boot takes the
-## rig's default again.
-static func forget() -> void:
-	_remembered = false
-	_remembered_mode = Mode.TAP
-	_remembered_side = Side.LEFT
-
-## Whether the title has answered this sitting — see `_remembered`.
-static func has_remembered() -> bool:
-	return _remembered
-
-static func remembered_mode() -> ControlsMode.Mode:
-	return _remembered_mode
-
-static func remembered_side() -> ControlsMode.Side:
-	return _remembered_side
+## The word `from_word()` and `side_from_word()` read back as `mode` and `side`: `"tap"` for
+## `Mode.TAP`, whose side means nothing, and `"joystick-left"` or `"joystick-right"` for
+## `Mode.JOYSTICK`. `main` keeps the title's answer in this form on the `Sitting` it hands down
+## (`Sitting.controls_word`), so the boots that open no title of their own read it the way they
+## read the configured word.
+static func word_for(mode: ControlsMode.Mode, side: ControlsMode.Side) -> String:
+	if mode != Mode.JOYSTICK:
+		return "tap"
+	return "joystick-right" if side == Side.RIGHT else "joystick-left"
 
 ## The bare mapping from a raw word — `--controls`/`?controls=`, which the run's configuration
 ## resolves (`RunConfig.controls_word`) — onto a `Mode`. `"joystick"`, `"joystick-left"` and
@@ -72,6 +48,8 @@ static func from_word(word: String) -> Mode:
 
 ## The steering side a rig gets with the mode `from_word()` answers: `joystick-right` steers from the
 ## right, and every other word — `joystick` and `joystick-left` included — from the left. Only a
-## rig that skips the title reads it; the title's two joystick buttons choose the side themselves.
+## boot whose title does not ask reads it — a rig that skips the title, or a boot that opens none
+## and reads the title's earlier answer (`word_for()`); the title's two joystick buttons choose the
+## side themselves.
 static func side_from_word(word: String) -> ControlsMode.Side:
 	return Side.RIGHT if word == "joystick-right" else Side.LEFT

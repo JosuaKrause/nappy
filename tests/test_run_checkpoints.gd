@@ -315,9 +315,14 @@ func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
 ## checkpoint) and on to day 11 on the same world, the last nerve lost there, and the lost-day
 ## screen's continue. The world she then plays day 8 in — the next boot if the continue reloaded,
 ## this one if it did not — has the window unboarded, and the run's checkpoint restart was counted
-## once and not followed by a second `run_begun`.
+## once and not followed by a second `run_begun`. Both boots are handed one sitting of the test's
+## own (`main.use_sitting()`), which carries the run and the title's answer across the reload as
+## the one a real reload parks at the tree's root does.
 func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpoint(t) -> void:
+	var sitting := Sitting.new()
+	t.add_child(sitting)
 	var main: Node2D = MAIN_SCENE.instantiate()
+	main.use_sitting(sitting)
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
@@ -353,6 +358,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 		t.get_tree().paused = false
 		main.free()
 		playing = MAIN_SCENE.instantiate()
+		playing.use_sitting(sitting)
 		t.add_child(playing)
 		t.get_tree().process_frame.emit()
 		t.get_tree().process_frame.emit()
@@ -375,6 +381,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	playing.free()
+	sitting.free()
 
 func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t) -> void:
 	GameState.start_run(_SEED)

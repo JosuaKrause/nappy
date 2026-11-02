@@ -41,8 +41,8 @@ extends CanvasLayer
 ##
 ## **It outlives the scene reloads a run makes.** The held restart deletes the save and frees `main`,
 ## and a symbol freed with it would never show the deletion, or show it only until the reload.
-## `outlive_the_scene()` hands it to the scene tree's root, which a reload leaves alone; the
-## `main` that boots next takes it back with `carried()` instead of building a second, so one
+## `outlive_the_scene()` hands it to the `Sitting` `main` keeps at the tree's root across a reload;
+## the `main` that boots next takes it back with `carried()` instead of building a second, so one
 ## symbol keeps its clocks and its picture across the reload and settles from the browser's answer
 ## on the freshly booted screen. The day-14 hand-over to the escape reloads the scene the same way
 ## and carries the symbol the same way (`main._reload_the_scene()` is the one place either reload
@@ -76,7 +76,7 @@ const FADE_SECONDS := 1.5
 ## bug a shared tint constant would reintroduce.
 const _PEAK_ALPHA := 0.9
 
-## The name every symbol is given, and what `carried()` looks for on the tree's root.
+## The name every symbol is given, and what `carried()` looks for on its home.
 const _NODE_NAME := "SaveIndicator"
 
 ## Above the title screen's own 95 (`TitleScreen.layer`), so a write mid-boot still shows through
@@ -281,40 +281,23 @@ func _on_save_changed(operation: int, result: int) -> void:
 func is_showing() -> bool:
 	return not _showing.is_idle()
 
-## Hands the symbol to the scene tree's root, so the scene reload the held restart or the day-14
-## hand-over makes does not free it — see the class doc. **Only a symbol that is up needs moving**: an
-## idle one is freed with the scene that holds it and the next boot builds its own. Does nothing
-## once it is already at the root (an idle one stays there, and the next boot adopts it again), or
-## off the tree.
-func outlive_the_scene() -> void:
-	var tree := get_tree()
-	if tree == null or not is_showing():
+## Hands the symbol to `home`, the `Sitting` `main` keeps across the scene reload the held restart
+## or the day-14 hand-over makes, so the reload does not free it — see the class doc. **Only a
+## symbol that is up needs moving**: an idle one is freed with the scene that holds it and the next
+## boot builds its own. Does nothing once it is already there (an idle one stays, and the next boot
+## adopts it again), or off the tree.
+func outlive_the_scene(home: Sitting) -> void:
+	if get_tree() == null or home == null or not is_showing():
 		return
-	var home := _home(tree)
 	if get_parent() != home:
 		reparent(home, false)
 
-## The symbol an earlier `main` handed to the tree's root with `outlive_the_scene()`, or `null`
-## when none did. A `main` boots into it rather than building a second one.
-static func carried(tree: SceneTree) -> SaveIndicator:
-	if tree == null:
+## The symbol an earlier `main` handed to `home` with `outlive_the_scene()`, or `null` when none
+## did. A `main` boots into it rather than building a second one.
+static func carried(home: Sitting) -> SaveIndicator:
+	if home == null:
 		return null
-	return _home(tree).get_node_or_null(NodePath(_NODE_NAME)) as SaveIndicator
-
-## Where a symbol that outlives its scene lives: the tree's root, which a scene reload leaves alone.
-## `use_home()` points it at a plain node instead, since a suite runs while the root is still busy
-## adding the runner and cannot take a child. This is process-wide static state only tests set, not
-## an injected dependency: `carried()` is static, so a symbol cannot be handed its home. It is left
-## for the hidden-statics work, and the runner puts it back after every suite.
-static var _home_override: Node = null
-
-## Parks every symbol that outlives its scene at `home` instead of the tree's root; `null`, the
-## default, is the root again. Only tests call it.
-static func use_home(home: Node) -> void:
-	_home_override = home
-
-static func _home(tree: SceneTree) -> Node:
-	return _home_override if _home_override != null else tree.root
+	return home.get_node_or_null(NodePath(_NODE_NAME)) as SaveIndicator
 
 func _process(delta: float) -> void:
 	if _showing.is_idle():

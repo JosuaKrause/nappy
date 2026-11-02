@@ -139,8 +139,16 @@ var _title: TitleScreen
 ## by `_raise_save_indicator()`: in `_ready()`, ahead of the charge that can end a resumed run, and
 ## for the escape only when it is a run's own — the flag's escape touches the save not at all
 ## (`GameSave.uses_save()` refuses every one of them), so a symbol there could only ever stay dark.
-## It may be the one a reloading `main` handed to the tree's root, not a child of this node.
+## It may be the one a reloading `main` handed to the sitting (`_sitting`), not a child of this node.
 var _save_indicator: SaveIndicator
+
+## What this sitting keeps across the scene reloads a run makes — see `Sitting`'s own doc: the run
+## carried on from its checkpoint, the title's answer, the title's restart stamp, the frame record's
+## file and the save symbol a reload carries. Taken in `_ready()` by `_take_the_sitting()`: the one
+## `use_sitting()` handed in, else the one the boot before parked at the tree's root, else built
+## here; and handed to the title, the frame recorder and the save symbol. `null` only on a `main`
+## that never entered the tree.
+var _sitting: Sitting
 
 ## What `_reload_the_scene()` calls in place of reloading the scene, set only by `use_reload()`. An
 ## empty `Callable`, the default, reloads normally.
@@ -172,11 +180,6 @@ var _first_day := true
 ## `GameSave.uses_save()` already refuses all of them — see that function's own doc — and for a
 ## boot that carries a run on from a checkpoint (`RunFlow.Opening.CARRIED_FROM_CHECKPOINT`).
 var _resume := {}
-
-## Set by `_carry_the_run_into_the_next_boot()` just before it reloads the scene, and read and
-## cleared by the boot that follows. A `static var` because a scene reload frees this node but never
-## unloads its script — the same reason `TitleScreen._restarted_at_msec` is one.
-static var _carry_the_run_over := false
 
 ## Whether opening the save spent a normal run's last nerve and sent it back to its checkpoint —
 ## set once in `_ready()`, before the charge, and read by `_show_the_resume_gate()` for the line the
@@ -219,9 +222,18 @@ func use_reload(reload: Callable) -> void:
 func use_quit(quit: Callable) -> void:
 	_quit_override = quit
 
+## Hands this boot the sitting it keeps across a reload instead of the one the tree's root holds
+## (`Sitting`): a test hands a fresh one, and the same one to the boot that stands for the reload.
+## Set before the boot runs; a boot never handed one takes the root's, or builds its own.
+func use_sitting(sitting: Sitting) -> void:
+	_sitting = sitting
+
 func _ready() -> void:
 	# First, so every boot (the escape's and a recipe's too) deletes the save when its run ends.
 	GameSave.clear_when_a_run_ends()
+	# Before anything reads what the sitting kept: the run carried over, the title's answer, the
+	# save symbol a reload carried.
+	_take_the_sitting()
 	if not config.recipe_path.is_empty() and not _author_the_scene():
 		return
 	# Before anything the observers watch can happen: the run log's header, the save's gate and
@@ -395,7 +407,7 @@ func _ready() -> void:
 	if walks_a_day and config.frame_record_requested:
 		_frame_recorder = FrameRecorder.new()
 		add_child(_frame_recorder)
-		_frame_recorder.setup(_flow.in_the_title, _city, _player, _day, _run)
+		_frame_recorder.setup(_flow.in_the_title, _city, _player, _day, _run, _sitting)
 		_readout.watch_frames(_frame_recorder)
 
 	# Built before `_start_day()`, whose `day_planned` starts it once the day it is meant to walk
@@ -500,8 +512,8 @@ func _settle_the_run() -> void:
 	# **A run carried on from a checkpoint reads no file**: `GameState` already holds it, and
 	# `GameSave.load_in_memory()` puts it back through the same JSON and the same `_apply()` a load
 	# does, so this boot builds on exactly what a load would give it, on any run.
-	var carried := _carry_the_run_over
-	_carry_the_run_over = false
+	var carried := _sitting.carry_the_run_over
+	_sitting.carry_the_run_over = false
 	if carried:
 		GameSave.load_in_memory(_run)
 	else:
@@ -615,6 +627,7 @@ func _build_the_screens() -> void:
 	_title = TITLE_SCREEN.instantiate()
 	_title.use_platform(_touch_available, QuitOption.available(config))
 	_title.use_run(_run)
+	_title.use_sitting(_sitting)
 	add_child(_title)
 	_title.start_requested.connect(_on_title_start)
 	_title.quit_requested.connect(_quit)
@@ -1216,7 +1229,8 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 	# lesson by it and the page counts it.
 	EventBus.controls_chosen.emit(mode == ControlsMode.Mode.JOYSTICK, by_key)
 	_touch_controls.set_mode(mode, side)
-	ControlsMode.remember(mode, side)
+	if _sitting:
+		_sitting.controls_word = ControlsMode.word_for(mode, side)
 	if _readout:
 		_readout.close_the_title()
 	# A new game's mode is the title's Hard Mode checkbox, read as the title is dismissed — the
@@ -1597,7 +1611,7 @@ func _add_the_return_window(viewport: Viewport) -> void:
 ## **Except on the two boots that open no title of their own** while the title's answer is still in
 ## this process: the day-14 hand-over to the escape (`RunFlow.escape_from_a_run()`) and a normal run
 ## carried on from its checkpoint (`RunFlow.Opening.CARRIED_FROM_CHECKPOINT`). Each keeps the mode and steering side the
-## player chose on the run's title (`ControlsMode.remember()`) rather than falling back to the rig's
+## player chose on the run's title (`Sitting.controls_word`) rather than falling back to the rig's
 ## default — the side is "permanently for the sitting" (2026-10-10). A game closed inside a section
 ## and opened again has no answer in memory, and its title asks.
 func _add_touch_controls() -> void:
@@ -1609,12 +1623,11 @@ func _add_touch_controls() -> void:
 	_touch_controls.use_touch(_touch_available)
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
+	var word := config.controls_word
 	if (_flow.escape_from_a_run() or _flow.opening == RunFlow.Opening.CARRIED_FROM_CHECKPOINT) \
-			and ControlsMode.has_remembered():
-		_touch_controls.set_mode(ControlsMode.remembered_mode(), ControlsMode.remembered_side())
-	else:
-		_touch_controls.set_mode(ControlsMode.from_word(config.controls_word),
-				ControlsMode.side_from_word(config.controls_word))
+			and _sitting and _sitting.controls_word != "":
+		word = _sitting.controls_word
+	_touch_controls.set_mode(ControlsMode.from_word(word), ControlsMode.side_from_word(word))
 	_hand_the_controls_cover_to_the_events()
 
 ## Adds the final pass before raising the root render target. The engine's final root blit is a
@@ -1960,7 +1973,7 @@ func _on_summary_continued(raised_in: int) -> void:
 ## checkpoint's day on the run exactly as a load would give it, then starts it. The save already
 ## says that dawn: `_on_day_finished()` wrote it as the lost-day screen came up.
 func _carry_the_run_into_the_next_boot() -> void:
-	_carry_the_run_over = true
+	_sitting.carry_the_run_over = true
 	_reload_the_scene()
 
 ## Back to the title, with everything about the run thrown away.
@@ -1975,7 +1988,7 @@ func _carry_the_run_into_the_next_boot() -> void:
 ## and the tree is unpaused first: `reload_current_scene` builds the new scene into the same tree,
 ## and a paused one would open the title screen over a game that could never start.
 ##
-## `TitleScreen.note_restart_requested()` is called here, before the deferred reload, so the fresh
+## `Sitting.note_restart_requested()` is called here, before the deferred reload, so the fresh
 ## title screen the reload builds knows the frame or two after its own `_ready()` is exactly the
 ## window a stray press crossing the reload could land in — see that function's own doc, and
 ## `TitleScreen._unhandled_input()`'s for what it guards against. *(2026-09-07: "tapping on the
@@ -2003,7 +2016,8 @@ func _restart_run() -> void:
 	# open the escape again over a run that was just thrown away. A no-op for a restart from an
 	# ordinary day and for a finished run, which the `run_ended` subscriber has already cleared.
 	_facts.escape_section = DaySpec.Section.NONE
-	TitleScreen.note_restart_requested()
+	if _sitting:
+		_sitting.note_restart_requested()
 	_reload_the_scene()
 
 ## **Every scene reload goes through here**: the held restart (`_restart_run()`), the day-14
@@ -2012,8 +2026,9 @@ func _restart_run() -> void:
 ## (`_finish_the_section()`). A reload frees this node and the symbol under it, and a change in
 ## the save state may still be waiting for the browser — the restart's deletion, the lost day's
 ## write a checkpoint reload follows, or day 14's own save at the hand-over — so the symbol is
-## carried over first (`_carry_the_save_symbol_over()`) and the next boot adopts it. One place, so
-## a reload added later cannot forget the symbol, nor leave the flow in any mode but RELOADING.
+## carried over first (`_carry_the_save_symbol_over()`), under the sitting this node parks at the
+## tree's root (`_park_the_sitting()`), and the next boot adopts both. One place, so a reload added
+## later cannot forget the symbol or the sitting, nor leave the flow in any mode but RELOADING.
 ##
 ## The tree is unpaused first: `reload_current_scene` builds the new scene into the same tree, and
 ## a paused one would open the next screen over a game that could never start. Read through
@@ -2028,7 +2043,31 @@ func _reload_the_scene() -> void:
 	if _reload_override.is_valid():
 		_reload_override.call()
 		return
+	_park_the_sitting(tree)
 	tree.call_deferred("reload_current_scene")
+
+## Takes the sitting this boot keeps across a reload: the one `use_sitting()` handed in, else the
+## one the boot before parked at the tree's root (`_park_the_sitting()`), else a new one as this
+## node's own child, which this sitting's first boot builds. Looked up here, in the composition
+## root, and handed down from it; nothing below fetches it.
+func _take_the_sitting() -> void:
+	if _sitting:
+		return
+	_sitting = get_tree().root.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	if _sitting:
+		return
+	_sitting = Sitting.new()
+	_sitting.name = Sitting.NODE_NAME
+	add_child(_sitting)
+
+## Hands the sitting to the tree's root just before a real reload, which leaves the root alone, so
+## the next boot takes it back (`_take_the_sitting()`) with everything it keeps, the save symbol
+## carried under it included. Only a sitting under this node needs moving: one already at the root
+## stays there, and one a test handed in is the test's own. Not on the reload a test hands in
+## (`use_reload()`), whose next boot is handed the same sitting by the test.
+func _park_the_sitting(tree: SceneTree) -> void:
+	if _sitting and is_ancestor_of(_sitting):
+		_sitting.reparent(tree.root, false)
 
 ## The scene tree's own pause flag, read through `Engine.get_main_loop()` rather than `get_tree()`
 ## so this can be asked whether or not `main` itself is parented. `get_tree()` logs an
@@ -2211,20 +2250,21 @@ func _pause_on_focus_lost() -> void:
 
 ## A reload (`_reload_the_scene()`) frees this node and its children, including any symbol still
 ## parented here. A save change may still be waiting for IndexedDB: the held restart's deletion,
-## or day 14's own save at the hand-over to the escape. Handed to the tree's root, the symbol shows
-## across the reload and settles on whatever the reload builds, the title or the escape, with its
-## minimums running the whole time — see `SaveIndicator`'s own doc. Only a symbol that is up needs
-## moving; an idle child is freed with this node. A symbol already at the root stays there, even
-## when idle, and the next boot adopts it again.
+## or day 14's own save at the hand-over to the escape. Handed to the sitting (`_sitting`), which
+## outlives the reload at the tree's root, the symbol shows across the reload and settles on
+## whatever the reload builds, the title or the escape, with its minimums running the whole time —
+## see `SaveIndicator`'s own doc. Only a symbol that is up needs moving; an idle child is freed with
+## this node. A symbol already under the sitting stays there, even when idle, and the next boot
+## adopts it again.
 func _carry_the_save_symbol_over() -> void:
 	if _save_indicator:
-		_save_indicator.outlive_the_scene()
+		_save_indicator.outlive_the_scene(_sitting)
 
-## Takes the symbol the reloading `main` handed to the tree's root, or builds one as this node's own
+## Takes the symbol the reloading `main` handed to the sitting, or builds one as this node's own
 ## child. Above every screen this boot goes on to build — see `SaveIndicator`'s own doc
 ## for why it is its own layer rather than a node on the pause screen, the day summary or the HUD.
 func _raise_save_indicator() -> void:
-	_save_indicator = SaveIndicator.carried(get_tree())
+	_save_indicator = SaveIndicator.carried(_sitting)
 	if _save_indicator:
 		return
 	_save_indicator = SaveIndicator.new()
