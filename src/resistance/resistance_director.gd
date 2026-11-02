@@ -743,7 +743,7 @@ func _door_can_be_touched(door: Vector2) -> bool:
 const FIRE_ROW := "burning_building"
 
 ## The ground day 8's task stands on when the run never recorded a scar: every front day 3's fire
-## itself could be sited on (`EventScheduler._open_ground_for()` with `burning_building`'s own
+## itself could be sited on (`EventScheduler.open_ground_for()` with `burning_building`'s own
 ## `AT_THE_FRONT`), each with a building directly north of it to burn. A fresh ground cache, since
 ## the scheduler's own is the day's and this asks once.
 func _fronts_a_fire_catches_on() -> Array[Vector2i]:
