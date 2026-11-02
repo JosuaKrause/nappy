@@ -922,6 +922,24 @@ lint_in_names_repo docs/todo/2026-09-27-busy-otter/README.md docs/review/2026-09
     "docs/review/$second.md" docs/decisions/2026-09-26-M210.md
 status=$?
 check_that "lint.sh passes an entry, its review items and an old entry's decision sharing a name" '[[ $status -eq 0 ]]'
+printf '# cold-fish — A long slug\n' > "$names_repo/docs/decisions/2026-09-27-cold-fish-big-tank.md"
+printf '# Playtest big-tank\n' > "$names_repo/docs/playtests/2026-09-20-big-tank.md"
+lint_in_names_repo docs/decisions/2026-09-27-cold-fish-big-tank.md
+status=$?
+rm "$names_repo/docs/decisions/2026-09-27-cold-fish-big-tank.md" "$names_repo/docs/playtests/2026-09-20-big-tank.md"
+check_that "lint.sh skips a four-word slug whose first two words are no entry, as it skips any longer slug" \
+    '[[ $status -eq 0 ]]'
+printf '# busy-otter — Further · 2026-09-27\n' > "$names_repo/docs/decisions/2026-09-27-busy-otter-feathery-gecko.md"
+lint_in_names_repo docs/decisions/2026-09-27-busy-otter-feathery-gecko.md
+status=$?
+check_that "lint.sh accepts a further record named after its entry" '[[ $status -eq 0 ]]'
+mkdir -p "$names_repo/docs/todo/2026-09-20-feathery-gecko"
+printf 'priority: later\n\n# feathery-gecko — Another entry\n' > "$names_repo/docs/todo/2026-09-20-feathery-gecko/README.md"
+lint_in_names_repo docs/decisions/2026-09-27-busy-otter-feathery-gecko.md
+status=$?
+rm -r "$names_repo/docs/todo/2026-09-20-feathery-gecko"
+rm "$names_repo/docs/decisions/2026-09-27-busy-otter-feathery-gecko.md"
+check_that "lint.sh rejects a further record whose own pair another entry already uses" '[[ $status -ne 0 ]]'
 printf '# Playtest busy-otter — A second thing\n' > "$names_repo/docs/playtests/2026-09-28-busy-otter.md"
 lint_in_names_repo docs/playtests/2026-09-28-busy-otter.md
 status=$?

@@ -72,8 +72,8 @@ numbered** (PLAYTEST-144 6). `tools/new-name.sh <kind> "<title>"` draws
 `<date>-<adjective>-<animal>`, writes the file or the entry's folder with its heading and date, and
 prints the name, which is spoken and linked by its two words ("busy-badger"); sorting a folder puts
 the newest last. A further record or review item of an entry is named too,
-`<entry name>-<adjective>-<animal>`, and so is every piece of an entry's work: an item file, and
-the label a brief, a PR title or a record title gives a part of a step is a name, never "part B3",
+`<entry name>-<adjective>-<animal>`. So is every piece of an entry's work: an item file is named,
+and so is the label a brief, a PR title or a record title gives a part of a step, never "part B3",
 "slice 4" or "2a/4" (inbox #937 in plaid-penguin, inbox #941). The playtests that already have a
 number keep it, and so do the entries and records that already have one.
 

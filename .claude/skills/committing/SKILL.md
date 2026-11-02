@@ -273,8 +273,8 @@ touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`
 `CLAUDE.md`, the skills, and the docstrings on anything edited. **A PR that finishes an item deletes
 the item's file and files what it built as a decision**, `docs/decisions/<entry name>.md` (made with
 `tools/new-name.sh decision --entry <name> "<title>"`, which names a further record of an entry
-`<entry name>-<adjective>-<animal>`, never `-2`: two branches building at once would draw the same
-next number (inbox #937 in plaid-penguin, inbox #941)); **when that was the entry's last item, the entry's folder goes in the same PR**,
+`<entry name>-<adjective>-<animal>`, never `-2` (inbox #937 in plaid-penguin, inbox #941; read as: two branches building at once
+draw the same next number, the filer's reading of the player's remark that the reason is known, open to overturn)); **when that was the entry's last item, the entry's folder goes in the same PR**,
 because the queue holds open work only and the entry stops being open the moment the PR merges.
 Another entry's `after:` line naming it stays as it is: the record is what makes the wait count
 as over (`tools/queue.sh` prints it as `<name>, closed`, and the lint accepts it), so closing an

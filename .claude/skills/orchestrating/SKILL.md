@@ -140,8 +140,7 @@ A vague prompt returns work that cannot be merged.
 
 **A brief, a PR title and a record title name every part of a step, and never number or letter
 it** (inbox #937 in plaid-penguin, inbox #941): "the route rig walking the building", not "part
-B3", "slice 4" or "2a/4". A number is a lookup the reader performs, and two branches drawing the
-next one at once collide.
+B3", "slice 4" or "2a/4". A number is a lookup the reader performs.
 
 **Before spawning, the orchestrator writes the brief verbatim to `.claude/briefs/<branch with
 "/" replaced by "-">.md`.** `tools/agent-setup.sh <name> <branch>` makes the worktree and writes

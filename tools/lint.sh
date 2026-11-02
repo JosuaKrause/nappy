@@ -192,9 +192,21 @@ lint_order_links() {
 # anything else, nowhere. Under one date, an entry's folder, its decisions and its review items
 # share the name on purpose; a decision or review item new-name.sh drew without --entry says so in
 # its heading ("· not from an entry"), and may share its name with nothing. A milestone-numbered
-# file, or a record named by a longer heading slug, is not a name and is skipped.
+# file, or a record named by a longer heading slug, is not a name and is skipped. A four-word name
+# is a further record only when its first two words are themselves an entry, a folder under
+# docs/todo or a record `<entry>.md`; its last two words are a name too, and are checked as one.
 lint_duplicate_names() {
-    local folder path base own
+    local folder path base own entries
+    entries=" "
+    for folder in docs/todo docs/decisions docs/review; do
+        [[ -d "$folder" ]] || continue
+        for path in "$folder"/*; do
+            [[ -e "$path" ]] || continue
+            base="${path##*/}"
+            base="${base%.md}"
+            [[ "$base" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z]+-[a-z]+$ ]] && entries="$entries$base "
+        done
+    done
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         printf '%s\n' "$line"
@@ -207,6 +219,9 @@ lint_duplicate_names() {
                 base="${path##*/}"
                 base="${base%.md}"
                 [[ "$base" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z]+-[a-z]+(-[0-9]+|-[a-z]+-[a-z]+)?$ ]] || continue
+                if [[ "$base" =~ ^([0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z]+-[a-z]+)-[a-z]+-[a-z]+$ ]]; then
+                    [[ "$entries" == *" ${BASH_REMATCH[1]} "* ]] || continue
+                fi
                 own=0
                 if [[ "$folder" == docs/decisions || "$folder" == docs/review ]] \
                     && grep -qF '· not from an entry' <<<"$(head -n 1 "$path")"; then
@@ -226,6 +241,12 @@ lint_duplicate_names() {
                 files[pair, key]++
                 if (own) owned[pair, key] = 1
                 where[pair] = where[pair] " " folder "/" base
+                if (n == 4) {
+                    pair2 = part[3] "-" part[4]
+                    key2 = date " second"
+                    if (!((pair2, key2) in seen)) { seen[pair2, key2] = 1; count[pair2]++ }
+                    where[pair2] = where[pair2] " " folder "/" base
+                }
             }
             END {
                 for (k in owned) if (files[k] > 1) { split(k, kp, SUBSEP); bad[kp[1]] = 1 }

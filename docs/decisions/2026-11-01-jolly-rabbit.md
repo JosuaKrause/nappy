@@ -18,4 +18,9 @@ item needs a record for its entry), the name lint in `tools/lint.sh`, and the re
 `docs/REVIEW.md` say a further record is named and a piece of an entry's work, whether an item file or the label a brief, a PR title
 or a record title gives a part of a step, is named, never numbered or lettered ("part B3", "slice 4", "2a/4").
 
+**Read as:** "numbers already assigned stay" (inbox #941) is permanent: the existing numbered records, the refactor's `-2` to `-50`
+and the open pull requests' `-46` to `-50` among them, keep their names and are not renamed once the refactor ends (PLAYTEST-144 6
+says the same for numbered files). The context the player said yes to on #941 had said the refactor's numbered records would be
+renamed after it ends; this is the builder's reading, open to the player's overturn.
+
 **Rejected.** Leaving `--entry` as it was and numbering with a number-aware script; the player declined a fix that keeps numbers.
