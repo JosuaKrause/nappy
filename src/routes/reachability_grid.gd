@@ -67,16 +67,13 @@ var _cell_of_node: Array[Vector2i] = []
 var _edges: Array = []
 
 ## The sixteen-entry lookup from a cell's walkable mask to its components, each a list of local
-## slots. Built once, lazily, and shared by every grid — it depends on nothing but the geometry of
-## a 2x2 square.
-static var _mask_components: Array = []
-
-static func _components_of_mask(mask: int) -> Array:
-	if _mask_components.is_empty():
-		_mask_components.resize(16)
-		for candidate in 16:
-			_mask_components[candidate] = _compute_components(candidate)
-	return _mask_components[mask]
+## slots. Each `build()` makes its own, a local it reads and drops — it depends on nothing but the
+## geometry of a 2x2 square.
+static func _components_by_mask() -> Array:
+	var table: Array = []
+	for mask in 16:
+		table.append(_compute_components(mask))
+	return table
 
 static func _compute_components(mask: int) -> Array:
 	var present: Array[int] = []
@@ -121,6 +118,7 @@ static func build(map: CityMap, mover: Mover = null) -> ReachabilityGrid:
 	var grid := ReachabilityGrid.new()
 	grid._map_size = map.size
 	grid._cells = map.size / CELL
+	var components_by_mask := _components_by_mask()
 	var tile_count := map.size.x * map.size.y
 	grid._node_of_tile = PackedInt32Array()
 	grid._node_of_tile.resize(tile_count)
@@ -137,7 +135,7 @@ static func build(map: CityMap, mover: Mover = null) -> ReachabilityGrid:
 				tiles.append(tile)
 				if map.passable(tile, ground):
 					mask |= 1 << slot
-			for component in _components_of_mask(mask):
+			for component in components_by_mask[mask]:
 				var node := grid._edges.size()
 				grid._edges.append([])
 				grid._cell_of_node.append(cell)

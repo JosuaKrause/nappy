@@ -158,12 +158,9 @@ class Candidate extends RefCounted:
 	var strength := Strength.SOFT
 	var def_ids: Array[String] = []
 
-static var _candidates: Array[Candidate] = []
-
+## The day's eight pictures. Built fresh by every call, so no caller holds another's table.
 static func candidates() -> Array[Candidate]:
-	if _candidates.is_empty():
-		_candidates = _build_candidates()
-	return _candidates
+	return _build_candidates()
 
 ## The only place a new picture is added. See the class doc.
 ##
@@ -358,12 +355,9 @@ static func _build_escape_candidates() -> Array[Candidate]:
 		_candidate("finale_craters", Strength.HARD, ["impact_crater"]),
 	]
 
-static var _escape_candidates: Array[Candidate] = []
-
+## The escape's four pictures, built fresh by every call like `candidates()`.
 static func escape_candidates() -> Array[Candidate]:
-	if _escape_candidates.is_empty():
-		_escape_candidates = _build_escape_candidates()
-	return _escape_candidates
+	return _build_escape_candidates()
 
 ## The pictures `spec` seals with (`DaySpec.seal_pictures`).
 static func pictures_for(spec: DaySpec) -> Array[Candidate]:
