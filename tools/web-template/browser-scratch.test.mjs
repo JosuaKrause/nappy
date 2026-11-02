@@ -128,7 +128,7 @@ test('an attributed clone is removed once its process is gone; others are report
   assert.deepEqual([...scratch.owned.keys()], [owned]);
   await stop(browser);
   const report = await scratch.settle({ waitMs: 0 });
-  assert.deepEqual(report.removed.map(entry => entry.path), [owned]);
+  assert.deepEqual(report.removed.map(entry => entry.path), [owned], JSON.stringify(report));
   assert.match(report.removed[0].evidence, /Fixture\.app\/Contents\/binary$/);
   assert.deepEqual(report.retained, []);
   assert.deepEqual(report.candidates.map(entry => entry.path), [stranger]);
