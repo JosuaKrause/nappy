@@ -12,6 +12,7 @@ var _ended: Array = []
 var _run: RunState
 
 func run(t) -> void:
+	# Moves the observers' count only when a run is under way in the process, which depends on the suites before it.
 	t.gives_back_observers()
 	_test_a_timeout_costs_a_nerve_and_names_no_cause(t)
 	_test_a_crying_day_is_named_by_what_landed_the_most(t)

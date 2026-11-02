@@ -15,6 +15,7 @@ const SIMULATED_SECONDS := 25.0
 const SIMULATION_STEP := 0.1
 
 func run(t) -> void:
+	# Moves the observers' count only when a run is under way in the process, which depends on the suites before it.
 	t.gives_back_observers()
 	for seed_value in SEEDS:
 		_play_a_run(t, seed_value)

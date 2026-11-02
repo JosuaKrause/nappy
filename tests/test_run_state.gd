@@ -29,6 +29,7 @@ class FakeOwner:
 	var part := RunHeader.new()
 
 func run(t) -> void:
+	# Moves the observers' count only when a run is under way in the process, which depends on the suites before it.
 	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)

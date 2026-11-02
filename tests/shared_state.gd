@@ -72,23 +72,18 @@ const EXEMPT: Dictionary[String, String] = {
 	"drawn_view._viewport_id": "the per-frame view box cache, replaced each frame",
 	"drawn_view._box": "the per-frame view box cache, replaced each frame",
 	"run_config._at_boot": "the parse of the command line and page query, fixed for the process",
-	"Telemetry._config": "handed by a booted main; the runner hands it back with `Telemetry.configure(null)`",
-	"VisitCounter._config": "handed by a booted main; the runner hands it back with `VisitCounter.configure(null, ...)`",
-	"VisitCounter._run": "handed by a booted main; the runner hands it back with `VisitCounter.configure(null, ...)`",
-	"game_save._config": "handed by a booted main; the runner hands it back with `GameSave.configure(null)`",
-	"controls_mode._remembered": "the title's answer, set by a booted main; the runner calls `ControlsMode.forget()`",
-	"controls_mode._remembered_mode": "the title's answer, set by a booted main; the runner calls `ControlsMode.forget()`",
-	"controls_mode._remembered_side": "the title's answer, set by a booted main; the runner calls `ControlsMode.forget()`",
 }
 
 ## The fields a suite that boots `main` (or drives a run the observers watch) moves on: the
+## configuration `main` hands the observers and the title's remembered controls, and the
 ## observers' count of the run so far. A suite that does so declares it with
 ## `t.gives_back_observers()` as its first line, and the runner puts these back to what they were
 ## then once the suite is over; any other suite that changes one fails.
 const OBSERVER_FIELDS: Dictionary[String, Array] = {
-	"Telemetry": ["_run_dir", "_day_attempts", "_attempt", "_burst_serial"],
-	"VisitCounter": ["_day", "_open_tasks", "_reported_run_begun"],
-	"GameSave": ["_last_operation"],
+	"Telemetry": ["_config", "_run_dir", "_day_attempts", "_attempt", "_burst_serial"],
+	"VisitCounter": ["_config", "_run", "_day", "_open_tasks", "_reported_run_begun"],
+	"GameSave": ["_config", "_last_operation"],
+	"ControlsMode": ["_remembered", "_remembered_mode", "_remembered_side"],
 }
 
 ## The values of `OBSERVER_FIELDS` now, copied.
@@ -110,6 +105,8 @@ static func put_back_observers(held: Dictionary) -> void:
 static func _observer_target(owner: String) -> Object:
 	if owner == "GameSave":
 		return GameSave
+	if owner == "ControlsMode":
+		return ControlsMode
 	return Engine.get_main_loop().root.get_node(owner)
 
 static func _observer_get(owner: String, field: String) -> Variant:

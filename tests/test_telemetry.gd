@@ -17,6 +17,7 @@ extends RefCounted
 
 const BuildingEvents := preload("res://tests/building_events.gd")
 func run(t) -> void:
+	# Moves the observers' count only when a run is under way in the process, which depends on the suites before it.
 	t.gives_back_observers()
 	_test_it_is_off_until_a_run_asks_for_it(t)
 	_test_a_line_is_a_time_a_kind_and_a_sentence(t)
