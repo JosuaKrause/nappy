@@ -1614,8 +1614,9 @@ func _build_roof_layers() -> void:
 			_rotor_layers.append(object.add_rotor(_vent_frame_b))
 	if power_station:
 		_station_layer = Node2D.new()
-		add_child(_station_layer)
+		# Tagged before it enters the tree: the recorder classifies a node as it is added.
 		_station_layer.set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.SCENERY)
+		add_child(_station_layer)
 		_station_layer.draw.connect(_draw_station_layer)
 
 func _clear_roof_layers() -> void:

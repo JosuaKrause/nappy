@@ -912,9 +912,9 @@ the split as without. The row counts the game's own `_draw()` calls in the frame
 `EntityHalo` rim re-trace), `draws_scenery` (buildings, their roof objects, station layers and
 shadow chunks, decals, props, the city's edges, water and ground layers), `draws_badges`
 (`DangerEdge`), `draws_player` (her stroller) and `draws_other` (traffic lights, chalk, closure
-and fence markers, the HUD's own drawing). Each is counted by
+and fence markers, the HUD's own drawing). Each but `draws_crowd` is counted by
 `FrameRecorder` listening to the node's `draw` signal (below), so a call that returns early is still
-a call. The engine's own
+a call; the crowd counts its agents through its own timing sink. The engine's own
 measurement of the window's last render is `render_cpu_usec`
 (`RenderingServer.viewport_get_measured_render_time_cpu`, switched on only while the record is on);
 a row with 0 means the engine reported nothing, and `environment.render_cpu_reported` says whether
@@ -973,9 +973,7 @@ subtracts the product from a phone's frames subtracts too little.
 frame, so each holds the `FrameTiming` its manager hands it (`EventInstance.timing`) and, off, pays
 a member read and a read of its `on` before its body, which stays in its own `_process()`; a static
 read and a call into a second function there, on a couple of hundred timed bodies a frame, made
-every player's frame measurably longer on a desktop, with the record off. (A read of `on` through a
-held object measured about 30ns against about 75ns for a static read on the same loop, so handing
-the sink in costs nothing a static read did not.) A crowd agent is not timed on its own: it steps
+every player's frame measurably longer on a desktop, with the record off. A crowd agent is not timed on its own: it steps
 inside the crowd's tick, which is. The systems timed once a frame (the crowd's and the event
 manager's physics steps, the scenery queue's update, the sweep, the halo and the edge) are handed
 the sink when `main` builds them and read its `on` each frame (the crowd's through its
@@ -988,9 +986,8 @@ per-kind count. A node is counted by its class where the recorder may name it (`
 else by the kind it declares in its `FrameTiming.DRAW_KIND_META` (the view's nodes, which an
 observer may not name, and the canvases that are no class of their own: a shadow chunk, a station's
 yard layer). A crowd agent is counted through its `CrowdTiming`. With no recorder, nothing is
-connected, so a draw pays nothing at all. The measured figures from before the counting was moved
-to the signal — the per-kind means and the frame medians with the record off against the base —
-are in [M159-7](decisions/2026-09-19-M159-7.md) and its evidence,
+connected, so a draw pays nothing at all. The per-kind means and the frame medians with the record
+off, against the base, are measured in [M159-7](decisions/2026-09-19-M159-7.md) and its evidence,
 `docs/evidence/m159-draw-split-2026-10-04/`.
 
 **The readout carries one line for it**, beneath the frame block: the last slow frame's length and

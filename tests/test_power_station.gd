@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_the_door_is_reached_on_its_day_through_a_region_door(t)
 	_test_no_other_day_is_bent_toward_it(t)
 	_test_an_older_save_with_the_station_block_advanced_still_loads(t)
+	_test_the_yard_layer_is_counted_when_the_station_comes_into_view(t)
 	_test_the_stacks_stand_in_the_entities_depth_order(t)
 
 # ------------------------------------------------------------------ generation ---
@@ -335,3 +336,38 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t) -> void:
 		t.check(behind > 0, "stack %d's picture reaches walkable ground behind it (%d tiles)"
 				% [i, behind])
 	city.free()
+
+## The yard layer is built when residency brings the station into view, in a tree whose frame record
+## is listening: the recorder classifies a node as it is added, so the layer carries its kind
+## before it enters the tree, and its draws land in the scenery count.
+func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void:
+	var record := FrameRecord.new()
+	var ledger := FrameLedger.new(2)
+	record.start(ledger)
+	var sitting := Sitting.new()
+	sitting.frame_timing = record
+	var recorder := FrameRecorder.new()
+	recorder.save_on_exit = false
+	t.add_child(recorder)
+	recorder.setup(func() -> bool: return false, null, null, null, null, sitting)
+	var station := Building.new()
+	station.district = GameEnums.BlockPurpose.INDUSTRIAL
+	station.footprint = Vector2(96.0, 256.0)
+	station.height = 64.0
+	station.power_station = true
+	station.scenery_resident = false
+	t.add_child(station)
+	station.set_scenery_resident(true)
+	var layers := 0
+	for child in station.get_children():
+		if child is Node2D and child.has_meta(FrameTiming.DRAW_KIND_META):
+			layers += 1
+			for connection in (child as Node2D).draw.get_connections():
+				if connection["callable"].get_object() == recorder:
+					connection["callable"].call()
+	t.check(layers == 1, "the station's yard layer declares its kind (%d layers)" % layers)
+	t.check(ledger._counters[FrameLedger.DRAWS_SCENERY] == 1,
+			"a yard layer built into a listening tree is counted as scenery")
+	station.free()
+	recorder.free()
+	sitting.free()
