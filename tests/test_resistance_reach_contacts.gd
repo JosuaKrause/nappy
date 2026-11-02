@@ -4,12 +4,10 @@ extends "res://tests/resistance_rig.gd"
 func run(t) -> void:
 	t.gives_back_observers()
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
-	# This one reads the city standing, the third of the seeds the day-11 mast test builds.
-	_build_city(t, 1234567)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
-	_test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t)
-	if _city != null:
-		_city.free()
+	_test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t)
+	_test_the_director_hands_the_draw_its_own_predicates(t)
+	_free_city()
 
 ## feathery-marmot, day 11's queued mast — *"if there is a mast queued up that will be the next
 ## event to be generated"* (quiet-yak, inbox #503). On the test city's day 11, a stationary `reversing_lorry`
@@ -20,53 +18,52 @@ func run(t) -> void:
 ## the day's plan under an added id, and has room by the same rule. A mast put down where the
 ## director pointed, as before, fails the first half.
 func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
-	_build_city(t)
-	var saved_state := GameState.attempt_spend.city_state
-	_with_clean_run(func() -> void:
-		var read := _read_the_mark_on(t, 11, SEED)
-		var director: ResistanceDirector = read[0]
-		var player: Stroller = read[2]
-		var map := _city.map
-		var lorry_def := EventCatalogue.by_id("reversing_lorry")
-		var walled := _walled_alleys()
-		var lorry_tile := Vector2i(-1, -1)
-		for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-			if SpawnSiting.is_legal_ground(map, tile, walled) and not map.is_obstructed(tile) \
-					and map.tile_to_world(tile).distance_to(map.doorstep_world_position()) > 600.0:
-				lorry_tile = tile
-				break
-		var lorry := EventScheduler.Planned.new(lorry_def, map.tile_to_world(lorry_tile))
-		lorry.role = GameEnums.BlockerRole.FRICTION
-		_city.events.streaming._plans.append(lorry)
-		var inside: Array[Vector2i] = []
-		var clear: Array[Vector2i] = []
-		for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-			if not SpawnSiting.is_legal_ground(map, tile, walled) or map.is_obstructed(tile):
-				continue
-			var gap := map.tile_to_world(tile).distance_to(lorry.position)
-			if gap > EventScheduler.EVENT_SPACING_ANY and gap < lorry_def.field_reach() - Tuning.TILE_SIZE:
-				inside.append(tile)
-			elif gap > lorry_def.field_reach() + 600.0 and gap < lorry_def.field_reach() + 900.0:
-				clear.append(tile)
-		t.check(not inside.is_empty() and not clear.is_empty(),
-				"there is sidewalk inside the lorry's field and well clear of it (%d, %d)"
-				% [inside.size(), clear.size()])
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 11
-		var refused := _city.events.queue_a_mast(inside, rng)
-		t.check(refused == null, "offered only ground inside a lethal field, no mast is generated")
-		var placed := _city.events.queue_a_mast(clear, rng)
-		t.check(placed != null and placed.mast_id.begins_with("added-")
-				and placed in _city.events.plans(),
-				"offered ground clear of it, a mast is generated into the day's plan")
-		if placed:
-			var others := _city.events.plans().filter(
-					func(plan: EventScheduler.Planned) -> bool: return plan != placed)
-			t.check(EventScheduler._room_around(placed, others) != -INF,
-					"and it has room by the scheduler's own spacing")
-		player.free()
-		director.free())
-	GameState.attempt_spend.city_state = saved_state
+	_build_city_in_a_new_run(t)
+	var read := _read_the_mark_on(t, 11, SEED)
+	var director: ResistanceDirector = read[0]
+	var player: Stroller = read[2]
+	var map := _city.map
+	var lorry_def := EventCatalogue.by_id("reversing_lorry")
+	var walled := _walled_alleys()
+	var lorry_tile := Vector2i(-1, -1)
+	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if SpawnSiting.is_legal_ground(map, tile, walled) and not map.is_obstructed(tile) \
+				and map.tile_to_world(tile).distance_to(map.doorstep_world_position()) > 600.0:
+			lorry_tile = tile
+			break
+	var lorry := EventScheduler.Planned.new(lorry_def, map.tile_to_world(lorry_tile))
+	lorry.role = GameEnums.BlockerRole.FRICTION
+	# Planned after dawn, the way the day adds a plan it places late: it streams in like any
+	# planned row and its body is recorded where it stands.
+	_city.events.streaming.add(lorry)
+	var inside: Array[Vector2i] = []
+	var clear: Array[Vector2i] = []
+	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if not SpawnSiting.is_legal_ground(map, tile, walled) or map.is_obstructed(tile):
+			continue
+		var gap := map.tile_to_world(tile).distance_to(lorry.position)
+		if gap > EventScheduler.EVENT_SPACING_ANY and gap < lorry_def.field_reach() - Tuning.TILE_SIZE:
+			inside.append(tile)
+		elif gap > lorry_def.field_reach() + 600.0 and gap < lorry_def.field_reach() + 900.0:
+			clear.append(tile)
+	t.check(not inside.is_empty() and not clear.is_empty(),
+			"there is sidewalk inside the lorry's field and well clear of it (%d, %d)"
+			% [inside.size(), clear.size()])
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	var refused := _city.events.queue_a_mast(inside, rng)
+	t.check(refused == null, "offered only ground inside a lethal field, no mast is generated")
+	var placed := _city.events.queue_a_mast(clear, rng)
+	t.check(placed != null and placed.mast_id.begins_with("added-")
+			and placed in _city.events.plans(),
+			"offered ground clear of it, a mast is generated into the day's plan")
+	if placed:
+		var others := _city.events.plans().filter(
+				func(plan: EventScheduler.Planned) -> bool: return plan != placed)
+		t.check(EventScheduler._room_around(placed, others) != -INF,
+				"and it has room by the scheduler's own spacing")
+	player.free()
+	director.free()
 
 const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 
@@ -111,82 +108,73 @@ const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 ## all within this sweep's own days and seeds, so the general loop below checks them along with
 ## everything else rather than as a separate case.
 func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> void:
-	_with_clean_run(func() -> void:
-		var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
-		var saved_scars := GameState.attempt_spend.scars.duplicate()
-		var checked := 0
-		for seed_value in REACHABILITY_SWEEP_SEEDS:
-			var city: City = RunCity.of_the_run(CITY_SCENE)
-			t.add_child(city)
-			city.build(CityGenerator.generate(seed_value))
-			for day in REACHABILITY_SWEEP_DAYS:
-				GameState.resistance.completed_steps = []
-				GameState.resistance.failed_steps = []
-				GameState.facts.completed_resistance_alley_tiles.clear()
-				# No history, like `--day N`: day 8 with no recorded scar records one for its
-				# task, and a scar from another seed's city must not stand in this one's.
-				GameState.attempt_spend.scars = []
-				var closure_state := CityState.new()
-				closure_state.begin_day(city.map.block_plans, day)
-				city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
-				city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
-						city.map.doorstep_world_position())
+	var checked := 0
+	for seed_value in REACHABILITY_SWEEP_SEEDS:
+		var run := _build_city_in_a_new_run(t, seed_value)
+		var city := _city
+		for day in REACHABILITY_SWEEP_DAYS:
+			# No history, like `--day N`: no step done, no alley used and no scar — day 8 with no
+			# recorded scar records one for its task, and an earlier day's must not stand in this
+			# one's.
+			run.resistance.completed_steps = []
+			run.resistance.failed_steps = []
+			run.facts.completed_resistance_alley_tiles = []
+			run.attempt_spend.scars = []
+			var closure_state := CityState.new()
+			closure_state.begin_day(city.map.block_plans, day)
+			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
+			city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
+					city.map.doorstep_world_position())
 
-				var director := ResistanceDirector.new()
-				t.add_child(director)
-				director.set_process(false)
-				director.setup(city, city.map)
-				director.start_day(day, _production_rng(seed_value, day, "resistance"),
-						Tuning.day_length(day))
-				# `main.gd`'s own order: the player is placed at the doorstep only after
-				# `_resistance.start_day()` returns, and the tree's first `_process()` runs after
-				# that — so a mark checked before this tick is checked somewhere she never sees.
-				var player := _rig_player(t, city.map.doorstep_world_position())
-				director.use_player(player)
-				director.tick(STEP)
+			var director := _director(t)
+			director.start_day(day, _production_rng(seed_value, day, "resistance"),
+					Tuning.day_length(day))
+			# `main.gd`'s own order: the player is placed at the doorstep only after
+			# `_resistance.start_day()` returns, and the tree's first `_process()` runs after
+			# that — so a mark checked before this tick is checked somewhere she never sees.
+			var player := _rig_player(t, city.map.doorstep_world_position())
+			director.use_player(player)
+			director.tick(STEP)
 
-				var region_plan: RegionPlanner.RegionPlan = city.region_plan()
-				var walled_alleys: Array[Rect2i] = region_plan.alley_walls if region_plan else []
-				var reachability := _day_reachability(city)
-				var grid: ReachabilityGrid = reachability[0]
-				var blocked: Dictionary = reachability[1]
-				var reached: Dictionary = reachability[2]
-				var mark_step := director.current_step()
-				if mark_step != null:
+			var region_plan: RegionPlanner.RegionPlan = city.region_plan()
+			var walled_alleys: Array[Rect2i] = region_plan.alley_walls if region_plan else []
+			var reachability := _day_reachability(city)
+			var grid: ReachabilityGrid = reachability[0]
+			var blocked: Dictionary = reachability[1]
+			var reached: Dictionary = reachability[2]
+			var mark_step := director.current_step()
+			if mark_step != null:
+				checked += 1
+				var mark_tile := city.map.world_to_tile(director.contact_position())
+				t.check(_stands_on_legal_ground(city.map, mark_tile, walled_alleys, false,
+						grid, blocked, reached),
+						("seed %d day %d: step %d's mark stands on walkable, unobstructed, " +
+						"reachable ground at %s") % [seed_value, day, mark_step.index, mark_tile])
+
+				_read_the_mark(director)
+				var task_step := director.current_step()
+				if task_step != null:
 					checked += 1
-					var mark_tile := city.map.world_to_tile(director.contact_position())
-					t.check(_stands_on_legal_ground(city.map, mark_tile, walled_alleys, false,
-							grid, blocked, reached),
-							("seed %d day %d: step %d's mark stands on walkable, unobstructed, " +
-							"reachable ground at %s") % [seed_value, day, mark_step.index, mark_tile])
-
-					director._on_contact_completed(mark_step.index)
-					var task_step := director.current_step()
-					if task_step != null:
-						checked += 1
-						var task_tile := city.map.world_to_tile(director.contact_position())
-						# Every contact stands on its item — a door on a wall, a van or a mast on its
-						# own body's tile — so what is asked is that she can touch it from ground
-						# she can stand on. Day 9's is crossed instead: its gatehouse stands on the
-						# door's own held pavement, which is asked as before.
-						if task_step.target_kind == ResistanceSteps.TargetKind.DOOR:
-							t.check(_stands_on_legal_ground(city.map, task_tile, walled_alleys,
-									true, grid, blocked, reached),
-									("seed %d day %d: step %d's gatehouse stands on walkable, " +
-									"reachable ground at %s") % [seed_value, day, task_step.index,
-									task_tile])
-						else:
-							t.check(_touched_from_standable_ground(director,
-									director.contact_position(), city.map),
-									("seed %d day %d: step %d's contact at %s is touched from " +
-									"walkable, unobstructed, reachable ground") % [seed_value, day,
-									task_step.index, task_tile])
-				player.free()
-				director.free()
-			city.free()
-		GameState.facts.completed_resistance_alley_tiles = saved_tiles
-		GameState.attempt_spend.scars = saved_scars
-		t.check(checked > 0, "the sweep actually checked something (%d)" % checked))
+					var task_tile := city.map.world_to_tile(director.contact_position())
+					# Every contact stands on its item — a door on a wall, a van or a mast on its
+					# own body's tile — so what is asked is that she can touch it from ground
+					# she can stand on. Day 9's is crossed instead: its gatehouse stands on the
+					# door's own held pavement, which is asked as before.
+					if task_step.target_kind == ResistanceSteps.TargetKind.DOOR:
+						t.check(_stands_on_legal_ground(city.map, task_tile, walled_alleys,
+								true, grid, blocked, reached),
+								("seed %d day %d: step %d's gatehouse stands on walkable, " +
+								"reachable ground at %s") % [seed_value, day, task_step.index,
+								task_tile])
+					else:
+						t.check(_touched_from_standable_ground(director,
+								director.contact_position()),
+								("seed %d day %d: step %d's contact at %s is touched from " +
+								"walkable, unobstructed, reachable ground") % [seed_value, day,
+								task_step.index, task_tile])
+			player.free()
+			director.free()
+	t.check(checked > 0, "the sweep actually checked something (%d)" % checked)
 
 ## The first `RandomNumberGenerator.seed` whose first `randi_range(0, pool_size - 1)` answers
 ## `wanted_index` — found by trying seeds in order rather than inverted by hand, since nothing here
@@ -201,63 +189,99 @@ func _seed_that_draws(pool_size: int, wanted_index: int) -> int:
 	return -1
 
 ## **A placement that is valid today stays exactly where it is; only a candidate the new check
-## rejects is replaced.** `_pick_reachable()` draws one index over the whole pool exactly as it did
-## before `is_obstructed()` was ever checked, and only asks the question of the tile the draw
-## actually landed on — so a pool with nothing obstructed in it, or a draw that lands on a tile
-## that never was, answers exactly what a bare `pool[rng.randi_range(...)]` would.
+## rejects is replaced.** The director's draw (`ResistanceDirector.draw_reachable()`, which
+## `_pick_reachable()` hands today's legal ground and whether a drawn tile is open to it) draws one
+## index over the whole pool exactly as it did before `is_obstructed()` was ever checked, and only
+## asks the question of the tile the draw actually landed on — so a pool with nothing obstructed in
+## it, or a draw that lands on a tile that never was, answers exactly what a bare
+## `pool[rng.randi_range(...)]` would.
 ##
 ## Proven directly rather than inferred from a sweep's own before/after numbers: two real, legal
-## alley tiles as the whole pool, one seed engineered to draw each index first
-## (`_seed_that_draws()`). Neither candidate obstructed draws candidate_a exactly; candidate_a
-## obstructed replaces it with candidate_b, the pool's only other legal tile, never a third,
-## nonexistent one; and the seed that would have drawn candidate_b anyway still draws it,
+## alley tiles of the test city's map as the whole pool, no alley used, open meaning no body
+## recorded on the tile (`CityMap.is_obstructed()`), and one seed engineered to draw each index
+## first (`_seed_that_draws()`). Neither candidate obstructed draws candidate_a exactly;
+## candidate_a obstructed replaces it with candidate_b, the pool's only other legal tile, never a
+## third, nonexistent one; and the seed that would have drawn candidate_b anyway still draws it,
 ## unmoved by an obstruction on a *different* candidate it was never going to answer with.
-func _test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t) -> void:
-	_build_city(t)
-	_with_clean_run(func() -> void:
-		# Neither candidate this test picks may already be "used" (M177) — an unrelated leftover
-		# would shrink the pool below the two entries every check below assumes.
-		var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
-		GameState.facts.completed_resistance_alley_tiles.clear()
+func _test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t) -> void:
+	var map := CityGenerator.generate(SEED)
+	var legal: Array[Vector2i] = []
+	for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
+		if map.is_walkable(tile) and not map.is_closed(tile) \
+				and not map.is_held_at(tile) and not map.is_on_home_block(tile):
+			legal.append(tile)
+		if legal.size() >= 2:
+			break
+	t.check(legal.size() >= 2, "the test city has at least two legal alley candidates")
+	if legal.size() < 2:
+		return
 
-		var legal: Array[Vector2i] = []
-		for tile in _city.map.tiles_of_type(GameEnums.TileType.ALLEY):
-			if _city.map.is_walkable(tile) and not _city.map.is_closed(tile) \
-					and not _city.map.is_held_at(tile) and not _city.map.is_on_home_block(tile):
-				legal.append(tile)
-			if legal.size() >= 2:
-				break
-		t.check(legal.size() >= 2, "the test city has at least two legal alley candidates")
-		if legal.size() < 2:
-			GameState.facts.completed_resistance_alley_tiles = saved_tiles
-			return
+	var candidate_a: Vector2i = legal[0]
+	var candidate_b: Vector2i = legal[1]
+	var candidates: Array[Vector2i] = [candidate_a, candidate_b]
+	var seed_for_a := _seed_that_draws(candidates.size(), 0)
+	var seed_for_b := _seed_that_draws(candidates.size(), 1)
+	var stands := func(_tile: Vector2i) -> bool: return true
+	var open := func(tile: Vector2i) -> bool: return not map.is_obstructed(tile)
+	var none_used: Array[Vector2i] = []
 
-		var candidate_a: Vector2i = legal[0]
-		var candidate_b: Vector2i = legal[1]
-		var candidates: Array[Vector2i] = [candidate_a, candidate_b]
-		var seed_for_a := _seed_that_draws(candidates.size(), 0)
-		var seed_for_b := _seed_that_draws(candidates.size(), 1)
+	var rng_a := RandomNumberGenerator.new()
+	rng_a.seed = seed_for_a
+	t.check(ResistanceDirector.draw_reachable(candidates, rng_a, stands, open, none_used)
+			== candidate_a,
+			"neither candidate obstructed: the draw lands exactly where it always would")
 
-		var director := _director(t)
-		var rng_a := RandomNumberGenerator.new()
-		rng_a.seed = seed_for_a
-		t.check(director._pick_reachable(candidates, rng_a) == _city.map.tile_to_world(candidate_a),
-				"neither candidate obstructed: the draw lands exactly where it always would")
+	var obstruction: Array[Vector2i] = [candidate_a]
+	map.obstruct_tiles(self.get_instance_id(), obstruction)
+	var rng_a2 := RandomNumberGenerator.new()
+	rng_a2.seed = seed_for_a
+	t.check(ResistanceDirector.draw_reachable(candidates, rng_a2, stands, open, none_used)
+			== candidate_b,
+			"candidate_a obstructed: the same draw is replaced by the pool's only other " +
+			"legal candidate")
 
-		var obstruction: Array[Vector2i] = [candidate_a]
-		_city.map.obstruct_tiles(self.get_instance_id(), obstruction)
-		var rng_a2 := RandomNumberGenerator.new()
-		rng_a2.seed = seed_for_a
-		t.check(director._pick_reachable(candidates, rng_a2) == _city.map.tile_to_world(candidate_b),
-				"candidate_a obstructed: the same draw is replaced by the pool's only other " +
-				"legal candidate")
+	var rng_b := RandomNumberGenerator.new()
+	rng_b.seed = seed_for_b
+	t.check(ResistanceDirector.draw_reachable(candidates, rng_b, stands, open, none_used)
+			== candidate_b,
+			"a draw whose own candidate was never obstructed still lands exactly there, " +
+			"unmoved by an obstruction on the other one")
 
-		var rng_b := RandomNumberGenerator.new()
-		rng_b.seed = seed_for_b
-		t.check(director._pick_reachable(candidates, rng_b) == _city.map.tile_to_world(candidate_b),
-				"a draw whose own candidate was never obstructed still lands exactly there, " +
-				"unmoved by an obstruction on the other one")
+## What the draw above is handed is the director's: `_pick_reachable()` hands `draw_reachable()` the
+## day's legal ground (`stands`) and whether a drawn tile is open to it and reachable from home
+## (`open`). Proven through a real director's dawn rather than by reading the wiring: day 6's mark
+## is dawned once as it falls, then the same dawn is run again on an identical city with a body
+## recorded on the tile it fell on. The mark must land on another tile, one that is legal ground
+## with no body on it, so an `open` that did not refuse the occupied tile lets the first tile stand
+## and fails here. `open`'s reachability half is caught by the sweep above, not here: the director's
+## reach grid comes from the scheduler's plans, not the map the body is recorded on.
+func _test_the_director_hands_the_draw_its_own_predicates(t) -> void:
+	var fell_on := _dawn_mark_tile(t, 6, null)
+	t.check(fell_on != Vector2i(-1, -1), "day 6's mark falls on a tile at dawn")
+	var occupied: Array[Vector2i] = [fell_on]
+	var then := _dawn_mark_tile(t, 6, occupied)
+	t.check(then != Vector2i(-1, -1) and then != fell_on,
+			"with a body on the tile it fell on, the same dawn lands the mark on another")
+	t.check(not _city.map.is_obstructed(then)
+			and SpawnSiting.is_legal_ground(_city.map, then, _walled_alleys()),
+			"and that tile is legal ground with no body on it")
 
-		_city.map.release_obstruction(self.get_instance_id())
-		GameState.facts.completed_resistance_alley_tiles = saved_tiles
-		director.free())
+## The tile day `day`'s mark falls on at dawn, on a city and run built for it, with `bodies` (when
+## given) recorded on the map before the director dawns. (-1, -1) when it has no mark.
+func _dawn_mark_tile(t, day: int, bodies) -> Vector2i:
+	var run := _build_city_in_a_new_run(t)
+	run.resistance.completed_steps = _completed_through(2 * (day - 6))
+	var state := CityState.new()
+	run.attempt_spend.city_state = state
+	state.begin_day(_city.map.block_plans, day)
+	_city.start_day(state, day, _rng(day, "closures", SEED))
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", SEED), [],
+			_city.map.doorstep_world_position())
+	if bodies != null:
+		_city.map.obstruct_tiles(get_instance_id(), bodies)
+	var director := _director(t)
+	director.start_day(day, _rng(day, "resistance", SEED), 300.0)
+	var at := director.contact_position()
+	var tile := _city.map.world_to_tile(at) if at.is_finite() else Vector2i(-1, -1)
+	director.free()
+	return tile
