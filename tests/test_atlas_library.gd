@@ -218,14 +218,21 @@ func _test_regions_do_not_overlap(t) -> void:
 
 ## The questions a layout pass asks — how big is this picture, do we have one — are answered
 ## from the table, with no page loaded. A consumer that had to acquire a group to measure a
-## shadow would hold a megabyte of texture to read two integers.
+## shadow would hold a megabyte of texture to read two integers. And a library is built over that
+## table alone: the `Sitting` builds one before any boot opens a loading window, so building it
+## must read no page from disk, which every group's empty load moment shows.
 func _test_geometry_needs_nothing_acquired(t) -> void:
 	var atlas := AtlasLibrary.new()
 	var name := &"ui/pause"
 	t.check(AtlasTable.baked().has_region(name), "the table knows a region with nothing acquired")
 	t.check(AtlasTable.baked().native_size(name) != Vector2i.ZERO,
 			"a native size is answered with nothing acquired")
-	t.check(not atlas.is_acquired(&"ui"), "asking geometry acquired nothing")
+	var loaded: Array[String] = []
+	for group: StringName in AtlasTable.baked().groups():
+		if atlas.is_acquired(group) or atlas.last_load_moment(group) != &"":
+			loaded.append(String(group))
+	t.check(not AtlasTable.baked().groups().is_empty() and loaded.is_empty(),
+			"building a library read no page from disk (%s)" % ", ".join(loaded))
 	t.check(AtlasTable.baked().native_size(&"no/such/picture") == Vector2i.ZERO,
 			"an unknown region has no size")
 	t.check(not AtlasTable.baked().has_region(&"no/such/picture"), "an unknown region is not known")
