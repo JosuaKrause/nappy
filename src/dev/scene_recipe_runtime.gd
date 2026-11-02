@@ -1333,7 +1333,7 @@ func snapshot() -> Dictionary:
 		if actor is Stroller:
 			result[label]["carrying"] = actor.carrying
 			result[label]["speed"] = snappedf(actor.current_speed(), 0.0001)
-			result[label]["gait_frame"] = actor._mother_gait_frame(actor.current_speed() / Tuning.WALK_SPEED)
+			result[label]["gait_frame"] = actor.mother_gait_frame(actor.current_speed() / Tuning.WALK_SPEED)
 		elif actor is ContactPoint:
 			result[label]["done"] = actor.is_done
 		elif actor is EventInstance:
