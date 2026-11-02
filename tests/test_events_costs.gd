@@ -456,7 +456,7 @@ func _test_nothing_happens_inside_a_lethal_field(t) -> void:
 ## **The third case of the clearance rule, pinned over `EventDef.pursuit` rather than over
 ## either row that carries it today.** A lethal field that follows her is neither on the
 ## corridor nor off it, so placement cannot keep it clear of anything — `charging_dog` never
-## reaches `_room_around` at all on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER`
+## reaches `room_around` at all on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER`
 ## and sited with no tile, and `alley_robbery` (and `charging_dog` again, past the teaching day,
 ## once `spawn_mode_on()` answers `MAP`) is exempt only because `hard_fail` always classifies a
 ## `MAP`-placed `RECURRING`/`SCRIPTED` row `WALL` before `_role_for` ever asks whether it

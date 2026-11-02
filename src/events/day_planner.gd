@@ -38,6 +38,9 @@ class Plan extends RefCounted:
 
 ## The world the walk is planned over.
 var world: EventWorld
+## The ground the escape's rows are offered on, kept for as long as this planner replans the same
+## city (`EventScheduler.KeptGround`).
+var kept_ground := EventScheduler.KeptGround.new()
 
 func _init(the_world: EventWorld) -> void:
 	world = the_world
@@ -184,7 +187,7 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 	var result := Plan.new()
 	var walk := FinalePlanner.route(world.city_map)
 	result.walk = walk
-	result.placements = plan_the_escape_city(world.city_map, walk, rng, spec)
+	result.placements = plan_the_escape_city(world.city_map, walk, rng, spec, true, kept_ground)
 	result.is_a_day = false
 	world.city_map.clear_day_holds()
 	return result
@@ -203,15 +206,18 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 ## events are never offered the ground she is on. Neither is a check on the spawn and neither moves
 ## anything afterwards. The events are handed the seals too, because what they may not close is the
 ## walk from where she stands to either exit with the seals already down.
+##
+## `kept_ground` is what a replan of the same city reads its ground from again; none reads it afresh.
 static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 		rng: RandomNumberGenerator, spec: DaySpec,
-		populate_events := true) -> Array[EventScheduler.Planned]:
+		populate_events := true,
+		kept_ground: EventScheduler.KeptGround = null) -> Array[EventScheduler.Planned]:
 	var placements: Array[EventScheduler.Planned] = []
 	var seals := SealPlanner.plan_day(map, spec, walk, rng)
 	placements.append_array(seals)
 	if populate_events:
 		placements.append_array(EventScheduler.build_day(spec, rng, map, [], [], [], walk, 0,
-				PackedVector2Array(), [], seals))
+				PackedVector2Array(), [], seals, null, kept_ground))
 	return placements
 
 # --------------------------------------------------------------- the building ---

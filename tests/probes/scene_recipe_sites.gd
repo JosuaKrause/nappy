@@ -50,7 +50,7 @@ func run(_t) -> void:
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))
 	var found := 0
 	for segment in finale.open_streets:
-		var ground := EventScheduler._street_ground(map, segment, guards,
+		var ground := EventScheduler.street_ground(map, segment, guards,
 				StreetTrees.footprint_tiles(map), FinalePlanner.service_exit_world_position(map), {},
 				false)
 		if ground.is_empty():

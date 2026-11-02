@@ -2254,7 +2254,7 @@ func weighted_mast_index(beside: Array[Vector2i], rng: RandomNumberGenerator) ->
 
 ## Silences the mast day 11 sent her to, for the rest of the run: today through
 ## `EventManager.silence_mast()`, and every later day through the scar it leaves
-## (`EventScheduler.SILENCED_MAST`), which `EventScheduler._place_masts()` reads before a mast's plan
+## (`EventScheduler.SILENCED_MAST`), which `EventScheduler.place_masts()` reads before a mast's plan
 ## is ever made. A scar rather than a field of its own on `RunState` because it is exactly what a
 ## scar is — a permanent mark on the city left by what happened on an earlier day — and so it is
 ## saved, and given back with a lost day, by what already does both for the burnt shell.
@@ -3209,9 +3209,10 @@ func mark_guard() -> EventInstance:
 ## The robber or guard the task's trap has set on her, in the world, or null while none is: a done
 ## task's pursuer (`_set_the_trap_on_her()`), not the guard standing over a mark or a task (`guard_spot()`)
 ## and not one a walked crossing sets on her (`CheckpointController.guard_after_her()`). His warning
-## is not him: the trap is null until that has run.
+## is not him: the trap is null until that has run. Null again once he is done (retired with
+## `EventManager.retire()`, or gone his way), since a finished pursuer is no longer in the world.
 func trap() -> EventInstance:
-	return _trap if is_instance_valid(_trap) else null
+	return _trap if is_instance_valid(_trap) and not _trap.is_finished else null
 
 ## The district door's line day 9's crossing is watched on (`_on_door_crossed()`): where the door
 ## today's task names stands, and the street's own axis that every body of the door shares. `INF`

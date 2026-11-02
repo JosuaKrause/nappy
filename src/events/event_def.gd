@@ -205,7 +205,7 @@ enum SpawnMode {
 ## `obstructs_radius`-worth of ground, but stand along their street without being a spread
 ## (`stands_along_its_street`), so a corner costs them nothing.
 ##
-## **This is the test `EventScheduler._open_ground_for` asks before it will offer a corner as a
+## **This is the test `EventScheduler.open_ground_for` asks before it will offer a corner as a
 ## site**: a junction has no single street for the spread's axis or
 ## `EventInstance._centred_on_the_pavement_band` to answer about, so only a row that asks either
 ## question has anything to lose by standing on one. Row data, set by each row that is one, and kept

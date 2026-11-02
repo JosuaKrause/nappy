@@ -1072,8 +1072,8 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 
 # ------------------------------------------------------- the day's own rules ---
 
-## **The escape's own rows stand on the day's own ground for them** (`EventScheduler._street_ground()`
-## asks `_open_ground_for()`): every truck, van, roadblock and burst on a tile a day would offer that
+## **The escape's own rows stand on the day's own ground for them** (`EventScheduler.street_ground()`
+## asks `open_ground_for()`): every truck, van, roadblock and burst on a tile a day would offer that
 ## row — none on the home block, none in a street tree, none on the wrong side of a sidewalk, no
 ## spread on a corner — all but the front door's street, a door the escape never sets off from.
 ## *(Inbox #785 in minty-lemur, 2026-10-18: "does the escape use the same placement rules as the regular game? it
@@ -1093,7 +1093,7 @@ func _test_the_escape_stands_its_rows_on_the_days_own_ground(t) -> void:
 			var key := placement.def.get_instance_id()
 			if not offered.has(key):
 				var tiles := {}
-				for tile in EventScheduler._open_ground_for(placement.def, map, {}, -1, false):
+				for tile in EventScheduler.open_ground_for(placement.def, map, {}, -1, false):
 					tiles[tile] = true
 				offered[key] = tiles
 			var at := map.world_to_tile(placement.position)
@@ -1168,7 +1168,7 @@ func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
 
 ## **A restart plans the same escape, on the ground the first plan read.** A loss in the city
 ## replans it on the same city (`main._plan_the_finale_city()`), and the day's ground for the
-## escape's rows is kept across it (`EventScheduler._kept_ground()`): the restart's plan is
+## escape's rows is kept across it (`EventScheduler.KeptGround`, which `DayPlanner` holds): the restart's plan is
 ## the first one, placement for placement, and the kept ground is the same answer. A city whose
 ## ground did change — a tile closed — is read again rather than answered from the kept copy.
 func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
@@ -1178,12 +1178,14 @@ func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 	var walks: Array[FinalePlanner.Plan] = []
 	var plans: Array[Array] = []
 	var kept: Array[Dictionary] = []
+	var ground := EventScheduler.KeptGround.new()
 	for attempt in 2:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = SEEDS[0]
 		walks.append(FinalePlanner.route(map))
-		plans.append(DayPlanner.plan_the_escape_city(map, walks[-1], rng, _city_spec()))
-		kept.append(EventScheduler._kept_ground_answers)
+		plans.append(DayPlanner.plan_the_escape_city(map, walks[-1], rng, _city_spec(),
+				true, ground))
+		kept.append(ground.of(map))
 	var first: Array[EventScheduler.Planned] = []
 	first.assign(plans[0])
 	var second: Array[EventScheduler.Planned] = []
@@ -1201,8 +1203,8 @@ func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 	map.closed_tiles[tile] = true
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEEDS[0]
-	DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng, _city_spec())
-	t.check(not is_same(EventScheduler._kept_ground_answers, kept[1]),
+	DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng, _city_spec(), true, ground)
+	t.check(not is_same(ground.of(map), kept[1]),
 			"a city with a tile closed since is read again (%s)" % tile)
 
 # ------------------------------------------------------------ the marble bag ---
@@ -1967,7 +1969,7 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
 	city.free()
 
 ## **A tree and an event never share ground** (`docs/CITY.md`, "Street trees"), and the escape's
-## own plan is a second placement path that does not go through `EventScheduler._open_ground_for`
+## own plan is a second placement path that does not go through `EventScheduler.open_ground_for`
 ## or `SealPlanner.plan_day` — so the rule is asserted on this side too, over the whole plan: the
 ## trucks, vans, masked men and bursts on the open streets, and every seal body off them.
 ##

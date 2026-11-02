@@ -127,7 +127,7 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 	city.build(CityGenerator.generate(SEED))
 
 	var sites := {}
-	for tile in EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+	for tile in EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
 			city.map, {}):
 		sites[tile] = true
 	t.check(sites.size() > 100,

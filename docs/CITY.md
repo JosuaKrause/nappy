@@ -1744,7 +1744,7 @@ burnt. `burning_building` only ever catches on a wall `building.gd` actually
 draws (`EventDef.Pavement.AT_THE_FRONT`, the frontage lane of a north sidewalk, and only where the
 tile behind it is on the map), so there is always a real facade behind the scar to burn. Never the
 power station's: its facade is drawn whole whatever its condition says, and its transformer yard
-has no wall at all (`EventScheduler._open_ground_for()` refuses that front to a row that burns).
+has no wall at all (`EventScheduler.open_ground_for()` refuses that front to a row that burns).
 
 Causes fire during the day; the city presents the result the **next morning**.
 `CityMap.repaint()` runs at the start of a day, so the fire burns today and the street is
@@ -2317,13 +2317,13 @@ Top-down camera with a fake vertical extrusion:
 - **A tree and an event never share ground.** *(2026-09-12, the player: "events can only be placed
   where no trees are (except for the fallen tree which must empty out one tree lot)".)* The trees
   are the city's and fixed for the run while the events are the day's, so the day is what yields:
-  `EventScheduler._open_ground_for` refuses any tile a standing tree occupies or its footprint
+  `EventScheduler.open_ground_for` refuses any tile a standing tree occupies or its footprint
   reaches, the same way it refuses a closed street, and `SealPlanner._seal_along_tile` steps a
   seal's bodies along the street to the nearest clear cross-section. Both refuse where the
   candidate is offered rather than moving something afterwards. So a van, a café, a market stall,
   a yeller, a dog walker or a seal is never in or behind a tree, and the only thing that ever
   stands in a pit is the tree that fell out of it. The escape's own plan keeps the same rule
-  through the same two functions — `EventScheduler._street_ground` refuses a tree's ground and
+  through the same two functions — `EventScheduler.street_ground` refuses a tree's ground and
   `SealPlanner.plan_day` steps its seals off one — **with one exception the escape has and a
   day does not**: a seal stepped off a tree may land on ground one of the chains walks, and there
   it stands in the tree instead, since a picture overlapping a picture is better than the one way

@@ -238,7 +238,7 @@ static func footprint_radius() -> float:
 	return widest
 
 ## Every tile a standing street tree stands on or reaches over, as a set — the ground
-## `EventScheduler._open_ground_for` refuses a candidate row, the same way it refuses a closed
+## `EventScheduler.open_ground_for` refuses a candidate row, the same way it refuses a closed
 ## street, and the ground `SealPlanner` steps its own bodies aside from.
 ##
 ## **Every pit, including one today's fallen tree empties.** An emptied pit is on a street that is

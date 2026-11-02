@@ -648,7 +648,7 @@ func _crash_pass_cost(instance: EventInstance, offset: float) -> float:
 # ------------------------------------------------------------------ street trees ---
 
 ## **A seal never stands in a street tree** — `docs/CITY.md`, "Street trees". A seal does not go
-## through `EventScheduler._open_ground_for`, because `plan_day` puts one on every off-tree street
+## through `EventScheduler.open_ground_for`, because `plan_day` puts one on every off-tree street
 ## whether or not the catalogue would have been offered that tile, so the refusal lives in
 ## `SealPlanner._seal_along_tile` instead and this is what holds it. Stated over a whole run of
 ## days rather than one, since which street gets which picture is a daily roll.
@@ -759,7 +759,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 ## rules": *"the seals `SealPlanner` places before the scheduler runs reach crossings the rules
 ## never see, the same question one step out"*) was invisible to the very rule written to keep a
 ## route junction open. `build_day`'s `standing` argument threads the day's seals and the region
-## wall's own bodies into the three rules — not into `_room_around`'s spacing, which stays asked
+## wall's own bodies into the three rules — not into `room_around`'s spacing, which stays asked
 ## of the catalogue's own rows alone — see `EventScheduler._best_of`'s own doc.
 ##
 ## **What this proves.** Once `build_day` is handed `standing` the way `EventManager.start_day`

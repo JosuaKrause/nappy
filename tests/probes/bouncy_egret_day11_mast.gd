@@ -25,8 +25,6 @@ const SEEDS: Array[int] = [4242, 90210, 1234567, 2295276695, 291862120, 314159, 
 
 func run(t) -> void:
 	var suite: Variant = load("res://tests/test_resistance_arrow.gd").new()
-	var saved_scars := GameState.attempt_spend.scars.duplicate()
-	var saved_state := GameState.attempt_spend.city_state
 	var seeds: Array[int] = SEEDS
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds = []
@@ -35,36 +33,30 @@ func run(t) -> void:
 	var put_down := 0
 	print("\n== day 11's rigged mast, %d seeds ==" % seeds.size())
 	for seed_value in seeds:
-		suite._build_city(t, seed_value)
-		var result := [""]
-		suite._with_clean_run(func() -> void:
-			GameState.attempt_spend.scars = []
-			var read: Array = suite._read_the_mark_on(t, 11, seed_value)
-			var director: ResistanceDirector = read[0]
-			var player: Stroller = read[2]
-			var where := _where_a_mast_may_stand(suite._city)
-			var at_the_mark := {}
-			for plan in suite._city.events.plans():
-				if plan.mast_id != "":
-					at_the_mark[plan.mast_id] = true
-			result[0] = suite._walk_until_the_route_mast(at_the_mark, player)
-			var siting: EventScheduler.WalkSiting = suite._city.events.ahead._siting
-			var waits: Dictionary = siting.waits if siting else {}
-			print("  seed %10d  %-6s  tree tiles %s  passing %s" % [seed_value,
-					"PUT" if result[0] != "" else "never", where[0], where[1]])
-			if result[0] != "":
-				print("      walked %.1fs before it was put down"
-						% suite._seconds_walked_to_the_route_mast)
-			print("      waits %s" % waits)
-			player.free()
-			director.free())
-		if result[0] != "":
+		# A run of its own, so the steps done and the scars start clear whatever ran before.
+		suite._build_city_in_a_new_run(t, seed_value)
+		var read: Array = suite._read_the_mark_on(t, 11, seed_value)
+		var director: ResistanceDirector = read[0]
+		var player: Stroller = read[2]
+		var where := _where_a_mast_may_stand(suite._city)
+		var at_the_mark := {}
+		for plan in suite._city.events.plans():
+			if plan.mast_id != "":
+				at_the_mark[plan.mast_id] = true
+		var result: String = suite._walk_until_the_route_mast(at_the_mark, player)
+		var siting: EventScheduler.WalkSiting = suite._city.events.ahead._siting
+		var waits: Dictionary = siting.waits if siting else {}
+		print("  seed %10d  %-6s  tree tiles %s  passing %s" % [seed_value,
+				"PUT" if result != "" else "never", where[0], where[1]])
+		if result != "":
+			print("      walked %.1fs before it was put down"
+					% suite._seconds_walked_to_the_route_mast)
 			put_down += 1
+		print("      waits %s" % waits)
+		player.free()
+		director.free()
 	print("  put down on %d of %d" % [put_down, seeds.size()])
-	GameState.attempt_spend.scars = saved_scars
-	GameState.attempt_spend.city_state = saved_state
-	if suite._city:
-		suite._city.free()
+	suite._free_city()
 
 ## `[counts by the first rule that refuses a tile, the tiles no rule refuses]`, over every tile of
 ## the routed mast's ground on the day's route tree. See the file's own doc.

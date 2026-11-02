@@ -285,14 +285,14 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 ## where the director points: it is generated the way every row the day plans is, a `loudspeaker`
 ## heated like the day's own (`world.run.resistance.progress`) placed by `EventScheduler._best_of()`
 ## among `offered` — the tiles the director found near her and out of her view — against the whole
-## of the day's plan: `EventScheduler._room_around()`'s spacing, so it never stands inside anything else or inside
+## of the day's plan: `EventScheduler.room_around()`'s spacing, so it never stands inside anything else or inside
 ## a lethal row's field, the region doors' clear ground and the calm she has not used; a mast is
 ## exempt from the three rules that keep a line along her routes (the route junctions, the route
 ## sidewalks and a pacing beat's opening), as the fixed ones are (inbox #684 in coral-lark).
 ## Appended to the day's plan under `EventScheduler.added_mast_id()` with its body recorded, it
 ## streams in like any planned row, broadcasts on the one clock, is silenced by
 ## `EventStreaming.silence_mast()`, counts for `EventStreaming.silence_all_masts()`, and once
-## silenced stands silenced on later days from its scar (`EventScheduler._place_masts()`). Null when no offered tile passes, which leaves day 11 to the
+## silenced stands silenced on later days from its scar (`EventScheduler.place_masts()`). Null when no offered tile passes, which leaves day 11 to the
 ## nearest live mast, or, when no live mast stands at all, with nowhere to go.
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
 	if offered.is_empty():

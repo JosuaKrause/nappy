@@ -1049,7 +1049,7 @@ field with its value before and after (`tests/shared_state.gd`).
   `reach_contacts`, `reach_marks`, `reach_narrow`, `reach_relocated`, `crossing`, `replacement`,
   `placement_kinds`, `arrow` and `alley_siting` do; `reach_narrow` (through the rig's circle) and
   `reach_relocated` read the day's reach from `ResistanceDirector.reaches_from_home()` and
-  `reach_obstruction()`; `reach_narrow` still calls `EventScheduler._is_spoiled()`): `steps` (the step table, touch-completion, a
+  `reach_obstruction()`): `steps` (the step table, touch-completion, a
   task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
   finished task shown by the world and the sabotage putting the city's masts out once she has
   walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`
