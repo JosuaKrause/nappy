@@ -14,7 +14,7 @@ and later, about the mast added near day 11's mark:
 > we need to rethink masts anyway
 
 **What stands now.** `MastSites.compute(map)` (`src/events/mast_sites.gd`) farthest-point-samples
-`Tuning.MAST_COUNT` (6) sites over the city, and `EventScheduler._place_masts()` plants a
+`Tuning.MAST_COUNT` (6) sites over the city, and `EventScheduler.place_masts()` plants a
 `loudspeaker` at each from day 5, the same sites every day (the M180 loudspeaker record,
 `tools/decisions.sh M180`). Day 11 alone queues an extra mast near her when none is in reach of the
 mark (the feathery-marmot record). The player's complaint is that six fixed sites make masts hard

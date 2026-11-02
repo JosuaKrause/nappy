@@ -94,7 +94,7 @@ investigating patrol car, the hunting roadblock and the hunting vans, which no a
 otherwise reaches. The ordinary scheduler's ground, route, spacing, protected-door and corridor
 checks accept its site, checked against that shape. An authored path must equal that production route. A `loudspeaker` row is a mast, a
 scripted row no roll places, so it is accepted instead by the checks the day's masts pass
-(`EventScheduler._place_masts()`): day 5 or later; a sidewalk or square tile a mast site would be
+(`EventScheduler.place_masts()`): day 5 or later; a sidewalk or square tile a mast site would be
 offered (off the home street, its field off a calm interior and off every place a region door
 could stand); not closed, not on a held street, not on the home block; its field clear of the day's
 own doors; and clear of what is placed before it. The calm she has not used, which a mast queued for

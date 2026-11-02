@@ -172,9 +172,6 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 			" / ".join(_lines), director._rng.state])
 	if sent != null and is_instance_valid(sent):
 		city.events.retire(sent)
-	# The one write that stays: the director has no way to let go of a trap but a day starting again,
-	# and this probe runs several warnings on one day. `retire` above only finishes him.
-	director._trap = null
 	return 1
 
 ## `SPOTS` walkable sidewalk tiles spread evenly over the map's tile order.

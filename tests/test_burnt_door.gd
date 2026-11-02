@@ -21,7 +21,7 @@ func run(t) -> void:
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	var fronts := EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+	var fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
 			city.map, {})
 	t.check(not fronts.is_empty(), "the city has fronts a fire can catch on")
 	var held_doors := 0

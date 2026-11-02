@@ -455,11 +455,11 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 				if block == map.fenced_park or not block in map.calm_blocks:
 					continue
 				offered += 1
-				if EventScheduler._is_spoiled(map, planned, ClosurePlanner.calm_area_rect(map, block)):
+				if EventScheduler.is_spoiled(map, planned, ClosurePlanner.calm_area_rect(map, block)):
 					spoiled += 1
 			var clean := 0
 			for block in map.calm_blocks:
-				if not EventScheduler._is_spoiled(map, planned,
+				if not EventScheduler.is_spoiled(map, planned,
 						ClosurePlanner.calm_area_rect(map, block)):
 					clean += 1
 			t.check(clean >= 1, "seed %d day %d leaves an open calm area clean"

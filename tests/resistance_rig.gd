@@ -10,9 +10,6 @@ extends RefCounted
 ## (`tick()`), her (`use_player()`) and what she can see (`set_sight()`). A test that builds its city
 ## with `_build_city_in_a_new_run()` owns the run that city stands in, so the state it needs — the
 ## steps done, the alleys used, the scars — is set on that run, by the test, and gone with it.
-## `_build_city()` builds over the live run (`GameState`), and `_with_clean_run()` clears and puts
-## back that run's state; no suite calls them, and they stay for the probe
-## `tests/probes/bouncy_egret_day11_mast.gd`, which loads `test_resistance_arrow.gd` for this rig.
 ##
 ## **What the director has put in the street is read from the street**: the contact she touches
 ## (`ResistanceDirector.contact()`), what its task rides on (`rider()`), and every guard and pursuer
@@ -68,8 +65,7 @@ func _step_a_frame(t) -> void:
 	await t.get_tree().process_frame
 
 var _city: City
-## The run `_city` stands in when the suite built it one (`_build_city_in_a_new_run()`), freed with
-## the city; null for a city over the live run (`_build_city()`).
+## The run `_city` stands in (`_build_city_in_a_new_run()`), freed with the city.
 var _own_run: RunState
 
 ## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires the
@@ -77,13 +73,8 @@ var _own_run: RunState
 ## `_exit_tree()` (`src/events/event_manager.gd`). A suite builds a city many times over, so a
 ## `_city` never freed between two builds would leave every earlier one standing, each holding
 ## "events" resident for the rest of the process; `run()` frees whichever one is still around after
-## the last. Over the live run (`GameState`); only the probe named at the top calls it.
-func _build_city(t, seed_value := SEED) -> void:
-	_free_city()
-	_city = RunCity.of_the_run(CITY_SCENE)
-	t.add_child(_city)
-	_city.build(CityGenerator.generate(seed_value))
-
+## the last.
+##
 ## The city of `seed_value` in a run of its own, which it hands to every director built over it
 ## (`_director()`): the run starts fresh, with no step done, no alley used and no scar, and the test
 ## sets whatever else the day it asks about needs on it. Returns the run.
@@ -138,24 +129,6 @@ func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d:%s" % [seed_value, day, stream])
 	return rng
-
-## Runs `action` with the live run's steps, progress and package cleared, and puts them back, for a
-## city built over the live run (`_build_city()`); only the probe named at the top calls it. A city
-## in a run of its own starts clear.
-func _with_clean_run(action: Callable) -> void:
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var saved_failed := GameState.resistance.failed_steps.duplicate()
-	var saved_progress := GameState.resistance.progress
-	var saved_package := GameState.resistance.carrying_package
-	GameState.resistance.completed_steps = []
-	GameState.resistance.failed_steps = []
-	GameState.resistance.progress = 0
-	GameState.resistance.carrying_package = false
-	action.call()
-	GameState.resistance.completed_steps = saved_completed
-	GameState.resistance.failed_steps = saved_failed
-	GameState.resistance.progress = saved_progress
-	GameState.resistance.carrying_package = saved_package
 
 ## The perform step on `day` — named by its day rather than by its index, so a task added earlier
 ## in the calendar does not renumber every test after it.

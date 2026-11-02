@@ -980,13 +980,13 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		plans.append(plan)
 	return plans
 
-## An authored mast stands where the day's masts may, by the checks `EventScheduler._place_masts()`
+## An authored mast stands where the day's masts may, by the checks `EventScheduler.place_masts()`
 ## makes of a site and nothing wider: the day is `Tuning.MAST_FIRST_DAY` or later; the tile is a
 ## sidewalk or square tile `MastSites._is_eligible()` would offer (off the home street, its field
 ## off a calm interior and off every place a region door could stand); it is not closed, not on a
 ## held street and not on the home block; the mast's field is clear of the day's own doors
 ## (`EventScheduler.clear_of_the_doors()`); and no body placed before it is too near
-## (`EventScheduler._room_around()`). It does not ask what `EventManager.queue_a_mast()`'s
+## (`EventScheduler.room_around()`). It does not ask what `EventManager.queue_a_mast()`'s
 ## `WalkSiting` asks beyond those: the calm she has not used. The loudspeaker is a scripted row no catalogue roll places, so the ordinary
 ## placement refuses it.
 func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Planned],

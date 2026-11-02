@@ -201,7 +201,7 @@ func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
 ## every catalogue placement and every seal body on these same full days is asked whether it stands
 ## on a tile `StreetTrees.footprint_tiles` covers. The seals are asked here rather than only in
 ## `tests/test_seals.gd` because they are the half that does **not** go through
-## `EventScheduler._open_ground_for` — `SealPlanner._seal_along_tile` is a second implementation of
+## `EventScheduler.open_ground_for` — `SealPlanner._seal_along_tile` is a second implementation of
 ## one rule, and a day's plan is where the two have to agree. `fallen_tree` is the single exception
 ## and is excluded by name: it is the body that stands in a pit and empties it.
 ##
@@ -216,7 +216,7 @@ func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
 ## the generator — it did, twice, the day this was written — and say nothing about holds.
 ## **Two seeds and five days.** A (seed, day) here is the most expensive unit anywhere in this
 ## suite — a `RouteTree`, a region plan, a closure plan, two seal plans and a `build_day` — and
-## what it proves is that five refusals inside `_open_ground_for` fire, which every single pair
+## what it proves is that five refusals inside `open_ground_for` fire, which every single pair
 ## exercises over its whole day's worth of candidates. The days stay five rather than one because
 ## holds come from four different planners and each has its own first day (region walls from
 ## `REGION_WALL_FIRST_DAY`, closures from act I), so the sample has to span the acts; the seeds

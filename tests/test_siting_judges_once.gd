@@ -191,7 +191,7 @@ func _test_a_look_shares_its_verdicts(t) -> void:
 	var crew := EventScheduler._for_day(EventCatalogue.by_id("poster_crew"), day)
 	# A crew stands in front of a blank wall, which only a city's buildings know; every front face
 	# stands in for them here.
-	for tile in EventScheduler._open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
+	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
 	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
@@ -264,7 +264,7 @@ func _test_a_dropped_verdict_is_judged_again(t) -> void:
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
 			[] as Array[Vector2i], PackedVector2Array())
 	var crew := EventScheduler._for_day(EventCatalogue.by_id("poster_crew"), day)
-	for tile in EventScheduler._open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
+	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
 	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT

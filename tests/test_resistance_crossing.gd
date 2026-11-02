@@ -362,6 +362,10 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 							player.global_position) == Vector2.INF,
 							"his run at her from %s never crosses a district door's line"
 							% _city.map.world_to_tile(trap.global_position))
+				# A finished pursuer is no longer in the world, so the director stops naming him.
+				events.retire(trap)
+				t.check(director.trap() == null,
+						"a robber retired from the world is no longer her trap")
 		_end_the_attempt(director, player)
 	t.check(elsewhere == 2, "being let through another door completes nothing (%d of 2)"
 			% elsewhere)

@@ -354,7 +354,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
 	t.check(asked >= 4, "and the catalogue has pinned rows to ask it of (%d)" % asked)
 	# The pool the roll actually draws from, for the one row the player asked about: `poster_crew`
 	# is a sidewalk row now, and the square crew is the row that stands on squares.
-	t.check(not EventScheduler._open_ground_for(EventCatalogue.by_id("poster_crew"), map,
+	t.check(not EventScheduler.open_ground_for(EventCatalogue.by_id("poster_crew"), map,
 			ground).is_empty(), "and the sidewalk crew still has ground of its own to stand on")
 
 ## **The square's poster crew stands on squares and on nothing else.** *(2026-09-19: "we need a
