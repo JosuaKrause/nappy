@@ -130,6 +130,9 @@ var _sliding := false
 var _run: RunState = null
 ## What is on the walls: the run's `PosterState`, taken off the run by `setup()`.
 var posters: PosterState = null
+## The torn pictures the fronts draw their sheets through, handed in by the city before `setup()` and
+## on to every front (`Building.poster_art`).
+var art := PosterArt.new()
 ## The bag the run's tears draw from, rebuilt from `PosterState.tears` whenever it disagrees with
 ## the run — a save loaded, a lost day given back, a new run. See `_the_bag()`.
 var _bag: MarbleBag = null
@@ -160,8 +163,9 @@ func setup(city: City, map: CityMap, run: RunState) -> void:
 			continue
 		for i in tiles.size():
 			_by_tile[tiles[i]] = Vector2i(_walls.size(), i)
+		building.poster_art = art
 		_walls.append({"building": building, "cols": cols, "tiles": tiles})
-	PosterArt.prepare()
+	art.prepare()
 
 ## Whether `tile` is the sidewalk directly in front of a building's front: the frontage lane of an
 ## east-west street's north sidewalk, with the building's lot just north of it. A lot's south edge

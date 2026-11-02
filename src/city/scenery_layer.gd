@@ -27,8 +27,6 @@ func append(texture: Texture2D, rect: Rect2, alternate: Texture2D = null,
 	queue_redraw()
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	for i in _textures.size():
 		var texture := _alternates[i] if frame_b and _alternates[i] != null else _textures[i]
 		if _sources[i].has_area():

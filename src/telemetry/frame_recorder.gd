@@ -8,7 +8,11 @@ extends Node
 ## phases for `FrameLedger`: its own physics and process callbacks run first in their step
 ## (`PRIORITY_FIRST`), a child's process callback runs last (`PRIORITY_LAST`), the renderer's
 ## pre-draw callback ends `draw` and its post-draw callback ends `render`. The named systems mark
-## themselves through `FrameRecord`.
+## themselves through the `FrameTiming` they are handed (`FrameRecord`, here). **The game's own
+## `_draw()` calls are counted here, by listening**: the recorder connects the `draw` signal of
+## every node that is counted, found by its class (`draw_kind()`) in the tree as it stands at
+## `setup()` and as nodes enter it, so no drawing node reads a switch and a page without the record
+## connects nothing.
 ##
 ## **On the web, a button the page itself draws saves the record** through the browser's own
 ## download: a DOM element over the canvas rather than a game control, so a tap on it never also
@@ -19,9 +23,9 @@ extends Node
 ##
 ## Frames are kept only while a day is being played — not paused, not the title, not a summary —
 ## but every frame is timed, so the phases stay in step across a pause. The record survives a
-## restart (`FrameRecord.ledger` is static), so a recording that caught a stutter is not lost to
-## the restart that followed it. **The timing runs only while a recorder is in the tree**: the
-## escape builds none, so leaving the day switches `FrameRecord.on` off and hides the page's
+## restart (the `FrameRecord` and its ledger are the `Sitting`'s), so a recording that caught a
+## stutter is not lost to the restart that followed it. **The timing runs only while a recorder is
+## in the tree**: the escape builds none, so leaving the day switches the record off and hides the page's
 ## button, and the next day's recorder switches both back on.
 
 const PRIORITY_FIRST := -1000000000
@@ -43,6 +47,8 @@ class ProcessEnd extends Node:
 		recorder.at_process_end()
 
 var ledger: FrameLedger
+## The record this recorder runs: the sitting's, handed in by `setup()`.
+var _record: FrameRecord
 ## Whether the title is up, asked of whoever runs the screen and handed in by `setup()`: a frame
 ## behind the title is not kept, since nobody is playing it.
 var _in_the_title: Callable
@@ -82,9 +88,11 @@ func setup(in_the_title: Callable, city: City, player: Stroller, day: DayControl
 	var budget_usec := roundi(1000000.0 / (refresh if refresh > 0.0 else 60.0))
 	var resolution := clock_resolution()
 	var pair := calibrate()
-	FrameRecord.start(FrameRecord.ledger if FrameRecord.ledger != null
+	_record = _sitting.frame_timing as FrameRecord
+	_record.start(_record.ledger if _record.ledger != null
 			else FrameLedger.new(FrameLedger.CAPACITY, budget_usec))
-	ledger = FrameRecord.ledger
+	ledger = _record.ledger
+	_listen_for_draws()
 	_metadata = {"refresh_hz": refresh, "refresh_assumed": refresh <= 0.0,
 		"display_budget_usec": budget_usec, "timer_pair_usec": pair,
 		"timer_resolution_usec": resolution}
@@ -134,6 +142,51 @@ func _at_post_draw() -> void:
 	ledger.set_counter(FrameLedger.RENDER_OBJECTS, FrameCost.objects())
 	ledger.set_counter(FrameLedger.PRIMITIVES, FrameCost.primitives())
 
+## Connects the `draw` signal of every counted node in the tree and of every one that enters it.
+func _listen_for_draws() -> void:
+	var tree := get_tree()
+	tree.node_added.connect(_count_draws_of)
+	var pending: Array[Node] = [tree.root]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		_count_draws_of(node)
+		pending.append_array(node.get_children())
+
+## Counts the `draw` signal of `node` under its kind when it is a node the record counts. A node
+## that leaves the tree and comes back is connected once.
+func _count_draws_of(node: Node) -> void:
+	var kind := draw_kind(node)
+	if kind < 0:
+		return
+	var counted := _drew.bind(kind)
+	var canvas := node as CanvasItem
+	if not canvas.draw.is_connected(counted):
+		canvas.draw.connect(counted)
+
+## Which `FrameTiming.Draw` kind a node's `_draw()` is counted under, or -1 for a node that is not
+## counted: by its class where the recorder may name it, else by the kind it declares in its
+## `FrameTiming.DRAW_KIND_META`. The crowd's agents are not here: the crowd counts them itself, through its timing sink
+## (`FrameRecordTiming`).
+static func draw_kind(node: Node) -> int:
+	if not node is CanvasItem:
+		return -1
+	if node is Prop or node is Building or node is Building.RoofObject \
+			or node is Building.StationStack or node is SceneryLayer or node is SceneryWater \
+			or node is CityDecals or node is CityEdge:
+		return FrameTiming.Draw.SCENERY
+	if node is EventInstance:
+		return FrameTiming.Draw.EVENTS
+	if node is Stroller:
+		return FrameTiming.Draw.PLAYER
+	if node is ParkFenceMarker or node is ClosureMarker or node is TrafficLight \
+			or node is ContactPoint:
+		return FrameTiming.Draw.OTHER
+	return node.get_meta(FrameTiming.DRAW_KIND_META, -1)
+
+func _drew(kind: int) -> void:
+	if _record.on:
+		_record.drew(kind)
+
 ## What one `FrameRecord.enter()`/`leave()` pair costs on this device, in microseconds, timed over
 ## `CALIBRATION_PAIRS` pairs on a scratch ledger through the same two calls the game makes. A
 ## frame's `timer_calls` times this is what the timing pairs cost in that frame: a lower bound on
@@ -141,16 +194,13 @@ func _at_post_draw() -> void:
 ## the post-draw reads, the ring copy) is not in it. On a desktop the record on against off cost
 ## more than the product (docs/evidence/m159-frame-record-2026-10-04/).
 static func calibrate() -> float:
-	var live := FrameRecord.ledger
-	var was_on := FrameRecord.on
-	FrameRecord.start(FrameLedger.new(1))
+	var scratch := FrameRecord.new()
+	scratch.start(FrameLedger.new(1))
 	var started := Time.get_ticks_usec()
 	for _i in CALIBRATION_PAIRS:
-		var outer := FrameRecord.enter(FrameRecord.CROWD)
-		FrameRecord.leave(outer)
+		var outer := scratch.enter(FrameRecord.CROWD)
+		scratch.leave(outer)
 	var elapsed := Time.get_ticks_usec() - started
-	FrameRecord.ledger = live
-	FrameRecord.on = was_on
 	return float(elapsed) / CALIBRATION_PAIRS
 
 ## The smallest step `Time.get_ticks_usec()` takes on this device, in microseconds, the least of
@@ -292,7 +342,9 @@ func _render_cpu_reported() -> bool:
 	return false
 
 func _exit_tree() -> void:
-	FrameRecord.on = false
+	_record.stop()
+	if get_tree().node_added.is_connected(_count_draws_of):
+		get_tree().node_added.disconnect(_count_draws_of)
 	if _viewport.is_valid():
 		RenderingServer.viewport_set_measure_render_time(_viewport, false)
 	if RenderingServer.frame_pre_draw.is_connected(_at_pre_draw):

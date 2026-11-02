@@ -25,6 +25,8 @@ src/
   run_trace.gd            the sink game logic writes its account of a decision into, handed in
   drawn_frame.gd          the wait for a frame the viewport has actually drawn, for any capture
   game_enums.gd           shared enums (see below)
+  frame_timing.gd         the sink a timed system charges its time to the frame record through; the null
+                          sink here, `FrameRecord` (`src/telemetry/`) is the one that keeps the ledger
   field.gd                the arithmetic of a field: its falloff and a moving field's stretch (static)
   offscreen.gd            how far out of her view something sent at her starts (static)
   autoload/

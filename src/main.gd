@@ -126,6 +126,10 @@ var _halo: ExcitementHalo
 ## carries its line, the last slow frame's three largest costs, so a stutter caught on a phone shows
 ## as caught.
 var _frame_recorder: FrameRecorder
+## The torn posters' textures, composed from the baked page by the first city this boot builds and
+## handed to every day's city after it (`PosterArt`), so a city rebuilt daily does not compose them
+## again. Held here, not on the `Sitting`: a scene reload composes them once more.
+var _poster_art := PosterArt.new()
 ## The pointer controls, on their own layer for the same reason the danger edge is: they have to
 ## sit above the world they are drawn over. Built in `_ready()`, alongside `_touch_layer`.
 var _touch_controls: TouchControls
@@ -254,6 +258,8 @@ func _ready() -> void:
 	# Before anything reads what the sitting kept: the run carried over, the title's answer, the
 	# save symbol a reload carried, the save itself.
 	_take_the_sitting()
+	if config.frame_record_requested and not _sitting.frame_timing is FrameRecord:
+		_sitting.frame_timing = FrameRecord.new()
 	# Before anything can end the run, so every boot (the escape's and a recipe's too) deletes the
 	# save when its run ends.
 	_save.clear_when_a_run_ends()
@@ -732,6 +738,7 @@ func _make_player() -> Stroller:
 	var player: Stroller = STROLLER.instantiate()
 	player.is_male = _run.header.player_is_male
 	(player.get_node("Baby") as Baby).excitement_frozen = config.invincible
+	(player.get_node("Baby") as Baby).timing = _sitting.frame_timing
 	return player
 
 ## A city node in the tree, handed the dev choices that decide how it draws and schedules itself
@@ -741,6 +748,7 @@ func _new_city() -> City:
 	city.trace = _the_trace()
 	city.run = _run
 	city.ground_recipe = _sitting.ground_recipe
+	city.poster_art = _poster_art
 	city.ground_mode = config.ground_mode as SceneryGround.Mode
 	city.scenery_frame_locked = config.recipe_scripted
 	city.skip_shadows = config.skip_shadows
@@ -748,7 +756,8 @@ func _new_city() -> City:
 	city.skip_crowd_drawing = config.skip_crowd
 	city.skip_crowd_motion = config.skip_motion
 	city.crowd_view = ScreenCrowdView.new(self)
-	city.crowd_timing = FrameRecordTiming.new()
+	city.crowd_timing = FrameRecordTiming.new(_sitting.frame_timing)
+	city.frame_timing = _sitting.frame_timing
 	city.blackout_forced = config.blackout_requested
 	city.all_cyclists_pelicans = config.pelican
 	city.forced_row = config.forced_row
@@ -864,6 +873,7 @@ func _build_the_escape_building() -> void:
 	_building_events = EventManager.new()
 	_building_events.name = "BuildingEvents"
 	_building_events.skip_drawing = config.skip_events
+	_building_events.timing = _sitting.frame_timing
 	_building_events.trace = _the_trace()
 	_building_events.stream_radius = INF
 	add_child(_building_events)
@@ -1357,6 +1367,7 @@ func _add_danger_edge() -> void:
 	layer.name = "DangerEdge"
 	_edge_layer = layer
 	_edge = DangerEdge.new()
+	_edge.timing = _sitting.frame_timing
 	_edge.name = "Edge"
 	# Pinned to the fixed design box rather than full-rect, so this layer's own rotation (applied
 	# in `_apply_orientation()`) has a stationary 1280x720 footprint to rotate — see
@@ -1387,6 +1398,7 @@ func _add_excitement_halo() -> void:
 		_halo.setup(_excitement_now(), _player, _baby)
 		return
 	_halo = ExcitementHalo.new()
+	_halo.timing = _sitting.frame_timing
 	_halo.name = "ExcitementHalo"
 	DrawLayer.draw_on(_halo, DrawLayer.Layer.HALO)
 	_halo.setup(_excitement_now(), _player, _baby)

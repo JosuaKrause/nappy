@@ -45,7 +45,6 @@ const EXEMPT: Dictionary[String, String] = {
 	"street_network._by_key": "the same segments by key",
 	"street_network._adjacency": "the same segments' adjacency",
 	"resistance_steps._all": "the step table, built from constants on first use",
-	"poster_art._torn": "torn poster textures, drawn from fixed seeds on first use",
 	"event_catalogue._all": "the catalogue rows, built from code on first use",
 	"event_catalogue._hot": "the catalogue's hot-row index, built with it",
 	"event_catalogue._building_fire": "a catalogue row, built on first use",

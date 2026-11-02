@@ -21,6 +21,7 @@ func run(t) -> void:
 	_saved_seed = GameState.header.run_seed
 	_saved_posters = GameState.posters.to_data()
 	_test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t)
+	_test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t)
 	_test_the_wanted_notice_crosses_out_a_taken_neighbor(t)
 	_test_the_wall_draws_the_crossed_notice_from_the_run(t)
 	_test_the_state_survives_a_round_trip_and_a_lost_day(t)
@@ -49,6 +50,40 @@ func _test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t) -> void:
 			"where the mask keeps the paper the poster is untouched")
 	t.check(absf(torn.get_pixel(1, 0).a - 0.5) < 0.01,
 			"where the mask tears it away only the overlay is left (%.2f)" % torn.get_pixel(1, 0).a)
+
+## The composed torn pictures belong to the `PosterArt` instance, not to the class: two instances
+## compose their own, a prepared one composes nothing the second time, and a city built with one
+## hands that very one to its walls and every front they dress, so what `main` keeps across days
+## is what the fronts draw through.
+func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t) -> void:
+	AtlasLibrary.acquire(PosterArt.ATLAS_GROUP)
+	var art := PosterArt.new()
+	var other := PosterArt.new()
+	var kind := PosterArt.Kind.LEADER
+	t.check(art.torn(kind, 0, false) == PosterArt.sheet(kind, false),
+			"before it is prepared an art answers the intact sheet, never a missing picture")
+	art.prepare()
+	var composed := art.torn(kind, 0, false)
+	t.check(composed != PosterArt.sheet(kind, false) and composed is ImageTexture,
+			"a prepared art answers its composed torn picture")
+	art.prepare()
+	t.check(art.torn(kind, 0, false) == composed, "preparing again composes nothing")
+	t.check(other.torn(kind, 0, false) == PosterArt.sheet(kind, false),
+			"another art holds none of the first's pictures")
+	var map := CityGenerator.generate(SEEDS[0])
+	var city: City = RunCity.of_the_run(CITY_SCENE)
+	city.poster_art = art
+	t.add_child(city)
+	city.build(map)
+	var walls := city.poster_walls()
+	var fronts: Array = walls.fronts().keys()
+	var dressed := not fronts.is_empty()
+	for tile: Vector2i in fronts:
+		var building: Building = walls._walls[walls._by_tile[tile].x]["building"]
+		dressed = dressed and building.poster_art == art
+	t.check(walls.art == art and dressed, "the city's art reaches its walls and every front they dress")
+	city.free()
+	AtlasLibrary.release(PosterArt.ATLAS_GROUP)
 
 ## The wanted notice is the one-X copy until the neighbor has been taken — day 10 behind her and
 ## its warning not among the steps she completed — and the two-X copy after, intact or torn.
@@ -106,7 +141,7 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t) -> void:
 	var crossed := AtlasLibrary.region(PosterArt.WANTED_CROSSED)
 	var drawn := func() -> Texture2D:
 		var cell: Dictionary = GameState.posters.cells[tile]
-		return PosterArt.texture_for(int(cell["kind"]), int(cell["tear"]), building.neighbor_taken)
+		return building.poster_art.texture_for(int(cell["kind"]), int(cell["tear"]), building.neighbor_taken)
 	GameState.posters.paste(tile, PosterArt.Kind.WANTED, false, 1)
 
 	GameState.resistance.completed_steps = []
@@ -123,8 +158,8 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t) -> void:
 	walls._tear(tile)
 	var which := int(GameState.posters.cells[tile]["tear"])
 	t.check(building.neighbor_taken, "after a tear, the run's taken neighbor reaches the front")
-	t.check(drawn.call() == PosterArt.torn(PosterArt.Kind.WANTED, which, true)
-			and drawn.call() != PosterArt.torn(PosterArt.Kind.WANTED, which, false),
+	t.check(drawn.call() == building.poster_art.torn(PosterArt.Kind.WANTED, which, true)
+			and drawn.call() != building.poster_art.torn(PosterArt.Kind.WANTED, which, false),
 			"and the torn sheet is the crossed notice torn")
 
 	city.free()

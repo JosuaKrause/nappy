@@ -1,18 +1,23 @@
 class_name FrameRecordTiming
 extends CrowdTiming
 ## The crowd's sink for the frame record: what `CrowdTiming` is in a game that records. Charges the
-## crowd's time to `FrameRecord.CROWD` and its draws to `FrameLedger.DRAWS_CROWD`, exactly as the
-## crowd did when it read the record's statics itself, so the record's per-system names and draw
-## counts are unchanged. Handed to the city by `main._new_city()`; the crowd never names this class.
+## crowd's time to `FrameTiming.CROWD` and its draws to `FrameTiming.Draw.CROWD` on the record it
+## is handed, so the record's per-system names and draw counts are as the crowd's own would be.
+## Handed to the city by `main._new_city()`; the crowd never names this class.
+
+var _record: FrameTiming
+
+func _init(record: FrameTiming) -> void:
+	_record = record
 
 func running() -> bool:
-	return FrameRecord.on
+	return _record.on
 
 func enter() -> int:
-	return FrameRecord.enter(FrameRecord.CROWD)
+	return _record.enter(FrameTiming.CROWD)
 
 func leave(previous: int) -> void:
-	FrameRecord.leave(previous)
+	_record.leave(previous)
 
 func drew() -> void:
-	FrameRecord.drew(FrameLedger.DRAWS_CROWD)
+	_record.drew(FrameTiming.Draw.CROWD)

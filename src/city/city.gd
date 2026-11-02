@@ -179,6 +179,9 @@ var skip_crowd_motion := false
 ## with no screen (always drawn); the timing is the null sink unless handed another.
 var crowd_view: CrowdView = null
 var crowd_timing := CrowdTiming.new()
+## Where the scenery queue and the events charge their time to the frame record, handed in by
+## whoever builds the city (`main`) before `build()`; the null sink until then.
+var frame_timing := FrameTiming.new()
 ## `--blackout`: the city counts as sabotaged. See `Blackout.forced`.
 var blackout_forced := false
 ## Dark from its first frame, every power off — the escape's city, which is the same night as the
@@ -246,6 +249,9 @@ var run: RunState = null
 ## one the sitting holds, so every day's city composes from the same read. A city nobody handed one
 ## (a suite's) reads the file itself, once.
 var ground_recipe := GroundRecipe.new()
+## The torn posters' textures, composed once: `main._new_city()` hands the one it holds, so
+## every day's city draws the same fifteen. A city nobody handed one (a suite's) composes its own.
+var poster_art := PosterArt.new()
 ## Fixed for the run, from `StreetTrees.planted()` — unlike `_props`, never rebuilt daily: a
 ## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
 ## becomes.
@@ -314,6 +320,7 @@ func build(city_map: CityMap) -> void:
 	navigator = map.navigator()
 	scenery = SceneryResidency.new()
 	scenery.city = self
+	scenery.timing = frame_timing
 	scenery.frame_locked = scenery_frame_locked
 	add_child(scenery)
 	_ground.mode = ground_mode
@@ -333,6 +340,7 @@ func build(city_map: CityMap) -> void:
 	_posters = PosterWalls.new()
 	_posters.name = "Posters"
 	_posters.trace = trace
+	_posters.art = poster_art
 	add_child(_posters)
 	_posters.setup(self, map, run)
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
@@ -358,6 +366,7 @@ func build(city_map: CityMap) -> void:
 	events.name = "Events"
 	events.trace = trace
 	events.skip_drawing = skip_event_drawing
+	events.timing = frame_timing
 	if all_cyclists_pelicans:
 		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
 	add_child(events)

@@ -38,6 +38,10 @@ func _test_seeded_equal_choice_and_lifetime(t) -> void:
 func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 	var saved := GameState.header.player_is_male
 	var main := MAIN_SCRIPT.new()
+	# Never in the tree, so it takes no sitting of its own: it is handed one, which the rig's
+	# frame timing is read from.
+	var sitting := Sitting.new()
+	main.use_sitting(sitting)
 	for male in [false, true]:
 		GameState.header.player_is_male = male
 		var rig: Stroller = main._make_player()
@@ -65,6 +69,7 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 					"standing aside, continuing, resetting and resolving either state never reroll")
 		rig.free()
 	main.free()
+	sitting.free()
 	GameState.header.player_is_male = saved
 
 ## Every path the rig can draw is a name the bake actually knows — the completeness check

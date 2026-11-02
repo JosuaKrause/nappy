@@ -94,6 +94,7 @@ func update_view(load_view: Rect2, retained: Rect2, enqueue := Callable()) -> vo
 func _prepare_chunk(key: Vector2i) -> void:
 	var tiles := _tiles_for_chunk(key)
 	var chunk := Node2D.new()
+	chunk.set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.SCENERY)
 	chunk.draw.connect(_draw_chunk.bind(chunk, tiles))
 	add_child(chunk)
 	_resident[key] = chunk
@@ -136,6 +137,7 @@ func _rebuild_chunks() -> void:
 		var tiles: Tiles = by_chunk[key]
 		var chunk := Node2D.new()
 		chunk.name = "Chunk%d_%d" % [key.x, key.y]
+		chunk.set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.SCENERY)
 		chunk.draw.connect(_draw_chunk.bind(chunk, tiles))
 		add_child(chunk)
 
@@ -200,8 +202,6 @@ static func compute(rects: Array[Rect2i]) -> Tiles:
 	return tiles
 
 func _draw_chunk(canvas: CanvasItem, tiles: Tiles) -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	# `--skip shadows`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (c)): no chunk
 	# draws anything, so a frame under the flag differs from an ordinary one by drawing alone.
 	if skip_draw:
