@@ -23,7 +23,7 @@ one pass after the last refactor item, "once the refactor is done let's rewrite 
 dependency injection and through public APIs", and a step may convert the tests it touches early,
 "you can also do it as a bit with each step as long as the final result is the same" (inbox #813 in curly-moose).
 
-**Where it stands:** the suites still to convert are the ones the first command above counts above zero; the largest are `test_resistance.gd`, `test_main.gd` and `test_save.gd`.
+**Where it stands:** the suites still to convert are the ones the first command above counts above zero; the largest are `test_resistance.gd` and `test_main.gd`. The save suite's checks that build a script-only `main` are in `tests/test_save_wiring.gd` and wait for `main`'s seams for the title, the resume gate and the reload, which the `test_main` slice gives it. `test_finale.gd`, `test_park_return.gd` and `test_move_poses.gd` boot a real `main` and set `GameSave._uses_save_override`; `test_run_state.gd`, `test_park_return.gd`, `test_finale.gd` and `test_move_poses.gd` still call `GameSave`'s private `_write_now()`, `_read_now()` and `_clear_now()`.
 
 **The slice that rewrites `test_resistance.gd` also splits it by subject.** The file is the floor of the
 test suite's run time on CI: every test function stays called once and the check total unchanged, so the

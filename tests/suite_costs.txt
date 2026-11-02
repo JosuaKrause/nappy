@@ -98,7 +98,8 @@ test_routes_fallen_trees.gd 73578
 test_routes_kerb_tint.gd 2472
 test_routes_lattice.gd 6326
 test_run_state.gd 1020
-test_save.gd 1917
+test_save.gd 1300
+test_save_wiring.gd 700
 test_scenery_animation.gd 546
 test_scenery_residency.gd 2224
 test_seals.gd 112050

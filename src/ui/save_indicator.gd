@@ -202,9 +202,12 @@ class Showing extends RefCounted:
 var _icon_rect: TextureRect
 var _plain_texture: Texture2D
 var _struck_texture: Texture2D
-var _showing := Showing.new()
+var _showing: Showing
 
-func _init() -> void:
+## `timeline` is the symbol's timeline, handed in so whoever builds the symbol can keep a hand on it
+## — begin and answer changes on it, move its clocks, read its state — and a fresh one by default.
+func _init(timeline: Showing = null) -> void:
+	_showing = timeline if timeline != null else Showing.new()
 	name = _NODE_NAME
 	layer = _LAYER
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -279,11 +282,13 @@ func is_showing() -> bool:
 	return not _showing.is_idle()
 
 ## Hands the symbol to the scene tree's root, so the scene reload the held restart or the day-14
-## hand-over makes does not free it — see the class doc. Does nothing once it is already there, or
+## hand-over makes does not free it — see the class doc. **Only a symbol that is up needs moving**: an
+## idle one is freed with the scene that holds it and the next boot builds its own. Does nothing
+## once it is already at the root (an idle one stays there, and the next boot adopts it again), or
 ## off the tree.
 func outlive_the_scene() -> void:
 	var tree := get_tree()
-	if tree == null:
+	if tree == null or not is_showing():
 		return
 	var home := _home(tree)
 	if get_parent() != home:
@@ -297,10 +302,14 @@ static func carried(tree: SceneTree) -> SaveIndicator:
 	return _home(tree).get_node_or_null(NodePath(_NODE_NAME)) as SaveIndicator
 
 ## Where a symbol that outlives its scene lives: the tree's root, which a scene reload leaves alone.
-## `_home_override` is the seam a test points at a plain node instead, since a suite runs while the
-## root is still busy adding the runner and cannot take a child; `null`, the default, answers
-## normally, and a test sets it back when done.
+## `use_home()` points it at a plain node instead, since a suite runs while the root is still busy
+## adding the runner and cannot take a child.
 static var _home_override: Node = null
+
+## Parks every symbol that outlives its scene at `home` instead of the tree's root; `null`, the
+## default, is the root again.
+static func use_home(home: Node) -> void:
+	_home_override = home
 
 static func _home(tree: SceneTree) -> Node:
 	return _home_override if _home_override != null else tree.root

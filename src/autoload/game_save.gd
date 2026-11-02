@@ -172,12 +172,8 @@ window.nappySaveFlush = function (token, answer) {
 static var _window: JavaScriptObject = null
 static var _flush_answer: JavaScriptObject = null
 
-## Every flush still waiting for its answer, by the operation id of the write or deletion it
-## carries, which is also the token the page's answer names: `{"settled": Callable, "deleting":
-## bool, "waited": float}`, the callable its `write()` or `clear()` was given, whether the flush
-## carries a deletion, and the seconds of clamped frames it has waited so far. The first of the
-## answer and the timeout to arrive removes the entry; the second finds nothing and does nothing.
-static var _pending_flushes: Dictionary = {}
+## Every flush still waiting for its answer — see `Flushes`.
+static var _flushes := Flushes.new()
 ## The id `_new_operation()` handed out last. Only ever grows, for the life of the process, so a
 ## larger id is always a change begun later — which is how `SaveIndicator` knows the newest — and
 ## no id is reused across the scene reloads a held restart and the day-14 hand-over make.
@@ -186,26 +182,28 @@ static var _last_operation := 0
 ## flush begins waiting, so the step it first counts is the time since then.
 static var _last_tick_usec := 0
 
-## Set by a test to redirect every read and write at a scratch file instead of the player's own —
-## see the **verify** skill's testing policy: an agent's run never lands in a saved game. `""`
-## (the default) means "answer normally"; a test sets this before calling
-## `_write_now()`/`_read_now()` directly (bypassing `uses_save()`'s gate, which a headless test
-## runner would otherwise always fail) and clears it back to `""` when done.
+## Where a run redirected at a scratch file keeps its save, instead of the player's own — see the
+## **verify** skill's testing policy: an agent's run never lands in a saved game. `""` (the
+## default) means "the player's own".
 static var _path_override := ""
 
+## Points every read, write and deletion at `path` instead of the player's own save, or back at it
+## with `""`. A run whose `RunConfig` is not headless (`configure()`) reaches that file through the
+## ordinary `write()`, `try_resume()` and `clear()`.
 static func set_path_override(path: String) -> void:
 	_path_override = path
 
 static func _path() -> String:
 	return _path_override if _path_override != "" else _DEFAULT_PATH
 
-## Set by a test to force `uses_save()`'s own answer, bypassing the headless display server this
-## suite always boots against: a headless runner can drive `write()`/`try_resume()` (the gated
-## names `main.gd` actually calls) no other way, since `uses_save()` refuses a headless run
-## unconditionally. `null` (the
-## default) means "answer normally"; a test sets this to `true` before exercising the gated path
-## against a scratch file (`set_path_override()` first, never `_DEFAULT_PATH`) and clears it back
-## to `null` when done, or the override leaks into every suite that runs after it.
+## Set by a suite that boots a real `main` to force `uses_save()`'s own answer: `main` hands
+## `configure()` its own configuration when it boots, which the suite cannot make a windowed run, so
+## the gated names `main` calls (`write()`, `try_resume()`) refuse its headless run unless this says
+## otherwise. A suite that only drives `GameSave` itself hands `configure()` a windowed
+## `RunConfig` instead (`RunConfig.parse()` with `headless_display` false) and needs no override.
+## `null` (the default) means "answer normally"; a suite sets this to `true` against a scratch file
+## (`set_path_override()` first, never `_DEFAULT_PATH`) and clears it back to `null` when done, or
+## the override leaks into every suite that runs after it.
 static var _uses_save_override: Variant = null
 
 ## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then,
@@ -221,10 +219,11 @@ static func configure(config: RunConfig) -> void:
 ## runner and `tools/check.sh`'s boot must all fall through to an ordinary, unsaved run rather than
 ## any of them reading or writing what may be the player's own day 9.
 ##
-## `DisplayServer.get_name() == "headless"` answers the null display server a headless run boots
-## against (see the **verify** skill on `AutoScreenshot.can_photograph()`, the same check) —
-## checked first and unconditionally, since a headless boot carries no dev flag at all and would
-## otherwise read as an ordinary release run. On a debug build any dev flag at all keeps the run off
+## `config.headless` answers the null display server a headless run boots against (see the
+## **verify** skill on `AutoScreenshot.can_photograph()`, the same check), read once at boot by
+## `RunConfig.at_boot()` — checked first and unconditionally, since a headless boot carries no dev
+## flag at all and would otherwise read as an ordinary release run. A test that wants the saving of
+## a windowed run hands `configure()` a config parsed with `headless_display` false. On a debug build any dev flag at all keeps the run off
 ## the save (`config.active_args` is not empty), which reaches `--seed`, `--day`, `--walk` and the
 ## rest by construction rather than by naming each one again; `--no-save` and a flagless debug
 ## run's own empty argument list are the two ways a *windowed* debug session still answers "no" —
@@ -241,7 +240,7 @@ static func configure(config: RunConfig) -> void:
 static func uses_save() -> bool:
 	if _uses_save_override != null:
 		return bool(_uses_save_override)
-	if DisplayServer.get_name() == "headless" or _config == null:
+	if _config == null or _config.headless:
 		return false
 	if not _config.debug_build:
 		return not _config.web_debug_flag_used
@@ -280,7 +279,7 @@ static func clear(settled := Callable()) -> Result:
 	var on_web := OS.has_feature("web")
 	var persistent := OS.is_userfs_persistent()
 	var removed := _clear_now()
-	var result := _moment_result(removed, on_web, persistent)
+	var result := moment_result(removed, on_web, persistent)
 	if result == Result.FAILED:
 		Telemetry.note("save", "the deletion was not kept (%s)"
 				% ("the file could not be removed" if not removed else "the browser refused storage"))
@@ -290,10 +289,8 @@ static func clear(settled := Callable()) -> Result:
 		_flush(operation, settled, true)
 	return result
 
-## The ungated mechanics `clear()` calls through, and the seam `tests/test_save.gd` calls directly
-## (pointed at a scratch path with `set_path_override()`) to put the scratch file away, since
-## `clear()` itself refuses a headless run. Returns whether the file is gone; a file that was not
-## there to begin with is already gone, so that is `true` and writes nothing to the run log.
+## The ungated mechanics `clear()` calls through. Returns whether the file is gone; a file that was
+## not there to begin with is already gone, so that is `true` and writes nothing to the run log.
 static func _clear_now() -> bool:
 	if not has_save():
 		return true
@@ -322,7 +319,7 @@ static func write(run: RunState, day_under_way: bool, settled := Callable()) -> 
 	# the save is meant to be kept.
 	var persistent := OS.is_userfs_persistent()
 	var wrote := _write_now(run, day_under_way)
-	var result := _moment_result(wrote, on_web, persistent)
+	var result := moment_result(wrote, on_web, persistent)
 	if result == Result.FAILED:
 		Telemetry.note("save", "the save was not kept (%s)"
 				% ("the file could not be written" if not wrote else "the browser refused storage"))
@@ -333,13 +330,13 @@ static func write(run: RunState, day_under_way: bool, settled := Callable()) -> 
 	return result
 
 ## What a save moment comes to before any browser has answered — the pure half of `write()` and of
-## `clear()`, so a test can reach the web's branches from a desktop runner. `done` is
-## `_write_now()`'s or `_clear_now()`'s own answer, `persistent` is `OS.is_userfs_persistent()`:
+## `clear()`, public so the web's branches can be asked from a desktop runner. `done` is
+## the file write's or removal's own answer, `persistent` is `OS.is_userfs_persistent()`:
 ## false on a web page whose browser refused IndexedDB at boot, where Godot carries on from memory
 ## alone and a flush would report success for a copy no reload will ever find — so a page in that
 ## state is a failed change without ever flushing. For a deletion that is the right answer too: a
 ## stored copy this page could not reach is one a later visit can bring back.
-static func _moment_result(done: bool, on_web: bool, persistent: bool) -> Result:
+static func moment_result(done: bool, on_web: bool, persistent: bool) -> Result:
 	if not done:
 		return Result.FAILED
 	if not on_web:
@@ -378,16 +375,16 @@ static func _run_has_ended(run: RunState) -> bool:
 ## during the next ordinary session, long before the following quit, so a save that never reached
 ## IndexedDB on one close is caught up by the time the game is closed again.
 static func _flush(operation: int, settled: Callable, deleting := false) -> void:
-	var token := _register_flush(operation, settled, deleting)
+	var token := _flushes.register(operation, settled, deleting)
 	_start_the_clock()
 	if _flush_answer == null:
 		JavaScriptBridge.eval(_FLUSH_JS)
 		_window = JavaScriptBridge.get_interface("window")
-		_flush_answer = JavaScriptBridge.create_callback(_on_flush_answered)
+		_flush_answer = JavaScriptBridge.create_callback(_flushes.answer)
 	if _window == null or _flush_answer == null:
 		# Deferred, so the answer never arrives before the caller has been handed `PENDING` and
 		# had the chance to begin whatever waits for it — an answer to nothing begun is dropped.
-		_settle.call_deferred(token, Result.FAILED, "the page's JavaScript is not reachable")
+		_flushes.fail.call_deferred(token, "the page's JavaScript is not reachable")
 		return
 	_window.call("nappySaveFlush", token, _flush_answer)
 
@@ -406,79 +403,97 @@ static func _tick() -> void:
 	var now := Time.get_ticks_usec()
 	var elapsed := float(now - _last_tick_usec) / 1000000.0
 	_last_tick_usec = now
-	_advance(_clamped_step(elapsed))
-
-## What one frame adds to a flush's wait, however long it was since the last frame.
-static func _clamped_step(elapsed_seconds: float) -> float:
-	return clampf(elapsed_seconds, 0.0, MAX_FLUSH_STEP_SECONDS)
-
-## Adds `step` seconds to every flush's wait and fails the ones past `FLUSH_TIMEOUT_SECONDS`, then
-## stops the clock once nothing waits. The seam `tests/test_save.gd` drives without a browser.
-static func _advance(step: float) -> void:
-	for token: int in _pending_flushes.keys():
-		var entry: Dictionary = _pending_flushes[token]
-		entry["waited"] = float(entry["waited"]) + step
-		if float(entry["waited"]) >= FLUSH_TIMEOUT_SECONDS:
-			_settle(token, Result.FAILED, "no answer within %.0fs" % FLUSH_TIMEOUT_SECONDS)
-	if _pending_flushes.is_empty():
+	_flushes.advance(elapsed)
+	if _flushes.is_empty():
 		var tree := Engine.get_main_loop() as SceneTree
 		if tree and tree.process_frame.is_connected(_tick):
 			tree.process_frame.disconnect(_tick)
 
-## The page's answer to one flush: `[token, message]`, `message` empty on success.
-static func _on_flush_answered(args: Array) -> void:
-	if args.size() < 2:
-		return
-	var message := str(args[1])
-	if message.is_empty():
-		_settle(int(args[0]), Result.CONFIRMED, "")
-	else:
-		_settle(int(args[0]), Result.FAILED, message)
+## The flushes waiting for the browser's answer, as a table of their own: **registered** when a
+## write or deletion hands its change to the browser, **answered** by the page's callback or
+## **timed out** by the frames that pass, whichever comes first. Apart from `GameSave`'s statics
+## and the `JavaScriptBridge`, so a desktop run, or a test, drives the whole of a flush's life
+## by registering one and giving it the page's answer or the frames' time: `GameSave` holds the one
+## the game uses, and each flush is keyed by the operation id of its change, which is also the token
+## the page's answer names.
+class Flushes extends RefCounted:
+	## Per token: `{"settled": Callable, "deleting": bool, "waited": float}`, the callable its
+	## `write()` or `clear()` was given, whether the flush carries a deletion, and the seconds of
+	## clamped frames it has waited so far. The first of the answer and the timeout to arrive
+	## removes the entry; the second finds nothing and does nothing.
+	var _waiting: Dictionary = {}
 
-## Puts `operation`'s flush in the table of flushes waiting for an answer, and answers its token,
-## which is the operation id itself.
-static func _register_flush(operation: int, settled: Callable, deleting := false) -> int:
-	_pending_flushes[operation] = {"settled": settled, "deleting": deleting, "waited": 0.0}
-	return operation
+	## Puts `operation`'s flush in the table, and answers its token, which is the operation id itself.
+	func register(operation: int, settled: Callable, deleting := false) -> int:
+		_waiting[operation] = {"settled": settled, "deleting": deleting, "waited": 0.0}
+		return operation
 
-## Settles one pending flush, once: whichever of the page's answer and the timeout arrives second
-## finds the token gone and does nothing, so a flush that answers after timing out stays failed
-## rather than flipping the symbol it already struck through. A `settled` whose object is gone — a
-## held restart reloads `main` while a flush is still out — is skipped. **The answer always goes out
-## on `EventBus` first** (`save_deletion_settled` for a deletion, `save_write_settled` for a write,
-## each with the operation id), which is what reaches the symbol that outlived the `main` a reload
-## freed.
-static func _settle(token: int, result: Result, reason: String) -> void:
-	if not _pending_flushes.has(token):
-		return
-	var entry: Dictionary = _pending_flushes[token]
-	var settled: Callable = entry["settled"]
-	var deleting: bool = entry["deleting"]
-	_pending_flushes.erase(token)
-	var kept := result == Result.CONFIRMED
-	if deleting:
-		if kept:
-			Telemetry.note("save", "the browser dropped the deleted save")
+	## Whether `token`'s flush is still waiting for an answer.
+	func waits_for(token: int) -> bool:
+		return _waiting.has(token)
+
+	func is_empty() -> bool:
+		return _waiting.is_empty()
+
+	## The page's answer to one flush: `[token, message]`, `message` empty on success.
+	func answer(args: Array) -> void:
+		if args.size() < 2:
+			return
+		var message := str(args[1])
+		if message.is_empty():
+			_settle(int(args[0]), Result.CONFIRMED, "")
 		else:
-			Telemetry.note("save", "the browser did not drop the deleted save (%s)" % reason)
-		EventBus.save_deletion_settled.emit(token, kept)
-	else:
-		if kept:
-			Telemetry.note("save", "the browser kept the save")
-		else:
-			Telemetry.note("save", "the browser did not keep the save (%s)" % reason)
-		EventBus.save_write_settled.emit(token, kept)
-	if settled.is_valid():
-		settled.call(result)
+			_settle(int(args[0]), Result.FAILED, message)
 
-## The ungated mechanics `write()` calls through, and the seam `tests/test_save.gd` calls directly
-## so a headless test (where `uses_save()` always answers `false`, see its own doc) can still
-## exercise the actual file format — pointed at a scratch path with `set_path_override()` first,
-## never at `_DEFAULT_PATH`.
+	## `token`'s flush failed for `reason` without the page having answered it.
+	func fail(token: int, reason: String) -> void:
+		_settle(token, Result.FAILED, reason)
+
+	## Adds one frame's time to every flush's wait — however long it was since the last frame, no
+	## more than `MAX_FLUSH_STEP_SECONDS`, and never a negative step — and fails the ones past
+	## `FLUSH_TIMEOUT_SECONDS`.
+	func advance(elapsed_seconds: float) -> void:
+		var step := clampf(elapsed_seconds, 0.0, MAX_FLUSH_STEP_SECONDS)
+		for token: int in _waiting.keys():
+			var entry: Dictionary = _waiting[token]
+			entry["waited"] = float(entry["waited"]) + step
+			if float(entry["waited"]) >= FLUSH_TIMEOUT_SECONDS:
+				_settle(token, Result.FAILED, "no answer within %.0fs" % FLUSH_TIMEOUT_SECONDS)
+
+	## Settles one pending flush, once: whichever of the page's answer and the timeout arrives second
+	## finds the token gone and does nothing, so a flush that answers after timing out stays failed
+	## rather than flipping the symbol it already struck through. A `settled` whose object is gone —
+	## a held restart reloads `main` while a flush is still out — is skipped. **The answer always
+	## goes out on `EventBus` first** (`save_deletion_settled` for a deletion, `save_write_settled`
+	## for a write, each with the operation id), which is what reaches the symbol that outlived the
+	## `main` a reload freed.
+	func _settle(token: int, result: Result, reason: String) -> void:
+		if not _waiting.has(token):
+			return
+		var entry: Dictionary = _waiting[token]
+		var settled: Callable = entry["settled"]
+		var deleting: bool = entry["deleting"]
+		_waiting.erase(token)
+		var kept := result == Result.CONFIRMED
+		if deleting:
+			if kept:
+				Telemetry.note("save", "the browser dropped the deleted save")
+			else:
+				Telemetry.note("save", "the browser did not drop the deleted save (%s)" % reason)
+			EventBus.save_deletion_settled.emit(token, kept)
+		else:
+			if kept:
+				Telemetry.note("save", "the browser kept the save")
+			else:
+				Telemetry.note("save", "the browser did not keep the save (%s)" % reason)
+			EventBus.save_write_settled.emit(token, kept)
+		if settled.is_valid():
+			settled.call(result)
+
+## The ungated mechanics `write()` calls through.
 ##
-## **Refuses once `run.header.ending` is set**, checked here rather than only in `write()` so a
-## test can drive it without also having to make `uses_save()` answer `true` under the headless
-## runner. A finished run already had its save cleared by `clear_when_a_run_ends()`; this is the
+## **Refuses once `run.header.ending` is set**, checked here as well as in `write()` so no path to
+## the file can skip it. A finished run already had its save cleared by `clear_when_a_run_ends()`; this is the
 ## second line of the same reasoning `CLAUDE.md`'s "check before accepting, never repair
 ## afterwards" asks for elsewhere in this project — a stray write between the ending firing and
 ## the player being shown it must not resurrect a file that answering the ending question
@@ -547,9 +562,7 @@ static func try_resume(run: RunState) -> Dictionary:
 		return {}
 	return _read_now(run)
 
-## The ungated mechanics `try_resume()` calls through — the seam `tests/test_save.gd` uses to
-## exercise a garbled or version-mismatched file directly, since `uses_save()` always answers
-## `false` under the headless test runner (see its own doc).
+## The ungated mechanics `try_resume()` calls through.
 ##
 ## Every way a file fails to become a resumable run answers the same "drop it for a fresh title
 ## screen" the design asks for, rather than a half-loaded run: no file at that path, text that is
