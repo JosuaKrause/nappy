@@ -30,33 +30,38 @@ func _test_both_states_visit_contact_passing_contact_passing(t) -> void:
 		var rig := _rig(carrying)
 		var frames: Array[int] = []
 		for _quarter in range(4):
-			frames.append(rig._mother_gait_frame(1.0))
-			rig._advance_walk_phase(QUARTER_CYCLE_DISTANCE)
+			frames.append(rig.mother_gait_frame(1.0))
+			rig.advance_walk_phase(QUARTER_CYCLE_DISTANCE)
 		t.check(frames == [0, 1, 2, 1],
 				"one %s cycle is A, C, B, C" % _state_name(carrying))
-		t.check(is_zero_approx(rig._walk_phase),
+		t.check(is_zero_approx(rig.walk_phase()),
 				"the four %s displacement quarters wrap at one TAU" % _state_name(carrying))
 		rig.free()
 
 func _test_displacement_crosses_a_passing_boundary_in_both_states(t) -> void:
 	for carrying in [false, true]:
 		var rig := _rig(carrying)
-		rig._advance_walk_phase(QUARTER_CYCLE_DISTANCE * 0.5)
-		t.check(rig._mother_gait_frame(1.0) == 0,
+		rig.advance_walk_phase(QUARTER_CYCLE_DISTANCE * 0.5)
+		t.check(rig.mother_gait_frame(1.0) == 0,
 				"half the first %s contact's travel still holds A" % _state_name(carrying))
-		rig._advance_walk_phase(QUARTER_CYCLE_DISTANCE * 0.5)
-		t.check(rig._mother_gait_frame(1.0) == 1,
+		rig.advance_walk_phase(QUARTER_CYCLE_DISTANCE * 0.5)
+		t.check(rig.mother_gait_frame(1.0) == 1,
 				"the completed %s quarter reaches passing C" % _state_name(carrying))
 		rig.free()
 
 func _test_idle_holds_the_passing_pose_from_every_phase(t) -> void:
 	for carrying in [false, true]:
-		var rig := _rig(carrying)
 		for phase in [0.0, PI / 2.0, PI, 3.0 * PI / 2.0]:
-			rig._walk_phase = phase
-			t.check(rig._mother_gait_frame(0.0) == 1,
+			# Walked there by distance, the way a frame advances the gait; 0.09 is the radians
+			# of gait per pixel `Stroller.advance_walk_phase()` applies.
+			var rig := _rig(carrying)
+			rig.advance_walk_phase(phase / 0.09)
+			t.check(is_equal_approx(rig.walk_phase(), phase),
+					"walking %.2f radians of gait stands the %s rig there"
+					% [phase, _state_name(carrying)])
+			t.check(rig.mother_gait_frame(0.0) == 1,
 					"idle %s settles on C from phase %.2f" % [_state_name(carrying), phase])
-		rig.free()
+			rig.free()
 
 func _pose_families(carrying: bool) -> Array[Array]:
 	if carrying:
@@ -108,11 +113,11 @@ func _test_every_view_resolves_every_pose_in_both_states(t) -> void:
 		for frame in range(3):
 			var expected := _direction_textures(carrying, frame)
 			for direction in range(8):
-				rig._view_direction = direction
+				rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))
 				# Pinned through her family's atlas rather than against the authored constant
-				# directly: `_mother_texture()` answers the baked region, and the assertion is
+				# directly: `mother_texture()` answers the baked region, and the assertion is
 				# about *which* view is selected either way.
-				t.check(rig._mother_texture(frame)
+				t.check(rig.mother_texture(frame)
 						== AtlasLibrary.region(StringName(expected[direction])),
 						"direction %d resolves %s pose %d"
 						% [direction, _state_name(carrying), frame])

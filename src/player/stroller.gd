@@ -72,7 +72,7 @@ const MOTHER_BACK_DIAGONAL: Array[String] = [
 	"rig/mother_back_diagonal_b"]
 
 ## The escape scene's rig — the baby in her arms, no pram. Selected in place of the sets above
-## whenever `carrying` is set; see `_mother_texture()`.
+## whenever `carrying` is set; see `mother_texture()`.
 const MOTHER_CARRYING_FRONT: Array[String] = [
 	"rig/mother_carrying_front_a",
 	"rig/mother_carrying_front_c",
@@ -116,7 +116,7 @@ const FATHER_BACK_DIAGONAL: Array[String] = [
 	"rig/father_back_diagonal_b"]
 
 ## The escape scene's rig — the baby in his arms, no pram. Selected in place of the sets above
-## whenever `carrying` is set; see `_mother_texture()`, the shared parent selector.
+## whenever `carrying` is set; see `mother_texture()`, the shared parent selector.
 const FATHER_CARRYING_FRONT: Array[String] = [
 	"rig/father_carrying_front_a",
 	"rig/father_carrying_front_c",
@@ -192,7 +192,7 @@ static func parent_atlas(male: bool) -> StringName:
 
 ## Every path the rig can draw, by the group it is baked on: each parent's pushing and carrying
 ## views over three gait frames, and the pram's five views on the group they share. Not read by
-## the live draw path — `_mother_texture()` and `_pram_texture()` turn the picture already in
+## the live draw path — `mother_texture()` and `pram_texture()` turn the picture already in
 ## hand into a region name directly — but kept as the one place "everything the rig can draw" is
 ## enumerable, which is what a completeness check against the membership file wants.
 static func sources_by_group() -> Dictionary:
@@ -495,7 +495,7 @@ func _physics_process(delta: float) -> void:
 	if _shove != Vector2.ZERO:
 		move_and_collide(_shove * delta)
 		_shove = _shove.move_toward(Vector2.ZERO, Tuning.FRICTION * delta)
-	_advance_walk_phase(velocity.length() * delta)
+	advance_walk_phase(velocity.length() * delta)
 
 	# Stride cadence is driven by distance covered, so it stays in step at any speed.
 	_alert_phase = wrapf(_alert_phase + delta, 0.0, 1.0)
@@ -1028,16 +1028,28 @@ func _draw() -> void:
 
 ## The source texture supplies the complete body geometry, including the stride and its small bob.
 func _draw_mother(gait: float) -> void:
-	Sprites.draw_standing(self, _mother_texture(_mother_gait_frame(gait)), Vector2.ZERO, Vector2.ZERO,
-			_mother_is_mirrored())
+	Sprites.draw_standing(self, mother_texture(mother_gait_frame(gait)), Vector2.ZERO, Vector2.ZERO,
+			mother_is_mirrored())
+
+## The sector of the eight views she draws now, indexed as `EightDirection` indexes them.
+func view_direction() -> int:
+	return _view_direction
+
+## Where the gait stands, wrapped 0..TAU; `advance_walk_phase()` moves it and `reset_at()` zeroes it.
+func walk_phase() -> float:
+	return _walk_phase
+
+## The pram's offset as the last frame computed it, the one her art, shadow and cue are drawn at.
+func drawn_pram_offset() -> Vector2:
+	return _pram_offset
 
 ## Distance advances the gait so slowing down changes cadence without changing the depicted loop.
-func _advance_walk_phase(distance: float) -> void:
+func advance_walk_phase(distance: float) -> void:
 	_walk_phase = wrapf(_walk_phase + distance * 0.09, 0.0, TAU)
 
 ## Both mother states use contact, passing, opposite contact, passing over one full turn. Keeping
 ## that loop on `TAU` preserves the contact/passing change frequency instead of doubling step rate.
-func _mother_gait_frame(gait: float) -> int:
+func mother_gait_frame(gait: float) -> int:
 	if gait <= 0.05:
 		return 1
 	var quarter := int(floor(_walk_phase / (TAU / 4.0))) % MOTHER_GAIT_LOOP.size()
@@ -1046,19 +1058,19 @@ func _mother_gait_frame(gait: float) -> int:
 ## The pram has authored front, back, side and diagonal projections. A hood belongs to its own
 ## three-quarter body plane, rather than sliding across an unchanged basket as the rig turns.
 func _draw_pram(at: Vector2) -> void:
-	var texture := _pram_texture()
-	Sprites.draw_standing(self, texture, at, _pram_draw_size(), _pram_is_mirrored())
+	var texture := pram_texture()
+	Sprites.draw_standing(self, texture, at, pram_draw_size(), pram_is_mirrored())
 
-func _pram_draw_size() -> Vector2:
-	return _pram_texture().get_size() * PRAM_VISUAL_SCALE
+func pram_draw_size() -> Vector2:
+	return pram_texture().get_size() * PRAM_VISUAL_SCALE
 
 ## The selected parent's region for a gait frame — the run's own parent page is acquired for the
 ## whole run in `_ready()`, so this is always the baked region and never the raw source.
-func _mother_texture(frame: int) -> Texture2D:
-	return AtlasLibrary.region(StringName(_mother_source(frame)))
+func mother_texture(frame: int) -> Texture2D:
+	return AtlasLibrary.region(StringName(mother_source(frame)))
 
 ## The authored view this frame draws, as the path it is baked under.
-func _mother_source(frame: int) -> String:
+func mother_source(frame: int) -> String:
 	if carrying:
 		if _view_direction == 0 or _view_direction == 4:
 			return FATHER_CARRYING_SIDE[frame] if is_male else MOTHER_CARRYING_SIDE[frame]
@@ -1082,14 +1094,14 @@ func _mother_source(frame: int) -> String:
 	return FATHER_BACK[frame] if is_male else MOTHER_BACK[frame]
 
 ## West-facing projections mirror their corresponding east-authored SVGs about the feet anchor.
-func _mother_is_mirrored() -> bool:
+func mother_is_mirrored() -> bool:
 	return EightDirection.is_mirrored(_view_direction)
 
 ## The pram region selected by the live drawing path, off `STROLLER_ATLAS` — the page the two
 ## parents share rather than the one her body is on. Its size is the region's, which is the
-## picture's own native size, so `_pram_draw_size()`'s seven-sixths lands on exactly the same
+## picture's own native size, so `pram_draw_size()`'s seven-sixths lands on exactly the same
 ## rectangle it always did.
-func _pram_texture() -> Texture2D:
+func pram_texture() -> Texture2D:
 	return AtlasLibrary.region(StringName(_pram_source()))
 
 ## The authored pram view for the direction she is facing, as the path it is baked under.
@@ -1105,7 +1117,7 @@ func _pram_source() -> String:
 	return PRAM_BACK
 
 ## West-facing prams share the same explicit east-authored symmetry as the mother.
-func _pram_is_mirrored() -> bool:
+func pram_is_mirrored() -> bool:
 	return EightDirection.is_mirrored(_view_direction)
 
 ## Decides the eight-direction projection for this frame, with hysteresis rather than a single

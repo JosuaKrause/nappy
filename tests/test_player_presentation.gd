@@ -55,16 +55,17 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 		for carrying in [false, true]:
 			rig.carrying = carrying
 			for direction in range(8):
-				rig._view_direction = direction
+				rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))
 				for frame in range(3):
 					var path := "rig/%s_%s%s_%s" % [
 							"father" if male else "mother", "carrying_" if carrying else "",
 							VIEWS[direction], POSES[frame]]
-					var source := rig._mother_source(frame)
+					var source := rig.mother_source(frame)
 					t.check(source == path, "every pose/state/facing stays in its selected family")
-					t.check(rig._mother_is_mirrored() == EightDirection.is_mirrored(direction),
+					t.check(rig.mother_is_mirrored() == EightDirection.is_mirrored(direction),
 							"both presentations retain the same west-facing mirrors")
-					rig._mother_texture(frame)
+					t.check(rig.view_direction() == direction and rig.mother_texture(frame) != null,
+							"the facing settles the view and the family resolves a picture for it")
 			t.check(rig.is_male == male and GameState.header.player_is_male == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")
 		rig.free()
