@@ -31,6 +31,7 @@ const WHERE_THE_PLAYER_WAS_CAUGHT := Vector2i(74, 22)
 const SEEDS := [4242, 1, 77, 9001]
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_the_two_chains_part_at_the_door_and_never_meet_again(t)
 	_test_each_chain_passes_three_distinct_calm_areas(t)
 	_test_each_chain_reaches_its_own_edge(t)

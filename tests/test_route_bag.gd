@@ -18,6 +18,7 @@ const STEP := 0.1
 const READING_THE_MARK_BOUND := 1.5
 
 func run(t) -> void:
+	t.gives_back_observers()
 	# Which ground a route marble finds depends on the run's seed; these checks hold on seed 2.
 	GameState.start_run(2)
 	_test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t)

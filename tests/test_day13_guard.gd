@@ -46,6 +46,7 @@ var _seen_through: VisibleView
 var _streams := "day13-guard:"
 
 func run(t) -> void:
+	t.gives_back_observers()
 	# Each day here starts from no read mark's alley remembered (`_start_the_day()`).
 	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	_test_the_guard_follows_her_to_the_roadblock_she_approaches(t)

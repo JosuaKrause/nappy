@@ -28,6 +28,7 @@ const DAY := 1
 const WHERE_SHE_STOOD := Vector2i(74, 27)
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var saved_section := GameState.facts.escape_section
 	GameState.start_run(SEED)
 	GameState.header.day = DAY

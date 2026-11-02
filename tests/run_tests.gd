@@ -12,7 +12,9 @@ extends Node
 ## runner. `run` may be a plain function or a coroutine: the runner awaits it, so a suite may
 ## `await` real frames, and lets a frame and a physics frame pass after each suite.
 ## Before each suite `_reset_globals` puts back the run state and the static test seams, and a
-## physics frame has passed before the first, so every suite meets the same engine state.
+## physics frame has passed before the first, so every suite meets the same engine state. After
+## each suite `SharedState` compares the shared state with what it was before, and a suite that
+## left any of it changed fails by name (`tests/shared_state.gd` says what is compared).
 ##
 ## Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
 ## negative fixtures under `tests/runner_fixtures/` (`engine_error.gd`, which proves the engine-error
@@ -46,6 +48,8 @@ var failures: Array[String] = []
 ## when something else quit the tree.
 var _running := ""
 var _finished := false
+## What `gives_back_observers()` recorded for the suite now running, put back once it is over.
+var _observer_hold := {}
 
 func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
@@ -68,6 +72,7 @@ func _ready() -> void:
 		var suite: Object = script.new()
 		_running = path.get_file()
 		_reset_globals()
+		var shared_before := SharedState.snapshot(self)
 		# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
 		# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
 		# coroutine waits for it.
@@ -77,6 +82,12 @@ func _ready() -> void:
 		# synchronous run never lets happen.
 		await get_tree().process_frame
 		await get_tree().physics_frame
+		if not _observer_hold.is_empty():
+			SharedState.put_back_observers(_observer_hold)
+			_observer_hold = {}
+		for leak in SharedState.diff(shared_before, SharedState.snapshot(self)):
+			failures.append("%s left shared state changed, %s" % [path.get_file(), leak])
+			print("LEAK  %s left shared state changed, %s" % [path.get_file(), leak])
 		_running = ""
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the
@@ -116,7 +127,12 @@ const RESET_SEED := 2
 ## the counter handed the live run, since the bus reaches it in suites that boot no `main`),
 ## and the static seams a suite sets by hand (the save's override hooks, the frame recorder, the
 ## remembered controls and the title's restart stamp). The run log and `VisitCounter`'s own state
-## and the `EventBus` connections are left alone.
+## and the `EventBus` connections are left alone, and so is everything else: `SharedState` compares
+## the shared state after each suite and fails the suite that left it changed, except the fields
+## it lists with a reason (these resets are the reason for some of them). It covers the tree's
+## `paused`, `Engine.time_scale`, `Input.mouse_mode`, the nodes under the root and the runner,
+## `InputMap`, the pressed actions, the autoloads' variables and signal connections and every
+## `static var` under `src/`.
 func _reset_globals() -> void:
 	GameState.start_run(RESET_SEED)
 	Telemetry.configure(null)
@@ -170,6 +186,13 @@ func _matches(file: String, filters: PackedStringArray) -> bool:
 		if file.contains(filter):
 			return true
 	return false
+
+## A suite that boots `main`, or drives a run the observers watch, calls this first: the observers'
+## count of the run (`SharedState.OBSERVER_FIELDS`) is put back to what it is now once the suite is
+## over, so that the next suite does not meet the days and tasks of this one. Nothing else is
+## given back for it.
+func gives_back_observers() -> void:
+	_observer_hold = SharedState.observers()
 
 # --------------------------------------------------------------- assertions ---
 

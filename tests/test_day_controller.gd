@@ -7,6 +7,7 @@ extends RefCounted
 ## `hud.gd` itself belongs to a different milestone and is read only.
 
 func run(t) -> void:
+	var standing: Array[Node] = t.get_children()
 	_test_the_clock_emits_once_per_second_crossed(t)
 	_test_a_day_starting_is_its_own_emit(t)
 	_test_invincible_stops_emitting_once_the_first_second_is_told(t)
@@ -16,6 +17,9 @@ func run(t) -> void:
 	_test_an_escape_section_reads_its_clock_to_the_hundredth(t)
 	_test_a_frozen_escape_clock_stays_silent(t)
 	_test_each_section_is_won_at_its_own_goal(t)
+	for child in t.get_children():
+		if not child in standing:
+			child.free()
 
 func _rig(t) -> DayController:
 	var player := Node2D.new()
