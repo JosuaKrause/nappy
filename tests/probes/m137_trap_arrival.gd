@@ -13,7 +13,7 @@ extends RefCounted
 ## **The rig.** A real city and `ResistanceDirector` per seed (`CityGenerator.generate(seed)`),
 ## carried to exactly one handover per seed rather than to every look-alike she could have handed
 ## the note to: day 6's mark touched so the yeller perform is active (`_on_contact_completed(1)`,
-## the shape `tests/test_resistance.gd`'s `_director_on_the_yeller_perform()` builds), day 7's mark
+## the shape `tests/resistance_rig.gd`'s `_director_on_the_yeller_perform()` builds), day 7's mark
 ## touched so the van's perform is active (`_on_contact_completed(3)`,
 ## `_director_on_the_van_perform()`'s shape); `contact_position()` then reads back the one
 ## look-alike that step reached. From there `_draw_arrival_position()` — the same private call

@@ -6,7 +6,7 @@ extends RefCounted
 ##     tools/test.sh probes/bouncy_egret_day11_mast.gd
 ##     PROBE_SEEDS=4242,314159 tools/test.sh probes/bouncy_egret_day11_mast.gd
 ##
-## Each city runs `tests/test_resistance.gd`'s own rig: day 11 planned in the real day order and its
+## Each city runs `tests/test_resistance_arrow.gd`'s own rig: day 11 planned in the real day order and its
 ## mark read, which rigs the mast onto her route (`ResistanceDirector._rig_her_route_for()`).
 ##
 ## Every mast is exempt from the three line rules (inbox #684 in coral-lark), so the "junction" and "sidewalk"
@@ -24,7 +24,7 @@ const SEEDS: Array[int] = [4242, 90210, 1234567, 2295276695, 291862120, 314159, 
 		909, 1001, 2002]
 
 func run(t) -> void:
-	var suite: Variant = load("res://tests/test_resistance.gd").new()
+	var suite: Variant = load("res://tests/test_resistance_arrow.gd").new()
 	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var saved_state := GameState.attempt_spend.city_state
 	var seeds: Array[int] = SEEDS

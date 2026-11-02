@@ -66,7 +66,7 @@ func _test_no_double_batch_in_a_day(t) -> void:
 ## ordinary queue left for the return to add to or re-pace, and the brief says leave it alone.
 ## `EventDirector.force()` takes effect at the next `start_day()`, which this rig does not run, so
 ## this reaches `_forced` directly the way other suites reach a director's private state
-## (`tests/test_resistance.gd`'s own `director._rider`, `director.tick()`).
+## (`tests/test_resistance_*.gd`'s own `director._rider`, `director.tick()`).
 func _test_forced_queue_is_untouched(t) -> void:
 	var map := _map()
 	var director := _director(map)

@@ -21,7 +21,7 @@ const REACH := 36.0
 ## The `decoration` atlas group the two pictures below are regions of — `_enter_tree()`/
 ## `_exit_tree()` acquire and release it, the same pairing `ClosureMarker` uses for its own
 ## `street_kit` group, rather than trusting `City`'s own hold on it: a `ContactPoint` built by a
-## test with no `City` around it (`tests/test_resistance.gd`'s bare pickups and rides) still
+## test with no `City` around it (`tests/test_resistance_steps.gd`'s bare pickups and rides) still
 ## needs a region to draw, and `AtlasLibrary` reference-counts, so acquiring a group already
 ## resident from boot (`main.RESIDENT_GROUPS`) still costs one page load for the whole process.
 const ATLAS_GROUP := &"decoration"

@@ -241,7 +241,7 @@ which she crosses the door beside; on the last night the station's door on its f
 the pavement tile the day kept. Planned on the day number alone, never on
 the run, so the day is the same whether or not this run will be offered the step. **One thing it
 does not cover:** a moving event, which has no body to seal anything with (a hard-fail mover counts
-where it starts). `tests/test_resistance.gd` plans the three days on cities whose narrow places the
+where it starts). `tests/test_resistance_reach_narrow.gd` plans the three days on cities whose narrow places the
 day's seals and bodies have been found to ring, and finds the place's tile reached and the contact
 reached from it.
 

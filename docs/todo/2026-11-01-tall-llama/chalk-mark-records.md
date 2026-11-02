@@ -9,13 +9,13 @@ chalk mark, its robber, and the task line; no gameplay defect was found).
 - crisp-moose's "the alley must be next to a path. if there is no path to it it shouldn't appear"
   was read as "a district door counts as a path" without asking. The player has now said so
   ([busy-ibis](../../playtests/2026-10-03-busy-ibis.md), statement 10: "yes a district door counts
-  as path"): the comment at `tests/test_resistance.gd` (the alley-path test) and
+  as path"): the comment at `tests/test_resistance_reach_marks.gd` (the alley-path test) and
   `docs/decisions/2026-09-27-downy-otter.md` cite busy-ibis for it, and the question this reading
   raised leaves `docs/review/2026-09-26-M213.md` if it is there.
 - The courtyard robber shipped with no still on the player's "no courtyard still needed", which no
   file held. The player has since seen it and likes it (busy-ibis, statement 11); the record that
   describes the courtyard spot cites busy-ibis, and no still is owed.
-- The M221 retry test (`tests/test_resistance.gd`, the test that retries a day) retries once and
+- The M221 retry test (`tests/test_resistance_placement_kinds.gd`, the test that retries a day) retries once and
   only checks that `_guard` no longer points at the old robber. The item asked that "after any
   number of failed attempts at a day, its alley holds exactly one chalk mark and no leftover
   robber": loop three attempts of day 9 and count the live chalk marks and the director's live
