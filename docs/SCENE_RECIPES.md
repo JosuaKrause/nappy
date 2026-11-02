@@ -127,7 +127,7 @@ included, is refused, never
 moved. Days 6 to 13 take `mark`; day 14's task, the power station's front door, has no mark and
 takes `task: {}`, and the scene starts with the resistance goal met, since the last night is
 offered only then. `neighbor` pins day 10's neighbor's start to a sidewalk tile the day's own draw
-could choose (about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from home, and
+could choose (about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of their walk from home, and
 `ResistanceDirector.NEIGHBOR_CLEAR_OF_HER`, 400px, or more from her where she reads the mark, which
 the draw runs when she does); it is the one target drawn
 from the whole city rather than placed near the mark or standing in a fixed place. Everything the

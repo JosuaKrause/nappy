@@ -818,23 +818,23 @@ func _test_the_pram_says_how_the_baby_is(t) -> void:
 	baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD
 	t.check(baby.cue() == Baby.Cue.UNSETTLED,
 			"the moment the day stops progressing, it says so")
-	baby.excitement = Tuning.EXCITEMENT_NEARLY_CRYING
+	baby.excitement = Baby.EXCITEMENT_NEARLY_CRYING
 	t.check(baby.cue() == Baby.Cue.NEARLY_CRYING,
 			"and escalates before the day is lost rather than as it is lost")
 
 	baby.state = GameEnums.BabyState.ASLEEP
 	baby.excitement = 0.0
 	t.check(baby.cue() == Baby.Cue.ASLEEP, "asleep is a state with a mark of its own")
-	baby.excitement = Tuning.EXCITEMENT_WAKE_THRESHOLD - Tuning.EXCITEMENT_STIR_MARGIN
+	baby.excitement = Tuning.EXCITEMENT_WAKE_THRESHOLD - Baby.EXCITEMENT_STIR_MARGIN
 	t.check(baby.cue() == Baby.Cue.STIRRING,
 			"and stirring is warned about before it costs half the bar")
 
 	# The relationships, which are what a rebalance must not quietly break.
-	t.check(Tuning.EXCITEMENT_NEARLY_CRYING > Tuning.EXCITEMENT_CALM_THRESHOLD
-			and Tuning.EXCITEMENT_NEARLY_CRYING < Tuning.METER_MAX,
+	t.check(Baby.EXCITEMENT_NEARLY_CRYING > Tuning.EXCITEMENT_CALM_THRESHOLD
+			and Baby.EXCITEMENT_NEARLY_CRYING < Tuning.METER_MAX,
 			"the last warning band sits between the freeze and the lost day")
-	t.check(Tuning.EXCITEMENT_STIR_MARGIN > 0.0
-			and Tuning.EXCITEMENT_STIR_MARGIN < Tuning.EXCITEMENT_WAKE_THRESHOLD,
+	t.check(Baby.EXCITEMENT_STIR_MARGIN > 0.0
+			and Baby.EXCITEMENT_STIR_MARGIN < Tuning.EXCITEMENT_WAKE_THRESHOLD,
 			"and stirring starts before waking, not with it")
 	baby.free()
 

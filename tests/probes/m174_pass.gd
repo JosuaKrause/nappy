@@ -84,13 +84,13 @@ func _row(id: String) -> void:
 			% ["px", "awake", "asleep", "awake", "asleep", "awake", "asleep", "awake", "asleep"])
 	for offset in OFFSETS:
 		var old_hist_awake := pass_net_averaged(historical, offset, 3.5, 1.0)
-		var old_hist_asleep := pass_net_averaged(historical, offset, 3.5, Tuning.SLEEPING_SENSITIVITY)
+		var old_hist_asleep := pass_net_averaged(historical, offset, 3.5, Baby.SLEEPING_SENSITIVITY)
 		var today_hist_awake := pass_net_averaged(historical, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
-		var today_hist_asleep := pass_net_averaged(historical, offset, Tuning.EXCITEMENT_DECAY_WALKING, Tuning.SLEEPING_SENSITIVITY)
+		var today_hist_asleep := pass_net_averaged(historical, offset, Tuning.EXCITEMENT_DECAY_WALKING, Baby.SLEEPING_SENSITIVITY)
 		var old_now_awake := pass_net_averaged(current, offset, 3.5, 1.0)
-		var old_now_asleep := pass_net_averaged(current, offset, 3.5, Tuning.SLEEPING_SENSITIVITY)
+		var old_now_asleep := pass_net_averaged(current, offset, 3.5, Baby.SLEEPING_SENSITIVITY)
 		var proposed_awake := pass_net_averaged(current, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
-		var proposed_asleep := pass_net_averaged(current, offset, Tuning.EXCITEMENT_DECAY_WALKING, Tuning.SLEEPING_SENSITIVITY)
+		var proposed_asleep := pass_net_averaged(current, offset, Tuning.EXCITEMENT_DECAY_WALKING, Baby.SLEEPING_SENSITIVITY)
 		print("  %6.0f | %9.2f %9.2f | %9.2f %9.2f | %9.2f %9.2f | %9.2f %9.2f"
 				% [offset, old_hist_awake, old_hist_asleep, today_hist_awake, today_hist_asleep,
 				old_now_awake, old_now_asleep, proposed_awake, proposed_asleep])

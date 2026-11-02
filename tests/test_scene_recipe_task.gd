@@ -235,7 +235,7 @@ func _test_a_neighbor_start_the_day_could_not_draw_is_refused(t) -> void:
 	var map := city.map
 	var mark := map.tile_to_world(ResistanceDirector.mark_tile_of(map, Vector2i(66, 146)))
 	# A sidewalk a block from her door: a few tiles of walk from home, nowhere near the band of
-	# about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of walk the day draws a start from.
+	# about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of walk the day draws a start from.
 	var near_home := Vector2i(62, 84)
 	t.check(map.tile_at(near_home) == GameEnums.TileType.SIDEWALK, "the probe stands on a sidewalk")
 	var errors := director.start_recipe_task(10, GameState.calendar.day_rng(10, "resistance"), 300.0, mark,

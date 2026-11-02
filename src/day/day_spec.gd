@@ -16,6 +16,41 @@ extends RefCounted
 ## hands it its title, so this layer names nothing of the UI's. `for_day()` and `for_section()` are
 ## the two shapes the run uses; a test builds one either way, or by hand.
 
+const FINALE_BAG_EMPTY := 1
+const FINALE_BAG_EXPLOSIONS := 8
+const FINALE_BAG_ROADBLOCKS := 2
+## The escape's marble bag, in the player's order of how many *(inbox #785 in minty-lemur:
+## "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks, off-screen
+## explosions, unmarked vans, roadblocks (the barriers) and empty marbles, where the slot that draws
+## one stands nothing. **The two rows that take her have the fewest marbles the order allows**, vans
+## 3 and roadblocks 2 over the one empty marble, and the trucks and explosions, which only wake the
+## baby, make up the rest: a van's catch and a guard's end the section, and a van's field is most of
+## what the probe's walks that cried had landed. With these a walk to an exit meets about three
+## trucks, three explosions, one van and one roadblock; the order's smallest bag, 5, 4, 3, 2 and 1,
+## meets a van and a roadblock more often and gets out on 44 walks of 48. A fill is 24 marbles and
+## a plan has about 31 open streets, so an escape draws one whole fill and about seven marbles of
+## the next. About a third of the streets stand nothing all the same, since a danger the placement
+## rules refuse is spent unmet.
+const FINALE_BAG_TRUCKS := 10
+const FINALE_BAG_VANS := 3
+## How many slots each open street of the escape's walk has, each filled by one draw from the
+## escape's marble bag below (`DaySpec.slots_per_street`, which the city section's spec takes from
+## here; `EventScheduler._fill_the_walk_from_the_bag()` draws them). **One keeps the section the
+## climax and every walk out of it walkable**, measured by walking the shortest walk
+## from the service exit to each exit through the plan's own events, on two sets of 24 seeds
+## (measured by `tests/probes/escape_winnable.gd` at f8172b7ccb7f, whose own stand-in walker and
+## meter produced `docs/evidence/winnable-escape-2026-10-19/`; the probe walks with the game's own
+## walker, `RouteRig`, and its numbers are not comparable with those):
+## at one slot a walk to an exit meets about eight dangers, one every eight seconds of walking, and
+## a plain walk gets out on 95 of 96 with the baby woken on 4; at two slots it meets about twelve,
+## the baby wakes on about one walk in five, and one walk in sixteen to one in nine ends in crying.
+## One slot also stands one roadblock a street at most, so a crossing is one band and one guard on
+## her side of it to lure *(inbox #771 in minty-lemur: "Luring away one guard (the challenge) is not
+## enough to make the obstacle survivable")*, which the notice spacing
+## (`EventScheduler._keeps_its_notice_to_itself()`) would hold at any slot count, since no street is
+## long enough for two bands' notices.
+const FINALE_SLOTS_PER_STREET := 1
+
 ## Where the walk is: the city, or the building the escape starts in.
 enum World { CITY, BUILDING }
 
@@ -148,7 +183,7 @@ var closes_streets := true
 ## touches both exits.
 var seals_the_main_road := false
 ## Whether every street and every through-alley off the walk is sealed, rather than a share of them
-## from `Tuning.REGION_WALL_FIRST_DAY` on and a `Tuning.ALLEY_MOUTH_SEAL_CHANCE` of the alleys: a
+## from `Tuning.REGION_WALL_FIRST_DAY` on and a `SealPlanner.ALLEY_MOUTH_SEAL_CHANCE` of the alleys: a
 ## day lets a wrong turn be taken and found; in the escape one open alley is a second way through.
 var seals_every_street_off_the_walk := false
 
@@ -231,11 +266,11 @@ static func for_section(which: int, section_length: float, section_title := "") 
 static func _place_the_escape_city(spec: DaySpec) -> void:
 	spec.draw = Draw.BAG_PER_STREET
 	spec.bag = {
-		"military_convoy": Tuning.FINALE_BAG_TRUCKS,
-		"finale_explosion": Tuning.FINALE_BAG_EXPLOSIONS,
-		"abduction": Tuning.FINALE_BAG_VANS,
-		"roadblock": Tuning.FINALE_BAG_ROADBLOCKS,
-		EMPTY_MARBLE: Tuning.FINALE_BAG_EMPTY,
+		"military_convoy": FINALE_BAG_TRUCKS,
+		"finale_explosion": FINALE_BAG_EXPLOSIONS,
+		"abduction": FINALE_BAG_VANS,
+		"roadblock": FINALE_BAG_ROADBLOCKS,
+		EMPTY_MARBLE: FINALE_BAG_EMPTY,
 	}
 	spec.bag_rows = {
 		"military_convoy": EventCatalogue.without_its_aftermath(
@@ -244,7 +279,7 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 		"abduction": EventCatalogue.by_id("abduction"),
 		"roadblock": EventCatalogue.escape_roadblock(),
 	}
-	spec.slots_per_street = Tuning.FINALE_SLOTS_PER_STREET
+	spec.slots_per_street = FINALE_SLOTS_PER_STREET
 	spec.keeps_unused_calm_clear = false
 	spec.holds_the_home_streets = false
 	spec.caps_per_day = false

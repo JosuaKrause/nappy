@@ -16,6 +16,10 @@ extends RefCounted
 ## the paint there is a signal's business and not a courtesy, and taking the exemption away makes a
 ## signal decoration on top of a courtesy that was already enough (the **crowd-traffic** skill).
 
+## How close to the crossing the player has to be for the traffic to yield. Roughly "standing
+## at the kerb waiting", which is the gesture the crossing is for.
+const CAR_ZEBRA_WAIT_RADIUS := 56.0
+
 ## **The junction box a body at `along` travelling `direction` is in or coming to**, as its index
 ## along the axis: inside a corridor the one it is in, in the block band between two the one that
 ## lies the way it is pointing.
@@ -71,7 +75,7 @@ static func owes_her_way(map: WorldMap, vertical: bool, at: Vector2, her: Vector
 ## **The near edge of the first zebra ahead that she waits at**, as a world coordinate along the
 ## axis, or `INF`: the whole run of paint the car meets, not the tile she stands on (a zebra is
 ## two tiles deep on an ordinary street and six where a road crosses a pedestrianised one), and the
-## first tile of it within `Tuning.CAR_ZEBRA_WAIT_RADIUS` along of her. **The scan runs tile by
+## first tile of it within `CAR_ZEBRA_WAIT_RADIUS` along of her. **The scan runs tile by
 ## tile from the car's own tile**, so a car stopped a few pixels from the paint, or already on it,
 ## still finds it; sampling points every 32px aliases, and the way it fails is a car that decides
 ## there is nothing to give way to and pulls away with somebody on the zebra.
@@ -98,7 +102,7 @@ static func zebra_edge_ahead(map: WorldMap, at: Vector2, vertical: bool, directi
 			run_start = along_index
 		# Distance along the street, not straight-line: somebody at the far kerb of a six-tile
 		# corridor is beside the crossing, not two tiles from it.
-		if absf(waiting_along - float(along_index) * tile) > Tuning.CAR_ZEBRA_WAIT_RADIUS:
+		if absf(waiting_along - float(along_index) * tile) > CAR_ZEBRA_WAIT_RADIUS:
 			continue
 		# The near edge of the run: its lowest coordinate going one way and its highest going the
 		# other, since the scan starts at the end nearest the car.
@@ -114,7 +118,7 @@ static func lies_past_the_box(edge: float, near: float, direction: float) -> boo
 
 ## **Whether she waits at the zebra on the far side of box `index`** (travelling `direction`,
 ## in the street `cross` along): at either tile of the sidewalk-deep paint that side of the box,
-## within `Tuning.CAR_ZEBRA_WAIT_RADIUS` along of it. Decided wherever she is along the paint, not
+## within `CAR_ZEBRA_WAIT_RADIUS` along of it. Decided wherever she is along the paint, not
 ## within a sight circle of the zebra: any later the nose is already in the box.
 static func waits_past_the_box(map: WorldMap, index: int, direction: float, cross: float,
 		vertical: bool, her: Vector2) -> bool:
@@ -127,6 +131,6 @@ static func waits_past_the_box(map: WorldMap, index: int, direction: float, cros
 		var zebra := Vector2i(lane_index, first + k) if vertical \
 				else Vector2i(first + k, lane_index)
 		if map.is_crossing(zebra) \
-				and absf(her_along - float(first + k) * tile) <= Tuning.CAR_ZEBRA_WAIT_RADIUS:
+				and absf(her_along - float(first + k) * tile) <= CAR_ZEBRA_WAIT_RADIUS:
 			return true
 	return false

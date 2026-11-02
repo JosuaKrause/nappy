@@ -33,6 +33,11 @@ extends RefCounted
 ## what stands on and off it is planned by the day's own code under the section's spec, as every
 ## walk is (`DayPlanner.plan_the_escape_city()`, from `EventManager.start_day()`).
 
+## How many calm blocks each chain runs through between the service exit and its edge — *"a single
+## path through the city that crosses three parks"*. The chains are built one street-walk at a
+## time between consecutive stops, so this is also how many intermediate stops each chain has.
+const FINALE_PARKS_PER_CHAIN := 3
+
 ## One calm area on the way: a connected component of calm ground, its tiles and the grid nodes
 ## that cover them.
 class CalmArea extends RefCounted:
@@ -134,7 +139,7 @@ static func route(map: CityMap) -> Plan:
 	# bridge chain the calm nearest the bottom. The home lot sits between the two ends of the
 	# spine, so neither exit is trivially nearer and neither chain is the short one.
 	areas.sort_custom(func(a: CalmArea, b: CalmArea) -> bool: return a.centre.y < b.centre.y)
-	var per_chain := mini(Tuning.FINALE_PARKS_PER_CHAIN, areas.size() / 2)
+	var per_chain := mini(FINALE_PARKS_PER_CHAIN, areas.size() / 2)
 	# **Each chain's own stops are ordered so the walk only ever goes one way.** The three northern
 	# areas are met southmost first, since she starts between the two exits and the tunnel is at
 	# the top; the three southern ones are already in the order she meets them on the way down. A

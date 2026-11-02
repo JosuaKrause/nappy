@@ -125,7 +125,7 @@ func _test_each_chain_passes_three_distinct_calm_areas(t) -> void:
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
 		for chain: FinalePlanner.Chain in plan.chains:
-			t.check(chain.stops.size() == Tuning.FINALE_PARKS_PER_CHAIN,
+			t.check(chain.stops.size() == FinalePlanner.FINALE_PARKS_PER_CHAIN,
 					"seed %d: a chain has %d stops" % [seed_value, chain.stops.size()])
 			var centres := {}
 			for stop: FinalePlanner.CalmArea in chain.stops:
@@ -166,12 +166,12 @@ func _test_each_chain_reaches_its_own_edge(t) -> void:
 					"seed %d: and within the portal's own depth of the map edge (%d rows)"
 					% [seed_value, from_the_edge])
 			# Standing on that tile is out of the city, and the street before it is not — the two
-			# halves of what `Tuning.FINALE_EXIT_REACH` has to be worth.
+			# halves of what `DayController.FINALE_EXIT_REACH` has to be worth.
 			var at := map.tile_to_world(exit)
-			t.check(Tuning.FINALE_EXIT_REACH > Tuning.PLAYER_BODY_RADIUS,
+			t.check(DayController.FINALE_EXIT_REACH > Tuning.PLAYER_BODY_RADIUS,
 					"the exit's reach covers her whole body on the tile")
 			t.check(at.distance_to(map.tile_to_world(exit + Vector2i(0, 2))) \
-					> Tuning.FINALE_EXIT_REACH,
+					> DayController.FINALE_EXIT_REACH,
 					"and stops short of the tile two back from it")
 		t.check(plan.chains[0].exit_kind != plan.chains[1].exit_kind,
 				"seed %d: the two chains leave by different ways" % seed_value)
@@ -1210,13 +1210,13 @@ func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 ## *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
 ## happening) as well"; "frequency order is trucks > explosions > vans > barriers > empty".)*
 func _test_the_escape_bag_keeps_the_players_order(t) -> void:
-	t.check(Tuning.FINALE_BAG_TRUCKS > Tuning.FINALE_BAG_EXPLOSIONS
-			and Tuning.FINALE_BAG_EXPLOSIONS > Tuning.FINALE_BAG_VANS
-			and Tuning.FINALE_BAG_VANS > Tuning.FINALE_BAG_ROADBLOCKS
-			and Tuning.FINALE_BAG_ROADBLOCKS > Tuning.FINALE_BAG_EMPTY,
+	t.check(DaySpec.FINALE_BAG_TRUCKS > DaySpec.FINALE_BAG_EXPLOSIONS
+			and DaySpec.FINALE_BAG_EXPLOSIONS > DaySpec.FINALE_BAG_VANS
+			and DaySpec.FINALE_BAG_VANS > DaySpec.FINALE_BAG_ROADBLOCKS
+			and DaySpec.FINALE_BAG_ROADBLOCKS > DaySpec.FINALE_BAG_EMPTY,
 			"the bag holds more trucks than explosions, than vans, than roadblocks, than empty marbles")
-	t.check(Tuning.FINALE_BAG_EMPTY > 0, "and it holds empty marbles")
-	t.check(Tuning.FINALE_SLOTS_PER_STREET > 0, "and every open street has a slot to draw for")
+	t.check(DaySpec.FINALE_BAG_EMPTY > 0, "and it holds empty marbles")
+	t.check(DaySpec.FINALE_SLOTS_PER_STREET > 0, "and every open street has a slot to draw for")
 	var counts := _city_spec().bag
 	var bag := EventScheduler.street_bag(counts, 7)
 	var total := 0
@@ -1277,10 +1277,10 @@ func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
 ## measures other mixes against.
 func _test_the_game_draws_the_escape_from_tunings_bag(t) -> void:
 	var spec := _city_spec()
-	t.check(spec.bag == {"military_convoy": Tuning.FINALE_BAG_TRUCKS,
-			"finale_explosion": Tuning.FINALE_BAG_EXPLOSIONS, "abduction": Tuning.FINALE_BAG_VANS,
-			"roadblock": Tuning.FINALE_BAG_ROADBLOCKS, DaySpec.EMPTY_MARBLE: Tuning.FINALE_BAG_EMPTY}
-			and spec.slots_per_street == Tuning.FINALE_SLOTS_PER_STREET,
+	t.check(spec.bag == {"military_convoy": DaySpec.FINALE_BAG_TRUCKS,
+			"finale_explosion": DaySpec.FINALE_BAG_EXPLOSIONS, "abduction": DaySpec.FINALE_BAG_VANS,
+			"roadblock": DaySpec.FINALE_BAG_ROADBLOCKS, DaySpec.EMPTY_MARBLE: DaySpec.FINALE_BAG_EMPTY}
+			and spec.slots_per_street == DaySpec.FINALE_SLOTS_PER_STREET,
 			"the city section's spec holds Tuning's bag and slots")
 	for seed_value in SEEDS:
 		var built := _plan_for(seed_value)
@@ -1291,7 +1291,7 @@ func _test_the_game_draws_the_escape_from_tunings_bag(t) -> void:
 		var rng: RandomNumberGenerator = bare["rng"]
 		var bag := EventScheduler.street_bag(_city_spec().bag,
 				EventScheduler.street_bag_seed(rng))
-		var placed := _escape_rows_on(map, bare, bag, Tuning.FINALE_SLOTS_PER_STREET)
+		var placed := _escape_rows_on(map, bare, bag, DaySpec.FINALE_SLOTS_PER_STREET)
 		var played: Array[EventScheduler.Planned] = []
 		for placement in placements:
 			if ESCAPE_ROWS.has(placement.def.id):
@@ -1618,7 +1618,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 		EventScheduler.Planned.new(burst, city.map.tile_to_world(road))]
 	GivenPlanner.hand_in(city.events, plans)
 	var none: Array[String] = []
-	city.events.start_day(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS),
+	city.events.start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
 			RandomNumberGenerator.new(), none)
 	t.check(city.events.instances().size() == 1, "the burst is in the world")
 	var live := city.events.instances()[0]
@@ -1785,7 +1785,7 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 
 ## One of the escape's sections, a whole clock long, titled the way the run titles it.
 static func _section(section: int) -> DaySpec:
-	return MAIN_SCRIPT.escape_section_spec(section, Tuning.FINALE_LENGTH_SECONDS)
+	return MAIN_SCRIPT.escape_section_spec(section, RunConfig.FINALE_LENGTH_SECONDS)
 
 ## Boots the real `main.tscn` on `section` of a normal run's own escape, on seed `SEEDS[0]` and its
 ## last day — the way a won day 14's handover and a game closed in a section both reach the boot —
@@ -1925,7 +1925,7 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 	GameState.header.day = an_act_iv_day
 	GivenPlanner.hand_in(city.events, [] as Array[EventScheduler.Planned])
 	var none: Array[String] = []
-	city.events.start_day(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS),
+	city.events.start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
 			RandomNumberGenerator.new(), none)
 	EventBus.return_phase_started.emit()
 	t.check(city.events.owed_ahead() == 0,
@@ -2351,4 +2351,4 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
 
 ## The escape city's section spec, the one the run flow walks the city under.
 static func _city_spec() -> DaySpec:
-	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)

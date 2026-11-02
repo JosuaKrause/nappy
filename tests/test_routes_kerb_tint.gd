@@ -177,7 +177,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 			"the sweep found main-road streets off the tree to check (%d)" % main_road_off_tree)
 
 	city.start_day(state, day + 1, RandomNumberGenerator.new(),
-			DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS))
+			DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
 	var twinned_after_finale := 0
 	var finale := _visit_every_neighborhood(t, city)
 	for source: int in finale.sources.values():
