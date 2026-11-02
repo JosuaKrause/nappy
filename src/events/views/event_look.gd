@@ -29,21 +29,11 @@ func _init(owner: EventInstance) -> void:
 ## same "no prior-view hold on a fresh placement" rule `EightDirection.nearest()`'s own doc names.
 var _view_sector := 2
 
-## The sector the picture is drawn in now (`0` east, counting clockwise on screen), as `select_view()`
-## and `face()` leave it.
-func view_sector() -> int:
-	return _view_sector
-
 ## Everything `draw()` reads that can change over time, as one comparable value — see
-## `picture_key()` and `redraw_if_the_picture_changed()`. `x` is a bit field and so is never
+## `_picture_key()` and `redraw_if_the_picture_changed()`. `x` is a bit field and so is never
 ## negative, which makes this starting value one no key can ever equal: the first tick of an
 ## event's life always asks for its own draw rather than relying on a coincidence.
 var _picture := Vector4i(-1, 0, 0, 0)
-
-## The key the redraw gate last compared (`redraw_if_the_picture_changed()`), or one no key can equal
-## before the first drawn frame.
-func compared_picture() -> Vector4i:
-	return _picture
 
 ## Asks for a redraw when what the event is showing has actually changed.
 ##
@@ -57,7 +47,7 @@ func compared_picture() -> Vector4i:
 ##
 ## **A term missing from the key is a frozen picture rather than a crash**, which is why the key
 ## below names every time-varying thing `draw()` and `draw_body()` read rather than a plausible
-## subset, and why `picture_never_settles()` stands beside it for the four cases whose picture is
+## subset, and why `_picture_never_settles()` stands beside it for the four cases whose picture is
 ## a continuous function of the clock and could not be named by a key at all.
 ##
 ## The key is stored on every drawn frame whether or not it asked for a draw, so the *transition out of*
@@ -76,11 +66,11 @@ func redraw_if_the_picture_changed() -> bool:
 		_picture_is_stale = true
 		move_nodes()
 		return false
-	var key := picture_key()
+	var key := _picture_key()
 	var changed := key != _picture or _picture_is_stale
 	_picture = key
 	_picture_is_stale = false
-	var asked := changed or picture_never_settles()
+	var asked := changed or _picture_never_settles()
 	if asked:
 		event.queue_redraw()
 	move_nodes(asked)
@@ -139,7 +129,7 @@ const SWELL_STEPS := 128.0
 ## are drawn rather than authored; and an **abduction mid-take**, whose victim slides from her
 ## standing offset to the van over `AbductionSpec.taken_over` seconds. Every one of them is a
 ## handful of instances on a day at most, and none of them was ever going to be gated.
-func picture_never_settles() -> bool:
+func _picture_never_settles() -> bool:
 	if not event.birds().is_empty():
 		return true
 	if event.is_taking_a_victim():
@@ -182,7 +172,7 @@ func _protest_pose() -> int:
 ## a draw, so the key has to compute the sector it *would* move to rather than read the one left
 ## over from the last one), the caret's own 0/1/2 strength, and the protest pose. `z` and `w` are
 ## the two continuous quantities, quantised — see `BOB_STEPS_PER_PX` and `SWELL_STEPS`.
-func picture_key() -> Vector4i:
+func _picture_key() -> Vector4i:
 	# The caret's strength is cached against `age` and where she is
 	# (`ExcitementSource.caret_strength()`) and was already asked once per draw through
 	# `wants_a_mark()`, so asking it here costs a frame exactly what it always cost.
@@ -568,7 +558,7 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 	if draw_shadow:
 		_draw_body_shadow(canvas, grounded)
 	var view := select_view(heading)
-	var mirror := EightDirection.is_mirrored(_view_sector)
+	var mirror := is_mirrored()
 	if view == "side" and side_faces_west:
 		mirror = not mirror
 	var picture: String = by_view[view]
@@ -634,6 +624,11 @@ func _heading_is_west() -> bool:
 func select_view(heading: Vector2) -> String:
 	_view_sector = EightDirection.update(_view_sector, heading)
 	return EventPictures.EIGHT_VIEW_BY_SECTOR[_view_sector]
+
+## Whether the view `select_view()` last gave is drawn mirrored (the west half of the sectors, which
+## reuse the east half's pictures): read by every family that draws an eight-view picture.
+func is_mirrored() -> bool:
+	return EightDirection.is_mirrored(_view_sector)
 
 ## Draws `texture` so its own ground anchor lands at `at` (local space, default the body's own
 ## origin) — `Sprites.draw_standing`'s bottom-centre assumption is wrong for this kit: a boom

@@ -1,6 +1,6 @@
 extends RefCounted
 ## The gate that stops an event rebuilding a draw list it does not need —
-## `EventLook.redraw_if_the_picture_changed()`, `picture_key()` and
+## `EventLook.redraw_if_the_picture_changed()`, the picture key behind it and
 ## `picture_never_settles()`. The crowd has had the same gate for a long time
 ## (`CrowdAgent.end_the_frame()`); events did not, and at about forty live
 ## instances a day that was the largest drawing cost in a frame
@@ -56,17 +56,15 @@ func _test_a_standing_seal_holds_one_key_for_its_whole_life(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("barricade"), Vector2.ZERO)
 	instance.step(STEP)
-	var key := instance.look.picture_key()
+	_asks(instance)
 	var changes := 0
 	for i in 300:
 		instance.step(STEP)
-		var now := instance.look.picture_key()
-		if now != key:
+		if _asks(instance):
 			changes += 1
-		key = now
 	t.check(changes <= 1,
 			"a barricade's picture key changes at most once in three hundred ticks (%d)" % changes)
-	t.check(not instance.look.picture_never_settles(),
+	t.check(not _never_settles(instance),
 			"and a barricade is not one of the looks that are never gated at all")
 	instance.free()
 
@@ -83,18 +81,22 @@ func _past_the_telegraph(t, instance: EventInstance, what: String) -> void:
 ## The gate stores whatever it compared, every drawn frame, whether or not it asked for a draw —
 ## which is what lets the *transition out of* a never-settling state still register as a change.
 func _test_the_gate_stores_the_key_it_compared(t) -> void:
+	var fresh := EventInstance.new()
+	fresh.setup(EventCatalogue.by_id("loose_dog"), Vector2.ZERO)
+	t.check(_asks(fresh),
+			"before its first drawn frame an instance holds a key nothing can equal, so the first draw is asked for")
+	t.check(not _asks(fresh), "and asking again with nothing changed is not a draw")
+	fresh.free()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("loose_dog"), Vector2.ZERO)
 	# In the tree, as the manager keeps it: its own frames draw it, so its atlas page is held as the
 	# manager holds it.
 	AtlasLibrary.acquire(EventPictures.ATLAS_GROUP)
 	t.add_child(instance)
-	t.check(instance.look.compared_picture().x == -1,
-			"before its first drawn frame an instance holds a key nothing can equal, so the first draw is asked for")
 	instance.step(STEP)
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
-	t.check(instance.look.compared_picture() == instance.look.picture_key(),
+	t.check(not _asks(instance),
 			"after a drawn frame the stored key is the one the gate just computed")
 	instance.free()
 	AtlasLibrary.release(EventPictures.ATLAS_GROUP)
@@ -110,18 +112,17 @@ func _test_a_striding_event_moves_its_key(t) -> void:
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	var stepping_changed_the_key := true
 	var was_stepping := instance.look.gait_is_stepping()
-	var key := instance.look.picture_key()
+	_asks(instance)
 	var flips := 0
 	for i in 600:
 		instance.step(STEP)
 		var now_stepping := instance.look.gait_is_stepping()
-		var now_key := instance.look.picture_key()
+		var asked := _asks(instance)
 		if now_stepping != was_stepping:
 			flips += 1
-			if now_key == key:
+			if not asked:
 				stepping_changed_the_key = false
 		was_stepping = now_stepping
-		key = now_key
 	t.check(flips > 0, "the walk actually swapped stride frames (%d times)" % flips)
 	t.check(stepping_changed_the_key, "every stride-frame swap moved the picture key")
 	instance.free()
@@ -137,15 +138,17 @@ func _test_a_bobbing_event_moves_its_key(t) -> void:
 	instance.step(STEP)
 	var moved_on_bob_alone := false
 	var was_stepping := instance.look.gait_is_stepping()
-	var key := instance.look.picture_key()
+	var bob := instance.look.current_bob()
+	_asks(instance)
 	for i in 300:
 		instance.step(STEP)
 		var now_stepping := instance.look.gait_is_stepping()
-		var now_key := instance.look.picture_key()
-		if now_stepping == was_stepping and now_key.z != key.z and now_key != key:
+		var now_bob := instance.look.current_bob()
+		var asked := _asks(instance)
+		if now_stepping == was_stepping and not is_equal_approx(now_bob, bob) and asked:
 			moved_on_bob_alone = true
 		was_stepping = now_stepping
-		key = now_key
+		bob = now_bob
 	t.check(moved_on_bob_alone,
 			"a walking event's lift moves the key on a tick where its stride frame did not")
 	t.check(absf(instance.look.current_bob()) > 0.0, "and the walker was actually bobbing")
@@ -162,15 +165,15 @@ func _test_the_normal_dogs_opposite_step_moves_its_key(t) -> void:
 		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, route, Vector2.RIGHT)
 		instance._gait_moving = true
 		instance._gait_phase = PI * 0.25
-		var first_step := instance.look.picture_key()
+		_asks(instance)
 		instance._gait_phase = PI * 1.25
-		var opposite_step := instance.look.picture_key()
+		var opposite_moves_it := _asks(instance)
 		t.check(instance.look.gait_is_stepping(), "%s is on a step in both states" % id)
 		if id == "charging_dog":
-			t.check(first_step == opposite_step,
+			t.check(not opposite_moves_it,
 					"the charging dog's two halves of a stride are one picture and one key")
 		else:
-			t.check(first_step != opposite_step,
+			t.check(opposite_moves_it,
 					"%s's first step and opposite step are two keys" % id)
 		instance.free()
 
@@ -183,7 +186,7 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t) -> void:
 	instance.setup(def, Vector2.ZERO, route, Vector2.RIGHT)
 	instance.step(STEP)
 	t.check(instance.is_telegraphing(), "a cat starts crouched in its telegraph")
-	var crouched := instance.look.picture_key()
+	_asks(instance)
 	var crossed := false
 	var ticks := int(ceil(def.telegraph_time / STEP)) + 10
 	for i in ticks:
@@ -192,7 +195,7 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t) -> void:
 			crossed = true
 			break
 	t.check(crossed, "the telegraph ended inside the window the test walked")
-	t.check(instance.look.picture_key() != crouched,
+	t.check(_asks(instance),
 			"the crouch giving way to the dash moves the picture key")
 	instance.free()
 
@@ -210,17 +213,21 @@ func _test_the_marks_flash_is_in_the_key(t) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	var seen := {}
+	var changes := 0
+	instance.step(STEP)
+	_force_the_caret(instance, 1)
+	_asks(instance)
 	# One whole flash beat, sampled tick by tick.
 	for i in int(ceil(1.0 / EventPictures.MARK_FLASHES_PER_SECOND / STEP)) + 2:
 		instance.step(STEP)
 		if not instance.is_telegraphing():
 			break
 		_force_the_caret(instance, 1)
-		seen[instance.look.picture_key()] = true
-	t.check(seen.size() >= 2,
-			"a marked, telegraphing event takes more than one key across one flash beat (%d)"
-					% seen.size())
+		if _asks(instance):
+			changes += 1
+	t.check(changes >= 1,
+			"a marked, telegraphing event takes more than one key across one flash beat (%d changes)"
+					% changes)
 	instance.free()
 
 ## The caret's own 0/1/2 strength is a picture — no mark, one mark, a doubled mark — so the same
@@ -229,11 +236,14 @@ func _test_the_caret_strength_is_in_the_key(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("barricade"), Vector2.ZERO)
 	instance.step(STEP)
-	var keys := {}
+	var moved := []
 	for strength in [0, 1, 2]:
 		_force_the_caret(instance, strength)
-		keys[instance.look.picture_key()] = true
-	t.check(keys.size() == 3, "no caret, a caret and a doubled caret are three different keys")
+		moved.append(_asks(instance))
+	_force_the_caret(instance, 0)
+	moved.append(_asks(instance))
+	t.check(moved == [true, true, true, true],
+			"no caret, a caret, a doubled caret and no caret again each move the key")
 	instance.free()
 
 ## **The gate asks for the caret once a tick, and that must not be the answer the rest of the frame
@@ -272,8 +282,9 @@ func _test_the_buskers_strum_moves_the_key_without_him_moving(t) -> void:
 	instance.setup(EventCatalogue.by_id("busker"), Vector2.ZERO)
 	_past_the_telegraph(t, instance, "the busker")
 	var start := instance.position
-	var keys := {}
+	var asked := 0
 	var swaps := 0
+	_asks(instance)
 	var was := instance.look.idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD)
 	for i in int(ceil(EventPictures.BUSKER_STRUM_PERIOD * 3.0 / STEP)):
 		instance.step(STEP)
@@ -281,10 +292,11 @@ func _test_the_buskers_strum_moves_the_key_without_him_moving(t) -> void:
 		if now != was:
 			swaps += 1
 		was = now
-		keys[instance.look.picture_key()] = true
+		if _asks(instance):
+			asked += 1
 	t.check(instance.position == start, "the busker did not move at all")
 	t.check(swaps >= 2, "his strum swapped frames over three periods (%d)" % swaps)
-	t.check(keys.size() == 2, "and the key takes exactly the two values his two frames are")
+	t.check(asked == swaps, "and the key moves exactly when his frame swaps (%d, %d)" % [asked, swaps])
 	instance.free()
 
 ## The same for the café frontage's lean, on its own slower timer — the whole row leans together,
@@ -293,11 +305,20 @@ func _test_the_cafe_sitters_lean_moves_the_key(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("cafe_tables"), Vector2.ZERO)
 	_past_the_telegraph(t, instance, "the café frontage")
-	var keys := {}
+	var asked := 0
+	var swaps := 0
+	_asks(instance)
+	var was := instance.look.idle_is_stepping(EventPictures.SITTER_IDLE_PERIOD)
 	for i in int(ceil(EventPictures.SITTER_IDLE_PERIOD * 2.5 / STEP)):
 		instance.step(STEP)
-		keys[instance.look.picture_key()] = true
-	t.check(keys.size() == 2, "a café frontage's key takes exactly its two lean frames")
+		var now := instance.look.idle_is_stepping(EventPictures.SITTER_IDLE_PERIOD)
+		if now != was:
+			swaps += 1
+		was = now
+		if _asks(instance):
+			asked += 1
+	t.check(swaps >= 1 and asked == swaps,
+			"a café frontage's key moves exactly when its lean frame swaps (%d, %d)" % [asked, swaps])
 	instance.free()
 
 ## The crash's smoke, the burst main's fountain and the basement vent's steam alternate two frames
@@ -316,7 +337,7 @@ func _test_separated_details_keep_the_owner_key_stable(t) -> void:
 		instance.step(STEP)
 		var start := instance.position
 		var was := instance.look.idle_is_stepping(period)
-		var key := instance.look.picture_key()
+		_asks(instance)
 		var swaps := 0
 		var silent_swaps := 0
 		for i in int(ceil(period * 3.0 / STEP)):
@@ -324,13 +345,12 @@ func _test_separated_details_keep_the_owner_key_stable(t) -> void:
 			if instance.is_finished:
 				break
 			var now := instance.look.idle_is_stepping(period)
-			var now_key := instance.look.picture_key()
+			var asked := _asks(instance)
 			if now != was:
 				swaps += 1
-				if now_key == key:
+				if not asked:
 					silent_swaps += 1
 			was = now
-			key = now_key
 		t.check(instance.position == start, "%s did not move at all" % id)
 		t.check(swaps >= 2, "%s swapped frames at least twice while live (%d)" % [id, swaps])
 		if id == "basement_steam":
@@ -363,11 +383,11 @@ func _test_a_waiting_robber_turning_to_face_her_moves_the_key(t) -> void:
 	instance.player_at = Vector2(9000.0, 0.0)
 	instance.step(STEP)
 	t.check(instance.is_waiting(), "he is only waiting, from the east")
-	var facing_east := instance.look.picture_key()
+	_asks(instance)
 	instance.player_at = Vector2(-9000.0, 0.0)
 	instance.step(STEP)
 	t.check(instance.is_waiting(), "he is still only waiting, from the west")
-	t.check(instance.look.picture_key() != facing_east,
+	t.check(_asks(instance),
 			"a waiting robber turning to face her moves the key with no step taken")
 	instance.free()
 
@@ -379,11 +399,11 @@ func _test_a_chatting_mother_moves_her_key_while_frozen(t) -> void:
 	instance.setup(EventCatalogue.by_id("chatting_mother"), Vector2.ZERO, route, Vector2.RIGHT)
 	for i in 30:
 		instance.step(STEP)
-	var strolling := instance.look.picture_key()
+	_asks(instance)
 	instance.start_chat()
 	instance.step(STEP)
 	t.check(instance.is_chatting(), "the conversation is running")
-	t.check(instance.look.picture_key() != strolling,
+	t.check(_asks(instance),
 			"the talking posture moves the key although she has stopped dead")
 	instance.free()
 
@@ -395,12 +415,12 @@ func _test_a_raised_boom_moves_the_gates_key(t) -> void:
 	instance.setup(EventCatalogue.by_id("checkpoint_gate"), Vector2.ZERO, PackedVector2Array(),
 			Vector2.DOWN)
 	instance.step(STEP)
-	var lowered := instance.look.picture_key()
+	_asks(instance)
 	var state := RegionPlanner.GateState.new()
 	state.raised = true
 	instance.gate_state = state
 	instance.step(STEP)
-	t.check(instance.look.picture_key() != lowered, "raising the boom moves the gate's key")
+	t.check(_asks(instance), "raising the boom moves the gate's key")
 	instance.free()
 
 ## An event that is over leaves rather than vanishing, and it bobs on the way out
@@ -412,11 +432,11 @@ func _test_a_leaving_event_moves_its_key(t) -> void:
 			Vector2.RIGHT)
 	instance.player_at = Vector2(-400.0, 0.0)
 	instance.step(STEP)
-	var live := instance.look.picture_key()
+	_asks(instance)
 	instance.leave_for_a_completed_task()
 	instance.step(STEP)
 	t.check(instance.is_leaving, "it is on its way out")
-	t.check(instance.look.picture_key() != live, "the departure moves the key")
+	t.check(_asks(instance), "the departure moves the key")
 	instance.free()
 
 # --------------------------------------------------- what is never gated at all ---
@@ -429,22 +449,22 @@ func _test_the_flock_and_the_drawn_flames_are_never_gated(t) -> void:
 	# `_ready()` is what builds the birds in a real scene; a bare rig has to ask for them.
 	flock.flock.build()
 	t.check(not flock.flock.birds.is_empty(), "the flock has birds")
-	t.check(flock.look.picture_never_settles(), "a flock is never gated — every bird moves every tick")
+	t.check(_never_settles(flock), "a flock is never gated — every bird moves every tick")
 	flock.free()
 
 	var fire := EventInstance.new()
 	fire.setup(EventCatalogue.by_id("burning_building"), Vector2.ZERO)
-	t.check(fire.look.picture_never_settles(), "a burning building's flames are never gated")
+	t.check(_never_settles(fire), "a burning building's flames are never gated")
 	fire.free()
 
 	var firefight := EventInstance.new()
 	firefight.setup(EventCatalogue.by_id("firefight"), Vector2.ZERO)
-	t.check(firefight.look.picture_never_settles(), "a firefight's muzzle flashes are never gated")
+	t.check(_never_settles(firefight), "a firefight's muzzle flashes are never gated")
 	firefight.free()
 
 	var stall := EventInstance.new()
 	stall.setup(EventCatalogue.by_id("market_stall"), Vector2.ZERO)
-	t.check(not stall.look.picture_never_settles(), "and a market stall is gated like any other scenery")
+	t.check(not _never_settles(stall), "and a market stall is gated like any other scenery")
 	stall.free()
 
 ## The van's victim slides to the van over `AbductionSpec.taken_over` seconds, so it is never gated while
@@ -454,16 +474,15 @@ func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("abduction"), Vector2.ZERO, PackedVector2Array(),
 			Vector2.RIGHT)
-	t.check(not instance.look.picture_never_settles(), "an idle van is gated like any other vehicle")
+	t.check(not _never_settles(instance), "an idle van is gated like any other vehicle")
 	instance.abduction.take_now()
 	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "the take is running")
-	t.check(instance.look.picture_never_settles(), "a van mid-take is never gated")
-	var during := instance.look.picture_key()
+	t.check(_never_settles(instance), "a van mid-take is never gated")
 	instance.abduction.stop()
 	instance.step(STEP)
 	t.check(not instance.is_taking_a_victim(), "the take is over")
-	t.check(instance.look.picture_key() != during,
+	t.check(_asks(instance),
 			"and the end of the take is a key change, so the victim is actually cleared")
 	instance.free()
 
@@ -478,7 +497,8 @@ func _test_the_key_is_stable_within_a_tick(t) -> void:
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	for i in 90:
 		instance.step(STEP)
-		t.check(instance.look.picture_key() == instance.look.picture_key(),
+		_asks(instance)
+		t.check(not _asks(instance),
 				"the key answers the same way twice inside tick %d" % i)
 	instance.free()
 
@@ -495,15 +515,25 @@ func _test_a_masts_lamp_and_its_silence_move_its_key(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	instance.age = def.pulse_period + def.telegraph_time + 1.0
-	var speaking := instance.look.picture_key()
+	_asks(instance)
 	instance.age = 2.0 * def.pulse_period + 0.5
-	t.check(instance.look.mast_is_telegraphing_now() and instance.look.picture_key() != speaking,
+	t.check(instance.look.mast_is_telegraphing_now() and _asks(instance),
 			"the next cycle's telegraph moves the mast's key")
 	instance.age = 2.0 * def.pulse_period + def.telegraph_time + 1.0
-	var before := instance.look.picture_key()
+	_asks(instance)
 	instance.silenced = true
-	t.check(instance.look.picture_key() != before, "silencing the mast moves its key")
+	t.check(_asks(instance), "silencing the mast moves its key")
 	instance.free()
+
+## Whether the redraw gate asks for a draw now: what `_process()` gets from it, and the one thing the
+## picture key decides.
+static func _asks(instance: EventInstance) -> bool:
+	return instance.look.redraw_if_the_picture_changed()
+
+## Whether the gate steps aside for `instance`: it asks again with nothing between the two asks.
+static func _never_settles(instance: EventInstance) -> bool:
+	_asks(instance)
+	return _asks(instance)
 
 ## Makes `instance`'s source answer `strength` for its caret this frame, as if it had worked it out.
 static func _force_the_caret(instance: EventInstance, strength: int) -> void:

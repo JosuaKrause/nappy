@@ -289,11 +289,6 @@ var _sight: Mover
 ## its step has dropped it. See `is_solid()`.
 var _obstruction: StaticBody2D
 
-## The solid body, or `null` while there is none (`is_solid()` says whether it counts right now): what a
-## walker bumps into, for whoever asks what stopped her.
-func obstruction() -> StaticBody2D:
-	return _obstruction
-
 ## The rim `ExcitementHalo` lights on this event (`Rim`), handed to its source: its own body's,
 ## or the band's while a guard walks away from his barrier.
 var _rim := Rim.new(self)

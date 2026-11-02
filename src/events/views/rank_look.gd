@@ -145,7 +145,7 @@ func _protest_pose_now() -> Array:
 		var by_view := EventPictures.PROTESTER_BY_VIEW_B if gait_is_stepping() \
 				else EventPictures.PROTESTER_BY_VIEW
 		picture = by_view[view]
-		mirror = EightDirection.is_mirrored(_view_sector)
+		mirror = is_mirrored()
 	return [picture, mirror]
 
 ## Where each protester of the rank drawn in `picture` stands, in draw order: the back rank, 14px up

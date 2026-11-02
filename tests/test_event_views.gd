@@ -185,7 +185,7 @@ func _test_select_view_holds_and_mirrors(t) -> void:
 		t.check(view == EXPECTED_VIEW[sector],
 				"heading %d degrees selects the %s view (got %s)"
 				% [sector * 45, EXPECTED_VIEW[sector], view])
-		t.check(EightDirection.is_mirrored(instance.look.view_sector()) == EXPECTED_MIRRORED[sector],
+		t.check(instance.look.is_mirrored() == EXPECTED_MIRRORED[sector],
 				"sector %d mirror flag matches the west convention" % sector)
 	instance.free()
 
@@ -199,7 +199,7 @@ func _test_select_view_zero_heading_holds(t) -> void:
 	instance.setup(EventCatalogue.by_id("busker"), Vector2.ZERO)
 	instance.look.face(Vector2.RIGHT)
 	var view := instance.look.select_view(Vector2.ZERO)
-	t.check(view == "side" and instance.look.view_sector() == 0,
+	t.check(view == "side" and not instance.look.is_mirrored(),
 			"an exactly zero heading holds whatever sector was last drawn")
 	instance.free()
 
@@ -461,9 +461,10 @@ func _test_setup_resets_the_view_to_the_exact_siting(t) -> void:
 	for sector in range(8):
 		instance.setup(EventCatalogue.by_id("busker"), Vector2.ZERO, PackedVector2Array(),
 				_heading_for_sector(sector))
-		t.check(instance.look.view_sector() == sector,
-				"a fresh siting at %d degrees starts on sector %d directly (got %d)"
-				% [sector * 45, sector, instance.look.view_sector()])
+		var held := instance.look.select_view(Vector2.ZERO)
+		t.check(held == EXPECTED_VIEW[sector] and instance.look.is_mirrored() == EXPECTED_MIRRORED[sector],
+				"a fresh siting at %d degrees starts on sector %d directly (got %s)"
+				% [sector * 45, sector, held])
 	instance.free()
 
 # ------------------------------------------------------------------- targeted facing ---
@@ -547,7 +548,7 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	t.check(instance.is_waiting() and (instance.look as PursuerLook).stands_still_now()
+	t.check(instance.is_waiting()
 			and (instance.look as PursuerLook).masked_pursuer_pictures() == EventPictures.GUARD_STANDING_BY_VIEW,
 			"waiting at the foot of the shaft he is drawn standing")
 	# Inside `EventDef.notice` (900px), outside `NoticeSpec.runs_within`: one step notices her,
@@ -557,14 +558,14 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
 	var alert := true
 	for i in int(round((def.telegraph_time + 2.0) / STEP)):
-		alert = alert and (instance.look as PursuerLook).stands_still_now() \
+		alert = alert \
 				and (instance.look as PursuerLook).masked_pursuer_pictures() == EventPictures.GUARD_ALERT_BY_VIEW
 		instance.step(STEP)
 	t.check(alert, "and stands with his hand raised for as long as she stays out of his reach")
 	instance.player_at = Vector2(0.0, def.notice.runs_within - 10.0)
 	for i in int(round(0.1 / STEP)):
 		instance.step(STEP)
-	t.check(not instance.is_telegraphing() and not (instance.look as PursuerLook).stands_still_now()
+	t.check(not instance.is_telegraphing()
 			and (instance.look as PursuerLook).masked_pursuer_pictures() == EventPictures.GUARD_LUNGING_BY_VIEW,
 			"once she comes within his charge distance he is drawn lunging")
 	instance.free()
@@ -879,7 +880,7 @@ func _test_vehicle_views_match_facings_csv_per_sector(t) -> void:
 			# previous iteration's hold agreeing with this one.
 			instance.look.face(_heading_for_sector((sector + 4) % 8))
 			var view := instance.look.select_view(_heading_for_sector(sector))
-			var mirror := EightDirection.is_mirrored(instance.look.view_sector())
+			var mirror := instance.look.is_mirrored()
 			if view == "side" and side_faces_west:
 				mirror = not mirror
 			t.check(view == EXPECTED_VIEW[sector],
@@ -912,7 +913,7 @@ func _test_riot_van_reproduces_its_octant_table_with_the_corrected_side_mirror(t
 	for sector in range(8):
 		instance.look.face(_heading_for_sector((sector + 4) % 8))
 		var view := instance.look.select_view(_heading_for_sector(sector))
-		var mirror := EightDirection.is_mirrored(instance.look.view_sector())
+		var mirror := instance.look.is_mirrored()
 		if view == "side":
 			mirror = not mirror
 		t.check(EventPictures.RIOT_VAN_BY_VIEW[view] == RIOT_VAN_OCTANT_TEXTURE[sector],
@@ -929,7 +930,7 @@ func _test_kerb_parked_vans_keep_their_axis_chosen_view(t) -> void:
 	for name in ["delivery_van", "ice_cream_van"]:
 		var instance := EventInstance.new()
 		instance.setup(EventCatalogue.by_id(name), Vector2.ZERO)
-		t.check(EventPictures.EIGHT_VIEW_BY_SECTOR[instance.look.view_sector()] == "side",
+		t.check(instance.look.select_view(Vector2.ZERO) == "side",
 				"%s's own default east facing still lands on the side view" % name)
 		instance.free()
 
@@ -942,7 +943,7 @@ func _test_reversing_lorry_only_ever_faces_the_side_view(t) -> void:
 	for face in [Vector2.RIGHT, Vector2.LEFT]:
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO, PackedVector2Array(), face)
-		t.check(EventPictures.EIGHT_VIEW_BY_SECTOR[instance.look.view_sector()] == "side",
+		t.check(instance.look.select_view(Vector2.ZERO) == "side",
 				"reversing_lorry facing %s still lands on the side view" % face)
 		instance.free()
 
@@ -1055,7 +1056,8 @@ func _test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t) -
 			moved_ticks += 1
 			t.check(is_equal_approx(bob, WheelBob.lift(instance.path_travelled())),
 					"tick %d's lift is the bob of the ground covered" % i)
-		keys[instance.look.picture_key().z] = true
+		if instance.look.redraw_if_the_picture_changed():
+			keys[i] = true
 		lowest = minf(lowest, bob)
 	t.check(moved_ticks > 0, "the patrol actually drove (%d ticks)" % moved_ticks)
 	t.check(lowest < -0.9 * WheelBob.HEIGHT, "and its body reached the top of a rise (%.3f)" % lowest)

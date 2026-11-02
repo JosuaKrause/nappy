@@ -232,10 +232,13 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t) -> void:
 			"handed in, the events around her stream in and are told where she is")
 	# Stood aside for the title, she is handed in and still nobody the events see.
 	her.stand_aside()
-	plan.live.player_at = Vector2.ZERO
+	# A position that is neither hers nor the default, so a manager that told the events anything
+	# about her, or reset what they hold, shows in it; the check above is what proves frames run.
+	var untold := Vector2(7.0, 7.0)
+	plan.live.player_at = untold
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
-	t.check(not manager.world.has_player() and plan.live.player_at == Vector2.ZERO,
+	t.check(not manager.world.has_player() and plan.live.player_at == untold,
 			"stood aside for the title, she is told nothing and nothing can strike her")
 	manager.use_player(null)
 	manager.free()

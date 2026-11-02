@@ -35,7 +35,7 @@ func _draw_robber(canvas: CanvasItem) -> void:
 	var heading := robber_waiting_heading() if waiting else event.facing_now()
 	var view := select_view(heading)
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
+			is_mirrored())
 
 ## The robber's picture for this frame: waiting, his two-frame alert walk through his notice
 ## (`is_telegraphing()`, which the sent robber, arriving already chasing, never is), and the lunge
@@ -59,18 +59,18 @@ func _draw_policeman(canvas: CanvasItem) -> void:
 	var by_view := policeman_pictures()
 	var view := select_view(event.facing_now())
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
+			is_mirrored())
 
 ## The policeman's picture for this frame: his alert, hand raised, for the second the man out of an
 ## investigating vehicle stands beside her before he charges (`is_standing_for_its_notice()`); his
 ## waiting posture while he stands with her through a stop (`has_stopped_her()`, through
-## `stands_still_now()`); his lunge, with its stride, once he gives chase and as he walks back to
+## `_stands_still_now()`); his lunge, with its stride, once he gives chase and as he walks back to
 ## his vehicle. The one a torn poster sends arrives charging and is only ever drawn coming. The one
 ## place the choice is read, so the draw, its halo and a test ask the same question.
 func policeman_pictures() -> Dictionary:
 	if event.is_standing_for_its_notice():
 		return EventPictures.POLICEMAN_ALERT_BY_VIEW
-	if stands_still_now():
+	if _stands_still_now():
 		return EventPictures.POLICEMAN_WAITING_BY_VIEW
 	return EventPictures.POLICEMAN_LUNGING_BY_VIEW_B if gait_is_stepping() \
 			else EventPictures.POLICEMAN_LUNGING_BY_VIEW
@@ -79,13 +79,13 @@ func policeman_pictures() -> Dictionary:
 ## near (`is_waiting()`, which `is_telegraphing()` is false for, the masked man at the foot of the
 ## shaft being the one who does), through his notice, and through a stop he has made of his catch
 ## (`has_stopped_her()`) until he turns to walk back.
-func stands_still_now() -> bool:
+func _stands_still_now() -> bool:
 	return event.is_waiting() or event.is_telegraphing() or (event.has_stopped_her()
 			and not event.is_leaving)
 
 ## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
 ## its boom — the same man, and the guardsman a torn poster sends or a vehicle lets out:
-## the `guard_standing_*` family while he waits for her and through a stop (`stands_still_now()`),
+## the `guard_standing_*` family while he waits for her and through a stop (`_stands_still_now()`),
 ## `guard_alert_*` for any notice he gives (`masked_pursuer_pictures()`), as a heated roadblock's
 ## guard does at his post, and `guard_lunging_*` once he is actually on her line. Read from his own
 ## travel heading through `_draw_eight_view()`, the same helper every other moving family uses, so
@@ -104,11 +104,11 @@ func _draw_masked_pursuer(canvas: CanvasItem) -> void:
 ## player: an event that does not spawn already charging always needs a warning.)* The van's guard a
 ## task sends and the guardsman a torn poster sends arrive charging and never give one, nor does the
 ## door guard, whose warning was the hut's or the post's guard's from her crossing
-## (`PursuitSpec.Start.CHARGES_AT_ONCE`). Otherwise `guard_standing_*` while `stands_still_now()` —
+## (`PursuitSpec.Start.CHARGES_AT_ONCE`). Otherwise `guard_standing_*` while `_stands_still_now()` —
 ## the masked man's wait, a stop — and `guard_lunging_*` after.
 func masked_pursuer_pictures() -> Dictionary:
 	if event.is_standing_for_its_notice() or (event.def.notice_within() > 0.0
 			and event.is_telegraphing()):
 		return EventPictures.GUARD_ALERT_BY_VIEW
-	return EventPictures.GUARD_STANDING_BY_VIEW if stands_still_now() \
+	return EventPictures.GUARD_STANDING_BY_VIEW if _stands_still_now() \
 			else EventPictures.GUARD_LUNGING_BY_VIEW

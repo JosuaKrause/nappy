@@ -93,7 +93,7 @@ func _draw_loose_dog(canvas: CanvasItem) -> void:
 	var view := select_view(event.facing_now())
 	var dog := EventPictures.dog_picture(view, gait_is_stepping(), gait_is_second_half())
 	Sprites.draw_standing(canvas, EventPictures.drawn(dog), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
+			is_mirrored())
 
 func _draw_cat(canvas: CanvasItem) -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
@@ -108,7 +108,7 @@ func _draw_cat(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var view := select_view(event.facing_now())
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
+			is_mirrored())
 
 ## The tables, and the people at them.
 ##
@@ -130,7 +130,7 @@ func _draw_crater(canvas: CanvasItem) -> void:
 func _draw_busker(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var view := select_view(event.facing_now())
-	var mirror := EightDirection.is_mirrored(_view_sector)
+	var mirror := is_mirrored()
 	var by_view := EventPictures.BUSKER_BY_VIEW_B \
 			if idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD) else EventPictures.BUSKER_BY_VIEW
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
@@ -176,7 +176,7 @@ func _draw_dog_walker(canvas: CanvasItem) -> void:
 	# The dog faces the walker's own travel — the same heading, the same view, the same mirror —
 	# since it is being led rather than watching anything of its own.
 	var view := select_view(event.facing_now())
-	var mirror := EightDirection.is_mirrored(_view_sector)
+	var mirror := is_mirrored()
 	# One phase for the pair, so the walker's own legs and the dog's never disagree about which of
 	# them is mid-stride: the dog steps while he does and rests while he does.
 	var stepping := gait_is_stepping()
@@ -203,4 +203,4 @@ func _draw_chatting_mother(canvas: CanvasItem) -> void:
 		by_view = EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW_B
 	var view := select_view(event.facing_now())
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
+			is_mirrored())

@@ -105,7 +105,7 @@ func _draw_abduction(canvas: CanvasItem) -> void:
 		var by_view := EventPictures.VAN_VICTIM_BY_VIEW_B if victim_gait_is_stepping() \
 				else EventPictures.VAN_VICTIM_BY_VIEW
 		Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), at, Vector2.ZERO,
-				EightDirection.is_mirrored(_view_sector))
+				is_mirrored())
 	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own
 	# doc comment on `side_faces_west`.
 	_draw_eight_view(EventPictures.UNMARKED_VAN_BY_VIEW, event.facing_now(), canvas, true)
