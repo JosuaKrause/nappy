@@ -107,7 +107,10 @@ func _test_a_departure_and_a_finish_are_phases(t) -> void:
 	t.check(instance.phase == EventInstance.Phase.LEAVING and instance.is_leaving,
 			"off the end of its route it is leaving (%d frames)" % frames)
 	t.check(instance.current_intensity() == 0.0, "and emits nothing while it goes")
-	instance._finish()
+	var leaving_ticks := 0
+	while not instance.is_finished and leaving_ticks < 400:
+		instance.step(STEP)
+		leaving_ticks += 1
 	t.check(instance.phase == EventInstance.Phase.DONE and instance.is_finished
 			and not instance.is_leaving, "finished, it is done, and only done")
 	instance.free()

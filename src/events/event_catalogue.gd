@@ -665,7 +665,7 @@ static func _cat_dash() -> EventDef:
 ## should). `art/events/mouse_{front,back}[_diagonal].svg` supply the four turned views and
 ## `mouse.svg` stays the `"side"` one; the `_b` siblings are the dash's own second frame — the tail
 ## curls differently rather than crossing legs it has no room to draw at this scale — alternated by
-## `EventLook._gait_stepping()` the same way `MOUSE`/`EventPictures.MOUSE_B` already were. The mouse
+## `EventLook.gait_is_stepping()` the same way `MOUSE`/`EventPictures.MOUSE_B` already were. The mouse
 ## still keeps no second posture for its own telegraph — it is already small and already still — so
 ## only the dash itself picks a heading; `_cat_dash`'s own crouch/running swap is a different axis,
 ## the posture rather than the facing.
@@ -2360,7 +2360,7 @@ static func _alley_robbery() -> EventDef:
 	# **He walks at her slowly through his notice**, a man getting up off a wall rather than a man
 	# already running: his chase is 130px/s, and closing at that from his trigger would be over in a
 	# tenth of a second. At 40px/s, a little over the dog walker's 32px/s stroll, a stride beat
-	# (`EventLook._gait_stepping()`, 17.5px of ground) lasts about 0.44s, near the 450ms the
+	# (`EventLook.gait_is_stepping()`, 17.5px of ground) lasts about 0.44s, near the 450ms the
 	# walkers' two-frame pictures were reviewed at.
 	def.pursuit.walk_speed = 40.0
 	# **He charges once his warning has run with her still inside his radius**, on the clock every

@@ -59,20 +59,20 @@ func _test_every_task_days_destination_draws_no_mark(t) -> void:
 		director.start_day(day, _rng(day, "resistance"), 300.0)
 		var offered := director.current_step()
 		if not finale:
-			t.check(offered != null and offered.is_pickup and director._contact.draws_a_mark(),
+			t.check(offered != null and offered.is_pickup and director.contact().draws_a_mark(),
 					"day %d: the mark on offer draws its chalk" % day)
 			# Her touch, the way `ContactPoint._physics_process()` answers it: done, then the
 			# director activates the task.
 			if offered != null and offered.is_pickup:
-				director._contact._complete()
-			t.check(director._read_mark != null and director._read_mark.is_done
-					and director._read_mark.draws_a_mark(),
+				director.contact().complete_now()
+			t.check(director.read_mark() != null and director.read_mark().is_done
+					and director.read_mark().draws_a_mark(),
 					"day %d: the read mark keeps its touched picture" % day)
 		var task := director.current_step()
 		t.check(task != null and not task.is_pickup, "day %d: the task is on offer" % day)
 		if task != null and not task.is_pickup:
-			var contact := director._contact
-			var bare := contact._rider == null
+			var contact := director.contact()
+			var bare := director.rider() == null
 			t.check(not contact.draws_a_mark(), "day %d: the task's destination (%s) draws no chalk"
 					% [day, "a bare point" if bare else "a rider"])
 			t.check(director.red_arrow_target() != Vector2.INF,
