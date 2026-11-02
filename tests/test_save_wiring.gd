@@ -379,7 +379,7 @@ func _test_title_leads_to_the_day_brief_with_nothing_charged(t) -> void:
 			"and the day brief's own continue still has to engage the day, which the save says;"
 			+ " showing the brief writes nothing new — the dawn write already said this")
 
-	t.check(t.get_tree().paused, "the day brief holds the tree, so the day is not walked yet")
+	t.check(t.get_tree().paused, "the tree stays paused while the day brief is up, so the day is not walked yet")
 	await _press_continue(t, main)
 	t.check(not summary.is_showing(), "continuing dismisses the brief")
 	t.check(not t.get_tree().paused, "and the gate is spent, the day walked with the tree running")
@@ -485,7 +485,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	t.check(is_instance_valid(indicator) and SaveIndicator.carried(tree) == indicator,
 			"so the reload does not free it, and the escape's boot adopts it")
 	t.check(is_instance_valid(indicator) and indicator.is_showing() and not indicator.shows_struck(),
-			"still fully shown for day 14's save after the reload")
+			"still shown, not struck, for day 14's save after the reload")
 	if is_instance_valid(indicator):
 		indicator.free()
 

@@ -18,9 +18,9 @@ minty-quail's `tests-public-seams.md`: `tests/test_save_wiring.gd` and the save 
   the day brief), and a check that the brief holds the tree before its continue stands beside them.
 - `GameSave._uses_save_override` is gone with no replacement. `test_finale.gd` boots under a windowed
   release configuration, `test_move_poses.gd` reaches its day through the `--day` dev flag with no
-  save, and the `_write_now()`, `_read_now()` and `_clear_now()` calls in `test_park_return.gd`,
-  `test_move_poses.gd`, `test_run_state.gd` and `test_finale.gd` go through `write()`, `try_resume()`
-  and `clear()`.
+  save (a headless boot, which the game keeps off the save), and the `_write_now()`, `_read_now()`
+  and `_clear_now()` calls in `test_park_return.gd`, `test_run_state.gd` and `test_finale.gd` go
+  through `write()`, `try_resume()` and `clear()`.
 
 **Open to overturn** (the builder's choices where the brief was silent): some checks read what the
 game shows rather than `flow.mode`: the save's `day_under_way`, the summary showing, the tree not
