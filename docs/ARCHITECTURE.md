@@ -813,8 +813,9 @@ sitting's first boot, parks it at the root just before every reload (`main._park
 and hands it to the title (`use_sitting()`), the frame recorder (`setup()`) and the save symbol, and
 its recipe to every city it builds (`main._new_city()` sets `City.ground_recipe`), and its library
 to everything that acquires a group or draws a region (the city, which hands it on to its
-furniture, crowd and events; her; the escape's building and its events; the screens, which hand
-it to their buttons and lines; the badge and the save symbol);
+furniture, crowd and events; her; the escape's building, its events and its steam grates; the
+screens, which hand it to their buttons and lines; the touch controls; the badge and the save
+symbol);
 nothing below the composition root fetches it. A test hands its boots a node of its own in place
 of the root (`main.use_sitting_home()`), so the boot standing for a reload takes the sitting the
 boot before parked there, and hands a `main` it drives off the tree one directly
