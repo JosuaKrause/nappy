@@ -187,7 +187,8 @@ func _ready() -> void:
 
 ## The stroller she rides in, told rather than discovered: `_ready()` takes her parent, and whoever
 ## builds the rig out of the tree (a test, a data-level stand-in) hands her the `Stroller` she is
-## a child of, so she can be stepped before she ever enters it.
+## a child of, so she can be stepped before she ever enters it. **Only tests call this**: in the
+## game she is a child of the rig in the scene and `_ready()` takes the stroller from her parent.
 func set_stroller(stroller: Stroller) -> void:
 	_stroller = stroller
 

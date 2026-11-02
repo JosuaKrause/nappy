@@ -744,7 +744,7 @@ func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 	var fire := EventCatalogue.by_id(FIRE_ROW)
 	if not fire:
 		return []
-	return EventScheduler._open_ground_for(fire, _map, {})
+	return EventScheduler.open_ground_for(fire, _map, {})
 
 ## The guard. From `TRAP_FIRST_DAY` no chalk mark is ever placed without one, nor day 13's
 ## roadblock (`keeps_a_waiting_guard()`) — a robber drawn from the band `alley_robbery`'s own
@@ -2019,7 +2019,7 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 ## any other door does nothing.
 ##
 ## **Only an inspected crossing sends the trap.** Walked under a raised boom (`inspected`
-## false), the door sets its own guard on her (`CheckpointController._set_a_guard_on_her()`),
+## false), the door sets its own guard on her (`CheckpointController.set_a_guard_on_her()`),
 ## and that guard is the whole of the crossing's price: no robber comes from off screen as well.
 ## *(2026-10-04, the player, asked whether both should come at once: "(a)" — under the boom only
 ## the guard, the robber only after an inspected crossing.)* `_walked_under_the_door` carries

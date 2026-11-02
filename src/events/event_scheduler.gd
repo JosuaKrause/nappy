@@ -2842,7 +2842,10 @@ static func room_around(candidate: Planned, already: Array[Planned]) -> float:
 
 ## The placement a recipe or a planner puts at one site, or null: the candidate `_build_placement()`
 ## sites on `tile` that `room_around()` leaves room for among `already`. The one entry point a
-## planner and `SceneRecipeRuntime` share, so an authored scene is sited by the rules a day is.
+## planner and `SceneRecipeRuntime` share: an authored scene's row keeps the day's spacing. The
+## scheduler's own loop (`_best_of()`) does not call it: a day asks `_judge()`, which asks
+## `_room_around()` among many more rules and keeps its verdicts and the candidate's role, so
+## routing the loop through this would change what the day places.
 static func place_at(def: EventDef, map: CityMap, tile: Vector2i, rng: RandomNumberGenerator,
 		already: Array[Planned]) -> Planned:
 	var candidate := _build_placement(def, map, tile, rng)

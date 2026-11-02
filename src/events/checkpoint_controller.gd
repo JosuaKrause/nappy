@@ -577,6 +577,9 @@ func _call_off_the_crossing(why: String) -> void:
 ## (about 57px from her as she crosses the near lane, 16px if she crosses beside it) his charge
 ## comes with almost no ground to answer it in. An alley's door has only its post, so its guard
 ## steps out of it. *The far hut is chosen while building, open to overturn.*
+##
+## **Called from outside the controller only by tests**, which set a guard on her without walking
+## a crossing; the game sets one from its own crossing warning.
 func set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vector2) -> void:
 	if not is_instance_valid(hut) or guard_is_after_her():
 		return
