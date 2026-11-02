@@ -2,7 +2,23 @@ extends RefCounted
 ## **What the resistance suites share** (`tests/test_resistance_*.gd`): the city each builds, the
 ## director over it, and the walks, views and sweeps more than one of them drives. A helper, not a
 ## suite: the runner loads only `test_*.gd`. Each suite extends this one and runs its own tests;
-## `_city` is freed by whichever suite built it, at the end of its `run()`.
+## `_city` is freed by whichever suite built it, at the end of its `run()` (`_free_city()`).
+##
+## **A test hands the director everything it reads** (minty-quail, tests through public seams):
+## the city, and with it the run (`City.run`, which `ResistanceDirector.setup()` takes when it is
+## handed none), the day's stream (`start_day()`'s `rng`), the day's length and every tick
+## (`tick()`), her (`use_player()`) and what she can see (`set_sight()`). A test that builds its city
+## with `_build_city_in_a_new_run()` owns the run that city stands in, so the state it needs — the
+## steps done, the alleys used, the scars — is set on that run, by the test, and gone with it.
+## `_build_city()` builds over the live run (`GameState`) for the suites that still set the run's
+## state on the autoload and put it back by hand (`_with_clean_run()`).
+##
+## **What the director has put in the street is read from the street**: the contact she touches
+## (`ResistanceDirector.contact()`), what its task rides on (`rider()`), and every guard and pursuer
+## from the city's live instances (`_live()`, `_new_one()`), never from the director's fields. Her
+## touch is a real physics frame with her standing on the contact (`_step_a_frame()`), and a read
+## that is only setup for what a test asks, not a touch it measures, completes the contact as an
+## action does (`ContactPoint.complete_now()`), which runs the same completion a touch runs.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
@@ -17,6 +33,11 @@ const STEP := 1.0 / 60.0
 ## lands near the doorstep" is enforced by construction the same way on every city, so a second
 ## city tests the same guarantee against different noise rather than a different shape of it.
 const RULE_SEEDS := 3
+
+## The seed of a run a test builds its own city in (`_build_city_in_a_new_run()`): fixed, so the
+## posters pasted from it are the same on every run, and the one the runner starts the live run on
+## between suites. Nothing the director places reads it: each day's stream is handed in (`_rng()`).
+const RUN_SEED := 2
 
 var _player: Stroller
 
@@ -36,9 +57,19 @@ func _build_pickup(t, step_index: int) -> void:
 	_contact.setup(ResistanceSteps.by_index(step_index), Vector2.ZERO)
 	_contact.use_player(_player)
 	t.add_child(_contact)
-	_contact.set_physics_process(false)
+
+## One real physics frame, and the process frame after it: every node in the tree takes its
+## `_physics_process()` once — a contact asks whether she is touching it — before the test reads on.
+## `physics_frame` is emitted before the nodes take their step, so the process frame is what says
+## the step has been taken.
+func _step_a_frame(t) -> void:
+	await t.get_tree().physics_frame
+	await t.get_tree().process_frame
 
 var _city: City
+## The run `_city` stands in when the suite built it one (`_build_city_in_a_new_run()`), freed with
+## the city; null for a city over the live run (`_build_city()`).
+var _own_run: RunState
 
 ## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires the
 ## "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
@@ -46,13 +77,34 @@ var _city: City
 ## over, so a `_city` never freed between two calls would leave every earlier one standing —
 ## sixteen abandoned `City` nodes in a suite that only ever needs the latest, each holding "events"
 ## resident for the rest of the process. `run()` frees whichever one is still around after the
-## last call.
+## last call. Over the live run (`GameState`), for the suites that still set the run's state there.
 func _build_city(t, seed_value := SEED) -> void:
-	if _city != null:
-		_city.free()
+	_free_city()
 	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(seed_value))
+
+## The city of `seed_value` in a run of its own, which it hands to every director built over it
+## (`_director()`): the run starts fresh, with no step done, no alley used and no scar, and the test
+## sets whatever else the day it asks about needs on it. Returns the run.
+func _build_city_in_a_new_run(t, seed_value := SEED) -> RunState:
+	_free_city()
+	_own_run = RunState.new()
+	_own_run.start_run(RUN_SEED)
+	_city = CITY_SCENE.instantiate()
+	_city.run = _own_run
+	t.add_child(_city)
+	_city.build(CityGenerator.generate(seed_value))
+	return _own_run
+
+## Frees the test city and the run it stands in when the suite built it one.
+func _free_city() -> void:
+	if _city != null:
+		_city.free()
+	_city = null
+	if _own_run != null:
+		_own_run.free()
+	_own_run = null
 
 ## The day's one view looked at `rect` with no corner covered, which is what the director's
 ## `set_sight(_city.events.sees)` and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
@@ -87,6 +139,8 @@ func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator
 	rng.seed = hash("%d:%d:%s" % [seed_value, day, stream])
 	return rng
 
+## Runs `action` with the live run's steps, progress and package cleared, and puts them back: for
+## the suites that build over the live run (`_build_city()`). A city in a run of its own starts clear.
 func _with_clean_run(action: Callable) -> void:
 	var saved_completed := GameState.resistance.completed_steps.duplicate()
 	var saved_failed := GameState.resistance.failed_steps.duplicate()
@@ -117,12 +171,39 @@ func _completed_through(last_index: int) -> Array[int]:
 
 ## Day 6's mark, started and touched — the shape most of this suite's perform-step tests now
 ## need, since `start_day()` alone only ever offers a mark (`ResistanceSteps.for_day()`). Returns
-## the director with step 2 (the yeller perform) already active.
+## the director with step 2 (the yeller perform) already active: the mark is read with nobody in
+## the world (`_read_the_mark()`).
 func _director_on_the_yeller_perform(t, seed_value := SEED) -> ResistanceDirector:
 	var director := _director(t)
 	director.start_day(6, _rng(6, "resistance", seed_value), 300.0)
-	director._on_contact_completed(1)
+	_read_the_mark(director)
 	return director
+
+## Completes the contact on offer, which reads a mark and activates the task it unlocks, the way an
+## action completes a step (`ContactPoint.complete_now()`): the same completion her touch runs,
+## from wherever she is — or, with no player handed to the director, from nowhere, the way a rig's
+## bare director reads it.
+func _read_the_mark(director: ResistanceDirector) -> void:
+	var contact := director.contact()
+	if contact:
+		contact.complete_now()
+
+## The live instances of the row `id` in the test city's street (`EventManager.instances()`): the
+## guards and pursuers the director has put there, read from the world rather than its fields.
+func _live(id: String) -> Array[EventInstance]:
+	var found: Array[EventInstance] = []
+	for instance in _city.events.instances():
+		if instance.def.id == id and not instance.is_finished:
+			found.append(instance)
+	return found
+
+## The live instance of `id` that is not among `before` (an earlier `_live(id)`), or null: what was
+## put in the street since.
+func _new_one(id: String, before: Array[EventInstance]) -> EventInstance:
+	for instance in _live(id):
+		if instance not in before:
+			return instance
+	return null
 
 func _all_but_the_finale() -> Array[int]:
 	var done: Array[int] = []
@@ -249,7 +330,8 @@ func _director_on_the_neighbor(t) -> ResistanceDirector:
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
 	t.check(mark != null and mark.is_pickup, "day 10 offers a mark")
-	director._on_contact_completed(mark.index if mark else -1)
+	if mark:
+		_read_the_mark(director)
 	return director
 
 ## The warning `events` has up for the row `id`, or null.
@@ -260,27 +342,37 @@ func _warning_for(events: EventManager, id: String) -> PendingWarning:
 	return null
 
 ## Whether some tile within three of `item` is ground she can stand on (walkable, no body,
-## reachable from home) and its centre completes today's contact (`ContactPoint.would_complete_at()`).
+## reachable from home under the day's whole obstruction, `_day_reachability()`) and its centre
+## completes today's contact (`ContactPoint.would_complete_at()`). On `in_city`, or the test city.
 func _touched_from_standable_ground(director: ResistanceDirector, item: Vector2,
-		on: CityMap = null) -> bool:
-	var map := on if on else _city.map
+		in_city: City = null) -> bool:
+	var city := in_city if in_city else _city
+	var map := city.map
+	var reachability := _day_reachability(city)
+	var grid: ReachabilityGrid = reachability[0]
+	var blocked: Dictionary = reachability[1]
+	var reached: Dictionary = reachability[2]
 	var centre := map.world_to_tile(item)
 	for dy in range(-3, 4):
 		for dx in range(-3, 4):
 			var tile := centre + Vector2i(dx, dy)
 			if not map.is_walkable(tile) or map.is_obstructed(tile) \
-					or not director._reachable_from_home(tile):
+					or not grid.reaches(tile, blocked, reached):
 				continue
-			if director._contact.would_complete_at(map.tile_to_world(tile)):
+			if director.contact().would_complete_at(map.tile_to_world(tile)):
 				return true
 	return false
 
 ## `[edge, inside]`, each `tile -> true`: walked tile by tile from her tile at `her` over walkable
-## ground the day's obstruction (`director._reach_blocked`) leaves open, going on only from a tile
-## inside the `NEAR_THE_MARK` circle round her — a tile at or past its edge is where that path
-## reaches the edge.
+## ground the day's obstruction leaves open, going on only from a tile inside the `NEAR_THE_MARK`
+## circle round her — a tile at or past its edge is where that path reaches the edge. The
+## obstruction is the director's own as it placed the day's first contact
+## (`director._reach_blocked`), so a task's own body placed after it (day 11's mast) does not shut
+## its own tile: the one private read left in this rig, which `reach_narrow` and `reach_relocated`
+## take with them when they move onto public seams (by reading the circle before the mark is read).
 func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 	var map := _city.map
+	var blocked: Dictionary = director._reach_blocked
 	var start := map.world_to_tile(her)
 	var centre := map.tile_to_world(start)
 	var edge := {}
@@ -291,7 +383,7 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var next := tile + step
 			if inside.has(next) or edge.has(next) or not map.is_walkable(next) \
-					or director._reach_blocked.has(next):
+					or blocked.has(next):
 				continue
 			if map.tile_to_world(next).distance_to(centre) >= ResistanceDirector.NEAR_THE_MARK:
 				edge[next] = true
@@ -304,10 +396,11 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 ## `seed_value`, and reads the day's mark standing on it with her screen the view around her:
 ## `[director with the task active, the mark's position, her rig]`.
 func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
-	GameState.resistance.completed_steps = _completed_through(2 * (day - 6))
-	GameState.facts.completed_resistance_alley_tiles = []
+	var run: RunState = _city.run
+	run.resistance.completed_steps = _completed_through(2 * (day - 6))
+	run.facts.completed_resistance_alley_tiles = []
 	var state := CityState.new()
-	GameState.attempt_spend.city_state = state
+	run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures", seed_value))
 	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
@@ -320,7 +413,7 @@ func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
 	_watch_the_screen_round(director, mark)
 	var step := director.current_step()
 	if step != null and step.is_pickup:
-		director._on_contact_completed(step.index)
+		_read_the_mark(director)
 	# The view was the mark's for placing the task; what the test does next looks through her own.
 	_look_at(Rect2())
 	return [director, mark, player]

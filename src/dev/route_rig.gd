@@ -454,7 +454,7 @@ const _NEAREST_OPEN_SEARCH_RADIUS := 6
 ##
 ## **Walking to the nearest open ground next to the body reaches the row exactly as reliably as
 ## the real game's own random-bearing offset does, without reproducing its RNG draw.**
-## `ResistanceDirector._reach_distance()` completes an any-instance task from `obstructs_radius +
+## `ResistanceDirector.touch_reach()` completes an any-instance task from `obstructs_radius +
 ## Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH` of the instance's centre (110px for `roadblock`,
 ## 60 + 14 + 36) — comfortably past where the solid edge itself sits (60px) — so standing on the
 ## closest ground the body actually leaves open is always well inside that reach, whichever side

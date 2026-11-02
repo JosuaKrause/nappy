@@ -14,8 +14,8 @@ extends Node
 ## **The `GameState` autoload is where the run lives**, since it outlives the scene reloads (the
 ## held restart, the day-14 hand-over, a run carried to its checkpoint). `main`, the composition
 ## root, takes it once and hands it, typed `RunState`, to `GameSave` and to every reader it builds,
-## so a test hands a reader whichever run it built; the events and the resistance (`src/events/`,
-## `src/resistance/`) still read it off the autoload.
+## so a test hands a reader whichever run it built; the resistance is handed it with its city
+## (`City.run`) or by `ResistanceDirector.setup()`.
 var run_parts := RunStateRegistry.new()
 var header: RunHeader = run_parts.register(RunHeader.new())
 var resistance: ResistanceRunState = run_parts.register(ResistanceRunState.new())

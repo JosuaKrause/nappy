@@ -158,7 +158,7 @@ static func has_a_body(instance: EventInstance) -> bool:
 ## for the van (22 + 14 + 36), 110px for a roadblock's band (60 + 14 + 36). One circle round the
 ## body's centre rather than a band round its outline, so it reaches past the body by at least
 ## `within` on every side, its ends included, and is the same circle an any-instance task already
-## retargeted onto a look-alike from (`ResistanceDirector._reach_distance()`).
+## retargeted onto a look-alike from (`ResistanceDirector.touch_reach()`).
 static func body_reach(instance: EventInstance, within := REACH) -> float:
 	return instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + within
 
