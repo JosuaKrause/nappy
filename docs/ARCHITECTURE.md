@@ -1043,15 +1043,15 @@ field with its value before and after (`tests/shared_state.gd`).
   `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
   its own and read what the director put in the street from the street (`steps`, `traps`,
   `reach_contacts`, `reach_marks`, `reach_narrow`, `reach_relocated`, `crossing`, `replacement`,
-  `placement_kinds` and `arrow` do; `alley_siting` still builds over the live run and reads the
-  director's fields; `reach_narrow` (through the rig's circle) and `reach_relocated` read the day's
-  reach from `ResistanceDirector.reaches_from_home()` and `reach_obstruction()`; `reach_narrow`
-  still calls `EventScheduler._is_spoiled()` and `reach_relocated`
-  `ResistanceDirector._nearest_alley_within()` and `EventScheduler._place_masts()`): `steps` (the step table,
-  touch-completion, a task activated the same day its mark is touched, the seeded dawn draws, an
-  expiring step, a finished task shown by the world and the sabotage putting the city's masts out
-  once she has walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`
-  (where a mark and its guard stand), `traps` (a task riding on a look-alike, and the robber or
+  `placement_kinds`, `arrow` and `alley_siting` do; `reach_narrow` (through the rig's circle) and
+  `reach_relocated` read the day's reach from `ResistanceDirector.reaches_from_home()` and
+  `reach_obstruction()`; `reach_narrow` still calls `EventScheduler._is_spoiled()` and
+  `reach_relocated` `EventScheduler._place_masts()`): `steps` (the step table, touch-completion, a
+  task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
+  finished task shown by the world and the sabotage putting the city's masts out once she has
+  walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`
+  (where a mark and its guard stand, asked of the director's public draws), `traps` (a task riding
+  on a look-alike, and the robber or
   guard set on her from off screen), `placement_kinds` (the four placement kinds a perform step
   may use, each task's own site, a day built in its order), `arrow` (the red
   arrow: what it points at, chosen and swept by the director's ticks), `crossing` (day 9's door

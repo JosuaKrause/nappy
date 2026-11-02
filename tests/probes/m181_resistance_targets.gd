@@ -82,7 +82,7 @@ func run(t) -> void:
 				if grid.reaches(tile, blocked, reached):
 					reach += 1
 			var director_rng := _rng(seed_value, day, "resistance")
-			var at := director._place(step, director_rng)
+			var at := director.place_contact(step, director_rng)
 			var placed := "nowhere"
 			if at != Vector2.INF:
 				var tile := city.map.world_to_tile(at)

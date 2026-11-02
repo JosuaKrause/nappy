@@ -197,8 +197,8 @@ func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t) -> void:
 	var rng := RandomNumberGenerator.new()
 	var at_mouth := map.tile_to_world(MOUTH)
 	var at_mark := map.tile_to_world(MARK)
-	var from_mouth := director._guard_position(rng, at_mouth, true, Vector2.INF, false)
-	var from_mark := director._guard_position(rng, at_mark, true, Vector2.INF, false)
+	var from_mouth := director.guard_position(rng, at_mouth, true, Vector2.INF, false)
+	var from_mark := director.guard_position(rng, at_mark, true, Vector2.INF, false)
 	t.check(from_mouth != Vector2.INF and from_mark != Vector2.INF, "both marks get a guard")
 	t.check(is_equal_approx(from_mouth.distance_to(at_mouth), from_mark.distance_to(at_mark)),
 			"at the same distance from the mark (%.1fpx, %.1fpx)"
