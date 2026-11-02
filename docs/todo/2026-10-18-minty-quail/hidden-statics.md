@@ -21,11 +21,12 @@ among them; and `PosterArt._torn`, which needs an owner that outlives the day's 
 handing it down through `PosterWalls` and `Building`. The constants left there (the `Mover` filters,
 `CityMap`'s tile tables) and `Mover._shared`, a pure memo of its flags, are not hidden globals. What
 outlives a scene reload (the controls choice, the held-restart stamp, the save symbol's home, the
-frame record's file, the checkpoint carry) is held by one `Sitting`, which `main` parks in its home
-across the reload and hands to the title, the save symbol and the recorder; no static holds it.
-Still to do, each needing one pass that owns all its readers, since they are read across the tree:
-`AtlasLibrary` and `GroundLayers` (`src/visuals/`), `FrameRecord.on` and `ledger`
-(`src/telemetry/frame_record.gd`, read on every draw), `Sprites._base_transform`, `DrawnView`'s
-per-frame memo and `EntityHalo._shared_material` (`src/ui/`), the statics under `src/events/`,
+frame record's file, the checkpoint carry, and the ground recipe read once per process) is held by
+one `Sitting`, which `main` parks in its home across the reload and hands on; no static holds it.
+The drawing state is held by what it describes: a sprite's base transform on the canvas it is drawn
+on, the drawn-view memo on its viewport. `EntityHalo._shared_material` is a shader material built
+once and never written, not a hidden global. Still to do, each needing one pass that owns all its
+readers, since they are read across the tree: `AtlasLibrary` (`src/visuals/`), `FrameRecord.on` and
+`ledger` (`src/telemetry/frame_record.gd`, read on every draw), the statics under `src/events/`,
 `GameSave`'s web-flush statics, and the single ones in `src/resistance/resistance_steps.gd` and
 `src/run_config.gd` (`rg -n '^\s*static var' src` lists them).
