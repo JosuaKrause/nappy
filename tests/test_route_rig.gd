@@ -119,8 +119,8 @@ func _teardown(t) -> void:
 	GameState.resistance.failed_steps = _saved_failed
 	GameState.resistance.progress = _saved_progress
 	GameState.resistance.carrying_package = _saved_package
-	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0.0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0.0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0.0)
 	_stroller.free()
 	_resistance.free()
 	_city.free()

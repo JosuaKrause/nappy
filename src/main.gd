@@ -158,6 +158,8 @@ var _dev_rig := DevRig.new()
 ## `src/dev/route_rig.gd`. Unlike `_dev_rig`, this owns a whole target queue that has to survive
 ## across a day's frames, so it is a child node rather than a bag of static lookups.
 var _route_rig: RouteRig
+## `--route` in the escape's building: see `_add_the_building_walker()`.
+var _building_walker: BuildingWalker
 ## Dev spawn and meter overrides apply to the opening day only; every later day starts on
 ## the doorstep with a fresh baby, like the game intends.
 var _first_day := true
@@ -990,6 +992,7 @@ func _start_section(spec: DaySpec, restarted: bool) -> void:
 		spec.exits = _the_city_exits()
 	_day.setup(null, _player, _run)
 	if spec.world == DaySpec.World.BUILDING:
+		_add_the_building_walker()
 		var start_at := _interior.start_world_position()
 		if not restarted:
 			start_at = _interior.part_world_position(_escape_start_part())
@@ -1041,6 +1044,21 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	_flow.day_planned.connect(_route_rig.start_day)
 	_route_rig.use_continue(_on_summary_continued)
 	_flow.brief_opened.connect(_route_rig.press_the_brief)
+
+## `--route` in the escape's building: the game's own walker, built once, with the building (the
+## city's rig, which needs the city, is built when the building is won). It presses the building's
+## brief and walks her out (`BuildingWalker`, `src/dev/building_walker.gd`).
+func _add_the_building_walker() -> void:
+	if config.route_targets.is_empty() or _building_walker:
+		return
+	_building_walker = BuildingWalker.new()
+	_building_walker.name = "BuildingWalker"
+	add_child(_building_walker)
+	_pauses_with_the_game(_building_walker)
+	_building_walker.setup(_interior.map, _player, _day)
+	_building_walker.use_continue(_on_summary_continued)
+	_flow.day_planned.connect(_building_walker.start_section)
+	_flow.brief_opened.connect(_building_walker.press_the_brief)
 
 ## `--route` in the escape's city: the game's own walker, built once the city stands — the first
 ## time a city section starts — and started on every attempt, with no `ResistanceDirector`. Its

@@ -329,8 +329,9 @@ func follow_target() -> String:
 ## `--route mark,task,calm,home`, the ordered target words `RouteRig` walks to in turn, split on
 ## commas with nothing else validated: the live `City` decides what a word means, so an unknown one
 ## is `RouteRig`'s own warning. `[]` for an absent flag or an empty value: no rig. In the escape the
-## rig is built with the city section and presses that section's first brief itself. A run booted
-## into the building has no rig: it stops on the building's brief.
+## building is walked by `BuildingWalker` (it presses the building's brief and walks her to the
+## service exit), and the city by the rig, built with the city section, which presses that section's
+## first brief itself: a run booted into the building follows on to a city exit.
 func route_targets() -> Array[String]:
 	var result: Array[String] = []
 	for word in _word_after("--route").split(","):

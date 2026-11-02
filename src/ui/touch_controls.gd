@@ -604,8 +604,8 @@ func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 		return
 	_direction = direction
 	_walking = true
-	_set_axis(&"move_left", &"move_right", direction.x)
-	_set_axis(&"move_up", &"move_down", direction.y)
+	set_axis(&"move_left", &"move_right", direction.x)
+	set_axis(&"move_up", &"move_down", direction.y)
 	_run_active = run
 	if run or _run_held:
 		Input.action_press(&"run")
@@ -656,7 +656,7 @@ func _let_go_of_the_run_button() -> void:
 ## The keyboard resets whatever heading a click, tap or drag last locked in. *(PLAYTEST-57: "arrow
 ## keys should reset any mouse click position. when pressing awsd or arrow keys right now the last
 ## pressed mouse position is still active resulting in incorrect / drifting movement.")* A pointer
-## press locks a heading in by pressing `move_*` actions synthetically (`_set_axis()`, called from
+## press locks a heading in by pressing `move_*` actions synthetically (`set_axis()`, called from
 ## `set_direction()`), and `Stroller._physics_process()` reads the same four actions through
 ## `Input.get_vector()`, which sums over *everybody* currently pressing them — so a real key adds
 ## to, rather than replaces, whatever a click left behind, and she drifts toward neither heading.
@@ -704,7 +704,7 @@ func _yield_to_the_keyboard(key: InputEventKey) -> void:
 	queue_redraw()
 
 ## Exactly the `move_*` actions this node itself currently holds pressed, derived from `_direction`
-## rather than kept as a second copy of it — `_set_axis()` is what `set_direction()` presses these
+## rather than kept as a second copy of it — `set_axis()` is what `set_direction()` presses these
 ## through, and it presses at most one of each opposing pair, matching `_direction`'s own sign on
 ## each axis. Empty once `_direction` is `Vector2.ZERO`, which `_stop()` and `_release_all()` both
 ## already set.
@@ -773,7 +773,7 @@ static func is_double_tap(elapsed: float, distance: float) -> bool:
 ## `move_left`/`move_right` can be true on a keyboard, and the other is explicitly released rather
 ## than left to decay on its own. Static, since it is pure — a direction's own components are what
 ## every caller here presses through it.
-static func _set_axis(negative: StringName, positive: StringName, value: float) -> void:
+static func set_axis(negative: StringName, positive: StringName, value: float) -> void:
 	if value > 0.0:
 		Input.action_press(positive, value)
 		Input.action_release(negative)
@@ -843,8 +843,8 @@ func resume_after_pause() -> void:
 		return
 	_direction = _direction_before_pause
 	_walking = true
-	_set_axis(&"move_left", &"move_right", _direction.x)
-	_set_axis(&"move_up", &"move_down", _direction.y)
+	set_axis(&"move_left", &"move_right", _direction.x)
+	set_axis(&"move_up", &"move_down", _direction.y)
 	_run_active = _run_before_pause
 	if _run_active:
 		Input.action_press(&"run")
@@ -940,7 +940,7 @@ func _draw_focus_circles() -> void:
 	draw_circle(_steering_focus + offset, knob_radius, knob_colour)
 
 ## The heading she is actually walking this instant, whichever of the two doors set it: a press or
-## drag through `set_direction()` (`_set_axis()` presses these same four actions), or a real key
+## drag through `set_direction()` (`set_axis()` presses these same four actions), or a real key
 ## through `_yield_to_the_keyboard()` overriding it. `Input.get_vector()` on `move_left`/
 ## `move_right`/`move_up`/`move_down` is the read `Stroller._physics_process()` makes to decide her
 ## own velocity, and the rig's `Stroller.input_she_moves_by()` is what this defers to when the rig has it, so this is not a second,

@@ -4,7 +4,7 @@ extends Node
 ## edges, with no scripted inputs — see docs/TODO.md, M184, "A rig walks the route". Where
 ## `--walk`'s own script (`AutoScreenshot`) holds a fixed direction or replays a fixed timing, this
 ## re-aims at the next step of a live path every physics frame, through the exact same
-## `TouchControls._set_axis()` press every other dev-rig direction already goes through — so the
+## `TouchControls.set_axis()` press every other dev-rig direction already goes through — so the
 ## meter, the events, the crowd, the closures, the doors and the clock all run exactly as they do
 ## for a player, at `Tuning.WALK_SPEED`. Only the source of the heading is a plan instead of a
 ## finger.
@@ -32,7 +32,8 @@ extends Node
 ## the rig when the city section starts, with no `ResistanceDirector` (the escape has no subquest, so
 ## `mark` and `task` are unavailable there), and the rig presses the section brief's continue itself
 ## (`press_the_brief()`), as a key would. A building won by other means builds the city and its brief
-## is answered the same way; the rig does not walk the building and is not built before the city.
+## is answered the same way; the rig is not built before the city, and the building is walked before it
+## by `BuildingWalker` (`src/dev/building_walker.gd`).
 ##
 ## An unresolved target (nothing to walk to yet, or nothing found within `_RESOLVE_TIMEOUT`) and an
 ## unreachable one (no path exists) are both logged and skipped rather than hung on forever — see
@@ -294,30 +295,17 @@ func start_day(spec: DaySpec) -> void:
 	if not _done:
 		_begin_resolving(_targets[0])
 
-## What a continue on a screen does (`main._on_summary_continued()`, which takes the `RunFlow.Mode` the
-## screen was raised in), handed by `main`: the rig answers an escape brief by calling it
-## (`press_the_brief()`).
-var _continue: Callable
+## Answers the escape's briefs (`press_the_brief()`): what a continue on a screen does is handed by
+## `main` (`use_continue()`).
+var _brief := BriefPresser.new([DaySpec.Section.BUILDING, DaySpec.Section.CITY])
 
 func use_continue(continue_from: Callable) -> void:
-	_continue = continue_from
-
-## The escape sections whose first brief the rig has pressed. A section's retry brief, raised after a
-## loss, is a person's: the loss stops the rig there, as it always has.
-var _pressed: Dictionary = {}
+	_brief.use_continue(continue_from)
 
 ## The run flow has raised a brief (`RunFlow.brief_opened`): the first brief of an escape section is
-## answered with the continue a tap and a key both end in, which the run flow carries out like any
-## other (`RunFlow.continued()`). A key cannot be sent as an input event: a rig run has every real
-## binding erased (`RigLock`). One frame after the flow opens the brief, since `main` shows the
-## screen right after, and a frame signal ticks while the tree is paused behind it. A day's brief
-## (`Section.NONE`) is left alone, and so is any brief of a section already pressed once.
+## pressed (`BriefPresser`); a day's brief and a section's retry brief are left alone.
 func press_the_brief(spec: DaySpec) -> void:
-	if spec.section == DaySpec.Section.NONE or _continue.is_null() or _pressed.has(spec.section):
-		return
-	_pressed[spec.section] = true
-	await get_tree().process_frame
-	_continue.call(RunFlow.Mode.BRIEF)
+	await _brief.press(get_tree(), spec)
 
 func _begin_resolving(word: String) -> void:
 	_current_word = word
@@ -1531,8 +1519,8 @@ func _follow(delta: float) -> void:
 		_follow(delta)
 		return
 	var direction := offset.normalized()
-	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
-	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
+	TouchControls.set_axis(&"move_left", &"move_right", direction.x)
+	TouchControls.set_axis(&"move_up", &"move_down", direction.y)
 
 ## Whether a door is holding her (`Stroller.is_detained()` — a `checkpoint_hut` or `checkpoint_post`
 ## she walked into, which talks to her for `EventCatalogue.CHECKPOINT_DETAIN_SECONDS` and then sets her down
@@ -1880,8 +1868,8 @@ func _into_a_door(point: Vector2) -> bool:
 ## from where the maneuver began, or every direction has had its turn without one working.
 func _unstick(delta: float) -> void:
 	var direction := _unstick_order[_unstick_index]
-	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
-	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
+	TouchControls.set_axis(&"move_left", &"move_right", direction.x)
+	TouchControls.set_axis(&"move_up", &"move_down", direction.y)
 	if _player.global_position.distance_to(_unstick_anchor) >= _UNSTICK_CLEAR_DISTANCE:
 		_end_unstick(true)
 		return
@@ -1964,8 +1952,8 @@ func _pace() -> void:
 		_settle_forward = not _settle_forward
 		return
 	var direction := offset.normalized()
-	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
-	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
+	TouchControls.set_axis(&"move_left", &"move_right", direction.x)
+	TouchControls.set_axis(&"move_up", &"move_down", direction.y)
 
 func _advance_target() -> void:
 	_target_index += 1
@@ -2029,5 +2017,5 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	_quit()
 
 func _release() -> void:
-	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0.0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0.0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0.0)

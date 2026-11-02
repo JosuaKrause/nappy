@@ -70,12 +70,20 @@ static func plan(map: InteriorMapPlan, rng: RandomNumberGenerator) -> Array[Even
 ## in the shaft stays reachable: its reach is its own 30px body plus her 14px, and the door tile is
 ## 64px from the cell it stands on.
 static func _place_the_fire(map: InteriorMapPlan, plans: Array[EventScheduler.Planned]) -> void:
-	var landing := map.waypoint("stairwell_%s:landing_second" % BURNING_SIDE)
-	var at := landing + Vector2i.DOWN
-	if landing == InteriorMapPlan.NOWHERE or not map.is_walkable(at):
+	var at := fire_tile(map)
+	if at == InteriorMapPlan.NOWHERE:
 		push_error("the second floor's approach in the %s shaft is not walkable" % BURNING_SIDE)
 		return
 	plans.append(EventScheduler.Planned.new(EventCatalogue.building_fire(), map.tile_to_world(at)))
+
+## The tile the fire stands on, or `InteriorMapPlan.NOWHERE` where the second floor's approach in the
+## burning shaft is not walkable. What a walker keeps off to take the way past it.
+static func fire_tile(map: InteriorMapPlan) -> Vector2i:
+	var landing := map.waypoint("stairwell_%s:landing_second" % BURNING_SIDE)
+	var at := landing + Vector2i.DOWN
+	if landing == InteriorMapPlan.NOWHERE or not map.is_walkable(at):
+		return InteriorMapPlan.NOWHERE
+	return at
 
 ## The masked man, at the foot of the shaft the fire did not take, running its whole height, and
 ## another of him this long after the last has run out of the top (`masked_pursuer.repeat_after`).
@@ -94,6 +102,21 @@ static func _place_the_masked_man(map: InteriorMapPlan,
 	for tile in walk:
 		path.append(map.tile_to_world(tile))
 	plans.append(EventScheduler.Planned.new(EventCatalogue.by_id("masked_pursuer"), path[0], path))
+
+## The shaft's ground **below the first floor's landing**, where the masked man starts and runs the
+## whole of it before he reaches the first floor: the cells of his walk from the foot up to, not
+## including, `stairwell_<side>:landing_first`. Above it she can run to the first floor's door in the
+## time he takes to climb here, which is what the notice's distance is measured to allow
+## (`EventCatalogue._masked_pursuer()`); on it she meets him with nowhere to stand but his line. What a
+## walker keeps off to leave the shaft by the first floor's door. Empty where the shaft has no walk.
+static func pursuer_ground_below_the_first_floor(map: InteriorMapPlan) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	var landing := map.waypoint("stairwell_%s:landing_first" % PURSUED_SIDE)
+	for tile in map.stairwell_walk("stairwell_%s" % PURSUED_SIDE):
+		if tile == landing:
+			return found
+		found.append(tile)
+	return []
 
 ## The mouse a third of the way along the basement's own corridor, and the vents on its narrows.
 ##
