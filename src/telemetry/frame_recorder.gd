@@ -14,7 +14,8 @@ extends Node
 ## download: a DOM element over the canvas rather than a game control, so a tap on it never also
 ## steers her, and the download starts inside the tap that asked for it, which is what a phone's
 ## browser requires. **On the desktop the record is written under `user://frame-records/`** on
-## every scene exit, the same file each time, so a quit or a restart leaves the whole record.
+## every scene exit, the same file each time, so a quit or a restart leaves the whole record: the
+## file's path is kept on the `Sitting` `main` hands in, which outlives the restart's reload.
 ##
 ## Frames are kept only while a day is being played — not paused, not the title, not a summary —
 ## but every frame is timed, so the phases stay in step across a pause. The record survives a
@@ -57,15 +58,18 @@ var _viewport: RID
 ## Whether scene exit writes the record on the desktop. A test turns it off.
 var save_on_exit := true
 
-## Where a native record is written, chosen once per process so every scene exit rewrites the
-## same file.
-static var _native_path := ""
-## The page button's callback into the recorder. See `_add_page_button()`.
-static var _save_callback: JavaScriptObject
+## The sitting that keeps where a native record is written (`Sitting.frame_record_path`), handed
+## in by `setup()`: chosen by the first save of the sitting, so every scene exit rewrites the same
+## file and a restart, which builds a new recorder, does not start a second.
+var _sitting: Sitting
+## The page button's callback into the recorder, held for the recorder's life. See
+## `_add_page_button()`.
+var _save_callback: JavaScriptObject
 
 func setup(in_the_title: Callable, city: City, player: Stroller, day: DayController,
-		run: RunState) -> void:
+		run: RunState, sitting: Sitting) -> void:
 	_run = run
+	_sitting = sitting
 	_in_the_title = in_the_title
 	_city = city
 	_player = player
@@ -263,19 +267,20 @@ func save() -> String:
 			Time.get_datetime_string_from_system().replace(":", "-")]
 		JavaScriptBridge.download_buffer(text.to_utf8_buffer(), file_name, "application/json")
 		return file_name
-	if _native_path == "":
-		_native_path = "user://frame-records/record-%s-seed%d.json" % [
+	if _sitting.frame_record_path == "":
+		_sitting.frame_record_path = "user://frame-records/record-%s-seed%d.json" % [
 			Time.get_datetime_string_from_system().replace(":", "-"), _run.header.run_seed]
-	if DirAccess.make_dir_recursive_absolute(_native_path.get_base_dir()) != OK:
+	var path := _sitting.frame_record_path
+	if DirAccess.make_dir_recursive_absolute(path.get_base_dir()) != OK:
 		push_error("Cannot create the frame record directory")
 		return ""
-	var file := FileAccess.open(_native_path, FileAccess.WRITE)
+	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
-		push_error("Cannot write the frame record: %s" % _native_path)
+		push_error("Cannot write the frame record: %s" % path)
 		return ""
 	file.store_string(text)
 	file.close()
-	var written := ProjectSettings.globalize_path(_native_path)
+	var written := ProjectSettings.globalize_path(path)
 	print("Frame record: %s" % written)
 	return written
 
@@ -304,8 +309,9 @@ func _exit_tree() -> void:
 ## The page's own button, added once per page: a reload of the scene hands the button the new
 ## recorder's callback and shows it again rather than adding a second button; leaving the day
 ## hides it (`_exit_tree()`). Focus goes back to the canvas after
-## the tap, so the keyboard keeps steering in a desktop browser. The callback is held in a static,
-## the way `GameSave` holds its own, because a callback GDScript lets go of stops answering.
+## the tap, so the keyboard keeps steering in a desktop browser. The callback is held on the
+## recorder, because a callback GDScript lets go of stops answering: it answers for as long as the
+## recorder lives, and the button is hidden as the recorder leaves the tree, before it is let go.
 func _add_page_button() -> void:
 	JavaScriptBridge.eval(_BUTTON_JS)
 	_save_callback = JavaScriptBridge.create_callback(_on_page_save)

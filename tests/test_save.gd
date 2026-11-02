@@ -1227,42 +1227,38 @@ func _test_a_restart_with_no_save_left_shows_nothing(t) -> void:
 	)
 
 ## The held restart deletes the save and reloads the scene, which frees `main` and everything under
-## it. The symbol the deletion raised is handed to the tree's root first, so it is still there on
-## the title the reload builds, still pending, and the browser's answer settles it. An idle symbol
-## is not carried: the next boot builds its own.
+## it. The symbol the deletion raised is handed to the sitting first (`Sitting`, which a real reload
+## leaves at the tree's root; a sitting of the test's own here), so it is still there on the title
+## the reload builds, still pending, and the browser's answer settles it. An idle symbol is not
+## carried: the next boot builds its own.
 func _test_the_restarts_symbol_survives_the_scene_reload(t) -> void:
-	var tree: SceneTree = t.get_tree()
-	# This suite runs inside the runner's own `_ready()`, while the tree's root is still busy
-	# adding the runner, so it cannot take a child; a node stands in for the root.
-	var home := Node.new()
-	t.add_child(home)
-	SaveIndicator.use_home(home)
+	var sitting := Sitting.new()
+	t.add_child(sitting)
 	var old_main := Node.new()
 	t.add_child(old_main)
 	var timeline := SaveIndicator.Showing.new()
 	var indicator := SaveIndicator.new(timeline)
 	old_main.add_child(indicator)
-	t.check(SaveIndicator.carried(tree) == null, "nothing is carried before a restart")
+	t.check(SaveIndicator.carried(sitting) == null, "nothing is carried before a restart")
 
-	indicator.outlive_the_scene()
+	indicator.outlive_the_scene(sitting)
 	t.check(indicator.get_parent() == old_main, "an idle symbol stays where it is")
 
 	var deletion := _next_operation()
 	EventBus.save_deleted.emit(deletion, int(GameSave.Result.PENDING))
-	indicator.outlive_the_scene()
-	t.check(indicator.get_parent() == home, "a symbol that is up goes to the tree's root")
+	indicator.outlive_the_scene(sitting)
+	t.check(indicator.get_parent() == sitting, "a symbol that is up goes to the sitting")
 	old_main.free()
 	t.check(is_instance_valid(indicator), "so freeing the scene it came from does not free it")
-	t.check(SaveIndicator.carried(tree) == indicator, "and the next boot finds it")
+	t.check(SaveIndicator.carried(sitting) == indicator, "and the next boot finds it")
 	t.check(timeline.pending == 1 and indicator.is_showing(), "still showing the pending deletion")
 
 	EventBus.save_deletion_settled.emit(deletion, false)
 	t.check(indicator.shows_struck() and timeline.pending == 0,
 			"the browser's answer arrives after the reload and settles it, struck")
 	indicator.free()
-	t.check(SaveIndicator.carried(tree) == null, "nothing is left on the root")
-	SaveIndicator.use_home(null)
-	home.free()
+	t.check(SaveIndicator.carried(sitting) == null, "nothing is left on the sitting")
+	sitting.free()
 
 ## A symbol freed with its scene stops listening: a signal drops a freed object by itself, so a
 ## later deletion reaches nobody and calls nothing.
@@ -1335,15 +1331,14 @@ func _test_a_write_flush_settles_the_write_signal_and_a_deletion_flush_does_not(
 	EventBus.save_write_settled.disconnect(listen)
 
 ## **The held restart on a day's summary while its end-of-day save is still being retried.** The web
-## save is announced pending, the restart hands the symbol to the tree's root and frees `main`, and
+## save is announced pending, the restart hands the symbol to the sitting and frees `main`, and
 ## the browser answers a flush whose `settled` callable names the freed `main`. The symbol must
 ## still be answered; before the answer went through the bus it stayed pending, fully shown, for
 ## good.
 func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_saved(t) -> void:
 	var flushes := GameSave.Flushes.new()
-	var home := Node.new()
-	t.add_child(home)
-	SaveIndicator.use_home(home)
+	var sitting := Sitting.new()
+	t.add_child(sitting)
 	var old_main_scene := Node.new()
 	t.add_child(old_main_scene)
 	var timeline := SaveIndicator.Showing.new()
@@ -1356,8 +1351,8 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	EventBus.save_written.emit(save, int(GameSave.Result.PENDING))
 	var token := flushes.register(save, Callable(saver, &"set_name"))
 	t.check(timeline.pending == 1, "the web save is out and the symbol waits for it")
-	indicator.outlive_the_scene()
-	t.check(indicator.get_parent() == home, "the restart hands the symbol to the tree's root")
+	indicator.outlive_the_scene(sitting)
+	t.check(indicator.get_parent() == sitting, "the restart hands the symbol to the sitting")
 	saver.free()
 	old_main_scene.free()
 
@@ -1374,8 +1369,7 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	t.check(indicator.shows_struck() and timeline.pending == 0,
 			"and a save the browser did not keep strikes it the same way")
 	indicator.free()
-	SaveIndicator.use_home(null)
-	home.free()
+	sitting.free()
 
 ## A symbol that did not live through a reload never began the changes announced before it, and an
 ## answer to one of those settles nothing on it: its own pending change stays pending, and its own

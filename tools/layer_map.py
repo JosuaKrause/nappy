@@ -86,10 +86,12 @@ FILES: dict[str, str] = {
     "src/run_trace.gd": "model",
     "src/sprites.gd": "world",
     "src/web_display.gd": "view",
-    # autoload: the balance numbers are data, the run's registry and its signals are the model.
+    # autoload: the balance numbers are data, the run's registry and its signals are the model, and
+    # so is what a sitting keeps across a scene reload, which the view and the observers are handed.
     "src/autoload/tuning.gd": "data",
     "src/autoload/event_bus.gd": "model",
     "src/autoload/game_state.gd": "model",
+    "src/autoload/sitting.gd": "model",
     # city: the map, its generation and its run-scoped state are the model; the scene and its
     # furniture (the folder's own layer) are the world.
     "src/city/block_layout.gd": "model",

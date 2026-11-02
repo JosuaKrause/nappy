@@ -14,13 +14,18 @@ held by the owner that reads it and handed to whoever needs it.
 the statics belong to the city, the routes and the art rather than to the run's state, so the item
 that keeps the run's state in one place does not build them.
 
-**Where it stands:** the statics under `src/crowd/`, `src/city/`, `src/routes/` and `src/world/` hold
-no hidden globals except two: `StreetNetwork`'s lattice memos (`_segments`, `_by_key`,
+**Where it stands:** the statics under `src/crowd/`, `src/city/`, `src/routes/` and `src/world/`
+hold no hidden globals except two: `StreetNetwork`'s lattice memos (`_segments`, `_by_key`,
 `_adjacency`), which need a network handed to their static callers, the resistance and finale tests
-among them; and `PosterArt._torn`, which needs an owner that outlives the day's city, `main`, handing
-it down through `PosterWalls` and `Building`. The constants left there (the `Mover` filters,
-`CityMap`'s tile tables) and `Mover._shared`, a pure memo of its flags, are not hidden globals. The other folders' statics are
-still to do: `src/events/`, `src/visuals/` (the `AtlasLibrary` statics among them), `src/ui/` (with
-`SaveIndicator._home_override`), `src/autoload/`, `src/telemetry/` and the single ones in
-`src/resistance/`, `src/sprites.gd`, `src/run_config.gd` and `src/main.gd`
-(`rg -n '^\s*static var' src` lists them).
+among them; and `PosterArt._torn`, which needs an owner that outlives the day's city, `main`,
+handing it down through `PosterWalls` and `Building`. The constants left there (the `Mover` filters,
+`CityMap`'s tile tables) and `Mover._shared`, a pure memo of its flags, are not hidden globals. What
+outlives a scene reload (the controls choice, the held-restart stamp, the save symbol's home, the
+frame record's file, the checkpoint carry) is held by one `Sitting`, which `main` parks in its home
+across the reload and hands to the title, the save symbol and the recorder; no static holds it.
+Still to do, each needing one pass that owns all its readers, since they are read across the tree:
+`AtlasLibrary` and `GroundLayers` (`src/visuals/`), `FrameRecord.on` and `ledger`
+(`src/telemetry/frame_record.gd`, read on every draw), `Sprites._base_transform`, `DrawnView`'s
+per-frame memo and `EntityHalo._shared_material` (`src/ui/`), the statics under `src/events/`,
+`GameSave`'s web-flush statics, and the single ones in `src/resistance/resistance_steps.gd` and
+`src/run_config.gd` (`rg -n '^\s*static var' src` lists them).

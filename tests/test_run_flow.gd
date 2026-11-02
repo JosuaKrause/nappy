@@ -215,11 +215,16 @@ func _test_a_tap_then_a_key_continue_once(t) -> void:
 			"the readout heard the day begun from the flow")
 	# Every reload goes through one function, which an authored scene failing its own retry calls
 	# straight from the walk: the flow says RELOADING whichever way it came.
+	# The reload parks the sitting in a node of the test's own rather than at the tree's root.
+	var home := Node.new()
+	t.add_child(home)
+	main.use_sitting_home(home)
 	main.use_reload(func() -> void: pass)
 	main._reload_the_scene()
 	t.check(main._flow.mode == RunFlow.Mode.RELOADING, "a reload from the walk leaves RELOADING (%s)"
 			% RunFlow.Mode.keys()[main._flow.mode])
 	_shut_down(t, main)
+	home.free()
 
 ## A hard run's last nerve: the run-over screen's continue raises the ending, and the tap's own
 ## continue must not then reach the ending and restart the run before it has been seen.

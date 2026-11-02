@@ -316,7 +316,8 @@ func _test_the_clock_resolution(t) -> void:
 ## The record is running before `main` is built, as it is in the game, where `main._ready()` sets
 ## the recorder up before `_start_day()` makes the day's agents, and the crowd's timed tick, which
 ## steps them, is checked on the real crowd (`_check_the_crowd_is_timed_once`).
-## The recorder itself is then set up from a switch left off, the way a held restart leaves it.
+## The recorder itself is then set up from a switch left off, the way a held restart leaves it,
+## and handed a sitting of the test's own, which keeps the one file a desktop save writes.
 func _test_the_recorder_in_a_real_main(t) -> void:
 	var saved := _save_game_state()
 	var was_on := FrameRecord.on
@@ -332,7 +333,8 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	var recorder := FrameRecorder.new()
 	recorder.save_on_exit = false
 	main.add_child(recorder)
-	recorder.setup(main._flow.in_the_title, main._city, main._player, main._day, main._run)
+	var sitting := Sitting.new()
+	recorder.setup(main._flow.in_the_title, main._city, main._player, main._day, main._run, sitting)
 	main._frame_recorder = recorder
 	main._readout.watch_frames(recorder)
 	t.check(FrameRecord.on and FrameRecord.ledger == recorder.ledger
@@ -375,6 +377,13 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 			"with the world's counters read at the end of its process step")
 	t.check(main._readout._frame_record_lines().size() == 1, "the readout carries the record's line")
 	_check_the_crowd_is_timed_once(t, main._city.crowd)
+	var written := recorder.save()
+	t.check(sitting.frame_record_path.begins_with("user://frame-records/")
+			and written == ProjectSettings.globalize_path(sitting.frame_record_path),
+			"a desktop save chooses its file on the sitting, which outlives the recorder")
+	t.check(recorder.save() == written, "and every later save rewrites the same file")
+	DirAccess.remove_absolute(written)
+	sitting.free()
 	FrameRecord.start(ledger)
 	Telemetry.end_run()
 	main.free()

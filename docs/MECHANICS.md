@@ -2063,7 +2063,7 @@ the web a deletion is kept only once IndexedDB has dropped the file, so `GameSav
 same copy a write does, with its retry and its timeout: the engine copies a removal on its own too,
 a frame later, but tells nobody how it went, and the symbol needs an answer to wait for. The held
 restart reloads the scene, and so does the hand-over from a won day 14 to the escape; before either
-reload the symbol, when it is up, is handed to the scene tree's root, so it stays up through the
+reload the symbol, when it is up, is handed to the sitting `main` keeps at the scene tree's root, so it stays up through the
 reload and settles on the freshly booted title or escape with its minimums running. A restart with no save left to
 delete — the run had already ended and deleted it — changes nothing, so it shows nothing. **`GameSave`
 announces every write and deletion itself, on `EventBus`, and the symbol is the one thing that
