@@ -13,9 +13,9 @@ the answers given in line, and chose a shared doc over GitHub issues, which are 
 conversation (inbox #830 in minty-dolphin).
 
 The board is the Claude Doc "Nappy board", https://claude.ai/artifact/UbMpXbepDzN4Mfgs7tAxqm (doc
-id `df72dcc8-963b-4b22-bf78-ca097d25c920`, its one tab `4560d3a5-7376`, the tab's body node
-`bdec01d2-2025`). Only a Claude Code session with the Claude Docs tools reaches it; Codex has no
-route to it. **Only the orchestrating Claude Code session acts on it**: any other session that opens
+id `df72dcc8-963b-4b22-bf78-ca097d25c920`; its Main tab `4560d3a5-7376` with body node
+`bdec01d2-2025`, its Review tab `86f8ada2-8639` with body node `db7c662c-d0a4`). Only a Claude
+Code session with the Claude Docs tools reaches it; Codex has no route to it. **Only the orchestrating Claude Code session acts on it**: any other session that opens
 it changes nothing and answers nothing (inbox #830 in minty-dolphin), and the board says so. Claude is never
 @-mentioned in it, since a mention summons a separate session that has none of this context.
 
@@ -45,6 +45,19 @@ Top to bottom, every part present even when empty:
    it, one line on what comes after the running work.
 5. `## Recently done`: a table `Merged | What`, the PR linked, newest first, the last six or so.
 6. `## How this board works`: a bullet list of the rules below, in the player's terms.
+
+That is the Main tab. **The review items have a tab of their own, Review, in the same style** (inbox
+#948 in bouncy-marten). A review item under `docs/review/` is a sign-off check that needs a set-up
+run or a device and is answered one at a time, while the Main tab's questions are design decisions
+that block work and are answered in a batch, so the two kinds stay apart; a review item stays a file
+in the repository, and the tab only shows it. The tab holds a title and one line saying what it is
+for, `## Waiting on you` with the items ready to answer (or the one line "Nothing is ready for you
+right now."), and below it a section for items held until something happens, such as `## Waiting for
+a release`. Each item is a question in the layout below, named after the check with its review
+item's two words in its Question line, and its Context carries the steps. **The tab is kept in step
+with `docs/review/`** (inbox #948 in bouncy-marten): an item added, held or closed in the repository
+is added, moved or removed on the tab in the same turn, and the answer goes to a playtest file as
+before, which closes the item's file.
 
 **A question is a level-3 heading with a stable kebab-case name and one bullet list under it**,
 nested exactly like this, the layout the player set on the board:

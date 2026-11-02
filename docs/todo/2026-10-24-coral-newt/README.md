@@ -21,5 +21,8 @@ release Web engine has no Vorbis decoder), audio-sprite banks and MIDI (nothing 
 them), the chiptune style, and their live annotate servers (any page in the same browser can post
 "feedback" that the skill then tells the agent to read).
 
-*Proposed, not asked for:* the band `next`; the first two items as one PR to `tools/synthesize-sfx.py`
-before the player's next listen of the open sound-lab pass (`docs/review/2026-09-26-run-tools-sound-lab-sh-and.md`).
+*Proposed, not asked for:* the band `next`; the first two items as one PR to `tools/synthesize-sfx.py`.
+
+**No listen before the sound work is revived** (inbox #950 in bouncy-marten): the player hears the
+sound lab's current sound as bad, as they said when they first heard it, with nothing changed since,
+so the listen of pass 4 is closed and the next listen comes with the revived sound work.

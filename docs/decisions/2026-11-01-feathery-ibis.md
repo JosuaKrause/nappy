@@ -18,4 +18,4 @@ Nappy board as questions.
 
 **Not done.** The entry asked for the items that still wait on a person to be rewritten in full. Only the two kept remain, and they
 go to the board as questions, so rewriting them as review items is moot; whether the board replaces the review items altogether is
-an open question on the board (inbox #948).
+an open question on the board (inbox #948 in bouncy-marten).
