@@ -19,7 +19,7 @@ no hidden globals except two: `StreetNetwork`'s lattice memos (`_segments`, `_by
 `_adjacency`), which need a network handed to their static callers, the resistance and finale tests
 among them; and `PosterArt._torn`, which needs an owner that outlives the day's city, `main`, handing
 it down through `PosterWalls` and `Building`. The constants left there (the `Mover` filters,
-`CityMap`'s tile tables, `Mover._shared`) are not hidden globals. The other folders' statics are
+`CityMap`'s tile tables) and `Mover._shared`, a pure memo of its flags, are not hidden globals. The other folders' statics are
 still to do: `src/events/`, `src/visuals/` (the `AtlasLibrary` statics among them), `src/ui/` (with
 `SaveIndicator._home_override`), `src/autoload/`, `src/telemetry/` and the single ones in
 `src/resistance/`, `src/sprites.gd`, `src/run_config.gd` and `src/main.gd`
