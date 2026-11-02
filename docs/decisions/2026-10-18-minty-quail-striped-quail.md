@@ -22,7 +22,7 @@ stays open for the statics read across the tree.
 
 **Open to overturn** (the builder's choices where the brief was silent): the save as a node under the
 `Sitting` rather than an autoload (the brief took it for one; it was not); `at_boot()` re-parsing the
-page query once per scene reload on the web, so a malformed flag's warning prints at each boot rather
+command line or the page query at each boot, so a malformed flag's warning prints at each boot rather
 than once per process; `main._ready()` taking the sitting before it wires the
 save's end-of-run clearing.
 

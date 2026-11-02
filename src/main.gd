@@ -150,8 +150,8 @@ var _save_indicator: SaveIndicator
 ## enters the tree has none unless it is handed one.
 var _sitting: Sitting
 ## The save this boot reads and writes: the one parked under the sitting (`GameSave`), which outlives
-## the reload that frees this node, or the one `use_save()` handed in, which its caller owns. Taken
-## with the sitting in `_ready()`.
+## the reload that frees this node, or the one `use_save()` handed in, which its caller owns. A
+## handed save is set at once; otherwise `_ready()` takes it from under the sitting, or makes one.
 var _save: GameSave
 ## Where the sitting is parked before a reload and looked for at boot (`_park_the_sitting()`,
 ## `_take_the_sitting()`): the tree's root, which a reload leaves alone, unless `use_sitting_home()`

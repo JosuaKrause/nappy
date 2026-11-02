@@ -338,6 +338,16 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 	var calls := Calls.new()
 
 	var first := await _boot(t, _windowed(), calls, home, false)
+	# Only the lookup under test keeps this boot off the player's own save file: if it broke, `main`
+	# would make a save at the default path. `main` configures only the save it took, and this test
+	# never configures `parked`, so stop before anything can write unless the boot took it.
+	t.check(parked.uses_save(), "the first boot took the save under the sitting and configured it")
+	if not parked.uses_save():
+		_shut(t, first)
+		EventBus.save_written.disconnect(hear)
+		Telemetry.end_run()
+		home.free()
+		return
 	await _press_on_the_title(t, first, "Tap")
 	t.check(ids.size() >= 1, "the first boot's save, found under the sitting, wrote (%s)" % [ids])
 	var before := ids.size()
