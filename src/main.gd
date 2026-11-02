@@ -145,6 +145,9 @@ var _save_indicator: SaveIndicator
 ## The seam `_reload_the_scene()` calls instead of reloading, set only by a test — see there. An
 ## empty `Callable`, the default, reloads normally.
 var _reload_override := Callable()
+## What `_quit()` calls in place of quitting the tree, set only by `use_quit()`. An empty
+## `Callable`, the default, quits normally.
+var _quit_override := Callable()
 
 ## Owns the `--follow` camera and the event id it tracks between frames — the one piece of
 ## `DevRig` (`src/dev/dev_rig.gd`) that has to survive across calls, so it is the one piece kept
@@ -202,6 +205,17 @@ func configure(run_config: RunConfig) -> void:
 	_escape_scene_requested = config.start_escape
 	_no_focus_pause = config.no_focus_pause
 	_touch_available = TouchInput.available(config)
+
+## Hands this boot what it calls instead of reloading the scene (a held restart, a continue that
+## reloads, the escape's hand-over): a reload replaces the scene a test runner stands in. Set before
+## the boot runs; a boot never handed one reloads normally.
+func use_reload(reload: Callable) -> void:
+	_reload_override = reload
+
+## Hands this boot what it calls instead of quitting the game (the pause screen's quit). Set before
+## the boot runs; a boot never handed one quits normally.
+func use_quit(quit: Callable) -> void:
+	_quit_override = quit
 
 func _ready() -> void:
 	# First, so every boot (the escape's and a recipe's too) deletes the save when its run ends.
@@ -1064,7 +1078,7 @@ func _finale_start_position() -> Vector2:
 ## **This is the fix for the day summary's own restart button holding, filling its bar, firing its
 ## signal, and being heard by nobody** — `_summary.restart_requested` had no connection at all next
 ## to `_pause.restart_requested.connect(_restart_run)`, which is the shape
-## `_test_the_summary_and_pause_restart_signals_are_both_connected` now holds so a screen added
+## `tests/test_main.gd`'s restart-signals test now holds so a screen added
 ## later cannot repeat it silently: a green `check.sh` and a green suite both passed with the day
 ## summary's restart doing nothing, because nothing before this ever asked whether the signal was
 ## connected rather than only whether pressing the button emitted it.
@@ -1141,10 +1155,8 @@ func _open_the_title() -> void:
 	var again := _flow.mode == RunFlow.Mode.ENDING or _flow.mode == RunFlow.Mode.EPILOGUE
 	_flow.open_title()
 	# Guarded the same shape `_on_title_start()`'s own final line already is, and for the same
-	# reason: `tests/test_main.gd` drives this function on a script-only `main` with no tree behind
-	# it, to reach the graph-hiding line below without the rest of this function's live-tree
-	# dependencies. Never false in the running game, where this only ever fires on a real `main`
-	# already in the tree.
+	# reason: a test may drive this function on a script-only `main` with no tree behind it. Never
+	# false in the running game, where this only ever fires on a real `main` already in the tree.
 	if is_inside_tree():
 		get_tree().paused = true
 	_apply_orientation()
@@ -1170,8 +1182,8 @@ func _open_the_title() -> void:
 ## reaches the counter alone: the controls a key player gets are still `mode`'s.
 ##
 ## Guarded with `is_inside_tree()` the same way `_process()` already guards `get_window()`: false
-## for the script-only instance `tests/test_main.gd` drives straight through this function with no
-## tree behind it at all — `get_tree()` itself logs an engine-level error when called off-tree,
+## for a script-only instance a test drives straight through this function with no tree behind it
+## at all — `get_tree()` itself logs an engine-level error when called off-tree,
 ## which `is_inside_tree()` never does, so this is the check to make rather than a null check on
 ## `get_tree()`'s own return. Never false in the running game, where this only ever fires on a real
 ## `main` already in the tree.
@@ -1621,8 +1633,7 @@ func _add_touch_controls() -> void:
 ## Reads the window through `Engine.get_main_loop()` rather than `get_window()`, the same
 ## substitution `_tree_is_paused()` makes and for the same reason: `get_window()` needs `main`
 ## itself inside a tree, which is true for the running game but not for the script-only `main`
-## `tests/test_main.gd` drives straight through `_open_the_title()` — see that test's own
-## `_test_opening_the_title_reasserts_the_orientation_it_finds_stale`. There is exactly one
+## a test drives straight through `_open_the_title()`. There is exactly one
 ## `SceneTree` for the whole process either way, so asking the engine for its root window answers
 ## the same question a parented `main`'s own `get_window()` would.
 ##
@@ -2004,8 +2015,8 @@ func _reload_the_scene() -> void:
 ## The scene tree's own pause flag, read through `Engine.get_main_loop()` rather than `get_tree()`
 ## so this can be asked whether or not `main` itself is parented. `get_tree()` logs an
 ## engine-level error off-tree — the same reason `_on_title_start()` guards it with
-## `is_inside_tree()` — and `tests/test_main.gd` drives `_process()` on a script-only instance with
-## no tree behind it at all. There is exactly one `SceneTree` for the whole process, whether a
+## `is_inside_tree()` — and a test may drive `_process()` on a script-only instance with no tree
+## behind it at all. There is exactly one `SceneTree` for the whole process, whether a
 ## person is playing or the suite is driving this frame by hand, so asking the engine for it
 ## answers the same question either way.
 func _tree_is_paused() -> bool:
@@ -2042,8 +2053,8 @@ func _process(delta: float) -> void:
 	_dev_rig.update_follow_camera(_city)
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
-	# `get_window()` is null for the script-only instance `tests/test_main.gd` drives straight
-	# through `_process()` with no window behind it at all.
+	# `get_window()` is null for a script-only instance a test drives straight through `_process()`
+	# with no window behind it at all.
 	var window := get_window()
 	if window and ScreenOrientation.wants_rotation(window.size, _touch_available) != _rotated:
 		_apply_orientation()
@@ -2074,7 +2085,7 @@ func _process(delta: float) -> void:
 	# whether today's task is on offer with its mark already touched, and which of the places
 	# that answer it the arrow points at, so this is only ever a read of it, never a placement
 	# or a move of its own — and asking it is a read too: the director chooses in its own
-	# `tick()`. `_resistance` can be null here: several `tests/test_main.gd` rigs drive
+	# `tick()`. `_resistance` can be null here: a test may drive
 	# `_process()` with a script-only `main` that never builds one.
 	var task_at := _resistance.red_arrow_target() if _resistance else Vector2.INF
 	_hud.set_task_guidance(task_at != Vector2.INF, task_at)
@@ -2212,4 +2223,7 @@ func _save_now(day_under_way: bool) -> void:
 func _quit() -> void:
 	if _session:
 		_session.close()
+	if _quit_override.is_valid():
+		_quit_override.call()
+		return
 	get_tree().quit()
