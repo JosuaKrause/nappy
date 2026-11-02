@@ -52,24 +52,33 @@ func run(t) -> void:
 # ------------------------------------------------------------ DevFlags parsing ---
 
 func _test_invincible_from_args(t) -> void:
-	t.check(not DevFlags._invincible_from_args(PackedStringArray()),
+	t.check(not _from_args(PackedStringArray()),
 		"no command-line modifier leaves the day mortal")
-	t.check(not DevFlags._invincible_from_args(PackedStringArray(["--invincible=1"])),
+	t.check(not _from_args(PackedStringArray(["--invincible=1"])),
 		"the explicit command-line spelling is a bare --invincible flag")
-	t.check(DevFlags._invincible_from_args(PackedStringArray(["--invincible"])),
+	t.check(_from_args(PackedStringArray(["--invincible"])),
 		"--invincible selects the mode")
 
 func _test_invincible_from_query(t) -> void:
-	t.check(not DevFlags._invincible_from_query(""),
+	t.check(not _from_query(""),
 		"an absent URL parameter leaves the day mortal")
-	t.check(not DevFlags._invincible_from_query("?invincible=0"),
+	t.check(not _from_query("?invincible=0"),
 		"invincible=0 leaves the day mortal")
-	t.check(not DevFlags._invincible_from_query("?seed=1&invincible=yes"),
+	t.check(not _from_query("?seed=1&invincible=yes"),
 		"only the documented URL value selects the mode")
-	t.check(DevFlags._invincible_from_query("?invincible=1"),
+	t.check(_from_query("?invincible=1"),
 		"?invincible=1 selects the mode")
-	t.check(DevFlags._invincible_from_query("?seed=1&invincible=1&day=2"),
+	t.check(_from_query("?seed=1&invincible=1&day=2"),
 		"the invincible parameter is found among other URL parameters")
+
+## Whether a debug build's run configuration on command-line `args` is invincible
+## (`RunConfig.invincible`, which `DevFlags.invincible()` answers).
+static func _from_args(args: PackedStringArray) -> bool:
+	return RunConfig.parse(args, "", true).invincible
+
+## Whether a debug build's run configuration on the page query `query` is invincible.
+static func _from_query(query: String) -> bool:
+	return RunConfig.parse(PackedStringArray(), query, true).invincible
 
 # ---------------------------------------------------------------------- rig ---
 
@@ -176,7 +185,7 @@ func _test_the_meter_does_not_rise_under_invincible(t) -> void:
 
 	rig.baby.excitement_frozen = true
 	for _i in int(round(3.0 / STEP)):
-		rig.baby._physics_process(STEP)
+		rig.baby.step(STEP)
 	t.check(rig.baby.excitement <= 20.0 + 0.01,
 			"excitement never rises under --invincible, even against a live source (got %.2f)"
 			% rig.baby.excitement)
@@ -196,7 +205,7 @@ func _test_the_clock_and_the_meter_both_move_with_the_flag_off(t) -> void:
 	var rig := _build_meter_rig(t)
 	rig.world.noise = 50.0
 	for _i in int(round(3.0 / STEP)):
-		rig.baby._physics_process(STEP)
+		rig.baby.step(STEP)
 	t.check(rig.baby.excitement > 0.01, "and excitement rises too, against the same source")
 	_teardown_meter_rig(rig)
 
