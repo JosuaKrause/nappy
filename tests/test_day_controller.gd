@@ -12,7 +12,7 @@ func run(t) -> void:
 	_test_a_day_starting_is_its_own_emit(t)
 	_test_invincible_stops_emitting_once_the_first_second_is_told(t)
 	_test_the_escape_clock_moves_every_frame(t)
-	_test_a_drawn_frame_shows_the_escape_clock_between_ticks(t)
+	await _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t)
 	_test_the_formatters(t)
 	_test_an_escape_section_reads_its_clock_to_the_hundredth(t)
 	_test_a_frozen_escape_clock_stays_silent(t)
@@ -21,9 +21,13 @@ func run(t) -> void:
 		if not child in standing:
 			child.free()
 
+## The stand-in for her the last `_rig()` handed its clock, which a test moves to a goal.
+var _her: Node2D
+
 func _rig(t) -> DayController:
 	var player := Node2D.new()
 	t.add_child(player)
+	_her = player
 	var day := DayController.new()
 	t.add_child(day)
 	day.set_process(false)
@@ -141,7 +145,8 @@ func _test_the_escape_clock_moves_every_frame(t) -> void:
 ## **Between two ticks a drawn frame shows the escape's hundredths a fraction of a tick on**
 ## (`DayController._process()`): the tick's countdown advanced by the physics interpolation
 ## fraction, never past where the next tick puts it, and the countdown itself untouched. A day's
-## whole-second clock and a frozen escape clock are told nothing by a drawn frame.
+## whole-second clock and a frozen escape clock are told nothing by a drawn frame. Each clock is let
+## process for exactly one real frame (`_one_drawn_frame()`).
 func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t) -> void:
 	var tick := 1.0 / Engine.physics_ticks_per_second
 	var shown := []
@@ -153,14 +158,13 @@ func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t) -> void:
 	escape.start(180.0)
 	escape.tick(tick)
 	var after_the_tick := escape.time_remaining
-	shown.clear()
-	escape._process(5.0)
+	await _one_drawn_frame(t, escape, shown)
 	t.check(shown.size() == 1 and shown[0] <= after_the_tick
 			and shown[0] > after_the_tick - tick - 0.0001,
 			"a drawn frame shows the countdown between this tick and the next (%s, %.4f)"
 			% [shown, after_the_tick])
 	t.check(is_equal_approx(escape.time_remaining, after_the_tick),
-			"and a five-second drawn frame moves the countdown itself not at all")
+			"and a drawn frame moves the countdown itself not at all")
 	escape.free()
 	for frozen in [false, true]:
 		var day := _rig(t)
@@ -168,12 +172,21 @@ func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t) -> void:
 		if frozen:
 			day.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
 		day.start(180.0)
-		shown.clear()
-		day._process(0.016)
+		await _one_drawn_frame(t, day, shown)
 		t.check(shown.is_empty(), "a %s is told nothing by a drawn frame (%s)"
 				% ["frozen escape clock" if frozen else "day's clock", shown])
 		day.free()
 	EventBus.day_time_changed.disconnect(on_emit)
+
+## Lets `clock` process for exactly one real frame, with `shown` emptied just before it: processing
+## is turned on after a frame has begun and off once the next one begins, since `process_frame`
+## fires ahead of the nodes' own `_process` of the frame it names.
+func _one_drawn_frame(t, clock: DayController, shown: Array) -> void:
+	await t.get_tree().process_frame
+	clock.set_process(true)
+	shown.clear()
+	await t.get_tree().process_frame
+	clock.set_process(false)
 
 func _test_the_formatters(t) -> void:
 	t.check(GameState.format_clock_hundredths(179.43) == "2:59.43",
@@ -243,7 +256,7 @@ func _test_each_section_is_won_at_its_own_goal(t) -> void:
 	city.tick(0.016)
 	t.check(results.is_empty(), "the city is won by neither its building's exit nor standing away "
 			+ "from its two ways out (%s)" % [results])
-	city._player.global_position = Vector2(-1000.0 + DayController.FINALE_EXIT_REACH - 1.0, 0.0)
+	_her.global_position = Vector2(-1000.0 + DayController.FINALE_EXIT_REACH - 1.0, 0.0)
 	city.tick(0.016)
 	t.check(results == [GameEnums.DayResult.WON] and city.exit_reached == CityEdge.Kind.BRIDGE,
 			"at the bridge deck, awake, the city section is won by the bridge (%s, %d)"

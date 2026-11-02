@@ -2,7 +2,9 @@ extends RefCounted
 ## A reproducible run choice reaches every player view and survives the day's lifecycle.
 
 const STATE_SCRIPT = preload("res://src/autoload/game_state.gd")
-const MAIN_SCRIPT = preload("res://src/main.gd")
+const Boot := preload("res://tests/booted_main.gd")
+## The save every boot is handed, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_player_presentation_scratch.json"
 const VIEWS: Array[String] = ["side", "front_diagonal", "front", "front_diagonal",
 		"side", "back_diagonal", "back", "back_diagonal"]
 const POSES: Array[String] = ["a", "c", "b"]
@@ -12,8 +14,9 @@ func _mother_texture(rig: Stroller, frame: int) -> Texture2D:
 	return AtlasLibrary.region(StringName(rig.pose(1.0).mother_sources[frame]))
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_seeded_equal_choice_and_lifetime(t)
-	_test_main_binds_both_complete_families_before_drawing(t)
+	await _test_main_binds_both_complete_families_before_drawing(t)
 	_test_every_family_source_is_a_baked_region(t)
 
 func _test_seeded_equal_choice_and_lifetime(t) -> void:
@@ -39,19 +42,25 @@ func _test_seeded_equal_choice_and_lifetime(t) -> void:
 	t.check(observed.size() == 2, "the seed sweep exercises both families")
 	state.free()
 
+## Real boots of `main` for each family (`--parent`), a day's and the escape's, whose rig is caught
+## the moment it enters the tree (`SceneTree.node_added`), before anything has drawn it: the choice
+## is bound by then on both ways in.
 func _test_main_binds_both_complete_families_before_drawing(t) -> void:
-	var saved := GameState.header.player_is_male
-	var main := MAIN_SCRIPT.new()
-	# Never in the tree, so it takes no sitting of its own: it is handed one, which the rig's
-	# frame timing is read from.
-	var sitting := Sitting.new()
-	main.use_sitting(sitting)
+	var baseline := GameState.save_snapshot()
 	for male in [false, true]:
-		GameState.header.player_is_male = male
-		var rig: Stroller = main._make_player()
-		t.check(rig.is_male == male and not rig.is_inside_tree(),
+		var parent := "father" if male else "mother"
+		var in_the_escape: Array[bool] = []
+		var escape: Boot.Booted = await _boot_catching(t, ["--parent", parent, "--start-escape"],
+				in_the_escape)
+		Telemetry.end_run()
+		escape.free_all()
+		GameState.facts.escape_section = DaySpec.Section.NONE
+		var on_a_day: Array[bool] = []
+		var booted: Boot.Booted = await _boot_catching(t, ["--parent", parent], on_a_day)
+		var rig := Boot.player(booted.main)
+		t.check(in_the_escape == [male] and on_a_day == [male] and rig != null
+				and rig.is_male == male,
 				"ordinary and escape construction share a choice bound before the first draw")
-		t.add_child(rig)
 		rig.set_physics_process(false)
 		rig.stand_aside()
 		rig.step_back_in()
@@ -72,10 +81,20 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 							"the facing settles the view and the family resolves a picture for it")
 			t.check(rig.is_male == male and GameState.header.player_is_male == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")
-		rig.free()
-	main.free()
-	sitting.free()
-	GameState.header.player_is_male = saved
+		Telemetry.end_run()
+		booted.free_all()
+	GameState.restore_snapshot(baseline)
+
+## A boot of `main` on `words`, with the family of every stroller that entered the tree during it,
+## at the moment it entered, appended to `entered`.
+func _boot_catching(t, words: Array, entered: Array[bool]) -> Boot.Booted:
+	var catch := func(node: Node) -> void:
+		if node is Stroller:
+			entered.append((node as Stroller).is_male)
+	t.get_tree().node_added.connect(catch)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words))
+	t.get_tree().node_added.disconnect(catch)
+	return booted
 
 ## Every path the rig can draw is a name the bake actually knows — the completeness check
 ## `assets/atlases/membership.json` wants. **Which page each one is on is

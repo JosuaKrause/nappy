@@ -7,9 +7,13 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const MAIN_SCRIPT := preload("res://src/main.gd")
+const Boot := preload("res://tests/booted_main.gd")
+## The save every boot is handed, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_run_config_scratch.json"
 const SEED := 4242
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_a_release_build_reads_no_command_line_flag(t)
 	_test_a_debug_build_reads_them(t)
 	_test_a_release_page_opens_the_bundle_only_with_debug(t)
@@ -18,7 +22,7 @@ func run(t) -> void:
 	_test_the_day_and_the_section_lengths(t)
 	_test_every_rig_flag_makes_a_rig(t)
 	_test_the_title_is_skipped_by_a_rig_or_a_recipe(t)
-	_test_main_hands_the_baby_and_the_city_plain_values(t)
+	await _test_main_hands_the_baby_and_the_city_plain_values(t)
 	_test_the_city_hands_each_value_to_its_part(t)
 	_test_the_escape_clock_takes_its_length_and_invincible(t)
 	_test_touch_and_web_are_the_runs_answers(t)
@@ -174,25 +178,39 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 				"--blackout", "--pelican", "--force", "cyclist", "3"])
 		if invincible:
 			words.append("--invincible")
-		var main: Node2D = MAIN_SCRIPT.new()
-		# Never in the tree, so it takes no sitting of its own: it is handed one, which hands the
-		# city its ground recipe.
-		var sitting := Sitting.new()
-		main.use_sitting(sitting)
-		main.configure(RunConfig.parse(words, "", true))
-		var player: Stroller = main._make_player()
-		t.check((player.get_node("Baby") as Baby).excitement_frozen == invincible,
+		words.append_array(_words(["--no-save", "--no-telemetry"]))
+		var baseline := GameState.save_snapshot()
+		# The city's flags as it enters the tree: `main` adds it before `build()`, which is where
+		# they take effect, so what is read here is what `build()` reads.
+		var entered := {}
+		var catch := func(node: Node) -> void:
+			if node is City:
+				var c := node as City
+				entered["flags"] = {"ground_mode": c.ground_mode, "skip_shadows": c.skip_shadows,
+						"skip_crowd_motion": c.skip_crowd_motion,
+						"skip_event_drawing": c.skip_event_drawing,
+						"skip_crowd_drawing": c.skip_crowd_drawing,
+						"blackout_forced": c.blackout_forced,
+						"all_cyclists_pelicans": c.all_cyclists_pelicans,
+						"forced_row": c.forced_row, "forced_interval": c.forced_interval,
+						"scenery_frame_locked": c.scenery_frame_locked}
+		t.get_tree().node_added.connect(catch)
+		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, RunConfig.parse(words, "", true))
+		t.get_tree().node_added.disconnect(catch)
+		var baby := Boot.baby(booted.main)
+		t.check(baby != null and baby.excitement_frozen == invincible,
 				"the baby's meter is frozen exactly when the run is invincible (%s)" % invincible)
-		player.free()
-		var city: City = main._new_city()
-		t.check(city.ground_mode == SceneryGround.Mode.ALL and city.skip_shadows
-				and city.skip_crowd_motion and not city.skip_event_drawing
-				and not city.skip_crowd_drawing and city.blackout_forced and city.all_cyclists_pelicans
-				and city.forced_row == "cyclist" and is_equal_approx(city.forced_interval, 3.0)
-				and not city.scenery_frame_locked,
+		var f: Dictionary = entered.get("flags", {})
+		t.check(not f.is_empty() and f["ground_mode"] == SceneryGround.Mode.ALL
+				and f["skip_shadows"]
+				and f["skip_crowd_motion"] and not f["skip_event_drawing"]
+				and not f["skip_crowd_drawing"] and f["blackout_forced"] and f["all_cyclists_pelicans"]
+				and f["forced_row"] == "cyclist" and is_equal_approx(f["forced_interval"], 3.0)
+				and not f["scenery_frame_locked"],
 				"the city is handed what the flags chose before it builds")
-		main.free()
-		sitting.free()
+		Telemetry.end_run()
+		booted.free_all()
+		GameState.restore_snapshot(baseline)
 
 ## What the city is handed reaches the part it belongs to, and the crowd's agents get theirs.
 func _test_the_city_hands_each_value_to_its_part(t) -> void:
