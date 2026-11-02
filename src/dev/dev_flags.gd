@@ -1,9 +1,9 @@
 class_name DevFlags
 extends RefCounted
 ## The parser behind `RunConfig`: every developer flag, read from a command line and a page query
-## handed in, never from the process itself. `RunConfig.at_boot()` builds one of these once, from
-## the real command line and the one read of the page's query (`page_query()`), and keeps the
-## answers; nothing else in the game constructs one or asks the process for a flag.
+## handed in, never from the process itself. `RunConfig.at_boot()` builds one of these, from
+## the real command line and the page's query (`page_query()`), and keeps the answers;
+## nothing else in the game constructs one or asks the process for a flag.
 ##
 ## **The command-line half answers only on a debug build.** `debug_build` is false for an exported
 ## release template, which is what `tools/export-web.sh` produces, so every getter here answers
@@ -135,7 +135,7 @@ func _init(args: PackedStringArray, query: String, debug_build: bool, movie := f
 	_recipe = recipe if debug_build else {}
 
 ## The page's own query string, read through `JavaScriptBridge` — the one read of the address bar
-## the game makes, at boot, by `RunConfig.at_boot()`. "" outside a Web export.
+## the game makes, at each boot, by `RunConfig.at_boot()`. "" outside a Web export.
 static func page_query() -> String:
 	if OS.get_name() != "Web":
 		return ""

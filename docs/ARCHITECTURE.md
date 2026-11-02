@@ -32,8 +32,8 @@ src/
 	event_bus.gd          global signals                  (autoload: EventBus)
 	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
 	game_state.gd         the run, as a registry of its parts (autoload: GameState)
-	game_save.gd          persists a run to disk and reads one back; not an autoload, a static
-	                      namespace
+	game_save.gd          persists a run to disk and reads one back; not an autoload, a node
+	                      `main` parks under the `Sitting`
 	sitting.gd            what a sitting keeps across the scene reloads a run makes; not an
 	                      autoload, a node `main` parks at the tree's root (see "`Sitting`")
 	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens
@@ -506,11 +506,12 @@ windowed, saves the viewport after N frames and quits.
 
 ### Dev flags and release builds
 
-**The run's configuration is resolved once, at boot, and handed out from `main`.**
+**The run's configuration is resolved at each boot, and handed out from `main`.**
 `RunConfig.at_boot()` (`src/run_config.gd`) reads the command line and, on the web, the page's
-query (`window.location.search`, the one read of the address bar the game makes) once per process,
-and keeps every answer in an immutable `RunConfig`: a later write is refused with a warning and its
-arrays are read-only. `main` is the one place it is read. It hands the config itself to the
+query (`window.location.search`, the one read of the address bar the game makes) and keeps every
+answer in an immutable `RunConfig`: a later write is refused with a warning and its
+arrays are read-only. `main` is the one place it is read, at each boot (no static holds it; a scene reload parses the same
+words again, and an immutable config makes that the same configuration; a malformed flag's warning prints again at each boot). It hands the config itself to the
 observers — `Telemetry.configure()`, `GameSave.configure()`, `VisitCounter.configure()` — and to
 the dev rigs (`AutoScreenshot.from_config()`, the scene-recipe runtime), and hands the world, the
 day and the baby the plain values they need out of it: a day's length
@@ -743,12 +744,14 @@ composition root, takes it once and hands it, typed `RunState`, to every reader 
 taken, the one thing `PosterArt` draws from the run), the HUD, the pause and title screens,
 `RunSession` and its `TelemetryObserver`, the frame trace and recorder, `DayController`,
 `VisitCounter`, the route rig and the scene recipe runtime — so a test hands a reader whichever run
-it built. `GameSave` is a namespace of static functions, handed the run
+it built. `GameSave` is a node under the `Sitting` (`main` makes it on the first boot), handed the run
 on every call that reads or writes one (`write(run, …)`, `try_resume(run)`, `load_in_memory(run)`,
-`file_data(run, …)`); the registry's own `run_data()` and `restore_run_data()` are what a save and a
+`file_data(run, …)`, the last a static); the registry's own `run_data()` and `restore_run_data()` are what a save and a
 checkpoint carry, so the calendar needs no `GameSave`, and `GameSave` clears the save when `run_ended`
-fires. Handed per call rather than held, because the web flush and the operation ids outlive the scene reloads that
-free the `main` holding a run. The resistance is handed it with its city (`City.run`), or by
+fires. The run is handed per call rather than held; what the save holds (the web flush's page-side
+objects, the flushes waiting, the operation ids, its file path) outlives the scene reloads that
+free the `main` holding a run, so the `Sitting` is its home and no static holds any of it. A test
+builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save()`). The resistance is handed it with its city (`City.run`), or by
 `ResistanceDirector.setup()`.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
 builds over the parts and exposes as `run.calendar`): the day and act, a day's attempt begun
@@ -796,8 +799,9 @@ escape, a run carried on to its checkpoint and a recipe's lost section played ag
 carried over (`carry_the_run_over`), the title's answer (`controls_word`), the instant of the last
 held restart, which the title's restart guard measures a press against (`restarted_at_msec`), the
 desktop frame record's one file (`frame_record_path`), the ground's composition recipe, read once
-per process (`ground_recipe`), and the save symbol a reload carries, which
-`SaveIndicator.outlive_the_scene()` reparents under it. Process memory only, never saved. `main`
+per process (`ground_recipe`), the save symbol a reload carries, which
+`SaveIndicator.outlive_the_scene()` reparents under it, and the `GameSave`, a child `main` makes
+and finds there (the sitting names neither: it is on the model's layer, they are not). Process memory only, never saved. `main`
 takes the one the boot before parked at the tree's root, or builds one as its own child on the
 sitting's first boot, parks it at the root just before every reload (`main._park_the_sitting()`),
 and hands it to the title (`use_sitting()`), the frame recorder (`setup()`) and the save symbol, and
@@ -1042,12 +1046,15 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
   `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
   its own and read what the director put in the street from the street (`steps`, `traps`,
-  `reach_contacts`, `crossing`, `replacement`, `placement_kinds` and `arrow` do; the other four
-  still build over the live run and read the director's fields): `steps` (the step table,
-  touch-completion, a task activated the same day its mark is touched, the seeded dawn draws, an
-  expiring step, a finished task shown by the world and the sabotage putting the city's masts out
-  once she has walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`
-  (where a mark and its guard stand), `traps` (a task riding on a look-alike, and the robber or
+  `reach_contacts`, `reach_marks`, `reach_narrow`, `reach_relocated`, `crossing`, `replacement`,
+  `placement_kinds`, `arrow` and `alley_siting` do; `reach_narrow` (through the rig's circle) and
+  `reach_relocated` read the day's reach from `ResistanceDirector.reaches_from_home()` and
+  `reach_obstruction()`; `reach_narrow` still calls `EventScheduler._is_spoiled()`): `steps` (the step table, touch-completion, a
+  task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
+  finished task shown by the world and the sabotage putting the city's masts out once she has
+  walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`
+  (where a mark and its guard stand, asked of the director's public draws), `traps` (a task riding
+  on a look-alike, and the robber or
   guard set on her from off screen), `placement_kinds` (the four placement kinds a perform step
   may use, each task's own site, a day built in its order), `arrow` (the red
   arrow: what it points at, chosen and swept by the director's ticks), `crossing` (day 9's door

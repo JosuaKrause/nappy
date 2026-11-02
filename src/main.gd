@@ -149,6 +149,10 @@ var _save_indicator: SaveIndicator
 ## here; and handed to the title, the frame recorder and the save symbol. A `main` that never
 ## enters the tree has none unless it is handed one.
 var _sitting: Sitting
+## The save this boot reads and writes: the one parked under the sitting (`GameSave`), which outlives
+## the reload that frees this node, or the one `use_save()` handed in, which its caller owns. A
+## handed save is set at once; otherwise `_ready()` takes it from under the sitting, or makes one.
+var _save: GameSave
 ## Where the sitting is parked before a reload and looked for at boot (`_park_the_sitting()`,
 ## `_take_the_sitting()`): the tree's root, which a reload leaves alone, unless `use_sitting_home()`
 ## handed another node. A test hands a node of its own, so a reload it stands in for parks and
@@ -233,6 +237,12 @@ func use_quit(quit: Callable) -> void:
 func use_sitting(sitting: Sitting) -> void:
 	_sitting = sitting
 
+## Hands this boot a save of the caller's own (`GameSave`) in place of the one under its sitting: a
+## suite's, at a scratch path, so nothing it drives reaches the player's save file. The caller owns
+## it and hands the boot that stands for a reload the same one. Set before the boot runs.
+func use_save(save: GameSave) -> void:
+	_save = save
+
 ## Hands this boot the node its sitting is parked in before a reload and looked for at boot, in
 ## place of the tree's root (`_sitting_home`): a suite's own node, which it frees afterwards, so
 ## nothing it drives is left at the root. Set before the boot runs; the boot that stands for the
@@ -241,17 +251,18 @@ func use_sitting_home(home: Node) -> void:
 	_sitting_home = home
 
 func _ready() -> void:
-	# First, so every boot (the escape's and a recipe's too) deletes the save when its run ends.
-	GameSave.clear_when_a_run_ends()
 	# Before anything reads what the sitting kept: the run carried over, the title's answer, the
-	# save symbol a reload carried.
+	# save symbol a reload carried, the save itself.
 	_take_the_sitting()
+	# Before anything can end the run, so every boot (the escape's and a recipe's too) deletes the
+	# save when its run ends.
+	_save.clear_when_a_run_ends()
 	if not config.recipe_path.is_empty() and not _author_the_scene():
 		return
 	# Before anything the observers watch can happen: the run log's header, the save's gate and
 	# what the page counts all read this boot's configuration rather than the command line.
 	Telemetry.configure(config)
-	GameSave.configure(config)
+	_save.configure(config)
 	VisitCounter.configure(config, _run)
 	# The run log's owner, listening on the bus from here on, and the trace everything this boot
 	# builds writes its own account into.
@@ -527,9 +538,9 @@ func _settle_the_run() -> void:
 	var carried := _sitting.carry_the_run_over
 	_sitting.carry_the_run_over = false
 	if carried:
-		GameSave.load_in_memory(_run)
+		_save.load_in_memory(_run)
 	else:
-		_resume = GameSave.try_resume(_run)
+		_resume = _save.try_resume(_run)
 	# **`GameState.facts.escape_section` is asked before a fresh run is started, not after.** It is set
 	# two ways and both of them must survive this line: the save above restores it for a game closed
 	# inside a section, and a handover from day 14 leaves it set on the autoload across the scene
@@ -2020,7 +2031,7 @@ func _restart_run() -> void:
 	# log**: the "deleted the save" line, and the "deletion was not kept" line when a deletion
 	# fails at once, belong to this run's log. A web deletion's later answer is logged only if a
 	# log is open when it arrives, so it may land in the next run's log after the reload.
-	GameSave.clear()
+	_save.clear()
 	if _session:
 		_session.close()
 	# And with it the run's record of being in the escape, which outlives the scene reload below
@@ -2062,14 +2073,18 @@ func _reload_the_scene() -> void:
 ## node's own child, which this sitting's first boot builds. Looked up here, in the composition
 ## root, and handed down from it; nothing below fetches it.
 func _take_the_sitting() -> void:
-	if _sitting:
-		return
-	_sitting = _the_sittings_home().get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
-	if _sitting:
-		return
-	_sitting = Sitting.new()
-	_sitting.name = Sitting.NODE_NAME
-	add_child(_sitting)
+	if not _sitting:
+		_sitting = _the_sittings_home().get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	if not _sitting:
+		_sitting = Sitting.new()
+		_sitting.name = Sitting.NODE_NAME
+		add_child(_sitting)
+	if not _save:
+		_save = _sitting.get_node_or_null(NodePath(GameSave.NODE_NAME)) as GameSave
+	if not _save:
+		_save = GameSave.new()
+		_save.name = GameSave.NODE_NAME
+		_sitting.add_child(_save)
 
 ## Hands the sitting to its home just before every reload, the one a test stands in for included,
 ## so the next boot takes it back (`_take_the_sitting()`) with everything it keeps, the save symbol
@@ -2294,7 +2309,7 @@ func _raise_save_indicator() -> void:
 ## nothing), and the browser's later answer reaches it even when a scene reload has freed this node
 ## first — a callback bound here would be dropped and leave the symbol shown for good.
 func _save_now(day_under_way: bool) -> void:
-	GameSave.write(_run, day_under_way)
+	_save.write(_run, day_under_way)
 
 func _quit() -> void:
 	if _session:

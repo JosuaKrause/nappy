@@ -23,6 +23,9 @@ const SCENARIO := preload("res://tests/fixtures/run_state_scenario.gd")
 const FIXTURE_PATH := "res://tests/fixtures/run_state_saved_by_main.json"
 const _SCRATCH_PATH := "user://test_run_state_scratch.json"
 
+## The save under test, at a scratch path.
+var _save := GameSave.new(_SCRATCH_PATH)
+
 ## An owner holding one part, for the check that a part left off the list is caught.
 class FakeOwner:
 	extends RefCounted
@@ -31,7 +34,6 @@ class FakeOwner:
 func run(t) -> void:
 	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
-	GameSave.set_path_override(_SCRATCH_PATH)
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE_PATH))
 
 	_test_the_scenario_writes_what_main_wrote(t, fixture)
@@ -44,9 +46,8 @@ func run(t) -> void:
 	_test_every_part_declares_each_field_once_in_its_data(t)
 	_test_every_part_round_trips_through_json(t)
 
-	_with_saving(func() -> void: GameSave.clear())
-	GameSave.configure(null)
-	GameSave.set_path_override("")
+	_with_saving(func() -> void: _save.clear())
+	_save.free()
 	GameState.start_run(1)
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = false
@@ -54,14 +55,14 @@ func run(t) -> void:
 
 ## `callable` run as a windowed release run, which saves, against the scratch file `run()` set.
 func _with_saving(callable: Callable) -> void:
-	GameSave.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
+	_save.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
 	callable.call()
-	GameSave.configure(null)
+	_save.configure(null)
 
 ## What the scratch file resumes into `GameState`, `{}` when nothing.
 func _resumed_from_the_scratch_file() -> Dictionary:
 	var resumed := [{}]
-	_with_saving(func() -> void: resumed[0] = GameSave.try_resume(GameState))
+	_with_saving(func() -> void: resumed[0] = _save.try_resume(GameState))
 	return resumed[0]
 
 ## Everything the file holds but the build that wrote it.

@@ -1216,7 +1216,7 @@ func region_plan() -> RegionPlanner.RegionPlan:
 ## `obstructs_radius`; null before `start_day` has grown a region plan.
 ##
 ## **Built once for the plan and handed again until the plan is another plan**: the resistance asks
-## for it for every candidate tile of a relocation (`ResistanceDirector._nearest_alley_within()`,
+## for it for every candidate tile of a relocation (`ResistanceDirector.nearest_alley_within()`,
 ## "cheap enough for every frame"), and a hundred-odd discs rebuilt on each ask were most of that
 ## cost. A plan is never edited once the city holds it; whoever changes a day's wall, doors or
 ## alleys builds another plan and hands it over (`set_region_plan()`).

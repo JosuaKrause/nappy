@@ -234,7 +234,7 @@ static func narrow_target_on(day: int) -> Step:
 	return null
 
 ## Every tile `step`'s contact may stand on, before any of today's refusals — the pool
-## `ResistanceDirector._place()` draws from, and the pool the day's planning keeps one reachable
+## `ResistanceDirector.place_contact()` draws from, and the pool the day's planning keeps one reachable
 ## tile of. One function for both, so the tiles the planning protects are the tiles the director
 ## picks among. `region_plan` is today's (`City.region_plan()`); only a `DOOR` reads it.
 ##

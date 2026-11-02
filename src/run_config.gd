@@ -1,6 +1,6 @@
 class_name RunConfig
 extends RefCounted
-## The run's configuration: every developer flag and the page's query, resolved once at boot and
+## The run's configuration: every developer flag and the page's query, resolved at boot and
 ## never changed afterwards. Layer one, data and configuration: `main` resolves it
 ## (`at_boot()`), hands it to the observers (`Telemetry`, `GameSave`, `VisitCounter`) and to the
 ## dev rigs, and hands the simulation the plain values it needs out of it — a day's length, whether
@@ -45,7 +45,7 @@ var _movie := false:
 # ------------------------------------------------------------------ the gates ---
 
 ## The null display server a headless run boots against: no window, so no player, and the
-## run never touches the player's save (`GameSave.uses_save()`). Read from the process once, at
+## run never touches the player's save (`GameSave.uses_save()`). Read from the process at
 ## boot (`at_boot()`); a test that wants the saving of a windowed run parses `false`.
 var headless := true:
 	set(value): headless = _write(headless, value)
@@ -208,16 +208,14 @@ var recipe_draft_path := "":
 
 # ------------------------------------------------------------------- resolving ---
 
-## The process's own configuration, resolved on the first call from the real command line and the
-## one read of the page's query, and the same object on every call after: a scene reload is not a
-## second boot.
-static var _at_boot: RunConfig
-
+## The process's own configuration, resolved from the real command line and the page's query on
+## every call and held by the caller: `main` takes it at each boot (a scene reload is a new `main`
+## and parses the same words again, which is the same configuration, since the command line and the
+## page's query do not change under a running page and a `RunConfig` is immutable). No static
+## holds it.
 static func at_boot() -> RunConfig:
-	if _at_boot == null:
-		_at_boot = parse(OS.get_cmdline_user_args(), DevFlags.page_query(), OS.is_debug_build(),
-				OS.has_feature("movie"), {}, DisplayServer.get_name() == "headless")
-	return _at_boot
+	return parse(OS.get_cmdline_user_args(), DevFlags.page_query(), OS.is_debug_build(),
+			OS.has_feature("movie"), {}, DisplayServer.get_name() == "headless")
 
 ## The configuration `args` and `query` describe on a build that is (`debug_build`) or is not a
 ## debug one, recorded by the movie writer or not, with a loaded recipe's data on top or `{}`, on a
