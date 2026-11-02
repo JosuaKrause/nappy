@@ -11,6 +11,7 @@ on:
       - 'tools/export-web.sh'
       - 'export_presets.cfg'
       - '.github/actions/web-browser-check/**'
+      - '.github/actions/install-ffmpeg/**'
   push:
     branches: [main]
     paths:
@@ -39,6 +40,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      # tools/test_cli_help.sh's trailer.sh case needs ffmpeg; ci.yml's `gates` job installs it the same way.
+      - name: Install ffmpeg
+        uses: ./.github/actions/install-ffmpeg
       - name: Check command-line and browser startup failures
         run: ./tools/test_cli_help.sh
       - name: Check browser scratch ownership against fixtures

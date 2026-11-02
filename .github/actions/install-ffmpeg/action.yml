@@ -1,0 +1,59 @@
+# The pinned static ffmpeg and ffprobe that `ci.yml`'s `gates` job and `web-template.yml`'s `browser`
+# job both need (tools/test_clip.py encodes a real burst and reads it back; tools/test_cli_help.sh
+# runs trailer.sh's retained-footage check). The runner image does not ship them, and one pin lives
+# here so the two workflows cannot drift.
+#
+# From BtbN/FFmpeg-Builds: the release it is published in, its file name (the cache key) and that
+# file's SHA-256, from the release's checksums.sha256. Changing any of the three fetches it again;
+# nothing else does. The pin is a month-end build because BtbN deletes its daily autobuilds after
+# about two weeks and keeps the month-end ones, so a cache miss months from now still finds the
+# file. Restored from a cache keyed on the build name, like Godot, rather than an apt install from
+# Ubuntu's mirrors on every run, whose stalled fetch once failed `test` with nothing wrong in the
+# code. The download runs only on a miss, with a timeout so a stalled fetch fails fast, and its
+# SHA-256 is checked before it is unpacked.
+name: install-ffmpeg
+description: Restore or download the pinned static ffmpeg and ffprobe and put them on PATH.
+
+runs:
+  using: composite
+  steps:
+    - name: Read the ffmpeg pin
+      id: pin
+      shell: bash
+      run: |
+        {
+          echo "release=autobuild-2026-09-30-13-08"
+          echo "build=ffmpeg-n8.1.3-9-g29e619e767-linux64-gpl-8.1"
+          echo "sha256=97ce978979194b5cf7e06a5e68020dbdaa7a4f3294c5452b6a1bc347100dbb79"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Cache ffmpeg
+      id: ffmpeg-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/ffmpeg
+        key: ${{ steps.pin.outputs.build }}
+
+    - name: Download ffmpeg
+      if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+      shell: bash
+      timeout-minutes: 5
+      env:
+        FFMPEG_RELEASE: ${{ steps.pin.outputs.release }}
+        FFMPEG_BUILD: ${{ steps.pin.outputs.build }}
+        FFMPEG_SHA256: ${{ steps.pin.outputs.sha256 }}
+      run: |
+        mkdir -p ~/ffmpeg
+        curl -sSL --fail --retry 3 -o ~/ffmpeg/ffmpeg.tar.xz \
+          "https://github.com/BtbN/FFmpeg-Builds/releases/download/${FFMPEG_RELEASE}/${FFMPEG_BUILD}.tar.xz"
+        echo "${FFMPEG_SHA256}  $HOME/ffmpeg/ffmpeg.tar.xz" | sha256sum --check -
+        tar -xf ~/ffmpeg/ffmpeg.tar.xz -C ~/ffmpeg --strip-components=2 \
+          "${FFMPEG_BUILD}/bin/ffmpeg" "${FFMPEG_BUILD}/bin/ffprobe"
+        rm ~/ffmpeg/ffmpeg.tar.xz
+        chmod +x ~/ffmpeg/ffmpeg ~/ffmpeg/ffprobe
+
+    - name: Put ffmpeg on PATH
+      shell: bash
+      run: |
+        echo "$HOME/ffmpeg" >> "$GITHUB_PATH"
+        ~/ffmpeg/ffmpeg -version | head -1
