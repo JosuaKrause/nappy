@@ -79,7 +79,14 @@ class CliHelpTests(unittest.TestCase):
         (root / "src" / "dev").mkdir(parents=True)
         (root / "src" / "autoload").mkdir(parents=True)
         (root / "scene-recipes").mkdir()
-        for name in ("trailer.sh", "record.sh", "lib_dev_flags.sh", "lib_movie_evidence.sh", "lib_disk_headroom.sh", "lib_import_restore.sh"):
+        for name in (
+            "trailer.sh",
+            "record.sh",
+            "lib_dev_flags.sh",
+            "lib_movie_evidence.sh",
+            "lib_disk_headroom.sh",
+            "lib_import_restore.sh",
+        ):
             shutil.copy2(TOOLS / name, root / "tools" / name)
         shutil.copy2(TOOLS / "trailer" / "shots.json", root / "tools" / "trailer" / "shots.json")
         shutil.copy2(TOOLS / "trailer" / "scores.json", root / "tools" / "trailer" / "scores.json")
