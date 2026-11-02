@@ -286,9 +286,11 @@ class QueueUpdateTests(unittest.TestCase):
     def test_a_deleted_item_with_its_entrys_record_on_the_base_passes(self) -> None:
         self.assertEqual(self.check([deleted(ITEM)], records=(f"{ENTRY}.md",)), [])
         self.assertEqual(self.check([deleted(ITEM)], records=(f"{ENTRY}-2.md",)), [])
+        self.assertEqual(self.check([deleted(ITEM)], records=(f"{ENTRY}-brisk-heron.md",)), [])
 
     def test_a_record_of_another_entry_does_not_count(self) -> None:
         self.assertEqual(len(self.check([deleted(ITEM)], records=(f"{ENTRY}-lemur.md", "other.md"))), 1)
+        self.assertEqual(len(self.check([deleted(ITEM)], records=(f"{ENTRY}-brisk-heron-x.md",))), 1)
 
     def test_a_deleted_item_with_nothing_to_account_for_it_fails_naming_it(self) -> None:
         failures = self.check([deleted(ITEM)])
