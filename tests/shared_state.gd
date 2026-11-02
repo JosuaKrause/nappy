@@ -46,9 +46,6 @@ const EXEMPT: Dictionary[String, String] = {
 	"street_network._adjacency": "the same segments' adjacency",
 	"resistance_steps._all": "the step table, built from constants on first use",
 	"poster_art._torn": "torn poster textures, drawn from fixed seeds on first use",
-	"ground_layers._manifest": "the ground manifest, read from its file on first use",
-	"ground_layers._manifest_read": "set once the manifest is read",
-	"ground_layers._manifest_reads": "counts the reads; read by tests only as a difference",
 	"event_catalogue._all": "the catalogue rows, built from code on first use",
 	"event_catalogue._hot": "the catalogue's hot-row index, built with it",
 	"event_catalogue._building_fire": "a catalogue row, built on first use",
@@ -65,9 +62,6 @@ const EXEMPT: Dictionary[String, String] = {
 	"event_footprints._warning_guard": "the memo's guard for those sizes",
 	"entity_halo._shared_material": "the shared halo material, created on first use",
 	"mover._shared": "movers shared by their flags, a pure function of the flags",
-	"drawn_view._frame": "the per-frame view box cache, replaced each frame",
-	"drawn_view._viewport_id": "the per-frame view box cache, replaced each frame",
-	"drawn_view._box": "the per-frame view box cache, replaced each frame",
 	"run_config._at_boot": "the parse of the command line and page query, fixed for the process",
 }
 

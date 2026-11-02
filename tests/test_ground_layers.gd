@@ -19,6 +19,9 @@ const MANIFEST_PATH := "res://assets/ground_layers.json"
 ## `GroundLayers.LAYER_REGION_ROOT`, which applies the same one rule.
 const LAYER_REGION_ROOT := "tiles/layers/"
 
+## The recipe every build here composes from, as a city is handed one.
+var recipe := GroundRecipe.new()
+
 func run(t) -> void:
 	AtlasLibrary.reset_for_tests()
 	_test_transparent_pixels_leave_the_base_unchanged(t)
@@ -33,7 +36,6 @@ func run(t) -> void:
 	_test_route_kerb_twin_tints_the_stone_alone(t)
 	_test_the_recipe_is_read_from_disk_once(t)
 	AtlasLibrary.reset_for_tests()
-	GroundLayers.reset_for_tests()
 
 func _test_transparent_pixels_leave_the_base_unchanged(t) -> void:
 	var base := Image.create(4, 4, false, Image.FORMAT_RGBA8)
@@ -207,19 +209,19 @@ func _layer_manifest(t) -> Dictionary:
 func _test_the_recipe_is_read_from_disk_once(t) -> void:
 	if _page(t) == null:
 		return
-	GroundLayers.reset_for_tests()
-	var first := GroundLayers.build_tile_set(AUTHORED_GROUND)
-	var second := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var fresh_recipe := GroundRecipe.new()
+	var first := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe)
+	var second := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe)
 	t.check(first != null and second != null, "both ground builds produced a TileSet")
 	t.check(not first.has_source(GroundTiles.WATER) and not second.has_source(GroundTiles.WATER),
 			"water is absent from both static compositions, including a daily repaint")
 	t.check(AtlasLibrary.has_region(&"tiles/water"),
 			"the independent water surface still has its original baked picture")
-	t.check(GroundLayers.manifest_reads() <= 1,
+	t.check(fresh_recipe.reads() <= 1,
 			"two ground builds read the recipe from disk at most once (read %d times)"
-			% GroundLayers.manifest_reads())
+			% fresh_recipe.reads())
 	if not _svg_bake():
-		t.check(GroundLayers.manifest_reads() == 1,
+		t.check(fresh_recipe.reads() == 1,
 				"a default bake's first ground build is the one that reads the recipe")
 
 func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
@@ -228,7 +230,7 @@ func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 	var page := _page(t)
 	if page == null:
 		return
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe)
 	var curbed := composed.get_source(8) as TileSetAtlasSource
 	var base_image := _layer_image(page, "sidewalk_base.png")
 	var detail_image := _layer_image(page, "curbstone.png")
@@ -293,7 +295,7 @@ func _test_the_grass_atlas_scatters_whole_features_over_one_base(t) -> void:
 	var page := _page(t)
 	if page == null:
 		return
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe)
 	var grass := composed.get_source(GroundLayers.GRASS_SOURCE_ID) as TileSetAtlasSource
 	var base := _layer_image(page, "grass_base.png")
 	t.check(grass != null and base != null, "the grass source and its base are both available")
@@ -318,7 +320,7 @@ func _test_the_grass_atlas_scatters_whole_features_over_one_base(t) -> void:
 			"not every grass cell is the bare base, so features are actually scattered")
 
 func _test_damage_atlas_selection_is_stable_and_shared(t) -> void:
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe)
 	if _svg_bake():
 		# An SVG bake draws the authored damage tiles as they were drawn, one cell each, so there
 		# is no shared variation to select between — the selector's own answer is then cell zero.
@@ -364,7 +366,7 @@ func _test_route_kerb_twin_tints_the_stone_alone(t) -> void:
 	var source_id := GroundTiles.SIDEWALK_KERB_N
 	var twin_id := GroundTiles.route_twin_of(source_id)
 	t.check(twin_id >= 0, "GroundTiles registers a route-kerb twin id for the north kerb source")
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe)
 	t.check(composed.has_source(twin_id), "the north kerb's route twin is registered")
 	if not composed.has_source(twin_id):
 		return

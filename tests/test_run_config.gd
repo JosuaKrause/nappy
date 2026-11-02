@@ -175,6 +175,10 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 		if invincible:
 			words.append("--invincible")
 		var main: Node2D = MAIN_SCRIPT.new()
+		# Never in the tree, so it takes no sitting of its own: it is handed one, which hands the
+		# city its ground recipe.
+		var sitting := Sitting.new()
+		main.use_sitting(sitting)
 		main.configure(RunConfig.parse(words, "", true))
 		var player: Stroller = main._make_player()
 		t.check((player.get_node("Baby") as Baby).excitement_frozen == invincible,
@@ -188,6 +192,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 				and not city.scenery_frame_locked,
 				"the city is handed what the flags chose before it builds")
 		main.free()
+		sitting.free()
 
 ## What the city is handed reaches the part it belongs to, and the crowd's agents get theirs.
 func _test_the_city_hands_each_value_to_its_part(t) -> void:
