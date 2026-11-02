@@ -4,7 +4,11 @@ extends RefCounted
 ## These are the numbers the whole game is balanced on and none of them are visible in a
 ## screenshot, so they get asserted rather than eyeballed.
 
-const STEP := 1.0 / 60.0
+## How much faster the long stretches run (see `_simulate_fast()`).
+const FAST_SCALE := 21.0
+
+## One frame, for `_simulate(ONE_FRAME)`: the least a stretch can last.
+const ONE_FRAME := 0.0
 
 ## Stands in for the city: the baby only ever asks these three questions.
 class FakeWorld extends WorldContext:
@@ -118,6 +122,20 @@ func _simulate(seconds: float) -> void:
 	for i in maxi(1, int(round(seconds * Engine.physics_ticks_per_second))):
 		await _baby.get_tree().physics_frame
 
+## A long stretch of real physics frames in a fraction of the wall time: the engine hands each
+## frame `1 / Engine.physics_ticks_per_second * Engine.time_scale` seconds, so the clock is sped
+## up for the stretch and put back after it. The frame in progress when the scale changes keeps
+## the delta it started with, so one frame passes at the normal scale before the caller goes on;
+## a check after this reads a range, not an exact sum.
+func _simulate_fast(seconds: float) -> void:
+	var frame := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
+	var clock := Engine.time_scale
+	Engine.time_scale = FAST_SCALE
+	for i in maxi(1, int(round(seconds / frame))):
+		await _baby.get_tree().physics_frame
+	Engine.time_scale = clock
+	await _baby.get_tree().physics_frame
+
 func _walk() -> void:
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 
@@ -194,24 +212,17 @@ func _test_standing_still_is_worse_than_walking_but_affordable(t) -> void:
 ## events and no crowd — the friendliest possible day — the street cannot finish it and one
 ## calm stretch can, with time left over to walk home.
 func _test_a_street_day_never_settles_and_a_park_day_does(t) -> void:
-	# Physics frames run at the wall clock's pace, so a 210s day of them is three and a half
-	# minutes of waiting. The street half is a rate: ten seconds of real frames give the walking
-	# gain, and `_test_a_day_cannot_be_won_on_street_gain_alone` holds that rate times every
-	# day's length under the meter's top.
 	_build(t)
 	_walk()
-	await _simulate(10.0)
-	t.check(_baby.state == GameEnums.BabyState.AWAKE and _baby.sleepiness < Tuning.METER_MAX
-			and is_equal_approx(_baby.sleepiness, Tuning.SLEEPINESS_GAIN_WALKING * 10.0),
-			"street walking alone gains only the walking rate and does not settle her")
+	await _simulate_fast(Tuning.day_length(1))
+	t.check(_baby.state == GameEnums.BabyState.AWAKE and _baby.sleepiness < Tuning.METER_MAX,
+			"a whole day of undisturbed street walking still does not settle her")
 	_teardown()
 
-	# The park half starts from what the walk out banks (the street rate times 45s, set on the
-	# public meter) and lets real frames run the calm stretch.
 	_build(t)
 	_walk()
 	var walk_out := 45.0
-	_baby.sleepiness = Tuning.SLEEPINESS_GAIN_WALKING * walk_out
+	await _simulate_fast(walk_out)          # the walk out to the park
 	_world.calm = true
 	var elapsed := walk_out
 	var short_day := Tuning.day_length(Tuning.RUN_LENGTH_DAYS)
@@ -361,7 +372,7 @@ func _test_sleeping_baby_is_less_sensitive(t) -> void:
 	_baby.state = GameEnums.BabyState.ASLEEP
 	_world.noise = 20.0
 	_walk()
-	await _simulate(STEP)
+	await _simulate(ONE_FRAME)
 	t.close_to(_baby.last_incoming, 20.0 * Baby.SLEEPING_SENSITIVITY,
 			"incoming excitement is damped while the baby sleeps")
 	_teardown()
@@ -470,7 +481,7 @@ func _test_the_overflow_mass_drains_with_the_window(t) -> void:
 	var mid := _baby.overflow_mass()
 	t.check(mid > 0.0, "the source has left some mass behind")
 	_world.noise = 0.0
-	await _simulate(STEP)
+	await _simulate(ONE_FRAME)
 	t.close_to(_baby.overflow_mass(), mid,
 			"the mass does not clear the instant the source is gone", 0.1)
 	await _simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW + 1.0)
