@@ -18,6 +18,8 @@ extends RefCounted
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const SEED := 4216201080
 const DAY := 1
+## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_baby_world_scratch.json"
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -48,6 +50,8 @@ func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 	GameState.header.day = DAY
 	GameState.facts.escape_section = DaySpec.Section.BUILDING
 	var main: Node2D = MAIN_SCENE.instantiate()
+	var save := GameSave.new(_SCRATCH_SAVE)
+	main.use_save(save)
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
@@ -67,6 +71,8 @@ func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
+	save.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 	GameState.facts.escape_section = saved_section
 
 ## Stands her on a city event that charges the ground under it, steps her meter once, and reads
@@ -130,6 +136,8 @@ func _boot_and_check(t, section: int, what: String) -> void:
 	GameState.header.day = DAY
 	GameState.facts.escape_section = section
 	var main: Node2D = MAIN_SCENE.instantiate()
+	var save := GameSave.new(_SCRATCH_SAVE)
+	main.use_save(save)
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
@@ -138,4 +146,6 @@ func _boot_and_check(t, section: int, what: String) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
+	save.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 	GameState.facts.escape_section = saved_section
