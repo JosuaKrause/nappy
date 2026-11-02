@@ -32,7 +32,8 @@ extends Node
 ## the rig when the city section starts, with no `ResistanceDirector` (the escape has no subquest, so
 ## `mark` and `task` are unavailable there), and the rig presses the section brief's continue itself
 ## (`press_the_brief()`), as a key would. A building won by other means builds the city and its brief
-## is answered the same way; the rig does not walk the building and is not built before the city.
+## is answered the same way; the rig is not built before the city, and the building is walked before it
+## by `BuildingWalker` (`src/dev/building_walker.gd`).
 ##
 ## An unresolved target (nothing to walk to yet, or nothing found within `_RESOLVE_TIMEOUT`) and an
 ## unreachable one (no path exists) are both logged and skipped rather than hung on forever — see

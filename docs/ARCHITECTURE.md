@@ -375,6 +375,8 @@ src/
 	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/tunnel/
 	                       bridge/spawn:<name>) along a real, kerb-preferring path, through the
 	                       ordinary input path; presses an escape brief's continue as a key would
+	building_walker.gd    --route in the escape's building: presses the building's brief and walks
+	                       her door to door to the service exit, then the city's rig takes over
 	debug_readout.gd      the developer's furniture: the right-hand readout, the frame graph, the
 	                      debug overlays and routes, their keys and the snapshot keys
 	debug_layers.gd       the fields, shadows and bounding-box overlays, one number key apiece
