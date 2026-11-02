@@ -5,9 +5,11 @@ extends "res://tests/resistance_rig.gd"
 ## and sets on that run what the day it asks about needs; none reads what another left. What the
 ## director put in the street is read from the street (`contact()`, `rider()`, `read_mark()`, the
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
-## (`raid_vans()`, `frontage_of()`, `spine_x()`, `tick()`). Three tests still call the scheduler's or
-## the director's own draws (`EventScheduler._open_ground_for()`, `_place_at_a_door()`,
-## `_weighted_mast_index()`): they move with a public form of those.
+## (`raid_vans()`, `frontage_of()`, `spine_x()`, `tick()`). Five tests still read a private: three call
+## `EventScheduler._open_ground_for()` (the two burnt-shell tests and the every-front sweep), one
+## `EventScheduler._place_masts()`, one the director's `_weighted_mast_index()` (the
+## near-mast test); and `_start_the_day()` hands the baby its stroller with `baby._stroller = player`.
+## They move with a public form of each.
 func run(t) -> void:
 	t.gives_back_observers()
 	await _test_the_burnt_shell_task_rides_the_recorded_scar(t)
@@ -416,6 +418,7 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 	var the_day := _start_the_day(t, 9, director)
 	var mark_contact := director.contact()
 	var guards := _live("alley_robbery")
+	var mark_guard := director.mark_guard()
 	t.check(mark_contact != null, "day 9's mark has its own contact before it is touched")
 
 	# The same signal a real touch fires (`ContactPoint._complete()`, already connected to
@@ -433,7 +436,9 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 	for guard in guards:
 		t.check(not guard.is_finished and is_instance_valid(guard),
 				"the mark's own guard stays too, not retired for the door")
-	t.check(_live("alley_robbery").size() == guards.size(),
+	if mark_guard != null:
+		t.check(director.mark_guard() == mark_guard, "still tracked as the mark's own")
+	t.check(_live(EventCatalogue.task_guard().id).is_empty(),
 			"the door stands no guard of its own: its trap comes to her once she crosses")
 
 	# The door's task expiring (its deadline, or its rider gone) ends the task, not the day:
@@ -443,16 +448,22 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 	t.check(is_instance_valid(mark_contact) and not mark_contact.is_queued_for_deletion(),
 			"the read mark still stands once the task it unlocked has expired")
 
-	# The day is retried (the same shape a new day takes): the read mark is freed outright, and the
-	# old guard, which `EventManager.clear()` retires in the real game, is retired as it does, so the
-	# day's own mark, given back with the lost day, is placed with a guard of its own — a fresh one.
+	# The day is retried (the same shape a new day takes): the read mark is freed outright. The day
+	# is not given back, so it offers no mark and no new guard: the old guard, still standing in the
+	# street (`EventManager.clear()` retires it in the real game), is no longer tracked as today's.
+	director.start_day(9, _rng(9, "resistance"), 300.0)
+	t.check(mark_contact.is_queued_for_deletion(), "the read mark is freed at the day's end")
+	t.check(director.read_mark() == null, "and no mark is tracked as read")
+	if mark_guard != null:
+		t.check(director.mark_guard() == null, "and the old guard is no longer tracked as today's")
+
+	# The same day given back with the lost day places its own mark, with a guard of its own: a
+	# fresh one, once the old one is retired as the real game's clear does.
 	for guard in guards:
 		_city.events.retire(guard)
 	_city.run.resistance.give_back()
 	var before := _live("alley_robbery")
 	director.start_day(9, _rng(9, "resistance"), 300.0)
-	t.check(mark_contact.is_queued_for_deletion(), "the read mark is freed at the day's end")
-	t.check(director.read_mark() == null, "and no mark is tracked as read")
 	t.check(_new_one("alley_robbery", before) != null,
 			"and the retried day's mark is guarded afresh, not by the old guard")
 

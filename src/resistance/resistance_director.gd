@@ -3159,6 +3159,13 @@ func read_mark() -> ContactPoint:
 func rider() -> EventInstance:
 	return _rider
 
+## The robber standing over today's chalk mark, in the world, or null while none is (no mark placed
+## yet, the mark placed with no robber, or the day started again and dropped him). It stays the
+## mark's own after the mark is read and the next task is active (`trap()` is the task's pursuer, a
+## different robber), and `start_day()` lets go of it.
+func mark_guard() -> EventInstance:
+	return _guard if is_instance_valid(_guard) else null
+
 ## The robber or guard the task's trap has set on her, in the world, or null while none is: a done
 ## task's pursuer (`_set_the_trap_on_her()`), not the guard standing over a mark or a task (`guard_spot()`)
 ## and not one a walked crossing sets on her (`CheckpointController.guard_after_her()`). His warning
