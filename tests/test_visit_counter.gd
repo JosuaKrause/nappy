@@ -693,7 +693,7 @@ func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
 	_walk(caught, Vector2(300.0, 0.0), 0.2)
 	caught.report_the_catch()
 	caught.report_the_catch()
-	caught._be_done()
+	t.check(_finish_by_its_own_frames(caught), "the caught robber is finished anyway, by his own clock")
 	t.check(counter.sent == [name + "chased", name + "caught"],
 		"caught, it is counted caught once and never also outlasted (%s)" % [counter.sent])
 	caught.free()
@@ -838,7 +838,7 @@ func _test_a_charge_cut_short_by_the_day_is_counted_ended(t) -> void:
 	_walk(robber, Vector2(300.0, 0.0), 0.2)
 	robber.report_the_charge_cut_short()
 	robber.report_the_charge_cut_short()
-	robber._be_done()
+	t.check(_finish_by_its_own_frames(robber), "the cut-short robber is finished after, by his own clock")
 	t.check(counter.sent == [name + "chased", name + "ended"],
 		"cut short by the day, it is counted ended once and nothing else (%s)" % [counter.sent])
 	robber.free()
@@ -857,6 +857,17 @@ func _charger(t: Node, def: EventDef) -> EventInstance:
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
+
+## Steps `instance` with her held well away until it leaves or is finished the way the game
+## finishes it, its own clock run out (or her shaken off), and says whether it did.
+func _finish_by_its_own_frames(instance: EventInstance) -> bool:
+	var step := 1.0 / 60.0
+	for i in int(round((instance.def.telegraph_time + instance.def.duration + 1.0) / step)):
+		instance.player_at = instance.global_position + Vector2(400.0, 0.0)
+		instance.step(step)
+		if instance.is_leaving or instance.is_finished:
+			return true
+	return false
 
 ## Steps `instance` for `seconds` with her held at `her`.
 func _walk(instance: EventInstance, her: Vector2, seconds: float) -> void:

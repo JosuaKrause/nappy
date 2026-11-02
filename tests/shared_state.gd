@@ -30,7 +30,8 @@ const AUTOLOADS: Array[String] = ["Tuning", "EventBus", "Telemetry", "GameState"
 
 ## The only fields whose change is not a leak, each named with the one-line reason. A field is
 ## exempt by its own name, never its owner: a new field of the same script is checked until it is
-## listed here. A key is `<script file name without .gd>.<field>` (or the autoload's name).
+## listed here. A key is `<script file name without .gd>.<field>` (or the autoload's name), and
+## `<autoload>.<field>.<its field>` for a part an autoload holds.
 ##
 ## Memoised from constant data or files, filled by whichever suite first needs it, and read as the
 ## same answer ever after:
@@ -60,6 +61,25 @@ const EXEMPT: Dictionary[String, String] = {
 	"event_footprints._warning_guard": "the memo's guard for those sizes",
 	"entity_halo._shared_material": "the shared halo material, created on first use",
 	"mover._shared": "movers shared by their flags, a pure function of the flags",
+	# Put back before every suite by the runner's own `GameState.start_run()`, which resets every
+	# part of the run, and `GameState.use_trace()` (`_reset_globals`):
+	"GameState.attempt_spend._dawn_city_state": "reset by the runner's start_run before every suite",
+	"GameState.attempt_spend._dawn_scars": "reset by the runner's start_run before every suite",
+	"GameState.attempt_spend.city_state": "reset by the runner's start_run before every suite",
+	"GameState.attempt_spend.scars": "reset by the runner's start_run before every suite",
+	"GameState.calendar._trace": "replaced by the runner's use_trace before every suite",
+	"GameState.facts.completed_resistance_alley_tiles": "reset by the runner's start_run before every suite",
+	"GameState.header.day": "reset by the runner's start_run before every suite",
+	"GameState.header.player_is_male": "rolled again by the runner's start_run before every suite",
+	"GameState.header.run_seed": "set by the runner's start_run before every suite",
+	"GameState.pelican.draws": "reset by the runner's start_run before every suite",
+	"GameState.posters._dawn": "reset by the runner's start_run before every suite",
+	"GameState.posters.cells": "reset by the runner's start_run before every suite",
+	"GameState.posters.pasted_through": "reset by the runner's start_run before every suite",
+	"GameState.resistance._dawn_completed_steps": "reset by the runner's start_run before every suite",
+	"GameState.resistance._dawn_progress": "reset by the runner's start_run before every suite",
+	"GameState.resistance._dawn_sabotage_done": "reset by the runner's start_run before every suite",
+	"GameState.resistance.completed_steps": "reset by the runner's start_run before every suite",
 }
 
 ## The fields a suite that boots `main` (or drives a run the observers watch) moves on: the
