@@ -19,7 +19,8 @@
 #     and changes nothing
 #   - --include brings a left-out folder back
 #   - --detach makes the same sparse checkout at a commit with no branch and no brief, and refuses
-#     an unknown ref and an existing path
+#     an unknown ref and an existing path, and lands on the named branch's head even when another
+#     fetch writes FETCH_HEAD between its fetch and its read
 #   - a headroom shortfall refuses before anything is made
 #   - --agent appends one line per agent, newest last, and not the same id twice; --release adds
 #     "cleanup: ready" once; both refuse a branch with no brief
@@ -240,6 +241,30 @@ same "--detach of a bare branch name lands on the remote's head" \
 "$tool" --detach "$head_sha" review-sha >/dev/null 2>&1
 same "--detach of a SHA lands on it" \
     "$head_sha" "$(git -C "$main/.claude/worktrees/review-sha" rev-parse HEAD 2>/dev/null)"
+# Another agent's fetch lands between ours and our read: a git wrapper that fetches a decoy branch
+# after every fetch the tool makes leaves FETCH_HEAD naming the decoy, so a read of FETCH_HEAD
+# detaches at the wrong commit.
+git -C "$work/pusher" checkout -q -b feature/decoy origin/main
+echo decoy > "$work/pusher/src/d.gd"
+git -C "$work/pusher" add -A && git -C "$work/pusher" commit -q -m decoy
+git -C "$work/pusher" push -q origin feature/decoy
+decoy_sha="$(git -C "$work/pusher" rev-parse HEAD)"
+real_git="$(command -v git)"
+mkdir -p "$work/racebin"
+cat > "$work/racebin/git" <<EOF
+#!/usr/bin/env bash
+"$real_git" "\$@"; rc=\$?
+for a in "\$@"; do
+    if [[ \$a == fetch ]]; then "$real_git" -C "$main" fetch -q origin feature/decoy; break; fi
+done
+exit \$rc
+EOF
+chmod +x "$work/racebin/git"
+PATH="$work/racebin:$PATH" "$tool" --detach origin/feature/live review-race >/dev/null 2>&1
+same "--detach ignores a fetch another agent makes in between" \
+    "$new_sha" "$(git -C "$main/.claude/worktrees/review-race" rev-parse HEAD 2>/dev/null)"
+check "the race wrapper left FETCH_HEAD on the decoy" \
+    test "$(cut -c1-40 "$main/.git/FETCH_HEAD" | head -1)" = "$decoy_sha"
 refuse "--detach of an unknown ref refused" "$tool" --detach no-such-ref review-two
 check "--detach refusal made no worktree" test ! -e "$main/.claude/worktrees/review-two"
 refuse "--detach onto an existing path refused" "$tool" --detach origin/main review-one
