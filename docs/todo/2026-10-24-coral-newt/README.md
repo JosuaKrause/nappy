@@ -23,6 +23,9 @@ them), the chiptune style, and their live annotate servers (any page in the same
 
 *Proposed, not asked for:* the band `next`; the first two items as one PR to `tools/synthesize-sfx.py`.
 
-**No listen before the sound work is revived** (inbox #950 in bouncy-marten): the player hears the
-sound lab's current sound as bad, as they said when they first heard it, with nothing changed since,
-so the listen of pass 4 is closed and the next listen comes with the revived sound work.
+**The listen of pass 4 is closed.** The player: "no, not working on this before we revive the sound
+items. the current sound is bad -- I already heard that back then (and told codex) -- nothing has
+changed since" (inbox #950 in bouncy-marten). Asked whether the entry should then leave `next`: "how
+is it being next a contradiction to we only act on questions when the item actually gets picked up
+and discussed?" (inbox #957 in bouncy-marten). **Read as:** the entry stays `next`; picking it up is
+the revival of the sound work, and the next listen and its questions are taken up then.

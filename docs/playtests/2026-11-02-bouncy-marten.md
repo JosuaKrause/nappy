@@ -73,3 +73,17 @@
 3. **Read as:** (the assistant's interpretation, not the player's words)
 
    No file watcher is built to find what rewrites docs/ARCHITECTURE.md; the player has seen no rewrite since #952 and treats the issue as fixed by it.
+
+## #957
+
+1. **Context** (the assistant's):
+
+   Said in the chat on 2026-11-02, answering the orchestrator's question after filing inbox #950 (no listen of the sound lab's pass 4 before the sound items are revived): coral-newt (the sound and art tools learn from the chirp study) is in the band `next` while the player said the sound work waits until it is revived; should it move to `later`? The orchestrator had left the band as it was.
+
+2. **The note.**
+
+   > how is it being next a contradiction to we only act on questions when the item actually gets picked up and discussed?
+
+3. **Read as:** (the assistant's interpretation, not the player's words)
+
+   coral-newt stays `next`: its questions, the listen included, are taken up when the entry is picked up and discussed, and picking it up is the revival of the sound work, so its band does not contradict #950.

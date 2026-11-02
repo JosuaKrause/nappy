@@ -15,7 +15,8 @@ answers — not what was built, which is the record's under [decisions/](decisio
 closes the items it covered: the finding goes in the playtest's file, the item's file is deleted in
 the same commit, and what the player asked for goes to the queue. Nothing here is a task; a task is
 an item under [todo/](todo/). What a rig has measured and no person has felt yet is an item like
-any other.
+any other. The orchestrating session shows each item on the Nappy board's Review tab and keeps the
+tab in step with this folder (**board**); the file stays the item.
 
 ## Next run, in one sitting
 
