@@ -2204,17 +2204,17 @@ func _test_escape_section_came_from_the_file(t) -> void:
 func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void:
 	_saved_section = GameState.facts.escape_section
 	var config := RunConfig.parse(PackedStringArray(["--no-telemetry"]), "", false, false, {}, false)
-	var _save := GameSave.new(_SCRATCH_SAVE)
-	_save.configure(config)
+	var save := GameSave.new(_SCRATCH_SAVE)
+	save.configure(config)
 	GameState.start_run(SEEDS[0])
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.facts.escape_section = DaySpec.Section.BUILDING
-	t.check(_save.write(GameState, false) == GameSave.Result.CONFIRMED,
+	t.check(save.write(GameState, false) == GameSave.Result.CONFIRMED,
 			"a save closed inside the building is on disk")
 	# A fresh page: nothing of the escape on the autoload, only in the file.
 	GameState.facts.escape_section = DaySpec.Section.NONE
 	var main: Node2D = MAIN_SCENE.instantiate()
-	main.use_save(_save)
+	main.use_save(save)
 	main.configure(config)
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
@@ -2243,10 +2243,10 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
 			"the clock still standing still behind the brief")
 
-	_save.clear()
-	_save.free()
+	save.clear()
 	AtlasLibrary.close_loading_window()
 	_free_the_escape(t, main)
+	save.free()
 
 ## `--route` booted into the building: nothing presses the building's own brief, and once the
 ## building is won the city is built, its brief raised, and the route rig presses that brief's

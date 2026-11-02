@@ -47,6 +47,7 @@ func run(t) -> void:
 	await _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t)
 	await _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t)
 	await _test_a_restart_clears_the_save_in_the_log_it_abandons(t)
+	await _test_the_save_outlives_a_reload_under_the_sitting(t)
 	await _test_a_game_closed_between_days_writes_nothing_at_opening(t)
 	await _test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t)
 	await _test_title_leads_to_the_day_brief_with_nothing_charged(t)
@@ -149,9 +150,10 @@ func _one(root: Node, type_name: String) -> Node:
 ## The real `main.tscn` handed `config`, `calls` and, when given, the `home` its sitting is parked
 ## in and taken from, put in the tree, with the two frames its `_ready()` awaits let pass: the run,
 ## the day and the title are built.
-func _boot(t, config: RunConfig, calls: Calls, home: Node = null) -> Node2D:
+func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save := true) -> Node2D:
 	var main: Node2D = MAIN_SCENE.instantiate()
-	main.use_save(_save)
+	if hand_the_save:
+		main.use_save(_save)
 	main.configure(config)
 	main.use_reload(calls.reload)
 	main.use_quit(calls.quit)
@@ -310,6 +312,55 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 			and SaveIndicator.carried(sitting) == carried,
 			"and takes the parked sitting, adopting the symbol under it rather than building its own")
 	_shut(t, reloaded)
+	Telemetry.end_run()
+	home.free()
+
+## **The game's own path to its save**, which every other test here skips by handing `main` a save
+## (`main.use_save()`): a boot handed only the sitting's home finds the save under the sitting in it,
+## and a reload leaves that same node there, so the next boot finds the same instance and its
+## operation ids keep growing. A boot that built a fresh save each time would free the one with the
+## reload (dropping a pending web flush) and restart the ids at 1, so a carried symbol's newest id
+## would outrank the next boot's write. The home holds a sitting with a save at a scratch path, as an
+## earlier boot leaves it, so the boot never reaches the player's file.
+func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
+	_begin()
+	var home := Node.new()
+	t.add_child(home)
+	var sitting := Sitting.new()
+	sitting.name = Sitting.NODE_NAME
+	home.add_child(sitting)
+	var parked := GameSave.new(_SCRATCH_PATH)
+	parked.name = GameSave.NODE_NAME
+	sitting.add_child(parked)
+	var ids: Array[int] = []
+	var hear := func(operation: int, _result: int) -> void: ids.append(operation)
+	EventBus.save_written.connect(hear)
+	var calls := Calls.new()
+
+	var first := await _boot(t, _windowed(), calls, home, false)
+	await _press_on_the_title(t, first, "Tap")
+	t.check(ids.size() >= 1, "the first boot's save, found under the sitting, wrote (%s)" % [ids])
+	var before := ids.size()
+	(_one(first, "PauseScreen") as PauseScreen).restart_requested.emit()
+	t.check(calls.reloads.size() == 1 and is_instance_valid(parked)
+			and parked.get_parent() == sitting and sitting.get_parent() == home,
+			"the restart reloads and the save is still parked under the sitting in its home")
+	_shut(t, first)
+	t.check(is_instance_valid(parked), "freeing the first boot leaves the save alive")
+
+	var second := await _boot(t, _windowed(), calls, home, false)
+	t.check(home.get_node_or_null(NodePath("%s/%s" % [Sitting.NODE_NAME, GameSave.NODE_NAME])) == parked
+			and home.get_child_count() == 1 and _all(sitting, "GameSave").size() == 1,
+			"the next boot finds the same save node, and makes no second one")
+	await _press_on_the_title(t, second, "Tap")
+	t.check(ids.size() > before, "the next boot wrote through it (%s)" % [ids])
+	var growing := true
+	for i in range(1, ids.size()):
+		growing = growing and ids[i] > ids[i - 1]
+	t.check(growing, "and the operation ids across the reload only grow (%s)" % [ids])
+	_shut(t, second)
+	EventBus.save_written.disconnect(hear)
+	parked.clear()
 	Telemetry.end_run()
 	home.free()
 

@@ -179,9 +179,11 @@ var _flush_answer: JavaScriptObject = null
 
 ## Every flush still waiting for its answer — see `Flushes`.
 var _flushes := Flushes.new()
-## The id `_new_operation()` handed out last. Only ever grows, for the life of the process, so a
-## larger id is always a change begun later — which is how `SaveIndicator` knows the newest — and
-## no id is reused across the scene reloads a held restart and the day-14 hand-over make.
+## The id `_new_operation()` handed out last. Only ever grows, for the life of this node. In the
+## game that is the life of the process, because the `Sitting` that holds the node is never freed
+## and `main` parks it across every reload; a second `GameSave` (every suite builds its own) starts
+## again at 0. A larger id is always a change begun later — which is how `SaveIndicator` knows the
+## newest — and no id is reused across the scene reloads a held restart and the day-14 hand-over make.
 var _last_operation := 0
 ## When the last frame ticked the flushes' clocks, in `Time.get_ticks_usec()`. Set when the first
 ## flush begins waiting, so the step it first counts is the time since then.
@@ -382,8 +384,8 @@ func _flush(operation: int, settled: Callable, deleting := false) -> void:
 
 ## Starts counting frames for the flushes' timeout, if no flush is already being counted. The
 ## `SceneTree`'s `process_frame` fires every frame whether or not the tree is paused, so a flush
-## started as the summary pauses the tree still times out, and it needs no node of its own to
-## survive the held restart's scene reload.
+## started as the summary pauses the tree still times out. The connection is on this node, which
+## survives the held restart's scene reload because `main` parks it with the `Sitting`.
 func _start_the_clock() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree == null or tree.process_frame.is_connected(_tick):
@@ -403,7 +405,7 @@ func _tick() -> void:
 
 ## The flushes waiting for the browser's answer, as a table of their own: **registered** when a
 ## write or deletion hands its change to the browser, **answered** by the page's callback or
-## **timed out** by the frames that pass, whichever comes first. Apart from `GameSave`'s statics
+## **timed out** by the frames that pass, whichever comes first. Apart from `GameSave`'s fields
 ## and the `JavaScriptBridge`, so a desktop run, or a test, drives the whole of a flush's life
 ## by registering one and giving it the page's answer or the frames' time: `GameSave` holds the one
 ## the game uses, and each flush is keyed by the operation id of its change, which is also the token

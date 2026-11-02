@@ -506,12 +506,12 @@ windowed, saves the viewport after N frames and quits.
 
 ### Dev flags and release builds
 
-**The run's configuration is resolved once, at boot, and handed out from `main`.**
+**The run's configuration is resolved at each boot, and handed out from `main`.**
 `RunConfig.at_boot()` (`src/run_config.gd`) reads the command line and, on the web, the page's
 query (`window.location.search`, the one read of the address bar the game makes) and keeps every
 answer in an immutable `RunConfig`: a later write is refused with a warning and its
 arrays are read-only. `main` is the one place it is read, at each boot (no static holds it; a scene reload parses the same
-words again, and an immutable config makes that the same configuration). It hands the config itself to the
+words again, and an immutable config makes that the same configuration; a malformed flag's warning prints again at each boot). It hands the config itself to the
 observers — `Telemetry.configure()`, `GameSave.configure()`, `VisitCounter.configure()` — and to
 the dev rigs (`AutoScreenshot.from_config()`, the scene-recipe runtime), and hands the world, the
 day and the baby the plain values they need out of it: a day's length

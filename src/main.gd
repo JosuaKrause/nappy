@@ -153,7 +153,6 @@ var _sitting: Sitting
 ## the reload that frees this node, or the one `use_save()` handed in, which its caller owns. Taken
 ## with the sitting in `_ready()`.
 var _save: GameSave
-var _handed_save: GameSave
 ## Where the sitting is parked before a reload and looked for at boot (`_park_the_sitting()`,
 ## `_take_the_sitting()`): the tree's root, which a reload leaves alone, unless `use_sitting_home()`
 ## handed another node. A test hands a node of its own, so a reload it stands in for parks and
@@ -242,7 +241,7 @@ func use_sitting(sitting: Sitting) -> void:
 ## suite's, at a scratch path, so nothing it drives reaches the player's save file. The caller owns
 ## it and hands the boot that stands for a reload the same one. Set before the boot runs.
 func use_save(save: GameSave) -> void:
-	_handed_save = save
+	_save = save
 
 ## Hands this boot the node its sitting is parked in before a reload and looked for at boot, in
 ## place of the tree's root (`_sitting_home`): a suite's own node, which it frees afterwards, so
@@ -2080,7 +2079,6 @@ func _take_the_sitting() -> void:
 		_sitting = Sitting.new()
 		_sitting.name = Sitting.NODE_NAME
 		add_child(_sitting)
-	_save = _handed_save
 	if not _save:
 		_save = _sitting.get_node_or_null(NodePath(GameSave.NODE_NAME)) as GameSave
 	if not _save:

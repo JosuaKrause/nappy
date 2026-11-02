@@ -426,6 +426,10 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.header.nerves = 2
 	var main: Node2D = MAIN_SCRIPT.new()
+	# Never configured, so it refuses every write as a headless run's does; a child of `main`, freed with it.
+	var save := GameSave.new("user://test_run_checkpoints_scratch.json")
+	main.add_child(save)
+	main.use_save(save)
 	main._summary = SUMMARY_SCENE.instantiate()
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
@@ -805,6 +809,10 @@ func _bare_gate_main(t) -> Node2D:
 	var sitting := Sitting.new()
 	main.add_child(sitting)
 	main.use_sitting(sitting)
+	# Never configured, so it refuses every write as a headless run's does; a child of `main`, freed with it.
+	var save := GameSave.new("user://test_run_checkpoints_scratch.json")
+	main.add_child(save)
+	main.use_save(save)
 	main._add_touch_controls()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

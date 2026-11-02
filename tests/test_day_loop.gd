@@ -441,6 +441,10 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 	t.check(session.observer() == null, "the session watches with no observer, as with the log off")
 
 	var main: Node2D = MAIN_SCRIPT.new()
+	# Never configured, so it refuses every write as a headless run's does; a child of `main`, freed with it.
+	var save := GameSave.new("user://test_day_loop_scratch.json")
+	main.add_child(save)
+	main.use_save(save)
 	main._city = city
 	main._day = day
 	main._summary = summary
