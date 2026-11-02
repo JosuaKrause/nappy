@@ -4,7 +4,11 @@ extends RefCounted
 ## These are the numbers the whole game is balanced on and none of them are visible in a
 ## screenshot, so they get asserted rather than eyeballed.
 
-const STEP := 1.0 / 60.0
+## How much faster the long stretches run (see `_simulate_fast()`).
+const FAST_SCALE := 21.0
+
+## One frame, for `_simulate(ONE_FRAME)`: the least a stretch can last.
+const ONE_FRAME := 0.0
 
 ## Stands in for the city: the baby only ever asks these three questions.
 class FakeWorld extends WorldContext:
@@ -40,26 +44,26 @@ var _baby: Baby
 func run(t) -> void:
 	_test_falloff(t)
 	_test_telegraph_contract(t)
-	_test_walking_fills_sleepiness(t)
+	await _test_walking_fills_sleepiness(t)
 	_test_a_day_cannot_be_won_on_street_gain_alone(t)
 	_test_one_calm_stretch_wins_a_day(t)
 	_test_a_day_is_a_minute_of_play_with_a_grace_of_three(t)
 	_test_standing_still_is_worse_than_walking_but_affordable(t)
-	_test_a_street_day_never_settles_and_a_park_day_does(t)
-	_test_calm_zone_speeds_sleep(t)
-	_test_idle_drains_sleepiness(t)
-	_test_running_blocks_sleep_and_excites(t)
-	_test_calm_threshold_freezes_sleepiness(t)
-	_test_only_motion_settles_her(t)
-	_test_alley_trickle(t)
-	_test_falls_asleep(t)
-	_test_sleeping_baby_is_less_sensitive(t)
-	_test_wakes_up_with_penalty(t)
-	_test_full_excitement_cries(t)
-	_test_one_bump_no_longer_ends_the_day(t)
-	_test_a_sustained_source_at_the_top_cries(t)
-	_test_the_overflow_mass_needs_both_size_and_time(t)
-	_test_the_overflow_mass_drains_with_the_window(t)
+	await _test_a_street_day_never_settles_and_a_park_day_does(t)
+	await _test_calm_zone_speeds_sleep(t)
+	await _test_idle_drains_sleepiness(t)
+	await _test_running_blocks_sleep_and_excites(t)
+	await _test_calm_threshold_freezes_sleepiness(t)
+	await _test_only_motion_settles_her(t)
+	await _test_alley_trickle(t)
+	await _test_falls_asleep(t)
+	await _test_sleeping_baby_is_less_sensitive(t)
+	await _test_wakes_up_with_penalty(t)
+	await _test_full_excitement_cries(t)
+	await _test_one_bump_no_longer_ends_the_day(t)
+	await _test_a_sustained_source_at_the_top_cries(t)
+	await _test_the_overflow_mass_needs_both_size_and_time(t)
+	await _test_the_overflow_mass_drains_with_the_window(t)
 
 # ------------------------------------------------------------- pure numbers ---
 
@@ -103,20 +107,34 @@ func _build(t) -> void:
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	_stroller.add_child(camera)
 	t.add_child(_stroller)
-	_stroller.set_physics_process(false)
+	_stroller.set_physics_process(false)  # the test sets her velocity; only the baby runs
 	_baby = Baby.new()
 	_stroller.add_child(_baby)
 	_baby.set_world(_world)
-	_baby.set_physics_process(false)
 
 func _teardown() -> void:
 	_stroller.free()
 	_world.free()
 
-## Drives the baby by hand at a fixed step so results do not depend on frame timing.
+## Lets whole physics frames pass with the baby in the tree: its own `_physics_process()` runs her
+## meters, one fixed step per frame (the project's own physics rate, `Engine.physics_ticks_per_second`).
 func _simulate(seconds: float) -> void:
-	for i in int(round(seconds / STEP)):
-		_baby._physics_process(STEP)
+	for i in maxi(1, int(round(seconds * Engine.physics_ticks_per_second))):
+		await _baby.get_tree().physics_frame
+
+## A long stretch of real physics frames in a fraction of the wall time: the engine hands each
+## frame `1 / Engine.physics_ticks_per_second * Engine.time_scale` seconds, so the clock is sped
+## up for the stretch and put back after it. The frame in progress when the scale changes keeps
+## the delta it started with, so one frame passes at the normal scale before the caller goes on;
+## a check after this reads a range, not an exact sum.
+func _simulate_fast(seconds: float) -> void:
+	var frame := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
+	var clock := Engine.time_scale
+	Engine.time_scale = FAST_SCALE
+	for i in maxi(1, int(round(seconds / frame))):
+		await _baby.get_tree().physics_frame
+	Engine.time_scale = clock
+	await _baby.get_tree().physics_frame
 
 func _walk() -> void:
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
@@ -132,7 +150,7 @@ func _stand() -> void:
 func _test_walking_fills_sleepiness(t) -> void:
 	_build(t)
 	_walk()
-	_simulate(10.0)
+	await _simulate(10.0)
 	t.close_to(_baby.sleepiness, Tuning.SLEEPINESS_GAIN_WALKING * 10.0,
 			"walking fills sleepiness at the base rate", 0.1)
 	_teardown()
@@ -196,19 +214,20 @@ func _test_standing_still_is_worse_than_walking_but_affordable(t) -> void:
 func _test_a_street_day_never_settles_and_a_park_day_does(t) -> void:
 	_build(t)
 	_walk()
-	_simulate(Tuning.day_length(1))
-	t.check(_baby.state == GameEnums.BabyState.AWAKE,
+	await _simulate_fast(Tuning.day_length(1))
+	t.check(_baby.state == GameEnums.BabyState.AWAKE and _baby.sleepiness < Tuning.METER_MAX,
 			"a whole day of undisturbed street walking still does not settle her")
 	_teardown()
 
 	_build(t)
 	_walk()
-	_simulate(45.0)          # the walk out to the park
+	var walk_out := 45.0
+	await _simulate_fast(walk_out)          # the walk out to the park
 	_world.calm = true
-	var elapsed := 45.0
+	var elapsed := walk_out
 	var short_day := Tuning.day_length(Tuning.RUN_LENGTH_DAYS)
 	while _baby.state != GameEnums.BabyState.ASLEEP and elapsed < short_day:
-		_simulate(1.0)
+		await _simulate(1.0)
 		elapsed += 1.0
 	t.check(_baby.state == GameEnums.BabyState.ASLEEP,
 			"a walk out plus one calm stretch does settle her")
@@ -221,7 +240,7 @@ func _test_calm_zone_speeds_sleep(t) -> void:
 	_build(t)
 	_world.calm = true
 	_walk()
-	_simulate(10.0)
+	await _simulate(10.0)
 	t.close_to(_baby.sleepiness,
 			Tuning.SLEEPINESS_GAIN_WALKING * Tuning.SLEEPINESS_CALM_ZONE_MULTIPLIER * 10.0,
 			"a calm zone multiplies the sleepiness gain", 0.1)
@@ -231,7 +250,7 @@ func _test_idle_drains_sleepiness(t) -> void:
 	_build(t)
 	_baby.sleepiness = 50.0
 	_stand()
-	_simulate(10.0)
+	await _simulate(10.0)
 	t.close_to(_baby.sleepiness, 50.0 - Baby.SLEEPINESS_DRAIN_IDLE * 10.0,
 			"standing still drains sleepiness", 0.1)
 	_teardown()
@@ -240,7 +259,7 @@ func _test_running_blocks_sleep_and_excites(t) -> void:
 	_build(t)
 	_baby.sleepiness = 50.0
 	_sprint()
-	_simulate(1.0)
+	await _simulate(1.0)
 	t.close_to(_baby.sleepiness, 50.0, "running neither fills nor drains sleepiness", 0.1)
 	t.close_to(_baby.excitement,
 			(Baby.EXCITEMENT_FROM_RUNNING - Baby.EXCITEMENT_DECAY_RUNNING) * 1.0,
@@ -254,7 +273,7 @@ func _test_calm_threshold_freezes_sleepiness(t) -> void:
 	# Noise exactly cancels the walking decay, so excitement holds above the threshold.
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING
 	_walk()
-	_simulate(4.0)
+	await _simulate(4.0)
 	t.close_to(_baby.sleepiness, 40.0,
 			"sleepiness is frozen, not drained, above the calm threshold", 0.05)
 	t.close_to(_baby.excitement, Tuning.EXCITEMENT_CALM_THRESHOLD + 5.0,
@@ -296,7 +315,7 @@ func _test_only_motion_settles_her(t) -> void:
 	_build(t)
 	_baby.excitement = 50.0
 	_stand()
-	_simulate(5.0)
+	await _simulate(5.0)
 	t.close_to(_baby.excitement, 50.0,
 			"a quiet spot with nobody moving holds the meter where it is", 0.1)
 	_teardown()
@@ -304,7 +323,7 @@ func _test_only_motion_settles_her(t) -> void:
 	_build(t)
 	_baby.excitement = 50.0
 	_walk()
-	_simulate(5.0)
+	await _simulate(5.0)
 	t.close_to(_baby.excitement, 50.0 - Tuning.EXCITEMENT_DECAY_WALKING * 5.0,
 			"walking the same quiet spot is what brings it down", 0.1)
 	_teardown()
@@ -326,7 +345,7 @@ func _test_alley_trickle(t) -> void:
 	t.check(Baby.EXCITEMENT_FROM_ALLEY > alley_decay * 0.5,
 			"but it is close enough underneath that an alley is not somewhere she recovers")
 	# Where the alley's ground sits among the other four is `_test_only_motion_settles_her`'s.
-	_simulate(1.0)
+	await _simulate(1.0)
 	t.close_to(_baby.last_incoming, Baby.EXCITEMENT_FROM_ALLEY,
 			"an alley contributes its trickle to incoming excitement")
 	_teardown()
@@ -342,7 +361,7 @@ func _test_falls_asleep(t) -> void:
 	# so re-pitching the fill cannot silently stop this test reaching the threshold.
 	_baby.sleepiness = Tuning.METER_MAX - Tuning.SLEEPINESS_GAIN_WALKING * 0.5
 	_walk()
-	_simulate(1.0)
+	await _simulate(1.0)
 	EventBus.return_phase_started.disconnect(handler)
 	t.check(_baby.state == GameEnums.BabyState.ASLEEP, "a full sleepiness meter puts the baby to sleep")
 	t.check(announced[0], "falling asleep starts the return phase")
@@ -353,7 +372,7 @@ func _test_sleeping_baby_is_less_sensitive(t) -> void:
 	_baby.state = GameEnums.BabyState.ASLEEP
 	_world.noise = 20.0
 	_walk()
-	_simulate(STEP)
+	await _simulate(ONE_FRAME)
 	t.close_to(_baby.last_incoming, 20.0 * Baby.SLEEPING_SENSITIVITY,
 			"incoming excitement is damped while the baby sleeps")
 	_teardown()
@@ -365,7 +384,7 @@ func _test_wakes_up_with_penalty(t) -> void:
 	_baby.excitement = Tuning.EXCITEMENT_WAKE_THRESHOLD - 2.0
 	_world.noise = 40.0
 	_walk()
-	_simulate(0.5)
+	await _simulate(0.5)
 	t.check(_baby.state == GameEnums.BabyState.AWAKE, "loud enough noise wakes a sleeping baby")
 	t.close_to(_baby.sleepiness, Baby.WAKE_SLEEPINESS_PENALTY,
 			"waking costs the sleepiness penalty")
@@ -376,12 +395,12 @@ func _test_full_excitement_cries(t) -> void:
 	_baby.excitement = Tuning.METER_MAX - 1.0
 	_world.noise = 60.0
 	_walk()
-	_simulate(0.5)
+	await _simulate(0.5)
 	t.check(_baby.state == GameEnums.BabyState.CRYING, "a full excitement meter loses the day")
 	# Crying is terminal for the day: nothing moves after it.
 	var frozen := _baby.excitement
 	_stand()
-	_simulate(2.0)
+	await _simulate(2.0)
 	t.close_to(_baby.excitement, frozen, "the meters stop once the baby is crying")
 	_teardown()
 
@@ -403,10 +422,10 @@ func _test_full_excitement_cries(t) -> void:
 ## the part of the jolt that landed *after* the bar was already clamped, which a jolt this short
 ## barely has any of.
 func _test_one_bump_no_longer_ends_the_day(t) -> void:
-	var from_89 := _one_bump_from(t, 89.0)
+	var from_89 := await _one_bump_from(t, 89.0)
 	t.check(not from_89["crying"], "one contact from 89 does not end the day")
 
-	var from_95 := _one_bump_from(t, 95.0)
+	var from_95 := await _one_bump_from(t, 95.0)
 	t.check(not from_95["crying"],
 			"one contact from 95 does not end the day either, though it reaches the cap (overflow %.2f)"
 			% from_95["overflow"])
@@ -423,7 +442,7 @@ func _test_a_sustained_source_at_the_top_cries(t) -> void:
 	# Comfortably net-positive while walking, so the whole window's worth clears the threshold.
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0
 	_walk()
-	_simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW)
+	await _simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW)
 	t.check(_baby.state == GameEnums.BabyState.CRYING,
 			"a source that keeps emitting at the cap for the whole window ends the day")
 	_teardown()
@@ -435,7 +454,7 @@ func _test_the_overflow_mass_needs_both_size_and_time(t) -> void:
 	_baby.excitement = Tuning.METER_MAX
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0  # net +10/s, well above the threshold
 	_walk()
-	_simulate(0.5)  # 0.5s of it is 5 points of mass, under `Baby.EXCITEMENT_OVERFLOW_TO_CRY`
+	await _simulate(0.5)  # 0.5s of it is 5 points of mass, under `Baby.EXCITEMENT_OVERFLOW_TO_CRY`
 	t.check(_baby.state != GameEnums.BabyState.CRYING,
 			"not enough time at the cap yet, however loud the source")
 	_teardown()
@@ -444,7 +463,7 @@ func _test_the_overflow_mass_needs_both_size_and_time(t) -> void:
 	_baby.excitement = Tuning.METER_MAX
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 2.0  # net +2/s: 6 points over the whole window
 	_walk()
-	_simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW)
+	await _simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW)
 	t.check(_baby.state != GameEnums.BabyState.CRYING,
 			"and a source too quiet to clear the mass in the window never ends the day, however "
 			+ "long she stays")
@@ -458,14 +477,14 @@ func _test_the_overflow_mass_drains_with_the_window(t) -> void:
 	_baby.excitement = Tuning.METER_MAX
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 2.0  # stays under the threshold throughout
 	_walk()
-	_simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW * 0.5)
+	await _simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW * 0.5)
 	var mid := _baby.overflow_mass()
 	t.check(mid > 0.0, "the source has left some mass behind")
 	_world.noise = 0.0
-	_simulate(STEP)
+	await _simulate(ONE_FRAME)
 	t.close_to(_baby.overflow_mass(), mid,
 			"the mass does not clear the instant the source is gone", 0.1)
-	_simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW + 1.0)
+	await _simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW + 1.0)
 	t.close_to(_baby.overflow_mass(), 0.0,
 			"and it has fully aged out of the window well after she has left", 0.01)
 	_teardown()
@@ -480,12 +499,17 @@ func _one_bump_from(t, at: float) -> Dictionary:
 			Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
 	_baby.excitement = at
 	_walk()
-	var jolt := Crowd.BUMP_DURATION
-	while jolt > 0.0:
-		agent.excitement._jolt = jolt
+	var frame := 1.0 / Engine.physics_ticks_per_second
+	# Bounded, so a jolt that `advance()` stopped running down fails the check below rather than
+	# hanging the suite.
+	var frames := int(Crowd.BUMP_DURATION / frame) + 10
+	while agent.excitement.is_startled() and frames > 0:
 		_world.noise = agent.excitement.contribution_at(_stroller.global_position)
-		_baby._physics_process(STEP)
-		jolt -= STEP
+		await _baby.get_tree().physics_frame
+		agent.excitement.advance(frame)
+		frames -= 1
+	t.check(not agent.excitement.is_startled(),
+			"a bump's jolt runs down within its own duration (from %.0f)" % at)
 	var result := {"excitement": _baby.excitement,
 			"crying": _baby.state == GameEnums.BabyState.CRYING,
 			"overflow": _baby.overflow_mass()}
