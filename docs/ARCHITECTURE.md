@@ -1052,6 +1052,13 @@ field with its value before and after (`tests/shared_state.gd`).
   reaching the doorstep or a calm interior, the field's own edge, the shared broadcast clock,
   and silencing one or all for the rest of the day.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
+- `booted_main.gd` — a helper the runner does not load, shared by the suites that boot the real
+  `scenes/main.tscn`: it hands each boot a save at a scratch path, lets real frames pass until she
+  stands in a world (everything after her is built in the same frame), finds what `main` built by
+  the names it gives (`City`, `Interior`, `Day`, `Resistance`, `Entities/Stroller` and her `Baby`,
+  the screens), and presses the title and the summary through the viewport. `main` has no public
+  read surface: no game class reads anything back off the composition root, so a suite reads its
+  tree rather than a query only tests would call.
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
   `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
   its own and read what the director put in the street from the street (`steps`, `traps`,

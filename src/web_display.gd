@@ -19,9 +19,10 @@ static func apply(config: RunConfig) -> void:
 		_cap_the_ratio(cap)
 
 ## The page's `?dpr=` cap, or 0.0 for none: not on a page, not asked for, or not asked of this
-## page (see the gate above).
-static func dpr_cap(config: RunConfig) -> float:
-	if not _reads_the_url(config.live_debug, OS.get_name() == "Web"):
+## page (see the gate above). `on_web` is whether the run is a Web export, the build the game is on
+## unless a caller says otherwise.
+static func dpr_cap(config: RunConfig, on_web := OS.get_name() == "Web") -> float:
+	if not _reads_the_url(config.live_debug, on_web):
 		return 0.0
 	return _cap_from_query(config.page_query)
 

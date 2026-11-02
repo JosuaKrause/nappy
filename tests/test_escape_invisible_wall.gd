@@ -12,8 +12,9 @@ extends RefCounted
 ## it at tile 74,27. `main._build_the_world_for()` takes them out
 ## (`InteriorScene.take_the_walls_out()`) before it builds the city.
 ##
-## **Driven through the real `main.tscn`**, booted on the building the way a run's own ending is
-## and walked out of through the service door's `exit_requested`, so what it reads is the handover
+## **Driven through the real `main.tscn`** (`tests/booted_main.gd`), booted on the building the way
+## a run's own ending is, its briefs pressed through the viewport, and walked out of through the
+## service door's `exit_requested`, so what it reads is the handover
 ## itself rather than a copy of it. A boot straight onto the street (`--start-escape city`) never builds the
 ## building, which is why nothing that starts there meets the wall.
 ##
@@ -21,7 +22,9 @@ extends RefCounted
 ## `--start-escape`, so day 1, standing at tile 74,27 on the east sidewalk of the tunnel chain's
 ## street (`docs/evidence/escape-invisible-wall-2026-10-17/`).
 
-const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+const Boot := preload("res://tests/booted_main.gd")
+## The save the boot is handed, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_escape_invisible_wall_scratch.json"
 const SEED := 4216201080
 const DAY := 1
 ## Where the player stood, a tile below the strip.
@@ -33,35 +36,35 @@ func run(t) -> void:
 	GameState.start_run(SEED)
 	GameState.header.day = DAY
 	GameState.facts.escape_section = DaySpec.Section.BUILDING
-	var main: Node2D = MAIN_SCENE.instantiate()
-	t.add_child(main)
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	t.check(main._interior != null, "the boot stands in the building")
-	main._on_summary_continued(main._flow.mode)
-	var before := _her_page_counts(main._player)
-	main._interior.exit_requested.emit()
-	main._on_summary_continued(main._flow.mode)
-	var after := _her_page_counts(main._player)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE)
+	var main := booted.main
+	var interior := Boot.interior(main)
+	t.check(interior != null, "the boot stands in the building")
+	await Boot.press_continue(t, main)
+	var before := _her_page_counts(Boot.player(main))
+	if interior:
+		interior.exit_requested.emit()
+	await Boot.press_continue(t, main)
+	var after := _her_page_counts(Boot.player(main))
 	t.check(after == before,
 			"walking her out into the city leaves her pages' counts as they were (%s, then %s)"
 			% [before, after])
-	t.check(main._city != null and main._flow.spec.section == DaySpec.Section.CITY,
+	var city := Boot.city(main)
+	t.check(city != null and city.is_ancestor_of(Boot.player(main)),
 			"and the service door has put her in the city")
-	if main._city != null:
+	if city != null:
 		_test_she_can_walk_north_from_where_the_player_stood(t, main)
 		_test_nothing_but_the_city_stands_on_the_escape_streets(t, main)
 		_test_nothing_of_the_building_is_drawn_in_the_city(t, main)
-	t.get_tree().paused = false
 	Telemetry.end_run()
-	main.free()
+	booted.free_all()
 	GameState.facts.escape_section = saved_section
 
 ## The player's own moment: on the sidewalk at 74,27, with the street open ahead of her, a step
 ## north is not stopped.
 func _test_she_can_walk_north_from_where_the_player_stood(t, main: Node2D) -> void:
-	var player: Stroller = main._player
-	var city: City = main._city
+	var player := Boot.player(main)
+	var city := Boot.city(main)
 	player.global_position = city.map.tile_to_world(WHERE_SHE_STOOD)
 	t.check(city.map.is_walkable(WHERE_SHE_STOOD + Vector2i.UP)
 			and city.map.is_walkable(WHERE_SHE_STOOD + Vector2i.UP * 2),
@@ -76,8 +79,8 @@ func _test_she_can_walk_north_from_where_the_player_stood(t, main: Node2D) -> vo
 ## body overlaps no collision body that is not the city's own — the city's buildings, its boundary
 ## and every event's body all live under `City`, so anything else there is a wall nobody drew.
 func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) -> void:
-	var city: City = main._city
-	var player: Stroller = main._player
+	var city := Boot.city(main)
+	var player := Boot.player(main)
 	var plan := FinalePlanner.route(city.map)
 	var space := city.get_world_2d().direct_space_state
 	var query := PhysicsShapeQueryParameters2D.new()
@@ -117,7 +120,7 @@ func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) ->
 ## they would show over the city's ground and buildings there. Every picture under the building
 ## but its fade, which `InteriorScene.clear_fade()` still lifts over the street, is hidden.
 func _test_nothing_of_the_building_is_drawn_in_the_city(t, main: Node2D) -> void:
-	var interior: InteriorScene = main._interior
+	var interior := Boot.interior(main)
 	var fade := interior.get_node("FadeLayer")
 	var asked := 0
 	var drawn := 0

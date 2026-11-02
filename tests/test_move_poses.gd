@@ -25,10 +25,19 @@ extends RefCounted
 ## suite would otherwise rest on a chance that any change to how the crowd moves can undo. The suite
 ## checks the day still runs when the swing is touched.
 ##
-## `run()` snapshots the whole save first and puts it back last, and points `GameSave` at a scratch
-## file, so nothing here leaks into the next suite or reaches the player's save.
+## **The booted game is driven the way a player and the engine drive it** (`tests/booted_main.gd`):
+## the title's joystick button pressed through the viewport, her marks read through the contact's
+## own completion (`ContactPoint.complete_now()`), and the walk's tick that `main` runs each physics
+## frame made of the same two public ticks it calls, the resistance's (`ResistanceDirector.tick()`)
+## and the day's (`DayController.tick()`).
+##
+## `run()` snapshots the whole save first and puts it back last, and every boot is handed a save at
+## a scratch path (`main.use_save()`), so nothing here leaks into the next suite or reaches the
+## player's save.
 
-const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+const Boot := preload("res://tests/booted_main.gd")
+## The save every boot is handed, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_move_poses_scratch.json"
 const SEEDS: Array[int] = [4242, 1]
 const STEP := 1.0 / 30.0
 ## How long she walks the day before the swing, in seconds.
@@ -50,33 +59,34 @@ func run(t) -> void:
 	var bumped := func(_at: Vector2) -> void: _bumps += 1
 	EventBus.crowd_bumped.connect(bumped)
 	for seed_value in SEEDS:
-		_walk_the_day(t, seed_value)
+		await _walk_the_day(t, seed_value)
 	EventBus.crowd_bumped.disconnect(bumped)
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
 	GameState.calendar.checkpoint = baseline["checkpoint"]
 
 ## A booted `Main` standing in day 12 on `seed_value`, a normal run under `--invincible`, reached
-## with `--seed` and `--day` (a flagged run never touches the save), with the mark read.
-func _day_twelve(t, seed_value: int) -> Node2D:
+## with `--seed` and `--day`, walked from the title's joystick button, with the mark read.
+func _day_twelve(t, seed_value: int) -> Boot.Booted:
 	var words := ["--invincible", "--seed", str(seed_value), "--day", str(ResistanceSteps.swing_day())]
-	var main: Node2D = MAIN_SCENE.instantiate()
-	main.configure(RunConfig.parse(PackedStringArray(words), "", true))
-	t.add_child(main)
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	main._on_title_start(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.RIGHT)
-	if main._flow.mode == RunFlow.Mode.BRIEF:
-		main._on_summary_continued(main._flow.mode)
-	var director: ResistanceDirector = main._resistance
-	var mark := director.current_step()
-	director._on_contact_completed(mark.index if mark else -1)
-	return main
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
+			RunConfig.parse(PackedStringArray(words), "", true))
+	await Boot.press_title(t, booted.main, "Right")
+	var summary := Boot.summary(booted.main)
+	if summary and summary.is_showing():
+		await Boot.press_continue(t, booted.main)
+	var mark := Boot.resistance(booted.main).contact()
+	if mark:
+		mark.complete_now()
+	return booted
 
 func _walk_the_day(t, seed_value: int) -> void:
-	var main := _day_twelve(t, seed_value)
-	var city: City = main._city
-	var director: ResistanceDirector = main._resistance
+	var booted: Boot.Booted = await _day_twelve(t, seed_value)
+	var main := booted.main
+	var city := Boot.city(main)
+	var director := Boot.resistance(main)
+	var day := Boot.day(main)
+	var player := Boot.player(main)
 	var swing := director.contact_position()
 	var seen := {}
 	for instance in city.events.instances():
@@ -90,19 +100,24 @@ func _walk_the_day(t, seed_value: int) -> void:
 	_check_the_tick(t, main, seed_value, -1, counts, seen, last)
 	for tick in ticks:
 		if tick == swing_tick:
-			t.check(main._day.is_running(), "seed %d: the day still runs when the swing is touched"
+			t.check(day.is_running(), "seed %d: the day still runs when the swing is touched"
 					% seed_value)
-			main._player.global_position = swing
-			var task := director.current_step()
-			director._on_contact_completed(task.index if task else -1)
+			player.global_position = swing
+			var task := director.contact()
+			if task:
+				task.complete_now()
 			# The cordon's officers set out, none of them stepped yet: each joined where he stands.
 			_check_the_tick(t, main, seed_value, tick, counts, seen, last)
 		elif tick < swing_tick and tick % BUMP_EVERY == BUMP_EVERY - 1:
 			_stand_against_a_walker(main)
 		else:
-			var here: Vector2 = main._player.global_position
-			main._player.global_position = here.move_toward(swing, Tuning.WALK_SPEED * STEP)
-		main._physics_process(STEP)
+			var here: Vector2 = player.global_position
+			player.global_position = here.move_toward(swing, Tuning.WALK_SPEED * STEP)
+		# Not `main`'s own gate (ticks only while walking and unpaused, and counts `play_ticks`):
+		# every pass ticks, so this loop does not stop at the day's end. Under `--invincible` the
+		# day never leaves walking, so the two read the same here.
+		director.tick(STEP)
+		day.tick(STEP)
 		city.events._physics_process(STEP)
 		city.crowd._physics_process(STEP)
 		counts["ticks"] += 1
@@ -119,26 +134,26 @@ func _walk_the_day(t, seed_value: int) -> void:
 			% [seed_value, counts["came"]])
 	t.check(counts["officers"] > 0, "seed %d: cordon officers walked (%d officer ticks)"
 			% [seed_value, counts["officers"]])
-	t.get_tree().paused = false
 	Telemetry.end_run()
-	main.free()
+	booted.free_all()
 
 ## Stands her a few pixels off the nearest walker, inside his bump radius, so his bump pushes him.
 func _stand_against_a_walker(main: Node2D) -> void:
-	var here: Vector2 = main._player.global_position
+	var player := Boot.player(main)
+	var here: Vector2 = player.global_position
 	var nearest: CrowdAgent = null
-	for agent in main._city.crowd.agents():
+	for agent in Boot.city(main).crowd.agents():
 		if agent.kind != CrowdAgent.Kind.WALKER or not agent.is_inside_tree():
 			continue
 		if nearest == null or agent.global_position.distance_squared_to(here) \
 				< nearest.global_position.distance_squared_to(here):
 			nearest = agent
 	if nearest != null:
-		main._player.global_position = nearest.global_position + Vector2(Crowd.BUMP_RADIUS * 0.5, 0.0)
+		player.global_position = nearest.global_position + Vector2(Crowd.BUMP_RADIUS * 0.5, 0.0)
 
 func _check_the_tick(t, main: Node2D, seed_value: int, tick: int, counts: Dictionary,
 		seen: Dictionary, last: Dictionary) -> void:
-	var city: City = main._city
+	var city := Boot.city(main)
 	var listed := city.map.moves.all()
 	for instance in city.events.instances():
 		if not instance.is_inside_tree():
@@ -160,7 +175,7 @@ func _check_the_tick(t, main: Node2D, seed_value: int, tick: int, counts: Dictio
 		last[id] = agent.position
 		_check_one(t, seed_value, tick, "crowd %s" % CrowdAgent.Kind.keys()[agent.kind],
 				agent._move, agent.position, listed, counts)
-	var cordon: ParkCordon = main._resistance._happenings.cordon
+	var cordon: ParkCordon = Boot.resistance(main)._happenings.cordon
 	if cordon == null:
 		return
 	for officer in cordon.officers:
