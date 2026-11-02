@@ -315,14 +315,14 @@ func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
 ## checkpoint) and on to day 11 on the same world, the last nerve lost there, and the lost-day
 ## screen's continue. The world she then plays day 8 in — the next boot if the continue reloaded,
 ## this one if it did not — has the window unboarded, and the run's checkpoint restart was counted
-## once and not followed by a second `run_begun`. Both boots are handed one sitting of the test's
-## own (`main.use_sitting()`), which carries the run and the title's answer across the reload as
-## the one a real reload parks at the tree's root does.
+## once and not followed by a second `run_begun`. Both boots are handed one node of the test's own
+## in place of the tree's root (`main.use_sitting_home()`): the continue parks the first boot's
+## sitting there, carrying the run and the title's answer, and the next boot takes it from there.
 func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpoint(t) -> void:
-	var sitting := Sitting.new()
-	t.add_child(sitting)
+	var home := Node.new()
+	t.add_child(home)
 	var main: Node2D = MAIN_SCENE.instantiate()
-	main.use_sitting(sitting)
+	main.use_sitting_home(home)
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
@@ -357,8 +357,11 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	if reloads.size() == 1:
 		t.get_tree().paused = false
 		main.free()
+		var parked := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+		t.check(parked != null and parked.carry_the_run_over,
+				"the continue parks the sitting in its home, carrying the run over")
 		playing = MAIN_SCENE.instantiate()
-		playing.use_sitting(sitting)
+		playing.use_sitting_home(home)
 		t.add_child(playing)
 		t.get_tree().process_frame.emit()
 		t.get_tree().process_frame.emit()
@@ -380,8 +383,10 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	EventBus.run_begun.disconnect(on_begun)
 	t.get_tree().paused = false
 	Telemetry.end_run()
+	t.check(home.get_child_count() == 1 and not (home.get_child(0) as Sitting).carry_the_run_over,
+			"and the next boot took that sitting and spent the carry")
 	playing.free()
-	sitting.free()
+	home.free()
 
 func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t) -> void:
 	GameState.start_run(_SEED)

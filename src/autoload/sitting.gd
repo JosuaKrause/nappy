@@ -11,10 +11,11 @@ extends Node
 ## boot before it parked at the tree's root, or builds one as its own child on the sitting's first
 ## boot, and hands it to whoever needs it through their setup: the title (`TitleScreen.use_sitting()`,
 ## the restart guard), the frame recorder (`FrameRecorder.setup()`, its one file) and the save
-## symbol (`SaveIndicator.outlive_the_scene()` and `carried()`, its home). Before a real reload
-## `main` parks it at the tree's root, which a reload leaves alone. A test hands a `main` a fresh
-## one of its own through `main.use_sitting()`, and hands the same one to the boot that stands for
-## the reload, rather than setting and resetting statics.
+## symbol (`SaveIndicator.outlive_the_scene()` and `carried()`, its home). Before every reload
+## `main` parks it at the tree's root, which a reload leaves alone. A test hands its boots a node of
+## its own to stand for the root (`main.use_sitting_home()`), so the boot that stands for the
+## reload takes the sitting the one before parked there, rather than the test setting and
+## resetting statics; a test driving a `main` off the tree hands it one (`main.use_sitting()`).
 ##
 ## **It is the home of a save symbol that outlives its scene**: `SaveIndicator.outlive_the_scene()`
 ## reparents a symbol that is up under this node, and the next boot's `SaveIndicator.carried()`

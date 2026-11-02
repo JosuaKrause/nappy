@@ -1488,6 +1488,9 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	var saved_section := GameState.facts.escape_section
 	var day := GameState.header.day
 	var main: Node2D = MAIN_SCRIPT.new()
+	# Never in the tree, so it takes no sitting of its own: it is handed one.
+	var sitting := Sitting.new()
+	main.use_sitting(sitting)
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	main._city = city
@@ -1555,6 +1558,7 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	clock.free()
 	city.free()
 	main.free()
+	sitting.free()
 	t.get_tree().paused = false
 	GameState.facts.escape_section = saved_section
 
@@ -2069,6 +2073,9 @@ func _test_finale_entities_stop_when_the_tree_pauses(t) -> void:
 func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	var main: Node2D = MAIN_SCRIPT.new()
+	# Never in the tree, so it takes no sitting of its own: it is handed one.
+	var sitting := Sitting.new()
+	main.use_sitting(sitting)
 	main._summary = SUMMARY_SCENE.instantiate()
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
@@ -2123,6 +2130,7 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	main._pause.free()
 	clock.free()
 	main.free()
+	sitting.free()
 	t.get_tree().paused = saved_paused
 
 ## A section's brief and the epilogue are the one exception to an ordinary day's own "Esc opens over

@@ -145,10 +145,15 @@ var _save_indicator: SaveIndicator
 ## What this sitting keeps across the scene reloads a run makes — see `Sitting`'s own doc: the run
 ## carried on from its checkpoint, the title's answer, the title's restart stamp, the frame record's
 ## file and the save symbol a reload carries. Taken in `_ready()` by `_take_the_sitting()`: the one
-## `use_sitting()` handed in, else the one the boot before parked at the tree's root, else built
-## here; and handed to the title, the frame recorder and the save symbol. `null` only on a `main`
-## that never entered the tree.
+## `use_sitting()` handed in, else the one the boot before parked in the sitting's home, else built
+## here; and handed to the title, the frame recorder and the save symbol. A `main` that never
+## enters the tree has none unless it is handed one.
 var _sitting: Sitting
+## Where the sitting is parked before a reload and looked for at boot (`_park_the_sitting()`,
+## `_take_the_sitting()`): the tree's root, which a reload leaves alone, unless `use_sitting_home()`
+## handed another node. A test hands a node of its own, so a reload it stands in for parks and
+## finds the sitting exactly as a real one does.
+var _sitting_home: Node
 
 ## What `_reload_the_scene()` calls in place of reloading the scene, set only by `use_reload()`. An
 ## empty `Callable`, the default, reloads normally.
@@ -222,11 +227,18 @@ func use_reload(reload: Callable) -> void:
 func use_quit(quit: Callable) -> void:
 	_quit_override = quit
 
-## Hands this boot the sitting it keeps across a reload instead of the one the tree's root holds
-## (`Sitting`): a test hands a fresh one, and the same one to the boot that stands for the reload.
-## Set before the boot runs; a boot never handed one takes the root's, or builds its own.
+## Hands this boot a sitting of the caller's own (`Sitting`) instead of the one its home holds: a
+## test that drives a `main` piece by piece, off the tree, hands it the one it reads. Set before
+## the boot runs; a boot never handed one takes its home's, or builds its own.
 func use_sitting(sitting: Sitting) -> void:
 	_sitting = sitting
+
+## Hands this boot the node its sitting is parked in before a reload and looked for at boot, in
+## place of the tree's root (`_sitting_home`): a suite's own node, which it frees afterwards, so
+## nothing it drives is left at the root. Set before the boot runs; the boot that stands for the
+## reload is handed the same node.
+func use_sitting_home(home: Node) -> void:
+	_sitting_home = home
 
 func _ready() -> void:
 	# First, so every boot (the escape's and a recipe's too) deletes the save when its run ends.
@@ -1229,8 +1241,7 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 	# lesson by it and the page counts it.
 	EventBus.controls_chosen.emit(mode == ControlsMode.Mode.JOYSTICK, by_key)
 	_touch_controls.set_mode(mode, side)
-	if _sitting:
-		_sitting.controls_word = ControlsMode.word_for(mode, side)
+	_sitting.controls_word = ControlsMode.word_for(mode, side)
 	if _readout:
 		_readout.close_the_title()
 	# A new game's mode is the title's Hard Mode checkbox, read as the title is dismissed — the
@@ -1625,7 +1636,7 @@ func _add_touch_controls() -> void:
 	_touch_controls.rotated = _rotated
 	var word := config.controls_word
 	if (_flow.escape_from_a_run() or _flow.opening == RunFlow.Opening.CARRIED_FROM_CHECKPOINT) \
-			and _sitting and _sitting.controls_word != "":
+			and _sitting.controls_word != "":
 		word = _sitting.controls_word
 	_touch_controls.set_mode(ControlsMode.from_word(word), ControlsMode.side_from_word(word))
 	_hand_the_controls_cover_to_the_events()
@@ -2016,8 +2027,7 @@ func _restart_run() -> void:
 	# open the escape again over a run that was just thrown away. A no-op for a restart from an
 	# ordinary day and for a finished run, which the `run_ended` subscriber has already cleared.
 	_facts.escape_section = DaySpec.Section.NONE
-	if _sitting:
-		_sitting.note_restart_requested()
+	_sitting.note_restart_requested()
 	_reload_the_scene()
 
 ## **Every scene reload goes through here**: the held restart (`_restart_run()`), the day-14
@@ -2026,8 +2036,8 @@ func _restart_run() -> void:
 ## (`_finish_the_section()`). A reload frees this node and the symbol under it, and a change in
 ## the save state may still be waiting for the browser — the restart's deletion, the lost day's
 ## write a checkpoint reload follows, or day 14's own save at the hand-over — so the symbol is
-## carried over first (`_carry_the_save_symbol_over()`), under the sitting this node parks at the
-## tree's root (`_park_the_sitting()`), and the next boot adopts both. One place, so a reload added
+## carried over first (`_carry_the_save_symbol_over()`), under the sitting this node parks in its
+## home, the tree's root (`_park_the_sitting()`), and the next boot adopts both. One place, so a reload added
 ## later cannot forget the symbol or the sitting, nor leave the flow in any mode but RELOADING.
 ##
 ## The tree is unpaused first: `reload_current_scene` builds the new scene into the same tree, and
@@ -2038,36 +2048,43 @@ func _restart_run() -> void:
 func _reload_the_scene() -> void:
 	_flow.reload()
 	_carry_the_save_symbol_over()
+	_park_the_sitting()
 	var tree := Engine.get_main_loop() as SceneTree
 	tree.paused = false
 	if _reload_override.is_valid():
 		_reload_override.call()
 		return
-	_park_the_sitting(tree)
 	tree.call_deferred("reload_current_scene")
 
 ## Takes the sitting this boot keeps across a reload: the one `use_sitting()` handed in, else the
-## one the boot before parked at the tree's root (`_park_the_sitting()`), else a new one as this
+## one the boot before parked in the sitting's home (`_park_the_sitting()`), else a new one as this
 ## node's own child, which this sitting's first boot builds. Looked up here, in the composition
 ## root, and handed down from it; nothing below fetches it.
 func _take_the_sitting() -> void:
 	if _sitting:
 		return
-	_sitting = get_tree().root.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	_sitting = _the_sittings_home().get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
 	if _sitting:
 		return
 	_sitting = Sitting.new()
 	_sitting.name = Sitting.NODE_NAME
 	add_child(_sitting)
 
-## Hands the sitting to the tree's root just before a real reload, which leaves the root alone, so
-## the next boot takes it back (`_take_the_sitting()`) with everything it keeps, the save symbol
-## carried under it included. Only a sitting under this node needs moving: one already at the root
-## stays there, and one a test handed in is the test's own. Not on the reload a test hands in
-## (`use_reload()`), whose next boot is handed the same sitting by the test.
-func _park_the_sitting(tree: SceneTree) -> void:
-	if _sitting and is_ancestor_of(_sitting):
-		_sitting.reparent(tree.root, false)
+## Hands the sitting to its home just before every reload, the one a test stands in for included,
+## so the next boot takes it back (`_take_the_sitting()`) with everything it keeps, the save symbol
+## carried under it included. Only a sitting under this node needs moving, since the reload frees
+## this node: one already in its home stays there, and one `use_sitting()` handed in is its
+## caller's own.
+func _park_the_sitting() -> void:
+	if is_ancestor_of(_sitting):
+		_sitting.reparent(_the_sittings_home(), false)
+
+## The node the sitting is parked in and looked for in: `use_sitting_home()`'s, else the tree's
+## root, read through `Engine.get_main_loop()` for the same reason `_reload_the_scene()` reads it.
+func _the_sittings_home() -> Node:
+	if _sitting_home:
+		return _sitting_home
+	return (Engine.get_main_loop() as SceneTree).root
 
 ## The scene tree's own pause flag, read through `Engine.get_main_loop()` rather than `get_tree()`
 ## so this can be asked whether or not `main` itself is parented. `get_tree()` logs an
