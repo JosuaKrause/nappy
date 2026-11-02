@@ -16,6 +16,7 @@
 // reported as a candidate with the missing evidence named, and left where it is. A clone that
 // existed before the run is never examined further.
 import { execFile } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { lstat, readdir, realpath, rm } from 'node:fs/promises';
 import { basename, dirname, join, relative, sep } from 'node:path';
 
@@ -118,8 +119,18 @@ const cloneOf = (path, root) => {
   return join(root, parts[0], parts[1]);
 };
 
-const alive = pid => {
-  try { process.kill(pid, 0); return true; } catch (error) { return error.code === 'EPERM'; }
+// A process that has exited but is not yet reaped (a zombie) still answers signal 0 and holds no
+// file. Linux names that state in /proc; macOS has no /proc and reaps promptly.
+const zombie = pid => {
+  try {
+    // The name in parentheses may itself hold `)`: the state follows the last one.
+    const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
+    return stat.slice(stat.lastIndexOf(')') + 1).trimStart().startsWith('Z');
+  } catch { return false; }
+};
+export const alive = pid => {
+  try { process.kill(pid, 0); } catch (error) { return error.code === 'EPERM'; }
+  return !zombie(pid);
 };
 
 // One run's ledger. `begin` before the browser starts, `observe` while it runs (as often as

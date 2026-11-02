@@ -2217,7 +2217,7 @@ func _pause_on_focus_lost() -> void:
 ## moving; an idle child is freed with this node. A symbol already at the root stays there, even
 ## when idle, and the next boot adopts it again.
 func _carry_the_save_symbol_over() -> void:
-	if _save_indicator and _save_indicator.is_showing():
+	if _save_indicator:
 		_save_indicator.outlive_the_scene()
 
 ## Takes the symbol the reloading `main` handed to the tree's root, or builds one as this node's own

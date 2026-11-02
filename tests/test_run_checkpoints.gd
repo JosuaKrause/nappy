@@ -45,11 +45,30 @@ func run(t) -> void:
 	_test_no_control_on_the_title_stops_a_press(t)
 	_test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t)
 
-	GameSave._clear_now()
+	_with_saving(func() -> void: GameSave.clear())
 	GameSave.set_path_override("")
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
 	GameState.calendar.checkpoint = baseline["checkpoint"]
+
+## `callable` run as a windowed release run, which saves, against the scratch file `run()` set; the
+## configuration is taken back off afterwards, since a booted `main` hands its own.
+func _with_saving(callable: Callable) -> void:
+	GameSave.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
+	callable.call()
+	GameSave.configure(null)
+
+## `GameState` written to the scratch file the way a game writes it, under way. Whether it was kept.
+func _write_to_the_scratch_file() -> bool:
+	var kept := [false]
+	_with_saving(func() -> void: kept[0] = GameSave.write(GameState, true) == GameSave.Result.CONFIRMED)
+	return kept[0]
+
+## What the scratch file resumes into `GameState`, `{}` when nothing.
+func _read_from_the_scratch_file() -> Dictionary:
+	var resumed := [{}]
+	_with_saving(func() -> void: resumed[0] = GameSave.try_resume(GameState))
+	return resumed[0]
 
 # ------------------------------------------------------------------ the checkpoint ---
 
@@ -88,9 +107,9 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 			"day 5 is under way and the checkpoint is still day 4's dawn")
 
 	# Through the file, so the checkpoint given back is the one a closed game would come back to.
-	t.check(GameSave._write_now(GameState, true), "the run is written with its checkpoint")
+	t.check(_write_to_the_scratch_file(), "the run is written with its checkpoint")
 	GameState.start_run(_SEED + 1)
-	t.check(not GameSave._read_now(GameState).is_empty(), "and read back")
+	t.check(not _read_from_the_scratch_file().is_empty(), "and read back")
 	t.check(GameState.calendar.checkpoint_day() == 4, "with its checkpoint on day 4")
 
 	var keys := _run_keys()
@@ -281,10 +300,10 @@ func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
 	GameState.header.nerves = 1
 	GameState.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
 	var kept := GameState.header.play_ticks
-	t.check(GameSave._write_now(GameState, true), "the run is written after the go-back")
+	t.check(_write_to_the_scratch_file(), "the run is written after the go-back")
 	GameState.start_run(_SEED + 1)
 	t.check(GameState.header.play_ticks == 0, "a new game starts at zero")
-	GameSave._read_now(GameState)
+	_read_from_the_scratch_file()
 	t.check(kept == 8000 and GameState.header.play_ticks == 8000,
 			"a save continued after a go-back keeps the play time (%d)" % GameState.header.play_ticks)
 
@@ -735,7 +754,7 @@ func _tap_through_the_engine(t, presented: Vector2, touch: bool) -> void:
 		Input.flush_buffered_events()
 
 ## `main._on_title_start()` reads the box for a new game and nothing for a resumed one, and tells
-## the counter the mode only for the new game. The rig is `tests/test_save.gd`'s bare gate `main`,
+## the counter the mode only for the new game. The rig is `tests/test_save_wiring.gd`'s bare gate `main`,
 ## with the real title scene in place of a bare `TitleScreen`, so the box is there to read.
 func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 	var main := _bare_gate_main(t)
