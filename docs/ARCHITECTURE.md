@@ -1046,16 +1046,17 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
   `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
   its own and read what the director put in the street from the street (`steps`, `traps`,
-  `reach_contacts`, `crossing`, `replacement` and `placement_kinds` do; the other five still build
-  over the live run and read the director's fields): `steps` (the step table, touch-completion,
-  a task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
-  finished task shown by the world and the sabotage putting the city's masts out once she has
-  walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`
+  `reach_contacts`, `crossing`, `replacement`, `placement_kinds` and `arrow` do; the other four
+  still build over the live run and read the director's fields): `steps` (the step table,
+  touch-completion, a task activated the same day its mark is touched, the seeded dawn draws, an
+  expiring step, a finished task shown by the world and the sabotage putting the city's masts out
+  once she has walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`
   (where a mark and its guard stand), `traps` (a task riding on a look-alike, and the robber or
   guard set on her from off screen), `placement_kinds` (the four placement kinds a perform step
-  may use, each task's own site, a day built in its order), `arrow` (the red arrow), `crossing`
-  (day 9's door done by crossing it) and `reach_marks`, `reach_contacts`, `reach_relocated` and
-  `reach_narrow` (every mark and contact placed where she can reach it).
+  may use, each task's own site, a day built in its order), `arrow` (the red
+  arrow: what it points at, chosen and swept by the director's ticks), `crossing` (day 9's door
+  done by crossing it) and `reach_marks`, `reach_contacts`, `reach_relocated` and `reach_narrow`
+  (every mark and contact placed where she can reach it).
 - `test_destination_drawing.gd` — on every task day, the mark on offer draws its chalk and keeps
   its touched picture once read, and the task's destination draws none, untouched or done, while
   the red arrow ends on it.
