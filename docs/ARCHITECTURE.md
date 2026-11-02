@@ -34,6 +34,8 @@ src/
 	game_state.gd         the run, as a registry of its parts (autoload: GameState)
 	game_save.gd          persists a run to disk and reads one back; not an autoload, a static
 	                      namespace
+	sitting.gd            what a sitting keeps across the scene reloads a run makes; not an
+	                      autoload, a node `main` parks at the tree's root (see "`Sitting`")
 	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens
 	                                                       (autoload: VisitCounter)
   run/                  the run's state, a domain model — one registered list of sub-states —
@@ -613,9 +615,10 @@ line's `--controls joystick|joystick-left|joystick-right|tap`, then the page's o
 then `TAP`) before the title screen
 exists at all — the answer a rig gets if it skips the title (`--no-title`, a screenshot rig) — and
 `main._on_title_start()` overrides both the moment a player actually presses a button. The side is
-never saved: it lasts until the title asks again. The day-14 hand-over to the escape reloads the
-scene and opens no title, so `ControlsMode.remember()` keeps the title's answer in static variables
-for the rest of the process, and that boot's `_add_touch_controls()` takes it instead of the
+never saved: it lasts until the title asks again. The day-14 hand-over to the escape and a run
+carried on to its checkpoint reload the scene and open no title, so `main._on_title_start()` keeps
+the title's answer on the `Sitting` (`controls_word`, in the words `--controls` takes, written by
+`ControlsMode.word_for()`), and those boots' `_add_touch_controls()` take it instead of the
 configured word. The command-line door stays behind the debug build; the query door behind
 `RunConfig.live_debug`, so a release page's own `?debug=1&controls=` reaches it too
 (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags").
@@ -777,6 +780,23 @@ observers that draw it — `day_started(spec)` before anything is built and `day
 it is placed — and `main` connects the developer readout (the day's line and its routes), the HUD
 (whether its clock reads to the hundredth) and the route rig (its targets for the day) to them; an
 authored scene's day is never planned.
+
+### `Sitting`
+Not an autoload: a plain `Node` (`src/autoload/sitting.gd`, on the model's layer) that holds what one
+sitting keeps across the scene reloads a run makes, the held restart, the day-14 hand-over to the
+escape, a run carried on to its checkpoint and a recipe's lost section played again, since
+`reload_current_scene()` frees every node `main` built. It holds four facts and is one home: the run
+carried over (`carry_the_run_over`), the title's answer (`controls_word`), the instant of the last
+held restart, which the title's restart guard measures a press against (`restarted_at_msec`), the
+desktop frame record's one file (`frame_record_path`), and the save symbol a reload carries, which
+`SaveIndicator.outlive_the_scene()` reparents under it. Process memory only, never saved. `main`
+takes the one the boot before parked at the tree's root, or builds one as its own child on the
+sitting's first boot, parks it at the root just before every reload (`main._park_the_sitting()`),
+and hands it to the title (`use_sitting()`), the frame recorder (`setup()`) and the save symbol;
+nothing below the composition root fetches it. A test hands its boots a node of its own in place
+of the root (`main.use_sitting_home()`), so the boot standing for a reload takes the sitting the
+boot before parked there, and hands a `main` it drives off the tree one directly
+(`main.use_sitting()`).
 
 ### `SummaryModel`
 Not an autoload: a pure `RefCounted` (`src/run/summary_model.gd`, the domain model) saying what one

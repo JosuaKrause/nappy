@@ -65,19 +65,6 @@ extends CanvasLayer
 signal start_requested(mode: ControlsMode.Mode, by_key: bool, side: ControlsMode.Side)
 signal quit_requested()
 
-## The instant `main._restart_run()` last asked for a scene reload, or `-INF` before the first one
-## this process. A `static var` on the class rather than a member on the node: `reload_current_scene()`
-## frees this screen's own instance and builds a fresh one, but the script class itself is never
-## unloaded, so this is the one place a fact can survive the freeing that crosses it — the same
-## thing an autoload would give, with no autoload added to hold it. See `_unhandled_input()`'s own
-## doc for what it guards.
-static var _restarted_at_msec := -INF
-
-## Called by `main._restart_run()`, immediately before it defers the reload — see that function's
-## own doc and this class's `_unhandled_input()`.
-static func note_restart_requested() -> void:
-	_restarted_at_msec = Time.get_ticks_msec()
-
 ## The milliseconds the guard measures a restart against: empty reads `Time.get_ticks_msec()`;
 ## `use_clock()` hands in another `Callable` returning milliseconds, so the guard window passing is
 ## a clock that moved on rather than a wait.
@@ -154,6 +141,17 @@ var _run: RunState
 ## by a test that opens one.
 func use_run(run: RunState) -> void:
 	_run = run
+
+## The sitting whose last restart the guard measures a press against
+## (`Sitting.restarted_at_msec`, which `main._restart_run()` stamps before its reload): a fresh
+## screen is built by that reload, so the stamp lives on the owner that outlives it, never on this
+## node. Handed in by `use_sitting()`; a screen handed none has seen no restart.
+var _sitting: Sitting
+
+## Hands the screen the sitting it measures a restart against. Called by `main` before the screen
+## enters the tree, and by a test that drives the guard.
+func use_sitting(sitting: Sitting) -> void:
+	_sitting = sitting
 
 func _ready() -> void:
 	# **The title has a colour of its own**, or the screen is four labels in one warm off-white and
@@ -407,7 +405,7 @@ func hard_mode_target() -> Rect2:
 ## `main._open_the_title()`, and this screen is up within a frame or two of the press that dismissed
 ## the ending. A stray press can still land squarely on a button — they are drawn in the same
 ## screen region a catch-all used to cover — so the guard answers exactly that case now rather than
-## every press on the screen. See `_restarted_at_msec`'s own doc for what survives the reload and
+## every press on the screen. See `Sitting.restarted_at_msec` for what survives the reload and
 ## `_RESTART_GUARD_SECONDS`'s for the window's own size.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
@@ -525,6 +523,7 @@ func _acknowledge_and_begin(mode: ControlsMode.Mode, side: ControlsMode.Side,
 ## which of them fired. See `_unhandled_input()`'s own doc for what the guard still answers now
 ## that a bare press elsewhere on the screen can no longer reach this function at all.
 func _begin(mode: ControlsMode.Mode, side: ControlsMode.Side, by_key := false) -> void:
-	if (_now_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
+	var restarted_at_msec: float = _sitting.restarted_at_msec if _sitting else -INF
+	if (_now_msec() - restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
 		return
 	start_requested.emit(mode, by_key, side)

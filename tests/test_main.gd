@@ -91,9 +91,6 @@ func run(t) -> void:
 	_test_return_window_is_off_under_the_override(t)
 	_test_is_rig_from_args(t)
 	_test_rig_quit_seconds_from(t)
-	ControlsMode.forget()
-	# The restart wiring the suite drove stamped the title's guard; give it back.
-	TitleScreen._restarted_at_msec = -INF
 	GameState.start_run(SEED)
 
 # ------------------------------------------------------------------ finding and booting ---
@@ -154,8 +151,12 @@ func _enter(t, main: Node2D) -> void:
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
 
-func _boot(t, words: Array, calls: Calls) -> Node2D:
+## `home`, when given, stands for the tree's root the boot parks its sitting in before a reload and
+## takes it from at boot (`main.use_sitting_home()`).
+func _boot(t, words: Array, calls: Calls, home: Node = null) -> Node2D:
 	var main := _instance(words, calls)
+	if home:
+		main.use_sitting_home(home)
 	await _enter(t, main)
 	return main
 
@@ -515,17 +516,31 @@ func _test_a_right_joystick_press_on_the_title_sets_the_controls_mode(t) -> void
 
 ## **A joystick-right player reaches the escape still joystick-right.** *(2026-10-10, the player:
 ## "permanently for the sitting".)* The day-14 hand-over reloads the scene and the escape's boot
-## opens no title, so its fresh controls take the title's answer this process remembers rather than
-## the rig's default. The previous test's right joystick press is that answer.
+## opens no title, so its fresh controls take the title's answer the sitting keeps rather than the
+## rig's default. A first boot's right joystick press is that answer, and its won day 14's continue
+## is the hand-over, which parks the sitting in a home of the test's own standing for the tree's
+## root; the boot standing for the reload is handed only that home and takes the sitting from it.
 func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
-	t.check(ControlsMode.has_remembered() and ControlsMode.remembered_mode() == ControlsMode.Mode.JOYSTICK
-			and ControlsMode.remembered_side() == ControlsMode.Side.RIGHT,
-			"the title's answer is remembered for the sitting")
+	var home := Node.new()
+	t.add_child(home)
+	var first_calls := Calls.new()
+	var first := await _boot(t, [], first_calls, home)
+	await _press_on_the_title(t, first, "Right")
+	_end_day_fourteen(first, false, true)
+	var day_fourteen := _one(first, "DaySummary") as DaySummaryScript
+	await UI.frames(t)
+	UI.push(day_fourteen, UI.touch_at(UI.centre(UI.button(day_fourteen, "Continue")), true))
+	await UI.frames(t)
+	t.check(first_calls.reloads.size() == 1, "day 14's continue hands over with a reload")
+	_shut(t, first)
+	var sitting := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	t.check(sitting != null and sitting.controls_word == "joystick-right",
+			"and parks the sitting, keeping the title's answer, in its home")
 	GameState.start_run(SEED)
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.facts.escape_section = DaySpec.Section.CITY
 	var calls := Calls.new()
-	var main := await _boot(t, [], calls)
+	var main := await _boot(t, [], calls, home)
 	var controls := _one(main, "TouchControls") as TouchControls
 	t.check(controls.controls_mode() == ControlsMode.Mode.JOYSTICK
 			and controls.run_button_center() == TouchControls.FOCUS_LEFT,
@@ -542,6 +557,7 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 			"and a brief in front of the walk adds no tick, with the tree running behind it")
 	GameState.facts.escape_section = DaySpec.Section.NONE
 	_shut(t, main)
+	home.free()
 	GameState.start_run(SEED)
 
 ## **A session on one booted game, in the order a session meets the screens.** The title opens once
@@ -557,6 +573,10 @@ func _test_a_session_on_one_booted_game(t) -> void:
 	t.check(GameState.header.play_ticks == 0, "start_run() zeroes the clock with the rest of the run")
 	var calls := Calls.new()
 	var main := _instance([], calls)
+	# Day 14's hand-over parks the sitting here rather than at the tree's root.
+	var home := Node.new()
+	t.add_child(home)
+	main.use_sitting_home(home)
 	await _check_a_boot_builds_the_one_control_reader(t, main)
 	await _check_the_title_then_a_key_starts_in_tap(t, main)
 	await _check_play_seconds_only_advance_while_the_world_moves(t, main)
@@ -564,6 +584,7 @@ func _test_a_session_on_one_booted_game(t) -> void:
 	await _check_a_won_day_fourteen_hands_over(t, main, calls)
 	await _check_the_summary_and_pause_restart_signals_are_both_connected(t, main, calls)
 	_shut(t, main)
+	home.free()
 	GameState.restore_snapshot(baseline)
 	GameState.facts.escape_section = DaySpec.Section.NONE
 	t.get_tree().paused = saved_paused

@@ -125,9 +125,9 @@ const RESET_SEED := 2
 ## that no suite starts on another's state: the run state and the trace it writes to (a silent
 ## one), the run configuration a booted `main` handed the observers (none, as before any boot, with
 ## the counter handed the live run, since the bus reaches it in suites that boot no `main`),
-## and the static seams a suite sets by hand (the save's override hooks, the frame recorder, the
-## remembered controls and the title's restart stamp). The run log and `VisitCounter`'s own state
-## and the `EventBus` connections are left alone, and so is everything else: `SharedState` compares
+## and the static seams a suite sets by hand (the save's override hooks and the frame recorder).
+## The run log and `VisitCounter`'s own state and the `EventBus` connections are left alone, and
+## so is everything else: `SharedState` compares
 ## the shared state after each suite and fails the suite that left it changed, except the fields
 ## it lists with a reason (these resets are the reason for some of them). It covers the tree's
 ## `paused`, `Engine.time_scale`, `Input.mouse_mode`, the nodes under the root and the runner,
@@ -140,11 +140,8 @@ func _reset_globals() -> void:
 	VisitCounter.configure(null, GameState)
 	GameSave.configure(null)
 	GameSave._path_override = ""
-	SaveIndicator.use_home(null)
 	FrameRecord.on = false
 	FrameRecord.ledger = null
-	ControlsMode.forget()
-	TitleScreen._restarted_at_msec = -INF
 
 ## Every suite, or the ones whose file name contains one of `filters`.
 ##

@@ -331,13 +331,15 @@ func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
 
 ## **A press within the guard window of a restart-triggered reload is swallowed, not started.**
 ## *(2026-09-07: "tapping on the game over screen often goes directly back to the game skipping the
-## title screen".)* The restart is stamped on the title screen's class (`note_restart_requested()`)
-## — the one place that survives the reload that frees the node under test itself — so the guard is
-## driven through that call rather than through `main._restart_run()`, which cannot safely be
-## called from a test: it defers a real `reload_current_scene()`, which nothing in this suite can
-## afford to trigger. The window passing is a restart stamped further back than the guard is long.
+## title screen".)* The restart is stamped on the sitting the title is handed
+## (`Sitting.note_restart_requested()`), the owner that outlives the reload that frees the node
+## under test itself, so the guard is driven through that call on a sitting of the test's own; the
+## restart wiring that stamps it in play is checked in `tests/test_save_wiring.gd`.
+## The window passing is a restart stamped further back than the guard is long.
 func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
+	var sitting := Sitting.new()
 	var title := _title(t)
+	title.use_sitting(sitting)
 	var started := [0]
 	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
 			_side: ControlsMode.Side) -> void: started[0] += 1)
@@ -346,7 +348,7 @@ func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
 	# The title is handed a clock that runs ahead of the real one by whatever the test says.
 	var ahead := [0]
 	title.use_clock(func() -> int: return Time.get_ticks_msec() + ahead[0])
-	TitleScreen.note_restart_requested()
+	sitting.note_restart_requested()
 	UI.push(title, _accept())
 	t.check(started[0] == 0, "a press right after a restart-triggered reload does not start a run")
 
@@ -356,8 +358,7 @@ func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
 
 	title.close()
 	title.free()
-	# The stamp is a static that outlives the title; give it back.
-	TitleScreen._restarted_at_msec = -INF
+	sitting.free()
 
 ## The title screen is **not** a pause, and the difference is the whole of what is behind it.
 ## *(M38: "as title screen just use the home and street in front without player and let act I events
