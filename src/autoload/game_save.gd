@@ -196,16 +196,20 @@ static func set_path_override(path: String) -> void:
 static func _path() -> String:
 	return _path_override if _path_override != "" else _DEFAULT_PATH
 
-## Set by a suite that boots a real `main` under a debug flag, to force `uses_save()`'s own answer:
-## `main` hands `configure()` whatever `RunConfig` the suite gave it, and a config carrying a dev flag
-## (`--invincible`, `--no-save`) is kept off the save by the debug policy however windowed it is, so
-## the gated names `main` calls (`write()`, `try_resume()`) would refuse it unless this says otherwise.
+## What answers `uses_save()` in place of the configuration, handed in by `use_gate()`: a `Callable`
+## taking nothing and returning a `bool`, or an empty one (the default) for "answer from the
+## configuration". A suite that boots a real `main` under a debug flag hands it one, since `main`
+## hands `configure()` whatever `RunConfig` the suite gave it, and a config carrying a dev flag
+## (`--invincible`, `--no-save`) is kept off the save by the debug policy however windowed it is.
 ## A suite whose `RunConfig` is windowed and carries no flag (`RunConfig.parse()` with
-## `headless_display` false) needs no override, and neither does one that only drives `GameSave`
-## itself. `null` (the default) means "answer normally"; a suite sets this to `true` against a scratch
-## file (`set_path_override()` first, never `_DEFAULT_PATH`) and clears it back to `null` when done, or
-## the override leaks into every suite that runs after it.
-static var _uses_save_override: Variant = null
+## `headless_display` false) needs no gate, and neither does one that only drives `GameSave` itself.
+static var _gate := Callable()
+
+## Hands `uses_save()` the answer to give instead of the configuration's, or takes it back with an
+## empty `Callable`. Point `set_path_override()` at a scratch file first, never at the player's own
+## save, and take the gate back when done, or it reaches every suite that runs after.
+static func use_gate(gate: Callable) -> void:
+	_gate = gate
 
 ## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then,
 ## which `uses_save()` answers with no save at all: nothing reads or writes the player's save
@@ -239,8 +243,8 @@ static func configure(config: RunConfig) -> void:
 ## gets, and for `?debug=1` alone with none of the bundle's own parameters named, since neither one
 ## is a run built any differently from the one every other visitor gets.
 static func uses_save() -> bool:
-	if _uses_save_override != null:
-		return bool(_uses_save_override)
+	if _gate.is_valid():
+		return bool(_gate.call())
 	if _config == null or _config.headless:
 		return false
 	if not _config.debug_build:

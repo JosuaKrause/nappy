@@ -2190,13 +2190,13 @@ func _test_escape_section_came_from_the_file(t) -> void:
 ## on the autoload, opening a save closed inside a section — opens on the title, through the day's
 ## own `_open_the_title()`, with the section's clock standing still behind it, and the title's start
 ## is the day's own `_on_title_start()`, whose resume gate raises the section's brief. **Booted for
-## real from a save on disk** (a scratch file, `GameSave._uses_save_override`), so what is checked is
+## real from a save on disk** (a scratch file, `GameSave.use_gate()`), so what is checked is
 ## `_ready()`'s own decision — `_escape_section_came_from_the_file()` read at the boot and handed to
 ## `_open_the_first_screen_of_the_escape()` — not a screen this test opened by hand.
 func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void:
 	_saved_section = GameState.facts.escape_section
 	GameSave.set_path_override(_SCRATCH_SAVE)
-	GameSave._uses_save_override = true
+	GameSave.use_gate(func() -> bool: return true)
 	GameState.start_run(SEEDS[0])
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.facts.escape_section = DaySpec.Section.BUILDING
@@ -2233,8 +2233,8 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
 			"the clock still standing still behind the brief")
 
-	GameSave._clear_now()
-	GameSave._uses_save_override = null
+	GameSave.clear()
+	GameSave.use_gate(Callable())
 	GameSave.configure(null)
 	GameSave.set_path_override("")
 	AtlasLibrary.close_loading_window()

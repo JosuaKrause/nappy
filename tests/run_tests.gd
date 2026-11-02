@@ -140,7 +140,7 @@ func _reset_globals() -> void:
 	VisitCounter.configure(null, GameState)
 	GameSave.configure(null)
 	GameSave._path_override = ""
-	GameSave._uses_save_override = null
+	GameSave.use_gate(Callable())
 	SaveIndicator.use_home(null)
 	FrameRecord.on = false
 	FrameRecord.ledger = null

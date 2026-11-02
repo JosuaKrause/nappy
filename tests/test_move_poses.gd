@@ -54,7 +54,9 @@ func run(t) -> void:
 	for seed_value in SEEDS:
 		_walk_the_day(t, seed_value)
 	EventBus.crowd_bumped.disconnect(bumped)
-	GameSave._clear_now()
+	GameSave.use_gate(func() -> bool: return true)
+	GameSave.clear()
+	GameSave.use_gate(Callable())
 	GameSave.configure(null)
 	GameSave.set_path_override("")
 	GameState.run_parts.restore_run_data(baseline)
@@ -66,12 +68,12 @@ func run(t) -> void:
 func _day_twelve(t, seed_value: int) -> Node2D:
 	GameState.start_run(seed_value)
 	GameState.header.day = ResistanceSteps.swing_day()
-	GameSave._write_now(GameState, true)
-	GameSave._uses_save_override = true
+	GameSave.use_gate(func() -> bool: return true)
+	GameSave.write(GameState, true)
 	var main: Node2D = MAIN_SCENE.instantiate()
 	main.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
 	t.add_child(main)
-	GameSave._uses_save_override = null
+	GameSave.use_gate(Callable())
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	main._on_title_start(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.RIGHT)

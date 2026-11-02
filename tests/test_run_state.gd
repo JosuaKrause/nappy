@@ -29,6 +29,7 @@ class FakeOwner:
 	var part := RunHeader.new()
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE_PATH))
@@ -43,13 +44,25 @@ func run(t) -> void:
 	_test_every_part_declares_each_field_once_in_its_data(t)
 	_test_every_part_round_trips_through_json(t)
 
-	GameSave._clear_now()
+	_with_saving(func() -> void: GameSave.clear())
 	GameSave.configure(null)
 	GameSave.set_path_override("")
 	GameState.start_run(1)
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = false
 	GameState.calendar.checkpoint = {}
+
+## `callable` run as a windowed release run, which saves, against the scratch file `run()` set.
+func _with_saving(callable: Callable) -> void:
+	GameSave.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
+	callable.call()
+	GameSave.configure(null)
+
+## What the scratch file resumes into `GameState`, `{}` when nothing.
+func _resumed_from_the_scratch_file() -> Dictionary:
+	var resumed := [{}]
+	_with_saving(func() -> void: resumed[0] = GameSave.try_resume(GameState))
+	return resumed[0]
 
 ## Everything the file holds but the build that wrote it.
 func _without_build(file: Dictionary) -> Dictionary:
@@ -78,7 +91,7 @@ func _test_a_save_written_by_main_loads_and_resumes(t, fixture: Dictionary) -> v
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture["written"]))
 	file.close()
-	var resume := GameSave._read_now(GameState)
+	var resume := _resumed_from_the_scratch_file()
 	t.check(resume.get("day_under_way", false) == true, "main's save resumes, a day under way")
 	t.check(_without_build(SCENARIO.written()) == _without_build(fixture["written"]),
 			"and the run it gives back writes the same file again (%s)" % _first_difference(
@@ -89,7 +102,7 @@ func _test_a_lost_day_from_a_loaded_save_gives_back_what_main_gave_back(t, fixtu
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture["written"]))
 	file.close()
-	GameSave._read_now(GameState)
+	_resumed_from_the_scratch_file()
 	var after: Dictionary = SCENARIO.after_a_loss()
 	t.check(_without_build(after) == _without_build(fixture["after_a_loss"]),
 			"a day lost after resuming main's save gives back what main's did (%s)"
