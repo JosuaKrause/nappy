@@ -1255,10 +1255,13 @@ check_that "lib_import_restore.sh leaves a file that was already dirty alone" \
 rm -rf "$ir_repo"
 # Every script the helper's header lists as covered sources it and arms it.
 for ir_script in check test cost-table bake-atlases export-web scene-draft scene-recipes record trailer shot; do
+    # A trap line carries the run step; export-web.sh, record.sh and trailer.sh trap a function that does.
+    ir_run='^[[:space:]]*trap .*import_restore_run'
+    case "$ir_script" in export-web|record|trailer) ir_run='^    import_restore_run$';; esac
     check_that "$ir_script.sh sources lib_import_restore.sh and arms it" \
-        'rg -qF "tools/lib_import_restore.sh\"" "$root/tools/$ir_script.sh" \
-         && rg -q "^[[:space:]]*import_restore_arm " "$root/tools/$ir_script.sh" \
-         && rg -q "import_restore_run" "$root/tools/$ir_script.sh"'
+        'grep -Fq "tools/lib_import_restore.sh\"" "$root/tools/$ir_script.sh" \
+         && grep -Eq "^[[:space:]]*import_restore_arm " "$root/tools/$ir_script.sh" \
+         && grep -Eq "$ir_run" "$root/tools/$ir_script.sh"'
 done
 
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---

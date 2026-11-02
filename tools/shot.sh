@@ -172,7 +172,6 @@ FOCUS_NOTED="$(rig_focus_note)"
 # shellcheck source=tools/lib_import_restore.sh
 source "$PROJECT_DIR/tools/lib_import_restore.sh"
 import_restore_arm "$PROJECT_DIR"
-trap 'import_restore_run' EXIT
 "$GODOT" --path "$PROJECT_DIR" --resolution "$RESOLUTION" --disable-vsync \
 	-- --screenshot "$OUT" --after "$SECONDS_TO_WAIT" "$@" &
 GODOT_PID=$!
