@@ -14,7 +14,7 @@ extends RunSubState
 ## the escape, so a game closed in a section opens on that section's brief.
 var escape_section: int = 0
 ## Alley tiles a completed pickup step's chalk mark stood at, this run — read by
-## `ResistanceDirector._pick_reachable()` and `_nearest_alley_within()` so a later mark never
+## `ResistanceDirector._pick_reachable()` and `nearest_alley_within()` so a later mark never
 ## relocates onto, or starts on, the same alley while another eligible one is still in reach
 ## (M177). **Not given back by a lost day**: a lost day's own placement never reads this list (the
 ## mark it is about was placed at dawn, before any tile could be recorded against it today), so an

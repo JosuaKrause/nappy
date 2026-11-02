@@ -7,7 +7,7 @@ extends "res://tests/resistance_rig.gd"
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
 ## (`raid_vans()`, `frontage_of()`, `spine_x()`, `tick()`). Five tests still read a private: three call
 ## `EventScheduler._open_ground_for()` (the two burnt-shell tests and the every-front sweep), one
-## `EventScheduler._place_masts()`, one the director's `_weighted_mast_index()` (the
+## `EventScheduler._place_masts()`, one the director's `weighted_mast_index()` (the
 ## near-mast test); and `_start_the_day()` hands the baby its stroller with `baby._stroller = player`.
 ## They move with a public form of each.
 func run(t) -> void:
@@ -699,7 +699,7 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 	t.check(live_tomorrow, "while the others speak")
 	director.free()
 
-## `_weighted_mast_index()` is the draw `_place_at_a_mast()` makes among the masts already found
+## `weighted_mast_index()` is the draw `_place_at_a_mast()` makes among the masts already found
 ## reachable, so this reaches the weighting rule directly, over two tiles at fixed, known
 ## distances from her, rather than through a live day 11 — whose own reachable masts a small test
 ## city can offer as few as one of (`docs/DECISIONS.md`, M181, day 11's mast in the map's corner),
@@ -728,7 +728,7 @@ func _test_the_mast_task_favors_the_near_mast(t) -> void:
 	for i in draws:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("mast weight test %d" % i)
-		var index := director._weighted_mast_index(beside, rng)
+		var index := director.weighted_mast_index(beside, rng)
 		if index == 0:
 			near_drawn += 1
 		elif index == 1:
@@ -747,7 +747,7 @@ func _test_the_mast_task_favors_the_near_mast(t) -> void:
 	for i in draws:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("mast weight fallback test %d" % i)
-		var index := director._weighted_mast_index(beside, rng)
+		var index := director.weighted_mast_index(beside, rng)
 		if index == 0:
 			fallback_near += 1
 		elif index == 1:

@@ -109,7 +109,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 
 ## downy-otter, "a mark is never placed in an alley she cannot reach" (*"also a mark should never
 ## be placed in an alley that is not reachable (ie sealed off)"*, olive-koala statement 9), on the
-## relocation path: `_nearest_alley_within()` asks `_reachable_from_home()` over the flood
+## relocation path: `nearest_alley_within()` asks `_reachable_from_home()` over the flood
 ## `_ensure_reachability()` builds once and caches for the day. Asked here from every tenth
 ## sidewalk tile of two cities, over every mark day, the way a mark relocating mid-walk is placed,
 ## and every answer is checked two ways: against `_day_reachability()`, the same rule the director
@@ -117,7 +117,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 ## a plain walk from the doorstep over walkable ground minus `CityMap.closed_tiles`,
 ## `soft_sealed_tiles` and `obstructed_tiles` — the per-tile record of where a body stands, a
 ## second source the director's discs do not read. Two seeds and a tenth of the sidewalks keep the
-## cost down: `_nearest_alley_within()` is linear in the alley count per call.
+## cost down: `nearest_alley_within()` is linear in the alley count per call.
 ##
 ## **A region door counts as a way through**, for the director and for the tile walk alike, so a
 ## mark reachable only by crossing a district door passes here. That is the player's own rule
@@ -168,7 +168,7 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 				if i % 10 != 0:
 					continue
 				var here := city.map.tile_to_world(sidewalks[i])
-				var nearest := director._nearest_alley_within(here)
+				var nearest := director.nearest_alley_within(here)
 				if nearest == Vector2.INF:
 					continue
 				checked += 1
