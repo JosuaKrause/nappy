@@ -186,8 +186,8 @@ lint_order_links() {
     done < <(grep -nE '\]\(todo/[^)/]+' "$f")
 }
 
-# One pair of words is one thing. A name is <date>-<word>-<word>, with a -2, -3 suffix for a second
-# decision or review item from one entry; the words need not be in tools/names/, since a name typed
+# One pair of words is one thing. A name is <date>-<word>-<word>, with a -2, -3 or -<word>-<word> suffix
+# for a further decision or review item from one entry; the words need not be in tools/names/, since a name typed
 # by hand is taken all the same. A pair may appear under two dates, or as a playtest and as
 # anything else, nowhere. Under one date, an entry's folder, its decisions and its review items
 # share the name on purpose; a decision or review item new-name.sh drew without --entry says so in
@@ -206,7 +206,7 @@ lint_duplicate_names() {
                 [[ -e "$path" ]] || continue
                 base="${path##*/}"
                 base="${base%.md}"
-                [[ "$base" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z]+-[a-z]+(-[0-9]+)?$ ]] || continue
+                [[ "$base" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z]+-[a-z]+(-[0-9]+|-[a-z]+-[a-z]+)?$ ]] || continue
                 own=0
                 if [[ "$folder" == docs/decisions || "$folder" == docs/review ]] \
                     && grep -qF '· not from an entry' <<<"$(head -n 1 "$path")"; then

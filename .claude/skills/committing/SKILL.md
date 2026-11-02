@@ -272,8 +272,9 @@ stale fastest because it holds the work the PR just did — and every other gove
 touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`, `README`,
 `CLAUDE.md`, the skills, and the docstrings on anything edited. **A PR that finishes an item deletes
 the item's file and files what it built as a decision**, `docs/decisions/<entry name>.md` (made with
-`tools/new-name.sh decision --entry <name> "<title>"`, which takes `-2` and on when the entry
-already has one); **when that was the entry's last item, the entry's folder goes in the same PR**,
+`tools/new-name.sh decision --entry <name> "<title>"`, which names a further record of an entry
+`<entry name>-<adjective>-<animal>`, never `-2`: two branches building at once would draw the same
+next number (inbox #937 in plaid-penguin, inbox #941)); **when that was the entry's last item, the entry's folder goes in the same PR**,
 because the queue holds open work only and the entry stops being open the moment the PR merges.
 Another entry's `after:` line naming it stays as it is: the record is what makes the wait count
 as over (`tools/queue.sh` prints it as `<name>, closed`, and the lint accepts it), so closing an
@@ -314,7 +315,8 @@ what is still open, with the built half filed as a decision.
 
 **And work that only a person can judge adds its review item in the same PR**: a file
 `docs/review/<entry name>.md`, made with `tools/new-name.sh review --entry <name> "<title>"`, which
-takes `-2` and on for a second item from the same entry (woolly-finch 18). The item says what to do,
+names a second item from the same entry `<entry name>-<adjective>-<animal>`, never a number
+(woolly-finch 18, inbox #941). The item says what to do,
 where to look, and the question a run answers, its steps written as prose rather than numbered; the
 record of what was built stays in the decision. The review items are the list a playtest is asked
 against, so an item missing from them is an item no run will ever be asked to look at.

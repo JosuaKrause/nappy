@@ -15,9 +15,11 @@
 # the date, since two things spoken "busy-badger" would be one name for two things.
 #
 # A decision and a review item usually take the name of the entry they come from (`--entry`), as
-# `<entry name>.md`, and `<entry name>-2.md` and on when that is taken. `--entry` accepts the full
-# name, its two words, or an old entry's milestone number (M210). One drawn without `--entry` gets
-# a new pair, and its heading ends "· not from an entry", which tools/lint.sh reads.
+# `<entry name>.md`; when that is taken, a second one is named `<entry name>-<adjective>-<animal>.md`,
+# a pair drawn like any other and never a number, since two branches building at once would draw
+# the same next number (inbox #937 in plaid-penguin, inbox #941). `--entry` accepts the full name,
+# its two words, or an old entry's milestone number (M210). One drawn without `--entry` gets a new
+# pair, and its heading ends "· not from an entry", which tools/lint.sh reads.
 #
 # A queue entry's README.md opens with its band line, `priority: later` unless `--priority` names
 # another band, then a blank line and the heading, so a new entry passes tools/lint.sh as written;
@@ -42,8 +44,8 @@ docs/playtests, writes the thing it names with a heading and the date, and print
               review     docs/review/<name>.md
               playtest   docs/playtests/<name>.md
   --entry N   decision and review only: take the name of entry N (its full name, its two words,
-              or an old entry's milestone number such as M210) instead of a new one, with -2, -3
-              and on when that file exists
+              or an old entry's milestone number such as M210) instead of a new one; when that
+              file exists, the name gets a pair of words drawn after it, <entry>-<adjective>-<animal>
   --priority B
               todo only: the entry's band, bug, now, next, later or parked (default: later);
               tools/queue.sh prints the queue in the order the bands give
@@ -137,7 +139,8 @@ existing_names() {
 }
 
 # The names an entry can go by: the entry folders, and the decisions and review items named
-# after one (a suffixed -2 is the same entry's second file, not a name of its own).
+# after one (a suffixed number or pair of words is the same entry's further file, not a name of
+# its own).
 entry_names() {
     local folder
     for folder in "$root/docs/todo" "$root/docs/decisions" "$root/docs/review"; do
@@ -149,18 +152,37 @@ entry_names() {
 # Not `grep -q`: under pipefail it exits at the first match, the listing still writing into the pipe
 # dies of SIGPIPE, and the pipeline's status then reads as "not taken" -- a used pair drawn again.
 pair_taken() {
-    existing_names | grep -E "^[0-9]{4}-[0-9]{2}-[0-9]{2}-$1(-[0-9]+)?$" >/dev/null
+    existing_names | grep -E "^[0-9]{4}-[0-9]{2}-[0-9]{2}-($1|.+-$1)(-[0-9]+)?$" >/dev/null
 }
 
-# The first free <base>, <base>-2, <base>-3 ... in $1 (a folder), as a file <x>.md.
-free_suffix() {
-    local folder="$1" base="$2" candidate n=2
-    candidate="$base"
-    while [[ -e "$folder/$candidate.md" ]]; do
-        candidate="$base-$n"
-        n=$((n + 1))
+# A pair "<adjective>-<animal>" no name in the four folders uses, or nothing and status 1.
+adjective_list=()
+while IFS= read -r w; do [[ -n "$w" ]] && adjective_list+=("$w"); done < "$adjectives"
+animal_list=()
+while IFS= read -r w; do [[ -n "$w" ]] && animal_list+=("$w"); done < "$animals"
+draw_pair() {
+    local tries=0 candidate
+    while [[ $tries -lt 500 ]]; do
+        candidate="${adjective_list[$((RANDOM % ${#adjective_list[@]}))]}-${animal_list[$((RANDOM % ${#animal_list[@]}))]}"
+        if ! pair_taken "$candidate"; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+        tries=$((tries + 1))
     done
-    printf '%s\n' "$candidate"
+    return 1
+}
+
+# <base> when $1/<base>.md is free, otherwise <base>-<adjective>-<animal> with a pair no name uses:
+# a further file of an entry is named, never numbered.
+free_name() {
+    local folder="$1" base="$2" pair
+    if [[ ! -e "$folder/$base.md" ]]; then
+        printf '%s\n' "$base"
+        return 0
+    fi
+    pair="$(draw_pair)" || return 1
+    printf '%s\n' "$base-$pair"
 }
 
 resolve_entry() {
@@ -182,24 +204,10 @@ if [[ -n "$entry" ]]; then
     base="$(resolve_entry "$entry")" || exit 1
     words="${base#??????????-}"
 else
-    adjective_list=()
-    while IFS= read -r w; do [[ -n "$w" ]] && adjective_list+=("$w"); done < "$adjectives"
-    animal_list=()
-    while IFS= read -r w; do [[ -n "$w" ]] && animal_list+=("$w"); done < "$animals"
-    words=""
-    tries=0
-    while [[ $tries -lt 500 ]]; do
-        candidate="${adjective_list[$((RANDOM % ${#adjective_list[@]}))]}-${animal_list[$((RANDOM % ${#animal_list[@]}))]}"
-        if ! pair_taken "$candidate"; then
-            words="$candidate"
-            break
-        fi
-        tries=$((tries + 1))
-    done
-    if [[ -z "$words" ]]; then
+    words="$(draw_pair)" || {
         echo "new-name.sh: no free adjective-animal pair in 500 draws; add words to tools/names/" >&2
         exit 1
-    fi
+    }
     base="$day-$words"
 fi
 
@@ -217,7 +225,10 @@ case "$kind" in
         sub="decisions"
         [[ "$kind" == review ]] && sub="review"
         mkdir -p "$root/docs/$sub"
-        name="$(free_suffix "$root/docs/$sub" "$base")"
+        name="$(free_name "$root/docs/$sub" "$base")" || {
+            echo "new-name.sh: no free adjective-animal pair in 500 draws; add words to tools/names/" >&2
+            exit 1
+        }
         # Drawn without --entry, its name is its own, and the heading says so: under one date the
         # lint lets an entry, its decisions and its review items share a name, and this is how it
         # tells a fresh draw that happens to match another branch's entry from one of those.
