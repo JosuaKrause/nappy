@@ -12,10 +12,10 @@ item stays open for the statics read across the tree.
   hands it to the baby, the city (its scenery residency, its events and the crowd's timing), the
   building's events, the danger edges and the excitement halo; event instances get it through
   `EventWorld.timing`.
-- The twenty `if FrameRecord.on` counter lines in the drawing code are gone: `FrameRecorder` counts
+- The twenty-two `if FrameRecord.on` counter lines in the drawing code are gone: `FrameRecorder` counts
   `_draw()` calls by connecting the `draw` signal of the nodes it recognises, over the tree at setup
   and as nodes enter it, by class where it may name it and by a kind the view's nodes declare
-  (`FrameTiming.DRAW_KIND_META`) where it may not. A page without a record connects nothing.
+  (`FrameTiming.DRAW_KIND_META`) where it may not. A page without a record connects nothing. Every draw kind counts as before on a recorded run, but a park fence's rail panel, which its `_draw()` and its parent's both counted, counts once per draw, so `draws_other` drops by those; the power station's yard layer declares its kind before it joins the tree, so it is heard.
 - `PosterArt` is an instance `main` holds and hands down through `City.poster_art`, `PosterWalls.art`
   and `Building.poster_art`, so the daily city does not recompose its 15 textures; a scene reload
   composes them once more.
