@@ -262,7 +262,7 @@ func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t) -> void:
 	var main := booted.main
 	var summary := Boot.summary(main)
 	var day := Boot.day(main)
-	t.check(summary.is_showing() and not day.is_running(),
+	t.check(summary.is_showing() and _title_of(main) == _city_words(),
 			"the boot stands on the city section's brief")
 	await Boot.press_continue(t, main)
 	t.check(not summary.is_showing() and day.is_running(),
@@ -275,9 +275,9 @@ func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t) -> void:
 	EventBus.day_started.connect(count)
 	await _tap_then_key(t, main)
 	EventBus.day_started.disconnect(count)
-	t.check(summary.is_showing() and started.size() == 1 and t.get_tree().paused,
-			"the retry's brief is up rather than the retry walked past it (%d started, paused %s)"
-			% [started.size(), t.get_tree().paused])
+	t.check(summary.is_showing() and _title_of(main) == _city_words() and started.size() == 1,
+			"the retry's brief is up rather than the retry walked past it (%d started, '%s')"
+			% [started.size(), _title_of(main)])
 	_shut_down(t, booted)
 	GameState.facts.escape_section = DaySpec.Section.NONE
 
@@ -294,8 +294,10 @@ func _boot(t, args: Array) -> Boot.Booted:
 
 ## A tap on the continue button, then a key inside the two frames the tap's acknowledgement holds
 ## open, both pushed through the viewport, then long enough for the tap's own continue to come due.
+## The screen is let lay itself out first, so the button stands where it is drawn.
 func _tap_then_key(t, main: Node2D) -> void:
 	var summary := Boot.summary(main)
+	await UI.frames(t)
 	UI.push(summary, UI.touch_at(UI.centre(UI.button(summary, "Continue")), true))
 	var key := InputEventAction.new()
 	key.action = &"ui_accept"
@@ -303,6 +305,15 @@ func _tap_then_key(t, main: Node2D) -> void:
 	UI.push(summary, key)
 	for _frame in 4:
 		await t.get_tree().process_frame
+
+## What the summary's title says: a section's brief is titled with the section's own words, its
+## outcome screen with what ended it.
+func _title_of(main: Node2D) -> String:
+	return (Boot.summary(main).get_node("Root/Center/Lines/Title") as Label).text
+
+## The escape city section's own words, which its brief is titled with.
+func _city_words() -> String:
+	return Texts.ESCAPE_CITY
 
 ## Whether the summary shows its continue button: every screen but the ending does.
 func _continue_shown(main: Node2D) -> bool:

@@ -13,6 +13,7 @@ const _SCRATCH_SAVE := "user://test_run_config_scratch.json"
 const SEED := 4242
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_a_release_build_reads_no_command_line_flag(t)
 	_test_a_debug_build_reads_them(t)
 	_test_a_release_page_opens_the_bundle_only_with_debug(t)

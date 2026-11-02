@@ -58,7 +58,7 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	GameState.start_run(seed_value)
 	GameState.header.day = ResistanceSteps.swing_day()
 	_with_saving(func() -> void: _save.write(GameState, true))
-	var main: Node2D = MAIN_SCENE.instantiate()
+	var main: Node2D = Boot.MAIN_SCENE.instantiate()
 	main.use_save(_save)
 	# A run with no flag at all, whatever this process's own command line says.
 	main.configure(RunConfig.parse(PackedStringArray(), "", true, false, {}, false))
