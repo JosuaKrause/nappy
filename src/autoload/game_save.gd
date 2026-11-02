@@ -196,17 +196,6 @@ static func set_path_override(path: String) -> void:
 static func _path() -> String:
 	return _path_override if _path_override != "" else _DEFAULT_PATH
 
-## Set by a suite that boots a real `main` under a debug flag, to force `uses_save()`'s own answer:
-## `main` hands `configure()` whatever `RunConfig` the suite gave it, and a config carrying a dev flag
-## (`--invincible`, `--no-save`) is kept off the save by the debug policy however windowed it is, so
-## the gated names `main` calls (`write()`, `try_resume()`) would refuse it unless this says otherwise.
-## A suite whose `RunConfig` is windowed and carries no flag (`RunConfig.parse()` with
-## `headless_display` false) needs no override, and neither does one that only drives `GameSave`
-## itself. `null` (the default) means "answer normally"; a suite sets this to `true` against a scratch
-## file (`set_path_override()` first, never `_DEFAULT_PATH`) and clears it back to `null` when done, or
-## the override leaks into every suite that runs after it.
-static var _uses_save_override: Variant = null
-
 ## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then,
 ## which `uses_save()` answers with no save at all: nothing reads or writes the player's save
 ## before the run has said which flags it carries.
@@ -239,8 +228,6 @@ static func configure(config: RunConfig) -> void:
 ## gets, and for `?debug=1` alone with none of the bundle's own parameters named, since neither one
 ## is a run built any differently from the one every other visitor gets.
 static func uses_save() -> bool:
-	if _uses_save_override != null:
-		return bool(_uses_save_override)
 	if _config == null or _config.headless:
 		return false
 	if not _config.debug_build:

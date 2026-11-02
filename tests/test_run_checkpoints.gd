@@ -755,7 +755,7 @@ func _tap_through_the_engine(t, presented: Vector2, touch: bool) -> void:
 		Input.flush_buffered_events()
 
 ## `main._on_title_start()` reads the box for a new game and nothing for a resumed one, and tells
-## the counter the mode only for the new game. The rig is `tests/test_save_wiring.gd`'s bare gate `main`,
+## the counter the mode only for the new game. The rig is the bare gate `main` below,
 ## with the real title scene in place of a bare `TitleScreen`, so the box is there to read.
 func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 	var main := _bare_gate_main(t)
