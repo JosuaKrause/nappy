@@ -626,7 +626,7 @@ fi
 # unrelated prerequisite is stubbed; flag validation, process supervision and log checks stay real.
 recipe_project="$work_dir/recipe-project"
 mkdir -p "$recipe_project/tools" "$recipe_project/src/dev"
-cp tools/scene-recipes.sh tools/shot.sh tools/lib_dev_flags.sh tools/lib_disk_headroom.sh "$recipe_project/tools/"
+cp tools/scene-recipes.sh tools/shot.sh tools/lib_dev_flags.sh tools/lib_disk_headroom.sh tools/lib_import_restore.sh "$recipe_project/tools/"
 cp src/dev/dev_flags.gd "$recipe_project/src/dev/"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$recipe_project/tools/bake-atlases.sh"
 chmod +x "$recipe_project/tools/bake-atlases.sh"
@@ -1216,28 +1216,42 @@ status=$?
 check_that "update-pr.sh refuses a branch that adds its own whitespace error" \
     '[[ $status -ne 0 && "$out" == *"branch.txt"* && "$out" == *"git diff --cached --check"* ]]'
 
-# ------------------- lib_import_restore.sh puts back what a fake import rewrites -------------
-# A throwaway repo with the two files committed; a fake "import" rewrites both. A clean file is
-# reverted, one that was already dirty is left alone.
+# ------------------- lib_import_restore.sh puts back a rewrite and keeps a deliberate edit -------------
+# A throwaway repo with the two files committed. A rewrite (spaces to tabs in ARCHITECTURE.md,
+# stripped comments and a dropped stretch key in project.godot) is reverted; a deliberate edit made
+# during the run survives with one line on stderr; a file that was already dirty is left alone.
 ir_repo="$(mktemp -d)"
 (
     cd "$ir_repo" && git init -q . && mkdir docs \
-        && printf '; comment\n' > project.godot && printf 'a    b\n' > docs/ARCHITECTURE.md \
+        && printf '; comment\n\n[display]\nwindow/stretch/aspect="keep"\nsize=1\n' > project.godot \
+        && printf 'a    b\n' > docs/ARCHITECTURE.md \
         && git add . && git -c user.name=t -c user.email=t@example.com commit -q -m init
 )
 # shellcheck source=tools/lib_import_restore.sh
 source "$root/tools/lib_import_restore.sh"
+ir_rewrite() {
+    printf '\n[display]\nsize=1\n' > "$ir_repo/project.godot"
+    printf 'a\tb\n' > "$ir_repo/docs/ARCHITECTURE.md"
+}
 import_restore_arm "$ir_repo"
-printf 'x\n' > "$ir_repo/project.godot"; printf 'a\tb\n' > "$ir_repo/docs/ARCHITECTURE.md"
+ir_rewrite
 import_restore_run 2>/dev/null
-check_that "lib_import_restore.sh reverts both files when they were clean" \
+check_that "lib_import_restore.sh reverts the known rewrite of both files" \
     '[[ -z "$(git -C "$ir_repo" status --porcelain)" ]]'
+import_restore_arm "$ir_repo"
+printf '; comment\n\n[display]\nwindow/stretch/aspect="keep"\nsize=2\n' > "$ir_repo/project.godot"
+printf 'a    b\nnew line\n' > "$ir_repo/docs/ARCHITECTURE.md"
+ir_err="$(import_restore_run 2>&1)"
+check_that "lib_import_restore.sh keeps a deliberate edit made during the run and says so" \
+    '[[ "$(cat "$ir_repo/project.godot")" == *"size=2"* && "$(cat "$ir_repo/docs/ARCHITECTURE.md")" == *"new line"* \
+        && "$ir_err" == *"project.godot changed during the run"* && "$ir_err" == *"ARCHITECTURE.md changed during the run"* ]]'
+git -C "$ir_repo" checkout -q -- .
 printf 'mine\n' > "$ir_repo/project.godot"
 import_restore_arm "$ir_repo"
-printf 'x\n' > "$ir_repo/project.godot"; printf 'a\tb\n' > "$ir_repo/docs/ARCHITECTURE.md"
+ir_rewrite
 import_restore_run 2>/dev/null
 check_that "lib_import_restore.sh leaves a file that was already dirty alone" \
-    '[[ "$(cat "$ir_repo/project.godot")" == x && "$(cat "$ir_repo/docs/ARCHITECTURE.md")" == "a    b" ]]'
+    '[[ "$(cat "$ir_repo/project.godot")" == "$(printf "\n[display]\nsize=1")" && -z "$(git -C "$ir_repo" status --porcelain -- docs/ARCHITECTURE.md)" ]]'
 rm -rf "$ir_repo"
 
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---

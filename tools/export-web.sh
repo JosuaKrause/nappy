@@ -108,11 +108,17 @@ for key in config/version config/source_commit; do
         exit 1
     fi
 done
+# project.godot and docs/ARCHITECTURE.md have been found rewritten after tools that run Godot; this
+# reverts such a rewrite on exit and keeps a deliberate edit (tools/lib_import_restore.sh).
+# shellcheck source=tools/lib_import_restore.sh
+source "$PROJECT_DIR/tools/lib_import_restore.sh"
+import_restore_arm "$PROJECT_DIR"
 PROJECT_FILE_BACKUP="$(mktemp)"
 cp "$PROJECT_FILE" "$PROJECT_FILE_BACKUP"
 restore_project_file() {
     cp "$PROJECT_FILE_BACKUP" "$PROJECT_FILE"
     rm -f "$PROJECT_FILE_BACKUP"
+    import_restore_run
 }
 trap restore_project_file EXIT
 sed -e "s|^config/version=.*|config/version=\"$SOURCE_VERSION\"|" \

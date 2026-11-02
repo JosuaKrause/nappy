@@ -156,7 +156,9 @@ if [[ -n "$shard_arg" ]]; then
     shard_index=$(( shard_index - 1 ))
 fi
 
-# The import pass rewrites project.godot and docs/ARCHITECTURE.md; every exit below restores them.
+# project.godot and docs/ARCHITECTURE.md have been found rewritten after runs like this one, by a
+# writer nobody has identified; every exit below reverts such a rewrite and keeps a deliberate edit
+# (tools/lib_import_restore.sh).
 # shellcheck source=tools/lib_import_restore.sh
 source "$PROJECT_DIR/tools/lib_import_restore.sh"
 

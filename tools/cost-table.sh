@@ -58,8 +58,9 @@ fi
 
 # The atlas bake and the import pass, the same preamble tools/test.sh runs before anything that
 # needs EventCatalogue's class_name to resolve -- a fresh checkout's .godot/ cache does not exist
-# until this runs once. The import pass rewrites project.godot and docs/ARCHITECTURE.md, which
-# tools/lib_import_restore.sh puts back.
+# until this runs once. project.godot and docs/ARCHITECTURE.md have been found rewritten after runs
+# like this one, by a writer nobody has identified; tools/lib_import_restore.sh reverts such a
+# rewrite and keeps a deliberate edit.
 "$PROJECT_DIR/tools/bake-atlases.sh" || exit 1
 # shellcheck source=tools/lib_import_restore.sh
 source "$PROJECT_DIR/tools/lib_import_restore.sh"

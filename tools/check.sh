@@ -36,8 +36,10 @@ if [[ ! -x "$GODOT" ]]; then
     exit 127
 fi
 
-# The import pass rewrites `project.godot` and `docs/ARCHITECTURE.md`; tools/lib_import_restore.sh
-# records which of the two were clean and puts them back from the EXIT trap, failure paths included.
+# `project.godot` and `docs/ARCHITECTURE.md` have been found rewritten after tools like this one ran,
+# by a writer nobody has identified (the editor stripping `project.godot`'s `;` comments is the
+# established part); tools/lib_import_restore.sh records which of the two were clean and, from the
+# EXIT trap (failure paths included), reverts one only if its change is that rewrite.
 # shellcheck source=tools/lib_import_restore.sh
 source "$PROJECT_DIR/tools/lib_import_restore.sh"
 import_restore_arm "$PROJECT_DIR"
