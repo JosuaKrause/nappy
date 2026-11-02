@@ -113,6 +113,9 @@ func _walk_the_day(t, seed_value: int) -> void:
 		else:
 			var here: Vector2 = player.global_position
 			player.global_position = here.move_toward(swing, Tuning.WALK_SPEED * STEP)
+		# Not `main`'s own gate (ticks only while walking and unpaused, and counts `play_ticks`):
+		# every pass ticks, so this loop does not stop at the day's end. Under `--invincible` the
+		# day never leaves walking, so the two read the same here.
 		director.tick(STEP)
 		day.tick(STEP)
 		city.events._physics_process(STEP)

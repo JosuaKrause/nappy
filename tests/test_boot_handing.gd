@@ -45,8 +45,8 @@ func _test_the_escapes_city_is_handed_the_controls_cover(t) -> void:
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]))
 	var main := booted.main
 	var city := Boot.city(main)
-	t.check(city != null and Boot.interior(main) == null,
-			"the escape's city is built")
+	t.check(city != null and city.is_ancestor_of(Boot.player(main)),
+			"the escape's city is built, and she stands in it")
 	var controls := Boot.touch_controls(main)
 	var visible: VisibleView = city.events.world.visible
 	t.check(visible.controls == controls.covering,

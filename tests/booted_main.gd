@@ -14,8 +14,11 @@ extends RefCounted
 ##
 ## **When a boot has finished** is read off the tree as well: she is built after the canvas warm-up
 ## the boot holds for (`main._warm_the_canvas_shaders()`, two drawn frames, none for a scene
-## recipe), and everything after her is built in the same frame, so once a frame has passed with
-## her standing in a world the boot has finished, whichever path it took. No frame count is assumed.
+## recipe), and the boot frees the camera it names `BootCamera` once she stands (every path does,
+## `main._retire_the_boot_camera()`, with no `await` after it), so once a frame has passed with her
+## standing in a world and `BootCamera` gone the boot has finished, whichever path it took. Waiting
+## on the camera as well keeps this true should a later step ever await after her. No frame count is
+## assumed.
 ##
 ## **No boot reaches the player's save.** `boot()` hands every `main` a save at a scratch path
 ## (`main.use_save()`), whatever configuration it boots under.
@@ -64,14 +67,15 @@ static func boot(t, scratch_path: String, config: RunConfig = null,
 	await until_booted(t, booted.main)
 	return booted
 
-## Lets real frames pass until `main`'s boot has finished: a frame has passed with her in a world.
+## Lets real frames pass until `main`'s boot has finished: a frame has passed with her in a world
+## and the boot's own camera freed.
 ## Fails `t`'s check after `BOOT_FRAMES`.
 static func until_booted(t, main: Node) -> void:
 	var frames := 0
 	while frames < BOOT_FRAMES:
 		await t.get_tree().process_frame
 		frames += 1
-		if player(main) != null:
+		if player(main) != null and main.get_node_or_null("BootCamera") == null:
 			return
 	t.check(false, "the boot finished within %d frames" % BOOT_FRAMES)
 
