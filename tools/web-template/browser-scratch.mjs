@@ -122,7 +122,11 @@ const cloneOf = (path, root) => {
 // A process that has exited but is not yet reaped (a zombie) still answers signal 0 and holds no
 // file. Linux names that state in /proc; macOS has no /proc and reaps promptly.
 const zombie = pid => {
-  try { return /^\d+ \(.*\) Z/s.test(readFileSync(`/proc/${pid}/stat`, 'utf8')); } catch { return false; }
+  try {
+    // The name in parentheses may itself hold `)`: the state follows the last one.
+    const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
+    return stat.slice(stat.lastIndexOf(')') + 1).trimStart().startsWith('Z');
+  } catch { return false; }
 };
 const alive = pid => {
   try { process.kill(pid, 0); } catch (error) { return error.code === 'EPERM'; }

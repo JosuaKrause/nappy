@@ -357,12 +357,22 @@ done
 # refusals above need none of them, and the case says `skip` where one is missing).
 checks=$(( checks + 1 ))
 trailer_cut_output="$(TRAILER_OUT="$trailer_cut_dir/out" ./tools/trailer.sh --selected-remix 2>&1)"
-trailer_font="$(jq -r '.style.font_family' tools/trailer/shots.json)"
-trailer_font_got="$(fc-match -f '%{family}\n' "$trailer_font" 2>/dev/null | head -1)"
+trailer_font=""
+trailer_font_got=""
+if command -v jq >/dev/null 2>&1; then
+    trailer_font="$(jq -r '.style.font_family' tools/trailer/shots.json)"
+fi
+if command -v fc-match >/dev/null 2>&1 && [[ -n "$trailer_font" ]]; then
+    trailer_font_got="$(fc-match -f '%{family}\n' "$trailer_font" 2>/dev/null | head -1)"
+fi
 if ! command -v uv >/dev/null 2>&1; then
     echo "skip trailer.sh --selected-remix retained-footage check (no uv on PATH)"
 elif ! command -v ffmpeg >/dev/null 2>&1; then
     echo "skip trailer.sh --selected-remix retained-footage check (no ffmpeg on PATH)"
+elif ! command -v jq >/dev/null 2>&1; then
+    echo "skip trailer.sh --selected-remix retained-footage check (no jq on PATH)"
+elif ! command -v fc-match >/dev/null 2>&1; then
+    echo "skip trailer.sh --selected-remix retained-footage check (no fc-match on PATH)"
 elif ! grep -Fixq -- "$trailer_font" <<<"${trailer_font_got//,/$'\n'}"; then
     echo "skip trailer.sh --selected-remix retained-footage check (font $trailer_font not installed)"
 elif [[ "$trailer_cut_output" == *"requires the retained selected base"* ]]; then
