@@ -197,6 +197,9 @@ func _test_day_from_query_clamps_the_same_way_as_the_command_line(t) -> void:
 func _test_day_from_query_is_not_given_when_absent(t) -> void:
 	t.check(_page("").day_override == 1, "an absent query starts on the first day")
 	t.check(_page("?debug=1").day_override == 1, "?debug=1 alone opens the bundle but names no day")
+	t.check(_debug_build(["--day", "4"], "?debug=1").day_override == 4,
+		"an absent ?day= leaves a --day N on the command line alone")
+	t.check(_page("?debug=1&day=1").day_override == 1, "?day=1 on an open page is day 1")
 
 ## `web_debug_flag_used`: `GameSave.uses_save()` reads this so a release page's visitor who
 ## actually typed one of the bundle's parameters never touches the save the page might otherwise
