@@ -46,7 +46,7 @@ class Bird extends RefCounted:
 	var phase := 0.0
 	## This bird's own held eight-view sector — one per bird rather than one shared with the
 	## instance's own `EventLook._view_sector`, since a flock is eleven bodies wheeling
-	## independently rather than one actor with one facing. See `EventLook._select_view()`, the same
+	## independently rather than one actor with one facing. See `EventLook.select_view()`, the same
 	## hold applied per bird by `FlockLook._draw_birds()`.
 	var view_sector := 2
 

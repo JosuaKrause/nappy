@@ -100,13 +100,14 @@ func _test_event_parts(t) -> void:
 					"%s/%s has independently moving detail across its slices" % [id, vertical])
 			var body := instance._obstruction
 			var centers := instance.solid_part_centres()
-			var key := instance.look._picture_key()
+			t.check(instance.look.redraw_if_the_picture_changed(),
+					"the event's first drawn frame asks for its draw, so the gate is live for the check below")
 			var initial: bool = moving[0].frame_b
 			var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
 					else EventPictures.BURST_MAIN_SPLASH_PERIOD
 			instance.step(period * 0.5)
 			# The look shows the step on the next drawn frame.
-			instance._process(0.0)
+			var asked := instance.look.redraw_if_the_picture_changed()
 			for layer in moving:
 				t.check(layer.frame_b != initial, "the existing event clock advances each detail")
 				for alternate in layer._alternates:
@@ -114,7 +115,7 @@ func _test_event_parts(t) -> void:
 			for layer in still:
 				for alternate in layer._alternates:
 					t.check(alternate == null, "stationary surroundings have no alternate texture")
-			t.check(instance.look._picture_key() == key, "animation leaves the static event key alone")
+			t.check(not asked, "animation leaves the static event key alone")
 			t.check(instance._obstruction == body and instance.solid_part_centres() == centers,
 					"animation preserves both collision resource and placement")
 			instance._finish()

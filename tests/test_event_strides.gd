@@ -2,8 +2,8 @@ extends RefCounted
 ## M108, "every living thing that moves has a stride" — the event half. `tests/test_event_views.gd`
 ## already pins each family's own five-view table and heading source; this suite pins the second
 ## frame every listed family gained beside it, and the alternation that picks between the two —
-## `EventInstance._advance_gait()`, and the look's `EventLook._gait_stepping()`,
-## `_victim_gait_stepping()` and `_idle_stepping()`.
+## `EventInstance._advance_gait()`, and the look's `EventLook.gait_is_stepping()`,
+## `victim_gait_is_stepping()` and `idle_is_stepping()`.
 ##
 ## Consistent with `test_event_views.gd`, nothing here calls a `_draw_*` function directly —
 ## `Sprites.draw_standing()` inside them is only valid from an actual draw pass. What is tested
@@ -100,18 +100,18 @@ func _heading_for_sector(sector: int) -> Vector2:
 
 ## A moving instance alternates: starts on frame a before it has covered any ground, crosses into
 ## the mid-stride frame as it walks, and returns to the rest frame later in the same stride — the
-## walker's own `sin(phase * 2.0) > 0.0` shape, read here through `_gait_stepping()` rather than
+## walker's own `sin(phase * 2.0) > 0.0` shape, read here through `gait_is_stepping()` rather than
 ## re-derived, exactly as `_draw_dog_walker()` reads it.
 func _test_moving_instance_alternates_gait_frames(t) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
-	t.check(not instance.look._gait_stepping(), "starts on frame a before it has moved at all")
+	t.check(not instance.look.gait_is_stepping(), "starts on frame a before it has moved at all")
 	var saw_b := false
 	var saw_a_again := false
 	for i in 400:
 		instance.step(STEP)
-		if instance.look._gait_stepping():
+		if instance.look.gait_is_stepping():
 			saw_b = true
 		elif saw_b:
 			saw_a_again = true
@@ -131,7 +131,7 @@ func _test_waiting_robber_holds_frame_a(t) -> void:
 	for i in 120:
 		instance.step(STEP)
 		t.check(instance.is_waiting(), "still only waiting at tick %d" % i)
-		t.check(not instance.look._gait_stepping(), "a waiting robber holds frame a (tick %d)" % i)
+		t.check(not instance.look.gait_is_stepping(), "a waiting robber holds frame a (tick %d)" % i)
 	instance.free()
 
 ## `chatting_mother`'s pacing beat gets a stride; her conversation freezes `_process()` entirely
@@ -147,11 +147,11 @@ func _test_chatting_mother_freezes_gait_when_talking(t) -> void:
 	t.check(instance.is_chatting(), "the conversation is running")
 	for i in 30:
 		instance.step(STEP)
-		t.check(not instance.look._gait_stepping(), "frozen mid-conversation holds frame a (tick %d)" % i)
+		t.check(not instance.look.gait_is_stepping(), "frozen mid-conversation holds frame a (tick %d)" % i)
 	instance.free()
 
 ## The crouch is the telegraph, held still by construction (`still_while_telegraphing`) — it must
-## never read the running family's own b frame, whatever `_gait_stepping()` says, since crouched
+## never read the running family's own b frame, whatever `gait_is_stepping()` says, since crouched
 ## has no second frame of its own at all.
 func _test_crouched_cat_never_reads_the_running_b_frame(t) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
@@ -162,7 +162,7 @@ func _test_crouched_cat_never_reads_the_running_b_frame(t) -> void:
 	# to prove the crouch branch never consults it.
 	instance._gait_phase = PI * 0.25
 	instance._gait_moving = true
-	t.check(instance.look._gait_stepping(), "the phase itself would read as stepping")
+	t.check(instance.look.gait_is_stepping(), "the phase itself would read as stepping")
 	t.check(EventPictures.CAT_CROUCHED_BY_VIEW["side"] != EventPictures.CAT_RUNNING_BY_VIEW_B["side"],
 			"the crouch and the running b frame are not the same picture regardless")
 	instance.free()
@@ -179,10 +179,10 @@ func _test_dog_walker_and_dog_share_one_phase(t) -> void:
 	var agreed := true
 	for i in 300:
 		instance.step(STEP)
-		var stepping := instance.look._gait_stepping()
+		var stepping := instance.look.gait_is_stepping()
 		var person_frame: String = EventPictures.PERSON_BY_VIEW_B["side"] if stepping \
 				else EventPictures.PERSON_BY_VIEW["side"]
-		var dog_frame := EventPictures.dog_picture("side", stepping, instance.look._gait_second_half())
+		var dog_frame := EventPictures.dog_picture("side", stepping, instance.look.gait_is_second_half())
 		if (person_frame == EventPictures.PERSON_BY_VIEW_B["side"]) == (dog_frame == rest):
 			agreed = false
 	t.check(agreed, "the walker is mid-stride exactly while the dog is on a step, never on its rest")
@@ -233,11 +233,11 @@ func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t) -> void:
 	var changed_at: Array[float] = []
 	for i in 900:
 		instance.step(STEP)
-		var now := EventPictures.dog_picture("side", instance.look._gait_stepping(),
-				instance.look._gait_second_half())
+		var now := EventPictures.dog_picture("side", instance.look.gait_is_stepping(),
+				instance.look.gait_is_second_half())
 		if shown.is_empty() or shown[-1] != now:
 			shown.append(now)
-			changed_at.append(instance._path_travelled)
+			changed_at.append(instance.path_travelled())
 	t.check(shown.size() >= 9, "the walk passed through two whole cycles (%d beats)" % shown.size())
 	t.check(not shown.is_empty() and shown[0] == cycle[0], "the first step comes first")
 	var in_order := true
@@ -260,36 +260,36 @@ func _test_a_standing_normal_dog_rests(t) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	for view in VIEWS:
-		t.check(EventPictures.dog_picture(view, instance.look._gait_stepping(),
-				instance.look._gait_second_half()) == EventPictures.dog_picture(view, false, false),
+		t.check(EventPictures.dog_picture(view, instance.look.gait_is_stepping(),
+				instance.look.gait_is_second_half()) == EventPictures.dog_picture(view, false, false),
 				"a %s dog that has not moved stands in its rest pose" % view)
 	for phase in [PI * 0.25, PI * 1.25]:
 		instance._gait_phase = phase
 		instance._advance_gait(0.0)
-		t.check(not instance.look._gait_stepping(), "a tick with no ground covered is not a step")
-		t.check(EventPictures.dog_picture("side", instance.look._gait_stepping(),
-				instance.look._gait_second_half()) == "events/dog_b",
+		t.check(not instance.look.gait_is_stepping(), "a tick with no ground covered is not a step")
+		t.check(EventPictures.dog_picture("side", instance.look.gait_is_stepping(),
+				instance.look.gait_is_second_half()) == "events/dog_b",
 				"a dog stopped at phase %.2f stands in its rest pose" % phase)
 	instance.free()
 
 ## The victim's own scripted walk to the van is a straight lerp over `AbductionSpec.taken_over` seconds
 ## rather than anything that touches `_path_travelled`, so it gets its own derived query
-## (`_victim_gait_stepping()`) instead of sharing `_gait_phase` — see that function's own doc. It
+## (`victim_gait_is_stepping()`) instead of sharing `_gait_phase` — see that function's own doc. It
 ## must start on frame a (`sin(0) == 0`) and later step, the same shape the distance-driven gait
 ## has, over the fixed walk rather than an open-ended one.
 func _test_victim_gait_starts_on_frame_a_and_later_steps(t) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
-	t.check(not instance.look._victim_gait_stepping(), "no take is running yet")
+	t.check(not instance.look.victim_gait_is_stepping(), "no take is running yet")
 	instance.player_at = instance.global_position
 	instance.abduction.take_now()
-	t.check(not instance.look._victim_gait_stepping(), "the walk starts on frame a")
+	t.check(not instance.look.victim_gait_is_stepping(), "the walk starts on frame a")
 	var saw_b := false
 	var steps := int(instance.def.abduction.taken_over / STEP)
 	for i in steps:
 		instance.age += STEP
-		if instance.look._victim_gait_stepping():
+		if instance.look.victim_gait_is_stepping():
 			saw_b = true
 	t.check(saw_b, "the walk steps into its own mid-stride frame before it finishes")
 	instance.free()
@@ -298,7 +298,7 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t) -> void:
 
 ## Neither the café sitters nor the busker ever move — `EventCatalogue._cafe_tables()` and
 ## `_busker()` are both stationary rows — so their own alternation has to come from
-## `_idle_stepping()`'s timer rather than any distance covered, and it does actually flip both ways
+## `idle_is_stepping()`'s timer rather than any distance covered, and it does actually flip both ways
 ## over a long enough run.
 func _test_idle_families_alternate_on_time_without_moving(t) -> void:
 	var periods := {
@@ -315,7 +315,7 @@ func _test_idle_families_alternate_on_time_without_moving(t) -> void:
 		var ticks := int(period / STEP) * 3 + 10
 		for i in ticks:
 			instance.step(STEP)
-			if instance.look._idle_stepping(period):
+			if instance.look.idle_is_stepping(period):
 				saw_true = true
 			else:
 				saw_false = true
@@ -345,18 +345,18 @@ func _test_gait_and_idle_phase_reset_on_setup(t) -> void:
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	for i in 40:
 		instance.step(STEP)
-	t.check(instance._gait_phase != 0.0, "the phase has moved on from its starting value")
+	t.check(instance.gait_phase() != 0.0, "the phase has moved on from its starting value")
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
-	t.check(instance._gait_phase == 0.0 and not instance._gait_moving,
+	t.check(instance.gait_phase() == 0.0 and not instance.gait_is_moving(),
 			"a fresh setup() resets the phase rather than carrying it over")
 	instance.resume(5.0, 30.0)
-	t.check(instance._gait_phase == 0.0 and not instance._gait_moving,
+	t.check(instance.gait_phase() == 0.0 and not instance.gait_is_moving(),
 			"resume() resets the phase too, so a resumed instance never starts mid-cycle")
 	instance.free()
 
 # ------------------------------------------------------------------- the halo ---
 
-## "One lookup picks the frame for the whole draw, as the walker does": `_gait_stepping()` is a
+## "One lookup picks the frame for the whole draw, as the walker does": `gait_is_stepping()` is a
 ## pure read of state `_process()` already settled this tick, so the main draw and every halo ring
 ## calling it again within the same frame must all agree — exactly the property that keeps a
 ## walking entity's halo from showing a different frame than its own body.
@@ -366,9 +366,9 @@ func _test_gait_query_is_stable_within_a_tick(t) -> void:
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
 	for i in 40:
 		instance.step(STEP)
-	var first := instance.look._gait_stepping()
+	var first := instance.look.gait_is_stepping()
 	for i in 5:
-		t.check(instance.look._gait_stepping() == first,
+		t.check(instance.look.gait_is_stepping() == first,
 				"repeated calls within the same tick agree, the way a halo ring's own re-draw needs")
 	instance.free()
 

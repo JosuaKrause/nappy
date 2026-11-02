@@ -1,7 +1,7 @@
 extends RefCounted
 ## Evidence rig for M108's "bind vehicle views" item: renders every bound event-vehicle and the
 ## police car at all eight `EightDirection` sectors from the actual runtime selection —
-## `EventInstance.setup()`, `EventLook._select_view()`, `EventPictures.EIGHT_VIEW_BY_SECTOR` and
+## `EventInstance.setup()`, `EventLook.select_view()`, `EventPictures.EIGHT_VIEW_BY_SECTOR` and
 ## each family's own `_BY_VIEW` table, the same calls `EventLook._draw_eight_view()` makes,
 ## `side_faces_west` included — rather
 ## than a hand-assembled list of source files. Copied from `tests/probes/m108_event_people_sheet.gd`

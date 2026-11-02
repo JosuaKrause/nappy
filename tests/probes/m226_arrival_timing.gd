@@ -153,15 +153,15 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	var parts: Array[Rect2] = []
 	var def := instance.def
-	var view: String = instance.look._select_view(instance._heading)
+	var view: String = instance.look.select_view(instance._heading)
 	var bob: float = instance.look.current_bob()
 	var picture := ""
 	match def.look:
 		EventDef.Look.CYCLIST:
 			var rider := (instance.look as FigureLook).rider_pictures()
-			picture = rider[1 if instance.look._gait_stepping() else 0][view]
+			picture = rider[1 if instance.look.gait_is_stepping() else 0][view]
 		EventDef.Look.LOOSE_DOG:
-			picture = instance.dog_picture(view, instance.look._gait_stepping(), instance.look._gait_second_half())
+			picture = instance.dog_picture(view, instance.look.gait_is_stepping(), instance.look.gait_is_second_half())
 			# Both revisions' _draw_loose_dog draws this 26px trailing, 2px-wide line.
 			var behind := 26.0 if instance.look._heading_is_west() else -26.0
 			parts.append(Rect2(minf(behind, 0.0) - 1.0, -9.0 + bob, absf(behind) + 2.0, 8.0))
@@ -170,7 +170,7 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 		EventDef.Look.ARMY_TRUCK:
 			picture = instance.ARMY_TRUCK_BY_VIEW[view]
 		EventDef.Look.CHARGING_DOG:
-			picture = (instance.CHARGING_DOG_BY_VIEW_B if instance.look._gait_stepping()
+			picture = (instance.CHARGING_DOG_BY_VIEW_B if instance.look.gait_is_stepping()
 					else instance.CHARGING_DOG_BY_VIEW)[view]
 		_:
 			assert(false, "arrival collector has no drawing observer for this look")
