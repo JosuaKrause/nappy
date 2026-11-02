@@ -799,6 +799,10 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 
 func _bare_gate_main(t) -> Node2D:
 	var main: Node2D = MAIN_SCRIPT.new()
+	# Never in the tree, so it takes no sitting of its own: it is handed one, freed with it.
+	var sitting := Sitting.new()
+	main.add_child(sitting)
+	main.use_sitting(sitting)
 	main._add_touch_controls()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
