@@ -237,7 +237,7 @@ static func trace_offsets(bob: float) -> Array[Vector2]:
 ## mirrored view have a rim at all.** `draw_set_transform` replaces rather than composes and nothing
 ## can read back what it replaced, so `Sprites.draw_standing()`'s own mirror — the only flipped draw
 ## path in the game, and the one every west-facing sector of every eight-view family goes through —
-## has to be handed the offset rather than left to discover it. See `Sprites._base_transform` for
+## has to be handed the offset rather than left to discover it. See `Sprites.BASE_TRANSFORM_META` for
 ## what it looked like when it was not: twelve copies stacked on the body and no ring.
 func _on_draw() -> void:
 	if FrameRecord.on:
@@ -247,8 +247,8 @@ func _on_draw() -> void:
 	var bob: float = _bob.call()
 	for offset in trace_offsets(bob):
 		var base := Transform2D(0.0, offset)
-		Sprites.set_base_transform(base)
+		Sprites.set_base_transform(self, base)
 		draw_set_transform_matrix(base)
 		_draw_body.call(self)
-	Sprites.set_base_transform(Transform2D.IDENTITY)
+	Sprites.set_base_transform(self, Transform2D.IDENTITY)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

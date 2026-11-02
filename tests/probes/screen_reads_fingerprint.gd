@@ -121,7 +121,7 @@ func _crowd_view(t) -> void:
 	var anchor := Node.new()
 	t.add_child(anchor)
 	var view := _crowd_view_of(anchor)
-	print("SR_CV none | box %s | beyond %s" % [_rect_hex(_drawn_box(view)), _beyond(view, Vector2(100.0, 100.0))])
+	print("SR_CV none | box %s | beyond %s" % [_rect_hex(_drawn_box(view, anchor)), _beyond(view, Vector2(100.0, 100.0))])
 	var rig := Node2D.new()
 	t.add_child(rig)
 	var camera := Camera2D.new()
@@ -137,12 +137,12 @@ func _crowd_view(t) -> void:
 				ScreenOrientation.apply_to_camera(camera, rotated)
 				camera.force_update_scroll()
 				print("SR_CV at=%s zoom=%s rotated=%s | box %s | beyond %s" % [centre, zoom, rotated,
-						_rect_hex(_drawn_box(view)), _beyond(view, centre)])
+						_rect_hex(_drawn_box(view, anchor)), _beyond(view, centre)])
 	rig.free()
 	anchor.free()
 
-func _drawn_box(view: CrowdView) -> Rect2:
-	DrawnView.forget()
+func _drawn_box(view: CrowdView, anchor: Node) -> Rect2:
+	DrawnView.forget(anchor.get_viewport())
 	return view.drawn_box()
 
 func _beyond(view: CrowdView, centre: Vector2) -> String:

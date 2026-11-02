@@ -251,15 +251,15 @@ func draw() -> void:
 	if EventFootprints.hidden_by_its_hold(event):
 		return
 	var bob := current_bob()
-	# Told to `Sprites` as well as to the canvas, for the reason `Sprites._base_transform` gives:
+	# Told to `Sprites` as well as to the canvas, for the reason `Sprites.BASE_TRANSFORM_META` gives:
 	# the mirror inside `draw_standing()` sets an absolute matrix and can read nothing back, so a
 	# west-facing family that was not handed this lift would drop it — a dog walker heading west
 	# drawn flat while the same walker heading east bobs.
 	var lift := Transform2D(0.0, Vector2(0.0, bob))
-	Sprites.set_base_transform(lift)
+	Sprites.set_base_transform(event, lift)
 	event.draw_set_transform_matrix(lift)
 	draw_body(event)
-	Sprites.set_base_transform(Transform2D.IDENTITY)
+	Sprites.set_base_transform(event, Transform2D.IDENTITY)
 	event.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_mark()
 

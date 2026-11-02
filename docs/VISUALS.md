@@ -134,10 +134,11 @@ anyway, writes `OUTSIDE` in the run log and raises an engine error, which makes 
 red. A process where no boot has claimed the moments at all is `unmanaged` and loads freely:
 that is a suite building a `City` or a `Stroller` by hand, where no frame is being watched.
 
-**The ground's composition recipe follows the same rule.** `GroundLayers` reads
-`assets/ground_layers.json` once, in the city's first build, and holds it for the life of the
-process, so a day's repaint composes from the held page and the held recipe and reads nothing
-from disk.
+**The ground's composition recipe follows the same rule.** `GroundRecipe` reads
+`assets/ground_layers.json` once, on the first ask, which is the city's first build; the `Sitting`
+holds it for the life of the process and `main._new_city()` hands it to each city
+(`City.ground_recipe`), which passes it to `GroundLayers.build_tile_set()`. So a day's repaint
+composes from the held page and the held recipe and reads nothing from disk.
 
 **`main`'s boot holds every group a day can draw for the life of the process** —
 `main.RESIDENT_GROUPS`, plus the run's own parent — so nothing is ever unloaded between one day

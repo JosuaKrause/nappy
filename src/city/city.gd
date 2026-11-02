@@ -242,6 +242,10 @@ var _posters: PosterWalls
 ## hands it over before `build()` (`main._new_city()`, or `RunCity` in a test); `build()` refuses a
 ## city without it.
 var run: RunState = null
+## The ground's composition recipe, read from disk once per process: `main._new_city()` hands the
+## one the sitting holds, so every day's city composes from the same read. A city nobody handed one
+## (a suite's) reads the file itself, once.
+var ground_recipe := GroundRecipe.new()
 ## Fixed for the run, from `StreetTrees.planted()` — unlike `_props`, never rebuilt daily: a
 ## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
 ## becomes.
@@ -1780,7 +1784,7 @@ func _recipe_litter(day: int) -> Array[Litter.Placed]:
 func _composed_ground_tile_set() -> TileSet:
 	if _authored_ground_tile_set == null:
 		_authored_ground_tile_set = _ground.tile_set
-	return GroundLayers.build_tile_set(_authored_ground_tile_set)
+	return GroundLayers.build_tile_set(_authored_ground_tile_set, ground_recipe)
 
 ## What the city stops at, on each of its four sides.
 ##
