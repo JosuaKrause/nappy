@@ -100,7 +100,7 @@ func _test_event_parts(t) -> void:
 					"%s/%s has independently moving detail across its slices" % [id, vertical])
 			var body := instance._obstruction
 			var centers := instance.solid_part_centres()
-			var key := instance.look._picture_key()
+			var key := instance.look.picture_key()
 			var initial: bool = moving[0].frame_b
 			var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
 					else EventPictures.BURST_MAIN_SPLASH_PERIOD
@@ -114,7 +114,7 @@ func _test_event_parts(t) -> void:
 			for layer in still:
 				for alternate in layer._alternates:
 					t.check(alternate == null, "stationary surroundings have no alternate texture")
-			t.check(instance.look._picture_key() == key, "animation leaves the static event key alone")
+			t.check(instance.look.picture_key() == key, "animation leaves the static event key alone")
 			t.check(instance._obstruction == body and instance.solid_part_centres() == centers,
 					"animation preserves both collision resource and placement")
 			instance._finish()

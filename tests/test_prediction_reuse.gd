@@ -293,7 +293,7 @@ func _test_consumer_order(t) -> void:
 			source.excitement.set_expected_total_gross(total)
 		t.check(_same_bits(cached.excitement.expected_impact_at(at), reference.excitement.expected_impact_at(at)), "event net parity")
 		t.check(_same_bits(car.excitement.expected_impact_at(at), reference_car.excitement.expected_impact_at(at)), "car net parity")
-		t.check(cached.look._picture_key() == reference.look._picture_key(), "redraw/caret key parity")
+		t.check(cached.look.picture_key() == reference.look.picture_key(), "redraw/caret key parity")
 		t.check(car.excitement.caret_strength() == reference_car.excitement.caret_strength(), "draw car mark parity")
 		t.check(cached.excitement.will_be_lethal(at) == reference.excitement.will_be_lethal(at), "event lethal prediction parity")
 		t.check(car.excitement.will_be_lethal(at) == reference_car.excitement.will_be_lethal(at), "car lethal prediction parity")

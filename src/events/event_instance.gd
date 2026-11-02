@@ -256,12 +256,12 @@ var _gait_phase := 0.0
 ## Whether this instance actually covered ground on its most recent step (`step()`) — the gate that
 ## makes a stopped figure (a queue, a give-way, a waiting robber, a chatting mother, a stationary
 ## yeller, the dog walker's own stop) hold frame a rather than whatever `_gait_phase` last landed
-## on. See `_advance_gait()` and `EventLook._gait_stepping()`.
+## on. See `_advance_gait()` and `EventLook.gait_is_stepping()`.
 var _gait_moving := false
 ## A deterministic 0..1 drawn once, in `setup()`, from this instance's own siting position — the
 ## same position-hash approach `EventFlock._roll()` uses, since the day's own RNG is not reachable
 ## from here and streaming an instance out and back in must not draw twice from it. Offsets the café
-## sitters' and the busker's own idle timer (`EventLook._idle_stepping()`) so two of either kind
+## sitters' and the busker's own idle timer (`EventLook.idle_is_stepping()`) so two of either kind
 ## placed on the same day do not lean or strum in lockstep.
 var _idle_phase_offset := 0.0
 
@@ -288,6 +288,11 @@ var _sight: Mover
 ## The solid body `_build_obstruction()` made, or `null` before it exists and after
 ## its step has dropped it. See `is_solid()`.
 var _obstruction: StaticBody2D
+
+## The solid body, or `null` while there is none (`is_solid()` says whether it counts right now): what a
+## walker bumps into, for whoever asks what stopped her.
+func obstruction() -> StaticBody2D:
+	return _obstruction
 
 ## The rim `ExcitementHalo` lights on this event (`Rim`), handed to its source: its own body's,
 ## or the band's while a guard walks away from his barrier.
@@ -1758,7 +1763,7 @@ func is_telegraphing_still() -> bool:
 # ------------------------------------------------------------------- the gait ---
 # The event half of "every living thing that moves has a stride" — the walker's own two-frame
 # alternation (`WalkerLook.advance()`/`gait_frame()`): the stride is kept here, by the ground the
-# event covers, and read by whichever look draws a second frame (`EventLook._gait_stepping()`).
+# event covers, and read by whichever look draws a second frame (`EventLook.gait_is_stepping()`).
 
 ## The mother's and the walker's own rate, in radians of gait phase per pixel walked. Pinned again
 ## here rather than shared: neither `Stroller` nor `CrowdAgent` exposes it as a constant reachable
@@ -1767,7 +1772,7 @@ const GAIT_RATE := 0.09
 
 ## Advances `_gait_phase` by `moved` (px covered this tick, positive or exactly zero — `_tick()`
 ## passes `_path_travelled`'s own delta, which is never negative) and records whether anything moved
-## at all, which is the "stopped" gate `EventLook._gait_stepping()` reads. Called once per tick, at
+## at all, which is the "stopped" gate `EventLook.gait_is_stepping()` reads. Called once per tick, at
 ## every exit from `_tick()`, the same "add the distance once, however the caller reached this
 ## point" shape `WalkerLook.advance()` has — asking `EventLook.draw_body()` to do it would double
 ## the addition once per halo ring, exactly the trap that function's own doc names.

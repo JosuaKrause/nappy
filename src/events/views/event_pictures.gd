@@ -18,7 +18,7 @@ const CAT_RUNNING := "events/cat_running"
 const MOUSE := "events/mouse"
 ## The dash's own second frame, and the `"side"` entry of `MOUSE_BY_VIEW_B` — its tail curls a
 ## little differently rather than crossing legs it has no room to draw at this scale, read off
-## `EventLook._gait_stepping()` the same way every other family's own `_b` table is.
+## `EventLook.gait_is_stepping()` the same way every other family's own `_b` table is.
 const MOUSE_B := "events/mouse_b"
 ## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
 ## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
@@ -142,7 +142,7 @@ const BURST_MAIN_VERTICAL := "events/burst_water_main_vertical"
 ## The crash's and the burst main's second frames, one per street axis: the same canvas and every
 ## pixel of the scene but the moving part — the crash's smoke one puff further up, the main's
 ## fountain surging and splashing on the rims. `wide_scene_texture()` picks them off
-## `EventLook._idle_stepping()`, on the two periods below, since neither scene ever moves.
+## `EventLook.idle_is_stepping()`, on the two periods below, since neither scene ever moves.
 const CAR_ACCIDENT_B := "events/car_accident_b"
 const CAR_ACCIDENT_VERTICAL_B := "events/car_accident_vertical_b"
 const BURST_MAIN_B := "events/burst_water_main_b"
@@ -158,7 +158,7 @@ const BURST_MAIN_SPLASH_PERIOD := 0.5
 # front_diagonal, S front, the three west sectors mirroring their east-authored partner about the
 # feet anchor (`EightDirection.is_mirrored()`). `EIGHT_VIEW_BY_SECTOR` is that same table, copied
 # rather than shared — an event and a walker have no common base to hang one array on — and
-# `EventLook._select_view()` below is `WalkerLook.sector()`'s own shape applied generally: one
+# `EventLook.select_view()` below is `WalkerLook.sector()`'s own shape applied generally: one
 # held sector per instance, since only one `Look` is ever live on a given instance.
 const EIGHT_VIEW_BY_SECTOR: Array[String] = [
 	"side", "front_diagonal", "front", "front_diagonal", "side",
@@ -175,7 +175,7 @@ const PERSON_BY_VIEW := {
 ## Feet-passing companion to `PERSON_BY_VIEW`, the walker frame-authoring rule applied to the dog
 ## walker's own body: cardinal and side views lift the coat and head one pixel and cross the legs
 ## and shoes, the two diagonals leave everything but the legs untouched. See
-## `EventLook._gait_stepping()`.
+## `EventLook.gait_is_stepping()`.
 const PERSON_BY_VIEW_B := {
 	"front": "events/person_front_b",
 	"back": "events/person_back_b",
@@ -222,7 +222,7 @@ const BUSKER_BY_VIEW := {
 	"back_diagonal": "events/busker_back_diagonal",
 }
 ## The strumming hand raised — read by `FigureLook._draw_busker()` off
-## `EventLook._idle_stepping()`'s own timer rather than `EventLook._gait_stepping()`'s distance,
+## `EventLook.idle_is_stepping()`'s own timer rather than `EventLook.gait_is_stepping()`'s distance,
 ## since he never moves. Everything but the hand/arm draped over the guitar is byte-identical to
 ## frame a.
 const BUSKER_BY_VIEW_B := {
@@ -269,7 +269,7 @@ const CAFE_SITTER_BY_VIEW := {
 	"back_diagonal": "events/cafe_sitter_back_diagonal",
 }
 ## A lean, not a stride: the sitters never move, so this alternates on
-## `EventLook._idle_stepping()`'s own timer rather than on `EventLook._gait_stepping()`'s distance.
+## `EventLook.idle_is_stepping()`'s own timer rather than on `EventLook.gait_is_stepping()`'s distance.
 ## Everything but the lap/table-contact stays put; the seated body above it leans a couple of pixels
 ## — see the SVG's own comment.
 const CAFE_SITTER_BY_VIEW_B := {
@@ -287,7 +287,7 @@ const VAN_VICTIM_BY_VIEW := {
 	"back_diagonal": "events/van_victim_back_diagonal",
 }
 ## See `PERSON_BY_VIEW_B` for the frame-authoring rule. Read by `EventVehicleLook._draw_abduction()`
-## off `EventLook._victim_gait_stepping()`, her own short scripted walk to the van rather than the
+## off `EventLook.victim_gait_is_stepping()`, her own short scripted walk to the van rather than the
 ## ordinary distance-driven gait — see that function's doc.
 const VAN_VICTIM_BY_VIEW_B := {
 	"front": "events/van_victim_front_b",
@@ -364,7 +364,7 @@ const ROBBER_ALERT_BY_VIEW := {
 	"back_diagonal": "events/robber_alert_back_diagonal",
 }
 ## The alert walk's other frame, alternated with `ROBBER_ALERT_BY_VIEW` by
-## `EventLook._gait_stepping()` as he walks at her through his notice, the way
+## `EventLook.gait_is_stepping()` as he walks at her through his notice, the way
 ## `ROBBER_LUNGING_BY_VIEW_B` is with his lunge: one walk cycle, the same canvas and anchor per
 ## view. Held still (a held lunge he stands for) he shows the first.
 const ROBBER_ALERT_BY_VIEW_B := {
@@ -453,7 +453,7 @@ const MOUSE_BY_VIEW := {
 }
 ## The dash's own second frame — its tail curls a little differently rather than crossing legs it
 ## has no room to draw at this scale, unlike `CAT_RUNNING_BY_VIEW_B`'s quadrupeds — alternated by
-## `EventLook._gait_stepping()` the same way every other family's own `_b` table is.
+## `EventLook.gait_is_stepping()` the same way every other family's own `_b` table is.
 const MOUSE_BY_VIEW_B := {
 	"front": "events/mouse_front_b",
 	"back": "events/mouse_back_b",
@@ -813,7 +813,7 @@ const BOOM_GATE_EW_RAISED := "checkpoints/boom_gate_ew_raised"
 ## floor grate it rises out of.
 const STEAM := "events/steam"
 ## Its second frame: the cloud lifted and spread and a fresh puff pushing up out of the grate.
-## Alternated off `_idle_stepping(STEAM_BILLOW_PERIOD)` for the instance's whole life, which is
+## Alternated off `idle_is_stepping(STEAM_BILLOW_PERIOD)` for the instance's whole life, which is
 ## exactly one blow — between blows the vent's plan keeps no instance at all.
 const STEAM_B := "events/steam_b"
 const STEAM_BILLOW_PERIOD := 0.7
@@ -975,7 +975,7 @@ static func icon_wheels_for(look: EventDef.Look) -> String:
 ## `frame_b` asks for the scene's second frame where it has one — the crash's smoke and the burst
 ## main's fountain. On screen the two are `EventScenery` layers, one behind each of the scene's
 ## slices (`SpreadLook._build_the_slices()`), and `SpreadLook._update_scenery()` alternates their
-## frame off its own `EventLook._idle_stepping()` call; `EventLook.draw_body()` only picks `frame_b`
+## frame off its own `EventLook.idle_is_stepping()` call; `EventLook.draw_body()` only picks `frame_b`
 ## here when it draws the whole scene itself, which happens on the halo's own canvas (`canvas !=
 ## self`) or with no slices standing. The fallen tree has nothing that moves and answers its one
 ## picture either way.
@@ -1043,9 +1043,9 @@ const BOB_PER_PX := PI / 34.0
 const BOB_HEIGHT := 2.5
 
 ## A few seconds per swap — slow enough that a café frontage reads as sitting rather than
-## fidgeting. See `EventLook._idle_stepping()`.
+## fidgeting. See `EventLook.idle_is_stepping()`.
 const SITTER_IDLE_PERIOD := 3.4
-## A strum's own tempo. See `EventLook._idle_stepping()`.
+## A strum's own tempo. See `EventLook.idle_is_stepping()`.
 const BUSKER_STRUM_PERIOD := 0.5
 ## A brush stroke's, for a poster crew pasting. See `POSTER_CREW_BY_VIEW_B`.
 const POSTER_CREW_PASTE_PERIOD := 0.8
@@ -1263,7 +1263,7 @@ static func _collect_views(sources: Dictionary, tables: Array) -> void:
 			sources[str(table[view])] = true
 
 ## The five-view generalisation of `EventLook._draw_simple`, for a family that has the full
-## front/back/side/diagonal set — `EventLook._select_view()` picks the view from `heading` and
+## front/back/side/diagonal set — `EventLook.select_view()` picks the view from `heading` and
 ## `EightDirection.is_mirrored()` says whether it mirrors, for every sector but one.
 ##
 ## **`side_faces_west` is the one bit `EightDirection` cannot answer, because it is a property of
@@ -1283,7 +1283,7 @@ static func _collect_views(sources: Dictionary, tables: Array) -> void:
 ## `EventLook._draw_simple` itself is untouched and keeps drawing the one row that has no
 ## directional family at all: `skip`.
 ##
-## `by_view_b` is the family's own feet-passing set, read off `EventLook._gait_stepping()` when
+## `by_view_b` is the family's own feet-passing set, read off `EventLook.gait_is_stepping()` when
 ## given — empty for every vehicle family, which has no stride, so the lookup falls through to
 ## `by_view`.
 ##
@@ -1333,7 +1333,7 @@ static func canvas_margins(look: EventDef.Look) -> Dictionary:
 	return FIRE_ENGINE_CANVAS_BOTTOM_MARGIN if look == EventDef.Look.FIRE_ENGINE \
 			else POLICE_CAR_CANVAS_BOTTOM_MARGIN
 
-## Whether `look` is a body whose picture is anchored over it by `EventLook._body_anchor()`: the
+## Whether `look` is a body whose picture is anchored over it by `EventLook.body_anchor()`: the
 ## patrol car's and the fire engine's, the two looks of a car that drives (`EventDef.vehicle`).
 static func is_anchored_over_its_body(look: EventDef.Look) -> bool:
 	return look == EventDef.Look.POLICE_CAR or look == EventDef.Look.FIRE_ENGINE

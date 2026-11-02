@@ -182,7 +182,7 @@ func _roadblock_band_at() -> Vector2:
 	return event.body_position() - event.global_position + Vector2(0.0, -current_bob())
 
 ## One guard standing at his post on `side` of the band drawn at `band_at`, facing out from it.
-## **The view sector is put back afterwards**: `_select_view()` advances `_view_sector` with
+## **The view sector is put back afterwards**: `select_view()` advances `_view_sector` with
 ## hysteresis for the one heading the event carries — the chaser's, once there is one — and a
 ## second figure turned another way must not reset it on every draw.
 func _draw_posted_guard(canvas: CanvasItem, band_at: Vector2, side: int) -> void:

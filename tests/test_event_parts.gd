@@ -15,7 +15,7 @@ func run(t) -> void:
 	_test_a_scar_is_recorded_once_however_often_it_streams_in(t)
 	_test_the_pelican_bag_is_the_handed_runs(t)
 	_test_a_door_says_what_it_does_to_her_and_moves_nobody(t)
-	_test_the_manager_sees_her_only_once_she_is_handed_in(t)
+	await _test_the_manager_sees_her_only_once_she_is_handed_in(t)
 
 ## An `EventWorld` on fresh open ground drawn in `holder`, belonging to the live run.
 func _world(t) -> EventWorld:
@@ -221,17 +221,20 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t) -> void:
 	manager.streaming.take([plan] as Array[EventScheduler.Planned])
 	var her := _her(t)
 	her.global_position = at
-	manager._physics_process(STEP)
+	await t.get_tree().physics_frame
+	await t.get_tree().physics_frame
 	t.check(plan.live == null,
 			"a player in the tree's `player` group but never handed in is nobody the events see")
 	manager.use_player(her)
-	manager._physics_process(STEP)
+	await t.get_tree().physics_frame
+	await t.get_tree().physics_frame
 	t.check(plan.live != null and plan.live.player_at == at,
 			"handed in, the events around her stream in and are told where she is")
 	# Stood aside for the title, she is handed in and still nobody the events see.
 	her.stand_aside()
 	plan.live.player_at = Vector2.ZERO
-	manager._physics_process(STEP)
+	await t.get_tree().physics_frame
+	await t.get_tree().physics_frame
 	t.check(not manager.world.has_player() and plan.live.player_at == Vector2.ZERO,
 			"stood aside for the title, she is told nothing and nothing can strike her")
 	manager.use_player(null)

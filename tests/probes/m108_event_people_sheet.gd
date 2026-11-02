@@ -1,7 +1,7 @@
 extends RefCounted
 ## Evidence rig for M108's "bind live event people, animals and riders" item: renders every bound
 ## family at all eight `EightDirection` sectors from the actual runtime selection —
-## `EventInstance.setup()`, `EventLook._select_view()`, `EventPictures.EIGHT_VIEW_BY_SECTOR` and
+## `EventInstance.setup()`, `EventLook.select_view()`, `EventPictures.EIGHT_VIEW_BY_SECTOR` and
 ## each family's own `_BY_VIEW` table, the same calls `EventLook._draw_eight_view()` and the looks'
 ## other `_draw_*` functions make —
 ## rather than a hand-assembled list of source files. Not a suite: it saves PNGs and prints a
@@ -94,7 +94,7 @@ func _heading_row(def_id: String, by_view: Dictionary) -> Array:
 	return row
 
 ## The waiting robber's own target-facing: `player_at` set at each of the eight bearings, read back
-## through `_robber_waiting_heading()` exactly as `_draw_robber()` does while `is_waiting()`.
+## through `robber_waiting_heading()` exactly as `_draw_robber()` does while `is_waiting()`.
 func _robber_waiting_row() -> Array:
 	var row := []
 	var def := EventCatalogue.by_id("alley_robbery")
@@ -102,7 +102,7 @@ func _robber_waiting_row() -> Array:
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)
 		instance.player_at = _sector_heading(sector) * (def.notice_within() + 40.0)
-		var view := instance.look._select_view(instance.look._robber_waiting_heading())
+		var view := instance.look.select_view(instance.look.robber_waiting_heading())
 		row.append(_entry(EventPictures.ROBBER_WAITING_BY_VIEW[view],
 				EightDirection.is_mirrored(instance.look._view_sector)))
 		instance.free()
