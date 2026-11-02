@@ -743,6 +743,13 @@ static func _street_ground(map: CityMap, segment: StreetNetwork.Segment, def: Ev
 				found.append(tile)
 	return found
 
+## The ground `def` may stand on along `segment`, public for `SceneRecipeRuntime` and the tests:
+## `_street_ground()`.
+static func street_ground(map: CityMap, segment: StreetNetwork.Segment, def: EventDef,
+		trees: Dictionary, standing_at: Vector2, open: Dictionary,
+		from_the_door: bool) -> Array[Vector2i]:
+	return _street_ground(map, segment, def, trees, standing_at, open, from_the_door)
+
 ## `_open_ground_for()`'s answer for `def` as a count of copies per tile, kept beside it in `open`,
 ## so a street's tiles are looked up rather than the whole city's list walked once per street.
 static func _open_ground_counts(def: EventDef, map: CityMap, open: Dictionary,
@@ -1222,6 +1229,13 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0,
 			announcement.silenced = quiet
 			planned.append(announcement)
 	return planned
+
+## The day's masts, public for the callers that plan one without a whole day (`SceneRecipeRuntime`,
+## the resistance suites): `_place_masts()` itself, so a mast is planned under the same refusals
+## whoever asks.
+static func place_masts(day: int, map: CityMap, heat: int = 0,
+		doors := PackedVector2Array(), scars: Array[Dictionary] = []) -> Array[Planned]:
+	return _place_masts(day, map, heat, doors, scars)
 
 ## The id of a mast queued for day 11's task at `foot` (`EventManager.queue_a_mast()`), the same
 ## every day it is planned again from its scar, and never a `MastSites` site's own id.
@@ -2595,6 +2609,12 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		ground[corner_free_key] = without_corners
 	return ground[corner_free_key]
 
+## The tiles the day offers `def`, public for the tests and recipes that ask what ground a row
+## has: `_open_ground_for()`, with its refusals and its cache `ground`.
+static func open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
+		side: int = -1, from_the_door := true) -> Array[Vector2i]:
+	return _open_ground_for(def, map, ground, side, from_the_door)
+
 ## How many more times a tile is offered to the roll because of what the day is placing there.
 ##
 ## Zero means the tile is not offered at all, and there is exactly one case of it — **a wall never
@@ -2814,6 +2834,21 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 		if _keeps_its_field_clear(candidate) and gap < candidate.def.field_reach():
 			return -INF
 	return INF if room_same >= EVENT_SPACING_SAME else room_same
+
+## How much room `candidate` has among `already`, `-INF` when a rule refuses it: `_room_around()`,
+## public so a planner outside the scheduler asks the day's own spacing.
+static func room_around(candidate: Planned, already: Array[Planned]) -> float:
+	return _room_around(candidate, already)
+
+## The placement a recipe or a planner puts at one site, or null: the candidate `_build_placement()`
+## sites on `tile` that `room_around()` leaves room for among `already`. The one entry point a
+## planner and `SceneRecipeRuntime` share, so an authored scene is sited by the rules a day is.
+static func place_at(def: EventDef, map: CityMap, tile: Vector2i, rng: RandomNumberGenerator,
+		already: Array[Planned]) -> Planned:
+	var candidate := _build_placement(def, map, tile, rng)
+	if not candidate or _room_around(candidate, already) == -INF:
+		return null
+	return candidate
 
 ## Whether the clearance rule is about this placement: a lethal event with nothing else inside
 ## its whole field — `EventDef.field_reach()`, not `outer_radius` alone, since a segment's field

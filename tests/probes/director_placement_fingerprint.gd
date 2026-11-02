@@ -112,7 +112,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 	# The mark and its guard.
 	var offered := director.current_step()
 	_print("%s mark %s guard %s" % [label, _point(director.contact_position()),
-			_guard_at(director._guard)])
+			_guard_at(director.mark_guard())])
 	printed += 1
 	var mark := director.contact_position()
 	if offered and offered.is_pickup and mark != Vector2.INF:
@@ -220,8 +220,8 @@ func _the_extras(city: City, director: ResistanceDirector, player: Stroller, lab
 ## (let through).
 func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label: String) -> int:
 	var happenings := director._happenings
-	var vans := happenings._raid_vans
-	var beat := happenings._raid_beat
+	var vans := happenings.raid_vans()
+	var beat := happenings.raid_beat()
 	_print("%s raid plans vans %s beat %s" % [label, vans, beat])
 	var far := city.map.tile_to_world(Vector2i(city.map.size.x - 4, 3))
 	var printed := 1

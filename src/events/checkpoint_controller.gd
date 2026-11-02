@@ -86,7 +86,7 @@ var _last_outright_moves := 0
 ## Read by `walks_under_a_boom()`; the run log has a line for each.
 var _walked_under := 0
 ## The guard a walked crossing last set on her, or `null` — one at a time, see
-## `_set_a_guard_on_her()`.
+## `set_a_guard_on_her()`.
 var _guard_after_her: EventInstance = null
 ## **A crossing still warning her** (`watch_the_door_lines()`): the door body whose line she walked
 ## across, the hut or post whose guard raises his hand at her, which side of the line she crossed
@@ -130,7 +130,7 @@ func guard_after_her() -> EventInstance:
 	return _guard_after_her if is_instance_valid(_guard_after_her) else null
 
 ## Whether the guard a walked crossing set on her is still on her: in the world, neither finished
-## nor leaving. One guard at a time (`_set_a_guard_on_her()`), so a crossing starts no warning and
+## nor leaving. One guard at a time (`set_a_guard_on_her()`), so a crossing starts no warning and
 ## sets no second guard while this holds.
 func guard_is_after_her() -> bool:
 	return is_instance_valid(_guard_after_her) and not _guard_after_her.is_finished \
@@ -473,7 +473,7 @@ func watch_the_door_lines(delta := 0.0) -> void:
 ## (`EventInstance.guard_warns_her`, drawn by `warn_at_the_doors()`) from the frame she crosses.
 ## Back across the line before `CROSSING_WARNING` has run, the crossing is called off and
 ## nothing comes; still across it once it has run, a guard is set on her
-## (`_set_a_guard_on_her()`). One crossing at a time, and none while a guard is already after
+## (`set_a_guard_on_her()`). One crossing at a time, and none while a guard is already after
 ## her. Answers whether a warning started.
 func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
 	if _crossing != null or guard_is_after_her():
@@ -542,7 +542,7 @@ func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
 	_crossing = null
 	_crossing_hut = null
 	_crossing_warning.stop()
-	_set_a_guard_on_her(hut, crossed, here)
+	set_a_guard_on_her(hut, crossed, here)
 	door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 	for held: Array in _held_crossings:
 		door_crossed.emit(held[0] as Vector2, held[1] as Vector2, false)
@@ -577,7 +577,7 @@ func _call_off_the_crossing(why: String) -> void:
 ## (about 57px from her as she crosses the near lane, 16px if she crosses beside it) his charge
 ## comes with almost no ground to answer it in. An alley's door has only its post, so its guard
 ## steps out of it. *The far hut is chosen while building, open to overturn.*
-func _set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vector2) -> void:
+func set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vector2) -> void:
 	if not is_instance_valid(hut) or guard_is_after_her():
 		return
 	var axis := crossed.facing_now()
@@ -587,7 +587,7 @@ func _set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vecto
 
 ## The hut or post on `door`'s own cross-street line nearest `here` — or, with `farthest`, the
 ## farthest — or null. The farthest is the one whose guard warns her and the one a guard steps out
-## of (`_set_a_guard_on_her()`).
+## of (`set_a_guard_on_her()`).
 func _hut_on_the_line_nearest(door: EventInstance, here: Vector2, farthest := false) -> EventInstance:
 	var axis := door.facing_now()
 	var hut: EventInstance = null

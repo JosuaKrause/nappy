@@ -725,7 +725,7 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 	var baby := Baby.new()
 	baby.name = "Baby"
 	stroller.add_child(baby)
-	baby._stroller = stroller
+	baby.set_stroller(stroller)
 	var result := {"caught_at": INF, "at_the_lunge": INF, "lunged_at": INF, "gave_up": false,
 			"ended": false, "first_seen": INF, "cried": false, "excitement": 0.0}
 	var her := Vector2.ZERO
@@ -740,7 +740,7 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 		her += bearing * velocity * STEP
 		stroller.position = her
 		stroller.velocity = bearing * velocity
-		baby._physics_process(STEP)
+		baby.step(STEP)
 		robber.player_at = her
 		robber.player_running = absf(velocity) > Tuning.WALK_SPEED
 		var box := robber.drawn_box()

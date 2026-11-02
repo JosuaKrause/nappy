@@ -60,7 +60,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
 	if placed:
 		var others := _city.events.plans().filter(
 				func(plan: EventScheduler.Planned) -> bool: return plan != placed)
-		t.check(EventScheduler._room_around(placed, others) != -INF,
+		t.check(EventScheduler.room_around(placed, others) != -INF,
 				"and it has room by the scheduler's own spacing")
 	player.free()
 	director.free()
