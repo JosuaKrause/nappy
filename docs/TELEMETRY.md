@@ -305,7 +305,9 @@ independent switch. One pure function, `GoatCounterOutbox.gate_allows()`, decide
 four booleans, the same shape `DevFlags._live_debug_requested()` already uses, and
 `tests/test_visit_counter.gd` drives its truth table directly. The same `GoatCounterOutbox` holds
 the events asked for before `count.js` has loaded and counts them in order once it has, and is
-handed the evaluator of the page's script, so a test reads the script each event sends. A missing or failing
+handed the evaluator of the page's script; the counter is handed its outbox with `send_through()`
+(its `_ready()` hands it the page's), so a test hands one with a recorder and reads the script each
+event sends, or that a refused event never reached it. A missing or failing
 `window.goatcounter` never raises or prints an engine error: the existence check comes first, and
 the call itself sits inside the page's own `try`/`catch`.
 
@@ -1098,7 +1100,7 @@ taken that same day; even off that flag, two pictures inside one in-game second 
 way. *(2026-09-11,
 playtest 56: "phot capture must use real time not game time otherwise at the end of the day all
 pictures get overwritten", then "actually why not just count up the screenshot numbers?".)* The
-counter is `Telemetry._shot_serial`, shared with the person-requested pictures in `asked/` below so
+counter is the run's `TelemetryShots` (`src/telemetry/telemetry_shots.gd`), which `Telemetry` holds, shared with the person-requested pictures in `asked/` below so
 a picture's own number says when in the run — relative to every picture the run took, from either
 folder — it was taken; it counts from 1 for the life of the run and never resets, not even across a
 retried attempt at the same day, so the counter itself cannot repeat a number. The attempt is named

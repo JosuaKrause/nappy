@@ -82,6 +82,7 @@ extends Node
 
 func _ready() -> void:
 	listen(EventBus)
+	send_through(GoatCounterOutbox.new(func(script: String) -> void: JavaScriptBridge.eval(script)))
 
 ## Connects every handler below to `bus`'s signals. `_ready()` hands it the game's `EventBus`; a
 ## test hands in a bus of its own, so what it emits reaches this counter alone, and frees the
@@ -167,11 +168,17 @@ static func _goatcounter_present() -> bool:
 	return bool(present)
 
 ## Where the events go: the queue for the ones asked for before `count.js` has loaded, and the
-## call that counts one. It evaluates its script through the page's own `JavaScriptBridge`.
-var _outbox := GoatCounterOutbox.new(func(script: String) -> void: JavaScriptBridge.eval(script))
+## call that counts one. `null` until `send_through()` hands one in, and nothing is sent before.
+var _outbox: GoatCounterOutbox
+
+## Hands the counter the outbox its events go to. `_ready()` hands it one that evaluates its script
+## through the page's own `JavaScriptBridge`; a test hands one with a recorder, so what reaches the
+## outbox, queued or counted, is what the recorder sees once the outbox flushes.
+func send_through(outbox: GoatCounterOutbox) -> void:
+	_outbox = outbox
 
 func _send_event(name: String) -> void:
-	if _config == null or not GoatCounterOutbox.may_ever_send(
+	if _config == null or _outbox == null or not GoatCounterOutbox.may_ever_send(
 			OS.get_name() == "Web", _config.debug_build, _config.readout_requested):
 		return
 	_outbox.send(name, _goatcounter_present())

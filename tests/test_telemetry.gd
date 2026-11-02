@@ -51,7 +51,7 @@ class Rig extends RefCounted:
 	## Lets `seconds` of the day pass in one real frame.
 	func frame(seconds := STEP) -> void:
 		elapsed += seconds
-		clock.time_remaining = LENGTH - elapsed
+		clock.tick(seconds)
 		await tree.process_frame
 
 	func free_all() -> void:
@@ -105,9 +105,10 @@ func run(t) -> void:
 	Telemetry.begin_memory_log()
 	Telemetry.end_run()
 
-## The run's shot allowance, the one thing in this suite read off `Telemetry` privately: a headless
-## process takes no pictures (`snapshot()` returns before the shot is counted), so nothing public
-## shows that a section's restart cleared the schedule. A seam that would end it is a screen
+## The run's shots, the one thing in this suite read off `Telemetry` privately: a headless process
+## takes no pictures (`snapshot()` and `snapshot_now()` return before a shot is counted or named),
+## so nothing public shows that a section's restart cleared the schedule, or that `Telemetry`'s own
+## day boundaries leave the run's picture counter alone. A seam that would end it is a screen
 ## `Telemetry` is handed and asks, instead of `DisplayServer.get_name() == "headless"`.
 func _the_runs_shots() -> TelemetryShots:
 	return Telemetry._shots
@@ -356,7 +357,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	# no resistance: the ones with nothing to ask have to say nothing rather than fail.
 	await t.get_tree().process_frame
 	player.global_position = man.global_position + Vector2(man.def.outer_radius * 0.5, 0.0)
-	clock.time_remaining = 180.0 - 12.5
+	clock.tick(12.5)
 	await t.get_tree().process_frame
 	clock.failure_reason = "They were on the stairs."
 	observer.day_finished(GameEnums.DayResult.LOST_HARD_FAIL, "masked-pursuer")
@@ -372,7 +373,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	clock.start(180.0)
 	await t.get_tree().process_frame
 	Telemetry.set_clock(40.0)
-	clock.time_remaining = 140.0
+	clock.tick(40.0)
 	clock.exit_reached = CityEdge.Kind.TUNNEL
 	observer.day_finished(GameEnums.DayResult.WON)
 
@@ -568,15 +569,15 @@ func _test_a_capture_is_never_logged_as_blocked(t) -> void:
 	rig.player.detain(2.0)
 	await _hold_against_a_wall(rig, "move_right", Vector2(100.0, 100.0), 2.5)
 
-	# The capture is over — `Stroller._physics_process` would have zeroed this by now, and a Stroller
-	# out of the tree has no physics frames to do it — and the same held key against the same wall
-	# is a genuine stall again.
+	# The capture is over — a Stroller out of the tree has no physics frames to count it down, so
+	# she is put back where she stands the way `main` puts her back (`reset_at()` ends a detention)
+	# — and the same held key against the same wall is a genuine stall again.
 	var during := 0
 	for line: String in Telemetry.current_log().lines:
 		if line.contains("blocked"):
 			during += 1
 	t.check(during == 0, "a held key through the capture itself writes no blocked entry (got %d)" % during)
-	rig.player._detained_for = 0.0
+	rig.player.reset_at(Vector2(100.0, 100.0))
 	await _hold_against_a_wall(rig, "move_right", Vector2(100.0, 100.0), 1.5)
 
 	var blocked := _blocked_lines(t)
@@ -1148,6 +1149,24 @@ func _test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t) -> void
 	t.check(shots.next_name("asked", "-attempt1") == "001-attempt1-asked.png",
 			"a new run's names start over")
 
+	# The same walk on the run's own counter, with `Telemetry`'s own day boundaries between the
+	# names: a new log is a new run, a new day and a retried day are not.
+	Telemetry.begin_memory_log()
+	var runs := _the_runs_shots()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+	t.check(runs.next_name("asked", "-attempt1") == "001-attempt1-asked.png",
+			"a new log's first picture is 001")
+	Telemetry.begin_day(2, 1, 1, 1, 180.0)
+	t.check(runs.next_name("asked", "-attempt1") == "002-attempt1-asked.png",
+			"Telemetry's own new day does not reset the run's counter")
+	Telemetry.begin_day(2, 1, 1, 1, 180.0)
+	t.check(runs.next_name("asked", "-attempt2") == "003-attempt2-asked.png",
+			"nor does Telemetry's own retry of the same day")
+	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 1, 180.0)
+	t.check(runs.next_name("asked", "-attempt1") == "004-attempt1-asked.png",
+			"nor an escape section opening")
+	Telemetry.end_run()
+
 ## `--invincible` clamps the countdown to exactly zero once a day runs out rather than ending it
 ## (`DayController.tick()`), which holds the elapsed day clock at the day's own length for as
 ## long as the day keeps running afterward — so under a clock-named scheme, every picture taken
@@ -1158,7 +1177,7 @@ func _test_a_day_clock_held_at_zero_still_gets_two_distinct_shot_names(t) -> voi
 	Telemetry.begin_memory_log()
 	Telemetry.begin_day(1, 1, 1, 1, 180.0)
 	Telemetry.set_clock(0.0)
-	var shots := TelemetryShots.new()
+	var shots := _the_runs_shots()
 	var first := shots.next_name("asked", "-attempt1")
 	var second := shots.next_name("asked", "-attempt1")
 	t.check(Telemetry.clock() == 0.0,

@@ -528,17 +528,31 @@ func _test_pending_events_queue_until_present_and_flush_in_order(t) -> void:
 
 ## The other half of the fix: a reason that can never change — off the web, a debug build, or
 ## `?debug=1` — must never populate the queue at all, the same "still send nothing under debug"
-## the gate itself already promised. This process is never on the web, so the counter refuses
-## before its outbox is ever touched: the real counter, handed a bus and events, evaluates no
-## script on a page it does not have, and `GoatCounterOutbox.may_ever_send()` is the refusal.
+## the gate itself already promised. This process is never on the web, so the real counter, handed
+## a bus, a release build's configuration and an outbox with a recorder (as `_ready()` hands it the
+## page's), refuses every event before its outbox is touched. Nothing it was handed is queued: the
+## outbox's next counted event, a probe sent with `count.js` present, flushes whatever the outbox
+## holds ahead of itself, and the recorder sees the probe alone.
 func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
 	var counter: Node = VISIT_COUNTER_SCRIPT.new()
 	var bus: Node = EVENT_BUS_SCRIPT.new()
+	var scripts: Array[String] = []
+	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
 	counter.configure(RunConfig.parse(PackedStringArray(), "", false), GameState)
+	counter.send_through(outbox)
 	counter.listen(bus)
+	t.check(bus.controls_chosen.get_connections().size() == 1
+			and bus.day_started.get_connections().size() == 1,
+		"the counter answers the bus it is handed, so there are events to refuse")
+	bus.run_begun.emit(1, false)
+	bus.day_started.emit(1)
 	bus.controls_chosen.emit(true, false)
-	t.check(not GoatCounterOutbox.may_ever_send(OS.get_name() == "Web", false, false),
-		"off the web, an event is refused outright rather than queued forever unsent")
+	bus.day_ended.emit(1, GameEnums.DayResult.WON, "", 0.0)
+	t.check(scripts.is_empty(), "off the web, nothing reaches a page (%s)" % [scripts])
+	outbox.send("probe", true)
+	t.check(scripts.size() == 1 and scripts[0].contains("\"path\":\"probe\""),
+		"off the web, an event is refused outright rather than queued forever unsent (%s)"
+		% [scripts])
 	t.check(not GoatCounterOutbox.may_ever_send(true, true, false)
 			and not GoatCounterOutbox.may_ever_send(true, false, true)
 			and GoatCounterOutbox.may_ever_send(true, false, false),
@@ -900,8 +914,8 @@ func _test_encounters_and_runs_are_named_by_their_day_and_row(t) -> void:
 ## Every event the counter sends carries `no_session: true`, the one thing that keeps it counted
 ## every time on a site whose sessions stay on for the page visit ("okay, I can turn session back
 ## on and you opt out for everything except /nappy.josuakrause.com/"). Every handler is driven
-## through `RecordingCounter`, and each name it sent is checked in the options `_dispatch()` hands
-## `count()` and in the script line itself, parsed back rather than searched as text.
+## through `RecordingCounter`, and each name it sent is checked in the options
+## `GoatCounterOutbox.send()` hands `count()` and in the script line itself, parsed back rather than searched as text.
 func _test_every_event_opts_out_of_sessions(t) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.run_begun.emit(1, false)

@@ -9,14 +9,16 @@ extends RefCounted
 ##   - the tree's `paused`, `Engine.time_scale`, `Input.mouse_mode`, and the nodes under the root and
 ##     under the runner;
 ##   - `InputMap`: each action's deadzone and events, and whether `Input` holds it pressed;
-##   - every autoload's script variables, and every connection on its signals;
+##   - every autoload's script variables, the script variables of each `RefCounted` it holds in
+##     one, and every connection on its signals;
 ##   - every `static var` declared under `src/`, found by reading the sources, so a new one is
 ##     checked without anybody adding it to a list.
 ##
 ## A snapshot is a flat `Dictionary` from a field's name to a string describing its value, so a
 ## difference reads as "field: before -> after". Objects are described by class and instance id
 ## (a replaced object is a change; a mutated one is seen through its own fields only when it is
-## an autoload), arrays and dictionaries by their contents down to `DEPTH` levels.
+## an autoload or a `RefCounted` an autoload holds, as `<autoload>.<field>.<its field>`), arrays and
+## dictionaries by their contents down to `DEPTH` levels.
 ##
 ## The runner resets some of this on purpose before every suite (`_reset_globals`); the check does
 ## not look past that, so a field the runner resets and a suite changes is named in `EXEMPT` with
@@ -165,7 +167,9 @@ static func _autoload(out: Dictionary[String, String], autoload: String) -> void
 		if not (int(property["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE):
 			continue
 		var name: String = property["name"]
-		out["%s.%s" % [autoload, name]] = _describe(node.get(name), DEPTH)
+		var value: Variant = node.get(name)
+		out["%s.%s" % [autoload, name]] = _describe(value, DEPTH)
+		_held(out, "%s.%s" % [autoload, name], value)
 	for info in node.get_signal_list():
 		var signal_name: String = info["name"]
 		var targets: Array[String] = []
@@ -178,6 +182,23 @@ static func _autoload(out: Dictionary[String, String], autoload: String) -> void
 			targets.append("%s.%s" % [_describe(callable.get_object(), 0), callable.get_method()])
 		targets.sort()
 		out["%s.signal.%s" % [autoload, signal_name]] = str(targets)
+
+## The script variables of a `RefCounted` an autoload holds in `value`, each under `key` and its own
+## name, so a part an autoload keeps its state in (a queue, a counter) is compared as the
+## autoload's own fields are. One level deep: what such a part holds in turn is described by class
+## and instance id, as any other object is. A `Node` an autoload holds is not followed, since it is
+## not the autoload's to give back.
+static func _held(out: Dictionary[String, String], key: String, value: Variant) -> void:
+	if not (value is RefCounted) or not is_instance_valid(value):
+		return
+	var part: RefCounted = value
+	if part.get_script() == null:
+		return
+	for property in part.get_property_list():
+		if not (int(property["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE):
+			continue
+		var name: String = property["name"]
+		out["%s.%s" % [key, name]] = _describe(part.get(name), DEPTH)
 
 static func _statics(out: Dictionary[String, String]) -> void:
 	if not _static_scanned:
