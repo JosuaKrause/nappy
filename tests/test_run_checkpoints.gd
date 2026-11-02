@@ -331,7 +331,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 		main._start_day()
 	t.check(GameState.header.day == 11 and GameState.calendar.checkpoint_day() == 8,
 			"day 11 is under way, with day 8 the checkpoint")
-	var boarded: Building = main._city._home_door_building()
+	var boarded: Building = main._city.home_door_building()
 	t.check(boarded != null and boarded.neighbor_window_col >= 0,
 			"day 11 boarded the neighbor's window")
 
@@ -359,7 +359,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	t.check(reloads.size() == 1, "the continue reloads the scene rather than repainting this one")
 	t.check(GameState.header.day == 8 and GameState.header.nerves == Tuning.STARTING_NERVES,
 			"she plays day 8 with every nerve")
-	var building: Building = playing._city._home_door_building()
+	var building: Building = playing._city.home_door_building()
 	t.check(building != null and building.neighbor_window_col < 0,
 			"and the neighbor's window is not boarded on day 8")
 	t.check(not playing._title.is_open() and not t.get_tree().paused,
