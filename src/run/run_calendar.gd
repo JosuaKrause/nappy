@@ -276,7 +276,7 @@ func regain_a_nerve_for_a_won_day() -> void:
 ## **Everything but the play time**: `RunHeader.play_ticks` stays as it was at the loss, for a
 ## checkpoint zero and a later one alike, since going back is the game sending her back for running
 ## out of nerves and not the player starting over; only a new game from the title starts it at zero
-## (inbox #920).
+## (inbox #920 in plaid-penguin).
 ##
 ## Checkpoint zero (`checkpoint` empty) is day 1 of the same city: the registry reset. The header
 ## keeps the run's seed and who is pushing the pram, since `--parent` may have chosen it over the
@@ -284,7 +284,7 @@ func regain_a_nerve_for_a_won_day() -> void:
 func _go_back_to_the_checkpoint() -> void:
 	var lost_on := header.day
 	var kept := checkpoint
-	# The run's play time only ever grows: the dawn's own clock is not given back (inbox #920).
+	# The run's play time only ever grows: the dawn's own clock is not given back (inbox #920 in plaid-penguin).
 	var played := header.play_ticks
 	if kept.is_empty():
 		run_parts.reset()

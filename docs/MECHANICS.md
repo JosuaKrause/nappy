@@ -1533,7 +1533,7 @@ frame slows the game instead — and a faster machine reads no lower time. The s
 seconds and loads it to the nearest tick, whatever seconds an older save holds. Not wall time, and not
 the day timer above, which resets every day — a retried day's first attempt counts toward it, and
 neither the pause screen, the day summary nor the title screen do. It only ever grows during a run
-(inbox #920): going back to a checkpoint, day 1's included, keeps it and does not put it back to
+(inbox #920 in plaid-penguin): going back to a checkpoint, day 1's included, keeps it and does not put it back to
 that dawn's reading (see "Two modes"); only a new game from the title starts it at zero.
 
 It is hidden throughout play — no HUD, no pause screen, no day summary — and the ending screen is
@@ -1931,7 +1931,7 @@ retry of a checkpoint day, or a run sent back to one, keeps the checkpoint it ha
 checkpoint day replaces it. Day 1 is not stored: the run's own seed rebuilds that dawn exactly. **The
 run's play time is the one thing that does not go back**: going back to a checkpoint, day 1's
 included, keeps the time played, since the game sent her back and she did not start over; only a new
-game from the title starts it at zero (inbox #920).
+game from the title starts it at zero (inbox #920 in plaid-penguin).
 
 **A checkpoint cannot strand the good ending any more than the run already had.** Tasks belong to
 their days and a checkpoint restores exactly what the run had done by that dawn, so a run that
