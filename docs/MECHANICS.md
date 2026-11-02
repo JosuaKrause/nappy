@@ -1532,8 +1532,9 @@ draws a frame late spends no extra time on the clock — a lag spike past the en
 frame slows the game instead — and a faster machine reads no lower time. The save holds it in
 seconds and loads it to the nearest tick, whatever seconds an older save holds. Not wall time, and not
 the day timer above, which resets every day — a retried day's first attempt counts toward it, and
-neither the pause screen, the day summary nor the title screen do. It is part of a normal run's
-checkpoint, so going back to one puts it back to that dawn's reading (see "Two modes").
+neither the pause screen, the day summary nor the title screen do. It only ever grows during a run
+(inbox #920): going back to a checkpoint, day 1's included, keeps it and does not put it back to
+that dawn's reading (see "Two modes"); only a new game from the title starts it at zero.
 
 It is hidden throughout play — no HUD, no pause screen, no day summary — and the ending screen is
 the only place it is shown, once, on every ending alike: bad, neutral and good all carry a line
@@ -1921,14 +1922,16 @@ nerves, which decide only when a run ends, are restart pacing, and that is where
 
 **A checkpoint is the exact state of the run at that day's dawn.** *(gentle-osprey, the player:
 "store the exact state at the checkpoint -- continuing should not have anything that happened after
-the checkpoint".)* It is the whole run as the save carries it — the resistance's steps and progress,
+the checkpoint".)* It is the whole run as the save carries it, apart from the play time — the resistance's steps and progress,
 the scars and the spent one-shots, every block's arc, the posters, where she settled each day, the
-fenced park, the alleys a mark has used, and the run's clock — kept by `RunCalendar.begin_day()` the
+fenced park and the alleys a mark has used — kept by `RunCalendar.begin_day()` the
 first time a checkpoint day is begun, before anything of that day can have happened, and given back
 whole when a normal run spends its last nerve, with five nerves instead of whatever that dawn had. A
 retry of a checkpoint day, or a run sent back to one, keeps the checkpoint it has; only the next
 checkpoint day replaces it. Day 1 is not stored: the run's own seed rebuilds that dawn exactly. **The
-run clock goes back with it**, so time spent after a checkpoint is not part of the run's length.
+run's play time is the one thing that does not go back**: going back to a checkpoint, day 1's
+included, keeps the time played, since the game sent her back and she did not start over; only a new
+game from the title starts it at zero (inbox #920).
 
 **A checkpoint cannot strand the good ending any more than the run already had.** Tasks belong to
 their days and a checkpoint restores exactly what the run had done by that dawn, so a run that
