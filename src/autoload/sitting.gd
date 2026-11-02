@@ -47,6 +47,12 @@ var restarted_at_msec := -INF
 ## `""` until then.
 var frame_record_path := ""
 
+## The ground's composition recipe, read from disk by the first city built this sitting and held
+## here after, so a reload and every day's repaint compose from the same read (`GroundRecipe`).
+## Not a fact a reload carries about the run, but one per process, and this node outlives the
+## reload that frees `main`.
+var ground_recipe := GroundRecipe.new()
+
 ## Stamps the held restart's reload — see `restarted_at_msec`.
 func note_restart_requested() -> void:
 	restarted_at_msec = Time.get_ticks_msec()

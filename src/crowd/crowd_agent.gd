@@ -225,10 +225,10 @@ func _draw() -> void:
 	# lift would drop it.
 	var bob := _look.bob()
 	var lift := Transform2D(0.0, Vector2(0.0, bob))
-	Sprites.set_base_transform(lift)
+	Sprites.set_base_transform(self, lift)
 	draw_set_transform_matrix(lift)
 	_look.draw_body(self)
-	Sprites.set_base_transform(Transform2D.IDENTITY)
+	Sprites.set_base_transform(self, Transform2D.IDENTITY)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if _carets:
 		_draw_mark()
