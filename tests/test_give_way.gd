@@ -80,7 +80,7 @@ func _test_the_zebra_she_waits_at(t, map: CityMap) -> void:
 	t.check(GiveWay.zebra_edge_ahead(map, zebra + Vector2(160.0, 0.0), false, 1.0, zebra) == INF,
 			"past it, there is none ahead")
 	t.check(GiveWay.zebra_edge_ahead(map, from_the_west, false, 1.0,
-			zebra + Vector2(0.0, 0.0) + Vector2(Tuning.CAR_ZEBRA_WAIT_RADIUS + TILE * 4.0, 0.0)) == INF,
+			zebra + Vector2(0.0, 0.0) + Vector2(GiveWay.CAR_ZEBRA_WAIT_RADIUS + TILE * 4.0, 0.0)) == INF,
 			"nor where she waits further along than the paint's wait radius")
 	t.check(GiveWay.zebra_edge_ahead(map, zebra + Vector2(160.0, 0.0), false, -1.0, zebra) > edge,
 			"going west the near edge is the run's far side, further along than going east's")

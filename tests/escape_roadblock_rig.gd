@@ -10,7 +10,7 @@ extends RefCounted
 ## she is and whether she runs (`_tell_them_where_she_is()`), asked whether one catches her
 ## (`is_lethal_at()`), and the meter fed from the strongest of them — they are
 ## `barrier_structure`, so only the strongest counts (`excitement_sources_at()`) — the way
-## `Baby._update_excitement()` feeds it, with `Tuning.SLEEPING_SENSITIVITY` while asleep and the
+## `Baby._update_excitement()` feeds it, with `Baby.SLEEPING_SENSITIVITY` while asleep and the
 ## wake at `Tuning.EXCITEMENT_WAKE_THRESHOLD`. Her body is a point moved along her line; the decay
 ## is the street's (`Tuning.EXCITEMENT_DECAY_WALKING`, `_RUNNING` and `_IDLE` at a multiplier of
 ## 1). **The roadblocks alone**: nothing else of the plan is live, so the figures are theirs.
@@ -146,10 +146,10 @@ class Meter extends RefCounted:
 		var strongest := 0.0
 		for instance in instances:
 			strongest = maxf(strongest, instance.excitement.contribution_at(her))
-		var incoming := strongest + (Tuning.EXCITEMENT_FROM_RUNNING if running else 0.0)
-		incoming *= Tuning.SLEEPING_SENSITIVITY if asleep else 1.0
-		var decay := Tuning.EXCITEMENT_DECAY_IDLE if idle else (
-				Tuning.EXCITEMENT_DECAY_RUNNING if running else Tuning.EXCITEMENT_DECAY_WALKING)
+		var incoming := strongest + (Baby.EXCITEMENT_FROM_RUNNING if running else 0.0)
+		incoming *= Baby.SLEEPING_SENSITIVITY if asleep else 1.0
+		var decay := Baby.EXCITEMENT_DECAY_IDLE if idle else (
+				Baby.EXCITEMENT_DECAY_RUNNING if running else Tuning.EXCITEMENT_DECAY_WALKING)
 		value = clampf(value + (incoming - decay) * STEP, 0.0, Tuning.METER_MAX)
 		peak = maxf(peak, value)
 		if asleep and value >= Tuning.EXCITEMENT_WAKE_THRESHOLD:
@@ -290,4 +290,4 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 
 ## The escape city's section spec, the one the run flow walks the city under.
 static func _city_spec() -> DaySpec:
-	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)

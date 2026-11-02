@@ -14,6 +14,7 @@ const MOUTH := Vector2i(92, 69)
 const MARK := Vector2i(92, 68)
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_the_schema_names_a_mark_on_the_days_that_have_one(t)
 	_test_the_task_observations_ask_about_the_task(t)
 	_test_the_task_scenes_start_off_an_unread_mark(t)
@@ -235,7 +236,7 @@ func _test_a_neighbor_start_the_day_could_not_draw_is_refused(t) -> void:
 	var map := city.map
 	var mark := map.tile_to_world(ResistanceDirector.mark_tile_of(map, Vector2i(66, 146)))
 	# A sidewalk a block from her door: a few tiles of walk from home, nowhere near the band of
-	# about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of walk the day draws a start from.
+	# about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of walk the day draws a start from.
 	var near_home := Vector2i(62, 84)
 	t.check(map.tile_at(near_home) == GameEnums.TileType.SIDEWALK, "the probe stands on a sidewalk")
 	var errors := director.start_recipe_task(10, GameState.calendar.day_rng(10, "resistance"), 300.0, mark,

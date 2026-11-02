@@ -44,7 +44,7 @@ travels the lattice asks `CityMap.is_street()`, not `is_walkable()`.**
 
 The scheduler guarantees one unspoiled park and a walkable route from home to a park. On top of
 that, `ClosurePlanner` keeps **at least two distinct calm areas reachable**
-(`Tuning.MIN_CALM_AREAS_REACHABLE`), checked **before accepting each closure**. Anything new that
+(`ClosurePlanner.MIN_CALM_AREAS_REACHABLE`), checked **before accepting each closure**. Anything new that
 closes a street must go through it — `tests/test_routes.gd` fails the build if it does not.
 
 **Two areas is the count; reachability is the strength.** Two *areas* is what stops a day arriving
@@ -84,7 +84,7 @@ guarantee true, this is the rule you are about to rediscover.**
 **One exception, and the direction is what makes it one:** a pass that only ever *removes*
 obstruction is safe, because every guarantee here is about **reaching** somewhere and taking a
 barrier away can only add reachable ground. The seal-thinning pass
-(`SealPlanner._thin_soft_pairs`, which drops one body of `Tuning.SEAL_THINNING_FRACTION` of the
+(`SealPlanner._thin_soft_pairs`, which drops one body of `SealPlanner.SEAL_THINNING_FRACTION` of the
 day's soft seals so the walls do not read as guardrails) is that case, where a pass that added or
 moved a seal would not be. **The test is monotonicity, not intent**: a pass that removes some things
 and places others is not covered, and neither is one whose removal could make a *cost* guarantee

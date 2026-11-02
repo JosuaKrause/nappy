@@ -218,9 +218,9 @@ func _test_no_single_street_cuts_off_all_the_calm(t) -> void:
 				continue
 			if StreetNetwork.route_count(home, area.access, closed, 1) >= 1:
 				reachable += 1
-		t.check(reachable >= Tuning.MIN_CALM_AREAS_REACHABLE,
+		t.check(reachable >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
 				"shutting %s still leaves %d calm areas to walk to, wanting %d"
-				% [segment.key(), reachable, Tuning.MIN_CALM_AREAS_REACHABLE])
+				% [segment.key(), reachable, ClosurePlanner.MIN_CALM_AREAS_REACHABLE])
 
 ## The exemption, stated as a fact rather than left implicit: an area with one way in loses
 ## it if that way is shut, and it is the *invariant* — two other areas still reachable — that

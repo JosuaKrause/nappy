@@ -12,7 +12,7 @@ extends RefCounted
 ## *(`docs/TODO.md`, M87, "No rig can drive a heading that is not an axis": a heading is now an
 ## arbitrary unit vector, `TouchControls.heading_to()`'s own answer, and `1s5e`'s letters can only
 ## ever name four of them. `3@45@` presses `move_left`/`move_right` and `move_up`/`move_down`
-## through `TouchControls._set_axis()` at the bearing's own fractional strength — the same call
+## through `TouchControls.set_axis()` at the bearing's own fractional strength — the same call
 ## the real touch scheme presses through — so the vector stays unit length and the rig still
 ## walks at `Tuning.WALK_SPEED` like every other press. The letters are shorthand for four
 ## particular bearings now, not a second mechanism.)*

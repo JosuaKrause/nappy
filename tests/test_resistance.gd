@@ -15,6 +15,7 @@ const STEP := 1.0 / 60.0
 const RULE_SEEDS := 3
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_step_table(t)
 	_test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t)
 	_test_step_selection(t)
@@ -4008,7 +4009,7 @@ func _director_on_the_neighbor(t) -> ResistanceDirector:
 	return director
 
 ## Day 10: the red arrow points at the neighbor, out in the city and walking home along a real walk
-## that ends at her doorstep, about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk away. Reached
+## that ends at her doorstep, about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of their walk away. Reached
 ## first, the neighbor runs and the task counts; reaching the door first, they are taken — the task
 ## is failed, and from the next day the wanted notice crosses their face out.
 func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
@@ -4032,10 +4033,10 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
 			for i in range(1, neighbor.path.size()):
 				length += neighbor.path[i - 1].distance_to(neighbor.path[i])
 			var seconds := length / neighbor.def.speed
-			t.check(absf(seconds - Tuning.NEIGHBOR_WALK_HOME_SECONDS)
+			t.check(absf(seconds - ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS)
 					<= (ResistanceDirector.NEIGHBOR_WALK_BAND_TILES + 2) * Tuning.TILE_SIZE
 					/ neighbor.def.speed,
-					"a walk of about %.0fs (%.0fs)" % [Tuning.NEIGHBOR_WALK_HOME_SECONDS, seconds])
+					"a walk of about %.0fs (%.0fs)" % [ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS, seconds])
 			t.check(director.red_arrow_target() == director.contact_position(),
 					"and the red arrow points at them")
 		director._on_contact_completed(task.index if task else -1)
@@ -4227,7 +4228,7 @@ func _director_on_day(t, day: int, state: CityState) -> ResistanceDirector:
 ## Day 11: the market is found gone — a commercial block whose arc was waiting to board up is
 ## boarded now, out of her sight, with the market stalls at its frontage gone from the day's plan,
 ## and it stays boarded. Nothing happens before she has walked a while; with nothing on her way by
-## `Tuning.MARKET_GONE_BY`, the nearest block she cannot see goes.
+## `ResistanceHappenings.MARKET_GONE_BY`, the nearest block she cannot see goes.
 func _test_the_market_is_found_gone(t) -> void:
 	_build_city(t)
 	var saved_state := GameState.attempt_spend.city_state
@@ -4243,7 +4244,7 @@ func _test_the_market_is_found_gone(t) -> void:
 				"the test city has a block waiting to board up, or this test checks nothing")
 		happenings.tick(STEP, door, Vector2.ZERO)
 		t.check(happenings.market_block.x < 0, "nothing is gone before she has walked anywhere")
-		happenings._elapsed = Tuning.MARKET_GONE_BY
+		happenings._elapsed = ResistanceHappenings.MARKET_GONE_BY
 		happenings._walked = EventDirector.ON_HER_WAY_AFTER
 		happenings.tick(STEP, door, Vector2.ZERO)
 		var block := happenings.market_block
@@ -4280,7 +4281,7 @@ func _test_the_market_is_found_gone(t) -> void:
 ## telegraph is over, coming toward the point level with her. The rear one stops out of her sight —
 ## beyond her, or short of her where nothing beyond will do — on a street rather than a junction,
 ## where its barricade still leaves her a way home; the trucks ahead of it leave nothing. It comes
-## once she nears the main road, or at `Tuning.COLUMN_BY` wherever she is, and once.
+## once she nears the main road, or at `ResistanceHappenings.COLUMN_BY` wherever she is, and once.
 func _test_the_column_comes_down_the_main_road(t) -> void:
 	var convoy := EventCatalogue.by_id("military_convoy")
 	t.check(convoy.first_day == ResistanceHappenings.COLUMN_DAY,
@@ -4296,7 +4297,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 		var map := _city.map
 		var door := map.doorstep_world_position()
 		var spine := happenings._spine_x()
-		var far_from_it := Vector2(spine + Tuning.COLUMN_WITHIN * 2.0, door.y)
+		var far_from_it := Vector2(spine + ResistanceHappenings.COLUMN_WITHIN * 2.0, door.y)
 		happenings._walked = EventDirector.ON_HER_WAY_AFTER
 		happenings.tick(STEP, far_from_it, Vector2.ZERO)
 		t.check(happenings.column.is_empty(), "nothing comes while she is far from the main road")
@@ -4374,7 +4375,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 			_city.events.retire(truck)
 
 		director.start_day(ResistanceHappenings.COLUMN_DAY, _rng(13, "resistance"), 300.0)
-		happenings._elapsed = Tuning.COLUMN_BY
+		happenings._elapsed = ResistanceHappenings.COLUMN_BY
 		happenings.tick(STEP, far_from_it, Vector2.ZERO)
 		_city.events.warnings.run(convoy.telegraph_time + STEP, far_from_it)
 		t.check(happenings.column.size() == Tuning.COLUMN_TRUCKS,

@@ -320,7 +320,7 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 		t.check(ran["ended_at"] < def.telegraph_time + def.duration,
 				"which ends '%s' early: %.1fs against a %.1fs chase"
 				% [def.id, ran["ended_at"], def.telegraph_time + def.duration])
-		var cost: float = ran["ended_at"] * Tuning.EXCITEMENT_FROM_RUNNING
+		var cost: float = ran["ended_at"] * Baby.EXCITEMENT_FROM_RUNNING
 		t.check(cost < Tuning.METER_MAX * 0.6,
 				"and running from '%s' costs %.0f of a %.0f meter rather than the day"
 				% [def.id, cost, Tuning.METER_MAX])
@@ -372,9 +372,9 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 		t.check(at_once["running"] < Tuning.PURSUIT_SHAKEN_OFF + turn + 0.5,
 				"and it costs %.1fs of running rather than the %.1fs chase"
 				% [at_once["running"], def.duration])
-		t.check(at_once["running"] * Tuning.EXCITEMENT_FROM_RUNNING < Tuning.METER_MAX * 0.3,
+		t.check(at_once["running"] * Baby.EXCITEMENT_FROM_RUNNING < Tuning.METER_MAX * 0.3,
 				"which is %.0f of a %.0f meter"
-				% [at_once["running"] * Tuning.EXCITEMENT_FROM_RUNNING, Tuning.METER_MAX])
+				% [at_once["running"] * Baby.EXCITEMENT_FROM_RUNNING, Tuning.METER_MAX])
 
 		# Answering during the telegraph — what a player who reads the cue actually does — is cheaper
 		# still, and that gradient is the reason the break-off is a rate rather than a clock.

@@ -32,7 +32,7 @@ extends Node
 ## step's digits without a separator.
 ##
 ## **The letters are shorthand for four particular bearings, not a second mechanism.** Every step
-## — lettered or angled — presses through `TouchControls._set_axis()`, the exact call the real
+## — lettered or angled — presses through `TouchControls.set_axis()`, the exact call the real
 ## touch scheme presses `move_left`/`move_right` and `move_up`/`move_down` through, at the step's
 ## own fractional strength: a 45° step presses both axes at 0.707 each rather than one axis at
 ## 1.0, so the vector stays unit length and the rig still walks at `Tuning.WALK_SPEED` (92px/s)
@@ -336,12 +336,12 @@ static func recording_frame_needs_force(recording: bool, window_can_draw: bool) 
 	return recording and not window_can_draw
 
 ## Presses `direction` through the same call the real touch scheme drives —
-## `TouchControls._set_axis()` on both axes, at `direction`'s own fractional strength, rather than
+## `TouchControls.set_axis()` on both axes, at `direction`'s own fractional strength, rather than
 ## `Input.action_press()` on a single `move_*` action. A diagonal step needs both axes pressed at
 ## once, which one action name cannot express.
 func _hold_direction(direction: Vector2) -> void:
-	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
-	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
+	TouchControls.set_axis(&"move_left", &"move_right", direction.x)
+	TouchControls.set_axis(&"move_up", &"move_down", direction.y)
 	_holding_direction = direction
 
 ## Lets go of whatever `_hold_direction()` last pressed. A no-op when nothing is held, so callers
@@ -349,8 +349,8 @@ func _hold_direction(direction: Vector2) -> void:
 func _release_direction() -> void:
 	if _holding_direction == Vector2.ZERO:
 		return
-	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0.0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0.0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0.0)
 	_holding_direction = Vector2.ZERO
 
 ## Steps the script forward against `_elapsed`, the same clock `--after` and `--flee` already read,

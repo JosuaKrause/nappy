@@ -25,6 +25,7 @@ const REACTION := 2.0
 const _SCRATCH_PATH := "user://test_park_return_scratch.json"
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)
 	for seed_value in SEEDS:
@@ -32,6 +33,7 @@ func run(t) -> void:
 		_test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value)
 		_test_shut_in_with_the_baby_asleep(t, seed_value)
 	GameSave._clear_now()
+	GameSave.configure(null)
 	GameSave.set_path_override("")
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
@@ -48,12 +50,10 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	GameState.start_run(seed_value)
 	GameState.header.day = ResistanceSteps.swing_day()
 	GameSave._write_now(GameState, true)
-	GameSave._uses_save_override = true
 	var main: Node2D = MAIN_SCENE.instantiate()
 	# A run with no flag at all, whatever this process's own command line says.
-	main.configure(RunConfig.parse(PackedStringArray(), "", true))
+	main.configure(RunConfig.parse(PackedStringArray(), "", true, false, {}, false))
 	t.add_child(main)
-	GameSave._uses_save_override = null
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	main._on_title_start(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.RIGHT)

@@ -46,6 +46,7 @@ const _SCRATCH_PATH := "user://test_move_poses_scratch.json"
 var _bumps := 0
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)
 	var bumped := func(_at: Vector2) -> void: _bumps += 1
@@ -54,6 +55,7 @@ func run(t) -> void:
 		_walk_the_day(t, seed_value)
 	EventBus.crowd_bumped.disconnect(bumped)
 	GameSave._clear_now()
+	GameSave.configure(null)
 	GameSave.set_path_override("")
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])

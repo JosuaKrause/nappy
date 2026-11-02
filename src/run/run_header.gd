@@ -16,6 +16,10 @@ var ending: GameEnums.Ending = GameEnums.Ending.NONE
 ## frame drawn late runs no more ticks than the engine steps, so a lag spike slows the
 ## game rather than adding time, and two machines playing the same run read the same time. Never
 ## shown during play; the ending screen is the only place it is read, through `play_seconds()`.
+## **Only ever grows during a run**: a lost day's retry does not give it back (the header is not
+## spent by an attempt) and going back to a checkpoint, zero included, keeps it instead of taking
+## the dawn's value; only a new game from the title starts it at zero (inbox #920 in plaid-penguin). A save holds
+## and loads it as it is.
 var play_ticks: int = 0
 
 ## `play_ticks` in seconds, at the physics tick rate (`Engine.physics_ticks_per_second`): what the

@@ -71,8 +71,8 @@ func _walk(t, script: String, smooth: bool) -> Dictionary:
 	return {"positions": positions, "velocities": velocities, "plan": plan}
 
 func _release() -> void:
-	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0.0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0.0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0.0)
 	Input.action_release(&"run")
 
 ## The two walks of `script` agree wherever her velocity does — before a turn, and from the moment

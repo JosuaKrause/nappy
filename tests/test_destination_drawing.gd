@@ -12,6 +12,7 @@ const SEED := 4242
 var _city: City
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_every_task_days_destination_draws_no_mark(t)
 	if _city != null:
 		_city.free()

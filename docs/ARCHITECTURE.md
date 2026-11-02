@@ -375,6 +375,10 @@ src/
 	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/tunnel/
 	                       bridge/spawn:<name>) along a real, kerb-preferring path, through the
 	                       ordinary input path; presses an escape brief's continue as a key would
+	building_walker.gd    --route in the escape's building: presses the building's brief and walks
+	                       her door to door to the service exit, then the city's rig takes over
+	brief_presser.gd      presses an escape section's first brief for a rig, as a key would; the
+	                       rig and the walker each hold one, told which sections it answers
 	debug_readout.gd      the developer's furniture: the right-hand readout, the frame graph, the
 	                      debug overlays and routes, their keys and the snapshot keys
 	debug_layers.gd       the fields, shadows and bounding-box overlays, one number key apiece
@@ -648,7 +652,7 @@ background presses through `TouchInput.is_press()`, so a press away from restart
 `TitleScreen` requires a press on one of its three mode buttons.
 
 A press or a drag computes a heading — `(target - origin)`, normalised — and presses it through
-`_set_axis()`, one signed value onto a pair of opposite actions. There is no target and nothing to
+`set_axis()`, one signed value onto a pair of opposite actions. There is no target and nothing to
 arrive at: she walks the heading until the next press or motion event changes it. A double press
 needs both a time window (`DOUBLE_TAP_SECONDS`) and a distance window (`DOUBLE_TAP_DISTANCE`) to
 read as a modifier on the same direction rather than a new one, and holds `run` until the next

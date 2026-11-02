@@ -26,6 +26,7 @@ const TITLE_SCREEN_SCENE := preload("res://scenes/ui/title_screen.tscn")
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_wants_rotation_only_for_a_portrait_touch_window(t)
 	_test_content_scale_size_matches_the_rotated_or_unrotated_design_box(t)
 	_test_the_transform_sends_the_design_centre_to_the_rotated_centre(t)

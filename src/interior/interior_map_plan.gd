@@ -432,6 +432,11 @@ func basement_walk() -> Array[Vector2i]:
 ## no way down a staircase at all. She walks those corners, so a walk that could not is not the
 ## walk she takes.
 func shortest_walk(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	return walk_avoiding(from, to, {})
+
+## `shortest_walk()` that never steps on a tile in `blocked` (a set: tile -> anything), other than
+## `from` and `to` themselves. Empty when no such walk exists.
+func walk_avoiding(from: Vector2i, to: Vector2i, blocked: Dictionary) -> Array[Vector2i]:
 	var previous := {from: from}
 	var queue: Array[Vector2i] = [from]
 	var head := 0
@@ -447,6 +452,8 @@ func shortest_walk(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 				var next := tile + Vector2i(dx, dy)
 				if previous.has(next) or not is_walkable(next):
 					continue
+				if next != to and blocked.has(next):
+					continue
 				previous[next] = tile
 				queue.append(next)
 	if not previous.has(to):
@@ -459,6 +466,69 @@ func shortest_walk(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	path.append(from)
 	path.reverse()
 	return path
+
+## **The way out of the building, from `from` to the service exit**, as the legs it is walked in:
+## each leg a tile walk inside one part, ending on a door's threshold (which carries her to its
+## counterpart, where the next leg starts) or, the last, on the exit. Fewest tiles walked, and no leg
+## steps on any door but the one it ends on, since a door under her feet is a crossing whether or
+## not she meant it. `blocked` is ground to keep off (a set: tile -> anything), as the fire's cell
+## is. Empty where there is no way out.
+func way_out(from: Vector2i, blocked: Dictionary = {}) -> Array[Array]:
+	var door_tiles := {}
+	for id: String in doors:
+		door_tiles[(doors[id] as Door).tile] = true
+	var keep_off := blocked.duplicate()
+	keep_off.merge(door_tiles)
+	if exit_tile.x >= 0:
+		keep_off[exit_tile] = true
+	# Dijkstra over the places a leg can start or end: where she stands, every door, the exit.
+	var nodes: Array[Vector2i] = [from, exit_tile]
+	for tile: Vector2i in door_tiles:
+		nodes.append(tile)
+	var cost := {from: 0}
+	var came := {}
+	var settled := {}
+	while true:
+		var here := NOWHERE
+		for node in nodes:
+			if cost.has(node) and not settled.has(node) \
+					and (here == NOWHERE or cost[node] < cost[here]):
+				here = node
+		if here == NOWHERE:
+			return []
+		if here == exit_tile:
+			break
+		settled[here] = true
+		var arrives_at := here
+		if here != from:
+			var via := _door_at(here)
+			if via == null or not doors.has(via.target_door):
+				continue
+			arrives_at = (doors[via.target_door] as Door).tile
+		# Her teleport costs nothing; every other step is a tile of the walk inside the part.
+		for node in nodes:
+			if node == arrives_at or settled.has(node) or InteriorMap.part_at(node) != InteriorMap.part_at(arrives_at):
+				continue
+			var leg := walk_avoiding(arrives_at, node, keep_off)
+			if leg.is_empty():
+				continue
+			var total: int = cost[here] + leg.size()
+			if not cost.has(node) or total < cost[node]:
+				cost[node] = total
+				came[node] = {"from": here, "leg": leg}
+	var legs: Array[Array] = []
+	var at := exit_tile
+	while at != from:
+		legs.append(came[at]["leg"])
+		at = came[at]["from"]
+	legs.reverse()
+	return legs
+
+func _door_at(tile: Vector2i) -> Door:
+	for id: String in doors:
+		if (doors[id] as Door).tile == tile:
+			return doors[id]
+	return null
 
 ## Whether `tile` is a transition trigger, and what it leads to: `{"kind": "door", "door": Door}`,
 ## `{"kind": "exit"}`, or empty. The exact question the scene asks every frame she walks

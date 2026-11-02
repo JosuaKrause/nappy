@@ -102,6 +102,7 @@ func fail(message: String) -> void:
 """
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var stem := "user://recipe_activity_%d" % OS.get_process_id()
 	var script := FileAccess.open(stem + ".gd", FileAccess.WRITE)
 	script.store_string(PROBE)

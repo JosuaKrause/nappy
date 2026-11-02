@@ -24,12 +24,14 @@ const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)
 
 	_test_going_back_restores_every_field_the_save_carries(t)
 	_test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t)
 	_test_checkpoint_zero_is_day_one_of_the_same_city(t)
+	_test_the_play_time_only_grows_across_every_way_back(t)
 	_test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpoint(t)
 	_test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t)
 	_test_choosing_hard_mode_drops_a_checkpoint_already_kept(t)
@@ -44,11 +46,30 @@ func run(t) -> void:
 	_test_no_control_on_the_title_stops_a_press(t)
 	_test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t)
 
-	GameSave._clear_now()
+	_with_saving(func() -> void: GameSave.clear())
 	GameSave.set_path_override("")
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
 	GameState.calendar.checkpoint = baseline["checkpoint"]
+
+## `callable` run as a windowed release run, which saves, against the scratch file `run()` set; the
+## configuration is taken back off afterwards, since a booted `main` hands its own.
+func _with_saving(callable: Callable) -> void:
+	GameSave.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
+	callable.call()
+	GameSave.configure(null)
+
+## `GameState` written to the scratch file the way a game writes it, under way. Whether it was kept.
+func _write_to_the_scratch_file() -> bool:
+	var kept := [false]
+	_with_saving(func() -> void: kept[0] = GameSave.write(GameState, true) == GameSave.Result.CONFIRMED)
+	return kept[0]
+
+## What the scratch file resumes into `GameState`, `{}` when nothing.
+func _read_from_the_scratch_file() -> Dictionary:
+	var resumed := [{}]
+	_with_saving(func() -> void: resumed[0] = GameSave.try_resume(GameState))
+	return resumed[0]
 
 # ------------------------------------------------------------------ the checkpoint ---
 
@@ -87,9 +108,9 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 			"day 5 is under way and the checkpoint is still day 4's dawn")
 
 	# Through the file, so the checkpoint given back is the one a closed game would come back to.
-	t.check(GameSave._write_now(GameState, true), "the run is written with its checkpoint")
+	t.check(_write_to_the_scratch_file(), "the run is written with its checkpoint")
 	GameState.start_run(_SEED + 1)
-	t.check(not GameSave._read_now(GameState).is_empty(), "and read back")
+	t.check(not _read_from_the_scratch_file().is_empty(), "and read back")
 	t.check(GameState.calendar.checkpoint_day() == 4, "with its checkpoint on day 4")
 
 	var keys := _run_keys()
@@ -108,6 +129,8 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	var after := _flatten(GameSave.file_data(GameState, false))
 	var wanted := _flatten_run(expected)
 	wanted["state.nerves"] = Tuning.STARTING_NERVES
+	# The one field going back does not give back: the time played only grows (inbox #920 in plaid-penguin).
+	wanted["state.play_seconds"] = changed["state.play_seconds"]
 	for key in keys:
 		t.check(after[key] == wanted[key],
 				"'%s' is the checkpoint's own dawn again (%s, wanted %s)"
@@ -236,6 +259,55 @@ func _test_checkpoint_zero_is_day_one_of_the_same_city(t) -> void:
 	t.check(GameState.header.player_is_male == parent, "pushed by the same parent")
 	t.check(events == [[1, 3]], "and the counter hears checkpoint 1 from day 3 (%s)" % [events])
 
+## **The run's play time only ever grows** (inbox #920 in plaid-penguin): going back to checkpoint zero, going back
+## to a later checkpoint, retrying a lost day and a save continued after a go-back each leave the
+## time exactly as it was, and a new game from the title is the one thing that starts it at zero.
+## The go-back paths to checkpoint zero and to a later checkpoint fail on the code before the fix
+## (zero reset it, a later one took the dawn's); the retry and the save passed before and pin it.
+func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
+	# Back to checkpoint zero, from day 3.
+	GameState.start_run(_SEED)
+	GameState.calendar.finish_day(GameEnums.DayResult.WON)
+	GameState.calendar.finish_day(GameEnums.DayResult.WON)
+	GameState.calendar.begin_day()
+	GameState.header.play_ticks = 4321
+	GameState.header.nerves = 1
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(GameState.header.day == 1 and GameState.header.play_ticks == 4321,
+			"back to checkpoint zero keeps the play time (%d)" % GameState.header.play_ticks)
+
+	# Back to a later checkpoint: the dawn of day 4 held less time than the loss on day 5.
+	GameState.start_run(_SEED)
+	GameState.header.day = 4
+	GameState.header.play_ticks = 1000
+	GameState.calendar.begin_day()
+	GameState.calendar.finish_day(GameEnums.DayResult.WON)
+	GameState.calendar.begin_day()
+	GameState.header.play_ticks = 7777
+	GameState.header.nerves = 1
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(GameState.header.day == 4 and GameState.calendar.checkpoint_day() == 4
+			and GameState.header.play_ticks == 7777,
+			"back to a later checkpoint keeps the play time, not the dawn's (%d)" % GameState.header.play_ticks)
+
+	# A lost day retried with nerves left: no go-back, the header is not given back.
+	GameState.header.nerves = 3
+	GameState.header.play_ticks = 8000
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	GameState.calendar.begin_day()
+	t.check(GameState.header.play_ticks == 8000, "a lost day's retry keeps the play time")
+
+	# A save continued after a go-back holds the time the go-back kept.
+	GameState.header.nerves = 1
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
+	var kept := GameState.header.play_ticks
+	t.check(_write_to_the_scratch_file(), "the run is written after the go-back")
+	GameState.start_run(_SEED + 1)
+	t.check(GameState.header.play_ticks == 0, "a new game starts at zero")
+	_read_from_the_scratch_file()
+	t.check(kept == 8000 and GameState.header.play_ticks == 8000,
+			"a save continued after a go-back keeps the play time (%d)" % GameState.header.play_ticks)
+
 ## **Going back is a boot, not a repaint.** Day 11 boards the neighbor's window on her own building
 ## for the rest of the run (`City.board_neighbor_window()`), which nothing in a dawn takes down; a
 ## run that loses its last nerve on day 11 and goes back to day 8 must not see it boarded, since
@@ -270,7 +342,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	EventBus.went_back_to_a_checkpoint.connect(on_back)
 	EventBus.run_begun.connect(on_begun)
 	var reloads := []
-	main._reload_override = func() -> void: reloads.append(1)
+	main.use_reload(func() -> void: reloads.append(1))
 	GameState.header.nerves = 1
 	main._on_day_finished(GameEnums.DayResult.LOST_TIMEOUT)
 	t.check(GameState.header.day == 8 and main._summary.is_showing(), "the lost-day screen is up, at day 8")
@@ -683,7 +755,7 @@ func _tap_through_the_engine(t, presented: Vector2, touch: bool) -> void:
 		Input.flush_buffered_events()
 
 ## `main._on_title_start()` reads the box for a new game and nothing for a resumed one, and tells
-## the counter the mode only for the new game. The rig is `tests/test_save.gd`'s bare gate `main`,
+## the counter the mode only for the new game. The rig is `tests/test_save_wiring.gd`'s bare gate `main`,
 ## with the real title scene in place of a bare `TitleScreen`, so the box is there to read.
 func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 	var main := _bare_gate_main(t)

@@ -71,6 +71,7 @@ const _NOT_A_SENTENCE := [
 ]
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_a_sentence_is_found_and_a_name_is_not(t)
 	_test_a_comment_and_a_log_call_are_not_judged(t)
 	_test_a_log_call_over_several_lines_is_skipped_to_its_end(t)

@@ -179,7 +179,7 @@ func _closure_access_vs_rim_sweep() -> void:
 			map.repaint(state)
 			var home := ClosurePlanner.home_street(map)
 			var areas := ClosurePlanner.calm_areas(map)
-			if not home or areas.size() < Tuning.MIN_CALM_AREAS_REACHABLE:
+			if not home or areas.size() < ClosurePlanner.MIN_CALM_AREAS_REACHABLE:
 				continue
 			var tree := RouteTree.for_day(map, day)
 			day_count += 1
@@ -265,8 +265,8 @@ func _candidates_without_access_filter(map: CityMap, home: StreetNetwork.Segment
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
 			continue
 		pool.append(segment)
-		var weight := Tuning.CLOSURE_WALL_BIAS if rim.has(key) else 1.0
-		weights.append(weight * Tuning.CLOSURE_GAP_BIAS if gaps.has(key) else weight)
+		var weight := ClosurePlanner.CLOSURE_WALL_BIAS if rim.has(key) else 1.0
+		weights.append(weight * ClosurePlanner.CLOSURE_GAP_BIAS if gaps.has(key) else weight)
 
 	var order: Array[StreetNetwork.Segment] = []
 	while not pool.is_empty():

@@ -63,4 +63,4 @@ static func _print(where: String, rows: Dictionary) -> void:
 
 ## The escape city's section spec, the one the run flow walks the city under.
 static func _city_spec() -> DaySpec:
-	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)

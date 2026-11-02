@@ -18,6 +18,7 @@ const STEP := 0.1
 const READING_THE_MARK_BOUND := 1.5
 
 func run(t) -> void:
+	t.gives_back_observers()
 	# Which ground a route marble finds depends on the run's seed; these checks hold on seed 2.
 	GameState.start_run(2)
 	_test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t)
@@ -59,7 +60,7 @@ func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t) -> void:
 ## is drawn rather than fixed.
 func _test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t) -> void:
 	var ordinary := MarbleBag.in_proportion({"cat": 2.5, "cyclist": 1.5, "dog": 3.0}, 2.0)
-	var x := Tuning.TASK_CONTACT_WITHIN_THE_NEXT
+	var x := ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT
 	for seed_value: int in [1, 2, 3, 4, 5]:
 		for drawn_first: int in [0, 3]:
 			var bag := MarbleBag.new([], ordinary, seed_value)
@@ -353,8 +354,8 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
 ## band on ground the route runs along, reachable from where she is, and in the world when she walks
 ## to it.
 func _test_after_the_mark_the_task_row_is_put_on_her_route(t) -> void:
-	_a_mark_puts_a_place_on_her_route(t, 6, "homeless_yeller", Tuning.TASK_CONTACT_WITHIN_THE_NEXT)
-	_a_mark_puts_a_place_on_her_route(t, 11, "loudspeaker", Tuning.MAST_WITHIN_THE_NEXT)
+	_a_mark_puts_a_place_on_her_route(t, 6, "homeless_yeller", ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT)
+	_a_mark_puts_a_place_on_her_route(t, 11, "loudspeaker", ResistanceSteps.MAST_WITHIN_THE_NEXT)
 
 ## A siting that refuses every place, as `WalkSiting.ahead_of()` does when she is off the day's
 ## routes or walking home inside the streaming band of the branch's end; it counts how often it was

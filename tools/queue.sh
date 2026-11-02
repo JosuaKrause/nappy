@@ -19,8 +19,8 @@
 # "bug" that has priority over now"). An `after:` line names another
 # entry's folder, in full, that this one truly waits on; an entry may carry several. An `after:`
 # naming an entry that is closed -- no folder under docs/todo/, but a record under docs/decisions/
-# named after it, `<name>.md` or `<name>-<n>.md` -- is a wait that is over: it holds nothing back
-# and prints as `<name>, closed`, so the end-of-session pass sees the line and deletes it.
+# named after it, `<name>.md`, `<name>-<n>.md` or `<name>-<adjective>-<animal>.md` -- is a wait
+# that is over: it holds nothing back and prints as `<name>, closed`, so the end-of-session pass sees the line and deletes it.
 #
 # The order: the bands in that sequence; within `now` the newest entry first, within every other
 # band the oldest first, by the date the folder's name starts with. Entries filed on the same day
@@ -205,14 +205,19 @@ base="$(
     printf '%s\n' "$records" | awk -F'\t' '$1 > 1 && NF' | LC_ALL=C sort -t "$(printf '\t')" -k1,1n -k2,2
 )"
 
-# The closed entries: a decision record named after an entry, `<name>.md` or `<name>-<n>.md`, is
+# The closed entries: a decision record named after an entry, `<name>.md`, `<name>-<n>.md` or
+# `<name>-<adjective>-<animal>.md`, is
 # what closing it writes (new-name.sh decision --entry), so an `after:` naming one is a wait that is
 # over rather than a typo.
 closed="$(for f in docs/decisions/*.md; do
     [[ -e "$f" ]] || continue
     f="${f##*/}"; f="${f%.md}"
     printf '%s\n' "$f"
-    [[ "$f" =~ ^(.*)-[0-9]+$ ]] && printf '%s\n' "${BASH_REMATCH[1]}"
+    if [[ "$f" =~ ^(.*)-[0-9]+$ ]]; then
+        printf '%s\n' "${BASH_REMATCH[1]}"
+    elif [[ "$f" =~ ^([0-9]{4}-[0-9]{2}-[0-9]{2}-([a-z]+-[a-z]+|M[0-9]+))-[a-z]+-[a-z]+$ ]]; then
+        printf '%s\n' "${BASH_REMATCH[1]}"
+    fi
 done)"
 
 # Holds every entry back until what it names has printed, reports the names that are neither an

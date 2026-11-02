@@ -48,6 +48,8 @@ var failures: Array[String] = []
 ## when something else quit the tree.
 var _running := ""
 var _finished := false
+## What `gives_back_observers()` recorded for the suite now running, put back once it is over.
+var _observer_hold := {}
 
 func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
@@ -70,7 +72,7 @@ func _ready() -> void:
 		var suite: Object = script.new()
 		_running = path.get_file()
 		_reset_globals()
-		var shared_before := SharedState.snapshot()
+		var shared_before := SharedState.snapshot(self)
 		# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
 		# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
 		# coroutine waits for it.
@@ -80,7 +82,10 @@ func _ready() -> void:
 		# synchronous run never lets happen.
 		await get_tree().process_frame
 		await get_tree().physics_frame
-		for leak in SharedState.diff(shared_before, SharedState.snapshot()):
+		if not _observer_hold.is_empty():
+			SharedState.put_back_observers(_observer_hold)
+			_observer_hold = {}
+		for leak in SharedState.diff(shared_before, SharedState.snapshot(self)):
 			failures.append("%s left shared state changed, %s" % [path.get_file(), leak])
 			print("LEAK  %s left shared state changed, %s" % [path.get_file(), leak])
 		_running = ""
@@ -121,31 +126,25 @@ const RESET_SEED := 2
 ## one), the run configuration a booted `main` handed the observers (none, as before any boot, with
 ## the counter handed the live run, since the bus reaches it in suites that boot no `main`),
 ## and the static seams a suite sets by hand (the save's override hooks, the frame recorder, the
-## remembered controls and the title's restart stamp), and the day and open tasks `VisitCounter`
-## counted and the run folder `Telemetry` named. These resets are on purpose, for what a suite that
-## boots `main` hands on (`SharedState.BOOTED_MAIN`); `SharedState` checks everything else, after
-## each suite, and fails the suite that leaves it changed. The run log and the `EventBus`
-## connections are left alone and checked.
+## remembered controls and the title's restart stamp). The run log and `VisitCounter`'s own state
+## and the `EventBus` connections are left alone, and so is everything else: `SharedState` compares
+## the shared state after each suite and fails the suite that left it changed, except the fields
+## it lists with a reason (these resets are the reason for some of them). It covers the tree's
+## `paused`, `Engine.time_scale`, `Input.mouse_mode`, the nodes under the root and the runner,
+## `InputMap`, the pressed actions, the autoloads' variables and signal connections and every
+## `static var` under `src/`.
 func _reset_globals() -> void:
 	GameState.start_run(RESET_SEED)
 	Telemetry.configure(null)
 	GameState.use_trace(RunTrace.new())
 	VisitCounter.configure(null, GameState)
-	VisitCounter._open_tasks = {}
-	VisitCounter._day = 0
-	VisitCounter._reported_run_begun = false
-	if not Telemetry.is_active():
-		Telemetry._run_dir = ""
-		Telemetry._day_attempts = {}
 	GameSave.configure(null)
 	GameSave._path_override = ""
 	GameSave._uses_save_override = null
-	SaveIndicator._home_override = null
+	SaveIndicator.use_home(null)
 	FrameRecord.on = false
 	FrameRecord.ledger = null
-	ControlsMode._remembered = false
-	ControlsMode._remembered_mode = ControlsMode.Mode.TAP
-	ControlsMode._remembered_side = ControlsMode.Side.LEFT
+	ControlsMode.forget()
 	TitleScreen._restarted_at_msec = -INF
 
 ## Every suite, or the ones whose file name contains one of `filters`.
@@ -187,6 +186,13 @@ func _matches(file: String, filters: PackedStringArray) -> bool:
 		if file.contains(filter):
 			return true
 	return false
+
+## A suite that boots `main`, or drives a run the observers watch, calls this first: the observers'
+## count of the run (`SharedState.OBSERVER_FIELDS`) is put back to what it is now once the suite is
+## over, so that the next suite does not meet the days and tasks of this one. Nothing else is
+## given back for it.
+func gives_back_observers() -> void:
+	_observer_hold = SharedState.observers()
 
 # --------------------------------------------------------------- assertions ---
 

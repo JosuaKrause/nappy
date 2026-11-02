@@ -4,7 +4,7 @@ extends RefCounted
 ## guess that leaves only the van?")*.
 ##
 ## Holds, through a real city: reading day 7's mark rigs her route with a bag of
-## `Tuning.VAN_WITHIN_THE_NEXT` holding one `delivery_van`; walking the day's route, the van's marble
+## `ResistanceSteps.VAN_WITHIN_THE_NEXT` holding one `delivery_van`; walking the day's route, the van's marble
 ## is among that many events handed out on it, and a van is then put on her route — ahead of her on
 ## the street she is walking, with no part of what it draws in the camera's view (led along her
 ## heading), where she can walk to it, in the world at once, and where keeping on her way brings it
@@ -19,6 +19,7 @@ const ROW := "delivery_van"
 const STEP := 0.1
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var met := 0
 	for seed_value in SEEDS:
 		if _a_mark_puts_a_van_on_her_route(t, seed_value):
@@ -29,7 +30,7 @@ func run(t) -> void:
 
 ## Answers whether a second van was put on her route in this city.
 func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
-	var size := Tuning.VAN_WITHIN_THE_NEXT
+	var size := ResistanceSteps.VAN_WITHIN_THE_NEXT
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))

@@ -194,7 +194,7 @@ func will_strike(her: Vector2) -> bool:
 ##   holds the crowd's cars.
 ## - **A zebra she is waiting at**, on a street whose traffic gives way (not the main road, whose
 ##   crossings the light keeps), within `Tuning.CAR_ZEBRA_SIGHT` ahead, her within half a street of
-##   the car's line and `Tuning.CAR_ZEBRA_WAIT_RADIUS` along of the paint: the centre stops
+##   the car's line and `GiveWay.CAR_ZEBRA_WAIT_RADIUS` along of the paint: the centre stops
 ##   `CAR_STOP_LINE_SETBACK` short of the paint's near edge (`GiveWay.stop_line()`, the crowd car's
 ##   own line) — **unless the zebra is on the far side of the junction box ahead**, where that
 ##   line would stand it inside the box: then it holds at the box's entry line, as at a red light,
