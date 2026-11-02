@@ -1968,7 +1968,7 @@ func _place_at_a_door(rng: RandomNumberGenerator) -> Vector2:
 
 ## The door's line the crossing is watched on (`_on_door_crossed()`): the position of the door
 ## today's day-9 task names (its gate, over the road) and the street's own axis, which every body
-## of the door shares. `Vector2.INF` on every other day.
+## of the door shares. `Vector2.INF` until a day 9 sets it; nothing clears it after.
 var _door_at := Vector2.INF
 var _door_axis := Vector2.ZERO
 
