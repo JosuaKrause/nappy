@@ -2234,6 +2234,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 
 	GameSave._clear_now()
 	GameSave._uses_save_override = null
+	GameSave.configure(null)
 	GameSave.set_path_override("")
 	AtlasLibrary.close_loading_window()
 	_free_the_escape(t, main)

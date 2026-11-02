@@ -352,7 +352,7 @@ static func _new_operation() -> int:
 	_last_operation += 1
 	return _last_operation
 
-## Whether `run` has an ending, after which nothing is written — see `_write_now()`.
+## Whether `run` has an ending, after which nothing is written — see `write()`, where the refusal lives.
 static func _run_has_ended(run: RunState) -> bool:
 	return run.header.ending != GameEnums.Ending.NONE
 

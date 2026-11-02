@@ -44,6 +44,7 @@ func run(t) -> void:
 	_test_every_part_round_trips_through_json(t)
 
 	GameSave._clear_now()
+	GameSave.configure(null)
 	GameSave.set_path_override("")
 	GameState.start_run(1)
 	GameState.run_parts.restore_run_data(baseline)

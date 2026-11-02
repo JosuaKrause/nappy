@@ -32,6 +32,7 @@ func run(t) -> void:
 		_test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value)
 		_test_shut_in_with_the_baby_asleep(t, seed_value)
 	GameSave._clear_now()
+	GameSave.configure(null)
 	GameSave.set_path_override("")
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
