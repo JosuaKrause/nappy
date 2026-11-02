@@ -67,6 +67,17 @@ var raid: Array[EventInstance] = []
 var _raid_vans := PackedVector2Array()
 var _raid_beat := PackedVector2Array()
 
+## Where the raid stands, or will stand once it has come, on day 10: the points of its two vans,
+## one either side of her door across her street, and empty on every other day or where the street
+## has no room for them.
+func raid_vans() -> PackedVector2Array:
+	return _raid_vans
+
+## Where the raid's patrol car paces: the two ends of its beat along the carriageway in front of
+## her door, or empty on every other day and where the street has no room for it.
+func raid_beat() -> PackedVector2Array:
+	return _raid_beat
+
 ## How long today has run, and how much of it she has spent walking rather than standing — a
 ## happening sited on her way waits for her to have chosen a way, as day 3's fire does, on the same
 ## clock (`EventDirector.site_what_is_on_her_way()`: seconds at `Tuning.AHEAD_MIN_SPEED` or more).
@@ -306,7 +317,7 @@ func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
 	var best := Vector2i(-1, -1)
 	var nearest := INF
 	for block in candidates:
-		var lot := _frontage_of(block)
+		var lot := frontage_of(block)
 		if _distance_to_rect(her, lot) < Tuning.OUT_OF_SIGHT:
 			continue
 		for cell: Vector2i in ahead:
@@ -321,7 +332,7 @@ func _market_out_of_her_sight(her: Vector2, candidates: Array[Vector2i]) -> Vect
 	var best := Vector2i(-1, -1)
 	var nearest := INF
 	for block in candidates:
-		var distance := _distance_to_rect(her, _frontage_of(block))
+		var distance := _distance_to_rect(her, frontage_of(block))
 		if distance >= Tuning.OUT_OF_SIGHT and distance < nearest:
 			nearest = distance
 			best = block
@@ -340,13 +351,13 @@ func board_up(block: Vector2i) -> bool:
 		_city.present_block(block, state)
 	var stalls := 0
 	if _city and _city.events:
-		stalls = _city.events.take_away_within(_frontage_of(block), ["market_stall"] as Array[String])
+		stalls = _city.events.take_away_within(frontage_of(block), ["market_stall"] as Array[String])
 	trace.note("contact", "the market at block %s is gone: boarded up, %d stall(s) taken away"
 			% [block, stalls])
 	return true
 
 ## A block's lot and the sidewalk round it, in world space: what a market on it stands in.
-func _frontage_of(block: Vector2i) -> Rect2:
+func frontage_of(block: Vector2i) -> Rect2:
 	return _map.tile_rect_to_world(_map.lot_rect(block).grow(Tuning.SIDEWALK_WIDTH))
 
 static func _distance_to_rect(point: Vector2, rect: Rect2) -> float:
@@ -413,7 +424,7 @@ func is_closing() -> bool:
 func _maybe_the_column(her: Vector2) -> void:
 	if her == Vector2.INF or not _city or not _city.events or _map.main_road < 0:
 		return
-	var near := absf(her.x - _spine_x()) <= COLUMN_WITHIN
+	var near := absf(her.x - spine_x()) <= COLUMN_WITHIN
 	if not (near and _walked >= EventDirector.ON_HER_WAY_AFTER) and _elapsed < COLUMN_BY:
 		return
 	# Still owed when the lane has no place off screen for it yet (she is at the road's very end):
@@ -421,7 +432,7 @@ func _maybe_the_column(her: Vector2) -> void:
 	_column_owed = send_the_column(her) == null
 
 ## The main road's middle, across it.
-func _spine_x() -> float:
+func spine_x() -> float:
 	return (float(_map.main_road * CityMap.period()) + Tuning.STREET_WIDTH * 0.5) \
 			* Tuning.TILE_SIZE
 

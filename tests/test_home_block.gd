@@ -108,8 +108,8 @@ func _test_the_home_block_lot_geometry_is_already_seed_independent(t) -> void:
 func _test_her_building_is_the_same_across_two_seeds(t) -> void:
 	var short := _city_for(t, SHORT_SEED)
 	var other := _city_for(t, OTHER_SEED)
-	var a: Building = short._home_door_building()
-	var b: Building = other._home_door_building()
+	var a: Building = short.home_door_building()
+	var b: Building = other.home_door_building()
 	t.check(a != null and b != null, "both seeds carve a door building on the home block")
 	if a != null and b != null:
 		t.check(a.wall_tiles() == b.wall_tiles(),
@@ -180,7 +180,7 @@ func _test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t) -> v
 	for i in CITY_SWEEP_SEEDS:
 		var seed_value := 500_000 + i * 104_729
 		var city := _city_for(t, seed_value)
-		var building: Building = city._home_door_building()
+		var building: Building = city.home_door_building()
 		t.check(building != null,
 				"seed %d: the door notch stands in front of a home-block building" % seed_value)
 		if building:
