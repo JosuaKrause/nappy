@@ -86,8 +86,8 @@ func _walk(t, seed_value: int) -> String:
 			events.ahead.place_what_is_owed_ahead(STEP)
 			events.stream_around(player.global_position)
 			if seen["man"] == null:
-				for plan: EventScheduler.Planned in events.ahead._director._placed_from_the_route:
-					if plan.def.id == ROW:
+				for plan: EventScheduler.Planned in events.plans():
+					if plan.def.id == ROW and events.ahead.director().is_from_her_route(plan):
 						seen["man"] = plan
 			var man: EventScheduler.Planned = seen["man"]
 			if man and man.is_placed():
@@ -96,8 +96,8 @@ func _walk(t, seed_value: int) -> String:
 					seen["in_view"] = true
 		_along(player, _path(map, player.global_position, [map.world_to_tile(
 				resistance.contact_position())]), tick)
-		resistance._on_contact_completed(mark.index)
-		var task_man: EventInstance = resistance._rider
+		resistance.contact().complete_now()
+		var task_man: EventInstance = resistance.rider()
 		if task_man:
 			_along(player, _path(map, player.global_position, _beside(map,
 					task_man.global_position)), tick)

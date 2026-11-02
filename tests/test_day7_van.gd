@@ -58,10 +58,10 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var mark := resistance.current_step()
 	t.check(mark != null and mark.is_pickup and mark.day == DAY,
 			"seed %d: day %d opens on its mark" % [seed_value, DAY])
-	var bag := city.events.ahead._director.route_bag()
+	var bag := city.events.ahead.director().route_bag()
 	if mark:
-		resistance._on_contact_completed(mark.index)
-	var task_van: EventInstance = resistance._rider
+		resistance.contact().complete_now()
+	var task_van: EventInstance = resistance.rider()
 	t.check(task_van != null and task_van.def.id == ROW,
 			"seed %d: reading it puts the task's van near the mark" % seed_value)
 	var task_van_at := task_van.global_position if task_van else Vector2.INF
@@ -115,9 +115,9 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 			if city.events.owed_ahead() < owed_before and handed < size:
 				handed += 1
 				if handed == size:
-					drawn_within = _a_place_from_her_route(city.events.ahead._director) != null
+					drawn_within = _a_place_from_her_route(city.events) != null
 			for plan: EventScheduler.Planned in city.events.plans().slice(plans_before):
-				if plan.def.id == ROW and city.events.ahead._director.is_from_her_route(plan):
+				if plan.def.id == ROW and city.events.ahead.director().is_from_her_route(plan):
 					placed.append(plan)
 					her_at_siting = player.global_position
 					where_sited = plan.position
@@ -175,7 +175,7 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 				"seed %d: keeping on the way she was walking, over walkable ground, it comes into her view"
 				% seed_value)
 	t.check(task_van != null and is_instance_valid(task_van) and not task_van.is_finished
-			and task_van.global_position == task_van_at and resistance._rider == task_van,
+			and task_van.global_position == task_van_at and resistance.rider() == task_van,
 			"seed %d: the task's own van stays where it was placed, and stays the task" % seed_value)
 	player.free()
 	resistance.free()
@@ -200,7 +200,7 @@ func _test_the_van_is_sited_wholly_out_of_the_camera_view(t) -> void:
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
-	var siting: EventScheduler.WalkSiting = city.events.ahead._siting
+	var siting: EventScheduler.WalkSiting = city.events.ahead.walk_siting()
 	var def := EventCatalogue.by_id(ROW)
 	var box := EventFootprints.footprint_of(def)
 	var path := _the_longest_route(city)
@@ -324,9 +324,9 @@ static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
 
 ## The van a marble from her route's bag handed to her walk to site, sited or not; null when none
 ## has been.
-func _a_place_from_her_route(director: EventDirector) -> EventScheduler.Planned:
-	for plan: EventScheduler.Planned in director._placed_from_the_route:
-		if plan.def.id == ROW:
+func _a_place_from_her_route(events: EventManager) -> EventScheduler.Planned:
+	for plan: EventScheduler.Planned in events.plans():
+		if plan.def.id == ROW and events.ahead.director().is_from_her_route(plan):
 			return plan
 	return null
 
@@ -339,7 +339,7 @@ func _the_longest_route(city: City) -> Array[Vector2]:
 				longest = route
 	var points: Array[Vector2] = []
 	for i in range(longest.size() - 1, -1, -1):
-		points.append(EventScheduler.WalkSiting._cell_centre(city.map, longest[i]))
+		points.append(city.events.ahead.walk_siting().cell_centre(longest[i]))
 	return points
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

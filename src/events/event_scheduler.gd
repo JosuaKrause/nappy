@@ -306,6 +306,97 @@ class Planned extends RefCounted:
 					Geometry2D.get_closest_point_to_segment(at, path[i - 1], path[i])))
 		return best
 
+	## The closest endpoint-to-route distance between two events.
+	##
+	## Two routes are measured from both sides so either route's closest endpoint can decide the gap.
+	## Crossing interiors are not detected; the answer is the nearest waypoint-to-route distance.
+	func gap_to(other: Planned) -> float:
+		# A point's distance to the whole other route already includes its endpoints, so the symmetric
+		# endpoint pass cannot make the answer smaller when either side is stationary.
+		if path.size() < 2:
+			return other.distance_from(position)
+		if other.path.size() < 2:
+			return distance_from(other.position)
+		var gap := INF
+		for point in ends():
+			gap = minf(gap, other.distance_from(point))
+		for point in other.ends():
+			gap = minf(gap, distance_from(point))
+		return gap
+
+	## Whether a row is one the **zero-cost line** has to get past — the reading PLAYTEST-71 settled,
+	## stated once here and read by every rule in this section.
+	##
+	## A line along a route is a walk from the doorstep to the calm that never enters a placed row's
+	## reach. Five kinds of row are outside it, and each is outside for its own reason rather than for
+	## convenience:
+	##
+	## - **a mast** (a `loudspeaker` plan, whether `MastSites` planted it or it is queued or routed) is
+	##   a fixture of the street it stands on: the six fixed ones are planted once by `MastSites`, off
+	##   the corridor-aware placement every other row here goes through, and stand at the same sites all
+	##   fourteen days. The two day 11 adds, the one queued near the mark and the one a rigged bag puts
+	##   on her route, are exempt too (inbox #684 in coral-lark, "Exempt like fixed masts"), because a mast's field
+	##   reaches the junction box at the end of whatever street it stands on, so held to the line it
+	##   would have almost no place on a route tree. A mast is asked none of the three rules that keep
+	##   a line along her routes (`_leaves_the_route_junctions_open`, `_leaves_the_routes_sidewalk_open`
+	##   and `_leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites._is_eligible()`: off the home
+	##   street and a calm interior), door clearance, the unused calm, spacing and a way out.
+	## - **`Role.SCENERY`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
+	##   count it as block, just count is scenery"* — which is the same exemption `_role_for` makes.
+	## - **a pursuer** follows her rather than sitting on a tile, and pays the telegraph contract
+	##   instead; so does anything the director sites (`AHEAD_OF_PLAYER`, `TOWARD_PLAYER`), which
+	##   reaches here as a plan with no position at all.
+	## - **a region door** costs by design — *"it costs by design"* — so `checkpoint_hut` and
+	##   `checkpoint_gate` are never a block. The region wall's own body is not a door and still counts.
+	## - **a mobile row that does not pace** is passed by crossing, waiting and crossing back — *"the
+	##   player can cross the street, wait, then come back without ever getting excited by it"*. A row
+	##   that **paces** is not mobile in that sense: it comes back, so it is read over its beat.
+	##
+	## **A wall is not outside it**, and that is the player's own decision on the one thing the four
+	## rules left open: *"option 2 is valid only if the influence at a junction is low enough that it
+	## can be taken without having to worry or plan around it."* A wall bounds the corridor — `_copies_of`
+	## offers it zero copies of any ground a route runs along, so it never stands on a route — but its
+	## field reaches in from the far sidewalk or one street out, and being told to walk a corridor whose crossings are covered by what is
+	## bounding it is being told to pay for the guidance. So a wall's own charging disc is asked the
+	## same three questions every other row's is, and the condition the player set on that is exactly
+	## `EventDef.line_reach()`: what a wall may still put over a junction is the part of its field under the
+	## walking decay, which is a crossing the walk takes without planning around it.
+	##
+	## The lethal-clearance rule's wall exemption is a different rule about a different thing and is
+	## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
+	## about whether a line exists past one.
+	func counts_against_the_line() -> bool:
+		return is_placed() and mast_id == "" and def.role != EventDef.Role.MAST \
+				and def.has_a_line_to_avoid()
+
+	## Whether a row denies a point, under the beat-opening reading.
+	##
+	## **A pacing row denies only the ground its beat never leaves free** — *"time pass, don't route
+	## around them"* — so a point it is ever more than its reach away from can be walked past by
+	## waiting. The intersection over a whole beat is the intersection over its **corners**, and that
+	## is exact rather than a sample: a disc is convex, so a point within `reach` of both ends of a
+	## straight run is within `reach` of every point of it.
+	func denies(at: Vector2, reach: float) -> bool:
+		if def.paces and path.size() >= 2:
+			for point in path:
+				if at.distance_to(point) > reach:
+					return false
+			return true
+		return at.distance_to(position) <= reach
+
+	## Whether a row's own reach gets anywhere near a rect at all — the cheap filter before the tile
+	## work. Grown by the line reading's plain disc rather than `field_reach()`, and asked of every
+	## corner of a beat as well as of where the row stands, since a pacing row's denied ground is
+	## inside each of those discs.
+	func reach_touches(rect: Rect2, reach: float) -> bool:
+		var grown := rect.grow(reach)
+		if grown.has_point(position):
+			return true
+		for point in path:
+			if grown.has_point(point):
+				return true
+		return false
+
 ## Budget grows with the day, so late days are denser as well as nastier. The target is **one event
 ## per block**, and the escalation is linear in the day: day 14 carries about half again as many
 ## events as day 1, with a larger share of them act III and IV rows rather than more dog walkers.
@@ -881,12 +972,12 @@ static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 ## is for the rows meant to be seen from a distance before she commits to a street — lethal, or
 ## costly enough to cross `WALL_WORTH_OF_COST` — and `delivery_van` is neither: silent, and a wall
 ## only because its own body leaves no lane (`_closes_the_band_by_its_own_placement`), which the
-## cost clause (`_line_reach_of >= _THE_FAR_LANE`) never sees. A row that is a wall by fit alone is
+## cost clause (`EventDef.reaches_the_far_lane()`) never sees. A row that is a wall by fit alone is
 ## spread along streets the way friction is instead: `_copies_of` reads this before deciding which
 ## weight a `WALL` gets.
 static func _is_a_wall_by_cost(def: EventDef) -> bool:
 	return def.hard_fail or def.walk_through_cost() >= WALL_WORTH_OF_COST \
-			or _line_reach_of(def) >= _THE_FAR_LANE
+			or def.reaches_the_far_lane()
 
 ## A private RNG for one phase of the day, derived from the day's seed and a salt.
 ##
@@ -1103,12 +1194,12 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 ## Read off the decay, every rise in the walking rate would admit louder rows here as a side
 ## effect of a change nobody made about parks.
 ##
-## **The zero case is not the line rules' zero case.** `_reach_above` answers nothing at all for a
+## **The zero case is not the line rules' zero case.** `EventDef.reach_above()` answers nothing at all for a
 ## row quieter than the rate it is asked about, which is right there — ground a walk nets the meter
 ## down in is not denied — and wrong here: a source she is standing on top of keeps her awake
 ## whatever its rate does further out, so the floor is its own `inner_radius`.
 static func _denial_radius(def: EventDef) -> float:
-	return maxf(def.inner_radius, _reach_above(def, CALM_ZONE_DENIAL_RATE))
+	return maxf(def.inner_radius, def.reach_above(CALM_ZONE_DENIAL_RATE))
 
 static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 	var best := tiles[0]
@@ -2799,7 +2890,7 @@ static func room_around(candidate: Planned, already: Array[Planned]) -> float:
 	for plan in already:
 		if not plan.is_placed():
 			continue
-		var gap := _gap_between(candidate, plan)
+		var gap := candidate.gap_to(plan)
 		# **An offer is not in the world yet, so it takes up no room.** A set piece is planned at
 		# every site of a covering set and exactly one of them ever happens, so spacing the whole day
 		# around all of them reserves ground for events that will not exist — and it breaks *a
@@ -2887,103 +2978,11 @@ static func place_at(def: EventDef, map: CityMap, tile: Vector2i, rng: RandomNum
 static func _keeps_its_field_clear(plan: Planned) -> bool:
 	return plan.def.hard_fail and plan.role != GameEnums.BlockerRole.WALL and plan.def.pursuit == null
 
-## The closest endpoint-to-route distance between two events.
-##
-## Two routes are measured from both sides so either route's closest endpoint can decide the gap.
-## Crossing interiors are not detected; the answer is the nearest waypoint-to-route distance.
-static func _gap_between(a: Planned, b: Planned) -> float:
-	# A point's distance to the whole other route already includes its endpoints, so the symmetric
-	# endpoint pass cannot make the answer smaller when either side is stationary.
-	if a.path.size() < 2:
-		return b.distance_from(a.position)
-	if b.path.size() < 2:
-		return a.distance_from(b.position)
-	var gap := INF
-	for point in a.ends():
-		gap = minf(gap, b.distance_from(point))
-	for point in b.ends():
-		gap = minf(gap, a.distance_from(point))
-	return gap
 
 # ------------------------------------------------- a path never has to cost (M129) ---
 
-## Whether a row is one the **zero-cost line** has to get past — the reading PLAYTEST-71 settled,
-## stated once here and read by every rule in this section.
-##
-## A line along a route is a walk from the doorstep to the calm that never enters a placed row's
-## reach. Five kinds of row are outside it, and each is outside for its own reason rather than for
-## convenience:
-##
-## - **a mast** (a `loudspeaker` plan, whether `MastSites` planted it or it is queued or routed) is
-##   a fixture of the street it stands on: the six fixed ones are planted once by `MastSites`, off
-##   the corridor-aware placement every other row here goes through, and stand at the same sites all
-##   fourteen days. The two day 11 adds, the one queued near the mark and the one a rigged bag puts
-##   on her route, are exempt too (inbox #684 in coral-lark, "Exempt like fixed masts"), because a mast's field
-##   reaches the junction box at the end of whatever street it stands on, so held to the line it
-##   would have almost no place on a route tree. A mast is asked none of the three rules that keep
-##   a line along her routes (`_leaves_the_route_junctions_open`, `_leaves_the_routes_sidewalk_open`
-##   and `_leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites._is_eligible()`: off the home
-##   street and a calm interior), door clearance, the unused calm, spacing and a way out.
-## - **`Role.SCENERY`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
-##   count it as block, just count is scenery"* — which is the same exemption `_role_for` makes.
-## - **a pursuer** follows her rather than sitting on a tile, and pays the telegraph contract
-##   instead; so does anything the director sites (`AHEAD_OF_PLAYER`, `TOWARD_PLAYER`), which
-##   reaches here as a plan with no position at all.
-## - **a region door** costs by design — *"it costs by design"* — so `checkpoint_hut` and
-##   `checkpoint_gate` are never a block. The region wall's own body is not a door and still counts.
-## - **a mobile row that does not pace** is passed by crossing, waiting and crossing back — *"the
-##   player can cross the street, wait, then come back without ever getting excited by it"*. A row
-##   that **paces** is not mobile in that sense: it comes back, so it is read over its beat.
-##
-## **A wall is not outside it**, and that is the player's own decision on the one thing the four
-## rules left open: *"option 2 is valid only if the influence at a junction is low enough that it
-## can be taken without having to worry or plan around it."* A wall bounds the corridor — `_copies_of`
-## offers it zero copies of any ground a route runs along, so it never stands on a route — but its
-## field reaches in from the far sidewalk or one street out, and being told to walk a corridor whose crossings are covered by what is
-## bounding it is being told to pay for the guidance. So a wall's own charging disc is asked the
-## same three questions every other row's is, and the condition the player set on that is exactly
-## `_line_reach_of()`: what a wall may still put over a junction is the part of its field under the
-## walking decay, which is a crossing the walk takes without planning around it.
-##
-## The lethal-clearance rule's wall exemption is a different rule about a different thing and is
-## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
-## about whether a line exists past one.
-static func _counts_against_the_line(plan: Planned) -> bool:
-	return plan.is_placed() and plan.mast_id == "" and plan.def.role != EventDef.Role.MAST \
-			and _a_line_has_to_avoid(plan.def)
 
-## The same exemptions asked of the **def** alone, for the one caller that has no placement to
-## ask about: `_role_for` decides a role before any tile is chosen. Everything a placement adds —
-## *is it actually standing anywhere* — is the caller's own question above.
-##
-## **A row the day sites from her own walk is the sixth, and it is the only one that is exempt
-## because closing the way is the point.** *(PLAYTEST-119: "you're not supposed to go past it";
-## "when you see the fire the reaction should be to take a different route".)* Day 3's fire is put
-## on the branch she is walking so that the street she is on stops being a way through, and the
-## engine parks across from it for the rest of the day — so asking whether a line survives along
-## that sidewalk would refuse every site the design exists to make. What replaces the guarantee is
-## strictly stronger and is stated over the day rather than over the street:
-## `WalkSiting._still_leaves_a_park_reachable()` refuses any site that leaves her unable to reach
-## the home, or a calm area she has not used, **outside both fields**. A one-shot carrying this
-## flag is never placed at dawn (`_place_one_shots` plans it with no position), so nothing else in
-## the day is judged differently because of it. **A recurring row carrying it is not exempt**: a
-## poster crew closes nothing, and it is placed at dawn and judged exactly as it always was before
-## its position is handed to her walk (`_hand_to_her_walk`).
-static func _a_line_has_to_avoid(def: EventDef) -> bool:
-	if def.role == EventDef.Role.SCENERY or def.pursuit != null or def.id.begins_with(_DOOR_ID_PREFIX):
-		return false
-	if def.on_her_way != null and def.kind == GameEnums.EventKind.ONE_SHOT:
-		return false
-	if def.mobile and not def.paces:
-		return false
-	return _line_reach_of(def) > 0.0
 
-## The line a stroller needs across a sidewalk, measured between the two lanes of one:
-## `SIDEWALK_WIDTH` (2) tiles of sidewalk means the far lane's centre is one tile (32px) from the
-## near one, and a free tile is a line because a tile is wider than the 28px stroller
-## (`2 * PLAYER_BODY_RADIUS`). It is the same tile-grained reading every other rule in this section
-## measures a line in.
-const _THE_FAR_LANE := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
 
 ## **Whether a row's own numbers leave no way past it along a sidewalk it may stand on** — the
 ## passability reading of a wall, beside the cost one. *(PLAYTEST-77: "how is market stall a
@@ -2992,7 +2991,7 @@ const _THE_FAR_LANE := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
 ## A sidewalk is two lanes of tile, and a row stands in one of them, so the only line past it is the
 ## other lane — one tile across, which `_denies` reads as free while the row's reach is under it.
 ## What the reach is, is the whole point: **the body plus the ground it charges for**
-## (`_line_reach_of`), not the body alone. A café whose tables are 24px across but which bills
+## (`EventDef.line_reach()`), not the body alone. A café whose tables are 24px across but which bills
 ## anybody within 56px of them is a café nobody walks past on that sidewalk for free, and *free* is
 ## what the guarantee is about.
 ##
@@ -3003,37 +3002,37 @@ const _THE_FAR_LANE := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
 ## there: the role only ever decides which ground it is offered.
 ##
 ## The five rows outside the line reading entirely — a pursuer, a door, a city-wide row, scenery, a
-## mobile row that does not pace — are outside this too, by asking `_a_line_has_to_avoid` rather
+## mobile row that does not pace — are outside this too, by asking `EventDef.has_a_line_to_avoid()` rather
 ## than repeating the list.
 static func _leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 	if not def.placement.has(GameEnums.TileType.SIDEWALK):
 		return false
-	if not _a_line_has_to_avoid(def):
+	if not def.has_a_line_to_avoid():
 		return false
-	if _line_reach_of(def) >= _THE_FAR_LANE:
+	if def.reaches_the_far_lane():
 		return true
 	return _closes_the_band_by_its_own_placement(def)
 
 ## The line a stroller needs, stated as a width rather than a reach: an edge-to-edge gap has to be
 ## at least this wide for her whole body to fit inside it, once a row's own edge and the sidewalk's
 ## true boundary — the kerb, or the frontage wall — are both hard edges neither of them may cross.
-## The same number as `_THE_FAR_LANE`'s tile grain (2 * `PLAYER_BODY_RADIUS`, 28px), read as a
+## The same number as `EventDef.reaches_the_far_lane()`'s tile grain (2 * `PLAYER_BODY_RADIUS`, 28px), read as a
 ## width because this clause measures one directly rather than comparing a reach to a fixed tile.
 const _HER_LANE_CLEARANCE := 2.0 * Tuning.PLAYER_BODY_RADIUS
 
 ## **Whether the row's own body, stood exactly where `pavement_side` puts it, leaves no edge-to-edge
 ## gap of `_HER_LANE_CLEARANCE` anywhere across the sidewalk band** — a second, physical reading of
-## "leaves no way past it" beside `_line_reach_of`'s cost-based one above. *(PLAYTEST-94, 2026-09-19:
+## "leaves no way past it" beside `EventDef.line_reach()`'s cost-based one above. *(PLAYTEST-94, 2026-09-19:
 ## "I still get hard walls on the side of the sidewalk that is on the path -- how can this be so hard
 ## to do correctly?")* The cost clause asks what a row bills a passer-by for being near it; this asks
 ## whether a passer-by has anywhere left to stand at all, and the two can disagree: `delivery_van`
-## is silent and its 22px `obstructs_radius` stays under `_THE_FAR_LANE` (32px), so the cost clause
+## is silent and its 22px `obstructs_radius` stays under `EventDef.reaches_the_far_lane()` (32px), so the cost clause
 ## reads it as friction — but pinned `AT_THE_KERB`, 16px in from the kerb edge, it leaves only
 ## `(SIDEWALK_WIDTH * TILE_SIZE - TILE_SIZE * 0.5) - 22 = 26px` to the frontage, narrower than the
 ## 28px she needs, which `tests/test_events.gd`'s `_test_a_kerbed_body_still_pins_the_frontage`
 ## already measures by hand for this one row. Read off `obstructs_radius` and `pavement_side` rather
 ## than off an id, so the next row this narrow is caught the same way without anybody adding it to a
-## list — and a row that already clears `_THE_FAR_LANE` never reaches this, so nothing already a wall
+## list — and a row that already clears `EventDef.reaches_the_far_lane()` never reaches this, so nothing already a wall
 ## is asked twice.
 static func _closes_the_band_by_its_own_placement(def: EventDef) -> bool:
 	var reach := def.obstructs_radius
@@ -3148,77 +3147,10 @@ static func _a_side_route_opens_off(map: CityMap, tile: Vector2i) -> bool:
 static func _is_ground_off_the_street(map: CityMap, tile: Vector2i) -> bool:
 	return map.is_open(tile) and not map.is_street(tile)
 
-## `checkpoint_hut` and `checkpoint_gate`, the two rows that **are** a region's door. Matched on the
-## id the way `tests/probes/m129_zero_cost_line.gd` matches them, since what makes a door a door is
-## `RegionPlanner` choosing it rather than any field on the def.
-const _DOOR_ID_PREFIX := "checkpoint"
 
-## How far a row denies ground: **the disc it charges for**, `obstructs_radius` wherever it has a
-## body, the larger of the two where both apply. A row that neither charges nor obstructs — the
-## `playground` ambient, at intensity 0 — is not something a line has to avoid.
-##
-## **Charging for is not the same as being heard on**, and the difference is the player's own
-## condition on any of this being checked at all: *"option 2 is valid only if the influence at a
-## junction is low enough that it can be taken without having to worry or plan around it."* A walk
-## through ground where a row emits less than `Tuning.EXCITEMENT_DECAY_WALKING` nets the meter
-## *down*, so it is ground a route does not have to be planned around and the rules in this section
-## have no business refusing a placement over it. The disc is therefore where the emission crosses
-## that rate, not `outer_radius`, which is where it stops reaching at all — the same distinction
-## `_denial_radius()` makes about calm ground, at a different rate and with a different zero: a row
-## quieter than the rate everywhere denies **nothing** here, where it still denies its own inner
-## disc to a pram trying to settle.
-##
-## **A lethal row keeps its whole `outer_radius`.** Its price is not a rate and nothing about being
-## quiet at the rim makes walking into it survivable, so the arithmetic below says nothing about it.
-##
-## The plain disc rather than `field_reach()`'s forward-stretched ellipse, because the milestone's
-## own wording is a radius and the two differ only for a mobile row and only ahead of it. A flock
-## would need its own answer — its intensity is shared between bodies, so the closed form below
-## reads it far too wide — and does not have one: `pigeon_flock` is `Role.SCENERY` and
-## `_counts_against_the_line` is done with it before this is ever asked.
-static func _line_reach_of(def: EventDef) -> float:
-	if def.hard_fail:
-		return maxf(def.outer_radius, def.obstructs_radius)
-	return maxf(_reach_above(def, Tuning.EXCITEMENT_DECAY_WALKING), def.obstructs_radius)
 
-## How far from the centre a row still emits more than `rate`, over both parts of its field: the
-## field itself, and the core where it has one (a cored row's loud part can outlive its quiet one,
-## which is the whole point of having it).
-static func _reach_above(def: EventDef, rate: float) -> float:
-	return maxf(_band_crossing(def.intensity, def.inner_radius, def.outer_radius, rate,
-			def.falloff_power),
-			_band_crossing(def.core_intensity, def.inner_radius, def.core_radius, rate,
-			def.falloff_power))
 
-## Where one falloff band crosses `rate`, or zero if it is never above it — `Field.falloff`'s
-## `1 − t^power` inverted for the `t` at which it equals `rate`. The row's own `falloff_power`
-## rather than a squared constant, so a row that ever shapes its own drop-off is denied the ground
-## it actually charges for rather than the ground a quadratic row of the same numbers would.
-static func _band_crossing(intensity: float, inner: float, outer: float, rate: float,
-		power: float) -> float:
-	if intensity <= rate or outer <= inner:
-		return 0.0
-	var left := 1.0 - rate / intensity
-	# `sqrt` at the default rather than `pow(x, 0.5)`, for the reason `Field.falloff` writes its
-	# own default out: the two may differ in the last bit, and every radius the catalogue was
-	# measured at came from this one.
-	var t := sqrt(left) if is_equal_approx(power, 2.0) else pow(left, 1.0 / power)
-	return inner + t * (outer - inner)
 
-## Whether a row denies a point, under the beat-opening reading.
-##
-## **A pacing row denies only the ground its beat never leaves free** — *"time pass, don't route
-## around them"* — so a point it is ever more than its reach away from can be walked past by
-## waiting. The intersection over a whole beat is the intersection over its **corners**, and that
-## is exact rather than a sample: a disc is convex, so a point within `reach` of both ends of a
-## straight run is within `reach` of every point of it.
-static func _denies(plan: Planned, at: Vector2, reach: float) -> bool:
-	if plan.def.paces and plan.path.size() >= 2:
-		for point in plan.path:
-			if at.distance_to(point) > reach:
-				return false
-		return true
-	return at.distance_to(plan.position) <= reach
 
 ## The day's route junctions with the geometry the rule asks about, worked out once per day and
 ## kept in the same `ground` dictionary every other day-lifetime answer in this file lives in.
@@ -3251,9 +3183,9 @@ static func _route_junctions(map: CityMap, ground: Dictionary, corridor: Corrido
 ## joining still has a line through every crossing, so a closed one never exists even briefly.
 static func _leaves_the_route_junctions_open(candidate: Planned, map: CityMap,
 		corridor: Corridor, ground: Dictionary, already: Array[Planned]) -> bool:
-	if not corridor or not _counts_against_the_line(candidate):
+	if not corridor or not candidate.counts_against_the_line():
 		return true
-	var reach := _line_reach_of(candidate.def)
+	var reach := candidate.def.line_reach()
 	for entry: Array in _route_junctions(map, ground, corridor):
 		var centre: Vector2 = entry[1]
 		var box_reach: float = entry[2]
@@ -3278,9 +3210,9 @@ static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Arra
 	var box_reach: float = entry[2]
 	var standing: Array[Planned] = [candidate]
 	for plan in already:
-		if plan == candidate or not _counts_against_the_line(plan):
+		if plan == candidate or not plan.counts_against_the_line():
 			continue
-		if plan.distance_from(centre) <= _line_reach_of(plan.def) + box_reach:
+		if plan.distance_from(centre) <= plan.def.line_reach() + box_reach:
 			standing.append(plan)
 
 	var origin := junction * CityMap.period()
@@ -3293,7 +3225,7 @@ static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Arra
 			var at := map.tile_to_world(tile)
 			var taken := false
 			for plan in standing:
-				if _denies(plan, at, _line_reach_of(plan.def)):
+				if plan.denies(at, plan.def.line_reach()):
 					taken = true
 					break
 			if not taken:
@@ -3442,7 +3374,7 @@ static func _a_route_walks(corridor: Corridor, band: Rect2i) -> bool:
 ## by waiting.
 ##
 ## **Two readings, either enough to refuse the candidate.** `_closes_the_run` is the cost one, over
-## `_cumulative_lane_reach_of` rather than `_line_reach_of` alone —
+## `_cumulative_lane_reach_of` rather than `EventDef.line_reach()` alone —
 ## `_closes_the_band_by_its_own_placement`'s own role clause is asked of a row's own numbers before
 ## a tile is chosen, but `_copies_of` still offers a `WALL` a cell of the *same* lane that does not
 ## itself `carries_a_route` (a route need not use every cell of the block it is walked along), so a
@@ -3451,18 +3383,18 @@ static func _a_route_walks(corridor: Corridor, band: Rect2i) -> bool:
 ## gap, over the same `standing` list.
 static func _leaves_the_routes_sidewalk_open(candidate: Planned, map: CityMap, corridor: Corridor,
 		ground: Dictionary, already: Array[Planned]) -> bool:
-	if not corridor or candidate.def.paces or not _counts_against_the_line(candidate):
+	if not corridor or candidate.def.paces or not candidate.counts_against_the_line():
 		return true
 	var reach := _cumulative_lane_reach_of(candidate.def)
 	for entry: Array in _route_sidewalks(map, ground, corridor):
 		var world: Rect2 = entry[2]
-		if not _reach_touches(candidate, world, reach):
+		if not candidate.reach_touches(world, reach):
 			continue
 		var standing: Array[Planned] = [candidate]
 		for plan in already:
-			if plan == candidate or plan.def.paces or not _counts_against_the_line(plan):
+			if plan == candidate or plan.def.paces or not plan.counts_against_the_line():
 				continue
-			if _reach_touches(plan, world, _cumulative_lane_reach_of(plan.def)):
+			if plan.reach_touches(world, _cumulative_lane_reach_of(plan.def)):
 				standing.append(plan)
 		var segment: StreetNetwork.Segment = entry[0]
 		if _closes_the_run(map, entry[1], segment.horizontal, standing):
@@ -3473,15 +3405,15 @@ static func _leaves_the_routes_sidewalk_open(candidate: Planned, map: CityMap, c
 	return true
 
 ## The reach `_leaves_the_routes_sidewalk_open` filters candidates by: the greater of
-## `_line_reach_of`'s cost-based reach and the physical standoff a solid body needs
+## `EventDef.line_reach()`'s cost-based reach and the physical standoff a solid body needs
 ## (`obstructs_radius + PLAYER_BODY_RADIUS`). A silent, cheap body — `delivery_van`'s own numbers —
 ## can close a lane by presence alone while charging nothing to walk past, so the filter that
 ## decides which rows are even worth asking `closes_a_walked_sidewalk_band` about has to see the
-## wider of the two rather than only the one `_line_reach_of` already answers.
+## wider of the two rather than only the one `EventDef.line_reach()` already answers.
 static func _cumulative_lane_reach_of(def: EventDef) -> float:
 	if def.obstructs_radius <= 0.0:
-		return _line_reach_of(def)
-	return maxf(_line_reach_of(def), def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS)
+		return def.line_reach()
+	return maxf(def.line_reach(), def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS)
 
 ## `rows` reduced to `[position.x, position.y, obstructs_radius]` triples, the shape
 ## `closes_a_walked_sidewalk_band` asks for — a row with no body contributes nothing to a physical
@@ -3520,7 +3452,7 @@ static func _closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
 			var at := map.tile_to_world(tile)
 			var taken := false
 			for plan in rows:
-				if _denies(plan, at, _line_reach_of(plan.def)):
+				if plan.denies(at, plan.def.line_reach()):
 					taken = true
 					break
 			if not taken:
@@ -3558,7 +3490,7 @@ static func _closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
 ## hand this that all three already share.
 ##
 ## Tile-grained like `_closes_the_run`, substituting a body's own physical
-## `radius + PLAYER_BODY_RADIUS` for that rule's cost-based `_line_reach_of()` — see
+## `radius + PLAYER_BODY_RADIUS` for that rule's cost-based `EventDef.line_reach()` — see
 ## `_closes_the_band_by_its_own_placement`'s doc for why a reach and a gap are the same question
 ## read two ways.
 ##
@@ -3638,20 +3570,20 @@ static func closes_a_walked_sidewalk_band(map: CityMap, band: Rect2i, horizontal
 ## a different shape with a different answer, and the milestone does not write a rule for it.
 static func _leaves_a_pacing_beats_opening(candidate: Planned, map: CityMap, corridor: Corridor,
 		already: Array[Planned]) -> bool:
-	if not corridor or not _counts_against_the_line(candidate):
+	if not corridor or not candidate.counts_against_the_line():
 		return true
-	var reach := _line_reach_of(candidate.def)
+	var reach := candidate.def.line_reach()
 	var streets := {}
 	var here := StreetNetwork.segment_containing(map.world_to_tile(candidate.position))
 	if candidate.def.paces and here and corridor.depth(here.tile_rect().position) == 0:
 		streets[here.key()] = here
 	for plan in already:
-		if plan == candidate or not plan.def.paces or not _counts_against_the_line(plan):
+		if plan == candidate or not plan.def.paces or not plan.counts_against_the_line():
 			continue
 		var theirs := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
 		if not theirs or corridor.depth(theirs.tile_rect().position) != 0:
 			continue
-		if _reach_touches(candidate, map.tile_rect_to_world(theirs.tile_rect()), reach):
+		if candidate.reach_touches(map.tile_rect_to_world(theirs.tile_rect()), reach):
 			streets[theirs.key()] = theirs
 
 	for key: Vector3i in streets:
@@ -3659,26 +3591,14 @@ static func _leaves_a_pacing_beats_opening(candidate: Planned, map: CityMap, cor
 		var rect := map.tile_rect_to_world(segment.tile_rect())
 		var standing: Array[Planned] = [candidate]
 		for plan in already:
-			if plan == candidate or not _counts_against_the_line(plan):
+			if plan == candidate or not plan.counts_against_the_line():
 				continue
-			if _reach_touches(plan, rect, _line_reach_of(plan.def)):
+			if plan.reach_touches(rect, plan.def.line_reach()):
 				standing.append(plan)
 		if _closes_the_street(map, segment, standing):
 			return false
 	return true
 
-## Whether a row's own reach gets anywhere near a rect at all — the cheap filter before the tile
-## work. Grown by the line reading's plain disc rather than `field_reach()`, and asked of every
-## corner of a beat as well as of where the row stands, since a pacing row's denied ground is
-## inside each of those discs.
-static func _reach_touches(plan: Planned, rect: Rect2, reach: float) -> bool:
-	var grown := rect.grow(reach)
-	if grown.has_point(plan.position):
-		return true
-	for point in plan.path:
-		if grown.has_point(point):
-			return true
-	return false
 
 ## Whether a tile between two junctions is carriageway a line may not cross there.
 ##

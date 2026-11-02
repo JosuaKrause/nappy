@@ -1292,7 +1292,7 @@ from the doorstep to the calm areas still worth reaching.
 *(PLAYTEST-77: "how is market stall a friction? you can't walk through it"; "a wall is also when you
 physically cannot walk through".)* A sidewalk is `Tuning.SIDEWALK_WIDTH` tiles — two lanes, 64px —
 so the only line past a row standing in one of them is the other lane, a tile away; a row whose body
-and charging disc (`EventScheduler._line_reach_of`, "What a row denies is what it charges for" in
+and charging disc (`EventDef.line_reach()`, "What a row denies is what it charges for" in
 `docs/CITY.md`) reach that far leaves no line at all. A market stall costs 8.5 points to walk
 through, well under `WALL_WORTH_OF_COST`, and denies 58px of the 64: cheap and impassable are not the
 same question, and friction is the role aimed *at* the route, so a row aimed there has to be one she

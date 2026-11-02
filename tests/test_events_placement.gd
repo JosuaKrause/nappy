@@ -79,7 +79,7 @@ func run(t) -> void:
 ## (127 of 344 rows), more than 1.5 points above its own 0.35 ceiling, so the floor is the ceiling —
 ## 0.35. The narrow share stands at 38.20% (34 of 89 rows), under its own 0.40 ceiling, so its floor
 ## is the lower number it clears by 1.5 points, rounded down — 0.36. **`roadblock` is in the narrow
-## class**: with its `intensity` 0, `EventScheduler._line_reach_of()` falls to its 60px body, under
+## class**: with its `intensity` 0, `EventDef.line_reach()` falls to its 60px body, under
 ## the half junction box, so its 18 rows (5 on the corridor) joined the class; the other narrow rows
 ## stand where they did, 29 of 71. Both still sit above the third of the ground that is corridor,
 ## which is what an unweighted day would give. **The sample is one city, so any change to the
@@ -175,7 +175,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 				# The rows small enough to stand beside a crossing without taking it: the junction
 				# rule cannot refuse one of these its corridor ground, so their share is the
 				# weight's own answer with nothing subtracted from it. See the docstring.
-				if EventScheduler._line_reach_of(plan.def) <= _A_JUNCTION_BOXES_HALF_WIDTH:
+				if plan.def.line_reach() <= _A_JUNCTION_BOXES_HALF_WIDTH:
 					narrow += 1
 					if away == 0:
 						narrow_on_the_route += 1
@@ -279,13 +279,13 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 				continue
 			if EventScheduler._role_for(def, day) != GameEnums.BlockerRole.FRICTION:
 				continue
-			if not EventScheduler._a_line_has_to_avoid(def):
+			if not def.has_a_line_to_avoid():
 				continue
 			checked += 1
-			t.check(EventScheduler._line_reach_of(def) < EventScheduler._THE_FAR_LANE,
+			t.check(not def.reaches_the_far_lane(),
 					"day %d: '%s' is friction on a sidewalk and denies %.1fpx of it, so the far"
-					% [day, def.id, EventScheduler._line_reach_of(def)]
-					+ " lane (%.0fpx out) is still a line" % EventScheduler._THE_FAR_LANE)
+					% [day, def.id, def.line_reach()]
+					+ " lane (%.0fpx out) is still a line" % float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE))
 	t.check(checked >= 2,
 			"and the catalogue has rows on a sidewalk to ask it of (%d)" % checked)
 
@@ -413,7 +413,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 ##
 ## The beat's own geometry is written out here rather than borrowed from the scheduler, for the
 ## reason the junction check gives: only the reading of which rows the question is about
-## (`_counts_against_the_line`) and what the corridor walks (`Corridor.carries_a_route`) is shared.
+## (`Planned.counts_against_the_line()`) and what the corridor walks (`Corridor.carries_a_route`) is shared.
 ##
 ## **Its non-vacuity is three counts**, because each could pass having seen nothing: a sample with no
 ## pacing row on a route sidewalk, one where no beat was ever walled, and one where the side-route
@@ -444,9 +444,9 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
-			if not plan.def.paces or not EventScheduler._counts_against_the_line(plan):
+			if not plan.def.paces or not plan.counts_against_the_line():
 				continue
-			if EventScheduler._line_reach_of(plan.def) < EventScheduler._THE_FAR_LANE:
+			if not plan.def.reaches_the_far_lane():
 				continue
 			var crossed := _a_beat_touches_a_junction(map, plan)
 			var sideways := _a_beat_passes_a_side_route(map, plan)
@@ -536,7 +536,7 @@ func _beat_tiles(map: CityMap, plan: EventScheduler.Planned) -> Array[Vector2i]:
 ## fill is written out below, so a change to the scheduler's private helper cannot quietly change
 ## what this file claims. Only the primitives are shared — which junctions the routes cross
 ## (`RouteTree.junctions()`), which streets are on the corridor (`Corridor.depth`), and what a row
-## denies (`EventScheduler._counts_against_the_line` and `_line_reach_of`, the reading PLAYTEST-71
+## denies (`Planned.counts_against_the_line()` and `EventDef.line_reach()`, the reading PLAYTEST-71
 ## settled and the one place it is written down).
 ##
 ## **And it cannot pass vacuously**: a day where no counted row ever stood within reach of a route
@@ -556,7 +556,7 @@ func _test_a_routes_junctions_stay_clear(t) -> void:
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
-			if EventScheduler._counts_against_the_line(plan):
+			if plan.counts_against_the_line():
 				counted.append(plan)
 		for junction in tree.junctions():
 			junctions += 1
@@ -564,7 +564,7 @@ func _test_a_routes_junctions_stay_clear(t) -> void:
 			var world := map.tile_rect_to_world(box)
 			var here: Array[EventScheduler.Planned] = []
 			for plan in counted:
-				var reach := EventScheduler._line_reach_of(plan.def)
+				var reach := plan.def.line_reach()
 				if plan.distance_from(world.get_center()) <= reach + world.size.length() * 0.5:
 					here.append(plan)
 			in_reach += here.size()
@@ -601,8 +601,8 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 				continue
 			var taken := false
 			for plan in rows:
-				if EventScheduler._denies(plan, map.tile_to_world(tile),
-						EventScheduler._line_reach_of(plan.def)):
+				if plan.denies(map.tile_to_world(tile),
+						plan.def.line_reach()):
 					taken = true
 					break
 			if not taken:
@@ -696,7 +696,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
 			# A pacing row is left out for the reason the rule leaves it out: a beat is passed by
 			# waiting rather than by a lane, and its own two rules are what govern it.
-			if EventScheduler._counts_against_the_line(plan) and not plan.def.paces:
+			if plan.counts_against_the_line() and not plan.def.paces:
 				counted.append(plan)
 		for segment in StreetNetwork.segments():
 			var rect := segment.tile_rect()
@@ -709,8 +709,8 @@ func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
 				var world := map.tile_rect_to_world(band)
 				var standing: Array[EventScheduler.Planned] = []
 				for plan in counted:
-					if EventScheduler._reach_touches(plan, world,
-							EventScheduler._line_reach_of(plan.def)):
+					if plan.reach_touches(world,
+							plan.def.line_reach()):
 						standing.append(plan)
 				if standing.is_empty():
 					continue
@@ -778,7 +778,7 @@ func _test_a_pacing_rows_opening_stays_open(t) -> void:
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
-			if EventScheduler._counts_against_the_line(plan):
+			if plan.counts_against_the_line():
 				counted.append(plan)
 		var streets := {}
 		for plan in counted:
@@ -793,8 +793,8 @@ func _test_a_pacing_rows_opening_stays_open(t) -> void:
 			var rect := map.tile_rect_to_world(segment.tile_rect())
 			var standing: Array[EventScheduler.Planned] = []
 			for plan in counted:
-				if EventScheduler._reach_touches(plan, rect,
-						EventScheduler._line_reach_of(plan.def)):
+				if plan.reach_touches(rect,
+						plan.def.line_reach()):
 					standing.append(plan)
 			if _a_walk_along_the_street(map, segment, standing):
 				continue
@@ -834,8 +834,8 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 				continue
 			var taken := false
 			for plan in rows:
-				if EventScheduler._denies(plan, map.tile_to_world(tile),
-						EventScheduler._line_reach_of(plan.def)):
+				if plan.denies(map.tile_to_world(tile),
+						plan.def.line_reach()):
 					taken = true
 					break
 			if not taken:
