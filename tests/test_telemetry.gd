@@ -571,6 +571,11 @@ func _test_a_capture_is_never_logged_as_blocked(t) -> void:
 	# The capture is over — `Stroller._physics_process` would have zeroed this by now, and a Stroller
 	# out of the tree has no physics frames to do it — and the same held key against the same wall
 	# is a genuine stall again.
+	var during := 0
+	for line: String in Telemetry.current_log().lines:
+		if line.contains("blocked"):
+			during += 1
+	t.check(during == 0, "a held key through the capture itself writes no blocked entry (got %d)" % during)
 	rig.player._detained_for = 0.0
 	await _hold_against_a_wall(rig, "move_right", Vector2(100.0, 100.0), 1.5)
 

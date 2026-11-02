@@ -352,6 +352,8 @@ func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 	t.check(counter.sent == ["nappy-day-5-lost-timeout"],
 		"the day it belonged to ending closed the step out: a second end skips nothing (%s)"
 		% [counter.sent])
+	counter.bus.resistance_contact_available.emit(8)
+	counter.bus.resistance_step_failed.emit(8)
 	counter.bus.day_started.emit(6)
 	counter.bus.resistance_contact_available.emit(7)
 	counter.sent.clear()
