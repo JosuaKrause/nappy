@@ -968,7 +968,10 @@ one figure a slice, a wide scene one
 `tools/test.sh` runs `tests/tests.tscn` headless. It is run as a *scene*, not via
 `--script`: `--script` replaces the main loop, which skips the autoloads, and every test
 needs `Tuning`. The runner loads every `tests/test_*.gd`, calls its `run(t)`, and exits
-non-zero on any failure.
+non-zero on any failure. After each suite it compares the shared state (`InputMap` and the
+actions `Input` holds pressed, the autoloads' variables and signal connections, every `static var`
+under `src/`) with what it was before, and a suite that left any of it changed fails, naming the
+field with its value before and after (`tests/shared_state.gd`).
 
 - `test_meters.gd` — falloff shape, the telegraph fairness contract, and every meter rule
   in docs/MECHANICS.md, driven at a fixed timestep against a fake world.

@@ -12,7 +12,9 @@ extends Node
 ## runner. `run` may be a plain function or a coroutine: the runner awaits it, so a suite may
 ## `await` real frames, and lets a frame and a physics frame pass after each suite.
 ## Before each suite `_reset_globals` puts back the run state and the static test seams, and a
-## physics frame has passed before the first, so every suite meets the same engine state.
+## physics frame has passed before the first, so every suite meets the same engine state. After
+## each suite `SharedState` compares the shared state with what it was before, and a suite that
+## left any of it changed fails by name (`tests/shared_state.gd` says what is compared).
 ##
 ## Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
 ## negative fixtures under `tests/runner_fixtures/` (`engine_error.gd`, which proves the engine-error
@@ -68,6 +70,7 @@ func _ready() -> void:
 		var suite: Object = script.new()
 		_running = path.get_file()
 		_reset_globals()
+		var shared_before := SharedState.snapshot()
 		# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
 		# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
 		# coroutine waits for it.
@@ -77,6 +80,9 @@ func _ready() -> void:
 		# synchronous run never lets happen.
 		await get_tree().process_frame
 		await get_tree().physics_frame
+		for leak in SharedState.diff(shared_before, SharedState.snapshot()):
+			failures.append("%s left shared state changed, %s" % [path.get_file(), leak])
+			print("LEAK  %s left shared state changed, %s" % [path.get_file(), leak])
 		_running = ""
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the
@@ -115,13 +121,22 @@ const RESET_SEED := 2
 ## one), the run configuration a booted `main` handed the observers (none, as before any boot, with
 ## the counter handed the live run, since the bus reaches it in suites that boot no `main`),
 ## and the static seams a suite sets by hand (the save's override hooks, the frame recorder, the
-## remembered controls and the title's restart stamp). The run log and `VisitCounter`'s own state
-## and the `EventBus` connections are left alone.
+## remembered controls and the title's restart stamp), and the day and open tasks `VisitCounter`
+## counted and the run folder `Telemetry` named. These resets are on purpose, for what a suite that
+## boots `main` hands on (`SharedState.BOOTED_MAIN`); `SharedState` checks everything else, after
+## each suite, and fails the suite that leaves it changed. The run log and the `EventBus`
+## connections are left alone and checked.
 func _reset_globals() -> void:
 	GameState.start_run(RESET_SEED)
 	Telemetry.configure(null)
 	GameState.use_trace(RunTrace.new())
 	VisitCounter.configure(null, GameState)
+	VisitCounter._open_tasks = {}
+	VisitCounter._day = 0
+	VisitCounter._reported_run_begun = false
+	if not Telemetry.is_active():
+		Telemetry._run_dir = ""
+		Telemetry._day_attempts = {}
 	GameSave.configure(null)
 	GameSave._path_override = ""
 	GameSave._uses_save_override = null

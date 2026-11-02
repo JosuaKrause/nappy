@@ -387,6 +387,19 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
   condition the sentence beside it claims pins nothing.
 - The suite must exit clean. **Leak warnings at shutdown mean a real retain bug.**
 
+## A suite leaves nothing changed
+
+**After every suite the runner compares the shared state with what it was before, and fails the
+suite that changed it** (`tests/shared_state.gd`): each `InputMap` action's events and deadzone,
+which actions `Input` holds pressed, every autoload's variables and the connections on its signals,
+and every `static var` under `src/`, found by reading the sources. The failure line names the
+field and its value before and after (`LEAK` is printed the moment it is found). A suite fixes a
+leak by giving back what it took (a released action, a disconnected signal, a fake injected instead
+of a static patched); it is never retried. Two lists in that file are the only exceptions, each with
+its reason beside it: `MEMOS` (statics filled on first use from constant data) and `BOOTED_MAIN`
+(what a suite that boots `main` hands the observers, which `_reset_globals` puts back on purpose).
+A new exception needs a reason of that kind, not a convenience.
+
 ## When a suite errors
 
 **An error inside a suite's own `run()` ends that suite and nothing else.** A runtime bug in the
