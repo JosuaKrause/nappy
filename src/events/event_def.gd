@@ -787,7 +787,7 @@ enum SolidWhen {
 	## *(2026-09-24, the player: "Boom shouldn't inspect her. It should block her." · "I didn't say it
 	## should stay solid when it's open".)* So it never detains: a lowered boom is a wall across the
 	## road and a raised one is ground she may walk under, at the price of the car that raised it and of
-	## the guard a walked crossing sets on her (`CheckpointController._set_a_guard_on_her()`). The
+	## the guard a walked crossing sets on her (`CheckpointController.set_a_guard_on_her()`). The
 	## inspection is the huts' alone, and a hut never takes her in from the carriageway its own door's
 	## boom spans — that ground is the boom's.
 	##

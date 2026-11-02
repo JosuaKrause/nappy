@@ -4,6 +4,7 @@ extends "res://tests/resistance_rig.gd"
 func run(t) -> void:
 	t.gives_back_observers()
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
+	_test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
 	_test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t)
 	_test_the_director_hands_the_draw_its_own_predicates(t)
@@ -60,10 +61,48 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
 	if placed:
 		var others := _city.events.plans().filter(
 				func(plan: EventScheduler.Planned) -> bool: return plan != placed)
-		t.check(EventScheduler._room_around(placed, others) != -INF,
+		t.check(EventScheduler.room_around(placed, others) != -INF,
 				"and it has room by the scheduler's own spacing")
 	player.free()
 	director.free()
+
+## `EventScheduler.place_at()`, the entry a recipe sites an authored row by, keeps the day's spacing:
+## on a tile the same row already holds (`room_around()` answers `-INF`, a body inside another's
+## `EVENT_SPACING_ANY`) it answers null, and with the tile free of every other plan it answers the
+## placement. The mast row stands for any catalogue row here; the spacing asks the candidate and the
+## plans standing, not which row it is.
+func _test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t) -> void:
+	_build_city_in_a_new_run(t)
+	var map := _city.map
+	var def := EventCatalogue.mast()
+	var walled := _walled_alleys()
+	var tile := Vector2i(-1, -1)
+	for candidate_tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if SpawnSiting.is_legal_ground(map, candidate_tile, walled) \
+				and not map.is_obstructed(candidate_tile):
+			tile = candidate_tile
+			break
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	var none: Array[EventScheduler.Planned] = []
+	var first := EventScheduler.place_at(def, map, tile, rng, none)
+	t.check(first != null and first.is_placed(),
+			"with no plan standing, `place_at()` sites the row on a free sidewalk tile")
+	if not first:
+		return
+	var crowded: Array[EventScheduler.Planned] = [first]
+	t.check(EventScheduler.place_at(def, map, tile, rng, crowded) == null,
+			"on the tile a placed plan already holds, `place_at()` answers null")
+	var far := Vector2i(-1, -1)
+	for candidate_tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		if SpawnSiting.is_legal_ground(map, candidate_tile, walled) \
+				and not map.is_obstructed(candidate_tile) and map.tile_to_world(candidate_tile) \
+				.distance_to(first.position) > EventScheduler.EVENT_SPACING_ANY + 600.0:
+			far = candidate_tile
+			break
+	var elsewhere := EventScheduler.place_at(def, map, far, rng, crowded)
+	t.check(far != Vector2i(-1, -1) and elsewhere != null,
+			"on a tile well clear of it, `place_at()` sites the row")
 
 const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 

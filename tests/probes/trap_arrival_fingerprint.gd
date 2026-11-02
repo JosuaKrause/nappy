@@ -163,7 +163,7 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 				_stand(city, player, her)
 		city.events.warnings.run(STEP, her)
 		shown += STEP
-	var sent: EventInstance = director._trap
+	var sent: EventInstance = director.trap()
 	var made := "nobody (withdrawn)" if warning.withdrawn else "nobody"
 	if sent != null and is_instance_valid(sent):
 		made = "%s at %s %s" % [sent.def.id, _point(sent.global_position),
@@ -172,6 +172,8 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 			" / ".join(_lines), director._rng.state])
 	if sent != null and is_instance_valid(sent):
 		city.events.retire(sent)
+	# The one write that stays: the director has no way to let go of a trap but a day starting again,
+	# and this probe runs several warnings on one day. `retire` above only finishes him.
 	director._trap = null
 	return 1
 

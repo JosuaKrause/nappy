@@ -3220,7 +3220,7 @@ static func _checkpoint_post() -> EventDef:
 ## spawn at the huts" · "The day ends, not going through the checkpoint is a clear unlawful thing
 ## here. She gets detained/imprisoned or whatever in that case. This is independent of the
 ## resistance. She shouldn't do it. One guard is enough".)* Nothing places it but
-## `CheckpointController._set_a_guard_on_her()`: `SCRIPTED` on day 0 like the rest of the door's
+## `CheckpointController.set_a_guard_on_her()`: `SCRIPTED` on day 0 like the rest of the door's
 ## kit, so the ordinary roll never reaches it, stepping out of the wall of the door's hut across
 ## the road from her on the side she crossed to. The guards drawn at the huts stay at their
 ## posts, so the door stays manned.

@@ -1001,10 +1001,7 @@ func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Pla
 			or not EventScheduler.clear_of_the_doors(at, PackedVector2Array(), doors,
 					def.field_reach()):
 		return null
-	var candidate := EventScheduler._build_placement(def, map, tile, RandomNumberGenerator.new())
-	if not candidate or EventScheduler._room_around(candidate, prior) == -INF:
-		return null
-	return candidate
+	return EventScheduler.place_at(def, map, tile, RandomNumberGenerator.new(), prior)
 
 ## The escape's exact actors use its own row variants (the walk's spec's `DaySpec.bag_rows`), open
 ## streets, tree exclusion, spawn clearance and body spacing. No ordinary-day corridor or offscreen
@@ -1022,7 +1019,7 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 	var ground_ok := false
 	var trees := StreetTrees.footprint_tiles(map)
 	for segment in finale.open_streets:
-		if tile in EventScheduler._street_ground(map, segment, def, trees, player_at, {},
+		if tile in EventScheduler.street_ground(map, segment, def, trees, player_at, {},
 				walk_spec.holds_the_home_streets):
 			ground_ok = true
 			break
@@ -1030,10 +1027,7 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 		return null
 	var rng := RandomNumberGenerator.new()
 	rng.seed = route_seed
-	var candidate := EventScheduler._build_placement(def, map, tile, rng)
-	if not candidate or EventScheduler._room_around(candidate, prior) == -INF:
-		return null
-	return candidate
+	return EventScheduler.place_at(def, map, tile, rng, prior)
 
 func begin() -> void:
 	if not _start_the_task():

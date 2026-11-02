@@ -5,10 +5,10 @@ extends "res://tests/resistance_rig.gd"
 ## and sets on that run what the day it asks about needs; none reads what another left. What the
 ## director put in the street is read from the street (`contact()`, `rider()`, `read_mark()`, the
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
-## (`raid_vans()`, `frontage_of()`, `spine_x()`, `tick()`). Four tests still read a private: three call
-## `EventScheduler._open_ground_for()` (the two burnt-shell tests and the every-front sweep), one
-## `EventScheduler._place_masts()`; and `_start_the_day()` hands the baby its stroller with `baby._stroller = player`.
-## They move with a public form of each.
+## (`raid_vans()`, `frontage_of()`, `spine_x()`, `tick()`). The ground a row is offered is asked of
+## `EventScheduler.open_ground_for()`, the next day's masts of `EventScheduler.place_masts()`, the
+## near mast of the director's `weighted_mast_index()`, and `_start_the_day()` hands the baby its
+## stroller with `Baby.set_stroller()`.
 func run(t) -> void:
 	t.gives_back_observers()
 	await _test_the_burnt_shell_task_rides_the_recorded_scar(t)
@@ -41,7 +41,7 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
 	var doorstep := _city.map.doorstep_world_position()
 	var near_fronts: Array[Vector2i] = []
 	var far_fronts: Array[Vector2i] = []
-	for tile in EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+	for tile in EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
 			_city.map, {}):
 		var distance := _city.map.tile_to_world(tile).distance_to(doorstep)
 		if distance < Tuning.EVENT_STREAM_RADIUS:
@@ -188,7 +188,7 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t, director: ResistanceDi
 func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
 	_build_city_in_a_new_run(t)
 	var size := float(Tuning.TILE_SIZE)
-	var fronts := EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+	var fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
 			_city.map, {})
 	var on_a_door := 0
 	var wrong: Array[Vector2i] = []
@@ -244,7 +244,7 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 
 	var shell := rider.global_position
 	var shell_tile := _city.map.world_to_tile(shell)
-	var fronts := EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+	var fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
 			_city.map, {})
 	t.check(shell_tile in fronts,
 			"the shell stands at %s, a front day 3's fire could have caught on" % shell_tile)
@@ -290,7 +290,7 @@ func _start_the_day(t, day: int, resistance: ResistanceDirector,
 	var baby := Baby.new()
 	baby.name = "Baby"
 	player.add_child(baby)
-	baby._stroller = player
+	baby.set_stroller(player)
 	var clock := DayController.new()
 	clock.set_process(false)
 	t.add_child(clock)
@@ -685,7 +685,7 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 	t.check(others_live, "and only that mast")
 
 	# The next morning, planned from the run's own scars.
-	var tomorrow := EventScheduler._place_masts(day + 1, _city.map, 0,
+	var tomorrow := EventScheduler.place_masts(day + 1, _city.map, 0,
 			PackedVector2Array(), run.attempt_spend.scars)
 	var quiet_tomorrow := false
 	var live_tomorrow := false

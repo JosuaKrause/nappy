@@ -83,7 +83,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 			var scars: Array[Dictionary] = []
 			scars.assign(_city.run.attempt_spend.scars)
 			var planned_bare := false
-			for plan in EventScheduler._place_masts(14, _city.map, 0, PackedVector2Array(), scars):
+			for plan in EventScheduler.place_masts(14, _city.map, 0, PackedVector2Array(), scars):
 				if plan.mast_id == mast_id and plan.silenced:
 					planned_bare = true
 			t.check(planned_bare,

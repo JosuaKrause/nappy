@@ -717,7 +717,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	var guard := int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
 	while hut.is_chatting() and guard > 0:
 		guard -= 1
-		baby._physics_process(STEP)
+		baby.step(STEP)
 		for instance in manager.world.instances:
 			instance.step(STEP)
 	t.check(not hut.is_chatting() and guard > 0, "and it runs its own clock out")
@@ -2023,20 +2023,20 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	_stand_for(rig, CheckpointController.CROSSING_WARNING * 0.5)
 	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
 			"the frame she crosses, the guard across the road raises his hand")
-	t.check(city.events.checkpoints._guard_after_her == null, "and nobody is after her yet")
+	t.check(city.events.checkpoints.guard_after_her() == null, "and nobody is after her yet")
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING * 2.0)
-	t.check(city.events.checkpoints._guard_after_her == null and not far_hut.guard_warns_her,
+	t.check(city.events.checkpoints.guard_after_her() == null and not far_hut.guard_warns_her,
 			"back across before it runs, it is called off: nobody comes, and his hand is down")
 	# Across, and staying across: the guard comes once it has run.
 	_step_her_to(rig, lane + axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING - 0.1)
-	t.check(city.events.checkpoints._guard_after_her == null, "staying across, nobody comes before it runs")
+	t.check(city.events.checkpoints.guard_after_her() == null, "staying across, nobody comes before it runs")
 	_stand_for(rig, 0.2)
 	EventBus.pursuit_warned.disconnect(on_warned)
 	t.check(warned == ["door_guard", "door_guard"],
 			"and the page counts each crossing's warning once (%s)" % [warned])
-	var guard := city.events.checkpoints._guard_after_her
+	var guard := city.events.checkpoints.guard_after_her()
 	t.check(guard != null and guard.def.id == "door_guard",
 			"once it has run, a door_guard is set on her")
 	if guard:
@@ -2055,7 +2055,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	var walks := city.events.walks_under_a_boom()
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING + 0.2)
-	t.check(city.events.walks_under_a_boom() == walks + 1 and city.events.checkpoints._guard_after_her == guard,
+	t.check(city.events.walks_under_a_boom() == walks + 1 and city.events.checkpoints.guard_after_her() == guard,
 			"walking back under it while he is after her sets nobody else on her")
 	_free_street_door_rig(rig)
 
@@ -2092,7 +2092,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t) -> void:
 			> far_lane.distance_to(far_hut.global_position),
 			"walked on to the far lane, the hut that warned her is now the nearer one")
 	_stand_for(rig, CheckpointController.CROSSING_WARNING)
-	var guard := city.events.checkpoints._guard_after_her
+	var guard := city.events.checkpoints.guard_after_her()
 	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
 			<= far_hut.def.obstructs_radius + 0.5,
 			"once the warning has run, the guard steps out of the hut that warned her (%s)"
@@ -2179,18 +2179,26 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 # "Checkpoints".
 
 ## A `_door_rig()` (two huts and a gate on an east-west street) with a `door_guard` already after
-## her, standing where `CheckpointController._set_a_guard_on_her()` would have put him — a hut's
-## width east of the northern hut, `doors[0]` — the shape every test below starts from.
+## her, set on her by `CheckpointController.set_a_guard_on_her()` out of the northern hut, `doors[0]`,
+## on the east side — the shape every test below starts from.
 func _guard_after_her_rig(t) -> Dictionary:
 	var rig := _door_rig(t)
 	var doors: Array[EventInstance] = []
 	doors.assign(rig["doors"])
 	var manager: EventManager = rig["manager"]
+	# Open ground drawn in a world to put him in: the spawner adds every event it makes to the world
+	# the map is drawn in, and his chase is walked on the map (a bare `CityMap` has no ground).
+	var world := WorldContext.new()
+	t.add_child(world)
+	manager.world.map = WorldMap.open_ground()
+	manager.world.map.world = world
+	rig["world"] = world
 	var near_hut := doors[0]
 	var axis := near_hut.facing_now()
-	var guard := _door_instance(t, "door_guard", near_hut.global_position + axis * 40.0, axis)
-	manager.world.instances.append(guard)
-	manager.checkpoints._guard_after_her = guard
+	# Set on her the way a walked crossing sets him, out of the near hut on the side she crossed to.
+	manager.checkpoints.set_a_guard_on_her(near_hut, doors[1], near_hut.global_position + axis * 40.0)
+	var guard := manager.checkpoints.guard_after_her()
+	assert(guard != null, "the crossing's guard is in the world")
 	rig["doors"] = doors
 	rig["guard"] = guard
 	return rig
@@ -2198,6 +2206,7 @@ func _guard_after_her_rig(t) -> Dictionary:
 func _free_guard_after_her_rig(rig: Dictionary) -> void:
 	(rig["guard"] as EventInstance).free()
 	_free_door_rig(rig)
+	(rig["world"] as WorldContext).free()
 
 ## **The moment a hut starts holding her, a `door_guard` chasing her gives up — no catch can land
 ## during the hold or after it.** She walks up to the far hut, never the one he stepped out of, and
