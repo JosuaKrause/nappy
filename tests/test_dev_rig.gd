@@ -9,7 +9,7 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 ## Step 1, "A chalk mark", is the pickup `ResistanceSteps.for_day()` selects on a fresh run from
-## its own `day` — the same day `tests/test_resistance.gd`'s determinism test uses, and the
+## its own `day` — the same day `tests/test_resistance_steps.gd`'s determinism test uses, and the
 ## smallest day that gives `--spawn contact` something to find.
 const DAY := 6
 
@@ -45,7 +45,7 @@ func _rng(stream: String) -> RandomNumberGenerator:
 ## One day, built the way `main._start_day()` builds it — closures before events, so `closure:0`
 ## has one to find — with streaming off so a plan is placed without a player ever coming near it
 ## (the same reasoning `tests/test_event_manager.gd`'s own `_build_city()` gives), and the
-## resistance run under a clean `GameState`, the way `tests/test_resistance.gd`'s own
+## resistance run under a clean `GameState`, the way `tests/resistance_rig.gd`'s own
 ## `_with_clean_run()` does, so day 4 always selects step 1 regardless of what an earlier suite
 ## left behind in the shared autoload.
 func _build_day(t) -> void:

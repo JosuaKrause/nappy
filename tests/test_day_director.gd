@@ -2,7 +2,7 @@ extends RefCounted
 ## `DayDirector.finish_day()` on a bare world: a day clock and an event manager, no city, no player.
 ## What a day's end settles — the cause `day_ended` carries, the calendar, the hand-over to the escape
 ## — is decided there, so it is checked there. `DayDirector.start_day()` needs a city: its order is
-## pinned in `tests/test_resistance.gd` (`_test_a_day_is_built_in_its_order`) on the light real world
+## pinned in `tests/test_resistance_placement_kinds.gd` (`_test_a_day_is_built_in_its_order`) on the light real world
 ## that suite builds.
 
 const SEED := 1717

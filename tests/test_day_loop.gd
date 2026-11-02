@@ -822,7 +822,7 @@ func _resistance_director(t, city: City) -> ResistanceDirector:
 	return director
 
 ## `GameState` is an autoload and the whole suite shares one, so anything that starts a run puts
-## back what it found. The same shape `tests/test_resistance.gd` uses, over the run-level fields
+## back what it found. The same shape `tests/test_resistance_*.gd` use, over the run-level fields
 ## these tests write rather than the resistance's alone.
 ## **A lost day gives back what the attempt did to the city**, not only what it did to the
 ## resistance. *("a retry always rolls new -- nothing that happened on the day that got retried can

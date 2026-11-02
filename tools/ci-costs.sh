@@ -6,7 +6,7 @@
 #   tools/ci-costs.sh --dry-run    # print the diff tools/ci-costs.sh would make; write nothing
 #
 # tools/test.sh --record-costs measures from a run on this one machine; this instead reads the
-# same "-- suite  N ms" lines (tests/run_tests.gd's own "-- %-26s %7d ms" line) out of the shard
+# same "-- suite  N ms" lines (tests/run_tests.gd's own "-- %-36s %7d ms" line) out of the shard
 # job logs of the last few green `ci` runs on main via `gh`, and averages each suite across
 # however many of those runs actually carry a measurement for it -- a shard that crashed or hung
 # on one run still leaves the others. `gh run view <run-id> --job <job-id> --log` prefixes every

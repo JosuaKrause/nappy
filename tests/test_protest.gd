@@ -66,7 +66,7 @@ func _test_plain_pose_with_no_objective(t) -> void:
 			"an objective on top of the protester draws the plain rank rather than dividing by zero")
 
 # ---------------------------------------------------------------- the resistance's own steps ---
-# The same city-and-director rig `test_resistance.gd` builds `ResistanceDirector` with, kept
+# The same city-and-director rig `tests/resistance_rig.gd` builds `ResistanceDirector` with, kept
 # separate rather than shared so this file never writes to one the resistance suite also owns.
 
 ## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires

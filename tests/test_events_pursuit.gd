@@ -281,7 +281,7 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 		# director, so this rig's geometry is not its own; `tests/test_checkpoints.gd` walks
 		# `door_guard` at a door instead.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
-		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
+		# resistance's sent robber and guard are walked in `tests/test_resistance_traps.gd`.
 		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
 		pursuers += 1
@@ -352,7 +352,7 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 	for def in EventCatalogue.all():
 		# Sited beside her rather than by the director — see `_test_a_pursuer_leaves_room_to_answer`.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
-		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
+		# resistance's sent robber and guard are walked in `tests/test_resistance_traps.gd`.
 		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
 		# One that waits for her charges on its warning's clock and is walked in
@@ -413,7 +413,7 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 	for def in EventCatalogue.all():
 		# Sited beside her by construction, which is what its own stand-off rule answers.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
-		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
+		# resistance's sent robber and guard are walked in `tests/test_resistance_traps.gd`.
 		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
 		var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())

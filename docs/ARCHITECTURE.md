@@ -1003,9 +1003,16 @@ non-zero on any failure.
   reaching the doorstep or a calm interior, the field's own edge, the shared broadcast clock,
   and silencing one or all for the rest of the day.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
-- `test_resistance.gd` — the step table, touch-completion, a task activated the same day its
-  mark is touched, the four placement kinds a perform step may use, the seeded guard, the
-  expiring step, and the sabotage putting the city's masts out once she has walked away.
+- `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
+  `resistance_rig.gd` (a helper the runner does not load): `steps` (the step table, touch-completion,
+  a task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
+  finished task shown by the world and the sabotage putting the city's masts out once she has
+  walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`
+  (where a mark and its guard stand), `traps` (a task riding on a look-alike, and the robber or
+  guard set on her from off screen), `placement_kinds` (the four placement kinds a perform step
+  may use, each task's own site, a day built in its order), `arrow` (the red arrow), `crossing`
+  (day 9's door done by crossing it) and `reach_marks`, `reach_contacts`, `reach_relocated` and
+  `reach_narrow` (every mark and contact placed where she can reach it).
 - `test_destination_drawing.gd` — on every task day, the mark on offer draws its chalk and keeps
   its touched picture once read, and the task's destination draws none, untouched or done, while
   the red arrow ends on it.
