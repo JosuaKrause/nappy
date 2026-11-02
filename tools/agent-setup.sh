@@ -204,8 +204,14 @@ else
     # bare branch name are fetched from origin first. A SHA, a tag or anything origin does not
     # have falls back to what resolves locally.
     commit=""
-    if git -C "$main" fetch --quiet origin "${ref#origin/}" 2>/dev/null; then
-        commit="$(git -C "$main" rev-parse --verify --quiet FETCH_HEAD^{commit})" || commit=""
+    # The fetch lands in the branch's own remote-tracking ref and that ref is read back: FETCH_HEAD
+    # is one file in the shared .git, so another agent's fetch between the two commands would
+    # change what it names.
+    fetched="${ref#origin/}"
+    if git -C "$main" fetch --quiet origin \
+            "+refs/heads/$fetched:refs/remotes/origin/$fetched" 2>/dev/null; then
+        commit="$(git -C "$main" rev-parse --verify --quiet \
+            "refs/remotes/origin/$fetched^{commit}")" || commit=""
     fi
     if [[ -z "$commit" ]]; then
         commit="$(git -C "$main" rev-parse --verify --quiet "$ref^{commit}")" || commit=""
