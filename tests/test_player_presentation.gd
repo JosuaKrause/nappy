@@ -7,6 +7,10 @@ const VIEWS: Array[String] = ["side", "front_diagonal", "front", "front_diagonal
 		"side", "back_diagonal", "back", "back_diagonal"]
 const POSES: Array[String] = ["a", "c", "b"]
 
+## The picture of the mother's pose `frame` at the view she is drawn in now, off her pose.
+func _mother_texture(rig: Stroller, frame: int) -> Texture2D:
+	return AtlasLibrary.region(StringName(rig.pose(1.0).mother_sources[frame]))
+
 func run(t) -> void:
 	_test_seeded_equal_choice_and_lifetime(t)
 	_test_main_binds_both_complete_families_before_drawing(t)
@@ -60,11 +64,11 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 					var path := "rig/%s_%s%s_%s" % [
 							"father" if male else "mother", "carrying_" if carrying else "",
 							VIEWS[direction], POSES[frame]]
-					var source := rig.mother_source(frame)
+					var source := rig.pose(1.0).mother_sources[frame]
 					t.check(source == path, "every pose/state/facing stays in its selected family")
-					t.check(rig.mother_is_mirrored() == EightDirection.is_mirrored(direction),
+					t.check(rig.pose(1.0).mirrored == EightDirection.is_mirrored(direction),
 							"both presentations retain the same west-facing mirrors")
-					t.check(rig.view_direction() == direction and rig.mother_texture(frame) != null,
+					t.check(rig.pose(1.0).view == direction and _mother_texture(rig, frame) != null,
 							"the facing settles the view and the family resolves a picture for it")
 			t.check(rig.is_male == male and GameState.header.player_is_male == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")
