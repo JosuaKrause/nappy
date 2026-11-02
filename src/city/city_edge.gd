@@ -71,16 +71,21 @@ const BRIDGE_DECK_PX := 1280.0
 const RAMP_STEP_PX := 8.0
 
 @export var kind := Kind.TUNNEL
+## The baked atlas pages this exit draws from (`AtlasLibrary`), handed by the city before it is
+## added; an exit nobody handed one (a suite's) makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
 
 ## `AtlasLibrary` reference-counts, so acquiring both groups on every piece of every exit is one
 ## page load each, regardless of how many `CityEdge` instances the city spawns.
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"street_kit")
-	AtlasLibrary.acquire(&"ground")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"street_kit")
+	atlas.acquire(&"ground")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"street_kit")
-	AtlasLibrary.release(&"ground")
+	atlas.release(&"street_kit")
+	atlas.release(&"ground")
 
 ## Whether this piece belongs in a layer over the entities.
 func overhangs() -> bool:
@@ -109,7 +114,7 @@ func _draw() -> void:
 ## The deck, laid end to end for `BRIDGE_DECK_PX`: one picture is a block long, and a view past the
 ## border shows the road carrying on over the water, so the deck never stops short of the frame.
 func _lay_the_deck() -> void:
-	var texture := AtlasLibrary.region(BRIDGE)
+	var texture := atlas.region(BRIDGE)
 	var extent := texture.get_size()
 	var rows := int(ceil(BRIDGE_DECK_PX / extent.y))
 	for row in rows:
@@ -164,9 +169,9 @@ func _swallow_the_road() -> void:
 func _roof_the_tunnel() -> void:
 	var tile := float(Tuning.TILE_SIZE)
 	var columns := Tuning.STREET_WIDTH
-	var portal_rows := AtlasLibrary.native_size(TUNNEL).y / Tuning.TILE_SIZE
+	var portal_rows := AtlasTable.baked().native_size(TUNNEL).y / Tuning.TILE_SIZE
 	var left := -columns * tile * 0.5
-	var mountain := AtlasLibrary.region(MOUNTAIN)
+	var mountain := atlas.region(MOUNTAIN)
 	for row in range(portal_rows, CityMap.OUTSIDE_DEPTH_TILES):
 		for column in columns:
 			draw_texture_rect(mountain,
@@ -177,6 +182,6 @@ func _roof_the_tunnel() -> void:
 ## Written out rather than reusing `Sprites.draw_standing`, which only knows the feet-anchored
 ## case: an exit that leaves eastward is anchored on its side, not on its base.
 func _blit(name: StringName, anchor: Vector2) -> void:
-	var texture := AtlasLibrary.region(name)
+	var texture := atlas.region(name)
 	var extent := texture.get_size()
 	draw_texture_rect(texture, Rect2(extent * anchor, extent), false)

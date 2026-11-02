@@ -25,7 +25,7 @@ func _init(agent: CrowdAgent) -> void:
 
 ## A `StringName` for a path in one of the tables below: they hold plain `String`s because a `const`
 ## `Dictionary` cannot hold a `StringName` literal the type checker keeps, and this is the one
-## conversion between that and what `AtlasLibrary.region()` and `native_size()` take.
+## conversion between that and what `AtlasLibrary.region()` and `AtlasTable.native_size()` take.
 static func region_of(name: String) -> StringName:
 	return StringName(name)
 

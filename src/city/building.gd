@@ -51,8 +51,8 @@ const NORTH_EDGE_INSET := 6.0
 
 ## Every picture below is a region name on the `buildings` atlas group — `AtlasLibrary.
 ## region_name_for()`'s own rule, written as a literal since the group is baked before this file
-## ever runs. `_enter_tree()`/`_exit_tree()` acquire and release the group, so `AtlasLibrary.
-## region()` only ever runs while it is held.
+## ever runs. `_enter_tree()`/`_exit_tree()` acquire and release the group on `atlas`, so
+## `atlas.region()` only ever runs while it is held.
 const WALL := &"buildings/wall"
 const WALL_BASE := &"buildings/wall_base"
 const WALL_EDGE_W := &"buildings/wall_edge_w"
@@ -605,18 +605,24 @@ var _station_layer: Node2D
 ## Parent for roof art that must participate in world y-sorting. City sets this before the building
 ## enters the tree; a null parent retains the standalone Building path used by focused fixtures.
 var roof_object_parent: Node2D
+## The baked atlas pages this front draws from (`AtlasLibrary`), handed by the city before the
+## building enters the tree and handed on to its roof objects; a building nobody handed one (a
+## suite's) makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
 
 ## Acquires the `buildings` atlas group rather than `_ready()`, so a building added and removed
 ## from the tree more than once stays paired with `_exit_tree()` — `_ready()` only ever runs the
 ## first time. `AtlasLibrary` reference-counts, so any number of buildings acquiring the same
 ## group is one page load.
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"buildings")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"buildings")
 
 func _exit_tree() -> void:
 	_clear_roof_layers()
 	_clear_roof_objects()
-	AtlasLibrary.release(&"buildings")
+	atlas.release(&"buildings")
 	request_ready()
 
 func _ready() -> void:
@@ -1012,7 +1018,7 @@ func _draw() -> void:
 			if is_covered(col):
 				continue
 			var at := _cell(col, row)
-			draw_texture(AtlasLibrary.region(WALL), at, wall_colour)
+			draw_texture(atlas.region(WALL), at, wall_colour)
 			if draws_window_at(row, col):
 				var index := row * cols + col
 				var window_at := at
@@ -1020,16 +1026,16 @@ func _draw() -> void:
 					# A 36px storefront or door rises four pixels into this row; lift every upper
 					# window two pixels so its sill remains visible, the whole row alike.
 					window_at.y -= 2.0
-				draw_texture(AtlasLibrary.region(window_texture(index)), window_at)
+				draw_texture(atlas.region(window_texture(index)), window_at)
 				if col == neighbor_window_col and row == neighbor_window_row():
-					draw_texture(AtlasLibrary.region(NEIGHBOR_WINDOW_SEALED), window_at)
+					draw_texture(atlas.region(NEIGHBOR_WINDOW_SEALED), window_at)
 			if col == hall.x:
-				draw_texture(AtlasLibrary.region(WALL_EDGE_W), at)
+				draw_texture(atlas.region(WALL_EDGE_W), at)
 			if col == hall.y - 1:
-				draw_texture(AtlasLibrary.region(WALL_EDGE_E), at)
+				draw_texture(atlas.region(WALL_EDGE_E), at)
 			# With no roof at all, the parapet is what stops the wall.
 			if roof_rows == 0 and row == wall_rows - 1:
-				draw_texture(AtlasLibrary.region(ROOF_EDGE_N), at)
+				draw_texture(atlas.region(ROOF_EDGE_N), at)
 
 	# Ground-floor substitutions are drawn after every wall cell, so a 64px storefront cannot be
 	# painted over by the neighboring half of its pair. A 36px source is offset four pixels north
@@ -1038,7 +1044,7 @@ func _draw() -> void:
 	for col in range(hall.x, hall.y if not power_station else hall.x):
 		var ground_name := ground_floor_texture(col)
 		if ground_name != &"":
-			var texture := AtlasLibrary.region(ground_name)
+			var texture := atlas.region(ground_name)
 			var y_offset := TILE - texture.get_height()
 			draw_texture(texture, _cell(col, 0) + Vector2(0.0, y_offset))
 
@@ -1057,16 +1063,16 @@ func _draw() -> void:
 			if row >= roof_rows + extension_rows(col):
 				continue
 			var at := _cell(col, wall_rows + row)
-			draw_texture(AtlasLibrary.region(ROOF), at, roof_colour)
+			draw_texture(atlas.region(ROOF), at, roof_colour)
 			var edges := roof_cell_edges(col, row)
 			if edges & ROOF_EDGE_BIT_S:
-				draw_texture(AtlasLibrary.region(_front_parapet_texture(col)), at)
+				draw_texture(atlas.region(_front_parapet_texture(col)), at)
 			if edges & ROOF_EDGE_BIT_N:
-				draw_texture(AtlasLibrary.region(ROOF_EDGE_N), at)
+				draw_texture(atlas.region(ROOF_EDGE_N), at)
 			if edges & ROOF_EDGE_BIT_W:
-				draw_texture(AtlasLibrary.region(ROOF_EDGE_W), at)
+				draw_texture(atlas.region(ROOF_EDGE_W), at)
 			if edges & ROOF_EDGE_BIT_E:
-				draw_texture(AtlasLibrary.region(ROOF_EDGE_E), at)
+				draw_texture(atlas.region(ROOF_EDGE_E), at)
 
 	if _station_layer != null:
 		_station_layer.queue_redraw()
@@ -1122,14 +1128,14 @@ func _draw_station_facade(wall_rows: int, hall: Vector2i) -> void:
 			var tile := POWER_STATION_WALL
 			if row == 0:
 				tile = POWER_STATION_BASE
-			draw_texture(AtlasLibrary.region(tile), at)
+			draw_texture(atlas.region(tile), at)
 	if has_band:
-		var band := AtlasLibrary.region(_clerestory_texture())
+		var band := atlas.region(_clerestory_texture())
 		for col in range(hall.x, hall.y):
 			draw_texture(band, _cell(col, wall_rows - 1))
 	for row in wall_rows:
-		draw_texture(AtlasLibrary.region(WALL_EDGE_W), _cell(hall.x, row))
-		draw_texture(AtlasLibrary.region(WALL_EDGE_E), _cell(hall.y - 1, row))
+		draw_texture(atlas.region(WALL_EDGE_W), _cell(hall.x, row))
+		draw_texture(atlas.region(WALL_EDGE_E), _cell(hall.y - 1, row))
 
 ## The hall's high windows: dimly lit on the last night while the city still has power, unlit
 ## otherwise. The last night only, because that is the night the hall is watched going out — the
@@ -1158,7 +1164,7 @@ func hall_cols() -> Vector2i:
 func _draw_station_yard(hall: Vector2i, canvas: CanvasItem = self) -> void:
 	if station_yard_cols.y <= 0:
 		return
-	var yard := AtlasLibrary.region(POWER_STATION_YARD)
+	var yard := atlas.region(POWER_STATION_YARD)
 	var left := _cell(station_yard_cols.x, 0).x
 	var foot := Vector2(left + station_yard_cols.y * TILE * 0.5, 0.0)
 	var mirrored := station_yard_cols.x < hall.x
@@ -1291,11 +1297,11 @@ func _draw_posters() -> void:
 		var side := float(cell["side"])
 		var over := Vector2.ZERO
 		if int(cell["under"]) != PosterState.NONE:
-			draw_texture(poster_art.texture_for(int(cell["under"]), int(cell["under_tear"]),
+			draw_texture(poster_art.texture_for(atlas, int(cell["under"]), int(cell["under_tear"]),
 					neighbor_taken),
 					at + PosterArt.UNDER_OFFSET * Vector2(side, 1.0))
 			over = PosterArt.OVER_OFFSET * Vector2(side, 1.0)
-		draw_texture(poster_art.texture_for(int(cell["kind"]), int(cell["tear"]), neighbor_taken),
+		draw_texture(poster_art.texture_for(atlas, int(cell["kind"]), int(cell["tear"]), neighbor_taken),
 				at + over)
 
 ## The column(s) `civic_portico.svg` actually paints over, read back from `_cell()` rather than
@@ -1337,14 +1343,14 @@ func _draw_front_overlay() -> void:
 	var door_col := entrance_door_col()
 	if door_col >= 0:
 		var door_x := _cell(door_col, 0).x + TILE * 0.5
-		Sprites.draw_standing(self, AtlasLibrary.region(entrance_door_texture()), Vector2(door_x, 0.0))
+		Sprites.draw_standing(self, atlas.region(entrance_door_texture()), Vector2(door_x, 0.0))
 	if not _fire_escape_cols.is_empty():
 		_draw_fire_escape()
 	if portico_is_drawn():
-		Sprites.draw_standing(self, AtlasLibrary.region(CIVIC_PORTICO), Vector2(0.0, 0.0))
+		Sprites.draw_standing(self, atlas.region(CIVIC_PORTICO), Vector2(0.0, 0.0))
 	if power_station:
 		var x := _cell(station_door_col, 0).x + TILE * CityMap.POWER_STATION_DOOR_TILES * 0.5
-		Sprites.draw_standing(self, AtlasLibrary.region(POWER_STATION_DOOR), Vector2(x, 0.0))
+		Sprites.draw_standing(self, atlas.region(POWER_STATION_DOOR), Vector2(x, 0.0))
 
 ## The rows whose floor line carries one of this front's fire-escape balconies, lowest first, or
 ## empty for a front with none. The same rows for every escape the front has — a floor's height
@@ -1391,7 +1397,7 @@ func _draw_fire_escape() -> void:
 		for i in range(landings.size() - 1, -1, -1):
 			var row := landings[i]
 			var foot := Vector2(x, _cell(col, row - 1).y + TILE)
-			Sprites.draw_standing(self, AtlasLibrary.region(fire_escape_texture(col, row)), foot)
+			Sprites.draw_standing(self, atlas.region(fire_escape_texture(col, row)), foot)
 
 # ------------------------------------------------------------- roof furniture ---
 
@@ -1466,7 +1472,7 @@ func _build_roof_furniture() -> void:
 ## cells; height is deliberately unrelated to this footprint and may extend several tiles north.
 func _furniture_span(kind: int) -> int:
 	var key := _furniture_texture(kind)
-	return ceili(AtlasLibrary.native_size(key).x * roof_equipment_scale(key) / TILE)
+	return ceili(AtlasTable.baked().native_size(key).x * roof_equipment_scale(key) / TILE)
 
 static func roof_equipment_scale(key: StringName) -> float:
 	if key in [VENT_STACK, VENT_HOUSING, EXHAUST_FAN, PIPE_MANIFOLD]:
@@ -1604,6 +1610,7 @@ func _build_roof_layers() -> void:
 		var at := _cell(cell.x, wall_tiles() + cell.y)
 		var anchor := at + Vector2(TILE * span * 0.5, TILE)
 		var object := RoofObject.new()
+		object.atlas = atlas
 		object.name = "RoofObject_%d_%d" % [cell.x, cell.y]
 		object.texture_key = _furniture_texture(entry["kind"])
 		object.duct_links = entry.get("links", -1)
@@ -1663,20 +1670,22 @@ func _furniture_texture(kind: int) -> StringName:
 ## lot collision remains the sole gameplay geometry, while this node gives tall art the correct
 ## depth origin at its roof foot.
 class RoofObject extends Node2D:
+	## The building's library, handed before the object enters the tree.
+	var atlas: AtlasLibrary
 	var texture_key: StringName
 	## West, east, south and north neighbors in roof-cell coordinates; -1 draws the whole asset.
 	var duct_links := -1
 
 	func _enter_tree() -> void:
-		AtlasLibrary.acquire(&"buildings")
+		atlas.acquire(&"buildings")
 		# Uniform scale about the foot also scales any rotor child and preserves depth sorting.
 		scale = Vector2.ONE * Building.roof_equipment_scale(texture_key)
 
 	func _exit_tree() -> void:
-		AtlasLibrary.release(&"buildings")
+		atlas.release(&"buildings")
 
 	func _draw() -> void:
-		var texture := AtlasLibrary.region(texture_key)
+		var texture := atlas.region(texture_key)
 		if duct_links >= 0:
 			_draw_duct(texture)
 			return
@@ -1709,11 +1718,11 @@ class RoofObject extends Node2D:
 	func add_rotor(frame_b: bool) -> SceneryLayer:
 		var layer := SceneryLayer.new()
 		layer.frame_b = frame_b
-		var size := AtlasLibrary.native_size(texture_key)
+		var size := AtlasTable.baked().native_size(texture_key)
 		var top_left := -Vector2(size.x * 0.5, size.y)
-		layer.append(AtlasLibrary.region(VENT_ROTOR),
+		layer.append(atlas.region(VENT_ROTOR),
 				Rect2(top_left + VENT_ROTOR_RECT.position, VENT_ROTOR_RECT.size),
-				AtlasLibrary.region(VENT_ROTOR_B))
+				atlas.region(VENT_ROTOR_B))
 		add_child(layer)
 		return layer
 
@@ -1728,13 +1737,16 @@ class RoofObject extends Node2D:
 ## hall's roof, so in practice it is in front of everything its picture reaches. It acquires the
 ## `buildings` atlas group itself, since it lives outside the building that otherwise holds it.
 class StationStack extends ScenerySprite:
+	## The city's library, handed before the stack enters the tree.
+	var atlas: AtlasLibrary
+
 	func _enter_tree() -> void:
-		AtlasLibrary.acquire(&"buildings")
+		atlas.acquire(&"buildings")
 
 	func _exit_tree() -> void:
-		AtlasLibrary.release(&"buildings")
+		atlas.release(&"buildings")
 
 	func _draw() -> void:
 		if not scenery_resident:
 			return
-		Sprites.draw_standing(self, AtlasLibrary.region(Building.POWER_STATION_STACK), Vector2.ZERO)
+		Sprites.draw_standing(self, atlas.region(Building.POWER_STATION_STACK), Vector2.ZERO)

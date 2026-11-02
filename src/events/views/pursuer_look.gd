@@ -34,7 +34,7 @@ func _draw_robber(canvas: CanvasItem) -> void:
 	# *her* — see `_robber_waiting_heading()`.
 	var heading := _robber_waiting_heading() if waiting else event.facing_now()
 	var view := _select_view(heading)
-	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## The robber's picture for this frame: waiting, his two-frame alert walk through his notice
@@ -58,7 +58,7 @@ func _draw_policeman(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var by_view := policeman_pictures()
 	var view := _select_view(event.facing_now())
-	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			EightDirection.is_mirrored(_view_sector))
 
 ## The policeman's picture for this frame: his alert, hand raised, for the second the man out of an

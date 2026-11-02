@@ -29,6 +29,10 @@ const _ICONS := {
 
 ## The line as last handed to `show_line()`, tokens unexpanded.
 var line := ""
+## The baked atlas pages the line's symbols are drawn from (`AtlasLibrary`), handed by its screen
+## before it enters the tree (`use_atlas()` on the HUD and the pause); a line nobody handed one (a
+## suite's) makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
 
 ## The control group `TouchControls` joins, so a line can ask which scheme is in force without any
 ## screen having to be handed the mode: the title screen chooses it at runtime, after the screens
@@ -36,10 +40,12 @@ var line := ""
 const CONTROLS_GROUP := &"touch_controls"
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"ui")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"ui")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"ui")
+	atlas.release(&"ui")
 
 ## Whether the chosen scheme is the joystick one — the only one that offers a Run disc, and so the
 ## only one where a line may name a run button. False when no `TouchControls` exists (a test, or
@@ -70,7 +76,7 @@ func show_line(new_line: String) -> void:
 		if at.x > 0:
 			add_text(rest.substr(0, at.x))
 		var token := rest.substr(at.x, at.y)
-		add_image(AtlasLibrary.region(_ICONS[token]), size, size, Color.WHITE,
+		add_image(atlas.region(_ICONS[token]), size, size, Color.WHITE,
 				INLINE_ALIGNMENT_CENTER)
 		rest = rest.substr(at.x + at.y)
 	pop()

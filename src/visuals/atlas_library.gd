@@ -1,18 +1,27 @@
 class_name AtlasLibrary
 extends RefCounted
-## The baked atlases, handed out by region name, one page per group.
+## The baked atlases' pages, handed out by region name, one page per group, and which of them are
+## held.
 ##
-## `tools/bake-atlases.sh` writes a page PNG per group and one region table into
-## `BAKED_ROOT` before the engine imports anything; this reads that table and answers
-## `region()` with an `AtlasTexture` over the page. **The page is the only texture a group
-## costs**: it is loaded on the first `acquire()` and dropped on the last `release()`, and
-## nothing here ever loads a constituent picture.
+## `tools/bake-atlases.sh` writes a page PNG per group and one region table into `BAKED_ROOT`
+## before the engine imports anything; a library is built over that table (`AtlasTable`) and
+## answers `region()` with an `AtlasTexture` over the page. **The page is the only texture a group
+## costs**: it is loaded on the first `acquire()` and dropped on the last `release()`, and nothing
+## here ever loads a constituent picture.
+##
+## **One library per sitting, handed to whoever draws.** The `Sitting` holds it (`Sitting.atlas`),
+## so the pages held for the life of the process (`hold_for_the_process()`) and the loading moments
+## outlive the scene reload a held restart makes, and `main` hands it to everything that acquires a
+## group or draws a region: the city hands it on to its furniture, its crowd and its events, the
+## screens to their buttons. Nothing fetches it. A node built with none handed (a suite's
+## hand-built city, stroller or button) makes its own when it first acquires, and its counts are
+## its own; a test hands the nodes it compares one fresh library instead.
 ##
 ## **A region is valid only while its group is acquired.** `region()` on an unacquired group
 ## is a programming error rather than a fallback — it says so with `push_error` and answers
 ## `null`, because the alternative, quietly loading the page, is exactly the second copy in
-## memory the atlases exist to prevent. Ask `native_size()` or `has_region()` instead when the
-## question is about geometry: both are answered from the region table with no texture loaded
+## memory the atlases exist to prevent. Ask the table (`AtlasTable.native_size()`,
+## `has_region()`) instead when the question is about geometry: it answers with no texture loaded
 ## at all, which is what a layout pass or a shadow's footprint needs.
 ##
 ## **A page may only be read from disk in a loading window.** `load()` blocks the frame that
@@ -24,21 +33,18 @@ extends RefCounted
 ## gate red. See `moment_for_a_load()` for the third state, before any boot has claimed the
 ## moments at all.
 ##
-## **The region table is loaded once and never dropped.** It is a few hundred rectangles, it is
-## needed to answer `native_size()` with nothing acquired, and re-reading it per group would
-## make the cheap questions cost a file read.
-##
 ## The bake shares this file's `region_name_for()`, `illustrated_path_for()` and `plan()`, so
 ## the name a picture is baked under, the PNG that stands in for it and where it lands on its
-## page are decided in one place rather than agreed between two.
+## page are decided in one place rather than agreed between two. They are static and hold
+## nothing, so the bake's headless `--script` run builds no library.
 
 ## Where the bake writes. Gitignored: a page is a build output, rebuilt from the sources on
 ## demand, and never committed.
 const BAKED_ROOT := "res://assets/atlases/baked/"
-## Region name -> group, rect and native size. Written by the bake, read here, and listed in
-## the Web preset's `include_filter` because a `.json` is not a resource and would otherwise
-## not be exported at all.
-const REGIONS_PATH := BAKED_ROOT + "regions.json"
+## The region table's own script (`AtlasTable`), preloaded rather than named: the bake compiles
+## this file in a headless `--script` run, where a checkout with no `.godot/` has no class-name
+## cache for a `class_name` to resolve against.
+const AtlasTableScript := preload("res://src/visuals/atlas_table.gd")
 ## Which group every picture belongs to, its lifetime and its padding kind. Checked in, and the
 ## one file a new consumer edits.
 const MEMBERSHIP_PATH := "res://assets/atlases/membership.json"
@@ -74,36 +80,44 @@ const MOMENT_OUTSIDE := &"OUTSIDE"
 ## no frame a load could stutter; `main`'s boot is the only thing that ever claims them.
 const MOMENT_UNMANAGED := &"unmanaged"
 
-static var _regions: Dictionary = {}
-static var _pages: Dictionary = {}
-static var _mode := ""
-static var _table_loaded := false
+## The region table this library's pages are cut by (`AtlasTable`), handed in at construction.
+var table: AtlasTableScript
+## Group -> its `Page`, one per group the table names, built with the library.
+var _pages: Dictionary = {}
 ## Whether a boot sequence owns the loading moments. False until `claim_the_loading_moments()`
 ## is called and again after `release_the_loading_moments()`.
-static var _moments_claimed := false
+var _moments_claimed := false
 ## The open window's own moment, or `&""` when it is shut.
-static var _window: StringName = &""
+var _window: StringName = &""
 ## Groups held for the life of the process, each holding exactly one reference of its own.
-static var _resident: Dictionary = {}
+var _resident: Dictionary = {}
 ## Group -> the moment its page was last read from disk in. What a test reads instead of
 ## provoking the error.
-static var _load_moments: Dictionary = {}
+var _load_moments: Dictionary = {}
+## Region name -> the `AtlasTexture` handed out for it while its group is acquired, so a draw
+## call's `region()` is one lookup. Each page lists the names it handed out, and its last release
+## drops them from here.
+var _textures: Dictionary = {}
 
 ## Group name -> the loaded page `Texture2D`, its reference count and its size.
 class Page extends RefCounted:
 	var texture: Texture2D = null
 	var count := 0
 	var size := Vector2i.ZERO
-	var padding := "transparent"
 	## When the page was last read from disk, so the line the release writes can say how long the
 	## page was actually resident. `-1` while nothing holds it.
 	var loaded_at_usec := -1
-	## Region name -> the `AtlasTexture` handed out for it, dropped with the page.
-	var textures: Dictionary = {}
-	## Which group's own file a load actually reads, for a `borrow_group_for_tests()` page whose
-	## key is a name no real consumer asks for. Empty for every real, baked group, which reads its
-	## own name's file the way it always has.
-	var disk_group: StringName = &""
+	## The region names handed out over this page (`AtlasLibrary._textures`), dropped with it.
+	var handed_out: Array[StringName] = []
+
+## A library over `region_table`, the baked one unless a caller hands another, with nothing
+## acquired and no moments claimed.
+func _init(region_table: AtlasTableScript = AtlasTableScript.baked()) -> void:
+	table = region_table
+	for group: StringName in table.groups():
+		var page := Page.new()
+		page.size = table.page_size(group)
+		_pages[group] = page
 
 # ------------------------------------------------------------------ the names ---
 
@@ -388,110 +402,18 @@ static func _split_free_rects(free_rects: Array[Rect2i], placed: Rect2i) -> void
 		if not redundant:
 			free_rects.append(deduped[i])
 
-# ------------------------------------------------------------------ the table ---
-
-## Reads the region table if it has not been read yet. Every public question calls this; a
-## missing table says so once and leaves every lookup answering its empty default, so a tree
-## whose atlases were never baked fails with one legible error rather than a hundred.
-static func _load_table() -> void:
-	if _table_loaded:
-		return
-	_table_loaded = true
-	if not FileAccess.file_exists(REGIONS_PATH):
-		push_error("No baked atlases at %s — run tools/bake-atlases.sh" % REGIONS_PATH)
-		return
-	var parser := JSON.new()
-	if parser.parse(FileAccess.get_file_as_string(REGIONS_PATH)) != OK:
-		push_error("Unreadable region table: %s" % REGIONS_PATH)
-		return
-	var data: Variant = parser.data
-	if not data is Dictionary or int((data as Dictionary).get("version", 0)) != 1:
-		push_error("Region table is not version 1: %s" % REGIONS_PATH)
-		return
-	var table: Dictionary = data
-	_mode = str(table.get("mode", ""))
-	var pages: Dictionary = table.get("pages", {})
-	for group: String in pages.keys():
-		var record: Dictionary = pages[group]
-		var page := Page.new()
-		var size: Array = record.get("size", [0, 0])
-		page.size = Vector2i(int(size[0]), int(size[1]))
-		page.padding = str(record.get("padding", "transparent"))
-		_pages[StringName(group)] = page
-	_regions = table.get("regions", {})
-
-## Which bake the tree carries, `"png"` or `"svg"`. The release is always `"png"`; a local
-## `tools/bake-atlases.sh --svg` is what produces the other.
-static func bake_mode() -> String:
-	_load_table()
-	return _mode
-
-## Every group the bake wrote a page for, sorted.
-static func groups() -> Array[StringName]:
-	_load_table()
-	var names: Array[StringName] = []
-	for group: StringName in _pages.keys():
-		names.append(group)
-	names.sort()
-	return names
-
-## Every region name in the table, sorted. The sweep a test walks.
-static func region_names() -> Array[StringName]:
-	_load_table()
-	var names: Array[StringName] = []
-	for name: String in _regions.keys():
-		names.append(StringName(name))
-	names.sort()
-	return names
-
-## Whether the bake knows this name, answered without loading anything.
-static func has_region(name: StringName) -> bool:
-	_load_table()
-	return _regions.has(String(name))
-
-## The picture's own size in pixels, answered from the table with no group acquired and no
-## texture loaded — what a layout, a shadow's footprint or an anchor needs. `Vector2i.ZERO` for
-## a name the bake does not know.
-static func native_size(name: StringName) -> Vector2i:
-	_load_table()
-	var record: Dictionary = _regions.get(String(name), {})
-	if record.is_empty():
-		return Vector2i.ZERO
-	var size: Array = record["size"]
-	return Vector2i(int(size[0]), int(size[1]))
-
-## Which group a region belongs to, or `&""` for a name the bake does not know.
-static func group_of(name: StringName) -> StringName:
-	_load_table()
-	var record: Dictionary = _regions.get(String(name), {})
-	return StringName(str(record.get("group", ""))) if not record.is_empty() else &""
-
-## The page's own size in pixels, from the table.
-static func page_size(group: StringName) -> Vector2i:
-	_load_table()
-	var page: Page = _pages.get(group)
-	return page.size if page != null else Vector2i.ZERO
-
-## The rect a region occupies on its page, from the table.
-static func region_rect(name: StringName) -> Rect2i:
-	_load_table()
-	var record: Dictionary = _regions.get(String(name), {})
-	if record.is_empty():
-		return Rect2i()
-	var rect: Array = record["rect"]
-	return Rect2i(int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]))
 
 # ----------------------------------------------------------- the two moments ---
 
 ## A boot takes ownership of the loading moments and opens its first window in one call.
 ##
-## **This is what turns the rule on for the rest of the process**: from here until
+## **This is what turns the rule on for this library from here on**: until
 ## `release_the_loading_moments()`, a page read from disk outside a window is an error. Only a
 ## boot may say it — `main._hold_every_page_a_day_draws()` is the one caller — because only a
-## boot knows that this process is a game somebody is about to watch. A process that never boots
-## one, which is every suite that builds a `Stroller`, a `City` or a `Crowd` by hand, stays
+## boot knows that this process is a game somebody is about to watch. A library no boot claims,
+## which is every one a suite builds by hand along with its `Stroller`, `City` or `Crowd`, stays
 ## `MOMENT_UNMANAGED` and loads as it always did.
-static func claim_the_loading_moments(moment: StringName) -> void:
+func claim_the_loading_moments(moment: StringName) -> void:
 	_moments_claimed = true
 	_window = moment
 
@@ -500,19 +422,19 @@ static func claim_the_loading_moments(moment: StringName) -> void:
 ##
 ## **A no-op where no boot has claimed the moments**, rather than a second way to claim them: a
 ## test that drives the day brief's screen on a hand-built `main` would otherwise turn the rule
-## on for every suite that ran after it, against nodes no boot ever held a page for.
-static func open_loading_window(moment: StringName) -> void:
+## on for a library no boot ever held a page in.
+func open_loading_window(moment: StringName) -> void:
 	if not _moments_claimed:
 		return
 	_window = moment
 
-static func close_loading_window() -> void:
+func close_loading_window() -> void:
 	_window = &""
 
-## Hands the moments back, so the process is `MOMENT_UNMANAGED` again. `main._exit_tree()` calls
+## Hands the moments back, so the library is `MOMENT_UNMANAGED` again. `main._exit_tree()` calls
 ## it, which is what lets the held restart — a whole scene reload — boot into a clean claim
 ## rather than into the previous `main`'s closed window.
-static func release_the_loading_moments() -> void:
+func release_the_loading_moments() -> void:
 	_moments_claimed = false
 	_window = &""
 
@@ -520,21 +442,22 @@ static func release_the_loading_moments() -> void:
 ## `MOMENT_OUTSIDE` when the moments are claimed and the window is shut, or `MOMENT_UNMANAGED`
 ## when no boot has claimed them. Asked without loading anything, which is how a test can state
 ## the rule without provoking a real engine error into the gate's output.
-static func moment_for_a_load() -> StringName:
+func moment_for_a_load() -> StringName:
 	if not _moments_claimed:
 		return MOMENT_UNMANAGED
 	return _window if _window != &"" else MOMENT_OUTSIDE
 
 ## The moment `group`'s page was last read from disk in, or `&""` if it has never been read.
-static func last_load_moment(group: StringName) -> StringName:
+func last_load_moment(group: StringName) -> StringName:
 	return _load_moments.get(group, &"")
 
 ## Takes the one reference that keeps `group` resident for the life of the process, and does
 ## nothing if it is already held. **This is what makes "nothing is unloaded that the next day
 ## might need" true by construction**: a consumer's own `_exit_tree()` release can then only ever
 ## drop the count back to this reference, never to nought, so a city torn down between two runs
-## or a node re-entering the tree never costs a reload.
-static func hold_for_the_process(group: StringName) -> void:
+## or a node re-entering the tree never costs a reload. The library outlives the scene reload
+## because the `Sitting` holds it.
+func hold_for_the_process(group: StringName) -> void:
 	if _resident.has(group):
 		return
 	_resident[group] = true
@@ -543,14 +466,14 @@ static func hold_for_the_process(group: StringName) -> void:
 ## Gives back a residency taken earlier. The one caller is a boot whose run draws the *other*
 ## parent than the last one did — a held restart rerolls the choice inside one process — and
 ## dropping a page nothing in the new run will draw is the whole point of splitting the two.
-static func stop_holding(group: StringName) -> void:
+func stop_holding(group: StringName) -> void:
 	if not _resident.has(group):
 		return
 	_resident.erase(group)
 	release(group)
 
 ## Whether `group` is one of the pages held for the life of the process.
-static func is_resident(group: StringName) -> bool:
+func is_resident(group: StringName) -> bool:
 	return _resident.has(group)
 
 # --------------------------------------------------------------- the lifetime ---
@@ -560,8 +483,7 @@ static func is_resident(group: StringName) -> bool:
 ## **The load is the thing the moments govern**, not the reference: every count after the first
 ## is free, which is why a consumer keeps its own `acquire()`/`release()` pair as the proof that
 ## the page is there while it draws.
-static func acquire(group: StringName) -> void:
-	_load_table()
+func acquire(group: StringName) -> void:
 	var page: Page = _pages.get(group)
 	if page == null:
 		push_error("No baked atlas group '%s'" % group)
@@ -571,8 +493,7 @@ static func acquire(group: StringName) -> void:
 		return
 	var moment := moment_for_a_load()
 	var started := Time.get_ticks_usec()
-	var disk_name := page.disk_group if page.disk_group != &"" else group
-	var path := BAKED_ROOT + String(disk_name) + ".png"
+	var path := BAKED_ROOT + String(group) + ".png"
 	var texture: Texture2D = load(path)
 	if texture == null:
 		push_error("Baked atlas page missing: %s" % path)
@@ -619,8 +540,7 @@ static func _note(kind: String, text: String) -> void:
 ## say a page went when it did not. A page held for the life of the process
 ## (`hold_for_the_process()`) never reaches this in an ordinary run; the held restart's swap of one
 ## parent's page for the other's is what does.
-static func release(group: StringName) -> void:
-	_load_table()
+func release(group: StringName) -> void:
 	var page: Page = _pages.get(group)
 	if page == null:
 		push_error("No baked atlas group '%s'" % group)
@@ -631,7 +551,9 @@ static func release(group: StringName) -> void:
 	page.count -= 1
 	if page.count > 0:
 		return
-	page.textures.clear()
+	for name in page.handed_out:
+		_textures.erase(name)
+	page.handed_out.clear()
 	page.texture = null
 	var held := Time.get_ticks_usec() - page.loaded_at_usec
 	page.loaded_at_usec = -1
@@ -639,14 +561,12 @@ static func release(group: StringName) -> void:
 			% [group, held / 1000000.0, page.size.x, page.size.y])
 
 ## Whether `group` currently holds its page.
-static func is_acquired(group: StringName) -> bool:
-	_load_table()
+func is_acquired(group: StringName) -> bool:
 	var page: Page = _pages.get(group)
 	return page != null and page.count > 0
 
 ## How many references `group` is holding, which is what a test asserts the counting on.
-static func reference_count(group: StringName) -> int:
-	_load_table()
+func reference_count(group: StringName) -> int:
 	var page: Page = _pages.get(group)
 	return page.count if page != null else 0
 
@@ -659,35 +579,32 @@ static func reference_count(group: StringName) -> int:
 ## **Null when the group is not acquired**, with an error naming the region — see the class
 ## note. The `AtlasTexture` is cached per name and dropped with the page, so a draw call costs a
 ## dictionary lookup and a released group leaves nothing behind.
-static func region(name: StringName) -> AtlasTexture:
-	_load_table()
-	var key := String(name)
-	var record: Dictionary = _regions.get(key, {})
-	if record.is_empty():
-		push_error("No baked region '%s'" % key)
+func region(name: StringName) -> AtlasTexture:
+	var cached: AtlasTexture = _textures.get(name)
+	if cached != null:
+		return cached
+	var group := table.group_of(name)
+	if group == &"":
+		push_error("No baked region '%s'" % name)
 		return null
-	var group := StringName(str(record["group"]))
 	var page: Page = _pages.get(group)
 	if page == null or page.texture == null:
-		push_error("Region '%s' asked for while its group '%s' is not acquired" % [key, group])
+		push_error("Region '%s' asked for while its group '%s' is not acquired" % [name, group])
 		return null
-	if page.textures.has(key):
-		return page.textures[key]
-	var rect: Array = record["rect"]
 	var texture := AtlasTexture.new()
 	texture.atlas = page.texture
-	texture.region = Rect2(int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]))
+	texture.region = Rect2(table.region_rect(name))
 	# So a neighbour's pixel is never sampled across a region's own edge — see `PADDING`.
 	texture.filter_clip = true
-	page.textures[key] = texture
+	_textures[name] = texture
+	page.handed_out.append(name)
 	return texture
 
 ## The whole page as a CPU image, for the ground compositor, which composes its TileSet out of
 ## the page's pixels rather than drawing regions. Loaded on demand and **not cached**: it is a
 ## megabyte-scale image wanted once per day repaint and holding it would be the second resident
 ## copy this class exists to avoid. Answers null for an unknown group.
-static func page_image(group: StringName) -> Image:
-	_load_table()
+func page_image(group: StringName) -> Image:
 	var page: Page = _pages.get(group)
 	if page == null:
 		push_error("No baked atlas group '%s'" % group)
@@ -706,49 +623,3 @@ static func page_image(group: StringName) -> Image:
 	if image.get_format() != Image.FORMAT_RGBA8:
 		image.convert(Image.FORMAT_RGBA8)
 	return image
-
-## Drops every page and re-reads the table, so a suite that bakes or swaps one starts clean.
-## Hands the loading moments back with them: a suite that drove a boot's own claim must not
-## leave the next suite's hand-built nodes acquiring against a window that boot closed.
-static func reset_for_tests() -> void:
-	_regions = {}
-	_pages = {}
-	_mode = ""
-	_table_loaded = false
-	_resident = {}
-	_load_moments = {}
-	release_the_loading_moments()
-
-# ------------------------------------------------------------- the test seam ---
-
-## A page name no real consumer ever asks for, backed by `source_group`'s own baked file so the
-## load it provokes is a genuine disk read of a genuine page rather than a fabricated one.
-##
-## **Every real group now has a runtime consumer** (see the class note's own list, and every
-## `acquire(` under `src/`), so a suite proving `acquire()`/`release()`'s telemetry lines has
-## nothing it can ask for on a real group's own name without its precondition depending on
-## whether some other suite's live node already holds it. Borrowing a name instead means the
-## count this suite watches starts at nought regardless of anything else in the process, and
-## `forget_test_group()` is how it leaves no trace once the suite is done — unlike
-## `reset_for_tests()`, which zeroes every group at once and would desync a real consumer's own
-## count if one is still in the tree from an earlier suite.
-static func borrow_group_for_tests(source_group: StringName) -> StringName:
-	_load_table()
-	var name := StringName("__test_only__" + String(source_group))
-	var source: Page = _pages.get(source_group)
-	if source == null:
-		push_error("No baked atlas group '%s' to borrow for a test" % source_group)
-		return name
-	var page := Page.new()
-	page.size = source.size
-	page.padding = source.padding
-	page.disk_group = source_group
-	_pages[name] = page
-	return name
-
-## Drops the page `borrow_group_for_tests()` added, and every count, residency or load-moment
-## record it left, so nothing about it survives into a suite that runs after.
-static func forget_test_group(name: StringName) -> void:
-	_pages.erase(name)
-	_resident.erase(name)
-	_load_moments.erase(name)

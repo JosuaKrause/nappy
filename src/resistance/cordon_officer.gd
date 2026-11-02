@@ -35,11 +35,17 @@ func _ready() -> void:
 	# is added, so drawn from where he stands rather than gliding in from the origin.
 	reset_physics_interpolation()
 
+## The baked atlas pages he is drawn from (`AtlasLibrary`): the city's, handed by the cordon that
+## stands him up; an officer nobody handed one makes his own when he first enters the tree.
+var atlas: AtlasLibrary = null
+
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"events")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"events")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"events")
+	atlas.release(&"events")
 
 ## This frame's walk: the way he faces and how far he moved.
 func walk(heading: Vector2, moved: float) -> void:
@@ -60,5 +66,5 @@ func picture() -> String:
 func _draw() -> void:
 	Sprites.draw_shadow(self, Vector2.ZERO, SHADOW)
 	var lift := absf(sin(_travelled * BOB_PER_PX)) * BOB_HEIGHT if _moving else 0.0
-	Sprites.draw_standing(self, AtlasLibrary.region(StringName(picture())),
+	Sprites.draw_standing(self, atlas.region(StringName(picture())),
 			Vector2(0.0, -lift), Vector2.ZERO, EightDirection.is_mirrored(_sector))

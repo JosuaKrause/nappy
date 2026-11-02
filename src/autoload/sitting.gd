@@ -62,6 +62,12 @@ var frame_timing := FrameTiming.new()
 ## reload that frees `main`.
 var ground_recipe := GroundRecipe.new()
 
+## The baked atlas pages and which of them are held (`AtlasLibrary`): one library per process,
+## held here so the pages a boot holds for the process, and the loading moments it claimed, outlive
+## the reload that frees `main`, and a held restart reads no page from disk again. `main` hands it
+## to everything that acquires a group or draws a region.
+var atlas := AtlasLibrary.new()
+
 ## Stamps the held restart's reload — see `restarted_at_msec`.
 func note_restart_requested() -> void:
 	restarted_at_msec = Time.get_ticks_msec()

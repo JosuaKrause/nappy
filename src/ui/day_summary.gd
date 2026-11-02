@@ -69,6 +69,13 @@ var _touch := TouchInput.available()
 func use_touch(touch: bool) -> void:
 	_touch = touch
 
+## Hands the screen's two buttons the baked atlas pages their symbols are drawn from
+## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
+## screen built anywhere else leaves them to make their own.
+func use_atlas(atlas: AtlasLibrary) -> void:
+	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).atlas = atlas
+	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).atlas = atlas
+
 func _ready() -> void:
 	# The summary has to keep running while it pauses everything behind it.
 	process_mode = Node.PROCESS_MODE_ALWAYS

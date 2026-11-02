@@ -15,7 +15,7 @@ const _ELIGIBLE: Array[GameEnums.TileType] = [
 	GameEnums.TileType.SIDEWALK, GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE,
 ]
 
-## `AtlasLibrary` region names in the "decoration" group, in the order `Placed.texture_index`
+## Region names in the "decoration" atlas group, in the order `Placed.texture_index`
 ## indexes into — `CityDecals._draw()` is the one place that turns an index back into a picture.
 const APPLE := &"props/litter_apple"
 const NEWSPAPER := &"props/litter_newspaper"

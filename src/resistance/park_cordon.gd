@@ -1318,6 +1318,7 @@ func _tape_up(stretch: Stretch) -> void:
 	if not _city:
 		return
 	var tape := CordonTape.new()
+	tape.atlas = _city.atlas
 	tape.piece = CordonTape.Piece.TAPE
 	tape.across = stretch.across()
 	tape.length = stretch.length()
@@ -1339,6 +1340,7 @@ func _plant_a_post(at: Vector2) -> void:
 	if not _city:
 		return
 	var post := CordonTape.new()
+	post.atlas = _city.atlas
 	post.piece = CordonTape.Piece.POST
 	post.position = at
 	_posts.append(post)
@@ -1444,6 +1446,7 @@ func _make_figure(officer: Officer) -> void:
 	if not _city:
 		return
 	var figure := CordonOfficer.new()
+	figure.atlas = _city.atlas
 	figure.position = officer.at
 	officer.node = figure
 	_city.add_entity(figure)

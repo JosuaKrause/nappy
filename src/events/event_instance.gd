@@ -671,6 +671,9 @@ var _may_park_on_commit := true
 ## call into a second function made every player's frame measurably longer on a desktop
 ## (docs/evidence/m159-frame-record-2026-10-04/).
 var timing := FrameTiming.new()
+## The baked atlas pages this event's look draws from (`AtlasLibrary`), handed in by whoever makes
+## it (`EventSpawner.create()`, from its manager's own), which holds the events' group on it.
+var atlas: AtlasLibrary
 
 ## **A drawn frame only redraws.** What the event does is stepped on the physics tick by its manager
 ## (`step()`); here it takes the draw layer its warning puts it on (`_take_the_layer_it_warns_on()`),

@@ -56,6 +56,12 @@ var _run: RunState
 func use_run(run: RunState) -> void:
 	_run = run
 
+## Hands the HUD's teaching line the baked atlas pages its symbols are drawn from (`AtlasLibrary`).
+## Called by `main` before the HUD enters the tree, so the line acquires on it; a HUD built
+## anywhere else leaves the line to make its own.
+func use_atlas(atlas: AtlasLibrary) -> void:
+	(get_node(^"Root/Teach") as HelpText).atlas = atlas
+
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `DaySummary` and `PauseScreen` use. No longer chosen between two wordings for the walking,
 ## running and pause lessons — those now name the tap on every device, since nothing on screen

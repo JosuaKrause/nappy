@@ -107,7 +107,7 @@ func _draw_spread_slices(segment_picture: String, cap: String, canvas: CanvasIte
 			if not cap.is_empty():
 				for side: float in _cap_sides(event.runs_vertically(), true):
 					_draw_cap(canvas, cap, cap_size, origin, half, side)
-		Sprites.draw_standing(canvas, EventPictures.drawn(segment_picture), origin + feet[i],
+		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, segment_picture), origin + feet[i],
 				_spread_extent(width, thickness))
 		if i == segments - 1 and not cap.is_empty():
 			for side: float in _cap_sides(event.runs_vertically(), false):
@@ -259,6 +259,7 @@ func _build_the_scenery_of(slice: Slice) -> void:
 	var size := EventPictures.native_size(picture)
 	var thickness := size.x if event.runs_vertically() else size.y
 	var scenery := EventScenery.new()
+	scenery.atlas = event.atlas
 	scenery.configure(picture, _spread_extent(half * 2.0, thickness),
 			_wide_scene_anchor(event.runs_vertically(), half),
 			EventPictures.wide_scene_shadow(picture) if slice.index == 0 \
@@ -336,7 +337,7 @@ func _release_the_slices() -> void:
 ## One end cap of a spread, standing at its end of the run — see `_draw_spread`.
 func _draw_cap(canvas: CanvasItem, cap: String, cap_size: Vector2, origin: Vector2, half: float,
 		side: float) -> void:
-	Sprites.draw_standing(canvas, EventPictures.drawn(cap),
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, cap),
 			origin + event.spread_at(_cap_offset(half, _cap_along(cap_size), side)), cap_size)
 
 ## Which end caps are drawn before the segments (`behind` true) and which after, as the `side` of
@@ -377,21 +378,21 @@ func _draw_wide_scene(picture: String, canvas: CanvasItem, only := -1,
 	if only <= 0:
 		var shadow := EventPictures.wide_scene_shadow(picture)
 		if not shadow.is_empty() and canvas != event.rim():
-			canvas.draw_texture_rect(EventPictures.drawn(shadow), whole, false, Palette.SHADOW)
+			canvas.draw_texture_rect(EventPictures.drawn(event.atlas, shadow), whole, false, Palette.SHADOW)
 		else:
 			# No authored ground-contact art for this axis (only `car_accident` has one either
 			# way) — the shape's own capsule shadow follows the same span as the body, `-half` to
 			# `half` along the spread axis.
 			_draw_body_shadow(canvas, origin)
 	if only < 0:
-		Sprites.draw_standing(canvas, EventPictures.drawn(picture), anchor, extent)
+		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, picture), anchor, extent)
 		return
 	var clip := _wide_scene_band(only)
 	clip.position += origin
 	var band := whole.intersection(clip)
 	if not band.has_area():
 		return
-	var texture := EventPictures.drawn(picture)
+	var texture := EventPictures.drawn(event.atlas, picture)
 	var texels := texture.get_size() / whole.size
 	canvas.draw_texture_rect_region(texture, band,
 			Rect2((band.position - whole.position) * texels, band.size * texels))

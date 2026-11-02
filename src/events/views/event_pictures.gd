@@ -1079,29 +1079,30 @@ static func largest_mark_rect() -> Rect2:
 ## The one baked page everything in this file draws from.
 const ATLAS_GROUP := &"events"
 
-## The picture to draw: a region of the `events` page, whose own `get_size()` is the source
-## picture's size, so every offset, extent, anchor and mirror below reads exactly the number it
-## read from a preloaded texture.
+## The picture to draw: a region of the `events` page on `atlas`, the library the event was handed
+## (`EventInstance.atlas`), whose own `get_size()` is the source picture's size, so every offset,
+## extent, anchor and mirror below reads exactly the number it read from a preloaded texture.
 ##
 ## **Null, with an engine error naming the region, if nothing holds the page** — `AtlasLibrary`'s
 ## own rule, and the reason `EventManager` acquires the group rather than trusting the boot's
 ## residency. Nothing here defends against that: a drawing that quietly fell back to loading the
 ## picture itself is the second resident copy the milestone exists to remove.
-static func drawn(picture: String) -> AtlasTexture:
-	return AtlasLibrary.region(StringName(picture))
+static func drawn(atlas: AtlasLibrary, picture: String) -> AtlasTexture:
+	return atlas.region(StringName(picture))
 
 ## A picture's own size, answered from the region table with nothing acquired and no texture
 ## loaded — what the layout arithmetic around a spread, a café rank, a protest rank or a badge
 ## needs, as a `Vector2` like a texture's `get_size()`.
 static func native_size(picture: String) -> Vector2:
-	return Vector2(AtlasLibrary.native_size(StringName(picture)))
+	return Vector2(AtlasTable.baked().native_size(StringName(picture)))
 
 ## The basement vent's floor grate, for the building to lay at every vent
 ## (`BuildingPlan.grates()`, `SteamGrates.lay()`) — see `STEAM_GRATE`
-## for why no instance draws it. Fetched here rather than by name there, so the region is still
-## named in this file with every other picture of the page.
-static func steam_grate() -> AtlasTexture:
-	return drawn(STEAM_GRATE)
+## for why no instance draws it — as a region of `atlas`, the library the building's events hold the
+## page on. Fetched here rather than by name there, so the region is still named in this file with
+## every other picture of the page.
+static func steam_grate(atlas: AtlasLibrary) -> AtlasTexture:
+	return drawn(atlas, STEAM_GRATE)
 
 ## Every picture a row with this look can draw, as repository paths.
 ##

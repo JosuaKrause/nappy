@@ -135,10 +135,10 @@ func heading_key() -> Vector2i:
 ## since a fresh entry never lands mid-turn.
 func entry_clearance(vertical: bool) -> float:
 	if vertical:
-		var body := AtlasLibrary.native_size(region_of(BODY_BY_VIEW["front"]))
+		var body := AtlasTable.baked().native_size(region_of(BODY_BY_VIEW["front"]))
 		var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH + float(CANVAS_BOTTOM_MARGIN["front"])
 		return maxf(south_reach, float(body.y) - south_reach)
-	var side := AtlasLibrary.native_size(region_of(BODY_BY_VIEW["side"]))
+	var side := AtlasTable.baked().native_size(region_of(BODY_BY_VIEW["side"]))
 	return float(side.x) * 0.5
 
 func palette() -> Array:
@@ -171,9 +171,8 @@ static func body_anchor(view_name: String, forward: Vector2) -> Vector2:
 ## `bob()`**, so what stays on the ground, a car's wheels and its shadow, is drawn back down by the
 ## same amount here, and the body and the trim are drawn where the lift puts them. That split is the
 ## whole of the bob: the wheels never move, the paint and the glass above them rise and fall about a
-## pixel. Reads `AtlasLibrary.region()`, which is null with an engine error the moment `crowd` is not
-## acquired; `Crowd.start_day()` acquires it before an agent exists to draw and `Crowd.clear()`
-## releases it once every agent is freed.
+## pixel. Reads the agent's library's `region()`, which is null with an engine error the moment
+## `crowd` is not acquired; `Crowd.start_day()` acquires it before an agent exists to draw.
 func draw_body(canvas: CanvasItem) -> void:
 	var frame := sector()
 	var flip := flipped()
@@ -184,9 +183,9 @@ func draw_body(canvas: CanvasItem) -> void:
 	# The same heading the shadow above and the debug view's bounding box are drawn on, so the
 	# picture cannot register against a car that is not there.
 	var anchor := body_anchor(view_name, forward)
-	var body := AtlasLibrary.region(region_of(BODY_BY_VIEW[view_name]))
-	var trim := AtlasLibrary.region(region_of(TRIM_BY_VIEW[view_name]))
-	var wheels := AtlasLibrary.region(region_of(WHEELS_BY_VIEW[view_name]))
+	var body := _agent.atlas.region(region_of(BODY_BY_VIEW[view_name]))
+	var trim := _agent.atlas.region(region_of(TRIM_BY_VIEW[view_name]))
+	var wheels := _agent.atlas.region(region_of(WHEELS_BY_VIEW[view_name]))
 	Sprites.draw_standing(canvas, body, anchor, Vector2.ZERO, flip, _agent.colour)
 	Sprites.draw_standing(canvas, trim, anchor, Vector2.ZERO, flip)
 	# Last: each tyre is drawn over the paint.
