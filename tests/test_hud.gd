@@ -11,8 +11,6 @@ extends RefCounted
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 
 func run(t) -> void:
-	# Moves the observers' count only when a run is under way in the process, which depends on the suites before it.
-	t.gives_back_observers()
 	_test_the_run_hint_fires_once_on_the_teaching_day(t)
 	_test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t)
 	_test_the_run_hint_never_fires_off_the_teaching_day(t)
