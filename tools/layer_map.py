@@ -180,7 +180,6 @@ STATIC_CACHES: dict[str, str] = {
     "WalkerStrategy._soft_sealed_today": "a constant mover",
     "WalkerStrategy._bodies_today": "a constant mover",
     "CarStrategy._car_today": "a constant mover",
-    "ReachabilityGrid._mask_components": "the components of a 2x2 mask, pure geometry",
     "ResistanceSteps._all": "the calendar, built once from constants",
     "EventFootprints._warning_sizes": "sizes read off the baked pictures, the same on every read",
     "EventFootprints._warning_guard": "a size read off the baked pictures, the same on every read",
@@ -720,13 +719,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "GroundLayers",
         "the ground's manifest is read once into statics (hidden-statics)",
         ("src/city/city.gd",),
-    ),
-    Exception_(
-        "static",
-        "SealPlanner",
-        "the seal candidates are held in statics (hidden-statics)",
-        ("src/events/day_planner.gd",),
-        more=(("src/events/day_planner.gd", 2),),
     ),
     Exception_(
         "static",
