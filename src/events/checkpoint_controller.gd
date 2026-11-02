@@ -143,7 +143,7 @@ func crossing_door() -> EventInstance:
 ## camera has left her, and the two seconds are a toll rather than a place —
 ## *"it works in both directions with the same cost each time"* is the recorded rule, and fields
 ## that keep charging through the hold make the same crossing cost whatever happens to stand beside
-## that particular door. `Tuning.EXCITEMENT_DECAY_IDLE` is already zero, so nothing gives back
+## that particular door. `Baby.EXCITEMENT_DECAY_IDLE` is already zero, so nothing gives back
 ## either: with everything else silenced the hold is exactly `Tuning.CHAT_EXCITEMENT` and nothing
 ## more.
 ##

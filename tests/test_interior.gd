@@ -1507,7 +1507,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 	# The age each man stopped waiting at: his warning's own start, since his notice clock is held.
 	var warned_at: Array[float] = []
 	var at := 0.0
-	while at < Tuning.FINALE_LENGTH_SECONDS:
+	while at < RunConfig.FINALE_LENGTH_SECONDS:
 		# Told where she is before the manager's tick steps them, and where each stood going in.
 		var stood := {}
 		var was_leaving_by_id := {}
@@ -1566,7 +1566,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 				% [gap, EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS])
 	t.check(gaps > 0, "there were gaps between his runs to measure (%d)" % gaps)
 	print("The masked man came %d times in %.0fs; gaps measured: %d"
-			% [appeared.size(), Tuning.FINALE_LENGTH_SECONDS, gaps])
+			% [appeared.size(), RunConfig.FINALE_LENGTH_SECONDS, gaps])
 	events.free()
 	scene.free()
 
@@ -1781,7 +1781,7 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 
 	var steam := EventCatalogue.by_id("basement_steam")
 	var vents := BuildingEvents.vents(events)
-	t.check(vents.size() == Tuning.FINALE_STEAM_PERIODS.size(),
+	t.check(vents.size() == BuildingPlan.FINALE_STEAM_PERIODS.size(),
 			"the corridor has one vent per period in `Tuning` (%d)" % vents.size())
 	t.check(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS > InteriorScene.TILE * 0.5,
 			"a blowing vent holds her centre %.0fpx out against the %.0fpx half-width of a one-tile "
@@ -1811,16 +1811,16 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 	t.check(spacing > (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0,
 			"consecutive vents leave a pocket she fits in (%.0fpx apart)" % spacing)
 	# The gap a vent leaves has to be long enough to cross its own reach with time over — the floor
-	# `Tuning.FINALE_STEAM_PERIODS`' own doc derives, asked of the numbers rather than restated.
+	# `BuildingPlan.FINALE_STEAM_PERIODS`' own doc derives, asked of the numbers rather than restated.
 	var crossing := (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0 / Tuning.WALK_SPEED
-	for period: float in Tuning.FINALE_STEAM_PERIODS:
+	for period: float in BuildingPlan.FINALE_STEAM_PERIODS:
 		t.check(period - EventCatalogue.FINALE_STEAM_BLOWS_FOR >= crossing + 1.0,
 				("a %.1fs vent leaves %.2fs of open corridor against the %.2fs it takes to walk "
 				% [period, period - EventCatalogue.FINALE_STEAM_BLOWS_FOR, crossing])
 				+ "through its reach, a margin of %.2fs"
 				% (period - EventCatalogue.FINALE_STEAM_BLOWS_FOR - crossing))
 	print("Basement vents: %d, %.0fpx apart at the closest, periods %s; a crossing costs %.2fs"
-			% [vents.size(), spacing, Tuning.FINALE_STEAM_PERIODS, crossing])
+			% [vents.size(), spacing, BuildingPlan.FINALE_STEAM_PERIODS, crossing])
 	events.free()
 	scene.free()
 
@@ -1945,7 +1945,7 @@ func _test_a_vent_never_closes_around_her(t: Node) -> void:
 	var charged := 0.0
 	var solid_while_she_was_in_it := 0
 	var blowing := false
-	while live < Tuning.FINALE_LENGTH_SECONDS and not blowing:
+	while live < RunConfig.FINALE_LENGTH_SECONDS and not blowing:
 		events._physics_process(STEP)
 		for instance in events.instances():
 			if instance.def.id != "basement_steam" or instance.global_position != inside:
@@ -2032,7 +2032,7 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
 		cost += blow.excitement.contribution_at(Vector2(STAND_AT, 0.0)) * STEP
 		elapsed += STEP
 	print("One blow of steam, stood %.0fpx from the vent for %.2fs: %.1f points awake, %.1f asleep"
-			% [STAND_AT, elapsed, cost, cost * Tuning.SLEEPING_SENSITIVITY])
+			% [STAND_AT, elapsed, cost, cost * Baby.SLEEPING_SENSITIVITY])
 	t.check(cost >= 40.0 and cost <= 50.0,
 			"one blow costs 40 to 50 points awake at %.0fpx (%.1f)" % [STAND_AT, cost])
 	blow.free()
@@ -2045,7 +2045,7 @@ func _longest_both_shut(a: EventScheduler.Planned, b: EventScheduler.Planned, st
 	var longest := 0.0
 	var run := 0.0
 	var at := 0.0
-	while at < Tuning.FINALE_LENGTH_SECONDS:
+	while at < RunConfig.FINALE_LENGTH_SECONDS:
 		if _is_shut(a, at, steam) and _is_shut(b, at, steam):
 			run += STEP
 			longest = maxf(longest, run)
@@ -2066,7 +2066,7 @@ func _is_shut(vent: EventScheduler.Planned, at: float, steam: EventDef) -> bool:
 			and phase < steam.telegraph_time + EventCatalogue.FINALE_STEAM_BLOWS_FOR
 
 ## *"Let's not replenish the meter in the basement it's a tense situation."* (inbox #765 in minty-lemur) The
-## scene answers the baby's `decay_multiplier()` with `Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`
+## scene answers the baby's `decay_multiplier()` with `InteriorScene.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`
 ## (nothing) at every tile of the basement's corridor and with an ordinary 1.0 in every other part
 ## of the building, so a blow's points stay on the meter until she is out.
 func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
@@ -2078,7 +2078,7 @@ func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
 	var worst := 0.0
 	for tile in walk:
 		worst = maxf(worst, scene.decay_multiplier(scene.map.tile_to_world(tile)))
-	t.check(worst == 0.0 and Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER == 0.0,
+	t.check(worst == 0.0 and InteriorScene.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER == 0.0,
 			"no tile of the basement corridor gives any decay back (%.2f)" % worst)
 	for part in InteriorMap.PARTS:
 		if part == "basement":
@@ -2119,7 +2119,7 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: Node) -> void:
 	# answers where she is drawn without building the whole stroller.
 	var her := Node2D.new()
 	scene.add_entity(her)
-	t.check(BuildingEvents.vents(events).size() == Tuning.FINALE_STEAM_PERIODS.size(),
+	t.check(BuildingEvents.vents(events).size() == BuildingPlan.FINALE_STEAM_PERIODS.size(),
 			"the basement has its vents (%d)" % BuildingEvents.vents(events).size())
 	for vent: EventScheduler.Planned in BuildingEvents.vents(events):
 		var grate := _grate_at(grates, vent.position)
@@ -2240,7 +2240,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 	# *"All windows always need to flash together. A single window cannot flash by itself."*
 	t.check(scene.windows_lit() == scene.window_count(),
 			"every one of the %d, together (%d lit)" % [scene.window_count(), scene.windows_lit()])
-	scene._process(Tuning.FINALE_WINDOW_FLASH_SECONDS + 0.01)
+	scene._process(InteriorScene.FINALE_WINDOW_FLASH_SECONDS + 0.01)
 	t.check(not scene.windows_are_flashing(), "and they go dark again a frame or two later")
 	t.check(scene.windows_lit() == 0, "all of them, with none left lit (%d)" % scene.windows_lit())
 	# Every coming of a row from outside lights them, not only a repeat: a plan that comes once, in
@@ -2295,8 +2295,8 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	var total := 0.0
 	for _draw in DRAWS:
 		var wait := scene._wait_for_the_next_distant_flash()
-		if wait < Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS \
-				or wait > Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS:
+		if wait < InteriorScene.FINALE_DISTANT_FLASH_MIN_SECONDS \
+				or wait > InteriorScene.FINALE_DISTANT_FLASH_MAX_SECONDS:
 			outside += 1
 		waits.append(wait)
 		total += wait
@@ -2305,7 +2305,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	var median: float = waits[DRAWS / 2]
 	t.check(outside == 0,
 			"every wait is inside [%.1fs, %.1fs] (%d of %d were not)"
-			% [Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS, Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS,
+			% [InteriorScene.FINALE_DISTANT_FLASH_MIN_SECONDS, InteriorScene.FINALE_DISTANT_FLASH_MAX_SECONDS,
 			outside, DRAWS])
 	t.check(absf(mean - Tuning.FINALE_DISTANT_FLASH_MEAN_SECONDS) <= 0.05,
 			"the mean wait is %.3fs against the %.2fs the shape constant is solved for"
@@ -2348,7 +2348,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	print("Window flashes over %.0fs: %d, against %d explosions" % [SPAN, flashes, bangs])
 
 	var instances := events.instances().size()
-	scene._physics_process(Tuning.FINALE_DISTANT_FLASH_MAX_SECONDS + 0.01)
+	scene._physics_process(InteriorScene.FINALE_DISTANT_FLASH_MAX_SECONDS + 0.01)
 	t.check(events.instances().size() == instances,
 			"a distant flash creates nothing, so it can charge nothing (%d instances either side)"
 			% instances)

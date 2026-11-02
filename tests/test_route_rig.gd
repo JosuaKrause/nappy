@@ -119,8 +119,8 @@ func _teardown(t) -> void:
 	GameState.resistance.failed_steps = _saved_failed
 	GameState.resistance.progress = _saved_progress
 	GameState.resistance.carrying_package = _saved_package
-	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0.0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0.0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0.0)
 	_stroller.free()
 	_resistance.free()
 	_city.free()
@@ -717,7 +717,7 @@ func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t) -> vo
 			== Vector2.INF, "a day has no tunnel or bridge to walk to")
 	var tunnel := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.TUNNEL))
 	var bridge := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.BRIDGE))
-	clock.spec = DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	clock.spec = DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	clock.spec.exits = {CityEdge.Kind.TUNNEL: tunnel, CityEdge.Kind.BRIDGE: bridge}
 	t.check(rig._resolve_target("tunnel") == tunnel, "'tunnel' resolves to the spec's tunnel")
 	t.check(rig._resolve_target("bridge") == bridge, "'bridge' resolves to the spec's bridge")

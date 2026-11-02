@@ -10,6 +10,6 @@ priority: later
 
 > "we can do option 1 and take the radius into account as well. meaning we compute numbers close by and at various distances. those numbers gets automatically computed/updated but also checked in so we can see in the diff where the balance changed"
 
-What the player feels near a source is its `intensity`, averaged over its pulse, scaled by `Tuning.SLEEPING_SENSITIVITY` (0.55) when the baby sleeps, shaped by `inner_radius`, `outer_radius` and `falloff_power`, less `Tuning.EXCITEMENT_DECAY_WALKING`: several numbers nothing ties together, so moving one silently re-prices every row.
+What the player feels near a source is its `intensity`, averaged over its pulse, scaled by `Baby.SLEEPING_SENSITIVITY` (0.55) when the baby sleeps, shaped by `inner_radius`, `outer_radius` and `falloff_power`, less `Tuning.EXCITEMENT_DECAY_WALKING`: several numbers nothing ties together, so moving one silently re-prices every row.
 
 **Read as:** "later" in the player's answer is the band.

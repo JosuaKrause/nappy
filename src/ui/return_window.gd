@@ -30,6 +30,8 @@ const IGNORED_MSEC := 500
 
 ## The `Time.get_ticks_msec()` reading at which the window ends, or `0` for no window.
 var _ignored_until_msec := 0
+## The milliseconds the window is measured on: the wall clock unless `use_clock()` hands another.
+var _clock: Callable = Time.get_ticks_msec
 ## Whether the game has been left since the window last opened. **A return needs a departure:** the
 ## page's own first focus at load is not a return, and a player's first tap in the half second after
 ## the page loads must reach the game. Set by a departure, spent by the arming.
@@ -54,9 +56,15 @@ func setup(viewport: Viewport, no_focus_pause: bool, rig: bool) -> void:
 	_viewport.set_disable_input(false)
 	_listen_on_the_web()
 
+## The milliseconds the window starts and ends on, a callable answering an `int`. A window never
+## handed one reads the wall clock (`Time.get_ticks_msec()`), so its half second is a real one; a
+## clock that moves by hand lets a caller step across the window's end without waiting it out.
+func use_clock(clock: Callable) -> void:
+	_clock = clock
+
 ## Whether the window is still running.
 func ignoring_input() -> bool:
-	return Time.get_ticks_msec() < _ignored_until_msec
+	return _clock.call() < _ignored_until_msec
 
 func _process(_delta: float) -> void:
 	end()
@@ -87,7 +95,7 @@ func _arm() -> void:
 	if not _has_left_the_game or _no_focus_pause or _rig or _viewport == null:
 		return
 	_has_left_the_game = false
-	_ignored_until_msec = Time.get_ticks_msec() + IGNORED_MSEC
+	_ignored_until_msec = int(_clock.call()) + IGNORED_MSEC
 	_viewport.set_disable_input(true)
 
 ## Puts input back once the window has passed, or at once with `force`.

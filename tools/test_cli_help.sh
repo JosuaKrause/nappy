@@ -880,10 +880,12 @@ out="$(cd "$names_repo" && ./tools/new-name.sh playtest "No words left" 2>&1)"
 status=$?
 check_that "new-name.sh refuses when every pair is taken, and writes nothing" \
     '[[ $status -ne 0 && $(ls "$names_repo/docs/playtests" | wc -l | tr -d " ") -eq 1 ]]'
+printf 'busy\nswift\n' > "$names_repo/tools/names/adjectives.txt"
 first="$(cd "$names_repo" && ./tools/new-name.sh review --entry busy-otter "Look at it" 2>/dev/null)"
 second="$(cd "$names_repo" && ./tools/new-name.sh review --entry busy-otter "Look again" 2>/dev/null)"
-check_that "new-name.sh names a review item after its entry, and a second one with -2" \
-    '[[ "$first" == 2026-09-27-busy-otter && "$second" == 2026-09-27-busy-otter-2 ]]'
+printf 'busy\n' > "$names_repo/tools/names/adjectives.txt"
+check_that "new-name.sh names a review item after its entry, and a second one with a drawn pair, never a number" \
+    '[[ "$first" == 2026-09-27-busy-otter && "$second" =~ ^2026-09-27-busy-otter-[a-z]+-[a-z]+$ && -s "$names_repo/docs/review/$second.md" ]]'
 printf 'otter\nheron\n' > "$names_repo/tools/names/animals.txt"
 fresh="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-29 decision "Moved out of a docstring" 2>/dev/null)"
 check_that "new-name.sh marks a decision drawn without --entry as not from an entry" \
@@ -917,9 +919,37 @@ lint_in_names_repo() {
     (cd "$names_repo" && ./tools/lint.sh "$@" >/dev/null 2>&1)
 }
 lint_in_names_repo docs/todo/2026-09-27-busy-otter/README.md docs/review/2026-09-27-busy-otter.md \
-    docs/review/2026-09-27-busy-otter-2.md docs/decisions/2026-09-26-M210.md
+    "docs/review/$second.md" docs/decisions/2026-09-26-M210.md
 status=$?
 check_that "lint.sh passes an entry, its review items and an old entry's decision sharing a name" '[[ $status -eq 0 ]]'
+printf '# cold-fish — A long slug\n' > "$names_repo/docs/decisions/2026-09-27-cold-fish-big-tank.md"
+printf '# Playtest big-tank\n' > "$names_repo/docs/playtests/2026-09-20-big-tank.md"
+lint_in_names_repo docs/decisions/2026-09-27-cold-fish-big-tank.md
+status=$?
+rm "$names_repo/docs/decisions/2026-09-27-cold-fish-big-tank.md" "$names_repo/docs/playtests/2026-09-20-big-tank.md"
+check_that "lint.sh skips a four-word slug whose first two words are no entry, as it skips any longer slug" \
+    '[[ $status -eq 0 ]]'
+printf '# busy-otter — Further · 2026-09-27\n' > "$names_repo/docs/decisions/2026-09-27-busy-otter-feathery-gecko.md"
+lint_in_names_repo docs/decisions/2026-09-27-busy-otter-feathery-gecko.md
+status=$?
+check_that "lint.sh accepts a further record named after its entry" '[[ $status -eq 0 ]]'
+mkdir -p "$names_repo/docs/todo/2026-09-20-feathery-gecko"
+printf 'priority: later\n\n# feathery-gecko — Another entry\n' > "$names_repo/docs/todo/2026-09-20-feathery-gecko/README.md"
+lint_in_names_repo docs/decisions/2026-09-27-busy-otter-feathery-gecko.md
+status=$?
+rm -r "$names_repo/docs/todo/2026-09-20-feathery-gecko"
+rm "$names_repo/docs/decisions/2026-09-27-busy-otter-feathery-gecko.md"
+check_that "lint.sh rejects a further record whose own pair another entry already uses" '[[ $status -ne 0 ]]'
+for entry_words in cold-fish warm-yak; do
+    mkdir -p "$names_repo/docs/todo/2026-11-03-$entry_words"
+    printf 'priority: later\n\n# %s — An entry\n' "$entry_words" > "$names_repo/docs/todo/2026-11-03-$entry_words/README.md"
+    printf '# %s — Further · 2026-11-03\n' "$entry_words" > "$names_repo/docs/decisions/2026-11-03-$entry_words-feathery-gecko.md"
+done
+lint_in_names_repo docs/decisions/2026-11-03-cold-fish-feathery-gecko.md docs/decisions/2026-11-03-warm-yak-feathery-gecko.md
+status=$?
+rm -r "$names_repo/docs/todo/2026-11-03-cold-fish" "$names_repo/docs/todo/2026-11-03-warm-yak"
+rm "$names_repo/docs/decisions/2026-11-03-cold-fish-feathery-gecko.md" "$names_repo/docs/decisions/2026-11-03-warm-yak-feathery-gecko.md"
+check_that "lint.sh rejects one second pair under two entries of the same date" '[[ $status -ne 0 ]]'
 printf '# Playtest busy-otter — A second thing\n' > "$names_repo/docs/playtests/2026-09-28-busy-otter.md"
 lint_in_names_repo docs/playtests/2026-09-28-busy-otter.md
 status=$?
@@ -1024,6 +1054,14 @@ line="$(cd "$queue_repo" && ./tools/queue.sh --band parked)"
 check_that "queue.sh counts an after naming a closed entry (a record, no folder) as satisfied, shown as closed" \
     '[[ $status -eq 0 && "$line" == *"(after 2026-09-04-gone-bird, closed)" ]]'
 rm "$queue_repo/docs/decisions/2026-09-04-gone-bird.md"
+printf '# gone-bird — Built · 2026-09-04\n' > "$queue_repo/docs/decisions/2026-09-04-gone-bird-brisk-heron.md"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nafter: 2026-09-04-gone-bird')" "slow-owl — Parked"
+(cd "$queue_repo" && ./tools/queue.sh --check)
+status=$?
+line="$(cd "$queue_repo" && ./tools/queue.sh --band parked)"
+check_that "queue.sh counts an after naming an entry whose only record is a named further record as closed" \
+    '[[ $status -eq 0 && "$line" == *"(after 2026-09-04-gone-bird, closed)" ]]'
+rm "$queue_repo/docs/decisions/2026-09-04-gone-bird-brisk-heron.md"
 add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 line="$(cd "$queue_repo" && ./tools/queue.sh --band next | tail -n 1)"
 check_that "queue.sh --band prints one band, each line with its title and what it waits on" \

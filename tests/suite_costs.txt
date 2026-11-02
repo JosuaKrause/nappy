@@ -100,6 +100,7 @@ test_resistance_steps.gd 9870
 test_resistance_traps.gd 13494
 test_return_patrols.gd 1579
 test_rig_press.gd 23
+test_route_building.gd 70000
 test_route_lines.gd 13859
 test_route_rig.gd 30489
 test_route_tree.gd 27422

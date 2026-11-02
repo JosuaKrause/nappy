@@ -270,7 +270,7 @@ func close() -> void:
 
 ## Whether the Hard Mode checkbox is checked — read by `main._on_title_start()` as the title is
 ## dismissed, and only for a new game, the one time the box is shown. `false` for a `TitleScreen`
-## built without its scene, which has no box to check — the bare rigs `tests/test_save.gd` drives
+## built without its scene, which has no box to check — the bare rigs `tests/test_save_wiring.gd` drives
 ## `main._on_title_start()` through.
 func hard_mode_checked() -> bool:
 	return _hard_mode != null and _hard_mode.visible and _hard_mode.button_pressed

@@ -22,6 +22,15 @@ extends Node
 ## which exceeds the screen's own half-diagonal, so the jump is never on screen to be drawn
 ## sliding in the first place.
 
+## How long the neighbor's walk home takes on day 10, from the moment her mark is touched: the
+## director starts them this far from her door along the walk (`ResistanceDirector.
+## _send_the_neighbor_home()`), and reaching the door is the deadline — walked home into the
+## vans. Chosen, not measured, and open to overturn once the late days are timed: at
+## `EventCatalogue.NEIGHBOR_WALK_SPEED` (46px/s) it is about eighty tiles of walk, which puts
+## them several blocks out in the city on every city, while she, at twice that pace, can
+## still meet them on their way in from anywhere she found the mark. A curfew day is 180s.
+const NEIGHBOR_WALK_HOME_SECONDS := 55.0
+
 ## The day the first chalk mark can appear, and so the first day anything is guarded or any
 ## robber is set on her — nothing is offered before it.
 const TRAP_FIRST_DAY := 6
@@ -2219,13 +2228,13 @@ func _silence_the_mast() -> void:
 ## How far from where she touched the mark the neighbor has to start, at least: off screen, so they
 ## walk into view rather than appear in it — the same distance an unseen mark is kept at.
 const NEIGHBOR_CLEAR_OF_HER := NOTICE_RADIUS
-## How far either side of the walk `Tuning.NEIGHBOR_WALK_HOME_SECONDS` asks for a start may be, in
+## How far either side of the walk `NEIGHBOR_WALK_HOME_SECONDS` asks for a start may be, in
 ## tiles of walk: the band a draw is made from, rather than the one ring of tiles at exactly that
 ## distance, which a closure or a park can leave empty.
 const NEIGHBOR_WALK_BAND_TILES := 8
 
 ## Day 10's neighbor, out in the city and walking home: spawned on a sidewalk about
-## `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their own walk from her door, off screen from her, and
+## `NEIGHBOR_WALK_HOME_SECONDS` of their own walk from her door, off screen from her, and
 ## given the walk itself as a path — down the day's own walking distance to the doorstep, over
 ## ground the day's closures and bodies leave open (`_reach_blocked`, the director's own
 ## reachability answer), on sidewalks and crossings where they reach and over any walkable ground
@@ -2244,7 +2253,7 @@ func _send_the_neighbor_home() -> EventInstance:
 	var on_foot := _reach_blocked.duplicate()
 	for tile in _map.tiles_of_type(GameEnums.TileType.ROAD):
 		on_foot[tile] = true
-	var wanted := roundi(Tuning.NEIGHBOR_WALK_HOME_SECONDS * def.speed / Tuning.TILE_SIZE)
+	var wanted := roundi(NEIGHBOR_WALK_HOME_SECONDS * def.speed / Tuning.TILE_SIZE)
 	for blocked: Dictionary in [on_foot, _reach_blocked]:
 		var field := _map.walk_field(door, blocked)
 		var start := _a_neighbor_start(field, wanted)
@@ -3042,7 +3051,7 @@ func _on_contact_completed(step_index: int) -> void:
 ## see a yeller. after touching the mark a marble bag with 1/3 chance of yeller should be put in so
 ## the yeller is guaranteed to encounter a yeller in the next three events" · inbox #561 in coral-bunny: "day 11 is
 ## going to be a x=3", then "let's make the other rigged bags smaller, too".)* The route's bag is
-## rigged with a bag of `Tuning.TASK_CONTACT_WITHIN_THE_NEXT` (`VAN_WITHIN_THE_NEXT` for the van,
+## rigged with a bag of `ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT` (`VAN_WITHIN_THE_NEXT` for the van,
 ## `MAST_WITHIN_THE_NEXT` for the mast) marbles, the row and the rest drawn from the bag she was drawing from
 ## (`EventManager.rig_her_route()`), and the place it names is put ahead of her on the branch she is
 ## walking. It is **besides** the contact `_begin_step()` placed near the mark, never instead of it:

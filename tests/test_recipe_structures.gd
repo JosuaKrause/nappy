@@ -80,7 +80,7 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t, runtime: SceneRecipeRun
 		player: Stroller, baby: Baby) -> void:
 	player.global_position = city.map.tile_to_world(Vector2i(16, 16))
 	city.events.use_player(player)
-	var escape := MAIN.escape_section_spec(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	var escape := MAIN.escape_section_spec(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	var errors := runtime.install(city, player, baby, escape)
 	t.check(errors.is_empty() and runtime.walk_spec == escape,
 			"an escape scene is installed into the spec it is handed: %s" % [errors])

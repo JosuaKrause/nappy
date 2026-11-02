@@ -125,12 +125,10 @@ func _reset_globals() -> void:
 	GameSave.configure(null)
 	GameSave._path_override = ""
 	GameSave._uses_save_override = null
-	SaveIndicator._home_override = null
+	SaveIndicator.use_home(null)
 	FrameRecord.on = false
 	FrameRecord.ledger = null
-	ControlsMode._remembered = false
-	ControlsMode._remembered_mode = ControlsMode.Mode.TAP
-	ControlsMode._remembered_side = ControlsMode.Side.LEFT
+	ControlsMode.forget()
 	TitleScreen._restarted_at_msec = -INF
 
 ## Every suite, or the ones whose file name contains one of `filters`.

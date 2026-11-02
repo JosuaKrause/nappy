@@ -58,9 +58,9 @@ func _test_every_planned_day_keeps_the_invariant(t) -> void:
 			for area in ClosurePlanner.calm_areas(map):
 				if StreetNetwork.route_count(home, area.access, closed, 1) >= 1:
 					reachable += 1
-			t.check(reachable >= Tuning.MIN_CALM_AREAS_REACHABLE,
+			t.check(reachable >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
 					"seed %d day %d: %d calm areas can still be walked to, need %d"
-					% [map.seed_used, day, reachable, Tuning.MIN_CALM_AREAS_REACHABLE])
+					% [map.seed_used, day, reachable, ClosurePlanner.MIN_CALM_AREAS_REACHABLE])
 
 ## docs/CITY.md's oldest exemption: the home is a notch in a block with one exit, so sealing
 ## the street outside it seals the player in however well connected the rest of the city is.
@@ -363,7 +363,7 @@ func _enough_calm_is_reachable(map: CityMap, grid: ReachabilityGrid,
 				break
 		if found:
 			reachable += 1
-			if reachable >= Tuning.MIN_CALM_AREAS_REACHABLE:
+			if reachable >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE:
 				return true
 	return false
 

@@ -13,6 +13,30 @@ extends RefCounted
 ## the basement, and the explosions outside. **Deterministic from the stream handed in**, so a retry
 ## handed the same seed is the same building rather than an easier one.
 
+## The basement's steam vents, one entry per vent: how often each one blows, in seconds.
+##
+## *"Have multiple fixed locations with steam that fully block the path and have them turn off an
+## on in different intervals so it becomes a timing puzzle."* **The count is the length of this
+## list rather than a second constant**, so a vent without a period of its own is not a thing that
+## can be written down.
+##
+## **Three, and no two periods share a factor with each other**, which is the whole of what makes
+## the corridor a puzzle instead of a rhythm: 8, 9 and 11 half-seconds are pairwise coprime, so the
+## pattern the three of them make together only repeats after their product — 396s, more than twice
+## the whole sequence's own clock — and she never walks the same corridor twice. Three rather than
+## more because the basement's corridor is about forty tiles end to end and a vent closes it
+## outright: a fourth would make the walk a queue of gates rather than a route with waits in it.
+##
+## **The floor under all three is what one crossing costs, not taste.** *(2026-09-19: "the steam
+## frequencies are too slow.")* A vent stands on a one-tile cell and holds her centre
+## `EventCatalogue.STEAM_VENT_BODY` + `Tuning.PLAYER_BODY_RADIUS` (16 + 14 = 30px) out, so clearing it
+## means covering 60px — 0.65s at `Tuning.WALK_SPEED` (92px/s). A vent's corridor is shut for
+## `EventCatalogue.FINALE_STEAM_BLOWS_FOR` and open for the rest of its period, so the shortest period leaves
+## `4.0 − 2.0 = 2.0s` of open corridor against that 0.65s: a second and a third of margin, which is
+## the "at least a second" a gate owes somebody who started walking a moment too late. Anything
+## under 3.7s would stop owing it.
+const FINALE_STEAM_PERIODS: Array[float] = [4.0, 4.5, 5.5]
+
 ## Which stairwell the fire closes, and it is **always the left one** *(2026-09-19: "there should be
 ## a fire on the left like it is right now but the top floor right side should be completely blocked
 ## off with rubble")*. The two have to agree: the rubble shuts the right stairwell off the top floor,
@@ -46,12 +70,20 @@ static func plan(map: InteriorMapPlan, rng: RandomNumberGenerator) -> Array[Even
 ## in the shaft stays reachable: its reach is its own 30px body plus her 14px, and the door tile is
 ## 64px from the cell it stands on.
 static func _place_the_fire(map: InteriorMapPlan, plans: Array[EventScheduler.Planned]) -> void:
-	var landing := map.waypoint("stairwell_%s:landing_second" % BURNING_SIDE)
-	var at := landing + Vector2i.DOWN
-	if landing == InteriorMapPlan.NOWHERE or not map.is_walkable(at):
+	var at := fire_tile(map)
+	if at == InteriorMapPlan.NOWHERE:
 		push_error("the second floor's approach in the %s shaft is not walkable" % BURNING_SIDE)
 		return
 	plans.append(EventScheduler.Planned.new(EventCatalogue.building_fire(), map.tile_to_world(at)))
+
+## The tile the fire stands on, or `InteriorMapPlan.NOWHERE` where the second floor's approach in the
+## burning shaft is not walkable. What a walker keeps off to take the way past it.
+static func fire_tile(map: InteriorMapPlan) -> Vector2i:
+	var landing := map.waypoint("stairwell_%s:landing_second" % BURNING_SIDE)
+	var at := landing + Vector2i.DOWN
+	if landing == InteriorMapPlan.NOWHERE or not map.is_walkable(at):
+		return InteriorMapPlan.NOWHERE
+	return at
 
 ## The masked man, at the foot of the shaft the fire did not take, running its whole height, and
 ## another of him this long after the last has run out of the top (`masked_pursuer.repeat_after`).
@@ -71,6 +103,21 @@ static func _place_the_masked_man(map: InteriorMapPlan,
 		path.append(map.tile_to_world(tile))
 	plans.append(EventScheduler.Planned.new(EventCatalogue.by_id("masked_pursuer"), path[0], path))
 
+## The shaft's ground **below the first floor's landing**, where the masked man starts and runs the
+## whole of it before he reaches the first floor: the cells of his walk from the foot up to, not
+## including, `stairwell_<side>:landing_first`. Above it she can run to the first floor's door in the
+## time he takes to climb here, which is what the notice's distance is measured to allow
+## (`EventCatalogue._masked_pursuer()`); on it she meets him with nowhere to stand but his line. What a
+## walker keeps off to leave the shaft by the first floor's door. Empty where the shaft has no walk.
+static func pursuer_ground_below_the_first_floor(map: InteriorMapPlan) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	var landing := map.waypoint("stairwell_%s:landing_first" % PURSUED_SIDE)
+	for tile in map.stairwell_walk("stairwell_%s" % PURSUED_SIDE):
+		if tile == landing:
+			return found
+		found.append(tile)
+	return []
+
 ## The mouse a third of the way along the basement's own corridor, and the vents on its narrows.
 ##
 ## Measured as a walk from the entry rather than written as tile offsets, so nothing here depends on
@@ -79,7 +126,7 @@ static func _place_the_masked_man(map: InteriorMapPlan,
 ##
 ## **The vents are not rolled** — *"multiple fixed locations"* — so a lost section is the same puzzle
 ## again: each on its own narrow (`InteriorMapPlan.vent_sites()`), each coming again on its own period
-## out of `Tuning.FINALE_STEAM_PERIODS`, and staggered so the three do not open the whole corridor at
+## out of `FINALE_STEAM_PERIODS`, and staggered so the three do not open the whole corridor at
 ## once on the first pass; after that their own periods do it. Between blows there is no instance at
 ## all, so a vent that is off costs nothing and stops nobody; its grate stays on the floor
 ## (`grates()`).
@@ -95,7 +142,7 @@ static func _place_the_basement(map: InteriorMapPlan, rng: RandomNumberGenerator
 	# crossing indoors (`EventInstance._alley_crossing_path()`), with no alley to roll one from.
 	rng.randf()
 	var sites := map.vent_sites()
-	var periods: Array[float] = Tuning.FINALE_STEAM_PERIODS
+	var periods: Array[float] = FINALE_STEAM_PERIODS
 	if sites.size() != periods.size():
 		push_error("the basement corridor offers %d one-tile gates for %d steam vents"
 				% [sites.size(), periods.size()])

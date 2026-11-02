@@ -35,6 +35,7 @@ class CheckCitationsTests(unittest.TestCase):
         "docs/playtests/2026-10-03-twin-name.md": "# One\n",
         "docs/decisions/2026-10-04-twin-name.md": "# Two\n",
         "docs/decisions/2026-09-26-polite-marten.md": "# Polite marten\n",
+        "docs/decisions/2026-09-26-polite-marten-brisk-heron.md": "# Polite marten, further\n",
         "README.md": "Not governed (no-such-name).\n",
     }
 
@@ -92,6 +93,10 @@ class CheckCitationsTests(unittest.TestCase):
 
     def test_a_name_that_is_no_file_is_flagged(self) -> None:
         self.flagged("A rule (woolly-pengiun #759).\n", "(woolly-pengiun) names no file")
+
+    def test_a_named_further_record_of_an_entry_is_cited_by_its_full_name(self) -> None:
+        self.skill("A rule (polite-marten-brisk-heron).\n")
+        self.assertEqual(self.run_check()[0], 0)
 
     def test_a_name_that_is_two_files_is_flagged(self) -> None:
         self.flagged("A rule (twin-name).\n", "(twin-name) names more than one file")

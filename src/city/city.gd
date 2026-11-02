@@ -133,7 +133,7 @@ const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
 ## the ground its own recovery also lightens what a crossing itself loads.
 ##
 ## **An alley sits between the two** — pressured ground rather than a shortcut to recovery, which
-## is what keeps `Tuning.EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning something: it sits just
+## is what keeps `Baby.EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning something: it sits just
 ## under the 3.5/s an alley gives back, so an empty alley is very nearly flat and is never quite
 ## recovery.
 const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
@@ -1135,7 +1135,7 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 ## No second layer: `GroundLayers.build_tile_set()` already gave every kerb source
 ## (`GroundTiles.ROUTE_KERB_SOURCES`) a tinted twin (`GroundTiles.route_twin_of`), composed with the
 ## `curbstone` component (or, where the bake carries whole authored tiles, the stone's own fill) blended toward
-## `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA` — so the paving around the stone is
+## `Palette.ROUTE_KERB_TINT` by `GroundLayers.ROUTE_KERB_TINT_ALPHA` — so the paving around the stone is
 ## untouched. This only ever decides *which* cells qualify and re-sets each straight onto `_ground`
 ## at its twin, same atlas coordinates: the two can never disagree about a cell's coordinates,
 ## because there is only the one layer. A twin that was never registered (an incomplete art drop)

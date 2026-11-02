@@ -1080,12 +1080,17 @@ func _settle_starting_camera() -> void:
 	var starting_camera := get_viewport().get_camera_2d()
 	if not starting_camera or not _player:
 		return
-	starting_camera.offset = Vector2(_player.facing.x,
-			_player.facing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
-	starting_camera.force_update_scroll()
-	starting_camera.reset_smoothing()
-	starting_camera.reset_physics_interpolation()
-	starting_camera.force_update_scroll()
+	settle_camera_on(starting_camera, _player)
+
+## Puts `camera` on `player` with her facing lead, at once and with no smoothing left to arrive: the
+## first view of a scripted scene is the player, not a camera travelling to her.
+static func settle_camera_on(camera: Camera2D, player: Stroller) -> void:
+	camera.offset = Vector2(player.facing.x,
+			player.facing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	camera.force_update_scroll()
+	camera.reset_smoothing()
+	camera.reset_physics_interpolation()
+	camera.force_update_scroll()
 
 ## Holds a scripted scene on the exact view it begins with. A camera of its own leaves the
 ## stroller's ordinary follow untouched, so free play and every recipe without `camera.fixed`
@@ -1314,8 +1319,8 @@ func activity_snapshot() -> Dictionary:
 	return result
 
 func _release_input() -> void:
-	TouchControls._set_axis(&"move_left", &"move_right", 0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0)
 	Input.action_release("run")
 
 func _exit_tree() -> void:

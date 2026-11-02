@@ -71,8 +71,11 @@ holds the player's words alone; somebody else's report reaches one only as a sum
 numbered** (PLAYTEST-144 6). `tools/new-name.sh <kind> "<title>"` draws
 `<date>-<adjective>-<animal>`, writes the file or the entry's folder with its heading and date, and
 prints the name, which is spoken and linked by its two words ("busy-badger"); sorting a folder puts
-the newest last. The playtests that already have a number keep it, and so do the entries and records
-that already have one.
+the newest last. A further record or review item of an entry is named too,
+`<entry name>-<adjective>-<animal>`. So is every piece of an entry's work: an item file is named,
+and so is the label a brief, a PR title or a record title gives a part of a step, never "part B3",
+"slice 4" or "2a/4" (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca). The playtests that already have a
+number keep it, and so do the entries and records that already have one.
 
 - **A playtest** is `docs/playtests/<name>.md`.
 - **A queue entry** is a folder, `docs/todo/<name>/`. Its `README.md` opens with the entry's band,
@@ -91,7 +94,7 @@ that already have one.
 - **A decision** is `docs/decisions/<entry name>.md`, written by the PR that builds the work
   (**committing**); when an entry's last item goes, its folder goes in the same commit.
 - **A review item** is `docs/review/<entry name>.md` (`tools/new-name.sh review --entry <name>`,
-  which takes `-2` and on for a second item from one entry): what to do, where to look, and the
+  which names a second item from one entry with a drawn pair of words, never a number): what to do, where to look, and the
   question a run answers, its steps written as prose rather than numbered.
 
 **An entry whose work is mostly built is closed, and what is left of it is filed fresh** (inbox #926 in

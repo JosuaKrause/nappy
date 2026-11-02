@@ -17,6 +17,18 @@ extends RefCounted
 ## (`RunState.calendar.day_rng(day, "happenings")`), so nothing here moves a draw the director
 ## or the scheduler makes.
 
+const COLUMN_BY := 100.0
+## The column comes once she is this close to the main road's middle, across it — about a screen's
+## half-width and a block — or at `COLUMN_BY` into the day whatever she is doing.
+const COLUMN_WITHIN := 480.0
+## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
+## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
+##
+## Day 11's market is sited ahead of her on her route once she has walked as long as day 3's fire
+## waits (`EventDirector.ON_HER_WAY_AFTER`); if nothing on her way has qualified by this far into
+## the day, it goes where she is not looking, so the city has lost it whichever way she walked.
+const MARKET_GONE_BY := 90.0
+
 ## The day the neighbor is out in the city rather than leaving at dawn, and the day of the raid.
 ## Named here rather than read off `ResistanceSteps` because the neighbor's mornings are the story
 ## whether or not this run is ever offered the task.
@@ -243,14 +255,14 @@ func _maybe_raid(her: Vector2) -> void:
 ## **Permanent because it is the block's own arc.** Only a block whose arc is waiting to board up
 ## is a candidate, and it takes that step today rather than on its own later day
 ## (`CityState.advance_now()`), so it is boarded for the rest of the run and a lost day gives it
-## back with the dawn's photograph. If nothing on her way has qualified by `Tuning.MARKET_GONE_BY`,
+## back with the dawn's photograph. If nothing on her way has qualified by `MARKET_GONE_BY`,
 ## the candidate nearest her that she cannot see goes instead: the city loses its market whichever
 ## way she walked. A city whose arcs board nothing after day 11 has no market to lose, and says so
 ## in the run log.
 func _maybe_the_market(delta: float, her: Vector2) -> void:
 	if her == Vector2.INF or not _city or not _map:
 		return
-	if _walked < EventDirector.ON_HER_WAY_AFTER and _elapsed < Tuning.MARKET_GONE_BY:
+	if _walked < EventDirector.ON_HER_WAY_AFTER and _elapsed < MARKET_GONE_BY:
 		return
 	_look_in -= delta
 	if _look_in > 0.0:
@@ -262,7 +274,7 @@ func _maybe_the_market(delta: float, her: Vector2) -> void:
 		trace.note("contact", "no block is waiting to board up, so there is no market to lose")
 		return
 	var block := _market_ahead_of(her, candidates)
-	if block.x < 0 and _elapsed >= Tuning.MARKET_GONE_BY:
+	if block.x < 0 and _elapsed >= MARKET_GONE_BY:
 		block = _market_out_of_her_sight(her, candidates)
 	if block.x >= 0:
 		board_up(block)
@@ -383,8 +395,8 @@ func is_closing() -> bool:
 ## **Day 13: a column on the main road, coming on her way** — the morning the army arrives, when
 ## the convoys start (`military_convoy`'s `first_day`). `Tuning.COLUMN_TRUCKS` army trucks, one
 ## behind the other `Tuning.COLUMN_SPACING` apart in one lane of the spine, sent down it toward the
-## point level with her once she comes within `Tuning.COLUMN_WITHIN` of the main road — or at
-## `Tuning.COLUMN_BY` into the day wherever she is, when it passes out of her sight. Each truck is
+## point level with her once she comes within `COLUMN_WITHIN` of the main road — or at
+## `COLUMN_BY` into the day wherever she is, when it passes out of her sight. Each truck is
 ## the catalogue's own row with its own telegraph contract, and the column arrives the way
 ## everything from off screen does (`EventManager.warn_first()`): its badge goes up first, alone for
 ## at most `Tuning.WARNING_ALONE_MAX`, pointing up the main road, and the trucks are then created in
@@ -401,8 +413,8 @@ func is_closing() -> bool:
 func _maybe_the_column(her: Vector2) -> void:
 	if her == Vector2.INF or not _city or not _city.events or _map.main_road < 0:
 		return
-	var near := absf(her.x - _spine_x()) <= Tuning.COLUMN_WITHIN
-	if not (near and _walked >= EventDirector.ON_HER_WAY_AFTER) and _elapsed < Tuning.COLUMN_BY:
+	var near := absf(her.x - _spine_x()) <= COLUMN_WITHIN
+	if not (near and _walked >= EventDirector.ON_HER_WAY_AFTER) and _elapsed < COLUMN_BY:
 		return
 	# Still owed when the lane has no place off screen for it yet (she is at the road's very end):
 	# asked again as she moves.

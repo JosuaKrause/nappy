@@ -15,6 +15,14 @@ extends RefCounted
 ## `DevFlags` is the parser and the flag manifest the shell tools read; what each flag means is
 ## its getter's doc there.
 
+## How long one section of the escape runs, on top of a real `DayController`'s own clock — each
+## section is its own day with a brief and a restart checkpoint of its own, and the player's
+## answer was *"180s per section"*. Stated on its own rather than reused from the ordinary day's
+## length: the player asked that *"the escape shouldn't be easy!"* (`docs/playtests/PLAYTEST-121.md`),
+## so the escape does not grow when the ordinary day does. Asked alongside the ordinary day's
+## length and not yet answered whether it should grow too — open to overturn.
+const FINALE_LENGTH_SECONDS := 180.0
+
 ## What a refused write says. A warning rather than an error: a test can watch for it through a
 ## `Logger` without the engine's error line failing the run it is in.
 const REFUSED := "RunConfig is resolved once at boot and never changes; a write was refused"
@@ -36,6 +44,11 @@ var _movie := false:
 
 # ------------------------------------------------------------------ the gates ---
 
+## The null display server a headless run boots against: no window, so no player, and the
+## run never touches the player's save (`GameSave.uses_save()`). Read from the process once, at
+## boot (`at_boot()`); a test that wants the saving of a windowed run parses `false`.
+var headless := true:
+	set(value): headless = _write(headless, value)
 ## A debug build: the gate on every command-line flag.
 var debug_build := false:
 	set(value): debug_build = _write(debug_build, value)
@@ -203,19 +216,21 @@ static var _at_boot: RunConfig
 static func at_boot() -> RunConfig:
 	if _at_boot == null:
 		_at_boot = parse(OS.get_cmdline_user_args(), DevFlags.page_query(), OS.is_debug_build(),
-				OS.has_feature("movie"))
+				OS.has_feature("movie"), {}, DisplayServer.get_name() == "headless")
 	return _at_boot
 
 ## The configuration `args` and `query` describe on a build that is (`debug_build`) or is not a
-## debug one, recorded by the movie writer or not, with a loaded recipe's data on top or `{}`.
+## debug one, recorded by the movie writer or not, with a loaded recipe's data on top or `{}`, on a
+## headless display server (the default: a test's run has no window) or a windowed one.
 ## Pure in its inputs: a test builds the run it wants by passing the words it would type.
 static func parse(args: PackedStringArray, query: String, debug_build: bool,
-		recording_movie := false, recipe_data: Dictionary = {}) -> RunConfig:
+		recording_movie := false, recipe_data: Dictionary = {}, headless_display := true) -> RunConfig:
 	var flags := DevFlags.new(args, query, debug_build, recording_movie, recipe_data)
 	var config := RunConfig.new()
 	config._given = args.duplicate()
 	config._movie = recording_movie
 	config.debug_build = debug_build
+	config.headless = headless_display
 	config.readout_requested = flags.readout_requested()
 	config.live_debug = flags.live_debug_requested()
 	config.web_debug_flag_used = flags.web_debug_flag_used()
@@ -288,7 +303,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 ## This run with a loaded recipe's data on top: the recipe's seed, day, escape part and parent in
 ## place of the flags' own. Parsed again from the same words and query, never from the process.
 func with_recipe(recipe_data: Dictionary) -> RunConfig:
-	return parse(_given, page_query, debug_build, _movie, recipe_data)
+	return parse(_given, page_query, debug_build, _movie, recipe_data, headless)
 
 # --------------------------------------------------------------- what follows ---
 
@@ -300,7 +315,7 @@ func day_length_for(day: int) -> float:
 ## How long one escape section runs: a day's own clock, compressed by `--day-length` exactly as a
 ## day is, since each section is a day.
 func escape_section_length() -> float:
-	return day_length_override if day_length_override > 0.0 else Tuning.FINALE_LENGTH_SECONDS
+	return day_length_override if day_length_override > 0.0 else FINALE_LENGTH_SECONDS
 
 ## Seconds until a rig quits itself: `--after` when given, else the length of the day it plays.
 func rig_quit_seconds() -> float:

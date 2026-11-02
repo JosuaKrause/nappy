@@ -14,7 +14,7 @@ extends Node
 ## is, and `Stroller.is_idle()` — built for the baby's own sleepiness read — cannot tell the two
 ## apart; reading `global_position` instead is what makes the flag answer "did she actually get
 ## anywhere" rather than "is a key down", and it is what lets a human's hands (`tools/run.sh`) and
-## `RouteRig`'s scripted input (`--route`, which presses the same `TouchControls._set_axis()` a
+## `RouteRig`'s scripted input (`--route`, which presses the same `TouchControls.set_axis()` a
 ## human's held key does) trigger it on exactly the same terms.
 ##
 ## **Watched only while the day is running, not paused, and not on a brief, summary or death

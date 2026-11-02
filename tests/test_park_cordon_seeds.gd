@@ -7,7 +7,7 @@ extends RefCounted
 ## blocked, under the director's own answer to what the day has blocked (`EventScheduler.
 ## blocked_by()`), and it stands clear of every body and every field a body carries; and **she
 ## sees them coming in time** — the first officer is in the camera's view of the swing at least the
-## walk from the swing to the gap plus `Tuning.PARK_CLOSING_WARNING` before it closes, so setting
+## walk from the swing to the gap plus `ParkCordon.PARK_CLOSING_WARNING` before it closes, so setting
 ## off at a walk a second after first sight gets her out. Both are checked here against the map
 ## and the clock, not against what the cordon says of itself. `tests/probes/plush_marten_cordon.gd`
 ## prints the same measurements as a table. And **a person walked out stays out**: with her
@@ -29,7 +29,7 @@ const LARGE_PARK_SEED := 90210
 const STEP := 1.0 / 60.0
 const PATIENCE := 60.0
 ## How long after first seeing an officer she sets off walking in the walking check: less than
-## `Tuning.PARK_CLOSING_WARNING`, which is the time the cordon leaves her to see and decide.
+## `ParkCordon.PARK_CLOSING_WARNING`, which is the time the cordon leaves her to see and decide.
 const REACTION := 1.0
 ## When she sets off down the way out behind a walked-out busker, and how far past its end, along
 ## its last leg, she stops.
@@ -83,10 +83,10 @@ func _check(t, seed_value: int, m: Dictionary) -> void:
 	t.check(m.trapped_standing, "%s: standing at the swing, she is shut in (closed at %.1fs)"
 			% [what, m.closed_at])
 	t.check(m.first_seen >= 0.0 and m.closed_at - m.first_seen
-			>= m.walk / Tuning.WALK_SPEED + Tuning.PARK_CLOSING_WARNING - 2.0 * STEP,
+			>= m.walk / Tuning.WALK_SPEED + ParkCordon.PARK_CLOSING_WARNING - 2.0 * STEP,
 			"%s: the first officer is in her view %.1fs before the gap closes, " % [what,
 			m.closed_at - m.first_seen] + "the walk to it (%.0fpx, %.1fs) plus %.0fs"
-			% [m.walk, m.walk / Tuning.WALK_SPEED, Tuning.PARK_CLOSING_WARNING])
+			% [m.walk, m.walk / Tuning.WALK_SPEED, ParkCordon.PARK_CLOSING_WARNING])
 	t.check(m.walked_out, "%s: setting off at a walk %.0fs after first sight gets her out"
 			% [what, REACTION])
 	# What the cordon says of itself is what happens: the close it logs and paces to, unless the

@@ -54,6 +54,7 @@ func run(t) -> void:
 		_walk_the_day(t, seed_value)
 	EventBus.crowd_bumped.disconnect(bumped)
 	GameSave._clear_now()
+	GameSave.configure(null)
 	GameSave.set_path_override("")
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
