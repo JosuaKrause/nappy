@@ -12,12 +12,14 @@ var _building: Building
 var _water: SceneryWater
 var _events: Array[EventInstance] = []
 var _output := OS.get_environment("SCENERY_CAPTURE_OUTPUT")
+## The library the fixture's events draw from, holding their page as a manager would.
+var _atlas := AtlasLibrary.new()
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	assert(not _output.is_empty() and "--no-save" in OS.get_cmdline_user_args())
 	assert(DirAccess.make_dir_recursive_absolute(_output) == OK)
-	AtlasLibrary.acquire(&"events")
+	_atlas.acquire(&"events")
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true)
 	_fixtures = Node2D.new()
@@ -63,10 +65,11 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	if _fixtures != null:
-		AtlasLibrary.release(&"events")
+		_atlas.release(&"events")
 
 func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	var event := EventInstance.new()
+	event.atlas = _atlas
 	event.setup(EventCatalogue.by_id(id), at)
 	event._spread_vertical = vertical
 	event.scale = Vector2.ONE * factor

@@ -6,7 +6,7 @@ extends RefCounted
 ## region is read out of `AtlasLibrary.page_image()` with `Image.get_region()`, which is the same
 ## rectangle `AtlasLibrary.region()` hands a draw call.
 ##
-## Every sweep below is over `AtlasLibrary.region_names()` and carries a count with it, because a
+## Every sweep below is over `AtlasTable.baked().region_names()` and carries a count with it, because a
 ## sweep that silently finds nothing is the way this file has failed before: its predecessor walked
 ## `event_instance.gd`'s constants for `Texture2D`s, and passed vacuously on an empty map the day
 ## those constants became region names.
@@ -59,12 +59,14 @@ const BABY_CUES: Array[StringName] = [&"props/baby_zzz", &"props/baby_fuss", &"p
 
 ## Whether this tree carries the default bake, which is the only one the transfer rules are about.
 var _transfer_rules := false
+## The library each page image is read through, fresh for this suite.
+var _atlas := AtlasLibrary.new()
 
 func run(t) -> void:
-	_transfer_rules = AtlasLibrary.bake_mode() == "png"
+	_transfer_rules = AtlasTable.baked().bake_mode() == "png"
 	if not _transfer_rules:
 		print("test_visuals: %s bake — the transfer registration rules are not asked of the "
-				% AtlasLibrary.bake_mode() + "authored vectors; see this file's own note")
+				% AtlasTable.baked().bake_mode() + "authored vectors; see this file's own note")
 	_test_the_rig_stands_on_its_canvas_bottom(t)
 	_test_ground_tiles_cover_their_cell(t)
 	_test_ground_components_keep_their_canvas(t)
@@ -80,7 +82,7 @@ func run(t) -> void:
 ## between a pram's wheels, are what stop a figure reading as a filled block.
 func _test_the_rig_stands_on_its_canvas_bottom(t) -> void:
 	var checked := 0
-	for name: StringName in AtlasLibrary.region_names():
+	for name: StringName in AtlasTable.baked().region_names():
 		if not String(name).begins_with("rig/"):
 			continue
 		var image := _region_image(name)
@@ -114,7 +116,7 @@ func _test_the_rig_stands_on_its_canvas_bottom(t) -> void:
 func _test_ground_tiles_cover_their_cell(t) -> void:
 	var checked := 0
 	var holed: Array[String] = []
-	for name: StringName in AtlasLibrary.region_names():
+	for name: StringName in AtlasTable.baked().region_names():
 		var text := String(name)
 		if not text.begins_with("tiles/") or text.begins_with("tiles/layers/"):
 			continue
@@ -146,7 +148,7 @@ func _test_ground_tiles_cover_their_cell(t) -> void:
 func _test_ground_components_keep_their_canvas(t) -> void:
 	var checked := 0
 	var bases := 0
-	for name: StringName in AtlasLibrary.region_names():
+	for name: StringName in AtlasTable.baked().region_names():
 		var text := String(name)
 		if not text.begins_with("tiles/layers/"):
 			continue
@@ -166,7 +168,7 @@ func _test_ground_components_keep_their_canvas(t) -> void:
 		if _transfer_rules:
 			t.check(_has_opaque_and_clear(image),
 					"%s has visible detail and genuine transparency" % name)
-	if AtlasLibrary.bake_mode() == "svg":
+	if AtlasTable.baked().bake_mode() == "svg":
 		t.check(checked == 0,
 				"an svg bake's page carries no ground component, since it composes nothing (%d)"
 				% checked)
@@ -242,12 +244,12 @@ func _test_baby_cues_keep_a_transparent_border(t) -> void:
 ## dropped again, so this suite leaves nothing acquired behind it — and it is read per region
 ## rather than cached, since `page_image()` deliberately does not cache a megabyte-scale image.
 func _region_image(name: StringName) -> Image:
-	if not AtlasLibrary.has_region(name):
+	if not AtlasTable.baked().has_region(name):
 		return null
-	var page := AtlasLibrary.page_image(AtlasLibrary.group_of(name))
+	var page := _atlas.page_image(AtlasTable.baked().group_of(name))
 	if page == null:
 		return null
-	return page.get_region(AtlasLibrary.region_rect(name))
+	return page.get_region(AtlasTable.baked().region_rect(name))
 
 func _is_opaque(image: Image) -> bool:
 	for y in image.get_height():

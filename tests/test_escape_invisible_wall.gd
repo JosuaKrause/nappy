@@ -145,9 +145,9 @@ func _test_nothing_of_the_building_is_drawn_in_the_city(t, main: Node2D) -> void
 ## and a page taken once but given back on every exit leaves the next boot in the same process
 ## reading it from disk outside the loading window.
 static func _her_page_counts(player: Stroller) -> Array[int]:
-	return [AtlasLibrary.reference_count(Stroller.parent_atlas(player.is_male)),
-			AtlasLibrary.reference_count(Stroller.STROLLER_ATLAS),
-			AtlasLibrary.reference_count(Stroller.INDICATOR_ATLAS)]
+	return [player.atlas.reference_count(Stroller.parent_atlas(player.is_male)),
+			player.atlas.reference_count(Stroller.STROLLER_ATLAS),
+			player.atlas.reference_count(Stroller.INDICATOR_ATLAS)]
 
 ## `body`'s path below `main`, so a failure names the subtree the body belongs to.
 static func _owner_path(main: Node, body: Object) -> String:

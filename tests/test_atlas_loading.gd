@@ -17,20 +17,27 @@ extends RefCounted
 ##
 ## The boot's own residency is driven through `main._hold_every_page_a_day_draws()` rather than a
 ## copy of its list, so a group added to `main.RESIDENT_GROUPS` is a group this suite is asking
-## about. `main` is never added to the tree here, the same way `tests/test_main.gd` drives it.
+## about. That `main` is never added to the tree, the same way `tests/test_main.gd` drives it: it
+## is handed a `Sitting` of the test's own, whose library it holds the pages on, and the cities and
+## rigs the test builds are handed that library as `main` hands its own. Each test builds its own
+## library, so no count it reads depends on a suite before it.
+##
+## One test boots the real `main.tscn` instead, on the day and in the escape's building, and asks
+## that everything it built draws from the one library its sitting holds.
 
 const MAIN_SCRIPT := preload("res://src/main.gd")
+const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 
 func run(t) -> void:
-	AtlasLibrary.reset_for_tests()
+	t.gives_back_observers()
 	_test_each_parent_has_a_page_of_their_own(t)
 	_test_the_indicators_share_the_ui_page(t)
 	_test_a_boot_holds_one_parent_and_never_the_other(t)
 	_test_a_page_may_only_be_read_in_a_window(t)
 	_test_two_days_never_reload_a_page(t)
-	AtlasLibrary.reset_for_tests()
+	_test_a_boot_hands_its_one_library_to_everything_it_draws(t)
 
 # ------------------------------------------------------------------ the groups ---
 
@@ -48,8 +55,8 @@ func _test_each_parent_has_a_page_of_their_own(t) -> void:
 		t.check(not sources.is_empty(), "%s: there were sources to check at all" % group)
 		for path: String in sources:
 			var name := StringName(path)
-			t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
-			t.check(AtlasLibrary.group_of(name) == group,
+			t.check(AtlasTable.baked().has_region(name), "%s is baked" % path)
+			t.check(AtlasTable.baked().group_of(name) == group,
 					"%s is on the '%s' page" % [path, group])
 			t.check(not seen.has(name), "%s is on exactly one page" % path)
 			seen[name] = group
@@ -66,13 +73,13 @@ func _test_each_parent_has_a_page_of_their_own(t) -> void:
 ## their own pass and tinted on their own; a page is not a pass.
 func _test_the_indicators_share_the_ui_page(t) -> void:
 	t.check(Stroller.INDICATOR_ATLAS == &"ui", "the indicators name the UI's own group")
-	t.check(not &"head_indicators" in AtlasLibrary.groups(),
+	t.check(not &"head_indicators" in AtlasTable.baked().groups(),
 			"and the head indicators are no longer a group of their own")
 	for path: String in Stroller.indicator_sources():
 		var name := StringName(path)
-		t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
-		t.check(AtlasLibrary.group_of(name) == &"ui", "%s is on the UI's page" % path)
-	t.check(AtlasLibrary.group_of(SaveIndicator._ICON) == &"ui",
+		t.check(AtlasTable.baked().has_region(name), "%s is baked" % path)
+		t.check(AtlasTable.baked().group_of(name) == &"ui", "%s is on the UI's page" % path)
+	t.check(AtlasTable.baked().group_of(SaveIndicator._ICON) == &"ui",
 			"beside the screen furniture it now shares that page with")
 
 # ----------------------------------------------------------------- the parents ---
@@ -85,83 +92,84 @@ func _test_the_indicators_share_the_ui_page(t) -> void:
 func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 	var saved := GameState.header.player_is_male
 	var main: Node2D = MAIN_SCRIPT.new()
-	AtlasLibrary.reset_for_tests()
+	var sitting := Sitting.new()
+	main.use_sitting(sitting)
+	var atlas := sitting.atlas
 	for male in [false, true]:
 		GameState.header.player_is_male = male
 		main._hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP,
 				MAIN_SCRIPT.NO_FURTHER_GROUPS)
 		var mine := Stroller.parent_atlas(male)
 		var theirs := Stroller.parent_atlas(not male)
-		t.check(AtlasLibrary.is_acquired(mine),
+		t.check(atlas.is_acquired(mine),
 				"the boot holds the '%s' page the run draws from" % mine)
-		t.check(not AtlasLibrary.is_acquired(theirs),
+		t.check(not atlas.is_acquired(theirs),
 				"and holds nothing of '%s', which this run can never draw" % theirs)
 		for day in [1, 2, 3]:
-			var city := _city(t)
+			var city := _city(t, atlas)
 			city.crowd.start_day(day, _rng("parent-%s-%d" % [male, day]))
-			var rig := _rig(t, male)
-			t.check(not AtlasLibrary.is_acquired(theirs),
+			var rig := _rig(t, male, atlas)
+			t.check(not atlas.is_acquired(theirs),
 					"day %d builds a city, a crowd and the rig without ever asking for '%s'"
 					% [day, theirs])
 			rig.free()
 			city.free()
-		t.check(AtlasLibrary.reference_count(mine) == 1,
+		t.check(atlas.reference_count(mine) == 1,
 				"and the run's own parent is back to the boot's single reference between days")
-	t.check(not AtlasLibrary.is_acquired(Stroller.MOTHER_ATLAS),
+	t.check(not atlas.is_acquired(Stroller.MOTHER_ATLAS),
 			"a second boot that rerolled the choice gave the first run's parent back")
 	main.free()
+	sitting.free()
 	GameState.header.player_is_male = saved
-	AtlasLibrary.reset_for_tests()
 
 # -------------------------------------------------------------------- the rule ---
 
 ## The three states of `moment_for_a_load()`, and the one thing a consumer's own `acquire()` does
 ## once a page is resident: bump a count and read nothing.
 ##
-## `MOMENT_UNMANAGED` is not a hole in the rule for tests — it is the state of a process where no
-## boot sequence has claimed the loading moments, which is every suite that builds a `Stroller`, a
-## `City` or a `Crowd` by hand, and where there is no played frame for a load to stutter. The
-## moment `main` boots, the rule is on for the rest of the process.
+## `MOMENT_UNMANAGED` is not a hole in the rule for tests — it is the state of a library no boot
+## sequence has claimed the loading moments on, which is every one a suite builds along with a
+## `Stroller`, a `City` or a `Crowd` by hand, and where there is no played frame for a load to
+## stutter. The moment `main` boots, the rule is on for the sitting's library until it leaves.
 func _test_a_page_may_only_be_read_in_a_window(t) -> void:
-	AtlasLibrary.reset_for_tests()
-	t.check(AtlasLibrary.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,
+	var atlas := AtlasLibrary.new()
+	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,
 			"with no boot, nothing owns the loading moments")
-	AtlasLibrary.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
-	t.check(AtlasLibrary.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,
+	atlas.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
+	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,
 			"and a brief's own window cannot claim them, so driving that screen in a test "
 			+ "never turns the rule on for the suites after it")
-	AtlasLibrary.claim_the_loading_moments(AtlasLibrary.MOMENT_STARTUP)
-	t.check(AtlasLibrary.moment_for_a_load() == AtlasLibrary.MOMENT_STARTUP,
+	atlas.claim_the_loading_moments(AtlasLibrary.MOMENT_STARTUP)
+	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_STARTUP,
 			"an open window names the moment a load would belong to")
-	AtlasLibrary.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
-	t.check(AtlasLibrary.moment_for_a_load() == AtlasLibrary.MOMENT_DAY_BRIEF,
+	atlas.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
+	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_DAY_BRIEF,
 			"and inside a claim the brief is the second moment a page may arrive in")
-	AtlasLibrary.open_loading_window(AtlasLibrary.MOMENT_STARTUP)
-	AtlasLibrary.hold_for_the_process(&"ui")
-	t.check(AtlasLibrary.last_load_moment(&"ui") == AtlasLibrary.MOMENT_STARTUP,
+	atlas.open_loading_window(AtlasLibrary.MOMENT_STARTUP)
+	atlas.hold_for_the_process(&"ui")
+	t.check(atlas.last_load_moment(&"ui") == AtlasLibrary.MOMENT_STARTUP,
 			"and the page that arrived in it records that moment")
-	t.check(AtlasLibrary.is_resident(&"ui") and AtlasLibrary.reference_count(&"ui") == 1,
+	t.check(atlas.is_resident(&"ui") and atlas.reference_count(&"ui") == 1,
 			"a residency is one reference, not one per call")
-	AtlasLibrary.hold_for_the_process(&"ui")
-	t.check(AtlasLibrary.reference_count(&"ui") == 1, "and asking for it twice is not two")
-	AtlasLibrary.close_loading_window()
+	atlas.hold_for_the_process(&"ui")
+	t.check(atlas.reference_count(&"ui") == 1, "and asking for it twice is not two")
+	atlas.close_loading_window()
 	# The refusal itself is what this must not perform — see the class note. This is the same
 	# claim: a page that had to be read from disk at this instant would be called OUTSIDE, which
 	# is the value `acquire()` raises its engine error on.
-	t.check(AtlasLibrary.moment_for_a_load() == AtlasLibrary.MOMENT_OUTSIDE,
+	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_OUTSIDE,
 			"with the moments claimed and the window shut, a read from disk would be OUTSIDE")
-	AtlasLibrary.acquire(&"ui")
-	t.check(AtlasLibrary.reference_count(&"ui") == 2,
+	atlas.acquire(&"ui")
+	t.check(atlas.reference_count(&"ui") == 2,
 			"a consumer acquiring a resident page outside every window is only a count")
-	t.check(AtlasLibrary.last_load_moment(&"ui") == AtlasLibrary.MOMENT_STARTUP,
+	t.check(atlas.last_load_moment(&"ui") == AtlasLibrary.MOMENT_STARTUP,
 			"and reads nothing, so the page still records the boot that actually loaded it")
-	AtlasLibrary.release(&"ui")
-	t.check(AtlasLibrary.is_acquired(&"ui"),
+	atlas.release(&"ui")
+	t.check(atlas.is_acquired(&"ui"),
 			"releasing a consumer's reference cannot drop a resident page")
-	AtlasLibrary.release_the_loading_moments()
-	t.check(AtlasLibrary.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,
+	atlas.release_the_loading_moments()
+	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,
 			"and a boot that leaves the tree hands the moments back for the next one")
-	AtlasLibrary.reset_for_tests()
 
 # -------------------------------------------------------------------- the days ---
 
@@ -169,17 +177,19 @@ func _test_a_page_may_only_be_read_in_a_window(t) -> void:
 ## page **object**, not the reference count: a count that dips to nought and comes back would
 ## look identical from the outside and would have cost a blocking read from disk in between.
 func _test_two_days_never_reload_a_page(t) -> void:
-	AtlasLibrary.reset_for_tests()
 	var saved := GameState.header.player_is_male
 	GameState.header.player_is_male = false
 	var main: Node2D = MAIN_SCRIPT.new()
+	var sitting := Sitting.new()
+	main.use_sitting(sitting)
+	var atlas := sitting.atlas
 	main._hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP, MAIN_SCRIPT.NO_FURTHER_GROUPS)
 	main.free()
 
-	var city := _city(t)
+	var city := _city(t, atlas)
 	city.crowd.start_day(1, _rng("day-1"))
-	var rig := _rig(t, false)
-	var first := _page_objects()
+	var rig := _rig(t, false, atlas)
+	var first := _page_objects(atlas)
 	t.check(first.size() >= MAIN_SCRIPT.RESIDENT_GROUPS.size(),
 			"there were pages to compare (%d)" % first.size())
 	# The whole day torn down the way quitting to the title tears it down: the rig out of the
@@ -188,13 +198,13 @@ func _test_two_days_never_reload_a_page(t) -> void:
 	city.crowd.clear()
 	city.free()
 	for group: StringName in first.keys():
-		t.check(AtlasLibrary.is_acquired(group),
+		t.check(atlas.is_acquired(group),
 				"'%s' survives the day it was drawn in" % group)
 
-	var tomorrow := _city(t)
+	var tomorrow := _city(t, atlas)
 	tomorrow.crowd.start_day(2, _rng("day-2"))
-	var rig_tomorrow := _rig(t, false)
-	var second := _page_objects()
+	var rig_tomorrow := _rig(t, false, atlas)
+	var second := _page_objects(atlas)
 	var reloaded: Array[String] = []
 	for group: StringName in first.keys():
 		if first[group] != second.get(group):
@@ -205,8 +215,55 @@ func _test_two_days_never_reload_a_page(t) -> void:
 	rig_tomorrow.free()
 	tomorrow.crowd.clear()
 	tomorrow.free()
+	sitting.free()
 	GameState.header.player_is_male = saved
-	AtlasLibrary.reset_for_tests()
+
+# ------------------------------------------------------------------ the boot ---
+
+## **One library per sitting, and everything a boot builds draws from it.** The pages a boot holds
+## for the process are held on the library its `Sitting` holds, and a node that acquired or drew on
+## a library of its own would load its page again outside the boot's window, unmanaged, and write a
+## second load line for it. So every node under a booted `main` that holds a library — the city and
+## its furniture, crowd and events, her, the screens' buttons and lines, the badge, the symbol, and
+## in the escape's building the interior and its events — holds the sitting's, on the day and in
+## the building alike. A node with an `atlas` it was never handed fails this by name.
+func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
+	var saved_section: int = GameState.facts.escape_section
+	var saved_day := GameState.header.day
+	for section: int in [DaySpec.Section.NONE, DaySpec.Section.BUILDING]:
+		GameState.start_run(SEED)
+		if section != DaySpec.Section.NONE:
+			GameState.header.day = Tuning.RUN_LENGTH_DAYS
+		GameState.facts.escape_section = section
+		var main: Node2D = MAIN_SCENE.instantiate()
+		main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry"]), "", true))
+		t.add_child(main)
+		t.get_tree().process_frame.emit()
+		t.get_tree().process_frame.emit()
+		var where := "the day" if section == DaySpec.Section.NONE else "the building"
+		var atlas: AtlasLibrary = main._sitting.atlas
+		var holders := 0
+		var strays: Array[String] = []
+		var stack: Array[Node] = [main]
+		while not stack.is_empty():
+			var node: Node = stack.pop_back()
+			stack.append_array(node.get_children())
+			if node is Sitting or not "atlas" in node:
+				continue
+			holders += 1
+			if node.get("atlas") != atlas and strays.size() < 5:
+				strays.append(str(main.get_path_to(node)))
+		t.check(holders > 10, "%s: the boot built nodes that draw from a library (%d)"
+				% [where, holders])
+		t.check(strays.is_empty(), "%s: every one draws from the sitting's library (not: %s)"
+				% [where, ", ".join(strays)])
+		t.check(atlas.is_resident(Crowd.ATLAS_GROUP) and atlas.is_resident(EventPictures.ATLAS_GROUP),
+				"%s: and the sitting's library is the one holding the boot's pages" % where)
+		t.get_tree().paused = false
+		main.free()
+	GameState.facts.escape_section = saved_section
+	GameState.header.day = saved_day
+	GameState.start_run(SEED)
 
 # ------------------------------------------------------------------- the rigs ---
 
@@ -215,16 +272,19 @@ func _rng(tag: String) -> RandomNumberGenerator:
 	rng.seed = hash("test_atlas_loading:%s" % tag)
 	return rng
 
-func _city(t) -> City:
+func _city(t, atlas: AtlasLibrary) -> City:
 	var city: City = RunCity.of_the_run(CITY_SCENE)
+	city.atlas = atlas
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	return city
 
 ## A hand-built rig, the shape `tests/test_stroller.gd` uses: a `Camera2D` named for the lookup
-## `_ready()` does, and physics off so nothing moves.
-func _rig(t, male: bool) -> Stroller:
+## `_ready()` does, and physics off so nothing moves; handed `atlas` as `main._make_player()` hands
+## the sitting's.
+func _rig(t, male: bool, atlas: AtlasLibrary) -> Stroller:
 	var rig := Stroller.new()
+	rig.atlas = atlas
 	rig.is_male = male
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -236,21 +296,21 @@ func _rig(t, male: bool) -> Stroller:
 
 ## One live page texture per acquired group, taken through `region()` so the object compared is
 ## the one a draw call would actually reach rather than the library's own bookkeeping.
-func _page_objects() -> Dictionary:
+func _page_objects(atlas: AtlasLibrary) -> Dictionary:
 	var pages: Dictionary = {}
-	for group: StringName in AtlasLibrary.groups():
-		if not AtlasLibrary.is_acquired(group):
+	for group: StringName in AtlasTable.baked().groups():
+		if not atlas.is_acquired(group):
 			continue
 		var sample := _a_region_of(group)
 		if sample == &"":
 			continue
-		var region := AtlasLibrary.region(sample)
+		var region := atlas.region(sample)
 		if region != null:
 			pages[group] = region.atlas
 	return pages
 
 func _a_region_of(group: StringName) -> StringName:
-	for name: StringName in AtlasLibrary.region_names():
-		if AtlasLibrary.group_of(name) == group:
+	for name: StringName in AtlasTable.baked().region_names():
+		if AtlasTable.baked().group_of(name) == group:
 			return name
 	return &""

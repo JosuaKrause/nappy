@@ -21,9 +21,10 @@ const LAYER_REGION_ROOT := "tiles/layers/"
 
 ## The recipe every build here composes from, as a city is handed one.
 var recipe := GroundRecipe.new()
+## The library every build here reads its page through, fresh for this suite.
+var atlas := AtlasLibrary.new()
 
 func run(t) -> void:
-	AtlasLibrary.reset_for_tests()
 	_test_transparent_pixels_leave_the_base_unchanged(t)
 	_test_component_rotation_is_clockwise(t)
 	_test_sparse_grass_selection_is_stable_and_varied(t)
@@ -35,7 +36,6 @@ func run(t) -> void:
 	_test_the_grass_atlas_scatters_whole_features_over_one_base(t)
 	_test_route_kerb_twin_tints_the_stone_alone(t)
 	_test_the_recipe_is_read_from_disk_once(t)
-	AtlasLibrary.reset_for_tests()
 
 func _test_transparent_pixels_leave_the_base_unchanged(t) -> void:
 	var base := Image.create(4, 4, false, Image.FORMAT_RGBA8)
@@ -190,8 +190,8 @@ func _test_manifest_covers_the_authored_ground_sources(t) -> void:
 	var unbaked: Array[String] = []
 	for filename in filenames:
 		var name := _region_name_of(filename)
-		if not AtlasLibrary.has_region(name) \
-				or AtlasLibrary.group_of(name) != GroundLayers.ATLAS_GROUP:
+		if not AtlasTable.baked().has_region(name) \
+				or AtlasTable.baked().group_of(name) != GroundLayers.ATLAS_GROUP:
 			unbaked.append(filename)
 	t.check(unbaked.is_empty(), "every base and component the recipe names is on the '%s' page (%s)"
 			% [GroundLayers.ATLAS_GROUP, ", ".join(unbaked.slice(0, 5))])
@@ -210,12 +210,12 @@ func _test_the_recipe_is_read_from_disk_once(t) -> void:
 	if _page(t) == null:
 		return
 	var fresh_recipe := GroundRecipe.new()
-	var first := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe)
-	var second := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe)
+	var first := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe, atlas)
+	var second := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe, atlas)
 	t.check(first != null and second != null, "both ground builds produced a TileSet")
 	t.check(not first.has_source(GroundTiles.WATER) and not second.has_source(GroundTiles.WATER),
 			"water is absent from both static compositions, including a daily repaint")
-	t.check(AtlasLibrary.has_region(&"tiles/water"),
+	t.check(AtlasTable.baked().has_region(&"tiles/water"),
 			"the independent water surface still has its original baked picture")
 	t.check(fresh_recipe.reads() <= 1,
 			"two ground builds read the recipe from disk at most once (read %d times)"
@@ -230,7 +230,7 @@ func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 	var page := _page(t)
 	if page == null:
 		return
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe, atlas)
 	var curbed := composed.get_source(8) as TileSetAtlasSource
 	var base_image := _layer_image(page, "sidewalk_base.png")
 	var detail_image := _layer_image(page, "curbstone.png")
@@ -295,7 +295,7 @@ func _test_the_grass_atlas_scatters_whole_features_over_one_base(t) -> void:
 	var page := _page(t)
 	if page == null:
 		return
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe, atlas)
 	var grass := composed.get_source(GroundLayers.GRASS_SOURCE_ID) as TileSetAtlasSource
 	var base := _layer_image(page, "grass_base.png")
 	t.check(grass != null and base != null, "the grass source and its base are both available")
@@ -320,7 +320,7 @@ func _test_the_grass_atlas_scatters_whole_features_over_one_base(t) -> void:
 			"not every grass cell is the bare base, so features are actually scattered")
 
 func _test_damage_atlas_selection_is_stable_and_shared(t) -> void:
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe, atlas)
 	if _svg_bake():
 		# An SVG bake draws the authored damage tiles as they were drawn, one cell each, so there
 		# is no shared variation to select between — the selector's own answer is then cell zero.
@@ -366,7 +366,7 @@ func _test_route_kerb_twin_tints_the_stone_alone(t) -> void:
 	var source_id := GroundTiles.SIDEWALK_KERB_N
 	var twin_id := GroundTiles.route_twin_of(source_id)
 	t.check(twin_id >= 0, "GroundTiles registers a route-kerb twin id for the north kerb source")
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe, atlas)
 	t.check(composed.has_source(twin_id), "the north kerb's route twin is registered")
 	if not composed.has_source(twin_id):
 		return
@@ -411,10 +411,10 @@ func _color_distance(a: Color, b: Color) -> float:
 ## page baked from the authored SVG rasters is what `tools/bake-atlases.sh --svg` writes, and the
 ## compositor reads that off the region table rather than off a flag.
 func _svg_bake() -> bool:
-	return AtlasLibrary.bake_mode() == "svg"
+	return AtlasTable.baked().bake_mode() == "svg"
 
 func _page(t) -> Image:
-	var page := AtlasLibrary.page_image(GroundLayers.ATLAS_GROUP)
+	var page := atlas.page_image(GroundLayers.ATLAS_GROUP)
 	t.check(page != null, "the baked ground page reads back as an image")
 	return page
 
@@ -427,9 +427,9 @@ func _layer_image(page: Image, filename: String) -> Image:
 	if filename.is_empty():
 		return null
 	var name := _region_name_of(filename)
-	if not AtlasLibrary.has_region(name):
+	if not AtlasTable.baked().has_region(name):
 		return null
-	var rect := AtlasLibrary.region_rect(name)
+	var rect := AtlasTable.baked().region_rect(name)
 	if not rect.has_area() or not Rect2i(Vector2i.ZERO, page.get_size()).encloses(rect):
 		return null
 	var image := page.get_region(rect)

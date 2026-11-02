@@ -19,12 +19,13 @@ func _init(host: Node) -> void:
 	city = RunCity.of_the_run(CITY_SCENE)
 	host.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	# The atlas page every crowd picture is drawn from, held the way `Crowd.start_day()` holds it for
-	# the day, so a halo or a drawn frame of an agent placed here finds its regions.
-	AtlasLibrary.acquire(Crowd.ATLAS_GROUP)
+	# The atlas page every crowd picture is drawn from, held on the city's library the way
+	# `Crowd.start_day()` holds it for the day and handed to every agent placed here, so a halo or a
+	# drawn frame of one finds its regions.
+	city.atlas.acquire(Crowd.ATLAS_GROUP)
 
 func free_city() -> void:
-	AtlasLibrary.release(Crowd.ATLAS_GROUP)
+	city.atlas.release(Crowd.ATLAS_GROUP)
 	city.free()
 
 ## A walker's look over `agent`: `WalkerLook` is a public class that reads the agent's heading and
@@ -40,6 +41,7 @@ static func car_look(agent: CrowdAgent) -> CarLook:
 ## A fresh agent of `kind` placed by `setup()`, as its rolled `seed_value` has it.
 func rolled(kind: CrowdAgent.Kind, seed_value: int) -> CrowdAgent:
 	var agent := CrowdAgent.new()
+	agent.atlas = city.atlas
 	agent.setup(kind, city.map, city.crowd.field(), seed_value, 0.5 * float(seed_value % 2))
 	return agent
 
@@ -62,6 +64,7 @@ func place_at_speed(kind: CrowdAgent.Kind, heading: Vector2, speed: float) -> Cr
 	var at := scout.position
 	scout.free()
 	var agent := CrowdAgent.new()
+	agent.atlas = city.atlas
 	var problem := agent.setup_at(kind, city.map, city.crowd.field(), 1, at, heading, speed)
 	if not problem.is_empty():
 		agent.free()

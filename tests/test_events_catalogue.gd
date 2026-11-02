@@ -634,8 +634,10 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t) -> void:
 	var map := CityMap.new()
 	var crash := EventCatalogue.by_id("car_accident")
 	# This fixture puts a live scenery-bearing instance in the tree without an EventManager, whose
-	# tree lifetime owns the events page in the game. Mirror that owner explicitly around the rig.
-	AtlasLibrary.acquire(EventPictures.ATLAS_GROUP)
+	# tree lifetime owns the events page in the game. Mirror that owner explicitly around the rig,
+	# on a library of the fixture's own that every instance is handed.
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(EventPictures.ATLAS_GROUP)
 	t.check(crash.solid_parts.size() == 2, "a crash is two cars, so it puts down two bodies")
 	t.check(crash.solid_reach() < crash.obstructs_radius,
 			"and it is solid to %.0fpx inside the %.0fpx of street it closes"
@@ -646,6 +648,7 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t) -> void:
 		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
 				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 		var instance := EventInstance.new()
+		instance.atlas = atlas
 		instance.setup(crash, map.tile_to_world(tile), PackedVector2Array(), Vector2.RIGHT, map)
 		t.add_child(instance)
 		instance.set_process(false)
@@ -671,7 +674,7 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t) -> void:
 				"while the middle of the road, where the cars are, is still shut on a %s street"
 				% street)
 		instance.free()
-	AtlasLibrary.release(EventPictures.ATLAS_GROUP)
+	atlas.release(EventPictures.ATLAS_GROUP)
 
 ## Where each of an instance's solid pieces sits along its own spread axis, in px from the scene's
 ## centre.

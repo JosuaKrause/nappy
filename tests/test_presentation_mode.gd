@@ -4,7 +4,7 @@ extends RefCounted
 ## bare command-line flag or a `?name=1` query parameter, without the debug build's own gate.
 ##
 ## **The presentation mode is not one of them any more.** A build is whichever mode the atlases
-## were baked in (`AtlasLibrary.bake_mode()`), so there is nothing at runtime left to select: the
+## were baked in (`AtlasTable.baked().bake_mode()`), so there is nothing at runtime left to select: the
 ## release is always the default PNG bake and `tools/bake-atlases.sh --svg` is the custom local
 ## one.
 ##
@@ -61,7 +61,7 @@ func run(t) -> void:
 ## wrote, and the dev-flag table — the one manifest `tools/lib_dev_flags.sh` validates against —
 ## carries no way to ask for the other one.
 func _test_the_bake_alone_decides_the_presentation(t) -> void:
-	var mode := AtlasLibrary.bake_mode()
+	var mode := AtlasTable.baked().bake_mode()
 	t.check(mode == "png" or mode == "svg",
 		"the region table names the bake the tree carries (got '%s')" % mode)
 	var table := FileAccess.get_file_as_string("res://src/dev/dev_flags.gd")

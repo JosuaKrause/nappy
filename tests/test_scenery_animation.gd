@@ -44,7 +44,7 @@ func _test_roof_rotors(t) -> void:
 	t.remove_child(building)
 	t.check(building._roof_objects.is_empty() and building._rotor_layers.is_empty(),
 			"tree exit releases every roof object and moving child")
-	if not AtlasLibrary.is_acquired(&"buildings"):
+	if not building.atlas.is_acquired(&"buildings"):
 		t.check(old_rotor.get_ref() == null, "the last building retains no atlas texture after exit")
 	t.add_child(building)
 	t.check(not building._rotor_layers.is_empty() and building._rotor_layers[0].frame_b,
@@ -81,10 +81,12 @@ func _test_rotor_registration_matches_authored_crops(t) -> void:
 ## A crash and a burst main are drawn in slices, each holding its part's scenery
 ## (`SpreadLook.Slice`, `EventScenery`), so what is asked here is asked of every slice's.
 func _test_event_parts(t) -> void:
-	AtlasLibrary.acquire(&"events")
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	for id: String in ["car_accident", "burst_water_main"]:
 		for vertical: bool in [false, true]:
 			var instance := EventInstance.new()
+			instance.atlas = atlas
 			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
 			instance._spread_vertical = vertical
 			t.add_child(instance)
@@ -140,7 +142,7 @@ func _test_event_parts(t) -> void:
 			t.check(again.all(func(scenery: Variant) -> bool:
 					return not is_instance_valid(scenery)),
 					"removing an event releases its scenery")
-	AtlasLibrary.release(&"events")
+	atlas.release(&"events")
 
 func _test_water_ownership(t) -> void:
 	var packed: PackedScene = load("res://scenes/world/city.tscn")

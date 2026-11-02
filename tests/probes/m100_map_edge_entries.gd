@@ -147,14 +147,14 @@ func _diagnose_day_start(t, map: CityMap) -> void:
 func _picture_clearance(kind: int, vertical: bool) -> float:
 	if kind == CrowdAgent.Kind.CAR:
 		if vertical:
-			var body := AtlasLibrary.native_size(
+			var body := AtlasTable.baked().native_size(
 					StringName(CarLook.BODY_BY_VIEW["front"]))
 			var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH \
 					+ float(CarLook.CANVAS_BOTTOM_MARGIN["front"])
 			return maxf(south_reach, float(body.y) - south_reach)
-		var side := AtlasLibrary.native_size(
+		var side := AtlasTable.baked().native_size(
 				StringName(CarLook.BODY_BY_VIEW["side"]))
 		return float(side.x) * 0.5
-	var walker := AtlasLibrary.native_size(
+	var walker := AtlasTable.baked().native_size(
 			StringName(WalkerLook.BODY_BY_VIEW["front"]))
 	return float(walker.y) if vertical else float(walker.x) * 0.5

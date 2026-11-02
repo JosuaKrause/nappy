@@ -83,7 +83,7 @@ func _test_every_family_source_is_a_baked_region(t) -> void:
 	var families: Dictionary = {}
 	for path: String in sources:
 		var name := StringName(path)
-		t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
+		t.check(AtlasTable.baked().has_region(name), "%s is baked" % path)
 		families[path.get_file().split("_")[0]] = true
 	t.check(families.has("father") and families.has("mother") and families.has("pram"),
 			"the family covers both parents and the shared stroller")
@@ -91,6 +91,6 @@ func _test_every_family_source_is_a_baked_region(t) -> void:
 	t.check(not indicators.is_empty(), "the indicators export at least one source")
 	for path: String in indicators:
 		var name := StringName(path)
-		t.check(AtlasLibrary.has_region(name), "%s is baked" % path)
-		t.check(AtlasLibrary.group_of(name) == Stroller.INDICATOR_ATLAS,
+		t.check(AtlasTable.baked().has_region(name), "%s is baked" % path)
+		t.check(AtlasTable.baked().group_of(name) == Stroller.INDICATOR_ATLAS,
 				"%s is on the indicators' own page" % path)

@@ -7,6 +7,9 @@ const TIMED_CITY := preload("res://tests/probes/lazy_scenery_city.gd")
 const SEEDS := [4242, 3265820891]
 const HALF_VIEW := Vector2(320, 180)
 
+## The library every city measured here is handed, holding the shared pages for the whole probe.
+var _atlas := AtlasLibrary.new()
+
 func run(t) -> void:
 	print("LAZY_META " + JSON.stringify({"engine": Engine.get_version_info(),
 		"os": OS.get_name(), "processor": OS.get_processor_name(),
@@ -14,15 +17,15 @@ func run(t) -> void:
 	# Warm shared pages once, matching process residency rather than timing cold disk loads.
 	var groups: Array[StringName] = [ &"buildings", &"street_kit", &"ground", &"decoration", &"events", &"crowd" ]
 	for group in groups:
-		AtlasLibrary.acquire(group)
-		var size := AtlasLibrary.page_size(group)
+		_atlas.acquire(group)
+		var size := AtlasTable.baked().page_size(group)
 		print("LAZY_ATLAS " + JSON.stringify({"group": group, "size": str(size),
 			"rgba8_base_bytes": size.x * size.y * 4}))
 	for trial in 3:
 		for seed_value: int in SEEDS:
 			_measure(t, seed_value, trial)
 	for group in groups:
-		AtlasLibrary.release(group)
+		_atlas.release(group)
 	_actual_boot(t)
 
 func _measure(t, seed_value: int, trial: int) -> void:
@@ -32,6 +35,7 @@ func _measure(t, seed_value: int, trial: int) -> void:
 	var generation_ms := (Time.get_ticks_usec() - started) / 1000.0
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	city.set_script(TIMED_CITY)
+	city.atlas = _atlas
 	t.add_child(city)
 	var memory_before := OS.get_static_memory_usage()
 	started = Time.get_ticks_usec()

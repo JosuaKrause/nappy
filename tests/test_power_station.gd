@@ -317,7 +317,7 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t) -> void:
 			in_buildings += 1
 	t.check(in_buildings == 0, "no stack is left in the building layer (%d)" % in_buildings)
 	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
-	var height := float(AtlasLibrary.native_size(Building.POWER_STATION_STACK).y)
+	var height := float(AtlasTable.baked().native_size(Building.POWER_STATION_STACK).y)
 	for i in mini(stacks.size(), feet.size()):
 		var stack := stacks[i]
 		var foot := station.position + feet[i]

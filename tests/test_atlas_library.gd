@@ -20,7 +20,6 @@ const MANIFEST_PATH := "res://assets/atlases/baked/bake_manifest.json"
 const FEWEST_CREDIBLE_REGIONS := 400
 
 func run(t) -> void:
-	AtlasLibrary.reset_for_tests()
 	var membership := _read_json(MEMBERSHIP_PATH)
 	t.check(not membership.is_empty(), "the membership file parses")
 	_test_the_bake_is_not_stale(t)
@@ -31,7 +30,6 @@ func run(t) -> void:
 	_test_a_page_arrives_and_leaves_with_its_references(t)
 	_test_pages_meet_a_fill_floor(t)
 	_test_pages_meet_an_aspect_ceiling(t)
-	AtlasLibrary.reset_for_tests()
 
 # ------------------------------------------------------------------ the bake ---
 
@@ -53,7 +51,7 @@ func _test_the_bake_is_not_stale(t) -> void:
 			changed.append(path)
 	t.check(changed.is_empty(), "no baked source has changed since the bake: %s"
 			% ", ".join(changed.slice(0, 5)))
-	t.check(str(manifest.get("mode", "")) == AtlasLibrary.bake_mode(),
+	t.check(str(manifest.get("mode", "")) == AtlasTable.baked().bake_mode(),
 			"the region table and the bake manifest agree on the mode")
 
 ## Every picture this bake's mode draws from the group is in its page, and nothing else is.
@@ -67,7 +65,7 @@ func _test_the_bake_is_not_stale(t) -> void:
 func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
 	var groups: Dictionary = membership.get("groups", {})
 	t.check(not groups.is_empty(), "the membership file lists groups")
-	var mode_key := "members_svg" if AtlasLibrary.bake_mode() == "svg" else "members_png"
+	var mode_key := "members_svg" if AtlasTable.baked().bake_mode() == "svg" else "members_png"
 	var expected := 0
 	for group: String in groups.keys():
 		var record: Dictionary = groups[group]
@@ -78,17 +76,17 @@ func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
 		var misfiled: Array[String] = []
 		for member: String in members:
 			var name := AtlasLibrary.region_name_for(member)
-			if not AtlasLibrary.has_region(name):
+			if not AtlasTable.baked().has_region(name):
 				missing.append(member)
-			elif AtlasLibrary.group_of(name) != StringName(group):
+			elif AtlasTable.baked().group_of(name) != StringName(group):
 				misfiled.append(member)
 		t.check(missing.is_empty(), "%s: every member is baked (missing %s)"
 				% [group, ", ".join(missing.slice(0, 5))])
 		t.check(misfiled.is_empty(), "%s: every member is on its own group's page (%s)"
 				% [group, ", ".join(misfiled.slice(0, 5))])
-	t.check(AtlasLibrary.region_names().size() == expected,
+	t.check(AtlasTable.baked().region_names().size() == expected,
 			"the region table holds exactly the membership (%d regions, %d members)"
-			% [AtlasLibrary.region_names().size(), expected])
+			% [AtlasTable.baked().region_names().size(), expected])
 	t.check(expected >= FEWEST_CREDIBLE_REGIONS,
 			"there were regions to ask about (%d)" % expected)
 
@@ -105,8 +103,9 @@ func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
 ## than a size, because a swapped picture of the same canvas would keep the size and lose the view.
 func _test_a_transfer_only_ever_stands_in_for_its_own_source(t, membership: Dictionary) -> void:
 	var groups: Dictionary = membership.get("groups", {})
-	var mode_key := "members_svg" if AtlasLibrary.bake_mode() == "svg" else "members_png"
-	var png_bake := AtlasLibrary.bake_mode() == "png"
+	var mode_key := "members_svg" if AtlasTable.baked().bake_mode() == "svg" else "members_png"
+	var png_bake := AtlasTable.baked().bake_mode() == "png"
+	var atlas := AtlasLibrary.new()
 	var claimed := {}
 	var shared: Array[String] = []
 	var renamed: Array[String] = []
@@ -135,9 +134,9 @@ func _test_a_transfer_only_ever_stands_in_for_its_own_source(t, membership: Dict
 			var from_png := png_bake and has_transfer
 			var expected := _raster_like_the_bake(transfer if from_png else "res://" + member)
 			if page == null:
-				page = AtlasLibrary.page_image(StringName(group))
+				page = atlas.page_image(StringName(group))
 			var name := AtlasLibrary.region_name_for(member)
-			var baked := page.get_region(AtlasLibrary.region_rect(name))
+			var baked := page.get_region(AtlasTable.baked().region_rect(name))
 			asked += 1
 			if diagonal:
 				if from_png:
@@ -188,21 +187,21 @@ static func _raster_like_the_bake(path: String) -> Image:
 ## of a pair of neighbours rather than for whichever was written last.
 func _test_regions_do_not_overlap(t) -> void:
 	var by_group: Dictionary = {}
-	for name: StringName in AtlasLibrary.region_names():
-		var group := AtlasLibrary.group_of(name)
+	for name: StringName in AtlasTable.baked().region_names():
+		var group := AtlasTable.baked().group_of(name)
 		if not by_group.has(group):
 			by_group[group] = []
 		(by_group[group] as Array).append(name)
 	for group: StringName in by_group.keys():
-		var page := Rect2i(Vector2i.ZERO, AtlasLibrary.page_size(group))
+		var page := Rect2i(Vector2i.ZERO, AtlasTable.baked().page_size(group))
 		var padded: Array[Rect2i] = []
 		var outside: Array[String] = []
 		var names: Array = by_group[group]
 		for name: StringName in names:
-			var rect := AtlasLibrary.region_rect(name)
+			var rect := AtlasTable.baked().region_rect(name)
 			if not page.encloses(rect.grow(AtlasLibrary.PADDING)):
 				outside.append(String(name))
-			if AtlasLibrary.native_size(name) != rect.size:
+			if AtlasTable.baked().native_size(name) != rect.size:
 				outside.append(String(name) + " (size disagrees with its rect)")
 			padded.append(rect.grow(AtlasLibrary.PADDING))
 		t.check(outside.is_empty(), "%s: every region and its padding is on the page (%s)"
@@ -221,49 +220,49 @@ func _test_regions_do_not_overlap(t) -> void:
 ## from the table, with no page loaded. A consumer that had to acquire a group to measure a
 ## shadow would hold a megabyte of texture to read two integers.
 func _test_geometry_needs_nothing_acquired(t) -> void:
-	AtlasLibrary.reset_for_tests()
+	var atlas := AtlasLibrary.new()
 	var name := &"ui/pause"
-	t.check(AtlasLibrary.has_region(name), "the table knows a region with nothing acquired")
-	t.check(AtlasLibrary.native_size(name) != Vector2i.ZERO,
+	t.check(AtlasTable.baked().has_region(name), "the table knows a region with nothing acquired")
+	t.check(AtlasTable.baked().native_size(name) != Vector2i.ZERO,
 			"a native size is answered with nothing acquired")
-	t.check(not AtlasLibrary.is_acquired(&"ui"), "asking geometry acquired nothing")
-	t.check(AtlasLibrary.native_size(&"no/such/picture") == Vector2i.ZERO,
+	t.check(not atlas.is_acquired(&"ui"), "asking geometry acquired nothing")
+	t.check(AtlasTable.baked().native_size(&"no/such/picture") == Vector2i.ZERO,
 			"an unknown region has no size")
-	t.check(not AtlasLibrary.has_region(&"no/such/picture"), "an unknown region is not known")
+	t.check(not AtlasTable.baked().has_region(&"no/such/picture"), "an unknown region is not known")
 
 ## The page arrives on the first reference and is *gone* on the last — checked through a
 ## `WeakRef` to the texture itself rather than through the library's own bookkeeping, since a
 ## counter that reaches nought while the texture stays resident is exactly the bug this file
 ## exists to prevent.
 func _test_a_page_arrives_and_leaves_with_its_references(t) -> void:
-	AtlasLibrary.reset_for_tests()
+	var atlas := AtlasLibrary.new()
 	var name := &"ui/pause"
-	AtlasLibrary.acquire(&"ui")
-	t.check(AtlasLibrary.reference_count(&"ui") == 1, "the first acquire counts one")
-	var region := AtlasLibrary.region(name)
+	atlas.acquire(&"ui")
+	t.check(atlas.reference_count(&"ui") == 1, "the first acquire counts one")
+	var region := atlas.region(name)
 	t.check(region != null, "an acquired group answers its region")
 	if region == null:
 		return
 	t.check(region.filter_clip, "a region clips its own filtering")
-	t.check(region.get_size() == Vector2(AtlasLibrary.native_size(name)),
+	t.check(region.get_size() == Vector2(AtlasTable.baked().native_size(name)),
 			"a region reports the picture's own size, not the page's")
-	t.check(AtlasLibrary.region(name) == region, "a region is handed out once and cached")
-	AtlasLibrary.acquire(&"ui")
-	t.check(AtlasLibrary.reference_count(&"ui") == 2, "a second acquire counts two")
+	t.check(atlas.region(name) == region, "a region is handed out once and cached")
+	atlas.acquire(&"ui")
+	t.check(atlas.reference_count(&"ui") == 2, "a second acquire counts two")
 	var page: WeakRef = weakref(region.atlas)
-	AtlasLibrary.release(&"ui")
+	atlas.release(&"ui")
 	t.check(page.get_ref() != null, "the page survives while a reference is left")
-	t.check(AtlasLibrary.region(name) != null, "and its regions still answer")
+	t.check(atlas.region(name) != null, "and its regions still answer")
 	region = null
-	AtlasLibrary.release(&"ui")
-	t.check(AtlasLibrary.reference_count(&"ui") == 0, "the last release counts nought")
+	atlas.release(&"ui")
+	t.check(atlas.reference_count(&"ui") == 0, "the last release counts nought")
 	t.check(page.get_ref() == null, "the page texture is gone once nothing holds it")
-	t.check(not AtlasLibrary.is_acquired(&"ui"), "and the group holds nothing")
+	t.check(not atlas.is_acquired(&"ui"), "and the group holds nothing")
 	# What a released group answers `region()` — null, with a `push_error` naming the region —
 	# is deliberately not exercised here. The error would be a real engine error in the run's
 	# output, and an engine error in a suite makes the gate red whether or not a test expected
 	# it; the state above is the same claim without the noise.
-	t.check(AtlasLibrary.native_size(name) != Vector2i.ZERO,
+	t.check(AtlasTable.baked().native_size(name) != Vector2i.ZERO,
 			"and its geometry is still answerable afterwards")
 
 func _read_json(path: String) -> Dictionary:
@@ -294,12 +293,12 @@ class _GroupShape:
 
 static func _group_shapes() -> Dictionary:
 	var shapes: Dictionary = {}
-	for name: StringName in AtlasLibrary.region_names():
-		var group := AtlasLibrary.group_of(name)
+	for name: StringName in AtlasTable.baked().region_names():
+		var group := AtlasTable.baked().group_of(name)
 		if not shapes.has(group):
 			shapes[group] = _GroupShape.new()
 		var shape: _GroupShape = shapes[group]
-		var size := AtlasLibrary.native_size(name)
+		var size := AtlasTable.baked().native_size(name)
 		shape.count += 1
 		var bordered := size + Vector2i.ONE * (2 * AtlasLibrary.PADDING)
 		shape.bordered_area += bordered.x * bordered.y
@@ -330,7 +329,7 @@ func _test_pages_meet_a_fill_floor(t) -> void:
 	var shapes := _group_shapes()
 	for group: StringName in shapes.keys():
 		var shape: _GroupShape = shapes[group]
-		var page := AtlasLibrary.page_size(group)
+		var page := AtlasTable.baked().page_size(group)
 		var fill := 100.0 * float(shape.bordered_area) / float(page.x * page.y)
 		var floor_percent := _fill_floor_percent(shape.count)
 		t.check(fill >= floor_percent,
@@ -347,7 +346,7 @@ func _test_pages_meet_an_aspect_ceiling(t) -> void:
 	var shapes := _group_shapes()
 	for group: StringName in shapes.keys():
 		var shape: _GroupShape = shapes[group]
-		var page := AtlasLibrary.page_size(group)
+		var page := AtlasTable.baked().page_size(group)
 		var aspect := float(maxi(page.x, page.y)) / float(mini(page.x, page.y))
 		var ceiling := AtlasLibrary.aspect_ceiling(shape.sizes)
 		t.check(aspect <= ceiling,
