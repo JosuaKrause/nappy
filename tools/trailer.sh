@@ -564,7 +564,13 @@ cleanup() {
     [[ -z "$LOAD_PID" ]] || kill "$LOAD_PID" 2>/dev/null || true
     rig_focus_watch_stop "$FOCUS_WATCHER_PID"
     rm -rf "$WORK"
+    import_restore_run
 }
+# project.godot and docs/ARCHITECTURE.md have been found rewritten after tools that run Godot; this
+# reverts such a rewrite on exit and keeps a deliberate edit (tools/lib_import_restore.sh).
+# shellcheck source=tools/lib_import_restore.sh
+source "$PROJECT_DIR/tools/lib_import_restore.sh"
+import_restore_arm "$PROJECT_DIR"
 trap cleanup EXIT
 
 TREE_BEFORE="$(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null || true)"

@@ -626,7 +626,7 @@ fi
 # unrelated prerequisite is stubbed; flag validation, process supervision and log checks stay real.
 recipe_project="$work_dir/recipe-project"
 mkdir -p "$recipe_project/tools" "$recipe_project/src/dev"
-cp tools/scene-recipes.sh tools/shot.sh tools/lib_dev_flags.sh tools/lib_disk_headroom.sh "$recipe_project/tools/"
+cp tools/scene-recipes.sh tools/shot.sh tools/lib_dev_flags.sh tools/lib_disk_headroom.sh tools/lib_import_restore.sh "$recipe_project/tools/"
 cp src/dev/dev_flags.gd "$recipe_project/src/dev/"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$recipe_project/tools/bake-atlases.sh"
 chmod +x "$recipe_project/tools/bake-atlases.sh"
@@ -1215,6 +1215,54 @@ out="$(cd "$ws_repo" && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.com GIT_COM
 status=$?
 check_that "update-pr.sh refuses a branch that adds its own whitespace error" \
     '[[ $status -ne 0 && "$out" == *"branch.txt"* && "$out" == *"git diff --cached --check"* ]]'
+
+# ------------------- lib_import_restore.sh puts back a rewrite and keeps a deliberate edit -------------
+# A throwaway repo with the two files committed. A rewrite (spaces to tabs in ARCHITECTURE.md,
+# stripped comments and a dropped stretch key in project.godot) is reverted; a deliberate edit made
+# during the run survives with one line on stderr; a file that was already dirty is left alone.
+ir_repo="$(mktemp -d)"
+(
+    cd "$ir_repo" && git init -q . && mkdir docs \
+        && printf '; comment\n\n[display]\nwindow/stretch/aspect="keep"\nsize=1\n' > project.godot \
+        && printf 'a    b\n' > docs/ARCHITECTURE.md \
+        && git add . && git -c user.name=t -c user.email=t@example.com commit -q -m init
+)
+# shellcheck source=tools/lib_import_restore.sh
+source "$root/tools/lib_import_restore.sh"
+ir_rewrite() {
+    printf '\n[display]\nsize=1\n' > "$ir_repo/project.godot"
+    printf 'a\tb\n' > "$ir_repo/docs/ARCHITECTURE.md"
+}
+import_restore_arm "$ir_repo"
+ir_rewrite
+import_restore_run 2>/dev/null
+check_that "lib_import_restore.sh reverts the known rewrite of both files" \
+    '[[ -z "$(git -C "$ir_repo" status --porcelain)" ]]'
+import_restore_arm "$ir_repo"
+printf '; comment\n\n[display]\nwindow/stretch/aspect="keep"\nsize=2\n' > "$ir_repo/project.godot"
+printf 'a    b\nnew line\n' > "$ir_repo/docs/ARCHITECTURE.md"
+ir_err="$(import_restore_run 2>&1)"
+check_that "lib_import_restore.sh keeps a deliberate edit made during the run and says so" \
+    '[[ "$(cat "$ir_repo/project.godot")" == *"size=2"* && "$(cat "$ir_repo/docs/ARCHITECTURE.md")" == *"new line"* \
+        && "$ir_err" == *"project.godot changed during the run"* && "$ir_err" == *"ARCHITECTURE.md changed during the run"* ]]'
+git -C "$ir_repo" checkout -q -- .
+printf 'mine\n' > "$ir_repo/project.godot"
+import_restore_arm "$ir_repo"
+ir_rewrite
+import_restore_run 2>/dev/null
+check_that "lib_import_restore.sh leaves a file that was already dirty alone" \
+    '[[ "$(cat "$ir_repo/project.godot")" == "$(printf "\n[display]\nsize=1")" && -z "$(git -C "$ir_repo" status --porcelain -- docs/ARCHITECTURE.md)" ]]'
+rm -rf "$ir_repo"
+# Every script the helper's header lists as covered sources it and arms it.
+for ir_script in check test cost-table bake-atlases export-web scene-draft scene-recipes record trailer shot; do
+    # A trap line carries the run step; export-web.sh, record.sh and trailer.sh trap a function that does.
+    ir_run='^[[:space:]]*trap .*import_restore_run'
+    case "$ir_script" in export-web|record|trailer) ir_run='^    import_restore_run$';; esac
+    check_that "$ir_script.sh sources lib_import_restore.sh and arms it" \
+        'grep -Fq "tools/lib_import_restore.sh\"" "$root/tools/$ir_script.sh" \
+         && grep -Eq "^[[:space:]]*import_restore_arm " "$root/tools/$ir_script.sh" \
+         && grep -Eq "$ir_run" "$root/tools/$ir_script.sh"'
+done
 
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
