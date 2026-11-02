@@ -23,10 +23,12 @@ const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
+## The save under test, at a scratch path.
+var _save := GameSave.new(_SCRATCH_PATH)
+
 func run(t) -> void:
 	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
-	GameSave.set_path_override(_SCRATCH_PATH)
 
 	_test_going_back_restores_every_field_the_save_carries(t)
 	_test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t)
@@ -46,8 +48,8 @@ func run(t) -> void:
 	_test_no_control_on_the_title_stops_a_press(t)
 	_test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t)
 
-	_with_saving(func() -> void: GameSave.clear())
-	GameSave.set_path_override("")
+	_with_saving(func() -> void: _save.clear())
+	_save.free()
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
 	GameState.calendar.checkpoint = baseline["checkpoint"]
@@ -55,20 +57,20 @@ func run(t) -> void:
 ## `callable` run as a windowed release run, which saves, against the scratch file `run()` set; the
 ## configuration is taken back off afterwards, since a booted `main` hands its own.
 func _with_saving(callable: Callable) -> void:
-	GameSave.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
+	_save.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
 	callable.call()
-	GameSave.configure(null)
+	_save.configure(null)
 
 ## `GameState` written to the scratch file the way a game writes it, under way. Whether it was kept.
 func _write_to_the_scratch_file() -> bool:
 	var kept := [false]
-	_with_saving(func() -> void: kept[0] = GameSave.write(GameState, true) == GameSave.Result.CONFIRMED)
+	_with_saving(func() -> void: kept[0] = _save.write(GameState, true) == GameSave.Result.CONFIRMED)
 	return kept[0]
 
 ## What the scratch file resumes into `GameState`, `{}` when nothing.
 func _read_from_the_scratch_file() -> Dictionary:
 	var resumed := [{}]
-	_with_saving(func() -> void: resumed[0] = GameSave.try_resume(GameState))
+	_with_saving(func() -> void: resumed[0] = _save.try_resume(GameState))
 	return resumed[0]
 
 # ------------------------------------------------------------------ the checkpoint ---

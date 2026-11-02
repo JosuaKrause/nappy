@@ -62,7 +62,6 @@ const EXEMPT: Dictionary[String, String] = {
 	"event_footprints._warning_guard": "the memo's guard for those sizes",
 	"entity_halo._shared_material": "the shared halo material, created on first use",
 	"mover._shared": "movers shared by their flags, a pure function of the flags",
-	"run_config._at_boot": "the parse of the command line and page query, fixed for the process",
 }
 
 ## The fields a suite that boots `main` (or drives a run the observers watch) moves on: the
@@ -73,7 +72,6 @@ const EXEMPT: Dictionary[String, String] = {
 const OBSERVER_FIELDS: Dictionary[String, Array] = {
 	"Telemetry": ["_config", "_run_dir", "_day_attempts", "_attempt", "_burst_serial"],
 	"VisitCounter": ["_config", "_run", "_day", "_open_tasks", "_reported_run_begun"],
-	"GameSave": ["_config", "_last_operation"],
 }
 
 ## The values of `OBSERVER_FIELDS` now, copied.
@@ -93,8 +91,6 @@ static func put_back_observers(held: Dictionary) -> void:
 				value.duplicate(true) if value is Dictionary or value is Array else value)
 
 static func _observer_target(owner: String) -> Object:
-	if owner == "GameSave":
-		return GameSave
 	return Engine.get_main_loop().root.get_node(owner)
 
 static func _observer_get(owner: String, field: String) -> Variant:
@@ -180,7 +176,7 @@ static func _autoload(out: Dictionary[String, String], autoload: String) -> void
 		for connection in node.get_signal_connection_list(signal_name):
 			var callable: Callable = connection["callable"]
 			# A connection made to a script rather than to an object is a static handler that a
-			# guarded `is_connected` check connects once for the process (`GameSave`'s).
+			# guarded `is_connected` check connects once for the process.
 			if callable.get_object() is GDScript:
 				continue
 			targets.append("%s.%s" % [_describe(callable.get_object(), 0), callable.get_method()])

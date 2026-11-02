@@ -17,6 +17,10 @@ extends Node
 ## reload takes the sitting the one before parked there, rather than the test setting and
 ## resetting statics; a test driving a `main` off the tree hands it one (`main.use_sitting()`).
 ##
+## **It is the home of the save too** (`GameSave`, a child node `main` makes on the first boot and
+## finds there after): the web flush's page-side objects, the operation ids and the file's path
+## outlive the reload that frees `main`. It names no save, for the reason it names no symbol.
+##
 ## **It is the home of a save symbol that outlives its scene**: `SaveIndicator.outlive_the_scene()`
 ## reparents a symbol that is up under this node, and the next boot's `SaveIndicator.carried()`
 ## finds it here. It names no symbol itself, since it sits below the view that draws one.

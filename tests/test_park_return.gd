@@ -24,17 +24,18 @@ const PATIENCE := 40.0
 const REACTION := 2.0
 const _SCRATCH_PATH := "user://test_park_return_scratch.json"
 
+## The save the boots read from, at a scratch path, handed to each (`main.use_save()`).
+var _save := GameSave.new(_SCRATCH_PATH)
+
 func run(t) -> void:
 	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
-	GameSave.set_path_override(_SCRATCH_PATH)
 	for seed_value in SEEDS:
 		_test_asleep_in_the_park_and_out_through_the_gap(t, seed_value)
 		_test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value)
 		_test_shut_in_with_the_baby_asleep(t, seed_value)
-	_with_saving(func() -> void: GameSave.clear())
-	GameSave.configure(null)
-	GameSave.set_path_override("")
+	_with_saving(func() -> void: _save.clear())
+	_save.free()
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
 	GameState.calendar.checkpoint = baseline["checkpoint"]
@@ -44,9 +45,9 @@ func run(t) -> void:
 ## `callable` run as a windowed release run, which saves, against the scratch file `run()` set; the
 ## configuration is taken back off afterwards, since a booted `main` hands its own.
 func _with_saving(callable: Callable) -> void:
-	GameSave.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
+	_save.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
 	callable.call()
-	GameSave.configure(null)
+	_save.configure(null)
 
 ## A booted `Main` standing at day 12's dawn on `seed_value`, a normal run, with the mark read and
 ## the swing offered.
@@ -56,8 +57,9 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	# file this suite points `GameSave` at.
 	GameState.start_run(seed_value)
 	GameState.header.day = ResistanceSteps.swing_day()
-	_with_saving(func() -> void: GameSave.write(GameState, true))
+	_with_saving(func() -> void: _save.write(GameState, true))
 	var main: Node2D = MAIN_SCENE.instantiate()
+	main.use_save(_save)
 	# A run with no flag at all, whatever this process's own command line says.
 	main.configure(RunConfig.parse(PackedStringArray(), "", true, false, {}, false))
 	t.add_child(main)

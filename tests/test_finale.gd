@@ -2203,17 +2203,18 @@ func _test_escape_section_came_from_the_file(t) -> void:
 ## `_open_the_first_screen_of_the_escape()` — not a screen this test opened by hand.
 func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void:
 	_saved_section = GameState.facts.escape_section
-	GameSave.set_path_override(_SCRATCH_SAVE)
 	var config := RunConfig.parse(PackedStringArray(["--no-telemetry"]), "", false, false, {}, false)
-	GameSave.configure(config)
+	var _save := GameSave.new(_SCRATCH_SAVE)
+	_save.configure(config)
 	GameState.start_run(SEEDS[0])
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.facts.escape_section = DaySpec.Section.BUILDING
-	t.check(GameSave.write(GameState, false) == GameSave.Result.CONFIRMED,
+	t.check(_save.write(GameState, false) == GameSave.Result.CONFIRMED,
 			"a save closed inside the building is on disk")
 	# A fresh page: nothing of the escape on the autoload, only in the file.
 	GameState.facts.escape_section = DaySpec.Section.NONE
 	var main: Node2D = MAIN_SCENE.instantiate()
+	main.use_save(_save)
 	main.configure(config)
 	t.add_child(main)
 	t.get_tree().process_frame.emit()
@@ -2242,9 +2243,8 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
 			"the clock still standing still behind the brief")
 
-	GameSave.clear()
-	GameSave.configure(null)
-	GameSave.set_path_override("")
+	_save.clear()
+	_save.free()
 	AtlasLibrary.close_loading_window()
 	_free_the_escape(t, main)
 
@@ -2334,8 +2334,8 @@ func _test_a_handover_does_not_open_on_the_title(t) -> void:
 ## `tests/test_pause.gd`'s own note gives for never calling it directly. What is checked instead is
 ## the wiring that reaches it (both of the escape's own screens, the same as a day's two) and the one
 ## fact of its own body that answers "a fresh run" for the escape specifically —
-## `GameState.facts.escape_section = DaySpec.Section.NONE`; its `GameSave.clear()` is exercised
-## safely, behind a path override, by `tests/test_save.gd` and is not repeated here.
+## `GameState.facts.escape_section = DaySpec.Section.NONE`; its `_save.clear()` is exercised
+## safely, at a scratch path, by `tests/test_save.gd` and is not repeated here.
 func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
 	var saved_section := GameState.facts.escape_section
 	GameState.facts.escape_section = DaySpec.Section.CITY
