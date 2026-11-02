@@ -128,7 +128,7 @@ const zombie = pid => {
     return stat.slice(stat.lastIndexOf(')') + 1).trimStart().startsWith('Z');
   } catch { return false; }
 };
-const alive = pid => {
+export const alive = pid => {
   try { process.kill(pid, 0); } catch (error) { return error.code === 'EPERM'; }
   return !zombie(pid);
 };
