@@ -97,7 +97,7 @@ func input_at(tick: int) -> Dictionary:
 	return {"direction": direction, "run": running, "blending": false}
 
 ## Presses `input` (`input_at()`'s answer) through the call the touch scheme presses through,
-## `TouchControls._set_axis()` on both axes, and holds or lets go of `run` to match.
+## `TouchControls.set_axis()` on both axes, and holds or lets go of `run` to match.
 ##
 ## **A blended press is lengthened by the deadzone first.** `Input.get_vector()`, which the stroller
 ## reads, maps a pressed length `L` between the actions' deadzone and one onto `(L - deadzone) / (1
@@ -108,8 +108,8 @@ static func press(input: Dictionary) -> void:
 	var direction: Vector2 = input.direction
 	if bool(input.get("blending", false)):
 		direction = pressed_for(direction)
-	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
-	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
+	TouchControls.set_axis(&"move_left", &"move_right", direction.x)
+	TouchControls.set_axis(&"move_up", &"move_down", direction.y)
 	if bool(input.run):
 		Input.action_press(&"run")
 	else:

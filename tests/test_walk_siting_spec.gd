@@ -44,7 +44,7 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t) -> void:
 	var manager := EventManager.new()
 	manager.use_the_spec(DaySpec.for_day(DAY))
 	t.check(manager.ahead.holds_the_home_streets, "a day's spec holds the home's streets after dawn")
-	manager.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS))
+	manager.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
 	t.check(not manager.ahead.holds_the_home_streets,
 			"and the escape city's spec does not, as its dawn placement does not")
 	manager.free()
@@ -60,7 +60,7 @@ func _test_the_siting_the_director_hands_out_carries_the_rule(t) -> void:
 	manager.world.city_map = map
 	manager.world.day = DAY
 	manager.ahead._day_tree = RouteTree.for_day(map, DAY)
-	manager.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS))
+	manager.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
 	t.check(not manager.ahead._task_siting().holds_the_home_streets,
 			"the escape city's spec reaches the siting the director hands out")
 	manager.ahead._task_siting_cache = null

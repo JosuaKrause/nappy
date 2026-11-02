@@ -59,7 +59,7 @@ const EXITS: Array[String] = ["tunnel", "bridge"]
 ## on a machine several agents share, where agents' test runs have crashed Godot (minty-lemur #792),
 ## so two unless `ESCAPE_WINNABLE_PARALLEL` sets another number.
 const PARALLEL := 2
-## Well past the section's own `Tuning.FINALE_LENGTH_SECONDS` and the boot before it: a walk still
+## Well past the section's own `RunConfig.FINALE_LENGTH_SECONDS` and the boot before it: a walk still
 ## running then has hung, and is reported so rather than waited on.
 const TIMEOUT_SECONDS := 260.0
 const POLL_MSEC := 250
@@ -327,4 +327,4 @@ func _print_walks(rows: Array[Dictionary]) -> void:
 
 ## The escape city's section spec, the one the run flow walks the city under.
 static func _city_spec() -> DaySpec:
-	return DaySpec.for_section(DaySpec.Section.CITY, Tuning.FINALE_LENGTH_SECONDS)
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)

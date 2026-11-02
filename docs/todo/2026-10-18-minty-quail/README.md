@@ -67,12 +67,11 @@ early to injected fakes and public APIs (`tests-public-seams.md`); nothing is re
 during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
 1. `shared-components.md`.
-2. `tuning.md`, alongside the extractions it serves.
-3. `comments.md`: in whichever PR touches the code.
-4. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs;
+2. `comments.md`: in whichever PR touches the code.
+3. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs;
    `tests-isolated.md` and `hidden-statics.md` beside it, since the tests that patch a static and put it back are the ones
    that move to an injected fake once its owner holds the state instead.
-5. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
+4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
    step's record lists what its change needs remeasured. That includes the crowd tick, measured

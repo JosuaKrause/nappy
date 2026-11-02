@@ -31,7 +31,7 @@ static func restart(events: EventManager, scene: InteriorScene) -> void:
 
 ## The building section's own spec.
 static func spec() -> DaySpec:
-	return DaySpec.for_section(DaySpec.Section.BUILDING, Tuning.FINALE_LENGTH_SECONDS)
+	return DaySpec.for_section(DaySpec.Section.BUILDING, RunConfig.FINALE_LENGTH_SECONDS)
 
 ## The basement's vents: the steam plans, in the order she meets them.
 static func vents(events: EventManager) -> Array[EventScheduler.Planned]:

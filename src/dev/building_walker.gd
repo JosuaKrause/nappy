@@ -5,7 +5,7 @@ extends Node
 ## (`RouteRig`, built once the city stands) with nobody touching it. Like `RouteRig` it is a dev
 ## tool behind the same debug-build gate and answers only to a dev flag, never a player control
 ## (docs/DECISIONS.md, M88): it presses the same movement actions a thumb does
-## (`TouchControls._set_axis()`) and goes through the doors and the exit the way she does, so the
+## (`TouchControls.set_axis()`) and goes through the doors and the exit the way she does, so the
 ## fade, the events, the meter and the clock all run as they do for a player. It never moves her and
 ## never calls the win.
 ##
@@ -32,8 +32,6 @@ const _JUMP_DISTANCE := Tuning.TILE_SIZE * 2.0
 var _player: Stroller
 var _day: DayController
 var _map: InteriorMapPlan
-var _continue: Callable
-var _pressed := false
 ## The legs of the walk, each a list of world points; the one being followed, and the point in it.
 var _legs: Array[PackedVector2Array] = []
 var _leg := 0
@@ -50,19 +48,17 @@ func setup(map: InteriorMapPlan, player: Stroller, day: DayController) -> void:
 	_day = day
 	_day.day_finished.connect(_on_day_finished)
 
-## What a continue on a screen does (`main._on_summary_continued()`).
-func use_continue(continue_from: Callable) -> void:
-	_continue = continue_from
+## Answers the building's brief (`press_the_brief()`): what a continue on a screen does is handed by
+## `main` (`use_continue()`).
+var _brief := BriefPresser.new([DaySpec.Section.BUILDING])
 
-## The building's brief is up (`RunFlow.brief_opened`): answered with the continue a tap and a key
-## both end in, a frame later, since `main` shows the screen right after the flow opens it. Only the
-## first brief of the building is pressed; a retry brief after a loss waits for a person.
+func use_continue(continue_from: Callable) -> void:
+	_brief.use_continue(continue_from)
+
+## The building's brief is up (`RunFlow.brief_opened`): pressed by `BriefPresser`, which leaves a
+## retry brief after a loss to a person.
 func press_the_brief(spec: DaySpec) -> void:
-	if spec.section != DaySpec.Section.BUILDING or _continue.is_null() or _pressed:
-		return
-	_pressed = true
-	await get_tree().process_frame
-	_continue.call(RunFlow.Mode.BRIEF)
+	await _brief.press(get_tree(), spec)
 
 ## The building section has been planned (`RunFlow.day_planned`): plans the walk out from where she
 ## stands.
@@ -122,8 +118,8 @@ func _physics_process(_delta: float) -> void:
 		if absf(along) <= _SIDEWAYS_SLACK:
 			along = float(slope) if points[_point].y > here.y else -float(slope)
 		direction = Vector2(signf(along), 0.0)
-	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
-	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
+	TouchControls.set_axis(&"move_left", &"move_right", direction.x)
+	TouchControls.set_axis(&"move_up", &"move_down", direction.y)
 	# The pursued shaft is run, not walked: the masked man comes up it faster than a walk, and a
 	# walker is caught (`EventCatalogue._masked_pursuer()`).
 	if _pursued_shaft.has(_map.world_to_tile(here)):
@@ -155,5 +151,5 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 
 func _release() -> void:
 	Input.action_release(&"run")
-	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0.0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0.0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0.0)

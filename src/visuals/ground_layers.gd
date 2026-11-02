@@ -27,6 +27,16 @@ extends RefCounted
 ## stone's own fill colour. There is no runtime switch between the two: the pixels on the page are
 ## the ones the build chose.
 
+## How far a route curbstone's own pixels are blended toward `Palette.ROUTE_KERB_TINT`
+## (`GroundLayers._tint_opaque`/`_tint_matching`, `City.tint_the_route()`) — the whole of the
+## M145 trial's own dial. The player sets it by eye against a still, not this comment: raise it
+## while the cast reads as invisible, lower it while it reads as a drawn hint rather than a cast,
+## and zero is the trial's off switch, with nothing else to change. The strip the blend applies to
+## is two or three pixels wide (the SVG art's 2px band, the illustrated `curbstone.png`'s 3px one),
+## so the number that read as nothing spread over a whole tile has to run higher to register within
+## its own width.
+const ROUTE_KERB_TINT_ALPHA := 0.45
+
 ## The composition recipe: which shared base and which transparent overlays each source id wants,
 ## which severity pool each damage source draws from, and the grass features. **A data file the
 ## game reads at runtime, so it lives under `assets/` and is named in the Web preset's
@@ -522,7 +532,7 @@ static func _layer_image(filename: String, page: Image) -> Image:
 # ----------------------------------------------------------------- the tinting ---
 
 ## Blends every opaque pixel of `image` toward `Palette.ROUTE_KERB_TINT` by
-## `Tuning.ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha. Used for the curbstone
+## `ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha. Used for the curbstone
 ## component, whose opaque pixels are the whole of the drawing.
 static func _tint_opaque(image: Image) -> Image:
 	var result := image.duplicate()
@@ -535,7 +545,7 @@ static func _tint_opaque(image: Image) -> Image:
 	return result
 
 ## Blends every pixel of `image` within `_COLOR_MATCH_TOLERANCE` of `target` toward
-## `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha.
+## `Palette.ROUTE_KERB_TINT` by `ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha.
 ## Used for an SVG bake's kerb tile, where the stone is identified by its own authored fill colour
 ## rather than by a separate component picture.
 static func _tint_matching(image: Image, target: Color) -> Image:
@@ -554,6 +564,6 @@ static func _close_enough(pixel: Color, target: Color) -> bool:
 			and absf(pixel.b - target.b) < _COLOR_MATCH_TOLERANCE
 
 static func _tinted_pixel(pixel: Color) -> Color:
-	var blended := pixel.lerp(Palette.ROUTE_KERB_TINT, Tuning.ROUTE_KERB_TINT_ALPHA)
+	var blended := pixel.lerp(Palette.ROUTE_KERB_TINT, ROUTE_KERB_TINT_ALPHA)
 	blended.a = pixel.a
 	return blended

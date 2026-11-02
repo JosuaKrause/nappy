@@ -1314,8 +1314,8 @@ func activity_snapshot() -> Dictionary:
 	return result
 
 func _release_input() -> void:
-	TouchControls._set_axis(&"move_left", &"move_right", 0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0)
 	Input.action_release("run")
 
 func _exit_tree() -> void:

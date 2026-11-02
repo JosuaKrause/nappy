@@ -650,7 +650,7 @@ background presses through `TouchInput.is_press()`, so a press away from restart
 `TitleScreen` requires a press on one of its three mode buttons.
 
 A press or a drag computes a heading — `(target - origin)`, normalised — and presses it through
-`_set_axis()`, one signed value onto a pair of opposite actions. There is no target and nothing to
+`set_axis()`, one signed value onto a pair of opposite actions. There is no target and nothing to
 arrive at: she walks the heading until the next press or motion event changes it. A double press
 needs both a time window (`DOUBLE_TAP_SECONDS`) and a distance window (`DOUBLE_TAP_DISTANCE`) to
 read as a modifier on the same direction rather than a new one, and holds `run` until the next

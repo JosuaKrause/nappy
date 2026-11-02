@@ -93,18 +93,60 @@ extends RefCounted
 ## an alley that touches the corridor at either end is the way round a wall the design asks for,
 ## and one that touches it at neither end would only ever bridge two sealed streets — a second
 ## city behind the walls rather than a door through them. **And even then, only sometimes** —
-## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` rolls each qualifying alley rather than sealing every one of
+## `ALLEY_MOUTH_SEAL_CHANCE` rolls each qualifying alley rather than sealing every one of
 ## them every day, so the alley reads as an occasional exception rather than a wall of its own. See
 ## `_seal_alley_mouths`.
 ##
 ## **From `Tuning.REGION_WALL_FIRST_DAY` on, only a share of those streets and alleys is sealed**
-## (`Tuning.GATEHOUSE_DAY_SEAL_SHARE`): the region wall divides the city into regions from that
+## (`GATEHOUSE_DAY_SEAL_SHARE`): the region wall divides the city into regions from that
 ## day, and the player found the two together much harder to navigate. See `_seals_this_street`.
 ##
 ## **A crossing alley — one whose two mouths open onto two different regions' ground — is never one
 ## of these candidates**, whichever way the tree runs. `RegionPlanner` already decides it as a door
 ## or a wall of its own, from `Tuning.REGION_WALL_FIRST_DAY` on, and hands its rect's `position` to
 ## `skip` so this pass never rolls for it too. See `docs/CITY.md`, "Regions and the wall".
+
+## The chance a through-alley disconnected from the day's tree actually gets walled at both mouths,
+## rolled once per qualifying alley. *(Playtest 25, finding 5: "the probability of blocking off
+## alleys should be way lower" — and, on which half of "alley" that covers, "at least for full
+## blockages -- robbers can be frequent".)* Before this it was 1.0 in code rather than in a
+## constant: `SealPlanner._seal_alley_mouths` walled every qualifying alley, every day, with no roll
+## at all.
+##
+## **Started low rather than derived**, the same way `SEAL_THINNING_FRACTION` was: too high and
+## alleys read as closed off wholesale again, which is the complaint; too low and the class doc's
+## own reason for sealing one at all — an alley walled at neither end, with both its streets sealed,
+## is a shortcut between two places the day has already said no to — stops mattering. Move this
+## against a played day rather than an argument. `alley_robbery`'s own frequency is untouched: the
+## player was explicit that the event and the physical blockage are two different things wearing one
+## word.
+const ALLEY_MOUTH_SEAL_CHANCE := 0.15
+## **From the gatehouse day on, fewer hard blockers off the day's route tree** — *(azure-puffin,
+## point 4: "when the guard houses are set up the city gets much harder to navigate let's loosen the
+## density of the hard blocking events in that case"; asked which, "fewer of all three. gatehouses
+## stay and remain on the actual paths".)* The region wall and its doors divide the city into regions
+## from `Tuning.REGION_WALL_FIRST_DAY`, so the three things that close the ground off the tree are thinned
+## from that day on, each by one share below. Nothing about the tree, the routing or the region plan
+## changes: these only take blockers away, and a blocker taken away only adds ground she can reach
+## (the **city** skill's one monotonic exception), so every reachability guarantee stays true.
+##
+## **How much is a proposal, not something the player asked for** — they said *fewer*, not how many
+## — so each share is a half and each is its own constant, to be moved against a played day.
+##
+## The share of off-tree streets `SealPlanner.plan_day` still seals, rolled once per street that
+## would otherwise carry a seal; the same share multiplies `ALLEY_MOUTH_SEAL_CHANCE` for a
+## through-alley's mouths.
+const GATEHOUSE_DAY_SEAL_SHARE := 0.5
+## The fraction of the day's **soft** seal pairs that lose one body in the final thinning pass, so
+## a wrong turn stays open long enough to be taken and discovered rather than reading as a wall on
+## sight. *(Playtest 22, finding 6: "the guidance is there and properly pushes the player in the
+## right direction but it feels a bit on guardrails… subtlety is key".)*
+##
+## **This is the dial the whole pass is about, and it is started small on purpose.** Too low and
+## the walls stay too visible to ever be walked into by accident; too high and the corridor stops
+## being the way through, which is M64's central claim. `SealPlanner._thin_soft_pairs` is the pass;
+## move this against a played day rather than an argument.
+const SEAL_THINNING_FRACTION := 0.08
 
 enum Strength { HARD, SOFT }
 
@@ -156,7 +198,7 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 
 ## Every seal for the walk `spec` describes: one per real street off the walk `route` hands in
 ## (`RouteSource.walks_the_street()`) that is not the street the walk starts in, the main road or a
-## boundary — one in `Tuning.GATEHOUSE_DAY_SEAL_SHARE` of them from `Tuning.REGION_WALL_FIRST_DAY` on
+## boundary — one in `GATEHOUSE_DAY_SEAL_SHARE` of them from `Tuning.REGION_WALL_FIRST_DAY` on
 ## — thinned by a small fraction, plus the mouths of any through-alley the walk does not reach
 ## (`RouteSource.reaches_the_alley()`). Returned as `EventScheduler.Planned` so the caller
 ## (`DayPlanner`, for a day and for the escape's city) can simply append
@@ -178,7 +220,7 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ##   join the two chains at the one street that touches both exits.
 ## - **Every street and every alley mouth off the walk is sealed**
 ##   (`DaySpec.seals_every_street_off_the_walk`), rather than a share of them and a fraction of the
-##   alleys: `Tuning.ALLEY_MOUTH_SEAL_CHANCE` exists so an alley reads as an occasional exception on
+##   alleys: `ALLEY_MOUTH_SEAL_CHANCE` exists so an alley reads as an occasional exception on
 ##   an ordinary day; one open alley in the finale is a second way through.
 ##
 ## **The exempt street is the one the walk starts in** (`RouteSource.street_it_starts_in()`): a
@@ -338,7 +380,7 @@ static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> b
 
 ## Whether a street the loop in `plan_day` would seal is sealed today, from
 ## `Tuning.REGION_WALL_FIRST_DAY` on — one roll per street against
-## `Tuning.GATEHOUSE_DAY_SEAL_SHARE`. *(azure-puffin, point 4: "when the guard houses are set up the
+## `GATEHOUSE_DAY_SEAL_SHARE`. *(azure-puffin, point 4: "when the guard houses are set up the
 ## city gets much harder to navigate let's loosen the density of the hard blocking events in that
 ## case"; "fewer of all three".)* The region wall already divides the city into regions from that day,
 ## and a seal on every street off the tree as well is what made it hard to navigate.
@@ -353,7 +395,7 @@ static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> b
 ## ground she can reach — the **city** skill's monotonic exception, the same argument as the
 ## thinning pass's.
 static func _seals_this_street(rng: RandomNumberGenerator) -> bool:
-	return rng.randf() < Tuning.GATEHOUSE_DAY_SEAL_SHARE
+	return rng.randf() < GATEHOUSE_DAY_SEAL_SHARE
 
 ## The candidate id that is a felled street tree, and the one seal picture whose street is not a
 ## free choice: *(2026-09-11, the player: "fallen trees should only be possible on streets with
@@ -526,7 +568,7 @@ static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
 	planned.append(EventScheduler.Planned.new(def_b, map.tile_to_world(side_b)))
 	return planned
 
-## The final pass: drop one body of `Tuning.SEAL_THINNING_FRACTION` of the day's soft pairs, so a
+## The final pass: drop one body of `SEAL_THINNING_FRACTION` of the day's soft pairs, so a
 ## wrong turn stays open long enough to be taken and discovered. *(Playtest 22, finding 6: "removing
 ## some obstacles randomly might lead the player down a bad path until they return to the actual
 ## path because they get stuck otherwise. this makes the actual path the player takes feel more
@@ -561,7 +603,7 @@ static func _thin_soft_pairs(map: CityMap, pairs: Array, rng: RandomNumberGenera
 		var along: int = entry[2]
 		var bands := [_sidewalk_band_tiles(segment, true, along),
 				_sidewalk_band_tiles(segment, false, along)]
-		if pair.size() == 2 and rng.randf() < Tuning.SEAL_THINNING_FRACTION:
+		if pair.size() == 2 and rng.randf() < SEAL_THINNING_FRACTION:
 			var side := rng.randi_range(0, 1)
 			kept.append(pair[side])
 			_mark_soft_sealed(map, bands[side])
@@ -703,9 +745,9 @@ static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -
 # ----------------------------------------------------------------------- alleys ---
 
 ## Seals the mouths of every through-alley the walk does not reach (`RouteSource.reaches_the_alley()`:
-## on a day, one that touches the tree at neither end) — and only a `Tuning.ALLEY_MOUTH_SEAL_CHANCE`
+## on a day, one that touches the tree at neither end) — and only a `ALLEY_MOUTH_SEAL_CHANCE`
 ## fraction of those, rolled once per qualifying alley, and from `Tuning.REGION_WALL_FIRST_DAY` on
-## that fraction times `Tuning.GATEHOUSE_DAY_SEAL_SHARE`, unless the spec seals every alley off the
+## that fraction times `GATEHOUSE_DAY_SEAL_SHARE`, unless the spec seals every alley off the
 ## walk (`DaySpec.seals_every_street_off_the_walk`, the escape's), which rolls nothing. See the
 ## class doc, "What alleys are for" — the smallest reading of a detail the design leaves open, taken
 ## rather than guessed at: an alley that touches the corridor at either end is kept open outright
@@ -725,9 +767,9 @@ static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
 	var every := spec.seals_every_street_off_the_walk
 	# From the gatehouse day on, the same share `_seals_this_street` keeps of the streets, folded
 	# into the one roll each qualifying alley already gets rather than rolled a second time.
-	var chance := Tuning.ALLEY_MOUTH_SEAL_CHANCE
+	var chance := ALLEY_MOUTH_SEAL_CHANCE
 	if day >= Tuning.REGION_WALL_FIRST_DAY:
-		chance *= Tuning.GATEHOUSE_DAY_SEAL_SHARE
+		chance *= GATEHOUSE_DAY_SEAL_SHARE
 	for rect in map.alley_rects:
 		# A through-alley can be built over by a later generation pass (`CityGenerator.
 		# _make_the_pair_solid`), which does not retract it from `alley_rects` — so the ground is

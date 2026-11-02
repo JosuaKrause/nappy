@@ -30,6 +30,7 @@ func run(t) -> void:
 	_test_going_back_restores_every_field_the_save_carries(t)
 	_test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t)
 	_test_checkpoint_zero_is_day_one_of_the_same_city(t)
+	_test_the_play_time_only_grows_across_every_way_back(t)
 	_test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpoint(t)
 	_test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t)
 	_test_choosing_hard_mode_drops_a_checkpoint_already_kept(t)
@@ -108,6 +109,8 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	var after := _flatten(GameSave.file_data(GameState, false))
 	var wanted := _flatten_run(expected)
 	wanted["state.nerves"] = Tuning.STARTING_NERVES
+	# The one field going back does not give back: the time played only grows (inbox #920 in plaid-penguin).
+	wanted["state.play_seconds"] = changed["state.play_seconds"]
 	for key in keys:
 		t.check(after[key] == wanted[key],
 				"'%s' is the checkpoint's own dawn again (%s, wanted %s)"
@@ -235,6 +238,55 @@ func _test_checkpoint_zero_is_day_one_of_the_same_city(t) -> void:
 			and GameState.resistance.completed_steps.is_empty(), "with every nerve and nothing done")
 	t.check(GameState.header.player_is_male == parent, "pushed by the same parent")
 	t.check(events == [[1, 3]], "and the counter hears checkpoint 1 from day 3 (%s)" % [events])
+
+## **The run's play time only ever grows** (inbox #920 in plaid-penguin): going back to checkpoint zero, going back
+## to a later checkpoint, retrying a lost day and a save continued after a go-back each leave the
+## time exactly as it was, and a new game from the title is the one thing that starts it at zero.
+## The go-back paths to checkpoint zero and to a later checkpoint fail on the code before the fix
+## (zero reset it, a later one took the dawn's); the retry and the save passed before and pin it.
+func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
+	# Back to checkpoint zero, from day 3.
+	GameState.start_run(_SEED)
+	GameState.calendar.finish_day(GameEnums.DayResult.WON)
+	GameState.calendar.finish_day(GameEnums.DayResult.WON)
+	GameState.calendar.begin_day()
+	GameState.header.play_ticks = 4321
+	GameState.header.nerves = 1
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(GameState.header.day == 1 and GameState.header.play_ticks == 4321,
+			"back to checkpoint zero keeps the play time (%d)" % GameState.header.play_ticks)
+
+	# Back to a later checkpoint: the dawn of day 4 held less time than the loss on day 5.
+	GameState.start_run(_SEED)
+	GameState.header.day = 4
+	GameState.header.play_ticks = 1000
+	GameState.calendar.begin_day()
+	GameState.calendar.finish_day(GameEnums.DayResult.WON)
+	GameState.calendar.begin_day()
+	GameState.header.play_ticks = 7777
+	GameState.header.nerves = 1
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
+	t.check(GameState.header.day == 4 and GameState.calendar.checkpoint_day() == 4
+			and GameState.header.play_ticks == 7777,
+			"back to a later checkpoint keeps the play time, not the dawn's (%d)" % GameState.header.play_ticks)
+
+	# A lost day retried with nerves left: no go-back, the header is not given back.
+	GameState.header.nerves = 3
+	GameState.header.play_ticks = 8000
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+	GameState.calendar.begin_day()
+	t.check(GameState.header.play_ticks == 8000, "a lost day's retry keeps the play time")
+
+	# A save continued after a go-back holds the time the go-back kept.
+	GameState.header.nerves = 1
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
+	var kept := GameState.header.play_ticks
+	t.check(GameSave._write_now(GameState, true), "the run is written after the go-back")
+	GameState.start_run(_SEED + 1)
+	t.check(GameState.header.play_ticks == 0, "a new game starts at zero")
+	GameSave._read_now(GameState)
+	t.check(kept == 8000 and GameState.header.play_ticks == 8000,
+			"a save continued after a go-back keeps the play time (%d)" % GameState.header.play_ticks)
 
 ## **Going back is a boot, not a repaint.** Day 11 boards the neighbor's window on her own building
 ## for the rest of the run (`City.board_neighbor_window()`), which nothing in a dawn takes down; a
