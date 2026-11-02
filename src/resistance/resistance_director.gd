@@ -3260,6 +3260,12 @@ const ARROW_SWEEP_TILES_PER_TICK := 1000
 ## task is placed.
 var _arrow_key: Variant = null
 var _arrow_clock := 0.0
+
+## What the red arrow points at right now (`_arrow_key` above): an instance id, a mast id, or null
+## before the task is placed. A read; asking changes nothing.
+func arrow_key() -> Variant:
+	return _arrow_key
+
 ## The finished fields the arrow reads (`WalkField`): `_arrow_nearest` swept from every target at
 ## once, which says which is closest from any tile and how far; `_arrow_own` swept from the one the
 ## arrow points at alone, which says how far that one is when another is closest — what the hold

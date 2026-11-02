@@ -412,11 +412,12 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 	var step := director.current_step()
 	var near := director.mast_in_play()
 	t.check(step != null and near != "", "day 11's task is on offer at the mast near the mark")
-	var before := [director.red_arrow_target(), director.mast_in_play(), director.contact_position()]
+	var before := [director.arrow_key(), director.red_arrow_target(), director.mast_in_play(),
+			director.contact_position()]
 	var asked := director.red_arrow_target()
 	t.check(asked == director.contact_position() and not director.arrow_sweeping()
-			and [director.red_arrow_target(), director.mast_in_play(), director.contact_position()]
-			== before,
+			and [director.arrow_key(), director.red_arrow_target(), director.mast_in_play(),
+			director.contact_position()] == before,
 			"asking for the arrow chooses nothing, sweeps nothing and moves no contact")
 	var at_the_mark := {}
 	for plan in _city.events.plans():
