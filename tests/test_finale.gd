@@ -53,6 +53,7 @@ func run(t) -> void:
 	_test_an_alley_mouth_wall_fits_the_mouth(t)
 	_test_nothing_the_escape_stands_reaches_over_a_building(t)
 	_test_a_restart_plans_the_same_escape_on_the_kept_ground(t)
+	_test_the_manager_plans_a_restart_on_the_ground_it_kept(t)
 	_test_the_escape_bag_keeps_the_players_order(t)
 	_test_every_slot_of_every_street_draws_one_marble(t)
 	_test_the_game_draws_the_escape_from_tunings_bag(t)
@@ -1168,8 +1169,8 @@ func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
 
 ## **A restart plans the same escape, on the ground the first plan read.** A loss in the city
 ## replans it on the same city (`main._plan_the_finale_city()`), and the day's ground for the
-## escape's rows is kept across it (`EventScheduler.KeptGround`, which `DayPlanner` holds): the restart's plan is
-## the first one, placement for placement, and the kept ground is the same answer. A city whose
+## escape's rows is kept across it (`EventScheduler.KeptGround`, which `DayPlanner` holds): the
+## restart's plan is the first one, placement for placement, and the kept ground is the same answer. A city whose
 ## ground did change — a tile closed — is read again rather than answered from the kept copy.
 func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 	var map := CityGenerator.generate(SEEDS[0])
@@ -1448,6 +1449,29 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 	t.check(over_her == 0,
 			"and none of their fields reaches the ground she comes out on (%d of %d)"
 			% [over_her, lethal])
+
+## **The manager hands its planner's kept ground to the escape's plan.** Starting the city section
+## twice on one city, as a restart after a loss does, the first plan leaves the rows' answers in the
+## ground the planner holds, and the second reads that same ground rather than scanning the city
+## again.
+func _test_the_manager_plans_a_restart_on_the_ground_it_kept(t) -> void:
+	var city: City = RunCity.of_the_run(CITY_SCENE)
+	t.add_child(city)
+	city.build(CityGenerator.generate(SEEDS[0]))
+	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
+	var spec := _section(DaySpec.Section.CITY)
+	city.start_day(GameState.attempt_spend.city_state, 1,
+			GameState.calendar.day_rng(1, "closures"), spec)
+	var none: Array[String] = []
+	var kept := city.events.planner.kept_ground
+	var grounds: Array[Dictionary] = []
+	for attempt in 2:
+		city.events.start_day(spec, GameState.calendar.day_rng(1, "finale"), none)
+		grounds.append(kept.of(city.map))
+	t.check(grounds[0].size() > 1,
+			"the first plan leaves the rows' answers in the planner's ground (%d)" % grounds[0].size())
+	t.check(is_same(grounds[0], grounds[1]), "the restart reads the same ground")
+	city.free()
 
 # ------------------------------------------------------------------ the city ---
 

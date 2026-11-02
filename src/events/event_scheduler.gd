@@ -594,7 +594,7 @@ static func _fill_the_walk_from_the_bag(spec: DaySpec, rng: RandomNumberGenerato
 	# **A tree and an event never share ground** — `docs/CITY.md`, "Street trees". Scanned once for
 	# the whole plan, and kept with the ground a replan reads again (`KeptGround`).
 	var ground := (kept_ground if kept_ground else KeptGround.new()).of(map)
-	var trees: Dictionary = ground[_TREE_TILES_KEY]
+	var trees: Dictionary = ground[TREE_TILES_KEY]
 	var rules := Rules.of(spec, map, route, standing)
 	var leave_alone: Array[Rect2] = []
 	if spec.keeps_unused_calm_clear:
@@ -660,7 +660,7 @@ class KeptGround extends RefCounted:
 		if _of == null or _of.get_ref() != map or _stamp != stamp:
 			_of = weakref(map)
 			_stamp = stamp
-			_answers = {EventScheduler._TREE_TILES_KEY: trees}
+			_answers = {TREE_TILES_KEY: trees}
 		return _answers
 
 ## **One waiting guard at a time** (`DaySpec.one_notice_at_a_time`). A candidate that waits to
@@ -737,8 +737,8 @@ static func _stands_at(map: CityMap, plan: Planned) -> Vector2:
 static func street_ground(map: CityMap, segment: StreetNetwork.Segment, def: EventDef,
 		trees: Dictionary, standing_at: Vector2, open: Dictionary,
 		from_the_door: bool) -> Array[Vector2i]:
-	if not open.has(_TREE_TILES_KEY):
-		open[_TREE_TILES_KEY] = trees
+	if not open.has(TREE_TILES_KEY):
+		open[TREE_TILES_KEY] = trees
 	var copies := _open_ground_counts(def, map, open, from_the_door)
 	var found: Array[Vector2i] = []
 	var rect := segment.tile_rect()
@@ -2509,12 +2509,12 @@ const _SACK_PILES_KEY := "alley sack piles"
 ## other answer in this file is cached in and under a key no `"%s|%d"` placement question can
 ## collide with. One scan of the city's pits per day rather than one per candidate row: the trees
 ## are fixed for the run, so nothing inside one `build_day` can move them.
-const _TREE_TILES_KEY := "street tree footprints"
+const TREE_TILES_KEY := "street tree footprints"
 
 static func _street_tree_tiles(map: CityMap, ground: Dictionary) -> Dictionary:
-	if not ground.has(_TREE_TILES_KEY):
-		ground[_TREE_TILES_KEY] = StreetTrees.footprint_tiles(map)
-	return ground[_TREE_TILES_KEY]
+	if not ground.has(TREE_TILES_KEY):
+		ground[TREE_TILES_KEY] = StreetTrees.footprint_tiles(map)
+	return ground[TREE_TILES_KEY]
 
 ## A placement with no particular street asked for. Not `Vector3i.ZERO`, which is the key of a real
 ## street — the one running east out of the north-west corner.
