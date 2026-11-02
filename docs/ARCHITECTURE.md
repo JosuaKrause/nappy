@@ -480,6 +480,25 @@ new break (a further use of a listed name included) and on a listed one that is 
 lookups, autoloads and stateful statics, the world and simulation also fetch nothing by an absolute
 node path, from the root or as the current scene.
 
+**The `static var`s under `src/visuals/`, `src/ui/`, `src/telemetry/` and `src/sprites.gd`** are of
+three kinds, and each stays a static for its kind's reason:
+
+- *Survives `reload_current_scene()`*, which frees every node, so no node can hold it and no
+  autoload is added for it: `ControlsMode`'s remembered answer and `TitleScreen`'s restart guard
+  (`main` writes and reads both), `FrameRecord.ledger` and `FrameRecorder`'s record path (one file
+  rewritten across a held restart).
+- *Read by the world and simulation on the hot path*, whose owners are other layers' files, so
+  handing it in changes every one of them: `FrameRecord.on` (the per-draw "is the record running"
+  check), `Sprites`' base transform (set and cleared by the crowd's and the events' drawing around
+  `draw_standing()`), `AtlasLibrary`'s region table, pages and loading windows (every sprite
+  consumer), `GroundLayers`' recipe (read once by the city's tile set build).
+- *An immutable or per-frame memo*: `EntityHalo`'s shared material (built once, never written
+  after), `DrawnView`'s box (a function of the viewport, recomputed once a process frame),
+  `FrameRecorder`'s page-button callback (held so the engine does not free what the page calls).
+
+`tests/shared_state.gd` finds every one by reading the sources, and the test runner puts back the
+ones a suite may change.
+
 ### `GameEnums`
 
 An autoload's name cannot also be a `class_name`, so the enums that signals and exports
