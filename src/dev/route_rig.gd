@@ -392,7 +392,8 @@ func _resolve_target(word: String) -> Vector2:
 			return _day.spec.exits.get(CityEdge.Kind.BRIDGE, Vector2.INF)
 		_:
 			if word.begins_with("spawn:"):
-				return DevRig.for_spawn_target(word.get_slice(":", 1), _city, _resistance, _run)
+				return DevRig.for_spawn_target(word.get_slice(":", 1), _city, _resistance,
+						_run.header)
 			push_warning("--route: unknown target '%s'" % word)
 			return Vector2.INF
 

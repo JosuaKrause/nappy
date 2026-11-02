@@ -586,7 +586,7 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 						_held.append(plan.live)
 						# Never streamed out either, however far she runs from it.
 						plan.kept_live = true
-	city.crowd.start_day(_run.header.day, _run.day_rng(_run.header.day, "crowd"), at,
+	city.crowd.start_day(_run.header.day, _run.calendar.day_rng(_run.header.day, "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
 	if background.get("uniform_walkers", false):
@@ -656,15 +656,15 @@ func _start_the_task() -> bool:
 		var camera := get_viewport().get_camera_2d()
 		if camera:
 			camera.force_update_scroll()
-		if _run.is_final_day():
+		if _run.calendar.is_final_day():
 			_run.resistance.progress = Tuning.RESISTANCE_GOAL
 		# The day's task is planned over the whole witness, as a played day plans it: the mark's
 		# "reachable from home" and the guard's place are questions about the city, and a stretch's
 		# void would answer every one of them no.
 		var edges := _city.map.witness_only()
 		errors = _resistance.start_recipe_task(_run.header.day,
-				_run.day_rng(_run.header.day, "resistance"), _config.day_length_for(_run.header.day),
-				mark, neighbor)
+				_run.calendar.day_rng(_run.header.day, "resistance"),
+				_config.day_length_for(_run.header.day), mark, neighbor)
 		_city.map.restore_edges(edges)
 	if not errors.is_empty():
 		manifest["setup_failed"] = true
@@ -890,8 +890,8 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		finale = FinalePlanner.route(map)
 		# The escape's seals alone, which dress the map as the game's walk does (the tree pits a
 		# seal empties, the soft seals cleared); what they place is not the scene's.
-		DayPlanner.plan_the_escape_city(map, finale, _run.day_rng(_run.header.day, "finale"),
-				walk_spec, false)
+		DayPlanner.plan_the_escape_city(map, finale,
+				_run.calendar.day_rng(_run.header.day, "finale"), walk_spec, false)
 		for chain in finale.chains:
 			if not chain.complete:
 				errors.append("escape route construction could not complete its ordinary chains")

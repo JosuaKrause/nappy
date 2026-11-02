@@ -23,12 +23,12 @@ func run(t) -> void:
 		t.add_child(city)
 		city.build(map)
 		GameState.attempt_spend.city_state.begin_day(map.block_plans, day)
-		city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"))
+		city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"))
 		var doorstep := map.doorstep_world_position()
-		city.events.start_day(DaySpec.for_day(day), GameState.day_rng(), GameState.attempt_spend.consumed_one_shots, doorstep)
+		city.events.start_day(DaySpec.for_day(day), GameState.calendar.day_rng(), GameState.attempt_spend.consumed_one_shots, doorstep)
 		var at := map.tile_to_world(case[2])
 		city.events.stream_around(at)
-		city.crowd.start_day(day, GameState.day_rng(day, "crowd"), at)
+		city.crowd.start_day(day, GameState.calendar.day_rng(day, "crowd"), at)
 		city.crowd.set_gates(city.region_plan().gates)
 		var most := 0
 		var total := 0

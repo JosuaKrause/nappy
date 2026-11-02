@@ -605,7 +605,7 @@ func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t) -> void:
 func _attempt_the_day(t, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
 	GameState.resistance.completed_steps = _completed_through(2 * (day - 6)) \
 			if day < Tuning.RUN_LENGTH_DAYS else _all_but_the_finale()
-	# A lost day gives back what the attempt recorded (`GameState.begin_day()`), the alley it read
+	# A lost day gives back what the attempt recorded (`GameState.calendar.begin_day()`), the alley it read
 	# its mark in included.
 	GameState.facts.completed_resistance_alley_tiles = []
 	var state := CityState.new()
@@ -3108,7 +3108,7 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
 	t.check(instance.is_finished, "gone at the six-second backstop, watched or not")
 	instance.free()
 
-## "A task is only complete if it is done on the day that won" — `GameState.finish_day()` gives
+## "A task is only complete if it is done on the day that won" — `GameState.calendar.finish_day()` gives
 ## a lost day's resistance work back, and the retry starts at the mark again, not straight at the
 ## task: a task is one day, so there is no dawn shortcut into the middle of it the way the old
 ## two-beat design had.
@@ -3120,7 +3120,7 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 		GameState.header.run_seed = SEED
 		GameState.header.day = 6
 		GameState.header.nerves = Tuning.STARTING_NERVES
-		GameState.begin_day()
+		GameState.calendar.begin_day()
 
 		var attempt := _director(t)
 		attempt.start_day(6, _rng(6, "resistance"), 300.0)
@@ -3138,7 +3138,7 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 				"and sends him away once he has lingered that long")
 		attempt.free()
 
-		t.check(GameState.finish_day(GameEnums.DayResult.LOST_CRYING),
+		t.check(GameState.calendar.finish_day(GameEnums.DayResult.LOST_CRYING),
 				"losing the day continues the run")
 		t.check(1 not in GameState.resistance.completed_steps
 				and 2 not in GameState.resistance.completed_steps,
@@ -3502,8 +3502,8 @@ func _start_the_day(t, day: int, resistance: ResistanceDirector,
 		prepare := Callable()) -> Dictionary:
 	# The whole run, not only the snapshot's state parts: `start_run()` also resets the riders
 	# (`facts`: the escape section, used alleys, fenced park), the checkpoint and the mode.
-	var baseline := {"run": GameSave.run_data(GameState), "checkpoint": GameState.checkpoint.duplicate(true),
-			"hard_mode": GameState.hard_mode}
+	var baseline := {"run": GameState.run_parts.run_data(), "checkpoint": GameState.calendar.checkpoint.duplicate(true),
+			"hard_mode": GameState.calendar.hard_mode}
 	GameState.start_run(SEED)
 	GameState.header.day = day
 	if prepare.is_valid():
@@ -3517,7 +3517,7 @@ func _start_the_day(t, day: int, resistance: ResistanceDirector,
 	var clock := DayController.new()
 	clock.set_process(false)
 	t.add_child(clock)
-	var days := DayDirector.new(GameState, config)
+	var days := DayDirector.new(GameState.calendar, GameState.facts, GameState.attempt_spend, config)
 	days.use_the_world(_city, _city.events, resistance, player, baby, clock)
 	_clock = clock
 	days.start_day(MAIN_SCRIPT.day_spec(config, day))
@@ -3527,9 +3527,9 @@ func _end_the_day(the_day: Dictionary) -> void:
 	for node: Node in the_day["nodes"]:
 		node.free()
 	var baseline: Dictionary = the_day["baseline"]
-	GameSave.restore_run_data(GameState, baseline["run"])
-	GameState.checkpoint = baseline["checkpoint"]
-	GameState.hard_mode = baseline["hard_mode"]
+	GameState.run_parts.restore_run_data(baseline["run"])
+	GameState.calendar.checkpoint = baseline["checkpoint"]
+	GameState.calendar.hard_mode = baseline["hard_mode"]
 
 var _clock: DayController
 
@@ -5672,7 +5672,7 @@ func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
 const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 const REACHABILITY_SWEEP_DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
 
-## `GameState.day_rng()`'s own hash, built without touching the `GameState.header.run_seed` global this
+## `GameState.calendar.day_rng()`'s own hash, built without touching the `GameState.header.run_seed` global this
 ## sweep has no other use for — same stream a played day actually draws from, for a seed and a day
 ## this test chooses rather than the run's own.
 func _production_rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:

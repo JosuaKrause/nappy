@@ -226,7 +226,7 @@ func _test_a_tap_then_a_key_on_the_run_over_screen_show_the_ending(t) -> void:
 	var main: Node2D = await _boot(t, ["--no-title"])
 	var reloads: Array[int] = []
 	main._reload_override = func() -> void: reloads.append(1)
-	GameState.choose_mode(true)
+	GameState.calendar.choose_mode(true)
 	GameState.header.nerves = 1
 	EventBus.hard_fail_triggered.emit("car_strike")
 	t.check(main._flow.mode == RunFlow.Mode.RUN_OVER and main._summary.is_showing(),
@@ -237,7 +237,7 @@ func _test_a_tap_then_a_key_on_the_run_over_screen_show_the_ending(t) -> void:
 			% [RunFlow.Mode.keys()[main._flow.mode], reloads.size()])
 	_shut_down(t, main)
 	GameState.header.ending = GameEnums.Ending.NONE
-	GameState.choose_mode(false)
+	GameState.calendar.choose_mode(false)
 
 ## A lost section's retry comes up behind its brief (PLAYTEST-94 10), and the tap's own continue
 ## must not then reach that brief and start the retry before it has been read.

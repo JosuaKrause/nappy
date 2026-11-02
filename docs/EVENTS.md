@@ -1489,7 +1489,7 @@ route you chose that day)"* (PLAYTEST-117). Three things make that hold:
   along where there is any, by the same acceptance rules every other site is chosen by. It records
   what a fire records — the scar, the block's arc, the one-shot spent — and is taken back out of the
   world, since the day is over. Meeting it stays the strong guarantee; this is what the weak one
-  owes. A **lost** day never lights one: a loss gives the whole attempt back (`GameState.finish_day`)
+  owes. A **lost** day never lights one: a loss gives the whole attempt back (`RunCalendar.finish_day`)
   and the retry owes a fire again.
 
 The fire engine is not part of this. It is never scheduled at all, and arrives only once the

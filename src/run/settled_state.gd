@@ -1,8 +1,8 @@
 class_name SettledState
 extends RunSubState
 ## The calm block she settled in on each day, so the next day's calm ground is somewhere else. Not
-## photographed: `GameState.finish_day()` erases the lost day's own entry, which is what a retry
-## has to forget.
+## photographed: `GameState.calendar.finish_day()` erases the lost day's own entry, which is
+## what a retry has to forget.
 
 ## The calm block the baby actually went to sleep in, per day: `day -> Vector2i`. Run-scoped and
 ## gameplay-owned, deliberately *not* read out of the telemetry log even though the `calm` entries

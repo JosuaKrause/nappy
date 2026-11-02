@@ -36,7 +36,7 @@ func run(t) -> void:
 # ------------------------------------------------------------------------ setup ---
 
 ## Repaints `map` for `day` with `used` handed over the way `Main._start_day()` hands
-## `GameState.settled_this_act()` over, and `fenced`/`fenced_act` the way it hands over
+## `GameState.calendar.settled_this_act()` over, and `fenced`/`fenced_act` the way it hands over
 ## `GameState.facts.fenced_park`/`fenced_park_act` — both defaulting to "nothing fenced yet", the shape
 ## every test but the ones about the fence itself wants. Returns the pair to feed the same map's
 ## next call, the way `Main._start_day()` reads them back into `GameState` for tomorrow, so a fence

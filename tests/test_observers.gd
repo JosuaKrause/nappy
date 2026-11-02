@@ -242,23 +242,23 @@ func _test_endings_and_checkpoints(t) -> void:
 	GameState.start_run(SEED)
 	GameState.header.day = 6
 	GameState.header.nerves = 1
-	GameState.finish_day(GameEnums.DayResult.LOST_CRYING)
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
 
 	GameState.start_run(SEED)
-	GameState.choose_mode(true)
+	GameState.calendar.choose_mode(true)
 	GameState.header.day = 3
 	GameState.header.nerves = 1
-	GameState.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	GameState.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 
 	GameState.start_run(SEED)
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
 	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
 	GameState.resistance.sabotage_done = true
-	GameState.finish_day(GameEnums.DayResult.WON)
+	GameState.calendar.finish_day(GameEnums.DayResult.WON)
 
 	GameState.start_run(SEED)
 	GameState.header.day = Tuning.RUN_LENGTH_DAYS
-	GameState.finish_day(GameEnums.DayResult.WON)
+	GameState.calendar.finish_day(GameEnums.DayResult.WON)
 
 	t.check(counter.sent == ["nappy-checkpoint-1-from-day-6", "nappy-ending-bad",
 			"nappy-ending-good", "nappy-ending-neutral"],

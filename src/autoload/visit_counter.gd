@@ -350,7 +350,7 @@ func _counted_day() -> int:
 
 func _on_day_started(day: int) -> void:
 	_day = day
-	for name in _day_began_names(day, _run.hard_mode):
+	for name in _day_began_names(day, _run.calendar.hard_mode):
 		_send_event(name)
 
 ## A fresh run's mode, from its title. **The day behind that title has already begun** — the first
@@ -366,7 +366,7 @@ func _on_went_back_to_a_checkpoint(checkpoint_day: int, lost_day: int) -> void:
 
 ## Which day offered a step is on offer, kept only long enough to say whether the day it belongs
 ## to ended with the step done or without it — `step index -> day`. A retry re-offers the same
-## index for the same day (`GameState._give_the_attempt_back()` restores the step lists a lost
+## index for the same day (`RunCalendar._give_the_attempt_back()` restores the step lists a lost
 ## attempt spent), which simply overwrites the entry with the day it already named.
 var _open_tasks := {}
 

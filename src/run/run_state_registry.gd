@@ -90,3 +90,20 @@ static func unregistered_in(owner: Object, registry: RunStateRegistry) -> Array[
 		if value is RunSubState and value not in registry._parts:
 			missing.append(property["name"])
 	return missing
+
+## The registry's parts in the shape a save carries them: `state_data()` under `"state"` and the
+## riders beside it. This is also exactly what a checkpoint is, so the save and the checkpoint
+## never carry two different ideas of what a run is (`GameSave.file_data()` adds the file's
+## own keys).
+func run_data() -> Dictionary:
+	var data := rider_data()
+	data["state"] = state_data()
+	return data
+
+## The other half of `run_data()`: puts every part back from a save read off disk or from a
+## checkpoint alike. `data["state"]` must already carry every key `state_keys()` names. The riders
+## are read after the snapshot, each with a default for its absence, so a save from a build that
+## never wrote a key leaves that part where a run that has not got that far holds it.
+func restore_run_data(data: Dictionary) -> void:
+	restore_state(data["state"])
+	restore_riders(data)

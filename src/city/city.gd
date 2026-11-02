@@ -260,9 +260,9 @@ const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
 ## `GameState.attempt_spend.scars` id for the sealed street door, recorded at the doorstep by
 ## `ResistanceHappenings._maybe_raid()` once the raid actually arrives. No `since_day` comparison
 ## is needed the way `EventScheduler.SILENCED_MAST` reads one: `_spawn_home()` and `start_day()`'s
-## `_sync_home_door()` both run after `GameState.begin_day()`'s dawn photograph, so the scar's mere
-## presence already answers "sealed as of this dawn" for every day after the one it was added on,
-## and the moment it happens on its own day is `seal_home_door()`'s, called live.
+## `_sync_home_door()` both run after `GameState.calendar.begin_day()`'s dawn photograph, so the
+## scar's mere presence already answers "sealed as of this dawn" for every day after the one it
+## was added on, and the moment it happens on its own day is `seal_home_door()`'s, called live.
 const SEALED_DOOR_SCAR := "sealed_door"
 ## `GameState.attempt_spend.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
 ## `aftermath.scar`), read by `mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
@@ -1073,8 +1073,9 @@ func _dress(state: CityState, day: int) -> void:
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
-	# After `GameState.begin_day()`'s own dawn photograph (`main.gd` calls this after that), so a
-	# lost day 10's scar is already given back by the time this reads the run's scars.
+	# After `GameState.calendar.begin_day()`'s own dawn photograph (`main.gd` calls this after
+	# that), so a lost day 10's scar is already given back by the time this reads the run's
+	# scars.
 	_sync_home_door()
 	_paint_ground()
 	_decals.set_placed(_recipe_litter(day))

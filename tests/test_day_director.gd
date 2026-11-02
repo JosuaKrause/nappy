@@ -35,7 +35,7 @@ func _rig(t, spec := DaySpec.new()) -> Dictionary:
 	clock.time_remaining = 120.0
 	var events := EventManager.new()
 	t.add_child(events)
-	var director := DayDirector.new(_run, RunConfig.parse(PackedStringArray(), "", true))
+	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
 	director.use_the_world(null, events, null, null, null, clock)
 	director.spec = spec
 	_ended.clear()

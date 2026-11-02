@@ -1546,7 +1546,7 @@ beside "Time played" — the last day played rather than the last day completed,
 loses its last nerve on day 1 reads day 1, not 0, and one that loses it in the escape reads day
 14. `GameState.header.day` already holds it: the calendar
 is never advanced past the day nerves ran out on, or past the day a load spent the last one on
-(`GameState.finish_day()` ends the run before it would move the calendar). The neutral and good
+(`RunCalendar.finish_day()` ends the run before it would move the calendar). The neutral and good
 endings say nothing about the day, since both are reached by finishing day 14.
 
 ## The escape, which is the run's ending
@@ -1567,7 +1567,7 @@ while the calendar (`GameState.header.day`) stays on day 14, since the run has n
 .earned_good_ending()`, `Tuning.RESISTANCE_GOAL` errands run *and* the last night's sabotage
 performed, the same pair that has always decided the good ending — goes on from its own summary to
 the building instead of to the ending screen. A won day 14 without them keeps the neutral ending it
-has. Nothing about the run is recorded as finished on the way in: `GameState.finish_day()` is not
+has. Nothing about the run is recorded as finished on the way in: `RunCalendar.finish_day()` is not
 called until she is out of the city, so the run has no `ending` and its save stays on disk for the
 whole escape, which is what the checkpoints come back to. `--start-escape` reaches the same
 sequence directly, with a fresh run behind it, so it can be walked without playing fourteen days
@@ -1616,7 +1616,7 @@ again.
 **A hard run's escape has nerves.** *(gentle-osprey, the player: "with hard mode the escape also
 has normal nerve counts and ends if nerves go to zero (instead of restarting indefinitely; this is
 only for normal mode)".)* She enters it with the nerves day 14 left her. A lost section costs one
-(`GameState.finish_day()`, with the section's `DaySpec`), and the last one is the bad ending, on
+(`RunCalendar.finish_day()`, with the section's `DaySpec`), and the last one is the bad ending, on
 the `GAME OVER` screen after the section's outcome screen, rather than the section again. No section gives one
 back, so a hard run can be lost in the escape
 *([mossy-kestrel](playtests/2026-10-11-mossy-kestrel.md), #718, the player: "No regain in escape
@@ -1825,7 +1825,7 @@ she took, to the millisecond, which is the only number that screen carries.
 ## Nerves
 
 The run-level health bar. Starts at 5. Every lost day costs one, and in a normal run a day she
-**wins** gives one back, up to the same five (`GameState.regain_a_nerve_for_a_won_day()`) — so a bad
+**wins** gives one back, up to the same five (`RunCalendar.regain_a_nerve_for_a_won_day()`) — so a bad
 single day is recoverable rather than a tight spot carried all the way to day 14. **A hard run's won
 day gives nothing back**: it starts with five and only loses them. **What 0 does is the run's
 mode**, chosen on the title as a new game begins (see "Two modes" below): a normal run goes back to
@@ -1867,12 +1867,12 @@ Three consequences, all of them chosen:
   exact same state at the beginning of the day. nothing else"*. A retried day is the state the run
   was in that morning: where she settled, everything the resistance did, and everything the attempt
   did to the city — the one-shots it consumed, the scars it left and the block arcs it advanced.
-  Only a day she **wins** keeps any of it. See `GameState.finish_day()`.
+  Only a day she **wins** keeps any of it. See `RunCalendar.finish_day()`.
 
 **A lost day gives the resistance back.** *"a task is only complete if it is done on the day that
 won"*: a mark touched, the task it unlocked, a contact lost to its deadline, a package picked up
 and the day-14 sabotage are all undone when the day is lost — a task is one day, so both halves of
-it are the same attempt's to lose. `GameState.begin_day()` photographs the five fields that say
+it are the same attempt's to lose. `RunCalendar.begin_day()` photographs the five fields that say
 what the resistance has done — the completed steps, the failed ones, the progress count, the
 package and the sabotage — and the loss restores them before the retry, so the retry starts at the
 same mark again, in the same place, from the same seed. A won day commits the photograph.
@@ -1882,7 +1882,7 @@ restored the same way: `consumed_one_shots`, `scars` and the whole of `CityState
 after the fire burned owes a fire again — sited from whatever walk the retry takes, which is why a
 player who lost walking east and retries walking west meets it on another street — and leaves no
 shell standing in the meantime. The city photograph is taken **before** the dawn arc roll, since
-`GameState.begin_day()` runs ahead of `CityState.begin_day()`, so the retry's own dawn makes that
+`RunCalendar.begin_day()` runs ahead of `CityState.begin_day()`, so the retry's own dawn makes that
 roll again from the same seed and the same day rather than inheriting it. **The once-only
 happenings of days 10 to 13 come back the same way**, since each is kept in one of those fields: the
 block day 11 boarded up and the park day 12 took are arc steps in `CityState`, the barricade day
@@ -1903,7 +1903,7 @@ remembered between sittings. A touch or a click on its box or label, or anywhere
 5% beyond them (the margin every button catches by) and 28 design px (`TitleScreen.hard_mode_target()`),
 or `H` on a keyboard, flips it and never starts the run:
 the run still begins only from the title's three controls buttons or a key, so the box can be set
-first (`TitleScreen`). The mode is `GameState.hard_mode`, fixed for the run and carried in the save.
+first (`TitleScreen`). The mode is `RunCalendar.hard_mode`, fixed for the run and carried in the save.
 **Nothing during play shows it** and nothing about the city, the events or a day's difficulty reads
 it: *"hard mode doesn't affect gameplay -- only restart pacing"*. **Gameplay is anything that
 happens during a day** *(dotted-hawk, the player: "by gameplay I mean -- enemies are not harder. or
@@ -1923,7 +1923,7 @@ nerves, which decide only when a run ends, are restart pacing, and that is where
 "store the exact state at the checkpoint -- continuing should not have anything that happened after
 the checkpoint".)* It is the whole run as the save carries it — the resistance's steps and progress,
 the scars and the spent one-shots, every block's arc, the posters, where she settled each day, the
-fenced park, the alleys a mark has used, and the run's clock — kept by `GameState.begin_day()` the
+fenced park, the alleys a mark has used, and the run's clock — kept by `RunCalendar.begin_day()` the
 first time a checkpoint day is begun, before anything of that day can have happened, and given back
 whole when a normal run spends its last nerve, with five nerves instead of whatever that dawn had. A
 retry of a checkpoint day, or a run sent back to one, keeps the checkpoint it has; only the next
@@ -2052,7 +2052,7 @@ it appears, and for as long as any change is still unanswered; it then fades ove
 hold after the answer** *(cozy-pelican: "we should show it until it is fully confirmed saved", and
 "okay always show it. but show it for at least a second")*. **Deleting the save file is a change
 too** *("show deleting the save file with a save symbol as well. every change in the save state
-needs to show the symbol")*: a run's end deletes it (`GameState._end_run()`: a day that ends a
+needs to show the symbol")*: a run's end deletes it (`RunCalendar._end_run()`: a day that ends a
 hard run, the charge a reopened hard run's save pays when it was the last nerve, a hard run's last
 nerve lost in the escape, and the escape walked out), and
 so does the held restart, and each shows the symbol with the same timings and the same strike. On

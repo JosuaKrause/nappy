@@ -29,13 +29,14 @@ extends RefCounted
 ## before the one calm area a run could fence existed loads with none chosen, which is exactly what
 ## a run that has not reached act III looks like anyway.
 ##
-## **The mode and the checkpoint ride the same way.** `"hard_mode"` is absent from a save written
-## before there were two modes, which reads as normal mode; `"checkpoint"` is absent from one
-## written before there were checkpoints, which reads as checkpoint zero, day 1 of the same city —
-## see `RunState.checkpoint`. **A checkpoint is the run in exactly the shape the file carries it**
-## (`run_data()`, every key below but the ones about the file itself), so a field a later build adds
-## to the save is in every checkpoint the moment it is in `run_data()`, and `restore_run_data()` is
-## the one function that reads both back.
+## **The mode and the checkpoint ride the same way.** `"hard_mode"` is absent from a save
+## written before there were two modes, which reads as normal mode; `"checkpoint"` is absent
+## from one written before there were checkpoints, which reads as checkpoint zero, day 1 of the
+## same city — see `RunCalendar.checkpoint`. **A checkpoint is the run in exactly the
+## shape the file carries it** (`RunStateRegistry.run_data()`, every key below but the ones
+## about the file itself), so a field a later build adds to the save is in every checkpoint the
+## moment it is in `run_data()`, and `RunStateRegistry.restore_run_data()` is the one function
+## that reads both back.
 ##
 ## **One save, no slots.** `_DEFAULT_PATH` is the only file this ever reads or writes on a real
 ## run; `set_path_override()` is the one seam a test uses to point at a scratch file instead, and
@@ -53,13 +54,14 @@ extends RefCounted
 ## that saved, and a callable bound to `main` would then be dropped and leave the symbol shown for
 ## good.
 ##
-## **Deleting the save is a change in the save state, and answers the same way.** *(cozy-pelican,
-## 2026-10-02: "show deleting the save file with a save symbol as well. every change in the save
-## state needs to show the symbol".)* `clear()` answers a `Result` like `write()` does and, on the
-## web, is not kept until IndexedDB has dropped the file too, which only a flush's own answer says
-## — see `_flush()`. It tells `EventBus` what it came to (`save_deleted`, and
-## `save_deletion_settled` for a web flush), which is how the symbol shows a deletion made by
-## `RunState._end_run()`, which cannot reach `main`'s indicator.
+## **Deleting the save is a change in the save state, and answers the same way.**
+## *(cozy-pelican, 2026-10-02: "show deleting the save file with a save symbol as well. every
+## change in the save state needs to show the symbol".)* `clear()` answers a `Result` like
+## `write()` does and, on the web, is not kept until IndexedDB has dropped the file too, which
+## only a flush's own answer says — see `_flush()`. It tells `EventBus` what it came to
+## (`save_deleted`, and `save_deletion_settled` for a web flush), which is how the symbol shows
+## a deletion made when a run ends (`clear_when_a_run_ends()`), which cannot reach `main`'s
+## indicator.
 ##
 ## **Every write and every deletion is one operation with its own id**, from `_new_operation()`,
 ## carried on its announcement and on its later answer alike. *(golden-otter, 2026-10-02: "if a new
@@ -259,9 +261,9 @@ static func has_save() -> bool:
 	return FileAccess.file_exists(_path())
 
 ## Deletes the save, if there is one, and answers what the deletion came to — which is also what
-## the save symbol shows, through `EventBus.save_deleted`. `RunState._end_run()` (a run that is
-## over) and `main._restart_run()` (the held restart) both call this; a run that is over or has been
-## thrown away leaves nothing to resume.
+## the save symbol shows, through `EventBus.save_deleted`. `clear_when_a_run_ends()`'s
+## subscriber (a run that is over) and `main._restart_run()` (the held restart) both call this;
+## a run that is over or has been thrown away leaves nothing to resume.
 ##
 ## `Result.REFUSED` for a dev run or a headless run (`uses_save()`) and when there is no file to
 ## delete: a restart after the run already ended and deleted the save changes nothing, so it draws
@@ -474,12 +476,13 @@ static func _settle(token: int, result: Result, reason: String) -> void:
 ## exercise the actual file format — pointed at a scratch path with `set_path_override()` first,
 ## never at `_DEFAULT_PATH`.
 ##
-## **Refuses once `run.header.ending` is set**, checked here rather than only in `write()` so a test
-## can drive it without also having to make `uses_save()` answer `true` under the headless runner.
-## A finished run already had its save cleared in `RunState._end_run()`; this is the second line
-## of the same reasoning `CLAUDE.md`'s "check before accepting, never repair afterwards" asks for
-## elsewhere in this project — a stray write between the ending firing and the player being shown
-## it must not resurrect a file that answering the ending question already deleted.
+## **Refuses once `run.header.ending` is set**, checked here rather than only in `write()` so a
+## test can drive it without also having to make `uses_save()` answer `true` under the headless
+## runner. A finished run already had its save cleared by `clear_when_a_run_ends()`; this is the
+## second line of the same reasoning `CLAUDE.md`'s "check before accepting, never repair
+## afterwards" asks for elsewhere in this project — a stray write between the ending firing and
+## the player being shown it must not resurrect a file that answering the ending question
+## already deleted.
 ##
 ## Returns whether the file was written and closed; on the web that is not yet a kept save — see
 ## `write()`.
@@ -500,17 +503,18 @@ static func _write_now(run: RunState, day_under_way: bool) -> bool:
 	return true
 
 ## Everything the save file holds of `run`, as the plain JSON-safe dictionary `_write_now()`
-## stringifies: `run_data()`, plus the facts about the file and the run's mode rather than about where the run
-## stands — the format and the build that wrote it, whether a day was under way, the mode, and the
-## checkpoint. `FILE_KEYS` names those, and `tests/test_run_checkpoints.gd` reads every other key
-## off this function to check a checkpoint gives each one back.
+## stringifies: `RunStateRegistry.run_data()`, plus the facts about the file and the run's mode
+## rather than about where the run stands — the format and the build that wrote it, whether a
+## day was under way, the mode, and the checkpoint. `FILE_KEYS` names those, and
+## `tests/test_run_checkpoints.gd` reads every other key off this function to check a checkpoint
+## gives each one back.
 static func file_data(run: RunState, day_under_way: bool) -> Dictionary:
-	var data := run_data(run)
+	var data := run.run_parts.run_data()
 	data["format_version"] = FORMAT_VERSION
 	data["build"] = BuildInfo.build_text()
 	data["day_under_way"] = day_under_way
-	data["hard_mode"] = run.hard_mode
-	data["checkpoint"] = run.checkpoint.duplicate(true)
+	data["hard_mode"] = run.calendar.hard_mode
+	data["checkpoint"] = run.calendar.checkpoint.duplicate(true)
 	return data
 
 ## The keys of `file_data()` that are not the run's own state, and so are neither part of a
@@ -520,34 +524,24 @@ const FILE_KEYS: Array[String] = [
 	"format_version", "build", "day_under_way", "hard_mode", "checkpoint",
 ]
 
-## Where `run` stands, in the shape the save carries it: `RunState.save_snapshot()` under
-## `"state"`, and the run's facts that ride beside it as top-level keys. This is also exactly what
-## a checkpoint is — `RunState._keep_a_checkpoint_if_one_is_due()` keeps it at a checkpoint day's
-## dawn — so the save and the checkpoint can never carry two different ideas of what a run is.
-static func run_data(run: RunState) -> Dictionary:
-	var data := run.run_parts.rider_data()
-	data["state"] = run.save_snapshot()
-	return data
+## Connects the deletion of the save to the end of a run: **a finished run leaves no save**,
+## since a save that named an ended run would have to be specially refused on load rather than
+## simply not existing. `main` calls this once a boot, before anything can end the run, and a
+## suite that ends a run calls it too; connecting twice changes nothing. (`main._restart_run()`
+## also clears the save, for the held restart that abandons a run before it ends on its own.)
+static func clear_when_a_run_ends() -> void:
+	if not EventBus.run_ended.is_connected(_on_run_ended):
+		EventBus.run_ended.connect(_on_run_ended)
 
-## The other half of `run_data()`: puts every field it carries back on `run`, from a save read off
-## disk or from a checkpoint alike. `data["state"]` must already have passed
-## `RunState.snapshot_is_complete()`. Each rider is read with a default for its absence, so a save
-## from a build that never wrote it loads with the value a run that has not got that far holds.
-## Leaves `hard_mode` and `checkpoint` alone: they are the file's keys, not the run's state.
-static func restore_run_data(run: RunState, data: Dictionary) -> void:
-	run.restore_snapshot(data["state"])
-	# After the snapshot, never before: the riders are read with a default for their absence, so a
-	# save from a build that never wrote a key leaves that part where a run that has not got that far
-	# holds it — the ordinary fourteen days with no escape, no used alleys, no fenced park, bare
-	# walls and a pelican bag at 0 — rather than half-restored.
-	run.run_parts.restore_riders(data)
+static func _on_run_ended(_ending: GameEnums.Ending) -> void:
+	clear()
 
-## Tries to resume a run into `run`. Returns `{}` when there is nothing to resume — no file, a file
-## this build cannot read, or a dev/headless run `uses_save()` already refused — and
-## `{"day_under_way": bool}` once `run` has been overwritten with the save's own fields. The caller
-## (`main._ready()`) still owns what a `true` costs: the same lost-day path an ordinary loss takes,
-## through `RunState.finish_day()`, so this function only ever reads and restores, never spends a
-## nerve.
+## Tries to resume a run into `run`. Returns `{}` when there is nothing to resume — no file, a
+## file this build cannot read, or a dev/headless run `uses_save()` already refused — and
+## `{"day_under_way": bool}` once `run` has been overwritten with the save's own fields. The
+## caller (`main._ready()`) still owns what a `true` costs: the same lost-day path an ordinary
+## loss takes, through `RunCalendar.finish_day()`, so this function only ever reads and
+## restores, never spends a nerve.
 static func try_resume(run: RunState) -> Dictionary:
 	if not uses_save():
 		return {}
@@ -596,12 +590,12 @@ static func _read_now(run: RunState) -> Dictionary:
 ## Everything a readable save puts back on `run`, from `_read_now()`'s file and from
 ## `load_in_memory()`'s copy alike, and what it says about the day: `{"day_under_way": bool}`.
 static func _apply(run: RunState, data: Dictionary) -> Dictionary:
-	restore_run_data(run, data)
+	run.run_parts.restore_run_data(data)
 	# The mode and the checkpoint, the same way again: a save from before there were two modes is a
 	# normal run, and one from before there were checkpoints goes back to day 1 of its own city.
-	run.hard_mode = bool(data.get("hard_mode", false))
+	run.calendar.hard_mode = bool(data.get("hard_mode", false))
 	var kept: Variant = data.get("checkpoint", {})
-	run.checkpoint = _usable_checkpoint(run, kept)
+	run.calendar.checkpoint = _usable_checkpoint(run, kept)
 	return {"day_under_way": bool(data.get("day_under_way", false))}
 
 ## `run` written out the way a save is and read straight back into it the way a save is —

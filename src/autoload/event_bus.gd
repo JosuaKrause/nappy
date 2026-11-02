@@ -41,10 +41,10 @@ signal nerves_changed(nerves: int)
 ## read `cause` from here, so the two name a lost day the same way.
 ##
 ## Emitted by `DayDirector.finish_day()` once the charges still running are closed and above the
-## calendar move `GameState.finish_day()` makes a moment later, so a lost day's retry and a won
-## day's next dawn are both still "day N" here. Fires once per attempt, as `day_started` does: a
-## retry begins and ends this pair again for the day it repeats — an escape section's included,
-## under its own number.
+## calendar move `GameState.calendar.finish_day()` makes a moment later, so a lost day's retry
+## and a won day's next dawn are both still "day N" here. Fires once per attempt, as
+## `day_started` does: a retry begins and ends this pair again for the day it repeats — an
+## escape section's included, under its own number.
 signal day_ended(day: int, result: GameEnums.DayResult, cause: String, elapsed: float)
 ## The held restart — the pause screen's or the day summary's own button — with the day it
 ## abandoned. `run_ended` below is the run finishing on its own terms; this is the player leaving
@@ -56,10 +56,10 @@ signal run_ended(ending: GameEnums.Ending)
 ## whose mode was chosen when it began. `main._on_title_start()` is the one emitter. Listen-only,
 ## for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal run_mode_chosen(hard: bool, day: int)
-## A normal run spent its last nerve on `lost_day` and went back to its checkpoint, `day` — 1 for
-## checkpoint zero, otherwise 4, 8 or 12 — with every nerve. Emitted by `GameState.finish_day()`
-## once the checkpoint is restored. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The
-## page counts visits".
+## A normal run spent its last nerve on `lost_day` and went back to its checkpoint, `day` — 1
+## for checkpoint zero, otherwise 4, 8 or 12 — with every nerve. Emitted by
+## `GameState.calendar.finish_day()` once the checkpoint is restored. Listen-only, for
+## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal went_back_to_a_checkpoint(day: int, lost_day: int)
 ## `GameSave.write()`'s own moment a save was actually written — never a refused write (a dev or
 ## headless run, or a run that has already ended), which changes nothing. `result` is a
@@ -76,16 +76,16 @@ signal save_written(operation: int, result: int)
 ## `operation`: `kept` is whether IndexedDB kept the save. Emitted once per pending write, and only
 ## for those.
 signal save_write_settled(operation: int, kept: bool)
-## `GameSave.clear()`'s own moment a save file was actually deleted — never a refused deletion (a
-## dev or headless run, or no file left to delete), which changes nothing. `result` is a
-## `GameSave.Result` passed as `int`, since a cross-script enum is not the same type as itself as
-## a parameter (the **godot** skill): `PENDING` on the web while IndexedDB has not yet said whether
-## it dropped the file (`save_deletion_settled` follows), `CONFIRMED` or `FAILED` otherwise.
-## Emitted by `GameSave` itself, so the deletion `GameState._end_run()` makes — an autoload with no
-## way to reach `main`'s indicator — shows the save symbol exactly as the held restart's does.
-## Heard by `SaveIndicator`, which outlives the `main` that raised it when the held restart reloads
-## the scene. `operation` is the deletion's own id, drawn from the same sequence a write's is — see
-## `save_written`.
+## `GameSave.clear()`'s own moment a save file was actually deleted — never a refused deletion
+## (a dev or headless run, or no file left to delete), which changes nothing. `result` is a
+## `GameSave.Result` passed as `int`, since a cross-script enum is not the same type as itself
+## as a parameter (the **godot** skill): `PENDING` on the web while IndexedDB has not yet said
+## whether it dropped the file (`save_deletion_settled` follows), `CONFIRMED` or `FAILED`
+## otherwise. Emitted by `GameSave` itself, so the deletion a run's end makes (`GameSave` clears
+## on `run_ended`, with no way to reach `main`'s indicator) shows the save symbol exactly as the
+## held restart's does. Heard by `SaveIndicator`, which outlives the `main` that raised it when
+## the held restart reloads the scene. `operation` is the deletion's own id, drawn from the same
+## sequence a write's is — see `save_written`.
 signal save_deleted(operation: int, result: int)
 ## The browser's answer to a deletion `save_deleted` announced as `PENDING`, with that deletion's
 ## `operation`: `kept` is whether IndexedDB dropped the file. Emitted once per pending deletion, and

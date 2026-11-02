@@ -1194,7 +1194,7 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 			"day 6 keeps its own count across whatever happened to other days in between")
 	Telemetry.end_run()
 
-## `GameState.finish_day()` retries a lost day by calling `_start_day()` again with the same
+## `GameState.calendar.finish_day()` retries a lost day by calling `_start_day()` again with the same
 ## `GameState.header.day` — `begin_day()` sees the same day number twice — and `write_map()` is called
 ## once per attempt from `main.gd`. Without the attempt in the name the second call's map would
 ## overwrite the first's, which is exactly the picture worth keeping: the day that went wrong.

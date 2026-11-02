@@ -39,6 +39,7 @@ src/
   run/                  the run's state, a domain model — one registered list of sub-states —
                         and the run flow: its screens (`run_flow.gd`) and its days (`day_director.gd`)
 	run_sub_state.gd      the interface of a part: reset, photograph, give_back, to_data, restore
+	run_calendar.gd       the run's calendar: day and act, a day begun and ended, the mode and checkpoint, the day's RNG
 	run_state_registry.gd the one list the dawn, a lost day, the snapshot and the save walk
 	run_header.gd         seed, presentation, day, nerves, ending, play time (in physics ticks)
 	resistance_run_state.gd  steps, progress, sabotage, the package; given back by a lost day
@@ -46,7 +47,7 @@ src/
 	settled_state.gd      the calm block she settled in each day
 	run_facts.gd          escape section, used alleys, fenced park: riders beside the snapshot
 	day_director.gd       starts a day (the ordered construction of its world) and ends it, handed
-	                      the world and the run; `main` and the tests both call it
+	                      the world and the run's calendar; `main` and the tests both call it
 	day_end.gd            what a day's end settled: its cause, its words, the calendar, the hand-over
 	run_flow.gd           which screen is up, what its continue leads to, and the day being walked,
 	                      announced to the readout, the HUD and the route rig
@@ -705,7 +706,7 @@ requires the two plans to be identical, because that hoist is exactly the edit t
 quietly consume one extra value and break determinism for every other guarantee here.
 
 ### `GameState`
-The run. Handles day transitions and ending selection, and holds the run's state as a registry
+The run. Holds the run's state as a registry
 (`run_parts`, a `RunStateRegistry`) of parts, each a `RunSubState` with one interface: `reset`,
 `photograph`, `give_back`, `to_data`, `restore`. **A field is declared once, in the part that owns
 it**, together with its dawn copy and its save shape; starting a run, the dawn photograph, a lost
@@ -727,10 +728,16 @@ taken, the one thing `PosterArt` draws from the run), the HUD, the pause and tit
 `VisitCounter`, the route rig and the scene recipe runtime — so a test hands a reader whichever run
 it built. `GameSave` is a namespace of static functions, handed the run
 on every call that reads or writes one (`write(run, …)`, `try_resume(run)`, `load_in_memory(run)`,
-`run_data(run)`, `restore_run_data(run, …)`); `RunState` hands itself for its checkpoint. Handed per
-call rather than held, because the web flush and the operation ids outlive the scene reloads that
+`file_data(run, …)`); the registry's own `run_data()` and `restore_run_data()` are what a save and a
+checkpoint carry, so the calendar needs no `GameSave`, and `GameSave` clears the save when `run_ended`
+fires. Handed per call rather than held, because the web flush and the operation ids outlive the scene reloads that
 free the `main` holding a run. The events and the resistance still read it off the autoload.
-`tests/test_run_state.gd` replays a run against a
+**The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
+builds over the parts and exposes as `run.calendar`): the day and act, a day's attempt begun
+(`begin_day()`, the dawn photograph) and ended (`finish_day()`, the nerve a loss spends and the day
+a win moves on to), the mode and the checkpoint a normal run goes back to, where she settled
+(`settled_this_act()`), and the day's random streams (`day_rng()`). `DayDirector` is handed it, with
+the run's facts and spend, and never the run. `tests/test_run_state.gd` replays a run against a
 save written before the parts existed (the fixture `tests/fixtures/run_state_saved_by_main.json`, dumped
 on commit e1cc7c7f) and checks every part is on the list.
 

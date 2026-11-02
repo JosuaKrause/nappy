@@ -1003,7 +1003,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 		var map: CityMap = main._city.map
 		var plan := FinalePlanner.route(map)
 		var placements := DayPlanner.plan_the_escape_city(map, plan,
-				GameState.day_rng(GameState.header.day, "finale"), _city_spec())
+				GameState.calendar.day_rng(GameState.header.day, "finale"), _city_spec())
 		var bands := _escape_roadblocks(placements)
 		var hers := StreetNetwork.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
@@ -1457,11 +1457,11 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
-	city.crowd.start_day(1, GameState.day_rng(1, "crowd"), city.map.doorstep_world_position())
+	city.crowd.start_day(1, GameState.calendar.day_rng(1, "crowd"), city.map.doorstep_world_position())
 	t.check(city.crowd.agent_count() > 0, "a day's crowd is a crowd")
 	var spec := _section(DaySpec.Section.CITY)
-	city.start_day(GameState.attempt_spend.city_state, 1, GameState.day_rng(1, "closures"), spec)
-	var director := DayDirector.new(GameState, RunConfig.parse(PackedStringArray(), "", true))
+	city.start_day(GameState.attempt_spend.city_state, 1, GameState.calendar.day_rng(1, "closures"), spec)
+	var director := DayDirector.new(GameState.calendar, GameState.facts, GameState.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
 	director.city = city
 	director.spec = spec
 	director.start_the_crowd(Vector2.INF)
@@ -1838,7 +1838,7 @@ func _test_only_a_won_last_day_with_every_task_done_hands_over(t) -> void:
 	# A run of its own, so nothing of the autoload's (the state, the riders, the checkpoint, the mode)
 	# is touched, and nothing needs putting back.
 	var run := RunState.new()
-	var director := DayDirector.new(run, RunConfig.parse(PackedStringArray(), "", true))
+	var director := DayDirector.new(run.calendar, run.facts, run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
 	run.start_run(9182)
 
 	run.header.day = Tuning.RUN_LENGTH_DAYS
@@ -1951,7 +1951,7 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
 		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
 		spec.owes_a_return = owes
 		var consumed: Array[String] = []
-		city.events.start_day(spec, GameState.day_rng(an_act_iv_day), consumed)
+		city.events.start_day(spec, GameState.calendar.day_rng(an_act_iv_day), consumed)
 		var before := city.events.owed_ahead()
 		EventBus.return_phase_started.emit()
 		owed[owes] = city.events.owed_ahead() - before

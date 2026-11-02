@@ -25,10 +25,10 @@ func _test_seeded_equal_choice_and_lifetime(t) -> void:
 		t.check(selected == (expected_rng.randi_range(0, 1) == 1),
 				"the presentation is the run stream's equal two-way draw")
 		state.header.day = 9
-		state.begin_day()
-		state.finish_day(GameEnums.DayResult.WON)
-		state.begin_day()
-		state.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
+		state.calendar.begin_day()
+		state.calendar.finish_day(GameEnums.DayResult.WON)
+		state.calendar.begin_day()
+		state.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
 		t.check(state.header.player_is_male == selected, "winning, retrying and starting days retain the choice")
 		state.start_run(seed_value)
 		t.check(state.header.player_is_male == selected, "replaying a seed reproduces the presentation")

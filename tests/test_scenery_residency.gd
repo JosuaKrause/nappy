@@ -101,7 +101,7 @@ func _test_city(t, seed_value: int) -> void:
 	_check_coverage(t, city, target)
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 8)
-	city.start_day(state, 8, GameState.day_rng(8, "closures"))
+	city.start_day(state, 8, GameState.calendar.day_rng(8, "closures"))
 	city.scenery.update(far, true)
 	_check_coverage(t, city, far)
 	city.scenery.update(home, true)

@@ -560,7 +560,7 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 	# the next day is planned knowing that. Measured over five seeds while this was built, the
 	# repeat rate goes from 28% of days to 0 — this asserts the claim rather than the number.
 	# Since playtest 12 the memory is the whole **act**, not the night before, so this walks the
-	# run the way `GameState.settled_this_act` does: the used set grows through an act and is
+	# run the way `RunCalendar.settled_this_act` does: the used set grows through an act and is
 	# emptied at the boundary. A day must send her somewhere she has not been this act.
 	var used_this_act: Array[Vector2i] = []
 	var act := 0

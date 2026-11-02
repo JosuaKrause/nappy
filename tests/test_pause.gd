@@ -568,12 +568,12 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 ## in place of the checkbox; a new game shows the checkbox and no name.
 func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 	var title := _title(t)
-	var was_hard: bool = GameState.hard_mode
-	GameState.hard_mode = false
+	var was_hard: bool = GameState.calendar.hard_mode
+	GameState.calendar.hard_mode = false
 	title.open(false, false, true)
 	t.check(title.mode_name_shown() == "Normal", "a decided Normal run is named 'Normal'")
 	t.check(not title.hard_mode_shown(), "and the checkbox is not offered beside it")
-	GameState.hard_mode = true
+	GameState.calendar.hard_mode = true
 	title.open(false, false, true)
 	t.check(title.mode_name_shown() == "Hard Mode", "a decided Hard Mode run is named 'Hard Mode'")
 	title.open(false, true)
@@ -582,7 +582,7 @@ func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 	title.open(true)
 	t.check(title.mode_name_shown() == "" and not title.hard_mode_shown(),
 			"a title with no run behind it shows neither")
-	GameState.hard_mode = was_hard
+	GameState.calendar.hard_mode = was_hard
 	title.free()
 
 ## **The hint has to name the thing that actually works.** *(2026-09-07, on review: "a bare tap no
