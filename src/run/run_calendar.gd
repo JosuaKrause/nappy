@@ -273,17 +273,25 @@ func regain_a_nerve_for_a_won_day() -> void:
 ## `RunStateRegistry.restore_run_data()` a save is read back with, so nothing a later field adds
 ## to the save can be left out of a checkpoint by forgetting it here.
 ##
+## **Everything but the play time**: `RunHeader.play_ticks` stays as it was at the loss, for a
+## checkpoint zero and a later one alike, since going back is the game sending her back for running
+## out of nerves and not the player starting over; only a new game from the title starts it at zero
+## (inbox #920).
+##
 ## Checkpoint zero (`checkpoint` empty) is day 1 of the same city: the registry reset. The header
 ## keeps the run's seed and who is pushing the pram, since `--parent` may have chosen it over the
 ## seed's roll; a normal run has no checkpoint to clear and is not in hard mode.
 func _go_back_to_the_checkpoint() -> void:
 	var lost_on := header.day
 	var kept := checkpoint
+	# The run's play time only ever grows: the dawn's own clock is not given back (inbox #920).
+	var played := header.play_ticks
 	if kept.is_empty():
 		run_parts.reset()
 	else:
 		run_parts.restore_run_data(kept)
 		checkpoint = kept
+	header.play_ticks = played
 	header.nerves = Tuning.STARTING_NERVES
 	EventBus.nerves_changed.emit(header.nerves)
 	EventBus.resistance_progress_changed.emit(resistance.progress)
