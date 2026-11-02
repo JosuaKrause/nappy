@@ -683,6 +683,7 @@ func _test_day_under_way_load_on_the_last_nerve_ends_the_run(t) -> void:
 	GameState.header.day = 9
 	GameState.header.nerves = 1
 	GameState.calendar.begin_day()
+	GameSave.clear_when_a_run_ends()
 	_with_forced_save(func() -> void:
 		t.check(GameSave._write_now(GameState, true), "a save exists before the last nerve is spent")
 
@@ -823,6 +824,7 @@ func _test_either_ending_clears_the_save(t) -> void:
 	GameState.start_run(59)
 	GameState.header.day = 3
 	GameState.header.nerves = 2
+	GameSave.clear_when_a_run_ends()
 	_with_forced_save(func() -> void:
 		t.check(GameSave._write_now(GameState, true), "a save exists")
 		GameState.calendar.finish_day(GameEnums.DayResult.WON)
@@ -1625,7 +1627,7 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 ## when the player continues. The hand-over must carry the symbol to the tree's root like the held
 ## restart does, so it outlives the reload, keeps showing A, and the escape's boot adopts it. There
 ## the escape's first save (B) begins, and A's answer, arriving late, must settle A and never B: B's
-## failure afterwards still strikes the symbol. The reload itself goes to `_reload_override`, since a
+## failure afterwards still strikes the symbol. The reload itself goes to `use_reload()`'s, since a
 ## real one would throw away the test runner's own scene.
 func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	var tree: SceneTree = t.get_tree()
@@ -1645,7 +1647,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	# Day 14's summary after the hand-over (`DayEnd.hands_over_to_the_escape`).
 	main._flow.mode = RunFlow.Mode.INTO_ESCAPE
 	var reloads: Array[int] = []
-	main._reload_override = func() -> void: reloads.append(1)
+	main.use_reload(func() -> void: reloads.append(1))
 
 	var day_fourteen := GameSave._new_operation()
 	EventBus.save_written.emit(day_fourteen, int(GameSave.Result.PENDING))

@@ -128,9 +128,7 @@ func _reset_globals() -> void:
 	SaveIndicator._home_override = null
 	FrameRecord.on = false
 	FrameRecord.ledger = null
-	ControlsMode._remembered = false
-	ControlsMode._remembered_mode = ControlsMode.Mode.TAP
-	ControlsMode._remembered_side = ControlsMode.Side.LEFT
+	ControlsMode.forget()
 	TitleScreen._restarted_at_msec = -INF
 
 ## Every suite, or the ones whose file name contains one of `filters`.

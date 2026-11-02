@@ -322,7 +322,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	EventBus.went_back_to_a_checkpoint.connect(on_back)
 	EventBus.run_begun.connect(on_begun)
 	var reloads := []
-	main._reload_override = func() -> void: reloads.append(1)
+	main.use_reload(func() -> void: reloads.append(1))
 	GameState.header.nerves = 1
 	main._on_day_finished(GameEnums.DayResult.LOST_TIMEOUT)
 	t.check(GameState.header.day == 8 and main._summary.is_showing(), "the lost-day screen is up, at day 8")

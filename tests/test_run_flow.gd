@@ -214,7 +214,7 @@ func _test_a_tap_then_a_key_continue_once(t) -> void:
 			"the readout heard the day begun from the flow")
 	# Every reload goes through one function, which an authored scene failing its own retry calls
 	# straight from the walk: the flow says RELOADING whichever way it came.
-	main._reload_override = func() -> void: pass
+	main.use_reload(func() -> void: pass)
 	main._reload_the_scene()
 	t.check(main._flow.mode == RunFlow.Mode.RELOADING, "a reload from the walk leaves RELOADING (%s)"
 			% RunFlow.Mode.keys()[main._flow.mode])
@@ -225,7 +225,7 @@ func _test_a_tap_then_a_key_continue_once(t) -> void:
 func _test_a_tap_then_a_key_on_the_run_over_screen_show_the_ending(t) -> void:
 	var main: Node2D = await _boot(t, ["--no-title"])
 	var reloads: Array[int] = []
-	main._reload_override = func() -> void: reloads.append(1)
+	main.use_reload(func() -> void: reloads.append(1))
 	GameState.calendar.choose_mode(true)
 	GameState.header.nerves = 1
 	EventBus.hard_fail_triggered.emit("car_strike")
