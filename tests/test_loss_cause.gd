@@ -13,7 +13,7 @@ func run(t) -> void:
 ## every other reason is a `def.id`, hyphenated the same way every other cause name in this file
 ## already is — `roadblock` included, so a row that turns lethal only once the resistance's heat
 ## reaches it (`EventDef.at_heat()`) needs no entry of its own here. Raw, unprefixed
-## — `VisitCounter._loss_event_suffix()` is what folds it onto `lost-hard-fail`.
+## — `VisitCounter.loss_event_suffix()` is what folds it onto `lost-hard-fail`.
 func _test_hard_fail_cause_suffix(t) -> void:
 	t.check(LossCause.hard_fail_suffix("car_strike") == "car",
 		"the one hard fail that is not a catalogue row")
@@ -28,7 +28,7 @@ func _test_hard_fail_cause_suffix(t) -> void:
 
 ## The largest group in `landed_by_group` names the cause; ties and an empty window pick the
 ## alphabetically first key that is present, falling back to `self` when nothing landed anything
-## in the window at all. Raw, unprefixed — `VisitCounter._loss_event_suffix()` is what folds it onto
+## in the window at all. Raw, unprefixed — `VisitCounter.loss_event_suffix()` is what folds it onto
 ## `lost-crying`.
 func _test_crying_cause_suffix(t) -> void:
 	t.check(LossCause.crying_suffix({"homeless_yeller": 12.0, "crowd": 4.0})

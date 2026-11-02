@@ -89,7 +89,7 @@ The events:
   one event folding in what actually did it rather than a second event beside it. The cause rides
   on the day's one end event, `EventBus.day_ended(day, result, cause, elapsed)`, which
   `DayDirector.finish_day()` emits, and `VisitCounter` folds it onto the loss kind
-  (`VisitCounter._loss_event_suffix()`); the run log's `lost` line names the same cause off the
+  (`VisitCounter.loss_event_suffix()`); the run log's `lost` line names the same cause off the
   same event. A hard fail names the row that struck her — `car` for the
   one that is not an event row (`EventBus.hard_fail_triggered("car_strike")`,
   `Crowd._strike()`), otherwise the row id off whichever row's own `is_lethal_at()` fired
@@ -301,7 +301,7 @@ things holds: the build is running on the web (`OS.get_name() == "Web"`), it is 
 nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
 `count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already
 keeps `count.js` off the page entirely (see above), so this is belt and braces rather than a second
-independent switch. One pure function, `VisitCounter._should_send()`, decides the gate from those
+independent switch. One pure function, `VisitCounter.gate_allows()`, decides the gate from those
 four booleans, the same shape `DevFlags._live_debug_requested()` already uses, and
 `tests/test_visit_counter.gd` drives its truth table directly. A missing or failing
 `window.goatcounter` never raises or prints an engine error: the existence check comes first, and

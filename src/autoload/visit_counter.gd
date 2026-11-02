@@ -41,7 +41,7 @@ extends Node
 ##   `car` for the one hard fail that is not an event row, otherwise the row id (hyphenated,
 ##   `charging-dog`); a crying loss names `crowd`, `traffic`, `self`, or the row id, whichever
 ##   landed the most on her over the crying window — the `cause` `EventBus.day_ended` carries, see
-##   its own doc and `_loss_event_suffix()` below. A `LOST_CRYING`/`LOST_HARD_FAIL` day ended with
+##   its own doc and `loss_event_suffix()` below. A `LOST_CRYING`/`LOST_HARD_FAIL` day ended with
 ##   no cause still sends the bare `lost-crying` / `lost-hard-fail` rather than nothing.
 ## - `nappy-day-3-seen-fire` / `nappy-day-3-fire-unmet` — the burning building sighted, and lit off
 ##   her path at dusk on a day she won without meeting it.
@@ -80,40 +80,67 @@ extends Node
 ##   far people get" in its own way.
 
 func _ready() -> void:
-	EventBus.run_begun.connect(_on_run_begun)
-	EventBus.day_started.connect(_on_day_started)
-	EventBus.day_ended.connect(_on_day_ended)
-	EventBus.run_restarted.connect(_on_run_restarted)
-	EventBus.run_ended.connect(_on_run_ended)
-	EventBus.resistance_contact_available.connect(_on_task_offered)
-	EventBus.resistance_step_completed.connect(_on_task_completed)
-	EventBus.resistance_step_failed.connect(_on_task_failed)
-	EventBus.resistance_mark_seen.connect(_on_mark_seen)
-	EventBus.event_sighted.connect(_on_event_sighted)
-	EventBus.event_lit_unmet.connect(_on_event_lit_unmet)
-	EventBus.city_gone_dark.connect(_on_city_gone_dark)
-	EventBus.pursuit_began.connect(_on_pursuit_began)
-	EventBus.pursuit_warned.connect(_on_pursuit_warned)
-	EventBus.pursuit_caught.connect(_on_pursuit_caught)
-	EventBus.pursuit_cut_short.connect(_on_pursuit_cut_short)
-	EventBus.pursuit_ended.connect(_on_pursuit_ended)
-	EventBus.encounter_seen.connect(_on_encounter_seen)
-	EventBus.encounter_influenced.connect(_on_encounter_influenced)
-	EventBus.run_bout_began.connect(_on_run_bout_began)
-	EventBus.pelican_spawned.connect(_on_pelican_spawned)
-	EventBus.pelican_sighted.connect(_on_pelican_sighted)
-	EventBus.pelican_excited_her.connect(_on_pelican_excited_her)
-	EventBus.pelican_struck_her.connect(_on_pelican_struck_her)
-	EventBus.poster_torn.connect(_on_poster_torn)
-	EventBus.poster_pursuit_sent.connect(_on_poster_pursuit_sent)
-	EventBus.player_detained.connect(_on_player_detained)
-	EventBus.escape_begun.connect(_on_escape_begun)
-	EventBus.escape_city_entered.connect(_on_escape_city_entered)
-	EventBus.escape_lost.connect(_on_escape_lost)
-	EventBus.escape_out.connect(_on_escape_out)
-	EventBus.controls_chosen.connect(_on_controls_chosen)
-	EventBus.run_mode_chosen.connect(_on_run_mode_chosen)
-	EventBus.went_back_to_a_checkpoint.connect(_on_went_back_to_a_checkpoint)
+	listen(EventBus)
+
+## The bus the counter listens to, or `null` while it listens to none.
+var _bus: Node
+
+## Connects every handler below to `bus`'s signals. `_ready()` hands it the game's `EventBus`; a
+## test hands in a bus of its own, so what it emits reaches this counter alone. Listening to a
+## second bus lets go of the first.
+func listen(bus: Node) -> void:
+	unlisten()
+	_bus = bus
+	for pair in _handlers(bus):
+		pair[0].connect(pair[1])
+
+## Lets go of every signal `listen()` connected.
+func unlisten() -> void:
+	if _bus == null:
+		return
+	for pair in _handlers(_bus):
+		if pair[0].is_connected(pair[1]):
+			pair[0].disconnect(pair[1])
+	_bus = null
+
+## Each signal of `bus` the counter answers, with the handler that answers it.
+func _handlers(bus: Node) -> Array:
+	return [
+		[bus.run_begun, _on_run_begun],
+		[bus.day_started, _on_day_started],
+		[bus.day_ended, _on_day_ended],
+		[bus.run_restarted, _on_run_restarted],
+		[bus.run_ended, _on_run_ended],
+		[bus.resistance_contact_available, _on_task_offered],
+		[bus.resistance_step_completed, _on_task_completed],
+		[bus.resistance_step_failed, _on_task_failed],
+		[bus.resistance_mark_seen, _on_mark_seen],
+		[bus.event_sighted, _on_event_sighted],
+		[bus.event_lit_unmet, _on_event_lit_unmet],
+		[bus.city_gone_dark, _on_city_gone_dark],
+		[bus.pursuit_began, _on_pursuit_began],
+		[bus.pursuit_warned, _on_pursuit_warned],
+		[bus.pursuit_caught, _on_pursuit_caught],
+		[bus.pursuit_cut_short, _on_pursuit_cut_short],
+		[bus.pursuit_ended, _on_pursuit_ended],
+		[bus.encounter_seen, _on_encounter_seen],
+		[bus.encounter_influenced, _on_encounter_influenced],
+		[bus.run_bout_began, _on_run_bout_began],
+		[bus.pelican_spawned, _on_pelican_spawned],
+		[bus.pelican_sighted, _on_pelican_sighted],
+		[bus.pelican_excited_her, _on_pelican_excited_her],
+		[bus.pelican_struck_her, _on_pelican_struck_her],
+		[bus.poster_torn, _on_poster_torn],
+		[bus.poster_pursuit_sent, _on_poster_pursuit_sent],
+		[bus.player_detained, _on_player_detained],
+		[bus.escape_begun, _on_escape_begun],
+		[bus.escape_city_entered, _on_escape_city_entered],
+		[bus.escape_lost, _on_escape_lost],
+		[bus.escape_out, _on_escape_out],
+		[bus.controls_chosen, _on_controls_chosen],
+		[bus.run_mode_chosen, _on_run_mode_chosen],
+		[bus.went_back_to_a_checkpoint, _on_went_back_to_a_checkpoint],
+	]
 
 # ------------------------------------------------------------------- the gate ---
 
@@ -132,17 +159,17 @@ func configure(config: RunConfig, run: RunState) -> void:
 	_config = config
 	_run = run
 
-## Whether an event may be sent at all, right now. `_should_send()` below is the pure truth table;
+## Whether an event may be sent at all, right now. `gate_allows()` below is the pure truth table;
 ## this is the one place its four live inputs are actually read.
 func should_send() -> bool:
-	return _config != null and _should_send(OS.get_name() == "Web", _config.debug_build,
+	return _config != null and gate_allows(OS.get_name() == "Web", _config.debug_build,
 			_config.readout_requested, _goatcounter_present())
 
 ## The gate, as a pure function of its four inputs: on the web, not a debug build, not
 ## `?debug=1` (`RunConfig.readout_requested`, the same flag that keeps `count.js` itself off the
 ## page — see `export_presets.cfg`'s `html/head_include`), and `window.goatcounter.count` actually
 ## present, since the script can fail to load or be blocked by the visitor's own browser.
-static func _should_send(on_web: bool, is_debug_build: bool, debug_requested: bool,
+static func gate_allows(on_web: bool, is_debug_build: bool, debug_requested: bool,
 		goatcounter_present: bool) -> bool:
 	return _may_ever_send(on_web, is_debug_build, debug_requested) and goatcounter_present
 
@@ -183,22 +210,31 @@ static func _goatcounter_present() -> bool:
 ## here and costs nothing beyond the one boolean check every other refusal already costs.
 var _pending: Array[String] = []
 
+## The events held back until `count.js` is present, in the order they were asked for.
+func pending_events() -> Array[String]:
+	return _pending.duplicate()
+
+## Holds `name` until `flush_pending()` finds the page ready — what `_send_event()` does when the
+## page cannot count it yet.
+func hold(name: String) -> void:
+	_pending.append(name)
+
 func _send_event(name: String) -> void:
 	if _config == null \
 			or not _may_ever_send(OS.get_name() == "Web", _config.debug_build, _config.readout_requested):
 		return
 	var present := _goatcounter_present()
-	_flush_pending(present)
+	flush_pending(present)
 	if present:
 		_dispatch(name)
 	else:
-		_pending.append(name)
+		hold(name)
 
 ## Sends whatever is queued, in the order it was asked for, when `present` holds; leaves the
 ## queue exactly as it was otherwise. `present` is a parameter rather than a fresh
-## `_goatcounter_present()` read taken in here, the same split `_should_send()` already makes for
+## `_goatcounter_present()` read taken in here, the same split `gate_allows()` already makes for
 ## its own live half, so a test can drive both outcomes directly without a page to ask.
-func _flush_pending(present: bool) -> void:
+func flush_pending(present: bool) -> void:
 	if not present or _pending.is_empty():
 		return
 	var queued := _pending
@@ -206,9 +242,9 @@ func _flush_pending(present: bool) -> void:
 	for queued_name in queued:
 		_dispatch(queued_name)
 
-## Sends `name` through the page's own `count.js` — see `_count_call()` for the call.
+## Sends `name` through the page's own `count.js` — see `count_call()` for the call.
 func _dispatch(name: String) -> void:
-	JavaScriptBridge.eval(_count_call(name))
+	JavaScriptBridge.eval(count_call(name))
 
 ## What `window.goatcounter.count()` is given for `name` — see
 ## https://www.goatcounter.com/help/events and /help/js. `path` is the event's own name, which
@@ -218,48 +254,48 @@ func _dispatch(name: String) -> void:
 ## is not counted again, so without it a day lost three times would read as one `lost-*`.
 ## `count.js` sends it as the hit's `ns` parameter, and GoatCounter counts a hit carrying it as a
 ## visit of its own.
-static func _count_options(name: String) -> Dictionary:
+static func count_options(name: String) -> Dictionary:
 	return {"path": name, "title": name, "event": true, "no_session": true}
 
-## The one line of script `_dispatch()` evaluates for `name`: `count()` with `_count_options()`,
+## The one line of script `_dispatch()` evaluates for `name`: `count()` with `count_options()`,
 ## wrapped in the page's own `try`/`catch` as well as the caller's own `_goatcounter_present()`
 ## check, so a third-party script's own internals throwing never becomes an engine error on this
 ## side — "a missing or failing window.goatcounter must never raise or print an engine error".
-static func _count_call(name: String) -> String:
+static func count_call(name: String) -> String:
 	return ("try { window.goatcounter.count(%s); } catch (e) {}"
-			% JSON.stringify(_count_options(name)))
+			% JSON.stringify(count_options(name)))
 
 # --------------------------------------------------------------- event names ---
 # Pure functions, each testable without a web page, a save or a run behind it.
 
-static func _day_event_name(day: int, suffix: String) -> String:
+static func day_event_name(day: int, suffix: String) -> String:
 	return "nappy-day-%d-%s" % [day, suffix]
 
 ## `GameEnums.DayResult`'s own key, lowercased and hyphenated — `LOST_CRYING` -> `lost-crying`,
 ## `WON` -> `won` — so a day's end is always named straight off the game's own loss causes rather
 ## than a second copy of them invented here.
-static func _loss_cause(result: GameEnums.DayResult) -> String:
+static func loss_cause(result: GameEnums.DayResult) -> String:
 	return String(GameEnums.DayResult.keys()[result]).to_lower().replace("_", "-")
 
-## The full name a day's own end sends: `_loss_cause(result)` with `cause` — `EventBus.day_ended`'s
+## The full name a day's own end sends: `loss_cause(result)` with `cause` — `EventBus.day_ended`'s
 ## own, unprefixed — folded on for the two results that ever have one. The game names no cause for
 ## `WON` or `LOST_TIMEOUT`; this still guards on `result` rather than trusting an empty `cause`
 ## alone, so neither name can ever carry one. An empty `cause` for `LOST_CRYING`/`LOST_HARD_FAIL`
 ## sends the bare loss name rather than nothing.
-static func _loss_event_suffix(result: GameEnums.DayResult, cause: String) -> String:
-	var base := _loss_cause(result)
+static func loss_event_suffix(result: GameEnums.DayResult, cause: String) -> String:
+	var base := loss_cause(result)
 	if cause.is_empty():
 		return base
 	if result != GameEnums.DayResult.LOST_CRYING and result != GameEnums.DayResult.LOST_HARD_FAIL:
 		return base
 	return "%s-%s" % [base, cause]
 
-static func _run_begun_name(day: int, resumed: bool) -> String:
+static func run_begun_name(day: int, resumed: bool) -> String:
 	return "nappy-run-resumed-day-%d" % day if resumed else "nappy-run-fresh"
 
 ## A fresh run's mode. *(gentle-osprey, the player: "needs telemetry whether someone chooses hard
 ## mode".)*
-static func _mode_event_name(hard: bool) -> String:
+static func mode_event_name(hard: bool) -> String:
 	return "nappy-mode-hard" if hard else "nappy-mode-normal"
 
 ## What a day begun sends: `began` for every run, and its hard-only copy beside it for a hard run.
@@ -267,21 +303,21 @@ static func _mode_event_name(hard: bool) -> String:
 ## far people get in each mode", answered "Add a hard-only copy".)* The plain name stays every
 ## run's, so its series runs on unbroken and a normal run's count is the total less the hard one.
 ## Nothing else splits by mode: *"hard mode doesn't affect gameplay -- only restart pacing"*.
-static func _day_began_names(day: int, hard: bool) -> Array[String]:
-	var names: Array[String] = [_day_event_name(day, "began")]
+static func day_began_names(day: int, hard: bool) -> Array[String]:
+	var names: Array[String] = [day_event_name(day, "began")]
 	if hard:
-		names.append(_day_event_name(day, "began-hard"))
+		names.append(day_event_name(day, "began-hard"))
 	return names
 
 ## A normal run back at checkpoint `checkpoint_day` (1, 4, 8 or 12) after losing its last nerve on
 ## `lost_day`. *(gentle-osprey, the player: "whether they are restarting from a checkpoint after
 ## losing all nerves".)*
-static func _checkpoint_event_name(checkpoint_day: int, lost_day: int) -> String:
+static func checkpoint_event_name(checkpoint_day: int, lost_day: int) -> String:
 	return "nappy-checkpoint-%d-from-day-%d" % [checkpoint_day, lost_day]
 
 ## `keys` when a key began the run, whatever scheme that gave it — the title begins a key's run in
 ## the tap scheme, and a key player is not a tap player — otherwise the button pressed.
-static func _controls_event_name(joystick: bool, by_key: bool) -> String:
+static func controls_event_name(joystick: bool, by_key: bool) -> String:
 	if by_key:
 		return "nappy-controls-keys"
 	return "nappy-controls-joystick" if joystick else "nappy-controls-tap"
@@ -291,7 +327,7 @@ static func _controls_event_name(joystick: bool, by_key: bool) -> String:
 ## kinds of stop apart: `chatting_mother` is a `chat`, and every other id that can reach here
 ## (`checkpoint_hut`, `checkpoint_post` — `checkpoint_gate`'s own boom never detains, see
 ## `EventCatalogue`) is a `checkpoint`.
-static func _detention_suffix(id: String) -> String:
+static func detention_suffix(id: String) -> String:
 	return "chat" if id == "chatting_mother" else "checkpoint"
 
 ## Whether `step` is a chalk-mark pickup or the perform half it unlocks — read straight off the
@@ -300,7 +336,7 @@ static func _detention_suffix(id: String) -> String:
 ## `false` for an index `ResistanceSteps` does not know (the finale's own step, or a stale index),
 ## which reads as a task rather than a mark — the safer default, since a `task-done`/`task-skipped`
 ## miscount is the smaller error next to a `mark-*` sent for a step that was never a mark at all.
-static func _is_pickup_step(step: int) -> bool:
+static func is_pickup_step(step: int) -> bool:
 	var data := ResistanceSteps.by_index(step)
 	return data != null and data.is_pickup
 
@@ -317,10 +353,14 @@ static func _is_pickup_step(step: int) -> bool:
 ## answered here instead, the one place a flag can live for exactly a page's own lifetime.
 var _reported_run_begun := false
 
+## Whether this page has already answered a `run_begun`.
+func has_reported_run_begun() -> bool:
+	return _reported_run_begun
+
 ## The decision behind `_on_run_begun()`'s own gate, pulled out to a pure function of its two
 ## inputs so a test can drive the truth table directly, the same split every other live check in
 ## this file makes for its own pure half.
-static func _resumed_for_report(resumed: bool, already_reported_this_page: bool) -> bool:
+static func resumed_for_report(resumed: bool, already_reported_this_page: bool) -> bool:
 	return resumed and not already_reported_this_page
 
 ## Whether a `run_begun` is the same run coming back after a reload this page made — the day-14
@@ -328,15 +368,15 @@ static func _resumed_for_report(resumed: bool, already_reported_this_page: bool)
 ## begun: a second `run_begun` on one page that finds a save. That sends nothing, since the run was
 ## already counted; a held restart clears the save before its reload, so it finds none and counts
 ## as the new, fresh run it is.
-static func _is_the_same_run_reloaded(resumed: bool, already_reported_this_page: bool) -> bool:
+static func is_the_same_run_reloaded(resumed: bool, already_reported_this_page: bool) -> bool:
 	return resumed and already_reported_this_page
 
 func _on_run_begun(day: int, resumed: bool) -> void:
-	if _is_the_same_run_reloaded(resumed, _reported_run_begun):
+	if is_the_same_run_reloaded(resumed, _reported_run_begun):
 		return
-	var actually_resumed := _resumed_for_report(resumed, _reported_run_begun)
+	var actually_resumed := resumed_for_report(resumed, _reported_run_begun)
 	_reported_run_begun = true
-	_send_event(_run_begun_name(day, actually_resumed))
+	_send_event(run_begun_name(day, actually_resumed))
 
 ## The day the last `day_started` announced — one of the fourteen, or one of the escape's two
 ## sections under their own numbers (`DaySpec.number`) — which everything counted while it is walked
@@ -350,19 +390,19 @@ func _counted_day() -> int:
 
 func _on_day_started(day: int) -> void:
 	_day = day
-	for name in _day_began_names(day, _run.calendar.hard_mode):
+	for name in day_began_names(day, _run.calendar.hard_mode):
 		_send_event(name)
 
 ## A fresh run's mode, from its title. **The day behind that title has already begun** — the first
 ## morning is built and its `day_started` sent before the title is dismissed, while the run still
 ## reads as normal — so a hard run sends that day's hard copy here, once its mode is known.
 func _on_run_mode_chosen(hard: bool, day: int) -> void:
-	_send_event(_mode_event_name(hard))
+	_send_event(mode_event_name(hard))
 	if hard:
-		_send_event(_day_event_name(day, "began-hard"))
+		_send_event(day_event_name(day, "began-hard"))
 
 func _on_went_back_to_a_checkpoint(checkpoint_day: int, lost_day: int) -> void:
-	_send_event(_checkpoint_event_name(checkpoint_day, lost_day))
+	_send_event(checkpoint_event_name(checkpoint_day, lost_day))
 
 ## Which day offered a step is on offer, kept only long enough to say whether the day it belongs
 ## to ended with the step done or without it — `step index -> day`. A retry re-offers the same
@@ -370,13 +410,17 @@ func _on_went_back_to_a_checkpoint(checkpoint_day: int, lost_day: int) -> void:
 ## attempt spent), which simply overwrites the entry with the day it already named.
 var _open_tasks := {}
 
+## Whether `step` was offered on a day that has not yet ended with it done or failed.
+func task_is_open(step: int) -> bool:
+	return _open_tasks.has(step)
+
 func _on_task_offered(step: int) -> void:
 	_open_tasks[step] = _counted_day()
 
 func _on_task_completed(step: int) -> void:
 	var day: int = _open_tasks.get(step, _counted_day())
 	_open_tasks.erase(step)
-	_send_event(_day_event_name(day, "mark-read" if _is_pickup_step(step) else "task-done"))
+	_send_event(day_event_name(day, "mark-read" if is_pickup_step(step) else "task-done"))
 
 ## A timed step's own deadline passed — `ResistanceDirector`'s one expiry path. Counted the same
 ## as a step a day simply ended without touching (`_on_day_ended()` below): both are "a task day
@@ -384,24 +428,24 @@ func _on_task_completed(step: int) -> void:
 func _on_task_failed(step: int) -> void:
 	var day: int = _open_tasks.get(step, _counted_day())
 	_open_tasks.erase(step)
-	_send_event(_day_event_name(day, "mark-missed" if _is_pickup_step(step) else "task-skipped"))
+	_send_event(day_event_name(day, "mark-missed" if is_pickup_step(step) else "task-skipped"))
 
 func _on_mark_seen(step: int) -> void:
 	var day: int = _open_tasks.get(step, _counted_day())
-	_send_event(_day_event_name(day, "mark-seen"))
+	_send_event(day_event_name(day, "mark-seen"))
 
 func _on_event_sighted(id: String) -> void:
 	if id != "burning_building":
 		return
-	_send_event(_day_event_name(_counted_day(), "seen-fire"))
+	_send_event(day_event_name(_counted_day(), "seen-fire"))
 
 func _on_event_lit_unmet(id: String) -> void:
 	if id != "burning_building":
 		return
-	_send_event(_day_event_name(_counted_day(), "fire-unmet"))
+	_send_event(day_event_name(_counted_day(), "fire-unmet"))
 
 func _on_city_gone_dark() -> void:
-	_send_event(_day_event_name(_counted_day(), "blackout"))
+	_send_event(day_event_name(_counted_day(), "blackout"))
 
 ## **Every charger's own charging counter** *(inbox #764 in minty-lemur, the player: "Ending a day and a charging
 ## counter are not the same thing"; "Charging is independent of an ended day")*: `<charger>-warned`
@@ -410,19 +454,19 @@ func _on_city_gone_dark() -> void:
 ## the day does — a catch that ends the day sends `lost-hard-fail-<row>` as well. `<charger>` is
 ## `charger_counter_name()`.
 func _on_pursuit_warned(id: String) -> void:
-	_send_event(_day_event_name(_counted_day(), "%s-warned" % charger_counter_name(id)))
+	_send_event(day_event_name(_counted_day(), "%s-warned" % charger_counter_name(id)))
 
 func _on_pursuit_began(id: String) -> void:
-	_send_event(_day_event_name(_counted_day(), "%s-chased" % charger_counter_name(id)))
+	_send_event(day_event_name(_counted_day(), "%s-chased" % charger_counter_name(id)))
 
 func _on_pursuit_caught(id: String) -> void:
-	_send_event(_day_event_name(_counted_day(), "%s-caught" % charger_counter_name(id)))
+	_send_event(day_event_name(_counted_day(), "%s-caught" % charger_counter_name(id)))
 
 func _on_pursuit_cut_short(id: String) -> void:
-	_send_event(_day_event_name(_counted_day(), "%s-ended" % charger_counter_name(id)))
+	_send_event(day_event_name(_counted_day(), "%s-ended" % charger_counter_name(id)))
 
 func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
-	_send_event(_day_event_name(_counted_day(), "%s-%s" % [charger_counter_name(id),
+	_send_event(day_event_name(_counted_day(), "%s-%s" % [charger_counter_name(id),
 			"shaken" if shaken_off else "outlasted"]))
 
 ## A charger's name in its counter: `dog` for `charging_dog`, so its `dog-chased`, `dog-shaken` and
@@ -445,64 +489,64 @@ static func _encounter_suffix(kind: String, name: String) -> String:
 	return "%s-%s" % [kind, name.replace("_", "-")]
 
 func _on_encounter_seen(day: int, name: String) -> void:
-	_send_event(_day_event_name(day, _encounter_suffix("seen", name)))
+	_send_event(day_event_name(day, _encounter_suffix("seen", name)))
 
 ## `influenced-unseen` for an encounter that was never seen, so influenced ÷ seen counts only the
 ## encounters she could see.
 func _on_encounter_influenced(day: int, name: String, seen: bool) -> void:
 	var kind := "influenced" if seen else "influenced-unseen"
-	_send_event(_day_event_name(day, _encounter_suffix(kind, name)))
+	_send_event(day_event_name(day, _encounter_suffix(kind, name)))
 
 func _on_run_bout_began(day: int) -> void:
-	_send_event(_day_event_name(day, "ran"))
+	_send_event(day_event_name(day, "ran"))
 
 ## The pelican's own four moments *(inbox #527 in azure-tapir, the player: "when the pelican spawns, when it's on
 ## screen, and when it's hitting the player. it must appear as its own entry")*. Each signal fires
 ## once per pelican where it is emitted (`EventBus`'s own doc on each), so each sends once; the
 ## instance it carries is not read.
 func _on_pelican_spawned(_instance: Variant) -> void:
-	_send_event(_day_event_name(_counted_day(), "pelican-spawned"))
+	_send_event(day_event_name(_counted_day(), "pelican-spawned"))
 
 func _on_pelican_sighted(_instance: Variant) -> void:
-	_send_event(_day_event_name(_counted_day(), "pelican-seen"))
+	_send_event(day_event_name(_counted_day(), "pelican-seen"))
 
 func _on_pelican_excited_her(_instance: Variant) -> void:
-	_send_event(_day_event_name(_counted_day(), "pelican-excited"))
+	_send_event(day_event_name(_counted_day(), "pelican-excited"))
 
 func _on_pelican_struck_her(_instance: Variant) -> void:
-	_send_event(_day_event_name(_counted_day(), "pelican-hit"))
+	_send_event(day_event_name(_counted_day(), "pelican-hit"))
 
 ## Every tear, not the first of an attempt: every event opts out of the site's sessions so that
 ## each one is counted (PLAYTEST-143: "we need a telemetry item for ripping posters").
 func _on_poster_torn() -> void:
-	_send_event(_day_event_name(_counted_day(), "poster-torn"))
+	_send_event(day_event_name(_counted_day(), "poster-torn"))
 
 ## A tear whose marble sends a pursuer on foot after her, beside that tear's own `poster-torn`
 ## (PLAYTEST-143: "we need a telemetry item for ripping posters and pursuit triggered by poster
 ## ripping").
 func _on_poster_pursuit_sent() -> void:
-	_send_event(_day_event_name(_counted_day(), "poster-pursuit"))
+	_send_event(day_event_name(_counted_day(), "poster-pursuit"))
 
 ## Every hold: `CheckpointController.check_detentions()` emits once per catch, a mother only
 ## ever chats once, and a checkpoint that holds her again is a second stop she paid for.
 func _on_player_detained(id: String) -> void:
-	_send_event(_day_event_name(_counted_day(), _detention_suffix(id)))
+	_send_event(day_event_name(_counted_day(), detention_suffix(id)))
 
 func _on_run_restarted(day: int) -> void:
-	_send_event(_day_event_name(day, "restarted"))
+	_send_event(day_event_name(day, "restarted"))
 
 func _on_run_ended(ending: GameEnums.Ending) -> void:
 	_send_event("nappy-ending-%s" % String(GameEnums.Ending.keys()[ending]).to_lower())
 
 func _on_day_ended(day: int, result: GameEnums.DayResult, cause: String, _elapsed: float) -> void:
-	_send_event(_day_event_name(day, _loss_event_suffix(result, cause)))
+	_send_event(day_event_name(day, loss_event_suffix(result, cause)))
 	# Whatever today's step still stands open — never reached, or reached but not finished — is
 	# skipped the moment the day it belonged to ends, whether the day was won or lost.
 	for step: int in _open_tasks.keys().duplicate():
 		if int(_open_tasks[step]) != day:
 			continue
 		_open_tasks.erase(step)
-		_send_event(_day_event_name(day, "mark-missed" if _is_pickup_step(step) else "task-skipped"))
+		_send_event(day_event_name(day, "mark-missed" if is_pickup_step(step) else "task-skipped"))
 
 func _on_escape_begun() -> void:
 	_send_event("nappy-escape-begun")
@@ -517,4 +561,4 @@ func _on_escape_out(_exit_kind: int) -> void:
 	_send_event("nappy-escape-out")
 
 func _on_controls_chosen(joystick: bool, by_key: bool) -> void:
-	_send_event(_controls_event_name(joystick, by_key))
+	_send_event(controls_event_name(joystick, by_key))
