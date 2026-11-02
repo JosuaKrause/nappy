@@ -212,7 +212,10 @@ src/
   resistance/
 	resistance_director.gd  places the day's contact; the guard and the deadline; activates a
 	                         perform step the moment the mark that unlocks it is touched; ticked
-	                         by `main` on the walk's physics tick, as the day's clock is
+	                         by `main` on the walk's physics tick, as the day's clock is; handed
+	                         its city and run (`setup()`), the day's stream and length
+	                         (`start_day()`), her and her sight, and a calendar (`use_steps()`);
+	                         `contact()`, `read_mark()` and `rider()` name what it has out
 	resistance_steps.gd     the calendar: a mark and the perform step it unlocks share one day,
 	                         plus the finale
 	contact_point.gd        touch to complete — a chalk mark, a task's own event instance, or a
@@ -735,7 +738,8 @@ on every call that reads or writes one (`write(run, …)`, `try_resume(run)`, `l
 `file_data(run, …)`); the registry's own `run_data()` and `restore_run_data()` are what a save and a
 checkpoint carry, so the calendar needs no `GameSave`, and `GameSave` clears the save when `run_ended`
 fires. Handed per call rather than held, because the web flush and the operation ids outlive the scene reloads that
-free the `main` holding a run. The events and the resistance still read it off the autoload.
+free the `main` holding a run. The resistance is handed it with its city (`City.run`), or by
+`ResistanceDirector.setup()`.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
 builds over the parts and exposes as `run.calendar`): the day and act, a day's attempt begun
 (`begin_day()`, the dawn photograph) and ended (`finish_day()`, the nerve a loss spends and the day
@@ -1007,7 +1011,8 @@ field with its value before and after (`tests/shared_state.gd`).
   and silencing one or all for the rest of the day.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
-  `resistance_rig.gd` (a helper the runner does not load): `steps` (the step table, touch-completion,
+  `resistance_rig.gd` (a helper the runner does not load), which builds a test's city in a run of
+  its own and reads what the director put in the street from the street: `steps` (the step table, touch-completion,
   a task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
   finished task shown by the world and the sabotage putting the city's masts out once she has
   walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`

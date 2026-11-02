@@ -113,7 +113,7 @@ func _test_the_guard_moves_with_the_mark_into_its_new_alley(t) -> void:
 				% guards.size())
 
 		var guard: EventInstance = guards[0]
-		var spot := director._guard_spot(new_at)
+		var spot := director.guard_spot(new_at)
 		t.check(spot != Vector2.INF, "the relocated mark's own alley is found")
 		t.check(guard.global_position.distance_to(spot) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
 				"the new guard stands in that alley, two-thirds through it or at its courtyard's " +

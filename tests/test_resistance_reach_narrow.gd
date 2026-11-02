@@ -43,7 +43,7 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 					var mast := step.target_kind == ResistanceSteps.TargetKind.MAST
 					var target := director.contact_position() if mast or director._rider == null \
 							else director._rider.global_position
-					var circle := _edge_of_her_circle(mark)
+					var circle := _edge_of_her_circle(director, mark)
 					# Day 13's roadblock is offered the ground her paths reach out to each of
 					# `ROADBLOCK_WIDER_REACH` in turn where the day's rules refuse the whole edge
 					# (`_place_the_roadblock_near()`), and that is not a fallback.

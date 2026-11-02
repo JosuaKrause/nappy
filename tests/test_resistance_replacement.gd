@@ -346,7 +346,7 @@ func _test_nothing_appears_or_vanishes_under_a_covered_corner(t) -> void:
 				# covered corner or out of the view) is a case the whole view has to refuse.
 				var seen_by_the_visible_area := false
 				for box_at: Array in [[ResistanceDirector.MARK_BOX, mark],
-						[ResistanceDirector.GUARD_BOX, director._guard_spot(mark)]]:
+						[ResistanceDirector.GUARD_BOX, director.guard_spot(mark)]]:
 					var drawn: Rect2 = box_at[0]
 					var drawn_at: Vector2 = box_at[1]
 					var middle := drawn_at + drawn.get_center()

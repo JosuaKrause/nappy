@@ -364,12 +364,15 @@ func _touched_from_standable_ground(director: ResistanceDirector, item: Vector2,
 	return false
 
 ## `[edge, inside]`, each `tile -> true`: walked tile by tile from her tile at `her` over walkable
-## ground the day's obstruction (`_day_reachability()`'s blocked tiles) leaves open, going on only
-## from a tile inside the `NEAR_THE_MARK` circle round her — a tile at or past its edge is where
-## that path reaches the edge.
-func _edge_of_her_circle(her: Vector2) -> Array:
+## ground the day's obstruction leaves open, going on only from a tile inside the `NEAR_THE_MARK`
+## circle round her — a tile at or past its edge is where that path reaches the edge. The
+## obstruction is the director's own as it placed the day's first contact
+## (`director._reach_blocked`), so a task's own body placed after it (day 11's mast) does not shut
+## its own tile: the one private read left in this rig, which `reach_narrow` and `reach_relocated`
+## take with them when they move onto public seams (by reading the circle before the mark is read).
+func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 	var map := _city.map
-	var blocked: Dictionary = _day_reachability(_city)[1]
+	var blocked: Dictionary = director._reach_blocked
 	var start := map.world_to_tile(her)
 	var centre := map.tile_to_world(start)
 	var edge := {}

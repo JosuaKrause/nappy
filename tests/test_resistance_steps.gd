@@ -12,10 +12,14 @@ func run(t) -> void:
 	await _test_touching_completes_a_pickup(t)
 	await _test_walking_away_leaves_it_untouched(t)
 	_test_the_chalk_mark_pictures_are_baked_on_decoration(t)
+	# The bare event instances the next tests stand in the tree are drawn on the real frames they let
+	# pass, so the events' pictures are held for them as a city's `EventManager` holds them.
+	AtlasLibrary.acquire(EventPictures.ATLAS_GROUP)
 	await _test_a_perform_contact_rides_on_its_instance(t)
 	await _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	await _test_touching_a_tasks_body_from_any_side_completes_it(t)
+	AtlasLibrary.release(EventPictures.ATLAS_GROUP)
 	_test_touching_the_mark_activates_the_same_days_task(t)
 	_test_placement_is_deterministic(t)
 	_test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t)
@@ -126,13 +130,6 @@ func _test_the_finale_needs_the_legwork(t) -> void:
 	var finale := ResistanceSteps.for_day(Tuning.RUN_LENGTH_DAYS, done, none, true)
 	t.check(finale != null and finale.needs_goal, "and is offered to one who has")
 
-## Hides a bare `EventInstance` a contact rides on in a test that lets real frames pass: a frame
-## draws what is visible, and nothing outside a city holds the events' pictures (`AtlasLibrary`'s
-## "events" group, which a city's `EventManager` acquires). What these tests ask is where it stands
-## and whether she touches it, never how it looks.
-func _draw_nothing_of(instance: EventInstance) -> void:
-	instance.hide()
-
 func _teardown_contact() -> void:
 	_contact.free()
 	_player.free()
@@ -182,7 +179,6 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2(300.0, 0.0))
 	t.add_child(instance)
 	instance.set_process(false)
-	_draw_nothing_of(instance)
 
 	var contact := ContactPoint.new()
 	contact.ride(ResistanceSteps.by_index(2), instance, Vector2.ZERO)
@@ -227,7 +223,6 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t) -> void
 	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
 	t.add_child(instance)
 	instance.set_process(false)
-	_draw_nothing_of(instance)
 
 	var step := ResistanceSteps.by_index(2)
 	t.check(step.completes_at_inner_radius, "day 6's note is the one step this applies to")
@@ -312,7 +307,6 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t) -> void:
 		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
 		t.add_child(instance)
 		instance.set_process(false)
-		_draw_nothing_of(instance)
 		var player := _rig_player(t, Vector2.ZERO)
 		var shape := instance.def.shape
 		var axis := instance.solid_axis()
@@ -465,8 +459,9 @@ func _test_touching_the_mark_activates_the_same_days_task(t) -> void:
 
 ## *Always guarded* has to mean a survivable placement, not a guaranteed lost day: a robber
 ## stands at least 62px (26 + `ContactPoint.REACH`) from every mark, in the mark's own alley —
-## within 96px of where `_guard_spot()` says he stands, two-thirds through it or at a courtyard's
-## inner end — and the distance is the same every time this day is replayed.
+## within 96px of where `ResistanceDirector.guard_spot()` says he stands, two-thirds through it or
+## at a courtyard's inner end — and the distance is the same every time this day is replayed. On a
+## city of its own with no day started, so every guard is a dawn guard.
 func _test_the_guard_is_seeded(t) -> void:
 	var run := _build_city_in_a_new_run(t)
 	_seen_guard_distances = []
