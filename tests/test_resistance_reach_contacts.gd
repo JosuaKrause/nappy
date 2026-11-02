@@ -252,8 +252,9 @@ func _test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t) -> void
 ## (`open`). Proven through a real director's dawn rather than by reading the wiring: day 6's mark
 ## is dawned once as it falls, then the same dawn is run again on an identical city with a body
 ## recorded on the tile it fell on. The mark must land on another tile, one that is legal ground
-## with no body on it, so an `open` that did not refuse the occupied tile (or a `stands` and an
-## `open` swapped for each other) lets the first tile stand and fails here.
+## with no body on it, so an `open` that did not refuse the occupied tile lets the first tile stand
+## and fails here. `open`'s reachability half is caught by the sweep above, not here: the director's
+## reach grid comes from the scheduler's plans, not the map the body is recorded on.
 func _test_the_director_hands_the_draw_its_own_predicates(t) -> void:
 	var fell_on := _dawn_mark_tile(t, 6, null)
 	t.check(fell_on != Vector2i(-1, -1), "day 6's mark falls on a tile at dawn")

@@ -297,8 +297,10 @@ func set_sight(sees: Callable) -> void:
 ## Hands the director the calendar it offers steps from, in place of the run's own
 ## (`ResistanceSteps.all()`): a step a later slice will build, such as one with a deadline, offered
 ## through the same `start_day()` and touch as every built step. The game never hands one.
-## Every read of the calendar in the director goes through it, the placement pools included
-## (`_step_of_kind()`). An empty calendar is refused (an error, and the director keeps the calendar
+## Every read of the calendar on the director goes through it, the placement pools included
+## (`_step_of_kind()`); the day's planning does not, since the static `target_ground()` reads the
+## run's own through `ResistanceSteps.narrow_target_on()`, so a handed step's route is not protected
+## by the planning. An empty calendar is refused (an error, and the director keeps the calendar
 ## it had): nothing quietly falls back to the run's own, and a director that offers nothing is one
 ## that is never handed a step.
 func use_steps(steps: Array[ResistanceSteps.Step]) -> void:

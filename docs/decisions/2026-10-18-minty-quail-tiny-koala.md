@@ -8,7 +8,8 @@ other eight resistance suites.
 **Built.**
 - `ResistanceDirector` gains `contact()`, `read_mark()` and `rider()` (what it has in the world),
   `use_steps(steps)` (a calendar handed in; the game never calls it and the director uses the run's
-  own, `ResistanceSteps.all()`, every read of the calendar going through the one it holds; an empty
+  own, `ResistanceSteps.all()`, every read of the calendar on the director going through the one it
+  holds, though the day's planning, the static `target_ground()`, reads the run's own; an empty
   calendar is refused), `guard_spot()`, and the statics `draw_reachable(candidates, rng, stands, open,
   used)` (the placement draw, moved out of `_pick_reachable()`), `touch_reach(instance)` and
   `pursuer_walker()`. `SceneRecipeRuntime` reads the public three.
