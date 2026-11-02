@@ -129,6 +129,13 @@ func clear() -> void:
 func guard_after_her() -> EventInstance:
 	return _guard_after_her if is_instance_valid(_guard_after_her) else null
 
+## Whether the guard a walked crossing set on her is still on her: in the world, neither finished
+## nor leaving. One guard at a time (`_set_a_guard_on_her()`), so a crossing starts no warning and
+## sets no second guard while this holds.
+func guard_is_after_her() -> bool:
+	return is_instance_valid(_guard_after_her) and not _guard_after_her.is_finished \
+			and not _guard_after_her.is_leaving
+
 ## The door body whose crossing is warning her right now, or null.
 func crossing_door() -> EventInstance:
 	return _crossing if is_instance_valid(_crossing) else null
@@ -469,8 +476,7 @@ func watch_the_door_lines(delta := 0.0) -> void:
 ## (`_set_a_guard_on_her()`). One crossing at a time, and none while a guard is already after
 ## her. Answers whether a warning started.
 func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
-	if _crossing != null or (is_instance_valid(_guard_after_her)
-			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving):
+	if _crossing != null or guard_is_after_her():
 		return false
 	var hut := _hut_on_the_line_nearest(crossed, here, true)
 	if not hut:
@@ -572,8 +578,7 @@ func _call_off_the_crossing(why: String) -> void:
 ## comes with almost no ground to answer it in. An alley's door has only its post, so its guard
 ## steps out of it. *The far hut is chosen while building, open to overturn.*
 func _set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vector2) -> void:
-	if not is_instance_valid(hut) or is_instance_valid(_guard_after_her) \
-			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving:
+	if not is_instance_valid(hut) or guard_is_after_her():
 		return
 	var axis := crossed.facing_now()
 	var side := -1.0 if (here - hut.global_position).dot(axis) < 0.0 else 1.0
@@ -638,8 +643,7 @@ func warn_at_the_doors() -> void:
 ## her holds her where he can catch her. *(2026-10-04, the player: "you shouldn't try to cheat it by
 ## going back in the hut -- that should be fatal by the robber".)*
 func _end_the_guard_for_a_hold() -> void:
-	if is_instance_valid(_guard_after_her) \
-			and not _guard_after_her.is_finished and not _guard_after_her.is_leaving:
+	if guard_is_after_her():
 		_guard_after_her.give_up_the_chase()
 
 ## Where the step from `was` to `here` crosses the line through `at` across `axis` — the door

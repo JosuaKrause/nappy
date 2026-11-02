@@ -3159,6 +3159,22 @@ func read_mark() -> ContactPoint:
 func rider() -> EventInstance:
 	return _rider
 
+## The robber or guard the task's trap has set on her, in the world, or null while none is: a done
+## task's pursuer (`_set_the_trap_on_her()`), not the guard standing over a mark or a task (`guard_spot()`)
+## and not one a walked crossing sets on her (`CheckpointController.guard_after_her()`). His warning
+## is not him: the trap is null until that has run.
+func trap() -> EventInstance:
+	return _trap if is_instance_valid(_trap) else null
+
+## The district door's line day 9's crossing is watched on (`_on_door_crossed()`): where the door
+## today's task names stands, and the street's own axis that every body of the door shares. `INF`
+## and zero on every other day.
+func door_position() -> Vector2:
+	return _door_at
+
+func door_axis() -> Vector2:
+	return _door_axis
+
 ## Where a protester should point, or `Vector2.INF` when there is nothing to point at: no step
 ## today, or today's step is a chalk-mark pickup. *(2026-09-11, the player: "the mark is
 ## findable now -- I don't think we need pointing for that. but the other tasks are not as easy
