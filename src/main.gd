@@ -142,7 +142,7 @@ var _title: TitleScreen
 ## It may be the one a reloading `main` handed to the tree's root, not a child of this node.
 var _save_indicator: SaveIndicator
 
-## The seam `_reload_the_scene()` calls instead of reloading, set only by a test — see there. An
+## What `_reload_the_scene()` calls in place of reloading the scene, set only by `use_reload()`. An
 ## empty `Callable`, the default, reloads normally.
 var _reload_override := Callable()
 ## What `_quit()` calls in place of quitting the tree, set only by `use_quit()`. An empty
@@ -2000,8 +2000,8 @@ func _restart_run() -> void:
 ## The tree is unpaused first: `reload_current_scene` builds the new scene into the same tree, and
 ## a paused one would open the next screen over a game that could never start. Read through
 ## `Engine.get_main_loop()` rather than `get_tree()`, so a test can drive the paths that reach this
-## with a `main` that is not parented, and the reload itself goes to `_reload_override` when a test
-## has set one: a real reload would throw away the test runner's own scene.
+## with a `main` that is not parented, and the reload itself goes to what `use_reload()` was handed
+## when a test has handed one: a real reload would throw away the test runner's own scene.
 func _reload_the_scene() -> void:
 	_flow.reload()
 	_carry_the_save_symbol_over()
