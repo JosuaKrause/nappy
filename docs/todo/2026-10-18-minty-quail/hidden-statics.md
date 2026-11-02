@@ -13,3 +13,14 @@ held by the owner that reads it and handed to whoever needs it.
 *Split out of `main-and-state.md` by the orchestrating session, not the player, open to overturn:*
 the statics belong to the city, the routes and the art rather than to the run's state, so the item
 that keeps the run's state in one place does not build them.
+
+**Where it stands:** the statics under `src/crowd/`, `src/city/`, `src/routes/` and `src/world/` hold
+no hidden globals except two: `StreetNetwork`'s lattice memos (`_segments`, `_by_key`,
+`_adjacency`), which need a network handed to their static callers, the resistance and finale tests
+among them; and `PosterArt._torn`, which needs an owner that outlives the day's city, `main`, handing
+it down through `PosterWalls` and `Building`. The constants left there (the `Mover` filters,
+`CityMap`'s tile tables, `Mover._shared`) are not hidden globals. The other folders' statics are
+still to do: `src/events/`, `src/visuals/` (the `AtlasLibrary` statics among them), `src/ui/` (with
+`SaveIndicator._home_override`), `src/autoload/`, `src/telemetry/` and the single ones in
+`src/resistance/`, `src/sprites.gd`, `src/run_config.gd` and `src/main.gd`
+(`rg -n '^\s*static var' src` lists them).
