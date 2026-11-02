@@ -32,7 +32,7 @@ func run(t) -> void:
 		_test_asleep_in_the_park_and_out_through_the_gap(t, seed_value)
 		_test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value)
 		_test_shut_in_with_the_baby_asleep(t, seed_value)
-	GameSave._clear_now()
+	_with_saving(func() -> void: GameSave.clear())
 	GameSave.configure(null)
 	GameSave.set_path_override("")
 	GameState.run_parts.restore_run_data(baseline)
@@ -40,6 +40,13 @@ func run(t) -> void:
 	GameState.calendar.checkpoint = baseline["checkpoint"]
 
 # ------------------------------------------------------------------ fixture ---
+
+## `callable` run as a windowed release run, which saves, against the scratch file `run()` set; the
+## configuration is taken back off afterwards, since a booted `main` hands its own.
+func _with_saving(callable: Callable) -> void:
+	GameSave.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
+	callable.call()
+	GameSave.configure(null)
 
 ## A booted `Main` standing at day 12's dawn on `seed_value`, a normal run, with the mark read and
 ## the swing offered.
@@ -49,7 +56,7 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	# file this suite points `GameSave` at.
 	GameState.start_run(seed_value)
 	GameState.header.day = ResistanceSteps.swing_day()
-	GameSave._write_now(GameState, true)
+	_with_saving(func() -> void: GameSave.write(GameState, true))
 	var main: Node2D = MAIN_SCENE.instantiate()
 	# A run with no flag at all, whatever this process's own command line says.
 	main.configure(RunConfig.parse(PackedStringArray(), "", true, false, {}, false))
