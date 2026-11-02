@@ -8,71 +8,92 @@ extends RefCounted
 ## gets there: the gap is between `_city.build()` and `_player` existing at all, which is inside
 ## `main._ready()` itself, either side of `await _warm_the_pictures()`.
 ##
-## `t.add_child(main)` runs `_ready()` synchronously up to its first suspension — the first
-## `await get_tree().process_frame` inside `_warm_the_canvas_shaders()` — and hands control back
-## here exactly at that point, which is the state a real first frame would draw from. Resuming by
-## hand with `t.get_tree().process_frame.emit()`, the same way `tests/test_pause.gd` resumes a
-## coroutine waiting on the same signal, finishes the boot without a real frame ever elapsing,
-## which keeps this test a plain function; the runner lets frames pass only between suites.
+## `t.add_child(main)` runs `_ready()` synchronously up to its first suspension, the canvas warm-up
+## that holds the boot for its drawn frames, and hands control back here exactly at that point,
+## which is the state a real first frame would draw from: she does not exist yet. Real frames then
+## let the boot finish, however many it holds for (`tests/booted_main.gd`), and the title's button
+## is pressed through the viewport.
 
-const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+const Boot := preload("res://tests/booted_main.gd")
+## The save every boot is handed, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_camera_start_scratch.json"
 
 func run(t) -> void:
 	t.gives_back_observers()
-	_test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t)
-	_test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t)
+	await _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t)
+	await _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t)
+
+## The real `main.tscn` handed a scratch save and `config`, put in the tree and left at the boot's
+## first suspension: the frame the boot camera draws.
+func _start_a_boot(t, config: RunConfig) -> Array:
+	var save := GameSave.new(_SCRATCH_SAVE)
+	var main: Node2D = Boot.MAIN_SCENE.instantiate()
+	main.use_save(save)
+	main.configure(config)
+	t.add_child(main)
+	return [main, save]
+
+func _end_the_boot(boot: Array) -> void:
+	var main: Node2D = boot[0]
+	main.get_tree().paused = false
+	Telemetry.end_run()
+	main.free()
+	(boot[1] as GameSave).free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 
 ## Boots for real, checks the frame the bug lived on, then lets the boot finish and checks the two
 ## frames PLAYTEST-76's own entry named as candidates: the first with the run started, and the
 ## first after the title's disc is pressed.
 func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 	var saved := _save_game_state()
-	var main: Node2D = MAIN_SCENE.instantiate()
-	t.add_child(main)
+	var boot := _start_a_boot(t, Boot.config([]))
+	var main: Node2D = boot[0]
 
-	# The suspended point. `_player` is only built after `_warm_the_pictures()` returns, so no
-	# camera of *hers* exists yet — confirming this is really the gap the doc above describes, not
-	# a coincidence of timing. `_new_boot_camera()` stands in for her: the viewport's own current
-	# camera should already be on the doorstep, the same ground the title screen will show.
-	t.check(main._player == null,
+	# The suspended point. She is only built after the canvas warm-up returns, so no camera of
+	# *hers* exists yet — confirming this is really the gap the doc above describes, not a
+	# coincidence of timing. The boot camera stands in for her: the viewport's own current camera
+	# should already be on the doorstep, the same ground the title screen will show.
+	t.check(Boot.player(main) == null,
 			"no player camera exists yet at the point the first frame would be drawn from")
 	var boot_camera := main.get_viewport().get_camera_2d()
+	var city := Boot.city(main)
 	t.check(boot_camera != null, "a camera is already current before she exists")
-	t.check(boot_camera.get_screen_center_position().distance_to(
-				main._city.map.doorstep_world_position()) < Tuning.TILE_SIZE,
+	t.check(boot_camera != null and city != null and boot_camera.get_screen_center_position()
+				.distance_to(city.map.doorstep_world_position()) < Tuning.TILE_SIZE,
 			"and it is already looking at the doorstep rather than the world's default transform, "
 			+ "which puts its own top-left corner on screen")
 
-	# Resume both awaits by hand. Nothing later in `_ready()` awaits anything else, so the player,
-	# the day and the title all finish booting inside this same call.
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-
-	var her_position: Vector2 = main._player.global_position
-	t.check(main._player.camera_screen_center().distance_to(her_position) < Tuning.TILE_SIZE,
+	await Boot.until_booted(t, main)
+	var player := Boot.player(main)
+	var her_position: Vector2 = player.global_position
+	t.check(player.camera_screen_center().distance_to(her_position) < Tuning.TILE_SIZE,
 			"on the first drawn frame with the run started, the camera is already within a tile "
 			+ "of her")
 
-	# The title's own disc: `_on_title_start()` is exactly what pressing it calls.
-	main._on_title_start(ControlsMode.Mode.TAP)
-	t.check(main._player.camera_screen_center().distance_to(main._player.global_position)
+	await Boot.press_title(t, main, "Tap")
+	t.check(player.camera_screen_center().distance_to(player.global_position)
 				< Tuning.TILE_SIZE,
 			"and the same holds on the first frame after the title's disc is pressed")
-	# A dawn after finishing far away must prepare home before the next process callback.
-	var city: City = main._city
+	# A dawn after finishing far away must prepare home before the next process callback: she is
+	# put far from home, the day is lost and its summary continued, and the home's ground is read
+	# the moment the next attempt has been placed (`EventBus.day_planned`), before any frame.
 	var far := Rect2(Vector2(64, 64), Tuning.VIEW_HALF_EXTENT * 2)
 	city.scenery.update(far, true)
-	main._player.reset_at(far.get_center())
-	main._first_day = false
-	main._start_day()
-	var home_view := city._home_scenery_view()
-	for key in city._ground.keys_in(home_view):
-		t.check(city._ground.chunks.has(key),
-				"real day reset prepares the home viewport before its first frame")
+	player.reset_at(far.get_center())
+	var dawns: Array[int] = []
+	var at_dawn := func(_day: int) -> void:
+		dawns.append(1)
+		var home_view := city._home_scenery_view()
+		for key in city._ground.keys_in(home_view):
+			t.check(city._ground.chunks.has(key),
+					"real day reset prepares the home viewport before its first frame")
+	EventBus.day_planned.connect(at_dawn)
+	EventBus.hard_fail_triggered.emit("car_strike")
+	await Boot.press_continue(t, main)
+	EventBus.day_planned.disconnect(at_dawn)
+	t.check(dawns.size() == 1, "the lost day's continue placed the next attempt (%d)" % dawns.size())
 
-	t.get_tree().paused = false
-	Telemetry.end_run()
-	main.free()
+	_end_the_boot(boot)
 	_restore_game_state(saved)
 
 ## PLAYTEST-140, statement 5: "when you lose with game over the title screen is sideways", and
@@ -97,12 +118,11 @@ func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t
 	t.check(ScreenOrientation.wants_rotation(window.size, true),
 			"the window this test boots into is one that wants rotation on a touch screen")
 
-	var main: Node2D = MAIN_SCENE.instantiate()
-	main._touch_available = true
-	t.add_child(main)
+	var boot := _start_a_boot(t, Boot.config(["--touch"]))
+	var main: Node2D = boot[0]
 
 	# The suspended point, before her camera exists: the frame the boot camera draws.
-	t.check(main._player == null, "suspended before she exists, where the boot camera draws")
+	t.check(Boot.player(main) == null, "suspended before she exists, where the boot camera draws")
 	t.check(window.content_scale_size == ScreenOrientation.content_scale_size(true),
 			"the window already presents in the rotated box before the first frame")
 	var boot_camera := main.get_viewport().get_camera_2d()
@@ -110,15 +130,12 @@ func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t
 				and is_equal_approx(boot_camera.rotation, -deg_to_rad(90.0)),
 			"and the boot camera is turned with it, so the city it shows is not drawn upright")
 
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	t.check(main._rotated, "the finished boot has turned the whole presentation")
-	t.check(main._title.transform == ScreenOrientation.rotation_transform(),
+	await Boot.until_booted(t, main)
+	t.check(Boot.touch_controls(main).rotated, "the finished boot has turned the whole presentation")
+	t.check(Boot.title(main).transform == ScreenOrientation.rotation_transform(),
 			"including the title it opens on")
 
-	t.get_tree().paused = false
-	Telemetry.end_run()
-	main.free()
+	_end_the_boot(boot)
 	window.size = saved_size
 	window.content_scale_size = saved_box
 	_restore_game_state(saved)
