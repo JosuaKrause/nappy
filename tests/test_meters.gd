@@ -116,7 +116,7 @@ func _teardown() -> void:
 ## Drives the baby by hand at a fixed step so results do not depend on frame timing.
 func _simulate(seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		_baby._physics_process(STEP)
+		_baby.step(STEP)
 
 func _walk() -> void:
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
@@ -480,12 +480,10 @@ func _one_bump_from(t, at: float) -> Dictionary:
 			Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
 	_baby.excitement = at
 	_walk()
-	var jolt := Crowd.BUMP_DURATION
-	while jolt > 0.0:
-		agent.excitement._jolt = jolt
+	while agent.excitement.is_startled():
 		_world.noise = agent.excitement.contribution_at(_stroller.global_position)
-		_baby._physics_process(STEP)
-		jolt -= STEP
+		_baby.step(STEP)
+		agent.excitement.advance(STEP)
 	var result := {"excitement": _baby.excitement,
 			"crying": _baby.state == GameEnums.BabyState.CRYING,
 			"overflow": _baby.overflow_mass()}
