@@ -297,7 +297,14 @@ func set_sight(sees: Callable) -> void:
 ## Hands the director the calendar it offers steps from, in place of the run's own
 ## (`ResistanceSteps.all()`): a step a later slice will build, such as one with a deadline, offered
 ## through the same `start_day()` and touch as every built step. The game never hands one.
+## Every read of the calendar in the director goes through it, the placement pools included
+## (`_step_of_kind()`). An empty calendar is refused (an error, and the director keeps the calendar
+## it had): nothing quietly falls back to the run's own, and a director that offers nothing is one
+## that is never handed a step.
 func use_steps(steps: Array[ResistanceSteps.Step]) -> void:
+	if steps.is_empty():
+		push_error("ResistanceDirector.use_steps() was handed an empty calendar; refused")
+		return
 	_steps = steps
 
 func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
@@ -1259,10 +1266,10 @@ static func is_at_a_front_door(step: ResistanceSteps.Step) -> bool:
 ## What a pursuer the director sends at her walks as: a man on foot of a figure's radius
 ## (`EventInstance.FIGURE_RADIUS`), whatever row he is — the walker every start the director draws
 ## for him is asked about (`_draw_arrival_position()`).
-static func sent_pursuer() -> Mover:
+static func pursuer_walker() -> Mover:
 	return Mover.on_foot(EventInstance.FIGURE_RADIUS)
 
-var _chaser := sent_pursuer()
+var _chaser := pursuer_walker()
 
 ## A bearing and a distance from `at`, redrawn until the point is walkable ground the day's
 ## catalogue and the home-block exemption both leave alone — rejected rather than repaired, the
@@ -2355,8 +2362,9 @@ func _take_the_neighbor_away() -> void:
 ## The calendar's one step that places its contact `kind`'s way — `DOOR` or `PARK_SWING` — so the
 ## two placements above read their pool through `ResistanceSteps.target_candidates()`, the function
 ## the day's planning reads it through, rather than a copy of it. Null if the calendar has none.
-static func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.Step:
-	for step in ResistanceSteps.all():
+## The calendar is the one the director offers steps from (`_steps`, `use_steps()`).
+func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.Step:
+	for step in _steps:
 		if step.target_kind == kind:
 			return step
 	return null

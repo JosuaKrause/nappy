@@ -5,7 +5,8 @@ func run(t) -> void:
 	t.gives_back_observers()
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
 	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
-	_test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t)
+	_test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t)
+	_test_the_director_hands_the_draw_its_own_predicates(t)
 	_free_city()
 
 ## feathery-marmot, day 11's queued mast — *"if there is a mast queued up that will be the next
@@ -202,7 +203,7 @@ func _seed_that_draws(pool_size: int, wanted_index: int) -> int:
 ## candidate_a obstructed replaces it with candidate_b, the pool's only other legal tile, never a
 ## third, nonexistent one; and the seed that would have drawn candidate_b anyway still draws it,
 ## unmoved by an obstruction on a *different* candidate it was never going to answer with.
-func _test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t) -> void:
+func _test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t) -> void:
 	var map := CityGenerator.generate(SEED)
 	var legal: Array[Vector2i] = []
 	for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
@@ -245,3 +246,41 @@ func _test_pick_reachable_only_replaces_the_candidate_the_new_check_rejects(t) -
 			== candidate_b,
 			"a draw whose own candidate was never obstructed still lands exactly there, " +
 			"unmoved by an obstruction on the other one")
+
+## What the draw above is handed is the director's: `_pick_reachable()` hands `draw_reachable()` the
+## day's legal ground (`stands`) and whether a drawn tile is open to it and reachable from home
+## (`open`). Proven through a real director's dawn rather than by reading the wiring: day 6's mark
+## is dawned once as it falls, then the same dawn is run again on an identical city with a body
+## recorded on the tile it fell on. The mark must land on another tile, one that is legal ground
+## with no body on it, so an `open` that did not refuse the occupied tile (or a `stands` and an
+## `open` swapped for each other) lets the first tile stand and fails here.
+func _test_the_director_hands_the_draw_its_own_predicates(t) -> void:
+	var fell_on := _dawn_mark_tile(t, 6, null)
+	t.check(fell_on != Vector2i(-1, -1), "day 6's mark falls on a tile at dawn")
+	var occupied: Array[Vector2i] = [fell_on]
+	var then := _dawn_mark_tile(t, 6, occupied)
+	t.check(then != Vector2i(-1, -1) and then != fell_on,
+			"with a body on the tile it fell on, the same dawn lands the mark on another")
+	t.check(not _city.map.is_obstructed(then)
+			and SpawnSiting.is_legal_ground(_city.map, then, _walled_alleys()),
+			"and that tile is legal ground with no body on it")
+
+## The tile day `day`'s mark falls on at dawn, on a city and run built for it, with `bodies` (when
+## given) recorded on the map before the director dawns. (-1, -1) when it has no mark.
+func _dawn_mark_tile(t, day: int, bodies) -> Vector2i:
+	var run := _build_city_in_a_new_run(t)
+	run.resistance.completed_steps = _completed_through(2 * (day - 6))
+	var state := CityState.new()
+	run.attempt_spend.city_state = state
+	state.begin_day(_city.map.block_plans, day)
+	_city.start_day(state, day, _rng(day, "closures", SEED))
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", SEED), [],
+			_city.map.doorstep_world_position())
+	if bodies != null:
+		_city.map.obstruct_tiles(get_instance_id(), bodies)
+	var director := _director(t)
+	director.start_day(day, _rng(day, "resistance", SEED), 300.0)
+	var at := director.contact_position()
+	var tile := _city.map.world_to_tile(at) if at.is_finite() else Vector2i(-1, -1)
+	director.free()
+	return tile

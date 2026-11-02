@@ -389,7 +389,7 @@ func _check_day_nines_trap_from_where_she_is_let_out(t, first: ResistanceDirecto
 func _check_no_start_was_passed_over(t, her: Vector2, label: String) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var siting := _city.spawn_siting
-	var asked := siting.ask(EventFootprints.footprint_of(def), ResistanceDirector.sent_pursuer(), her)
+	var asked := siting.ask(EventFootprints.footprint_of(def), ResistanceDirector.pursuer_walker(), her)
 	for candidate in _fixed_starts(def, her):
 		t.check(not (siting.allows(SpawnSiting.Rule.LEGAL_GROUND, asked, candidate)
 				and siting.allows(SpawnSiting.Rule.CLEAR_OF_THE_BOUNDARY, asked, candidate)),
@@ -485,7 +485,7 @@ func _check_the_trap_comes_from_off_screen(t, her: Vector2, row_id: String, labe
 	var start := chaser.global_position
 	var view := VisibleView.around(her, null)
 	var siting := _city.spawn_siting
-	var asked := siting.ask(EventFootprints.footprint_of(chaser.def), ResistanceDirector.sent_pursuer(),
+	var asked := siting.ask(EventFootprints.footprint_of(chaser.def), ResistanceDirector.pursuer_walker(),
 			her)
 	var beside := asked.beside
 	var dist := start.distance_to(her)

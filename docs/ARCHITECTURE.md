@@ -1011,8 +1011,10 @@ field with its value before and after (`tests/shared_state.gd`).
   and silencing one or all for the rest of the day.
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
-  `resistance_rig.gd` (a helper the runner does not load), which builds a test's city in a run of
-  its own and reads what the director put in the street from the street: `steps` (the step table, touch-completion,
+  `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
+  its own and read what the director put in the street from the street (`steps`, `traps` and
+  `reach_contacts` do; the other eight still build over the live run and read the director's
+  fields): `steps` (the step table, touch-completion,
   a task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
   finished task shown by the world and the sabotage putting the city's masts out once she has
   walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`
