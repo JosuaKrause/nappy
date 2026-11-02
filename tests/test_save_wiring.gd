@@ -251,8 +251,8 @@ func _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t) -> void:
 
 	await _press_on_the_title(t, main, "Tap")
 	t.check(not _summary_of(main).is_showing()
-			and (_one(main, "DayController") as DayController).is_running(),
-			"no day brief for a fresh run — she is playing already")
+			and not t.get_tree().paused,
+			"no day brief for a fresh run — she is playing already, the tree running")
 	var saved := GameSave.try_resume(GameState)
 	t.check(saved.get("day_under_way") == true,
 			"and the save on disk already says so, with nothing else run at all")
@@ -379,10 +379,10 @@ func _test_title_leads_to_the_day_brief_with_nothing_charged(t) -> void:
 			"and the day brief's own continue still has to engage the day, which the save says;"
 			+ " showing the brief writes nothing new — the dawn write already said this")
 
+	t.check(t.get_tree().paused, "the day brief holds the tree, so the day is not walked yet")
 	await _press_continue(t, main)
 	t.check(not summary.is_showing(), "continuing dismisses the brief")
-	t.check((_one(main, "DayController") as DayController).is_running(),
-			"and the gate is spent, the day running")
+	t.check(not t.get_tree().paused, "and the gate is spent, the day walked with the tree running")
 	t.check(GameSave.try_resume(GameState).get("day_under_way") == true,
 			"the day is engaged, which the save now says")
 
@@ -411,8 +411,8 @@ func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t) -> void:
 ## deleted the file.
 ##
 ## **The symbol exists before the charge**, because the charge can end the run and the run's end
-## deletes the save, a change the symbol shows: a symbol the test parked, whose timeline counts what
-## it was told, hears the deletion the charge made.
+## deletes the save, a change the symbol shows: the booted game's own symbol is showing after the
+## boot only if it was raised before the charge, since one raised after hears nothing of it.
 func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 	_begin()
 	GameState.start_run(236)
@@ -421,10 +421,10 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 	GameState.header.nerves = 1
 	GameState.calendar.begin_day()
 	t.check(_saved(true), "the hard run's save, closed with its day under way, is on disk")
-	var parked := Parked.new(t)
 	var main := await _boot(t, _windowed(), Calls.new())
 
-	t.check(parked.timeline.begun == 1,
+	var own := _one(main, "SaveIndicator") as SaveIndicator
+	t.check(own != null and own.is_showing(),
 			"the symbol is raised before the resumed run's charge, so the deletion it makes is announced")
 	t.check(GameState.header.ending != GameEnums.Ending.NONE and not GameSave.has_save(),
 			"the charge spent the last nerve, ended the run and deleted the save")
@@ -438,7 +438,6 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 	t.check(not GameSave.has_save(), "a run that has ended writes nothing, on this path either")
 
 	_shut(t, main)
-	parked.free_all()
 
 ## **The day-14 hand-over's reload to the escape, through the summary's own continue.** Day 14's own
 ## save (A) is written as its summary appears and may still be waiting for the browser when the player
@@ -485,6 +484,8 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	_shut(t, main)
 	t.check(is_instance_valid(indicator) and SaveIndicator.carried(tree) == indicator,
 			"so the reload does not free it, and the escape's boot adopts it")
+	t.check(is_instance_valid(indicator) and indicator.is_showing() and not indicator.shows_struck(),
+			"still fully shown for day 14's save after the reload")
 	if is_instance_valid(indicator):
 		indicator.free()
 
@@ -525,8 +526,7 @@ func _test_main_draws_nothing_for_a_refused_run(t) -> void:
 	var parked := Parked.new(t)
 	var main := await _boot(t, _headless(), Calls.new())
 	await _press_on_the_title(t, main, "Tap")
-	t.check((_one(main, "DayController") as DayController).is_running(),
-			"the day engaged, which is where the game writes its save")
+	t.check(not t.get_tree().paused, "the day engaged, which is where the game writes its save")
 	t.check(parked.timeline.is_idle() and not parked.timeline.struck,
 			"a refused save leaves the symbol dark")
 	t.check(not GameSave.has_save(), "and writes nothing")

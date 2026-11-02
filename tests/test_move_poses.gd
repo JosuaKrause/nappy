@@ -54,26 +54,19 @@ func run(t) -> void:
 	for seed_value in SEEDS:
 		_walk_the_day(t, seed_value)
 	EventBus.crowd_bumped.disconnect(bumped)
-	GameSave.use_gate(func() -> bool: return true)
-	GameSave.clear()
-	GameSave.use_gate(Callable())
 	GameSave.configure(null)
 	GameSave.set_path_override("")
 	GameState.run_parts.restore_run_data(baseline)
 	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
 	GameState.calendar.checkpoint = baseline["checkpoint"]
 
-## A booted `Main` standing in day 12 on `seed_value`, a normal run under `--invincible`, with the
-## mark read.
+## A booted `Main` standing in day 12 on `seed_value`, a normal run under `--invincible`, reached
+## with `--seed` and `--day` (a flagged run never touches the save), with the mark read.
 func _day_twelve(t, seed_value: int) -> Node2D:
-	GameState.start_run(seed_value)
-	GameState.header.day = ResistanceSteps.swing_day()
-	GameSave.use_gate(func() -> bool: return true)
-	GameSave.write(GameState, true)
+	var words := ["--invincible", "--seed", str(seed_value), "--day", str(ResistanceSteps.swing_day())]
 	var main: Node2D = MAIN_SCENE.instantiate()
-	main.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
+	main.configure(RunConfig.parse(PackedStringArray(words), "", true))
 	t.add_child(main)
-	GameSave.use_gate(Callable())
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	main._on_title_start(ControlsMode.Mode.JOYSTICK, false, ControlsMode.Side.RIGHT)
