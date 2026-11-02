@@ -63,7 +63,7 @@ func _ready() -> void:
 		var script := load(path) as GDScript
 		if script == null or not script.can_instantiate():
 			failures.append("%s failed to load (parse error or missing script)" % path)
-			print("-- %-26s %7s" % [path.get_file(), "LOAD FAIL"])
+			print("-- %-36s %7s" % [path.get_file(), "LOAD FAIL"])
 			continue
 		var suite: Object = script.new()
 		_running = path.get_file()
@@ -80,14 +80,14 @@ func _ready() -> void:
 		_running = ""
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the
-		# spread runs from `test_quit_option.gd` at 3ms to `test_resistance.gd` at about 192_000.
+		# spread runs from `test_quit_option.gd` at 3ms to the heaviest scene suites at over a hundred thousand.
 		#
 		# **Both columns are sized for the worst case rather than the common one**, since a
 		# single overflowing row pushes only its own line and the misalignment reads as a
-		# glitch rather than as the outlier it is pointing at. 26 clears the longest name on
-		# disk (`test_reachability_grid.gd`, 25) with a space to spare; 7 digits reach nearly
+		# glitch rather than as the outlier it is pointing at. 36 clears the longest name on
+		# disk (`test_resistance_placement_kinds.gd`, 34) with a space to spare; 7 digits reach nearly
 		# three hours, which no suite will approach without that being the news.
-		print("-- %-26s %7d ms" % [path.get_file(), Time.get_ticks_msec() - started])
+		print("-- %-36s %7d ms" % [path.get_file(), Time.get_ticks_msec() - started])
 
 	print("")
 	for failure in failures:

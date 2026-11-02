@@ -23,11 +23,14 @@ one pass after the last refactor item, "once the refactor is done let's rewrite 
 dependency injection and through public APIs", and a step may convert the tests it touches early,
 "you can also do it as a bit with each step as long as the final result is the same" (inbox #813 in curly-moose).
 
-**Where it stands:** the suites still to convert are the ones the first command above counts above zero; the largest are `test_resistance.gd`, `test_main.gd` and `test_save.gd`.
+**Where it stands:** the suites still to convert are the ones the first command above counts above zero; the largest are the `tests/test_resistance_*.gd` suites (with the helper they share, `tests/resistance_rig.gd`, which the `tests/test_*.gd` of the commands does not match and which is counted by naming it), `test_main.gd` and `test_save.gd`.
 
-**The slice that rewrites `test_resistance.gd` also splits it by subject.** The file is the floor of the
-test suite's run time on CI: every test function stays called once and the check total unchanged, so the
-split costs the suite nothing it checks. The player: "yes, fold into the test refactor"
+**The resistance suite is split by subject.** One file would be the floor of the test suite's run time on
+CI, a single suite on one shard; `tests/test_resistance_*.gd` are its subjects, each with its own cost row in
+`tests/suite_costs.txt` so the shards share them, and the city, director and walks more than one of
+them drives are in `tests/resistance_rig.gd`. Every test function is called once and the check total
+is that of the unsplit file. The slice that rewrites these suites converts them to public
+seams subject by subject. The player: "yes, fold into the test refactor"
 ([tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #931), answering whether splitting the resistance
 tests, left over from M125 (the test suite is slow again), is part of the refactor; "isn't that part of
-the refactor?" ([tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #930). Splitting the file is no separate entry.
+the refactor?" ([tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #930).

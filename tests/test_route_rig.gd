@@ -818,7 +818,7 @@ func _target_shape_rig(t, fixture: Dictionary) -> RouteRig:
 	return rig
 
 ## Touches `fixture`'s own mark (`ResistanceDirector._on_contact_completed()`, the pattern
-## `tests/test_resistance.gd` already drives a mark forward with) and answers the perform step it
+## `tests/test_resistance_*.gd` already drives a mark forward with) and answers the perform step it
 ## unlocks.
 func _touch_the_mark(fixture: Dictionary) -> ResistanceSteps.Step:
 	var resistance: ResistanceDirector = fixture["resistance"]

@@ -1263,7 +1263,7 @@ var _chaser := Mover.on_foot(EventInstance.FIGURE_RADIUS)
 ## see, so both refusals are what keeps him off her — outside his own `EventDef.notice`, or worse
 ## his `inner_radius`, a `hard_fail` with no warning at all — and off screen, whichever contact
 ## `at` names. `her` is `Vector2.INF` and `on_screen_matters` is `false` for a caller with nothing
-## to keep away from — the bare-map rigs in `tests/test_resistance.gd` that call this directly —
+## to keep away from — the bare-map rigs in `tests/test_resistance_*.gd` that call this directly —
 ## which never rejects anything on either count; a dawn placement passes the doorstep and `false`
 ## (`_begin_step()`).
 func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vector2,
@@ -2171,7 +2171,7 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 
 ## The near mast's edge over the far one: index `i`'s weight is `1.0 / d^2`, `d` the straight-line
 ## distance from where she is when the task is placed (`_player_position()`, or the doorstep with
-## no player in the tree, the shape every bare-director test in `tests/test_resistance.gd` builds)
+## no player in the tree, the shape every bare-director test in `tests/test_resistance_*.gd` builds)
 ## to `beside[i]`, the tile that draw would stand her on. Straight-line rather than a walked
 ## distance: `ReachabilityGrid` (`src/routes/reachability_grid.gd`) answers only whether a tile is
 ## reached, never how far, so there is no cheap walking distance on hand to weight by instead. `d`
@@ -2337,7 +2337,7 @@ static func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.S
 			return step
 	return null
 
-## Today's region plan, or null for the bare-map rigs several tests in `tests/test_resistance.gd`
+## Today's region plan, or null for the bare-map rigs several tests in `tests/test_resistance_*.gd`
 ## build with no `_city`.
 func _region_plan() -> RegionPlanner.RegionPlan:
 	return _city.region_plan() if _city else null
@@ -3402,7 +3402,7 @@ func _sweep_the_arrow_fields(budget: int) -> void:
 		retarget_the_arrow()
 
 ## Runs every sweep to its end and chooses, all at once: what a rig with no frames to spread it over
-## asks for (`tests/test_resistance.gd`, the cost probe). Bounded, though a sweep finishing starts at
+## asks for (`tests/test_resistance_*.gd`, the cost probe). Bounded, though a sweep finishing starts at
 ## most the one field of whatever it chose.
 func _settle_the_arrow() -> void:
 	retarget_the_arrow()
