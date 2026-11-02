@@ -125,7 +125,7 @@ func _reset_globals() -> void:
 	GameSave.configure(null)
 	GameSave._path_override = ""
 	GameSave._uses_save_override = null
-	SaveIndicator._home_override = null
+	SaveIndicator.use_home(null)
 	FrameRecord.on = false
 	FrameRecord.ledger = null
 	ControlsMode.forget()

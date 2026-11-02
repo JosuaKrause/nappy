@@ -805,7 +805,7 @@ func _end_day_fourteen(main: Node2D, hard: bool, sabotage_done: bool) -> void:
 ## the good ending played rather than announced, so a won day 14 with every task complete must
 ## leave `GameState` exactly where it is — no `ending`, no cleared save, day 14 still — and only
 ## record which section the run is now in. A run whose ending were set here could write no save at
-## all (`GameSave._write_now()` refuses one), and the section checkpoints would have nothing to
+## all (`GameSave.write()` refuses one), and the section checkpoints would have nothing to
 ## come back to.
 ##
 ## Driven through the day's own end signal on the booted game against its real city, day and
