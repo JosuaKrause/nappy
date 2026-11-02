@@ -26,4 +26,4 @@ item stays open for the other resistance suites and the private reads these two 
   is checked three times in replacement and twice in placement_kinds.
 
 **Open to overturn** (the builders' choices where the brief was silent): the two raid getters,
-ticking the happenings with a long delta, and the dropped repeated setup checks.
+`City._home_door_building()` made public, ticking the happenings with a long delta, and the dropped repeated setup checks.
