@@ -82,10 +82,10 @@ func _play_a_run(t, seed_value: int) -> void:
 			# again at tomorrow's dawn. `current_step()` keeps naming the finished step until
 			# the next `start_day()`, so the index comparison is what ends the walk.
 			var offered: int = director.current_step().index
-			director._on_contact_completed(offered)
+			_touch(director)
 			while director.current_step() and director.current_step().index != offered:
 				offered = director.current_step().index
-				director._on_contact_completed(offered)
+				_touch(director)
 
 		# The day was survivable, so bank the win and move on.
 		GameState.calendar.finish_day(GameEnums.DayResult.WON)
@@ -101,6 +101,13 @@ func _play_a_run(t, seed_value: int) -> void:
 	director.free()
 	city.free()
 	_restore_game_state(saved)
+
+## Completes the step on offer the way her touch does: through the contact's own completion
+## (`ContactPoint.complete_now()`), which the director hears.
+func _touch(director: ResistanceDirector) -> void:
+	var contact := director.contact()
+	if contact:
+		contact.complete_now()
 
 ## Drives the day forward by hand: the manager's physics tick, which steps its instances, the way
 ## the engine would, but at a coarse step.

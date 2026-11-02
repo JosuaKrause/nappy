@@ -7,6 +7,9 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const MAIN_SCRIPT := preload("res://src/main.gd")
+const Boot := preload("res://tests/booted_main.gd")
+## The save every boot is handed, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_run_config_scratch.json"
 const SEED := 4242
 
 func run(t) -> void:
@@ -18,7 +21,7 @@ func run(t) -> void:
 	_test_the_day_and_the_section_lengths(t)
 	_test_every_rig_flag_makes_a_rig(t)
 	_test_the_title_is_skipped_by_a_rig_or_a_recipe(t)
-	_test_main_hands_the_baby_and_the_city_plain_values(t)
+	await _test_main_hands_the_baby_and_the_city_plain_values(t)
 	_test_the_city_hands_each_value_to_its_part(t)
 	_test_the_escape_clock_takes_its_length_and_invincible(t)
 	_test_touch_and_web_are_the_runs_answers(t)
@@ -174,25 +177,22 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 				"--blackout", "--pelican", "--force", "cyclist", "3"])
 		if invincible:
 			words.append("--invincible")
-		var main: Node2D = MAIN_SCRIPT.new()
-		# Never in the tree, so it takes no sitting of its own: it is handed one, which hands the
-		# city its ground recipe.
-		var sitting := Sitting.new()
-		main.use_sitting(sitting)
-		main.configure(RunConfig.parse(words, "", true))
-		var player: Stroller = main._make_player()
-		t.check((player.get_node("Baby") as Baby).excitement_frozen == invincible,
+		words.append_array(_words(["--no-save", "--no-telemetry"]))
+		var baseline := GameState.save_snapshot()
+		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, RunConfig.parse(words, "", true))
+		var baby := Boot.baby(booted.main)
+		t.check(baby != null and baby.excitement_frozen == invincible,
 				"the baby's meter is frozen exactly when the run is invincible (%s)" % invincible)
-		player.free()
-		var city: City = main._new_city()
-		t.check(city.ground_mode == SceneryGround.Mode.ALL and city.skip_shadows
+		var city := Boot.city(booted.main)
+		t.check(city != null and city.ground_mode == SceneryGround.Mode.ALL and city.skip_shadows
 				and city.skip_crowd_motion and not city.skip_event_drawing
 				and not city.skip_crowd_drawing and city.blackout_forced and city.all_cyclists_pelicans
 				and city.forced_row == "cyclist" and is_equal_approx(city.forced_interval, 3.0)
 				and not city.scenery_frame_locked,
 				"the city is handed what the flags chose before it builds")
-		main.free()
-		sitting.free()
+		Telemetry.end_run()
+		booted.free_all()
+		GameState.restore_snapshot(baseline)
 
 ## What the city is handed reaches the part it belongs to, and the crowd's agents get theirs.
 func _test_the_city_hands_each_value_to_its_part(t) -> void:

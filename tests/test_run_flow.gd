@@ -2,10 +2,11 @@ extends RefCounted
 ## The run's flow through its screens (`RunFlow`): what each screen's continue leads to, and that a
 ## continue with no screen up leads nowhere.
 
-const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+const Boot := preload("res://tests/booted_main.gd")
+const UI := preload("res://tests/ui_screens.gd")
 const SEED := 4242
-## How many frames a boot may take to reach its first day before the test gives up on it.
-const BOOT_FRAMES := 30
+## The save every boot is handed, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_run_flow_scratch.json"
 ## Whether the tree was paused before a boot, put back once it is shut down.
 var _saved_paused := false
 
@@ -198,14 +199,20 @@ func _test_the_observers_hear_the_spec_begun_and_planned(t) -> void:
 ## continues (`DaySummary._acknowledge_and_continue()`), and a key continues at once, so a key
 ## pressed inside those two frames continues first and the tap's own continue comes due after the
 ## screen it was meant for is gone. Only the first may move the run on: the tap's is dropped.
+##
+## **Booted and driven as a player drives it** (`tests/booted_main.gd`): the screens are read off
+## what they show (the summary up, its continue shown or not, the day's clock running) and pressed
+## through the viewport, the tap on the continue button and the key as an action event.
 func _test_a_tap_then_a_key_continue_once(t) -> void:
-	var main: Node2D = await _boot(t, ["--no-title"])
-	t.check(main._day != null and main._day.is_running(), "the boot reached day 1")
+	var booted: Boot.Booted = await _boot(t, ["--no-title"])
+	var main := booted.main
+	var day := Boot.day(main)
+	t.check(day != null and day.is_running(), "the boot reached day 1")
 	EventBus.hard_fail_triggered.emit("car_strike")
-	t.check(main._summary.is_showing(), "the lost day's summary is up")
+	t.check(Boot.summary(main).is_showing(), "the lost day's summary is up")
 
 	var started: Array[int] = []
-	var count := func(day: int) -> void: started.append(day)
+	var count := func(day_number: int) -> void: started.append(day_number)
 	EventBus.day_started.connect(count)
 	await _tap_then_key(t, main)
 	EventBus.day_started.disconnect(count)
@@ -223,92 +230,84 @@ func _test_a_tap_then_a_key_continue_once(t) -> void:
 	main._reload_the_scene()
 	t.check(main._flow.mode == RunFlow.Mode.RELOADING, "a reload from the walk leaves RELOADING (%s)"
 			% RunFlow.Mode.keys()[main._flow.mode])
-	_shut_down(t, main)
+	_shut_down(t, booted)
 	home.free()
 
 ## A hard run's last nerve: the run-over screen's continue raises the ending, and the tap's own
-## continue must not then reach the ending and restart the run before it has been seen.
+## continue must not then reach the ending and restart the run before it has been seen. The ending
+## is the summary with no continue on it (`DaySummary.show_summary()` hides it on an ending).
 func _test_a_tap_then_a_key_on_the_run_over_screen_show_the_ending(t) -> void:
-	var main: Node2D = await _boot(t, ["--no-title"])
+	var booted: Boot.Booted = await _boot(t, ["--no-title"])
+	var main := booted.main
 	var reloads: Array[int] = []
 	main.use_reload(func() -> void: reloads.append(1))
 	GameState.calendar.choose_mode(true)
 	GameState.header.nerves = 1
 	EventBus.hard_fail_triggered.emit("car_strike")
-	t.check(main._flow.mode == RunFlow.Mode.RUN_OVER and main._summary.is_showing(),
+	var summary := Boot.summary(main)
+	t.check(summary.is_showing() and _continue_shown(main) and GameState.header.nerves == 0,
 			"the run-over screen is up")
 	await _tap_then_key(t, main)
-	t.check(main._flow.mode == RunFlow.Mode.ENDING and main._summary.is_showing()
-			and reloads.is_empty(), "the ending is up and the run not restarted (%s, %d reloads)"
-			% [RunFlow.Mode.keys()[main._flow.mode], reloads.size()])
-	_shut_down(t, main)
+	t.check(summary.is_showing() and not _continue_shown(main) and reloads.is_empty(),
+			"the ending is up and the run not restarted (continue shown %s, %d reloads)"
+			% [_continue_shown(main), reloads.size()])
+	_shut_down(t, booted)
 	GameState.header.ending = GameEnums.Ending.NONE
 	GameState.calendar.choose_mode(false)
 
 ## A lost section's retry comes up behind its brief (PLAYTEST-94 10), and the tap's own continue
 ## must not then reach that brief and start the retry before it has been read.
 func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t) -> void:
-	var main: Node2D = await _boot(t, ["--start-escape", "city"])
-	t.check(main._flow.mode == RunFlow.Mode.BRIEF and main._summary.is_showing(),
+	var booted: Boot.Booted = await _boot(t, ["--start-escape", "city"])
+	var main := booted.main
+	var summary := Boot.summary(main)
+	var day := Boot.day(main)
+	t.check(summary.is_showing() and not day.is_running(),
 			"the boot stands on the city section's brief")
-	main._on_summary_continued(main._flow.mode)
-	t.check(main._flow.mode == RunFlow.Mode.WALKING and main._day.is_running(),
+	await Boot.press_continue(t, main)
+	t.check(not summary.is_showing() and day.is_running(),
 			"and its continue walks the section")
 	t.get_tree().paused = true
 	EventBus.hard_fail_triggered.emit("car_strike")
-	t.check(main._flow.mode == RunFlow.Mode.SECTION_LOST and main._summary.is_showing(),
-			"the lost section's screen is up")
+	t.check(summary.is_showing() and not day.is_running(), "the lost section's screen is up")
+	var started: Array[int] = []
+	var count := func(day_number: int) -> void: started.append(day_number)
+	EventBus.day_started.connect(count)
 	await _tap_then_key(t, main)
-	t.check(main._flow.mode == RunFlow.Mode.BRIEF and main._summary.is_showing(),
-			"the retry's brief is up rather than the retry walked past it (%s)"
-			% RunFlow.Mode.keys()[main._flow.mode])
-	_shut_down(t, main)
+	EventBus.day_started.disconnect(count)
+	t.check(summary.is_showing() and started.size() == 1 and t.get_tree().paused,
+			"the retry's brief is up rather than the retry walked past it (%d started, paused %s)"
+			% [started.size(), t.get_tree().paused])
+	_shut_down(t, booted)
 	GameState.facts.escape_section = DaySpec.Section.NONE
 
-## The real `main.tscn` on `SEED` with `args`, unsaved and uncounted, once its first day or section
-## is built (running, or behind its brief), with the tree paused as a screen leaves it.
-func _boot(t, args: Array) -> Node2D:
+## The real `main.tscn` on `SEED` with `args`, unsaved and uncounted, once its boot has finished
+## (its first day running, or behind its brief), with the tree paused as a screen leaves it.
+func _boot(t, args: Array) -> Boot.Booted:
 	_saved_paused = t.get_tree().paused
 	t.get_tree().paused = true
-	var given := PackedStringArray(["--seed", str(SEED), "--no-telemetry", "--no-save"])
-	given.append_array(PackedStringArray(args))
-	var main: Node2D = MAIN_SCENE.instantiate()
-	main.configure(RunConfig.parse(given, "", true))
-	t.add_child(main)
-	var frames := 0
-	while frames < BOOT_FRAMES and not (main._day and main._day.is_running()) \
-			and main._flow.mode != RunFlow.Mode.BRIEF:
-		await t.get_tree().process_frame
-		frames += 1
+	var words := ["--seed", str(SEED)]
+	words.append_array(args)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words))
 	t.get_tree().paused = true
-	return main
+	return booted
 
-## A tap off the held restart, then a key inside the two frames the tap's acknowledgement holds
-## open, then long enough for the tap's own continue to come due.
+## A tap on the continue button, then a key inside the two frames the tap's acknowledgement holds
+## open, both pushed through the viewport, then long enough for the tap's own continue to come due.
 func _tap_then_key(t, main: Node2D) -> void:
-	var tap := InputEventScreenTouch.new()
-	tap.pressed = true
-	tap.position = _off_the_restart_button(main._summary)
-	main._summary._unhandled_input(tap)
+	var summary := Boot.summary(main)
+	UI.push(summary, UI.touch_at(UI.centre(UI.button(summary, "Continue")), true))
 	var key := InputEventAction.new()
 	key.action = &"ui_accept"
 	key.pressed = true
-	main._summary._unhandled_input(key)
+	UI.push(summary, key)
 	for _frame in 4:
 		await t.get_tree().process_frame
 
-func _shut_down(t, main: Node2D) -> void:
-	t.remove_child(main)
-	main.free()
-	t.get_tree().paused = _saved_paused
+## Whether the summary shows its continue button: every screen but the ending does.
+func _continue_shown(main: Node2D) -> bool:
+	return UI.button(Boot.summary(main), "Continue").is_visible_in_tree()
 
-## A point on the screen whose tap is a continue, not the start of the held restart.
-func _off_the_restart_button(summary: CanvasLayer) -> Vector2:
-	var size: Vector2 = summary.get_viewport().get_visible_rect().size
-	for x in range(1, 8):
-		for y in range(1, 8):
-			var at := Vector2(size.x * x / 8.0, size.y * y / 8.0)
-			var design := ScreenOrientation.to_design_space(at, summary._wants_rotation())
-			if not summary._restart_button.contains_design_point(design):
-				return at
-	return Vector2.ZERO
+func _shut_down(t, booted: Boot.Booted) -> void:
+	booted.free_all()
+	t.get_tree().paused = _saved_paused
