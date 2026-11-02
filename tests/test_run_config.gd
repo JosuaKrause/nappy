@@ -269,6 +269,10 @@ func _test_touch_and_web_are_the_runs_answers(t) -> void:
 	# Each answer below is the opposite of what this headless process's platform gives (no touch,
 	# quitting works), so each check fails if `main` stops handing that screen its answer.
 	var main: Node2D = MAIN_SCRIPT.new()
+	# Never in the tree, so it takes no sitting of its own: it is handed one, whose atlas library
+	# the screens are handed.
+	var sitting := Sitting.new()
+	main.use_sitting(sitting)
 	main.configure(debug)
 	main._build_the_screens()
 	t.check(main._touch_available, "main reads the run's touch answer once")
@@ -280,3 +284,4 @@ func _test_touch_and_web_are_the_runs_answers(t) -> void:
 	t.check(main._title._touch and not main._title._can_quit,
 			"and the title screen both answers")
 	main.free()
+	sitting.free()
