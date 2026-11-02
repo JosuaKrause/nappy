@@ -172,14 +172,16 @@ FOCUS_NOTED="$(rig_focus_note)"
 # shellcheck source=tools/lib_import_restore.sh
 source "$PROJECT_DIR/tools/lib_import_restore.sh"
 import_restore_arm "$PROJECT_DIR"
+# The watcher dies with the rig on every exit path below, including a signal from outside: it is
+# stopped explicitly the moment Godot is done with, and this trap catches every other way this
+# script itself stops running first. Set right after arming, with no watcher yet, so no failure
+# between the launch and the watcher's start leaves the restore unrun.
+FOCUS_WATCHER_PID=""
+trap 'rig_focus_watch_stop "$FOCUS_WATCHER_PID"; import_restore_run' EXIT
 "$GODOT" --path "$PROJECT_DIR" --resolution "$RESOLUTION" --disable-vsync \
 	-- --screenshot "$OUT" --after "$SECONDS_TO_WAIT" "$@" &
 GODOT_PID=$!
 FOCUS_WATCHER_PID="$(rig_focus_watch_start "$GODOT_PID" "$FOCUS_NOTED")"
-# The watcher dies with the rig on every exit path below, including a signal from outside: it is
-# stopped explicitly the moment Godot is done with, and this trap catches every other way this
-# script itself stops running first.
-trap 'rig_focus_watch_stop "$FOCUS_WATCHER_PID"; import_restore_run' EXIT
 if ! wait_or_kill "$GODOT_PID" "$KILL_AFTER"; then
     echo "shot.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
     exit 1
