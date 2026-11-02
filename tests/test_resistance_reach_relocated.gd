@@ -71,8 +71,8 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 					"seed %d: reaching it silences it and records its scar" % seed_value)
 			# Day 14's sabotage: lit again, the added mast is put out by `silence_all_masts()`
 			# with the others — it is that one mast's plan this asks about.
-			t.check(added_plan != null and _city.events.plans().has(added_plan),
-					"seed %d: the queued mast is one of the day's plans, the one the contact stands at"
+			t.check(not director.fell_back() and _city.events.plans().has(added_plan),
+					"seed %d: the task went to the mast put up for it, one of the day's plans"
 					% seed_value)
 			added_plan.silenced = false
 			_city.events.silence_all_masts()
@@ -112,9 +112,13 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 		elif not site_near:
 			# The scheduler may refuse every tile it was offered — its acceptance, not the
 			# director's — and then the nearest live mast is the task's, which the director says.
-			t.check(director.fell_back(),
-					"seed %d: no mast near the mark, none generated, and the nearest stands in"
-					% seed_value)
+			var generated := 0
+			for plan in _city.events.plans():
+				if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-"):
+					generated += 1
+			t.check(generated == 0 and director.fell_back(),
+					"seed %d: no mast near the mark, none generated (%d), and the nearest stands in"
+					% [seed_value, generated])
 		player.free()
 		director.free()
 	_free_city()

@@ -10,8 +10,9 @@ extends RefCounted
 ## (`tick()`), her (`use_player()`) and what she can see (`set_sight()`). A test that builds its city
 ## with `_build_city_in_a_new_run()` owns the run that city stands in, so the state it needs — the
 ## steps done, the alleys used, the scars — is set on that run, by the test, and gone with it.
-## `_build_city()` builds over the live run (`GameState`) for the suites that still set the run's
-## state on the autoload and put it back by hand (`_with_clean_run()`).
+## `_build_city()` builds over the live run (`GameState`), and `_with_clean_run()` clears and puts
+## back that run's state; no suite calls them, and they stay for the probe
+## `tests/probes/bouncy_egret_day11_mast.gd`, which loads `test_resistance_arrow.gd` for this rig.
 ##
 ## **What the director has put in the street is read from the street**: the contact she touches
 ## (`ResistanceDirector.contact()`), what its task rides on (`rider()`), and every guard and pursuer
@@ -73,11 +74,10 @@ var _own_run: RunState
 
 ## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires the
 ## "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
-## `_exit_tree()` (`src/events/event_manager.gd`). This suite calls `_build_city()` many times
-## over, so a `_city` never freed between two calls would leave every earlier one standing —
-## sixteen abandoned `City` nodes in a suite that only ever needs the latest, each holding "events"
-## resident for the rest of the process. `run()` frees whichever one is still around after the
-## last call. Over the live run (`GameState`), for the suites that still set the run's state there.
+## `_exit_tree()` (`src/events/event_manager.gd`). A suite builds a city many times over, so a
+## `_city` never freed between two builds would leave every earlier one standing, each holding
+## "events" resident for the rest of the process; `run()` frees whichever one is still around after
+## the last. Over the live run (`GameState`); only the probe named at the top calls it.
 func _build_city(t, seed_value := SEED) -> void:
 	_free_city()
 	_city = RunCity.of_the_run(CITY_SCENE)
@@ -139,8 +139,9 @@ func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator
 	rng.seed = hash("%d:%d:%s" % [seed_value, day, stream])
 	return rng
 
-## Runs `action` with the live run's steps, progress and package cleared, and puts them back: for
-## the suites that build over the live run (`_build_city()`). A city in a run of its own starts clear.
+## Runs `action` with the live run's steps, progress and package cleared, and puts them back, for a
+## city built over the live run (`_build_city()`); only the probe named at the top calls it. A city
+## in a run of its own starts clear.
 func _with_clean_run(action: Callable) -> void:
 	var saved_completed := GameState.resistance.completed_steps.duplicate()
 	var saved_failed := GameState.resistance.failed_steps.duplicate()

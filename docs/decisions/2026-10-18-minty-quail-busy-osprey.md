@@ -12,7 +12,7 @@ their cities in runs of their own; the item stays open for the reads other files
   private member; its `_paths_reach_between()` is a deliberate copy of the director's walk, kept as a
   test oracle.
 - `reach_marks` no longer writes `GameState`; `reach_narrow` builds a city per seed and day and gets
-  its contact from the real day (`start_day()` and her read of the mark) rather than `_place()`;
+  its contact from the real day (`start_day()` and her read of the mark) rather than `place_contact()`;
   `reach_relocated` touches through `contact().complete_now()` and lets `EventManager.start_day()`
   plan the later days from the run's scars. Private reads: reach_marks 0, reach_narrow 7 to 1
   (`EventScheduler._is_spoiled()`), reach_relocated 12 to 1 (`EventScheduler._place_masts()`).
@@ -24,5 +24,5 @@ their cities in runs of their own; the item stays open for the reads other files
   planning or the contact's link each fails the suite.
 
 **Open to overturn** (the builders' choices where the brief was silent): a city per seed and day; the
-real day flow in place of `_place()`; `reach_obstruction()` as a snapshot of the first placement's
+real day flow in place of `place_contact()`; `reach_obstruction()` as a snapshot of the first placement's
 measure; the rig's copied walk.
