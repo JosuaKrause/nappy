@@ -1,16 +1,16 @@
 extends RefCounted
 ## The gate that stops an event rebuilding a draw list it does not need —
 ## `EventLook.redraw_if_the_picture_changed()`, the picture key behind it and
-## `picture_never_settles()`. The crowd has had the same gate for a long time
+## `_picture_never_settles()`. The crowd has had the same gate for a long time
 ## (`CrowdAgent.end_the_frame()`); events did not, and at about forty live
 ## instances a day that was the largest drawing cost in a frame
 ## (`docs/evidence/m124-frame-cost-2026-09-13/README.md`).
 ##
-## **What a suite can hold here is the key, not the drawing.** `_draw()` never runs headless, and
-## nothing exposes whether a `queue_redraw()` is pending — so what is asserted is the value the gate
-## compares, which is the whole of its decision: a key that does not move is a draw list that is not
-## rebuilt, and a key that moves while the picture does is the guarantee that nothing animated was
-## frozen by the gate. The rendered half is the bursts in
+## **What a suite can hold here is the gate's answer, not the drawing.** `_draw()` never runs
+## headless, and nothing exposes whether a `queue_redraw()` is pending — so what is asserted is what
+## `redraw_if_the_picture_changed()` answers each time the game's `_process()` would ask it, which is
+## the whole of its decision: a gate that does not ask is a draw list that is not rebuilt, and a gate
+## that asks while the picture moves is the guarantee that nothing animated was frozen by it. The rendered half is the bursts in
 ## `docs/evidence/m124-frame-fixes-2026-09-13/`.
 ##
 ## Nothing here calls a `_draw_*` function — `Sprites.draw_standing()` inside them is only valid
