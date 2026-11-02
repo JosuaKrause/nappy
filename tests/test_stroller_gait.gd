@@ -1,63 +1,86 @@
 extends RefCounted
 ## The pushing and carrying rigs share a distance-driven contact/passing gait.
 
-const QUARTER_CYCLE_DISTANCE := (TAU / 4.0) / 0.09
-
 func run(t) -> void:
-	_test_both_states_visit_contact_passing_contact_passing(t)
-	_test_displacement_crosses_a_passing_boundary_in_both_states(t)
-	_test_idle_holds_the_passing_pose_from_every_phase(t)
+	for carrying in [false, true]:
+		var rig := _rig(t, carrying)
+		var samples := await _walk(t, rig, 80)
+		_test_the_cycle_visits_contact_passing_contact_passing(t, carrying, samples)
+		_test_the_gait_follows_distance_and_changes_frame_on_quarter_boundaries(t, carrying, samples)
+		_test_idle_holds_the_passing_pose_from_every_phase(t, carrying, samples)
+		rig.free()
 	_test_each_state_has_three_distinct_poses_per_view(t)
-	# None of the rigs above are added to the tree, so `Stroller._enter_tree()` never runs and none
-	# of her groups is acquired through it — only the one test below reads a region, so it takes its
-	# own reference on a library it hands each rig rather than growing every `_rig()` call a camera
-	# and a tree entry. The mother's page alone, since every rig here is built with the default
-	# presentation and the two parents are two pages (`Stroller.MOTHER_ATLAS`'s own doc).
-	var atlas := AtlasLibrary.new()
-	atlas.acquire(Stroller.MOTHER_ATLAS)
-	_test_every_view_resolves_every_pose_in_both_states(t, atlas)
-	atlas.release(Stroller.MOTHER_ATLAS)
+	await _test_every_view_resolves_every_pose_in_both_states(t)
 
-func _rig(carrying: bool) -> Stroller:
+## A rig in the tree, so her own `_enter_tree()` acquires her page (on a library of her own, since
+## nobody hands her one) and her own `_physics_process()` runs.
+func _rig(t, carrying: bool) -> Stroller:
 	var rig := Stroller.new()
 	rig.carrying = carrying
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	rig.add_child(camera)
+	t.add_child(rig)
 	return rig
 
 func _state_name(carrying: bool) -> String:
 	return "carrying" if carrying else "pushing"
 
-func _test_both_states_visit_contact_passing_contact_passing(t) -> void:
-	for carrying in [false, true]:
-		var rig := _rig(carrying)
-		var frames: Array[int] = []
-		for _quarter in range(4):
-			frames.append(rig._mother_gait_frame(1.0))
-			rig._advance_walk_phase(QUARTER_CYCLE_DISTANCE)
-		t.check(frames == [0, 1, 2, 1],
-				"one %s cycle is A, C, B, C" % _state_name(carrying))
-		t.check(is_zero_approx(rig._walk_phase),
-				"the four %s displacement quarters wrap at one TAU" % _state_name(carrying))
-		rig.free()
+## One sample per real physics frame of her walking east with the move key held: the pose she is
+## drawn in, how far the frame carried her, and the gait phase before it.
+func _walk(t, rig: Stroller, frames: int) -> Array[Dictionary]:
+	var samples: Array[Dictionary] = []
+	Input.action_press("move_right")
+	for _i in frames:
+		var before := rig.global_position
+		var phase_before: float = rig.pose(1.0).walk_phase
+		await t.get_tree().physics_frame
+		samples.append({
+			"pose": rig.pose(1.0),
+			"idle_pose": rig.pose(0.0),
+			"phase_before": phase_before,
+			"moved": rig.global_position.distance_to(before),
+		})
+	Input.action_release("move_right")
+	return samples
 
-func _test_displacement_crosses_a_passing_boundary_in_both_states(t) -> void:
-	for carrying in [false, true]:
-		var rig := _rig(carrying)
-		rig._advance_walk_phase(QUARTER_CYCLE_DISTANCE * 0.5)
-		t.check(rig._mother_gait_frame(1.0) == 0,
-				"half the first %s contact's travel still holds A" % _state_name(carrying))
-		rig._advance_walk_phase(QUARTER_CYCLE_DISTANCE * 0.5)
-		t.check(rig._mother_gait_frame(1.0) == 1,
-				"the completed %s quarter reaches passing C" % _state_name(carrying))
-		rig.free()
+func _test_the_cycle_visits_contact_passing_contact_passing(t, carrying: bool, samples: Array[Dictionary]) -> void:
+	var frames: Array[int] = []
+	for sample in samples:
+		var frame: int = sample.pose.gait_frame
+		if frames.is_empty() or frames[-1] != frame:
+			frames.append(frame)
+	t.check(frames.size() >= 8 and frames.slice(0, 8) == [0, 1, 2, 1, 0, 1, 2, 1],
+			"two %s cycles are A, C, B, C, A, C, B, C (%s)" % [_state_name(carrying), frames])
 
-func _test_idle_holds_the_passing_pose_from_every_phase(t) -> void:
-	for carrying in [false, true]:
-		var rig := _rig(carrying)
-		for phase in [0.0, PI / 2.0, PI, 3.0 * PI / 2.0]:
-			rig._walk_phase = phase
-			t.check(rig._mother_gait_frame(0.0) == 1,
-					"idle %s settles on C from phase %.2f" % [_state_name(carrying), phase])
-		rig.free()
+func _test_the_gait_follows_distance_and_changes_frame_on_quarter_boundaries(t, carrying: bool, samples: Array[Dictionary]) -> void:
+	var wrapped := true
+	var by_distance := true
+	var by_quarter := true
+	for sample in samples:
+		var phase: float = sample.pose.walk_phase
+		wrapped = wrapped and phase >= 0.0 and phase < TAU
+		# Each step advances the phase by the distance it covered, whatever the speed.
+		var advanced := fposmod(phase - float(sample.phase_before), TAU)
+		by_distance = by_distance and is_equal_approx(advanced,
+				fposmod(float(sample.moved) * WalkerLook.GAIT_RATE, TAU))
+		by_quarter = by_quarter and sample.pose.gait_frame \
+				== Stroller.MOTHER_GAIT_LOOP[int(floor(phase / (TAU / 4.0))) % 4]
+	t.check(wrapped, "the %s gait phase wraps at one TAU" % _state_name(carrying))
+	t.check(by_distance, "the %s gait advances by distance covered" % _state_name(carrying))
+	t.check(by_quarter, "the %s frame changes exactly on a quarter boundary of the phase"
+			% _state_name(carrying))
+
+func _test_idle_holds_the_passing_pose_from_every_phase(t, carrying: bool, samples: Array[Dictionary]) -> void:
+	var quarters := {}
+	var held := true
+	for sample in samples:
+		quarters[int(floor(float(sample.pose.walk_phase) / (TAU / 4.0)))] = true
+		held = held and sample.idle_pose.gait_frame == 1
+	t.check(quarters.size() == 4, "the %s walk visits all four quarters of the phase"
+			% _state_name(carrying))
+	t.check(held, "idle %s settles on C from every phase" % _state_name(carrying))
 
 func _pose_families(carrying: bool) -> Array[Array]:
 	if carrying:
@@ -103,19 +126,18 @@ func _direction_textures(carrying: bool, frame: int) -> Array[String]:
 		back_diagonal[frame],
 	]
 
-func _test_every_view_resolves_every_pose_in_both_states(t, atlas: AtlasLibrary) -> void:
+func _test_every_view_resolves_every_pose_in_both_states(t) -> void:
 	for carrying in [false, true]:
-		var rig := _rig(carrying)
-		rig.atlas = atlas
-		for frame in range(3):
-			var expected := _direction_textures(carrying, frame)
-			for direction in range(8):
-				rig._view_direction = direction
-				# Pinned through her family's atlas rather than against the authored constant
-				# directly: `_mother_texture()` answers the baked region, and the assertion is
-				# about *which* view is selected either way.
-				t.check(rig._mother_texture(frame)
-						== atlas.region(StringName(expected[direction])),
+		var rig := _rig(t, carrying)
+		for direction in range(8):
+			rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))
+			var pose := rig.pose(1.0)
+			t.check(pose.view == direction, "facing %d settles view %d" % [direction * 45, direction])
+			for frame in range(3):
+				var expected := _direction_textures(carrying, frame)
+				t.check(pose.mother_sources[frame] == expected[direction]
+						and rig.atlas.region(StringName(pose.mother_sources[frame]))
+						== rig.atlas.region(StringName(expected[direction])),
 						"direction %d resolves %s pose %d"
 						% [direction, _state_name(carrying), frame])
 		rig.free()

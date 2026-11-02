@@ -72,7 +72,7 @@ const MOTHER_BACK_DIAGONAL: Array[String] = [
 	"rig/mother_back_diagonal_b"]
 
 ## The escape scene's rig — the baby in her arms, no pram. Selected in place of the sets above
-## whenever `carrying` is set; see `_mother_texture()`.
+## whenever `carrying` is set; see `Pose.mother_texture()`.
 const MOTHER_CARRYING_FRONT: Array[String] = [
 	"rig/mother_carrying_front_a",
 	"rig/mother_carrying_front_c",
@@ -116,7 +116,7 @@ const FATHER_BACK_DIAGONAL: Array[String] = [
 	"rig/father_back_diagonal_b"]
 
 ## The escape scene's rig — the baby in his arms, no pram. Selected in place of the sets above
-## whenever `carrying` is set; see `_mother_texture()`, the shared parent selector.
+## whenever `carrying` is set; see `Pose.mother_texture()`, the shared parent selector.
 const FATHER_CARRYING_FRONT: Array[String] = [
 	"rig/father_carrying_front_a",
 	"rig/father_carrying_front_c",
@@ -192,7 +192,7 @@ static func parent_atlas(male: bool) -> StringName:
 
 ## Every path the rig can draw, by the group it is baked on: each parent's pushing and carrying
 ## views over three gait frames, and the pram's five views on the group they share. Not read by
-## the live draw path — `_mother_texture()` and `_pram_texture()` turn the picture already in
+## the live draw path — `Pose.mother_texture()` and `Pose.pram_texture()` turn the picture already in
 ## hand into a region name directly — but kept as the one place "everything the rig can draw" is
 ## enumerable, which is what a completeness check against the membership file wants.
 static func sources_by_group() -> Dictionary:
@@ -1013,37 +1013,37 @@ func _draw() -> void:
 	# and nothing offset in front of her, so the cue over the bundle floats over her own column —
 	# see `_draw_baby_cue()` and `baby_cue_lift()`, both of which already treat a zero offset as
 	# "shares her column" without a branch of their own.
-	var pram_offset := _pram_offset
+	var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
+	var drawn := pose(gait)
+	var pram_offset := drawn.pram_offset
 
 	# Shadows belong to the ground plane, so they always go underneath both figures.
 	shape.draw_shadow(self, Vector2.ZERO)
-	var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
 	if carrying:
-		_draw_mother(gait)
+		_draw_mother(drawn)
 	else:
 		pram_shape.draw_shadow(self, pram_offset)
 		if facing.y < 0.0:
-			_draw_pram(pram_offset)
-			_draw_mother(gait)
+			_draw_pram(drawn)
+			_draw_mother(drawn)
 		else:
-			_draw_mother(gait)
-			_draw_pram(pram_offset)
+			_draw_mother(drawn)
+			_draw_pram(drawn)
 
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
 
 ## The source texture supplies the complete body geometry, including the stride and its small bob.
-func _draw_mother(gait: float) -> void:
-	Sprites.draw_standing(self, _mother_texture(_mother_gait_frame(gait)), Vector2.ZERO, Vector2.ZERO,
-			_mother_is_mirrored())
+func _draw_mother(pose: Pose) -> void:
+	Sprites.draw_standing(self, pose.mother_texture(), Vector2.ZERO, Vector2.ZERO, pose.mirrored)
 
 ## Distance advances the gait so slowing down changes cadence without changing the depicted loop.
 func _advance_walk_phase(distance: float) -> void:
-	_walk_phase = wrapf(_walk_phase + distance * 0.09, 0.0, TAU)
+	_walk_phase = wrapf(_walk_phase + distance * WalkerLook.GAIT_RATE, 0.0, TAU)
 
 ## Both mother states use contact, passing, opposite contact, passing over one full turn. Keeping
 ## that loop on `TAU` preserves the contact/passing change frequency instead of doubling step rate.
-func _mother_gait_frame(gait: float) -> int:
+func mother_gait_frame(gait: float) -> int:
 	if gait <= 0.05:
 		return 1
 	var quarter := int(floor(_walk_phase / (TAU / 4.0))) % MOTHER_GAIT_LOOP.size()
@@ -1051,17 +1051,51 @@ func _mother_gait_frame(gait: float) -> int:
 
 ## The pram has authored front, back, side and diagonal projections. A hood belongs to its own
 ## three-quarter body plane, rather than sliding across an unchanged basket as the rig turns.
-func _draw_pram(at: Vector2) -> void:
-	var texture := _pram_texture()
-	Sprites.draw_standing(self, texture, at, _pram_draw_size(), _pram_is_mirrored())
+func _draw_pram(pose: Pose) -> void:
+	Sprites.draw_standing(self, pose.pram_texture(), pose.pram_offset, pose.pram_size, pose.mirrored)
 
-func _pram_draw_size() -> Vector2:
-	return _pram_texture().get_size() * PRAM_VISUAL_SCALE
+## What she is drawn as this frame, the one thing `_draw()` draws from and the one thing a test
+## reads to know what was drawn: the eight-view sector, whether it mirrors, the gait frame, the
+## authored picture of each mother pose and of the pram, and the offset and size the pram is
+## drawn at. `gait` is her speed over `Tuning.WALK_SPEED`; at or below 0.05 she stands on the
+## passing pose whatever the phase of her stride.
+func pose(gait: float) -> Pose:
+	var drawn := Pose.new()
+	drawn.view = _view_direction
+	drawn.mirrored = EightDirection.is_mirrored(_view_direction)
+	drawn.walk_phase = _walk_phase
+	drawn.gait_frame = mother_gait_frame(gait)
+	for frame in 3:
+		drawn.mother_sources.append(_mother_source(frame))
+	drawn.pram_source = _pram_source()
+	drawn.atlas = atlas
+	drawn.pram_offset = _pram_offset
+	drawn.pram_size = drawn.pram_texture().get_size() * PRAM_VISUAL_SCALE
+	return drawn
 
-## The selected parent's region for a gait frame — the run's own parent page is acquired for the
-## whole run in `_ready()`, so this is always the baked region and never the raw source.
-func _mother_texture(frame: int) -> Texture2D:
-	return atlas.region(StringName(_mother_source(frame)))
+## The drawn state of `pose()`. Both figures mirror together, since both are authored east-facing
+## and mirrored about the feet for a west-facing view.
+class Pose extends RefCounted:
+	var view := 0
+	var mirrored := false
+	var walk_phase := 0.0
+	var gait_frame := 0
+	## The baked path of each of the mother's three poses (contact, passing, opposite contact) at this view.
+	var mother_sources: Array[String] = []
+	var pram_source := ""
+	var pram_offset := Vector2.ZERO
+	var pram_size := Vector2.ZERO
+	## The library her pages are acquired on (`Stroller.atlas`), which the pictures are read from.
+	var atlas: AtlasLibrary = null
+
+	## The region of the pose she is drawn in; the run's own parent page is acquired for the whole
+	## run in `_enter_tree()`, so this is always the baked region and never the raw source.
+	func mother_texture() -> Texture2D:
+		return atlas.region(StringName(mother_sources[gait_frame]))
+
+	## The region of the pram, off the page the two parents share.
+	func pram_texture() -> Texture2D:
+		return atlas.region(StringName(pram_source))
 
 ## The authored view this frame draws, as the path it is baked under.
 func _mother_source(frame: int) -> String:
@@ -1087,17 +1121,6 @@ func _mother_source(frame: int) -> String:
 		return FATHER_BACK_DIAGONAL[frame] if is_male else MOTHER_BACK_DIAGONAL[frame]
 	return FATHER_BACK[frame] if is_male else MOTHER_BACK[frame]
 
-## West-facing projections mirror their corresponding east-authored SVGs about the feet anchor.
-func _mother_is_mirrored() -> bool:
-	return EightDirection.is_mirrored(_view_direction)
-
-## The pram region selected by the live drawing path, off `STROLLER_ATLAS` — the page the two
-## parents share rather than the one her body is on. Its size is the region's, which is the
-## picture's own native size, so `_pram_draw_size()`'s seven-sixths lands on exactly the same
-## rectangle it always did.
-func _pram_texture() -> Texture2D:
-	return atlas.region(StringName(_pram_source()))
-
 ## The authored pram view for the direction she is facing, as the path it is baked under.
 func _pram_source() -> String:
 	if _view_direction == 0 or _view_direction == 4:
@@ -1109,10 +1132,6 @@ func _pram_source() -> String:
 	if _view_direction == 5 or _view_direction == 7:
 		return PRAM_BACK_DIAGONAL
 	return PRAM_BACK
-
-## West-facing prams share the same explicit east-authored symmetry as the mother.
-func _pram_is_mirrored() -> bool:
-	return EightDirection.is_mirrored(_view_direction)
 
 ## Decides the eight-direction projection for this frame, with hysteresis rather than a single
 ## switching angle — `EightDirection.update()`, the selector `CrowdAgent`'s walkers now share.
