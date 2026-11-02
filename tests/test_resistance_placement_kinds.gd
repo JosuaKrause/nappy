@@ -2,6 +2,7 @@ extends "res://tests/resistance_rig.gd"
 ## The four placement kinds a perform step may use, each task's own site, and the days built in order.
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_the_burnt_shell_task_rides_the_recorded_scar(t)
 	_test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t)
 	_test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t)

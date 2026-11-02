@@ -18,6 +18,7 @@ extends RefCounted
 const _SCRATCH_PATH := "user://test_save_wiring_scratch.json"
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var baseline := GameState.save_snapshot()
 	GameSave.set_path_override(_SCRATCH_PATH)
 	GameSave.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))

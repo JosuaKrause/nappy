@@ -12,14 +12,16 @@ a seed it does not control is made deterministic. The landing process stays as i
 statement says "we don't need either" of the two options (freckled-moose #914).
 
 **The incident.** An order-dependent `test_touch` failure on `main`: a suite run alone passes, but
-fails in a shard, likely behind another suite that leaves shared state behind.
+fails in a shard, likely behind another suite that leaves shared state behind. The cause is not
+established: a held `pause` action does not fail `test_touch.gd`'s own checks.
 
-**Proposed, not asked for:** the test runner checks shared state before and after each suite
-(`InputMap` bindings, which actions `Input` holds pressed, autoload fields, static variables) and
-fails a suite that leaves it changed, naming the field. Every flaky check found, by that or by a
-repeated run, is made deterministic rather than retried. The plainer alternative is to fix each
-leak as it shows up; the check is proposed because a leak is otherwise found only when two suites
-happen to meet on `main`.
+**What is left.** The runner fails a suite that leaves shared state changed, and the leaks it found
+are fixed (the isolated half). The flaky half: a repeat mode and a shuffled order (`--shuffle SEED`)
+in the runner so that an order-dependent or timing-dependent check shows itself without two suites
+happening to meet on `main`; three green full runs on the head; and making deterministic every check
+whose result changes between runs. The suites that boot `main` declare `t.gives_back_observers()`
+for the observers' count of a run; giving each its own teardown, once `hidden-statics.md` puts the
+state in an owner a suite can hold, removes the declaration.
 
 This item sits beside `tests-public-seams.md` (tests drive public seams and real frames), whose
 fakes injected instead of patched statics remove part of the same shared state.

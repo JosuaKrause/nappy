@@ -2,6 +2,7 @@ extends "res://tests/resistance_rig.gd"
 ## M188: a mark is never placed in an alley she cannot reach.
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
 	if _city != null:
 		_city.free()

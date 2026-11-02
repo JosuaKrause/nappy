@@ -9,6 +9,8 @@ const SEED := 4242
 var _city: City
 
 func run(t) -> void:
+	t.gives_back_observers()
+	var standing: Array[Node] = t.get_children()
 	_test_bearing_sectors_pick_the_matching_pose(t)
 	_test_a_bearing_off_centre_still_rounds_to_its_sector(t)
 	_test_plain_pose_with_no_objective(t)
@@ -18,6 +20,9 @@ func run(t) -> void:
 	_test_a_protest_with_no_director_points_at_nothing(t)
 	if _city != null:
 		_city.free()
+	for child in t.get_children():
+		if not child in standing:
+			child.free()
 
 # ---------------------------------------------------------------- bearing ---
 

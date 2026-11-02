@@ -2,6 +2,7 @@ extends "res://tests/resistance_rig.gd"
 ## M188: a relocated mark is never placed in an alley she cannot reach, and day 11 puts up a mast near the mark when none is near.
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t)
 	_test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
 	if _city != null:

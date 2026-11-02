@@ -2,6 +2,7 @@ extends "res://tests/resistance_rig.gd"
 ## The task riding on a look-alike, the guarded targets and the handover traps: a robber or guard set on her from off screen, announced before he can catch her.
 
 func run(t) -> void:
+	t.gives_back_observers()
 	# The alleys earlier tests of the one resistance suite had recorded as used by completed marks
 	# (`RunFacts.completed_resistance_alley_tiles`), which a day's mark placement avoids and which
 	# no test cleared; the counts below were written against them.

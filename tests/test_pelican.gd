@@ -29,6 +29,7 @@ const CYCLISTS_PER_RUN := 30
 var _city: City
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var saved := _save_the_run()
 	_test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t)
 	_test_the_seed_decides_which_cyclist_is_the_pelican(t)

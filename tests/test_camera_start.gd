@@ -18,6 +18,7 @@ extends RefCounted
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t)
 	_test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t)
 

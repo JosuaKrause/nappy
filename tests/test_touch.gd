@@ -1339,7 +1339,11 @@ func _drag_event(index: int, position: Vector2) -> InputEventScreenDrag:
 ## However a check above failed or passed, the movement actions, `run` and `pause` are global
 ## `Input` state — nothing about them is scoped to this suite's own nodes — so a failure that
 ## returns early must not leave one pressed for whatever test runs next.
+## A touch fed through `_input` presses the pause action through buffered input, which the engine
+## applies at the next frame; the buffer is flushed first so that the release is the last word and
+## the press does not land after the suite is over.
 func _release_actions() -> void:
+	Input.flush_buffered_events()
 	Input.action_release(&"move_left")
 	Input.action_release(&"move_right")
 	Input.action_release(&"move_up")

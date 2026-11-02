@@ -2,6 +2,7 @@ extends "res://tests/resistance_rig.gd"
 ## Day 9's door: the task is done by crossing it, not by standing at it, and what the guard and the hut do about a crossing.
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
 	_test_a_crossing_taken_back_does_not_do_day_nine(t)
 	_test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t)

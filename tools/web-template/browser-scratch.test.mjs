@@ -9,7 +9,7 @@ import { chmod, mkdir, mkdtemp, realpath, rm, stat, symlink, writeFile } from 'n
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
-import { BrowserScratch, canonical, cloneRoot, listClones } from './browser-scratch.mjs';
+import { BrowserScratch, alive, canonical, cloneRoot, listClones } from './browser-scratch.mjs';
 
 let scratchDir;
 before(async () => { scratchDir = await realpath(await mkdtemp(join(tmpdir(), 'browser-scratch-test-'))); });
@@ -39,12 +39,16 @@ const settleWithin = (child, milliseconds = 3000) => new Promise(r => {
 const stop = async child => {
   // The shell's sleep is its child; kill the group's members one by one.
   const { execFileSync } = await import('node:child_process');
+  const killed = [child.pid];
   for (const line of execFileSync('ps', ['-A', '-o', 'pid=,ppid=']).toString().split('\n')) {
     const [pid, ppid] = line.trim().split(/\s+/).map(Number);
-    if (ppid === child.pid) process.kill(pid, 'SIGKILL');
+    if (ppid === child.pid) { process.kill(pid, 'SIGKILL'); killed.push(pid); }
   }
   child.kill('SIGKILL');
   await settleWithin(child);
+  // SIGKILL is delivered asynchronously: wait until every killed process is gone, as a browser
+  // that has exited is by the time settle runs.
+  for (let i = 0; i < 100 && killed.some(alive); i++) await pause(20);
 };
 const exists = async path => { try { await stat(path); return true; } catch { return false; } };
 const pause = ms => new Promise(r => setTimeout(r, ms));
@@ -128,7 +132,7 @@ test('an attributed clone is removed once its process is gone; others are report
   assert.deepEqual([...scratch.owned.keys()], [owned]);
   await stop(browser);
   const report = await scratch.settle({ waitMs: 0 });
-  assert.deepEqual(report.removed.map(entry => entry.path), [owned]);
+  assert.deepEqual(report.removed.map(entry => entry.path), [owned], JSON.stringify(report));
   assert.match(report.removed[0].evidence, /Fixture\.app\/Contents\/binary$/);
   assert.deepEqual(report.retained, []);
   assert.deepEqual(report.candidates.map(entry => entry.path), [stranger]);

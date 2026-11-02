@@ -11,6 +11,7 @@ const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCENE := preload("res://scenes/ui/pause_screen.tscn")
 
 func run(t) -> void:
+	var was_paused: bool = t.get_tree().paused
 	_test_a_short_multi_sentence_text_stays_on_one_line(t)
 	_test_a_decimal_and_a_clock_reading_never_split(t)
 	_test_a_single_long_sentence_is_handed_back_unbroken(t)
@@ -21,6 +22,7 @@ func run(t) -> void:
 	_test_every_ending_and_finale_body_breaks_only_between_sentences(t)
 	_test_the_resumed_day_note_breaks_only_between_sentences(t)
 	_test_the_pause_screens_body_breaks_only_between_sentences(t)
+	t.get_tree().paused = was_paused
 
 # ------------------------------------------------------------- the pure helper ---
 

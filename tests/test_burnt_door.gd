@@ -15,6 +15,7 @@ const SEED := 1
 const DAY := 8
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
 	var saved_state := GameState.attempt_spend.city_state
 	var city: City = RunCity.of_the_run(CITY_SCENE)

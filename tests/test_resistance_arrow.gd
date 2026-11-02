@@ -2,6 +2,7 @@ extends "res://tests/resistance_rig.gd"
 ## The red arrow: what it points at, how it chooses and switches, and where every arrow ends.
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t)
 	_test_an_arrow_exists_on_every_task_day(t)
 	_test_the_arrow_chooses_by_walking_distance_not_straight_line(t)

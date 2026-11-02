@@ -232,6 +232,13 @@ fi
 # allocate nothing.
 headroom_preflight tools/bake-atlases.sh "$PROJECT_DIR/assets/atlases/baked" "" atlas-bake || exit 1
 
+# project.godot and docs/ARCHITECTURE.md have been found rewritten after tools that run Godot; this
+# reverts such a rewrite on exit and keeps a deliberate edit (tools/lib_import_restore.sh).
+# shellcheck source=tools/lib_import_restore.sh
+source "$PROJECT_DIR/tools/lib_import_restore.sh"
+import_restore_arm "$PROJECT_DIR"
+trap import_restore_run EXIT
+
 echo "atlases: baking ($mode mode) -- $reason"
 bake_args=()
 if [[ "$mode" == "svg" ]]; then

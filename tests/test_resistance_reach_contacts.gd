@@ -2,6 +2,7 @@ extends "res://tests/resistance_rig.gd"
 ## M188: every mark and contact stands on ground she can reach, and a queued mast is never generated inside a lethal field.
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
 	# This one reads the city standing, the third of the seeds the day-11 mast test builds.
 	_build_city(t, 1234567)

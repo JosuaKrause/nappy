@@ -2,6 +2,7 @@ extends "res://tests/resistance_rig.gd"
 ## M188: the narrow targets are reachable on their day, and a task is placed near its mark.
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_a_task_is_placed_near_its_mark(t)
 	_test_the_narrow_targets_are_reachable_on_their_day(t)
 	if _city != null:
