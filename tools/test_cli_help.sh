@@ -1216,6 +1216,30 @@ status=$?
 check_that "update-pr.sh refuses a branch that adds its own whitespace error" \
     '[[ $status -ne 0 && "$out" == *"branch.txt"* && "$out" == *"git diff --cached --check"* ]]'
 
+# ------------------- lib_import_restore.sh puts back what a fake import rewrites -------------
+# A throwaway repo with the two files committed; a fake "import" rewrites both. A clean file is
+# reverted, one that was already dirty is left alone.
+ir_repo="$(mktemp -d)"
+(
+    cd "$ir_repo" && git init -q . && mkdir docs \
+        && printf '; comment\n' > project.godot && printf 'a    b\n' > docs/ARCHITECTURE.md \
+        && git add . && git -c user.name=t -c user.email=t@example.com commit -q -m init
+)
+# shellcheck source=tools/lib_import_restore.sh
+source "$root/tools/lib_import_restore.sh"
+import_restore_arm "$ir_repo"
+printf 'x\n' > "$ir_repo/project.godot"; printf 'a\tb\n' > "$ir_repo/docs/ARCHITECTURE.md"
+import_restore_run 2>/dev/null
+check_that "lib_import_restore.sh reverts both files when they were clean" \
+    '[[ -z "$(git -C "$ir_repo" status --porcelain)" ]]'
+printf 'mine\n' > "$ir_repo/project.godot"
+import_restore_arm "$ir_repo"
+printf 'x\n' > "$ir_repo/project.godot"; printf 'a\tb\n' > "$ir_repo/docs/ARCHITECTURE.md"
+import_restore_run 2>/dev/null
+check_that "lib_import_restore.sh leaves a file that was already dirty alone" \
+    '[[ "$(cat "$ir_repo/project.godot")" == x && "$(cat "$ir_repo/docs/ARCHITECTURE.md")" == "a    b" ]]'
+rm -rf "$ir_repo"
+
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
 # undocumented the way audit-pck.sh, export-web.sh, release.sh, serve-web.sh and stats.sh used to

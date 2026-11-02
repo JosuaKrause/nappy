@@ -78,9 +78,9 @@ fi
 #
 # **So detect it here and fix it here, rather than printing an instruction.** The detection is
 # cheap enough to pay on every run and the repair only happens when it is actually needed, so the
-# common path is unchanged and the rare one just starts. check.sh's own import pass now reverts
-# the project.godot and docs/ARCHITECTURE.md rewrites it causes, which is what made calling it
-# from here safe.
+# common path is unchanged and the rare one just starts. check.sh's own import pass reverts the
+# project.godot and docs/ARCHITECTURE.md rewrites it causes (tools/lib_import_restore.sh), which is
+# what made calling it from here safe.
 #
 # **The test is which classes are cached, not which files are newer.** A modification time says
 # only that a script changed, which is what every ordinary edit does -- rebuilding on that would

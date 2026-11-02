@@ -58,12 +58,15 @@ fi
 
 # The atlas bake and the import pass, the same preamble tools/test.sh runs before anything that
 # needs EventCatalogue's class_name to resolve -- a fresh checkout's .godot/ cache does not exist
-# until this runs once. No project.godot/ARCHITECTURE.md restore dance the way tools/check.sh
-# does: in a developer's own loop this runs after check.sh, by which point .godot/ is already
-# settled, and in CI it runs in the `cost-table` job on a checkout nothing reads afterwards, the
-# way tools/test.sh's own import pass runs on a shard and skips the same dance.
+# until this runs once. The import pass rewrites project.godot and docs/ARCHITECTURE.md, which
+# tools/lib_import_restore.sh puts back.
 "$PROJECT_DIR/tools/bake-atlases.sh" || exit 1
+# shellcheck source=tools/lib_import_restore.sh
+source "$PROJECT_DIR/tools/lib_import_restore.sh"
+import_restore_arm "$PROJECT_DIR"
+trap import_restore_run EXIT
 "$GODOT" --headless --import --path "$PROJECT_DIR" >/dev/null 2>&1
+import_restore_run
 
 args=()
 if [[ $check_mode -eq 1 ]]; then
@@ -74,7 +77,7 @@ fi
 # an engine ERROR: and still exit 0, so the two are checked together rather than trusting the
 # exit code alone.
 scratch="$(mktemp)"
-trap 'rm -f "$scratch"' EXIT
+trap 'rm -f "$scratch"; import_restore_run' EXIT
 "$GODOT" --headless --path "$PROJECT_DIR" res://tools/cost_table.tscn -- \
         "${args[@]+"${args[@]}"}" 2>&1 | tee "$scratch"
 status="${PIPESTATUS[0]}"

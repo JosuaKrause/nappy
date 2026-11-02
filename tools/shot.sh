@@ -127,7 +127,8 @@ fi
 # **The repair is tools/check.sh rather than a bake on its own**, because a freshly baked page
 # is a file the engine has not imported yet, and a windowed run does no import pass of its own —
 # check.sh bakes, imports, and puts back the project.godot and docs/ARCHITECTURE.md rewrites the
-# import pass causes, which a bare `--import` here would leave in the working tree.
+# import pass causes (tools/lib_import_restore.sh), which a bare `--import` here would leave in the
+# working tree.
 if [[ -n "$atlases_stale" ]]; then
     # `--check` exits non-zero by design; this reprint is the reason, not a failure.
     "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true

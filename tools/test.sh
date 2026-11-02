@@ -156,6 +156,10 @@ if [[ -n "$shard_arg" ]]; then
     shard_index=$(( shard_index - 1 ))
 fi
 
+# The import pass rewrites project.godot and docs/ARCHITECTURE.md; every exit below restores them.
+# shellcheck source=tools/lib_import_restore.sh
+source "$PROJECT_DIR/tools/lib_import_restore.sh"
+
 # The atlas pages, before the import pass that has to see them; no work when they are current.
 # `--plan` runs nothing, so it needs neither the bake nor the import.
 if [[ $plan_only -eq 0 ]]; then
@@ -164,7 +168,10 @@ if [[ $plan_only -eq 0 ]]; then
     # The import pass, once and before anything runs in parallel. Several Godot processes importing
     # the same project at the same time race on `.godot/`, and the failure looks like a missing
     # `class_name` rather than like a race.
+    import_restore_arm "$PROJECT_DIR"
+    trap import_restore_run EXIT
     "$GODOT" --headless --import --path "$PROJECT_DIR" >/dev/null 2>&1
+    import_restore_run
 fi
 
 ## Runs one Godot test process and classifies it the way tools/check.sh already classifies a
@@ -304,7 +311,7 @@ if [[ $# -gt 0 || $serial -eq 1 ]]; then
 			rm -f "$f" "$f.uid"
 		done
     }
-    trap cleanup_staged EXIT
+    trap 'cleanup_staged; import_restore_run' EXIT
     for arg in "$@"; do
         staged_path="$(stage_runner_fixture "$arg")" || exit 1
         if [[ -n "$staged_path" ]]; then
@@ -444,7 +451,7 @@ if [[ -n "$shard_index" ]]; then
 fi
 
 work_dir="$(mktemp -d)"
-trap 'rm -rf "$work_dir"' EXIT
+trap 'rm -rf "$work_dir"; import_restore_run' EXIT
 
 pids=()
 for ((i = 0; i < SHARDS; i++)); do
