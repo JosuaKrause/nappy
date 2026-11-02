@@ -22,13 +22,18 @@ extends RefCounted
 ## rigs the test builds are handed that library as `main` hands its own. Each test builds its own
 ## library, so no count it reads depends on a suite before it.
 ##
-## One test boots the real `main.tscn` instead, on the day and in the escape's building, and asks
-## that everything it built draws from the one library its sitting holds.
+## Two tests boot the real `main.tscn` instead: one, on the day and in the escape's building, asks
+## that everything it built draws from the one library its sitting holds; the other reads the run
+## log across a played day, a held restart and day 14's hand-over for a page loaded on a library of
+## a node's own.
 
 const MAIN_SCRIPT := preload("res://src/main.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const UI := preload("res://tests/ui_screens.gd")
 const SEED := 4242
+## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_atlas_loading_scratch.json"
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -38,6 +43,7 @@ func run(t) -> void:
 	_test_a_page_may_only_be_read_in_a_window(t)
 	_test_two_days_never_reload_a_page(t)
 	_test_a_boot_hands_its_one_library_to_everything_it_draws(t)
+	await _test_no_boot_loads_a_page_on_a_library_of_its_own(t)
 
 # ------------------------------------------------------------------ the groups ---
 
@@ -264,6 +270,121 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 	GameState.facts.escape_section = saved_section
 	GameState.header.day = saved_day
 	GameState.start_run(SEED)
+
+## **A missed hand-off is red wherever and whenever the node is made.** A node handed no library
+## makes its own the first time it acquires, and a library no boot has claimed the loading moments
+## on loads its page freely and calls the load `unmanaged` (`AtlasLibrary.MOMENT_UNMANAGED`): no
+## engine error and no `OUTSIDE` line, only the run log's load line. The tree walk above sees only
+## the nodes standing two frames into a boot. So this reads the run log across a boot whose day is
+## started from the title and played for a second, the held restart's reload into a second boot,
+## and day 14's hand-over into the escape's boot, all three taking the one sitting parked in a home
+## of the test's own (`main.use_sitting_home()`, standing for the tree's root), and no page may be
+## loaded in the unmanaged anywhere in it.
+func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
+	var saved_section: int = GameState.facts.escape_section
+	var saved_day := GameState.header.day
+	GameState.facts.escape_section = DaySpec.Section.NONE
+	var home := Node.new()
+	t.add_child(home)
+	var save := GameSave.new(_SCRATCH_SAVE)
+	var reloads: Array[int] = []
+	var lines: Array[String] = []
+
+	Telemetry.begin_memory_log()
+	var log: TelemetryLog = Telemetry.current_log()
+	var first := await _boot_in(t, home, save, reloads)
+	await _press_tap(t, first)
+	for _i in 60:
+		await t.get_tree().physics_frame
+	(_one(first, "PauseScreen") as PauseScreen).restart_requested.emit()
+	t.check(reloads.size() == 1, "the held restart reloads")
+	lines.append_array(log.lines)
+	_shut(t, first)
+
+	# The restart closed the run log; the reloaded boot's lines go in a fresh one.
+	Telemetry.begin_memory_log()
+	log = Telemetry.current_log()
+	var second := await _boot_in(t, home, save, reloads)
+	await _press_tap(t, second)
+	# Day 14 after the hand-over (`DayEnd.hands_over_to_the_escape`): every task done, a win.
+	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+	GameState.resistance.sabotage_done = true
+	(_one(second, "DayController") as DayController).day_finished.emit(GameEnums.DayResult.WON)
+	var summary := _one(second, "DaySummary")
+	await UI.frames(t)
+	UI.push(summary, UI.touch_at(UI.centre(UI.button(summary, "Continue")), true))
+	await UI.frames(t)
+	t.check(reloads.size() == 2 and GameState.facts.escape_section == DaySpec.Section.BUILDING,
+			"continuing past day 14's summary reloads into the escape's building")
+	_shut(t, second)
+	var escape := await _boot_in(t, home, save, reloads)
+	t.check(_one(escape, "InteriorScene") != null, "and that boot builds the building")
+	lines.append_array(log.lines)
+	_shut(t, escape)
+
+	var loads := 0
+	var at_startup := 0
+	var unmanaged: Array[String] = []
+	for line in lines:
+		if not ("atlas page" in line and " loaded in the " in line):
+			continue
+		loads += 1
+		if ("loaded in the %s" % AtlasLibrary.MOMENT_STARTUP) in line:
+			at_startup += 1
+		if ("loaded in the %s" % AtlasLibrary.MOMENT_UNMANAGED) in line:
+			unmanaged.append(line.strip_edges())
+	t.check(at_startup > 0, "the log heard the boots load their pages (%d loads)" % loads)
+	t.check(unmanaged.is_empty(), "no page was loaded on a library of a node's own (%s)"
+			% " | ".join(unmanaged.slice(0, 3)))
+
+	Telemetry.end_run()
+	home.free()
+	save.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
+	t.get_tree().paused = false
+	GameState.facts.escape_section = saved_section
+	GameState.header.day = saved_day
+	GameState.start_run(SEED)
+
+## The real `main.tscn` handed the suite's scratch save, a reload that only counts, and the `home`
+## its sitting is parked in and taken from, put in the tree with the two frames its `_ready()`
+## awaits let pass.
+func _boot_in(t, home: Node, save: GameSave, reloads: Array[int]) -> Node2D:
+	var main: Node2D = MAIN_SCENE.instantiate()
+	main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry", "--seed",
+			str(SEED)]), "", true))
+	main.use_save(save)
+	main.use_sitting_home(home)
+	main.use_reload(func() -> void: reloads.append(1))
+	t.add_child(main)
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	return main
+
+func _shut(t, main: Node2D) -> void:
+	t.get_tree().paused = false
+	main.free()
+
+## A press on the title's tap button, pushed through the viewport where the layout draws it.
+func _press_tap(t, main: Node2D) -> void:
+	var title := _one(main, "TitleScreen")
+	await UI.frames(t)
+	UI.push(title, UI.touch_at(UI.centre(UI.button(title, "Tap")), true))
+	await UI.frames(t)
+
+## The one node under `root` whose script's class or file is named `type_name`, or null.
+func _one(root: Node, type_name: String) -> Node:
+	var found: Array[Node] = []
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		stack.append_array(node.get_children())
+		var script: Script = node.get_script()
+		if script and (script.get_global_name() == type_name
+				or script.resource_path.get_file().get_basename().to_pascal_case() == type_name):
+			found.append(node)
+	return found[0] if found.size() == 1 else null
 
 # ------------------------------------------------------------------- the rigs ---
 
