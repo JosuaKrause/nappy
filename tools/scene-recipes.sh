@@ -55,6 +55,13 @@ output="$(cd "$output" && pwd)"
 cd "$root"
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 source "$root/tools/lib_dev_flags.sh"
+PROJECT_DIR="$root"
+# project.godot and docs/ARCHITECTURE.md have been found rewritten after tools that run Godot; this
+# reverts such a rewrite on exit and keeps a deliberate edit (tools/lib_import_restore.sh).
+# shellcheck source=tools/lib_import_restore.sh
+source "$PROJECT_DIR/tools/lib_import_restore.sh"
+import_restore_arm "$PROJECT_DIR"
+trap import_restore_run EXIT
 for file in "${recipes[@]}"; do
     name="$(basename "$file" .json)"
     "$GODOT" --headless --path "$root" --fixed-fps 60 -- \
