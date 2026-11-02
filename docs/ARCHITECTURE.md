@@ -216,6 +216,11 @@ src/
 	                         its city and run (`setup()`), the day's stream and length
 	                         (`start_day()`), her and her sight, and a calendar (`use_steps()`);
 	                         `contact()`, `read_mark()` and `rider()` name what it has out
+	happenings.gd           what the story puts in the street that is not a task (the neighbor's
+	                         mornings, day 10's raid, day 11's market, day 12's park, day 13's
+	                         column); owned by the director, built and ticked on its own over a
+	                         city (`setup()`, `start_day()`, `tick()`); `raid_vans()`,
+	                         `raid_beat()`, `frontage_of()` and `spine_x()` say where
 	resistance_steps.gd     the calendar: a mark and the perform step it unlocks share one day,
 	                         plus the finale
 	contact_point.gd        touch to complete — a chalk mark, a task's own event instance, or a
@@ -1012,9 +1017,9 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_day_loop.gd` — the two phases, all four day outcomes, nerves, ending selection.
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
   `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
-  its own and read what the director put in the street from the street (`steps`, `traps` and
-  `reach_contacts` do; the other eight still build over the live run and read the director's
-  fields): `steps` (the step table, touch-completion,
+  its own and read what the director put in the street from the street (`steps`, `traps`,
+  `reach_contacts`, `replacement` and `placement_kinds` do; the other six still build over the live
+  run and read the director's fields): `steps` (the step table, touch-completion,
   a task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
   finished task shown by the world and the sabotage putting the city's masts out once she has
   walked away), `replacement` (an unseen mark moving to an alley she comes near), `alley_siting`
