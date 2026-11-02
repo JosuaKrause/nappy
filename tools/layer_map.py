@@ -459,13 +459,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "GameSave",
-        "the run's registry hands itself to the save at a checkpoint (hidden-statics moves the calendar off it)",
-        ("src/autoload/game_state.gd",),
-        more=(("src/autoload/game_state.gd", 3),),
-    ),
-    Exception_(
-        "names",
         "GroundTiles",
         "the ground's picture builder reads which tile a cell gets",
         ("src/visuals/ground_layers.gd",),

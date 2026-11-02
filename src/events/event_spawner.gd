@@ -395,7 +395,7 @@ func _summon_the_sighted_row(source: EventDef, at: Vector2,
 	var along := Vector2(inward.y, inward.x)
 	var road_at := where_the_summoned_row_stops(world.city_map, at)
 	var headings: Array[Vector2] = [along, -along]
-	if world.run.day_rng(world.day, "sighted:%s" % source.id).randf() < 0.5:
+	if world.run.calendar.day_rng(world.day, "sighted:%s" % source.id).randf() < 0.5:
 		headings.reverse()
 	var her := world.player.global_position if world.player else at
 	for heading in headings:

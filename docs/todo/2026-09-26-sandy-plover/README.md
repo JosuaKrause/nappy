@@ -1,4 +1,4 @@
-priority: later
+priority: parked
 
 # sandy-plover — The git-grep guard's deny message fits in one argument on Linux · filed 2026-09-26
 
@@ -9,3 +9,5 @@ characters, not bytes, so a flagged text of about 32,000 four-byte characters ma
 Linux's 128 KB limit on one argument: `jq` fails, nothing reaches stdout, and the hook lets the
 command through. Only on Linux (CI, a Linux Codex, a cloud session), and only for a deliberately
 built command.
+
+**Parked.** [tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #930: "linux is not a coding platform for now -- to parked".

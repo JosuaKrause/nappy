@@ -44,11 +44,11 @@ func _play_a_run(t, seed_value: int) -> void:
 		# the same way (`main._start_day()`), and this is where the day's region plan is built,
 		# which is what the day-9 crossing task asks for when its mark is touched.
 		GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-		city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"))
+		city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"))
 
-		city.set_act(GameState.current_act())
-		city.events.start_day(DaySpec.for_day(day), GameState.day_rng(day), GameState.attempt_spend.consumed_one_shots)
-		director.start_day(day, GameState.day_rng(day, "resistance"), Tuning.day_length(day))
+		city.set_act(GameState.calendar.current_act())
+		city.events.start_day(DaySpec.for_day(day), GameState.calendar.day_rng(day), GameState.attempt_spend.consumed_one_shots)
+		director.start_day(day, GameState.calendar.day_rng(day, "resistance"), Tuning.day_length(day))
 
 		t.check(city.events.active_count() > 0, "seed %d day %d has events" % [seed_value, day])
 
@@ -88,7 +88,7 @@ func _play_a_run(t, seed_value: int) -> void:
 				director._on_contact_completed(offered)
 
 		# The day was survivable, so bank the win and move on.
-		GameState.finish_day(GameEnums.DayResult.WON)
+		GameState.calendar.finish_day(GameEnums.DayResult.WON)
 
 	t.check(contacts_offered >= Tuning.RESISTANCE_GOAL,
 			"seed %d offers at least %d contacts over a run (%d)"

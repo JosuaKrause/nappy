@@ -25,7 +25,7 @@ const _ALLOWED_FILES := {
 	"res://src/telemetry/": "the run log's own lines",
 	"res://src/autoload/telemetry.gd": "the run log's own lines",
 	"res://src/autoload/game_save.gd": "the save's own log and error lines",
-	"res://src/autoload/game_state.gd": "log notes about nerves and resistance work",
+	"res://src/run/run_calendar.gd": "log notes about nerves and resistance work",
 	"res://src/autoload/visit_counter.gd": "the page-count script's own source",
 	"res://src/city/building.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/city/city_generator.gd": "map validation errors and recipe checks, reported to a developer",

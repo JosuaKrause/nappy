@@ -41,7 +41,7 @@ var hard_fail_reason := ""
 var _map: CityMap
 var _player: Node2D
 ## The run she settles in, which is told where she found her calm
-## (`RunState.remember_where_she_settled()`), handed in by `setup()`.
+## (`RunState.calendar.remember_where_she_settled()`), handed in by `setup()`.
 var _run: RunState
 var _connected := false
 ## The whole second `day_time_changed` was last emitted for. `hud.gd`'s clock reads to the second
@@ -210,7 +210,7 @@ func _remember_the_calm_she_found() -> void:
 	var here := _player.global_position
 	if not Tile.is_calm(_map.tile_type_at_world(here)):
 		return
-	_run.remember_where_she_settled(_map.block_at(here))
+	_run.calendar.remember_where_she_settled(_map.block_at(here))
 
 func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 	if not is_running():

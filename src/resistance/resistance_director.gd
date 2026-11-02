@@ -1106,9 +1106,9 @@ static func sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
 ##
 ## **On the last night it chases her away from the station.** The hand-over is the sabotage, and
 ## the day still has to be won by walking home under the blackout before it goes on to the escape
-## (`RunState.earned_good_ending()`), so being caught there loses day 14 like any other catch,
-## and a lost day gives the sabotage back with the rest of what the attempt spent, so the retry
-## starts at the station's door again.
+## (`RunState.calendar.earned_good_ending()`), so being caught there loses day 14 like any other
+## catch, and a lost day gives the sabotage back with the rest of what the attempt spent, so the
+## retry starts at the station's door again.
 ##
 ## From `TRAP_FIRST_DAY`, like the guard. Where she is, or the contact she has just touched when
 ## no player is in the tree (a bare director in a rig): she is within the contact's own reach of

@@ -21,7 +21,7 @@ const SEED := 4242
 const STEP := 1.0 / 60.0
 
 ## Run seeds the bag is measured over, and the cyclists a run is given in the measurement: a little
-## over the 26 a run meets on average (`docs/todo/2026-10-05-pebbly-ibis/README.md`), so the share of
+## over the 26 a run meets on average (`docs/evidence/pelican-cyclists-2026-10-05/README.md`), so the share of
 ## runs with a pelican is near 30/400, 7.5%: 400 runs, 30 expected, a standard deviation near 5.3.
 const SHARE_SEEDS := 400
 const CYCLISTS_PER_RUN := 30
@@ -182,8 +182,8 @@ func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t) -> void:
 	t.check(GameState.pelican.draws == 7, "a lost day sets the count back to the day's dawn")
 	t.check(_rolls(cyclist, 20, seed_value) == day,
 			"and the retry draws the same cyclists and pelican the day first did")
-	t.check(GameSave.run_data(GameState).has("pelican")
-			and int(GameSave.run_data(GameState)["pelican"]["draws"]) == GameState.pelican.draws,
+	t.check(GameState.run_parts.run_data().has("pelican")
+			and int(GameState.run_parts.run_data()["pelican"]["draws"]) == GameState.pelican.draws,
 			"the standard save carries the count under its own key")
 	GameState.pelican.reset()
 	GameState.pelican.restore(JSON.parse_string(JSON.stringify(saved)))

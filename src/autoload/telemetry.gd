@@ -43,9 +43,10 @@ var _day_open := false
 ## `""` when the log is in memory only, which is what the test suite runs on.
 var _run_dir := ""
 ## How many times `begin_day()` has opened each day number this run. A nerve buys another attempt
-## at the same day without the calendar advancing — see `GameState.finish_day()` — so `begin_day`
-## is called again with the day number it just failed at, and this is what lets the second
-## attempt's pictures say so instead of overwriting the first's. Reset at the start of a run.
+## at the same day without the calendar advancing — see `GameState.calendar.finish_day()` — so
+## `begin_day` is called again with the day number it just failed at, and this is what lets the
+## second attempt's pictures say so instead of overwriting the first's. Reset at the start of a
+## run.
 var _day_attempts := {}
 ## The day currently open's attempt number, `1` on a first attempt — mirrors
 ## `_day_attempts[day]` for whichever day that is, kept as its own field so nothing that names a
@@ -195,9 +196,10 @@ func begin_memory_log() -> void:
 ## Starts a day's section. Everything after this is timestamped from zero.
 ##
 ## **Also where the attempt is counted.** A nerve retries a lost day without the calendar
-## advancing — see `GameState.finish_day()` — so this is called again with the same `day`, and
-## `_day_attempts[day]` counts how many times that has happened. `_attempt` is a first attempt
-## (`1`) until it is not, and `_attempt_suffix()` is what turns that into a filename fragment.
+## advancing — see `GameState.calendar.finish_day()` — so this is called again with the same
+## `day`, and `_day_attempts[day]` counts how many times that has happened. `_attempt` is a
+## first attempt (`1`) until it is not, and `_attempt_suffix()` is what turns that into a
+## filename fragment.
 func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float) -> void:
 	_open_a_day(day, "day %-2d act %d  run seed %d  city seed %d  length %.1fs"
 			% [day, act, run_seed, city_seed, length])

@@ -180,7 +180,7 @@ func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			state.begin_day(map.block_plans, day)
 			GameState.posters.photograph()
-			city.start_day(state, day, GameState.day_rng(day, "closures"))
+			city.start_day(state, day, GameState.calendar.day_rng(day, "closures"))
 			var cells := GameState.posters.cells
 			if day < PosterWalls.FIRST_DAY:
 				t.check(cells.is_empty(), "seed %d: nothing is on a wall on day %d" % [seed_value, day])
@@ -269,7 +269,7 @@ func _check_a_retry_pastes_the_same_dawn(t, city: City, state: CityState, day: i
 	var first := GameState.posters.to_data()
 	GameState.posters.give_back()
 	GameState.posters.pasted_through = mini(GameState.posters.pasted_through, day - 1)
-	city.start_day(state, day, GameState.day_rng(day, "closures"))
+	city.start_day(state, day, GameState.calendar.day_rng(day, "closures"))
 	t.check(GameState.posters.to_data()["cells"] == first["cells"],
 			"seed %d: a retried day %d pastes the same dawn" % [seed_value, day])
 

@@ -94,6 +94,15 @@ that already have one.
   which takes `-2` and on for a second item from one entry): what to do, where to look, and the
   question a run answers, its steps written as prose rather than numbered.
 
+**An entry whose work is mostly built is closed, and what is left of it is filed fresh** (inbox #926 in
+tiny-lark). When only a few leftover items hang on an entry otherwise built, its record is written,
+its folder goes, and what is left is filed as a fresh entry (`tools/new-name.sh todo`) dated the day
+it is filed, so the queue holds no entry that lingers for months on its last items. The fresh entry opens
+with the player's words, names the old entry by its two words (or number) and title, and carries the
+old item's text where it still holds; a band the player did not name is the filer's proposal, as
+above. Closing an entry whose items the player has let go is a drop, and the pull request quotes the
+player's words for it (`Dropped: <path> — "<the player's words>"`, **pr-review**).
+
 The failure mode is specific and it is not laziness: **a finding arrives as a complaint plus a
 design**, the complaint is the part that is easy to restate, and the design is the part that took
 the player thought. **Record the design even when you are about to fix the complaint**, and record

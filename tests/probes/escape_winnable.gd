@@ -13,7 +13,7 @@ extends RefCounted
 ##
 ## **What it measures, per seed.** The section's plan as a straight city boot builds it
 ## (`--start-escape city`: `GameState.start_run(seed)`, the city built from the run seed, the plan
-## drawn from `GameState.day_rng(day, "finale")` under the city section's spec, as
+## drawn from `GameState.calendar.day_rng(day, "finale")` under the city section's spec, as
 ## `main._plan_the_finale_city()` draws it): how many of the escape's four rows stand on its open
 ## streets and how many streets stand none, for every mix. **And for the game's own bag, the game
 ## walking it**: one headless run of the real game per exit, booted `--start-escape city --seed
@@ -122,7 +122,7 @@ func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionar
 	t.add_child(city)
 	city.build(CityGenerator.generate(GameState.header.run_seed))
 	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(GameState.attempt_spend.city_state, day, GameState.day_rng(day, "closures"), _city_spec())
+	city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"), _city_spec())
 	var found: Array[Dictionary] = []
 	for mix in mixes:
 		var walk := FinalePlanner.route(city.map)
@@ -141,7 +141,7 @@ func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionar
 ## bag is drawn on (`EventScheduler.street_bag_seed()`).
 func _plan(map: CityMap, walk: FinalePlanner.Plan, day: int,
 		mix: Dictionary) -> Array[EventScheduler.Planned]:
-	var rng := GameState.day_rng(day, "finale")
+	var rng := GameState.calendar.day_rng(day, "finale")
 	var spec := _city_spec()
 	if mix.has("slots"):
 		var counts: Array = mix["counts"]

@@ -797,7 +797,7 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 		var first := EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed)
 		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
 		# where it becomes real — `EventScheduler._place_one_shots`. And a lost day gives back what
-		# it spent (`GameState.finish_day`), so every retry is the same day down to the fire itself.
+		# it spent (`RunCalendar.finish_day`), so every retry is the same day down to the fire itself.
 		# The other direction, the day after it burned on a day she won, is the loop below this one.
 		t.check(consumed.is_empty(),
 				"seed %d: planning day %d spends nothing on its own" % [run_seed, day])

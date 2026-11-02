@@ -290,7 +290,7 @@ var _fenced_park_state := Vector2i(-1, -1)
 var _fenced_park_state_act := 0
 var _act_for_the_next_repaint := 0
 
-## The calm areas she has used this act (`GameState.settled_this_act()`), for the **next**
+## The calm areas she has used this act (`GameState.calendar.settled_this_act()`), for the **next**
 ## `repaint()` to shut where it can. `Main._start_day()` hands them over just before
 ## `City.start_day()` repaints the city, and the repaint reads them once and forgets them: the
 ## escape's own repaint (`City.start_day()` under the city section's spec) comes with no handover and shuts nothing, and a

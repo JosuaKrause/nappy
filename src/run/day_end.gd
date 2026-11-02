@@ -18,9 +18,9 @@ var exit_reached := -1
 ## section's own cost and screen are `main`'s.
 var is_section := false
 ## A won last day with every task done: the run goes on into the escape, so the calendar was not
-## closed (`GameState.finish_day()` not called) and the won day's nerve was given back.
+## closed (`GameState.calendar.finish_day()` not called) and the won day's nerve was given back.
 var hands_over_to_the_escape := false
 ## Whether this loss spent a normal run's last nerve, so the run goes back to its checkpoint.
 var goes_back := false
-## Whether the run ended with this day (`GameState.finish_day()` returned false).
+## Whether the run ended with this day (`GameState.calendar.finish_day()` returned false).
 var run_over := false

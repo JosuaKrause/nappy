@@ -510,7 +510,7 @@ func _refresh_header() -> void:
 		_header.text = ""
 		return
 	var text := "day %d / %d      act %d      nerves %s" % [
-		_run.header.day, Tuning.RUN_LENGTH_DAYS, _run.current_act(),
+		_run.header.day, Tuning.RUN_LENGTH_DAYS, _run.calendar.current_act(),
 		# `Texts.nerve_stars()` — every screen that shows a nerve count reads through it rather
 		# than repeating this line.
 		Texts.nerve_stars(_run.header.nerves),

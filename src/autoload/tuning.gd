@@ -149,7 +149,7 @@ const CURFEW_DAY_LENGTH_SECONDS := 180.0
 
 ## Five of the eight tasks the calendar carries (`ResistanceSteps._build()`, days 6 to 13), so a
 ## player who skips or fails three still reaches the good ending. The day-14
-## sabotage is a must on top of it: `GameState.earned_good_ending()` asks for both.
+## sabotage is a must on top of it: `GameState.calendar.earned_good_ending()` asks for both.
 const RESISTANCE_GOAL := 5
 
 

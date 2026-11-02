@@ -82,7 +82,7 @@ The events:
   gameplay -- only restart pacing"*.
 - `nappy-checkpoint-N-from-day-M` — a normal run that spent its last nerve on day M and went back to
   checkpoint N: 1 (day 1 of the same city), 4, 8 or 12 (`EventBus.went_back_to_a_checkpoint`, from
-  `GameState.finish_day()`). Sent after day M's own `lost-*`.
+  `RunCalendar.finish_day()`). Sent after day M's own `lost-*`.
 - `nappy-day-N-won` / `nappy-day-N-lost-timeout` — a day's end that names nothing further: a win
   needs no cause and a timeout's own name already says everything about a clock that ran out.
 - `nappy-day-N-lost-crying-<source>` / `nappy-day-N-lost-hard-fail-<what>` — a lost day's own name,
@@ -1311,7 +1311,7 @@ day's corridor, every event the day placed and — at dusk — the trail she act
 over it. `TelemetryMap` does the drawing.
 
 **A day played twice writes two pictures.** A nerve retries a lost day without the calendar
-advancing — `GameState.finish_day()` spends the nerve and gives the resistance's day back — so
+advancing — `RunCalendar.finish_day()` spends the nerve and gives the resistance's day back — so
 `Telemetry.begin_day()` is called again with the day it just failed at, and it counts how many
 times that has happened. Every attempt names itself, including the first —
 `day06-attempt1.png` / `day06-attempt1-dusk.png`, then `day06-attempt2.png`,

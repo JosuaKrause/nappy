@@ -701,7 +701,7 @@ func _test_resolve_target_spawn_reaches_devrig(t) -> void:
 	var rig := _rig(t)
 	rig._resistance = _resistance
 	var at := rig._resolve_target("spawn:park")
-	t.check(at == DevRig.for_spawn_target("park", _city, _resistance, GameState),
+	t.check(at == DevRig.for_spawn_target("park", _city, _resistance, GameState.header),
 			"'spawn:park' resolves exactly as DevRig.for_spawn_target('park', ...) does")
 	rig.free()
 
