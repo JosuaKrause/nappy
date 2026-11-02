@@ -64,6 +64,7 @@ class ReadoutRig:
 		stroller.free()
 
 func run(t) -> void:
+	t.gives_back_observers()
 	await _test_a_placed_player_settles_with_her_lead_and_keeps_room_limits(t)
 	await _test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	await _test_the_readout_flag_shows_it_on_a_release_build(t)
@@ -91,6 +92,8 @@ func run(t) -> void:
 	_test_is_rig_from_args(t)
 	_test_rig_quit_seconds_from(t)
 	ControlsMode.forget()
+	# The restart wiring the suite drove stamped the title's guard; give it back.
+	TitleScreen._restarted_at_msec = -INF
 	GameState.start_run(SEED)
 
 # ------------------------------------------------------------------ finding and booting ---

@@ -15,6 +15,7 @@ const STEP := 1.0 / 60.0
 const RULE_SEEDS := 3
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_step_table(t)
 	_test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t)
 	_test_step_selection(t)

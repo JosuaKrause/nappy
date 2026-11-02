@@ -29,6 +29,7 @@ class FakeOwner:
 	var part := RunHeader.new()
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE_PATH))

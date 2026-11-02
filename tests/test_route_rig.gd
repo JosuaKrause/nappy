@@ -24,6 +24,7 @@ var _saved_progress: int
 var _saved_package: bool
 
 func run(t) -> void:
+	t.gives_back_observers()
 	# Which ground the rig's targets resolve to depends on the run's seed: these checks hold on seeds
 	# 4 and 5 and fail on 1, 2 and 3.
 	GameState.start_run(4)

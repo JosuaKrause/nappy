@@ -3,6 +3,7 @@ extends RefCounted
 
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_b_and_the_rig_action_choose_the_burst(t)
 	_test_headless_and_overlapping_requests_refuse_before_a_capture_wait(t)
 	_test_unique_paths_and_manifest_timing(t)

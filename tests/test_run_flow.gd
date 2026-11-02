@@ -10,6 +10,7 @@ const BOOT_FRAMES := 30
 var _saved_paused := false
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_raising_a_brief_announces_it(t)
 	_test_each_screen_continues_to_its_step(t)
 	_test_a_continue_from_a_screen_the_run_has_left_leads_nowhere(t)

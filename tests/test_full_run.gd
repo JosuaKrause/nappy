@@ -15,6 +15,7 @@ const SIMULATED_SECONDS := 25.0
 const SIMULATION_STEP := 0.1
 
 func run(t) -> void:
+	t.gives_back_observers()
 	for seed_value in SEEDS:
 		_play_a_run(t, seed_value)
 

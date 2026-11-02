@@ -36,6 +36,7 @@ var _day: DayController
 var _results: Array[GameEnums.DayResult] = []
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_invincible_from_args(t)
 	_test_invincible_from_query(t)
 	_test_crying_does_not_end_the_day_under_invincible(t)

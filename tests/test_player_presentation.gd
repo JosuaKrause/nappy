@@ -8,6 +8,7 @@ const VIEWS: Array[String] = ["side", "front_diagonal", "front", "front_diagonal
 const POSES: Array[String] = ["a", "c", "b"]
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_seeded_equal_choice_and_lifetime(t)
 	_test_main_binds_both_complete_families_before_drawing(t)
 	_test_every_family_source_is_a_baked_region(t)

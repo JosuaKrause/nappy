@@ -24,6 +24,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 
 func run(t) -> void:
+	t.gives_back_observers()
 	AtlasLibrary.reset_for_tests()
 	_test_each_parent_has_a_page_of_their_own(t)
 	_test_the_indicators_share_the_ui_page(t)

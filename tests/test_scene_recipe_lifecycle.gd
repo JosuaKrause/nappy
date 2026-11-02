@@ -214,6 +214,7 @@ func fail(message: String) -> void:
 """
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var stem := "user://scene_recipe_lifecycle_%d" % OS.get_process_id()
 	var script_path := stem + ".gd"
 	var scene_path := stem + ".tscn"

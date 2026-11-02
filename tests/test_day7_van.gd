@@ -19,6 +19,7 @@ const ROW := "delivery_van"
 const STEP := 0.1
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var met := 0
 	for seed_value in SEEDS:
 		if _a_mark_puts_a_van_on_her_route(t, seed_value):

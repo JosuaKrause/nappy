@@ -26,6 +26,7 @@ const TITLE_SCREEN_SCENE := preload("res://scenes/ui/title_screen.tscn")
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_wants_rotation_only_for_a_portrait_touch_window(t)
 	_test_content_scale_size_matches_the_rotated_or_unrotated_design_box(t)
 	_test_the_transform_sends_the_design_centre_to_the_rotated_centre(t)
@@ -299,7 +300,11 @@ func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScr
 
 ## Global `Input` state, same reason `test_touch.gd` cleans it up: nothing here is scoped to this
 ## suite's own nodes.
+## A touch fed through `_input` presses the pause action through buffered input, which the engine
+## applies at the next frame; the buffer is flushed first so that the release is the last word and
+## the press does not land after the suite is over.
 func _release_actions() -> void:
+	Input.flush_buffered_events()
 	Input.action_release(&"move_left")
 	Input.action_release(&"move_right")
 	Input.action_release(&"move_up")

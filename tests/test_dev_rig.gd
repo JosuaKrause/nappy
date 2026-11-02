@@ -22,6 +22,7 @@ var _saved_progress: int
 var _saved_package: bool
 
 func run(t) -> void:
+	t.gives_back_observers()
 	# The siting reads the run's seed: these checks hold on seed 2 and fail on seed 1.
 	GameState.start_run(2)
 	_build_day(t)

@@ -13,6 +13,7 @@ var _day: DayController
 var _results: Array[GameEnums.DayResult] = []
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_map = CityGenerator.generate(SEED)
 	_test_start_sets_the_clock(t)
 	_test_running_out_of_daylight_loses(t)

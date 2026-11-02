@@ -356,6 +356,8 @@ func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
 
 	title.close()
 	title.free()
+	# The stamp is a static that outlives the title; give it back.
+	TitleScreen._restarted_at_msec = -INF
 
 ## The title screen is **not** a pause, and the difference is the whole of what is behind it.
 ## *(M38: "as title screen just use the home and street in front without player and let act I events

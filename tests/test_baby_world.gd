@@ -20,6 +20,7 @@ const SEED := 4216201080
 const DAY := 1
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_a_baby_with_no_world_is_neutral(t)
 	_test_a_baby_answers_for_the_world_she_is_handed(t)
 	_test_the_escape_hands_her_the_building_then_the_city(t)

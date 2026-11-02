@@ -24,6 +24,7 @@ const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)
 

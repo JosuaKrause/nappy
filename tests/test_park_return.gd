@@ -25,6 +25,7 @@ const REACTION := 2.0
 const _SCRATCH_PATH := "user://test_park_return_scratch.json"
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
 	GameSave.set_path_override(_SCRATCH_PATH)
 	for seed_value in SEEDS:

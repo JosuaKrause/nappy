@@ -8,6 +8,7 @@ extends RefCounted
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_the_crowd_does_not_meet_her_behind_the_title(t)
 	_test_the_escapes_city_is_handed_the_controls_cover(t)
 
