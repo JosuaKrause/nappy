@@ -240,9 +240,11 @@ cues' own drawing:
 **A caller that sets a canvas transform around a mirrored sprite publishes it.**
 `Sprites.draw_standing()` is the only mirrored draw path in the game, and it can only set an
 absolute matrix. So a caller pairs its own `draw_set_transform*` with
-`Sprites.set_base_transform()`, and clears it back to `Transform2D.IDENTITY` when the pass ends;
-`Sprites.mirrored_transform()` composes the mirror under it. `EntityHalo._on_draw()` and
-`EventLook.draw()` are the two callers. A caller that forgets draws every mirrored halo offset
+`Sprites.set_base_transform(canvas, base)`, which tells the canvas item being drawn on (the
+transform is a property of that canvas's pass, held on it and read back by `draw_standing()`, not a
+global), and sets it back to `Transform2D.IDENTITY` when the pass ends;
+`Sprites.mirrored_transform(canvas, at)` composes the mirror under it. `EntityHalo._on_draw()`,
+`EventLook.draw()` and `CrowdAgent._draw()` are the three callers. A caller that forgets draws every mirrored halo offset
 on top of the body, with no rim.
 
 **A redraw gate is a promise about everything the drawing reads.** An event's look (`EventLook`)

@@ -208,7 +208,7 @@ func _layer_region_name(filename: String) -> StringName:
 ## `resource_path` — the check that distinguishes "composed from the page" from "a picture that
 ## was loaded".
 func _test_the_ground_is_one_composed_sheet(t) -> void:
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new())
 	t.check(composed != null, "the ground TileSet composes at all")
 	if composed == null:
 		return
@@ -290,7 +290,7 @@ func _test_every_tile_is_the_page_the_manifest_asked_for(t) -> void:
 	if page == null:
 		return
 	var manifest := _composition_recipe()
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new())
 	if composed == null:
 		return
 	var twin_ids: Dictionary = {}
@@ -331,8 +331,8 @@ func _test_every_tile_is_the_page_the_manifest_asked_for(t) -> void:
 ## Two builds of the same authored TileSet are the same pixels: the day repaint starts from the
 ## authored file every time, so layers can never accumulate across days.
 func _test_a_repaint_composes_the_same_pixels_again(t) -> void:
-	var first := GroundLayers.build_tile_set(AUTHORED_GROUND)
-	var second := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var first := GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new())
+	var second := GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new())
 	if first == null or second == null:
 		t.check(false, "both repaints compose a TileSet")
 		return

@@ -564,7 +564,7 @@ static func _read_now(run: RunState) -> Dictionary:
 	# drop one for a fresh title screen. `JSON.parse_string()` reports the same failure by printing
 	# an engine `ERROR: Parse JSON failed…` on its way to returning null, which is right for code
 	# that never expects bad JSON and wrong here; the instance form reports through its own return
-	# value instead and prints nothing, the same shape `GroundLayers._load_manifest()` already uses
+	# value instead and prints nothing, the same shape `GroundRecipe` already uses
 	# for a manifest file that also may not parse.
 	var parser := JSON.new()
 	if parser.parse(text) != OK:
