@@ -377,6 +377,8 @@ src/
 	                       ordinary input path; presses an escape brief's continue as a key would
 	building_walker.gd    --route in the escape's building: presses the building's brief and walks
 	                       her door to door to the service exit, then the city's rig takes over
+	brief_presser.gd      presses an escape section's first brief for a rig, as a key would; the
+	                       rig and the walker each hold one, told which sections it answers
 	debug_readout.gd      the developer's furniture: the right-hand readout, the frame graph, the
 	                      debug overlays and routes, their keys and the snapshot keys
 	debug_layers.gd       the fields, shadows and bounding-box overlays, one number key apiece
