@@ -367,12 +367,11 @@ func _touched_from_standable_ground(director: ResistanceDirector, item: Vector2,
 ## ground the day's obstruction leaves open, going on only from a tile inside the `NEAR_THE_MARK`
 ## circle round her — a tile at or past its edge is where that path reaches the edge. The
 ## obstruction is the director's own as it placed the day's first contact
-## (`director._reach_blocked`), so a task's own body placed after it (day 11's mast) does not shut
-## its own tile: the one private read left in this rig, which `reach_narrow` and `reach_relocated`
-## take with them when they move onto public seams (by reading the circle before the mark is read).
+## (`ResistanceDirector.reach_obstruction()`), so a task's own body placed after it (day 11's mast)
+## does not shut its own tile.
 func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 	var map := _city.map
-	var blocked: Dictionary = director._reach_blocked
+	var blocked := director.reach_obstruction()
 	var start := map.world_to_tile(her)
 	var centre := map.tile_to_world(start)
 	var edge := {}
@@ -391,6 +390,37 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 				inside[next] = true
 				queue.append(next)
 	return [edge, inside]
+
+## The tiles her paths from `her` reach at least `near` and less than `far` from her own tile's
+## centre, over walkable ground the day's obstruction leaves open
+## (`ResistanceDirector.reach_obstruction()`), walked on past the circle's edge. `tile -> true`.
+func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: float,
+		far: float) -> Dictionary:
+	var map := _city.map
+	var blocked := director.reach_obstruction()
+	var found := {}
+	var start := map.world_to_tile(her)
+	if not map.is_walkable(start):
+		return found
+	var centre := map.tile_to_world(start)
+	var seen := {start: true}
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + step
+			if seen.has(next) or not map.is_walkable(next) or blocked.has(next):
+				continue
+			seen[next] = true
+			var distance := map.tile_to_world(next).distance_to(centre)
+			if distance >= far:
+				continue
+			if distance >= near:
+				found[next] = true
+			queue.append(next)
+	return found
 
 ## Plans `day` on the test city in the real day order (closures, events, resistance) for
 ## `seed_value`, and reads the day's mark standing on it with her screen the view around her:

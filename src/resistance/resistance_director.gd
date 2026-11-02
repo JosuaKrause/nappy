@@ -1826,6 +1826,11 @@ func _where_she_read_it(mark: Vector2) -> Vector2:
 ## where a path reaches the circle's edge — for the run log and the tests.
 var _fell_back := false
 
+## `_fell_back`, read: whether the last task placed near a mark stood on the nearest place rather than
+## where a path reaches the circle's edge.
+func fell_back() -> bool:
+	return _fell_back
+
 ## The tile of `candidates` nearest `mark` that every placement refusal here leaves alone — legal
 ## ground (`SpawnSiting.CONTACT_GROUND`), reachable from home, off her screen — or
 ## `Vector2.INF` when none does. `_pick_near()`'s fallback.
@@ -2599,6 +2604,19 @@ func _ensure_reachability() -> void:
 func _reachable_from_home(tile: Vector2i) -> bool:
 	_ensure_reachability()
 	return _reach_grid.reaches(tile, _reach_blocked, _reach_reached)
+
+## **The reach, read by whoever asks what the day leaves her** — a test, a tool: `reaches_from_home()`
+## is `_reachable_from_home()`'s answer, and `reach_obstruction()` the tiles the day's obstruction
+## shuts (`tile -> true`: the catalogue's bodies and discs, today's closures, the seals and the soft
+## seals' bands), as they stood when the day's first placement asked and until the day ends — a body
+## a task puts up after that (day 11's added mast) is not in it, so the ground its own task stands on
+## is not shut by it. A copy; the director's own is never handed out.
+func reaches_from_home(tile: Vector2i) -> bool:
+	return _reachable_from_home(tile)
+
+func reach_obstruction() -> Dictionary:
+	_ensure_reachability()
+	return _reach_blocked.duplicate()
 
 ## **One tick of the resistance's day**, run by `main` on every physics tick the walk stepped, the
 ## same tick its play time counts (`main._physics_process()`): the happenings, the note's lingering
