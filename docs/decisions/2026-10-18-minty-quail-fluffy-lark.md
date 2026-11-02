@@ -18,9 +18,9 @@ stays open for the statics read across the tree.
   (`use_sitting_home(node)`, the tree's root by default), else builds one; `_reload_the_scene()`,
   which every reload goes through, parks it there first, before a test's own reload too. `main`
   hands it to the title, the recorder and the symbol; nothing below `main` fetches it.
-- A test of a lone title, recorder or symbol hands in a fresh `Sitting`; the held-restart, day-14 hand-over and checkpoint tests boot
-  the next `main` with only the home, checking it took the parked one (with the park or the lookup
-  removed, 15 and 8 checks fail). The runner resets none of these fields.
+- A test of a lone title, recorder or symbol hands in a fresh `Sitting`; the held-restart, day-14
+  hand-over and checkpoint tests boot the next `main` with only the home, checking it took the parked
+  one (with the park or the lookup removed, 15 and 8 checks fail). The runner resets none of these fields.
 
 **Open to overturn** (the builder's choices where the brief was silent): a node `main` parks rather
 than a new autoload (an autoload is fetchable from anywhere) or `GameState` (a held restart throws
