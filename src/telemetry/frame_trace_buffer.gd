@@ -20,6 +20,10 @@ func _init(capacity: int = CAPACITY) -> void:
 	_capacity = clampi(capacity, 1, CAPACITY)
 	_values.resize(_capacity * COLUMNS.size())
 
+## How many cells the buffer holds in all, whatever it has captured; it never grows past its first size.
+func storage_size() -> int:
+	return _values.size()
+
 ## Pauses and title screens break the interval: resuming must not manufacture a slow frame.
 func break_interval() -> void:
 	_previous_usec = -1

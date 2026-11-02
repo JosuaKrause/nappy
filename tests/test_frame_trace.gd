@@ -18,7 +18,7 @@ func run(t) -> void:
 	var rows: Array = report.samples
 	t.check(rows.size() == 4 and report.dropped_after_capacity == 1,
 		"a full buffer preserves captured frames and counts the omitted tail")
-	t.check(buffer._values.size() == 4 * FrameTraceBuffer.COLUMNS.size(),
+	t.check(buffer.storage_size() == 4 * FrameTraceBuffer.COLUMNS.size(),
 		"overflow never grows storage")
 	t.check(rows[1][0] == 1040000 and rows[1][1] == 21 and rows[1][2] == 19,
 		"the slow interval retains its raw timestamp and both engine frame IDs")

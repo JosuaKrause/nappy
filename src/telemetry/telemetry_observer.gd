@@ -181,7 +181,7 @@ var _path_branches: Array[int] = []
 ## Where she actually went today, for the dusk map to draw against the corridor above. Each point
 ## is `(x, y, run_excess_ratio)` — a third component on the one trail rather than a second trail to
 ## keep in step with it, since running is a property of a stretch of the walk and not a separate
-## picture. Sampled by distance (`TRAIL_SAMPLE_DISTANCE`), not by frame; see `_watch_the_trail`.
+## picture. Sampled by distance (`TRAIL_SAMPLE_DISTANCE`), not by frame; see `watch_the_trail`.
 ## Cleared in `start_day()`, same as everything else below it: a rewound day was not walked.
 var _trail: Array[Vector3] = []
 ## The last point actually recorded, so the next one can be measured against it. `_trail` is not
@@ -192,7 +192,7 @@ var _trail_last := Vector2.ZERO
 ## Which planned events she actually met today — came within `def.outer_radius` of, the field she
 ## can feel — keyed by the `EventScheduler.Planned` itself so the dusk map can ask "was this one of
 ## them" with no second identifier to keep in sync with the plan list it is already drawing. See
-## `_watch_met_events`.
+## `watch_met_events`.
 var _met_events := {}
 
 # When a bump was last written down, and how many have gone unwritten since.
@@ -235,12 +235,12 @@ var _last_closure_at := -1000.0
 var _contact_seen := false
 
 # What the frames are costing. Time since the last `frame` entry and the longest single frame
-# seen since it, both in frame seconds rather than day seconds — see `_watch_the_frame`.
+# seen since it, both in frame seconds rather than day seconds — see `watch_the_frame`.
 var _frame_since := 0.0
 var _frame_worst := 0.0
 
 ## Whether `--spikes` was given, handed in through `setup()` or `setup_escape()` so a builder
-## cannot leave it out — `_watch_the_frame` must cost nothing but this one check while the flag is
+## cannot leave it out — `watch_the_frame` must cost nothing but this one check while the flag is
 ## off.
 var spikes_on := false
 
@@ -305,6 +305,22 @@ func _listen() -> void:
 	EventBus.pelican_sighted.connect(_on_pelican_sighted)
 	EventBus.pelican_struck_her.connect(_on_pelican_struck_her)
 
+## The street map the street, calm-ground and closure watchers read their tiles from.
+func watch_map(map: CityMap) -> void:
+	_map = map
+	_world_map = map
+
+## The player the per-frame watchers read: her position, her input, whether she is held.
+func watch_player(player: Stroller) -> void:
+	_player = player
+
+## The player and the city the observer was handed, or `null` while it has none.
+func player() -> Stroller:
+	return _player
+
+func city() -> City:
+	return _city
+
 ## Section one: the building's map, and the events walked among in it. No `CityMap`, so the street,
 ## calm-ground and closure watchers have nothing to ask and say nothing.
 func watch_building(map: WorldMap, events: Node) -> void:
@@ -320,8 +336,7 @@ func watch_building(map: WorldMap, events: Node) -> void:
 ## the chains' stops — are written exactly as a day writes them.
 func watch_city(city: City) -> void:
 	_city = city
-	_map = city.map
-	_world_map = city.map
+	watch_map(city.map)
 	_keeps_a_trail = true
 	_events = city.events
 	_escape_section = "the city"
@@ -470,15 +485,15 @@ func _process(delta: float) -> void:
 	_watch_the_meters()
 	_watch_running()
 	_watch_idling(delta)
-	_watch_blocked(here)
+	watch_blocked(here)
 	_watch_direction(delta)
-	_watch_what_is_near(here)
+	watch_what_is_near(here)
 	_watch_the_chase(here, delta)
 	_watch_closures(here)
 	_watch_the_contact(here)
-	_watch_the_trail(here)
-	_watch_met_events(here)
-	_watch_the_frame(delta)
+	watch_the_trail(here)
+	watch_met_events(here)
+	watch_the_frame(delta)
 
 ## What the frames are costing, once a second — the one entry that is about the **device** rather
 ## than about the day, and the only way a session played on a phone or on the web page can be read
@@ -496,7 +511,7 @@ func _process(delta: float) -> void:
 ## **The worst frame in the interval is on the line, not an average of them.** "A bit laggy" is a
 ## hitch, and a mean is the statistic a hitch hides in; one `maxf` a frame is what makes the
 ## complaint measurable rather than a matter of opinion.
-func _watch_the_frame(delta: float) -> void:
+func watch_the_frame(delta: float) -> void:
 	_frame_worst = maxf(_frame_worst, delta)
 	# The one extra cost of `--spikes`, and the only one: with the flag off this is a boolean
 	# check and nothing else, same as the rest of this file with telemetry off.
@@ -519,7 +534,7 @@ func _watch_the_frame(delta: float) -> void:
 ## fps is way above 60" — a 16 to 24ms frame most seconds, two to three times its neighbours,
 ## with nothing saying when it falls or what ran in it.)*
 ##
-## **Reuses `_watch_the_frame`'s own interval rather than a trailing window of its own** — the
+## **Reuses `watch_the_frame`'s own interval rather than a trailing window of its own** — the
 ## mean is of every frame since the last report and starts again every `FRAME_REPORT_INTERVAL`,
 ## never a rolling second, because the question is "which frame in *this* second was the
 ## outlier" rather than "what does this instant look like against the second before it", and the
@@ -550,7 +565,7 @@ func _watch_for_a_spike(delta: float) -> void:
 
 ## What changed since the previous frame, read off state this observer already holds for other
 ## entries — `_tile_of()` for the tile every line names and `_live()` for
-## `_watch_what_is_near`'s scan — rather than a new per-frame hook on a gameplay class, which
+## `watch_what_is_near`'s scan — rather than a new per-frame hook on a gameplay class, which
 ## the **telemetry** rule rules out. `"nothing else changed that frame"` is itself an answer: it
 ## says the spike was not the game doing extra work, which is the other half of the question the
 ## probe exists to ask.
@@ -918,7 +933,7 @@ func _ground_at(world_position: Vector2) -> String:
 ## `BLOCKED_REPORT_INTERVAL` after that while it persists: the same throttle `_on_bumped` uses,
 ## for the same reason — a wall that is still there a second later is one finding continuing,
 ## not a new one.
-func _watch_blocked(here: Vector2) -> void:
+func watch_blocked(here: Vector2) -> void:
 	if _player and _player.is_detained():
 		# A capture holds input the same way a wall does — pressed, going nowhere — and without
 		# this a `chatting_mother` conversation writes itself down twice, once as `chat` and once
@@ -1006,7 +1021,7 @@ func _because_of_a_closure() -> String:
 ## What came within reach, and whether it kept coming. The threshold is the event's own outer
 ## radius — the distance at which it starts to reach the meter — so nothing here invents a
 ## number about what "near" means.
-func _watch_what_is_near(here: Vector2) -> void:
+func watch_what_is_near(here: Vector2) -> void:
 	var live := {}
 	for instance in _live():
 		if instance.is_finished:
@@ -1196,7 +1211,7 @@ func _watch_the_contact(here: Vector2) -> void:
 ## The point carries `Stroller.run_excess_ratio()` as its third component rather than a second
 ## trail, because running is a property of a stretch of the one walk, not a separate walk of its
 ## own — the same reasoning `_watch_running` uses for the `run` entry, one attribute richer.
-func _watch_the_trail(here: Vector2) -> void:
+func watch_the_trail(here: Vector2) -> void:
 	if not _keeps_a_trail:
 		return
 	if not _trail.is_empty() and here.distance_to(_trail_last) < TRAIL_SAMPLE_DISTANCE:
@@ -1213,7 +1228,7 @@ func _watch_the_trail(here: Vector2) -> void:
 ##
 ## Once a plan is met it stays met for the rest of the day: the dictionary is never cleared except
 ## in `start_day()`, so streaming an event back out and in again does not un-meet it.
-func _watch_met_events(here: Vector2) -> void:
+func watch_met_events(here: Vector2) -> void:
 	if not _city:
 		return
 	for plan in _city.events.plans():

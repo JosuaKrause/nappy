@@ -84,7 +84,7 @@ func is_active() -> bool:
 ## - `<run>` is the individual run, and its name now carries what used to be split across two
 ##   folder levels: `run-` or `rig-` (see `played` below — the distinction `tools/stats.sh` counts
 ##   separately and `tools/telemetry.sh -l` lists), the full `HHMMSS` time of day, the seed, and
-##   last `_file_tag()` — the `git describe` form the run was played on (`v0.0.0-49-gab12cd3`), or
+##   last `file_tag()` — the `git describe` form the run was played on (`v0.0.0-49-gab12cd3`), or
 ##   the same with `-dirty` appended. `tools/telemetry.sh -p` compares that tail against the same
 ##   `git describe`, computed once as `HEAD_COMMIT`, by path alone, to say what is stale. Repeating
 ##   the hour and minute the parent folder already carries is a few redundant characters, and what
@@ -108,12 +108,12 @@ func is_active() -> bool:
 ## collecting from a stranger's browser because of a query string nobody documented is exactly what
 ## a release build carrying no modifiers rules out. A debug build answers immediately: the browser
 ## used to debug a web build is its own debug export (`tools/export-web.sh debug`).
-## `_reads_the_url()` below is the gate itself, pure so the promise is a truth table a test can
+## `reads_the_url()` below is the gate itself, pure so the promise is a truth table a test can
 ## check.
 func _web_override_requested() -> bool:
-	if _config == null or not _reads_the_url(_config.debug_build, OS.get_name() == "Web"):
+	if _config == null or not reads_the_url(_config.debug_build, OS.get_name() == "Web"):
 		return false
-	return _telemetry_flag_from_query(_config.page_query)
+	return telemetry_flag_from_query(_config.page_query)
 
 ## The decision behind `_web_override_requested()`'s own gate, pulled out to a pure function of its
 ## two inputs so the promise is a truth table a test can check rather than a build type nothing can
@@ -121,14 +121,14 @@ func _web_override_requested() -> bool:
 ## site, and the next modifier this project gains should have an obvious static function to copy,
 ## not a dependency to go find. debug and web is the one case `?telemetry=1`
 ## exists for; release and web — the published page — is the case the promise is actually about.
-static func _reads_the_url(is_debug: bool, on_web: bool) -> bool:
+static func reads_the_url(is_debug: bool, on_web: bool) -> bool:
 	return is_debug and on_web
 
 ## `"?telemetry=1"` (with or without a leading `?`, alongside any other parameter) reads as "log
 ## this run"; anything else — absent, or any other value — leaves the platform's own default in
 ## place. Pulled out from `_web_override_requested()` so a test can ask the parsing question
 ## directly, without a Web export to produce a real `window.location.search` to parse.
-static func _telemetry_flag_from_query(query: String) -> bool:
+static func telemetry_flag_from_query(query: String) -> bool:
 	var trimmed := query.trim_prefix("?")
 	for pair in trimmed.split("&"):
 		var parts := pair.split("=")
@@ -157,7 +157,7 @@ func begin_run(run_seed: int, played := true) -> void:
 	var day_folder := stamp.get_slice("T", 0)
 	var time_part := stamp.get_slice("T", 1).replace(":", "")
 	_run_dir = "%s/%s/%s-%s-seed%d-%s" % [DIRECTORY, day_folder,
-			"run" if played else "rig", time_part, run_seed, _file_tag()]
+			"run" if played else "rig", time_part, run_seed, file_tag()]
 	if DirAccess.make_dir_recursive_absolute(_run_dir) != OK:
 		push_warning("telemetry: cannot create %s" % _run_dir)
 		_run_dir = ""
@@ -198,7 +198,7 @@ func begin_memory_log() -> void:
 ## **Also where the attempt is counted.** A nerve retries a lost day without the calendar
 ## advancing — see `GameState.calendar.finish_day()` — so this is called again with the same
 ## `day`, and `_day_attempts[day]` counts how many times that has happened. `_attempt` is a
-## first attempt (`1`) until it is not, and `_attempt_suffix()` is what turns that into a
+## first attempt (`1`) until it is not, and `attempt_suffix()` is what turns that into a
 ## filename fragment.
 func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float) -> void:
 	_open_a_day(day, "day %-2d act %d  run seed %d  city seed %d  length %.1fs"
@@ -317,7 +317,7 @@ const SHOT_SPACING := 3.0
 var _shots_today := 0
 var _last_shot := -INF
 
-## Names a picture, shared by `snapshot()` and `snapshot_now()` — see `_next_shot_name()`. Counts
+## Names a picture, shared by `snapshot()` and `snapshot_now()` — see `next_shot_name()`. Counts
 ## from 1 for the life of the run, reset only in `begin_run()`/`begin_memory_log()`: neither a new
 ## day nor a retried attempt resets it, since a number that reset could repeat, which is the exact
 ## failure a clock-based name already had.
@@ -331,6 +331,19 @@ var _burst: Dictionary = {}
 var _burst_serial := 0
 var _burst_token := 0
 
+## Whether `SHOT_SPACING` has passed on the log's clock since the last automatic shot.
+func shot_is_due() -> bool:
+	return _clock - _last_shot >= SHOT_SPACING
+
+## Counts one automatic shot against the day's allowance and starts the spacing from now.
+func spend_a_shot() -> void:
+	_shots_today += 1
+	_last_shot = _clock
+
+## How many shots today's allowance has spent.
+func shots_spent() -> int:
+	return _shots_today
+
 ## Writes a PNG of the current frame beside the log, named after the moment that asked for it.
 ##
 ## Silently does nothing when there is no run being traced, when the day's allowance is spent, when
@@ -339,13 +352,12 @@ var _burst_token := 0
 func snapshot(kind: String) -> void:
 	if not _log or _log.path == "" or _shots_today >= SHOTS_PER_DAY:
 		return
-	if _clock - _last_shot < SHOT_SPACING:
+	if not shot_is_due():
 		return
 	if DisplayServer.get_name() == "headless":
 		return
-	_shots_today += 1
-	_last_shot = _clock
-	_capture("%s/%s" % [_type_dir("auto"), _next_shot_name(kind)])
+	spend_a_shot()
+	_capture("%s/%s" % [_type_dir("auto"), next_shot_name(kind)])
 
 ## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
 ## a game feature.
@@ -371,7 +383,7 @@ func snapshot_now(context: String) -> void:
 	if _log.path == "" or DisplayServer.get_name() == "headless":
 		return
 	_shots_today += 1
-	_capture("%s/%s" % [_type_dir("asked"), _next_shot_name("asked")])
+	_capture("%s/%s" % [_type_dir("asked"), next_shot_name("asked")])
 
 ## Starts one bounded animation sequence in the current run's `asked/` folder. The sequence is
 ## serialized one frame at a time so a slow PNG write cannot create an unbounded backlog, and the
@@ -565,7 +577,7 @@ func _write_burst_metadata() -> bool:
 ## **A day played twice writes two pictures.** A nerve retries a lost day without the calendar
 ## advancing, so this is called again for the same `day` — and without the attempt in the name the
 ## second attempt's maps would overwrite the first's, destroying the picture of the day that went
-## wrong. `_attempt_suffix()` names the attempt every time, including the first, so a filename is
+## wrong. `attempt_suffix()` names the attempt every time, including the first, so a filename is
 ## never ambiguous about which attempt it came from and there is only one shape to read.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
@@ -573,7 +585,7 @@ func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		corridor := true) -> void:
 	if not _log or _log.path == "":
 		return
-	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, _attempt_suffix(),
+	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, attempt_suffix(),
 			"-dusk" if at_dusk else ""]
 	# The escape's city has no corridor — its walk is two chains, not a tree — so its map draws none
 	# (`corridor` false) rather than one grown for a day that is not being walked.
@@ -603,7 +615,7 @@ func _capture(path: String) -> void:
 ## The version a run folder's name ends in — `BuildInfo.source_version()`, the `git describe` form
 ## with `-dirty` on a working tree that is not clean. `tools/telemetry.sh -p` compares a folder's
 ## tail against the same `git describe` to say what is stale.
-static func _file_tag() -> String:
+static func file_tag() -> String:
 	return BuildInfo.source_version()
 
 # ------------------------------------------------------------------ the files ---
@@ -611,7 +623,7 @@ static func _file_tag() -> String:
 ## `-attempt<N>` on every name a run writes, including the first, so every filename has the same
 ## shape and nothing that reads or matches one has to handle a suffix that is sometimes there and
 ## sometimes not. See `begin_day()`, which is where `_attempt` is counted.
-func _attempt_suffix() -> String:
+func attempt_suffix() -> String:
 	return "-attempt%d" % _attempt
 
 ## The folder one kind of picture lives in, within the current run — `auto` for the heuristic's own
@@ -638,6 +650,6 @@ func _type_dir(name: String) -> String:
 ## attempt suffix and kind are what a retried day, or a heuristic-vs-asked picture, still need to
 ## say without opening the file; the day clock the name used to carry is already in the run log's
 ## own `shot` entry.
-func _next_shot_name(kind: String) -> String:
+func next_shot_name(kind: String) -> String:
 	_shot_serial += 1
-	return "%03d%s-%s.png" % [_shot_serial, _attempt_suffix(), kind]
+	return "%03d%s-%s.png" % [_shot_serial, attempt_suffix(), kind]

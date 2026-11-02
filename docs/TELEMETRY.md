@@ -758,7 +758,7 @@ machine cannot fill the log with it, which is the whole reason it stays behind i
 `--spikes` run on a fast machine that never has a frame twice its neighbours writes none at all.
 
 **What changed** is read off state the observer already holds for other entries — the tile
-`_watch_the_ground` already looks up and the live event count `_watch_what_is_near` already scans
+`_watch_the_ground` already looks up and the live event count `watch_what_is_near` already scans
 — never a new per-frame hook added to a gameplay class. A frame she walked out of one tile and
 into the next reads:
 
@@ -1439,7 +1439,7 @@ strength and the ones she met carry the pip on top of it.
 her — not merely that `EventManager.stream_around` had loaded it into the world. Streaming happens
 at `Tuning.EVENT_STREAM_RADIUS` (900px), more than twice the reach of a typical row, so a day where
 she met eight of forty events and one where she was merely near forty are very different days, and
-only the narrower question is the one worth answering. `TelemetryObserver._watch_met_events` keeps
+only the narrower question is the one worth answering. `TelemetryObserver.watch_met_events` keeps
 the list; see "The trail" below for how it is carried to the picture.
 
 ### The trail
