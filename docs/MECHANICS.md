@@ -1922,12 +1922,11 @@ nerves, which decide only when a run ends, are restart pacing, and that is where
 
 **A checkpoint is the exact state of the run at that day's dawn.** *(gentle-osprey, the player:
 "store the exact state at the checkpoint -- continuing should not have anything that happened after
-the checkpoint".)* It is the whole run as the save carries it — the resistance's steps and progress,
+the checkpoint".)* It is the whole run as the save carries it, apart from the play time — the resistance's steps and progress,
 the scars and the spent one-shots, every block's arc, the posters, where she settled each day, the
 fenced park and the alleys a mark has used — kept by `RunCalendar.begin_day()` the
 first time a checkpoint day is begun, before anything of that day can have happened, and given back
-whole when a normal run spends its last nerve, with five nerves instead of whatever that dawn had
-and the play time it has now. A
+whole when a normal run spends its last nerve, with five nerves instead of whatever that dawn had. A
 retry of a checkpoint day, or a run sent back to one, keeps the checkpoint it has; only the next
 checkpoint day replaces it. Day 1 is not stored: the run's own seed rebuilds that dawn exactly. **The
 run's play time is the one thing that does not go back**: going back to a checkpoint, day 1's
