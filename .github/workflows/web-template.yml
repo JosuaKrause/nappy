@@ -35,15 +35,12 @@ jobs:
           sparse-checkout: |
             /*
             !/docs/evidence/
-      # Before uv is installed, as in ci.yml's `gates` job: with uv on PATH the script's trailer.sh
-      # case goes on to need ffmpeg and the Georgia editorial font, which a Linux runner does not
-      # have, and the case is written to skip itself where uv is absent.
-      - name: Check command-line and browser startup failures
-        run: ./tools/test_cli_help.sh
       - uses: astral-sh/setup-uv@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check command-line and browser startup failures
+        run: ./tools/test_cli_help.sh
       - name: Check browser scratch ownership against fixtures
         run: node --test tools/web-template/browser-scratch.test.mjs
       # The same template, export and browser check as ci.yml's `browser` job and the deploy.
