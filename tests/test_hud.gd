@@ -302,6 +302,9 @@ func _test_the_pause_hint_waits_out_a_detention(t) -> void:
 	t.add_child(watch)
 
 	await _walk_then_stop(t, stroller)
+	# Part of the stand is already earned when the detention begins: the lesson must not keep it.
+	await _stand(t, watch, 2.0, func() -> bool: return _teach(hud).line != "")
+	t.check(_teach(hud).line == "", "two seconds of her own stillness is not yet the lesson")
 	var held_for: float = hud.TEACH_PAUSE_AFTER * 2.0
 	stroller.detain(held_for)
 	await _stand(t, watch, held_for * 0.9, func() -> bool: return _teach(hud).line != "")

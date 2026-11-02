@@ -29,8 +29,8 @@ extends CanvasLayer
 @onready var _teach: HelpText = $Root/Teach
 
 ## Whether the debug header and the developer's furniture show — the build's own answer until
-## `configure()` hands the run's. A member rather than a read at each use site, so a test can flip
-## it and drive both HUD shapes without needing an actual debug build.
+## `configure()` hands the run's. A member rather than a read at each use site, so a test can
+## configure either HUD shape without needing an actual debug build.
 var _debug := OS.is_debug_build()
 ## `--invincible`, named in the debug header so no capture from such a run reads as a real one.
 var _invincible := false

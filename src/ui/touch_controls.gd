@@ -504,9 +504,9 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ##   other direction: design → presented (`ScreenOrientation.to_presented_space()`, the inverse of
 ##   `to_design_space()`) → world (`_focus_world()`, the same canvas-transform inverse used above).
 ##
-## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
-## window still instead of racing the engine clock -- `_input()` and `_on_pointer()` are the real
-## callers and supply it from `Time.get_ticks_msec()`.
+## `now` is a parameter rather than read from `Time` in here, so the double-tap window is measured
+## on the clock `use_clock()` hands in (the engine's own by default) -- `_on_pointer()` is the real
+## caller and supplies it from `_now()`.
 ##
 ## **Paused, a press does nothing at all**, the same as this file's controls drawing nothing on the
 ## title, the pause and the between-days summary. The event is left unhandled either way, so the
