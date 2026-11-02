@@ -25,6 +25,9 @@
 #     comment, a blank line, or the `window/stretch/aspect=` key;
 #   - any other change to a file that was clean is kept, and one line on stderr says so.
 # A file that already carried changes at arm time is left alone and named.
+# **Two deliberate edits cannot be told from the rewrite by content and are reverted too:** deleting
+# only `;` comment lines or blank lines from `project.godot`, and a whitespace-only change inside a
+# line of `docs/ARCHITECTURE.md`; commit such an edit, or make it outside a running tool.
 #
 # **Who sources it.** tools/check.sh, tools/test.sh, tools/cost-table.sh, tools/bake-atlases.sh,
 # tools/export-web.sh, tools/scene-draft.sh, tools/scene-recipes.sh, tools/record.sh,
@@ -87,7 +90,7 @@ import_restore_run() {
         if ! import_restore_is_rewrite "$f"; then
             echo "note: $f changed during the run and is not the known rewrite, so it was kept" >&2
         elif git -C "$IMPORT_RESTORE_DIR" checkout -- "$f"; then
-            echo "reverted $f (rewritten during the run, not by you)" >&2
+            echo "reverted $f (its change matched the known rewrite; to keep such an edit, commit it or make it outside the tool)" >&2
         else
             echo "WARNING: $f was rewritten during the run and could not be reverted" >&2
         fi

@@ -1253,6 +1253,13 @@ import_restore_run 2>/dev/null
 check_that "lib_import_restore.sh leaves a file that was already dirty alone" \
     '[[ "$(cat "$ir_repo/project.godot")" == "$(printf "\n[display]\nsize=1")" && -z "$(git -C "$ir_repo" status --porcelain -- docs/ARCHITECTURE.md)" ]]'
 rm -rf "$ir_repo"
+# Every script the helper's header lists as covered sources it and arms it.
+for ir_script in check test cost-table bake-atlases export-web scene-draft scene-recipes record trailer shot; do
+    check_that "$ir_script.sh sources lib_import_restore.sh and arms it" \
+        'rg -qF "tools/lib_import_restore.sh\"" "$root/tools/$ir_script.sh" \
+         && rg -q "^[[:space:]]*import_restore_arm " "$root/tools/$ir_script.sh" \
+         && rg -q "import_restore_run" "$root/tools/$ir_script.sh"'
+done
 
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is
