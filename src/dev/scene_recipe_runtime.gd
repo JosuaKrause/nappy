@@ -696,9 +696,9 @@ var _task_from := Vector2.INF
 func _bind_task_names() -> void:
 	if not _resistance or not data.get("setup", {}).has("task") or manifest.get("setup_failed", false):
 		return
-	var contact: ContactPoint = _resistance._contact
-	if _resistance._read_mark:
-		named["mark"] = _resistance._read_mark
+	var contact: ContactPoint = _resistance.contact()
+	if _resistance.read_mark():
+		named["mark"] = _resistance.read_mark()
 	elif contact and contact.step.is_pickup and not contact.is_done:
 		named["mark"] = contact
 		return
@@ -722,8 +722,8 @@ func _bind_task_names() -> void:
 	if named.get("task") == contact:
 		return
 	named["task"] = contact
-	if _resistance._rider:
-		named["rider"] = _resistance._rider
+	if _resistance.rider():
+		named["rider"] = _resistance.rider()
 	var step := _resistance.current_step()
 	var target := _resistance.contact_position()
 	var arrow := _resistance.red_arrow_target()
@@ -1407,7 +1407,7 @@ func _observe() -> void:
 							Vector2(float(check.half[0]), float(check.half[1])))
 				"offered":
 					passed = actor is ContactPoint and not actor.is_done and _resistance != null \
-							and _resistance._contact == actor
+							and _resistance.contact() == actor
 				"done":
 					passed = actor is ContactPoint and actor.is_done \
 							and actor.step.index in _run.resistance.completed_steps
