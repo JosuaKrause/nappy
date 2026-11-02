@@ -19,6 +19,7 @@ func run(t) -> void:
 ## the city's six masts, 1,377px and 3,948px away on two of these cities.
 func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 	var added := [0]
+	var room_days := [0]
 	for seed_value: int in [SEED, 90210, 1234567]:
 		# A city and a run of its own for every seed: the scar the task leaves is this run's.
 		_build_city_in_a_new_run(t, seed_value)
@@ -28,9 +29,12 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 		var player: Stroller = read[2]
 		var circle := _edge_of_her_circle(director, mark)
 		var site_near := false
+		# The task's mast, by the public link: the contact stands on its foot.
 		var added_plan: EventScheduler.Planned = null
 		for plan in _city.events.plans():
-			if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-"):
+			if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-") \
+					and _city.events.mast_foot(plan.mast_id).distance_to(
+					director.contact_position()) < 0.5:
 				added_plan = plan
 		for plan in _city.events.plans():
 			if plan.def.id != "loudspeaker" or plan.mast_id.begins_with("added-") or plan.silenced:
@@ -56,8 +60,6 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 					% seed_value)
 			t.check(not _would_show(ResistanceDirector.TASK_BOX, foot),
 					"seed %d: and out of her view" % seed_value)
-			var masts_before := _city.events.plans().filter(
-					func(plan: EventScheduler.Planned) -> bool: return plan.mast_id != "").size()
 			# Her touch on the task's contact, which silences the mast it stands at.
 			director.contact().complete_now()
 			var scarred := false
@@ -65,26 +67,40 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 				if String(scar["id"]) == EventScheduler.SILENCED_MAST \
 						and (scar["position"] as Vector2).distance_to(foot) < 1.0:
 					scarred = true
-			t.check(scarred, "seed %d: reaching it silences it and records its scar" % seed_value)
+			t.check(scarred and added_plan.silenced,
+					"seed %d: reaching it silences it and records its scar" % seed_value)
 			# Day 14's sabotage: lit again, the added mast is put out by `silence_all_masts()`
 			# with the others — it is that one mast's plan this asks about.
-			t.check(masts_before > 0,
-					"seed %d: the queued mast is one of the day's plans" % seed_value)
+			t.check(added_plan != null and _city.events.plans().has(added_plan),
+					"seed %d: the queued mast is one of the day's plans, the one the contact stands at"
+					% seed_value)
 			added_plan.silenced = false
 			_city.events.silence_all_masts()
 			t.check(added_plan.silenced,
 					"seed %d: day 14's sabotage puts out the queued mast too" % seed_value)
-			# The later days are planned the way the game plans them, from the run's scars.
+			# Last night's masts, planned on the day-11 map from the run's scars: the scarred
+			# mast is among them, silenced, whatever that night's closures and holds do.
+			var scars: Array[Dictionary] = []
+			scars.assign(_city.run.attempt_spend.scars)
+			var planned_bare := false
+			for plan in EventScheduler._place_masts(14, _city.map, 0, PackedVector2Array(), scars):
+				if plan.mast_id == mast_id and plan.silenced:
+					planned_bare = true
+			t.check(planned_bare,
+					"seed %d: and the last night plans it, silenced, from its scar" % seed_value)
+			# The same night as the game plans it: the mast is there unless that night's
+			# closures, holds or district doors leave it no room, and then it is absent.
 			_plan_the_day(14, seed_value)
 			var on_day_14 := false
 			for plan in _city.events.plans():
 				if plan.mast_id == mast_id and plan.silenced:
 					on_day_14 = true
-			# Planned again "on every later day whose holds, closures and doors leave the tile
-			# alone": where the last night's closures, holds or doors do not, it is not planned.
-			t.check(on_day_14 or _the_day_leaves_no_room_for(foot),
-					"seed %d: and the last night plans it, silenced, from its scar (or its closures, holds or doors leave it no room)"
-					% seed_value)
+			var no_room := _the_day_leaves_no_room_for(foot)
+			if not no_room:
+				room_days[0] += 1
+			t.check(on_day_14 == not no_room,
+					"seed %d: and on the real last night it stands exactly where the night leaves room (%s)"
+					% [seed_value, "room" if not no_room else "no room"])
 			_plan_the_day(12, seed_value)
 			var stands_again := false
 			for plan in _city.events.plans():
@@ -104,6 +120,8 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 	_free_city()
 	t.check(added[0] > 0, "some city had no mast near its day-11 mark, so one was put up (%d)"
 			% added[0])
+	t.check(room_days[0] > 0, "some seed's last night left the mast room, so it was planned (%d)"
+			% room_days[0])
 
 ## Whether the day just planned on the test city refuses a mast at `foot`: its tile closed, held or
 ## on the home block, or a district door's checkpoint within the gap and a mast's field of it

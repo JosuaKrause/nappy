@@ -130,6 +130,12 @@ var _step: ResistanceSteps.Step
 ## The `MastSites.Site.id` of the mast day 11's task was sent to, "" on every other step — kept so
 ## the touch silences the mast the arrow pointed at rather than whichever is nearest her then.
 var _mast_id := ""
+
+## The id of the mast day 11's task is on now, which a touch silences ("" on every other step): the
+## mast the red arrow last pointed at, since the contact moves with it (`_point_the_arrow_at()`).
+func mast_in_play() -> String:
+	return _mast_id
+
 ## The neighbor she did not reach, standing at her own door after the task expired — taken with the
 ## raid once she is not looking (`_take_the_neighbor_away()`). Null on every other day.
 var _taken_neighbor: EventInstance
@@ -2610,7 +2616,9 @@ func _reachable_from_home(tile: Vector2i) -> bool:
 ## shuts (`tile -> true`: the catalogue's bodies and discs, today's closures, the seals and the soft
 ## seals' bands), as they stood when the day's first placement asked and until the day ends — a body
 ## a task puts up after that (day 11's added mast) is not in it, so the ground its own task stands on
-## is not shut by it. A copy; the director's own is never handed out.
+## is not shut by it. A read builds that snapshot if no placement has asked yet (`start_day()` asks
+## first, so on a played day it is the day's first placement's). A copy; the director's own is never
+## handed out.
 func reaches_from_home(tile: Vector2i) -> bool:
 	return _reachable_from_home(tile)
 
@@ -3272,6 +3280,12 @@ const ARROW_SWEEP_TILES_PER_TICK := 1000
 ## task is placed.
 var _arrow_key: Variant = null
 var _arrow_clock := 0.0
+
+## What the red arrow points at right now (`_arrow_key` above): an instance id, a mast id, or null
+## before the task is placed. A read; asking changes nothing.
+func arrow_key() -> Variant:
+	return _arrow_key
+
 ## The finished fields the arrow reads (`WalkField`): `_arrow_nearest` swept from every target at
 ## once, which says which is closest from any tile and how far; `_arrow_own` swept from the one the
 ## arrow points at alone, which says how far that one is when another is closest — what the hold
@@ -3341,6 +3355,16 @@ func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 					"reach": touch_reach(instance),
 					"beat": instance.path if instance.def.paces else PackedVector2Array()})
 	return found
+
+## Every place that answers today's task now, as `_arrow_candidates()` has them (`{key, at, reach,
+## beat}`: the instance id of a man shouting or a roadblock, or the id of a mast): what the red arrow
+## may choose from. Empty with no step on offer, or one a single place answers.
+func arrow_targets() -> Array[Dictionary]:
+	var step := current_step()
+	if step == null or not ResistanceSteps.answers_at_several_places(step):
+		var none: Array[Dictionary] = []
+		return none
+	return _arrow_candidates(step)
 
 ## Whether `plan` is a mast that answers day 11's task: **any live mast does** *(the player, asked
 ## whether only the mast near the mark and the one rigged onto her route should: "why limit
@@ -3464,6 +3488,27 @@ func _choose_the_arrow(found: Array[Dictionary]) -> Variant:
 	if current_length < 0:
 		return nearest
 	return nearest if nearest_length <= current_length - ARROW_HOLD_TILES else current
+
+## The key of the target that is closest on foot from `tile`, in the sweep of every target that is
+## finished (`_arrow_nearest`), or null while none is or no target is reached from `tile`: what
+## `retarget_the_arrow()` reads for her tile.
+func arrow_nearest_at(tile: Vector2i) -> Variant:
+	return _arrow_nearest.nearest_at(tile) if _arrow_nearest else null
+
+## How many tiles closer on foot from `tile` the closest target is than the one the arrow points at,
+## the margin `ARROW_HOLD_TILES` is held against; a negative number while either sweep is unfinished
+## or the arrow's own target is not reached from `tile`.
+func arrow_lead_at(tile: Vector2i) -> int:
+	if not _arrow_nearest or not _arrow_own:
+		return -1
+	var to_nearest := _arrow_nearest.length_at(tile)
+	var to_own := _arrow_own.length_at(tile)
+	return to_own - to_nearest if to_nearest >= 0 and to_own >= 0 else -1
+
+## Whether a sweep of the arrow's walking fields is under way (`_sweep_the_arrow_fields()` runs one a
+## slice a tick): false once the choice has settled, and while nothing has started one.
+func arrow_sweeping() -> bool:
+	return _arrow_nearest_next != null or _arrow_own_next != null
 
 ## Whether `field` (finished or under way) was swept from exactly `found`, each standing where it
 ## stood then (`WalkField.anchor_of()`), under the blocking `versions` name.

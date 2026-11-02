@@ -394,6 +394,9 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 ## The tiles her paths from `her` reach at least `near` and less than `far` from her own tile's
 ## centre, over walkable ground the day's obstruction leaves open
 ## (`ResistanceDirector.reach_obstruction()`), walked on past the circle's edge. `tile -> true`.
+## **A deliberate copy of the director's own walk** (`_paths_reach_between()` there), kept as a test
+## oracle: day 13's check grades the director's roadblock against a walk the director does not run,
+## so if the two drift that check fails rather than passing silently.
 func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: float,
 		far: float) -> Dictionary:
 	var map := _city.map
