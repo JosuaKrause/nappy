@@ -2511,7 +2511,8 @@ static func draw_reachable(candidates: Array[Vector2i], rng: RandomNumberGenerat
 ## pool where that is common: a narrow target whose planning kept a route to only a few of its
 ## tiles. `NO_TILE` if every tile in `pool` is refused, which `_pick_reachable()` then reads the
 ## same way it reads an empty pool: nowhere to go today.
-static func _nearest_open_in_pool(pool: Array[Vector2i], from: Vector2i, open: Callable) -> Vector2i:
+static func _nearest_open_in_pool(pool: Array[Vector2i], from: Vector2i,
+		open: Callable) -> Vector2i:
 	var nearest := NO_TILE
 	var nearest_distance := INF
 	for tile in pool:
