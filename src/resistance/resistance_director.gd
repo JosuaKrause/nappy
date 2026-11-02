@@ -3168,7 +3168,8 @@ func trap() -> EventInstance:
 
 ## The district door's line day 9's crossing is watched on (`_on_door_crossed()`): where the door
 ## today's task names stands, and the street's own axis that every body of the door shares. `INF`
-## and zero on every other day.
+## and zero until a day 9 sets them; nothing clears them after, so a director reused past day 9 keeps
+## that day's door.
 func door_position() -> Vector2:
 	return _door_at
 
