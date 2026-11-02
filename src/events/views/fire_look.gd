@@ -56,7 +56,7 @@ func _draw_fire(canvas: CanvasItem) -> void:
 				against_the_wall + Vector2(flames[i].x, 0.0),
 				Vector2(flames[i].y, height))
 	# Neighboring plumes billow out of step, so a long front's smoke does not pulse as one.
-	var billowing := _idle_stepping(EventPictures.STEAM_BILLOW_PERIOD)
+	var billowing := idle_is_stepping(EventPictures.STEAM_BILLOW_PERIOD)
 	var plumes := _smoke_across(_fire_facade_runs())
 	for i in plumes.size():
 		var picture := EventPictures.STEAM_B if billowing != (i % 2 == 1) else EventPictures.STEAM

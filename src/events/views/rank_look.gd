@@ -55,13 +55,13 @@ func _cafe_table_count() -> int:
 	return maxi(1, ceili(half * 2.0 / along_natural))
 
 ## The sitter of table `i`, at one end of the table sprite, turned to face it. The lean is the whole
-## row's and the facing each seat's: `_idle_stepping()` is a property of the event rather than
+## row's and the facing each seat's: `idle_is_stepping()` is a property of the event rather than
 ## of a chair, so every sitter leans together, while the view and the mirror are picked per seat,
 ## because a party at one table faces the table rather than sharing the frontage's own bearing.
 func _draw_cafe_sitter(canvas: CanvasItem, origin: Vector2, half: float, width: float,
 		i: int) -> void:
 	var by_view := EventPictures.CAFE_SITTER_BY_VIEW_B \
-			if _idle_stepping(EventPictures.SITTER_IDLE_PERIOD) \
+			if idle_is_stepping(EventPictures.SITTER_IDLE_PERIOD) \
 					else EventPictures.CAFE_SITTER_BY_VIEW
 	var along := -half + width * (i + 0.5)
 	var alternate := i % 2 == 1
@@ -141,11 +141,11 @@ func _protest_pose_now() -> Array:
 	# stay unmirrored, since each is its own authored direction rather than a member of the
 	# mirrored five-view family.
 	if picture == EventPictures.PROTESTER:
-		var view := _select_view(event.facing_now())
-		var by_view := EventPictures.PROTESTER_BY_VIEW_B if _gait_stepping() \
+		var view := select_view(event.facing_now())
+		var by_view := EventPictures.PROTESTER_BY_VIEW_B if gait_is_stepping() \
 				else EventPictures.PROTESTER_BY_VIEW
 		picture = by_view[view]
-		mirror = EightDirection.is_mirrored(_view_sector)
+		mirror = is_mirrored()
 	return [picture, mirror]
 
 ## Where each protester of the rank drawn in `picture` stands, in draw order: the back rank, 14px up

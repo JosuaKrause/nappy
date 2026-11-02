@@ -87,7 +87,7 @@ static func footprint_of(row: EventDef) -> Rect2:
 	return box
 
 ## The furthest below its own node a row's picture is ever drawn: a car's body reach, pointed
-## straight down the screen, and its look's largest canvas margin (`EventLook._body_anchor()`); zero
+## straight down the screen, and its look's largest canvas margin (`EventLook.body_anchor()`); zero
 ## for every other row, whose pictures stand on the node. `footprint_of()` and `drawn_box_of()` add it.
 static func picture_drop_of(row: EventDef) -> float:
 	if not EventPictures.is_anchored_over_its_body(row.look) or row.shape == null:

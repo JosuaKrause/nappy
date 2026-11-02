@@ -31,11 +31,11 @@ func _draw_robber(canvas: CanvasItem) -> void:
 	# her for every frame of the telegraph and the lunge alike — `draw_body()`'s ordinary reading,
 	# `EventInstance.facing_now()`. Before that he has nothing of his own to face except the alley
 	# he was sited in, and a man only watching the street is worth nothing next to a man watching
-	# *her* — see `_robber_waiting_heading()`.
-	var heading := _robber_waiting_heading() if waiting else event.facing_now()
-	var view := _select_view(heading)
+	# *her* — see `robber_waiting_heading()`.
+	var heading := robber_waiting_heading() if waiting else event.facing_now()
+	var view := select_view(heading)
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
+			is_mirrored())
 
 ## The robber's picture for this frame: waiting, his two-frame alert walk through his notice
 ## (`is_telegraphing()`, which the sent robber, arriving already chasing, never is), and the lunge
@@ -46,9 +46,9 @@ func robber_pictures() -> Dictionary:
 	if event.is_waiting():
 		return EventPictures.ROBBER_WAITING_BY_VIEW
 	if event.is_telegraphing():
-		return EventPictures.ROBBER_ALERT_BY_VIEW_B if _gait_stepping() \
+		return EventPictures.ROBBER_ALERT_BY_VIEW_B if gait_is_stepping() \
 				else EventPictures.ROBBER_ALERT_BY_VIEW
-	return EventPictures.ROBBER_LUNGING_BY_VIEW_B if _gait_stepping() \
+	return EventPictures.ROBBER_LUNGING_BY_VIEW_B if gait_is_stepping() \
 			else EventPictures.ROBBER_LUNGING_BY_VIEW
 
 ## **The policeman on foot, drawn as the robber is.** He faces her while he is after her
@@ -57,9 +57,9 @@ func robber_pictures() -> Dictionary:
 func _draw_policeman(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var by_view := policeman_pictures()
-	var view := _select_view(event.facing_now())
+	var view := select_view(event.facing_now())
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
+			is_mirrored())
 
 ## The policeman's picture for this frame: his alert, hand raised, for the second the man out of an
 ## investigating vehicle stands beside her before he charges (`is_standing_for_its_notice()`); his
@@ -72,7 +72,7 @@ func policeman_pictures() -> Dictionary:
 		return EventPictures.POLICEMAN_ALERT_BY_VIEW
 	if _stands_still_now():
 		return EventPictures.POLICEMAN_WAITING_BY_VIEW
-	return EventPictures.POLICEMAN_LUNGING_BY_VIEW_B if _gait_stepping() \
+	return EventPictures.POLICEMAN_LUNGING_BY_VIEW_B if gait_is_stepping() \
 			else EventPictures.POLICEMAN_LUNGING_BY_VIEW
 
 ## Whether a man on foot is drawn standing rather than lunging: while he waits for her to come

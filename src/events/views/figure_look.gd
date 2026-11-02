@@ -37,7 +37,7 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			_draw_chatting_mother(canvas)
 		EventDef.Look.POSTER_CREW:
 			var crew := EventPictures.POSTER_CREW_BY_VIEW_B \
-					if _idle_stepping(EventPictures.POSTER_CREW_PASTE_PERIOD) \
+					if idle_is_stepping(EventPictures.POSTER_CREW_PASTE_PERIOD) \
 					else EventPictures.POSTER_CREW_BY_VIEW
 			_draw_eight_view(crew, event.facing_now(), canvas)
 		EventDef.Look.POSTER_CREW_SQUARE:
@@ -52,7 +52,7 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			_draw_crater(canvas)
 		EventDef.Look.STEAM:
 			_draw_simple(EventPictures.STEAM_B
-					if _idle_stepping(EventPictures.STEAM_BILLOW_PERIOD) \
+					if idle_is_stepping(EventPictures.STEAM_BILLOW_PERIOD) \
 							else EventPictures.STEAM, canvas)
 		EventDef.Look.LOUDSPEAKER_MAST:
 			_draw_mast(canvas)
@@ -90,10 +90,10 @@ func _draw_loose_dog(canvas: CanvasItem) -> void:
 	# offset stays a plain east/west span — a composite the picture underneath it does not own,
 	# same as `_draw_dog_walker`'s taut one.
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
-	var view := _select_view(event.facing_now())
-	var dog := EventPictures.dog_picture(view, _gait_stepping(), _gait_second_half())
+	var view := select_view(event.facing_now())
+	var dog := EventPictures.dog_picture(view, gait_is_stepping(), gait_is_second_half())
 	Sprites.draw_standing(canvas, EventPictures.drawn(dog), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
+			is_mirrored())
 
 func _draw_cat(canvas: CanvasItem) -> void:
 	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
@@ -103,12 +103,12 @@ func _draw_cat(canvas: CanvasItem) -> void:
 			else EventPictures.CAT_RUNNING_BY_VIEW
 	# The crouch holds still by construction (`still_while_telegraphing`), so only the dash gets a
 	# second frame — a crouching cat has nothing to stride into yet.
-	if not telegraphing and _gait_stepping():
+	if not telegraphing and gait_is_stepping():
 		by_view = EventPictures.CAT_RUNNING_BY_VIEW_B
 	_draw_body_shadow(canvas)
-	var view := _select_view(event.facing_now())
+	var view := select_view(event.facing_now())
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
+			is_mirrored())
 
 ## The tables, and the people at them.
 ##
@@ -122,17 +122,17 @@ func _draw_cat(canvas: CanvasItem) -> void:
 func _draw_crater(canvas: CanvasItem) -> void:
 	_draw_at_anchor(canvas, EventPictures.IMPACT_CRATER, EventPictures.CRATER_ANCHOR)
 
-## The busker's own site facing and idle strum — he never moves, so this reads `_idle_stepping()`
-## rather than `_gait_stepping()`, the same timer the café sitters use above at a faster tempo
+## The busker's own site facing and idle strum — he never moves, so this reads `idle_is_stepping()`
+## rather than `gait_is_stepping()`, the same timer the café sitters use above at a faster tempo
 ## (`EventPictures.BUSKER_STRUM_PERIOD`). Kept as its own function rather than routed through
 ## `_draw_eight_view()` because that helper's own `by_view_b` parameter is keyed to the gait, not
 ## the idle timer.
 func _draw_busker(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
-	var view := _select_view(event.facing_now())
-	var mirror := EightDirection.is_mirrored(_view_sector)
+	var view := select_view(event.facing_now())
+	var mirror := is_mirrored()
 	var by_view := EventPictures.BUSKER_BY_VIEW_B \
-			if _idle_stepping(EventPictures.BUSKER_STRUM_PERIOD) else EventPictures.BUSKER_BY_VIEW
+			if idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD) else EventPictures.BUSKER_BY_VIEW
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			mirror)
 
@@ -146,7 +146,7 @@ func _draw_mast(canvas: CanvasItem) -> void:
 	_draw_simple(EventPictures.MAST, canvas)
 	if event.silenced:
 		return
-	if _mast_is_telegraphing_now():
+	if mast_is_telegraphing_now():
 		Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.MAST_LAMP),
 				EventPictures.MAST_LAMP_AT, Vector2.ZERO, false,
 				Palette.SIGNAL_AMBER)
@@ -175,14 +175,14 @@ func _draw_dog_walker(canvas: CanvasItem) -> void:
 	canvas.draw_line(Vector2(0.0, -26.0), to_the_dog + Vector2(0.0, -6.0), Palette.OUTLINE, 2.0)
 	# The dog faces the walker's own travel — the same heading, the same view, the same mirror —
 	# since it is being led rather than watching anything of its own.
-	var view := _select_view(event.facing_now())
-	var mirror := EightDirection.is_mirrored(_view_sector)
+	var view := select_view(event.facing_now())
+	var mirror := is_mirrored()
 	# One phase for the pair, so the walker's own legs and the dog's never disagree about which of
 	# them is mid-stride: the dog steps while he does and rests while he does.
-	var stepping := _gait_stepping()
+	var stepping := gait_is_stepping()
 	var person_by_view := EventPictures.PERSON_BY_VIEW_B if stepping \
 			else EventPictures.PERSON_BY_VIEW
-	var dog := EventPictures.dog_picture(view, stepping, _gait_second_half())
+	var dog := EventPictures.dog_picture(view, stepping, gait_is_second_half())
 	Sprites.draw_standing(canvas, EventPictures.drawn(person_by_view[view]), Vector2.ZERO,
 			Vector2.ZERO, mirror)
 	Sprites.draw_standing(canvas, EventPictures.drawn(dog), to_the_dog, Vector2.ZERO, mirror)
@@ -199,8 +199,8 @@ func _draw_chatting_mother(canvas: CanvasItem) -> void:
 			else EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW
 	# Talking holds still by construction — the event's tick freezes her pacing the instant a
 	# conversation starts — so only the walking posture gets a second frame.
-	if not chatting and _gait_stepping():
+	if not chatting and gait_is_stepping():
 		by_view = EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW_B
-	var view := _select_view(event.facing_now())
+	var view := select_view(event.facing_now())
 	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
+			is_mirrored())
