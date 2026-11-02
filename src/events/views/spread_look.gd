@@ -20,12 +20,12 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			if canvas != event or _slices.is_empty():
 				_draw_wide_scene(EventPictures.wide_scene_texture(EventDef.Look.CAR_ACCIDENT,
 						event.runs_vertically(),
-						_idle_stepping(EventPictures.CAR_ACCIDENT_SMOKE_PERIOD)), canvas)
+						idle_is_stepping(EventPictures.CAR_ACCIDENT_SMOKE_PERIOD)), canvas)
 		EventDef.Look.BURST_MAIN:
 			if canvas != event or _slices.is_empty():
 				_draw_wide_scene(EventPictures.wide_scene_texture(EventDef.Look.BURST_MAIN,
 						event.runs_vertically(),
-						_idle_stepping(EventPictures.BURST_MAIN_SPLASH_PERIOD)), canvas)
+						idle_is_stepping(EventPictures.BURST_MAIN_SPLASH_PERIOD)), canvas)
 		EventDef.Look.COLLAPSED_FRONTAGE:
 			_draw_the_spread(canvas)
 		EventDef.Look.SCAFFOLDING:
@@ -48,7 +48,7 @@ func _update_scenery() -> void:
 	var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD \
 			if event.def.look == EventDef.Look.CAR_ACCIDENT \
 			else EventPictures.BURST_MAIN_SPLASH_PERIOD
-	var frame_b := _idle_stepping(period)
+	var frame_b := idle_is_stepping(period)
 	for scenery in _sceneries:
 		scenery.visible = shown
 		scenery.set_frame(frame_b)

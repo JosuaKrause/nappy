@@ -29,7 +29,7 @@ func _draw_birds(canvas: CanvasItem) -> void:
 			var faded := 1.0 - bird.lift / BIRD_SHADOW_CEILING
 			_draw_shadow(canvas, bird.at, 5.0 * faded)
 		# Each bird holds its own sector — a flock is eleven bodies wheeling independently, not one
-		# actor with one facing — through the same hold `_select_view()` gives the instance itself.
+		# actor with one facing — through the same hold `select_view()` gives the instance itself.
 		bird.view_sector = EightDirection.update(bird.view_sector, bird.heading)
 		var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[bird.view_sector]
 		var mirror := EightDirection.is_mirrored(bird.view_sector)

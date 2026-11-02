@@ -12,13 +12,13 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			# mirrors it (see `docs/evidence/svg-vehicles-2026-09-10/README.md`).
 			_draw_eight_view(EventPictures.DELIVERY_VAN_BY_VIEW, event.facing_now(), canvas, true)
 		EventDef.Look.FIRE_ENGINE:
-			# Drawn over its own body like the patrol car (`_body_anchor()`): the body is the
+			# Drawn over its own body like the patrol car (`body_anchor()`): the body is the
 			# truck's `shape`, and the shadow, which is that shape, stays under the node.
-			var engine_view := _select_view(event.facing_now())
+			var engine_view := select_view(event.facing_now())
 			_draw_body_shadow(canvas, Vector2(0.0, -current_bob()))
 			_draw_eight_view(EventPictures.FIRE_ENGINE_BY_VIEW, event.facing_now(), canvas, true,
 					{}, false,
-					_body_anchor(engine_view))
+					body_anchor(engine_view))
 		EventDef.Look.ICE_CREAM_VAN:
 			# East-authored: always sited facing east, same as `DELIVERY_VAN` above,
 			# but `ice_cream_van.svg` is one of the sources that already faces east, so no
@@ -34,13 +34,13 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			# East-authored — see `ICE_CREAM_VAN` above — and a real octant: `police_patrol` is
 			# mobile and turns corners along its own patrol route, so its diagonal views are
 			# ordinarily reachable. Drawn over its own body rather than standing on its node — see
-			# `_body_anchor()` — with the shadow, which is the body's shape, under the node on the
+			# `body_anchor()` — with the shadow, which is the body's shape, under the node on the
 			# ground.
-			var view := _select_view(event.facing_now())
+			var view := select_view(event.facing_now())
 			_draw_body_shadow(canvas, Vector2(0.0, -current_bob()))
 			_draw_eight_view(EventPictures.POLICE_CAR_BY_VIEW, event.facing_now(), canvas, false,
 					{}, false,
-					_body_anchor(view))
+					body_anchor(view))
 		EventDef.Look.UNMARKED_VAN:
 			_draw_abduction(canvas)
 		EventDef.Look.RIOT_VAN:
@@ -87,7 +87,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 ## can ever be drawn together. `is_taking_a_victim()` is only ever true while the van `is_waiting()`
 ## (`EventAbduction` abandons it the instant a `HUNTS`-heated copy starts hunting), and idling the
 ## van's own `EventInstance.facing_now()` is `Planned.facing`'s untouched default, always due east —
-## so the van's own `_select_view(event.facing_now())` call below, after the victim's, only ever
+## so the van's own `select_view(event.facing_now())` call below, after the victim's, only ever
 ## asks for exactly the sector the victim's own call left it on (both facing the same way) or its
 ## exact opposite (180° apart, always past `EightDirection`'s hold), never anything a stale hold
 ## could get wrong.
@@ -101,11 +101,11 @@ func _draw_abduction(canvas: CanvasItem) -> void:
 		# She faces the van, which is the only place she is walking to — a pure east/west direction
 		# by construction (`standing` never has a Y component), so this always resolves to the same
 		# side view `_heading_is_west()` picked before, now read off the shared table.
-		var view := _select_view(-standing)
-		var by_view := EventPictures.VAN_VICTIM_BY_VIEW_B if _victim_gait_stepping() \
+		var view := select_view(-standing)
+		var by_view := EventPictures.VAN_VICTIM_BY_VIEW_B if victim_gait_is_stepping() \
 				else EventPictures.VAN_VICTIM_BY_VIEW
 		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, by_view[view]), at, Vector2.ZERO,
-				EightDirection.is_mirrored(_view_sector))
+				is_mirrored())
 	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own
 	# doc comment on `side_faces_west`.
 	_draw_eight_view(EventPictures.UNMARKED_VAN_BY_VIEW, event.facing_now(), canvas, true)

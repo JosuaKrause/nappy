@@ -25,7 +25,7 @@ func _init(owner: EventInstance) -> void:
 
 ## The eight-view sector the event is drawn in, for whichever family reads
 ## `EventPictures.EIGHT_VIEW_BY_SECTOR` instead of a single side-mirrored picture — see
-## `_select_view()`. Set by `face()` to the exact nearest sector for the event's own siting, the
+## `select_view()`. Set by `face()` to the exact nearest sector for the event's own siting, the
 ## same "no prior-view hold on a fresh placement" rule `EightDirection.nearest()`'s own doc names.
 var _view_sector := 2
 
@@ -140,7 +140,7 @@ func _picture_never_settles() -> bool:
 ## Which heading the next draw would pick the event's eight-view sector from.
 ##
 ## Ordinarily `EventInstance.facing_now()`. Two exceptions. A robber who has not noticed her yet:
-## `PursuerLook._draw_robber()` picks his view from `_robber_waiting_heading()` — her position,
+## `PursuerLook._draw_robber()` picks his view from `robber_waiting_heading()` — her position,
 ## whenever anything has told the event where she is and nothing built stands between them — rather
 ## than from the alley he was
 ## sited facing, so the key has to read the same thing or the one turn in the game that happens
@@ -148,7 +148,7 @@ func _picture_never_settles() -> bool:
 ## band (`barrier_post`, before he has left its body), who is drawn facing out from his post.
 func drawn_heading() -> Vector2:
 	if event.def.look == EventDef.Look.ROBBER and event.is_waiting():
-		return _robber_waiting_heading()
+		return robber_waiting_heading()
 	if event.barrier_post and not event.barrier_post.has_left_its_body():
 		return EventFootprints.guard_post_heading(event.runs_vertically(), 1)
 	return event.facing_now()
@@ -168,7 +168,7 @@ func _protest_pose() -> int:
 ##
 ## `x` is a bit field — one bit per question the drawing asks, in an order that is arbitrary and
 ## only has to be stable. `y` carries the three small integers: the eight-view sector the next draw
-## would land on (`_select_view()` is what actually advances `_view_sector`, and it only runs inside
+## would land on (`select_view()` is what actually advances `_view_sector`, and it only runs inside
 ## a draw, so the key has to compute the sector it *would* move to rather than read the one left
 ## over from the last one), the caret's own 0/1/2 strength, and the protest pose. `z` and `w` are
 ## the two continuous quantities, quantised — see `BOB_STEPS_PER_PX` and `SWELL_STEPS`.
@@ -185,29 +185,29 @@ func _picture_key() -> Vector4i:
 		# beat, so it is part of the picture rather than of the mark's size.
 		flashed_off = event.is_telegraphing() \
 				and fmod(event.age * EventPictures.MARK_FLASHES_PER_SECOND, 1.0) > 0.55
-	# **Only the looks that actually read an idle timer carry one.** `_idle_stepping()` is a
+	# **Only the looks that actually read an idle timer carry one.** `idle_is_stepping()` is a
 	# function of the clock alone and knows nothing about the row asking, so handing it to every
 	# instance would flip every seal's key twice a second for an animation it does not have — the
 	# gate would then be paying its whole cost and buying nothing. Smoke and fountain phases
 	# belong to their own small layers, while the steam is already a cloud-only picture.
 	var idle := false
 	if event.def.look == EventDef.Look.CAFE:
-		idle = _idle_stepping(EventPictures.SITTER_IDLE_PERIOD)
+		idle = idle_is_stepping(EventPictures.SITTER_IDLE_PERIOD)
 	elif event.def.look == EventDef.Look.BUSKER:
-		idle = _idle_stepping(EventPictures.BUSKER_STRUM_PERIOD)
+		idle = idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD)
 	elif event.def.look == EventDef.Look.POSTER_CREW:
-		idle = _idle_stepping(EventPictures.POSTER_CREW_PASTE_PERIOD)
+		idle = idle_is_stepping(EventPictures.POSTER_CREW_PASTE_PERIOD)
 	elif event.def.look == EventDef.Look.STEAM:
-		idle = _idle_stepping(EventPictures.STEAM_BILLOW_PERIOD)
+		idle = idle_is_stepping(EventPictures.STEAM_BILLOW_PERIOD)
 	var flags := 0
 	flags = flags * 2 + (1 if event.is_finished else 0)
 	flags = flags * 2 + (1 if EventFootprints.hidden_by_its_hold(event) else 0)
 	flags = flags * 2 + (1 if event.is_leaving else 0)
-	flags = flags * 2 + (1 if _gait_stepping() else 0)
+	flags = flags * 2 + (1 if gait_is_stepping() else 0)
 	# The normal dog alone tells its two steps apart (`EventPictures.dog_picture()`), so only its
 	# two looks carry the stride's half: every other family draws the same picture in both halves.
 	var three_pose_dog := event.def.look in [EventDef.Look.DOG_WALKER, EventDef.Look.LOOSE_DOG]
-	flags = flags * 2 + (1 if three_pose_dog and _gait_second_half() else 0)
+	flags = flags * 2 + (1 if three_pose_dog and gait_is_second_half() else 0)
 	flags = flags * 2 + (1 if _heading_is_west() else 0)
 	flags = flags * 2 + (1 if event.is_telegraphing() else 0)
 	flags = flags * 2 + (1 if event.is_waiting() else 0)
@@ -215,7 +215,7 @@ func _picture_key() -> Vector4i:
 	flags = flags * 2 + (1 if event.has_stopped_her() else 0)
 	flags = flags * 2 + (1 if event.is_its_guard_inside() else 0)
 	flags = flags * 2 + (1 if event.is_taking_a_victim() else 0)
-	flags = flags * 2 + (1 if _victim_gait_stepping() else 0)
+	flags = flags * 2 + (1 if victim_gait_is_stepping() else 0)
 	flags = flags * 2 + (1 if idle else 0)
 	flags = flags * 2 + (1 if event.gate_state != null and event.gate_state.raised else 0)
 	flags = flags * 2 + (1 if event.guard_warns_her else 0)
@@ -226,9 +226,9 @@ func _picture_key() -> Vector4i:
 	# city's broadcast clock rather than `is_telegraphing()`, which a mast passes once at creation.
 	var mast := event.def.look == EventDef.Look.LOUDSPEAKER_MAST
 	flags = flags * 2 + (1 if mast and event.silenced else 0)
-	flags = flags * 2 + (1 if mast and _mast_is_telegraphing_now() else 0)
+	flags = flags * 2 + (1 if mast and mast_is_telegraphing_now() else 0)
 	var sector := EightDirection.update(_view_sector, drawn_heading())
-	# A car's picture is anchored on its live heading (`_body_anchor()`), and its shadow and
+	# A car's picture is anchored on its live heading (`body_anchor()`), and its shadow and
 	# body turn with it, so a car rounding a corner redraws as it turns rather than only when it
 	# crosses into another sector. Whole degrees, above the protest's own poses.
 	var turn := posmod(roundi(rad_to_deg(event.facing_now().angle())),
@@ -297,18 +297,18 @@ func current_bob() -> float:
 ## `is_chatting()`, `is_telegraphing_still()`) already read as zero distance covered rather than a
 ## small residual speed to floor against. A pure query on state the event's tick already settled, so
 ## calling it more than once — the main draw, then once per halo ring — always agrees with itself.
-func _gait_stepping() -> bool:
+func gait_is_stepping() -> bool:
 	return event.gait_is_moving() and sin(event.gait_phase() * 2.0) > 0.0
 
 ## Whether the stride is in its second half — the half a stepping normal dog takes its opposite
-## step in (`EventPictures.dog_picture()`). `_gait_stepping()` is true twice per turn of the
+## step in (`EventPictures.dog_picture()`). `gait_is_stepping()` is true twice per turn of the
 ## event's `gait_phase()`, once in
 ## each half, so the two together split the turn into four equal beats: step, rest, opposite step,
 ## rest, each `PI / 2 / GAIT_RATE` (17.5px) of ground. The dog therefore changes picture exactly
 ## when the dog walker's own two frames swap, and a whole four-beat walk is 70px: a beat is 545ms
 ## at the dog walker's 32px/s, close to the 450ms the pictures were reviewed at, and 132ms at the
 ## loose dog's 132px/s, where the dog is running.
-func _gait_second_half() -> bool:
+func gait_is_second_half() -> bool:
 	return event.gait_phase() >= PI
 
 ## The victim's own short scripted walk to the van (`EventAbduction`) is a straight-line lerp on
@@ -318,9 +318,9 @@ func _gait_second_half() -> bool:
 ## give it. The walk is at a constant speed by construction (linear interpolation over a fixed
 ## time), so the distance covered by moment `t` is exactly `t * (AbductionSpec.standing_offset /
 ## AbductionSpec.taken_over)`, fed through the same
-## `GAIT_RATE` and doubled-phase test `_gait_stepping()` uses. `sin(0) == 0`, so the walk always
+## `GAIT_RATE` and doubled-phase test `gait_is_stepping()` uses. `sin(0) == 0`, so the walk always
 ## starts on frame a rather than mid-stride.
-func _victim_gait_stepping() -> bool:
+func victim_gait_is_stepping() -> bool:
 	if not event.is_taking_a_victim():
 		return false
 	var elapsed := event.abduction.walked_for()
@@ -331,7 +331,7 @@ func _victim_gait_stepping() -> bool:
 ## `period` seconds, offset per event by `idle_offset()` so two placed the same day do not
 ## swap in lockstep. Driven by `clock()` rather than `age`, the same simulated-time clock `landed()`
 ## already measures against, so a paused game holds the frame rather than drifting it.
-func _idle_stepping(period: float) -> bool:
+func idle_is_stepping(period: float) -> bool:
 	var phase := fmod(event.clock() + event.idle_offset() * period, period)
 	return phase >= period * 0.5
 
@@ -514,13 +514,13 @@ func _draw_figure(_canvas: CanvasItem) -> void:
 ## A shadow and a sprite, facing the way it is going. What most looks are, and having it once is
 ## what keeps a dozen near-identical three-line functions from existing.
 ##
-## `picture_b` is `mouse`'s own second frame, read off `_gait_stepping()` when given; `""` for
+## `picture_b` is `mouse`'s own second frame, read off `gait_is_stepping()` when given; `""` for
 ## everything else this draws (`skip`, and `mouse` before its own dash starts), which keeps every
 ## other caller exactly as it was.
 func _draw_simple(picture: String, canvas: CanvasItem,
 		picture_b: String = "") -> void:
 	_draw_body_shadow(canvas)
-	var drawn := picture_b if not picture_b.is_empty() and _gait_stepping() else picture
+	var drawn := picture_b if not picture_b.is_empty() and gait_is_stepping() else picture
 	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, drawn), Vector2.ZERO, Vector2.ZERO,
 			_heading_is_west())
 
@@ -536,17 +536,17 @@ func _draw_simple(picture: String, canvas: CanvasItem,
 ## quantised view, the crowd car's reason: the body turns continuously as a car rounds a corner, and
 ## a picture anchored on the view would jump at every sector boundary. The caret over it is lowered
 ## by the same amount (`_picture_drop_now()`).
-func _body_anchor(view: String) -> Vector2:
+func body_anchor(view: String) -> Vector2:
 	var south := event.def.shape.half_length * absf(event.solid_axis().y) + event.def.shape.radius
 	return Vector2(0.0, south + float(EventPictures.canvas_margins(event.def.look).get(view, 0.0)))
 
 ## How far below its own node the event's picture is drawn this frame — a car's
-## `_body_anchor()`, zero for every other row — so the caret over it stands the same height
+## `body_anchor()`, zero for every other row — so the caret over it stands the same height
 ## above the picture as it does over anything else.
 func _picture_drop_now() -> float:
 	if not EventPictures.is_anchored_over_its_body(event.def.look) or event.def.shape == null:
 		return 0.0
-	return _body_anchor(EventPictures.EIGHT_VIEW_BY_SECTOR[_view_sector]).y
+	return body_anchor(EventPictures.EIGHT_VIEW_BY_SECTOR[_view_sector]).y
 
 func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 		side_faces_west := false, by_view_b: Dictionary = {}, draw_shadow := true,
@@ -557,12 +557,12 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 		grounded = at + Vector2(0.0, -current_bob())
 	if draw_shadow:
 		_draw_body_shadow(canvas, grounded)
-	var view := _select_view(heading)
-	var mirror := EightDirection.is_mirrored(_view_sector)
+	var view := select_view(heading)
+	var mirror := is_mirrored()
 	if view == "side" and side_faces_west:
 		mirror = not mirror
 	var picture: String = by_view[view]
-	if not by_view_b.is_empty() and _gait_stepping():
+	if not by_view_b.is_empty() and gait_is_stepping():
 		picture = by_view_b[view]
 	var wheels: String = wheels_by_view.get(view, "")
 	var behind := wheels in EventPictures.WHEELS_BEHIND_THE_BODY
@@ -580,7 +580,7 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 ## he does not visibly track her round the corner *(leafy-puffin, inbox #648: "yes noticing needs
 ## a clear line")*: he keeps the facing he was sited with, which is also the harmless default a
 ## data-level rig with no player position gets.
-func _robber_waiting_heading() -> Vector2:
+func robber_waiting_heading() -> Vector2:
 	if event.player_at != Vector2.INF:
 		var toward := event.player_at - event.global_position
 		if toward.length_squared() > 0.0001 and event.clear_line_to(event.player_at):
@@ -595,7 +595,7 @@ func _robber_waiting_heading() -> Vector2:
 ## `is_telegraphing()` does for an ordinary row, and what keeps two masts met minutes apart in the
 ## same phase of it. `current_intensity()`'s own cosine pulse is untouched by this — the field
 ## keeps swelling and fading on the same clock; this only decides the lamp and the arcs.
-func _mast_is_telegraphing_now() -> bool:
+func mast_is_telegraphing_now() -> bool:
 	if event.def.pulse_period <= 0.0:
 		return false
 	return fmod(event.age, event.def.pulse_period) < event.def.telegraph_time
@@ -621,9 +621,14 @@ func _heading_is_west() -> bool:
 ## never passes one either (`EightDirection.update()`'s own doc). Safe to call more than once a
 ## frame with the same heading: `EntityHalo` redraws `draw_body()` once per ring, and asking
 ## `EightDirection.update()` twice from the same starting sector always answers the same way.
-func _select_view(heading: Vector2) -> String:
+func select_view(heading: Vector2) -> String:
 	_view_sector = EightDirection.update(_view_sector, heading)
 	return EventPictures.EIGHT_VIEW_BY_SECTOR[_view_sector]
+
+## Whether the view `select_view()` last gave is drawn mirrored (the west half of the sectors, which
+## reuse the east half's pictures): read by every family that draws an eight-view picture.
+func is_mirrored() -> bool:
+	return EightDirection.is_mirrored(_view_sector)
 
 ## Draws `texture` so its own ground anchor lands at `at` (local space, default the body's own
 ## origin) — `Sprites.draw_standing`'s bottom-centre assumption is wrong for this kit: a boom
