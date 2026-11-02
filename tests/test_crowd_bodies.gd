@@ -77,25 +77,25 @@ func _stand_a_body(map: CityMap, corridor: int, lanes: Array, from: int, to: int
 ## day's (emptied) crowd so `Crowd.step()` moves it exactly as it moves anybody.
 func _agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, lane: int,
 		along: float, direction: float, vertical := true,
-		offsets: Array[int] = CrowdLanes.SIDEWALK_OFFSETS) -> CrowdAgent:
-	var agent := CrowdAgent.new()
-	agent.setup(kind, map, city.crowd.field(), 1, 0.0)
-	agent._vertical = vertical
-	agent._corridor = corridor
-	agent._lane = lane
-	agent._direction = direction
-	agent._lane_centre = CrowdLanes.lane_centre(corridor, lane) if kind == CrowdAgent.Kind.CAR \
+		offsets: Array[int] = CrowdLanes.SIDEWALK_OFFSETS, speed := -1.0) -> CrowdAgent:
+	var centre := CrowdLanes.lane_centre(corridor, lane) if kind == CrowdAgent.Kind.CAR \
 			else CrowdLanes.walker_lane_centre(corridor, lane, offsets)
-	agent._speed = 60.0 if kind == CrowdAgent.Kind.WALKER else 130.0
-	agent._cruise = agent._speed
-	agent._set_along(along)
-	agent._set_cross(agent._lane_centre)
-	agent._junction = -1
-	agent._scan_at = Vector2i(-9999, -9999)
-	agent._blocked_in = CrowdAgent.LOOKAHEAD_TILES + 1
-	city.add_entity(agent)
-	city.crowd._agents.append(agent)
-	return agent
+	var at := Vector2(centre, along) if vertical else Vector2(along, centre)
+	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
+	# The same entry the game gives a pinned actor in a task scene (`SceneRecipeRuntime`): the
+	# lane, the body clearance and the pocket are checked as a rolled morning's are.
+	if speed < 0.0:
+		speed = 60.0 if kind == CrowdAgent.Kind.WALKER else 130.0
+	var placed := city.crowd.add_recipe_actor("rig-%d" % city.crowd.agent_count(), kind, at,
+			heading, speed, 1)
+	assert(placed["error"] == "", "the rig's agent is placed: %s" % placed["error"])
+	return placed.get("actor")
+
+## Whether `car` is still driving in the positive direction down vertical corridor `corridor`: its
+## heading is straight down the street and it is standing in that corridor.
+func _still_driving_down(car: CrowdAgent, corridor: int) -> bool:
+	return car.heading().is_equal_approx(Vector2.DOWN) \
+			and CrowdLanes.corridor_at(car.position.x) == corridor
 
 ## Walks the crowd for `seconds` with the field pinned on `at`, and reports what happened to
 ## `watched`: whether anybody was ever standing on a body's own tile, whether it ever stepped round
@@ -110,14 +110,17 @@ func _walk(city: City, map: CityMap, watched: CrowdAgent, at: Vector2,
 	var stepped_round := false
 	var deepest := watched.position.y
 	var shallowest := watched.position.y
+	var lane_x := watched.position.x
 	for frame in int(round(seconds / STEP)):
 		city.crowd.set_focus(at)
 		city.crowd.step(STEP)
 		for agent in city.crowd.agents():
 			if map.is_obstructed(map.world_to_tile(agent.position)):
 				inside += 1
+		# A walker that goes round a body leaves the lane it started in, onto the other lane of its
+		# own footway, a tile over; nothing else a walker does on this stretch takes it off its line.
 		stepped_round = stepped_round or (watched.kind == CrowdAgent.Kind.WALKER
-				and watched.strategy._body_detour_held)
+				and absf(watched.position.x - lane_x) > Tuning.TILE_SIZE * 0.5)
 		deepest = maxf(deepest, watched.position.y)
 		shallowest = minf(shallowest, watched.position.y)
 	return {"inside": inside, "stepped_round": stepped_round, "deepest": deepest,
@@ -226,8 +229,9 @@ func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t, city: Cit
 			float(run.y) * Tuning.TILE_SIZE, 1.0)
 	t.check(not car.strategy.cannot_go_on(true, Vector2i(base + 2, body_at)),
 			"and neither is the carriageway under it")
-	city.crowd._agents.erase(car)
-	car.queue_free()
+	city.crowd.clear()
+	walker = _agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
+			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
 
 	# The last junction band before the body, which is where this walker used to give the street up.
 	var last_junction := -1
@@ -303,8 +307,7 @@ func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, ci
 	# Turned off this street, or still on it and stopped short. Both are the entry's own answer —
 	# *"a car already in the street with no junction left before the body stops behind it"* — and
 	# which one a given seed's geometry produces is not a property worth pinning.
-	var turned_away: bool = blocked._corridor != corridor or not blocked._vertical \
-			or blocked._direction < 0.0
+	var turned_away := not _still_driving_down(blocked, corridor)
 	t.check(turned_away or walked["deepest"] < float(body_at) * Tuning.TILE_SIZE,
 			"and it turns off the street or comes to rest short of the body")
 	t.check(oncoming_started - oncoming.position.y > float(CityMap.period()) * Tuning.TILE_SIZE,
@@ -399,7 +402,7 @@ func _walk_at_a_precinct_wall(t, city: City, map: CityMap, rows: Array,
 			"a body %s is a wall to a walker on a precinct" % label)
 
 	var edge := Vector2i(base + rows[0][0], wall) if vertical else Vector2i(wall, base + rows[0][0])
-	t.check(walkers[0].strategy._footway_is_shut(vertical, edge),
+	t.check(walkers[0].strategy.cannot_go_on(vertical, edge),
 			"and so is the first body's own edge lane, asked from the walker at the start")
 	var at := map.tile_to_world(probe)
 	var first_px := float(wall) * Tuning.TILE_SIZE - 1.5 * Tuning.TILE_SIZE
@@ -411,14 +414,15 @@ func _walk_at_a_precinct_wall(t, city: City, map: CityMap, rows: Array,
 		city.crowd.set_focus(at)
 		city.crowd.step(STEP)
 		for walker in walkers:
-			if walker._vertical == vertical:
-				var along := walker._along()
+			if walker.travelling_vertically() == vertical:
+				var along := walker.position.y if vertical else walker.position.x
 				if along > first_px and along < last_px:
 					standing += 1
 			if map.is_obstructed(map.world_to_tile(walker.position)):
 				inside += 1
 	for walker in walkers:
-		if walker._vertical != vertical or walker._direction < 0.0:
+		if walker.travelling_vertically() != vertical \
+				or walker.heading().dot(Vector2.DOWN if vertical else Vector2.RIGHT) < 0.0:
 			turned += 1
 	t.check(inside == 0, "nobody walks into a body %s (%d frames somebody did)" % [label, inside])
 	t.check(turned == walkers.size(),
@@ -550,8 +554,9 @@ func _test_a_walker_passes_a_crash_on_its_pavement(t, city: City, map: CityMap) 
 	for offset: int in CrowdLanes.ROAD_OFFSETS:
 		t.check(driver.strategy.cannot_go_on(true, Vector2i(base + offset, body_at)),
 				"and the carriageway under it is shut to a car at offset %d" % offset)
-	city.crowd._agents.erase(driver)
-	driver.queue_free()
+	city.crowd.clear()
+	walker = _agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
+			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
 
 	var at := map.tile_to_world(Vector2i(base + 1, body_at))
 	var walked := _walk(city, map, walker, at, 6.0)
@@ -625,7 +630,7 @@ func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t, city: City, map: CityM
 	t.check(walked["deepest"] > float(body_at + 1) * Tuning.TILE_SIZE,
 			"so the car drives straight past it (reached %.0f, the van's tile ends %.0f)"
 			% [walked["deepest"], float(body_at + 1) * Tuning.TILE_SIZE])
-	t.check(driver._corridor == corridor and driver._vertical and driver._direction > 0.0,
+	t.check(_still_driving_down(driver, corridor),
 			"without turning off the street it was on")
 	map.clear_day_obstructions()
 
@@ -662,8 +667,7 @@ func _test_a_row_across_the_whole_street_still_turns_a_car(t, city: City, map: C
 			"no car ever stands on the tree's own tile (%d frames one did)" % walked["inside"])
 	# Turned off this street, or still on it and stopped short — the same two answers a body in a
 	# lane already has, and which one a seed's geometry produces is not worth pinning.
-	var turned_away: bool = driver._corridor != corridor or not driver._vertical \
-			or driver._direction < 0.0
+	var turned_away := not _still_driving_down(driver, corridor)
 	t.check(turned_away or walked["deepest"] < float(body_at) * Tuning.TILE_SIZE,
 			"and it turns off the street or comes to rest short of the tree")
 	map.clear_day_obstructions()
