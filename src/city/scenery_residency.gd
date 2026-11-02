@@ -21,6 +21,9 @@ const GUARD_MARGIN := 96.0
 const BUDGET_USEC := 2000
 ## BUDGET_USEC, lowered by a test to make the per-frame spill-over countable.
 var budget_usec := BUDGET_USEC
+## Where an update charges its time to the frame record, handed in by the city that builds this; the
+## null sink until then.
+var timing := FrameTiming.new()
 var city: City
 ## A scripted recipe's frame-locked playback: every update prepares its whole load view in that
 ## frame, with no budget and no deferral, so a recorded frame never shows unprepared ground. Handed
@@ -69,14 +72,14 @@ func camera_view() -> Rect2:
 	return rect
 
 func update(next_view: Rect2, immediate := false) -> void:
-	# The frame record's `scenery` (`FrameRecord`): the whole update, guard preparations included,
+	# The frame record's `scenery` (`FrameTiming`): the whole update, guard preparations included,
 	# with the jobs it ran counted by kind and what it spent past `budget_usec` kept apart. The
 	# deferred window's two ends go into the engine's deferred queue either side of everything this
 	# update queues there, so the tile map work and first draws it leaves behind are scenery's too.
-	var recording := FrameRecord.on
+	var recording := timing.on
 	var outer := 0
 	if recording:
-		outer = FrameRecord.enter(FrameRecord.SCENERY)
+		outer = timing.enter(FrameTiming.SCENERY)
 		_record_deferred_scenery.call_deferred(true)
 	immediate = immediate or frame_locked
 	var started := Time.get_ticks_usec()
@@ -104,7 +107,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
 			if recording:
-				FrameRecord.scenery_job(FrameLedger.GUARD_PREPARATIONS)
+				timing.scenery_job(FrameTiming.Job.GUARD)
 			ground.prepare(key)
 			_whole_region_frame = Engine.get_process_frames()
 		else:
@@ -122,23 +125,23 @@ func update(next_view: Rect2, immediate := false) -> void:
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
 			if recording:
-				FrameRecord.scenery_job(FrameLedger.GUARD_PREPARATIONS)
+				timing.scenery_job(FrameTiming.Job.GUARD)
 			item.set_scenery_resident(true)
 		elif load_view.intersects(bounds):
 			var job := {"distance": bounds.get_center().distance_squared_to(view.get_center()),
 					"prepare": item.set_scenery_resident.bind(true)}
 			if recording:
-				job.kind = FrameLedger.JOBS_BUILDING if item is Building else FrameLedger.JOBS_PROP
+				job.kind = FrameTiming.Job.BUILDING if item is Building else FrameTiming.Job.PROP
 			pending.append(job)
 	# Which kind the shadows' and decals' jobs are counted as, held in an array the callable shares
 	# rather than bound into it, so a run without the record does no extra work for it.
-	var enqueued_kind := [FrameLedger.JOBS_SHADOW]
+	var enqueued_kind := [FrameTiming.Job.SHADOW]
 	var enqueue := func(bounds: Rect2, prepare: Callable) -> void:
 		if guard.intersects(bounds):
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
 			if recording:
-				FrameRecord.scenery_job(FrameLedger.GUARD_PREPARATIONS)
+				timing.scenery_job(FrameTiming.Job.GUARD)
 			prepare.call()
 		else:
 			var job := {"distance": bounds.get_center().distance_squared_to(view.get_center()),
@@ -147,7 +150,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 				job.kind = enqueued_kind[0]
 			pending.append(job)
 	city._building_shadows.update_view(load_view, retained, enqueue)
-	enqueued_kind[0] = FrameLedger.JOBS_DECAL
+	enqueued_kind[0] = FrameTiming.Job.DECAL
 	city._decals.update_view(load_view, retained, enqueue)
 	pending.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
 	_pending = false
@@ -166,7 +169,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 				ground.prepare(job.ground_key)
 				ran += 1
 				if recording:
-					FrameRecord.scenery_job(FrameLedger.JOBS_GROUND)
+					timing.scenery_job(FrameTiming.Job.GROUND)
 				continue
 			var frame := Engine.get_process_frames()
 			if ground.mode == SceneryGround.Mode.ONE:
@@ -179,7 +182,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 				ground.prepare(job.ground_key)
 				ran += 1
 				if recording:
-					FrameRecord.scenery_job(FrameLedger.JOBS_GROUND)
+					timing.scenery_job(FrameTiming.Job.GROUND)
 				continue
 			# Several regions may approach together. Advance each once within the shared budget;
 			# repeating an explicit update or replacing a canceled job cannot drain one region.
@@ -192,24 +195,24 @@ func update(next_view: Rect2, immediate := false) -> void:
 			_ground_stepped[job.ground_key] = true
 			ran += 1
 			if recording:
-				FrameRecord.scenery_job(FrameLedger.JOBS_GROUND)
+				timing.scenery_job(FrameTiming.Job.GROUND)
 			if not ground.prepare_step(job.ground_key):
 				_pending = true
 		else:
 			(job.prepare as Callable).call()
 			ran += 1
 			if recording:
-				FrameRecord.scenery_job(job.kind)
+				timing.scenery_job(job.kind)
 	var elapsed := Time.get_ticks_usec() - started
 	worst_update_usec = maxi(worst_update_usec, elapsed)
 	if recording:
-		FrameRecord.scenery_update(elapsed, budget_usec)
+		timing.scenery_update(elapsed, budget_usec)
 		_record_deferred_scenery.call_deferred(false)
-		FrameRecord.leave(outer)
+		timing.leave(outer)
 
 ## One end of the frame record's deferred scenery window, run from the engine's deferred flush.
 func _record_deferred_scenery(begins: bool) -> void:
 	if begins:
-		FrameRecord.scenery_deferred_begins()
+		timing.scenery_deferred_begins()
 	else:
-		FrameRecord.scenery_deferred_ends()
+		timing.scenery_deferred_ends()

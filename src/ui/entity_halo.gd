@@ -122,6 +122,7 @@ const COMPATIBILITY_RIM_BLOCKS := 256 / 16
 const RIM_BUDGET := COMPATIBILITY_RIM_BLOCKS - 1
 
 func _init(draw_body: Callable, bob: Callable) -> void:
+	set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.HALOS)
 	_draw_body = draw_body
 	_bob = bob
 	name = "Halo"
@@ -240,8 +241,6 @@ static func trace_offsets(bob: float) -> Array[Vector2]:
 ## has to be handed the offset rather than left to discover it. See `Sprites.BASE_TRANSFORM_META` for
 ## what it looked like when it was not: twelve copies stacked on the body and no ring.
 func _on_draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_HALOS)
 	if not is_showing():
 		return
 	var bob: float = _bob.call()

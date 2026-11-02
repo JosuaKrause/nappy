@@ -62,9 +62,12 @@ func _process(_delta: float) -> void:
 		# The camera moves under it every frame, so the arrow has to be redrawn every frame.
 		queue_redraw()
 
+## Counted by the frame record under `FrameTiming.Draw.OTHER`, which the recorder reads off this meta
+## since it may not name the view.
+func _init() -> void:
+	set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.OTHER)
+
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not active or target == Vector2.INF:
 		return
 

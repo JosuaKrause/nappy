@@ -305,18 +305,17 @@ func _test_frame_record(t, city: City) -> void:
 	var keys := _ring_keys(city, view, 2)
 	var close := SceneryGround.key_for(city.map.world_to_tile(view.get_center()))
 	city._ground.release(close)
-	var was_on := FrameRecord.on
-	var was := FrameRecord.ledger
+	var record := FrameRecord.new()
 	var ledger := FrameLedger.new(4)
-	FrameRecord.start(ledger)
+	record.start(ledger)
+	scenery.timing = record
 	ledger.process_start(Time.get_ticks_usec())
 	scenery.budget_usec = 1
 	scenery.update(view)
 	scenery.budget_usec = SceneryResidency.BUDGET_USEC
 	ledger.switch_to(FrameRecord.PROCESS_REST, Time.get_ticks_usec())
-	FrameRecord.stop()
-	FrameRecord.ledger = was
-	FrameRecord.on = was_on
+	record.stop()
+	scenery.timing = FrameTiming.new()
 	t.check(keys.size() == 2, "the record check has two actual load-ring regions to prepare")
 	t.check(ledger._counters[FrameLedger.GUARD_PREPARATIONS] >= 1,
 			"the guard's synchronous preparation is counted apart")

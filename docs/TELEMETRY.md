@@ -853,9 +853,11 @@ charged to exactly one bucket**, so a row's buckets add up to its `frame_usec` e
 `FrameRecorder` (`src/telemetry/frame_recorder.gd`) marks the engine's phases: its own physics and
 process callbacks run first in their step, a child's process callback runs last, and the
 renderer's pre-draw callback ends the engine's side of drawing (`draw`) and its post-draw callback
-ends the renderer's (`render`). A timed system calls `FrameRecord.enter()` on the
-way in and `leave()` on the way out (`src/telemetry/frame_record.gd`); whatever was being charged
-pauses while it runs, so a timed system inside another is charged to itself alone.
+ends the renderer's (`render`). A timed system calls `enter()` on the
+way in and `leave()` on the way out of the `FrameTiming` it is handed (`src/frame_timing.gd`, the
+null sink; `FrameRecord`, `src/telemetry/frame_record.gd`, is the one that keeps the ledger, made by
+`main` when the run asks for a record and kept by the `Sitting` across a reload); whatever was being
+charged pauses while it runs, so a timed system inside another is charged to itself alone.
 
 What each bucket catches, and what it cannot:
 
@@ -910,8 +912,9 @@ the split as without. The row counts the game's own `_draw()` calls in the frame
 `EntityHalo` rim re-trace), `draws_scenery` (buildings, their roof objects, station layers and
 shadow chunks, decals, props, the city's edges, water and ground layers), `draws_badges`
 (`DangerEdge`), `draws_player` (her stroller) and `draws_other` (traffic lights, chalk, closure
-and fence markers, the HUD's own drawing). Each is a counter line at the top of the `_draw()`,
-guarded by `FrameRecord.on`; a call that returns early is still a call. The engine's own
+and fence markers, the HUD's own drawing). Each but `draws_crowd` is counted by
+`FrameRecorder` listening to the node's `draw` signal (below), so a call that returns early is still
+a call; the crowd counts its agents through its own timing sink. The engine's own
 measurement of the window's last render is `render_cpu_usec`
 (`RenderingServer.viewport_get_measured_render_time_cpu`, switched on only while the record is on);
 a row with 0 means the engine reported nothing, and `environment.render_cpu_reported` says whether
@@ -967,26 +970,25 @@ half and four times the product (`docs/evidence/m159-frame-record-2026-10-04/`),
 subtracts the product from a phone's frames subtracts too little.
 
 **Off, it costs every player as little as the wrap can.** The live events are timed once each a
-frame, so each copies `FrameRecord.on` when it is made and, off, pays one member read before its
-body, which stays in its own `_process()`; a static read and a call into a second function there,
-on a couple of hundred timed bodies a frame, made every player's frame measurably longer on a
-desktop, with the record off. A crowd agent is not timed on its own: it steps inside the crowd's
-tick, which is. The five systems timed
-once a frame (the crowd's and the event manager's physics steps, the sweep, the halo and the edge)
-are built with the city, before the recorder starts, so they read `FrameRecord.on` each frame (the
-crowd's through its `CrowdTiming`). The
-measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
+frame, so each holds the `FrameTiming` its manager hands it (`EventInstance.timing`) and, off, pays
+a member read and a read of its `on` before its body, which stays in its own `_process()`; a static
+read and a call into a second function there, on a couple of hundred timed bodies a frame, made
+every player's frame measurably longer on a desktop, with the record off. A crowd agent is not timed on its own: it steps
+inside the crowd's tick, which is. The systems timed once a frame (the crowd's and the event
+manager's physics steps, the scenery queue's update, the sweep, the halo and the edge) are handed
+the sink when `main` builds them and read its `on` each frame (the crowd's through its
+`CrowdTiming`). The measurement is under `docs/evidence/m159-frame-record-2026-10-04/`.
 
-The game's own `_draw()` overrides each start with `if FrameRecord.on:` (a crowd agent's with
-`if frame_timing != null and frame_timing.running():`, through the `CrowdTiming` it is handed) and one
-call that adds 1 to a per-kind count, so off they pay one static read each. That is acceptable where the timing
-wrap's read was not, because of how often it runs: a frame runs about twenty `_draw()` calls (the
-retained canvas items redraw only when something changes) against the couple of hundred timed
-bodies a frame the wrap's read was measured on, so with
-the record off the guarded reads cost nothing the frame medians can see. The measured figures —
-the per-kind means, one guarded counter's cost against the same body without it (`drew_cost.gd`),
-and the frame medians with the record off against the base — are in
-[M159-7](decisions/2026-09-19-M159-7.md) and its evidence, `docs/evidence/m159-draw-split-2026-10-04/`.
+**The game's own `_draw()` overrides carry no counting code.** With the record on, `FrameRecorder`
+connects the `draw` signal (emitted before each `_draw()`) of every node that is counted, at
+`setup()` over the tree as it stands and then as nodes enter it, and the connected call adds 1 to a
+per-kind count. A node is counted by its class where the recorder may name it (`draw_kind()`),
+else by the kind it declares in its `FrameTiming.DRAW_KIND_META` (the view's nodes, which an
+observer may not name, and the canvases that are no class of their own: a shadow chunk, a station's
+yard layer). A crowd agent is counted through its `CrowdTiming`. With no recorder, nothing is
+connected, so a draw pays nothing at all. The per-kind means and the frame medians with the record
+off, against the base, are measured in [M159-7](decisions/2026-09-19-M159-7.md) and its evidence,
+`docs/evidence/m159-draw-split-2026-10-04/`.
 
 **The readout carries one line for it**, beneath the frame block: the last slow frame's length and
 what its callbacks took, as `frame/work`, then its largest costs under short names (`phys` and

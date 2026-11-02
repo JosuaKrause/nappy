@@ -286,6 +286,11 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	AtlasLibrary.release(&"ui")
 
+## Counted by the frame record under `FrameTiming.Draw.OTHER`, which the recorder reads off this meta
+## since it may not name the view.
+func _init() -> void:
+	set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.OTHER)
+
 func _ready() -> void:
 	add_to_group(HelpText.CONTROLS_GROUP)
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -880,8 +885,6 @@ static func _send_pause_action() -> InputEventAction:
 ## the city is an undrawn direction any more: see `_draw_focus_circles()`'s own doc for why that
 ## mode needs something to read the locked-in state off, and why `Mode.TAP` does not.
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not visible:
 		return
 	_draw_pause_button()

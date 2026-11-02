@@ -78,8 +78,6 @@ func _compute_shape() -> GroundShape:
 			return GroundShape.point(0.0)
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	if not scenery_resident:
 		return
 	match kind:

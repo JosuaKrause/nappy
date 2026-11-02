@@ -234,6 +234,7 @@ func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sca
 	show_the_bang(def)
 	var instance := EventInstance.new()
 	instance.skip_draw = world.skip_drawing
+	instance.timing = world.timing
 	instance.trace = world.trace
 	instance.setup(def, at, path, facing, world.map, world.navigator())
 	instance.signals = world.signals

@@ -138,8 +138,6 @@ func _reset_globals() -> void:
 	Telemetry.configure(null)
 	GameState.use_trace(RunTrace.new())
 	VisitCounter.configure(null, GameState)
-	FrameRecord.on = false
-	FrameRecord.ledger = null
 
 ## Every suite, or the ones whose file name contains one of `filters`.
 ##
