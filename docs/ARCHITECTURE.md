@@ -367,6 +367,8 @@ src/
 	                       boot holds every group a day draws for the life of the process
 	ground_layers.gd      shared ground bases, transparent overlays and sparse grass atlases,
 	                       then every TileSetAtlasSource packed into one texture through margins
+	ground_recipe.gd      the composition recipe `ground_layers.json`, read from disk by the first
+	                       ask and held by the object; one per process, held by the `Sitting`
 	eight_direction.gd    the eight-sector heading selector the stroller and the crowd both draw by
 	wheel_bob.gd          the rise and fall a vehicle's body rides over wheels that stay on the
 	                       ground, shared by the crowd's cars and the moving event vehicles
@@ -785,7 +787,7 @@ authored scene's day is never planned.
 Not an autoload: a plain `Node` (`src/autoload/sitting.gd`, on the model's layer) that holds what one
 sitting keeps across the scene reloads a run makes, the held restart, the day-14 hand-over to the
 escape, a run carried on to its checkpoint and a recipe's lost section played again, since
-`reload_current_scene()` frees every node `main` built. It holds four facts and is one home: the run
+`reload_current_scene()` frees every node `main` built. It holds these facts and is one home: the run
 carried over (`carry_the_run_over`), the title's answer (`controls_word`), the instant of the last
 held restart, which the title's restart guard measures a press against (`restarted_at_msec`), the
 desktop frame record's one file (`frame_record_path`), and the save symbol a reload carries, which

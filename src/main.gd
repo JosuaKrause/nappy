@@ -729,6 +729,7 @@ func _new_city() -> City:
 	var city: City = CITY.instantiate()
 	city.trace = _the_trace()
 	city.run = _run
+	city.ground_recipe = _sitting.ground_recipe
 	city.ground_mode = config.ground_mode as SceneryGround.Mode
 	city.scenery_frame_locked = config.recipe_scripted
 	city.skip_shadows = config.skip_shadows

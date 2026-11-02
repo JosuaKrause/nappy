@@ -39,7 +39,7 @@ func _screen(t, top_left := Vector2.ZERO) -> SubViewport:
 
 func _look_from(screen: SubViewport, top_left: Vector2) -> void:
 	screen.canvas_transform = Transform2D(0.0, Vector2.ONE * ZOOM, 0.0, -top_left * ZOOM)
-	DrawnView.forget()
+	DrawnView.forget(screen)
 
 func _world_shown(top_left: Vector2) -> Rect2:
 	return Rect2(top_left, SCREEN / ZOOM)
@@ -57,13 +57,12 @@ func _test_the_box_is_the_screen_grown_by_the_margin(t) -> void:
 	var centre := SCREEN * 0.5
 	screen.canvas_transform = Transform2D(PI * 0.5, Vector2.ONE * ZOOM, 0.0, centre) \
 			* Transform2D(0.0, -centre / ZOOM)
-	DrawnView.forget()
+	DrawnView.forget(screen)
 	var turned := DrawnView.box_of(screen)
 	t.check(is_equal_approx(turned.size.x, SCREEN.y / ZOOM + DrawnView.MARGIN * 2.0)
 			and is_equal_approx(turned.size.y, SCREEN.x / ZOOM + DrawnView.MARGIN * 2.0),
 			"a quarter turn shows the same world on its side, and the box follows it (%s)" % turned)
 	screen.free()
-	DrawnView.forget()
 
 ## A rig that steps an agent by hand outside any tree keeps the gate's old answer: there is no screen
 ## for it to be off, so every change still asks for its redraw.
@@ -157,7 +156,6 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	t.check(car.excitement.caret_strength() == 2,
 			"and the redraw it asked for draws the doubled red caret it is owed")
 	screen.free()
-	DrawnView.forget()
 
 ## A walker whose picture did not change while it was off screen — standing, its view and stride
 ## where they were — still redraws on its first frame back, since what it shows was not kept.
@@ -181,7 +179,6 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t) -> voi
 			"back on screen it redraws once, though nothing in its key moved")
 	t.check(not walker.end_the_frame(0.0), "and then only on a change again")
 	screen.free()
-	DrawnView.forget()
 
 ## **An event off screen runs no key and no caret projection, and it is redrawn with the caret it is
 ## owed no later than the frame any of it can be seen.** A cyclist on course for her, so its caret
@@ -233,7 +230,6 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	t.check(cyclist.look.redraw_if_the_picture_changed(),
 			"back on screen with the same key, it redraws once")
 	screen.free()
-	DrawnView.forget()
 
 ## **A street fire burns along the whole front of its building, far past its own picture, and it is
 ## redrawn on every tick any of that front can be on the screen** — its flames flicker and its
@@ -290,7 +286,6 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 			"and every frame any of the front showed, the fire was redrawn (%d were not)"
 			% shown_unasked)
 	screen.free()
-	DrawnView.forget()
 
 ## **The badge is drawn on the frame it goes up, redrawn every frame it is up, and redrawn once to
 ## come off** — and with none up and none drawn there is nothing to redraw.

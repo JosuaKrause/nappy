@@ -43,7 +43,7 @@ const ROUTE_KERB_TINT_ALPHA := 0.45
 ## `include_filter`** — a `.json` is not a resource and would otherwise not be exported at all.
 ## Its filenames are the illustrated PNGs' own; `_layer_image()` turns each one into a region name
 ## and the pixels come off the page.
-const MANIFEST_PATH := "res://assets/ground_layers.json"
+const MANIFEST_PATH := GroundRecipe.PATH
 ## The region prefix the manifest's component filenames sit under: a manifest naming
 ## `curbstone.png` means the region `tiles/layers/curbstone`.
 const LAYER_REGION_ROOT := "tiles/layers/"
@@ -84,7 +84,7 @@ const _COLOR_MATCH_TOLERANCE := 0.03
 ##
 ## A source the recipe composes nothing for draws its whole tile off the page, in either bake, and
 ## a name the bake does not carry is the same kind of error one level down.
-static func build_tile_set(authored: TileSet) -> TileSet:
+static func build_tile_set(authored: TileSet, recipe: GroundRecipe) -> TileSet:
 	if authored == null:
 		return null
 	var started := Time.get_ticks_usec()
@@ -93,7 +93,7 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 		push_error("The baked '%s' page did not read back; the ground cannot be composed"
 				% ATLAS_GROUP)
 		return null
-	var manifest := _layer_recipe()
+	var manifest := _layer_recipe(recipe)
 	if manifest.is_empty() and AtlasLibrary.bake_mode() != "svg":
 		# The recipe said what a default bake's page holds, so without it nothing can be composed
 		# and nothing whole is on the page to draw instead. Stopping here says that once;
@@ -154,10 +154,10 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 ## it, markings included, so composing a kerb over a paving base there would draw the kerb twice.
 ## In a default bake the recipe is what the page was baked around, so a missing or unusable one is
 ## an error rather than a quiet `{}` — the whole tiles it composes are not on that page.
-static func _layer_recipe() -> Dictionary:
+static func _layer_recipe(recipe: GroundRecipe) -> Dictionary:
 	if AtlasLibrary.bake_mode() == "svg":
 		return {}
-	var manifest := _load_manifest()
+	var manifest := recipe.manifest()
 	if manifest.is_empty() or int(manifest.get("tile_size", 0)) != TILE_SIZE.x:
 		push_error("The ground composition recipe %s is missing, unreadable or not a version 1 "
 				% MANIFEST_PATH + "recipe at %dpx tiles" % TILE_SIZE.x)
@@ -281,42 +281,6 @@ static func rotate_clockwise(image: Image, degrees: int) -> Image:
 		_:
 			return null
 	return result
-
-## The recipe, read from disk once and held for the life of the process, like the `ground` page
-## it composes from. The ground is repainted at the start of every day, and a repaint that went
-## back to the disk would make each day's ground depend on what the file system holds at that
-## moment — a file moved under a running game would leave that day with no recipe and no ground.
-## The first build is the city's own, before the first day is drawn.
-static var _manifest: Dictionary = {}
-static var _manifest_read := false
-static var _manifest_reads := 0
-
-static func _load_manifest() -> Dictionary:
-	if not _manifest_read:
-		_manifest_read = true
-		_manifest = _read_manifest()
-	return _manifest
-
-static func _read_manifest() -> Dictionary:
-	_manifest_reads += 1
-	if not FileAccess.file_exists(MANIFEST_PATH):
-		return {}
-	var parser := JSON.new()
-	if parser.parse(FileAccess.get_file_as_string(MANIFEST_PATH)) != OK:
-		push_warning("Ignoring invalid ground layer manifest: %s" % MANIFEST_PATH)
-		return {}
-	var data: Variant = parser.data
-	return data if data is Dictionary and int(data.get("version", 0)) == 1 else {}
-
-## How many times the recipe has been read from disk. A suite asks that it stays at one.
-static func manifest_reads() -> int:
-	return _manifest_reads
-
-## Forgets the held recipe, so a suite can watch the one read happen.
-static func reset_for_tests() -> void:
-	_manifest = {}
-	_manifest_read = false
-	_manifest_reads = 0
 
 ## Composes `source_id`'s base and rotated components, tinting the `curbstone` component first
 ## when `tint_curbstone` asks for it — which is the route's own cast (M145's trial): the paving,

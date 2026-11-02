@@ -645,7 +645,7 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 ## the three west-facing sectors of every family drew no rim at all.
 ##
 ## Headless never calls `_draw()`, so the composition is asserted where it is computed rather than
-## on pixels: `EntityHalo.trace_offsets()` is the ring and `Sprites.mirrored_transform()` is what the
+## on pixels: `EntityHalo.trace_offsets()` is the ring and `Sprites.mirrored_transform()` (given the canvas) is what the
 ## flipped branch actually sets. Both are pure, and between them they are the whole of where a
 ## mirrored copy lands.
 ##
@@ -660,10 +660,12 @@ func _test_the_rims_mirrored_copies_land_on_the_ring(t) -> void:
 	t.check(ring.size() == EntityHalo.HALO_OFFSETS,
 			"the ring is the whole of `HALO_OFFSETS` (%d) rather than a subset" % ring.size())
 
+	var canvas := Node2D.new()
+	var other := Node2D.new()
 	var landed := {}
 	for offset in ring:
-		Sprites.set_base_transform(Transform2D(0.0, offset))
-		var mirrored := Sprites.mirrored_transform(anchor)
+		Sprites.set_base_transform(canvas, Transform2D(0.0, offset))
+		var mirrored := Sprites.mirrored_transform(canvas, anchor)
 		# The flipped branch draws its rect in the mirrored frame, so where the sprite's own anchor
 		# ends up is that frame's origin: the ring offset plus the anchor, and nothing else.
 		t.check(mirrored.origin.is_equal_approx(offset + anchor),
@@ -672,7 +674,13 @@ func _test_the_rims_mirrored_copies_land_on_the_ring(t) -> void:
 		t.check(is_equal_approx(mirrored.x.x, -1.0) and is_equal_approx(mirrored.y.y, 1.0),
 				"and it is still mirrored on x only — composing the offset in may not undo the flip")
 		landed[mirrored.origin.snapped(Vector2.ONE * 0.001)] = true
-	Sprites.set_base_transform(Transform2D.IDENTITY)
+	t.check(Sprites.mirrored_transform(other, anchor).origin.is_equal_approx(anchor),
+			"a canvas never told a transform mirrors about its own anchor, whatever another canvas was told")
+	Sprites.set_base_transform(canvas, Transform2D.IDENTITY)
+	t.check(Sprites.base_transform_of(canvas) == Transform2D.IDENTITY,
+			"clearing a canvas's transform puts it back to identity")
+	canvas.free()
+	other.free()
 	t.check(landed.size() == ring.size(),
 			("all %d mirrored copies land on points of their own (%d distinct), which is what makes "
 			+ "a rim rather than one silhouette re-drawn on itself") % [ring.size(), landed.size()])
