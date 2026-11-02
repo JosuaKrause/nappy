@@ -940,6 +940,16 @@ status=$?
 rm -r "$names_repo/docs/todo/2026-09-20-feathery-gecko"
 rm "$names_repo/docs/decisions/2026-09-27-busy-otter-feathery-gecko.md"
 check_that "lint.sh rejects a further record whose own pair another entry already uses" '[[ $status -ne 0 ]]'
+for entry_words in cold-fish warm-yak; do
+    mkdir -p "$names_repo/docs/todo/2026-11-03-$entry_words"
+    printf 'priority: later\n\n# %s — An entry\n' "$entry_words" > "$names_repo/docs/todo/2026-11-03-$entry_words/README.md"
+    printf '# %s — Further · 2026-11-03\n' "$entry_words" > "$names_repo/docs/decisions/2026-11-03-$entry_words-feathery-gecko.md"
+done
+lint_in_names_repo docs/decisions/2026-11-03-cold-fish-feathery-gecko.md docs/decisions/2026-11-03-warm-yak-feathery-gecko.md
+status=$?
+rm -r "$names_repo/docs/todo/2026-11-03-cold-fish" "$names_repo/docs/todo/2026-11-03-warm-yak"
+rm "$names_repo/docs/decisions/2026-11-03-cold-fish-feathery-gecko.md" "$names_repo/docs/decisions/2026-11-03-warm-yak-feathery-gecko.md"
+check_that "lint.sh rejects one second pair under two entries of the same date" '[[ $status -ne 0 ]]'
 printf '# Playtest busy-otter — A second thing\n' > "$names_repo/docs/playtests/2026-09-28-busy-otter.md"
 lint_in_names_repo docs/playtests/2026-09-28-busy-otter.md
 status=$?

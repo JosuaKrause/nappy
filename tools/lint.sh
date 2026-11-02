@@ -243,7 +243,7 @@ lint_duplicate_names() {
                 where[pair] = where[pair] " " folder "/" base
                 if (n == 4) {
                     pair2 = part[3] "-" part[4]
-                    key2 = date " second"
+                    key2 = date " second " base
                     if (!((pair2, key2) in seen)) { seen[pair2, key2] = 1; count[pair2]++ }
                     where[pair2] = where[pair2] " " folder "/" base
                 }
