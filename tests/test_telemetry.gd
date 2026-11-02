@@ -58,6 +58,10 @@ func run(t) -> void:
 	_test_two_spikes_in_one_second_write_only_the_worse_one(t)
 	_test_no_spike_line_with_the_flag_off(t)
 	_test_a_baked_page_says_which_moment_loaded_it(t)
+	# Whichever test ran last leaves its clock and attempt count behind; a log opened and closed
+	# puts both back, so the suite hands the shared state on as it found it in any order.
+	Telemetry.begin_memory_log()
+	Telemetry.end_run()
 
 # ------------------------------------------------------------------ dormancy ---
 

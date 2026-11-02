@@ -307,6 +307,11 @@ four booleans, the same shape `DevFlags._live_debug_requested()` already uses, a
 `window.goatcounter` never raises or prints an engine error: the existence check comes first, and
 the call itself sits inside the page's own `try`/`catch`.
 
+`VisitCounter.listen(bus)` connects every handler to the bus it is handed: the autoload's `_ready()`
+hands it `EventBus`, and a test hands it a bus of the same script with nobody else listening, then
+emits on it, so what the counter sends is read off real signals and not off its handlers called by
+hand. `unlisten()` lets go, and `pending_events()` answers what waits for `count.js`.
+
 ## Where the logs are
 
 ```sh
