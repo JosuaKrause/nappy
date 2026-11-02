@@ -12,19 +12,21 @@ asked for a standing list of tasks and questions, with their thoughts written un
 the answers given in line, and chose a shared doc over GitHub issues, which are too slow for a
 conversation (inbox #830 in minty-dolphin).
 
-The board is the Claude Doc "Nappy board", https://claude.ai/artifact/UbMpXbepDzN4Mfgs7tAxqm (doc
-id `df72dcc8-963b-4b22-bf78-ca097d25c920`, its one tab `4560d3a5-7376`, the tab's body node
-`bdec01d2-2025`). Only a Claude Code session with the Claude Docs tools reaches it; Codex has no
-route to it. **Only the orchestrating Claude Code session acts on it**: any other session that opens
-it changes nothing and answers nothing (inbox #830 in minty-dolphin), and the board says so. Claude is never
-@-mentioned in it, since a mention summons a separate session that has none of this context.
+The board is the Claude Doc "Nappy board", https://claude.ai/artifact/UbMpXbepDzN4Mfgs7tAxqm (doc id
+`df72dcc8-963b-4b22-bf78-ca097d25c920`; its Main tab `4560d3a5-7376` with body node `bdec01d2-2025`,
+its Review tab `86f8ada2-8639` with body node `db7c662c-d0a4`). Only a Claude Code session with the
+Claude Docs tools reaches it; Codex has no route to it. **Only the orchestrating Claude Code session
+acts on it**: any other session that opens it changes nothing and answers nothing (inbox #830 in
+minty-dolphin), and the board says so. Claude is never @-mentioned in it, since a mention summons a
+separate session that has none of this context.
 
 ## When it is read
 
 **On every turn the orchestrator takes, and whenever the player says "doc" or "check the doc".**
 Nothing notifies the terminal session of an edit, and the player gives a heads-up when it matters
-rather than have the board polled (inbox #830 in minty-dolphin). A report from an agent, a merge or a review
-verdict updates the Running table in the same turn.
+rather than have the board polled (inbox #830 in minty-dolphin). A report from an agent, a merge or
+a review verdict updates the Running table in the same turn. **Both tabs are read**, since the
+player answers review items on the Review tab and design questions on the Main tab.
 
 ## The layout
 
@@ -45,6 +47,20 @@ Top to bottom, every part present even when empty:
    it, one line on what comes after the running work.
 5. `## Recently done`: a table `Merged | What`, the PR linked, newest first, the last six or so.
 6. `## How this board works`: a bullet list of the rules below, in the player's terms.
+
+That is the Main tab. **The review items have a tab of their own, Review, in the same overall style,
+and it is kept in step with `docs/review/`** (inbox #948 in bouncy-marten). A review item under
+`docs/review/` is a sign-off check that needs a set-up run or a device and is answered one at a
+time, while the Main tab's questions are design decisions that block work and are answered in a
+batch, so the two kinds stay apart; a review item stays a file in the repository, and the tab only
+shows it. The answer goes to a playtest file as before, which closes the item's file
+(**playtest-feedback**). *Proposed, not asked for, open to the player's correction:* the tab holds
+a title and one line saying what it is for, `## Waiting on you` with the items ready to answer (or
+the one line "Nothing is ready for you right now."), and below it a section for items held until
+something happens, such as `## Waiting for a release`, where the item's file says what it waits
+for; each item is a question in the layout below with its review item's name in its Question line
+and the steps in its Context; and an item added, held or closed in the repository is added, moved
+or removed on the tab in the same turn.
 
 **A question is a level-3 heading with a stable kebab-case name and one bullet list under it**,
 nested exactly like this, the layout the player set on the board:
@@ -107,10 +123,11 @@ A local script cannot run the board: it lives behind claude.ai's connector, whic
 Claude Docs tools call, with no credential a script could use. The saving is in what is read and how
 often:
 
-- **Read the changes, not the page.** Keep the last read's `rev` and read
-  `{"kind":"view","sinceRev":<rev>}`: only the blocks changed since come back. Comments the same
-  way: `query` with `under` the tab and `afterSeq` the last `seq` seen. A full read is for a lost
-  bookmark only; `session-cleanup`'s restart prompt carries both numbers.
+- **Read the changes, not the page.** Each tab's body has a `rev` of its own: keep the last read's
+  `rev` for each tab and read `{"kind":"view","sinceRev":<rev>}` on each: only the blocks changed
+  since come back. Comments the same way: `query` with `under` each tab and `afterSeq` the last
+  `seq` seen there. A full read is for a lost bookmark only; `session-cleanup`'s restart prompt
+  carries the numbers for both tabs.
 - **Write in one call.** Several ops go in one `update`, applied in order; a write's acknowledgement
   is the next write's anchor, with no read between.
 - **Keep the page small.** A filed item leaves whole and Recently done keeps the last few;

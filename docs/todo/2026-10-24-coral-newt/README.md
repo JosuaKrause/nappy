@@ -21,5 +21,11 @@ release Web engine has no Vorbis decoder), audio-sprite banks and MIDI (nothing 
 them), the chiptune style, and their live annotate servers (any page in the same browser can post
 "feedback" that the skill then tells the agent to read).
 
-*Proposed, not asked for:* the band `next`; the first two items as one PR to `tools/synthesize-sfx.py`
-before the player's next listen of the open sound-lab pass (`docs/review/2026-09-26-run-tools-sound-lab-sh-and.md`).
+*Proposed, not asked for:* the band `next`; the first two items as one PR to `tools/synthesize-sfx.py`.
+
+**The listen of pass 4 is closed.** The player: "no, not working on this before we revive the sound
+items. the current sound is bad -- I already heard that back then (and told codex) -- nothing has
+changed since" (inbox #950 in bouncy-marten). Asked whether the entry should then leave `next`: "how
+is it being next a contradiction to we only act on questions when the item actually gets picked up
+and discussed?" (inbox #957 in bouncy-marten). **Read as:** the entry stays `next`; picking it up is
+the revival of the sound work, and the next listen and its questions are taken up then.

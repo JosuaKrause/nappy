@@ -7,3 +7,8 @@ for the same time, and press `save frames`; that is the baseline. Then add `&dpr
 readout's `window` and `drawn` lines say what was drawn. Save one more record, the same way, at the
 lowest value that still looks right. Which `dpr` looks acceptable, and does its record's `render`
 fall against the baseline? The cap is recorded in [M159-11](../decisions/2026-09-19-M159-11.md).
+
+**Held until the release after v0.29.2 is published.** The player: "bring that question up again
+after the latest release" (inbox #951 in bouncy-marten). **Read as:** ask again once the next
+release is out, not on v0.29.2, which already carries `?dpr=`; merry-lynx (ask the player for a
+phone frame record once the new version is published) waits on the same release.
