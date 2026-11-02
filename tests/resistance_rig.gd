@@ -10,8 +10,9 @@ extends RefCounted
 ## (`tick()`), her (`use_player()`) and what she can see (`set_sight()`). A test that builds its city
 ## with `_build_city_in_a_new_run()` owns the run that city stands in, so the state it needs — the
 ## steps done, the alleys used, the scars — is set on that run, by the test, and gone with it.
-## `_build_city()` builds over the live run (`GameState`) for the suites that still set the run's
-## state on the autoload and put it back by hand (`_with_clean_run()`).
+## `_build_city()` builds over the live run (`GameState`), and `_with_clean_run()` clears and puts
+## back that run's state; no suite calls them, and they stay for the probe
+## `tests/probes/bouncy_egret_day11_mast.gd`, which loads `test_resistance_arrow.gd` for this rig.
 ##
 ## **What the director has put in the street is read from the street**: the contact she touches
 ## (`ResistanceDirector.contact()`), what its task rides on (`rider()`), and every guard and pursuer
@@ -73,11 +74,10 @@ var _own_run: RunState
 
 ## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires the
 ## "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
-## `_exit_tree()` (`src/events/event_manager.gd`). This suite calls `_build_city()` many times
-## over, so a `_city` never freed between two calls would leave every earlier one standing —
-## sixteen abandoned `City` nodes in a suite that only ever needs the latest, each holding "events"
-## resident for the rest of the process. `run()` frees whichever one is still around after the
-## last call. Over the live run (`GameState`), for the suites that still set the run's state there.
+## `_exit_tree()` (`src/events/event_manager.gd`). A suite builds a city many times over, so a
+## `_city` never freed between two builds would leave every earlier one standing, each holding
+## "events" resident for the rest of the process; `run()` frees whichever one is still around after
+## the last. Over the live run (`GameState`); only the probe named at the top calls it.
 func _build_city(t, seed_value := SEED) -> void:
 	_free_city()
 	_city = RunCity.of_the_run(CITY_SCENE)
@@ -139,8 +139,9 @@ func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator
 	rng.seed = hash("%d:%d:%s" % [seed_value, day, stream])
 	return rng
 
-## Runs `action` with the live run's steps, progress and package cleared, and puts them back: for
-## the suites that build over the live run (`_build_city()`). A city in a run of its own starts clear.
+## Runs `action` with the live run's steps, progress and package cleared, and puts them back, for a
+## city built over the live run (`_build_city()`); only the probe named at the top calls it. A city
+## in a run of its own starts clear.
 func _with_clean_run(action: Callable) -> void:
 	var saved_completed := GameState.resistance.completed_steps.duplicate()
 	var saved_failed := GameState.resistance.failed_steps.duplicate()
@@ -367,12 +368,11 @@ func _touched_from_standable_ground(director: ResistanceDirector, item: Vector2,
 ## ground the day's obstruction leaves open, going on only from a tile inside the `NEAR_THE_MARK`
 ## circle round her — a tile at or past its edge is where that path reaches the edge. The
 ## obstruction is the director's own as it placed the day's first contact
-## (`director._reach_blocked`), so a task's own body placed after it (day 11's mast) does not shut
-## its own tile: the one private read left in this rig, which `reach_narrow` and `reach_relocated`
-## take with them when they move onto public seams (by reading the circle before the mark is read).
+## (`ResistanceDirector.reach_obstruction()`), so a task's own body placed after it (day 11's mast)
+## does not shut its own tile.
 func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 	var map := _city.map
-	var blocked: Dictionary = director._reach_blocked
+	var blocked := director.reach_obstruction()
 	var start := map.world_to_tile(her)
 	var centre := map.tile_to_world(start)
 	var edge := {}
@@ -391,6 +391,40 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 				inside[next] = true
 				queue.append(next)
 	return [edge, inside]
+
+## The tiles her paths from `her` reach at least `near` and less than `far` from her own tile's
+## centre, over walkable ground the day's obstruction leaves open
+## (`ResistanceDirector.reach_obstruction()`), walked on past the circle's edge. `tile -> true`.
+## **A deliberate copy of the director's own walk** (`_paths_reach_between()` there), kept as a test
+## oracle: day 13's check grades the director's roadblock against a walk the director does not run,
+## so if the two drift that check fails rather than passing silently.
+func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: float,
+		far: float) -> Dictionary:
+	var map := _city.map
+	var blocked := director.reach_obstruction()
+	var found := {}
+	var start := map.world_to_tile(her)
+	if not map.is_walkable(start):
+		return found
+	var centre := map.tile_to_world(start)
+	var seen := {start: true}
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + step
+			if seen.has(next) or not map.is_walkable(next) or blocked.has(next):
+				continue
+			seen[next] = true
+			var distance := map.tile_to_world(next).distance_to(centre)
+			if distance >= far:
+				continue
+			if distance >= near:
+				found[next] = true
+			queue.append(next)
+	return found
 
 ## Plans `day` on the test city in the real day order (closures, events, resistance) for
 ## `seed_value`, and reads the day's mark standing on it with her screen the view around her:

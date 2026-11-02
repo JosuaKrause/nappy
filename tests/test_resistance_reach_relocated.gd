@@ -5,8 +5,7 @@ func run(t) -> void:
 	t.gives_back_observers()
 	_test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t)
 	_test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
-	if _city != null:
-		_city.free()
+	_free_city()
 
 ## feathery-marmot, day 11 — *"Now just add a new mast close by"* (the player, 2026-10-03, quiet-yak, inbox #486, on a
 ## mark with no live mast near it). On three cities, day 11 is planned the way a played day is and
@@ -19,93 +18,139 @@ func run(t) -> void:
 ## from the scars, stand it again at its own foot, silenced. Before, the task went to the nearest of
 ## the city's six masts, 1,377px and 3,948px away on two of these cities.
 func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
-	var saved_scars := GameState.attempt_spend.scars.duplicate()
-	var saved_state := GameState.attempt_spend.city_state
 	var added := [0]
+	var room_days := [0]
 	for seed_value: int in [SEED, 90210, 1234567]:
-		_build_city(t, seed_value)
-		_with_clean_run(func() -> void:
-			GameState.attempt_spend.scars = []
-			var read := _read_the_mark_on(t, 11, seed_value)
-			var director: ResistanceDirector = read[0]
-			var mark: Vector2 = read[1]
-			var player: Stroller = read[2]
-			var circle := _edge_of_her_circle(director, mark)
-			var site_near := false
-			for plan in _city.events.plans():
-				if plan.def.id != "loudspeaker" or plan.mast_id.begins_with("added-") or plan.silenced:
+		# A city and a run of its own for every seed: the scar the task leaves is this run's.
+		_build_city_in_a_new_run(t, seed_value)
+		var read := _read_the_mark_on(t, 11, seed_value)
+		var director: ResistanceDirector = read[0]
+		var mark: Vector2 = read[1]
+		var player: Stroller = read[2]
+		var circle := _edge_of_her_circle(director, mark)
+		var site_near := false
+		# The task's mast, by the public link: the contact stands on its foot.
+		var added_plan: EventScheduler.Planned = null
+		for plan in _city.events.plans():
+			if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-") \
+					and _city.events.mast_foot(plan.mast_id).distance_to(
+					director.contact_position()) < 0.5:
+				added_plan = plan
+		for plan in _city.events.plans():
+			if plan.def.id != "loudspeaker" or plan.mast_id.begins_with("added-") or plan.silenced:
+				continue
+			var foot_tile := _city.map.world_to_tile(plan.position)
+			# The tile she touches it from: the first beside the foot she can stand on, the
+			# order `_place_at_a_mast()` asks them in.
+			for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				var next := foot_tile + side
+				if not SpawnSiting.is_legal_ground(_city.map, next,
+						_walled_alleys()) or _city.map.is_obstructed(next) \
+						or not director.reaches_from_home(next):
 					continue
-				var foot_tile := _city.map.world_to_tile(plan.position)
-				# The tile she touches it from: the first beside the foot she can stand on, the
-				# order `_place_at_a_mast()` asks them in.
-				for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-					var next := foot_tile + side
-					if not SpawnSiting.is_legal_ground(_city.map, next,
-							_walled_alleys()) or _city.map.is_obstructed(next) \
-							or not director._reachable_from_home(next):
-						continue
-					if circle[0].has(next) or circle[1].has(next):
-						site_near = true
-					break
-			if not site_near and director._mast_id.begins_with("added-"):
-				added[0] += 1
-				var foot := _city.events.mast_foot(director._mast_id)
-				t.check(foot != Vector2.INF and circle[0].has(_city.map.world_to_tile(foot)),
-						"seed %d: the mast put up for the task stands where her path reaches the circle's edge"
-						% seed_value)
-				t.check(not _would_show(ResistanceDirector.TASK_BOX, foot),
-						"seed %d: and out of her view" % seed_value)
-				var masts_before := _city.events.plans().filter(
-						func(plan: EventScheduler.Planned) -> bool: return plan.mast_id != "").size()
-				director._on_contact_completed(12)
-				var scarred := false
-				for scar: Dictionary in GameState.attempt_spend.scars:
-					if String(scar["id"]) == EventScheduler.SILENCED_MAST \
-							and (scar["position"] as Vector2).distance_to(foot) < 1.0:
-						scarred = true
-				t.check(scarred, "seed %d: reaching it silences it and records its scar" % seed_value)
-				# Day 14's sabotage: lit again, the added mast is put out by `silence_all_masts()`
-				# with the others — it is that one mast's plan this asks about.
-				var added_plan: EventScheduler.Planned = null
-				for plan in _city.events.plans():
-					if plan.mast_id == director._mast_id:
-						added_plan = plan
-				t.check(added_plan != null and masts_before > 0,
-						"seed %d: the queued mast is one of the day's plans" % seed_value)
-				if added_plan:
-					added_plan.silenced = false
-					_city.events.silence_all_masts()
-					t.check(added_plan.silenced,
-							"seed %d: day 14's sabotage puts out the queued mast too" % seed_value)
-				var day_14 := EventScheduler._place_masts(14, _city.map, 0, PackedVector2Array(),
-						GameState.attempt_spend.scars)
-				var on_day_14 := false
-				for plan in day_14:
-					if plan.mast_id == director._mast_id and plan.silenced:
-						on_day_14 = true
-				t.check(on_day_14, "seed %d: and the last night plans it, silenced, from its scar"
-						% seed_value)
-				var day_12 := EventScheduler._place_masts(12, _city.map, 0, PackedVector2Array(),
-						GameState.attempt_spend.scars)
-				var stands_again := false
-				for plan in day_12:
-					if plan.mast_id == director._mast_id and plan.silenced \
-							and plan.position.distance_to(foot) < 1.0:
-						stands_again = true
-				t.check(stands_again, "seed %d: and the next day stands it again, silenced"
-						% seed_value)
-			elif not site_near:
-				# The scheduler may refuse every tile it was offered — its acceptance, not the
-				# director's — and then the nearest live mast is the task's, which the director says.
-				t.check(director._fell_back,
-						"seed %d: no mast near the mark, none generated, and the nearest stands in (%s)"
-						% [seed_value, director._mast_id])
-			player.free()
-			director.free())
-	GameState.attempt_spend.scars = saved_scars
-	GameState.attempt_spend.city_state = saved_state
+				if circle[0].has(next) or circle[1].has(next):
+					site_near = true
+				break
+		if not site_near and added_plan != null:
+			added[0] += 1
+			var mast_id := added_plan.mast_id
+			var foot := _city.events.mast_foot(mast_id)
+			t.check(foot != Vector2.INF and circle[0].has(_city.map.world_to_tile(foot)),
+					"seed %d: the mast put up for the task stands where her path reaches the circle's edge"
+					% seed_value)
+			t.check(not _would_show(ResistanceDirector.TASK_BOX, foot),
+					"seed %d: and out of her view" % seed_value)
+			# Her touch on the task's contact, which silences the mast it stands at.
+			director.contact().complete_now()
+			var scarred := false
+			for scar: Dictionary in _city.run.attempt_spend.scars:
+				if String(scar["id"]) == EventScheduler.SILENCED_MAST \
+						and (scar["position"] as Vector2).distance_to(foot) < 1.0:
+					scarred = true
+			t.check(scarred and added_plan.silenced,
+					"seed %d: reaching it silences it and records its scar" % seed_value)
+			# Day 14's sabotage: lit again, the added mast is put out by `silence_all_masts()`
+			# with the others — it is that one mast's plan this asks about.
+			t.check(not director.fell_back() and _city.events.plans().has(added_plan),
+					"seed %d: the task went to the mast put up for it, one of the day's plans"
+					% seed_value)
+			added_plan.silenced = false
+			_city.events.silence_all_masts()
+			t.check(added_plan.silenced,
+					"seed %d: day 14's sabotage puts out the queued mast too" % seed_value)
+			# Last night's masts, planned on the day-11 map from the run's scars: the scarred
+			# mast is among them, silenced, whatever that night's closures and holds do.
+			var scars: Array[Dictionary] = []
+			scars.assign(_city.run.attempt_spend.scars)
+			var planned_bare := false
+			for plan in EventScheduler._place_masts(14, _city.map, 0, PackedVector2Array(), scars):
+				if plan.mast_id == mast_id and plan.silenced:
+					planned_bare = true
+			t.check(planned_bare,
+					"seed %d: and the last night plans it, silenced, from its scar" % seed_value)
+			# The same night as the game plans it: the mast is there unless that night's
+			# closures, holds or district doors leave it no room, and then it is absent.
+			_plan_the_day(14, seed_value)
+			var on_day_14 := false
+			for plan in _city.events.plans():
+				if plan.mast_id == mast_id and plan.silenced:
+					on_day_14 = true
+			var no_room := _the_day_leaves_no_room_for(foot)
+			if not no_room:
+				room_days[0] += 1
+			t.check(on_day_14 == not no_room,
+					"seed %d: and on the real last night it stands exactly where the night leaves room (%s)"
+					% [seed_value, "room" if not no_room else "no room"])
+			_plan_the_day(12, seed_value)
+			var stands_again := false
+			for plan in _city.events.plans():
+				if plan.mast_id == mast_id and plan.silenced \
+						and plan.position.distance_to(foot) < 1.0:
+					stands_again = true
+			t.check(stands_again, "seed %d: and the next day stands it again, silenced"
+					% seed_value)
+		elif not site_near:
+			# The scheduler may refuse every tile it was offered — its acceptance, not the
+			# director's — and then the nearest live mast is the task's, which the director says.
+			var generated := 0
+			for plan in _city.events.plans():
+				if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-"):
+					generated += 1
+			t.check(generated == 0 and director.fell_back(),
+					"seed %d: no mast near the mark, none generated (%d), and the nearest stands in"
+					% [seed_value, generated])
+		player.free()
+		director.free()
+	_free_city()
 	t.check(added[0] > 0, "some city had no mast near its day-11 mark, so one was put up (%d)"
 			% added[0])
+	t.check(room_days[0] > 0, "some seed's last night left the mast room, so it was planned (%d)"
+			% room_days[0])
+
+## Whether the day just planned on the test city refuses a mast at `foot`: its tile closed, held or
+## on the home block, or a district door's checkpoint within the gap and a mast's field of it
+## (`EventScheduler.clear_of_the_doors()`, the check the planning makes of every mast).
+func _the_day_leaves_no_room_for(foot: Vector2) -> bool:
+	var tile := _city.map.world_to_tile(foot)
+	if _city.map.is_closed(tile) or _city.map.is_held_at(tile) or _city.map.is_on_home_block(tile):
+		return true
+	var doors := PackedVector2Array()
+	var region_plan: RegionPlanner.RegionPlan = _city.region_plan()
+	if region_plan:
+		for body in region_plan.door_bodies:
+			doors.append(body.position)
+	return not EventScheduler.clear_of_the_doors(foot, PackedVector2Array(), doors,
+			EventCatalogue.mast().field_reach())
+
+## Plans `day` on the test city in the real day order (closures, then events), from the run's own
+## scars: what the game does at that day's dawn.
+func _plan_the_day(day: int, seed_value: int) -> void:
+	var state := CityState.new()
+	_city.run.attempt_spend.city_state = state
+	state.begin_day(_city.map.block_plans, day)
+	_city.start_day(state, day, _rng(day, "closures", seed_value))
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
+			_city.map.doorstep_world_position())
 
 ## downy-otter, "a mark is never placed in an alley she cannot reach" (*"also a mark should never
 ## be placed in an alley that is not reachable (ie sealed off)"*, olive-koala statement 9), on the
@@ -127,9 +172,8 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 	var seeds: Array[int] = [4242, 2295276695]
 	var checked := 0
 	for seed_value in seeds:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
-		t.add_child(city)
-		city.build(CityGenerator.generate(seed_value))
+		_build_city_in_a_new_run(t, seed_value)
+		var city := _city
 		for day in REACHABILITY_SWEEP_DAYS:
 			var closure_state := CityState.new()
 			closure_state.begin_day(city.map.block_plans, day)
@@ -137,10 +181,7 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 			city.events.start_day(DaySpec.for_day(day), _production_rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 
-			var director := ResistanceDirector.new()
-			t.add_child(director)
-			director.set_process(false)
-			director.setup(city, city.map)
+			var director := _director(t)
 			director.start_day(day, _production_rng(seed_value, day, "resistance"),
 					Tuning.day_length(day))
 			var mark_step := director.current_step()
@@ -183,5 +224,5 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 						"and body reaches it (%s, from %s)")
 						% [seed_value, day, nearest_tile, sidewalks[i]])
 			director.free()
-		city.free()
+	_free_city()
 	t.check(checked > 0, "some relocation target was actually checked (%d)" % checked)
