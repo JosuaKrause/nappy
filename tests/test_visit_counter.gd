@@ -70,81 +70,119 @@ func run(t) -> void:
 	_test_an_escape_section_is_counted_as_a_day_of_its_own(t)
 	_test_every_event_opts_out_of_sessions(t)
 
-## `_should_send()` — on the web, released, unasked-for and with a live
-## `window.goatcounter.count` are all four required; missing any one of them refuses.
+## `GoatCounterOutbox.gate_allows()` — on the web, released, unasked-for and with a live
+## `window.goatcounter.count` are all four required; missing any one of them refuses. The gate
+## reads the platform, which a test cannot fake, so its truth table is the outbox's own.
 func _test_should_send_truth_table(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.gate_allows(true, false, false, true),
+	t.check(GoatCounterOutbox.gate_allows(true, false, false, true),
 		"web, a release build, no ?debug=1, and goatcounter present sends")
-	t.check(not VISIT_COUNTER_SCRIPT.gate_allows(false, false, false, true),
+	t.check(not GoatCounterOutbox.gate_allows(false, false, false, true),
 		"off the web, nothing is sent no matter what else is true")
-	t.check(not VISIT_COUNTER_SCRIPT.gate_allows(true, true, false, true),
+	t.check(not GoatCounterOutbox.gate_allows(true, true, false, true),
 		"a debug build sends nothing, on the web or off it")
-	t.check(not VISIT_COUNTER_SCRIPT.gate_allows(true, false, true, true),
+	t.check(not GoatCounterOutbox.gate_allows(true, false, true, true),
 		"?debug=1 (RunConfig.readout_requested) sends nothing even on a release web build")
-	t.check(not VISIT_COUNTER_SCRIPT.gate_allows(true, false, false, false),
+	t.check(not GoatCounterOutbox.gate_allows(true, false, false, false),
 		"a missing or blocked window.goatcounter sends nothing")
-	t.check(not VISIT_COUNTER_SCRIPT.gate_allows(false, true, true, false),
+	t.check(not GoatCounterOutbox.gate_allows(false, true, true, false),
 		"every reason to refuse at once still refuses")
 
+## A day-scoped name is `nappy-day-<day>-<suffix>`, joined the way PLAYTEST-132's own example does.
 func _test_day_event_name(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.day_event_name(6, "lost-crying") == "nappy-day-6-lost-crying",
-		"day and suffix join the way PLAYTEST-132's own example does")
-	t.check(VISIT_COUNTER_SCRIPT.day_event_name(1, "began") == "nappy-day-1-began",
-		"a plain day-scoped name")
-	t.check(VISIT_COUNTER_SCRIPT.day_event_name(14, "task-skipped") == "nappy-day-14-task-skipped",
-		"a two-word suffix stays hyphenated, not a second underscore")
+	var counter := RecordingCounter.new()
+	counter.bus.day_ended.emit(6, GameEnums.DayResult.LOST_CRYING, "", 0.0)
+	t.check(counter.sent.back() == "nappy-day-6-lost-crying",
+		"day and suffix join the way PLAYTEST-132's own example does (%s)" % [counter.sent])
+	counter.bus.day_started.emit(1)
+	t.check(counter.sent.back() == "nappy-day-1-began", "a plain day-scoped name (%s)" % [counter.sent])
+	counter.bus.resistance_contact_available.emit(2)
+	counter.bus.day_ended.emit(14, GameEnums.DayResult.WON, "", 0.0)
+	t.check(counter.sent.size() == 3,
+		"a step offered on another day is not skipped by day 14's end (%s)" % [counter.sent])
+	counter.bus.day_ended.emit(1, GameEnums.DayResult.WON, "", 0.0)
+	t.check(counter.sent.back() == "nappy-day-1-task-skipped",
+		"a two-word suffix stays hyphenated, not a second underscore (%s)" % [counter.sent])
+	_done(counter)
 
 ## `GameEnums.DayResult`'s own keys are the loss causes — nothing here invents a second name for
-## one, it only lowercases and hyphenates the key already in the game.
+## one, it only lowercases and hyphenates the key already in the game. A day's end sends the key.
 func _test_loss_cause_names_every_day_result(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.loss_cause(GameEnums.DayResult.WON) == "won",
-		"a win names itself, no 'lost-' prefix")
-	t.check(VISIT_COUNTER_SCRIPT.loss_cause(GameEnums.DayResult.LOST_CRYING) == "lost-crying",
-		"an enum key's underscore becomes the name's own hyphen")
-	t.check(VISIT_COUNTER_SCRIPT.loss_cause(GameEnums.DayResult.LOST_TIMEOUT) == "lost-timeout",
-		"the timeout loss")
-	t.check(VISIT_COUNTER_SCRIPT.loss_cause(GameEnums.DayResult.LOST_HARD_FAIL) == "lost-hard-fail",
-		"a two-word cause stays entirely hyphenated")
+	var counter := RecordingCounter.new()
+	var named := [
+		[GameEnums.DayResult.WON, "won", "a win names itself, no 'lost-' prefix"],
+		[GameEnums.DayResult.LOST_CRYING, "lost-crying",
+				"an enum key's underscore becomes the name's own hyphen"],
+		[GameEnums.DayResult.LOST_TIMEOUT, "lost-timeout", "the timeout loss"],
+		[GameEnums.DayResult.LOST_HARD_FAIL, "lost-hard-fail",
+				"a two-word cause stays entirely hyphenated"]]
+	for row in named:
+		counter.sent.clear()
+		counter.bus.day_ended.emit(3, row[0], "", 0.0)
+		t.check(counter.sent == ["nappy-day-3-" + row[1]], row[2])
+	_done(counter)
 
-## `_loss_event_suffix()` is what `_on_day_ended()` actually sends: `_loss_cause(result)` with
-## `EventBus.day_ended`'s own raw cause folded on, for the two results that ever have one — a win
-## or a timeout keeps its bare name even if it is (wrongly) handed a cause, since the game names
-## none for either.
+## What a day's end sends is the loss kind with `EventBus.day_ended`'s own raw cause folded on, for
+## the two results that ever have one — a win or a timeout keeps its bare name even if it is
+## (wrongly) handed a cause, since the game names none for either.
 func _test_loss_event_suffix_folds_a_cause_only_for_the_two_results_that_ever_have_one(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.loss_event_suffix(GameEnums.DayResult.LOST_CRYING, "traffic")
-			== "lost-crying-traffic", "a crying loss folds its cause on")
-	t.check(VISIT_COUNTER_SCRIPT.loss_event_suffix(GameEnums.DayResult.LOST_HARD_FAIL, "car")
-			== "lost-hard-fail-car", "a hard fail folds its cause on the same way")
-	t.check(VISIT_COUNTER_SCRIPT.loss_event_suffix(GameEnums.DayResult.LOST_CRYING, "")
-			== "lost-crying", "no recorded cause sends the bare loss name rather than nothing")
-	t.check(VISIT_COUNTER_SCRIPT.loss_event_suffix(GameEnums.DayResult.WON, "traffic") == "won",
-		"a win never carries a cause, whatever is pending")
-	t.check(VISIT_COUNTER_SCRIPT.loss_event_suffix(GameEnums.DayResult.LOST_TIMEOUT, "traffic")
-			== "lost-timeout", "a timeout never carries a cause either")
+	var counter := RecordingCounter.new()
+	counter.bus.day_ended.emit(2, GameEnums.DayResult.LOST_CRYING, "traffic", 0.0)
+	t.check(counter.sent.back() == "nappy-day-2-lost-crying-traffic", "a crying loss folds its cause on")
+	counter.bus.day_ended.emit(2, GameEnums.DayResult.LOST_HARD_FAIL, "car", 0.0)
+	t.check(counter.sent.back() == "nappy-day-2-lost-hard-fail-car",
+		"a hard fail folds its cause on the same way")
+	counter.bus.day_ended.emit(2, GameEnums.DayResult.LOST_CRYING, "", 0.0)
+	t.check(counter.sent.back() == "nappy-day-2-lost-crying",
+		"no recorded cause sends the bare loss name rather than nothing")
+	counter.bus.day_ended.emit(2, GameEnums.DayResult.WON, "traffic", 0.0)
+	t.check(counter.sent.back() == "nappy-day-2-won", "a win never carries a cause, whatever is pending")
+	counter.bus.day_ended.emit(2, GameEnums.DayResult.LOST_TIMEOUT, "traffic", 0.0)
+	t.check(counter.sent.back() == "nappy-day-2-lost-timeout", "a timeout never carries a cause either")
+	_done(counter)
 
 func _test_run_begun_name(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.run_begun_name(1, false) == "nappy-run-fresh",
+	var counter := RecordingCounter.new()
+	counter.bus.run_begun.emit(1, false)
+	t.check(counter.sent == ["nappy-run-fresh"],
 		"a fresh run always starts day 1, not worth repeating in the name")
-	t.check(VISIT_COUNTER_SCRIPT.run_begun_name(9, true) == "nappy-run-resumed-day-9",
-		"a resumed run names the day it resumed on")
+	_done(counter)
+	counter = RecordingCounter.new()
+	counter.bus.run_begun.emit(9, true)
+	t.check(counter.sent == ["nappy-run-resumed-day-9"], "a resumed run names the day it resumed on")
+	_done(counter)
 
 func _test_mode_event_name(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.mode_event_name(true) == "nappy-mode-hard", "a hard run")
-	t.check(VISIT_COUNTER_SCRIPT.mode_event_name(false) == "nappy-mode-normal", "a normal run")
+	var counter := RecordingCounter.new()
+	counter.bus.run_mode_chosen.emit(true, 1)
+	t.check(counter.sent.front() == "nappy-mode-hard", "a hard run")
+	counter.sent.clear()
+	counter.bus.run_mode_chosen.emit(false, 1)
+	t.check(counter.sent.front() == "nappy-mode-normal", "a normal run")
+	_done(counter)
 
 ## Every run keeps the plain `began`, so its series runs on unbroken; a hard run adds its copy.
 func _test_day_began_names(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.day_began_names(5, false) == ["nappy-day-5-began"],
-		"a normal run's day sends the plain name alone")
-	t.check(VISIT_COUNTER_SCRIPT.day_began_names(5, true)
-			== ["nappy-day-5-began", "nappy-day-5-began-hard"],
+	var saved := GameState.calendar.hard_mode
+	var counter := RecordingCounter.new()
+	GameState.calendar.hard_mode = false
+	counter.bus.day_started.emit(5)
+	t.check(counter.sent == ["nappy-day-5-began"], "a normal run's day sends the plain name alone")
+	counter.sent.clear()
+	GameState.calendar.hard_mode = true
+	counter.bus.day_started.emit(5)
+	t.check(counter.sent == ["nappy-day-5-began", "nappy-day-5-began-hard"],
 		"a hard run's day sends the plain name and its hard-only copy")
+	GameState.calendar.hard_mode = saved
+	_done(counter)
 
 func _test_checkpoint_event_name(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.checkpoint_event_name(8, 10) == "nappy-checkpoint-8-from-day-10",
+	var counter := RecordingCounter.new()
+	counter.bus.went_back_to_a_checkpoint.emit(8, 10)
+	t.check(counter.sent.back() == "nappy-checkpoint-8-from-day-10",
 		"the checkpoint gone back to, and the day the last nerve was lost on")
-	t.check(VISIT_COUNTER_SCRIPT.checkpoint_event_name(1, 2) == "nappy-checkpoint-1-from-day-2",
-		"checkpoint zero is day 1")
+	counter.bus.went_back_to_a_checkpoint.emit(1, 2)
+	t.check(counter.sent.back() == "nappy-checkpoint-1-from-day-2", "checkpoint zero is day 1")
+	_done(counter)
 
 ## The day a fresh run's title stands in front of has already begun as a normal run's by the time
 ## the title says the run is hard, so the counter sends that day's hard copy with the mode; every
@@ -175,34 +213,51 @@ func _test_a_hard_run_counts_its_days_twice_and_a_normal_run_once(t) -> void:
 ## A key begins the run in the tap scheme, and is still reported as keys: the name comes from the
 ## input that began the run, not the scheme it fell back to.
 func _test_controls_event_name(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.controls_event_name(true, false)
-			== "nappy-controls-joystick", "the joystick button")
-	t.check(VISIT_COUNTER_SCRIPT.controls_event_name(false, false)
-			== "nappy-controls-tap", "the tap button")
-	t.check(VISIT_COUNTER_SCRIPT.controls_event_name(false, true)
-			== "nappy-controls-keys", "a key, whose run begins in tap mode, is reported as keys")
+	var counter := RecordingCounter.new()
+	counter.bus.controls_chosen.emit(true, false)
+	t.check(counter.sent.back() == "nappy-controls-joystick", "the joystick button")
+	counter.bus.controls_chosen.emit(false, false)
+	t.check(counter.sent.back() == "nappy-controls-tap", "the tap button")
+	counter.bus.controls_chosen.emit(false, true)
+	t.check(counter.sent.back() == "nappy-controls-keys",
+		"a key, whose run begins in tap mode, is reported as keys")
+	_done(counter)
 
 ## `chatting_mother` is a `chat`; every other id that can reach `EventBus.player_detained` — the
 ## catalogue's only other two rows with a `detain_seconds` above zero — is a `checkpoint`.
 func _test_detention_suffix(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.detention_suffix("chatting_mother") == "chat",
-		"the mother who stops her for a conversation")
-	t.check(VISIT_COUNTER_SCRIPT.detention_suffix("checkpoint_hut") == "checkpoint",
-		"a checkpoint's hut")
-	t.check(VISIT_COUNTER_SCRIPT.detention_suffix("checkpoint_post") == "checkpoint",
-		"a checkpoint's post")
+	var counter := RecordingCounter.new()
+	var day := GameState.header.day
+	counter.bus.day_started.emit(day)
+	counter.sent.clear()
+	counter.bus.player_detained.emit("chatting_mother")
+	t.check(counter.sent == ["nappy-day-%d-chat" % day], "the mother who stops her for a conversation")
+	counter.sent.clear()
+	counter.bus.player_detained.emit("checkpoint_hut")
+	t.check(counter.sent == ["nappy-day-%d-checkpoint" % day], "a checkpoint's hut")
+	counter.sent.clear()
+	counter.bus.player_detained.emit("checkpoint_post")
+	t.check(counter.sent == ["nappy-day-%d-checkpoint" % day], "a checkpoint's post")
+	_done(counter)
 
 ## The mark/task split comes from `ResistanceSteps` itself — index 1 is day 6's chalk mark and
 ## index 2 is the perform step it unlocks (`ResistanceSteps._build()`), so this is real catalogue
-## data rather than an index chosen to make the parity come out right.
+## data rather than an index chosen to make the parity come out right. A completed step is sent as
+## `mark-read` or `task-done` accordingly.
 func _test_is_pickup_step(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.is_pickup_step(1), "index 1 is day 6's chalk mark")
-	t.check(not VISIT_COUNTER_SCRIPT.is_pickup_step(2),
-		"index 2 is the perform step the mark unlocks")
-	t.check(not VISIT_COUNTER_SCRIPT.is_pickup_step(17),
-		"the finale's own step is not a pickup either")
-	t.check(not VISIT_COUNTER_SCRIPT.is_pickup_step(999),
-		"an index the resistance does not know reads as a task, the safer default")
+	var counter := RecordingCounter.new()
+	var day := GameState.header.day
+	counter.bus.day_started.emit(day)
+	var cases := [
+		[1, "mark-read", "index 1 is day 6's chalk mark"],
+		[2, "task-done", "index 2 is the perform step the mark unlocks"],
+		[17, "task-done", "the finale's own step is not a pickup either"],
+		[999, "task-done", "an index the resistance does not know reads as a task, the safer default"]]
+	for row in cases:
+		counter.sent.clear()
+		counter.bus.resistance_step_completed.emit(row[0])
+		t.check(counter.sent == ["nappy-day-%d-%s" % [day, row[1]]], row[2])
+	_done(counter)
 
 ## Drives every signal handler the counter connects to and checks that none of it moved anything
 ## `GameState` owns. This process is never on the web (`OS.get_name() != "Web"`), so
@@ -259,13 +314,11 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	var after := _gamestate_snapshot()
 	t.check(before == after,
 		"answering every signal the counter connects to leaves GameState untouched")
-	counter.unlisten()
 	bus.free()
 	counter.free()
 
-## Lets go of `counter`'s bus and frees both.
+## Frees the counter, which lets go of every bus it listened to, and the bus of its own.
 func _done(counter: RecordingCounter) -> void:
-	counter.unlisten()
 	counter.bus.free()
 	counter.free()
 
@@ -281,39 +334,53 @@ func _gamestate_snapshot() -> Dictionary:
 
 ## The bookkeeping behind "each task done, and each task skipped (a task day that ended without
 ## it), by day" — a step offered and then completed never reaches `_on_day_ended()`'s own sweep; a
-## step offered and never touched, or offered on an earlier day and still open, does. Checked
-## through `_open_tasks` directly, the one piece of state private to the counter, since the
-## `_send_event` calls themselves are silent in this process (see the test above).
+## step offered and never touched, or offered on an earlier day and still open, does. Read off what
+## the counter sends when the day ends: a skipped step is a `task-skipped` of the day it was offered.
 func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 	var counter := RecordingCounter.new()
+	counter.bus.day_started.emit(5)
 	counter.bus.resistance_contact_available.emit(5)
 	counter.bus.resistance_step_completed.emit(5)
-	t.check(not counter.task_is_open(5), "a completed step is no longer open")
 	counter.bus.resistance_contact_available.emit(6)
-	t.check(counter.task_is_open(6), "an offered, untouched step stays open")
-	counter.bus.day_ended.emit(GameState.header.day, GameEnums.DayResult.LOST_TIMEOUT, "", 0.0)
-	t.check(not counter.task_is_open(6),
-		"the day it belonged to ending, won or lost, closes it out as skipped")
+	counter.sent.clear()
+	counter.bus.day_ended.emit(5, GameEnums.DayResult.LOST_TIMEOUT, "", 0.0)
+	t.check(counter.sent == ["nappy-day-5-lost-timeout", "nappy-day-5-task-skipped"],
+		"the day ending skips the offered, untouched step once and not the completed one (%s)"
+		% [counter.sent])
+	counter.sent.clear()
+	counter.bus.day_ended.emit(5, GameEnums.DayResult.LOST_TIMEOUT, "", 0.0)
+	t.check(counter.sent == ["nappy-day-5-lost-timeout"],
+		"the day it belonged to ending closed the step out: a second end skips nothing (%s)"
+		% [counter.sent])
+	counter.bus.day_started.emit(6)
+	counter.bus.resistance_contact_available.emit(7)
+	counter.sent.clear()
+	counter.bus.day_ended.emit(5, GameEnums.DayResult.WON, "", 0.0)
+	t.check(counter.sent == ["nappy-day-5-won"],
+		"a step offered on day 6 stays open when day 5's end comes (%s)" % [counter.sent])
 	_done(counter)
 
-## `_on_task_completed()`/`_on_task_failed()`/`_on_day_ended()`'s own sweep all ask
-## `_is_pickup_step()` rather than a parity rule of their own — checked here through `_open_tasks`
-## directly, since `_send_event` itself is silent in this process (see the test above this one).
+## `_on_task_completed()`/`_on_task_failed()`/`_on_day_ended()`'s own sweep all ask whether a step is
+## a pickup rather than apply a parity rule of their own — checked here through what each sends.
 ## Index 1 (day 6's mark) and index 2 (the perform step it unlocks) are real `ResistanceSteps` data,
 ## not indices chosen to make a parity come out right.
 func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
 	var counter := RecordingCounter.new()
+	counter.bus.day_started.emit(6)
 	counter.bus.resistance_contact_available.emit(1)
 	counter.bus.resistance_contact_available.emit(2)
 	counter.bus.resistance_step_completed.emit(1)
 	counter.bus.resistance_step_completed.emit(2)
-	t.check(not counter.task_is_open(1) and not counter.task_is_open(2),
-		"a completed mark and a completed task both close out, whatever they are sent as")
+	counter.bus.day_ended.emit(6, GameEnums.DayResult.WON, "", 0.0)
+	t.check(counter.sent.slice(1) == ["nappy-day-6-mark-read", "nappy-day-6-task-done", "nappy-day-6-won"],
+		"a completed mark and a completed task both close out, and are sent as what they are (%s)"
+		% [counter.sent])
+	counter.sent.clear()
 	counter.bus.resistance_contact_available.emit(1)
 	counter.bus.resistance_contact_available.emit(2)
-	counter.bus.day_ended.emit(GameState.header.day, GameEnums.DayResult.LOST_TIMEOUT, "", 0.0)
-	t.check(not counter.task_is_open(1) and not counter.task_is_open(2),
-		"the day ending closes out an untouched mark and an untouched task alike")
+	counter.bus.day_ended.emit(6, GameEnums.DayResult.LOST_TIMEOUT, "", 0.0)
+	t.check(counter.sent.slice(1) == ["nappy-day-6-mark-missed", "nappy-day-6-task-skipped"],
+		"the day ending closes out an untouched mark and an untouched task alike (%s)" % [counter.sent])
 	_done(counter)
 
 ## `poster-torn`, `chat` and `checkpoint` are sent every time, within one attempt and across a
@@ -385,74 +452,95 @@ func _test_won_and_timeout_never_carry_a_pending_cause(t) -> void:
 ## Review finding: a genuinely fresh visit that hands over to the escape at day 14 re-enters
 ## `main._ready()` through `reload_current_scene()`, and `GameSave.try_resume()` there finds the
 ## save that same reload just wrote — `resumed` (from `EventBus.run_begun`) reads `true`, but the
-## page never actually left. `_resumed_for_report()` is the fix: a save is only a resume if this
-## page has not already reported a run beginning once before.
+## page never actually left. A save is only a resume if this page has not already reported a run
+## beginning once before. The four cases of (resumed, already reported), read off what is sent.
 func _test_resumed_for_report_truth_table(t) -> void:
-	t.check(VISIT_COUNTER_SCRIPT.is_the_same_run_reloaded(true, true),
-			"a save found by a second run_begun on one page is the same run reloaded: nothing sent")
-	t.check(not VISIT_COUNTER_SCRIPT.is_the_same_run_reloaded(false, true),
-			"no save on a second run_begun is a new run after a held restart: counted fresh")
-	t.check(not VISIT_COUNTER_SCRIPT.is_the_same_run_reloaded(true, false),
-			"the page's first run_begun that finds a save is a real resume: counted")
-	t.check(VISIT_COUNTER_SCRIPT.resumed_for_report(true, false),
-		"a genuine resume, the first time this page has ever reported, stays a resume")
-	t.check(not VISIT_COUNTER_SCRIPT.resumed_for_report(true, true),
-		"a save found after this page already reported once is this page's own write, not a resume")
-	t.check(not VISIT_COUNTER_SCRIPT.resumed_for_report(false, false),
-		"no save at all is never a resume")
-	t.check(not VISIT_COUNTER_SCRIPT.resumed_for_report(false, true),
+	var counter := RecordingCounter.new()
+	counter.bus.run_begun.emit(4, true)
+	counter.bus.run_begun.emit(4, true)
+	t.check(counter.sent == ["nappy-run-resumed-day-4"],
+		"a save found by a second run_begun on one page is the same run reloaded: nothing sent (%s)"
+		% [counter.sent])
+	counter.sent.clear()
+	counter.bus.run_begun.emit(1, false)
+	t.check(counter.sent == ["nappy-run-fresh"],
+		"no save on a second run_begun is a new run after a held restart: counted fresh")
+	_done(counter)
+	counter = RecordingCounter.new()
+	counter.bus.run_begun.emit(4, true)
+	t.check(counter.sent == ["nappy-run-resumed-day-4"],
+		"the page's first run_begun that finds a save is a real resume: counted")
+	_done(counter)
+	counter = RecordingCounter.new()
+	counter.bus.run_begun.emit(1, false)
+	t.check(counter.sent == ["nappy-run-fresh"], "no save at all is never a resume")
+	counter.bus.run_begun.emit(1, false)
+	t.check(counter.sent == ["nappy-run-fresh", "nappy-run-fresh"],
 		"no save and already reported stays not-a-resume")
+	_done(counter)
 
-## The stateful half: `_reported_run_begun` starts false, flips true on the first `run_begun`, and
+## The stateful half: the page has reported nothing at first, the first `run_begun` marks it, and
 ## a second one on the same instance — the day-14 handover's own `reload_current_scene()`, or any
-## other reload within one page's life — is downgraded to fresh even though `main.gd` still passed
-## `resumed = true`, because the save it found is this page's own.
+## other reload within one page's life — is never reported as resumed even though `main.gd` still
+## passed `resumed = true`, because the save it found is this page's own.
 func _test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t) -> void:
 	var counter := RecordingCounter.new()
-	t.check(not counter.has_reported_run_begun(), "a fresh instance has not reported anything yet")
-	counter.bus.run_begun.emit(1, true)
-	t.check(counter.has_reported_run_begun(), "the first call marks the page as having reported")
+	counter.bus.run_begun.emit(14, true)
+	t.check(counter.sent == ["nappy-run-resumed-day-14"],
+		"a fresh instance has not reported anything yet: a save found is a resume")
+	counter.bus.run_begun.emit(1, false)
+	t.check(counter.sent.back() == "nappy-run-fresh" and counter.sent.size() == 2,
+		"the first call marked the page as having reported, and a run with no save is fresh")
 	# Same instance, a later boot within this page's own life (a day-14 handover, say) — main.gd
 	# still passes `resumed = true` because a save now genuinely exists, and the fix is that this
-	# object, not main.gd, is what downgrades it.
-	t.check(not VISIT_COUNTER_SCRIPT.resumed_for_report(true, counter.has_reported_run_begun()),
+	# object, not main.gd, is what refuses it.
+	counter.bus.run_begun.emit(14, true)
+	t.check(counter.sent.size() == 2,
 		"once this page has reported, a second 'resumed' argument is not trusted as a new resume")
 	_done(counter)
 
 ## Review finding: `count.js` loads asynchronously, so an event asked for before it has finished
 ## loading — the earliest events of a cold, first-ever visit, above all — must not be dropped
-## silently the way a debug build's events are. `_flush_pending()` takes `present` as a parameter
-## rather than asking `_goatcounter_present()` itself (which is hard-wired false off the web), so
-## the queueing logic is testable here without a real page.
+## silently the way a debug build's events are. `GoatCounterOutbox.send()` takes `present` as a
+## parameter rather than asking the page (which is hard-wired absent off the web), so the queueing
+## logic is testable here without a real page: the outbox evaluates what it is handed a recorder
+## for.
 func _test_pending_events_queue_until_present_and_flush_in_order(t) -> void:
-	var counter: Node = VISIT_COUNTER_SCRIPT.new()
-	counter.hold("nappy-run-fresh")
-	counter.hold("nappy-day-1-began")
-	var seeded: Array[String] = ["nappy-run-fresh", "nappy-day-1-began"]
-	counter.flush_pending(false)
-	t.check(counter.pending_events() == seeded,
-		"count.js not yet present leaves the queue exactly as it was")
-	counter.flush_pending(true)
-	t.check(counter.pending_events().is_empty(),
-		"count.js present drains the whole queue, in the order the events were asked for")
-	# Flushing an empty queue, present or not, costs nothing and breaks nothing.
-	counter.flush_pending(true)
-	t.check(counter.pending_events().is_empty(), "flushing an already-empty queue is a no-op")
-	counter.free()
+	var scripts: Array[String] = []
+	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
+	outbox.send("nappy-run-fresh", false)
+	outbox.send("nappy-day-1-began", false)
+	t.check(scripts.is_empty(), "count.js not yet present evaluates nothing: the events are held")
+	outbox.send("nappy-day-1-task-done", true)
+	t.check(scripts.size() == 3 and scripts[0].contains("\"path\":\"nappy-run-fresh\"")
+			and scripts[1].contains("\"path\":\"nappy-day-1-began\"")
+			and scripts[2].contains("\"path\":\"nappy-day-1-task-done\""),
+		"count.js present drains the whole queue, in the order the events were asked for, then the "
+		+ "one asked for now (%s)" % [scripts])
+	outbox.send("nappy-day-1-blackout", true)
+	t.check(scripts.size() == 4 and scripts[3].contains("nappy-day-1-blackout"),
+		"with nothing held, an event is counted at once and the drained queue is not sent twice")
+	t.check(scripts[3].begins_with("try { window.goatcounter.count(") and scripts[3].ends_with("catch (e) {}")
+			and scripts[3].contains("\"no_session\":true") and scripts[3].contains("\"event\":true"),
+		"every event is one count() call inside the page's own try/catch, opted out of sessions")
 
 ## The other half of the fix: a reason that can never change — off the web, a debug build, or
 ## `?debug=1` — must never populate the queue at all, the same "still send nothing under debug"
-## the gate itself already promised. This process is never on the web, so `_send_event()` refuses
-## before `_pending` is ever touched.
+## the gate itself already promised. This process is never on the web, so the counter refuses
+## before its outbox is ever touched: the real counter, handed a bus and events, evaluates no
+## script on a page it does not have, and `GoatCounterOutbox.may_ever_send()` is the refusal.
 func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
 	var counter: Node = VISIT_COUNTER_SCRIPT.new()
 	var bus: Node = EVENT_BUS_SCRIPT.new()
 	counter.configure(RunConfig.parse(PackedStringArray(), "", false), GameState)
 	counter.listen(bus)
 	bus.controls_chosen.emit(true, false)
-	t.check(counter.pending_events().is_empty(),
+	t.check(not GoatCounterOutbox.may_ever_send(OS.get_name() == "Web", false, false),
 		"off the web, an event is refused outright rather than queued forever unsent")
-	counter.unlisten()
+	t.check(not GoatCounterOutbox.may_ever_send(true, true, false)
+			and not GoatCounterOutbox.may_ever_send(true, false, true)
+			and GoatCounterOutbox.may_ever_send(true, false, false),
+		"a debug build and ?debug=1 are refused for good, a release web page is not")
 	bus.free()
 	counter.free()
 
@@ -544,7 +632,6 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t) -> void:
 	t.check(counter.sent == ["nappy-day-%d-alley-robbery-warned" % day],
 		"the robber's warning is counted under his own name (%s)" % [counter.sent])
 	robber.free()
-	counter.listen(counter.bus)
 	_done(counter)
 
 ## **Every charger has a counter of its own, named by its row** *(inbox #764 in minty-lemur, the player: "Ending a
@@ -620,7 +707,6 @@ func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
 	t.check(counter.sent == [name + "chased", name + "outlasted"],
 		"its clock run out, it is counted outlasted (%s)" % [counter.sent])
 	outlasted.free()
-	counter.listen(counter.bus)
 	_done(counter)
 
 ## **The day-3 lesson's dog has its own set and not the dog's** *(PLAYTEST-141: "we need to record
@@ -647,7 +733,6 @@ func _test_the_lesson_dog_has_its_own_set(t) -> void:
 	t.check(counter.sent == ["nappy-day-%d-dog-chased" % day],
 		"a dog that is not the lesson's is an ordinary dog (%s)" % [counter.sent])
 	later.free()
-	counter.listen(counter.bus)
 	_done(counter)
 
 ## **A raised hand is a warning, and the charge comes after it** *(inbox #764 in minty-lemur, the player: "Dog-chased
@@ -683,7 +768,6 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t) -> void:
 			"nappy-day-%d-task-guard-chased" % day],
 		"and his charge after his second chased (%s)" % [counter.sent])
 	guard.free()
-	counter.listen(counter.bus)
 	_done(counter)
 
 ## **The masked man in the escape's stairwell has his counter** like every charger: `-warned` as his
@@ -723,7 +807,6 @@ func _test_the_masked_man_has_his_counter(t) -> void:
 	t.check(counter.sent == [name + "warned", name + "chased", name + "caught"],
 		"a run that catches her is counted caught (%s)" % [counter.sent])
 	caught.free()
-	counter.listen(counter.bus)
 	_done(counter)
 
 ## **A charge the day ends under is counted ended**, so every charge still ends in exactly one way
@@ -749,7 +832,6 @@ func _test_a_charge_cut_short_by_the_day_is_counted_ended(t) -> void:
 	waiting.report_the_charge_cut_short()
 	t.check(counter.sent.is_empty(), "a charger that never charged has nothing to end (%s)" % [counter.sent])
 	waiting.free()
-	counter.listen(counter.bus)
 	_done(counter)
 
 ## A charger at the origin, in the tree, stepped by hand.
@@ -857,17 +939,22 @@ func _test_every_event_opts_out_of_sessions(t) -> void:
 		"there were events to check (%d)" % counter.sent.size())
 	var prefix := "try { window.goatcounter.count("
 	var suffix := "); } catch (e) {}"
+	var scripts: Array[String] = []
+	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
 	for name: String in counter.sent:
-		var options: Dictionary = VISIT_COUNTER_SCRIPT.count_options(name)
-		var call: String = VISIT_COUNTER_SCRIPT.count_call(name)
-		var parsed: Variant = null
+		outbox.send(name, true)
+	t.check(scripts.size() == counter.sent.size(), "each event is one script line")
+	for i in counter.sent.size():
+		var name := counter.sent[i]
+		var call := scripts[i]
+		var options: Variant = null
 		if call.begins_with(prefix) and call.ends_with(suffix):
-			parsed = JSON.parse_string(call.substr(prefix.length(),
+			options = JSON.parse_string(call.substr(prefix.length(),
 					call.length() - prefix.length() - suffix.length()))
-		t.check(options.get("no_session") == true and options.get("event") == true
-				and options.get("path") == name,
+		t.check(options is Dictionary and options.get("no_session") == true
+				and options.get("event") == true and options.get("path") == name,
 			"%s is an event under its own path that opts out of sessions" % name)
-		t.check(parsed is Dictionary and parsed == options,
+		t.check(options is Dictionary and options.get("title") == name and options.size() == 4,
 			"%s: the script line hands count() exactly those options" % name)
 	_done(counter)
 

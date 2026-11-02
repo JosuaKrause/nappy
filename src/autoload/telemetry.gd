@@ -84,7 +84,7 @@ func is_active() -> bool:
 ## - `<run>` is the individual run, and its name now carries what used to be split across two
 ##   folder levels: `run-` or `rig-` (see `played` below — the distinction `tools/stats.sh` counts
 ##   separately and `tools/telemetry.sh -l` lists), the full `HHMMSS` time of day, the seed, and
-##   last `file_tag()` — the `git describe` form the run was played on (`v0.0.0-49-gab12cd3`), or
+##   last `_file_tag()` — the `git describe` form the run was played on (`v0.0.0-49-gab12cd3`), or
 ##   the same with `-dirty` appended. `tools/telemetry.sh -p` compares that tail against the same
 ##   `git describe`, computed once as `HEAD_COMMIT`, by path alone, to say what is stale. Repeating
 ##   the hour and minute the parent folder already carries is a few redundant characters, and what
@@ -108,33 +108,13 @@ func is_active() -> bool:
 ## collecting from a stranger's browser because of a query string nobody documented is exactly what
 ## a release build carrying no modifiers rules out. A debug build answers immediately: the browser
 ## used to debug a web build is its own debug export (`tools/export-web.sh debug`).
-## `reads_the_url()` below is the gate itself, pure so the promise is a truth table a test can
-## check.
+## `TelemetryPage.reads_the_url()` is the gate itself, pure so the promise is a truth table a test
+## can check.
 func _web_override_requested() -> bool:
-	if _config == null or not reads_the_url(_config.debug_build, OS.get_name() == "Web"):
+	if _config == null \
+			or not TelemetryPage.reads_the_url(_config.debug_build, OS.get_name() == "Web"):
 		return false
-	return telemetry_flag_from_query(_config.page_query)
-
-## The decision behind `_web_override_requested()`'s own gate, pulled out to a pure function of its
-## two inputs so the promise is a truth table a test can check rather than a build type nothing can
-## fake: a one-line boolean `and` is not worth a module this file would have to import for one call
-## site, and the next modifier this project gains should have an obvious static function to copy,
-## not a dependency to go find. debug and web is the one case `?telemetry=1`
-## exists for; release and web — the published page — is the case the promise is actually about.
-static func reads_the_url(is_debug: bool, on_web: bool) -> bool:
-	return is_debug and on_web
-
-## `"?telemetry=1"` (with or without a leading `?`, alongside any other parameter) reads as "log
-## this run"; anything else — absent, or any other value — leaves the platform's own default in
-## place. Pulled out from `_web_override_requested()` so a test can ask the parsing question
-## directly, without a Web export to produce a real `window.location.search` to parse.
-static func telemetry_flag_from_query(query: String) -> bool:
-	var trimmed := query.trim_prefix("?")
-	for pair in trimmed.split("&"):
-		var parts := pair.split("=")
-		if parts.size() == 2 and parts[0] == "telemetry":
-			return parts[1] == "1"
-	return false
+	return TelemetryPage.asks_for_telemetry(_config.page_query)
 
 ## **Silently does nothing on a web export, unless the page's own `?telemetry=1` says otherwise.**
 ## `user://` is browser storage there — a stranger's browser rather than a developer's disk — so by
@@ -157,7 +137,7 @@ func begin_run(run_seed: int, played := true) -> void:
 	var day_folder := stamp.get_slice("T", 0)
 	var time_part := stamp.get_slice("T", 1).replace(":", "")
 	_run_dir = "%s/%s/%s-%s-seed%d-%s" % [DIRECTORY, day_folder,
-			"run" if played else "rig", time_part, run_seed, file_tag()]
+			"run" if played else "rig", time_part, run_seed, _file_tag()]
 	if DirAccess.make_dir_recursive_absolute(_run_dir) != OK:
 		push_warning("telemetry: cannot create %s" % _run_dir)
 		_run_dir = ""
@@ -165,9 +145,8 @@ func begin_run(run_seed: int, played := true) -> void:
 	_log = TelemetryLog.new("%s/run.log" % _run_dir)
 	_clock = 0.0
 	_day_open = false
-	_shots_today = 0
-	_last_shot = -INF
-	_shot_serial = 0
+	_shots.restart_schedule()
+	_shots.restart_names()
 	_day_attempts = {}
 	_attempt = 1
 	_log.header("nappy %s log  %s  version %s"
@@ -188,7 +167,7 @@ func begin_memory_log() -> void:
 	_run_dir = ""
 	_clock = 0.0
 	_day_open = false
-	_shot_serial = 0
+	_shots.restart_names()
 	_day_attempts = {}
 	_attempt = 1
 	_log.header("nappy run log  (memory)")
@@ -198,7 +177,7 @@ func begin_memory_log() -> void:
 ## **Also where the attempt is counted.** A nerve retries a lost day without the calendar
 ## advancing — see `GameState.calendar.finish_day()` — so this is called again with the same
 ## `day`, and `_day_attempts[day]` counts how many times that has happened. `_attempt` is a
-## first attempt (`1`) until it is not, and `attempt_suffix()` is what turns that into a
+## first attempt (`1`) until it is not, and `_attempt_suffix()` is what turns that into a
 ## filename fragment.
 func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float) -> void:
 	_open_a_day(day, "day %-2d act %d  run seed %d  city seed %d  length %.1fs"
@@ -221,8 +200,7 @@ func _open_a_day(day: int, line: String) -> void:
 	_attempt = _day_attempts[day]
 	_clock = 0.0
 	_day_open = true
-	_shots_today = 0
-	_last_shot = -INF
+	_shots.restart_schedule()
 	_log.header("")
 	# Noted the same way the seed is, once per day rather than as a per-frame entry, so a log
 	# from an --invincible day cannot be mistaken for one where a loss actually meant anything.
@@ -266,8 +244,9 @@ func set_clock(seconds: float) -> void:
 ## The section's clock, put back to zero for a fresh walk — a retried section, or the second
 ## section beginning after the first — with the automatic-snapshot schedule reset alongside it.
 ##
-## **`set_clock(0.0)` alone is not this.** It leaves `_last_shot` wherever the previous walk's
-## last automatic shot fell, so `snapshot()`'s spacing gate (`_clock - _last_shot < SHOT_SPACING`)
+## **`set_clock(0.0)` alone is not this.** It leaves the last shot's time wherever the previous walk's
+## last automatic shot fell, so `snapshot()`'s spacing gate (the clock less the last shot's time under
+## `SHOT_SPACING`)
 ## would stay true — the new clock read as still inside the old walk's three-second window — until
 ## the new walk's own clock climbed back past whatever the old one had reached, holding every
 ## automatic snapshot back for exactly that long. This gives a walk the same clean slate
@@ -277,8 +256,7 @@ func restart_section_clock() -> void:
 	if not _day_open:
 		return
 	_clock = 0.0
-	_shots_today = 0
-	_last_shot = -INF
+	_shots.restart_schedule()
 
 func clock() -> float:
 	return _clock
@@ -306,22 +284,13 @@ func current_log() -> TelemetryLog:
 # - **It has to stay small.** Capped per day and spaced, because a burst of near-identical frames is
 #   a directory nobody opens.
 
-## The most shots one day may produce, and the least time between two of them.
-##
-## Six is about one per losing attempt plus the moment before it. The spacing is longer than any cue
-## in the game holds for, so a condition that is true for two seconds is one picture rather than a
-## hundred and twenty.
-const SHOTS_PER_DAY := 6
-const SHOT_SPACING := 3.0
+## The most shots one day may produce, and the least time between two of them — `TelemetryShots`
+## holds both and the day's count; this is where they are named for the callers that read them.
+const SHOTS_PER_DAY := TelemetryShots.PER_DAY
+const SHOT_SPACING := TelemetryShots.SPACING
 
-var _shots_today := 0
-var _last_shot := -INF
-
-## Names a picture, shared by `snapshot()` and `snapshot_now()` — see `next_shot_name()`. Counts
-## from 1 for the life of the run, reset only in `begin_run()`/`begin_memory_log()`: neither a new
-## day nor a retried attempt resets it, since a number that reset could repeat, which is the exact
-## failure a clock-based name already had.
-var _shot_serial := 0
+## The day's allowance, the spacing and the run-wide counter that names every picture.
+var _shots := TelemetryShots.new()
 
 const BURST_VERSION := 1
 const BURST_TARGET_FPS := 12
@@ -331,33 +300,18 @@ var _burst: Dictionary = {}
 var _burst_serial := 0
 var _burst_token := 0
 
-## Whether `SHOT_SPACING` has passed on the log's clock since the last automatic shot.
-func shot_is_due() -> bool:
-	return _clock - _last_shot >= SHOT_SPACING
-
-## Counts one automatic shot against the day's allowance and starts the spacing from now.
-func spend_a_shot() -> void:
-	_shots_today += 1
-	_last_shot = _clock
-
-## How many shots today's allowance has spent.
-func shots_spent() -> int:
-	return _shots_today
-
 ## Writes a PNG of the current frame beside the log, named after the moment that asked for it.
 ##
 ## Silently does nothing when there is no run being traced, when the day's allowance is spent, when
 ## another shot was taken a moment ago, or when there is no screen to photograph — a headless test
 ## run has a viewport with nothing in it, and the suite must not start writing images.
 func snapshot(kind: String) -> void:
-	if not _log or _log.path == "" or _shots_today >= SHOTS_PER_DAY:
-		return
-	if not shot_is_due():
+	if not _log or _log.path == "" or not _shots.allows(_clock):
 		return
 	if DisplayServer.get_name() == "headless":
 		return
-	spend_a_shot()
-	_capture("%s/%s" % [_type_dir("auto"), next_shot_name(kind)])
+	_shots.take(_clock)
+	_capture("%s/%s" % [_type_dir("auto"), _shots.next_name(kind, _attempt_suffix())])
 
 ## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
 ## a game feature.
@@ -382,8 +336,8 @@ func snapshot_now(context: String) -> void:
 	note("shot", context)
 	if _log.path == "" or DisplayServer.get_name() == "headless":
 		return
-	_shots_today += 1
-	_capture("%s/%s" % [_type_dir("asked"), next_shot_name("asked")])
+	_shots.take_asked()
+	_capture("%s/%s" % [_type_dir("asked"), _shots.next_name("asked", _attempt_suffix())])
 
 ## Starts one bounded animation sequence in the current run's `asked/` folder. The sequence is
 ## serialized one frame at a time so a slow PNG write cannot create an unbounded backlog, and the
@@ -577,7 +531,7 @@ func _write_burst_metadata() -> bool:
 ## **A day played twice writes two pictures.** A nerve retries a lost day without the calendar
 ## advancing, so this is called again for the same `day` — and without the attempt in the name the
 ## second attempt's maps would overwrite the first's, destroying the picture of the day that went
-## wrong. `attempt_suffix()` names the attempt every time, including the first, so a filename is
+## wrong. `_attempt_suffix()` names the attempt every time, including the first, so a filename is
 ## never ambiguous about which attempt it came from and there is only one shape to read.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
@@ -585,7 +539,7 @@ func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		corridor := true) -> void:
 	if not _log or _log.path == "":
 		return
-	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, attempt_suffix(),
+	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, _attempt_suffix(),
 			"-dusk" if at_dusk else ""]
 	# The escape's city has no corridor — its walk is two chains, not a tree — so its map draws none
 	# (`corridor` false) rather than one grown for a day that is not being walked.
@@ -615,7 +569,7 @@ func _capture(path: String) -> void:
 ## The version a run folder's name ends in — `BuildInfo.source_version()`, the `git describe` form
 ## with `-dirty` on a working tree that is not clean. `tools/telemetry.sh -p` compares a folder's
 ## tail against the same `git describe` to say what is stale.
-static func file_tag() -> String:
+static func _file_tag() -> String:
 	return BuildInfo.source_version()
 
 # ------------------------------------------------------------------ the files ---
@@ -623,7 +577,7 @@ static func file_tag() -> String:
 ## `-attempt<N>` on every name a run writes, including the first, so every filename has the same
 ## shape and nothing that reads or matches one has to handle a suffix that is sometimes there and
 ## sometimes not. See `begin_day()`, which is where `_attempt` is counted.
-func attempt_suffix() -> String:
+func _attempt_suffix() -> String:
 	return "-attempt%d" % _attempt
 
 ## The folder one kind of picture lives in, within the current run — `auto` for the heuristic's own
@@ -636,20 +590,3 @@ func _type_dir(name: String) -> String:
 	if DirAccess.make_dir_recursive_absolute(dir) != OK:
 		push_warning("telemetry: cannot create %s" % dir)
 	return dir
-
-## Names a snapshot by a per-run counter, not by any clock. *(2026-09-11, playtest 56: "phot
-## capture must use real time not game time otherwise at the end of the day all pictures get
-## overwritten", then, once a real-time name was in place, "actually why not just count up the
-## screenshot numbers?".)* Shared by `snapshot()` and `snapshot_now()` — `auto/` and `asked/` are
-## separate folders, so the two could never collide on a name either way, but one counter across
-## both means a picture's own number already says when in the run, relative to every other picture
-## the run took, it was taken. `_shot_serial` is never reset by a day boundary or a retried
-## attempt, so the counter itself cannot repeat a number the way a clock could.
-##
-## `%03d<attempt suffix>-<kind>.png` — `001-attempt1-asked.png`, `002-attempt1-asked.png` — the
-## attempt suffix and kind are what a retried day, or a heuristic-vs-asked picture, still need to
-## say without opening the file; the day clock the name used to carry is already in the run log's
-## own `shot` entry.
-func next_shot_name(kind: String) -> String:
-	_shot_serial += 1
-	return "%03d%s-%s.png" % [_shot_serial, attempt_suffix(), kind]

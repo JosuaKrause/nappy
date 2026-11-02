@@ -89,7 +89,7 @@ The events:
   one event folding in what actually did it rather than a second event beside it. The cause rides
   on the day's one end event, `EventBus.day_ended(day, result, cause, elapsed)`, which
   `DayDirector.finish_day()` emits, and `VisitCounter` folds it onto the loss kind
-  (`VisitCounter.loss_event_suffix()`); the run log's `lost` line names the same cause off the
+  (`VisitCounter`'s day-ended handler); the run log's `lost` line names the same cause off the
   same event. A hard fail names the row that struck her — `car` for the
   one that is not an event row (`EventBus.hard_fail_triggered("car_strike")`,
   `Crowd._strike()`), otherwise the row id off whichever row's own `is_lethal_at()` fired
@@ -301,16 +301,13 @@ things holds: the build is running on the web (`OS.get_name() == "Web"`), it is 
 nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
 `count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already
 keeps `count.js` off the page entirely (see above), so this is belt and braces rather than a second
-independent switch. One pure function, `VisitCounter.gate_allows()`, decides the gate from those
+independent switch. One pure function, `GoatCounterOutbox.gate_allows()`, decides the gate from those
 four booleans, the same shape `DevFlags._live_debug_requested()` already uses, and
-`tests/test_visit_counter.gd` drives its truth table directly. A missing or failing
+`tests/test_visit_counter.gd` drives its truth table directly. The same `GoatCounterOutbox` holds
+the events asked for before `count.js` has loaded and counts them in order once it has, and is
+handed the evaluator of the page's script, so a test reads the script each event sends. A missing or failing
 `window.goatcounter` never raises or prints an engine error: the existence check comes first, and
 the call itself sits inside the page's own `try`/`catch`.
-
-`VisitCounter.listen(bus)` connects every handler to the bus it is handed: the autoload's `_ready()`
-hands it `EventBus`, and a test hands it a bus of the same script with nobody else listening, then
-emits on it, so what the counter sends is read off real signals and not off its handlers called by
-hand. `unlisten()` lets go, and `pending_events()` answers what waits for `count.js`.
 
 ## Where the logs are
 
@@ -763,7 +760,7 @@ machine cannot fill the log with it, which is the whole reason it stays behind i
 `--spikes` run on a fast machine that never has a frame twice its neighbours writes none at all.
 
 **What changed** is read off state the observer already holds for other entries — the tile
-`_watch_the_ground` already looks up and the live event count `watch_what_is_near` already scans
+`_watch_the_ground` already looks up and the live event count `_watch_what_is_near` already scans
 — never a new per-frame hook added to a gameplay class. A frame she walked out of one tile and
 into the next reads:
 
@@ -1444,7 +1441,7 @@ strength and the ones she met carry the pip on top of it.
 her — not merely that `EventManager.stream_around` had loaded it into the world. Streaming happens
 at `Tuning.EVENT_STREAM_RADIUS` (900px), more than twice the reach of a typical row, so a day where
 she met eight of forty events and one where she was merely near forty are very different days, and
-only the narrower question is the one worth answering. `TelemetryObserver.watch_met_events` keeps
+only the narrower question is the one worth answering. `TelemetryObserver._watch_met_events` keeps
 the list; see "The trail" below for how it is carried to the picture.
 
 ### The trail

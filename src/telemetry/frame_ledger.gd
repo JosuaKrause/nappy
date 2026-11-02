@@ -120,26 +120,6 @@ var _readout_for := -1
 var _deferred_outer := FrameRecord.DRAW
 var _deferred_since := 0
 
-## How many cells the ring holds in all; it never grows past its first size.
-func storage_size() -> int:
-	return _rows.size()
-
-## The bucket the clock is charging now.
-func current_bucket() -> int:
-	return _current
-
-## What the counter `which` (one of the constants above) has counted so far this frame.
-func counter(which: int) -> int:
-	return _counters[which]
-
-## What `bucket` has spent so far this frame, in microseconds.
-func spent(bucket: int) -> int:
-	return _spent[bucket]
-
-## What every bucket has spent so far this frame, a copy.
-func spent_all() -> PackedInt64Array:
-	return _spent.duplicate()
-
 func _init(rows: int = CAPACITY, budget_usec: int = 16667) -> void:
 	capacity = clampi(rows, 1, CAPACITY)
 	display_budget_usec = budget_usec
