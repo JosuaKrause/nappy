@@ -74,7 +74,7 @@ prints the name, which is spoken and linked by its two words ("busy-badger"); so
 the newest last. A further record or review item of an entry is named too,
 `<entry name>-<adjective>-<animal>`. So is every piece of an entry's work: an item file is named,
 and so is the label a brief, a PR title or a record title gives a part of a step, never "part B3",
-"slice 4" or "2a/4" (inbox #937 in plaid-penguin, inbox #941). The playtests that already have a
+"slice 4" or "2a/4" (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca). The playtests that already have a
 number keep it, and so do the entries and records that already have one.
 
 - **A playtest** is `docs/playtests/<name>.md`.

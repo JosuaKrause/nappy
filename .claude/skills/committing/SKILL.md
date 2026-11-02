@@ -273,7 +273,7 @@ touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`
 `CLAUDE.md`, the skills, and the docstrings on anything edited. **A PR that finishes an item deletes
 the item's file and files what it built as a decision**, `docs/decisions/<entry name>.md` (made with
 `tools/new-name.sh decision --entry <name> "<title>"`, which names a further record of an entry
-`<entry name>-<adjective>-<animal>`, never `-2` (inbox #937 in plaid-penguin, inbox #941; read as: two branches building at once
+`<entry name>-<adjective>-<animal>`, never `-2` (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca; read as: two branches building at once
 draw the same next number, the filer's reading of the player's remark that the reason is known, open to overturn)); **when that was the entry's last item, the entry's folder goes in the same PR**,
 because the queue holds open work only and the entry stops being open the moment the PR merges.
 Another entry's `after:` line naming it stays as it is: the record is what makes the wait count
@@ -316,7 +316,7 @@ what is still open, with the built half filed as a decision.
 **And work that only a person can judge adds its review item in the same PR**: a file
 `docs/review/<entry name>.md`, made with `tools/new-name.sh review --entry <name> "<title>"`, which
 names a second item from the same entry `<entry name>-<adjective>-<animal>`, never a number
-(woolly-finch 18, inbox #941). The item says what to do,
+(woolly-finch 18, inbox #941 in breezy-alpaca). The item says what to do,
 where to look, and the question a run answers, its steps written as prose rather than numbered; the
 record of what was built stays in the decision. The review items are the list a playtest is asked
 against, so an item missing from them is an item no run will ever be asked to look at.
