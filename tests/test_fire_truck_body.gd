@@ -57,9 +57,10 @@ func _step(engine: EventInstance, player: Stroller) -> void:
 	engine.player_at = player.global_position
 	engine.pram_at = player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS
 	engine.step(STEP)
-	if engine._obstruction:
-		engine._obstruction.force_update_transform()
-		for child in engine._obstruction.get_children():
+	var body := _body_of(engine)
+	if body:
+		body.force_update_transform()
+		for child in body.get_children():
 			(child as Node2D).force_update_transform()
 
 func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
@@ -72,6 +73,13 @@ func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
 
 ## What stops `player` walking on along `heading` from where she stands: the collider a further
 ## step would meet, or null.
+## The solid body the engine carries as a child (the one `StaticBody2D` that holds every piece).
+func _body_of(engine: EventInstance) -> StaticBody2D:
+	for child in engine.get_children():
+		if child is StaticBody2D:
+			return child
+	return null
+
 func _what_stops(player: Stroller, heading: Vector2) -> Object:
 	var hit := player.move_and_collide(heading * WALK, true)
 	return hit.get_collider() if hit else null
@@ -110,7 +118,7 @@ func _test_the_body_is_solid_while_it_drives_and_lethal_only_ahead(t) -> void:
 		if not pressed and absf(engine.global_position.x) < 6.0:
 			pressed = true
 			stopped = _walk(player, Vector2.UP, 70.0) < 70.0 \
-					and _what_stops(player, Vector2.UP) == engine._obstruction
+					and _what_stops(player, Vector2.UP) == _body_of(engine)
 	t.check(pressed and stopped, "walking into a driving truck's flank, its body stops her")
 	t.check(not struck, "and it never strikes her beside it")
 	player.free()
@@ -240,7 +248,7 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 			lethal = lethal or engine.is_lethal_at(player.global_position)
 			if engine.is_parked:
 				break
-		var gap := engine.car.gap_to_her(engine.global_position, engine._heading)
+		var gap := engine.car.gap_to_her(engine.global_position, engine.facing_now())
 		t.check(engine.is_parked and gap > 0.0 and not lethal,
 				"%.0fpx past its kerb, it parks %.0fpx short of her and the day goes on"
 				% [past, gap])
@@ -323,7 +331,7 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 			"and a parked truck is not driving")
 	for place in [Vector2(40.0, 0.0), Vector2(-40.0, 0.0), Vector2(0.0, 30.0), Vector2(0.0, -30.0)]:
 		t.check(not engine.is_lethal_at(place), "a parked truck strikes nobody at %s" % place)
-	t.check(engine._obstruction != null, "and its body is still there")
+	t.check(engine.is_solid() and _body_of(engine) != null, "and its body is still there")
 	# Her first rig goes before the walks: placed with no frame run, the physics server still has
 	# its body at the origin, under the truck, where it would stop a walker instead of the truck.
 	player.free()
@@ -331,7 +339,7 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 		var from: Vector2 = engine.global_position - approach * 90.0
 		var walker := _her(t, from, approach)
 		var walked := _walk(walker, approach, 180.0)
-		t.check(walked < 180.0 and _what_stops(walker, approach) == engine._obstruction,
+		t.check(walked < 180.0 and _what_stops(walker, approach) == _body_of(engine),
 				"walking %s into the parked truck, its own body stops her (%.0fpx)"
 				% [approach, walked])
 		var stood := walker.global_position.distance_to(engine.global_position)
@@ -517,7 +525,7 @@ func _test_a_loss_to_it_names_its_own_cause(t) -> void:
 func _test_its_picture_stands_over_its_body(t) -> void:
 	var engine := _engine(t, PackedVector2Array([Vector2.ZERO, Vector2(0.0, 600.0)]))
 	var shape := _truck().shape
-	t.check(is_equal_approx(engine.look._body_anchor("side").y,
+	t.check(is_equal_approx(engine.look.body_anchor("side").y,
 			shape.half_length * absf(engine.solid_axis().y) + shape.radius
 			+ float(EventPictures.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN["side"])),
 			"the side view's bottom lands on the body's southern edge")
