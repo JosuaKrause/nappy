@@ -23,7 +23,7 @@ func run(t) -> void:
 	_test_every_rig_flag_makes_a_rig(t)
 	_test_the_title_is_skipped_by_a_rig_or_a_recipe(t)
 	await _test_main_hands_the_baby_and_the_city_plain_values(t)
-	_test_the_city_hands_each_value_to_its_part(t)
+	await _test_the_city_hands_each_value_to_its_part(t)
 	_test_the_escape_clock_takes_its_length_and_invincible(t)
 	_test_touch_and_web_are_the_runs_answers(t)
 
@@ -179,7 +179,9 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 		if invincible:
 			words.append("--invincible")
 		words.append_array(_words(["--no-save", "--no-telemetry"]))
-		var baseline := GameState.save_snapshot()
+		# The run this boot plays is the test's own, parked in a home the game takes it from.
+		var run := RunState.new()
+		var home := Boot.home_playing(t, run)
 		# The city's flags as it enters the tree: `main` adds it before `build()`, which is where
 		# they take effect, so what is read here is what `build()` reads.
 		var entered := {}
@@ -195,7 +197,8 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 						"forced_row": c.forced_row, "forced_interval": c.forced_interval,
 						"scenery_frame_locked": c.scenery_frame_locked}
 		t.get_tree().node_added.connect(catch)
-		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, RunConfig.parse(words, "", true))
+		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, RunConfig.parse(words, "", true),
+				func(main: Node) -> void: main.use_sitting_home(home))
 		t.get_tree().node_added.disconnect(catch)
 		var baby := Boot.baby(booted.main)
 		t.check(baby != null and baby.excitement_frozen == invincible,
@@ -210,7 +213,8 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 				"the city is handed what the flags chose before it builds")
 		Telemetry.end_run()
 		booted.free_all()
-		GameState.restore_snapshot(baseline)
+		home.free()
+		run.free()
 
 ## What the city is handed reaches the part it belongs to, and the crowd's agents get theirs.
 func _test_the_city_hands_each_value_to_its_part(t) -> void:
@@ -246,12 +250,22 @@ func _test_the_city_hands_each_value_to_its_part(t) -> void:
 	for agent in agents:
 		at.append(agent.global_position)
 	for i in 30:
-		city.crowd._physics_process(1.0 / 30.0)
+		await t.get_tree().physics_frame
 	var moved := 0
 	for i in agents.size():
 		if agents[i].global_position != at[i]:
 			moved += 1
-	t.check(moved == 0, "and a crowd tick under the crowd's skip_motion moves none of them (%d moved)" % moved)
+	t.check(moved == 0, "and the crowd's physics frames under its skip_motion move none of them (%d moved)" % moved)
+	# The control: the same crowd without the flag does move on the same frames, so the frames above
+	# really ran the crowd.
+	city.crowd.skip_motion = false
+	for i in 30:
+		await t.get_tree().physics_frame
+	moved = 0
+	for i in agents.size():
+		if agents[i].global_position != at[i]:
+			moved += 1
+	t.check(moved > 0, "and without the flag the same frames do move them (%d moved)" % moved)
 	city.free()
 
 ## The escape's clock is a day's: a section's spec carries the section length it is handed, and the

@@ -480,7 +480,8 @@ func _ready() -> void:
 		var still_watch := StillWatch.new()
 		still_watch.name = "StillWatch"
 		add_child(still_watch)
-		still_watch.setup(_city, _player, _day, config.quit_when_still_seconds, config.recording)
+		still_watch.setup(_city, _player, _day, config.quit_when_still_seconds,
+				StillWatch.telemetry_picture_dir(), config.recording)
 
 	# The escape's first screen — see `_open_the_first_screen_of_the_escape()`. An authored scene
 	# has already started playing above.

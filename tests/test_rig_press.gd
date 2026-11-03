@@ -7,12 +7,12 @@ extends RefCounted
 ##
 ## `RigLock.is_the_rigs_own_press()` is what `_input()` reads instead of marking every event
 ## handled outright: whether `event.device` carries `InputEvent.DEVICE_ID_EMULATION`, the constant
-## `AutoScreenshot._tap()` tags its own events with before handing them to
+## `AutoScreenshot` tags its own `--press` events with before handing them to
 ## `Input.parse_input_event()`. The gate tests drive a real `RigLock` with `locked_out` set by hand,
 ## never `setup()`, which also erases this process's `InputMap` bindings until the lock leaves the
 ## tree; the one test that calls `setup()` is the one about those bindings coming back.
 
-const AUTO_SCREENSHOT: GDScript = preload("res://src/dev/auto_screenshot.gd")
+const UI := preload("res://tests/ui_screens.gd")
 
 ## Stands in for the unhandled-phase handlers (`main`'s pause action, the readout's snapshot keys):
 ## anything that reaches this has cleared the `RigLock`, the same way reaching them means the lock
@@ -25,7 +25,7 @@ class Catcher extends Node:
 func run(t) -> void:
 	_test_is_the_rigs_own_press(t)
 	_test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t)
-	_test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t)
+	await _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t)
 	_test_the_gate_does_nothing_once_the_rig_unlocks(t)
 	_test_the_lock_gives_the_bindings_back_when_freed(t)
 
@@ -99,9 +99,10 @@ func _test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t) -> voi
 	gate.free()
 	catcher.free()
 
-## The two `--press` forms `AutoScreenshot._tap()` builds — a bare action (`pause`) and a `key:`
-## keycode (`key:r`) — driven through the real `_tap()` rather than a hand-built stand-in, so a
-## regression in the tagging itself, not only in this suite's idea of it, would fail here.
+## The two `--press` forms — a bare action (`pause`) and a `key:` keycode (`key:r`) — driven through
+## the rig the game builds for `--press pause 0 --press key:r 1` (`AutoScreenshot.from_config()`),
+## standing in the tree on a clock the suite moves, so a regression in the tagging itself, not only
+## in this suite's idea of it, would fail here.
 func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t) -> void:
 	var gate := RigLock.new()
 	t.add_child(gate)
@@ -109,8 +110,13 @@ func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out
 	t.add_child(catcher)
 	gate.locked_out = true
 
-	var rig: Node = AUTO_SCREENSHOT.new()
-	rig._tap("pause")
+	var clock := UI.FakeClock.new()
+	var words := PackedStringArray(["--screenshot", "scratch_unused.png", "--after", "600",
+			"--press", "pause", "0", "--press", "key:r", "1"])
+	var rig := AutoScreenshot.from_config(RunConfig.parse(words, "", true))
+	rig.simulation_clock = clock.read
+	t.add_child(rig)
+	await UI.frames(t)
 	Input.flush_buffered_events()
 	t.check(catcher.seen.size() == 2,
 			"the action form presses and releases, both reaching the unhandled phase (got %d)"
@@ -120,7 +126,8 @@ func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out
 				"and each one is the pause action the rig actually pressed (got %s)" % event)
 	catcher.seen.clear()
 
-	rig._tap("key:r")
+	clock.now = 1.5
+	await UI.frames(t)
 	Input.flush_buffered_events()
 	t.check(catcher.seen.size() == 2,
 			"the key: form presses and releases too, both reaching the unhandled phase (got %d)"
