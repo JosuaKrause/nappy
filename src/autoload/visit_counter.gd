@@ -12,8 +12,9 @@ extends Node
 ## the visit stays one visitor ("okay, I can turn session back on and you opt out for everything
 ## except /nappy.josuakrause.com/"). Off the web, on a debug build, or behind `?debug=1`, it is a
 ## silent no-op — see
-## `_may_ever_send()`. `count.js` loading asynchronously is not one of those: an event asked for
-## before it has finished loading is queued and sent the moment it appears — see `_pending` — and
+## `GoatCounterOutbox.may_ever_send()`. `count.js` loading asynchronously is not one of those: an
+## event asked for before it has finished loading is queued and sent the moment it appears — see
+## `GoatCounterOutbox` — and
 ## only a `count.js` genuinely never loading (missing or blocked) leaves that queue unsent.
 ##
 ## **It only listens**, the same discipline `TelemetryObserver` keeps for the run log: everything
@@ -80,40 +81,54 @@ extends Node
 ##   far people get" in its own way.
 
 func _ready() -> void:
-	EventBus.run_begun.connect(_on_run_begun)
-	EventBus.day_started.connect(_on_day_started)
-	EventBus.day_ended.connect(_on_day_ended)
-	EventBus.run_restarted.connect(_on_run_restarted)
-	EventBus.run_ended.connect(_on_run_ended)
-	EventBus.resistance_contact_available.connect(_on_task_offered)
-	EventBus.resistance_step_completed.connect(_on_task_completed)
-	EventBus.resistance_step_failed.connect(_on_task_failed)
-	EventBus.resistance_mark_seen.connect(_on_mark_seen)
-	EventBus.event_sighted.connect(_on_event_sighted)
-	EventBus.event_lit_unmet.connect(_on_event_lit_unmet)
-	EventBus.city_gone_dark.connect(_on_city_gone_dark)
-	EventBus.pursuit_began.connect(_on_pursuit_began)
-	EventBus.pursuit_warned.connect(_on_pursuit_warned)
-	EventBus.pursuit_caught.connect(_on_pursuit_caught)
-	EventBus.pursuit_cut_short.connect(_on_pursuit_cut_short)
-	EventBus.pursuit_ended.connect(_on_pursuit_ended)
-	EventBus.encounter_seen.connect(_on_encounter_seen)
-	EventBus.encounter_influenced.connect(_on_encounter_influenced)
-	EventBus.run_bout_began.connect(_on_run_bout_began)
-	EventBus.pelican_spawned.connect(_on_pelican_spawned)
-	EventBus.pelican_sighted.connect(_on_pelican_sighted)
-	EventBus.pelican_excited_her.connect(_on_pelican_excited_her)
-	EventBus.pelican_struck_her.connect(_on_pelican_struck_her)
-	EventBus.poster_torn.connect(_on_poster_torn)
-	EventBus.poster_pursuit_sent.connect(_on_poster_pursuit_sent)
-	EventBus.player_detained.connect(_on_player_detained)
-	EventBus.escape_begun.connect(_on_escape_begun)
-	EventBus.escape_city_entered.connect(_on_escape_city_entered)
-	EventBus.escape_lost.connect(_on_escape_lost)
-	EventBus.escape_out.connect(_on_escape_out)
-	EventBus.controls_chosen.connect(_on_controls_chosen)
-	EventBus.run_mode_chosen.connect(_on_run_mode_chosen)
-	EventBus.went_back_to_a_checkpoint.connect(_on_went_back_to_a_checkpoint)
+	listen(EventBus)
+	send_through(GoatCounterOutbox.new(func(script: String) -> void: JavaScriptBridge.eval(script)))
+
+## Connects every handler below to `bus`'s signals. `_ready()` hands it the game's `EventBus`; a
+## test hands in a bus of its own, so what it emits reaches this counter alone, and frees the
+## counter to let go of it.
+func listen(bus: Node) -> void:
+	for pair in _handlers(bus):
+		pair[0].connect(pair[1])
+
+## Each signal of `bus` the counter answers, with the handler that answers it.
+func _handlers(bus: Node) -> Array:
+	return [
+		[bus.run_begun, _on_run_begun],
+		[bus.day_started, _on_day_started],
+		[bus.day_ended, _on_day_ended],
+		[bus.run_restarted, _on_run_restarted],
+		[bus.run_ended, _on_run_ended],
+		[bus.resistance_contact_available, _on_task_offered],
+		[bus.resistance_step_completed, _on_task_completed],
+		[bus.resistance_step_failed, _on_task_failed],
+		[bus.resistance_mark_seen, _on_mark_seen],
+		[bus.event_sighted, _on_event_sighted],
+		[bus.event_lit_unmet, _on_event_lit_unmet],
+		[bus.city_gone_dark, _on_city_gone_dark],
+		[bus.pursuit_began, _on_pursuit_began],
+		[bus.pursuit_warned, _on_pursuit_warned],
+		[bus.pursuit_caught, _on_pursuit_caught],
+		[bus.pursuit_cut_short, _on_pursuit_cut_short],
+		[bus.pursuit_ended, _on_pursuit_ended],
+		[bus.encounter_seen, _on_encounter_seen],
+		[bus.encounter_influenced, _on_encounter_influenced],
+		[bus.run_bout_began, _on_run_bout_began],
+		[bus.pelican_spawned, _on_pelican_spawned],
+		[bus.pelican_sighted, _on_pelican_sighted],
+		[bus.pelican_excited_her, _on_pelican_excited_her],
+		[bus.pelican_struck_her, _on_pelican_struck_her],
+		[bus.poster_torn, _on_poster_torn],
+		[bus.poster_pursuit_sent, _on_poster_pursuit_sent],
+		[bus.player_detained, _on_player_detained],
+		[bus.escape_begun, _on_escape_begun],
+		[bus.escape_city_entered, _on_escape_city_entered],
+		[bus.escape_lost, _on_escape_lost],
+		[bus.escape_out, _on_escape_out],
+		[bus.controls_chosen, _on_controls_chosen],
+		[bus.run_mode_chosen, _on_run_mode_chosen],
+		[bus.went_back_to_a_checkpoint, _on_went_back_to_a_checkpoint],
+	]
 
 # ------------------------------------------------------------------- the gate ---
 
@@ -132,29 +147,11 @@ func configure(config: RunConfig, run: RunState) -> void:
 	_config = config
 	_run = run
 
-## Whether an event may be sent at all, right now. `_should_send()` below is the pure truth table;
-## this is the one place its four live inputs are actually read.
+## Whether an event may be sent at all, right now. `GoatCounterOutbox.gate_allows()` is the pure
+## truth table; this is the one place its four live inputs are actually read.
 func should_send() -> bool:
-	return _config != null and _should_send(OS.get_name() == "Web", _config.debug_build,
-			_config.readout_requested, _goatcounter_present())
-
-## The gate, as a pure function of its four inputs: on the web, not a debug build, not
-## `?debug=1` (`RunConfig.readout_requested`, the same flag that keeps `count.js` itself off the
-## page — see `export_presets.cfg`'s `html/head_include`), and `window.goatcounter.count` actually
-## present, since the script can fail to load or be blocked by the visitor's own browser.
-static func _should_send(on_web: bool, is_debug_build: bool, debug_requested: bool,
-		goatcounter_present: bool) -> bool:
-	return _may_ever_send(on_web, is_debug_build, debug_requested) and goatcounter_present
-
-## The three of the gate's four inputs that can never change their answer for the rest of this
-## page's life once asked — the build is not going to stop being a debug build, and `?debug=1`
-## does not disappear from a page nobody reloads. `_goatcounter_present()` is the one input that
-## legitimately answers differently a moment later, because `count.js` loads asynchronously
-## (`export_presets.cfg`'s own `counter.async = true`) — so `_send_event()` below asks this once,
-## up front, to decide *whether an event is ever worth queuing at all* before it asks the
-## time-varying half.
-static func _may_ever_send(on_web: bool, is_debug_build: bool, debug_requested: bool) -> bool:
-	return on_web and not is_debug_build and not debug_requested
+	return _config != null and GoatCounterOutbox.gate_allows(OS.get_name() == "Web",
+			_config.debug_build, _config.readout_requested, _goatcounter_present())
 
 ## Whether the page actually has a callable `window.goatcounter.count` — `false` off the web
 ## without ever asking `JavaScriptBridge`, the same guard `DevFlags.page_query()` makes before its
@@ -170,64 +167,21 @@ static func _goatcounter_present() -> bool:
 			"&& typeof window.goatcounter.count === 'function')")
 	return bool(present)
 
-## Events asked for while `count.js` had not yet finished loading — see `_may_ever_send()`'s own
-## doc for why that is the one live input worth waiting on. Flushed the cheap way, from
-## `_send_event()` itself the next time anything is asked for, rather than a timer or a per-frame
-## poll: nothing here may cost anything while the game is otherwise between events. A cold,
-## first-ever visit is the case this exists for — `count.js` is a real network fetch, and the
-## earliest events of a run (`run_begun`, day 1's `day_started`) can race ahead of it; a later
-## visit, with the script already cached, never queues anything at all.
-##
-## **Never populated for a reason that cannot change.** `_send_event()` checks `_may_ever_send()`
-## before this queue is ever touched, so a debug build or a page carrying `?debug=1` holds nothing
-## here and costs nothing beyond the one boolean check every other refusal already costs.
-var _pending: Array[String] = []
+## Where the events go: the queue for the ones asked for before `count.js` has loaded, and the
+## call that counts one. `null` until `send_through()` hands one in, and nothing is sent before.
+var _outbox: GoatCounterOutbox
+
+## Hands the counter the outbox its events go to. `_ready()` hands it one that evaluates its script
+## through the page's own `JavaScriptBridge`; a test hands one with a recorder, so what reaches the
+## outbox, queued or counted, is what the recorder sees once the outbox flushes.
+func send_through(outbox: GoatCounterOutbox) -> void:
+	_outbox = outbox
 
 func _send_event(name: String) -> void:
-	if _config == null \
-			or not _may_ever_send(OS.get_name() == "Web", _config.debug_build, _config.readout_requested):
+	if _config == null or _outbox == null or not GoatCounterOutbox.may_ever_send(
+			OS.get_name() == "Web", _config.debug_build, _config.readout_requested):
 		return
-	var present := _goatcounter_present()
-	_flush_pending(present)
-	if present:
-		_dispatch(name)
-	else:
-		_pending.append(name)
-
-## Sends whatever is queued, in the order it was asked for, when `present` holds; leaves the
-## queue exactly as it was otherwise. `present` is a parameter rather than a fresh
-## `_goatcounter_present()` read taken in here, the same split `_should_send()` already makes for
-## its own live half, so a test can drive both outcomes directly without a page to ask.
-func _flush_pending(present: bool) -> void:
-	if not present or _pending.is_empty():
-		return
-	var queued := _pending
-	_pending = []
-	for queued_name in queued:
-		_dispatch(queued_name)
-
-## Sends `name` through the page's own `count.js` — see `_count_call()` for the call.
-func _dispatch(name: String) -> void:
-	JavaScriptBridge.eval(_count_call(name))
-
-## What `window.goatcounter.count()` is given for `name` — see
-## https://www.goatcounter.com/help/events and /help/js. `path` is the event's own name, which
-## also keeps the page's path function (the head's `goatcounter.path`, for the visit alone) off
-## it, since `count.js` reads that only when a call names no path. **`no_session` on every
-## event**: the site keeps sessions for the page visit, and a path hit again inside one session
-## is not counted again, so without it a day lost three times would read as one `lost-*`.
-## `count.js` sends it as the hit's `ns` parameter, and GoatCounter counts a hit carrying it as a
-## visit of its own.
-static func _count_options(name: String) -> Dictionary:
-	return {"path": name, "title": name, "event": true, "no_session": true}
-
-## The one line of script `_dispatch()` evaluates for `name`: `count()` with `_count_options()`,
-## wrapped in the page's own `try`/`catch` as well as the caller's own `_goatcounter_present()`
-## check, so a third-party script's own internals throwing never becomes an engine error on this
-## side — "a missing or failing window.goatcounter must never raise or print an engine error".
-static func _count_call(name: String) -> String:
-	return ("try { window.goatcounter.count(%s); } catch (e) {}"
-			% JSON.stringify(_count_options(name)))
+	_outbox.send(name, _goatcounter_present())
 
 # --------------------------------------------------------------- event names ---
 # Pure functions, each testable without a web page, a save or a run behind it.
