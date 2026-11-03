@@ -298,6 +298,8 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 		await t.get_tree().physics_frame
 	(_one(first, "PauseScreen") as PauseScreen).restart_requested.emit()
 	t.check(reloads.size() == 1, "the held restart reloads")
+	var parked := home.get_node_or_null(NodePath(Sitting.NODE_NAME))
+	t.check(parked != null, "the held restart parks the sitting in the home")
 	lines.append_array(log.lines)
 	_shut(t, first)
 
@@ -317,6 +319,8 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	await UI.frames(t)
 	t.check(reloads.size() == 2 and GameState.facts.escape_section == DaySpec.Section.BUILDING,
 			"continuing past day 14's summary reloads into the escape's building")
+	t.check(parked != null and home.get_node_or_null(NodePath(Sitting.NODE_NAME)) == parked,
+			"and the second boot took the parked sitting and parks the same one again")
 	_shut(t, second)
 	var escape := await _boot_in(t, home, save, reloads)
 	t.check(_one(escape, "InteriorScene") != null, "and that boot builds the building")
