@@ -6,10 +6,12 @@ All nine converted; five read no private member, and the item lists what the oth
 
 **Found:** a headless run calls `_draw()` and emits `draw` like any other; its dummy renderer
 makes no pixels. A probe counted a halo rim's traced copies in a headless suite. The verify and
-cues skills, `docs/ARCHITECTURE.md`, `docs/EVENTS.md` and eleven code and suite comments said a
+cues skills, `docs/ARCHITECTURE.md`, `docs/EVENTS.md` and thirteen comments in ten code and suite files said a
 headless run never calls `_draw()`; each keeps its point (a headless pass does not prove the
-picture) with the true reason. Record minty-quail-44 dropped two halo wiring checks on the old
-premise; a draw pass could hold them now.
+picture) with the true reason. Record minty-quail-44 dropped two halo wiring checks from
+`tests/test_car_views.gd` on the old premise ("halo redraws the same body", "halo rides the bob");
+they are back, read through an atlas the car is handed that notes each region a traced copy asks
+for and where the copy stands.
 
 **Built.**
 - No seam under `src/`; one false doc clause in `src/ui/entity_halo.gd` fixed.
@@ -28,6 +30,11 @@ premise; a draw pass could hold them now.
   kept; four guards added. About forty mutation runs.
 - A latent flake fixed: a manager's physics tick turned off before it entered the tree came back
   on when it entered; it is turned off after.
+
+- The first review found three halo checks that passed or failed on frame length alone (a walk
+  moved per frame while the fades ran on frame time; the strong-pick order read within one frame,
+  which a long frame could fill with two blocks); the walk is laid out in steps of frame time and
+  the strong-pick rule is read on every frame, holding at 30, 80 and 150 ms frames.
 
 **Open to overturn** (the builder's choices where the brief was silent): the halo checks count
 frame time (the rims ease on process frames), not physics ticks; the retired-holder test queues its
