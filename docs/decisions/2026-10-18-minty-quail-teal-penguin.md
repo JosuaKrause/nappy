@@ -22,12 +22,11 @@ the reads below, `test_observers.gd` and the other suites the item lists.
   off-the-web refusal, the picture counter across a day and a retry, the runner seeing a part's
   fields) were proven again by the reviewer's own mutations.
 - The runner's shared-state check (`tests/shared_state.gd`) also compares the script variables of
-  each `RefCounted` an autoload holds, one level deep. It found 17 GameState run fields that suites
-  change and the runner's own `GameState.start_run()` puts back; each is listed in `EXEMPT` by name
-  with that reason. The verify skill's "A suite leaves nothing changed" says so.
-
-**Open to overturn:** the 17 run fields exempted by name rather than restored by each suite, or
-by a rule keyed on GameState; a future suite that moves another such field adds it the same way.
+  each `RefCounted` an autoload holds, one level deep, so `VisitCounter._outbox._pending` and
+  `Telemetry._shots`' fields are caught again. It skips the `GameState` autoload's parts as a whole,
+  naming `run-state-handed-in.md`, the item that ends the global run and the skip with it: a first
+  pass listed 17 run fields the runner's reset puts back as exempt by name, and the player rejected
+  that, "the state is created fresh and injected for every test" (inbox #985 in round-egret).
 
 **Left, with the route each needs:** the day-adjusted dog row (`EventScheduler._for_day`) wants a
 planned placement with a city map; the recording counter's `_send_event()` override wants a gate
