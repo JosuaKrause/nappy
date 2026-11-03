@@ -59,7 +59,7 @@ const EXEMPT: Dictionary[String, String] = {
 ## these back to what they were then once the suite is over; any other suite that changes one
 ## fails.
 const OBSERVER_FIELDS: Dictionary[String, Array] = {
-	"Telemetry": ["_config", "_run_dir", "_day_attempts", "_attempt", "_burst_serial"],
+	"Telemetry": ["_config", "_run_dir", "_day_attempts", "_attempt"],
 	"VisitCounter": ["_config", "_run", "_day", "_open_tasks", "_reported_run_begun"],
 }
 
