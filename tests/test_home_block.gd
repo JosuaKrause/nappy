@@ -48,10 +48,18 @@ func run(t) -> void:
 
 static func _city_for(t, seed_value: int) -> City:
 	var map := CityGenerator.generate(seed_value)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	t.add_child(city)
 	city.build(map)
 	return city
+
+## The window picture the drawing paints on each wall cell of `building`
+## (`Building.window_texture()`): the building's window style and which cells are lit, in one list.
+static func _window_pictures(building: Building) -> Array[StringName]:
+	var pictures: Array[StringName] = []
+	for index in building.columns() * building.wall_tiles():
+		pictures.append(building.window_texture(index))
+	return pictures
 
 ## Every home-block building rect, sorted so two independently-collected lists compare directly.
 static func _home_block_rects(map: CityMap) -> Array[Rect2i]:
@@ -119,8 +127,8 @@ func _test_her_building_is_the_same_across_two_seeds(t) -> void:
 				"her building's own width matches across seeds (%d vs %d)" % [a.columns(), b.columns()])
 		t.check(a.variant == b.variant,
 				"her building's own colour variant matches across seeds (%d vs %d)" % [a.variant, b.variant])
-		t.check(a._window_style == b._window_style, "her building's own window style matches across seeds")
-		t.check(a._windows == b._windows, "her building's own lit-window pattern matches across seeds")
+		t.check(_window_pictures(a) == _window_pictures(b),
+				"her building's own window style and lit-window pattern match across seeds")
 		t.check(a._roof_furniture.is_empty() and b._roof_furniture.is_empty(),
 				"her building's own roof is too shallow to carry furniture on either seed (%s vs %s)"
 				% [a._roof_furniture, b._roof_furniture])
@@ -146,8 +154,8 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
 		var b: Building = other_by_lot[lot]
 		t.check(a.wall_tiles() == b.wall_tiles(), "lot %s: floor count matches across seeds" % lot)
 		t.check(a.variant == b.variant, "lot %s: colour variant matches across seeds" % lot)
-		t.check(a._window_style == b._window_style, "lot %s: window style matches across seeds" % lot)
-		t.check(a._windows == b._windows, "lot %s: lit-window pattern matches across seeds" % lot)
+		t.check(_window_pictures(a) == _window_pictures(b),
+				"lot %s: window style and lit-window pattern match across seeds" % lot)
 		t.check(a._roof_furniture == b._roof_furniture, "lot %s: roof furniture matches across seeds" % lot)
 	short.free()
 	other.free()

@@ -125,24 +125,19 @@ func _check(t, seed_value: int, m: Dictionary) -> void:
 ## and once walking out through the last gap `REACTION` after an officer first comes into view.
 ## Answers what was measured, or `{}` when the day has no swing park.
 func measure(t, seed_value: int) -> Dictionary:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var run := RunState.new()
+	run.start_run(seed_value)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
-	var saved := {
-		"state": GameState.attempt_spend.city_state, "day": GameState.header.day,
-		"completed": GameState.resistance.completed_steps.duplicate(),
-		"failed": GameState.resistance.failed_steps.duplicate(),
-		"progress": GameState.resistance.progress,
-		"package": GameState.resistance.carrying_package,
-	}
-	GameState.resistance.completed_steps = []
-	GameState.resistance.failed_steps = []
-	GameState.resistance.progress = 0
-	GameState.resistance.carrying_package = false
+	run.resistance.completed_steps = []
+	run.resistance.failed_steps = []
+	run.resistance.progress = 0
+	run.resistance.carrying_package = false
 	var day := ResistanceSteps.swing_day()
-	GameState.header.day = day
+	run.header.day = day
 	var state := CityState.new()
-	GameState.attempt_spend.city_state = state
+	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
@@ -154,22 +149,17 @@ func measure(t, seed_value: int) -> Dictionary:
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var result := {}
 	var mark := director.current_step()
-	director._on_contact_completed(mark.index if mark else -1)
+	director.contact().complete_now()
 	var task := director.current_step()
 	if task and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
 		var swing := director.contact_position()
-		director._on_contact_completed(task.index)
+		director.contact().complete_now()
 		var happenings: ResistanceHappenings = director._happenings
 		result = _measure_the_day(city, director, happenings, swing)
 		happenings.start_day(day + 1)
 	director.free()
 	city.free()
-	GameState.attempt_spend.city_state = saved.state
-	GameState.header.day = saved.day
-	GameState.resistance.completed_steps = saved.completed
-	GameState.resistance.failed_steps = saved.failed
-	GameState.resistance.progress = saved.progress
-	GameState.resistance.carrying_package = saved.package
+	run.free()
 	return result
 
 func _measure_the_day(city: City, director: ResistanceDirector,
@@ -197,7 +187,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.people = people
 	cordon.clear()
 	var again := ParkCordon.new(city.map, city.navigator, city, cordon.park,
-			city.spawn_siting, director._reach_blocked)
+			city.spawn_siting, director.reach_obstruction())
 	her[0] = swing
 	_tick(city, again, her[0])
 	var walking := _play(city, again, her, shows, true)
@@ -226,7 +216,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	if not busker:
 		return {"person_placed": false, "place": place[0]}
 	var cordon := ParkCordon.new(city.map, city.navigator, city, park,
-			city.spawn_siting, director._reach_blocked)
+			city.spawn_siting, director.reach_obstruction())
 	var her := [swing]
 	var shows := _camera_on(her)
 	_tick(city, cordon, her[0])
@@ -302,7 +292,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 		result: Dictionary) -> void:
 	var map := city.map
 	var rect := ClosurePlanner.calm_area_rect(map, cordon.park)
-	var blocked: Dictionary = director._reach_blocked.duplicate()
+	var blocked: Dictionary = director.reach_obstruction()
 	for tile in map.rect_tiles(rect):
 		blocked[tile] = true
 	var field := map.walk_field(map.home_rect.position, blocked)

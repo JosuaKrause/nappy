@@ -48,6 +48,13 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------------ setup ---
 
+## Where a hard seal's bodies stand across `segment`: the spacing the planner gives any world rect
+## (`SealPlanner.positions_across`, which `place_hard_on`, the door structure and the mast sites
+## all call), over the street's whole tile rect.
+func _hard_positions(map: CityMap, segment: StreetNetwork.Segment, def: EventDef) -> Array[Vector2]:
+	return SealPlanner.positions_across(map.tile_rect_to_world(segment.tile_rect()),
+			segment.horizontal, def.obstructs_radius)
+
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
@@ -98,7 +105,7 @@ func _candidate_segments(map: CityMap, tree: RouteTree,
 			continue
 		if home and key == home.key():
 			continue
-		if SealPlanner._is_the_main_road(map, segment):
+		if map.is_main_road(not segment.horizontal, segment.a.x):
 			continue
 		found[key] = true
 	return found
@@ -181,7 +188,7 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
 						"seed %d day %d: a seal stands on the doorstep's own street"
 						% [map.seed_used, day])
 
-## The main road is refused as a seal candidate outright — see `SealPlanner._is_the_main_road` and
+## The main road is refused as a seal candidate outright — see `CityMap.is_main_road` (which the planner asks) and
 ## its class doc, "The main road is exempt too". Checked over every real vertical segment at
 ## `map.main_road`'s own corridor index, not only the ones sampled for the other tests, since a
 ## seal here would wall the one street the design deliberately leaves open to cross.
@@ -193,7 +200,7 @@ func _test_the_main_road_is_never_sealed(t) -> void:
 			var planned := _seals_for(map, day)
 			var sealed := _sealed_segments(map, planned)
 			for segment in StreetNetwork.segments():
-				if not SealPlanner._is_the_main_road(map, segment):
+				if not map.is_main_road(not segment.horizontal, segment.a.x):
 					continue
 				t.check(not sealed.has(segment.key()),
 						"seed %d day %d: a seal stands on the main road at %s"
@@ -411,13 +418,22 @@ func _test_candidate_shapes(t) -> void:
 						% [candidate.id, id])
 
 ## The milestone's own requirement: the catalogue can seal a street from day 1, with nothing new
-## drawn. `SealPlanner._eligible` is the same check `_pick_candidate` uses at dawn, asked here
-## directly rather than re-derived, so this fails the day the candidate list stops honouring it.
+## drawn. Asked of the day the game plans (`plan_day` on day 1's spec), which is what the dawn
+## calls, rather than of the planner's private gate: some planned seal standing on a street (an
+## alley's mouth can be walled with a soft picture's row too) is one of a soft picture's rows.
 func _test_day_one_has_a_working_soft_pair(t) -> void:
-	var has_soft := false
+	var soft_ids := {}
 	for candidate in SealPlanner.candidates():
-		if candidate.strength == SealPlanner.Strength.SOFT and SealPlanner._eligible(candidate, 1):
-			has_soft = true
+		if candidate.strength == SealPlanner.Strength.SOFT:
+			for id in candidate.def_ids:
+				soft_ids[id] = true
+	var has_soft := false
+	for map in _maps:
+		for plan in _seals_for(map, 1):
+			# A pair stands on a street; an alley's mouth may be walled with a soft picture's row too.
+			var on_a_street := not map.alley_at(map.world_to_tile(plan.position)).has_area()
+			if plan.is_placed() and soft_ids.has(plan.def.id) and on_a_street:
+				has_soft = true
 	t.check(has_soft, "day 1 has at least one working soft seal pair")
 
 # ---------------------------------------------------------------------- thinning ---
@@ -489,7 +505,7 @@ func _first_real_segment(map: CityMap) -> StreetNetwork.Segment:
 			return segment
 	return null
 
-## `SealPlanner._hard_positions`'s own contract: a hard seal's bodies span the street's whole
+## `SealPlanner.positions_across`'s contract for a hard seal: a hard seal's bodies span the street's whole
 ## 192px width with no gap between them, whatever the row's own `obstructs_radius` is — see
 ## `seal_planner.gd`'s class doc, "no gap between them." Checked directly for every `HARD`
 ## candidate, including all four dedicated hard-seal pictures, rather than trusted from the
@@ -510,7 +526,7 @@ func _test_hard_seals_cover_the_street_edge_to_edge(t) -> void:
 		if not def:
 			continue
 		checked += 1
-		var positions := SealPlanner._hard_positions(map, segment, def)
+		var positions := _hard_positions(map, segment, def)
 		t.check(positions.size() > 0, "hard seal %s places at least one body" % candidate.id)
 		var along: Array[float] = []
 		for pos in positions:
@@ -529,7 +545,7 @@ func _test_hard_seals_cover_the_street_edge_to_edge(t) -> void:
 	t.check(checked >= 5, "and every hard candidate was checked, M64's four included (%d)" % checked)
 
 ## `fallen_tree`, `car_accident`, `burst_water_main` and `collapsed_frontage` are authored at
-## `obstructs_radius` 96 — exactly half the 192px street — so `_hard_positions` places exactly one
+## `obstructs_radius` 96 — exactly half the 192px street — so `positions_across` places exactly one
 ## body spanning it edge to edge, rather than repeating the scene several times across the street.
 ## See each row's own class doc in `event_catalogue.gd`.
 func _test_whole_scene_hard_seals_place_a_single_body(t) -> void:
@@ -542,7 +558,7 @@ func _test_whole_scene_hard_seals_place_a_single_body(t) -> void:
 		t.check(def != null, "'%s' is a real catalogue row" % id)
 		if not def:
 			continue
-		var positions := SealPlanner._hard_positions(map, segment, def)
+		var positions := _hard_positions(map, segment, def)
 		t.check(positions.size() == 1,
 				"'%s' is one continuous scene, so it places exactly one body (got %d)"
 				% [id, positions.size()])
