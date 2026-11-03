@@ -1708,13 +1708,17 @@ func _first_of(kind: CrowdAgent.Kind, except: CrowdAgent = null) -> CrowdAgent:
 	return null
 
 ## Lets the crowd's own physics tick (`Crowd._physics_process()`, in the tree) run for `seconds` of
-## game time: real physics frames, under `Engine.time_scale` so they pass quickly.
+## game time: real physics frames, under `Engine.time_scale` so there are fewer of them. The scale
+## makes each tick last `FAST_SCALE` times longer (as `test_meters.gd`'s `_simulate_fast()` does), so
+## the frames are counted in the scaled tick and one more passes once the scale is restored.
 func _let_the_physics_run(seconds: float) -> void:
+	var frame := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
 	var clock := Engine.time_scale
 	Engine.time_scale = FAST_SCALE
-	for i in int(round(seconds / STEP)):
+	for i in maxi(1, int(round(seconds / frame))):
 		await _city.get_tree().physics_frame
 	Engine.time_scale = clock
+	await _city.get_tree().physics_frame
 
 func _step(agent: CrowdAgent, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):

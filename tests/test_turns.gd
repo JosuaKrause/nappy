@@ -680,11 +680,11 @@ func _test_a_red_light_still_holds_a_car_that_is_turning(t) -> void:
 ## at the last junction — the boundary case of the same rule a closure exercises.
 func _test_a_car_turns_at_the_last_junction_before_the_boundary(t) -> void:
 	_clear_the_holds()
-	# The last ordinary street, counting in from the outermost: a spine is kept by its lights, a
-	# precinct has no carriageway for a car, and the outermost corridor is at the map's edge with no
-	# room beside it for a car's picture, which a placed car is owed (`LaneMover.setup_at()`).
+	# The outermost street that is an ordinary one, the map's corner: its last junction has one arm to
+	# turn into, or an about-face. A spine is kept by its lights and a precinct has no carriageway for
+	# a car, so those are skipped.
 	var start := (StreetNetwork.junction_count().x - 1) * CityMap.period() - 4
-	var corridor := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y) - 2
+	var corridor := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y) - 1
 	while corridor > 1 and (corridor == _city.map.main_road
 			or _city.map.street_kind(false, corridor, start) != GameEnums.StreetKind.ORDINARY):
 		corridor -= 1

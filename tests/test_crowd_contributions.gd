@@ -9,6 +9,8 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RIG := preload("res://tests/test_crowd_bodies.gd")
 const SEED := 4242
+## The pace of the car brought to a standstill rather than placed at one.
+const STOPPED := -1.0
 
 var _rig = RIG.new()
 
@@ -26,7 +28,7 @@ func run(t) -> void:
 	city.free()
 
 ## One walker and one car of the crowd, each at both ends of its kind's pace, a walker also giving
-## way (hurrying and waiting), a jolt of each radius running or not, and a car on a curved heading.
+## way (hurrying and waiting), a car also stopped by a crash, a jolt of each radius running or not, and a car on a curved heading.
 func _test_the_contribution_matches_the_unfiltered_kernel(t, city: City, map: CityMap,
 		street: Vector2i) -> void:
 	# The crowd's set the bodies are heard in, which their jolts widen as a crowd's own bodies do.
@@ -41,13 +43,22 @@ func _test_the_contribution_matches_the_unfiltered_kernel(t, city: City, map: Ci
 	for kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		var paces: Vector2 = Tuning.CAR_SPEED if kind == CrowdAgent.Kind.CAR \
 				else Tuning.PEDESTRIAN_SPEED
-		for pace in [paces.x, paces.y]:
+		# A car is also asked at a standstill, which a crash brings it to (`crashed_into()`, the
+		# public call the crowd makes); `STOPPED` stands for that row, and the walker's standstill is
+		# its waiting.
+		var paces_asked: Array = [paces.x, paces.y]
+		if kind == CrowdAgent.Kind.CAR:
+			paces_asked.append(STOPPED)
+		for pace in paces_asked:
 			for yielding in ([0, 1, 2] if kind == CrowdAgent.Kind.WALKER else [0]):
 				city.crowd.start_day(1, _rng(), Vector2.ZERO)
 				city.crowd.clear()
 				var agent: CrowdAgent = _rig.agent_on(city, map, kind, street.x,
 						car_lane if kind == CrowdAgent.Kind.CAR else 0, along, 1.0, true,
-						CrowdLanes.SIDEWALK_OFFSETS, pace)
+						CrowdLanes.SIDEWALK_OFFSETS, paces.x if pace == STOPPED else pace)
+				if pace == STOPPED:
+					agent.crashed_into()
+					t.check(agent.speed() == 0.0, "a car a crash stopped is at a standstill")
 				# A yield is a walker's: a car has no hurry or wait to be in. Stepping aside along its own
 				# line is hurrying, against it is waiting (`LaneMover.step_aside()`).
 				if yielding == 1:
