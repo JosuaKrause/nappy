@@ -685,7 +685,8 @@ question, and it is one subtraction.
 
 ### What a frame cost
 
-The `frame` entry, once a second:
+The `frame` entry, once a second, written by the observer's `FrameWatch`
+(`src/telemetry/frame_watch.gd`), which the observer hands each frame's length:
 
 ```
   12.0  frame    fps 118, worst frame 22.4ms, draws 342, objects 351, primitives 4120, process 4.21ms, physics 0.83ms
@@ -747,8 +748,8 @@ anything at all.
 ### What a spike was
 
 `frame` gives the engine's own per-second maximum, and the engine cannot say *when in the second*
-that maximum fell or what the game was doing at the time. Under `--spikes`, the observer keeps the
-same second's running mean of its own frame deltas — the mean of every frame already seen since
+that maximum fell or what the game was doing at the time. Under `--spikes`, the observer's frame
+watch keeps the same second's running mean of its frame deltas — the mean of every frame already seen since
 the last report, reusing `frame`'s own interval rather than a window of its own — and remembers
 whichever frame ran past twice that mean, the worst one if more than one did:
 
@@ -1150,7 +1151,11 @@ serially before the next frame is scheduled, so disk overhead appears in the tim
 create an unbounded backlog. A second request is refused while one is active; a run or day ending
 the capture leaves metadata with `status: "cancelled"` when possible. The target is not a promise
 that every desktop reaches 12 fps; inspect the timestamps for the achieved timing. Headless and
-unwritable runs are refused without fabricating images. Run `./tools/clip.sh` to scan the whole
+unwritable runs are refused without fabricating images. The capture is `BurstRecorder`
+(`src/telemetry/burst_recorder.gd`), which `Telemetry` builds and hands the screen it photographs
+(`TelemetryScreen`, the game's viewport, which can draw nothing headless), the engine's clock and
+the tree's timers, and the run's `asked/` folder at each start; `tests/test_burst_capture.gd` hands
+it a screen whose frames it draws, a clock it moves and a scratch folder. Run `./tools/clip.sh` to scan the whole
 telemetry folder and convert bursts whose sibling MP4 is missing, without deleting their PNGs.
 The scan skips active captures and existing videos; ended partial sequences with frames are
 eligible too. Pass a burst folder to select one sequence. If there is nothing to convert, the

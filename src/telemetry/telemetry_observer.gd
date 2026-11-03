@@ -96,13 +96,6 @@ const BUMP_QUIET_TIME := 1.5
 ## being answered is "did the player ever go near a contact", not "did they use it".
 const CONTACT_SIGHT := 130.0
 
-## How often the log says what a frame is costing. One second, because the question it answers —
-## *is the game laggy on this device, and where is the frame going* — is about a stretch of play
-## rather than a moment, and a line per frame would be a metrics dump wearing a log's clothes.
-## A three-minute day is about a hundred and eighty lines, which a reader can scan down the same
-## way they scan `near`.
-const FRAME_REPORT_INTERVAL := 1.0
-
 ## How long movement input must be held while she goes nowhere before it counts as *blocked*
 ## rather than a footstep settling at a kerb. About a second — the same order as
 ## `TURN_COMMIT_TIME`'s read on "held long enough to be a decision" rather than a stumble.
@@ -234,31 +227,14 @@ var _last_closure_at := -1000.0
 # The resistance contact.
 var _contact_seen := false
 
-# What the frames are costing. Time since the last `frame` entry and the longest single frame
-# seen since it, both in frame seconds rather than day seconds — see `_watch_the_frame`.
-var _frame_since := 0.0
-var _frame_worst := 0.0
+## What the frames are costing: the `frame` line once a second and, under `--spikes`, the `spike`
+## line, written into the run log (`FrameWatch`).
+var _frames := FrameWatch.new(Telemetry.note)
 
 ## Whether `--spikes` was given, handed in through `setup()` or `setup_escape()` so a builder
-## cannot leave it out — `_watch_the_frame` must cost nothing but this one check while the flag is
+## cannot leave it out — the frame watch must cost nothing but this one check while the flag is
 ## off.
 var spikes_on := false
-
-# This second's running mean, kept the same way `_frame_worst` is: the sum and count of every
-# frame's delta since the last report, so `_frame_sum / _frame_count` is the mean of the frames
-# already seen this second, and the worst candidate found so far — its own delta, the mean it
-# beat, and what the game did in it. Only touched while `spikes_on` holds; see `_watch_for_a_spike`.
-var _frame_sum := 0.0
-var _frame_count := 0
-var _spike_delta := 0.0
-var _spike_mean := 0.0
-var _spike_what := ""
-
-# The previous frame's tile and live event count, so a spike's own context can say what changed
-# *that* frame rather than merely what the world looked like. Updated every frame `spikes_on`
-# holds, spike or not — see `_watch_for_a_spike`.
-var _spike_tile := Vector2i.ZERO
-var _spike_events := 0
 
 # The cues. What was up over her head, since when, and how much of that she spent on the road;
 # and which edge badges are up, each with the clock reading it went up at.
@@ -382,11 +358,7 @@ func _forget_the_walk() -> void:
 	_mark_on_road = 0.0
 	_mark_why = ""
 	_badges.clear()
-	_frame_since = 0.0
-	_frame_worst = 0.0
-	_reset_the_spike_window()
-	_spike_tile = Vector2i.ZERO
-	_spike_events = 0
+	_frames.restart()
 	_tree = null
 	_corridor = null
 	_path_time = {"on": 0.0, "off": 0.0, "away": 0.0}
@@ -478,104 +450,15 @@ func _process(delta: float) -> void:
 	_watch_the_contact(here)
 	_watch_the_trail(here)
 	_watch_met_events(here)
-	_watch_the_frame(delta)
+	_frames.watch(delta, spikes_on, _spike_scene)
 
-## What the frames are costing, once a second — the one entry that is about the **device** rather
-## than about the day, and the only way a session played on a phone or on the web page can be read
-## back afterwards at all. *(2026-09-13: "I played a few sessions on mobile. It is a bit laggy
-## now.")* A frame rate on its own cannot say where the frame went; `FrameCost` carries the draw
-## calls, the renderable objects, the primitives and the two loop times beside it, and those are
-## what separate *too many texture switches* from *too much work before the renderer is reached*.
-##
-## **Timed off `delta` rather than off `Telemetry.clock()`**, unlike `_watch_the_corridor`, and the
-## reason is a flag: `--invincible` stands the day clock still on purpose, so an interval measured
-## against it would emit one line and then never advance — on exactly the runs a capture is most
-## likely to be taken from. The cost is that every line of such a run carries the same timestamp,
-## which is already true of every other entry there.
-##
-## **The worst frame in the interval is on the line, not an average of them.** "A bit laggy" is a
-## hitch, and a mean is the statistic a hitch hides in; one `maxf` a frame is what makes the
-## complaint measurable rather than a matter of opinion.
-func _watch_the_frame(delta: float) -> void:
-	_frame_worst = maxf(_frame_worst, delta)
-	# The one extra cost of `--spikes`, and the only one: with the flag off this is a boolean
-	# check and nothing else, same as the rest of this file with telemetry off.
-	if spikes_on:
-		_watch_for_a_spike(delta)
-	_frame_since += delta
-	if _frame_since < FRAME_REPORT_INTERVAL:
-		return
-	if _spike_delta > 0.0:
-		Telemetry.note("spike", "%.1fms, mean %.1fms — %s" % [
-			_spike_delta * 1000.0, _spike_mean * 1000.0, _spike_what])
-	Telemetry.note("frame", FrameCost.line(_frame_worst))
-	_frame_since = 0.0
-	_frame_worst = 0.0
-	_reset_the_spike_window()
-
-## The probe behind `--spikes`: which frame in this second, if any, ran past twice the mean of
-## the frames already seen this second, and what the game did in it. *(2026-09-14, on a desktop
-## build reading 85 to 112 fps with `physics` under 2ms: "local laptop also stutters even though
-## fps is way above 60" — a 16 to 24ms frame most seconds, two to three times its neighbours,
-## with nothing saying when it falls or what ran in it.)*
-##
-## **Reuses `_watch_the_frame`'s own interval rather than a trailing window of its own** — the
-## mean is of every frame since the last report and starts again every `FRAME_REPORT_INTERVAL`,
-## never a rolling second, because the question is "which frame in *this* second was the
-## outlier" rather than "what does this instant look like against the second before it", and the
-## report already marks where one second ends and the next begins.
-##
-## **The mean is of the frames seen *before* this one**, not including it — comparing a frame
-## against a mean it has already dragged upward would shrink its own ratio, and a single 100ms
-## frame in a second of 16ms ones would then have to clear a mean of its own making rather than
-## the ordinary one. The first frame of a fresh interval is never a candidate: there is nothing
-## yet to call it twice the size of.
-##
-## **Only the worst candidate survives** — `delta > _spike_delta` beside the threshold check —
-## so a second with two qualifying frames writes the rate limit's one line about the worse of
-## the two, never the more recent.
-func _watch_for_a_spike(delta: float) -> void:
-	var tile := _tile_of(_player.global_position)
-	var events := _live().size()
-	if _frame_count > 0:
-		var mean: float = _frame_sum / _frame_count
-		if delta > 2.0 * mean and delta > _spike_delta:
-			_spike_delta = delta
-			_spike_mean = mean
-			_spike_what = _spike_context(tile, events)
-	_frame_sum += delta
-	_frame_count += 1
-	_spike_tile = tile
-	_spike_events = events
-
-## What changed since the previous frame, read off state this observer already holds for other
-## entries — `_tile_of()` for the tile every line names and `_live()` for
-## `_watch_what_is_near`'s scan — rather than a new per-frame hook on a gameplay class, which
-## the **telemetry** rule rules out. `"nothing else changed that frame"` is itself an answer: it
-## says the spike was not the game doing extra work, which is the other half of the question the
-## probe exists to ask.
-##
-## **A picture arriving late is not one of the answers, because a page cannot arrive late.** Every
-## page a day draws is held from the boot's own loading window, and a page read from disk outside
-## one writes its own `texture` line naming the group, the moment and the milliseconds and raises
-## an engine error the test gate is red for — a louder report than a count in a spike line.
-func _spike_context(tile: Vector2i, events: int) -> String:
-	var changes: Array[String] = []
-	if tile != _spike_tile:
-		changes.append("her tile changed to %s" % RunTrace.tile(tile))
-	if events != _spike_events:
-		changes.append("live events %d -> %d" % [_spike_events, events])
-	return ", ".join(changes) if not changes.is_empty() else "nothing else changed that frame"
-
-## The per-second spike-candidate bookkeeping, cleared alongside `_frame_since`/`_frame_worst`
-## every time a `frame` line closes the interval — pulled into its own function since
-## `start_day()` also has to reach it, for a rewound day the same way it resets everything else.
-func _reset_the_spike_window() -> void:
-	_frame_sum = 0.0
-	_frame_count = 0
-	_spike_delta = 0.0
-	_spike_mean = 0.0
-	_spike_what = ""
+## Her tile and the live event count this frame: what a `--spikes` frame's line says changed since
+## the frame before (`FrameWatch.watch()`), read off what every other line already reads — `_tile_of()`
+## for the tile every line names and `_live()` for `_watch_what_is_near`'s scan — rather than a
+## per-frame hook on a gameplay class, which the **telemetry** rule rules out. Asked only under
+## `--spikes`.
+func _spike_scene() -> Array:
+	return [_tile_of(_player.global_position), _live().size()]
 
 ## Whether she is walking the day's corridor.
 ##

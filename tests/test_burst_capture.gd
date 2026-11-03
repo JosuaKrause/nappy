@@ -1,5 +1,12 @@
 extends RefCounted
-## The capture control and manifest lifecycle that remain observable without a renderer.
+## The capture keys, and the animation burst's lifecycle and manifest.
+##
+## The keys are pushed through the viewport to the readout and read back from the run log. The
+## lifecycle is the `BurstRecorder` `Telemetry` builds, handed what the game hands it: a screen
+## (here `Screen`, whose frames the test draws), a clock (here `Clock`, which the test moves and
+## whose waits it ends) and a folder (a scratch one under `user://`, removed afterwards). What a
+## sequence did is read where `tools/clip.py` reads it, in the folder and its `burst.json`, and in
+## the lines it hands the run log.
 
 
 func run(t) -> void:
@@ -9,6 +16,7 @@ func run(t) -> void:
 	_test_headless_and_overlapping_requests_refuse_before_a_capture_wait(t)
 	_test_unique_paths_and_manifest_timing(t)
 	_test_cancellation_and_stale_callbacks_cannot_cross_sequences(t)
+	_test_a_day_or_a_run_ending_cuts_the_active_burst_short(t)
 	_test_metadata_write_failure_stops_without_claiming_success(t)
 
 const UI := preload("res://tests/ui_screens.gd")
@@ -89,103 +97,322 @@ func _pictures(rig: Rig) -> int:
 func _bursts(rig: Rig) -> int:
 	return rig.asked().filter(func(line: String) -> bool: return line.contains("burst refused")).size()
 
+## A screen whose frames the test draws: `draw()` ends the wait for a drawn frame, and the picture is
+## a small blank image.
+class Screen extends TelemetryScreen:
+	signal drew
+	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+
+	func can_draw() -> bool:
+		return true
+
+	func drawn() -> void:
+		await drew
+
+	func picture() -> Image:
+		return image
+
+## One wait on `Clock`, ended by the test.
+class Wait extends RefCounted:
+	signal done
+	var due := 0
+	var ended := false
+
+	func _init(at: int) -> void:
+		due = at
+
+	func end() -> void:
+		if not ended:
+			ended = true
+			done.emit()
+
+## A clock the test moves. Every wait the recorder takes is kept in `waits`, the first being the
+## sequence's deadline, which `start()` takes before anything else.
+class Clock extends BurstRecorder.Clock:
+	var now := 5000000
+	var waits: Array[Wait] = []
+
+	func usec() -> int:
+		return now
+
+	func after(seconds: float) -> Signal:
+		var wait := Wait.new(now + roundi(seconds * 1000000.0))
+		waits.append(wait)
+		return wait.done
+
+	## Moves the clock on by `seconds` and ends every wait due by then, oldest first.
+	func advance(seconds: float) -> void:
+		now += roundi(seconds * 1000000.0)
+		for wait: Wait in waits.duplicate():
+			if wait.due <= now:
+				wait.end()
+
+	## Ends every wait but the deadlines in `kept`, whatever the clock says: a renderer the pacing
+	## does not hold back.
+	func end_waits_but(kept: Array[Wait]) -> void:
+		for wait: Wait in waits.duplicate():
+			if not wait in kept:
+				wait.end()
+
+## A recorder with its screen, clock and scratch folder, and the run log lines it wrote.
+class Bench:
+	var screen := Screen.new()
+	var clock := Clock.new()
+	var lines: Array[String] = []
+	var root := ""
+	var recorder: BurstRecorder
+
+	func _init(name: String) -> void:
+		root = ProjectSettings.globalize_path("user://burst-test-%s-%d" % [name, Time.get_ticks_usec()])
+		DirAccess.make_dir_recursive_absolute(root)
+		recorder = BurstRecorder.new(screen, clock, noted)
+
+	func noted(kind: String, text: String) -> void:
+		lines.append("%s %s" % [kind, text])
+
+	## Starts a sequence under the scratch folder and returns its own folder, read off the line the
+	## start wrote ("" when refused).
+	func start(context: String) -> String:
+		if not recorder.start(root, context):
+			return ""
+		var line := lines.back() as String
+		return "%s/%s" % [root, line.get_slice("/", line.get_slice_count("/") - 1)]
+
+	## Whether a sequence is running, asked the way a person asking for another finds out: a second
+	## request is refused as an overlap while one is, and starts (and is cut off again) when none is.
+	func busy() -> bool:
+		var before := lines.size()
+		var refused := true
+		if recorder.start(root, "probe"):
+			recorder.cancel("probe over")
+			refused = false
+		else:
+			refused = lines.back().contains("another burst is active")
+		lines.resize(before)
+		return refused
+
+	## Draws one frame on the screen.
+	func draw() -> void:
+		screen.drew.emit()
+
+	## The manifest in `folder`, or an empty dictionary when it is not valid JSON.
+	func manifest(folder: String) -> Dictionary:
+		var parsed := JSON.new()
+		if parsed.parse(FileAccess.get_file_as_string("%s/burst.json" % folder)) != OK:
+			return {}
+		return parsed.data
+
+	## Ends whatever is left — a sequence, a pending wait, a coroutine waiting on a frame — and
+	## removes the scratch folder.
+	func close() -> void:
+		recorder.cancel("test over")
+		clock.advance(60.0)
+		screen.drew.emit()
+		_delete_recursive(root)
+
+	static func _delete_recursive(path: String) -> void:
+		var dir := DirAccess.open(path)
+		if dir:
+			for child in dir.get_directories():
+				_delete_recursive("%s/%s" % [path, child])
+			for file in dir.get_files():
+				DirAccess.remove_absolute("%s/%s" % [path, file])
+		DirAccess.remove_absolute(path)
+
+## `Telemetry`'s own burst refuses in a headless run, where its screen draws nothing, and on a log
+## with no run folder; the refusal starts nothing, so a second request is refused the same way and
+## not as an overlap. A recorder with a sequence running refuses a second before it can replace it.
 func _test_headless_and_overlapping_requests_refuse_before_a_capture_wait(t) -> void:
 	Telemetry.begin_memory_log()
 	t.check(not Telemetry.start_burst("headless test"),
 			"headless capture refuses without beginning a renderer wait")
-	t.check(Telemetry._burst.is_empty(), "headless refusal leaves no active recorder")
-
-	Telemetry._burst = _burst_state("user://burst-overlap", 41)
-	t.check(not Telemetry.start_burst("overlap test"),
-			"a second request is refused before it can replace the active recorder")
-	t.check(int(Telemetry._burst["token"]) == 41,
-			"the refused request leaves the original recorder intact")
-	Telemetry._burst.clear()
+	t.check(not Telemetry.start_burst("headless again")
+				and _count(Telemetry.current_log().lines, "burst refused: no drawable viewport") == 2
+				and _count(Telemetry.current_log().lines, "another burst is active") == 0,
+			"headless refusal leaves no active recorder")
 	Telemetry.end_run()
 
+	var bench := Bench.new("overlap")
+	var first := bench.start("first")
+	t.check(first != "" and not bench.recorder.start(bench.root, "overlap test")
+				and bench.lines.back().contains("burst refused: another burst is active"),
+			"a second request is refused before it can replace the active recorder")
+	bench.draw()
+	var manifest := bench.manifest(first)
+	t.check(DirAccess.get_directories_at(bench.root).size() == 1
+				and manifest.get("context") == "first" and manifest.get("status") == "active"
+				and (manifest.get("frames", []) as Array).size() == 1,
+			"the refused request leaves the original recorder intact")
+	bench.close()
+
 ## The manifest is the handoff to `clip.py`: it must describe frame order and actual elapsed times,
-## while path allocation must refuse both an existing directory and an existing file.
+## while path allocation must refuse both an existing directory and an existing file. Every folder
+## is named from the clock, which stands still here, so each new one has to step past the others.
 func _test_unique_paths_and_manifest_timing(t) -> void:
-	var root := _temporary_directory("paths")
-	var first := Telemetry._next_burst_path(root)
-	t.check(DirAccess.make_dir_recursive_absolute(first) == OK,
+	var bench := Bench.new("paths")
+	var first := bench.start("first")
+	t.check(first != "" and DirAccess.dir_exists_absolute(first),
 			"the first generated burst directory can be created")
-	var second := Telemetry._next_burst_path(root)
-	t.check(second != first and not DirAccess.dir_exists_absolute(second),
-			"a previous sequence directory is never selected again")
-	var collision := FileAccess.open(second, FileAccess.WRITE)
+	var opened := bench.manifest(first)
+	t.check(opened.get("status") == "active" and (opened.get("frames", [1]) as Array).is_empty(),
+			"a writable sequence gets its initial manifest")
+	bench.recorder.cancel("next")
+	var taken := first.get_base_dir() + "/" + first.get_file().left(-3) + "002"
+	var collision := FileAccess.open(taken, FileAccess.WRITE)
 	if collision:
 		collision.close()
-	var third := Telemetry._next_burst_path(root)
-	t.check(third != second, "an existing file also cannot become a burst directory")
+	var after_the_file := bench.start("after the file")
+	t.check(after_the_file != "" and after_the_file != taken
+				and DirAccess.dir_exists_absolute(after_the_file) and FileAccess.file_exists(taken),
+			"an existing file also cannot become a burst directory")
+	bench.recorder.cancel("next")
+	# A second recorder counts its folders from the start again, at the same moment on the clock.
+	var again := BurstRecorder.new(bench.screen, bench.clock, bench.noted)
+	t.check(again.start(bench.root, "second recorder")
+				and DirAccess.get_directories_at(bench.root).size() == 3
+				and bench.manifest(first).get("context") == "first"
+				and bench.manifest(after_the_file).get("context") == "after the file",
+			"a previous sequence directory is never selected again")
+	again.cancel("test over")
+	bench.close()
 
-	Telemetry._burst = _burst_state(first, 42, [
-		{"file": "frame-0001.png", "elapsed_seconds": 0.04},
-		{"file": "frame-0002.png", "elapsed_seconds": 0.17},
-	])
-	t.check(Telemetry._write_burst_metadata(), "a writable sequence gets its initial manifest")
-	var parsed := JSON.new()
-	t.check(parsed.parse(FileAccess.get_file_as_string("%s/burst.json" % first)) == OK,
-			"the manifest is valid JSON")
-	var manifest: Dictionary = parsed.data
+	var timed := Bench.new("timing")
+	var folder := timed.start("timing")
+	timed.clock.advance(0.04)
+	timed.draw()
+	timed.clock.advance(0.13)
+	timed.draw()
+	timed.clock.advance(BurstRecorder.DURATION_SECONDS)
+	var manifest := timed.manifest(folder)
+	t.check(not manifest.is_empty(), "the manifest is valid JSON")
 	t.check(manifest.get("schema_version") == 1 and not manifest.has("version"),
 			"the manifest uses the converter's one-version schema")
 	var frames: Array = manifest.get("frames", [])
 	t.check(frames.size() == 2 and frames[0]["file"] == "frame-0001.png"
+				and frames[1]["file"] == "frame-0002.png"
+				and FileAccess.file_exists("%s/frame-0002.png" % folder)
 				and float(frames[0]["elapsed_seconds"]) < float(frames[1]["elapsed_seconds"]),
 			"manifest frames remain numbered and strictly ordered by their capture timestamps")
-	t.check(float(manifest["duration_seconds"]) > float(frames[1]["elapsed_seconds"]),
+	t.check(frames.size() == 2
+				and float(manifest.get("duration_seconds", 0.0)) > float(frames[1]["elapsed_seconds"])
+				and manifest.get("status") == "complete" and manifest.get("reason") == "duration",
 			"the actual burst duration is after its final readable frame")
-	t.check(Telemetry._burst_finish_reason(3.0, Telemetry.BURST_MAX_FRAMES) == "duration"
-				and Telemetry._burst_finish_reason(2.9, Telemetry.BURST_MAX_FRAMES) == "frame_cap",
-			"duration and frame cap bound the recorder without allowing a thirty-seventh frame")
-	Telemetry._burst.clear()
-	_delete_recursive(root)
+	timed.close()
 
+	t.check(_frames_until_the_end(2.9) == ["frame_cap", 36],
+			"the frame cap ends a sequence at its thirty-sixth frame, and a thirty-seventh is never drawn in")
+	t.check(_frames_until_the_end(BurstRecorder.DURATION_SECONDS)[0] == "duration",
+			"at both bounds at once, the duration is what ended it")
+
+## A sequence whose pacing never holds it back draws thirty-six frames with the clock still, then
+## waits out its last pacing wait with the clock moved to `seconds` after the start, the deadline
+## left pending; and one more frame is drawn. The manifest's reason and frame count are returned.
+func _frames_until_the_end(seconds: float) -> Array:
+	var bench := Bench.new("cap")
+	var folder := bench.start("cap")
+	var deadline: Array[Wait] = [bench.clock.waits[0]]
+	for i in BurstRecorder.MAX_FRAMES:
+		bench.draw()
+		if i < BurstRecorder.MAX_FRAMES - 1:
+			bench.clock.end_waits_but(deadline)
+	bench.clock.now += roundi(seconds * 1000000.0)
+	bench.clock.end_waits_but(deadline)
+	bench.draw()
+	var manifest := bench.manifest(folder)
+	var drawn_in := (manifest.get("frames", []) as Array).size()
+	if FileAccess.file_exists("%s/frame-0037.png" % folder):
+		drawn_in += 1
+	var found := [manifest.get("reason"), drawn_in]
+	bench.close()
+	return found
+
+## A recorder cancelled by hand, or a deadline with nothing drawn, cancels the sequence. And a
+## deadline or a frame wait left over from a sequence that has ended does nothing to the next one.
 func _test_cancellation_and_stale_callbacks_cannot_cross_sequences(t) -> void:
-	var root := _temporary_directory("lifecycle")
-	Telemetry.begin_memory_log()
-	Telemetry._burst = _burst_state(root, 51, [{"file": "frame-0001.png", "elapsed_seconds": 0.1}])
-	Telemetry.end_day()
-	t.check(Telemetry._burst.is_empty(), "ending a day cancels its active burst")
-	var parsed := JSON.new()
-	parsed.parse(FileAccess.get_file_as_string("%s/burst.json" % root))
-	var cancelled: Dictionary = parsed.data
-	t.check(cancelled.get("status") == "cancelled" and cancelled.get("reason") == "day ended",
+	var bench := Bench.new("lifecycle")
+	var cut := bench.start("cut short")
+	bench.clock.advance(0.1)
+	bench.draw()
+	bench.clock.advance(0.1)
+	bench.recorder.cancel("day ended")
+	var cancelled := bench.manifest(cut)
+	t.check(cancelled.get("status") == "cancelled" and cancelled.get("reason") == "day ended"
+				and (cancelled.get("frames", []) as Array).size() == 1,
 			"a cancelled sequence records why its partial frames ended")
-	Telemetry._burst = _burst_state(root, 52)
-	Telemetry._on_burst_deadline(52)
-	parsed.parse(FileAccess.get_file_as_string("%s/burst.json" % root))
-	var empty_deadline: Dictionary = parsed.data
+
+	var empty := bench.start("never drawn")
+	bench.clock.advance(BurstRecorder.DURATION_SECONDS)
+	var empty_deadline := bench.manifest(empty)
 	t.check(empty_deadline.get("status") == "cancelled"
 				and empty_deadline.get("reason") == "no frames captured before deadline",
 			"a renderer that never draws leaves a cancelled, not complete, zero-frame sequence")
 
-	Telemetry._burst = _burst_state(root, 53)
-	Telemetry._on_burst_deadline(51)
-	Telemetry._finish_burst(51, "duration")
-	t.check(Telemetry._burst.get("status") == "active" and int(Telemetry._burst.get("token")) == 53,
+	# The old sequence is waiting on a frame when it is cut; its deadline is still pending when the
+	# new one, started a second later, is drawn.
+	var old := bench.start("old")
+	bench.recorder.cancel("day ended")
+	bench.clock.advance(1.0)
+	var newer := bench.start("newer")
+	bench.clock.advance(BurstRecorder.DURATION_SECONDS - 0.5)
+	bench.draw()
+	var current := bench.manifest(newer)
+	t.check(current.get("status") == "active"
+				and (current.get("frames", []) as Array).size() == 1
+				and bench.manifest(old).get("reason") == "day ended"
+				and (bench.manifest(old).get("frames", [1]) as Array).is_empty(),
 			"an old timer or post-draw coroutine cannot finalize a newer sequence")
-	Telemetry._burst.clear()
-	Telemetry.end_run()
-	_delete_recursive(root)
+	bench.close()
 
-func _test_metadata_write_failure_stops_without_claiming_success(t) -> void:
-	var root := _temporary_directory("write-failure")
-	var blocked_manifest := "%s/burst.json" % root
-	DirAccess.make_dir_recursive_absolute(blocked_manifest)
+## `Telemetry.end_day()` and `end_run()` each cut the active sequence short, with their own reason.
+## The one private write of the suite: `Telemetry._bursts` is swapped for a recorder on this bench's
+## screen, clock and scratch folder (the game's own is on the viewport, which draws nothing here)
+## and put back, since `Telemetry` hands its recorder to no caller and takes none.
+func _test_a_day_or_a_run_ending_cuts_the_active_burst_short(t) -> void:
+	var bench := Bench.new("day-and-run")
+	var game_recorder = Telemetry._bursts
+	Telemetry._bursts = bench.recorder
 	Telemetry.begin_memory_log()
-	Telemetry._burst = _burst_state(root, 61)
-	t.check(not Telemetry._write_burst_metadata(),
-			"a manifest path occupied by a directory reports its write failure")
-	Telemetry._finish_burst(61, "duration")
-	t.check(Telemetry._burst.is_empty(), "a metadata failure always terminates the recorder")
-	var lines: Array = Telemetry.current_log().lines
-	t.check(not lines.is_empty() and lines.back().contains("burst abandoned")
-				and not lines.back().contains("finished"),
-			"a failed final write is never logged as a successful burst")
+	var day := bench.start("cut by the day")
+	bench.draw()
+	Telemetry.end_day()
+	var by_day := bench.manifest(day)
+	t.check(by_day.get("status") == "cancelled" and by_day.get("reason") == "day ended"
+				and (by_day.get("frames", []) as Array).size() == 1 and not bench.busy(),
+			"ending a day cuts its active burst short, keeping the frames drawn")
+	var run := bench.start("cut by the run")
+	bench.draw()
 	Telemetry.end_run()
-	_delete_recursive(root)
+	var by_run := bench.manifest(run)
+	t.check(by_run.get("status") == "cancelled" and by_run.get("reason") == "run ended"
+				and not bench.busy(),
+			"ending the run cuts its active burst short")
+	Telemetry._bursts = game_recorder
+	bench.close()
+
+## A manifest that can no longer be written ends the sequence, and the log never calls it a
+## finished burst: blocked before a frame is drawn, and blocked before the deadline closes it.
+func _test_metadata_write_failure_stops_without_claiming_success(t) -> void:
+	var bench := Bench.new("write-failure")
+	_block_the_manifest(bench.start("blocked on a frame"))
+	bench.draw()
+	t.check(not bench.busy()
+				and bench.lines.back().contains("burst abandoned: metadata write failed"),
+			"a manifest path occupied by a directory reports its write failure")
+	_block_the_manifest(bench.start("blocked at the deadline"))
+	bench.clock.advance(BurstRecorder.DURATION_SECONDS)
+	t.check(not bench.busy(), "a metadata failure always terminates the recorder")
+	t.check(bench.lines.back().contains("burst abandoned")
+				and _count(bench.lines, "burst complete") == 0,
+			"a failed final write is never logged as a successful burst")
+	bench.close()
+
+## Puts a directory where the manifest in `folder` is written.
+func _block_the_manifest(folder: String) -> void:
+	DirAccess.remove_absolute("%s/burst.json" % folder)
+	DirAccess.make_dir_recursive_absolute("%s/burst.json" % folder)
+
+func _count(lines: Array, text: String) -> int:
+	return lines.filter(func(line: String) -> bool: return line.contains(text)).size()
 
 func _p_key(shift: bool, repeated := false) -> InputEventKey:
 	var event := InputEventKey.new()
@@ -204,28 +431,3 @@ func _b_key(shift: bool, repeated := false) -> InputEventKey:
 	event.echo = repeated
 	event.pressed = true
 	return event
-
-func _burst_state(path: String, token: int, frames: Array = []) -> Dictionary:
-	return {
-		"dir": path,
-		"context": "test",
-		"started_usec": Time.get_ticks_usec() - 1000000,
-		"frames": frames,
-		"status": "active",
-		"reason": "",
-		"token": token,
-	}
-
-func _temporary_directory(name: String) -> String:
-	var path := ProjectSettings.globalize_path("user://burst-test-%s-%d" % [name, Time.get_ticks_usec()])
-	DirAccess.make_dir_recursive_absolute(path)
-	return path
-
-func _delete_recursive(path: String) -> void:
-	var dir := DirAccess.open(path)
-	if dir:
-		for child in dir.get_directories():
-			_delete_recursive("%s/%s" % [path, child])
-		for file in dir.get_files():
-			DirAccess.remove_absolute("%s/%s" % [path, file])
-	DirAccess.remove_absolute(path)

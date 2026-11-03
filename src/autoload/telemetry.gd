@@ -211,21 +211,16 @@ func _open_a_day(day: int, line: String) -> void:
 ## Closes a day's section. The clock stops here, so the between-days screen — during which the
 ## tree is paused anyway — cannot advance it.
 func end_day() -> void:
-	_cancel_burst("day ended")
+	_bursts.cancel("day ended")
 	_day_open = false
 
 func end_run() -> void:
-	_cancel_burst("run ended")
+	_bursts.cancel("run ended")
 	if not _log:
 		return
 	_log.close()
 	_log = null
 	_day_open = false
-
-func _cancel_burst(reason: String) -> void:
-	if _burst.size() == 0:
-		return
-	_finish_burst(int(_burst["token"]), "cancelled", reason)
 
 ## One thing that happened. `kind` is the column a reader scans down; reuse the kinds listed
 ## in docs/TELEMETRY.md rather than inventing a synonym for one of them.
@@ -292,13 +287,13 @@ const SHOT_SPACING := TelemetryShots.SPACING
 ## The day's allowance, the spacing and the run-wide counter that names every picture.
 var _shots := TelemetryShots.new()
 
-const BURST_VERSION := 1
-const BURST_TARGET_FPS := 12
-const BURST_DURATION_SECONDS := 3.0
-const BURST_MAX_FRAMES := 36
-var _burst: Dictionary = {}
-var _burst_serial := 0
-var _burst_token := 0
+## What the run log photographs: the game's own viewport (`_ViewportScreen`, below), asked by every
+## picture, still or burst, whether a frame can be drawn at all.
+var _screen: TelemetryScreen = _ViewportScreen.new(self)
+
+## The animation bursts a person asks for (`start_burst()`), handed the same screen, the engine's
+## clock and the tree's timers, and this log's `note`. A day or the run ending cuts its sequence short.
+var _bursts := BurstRecorder.new(_screen, BurstRecorder.Clock.new(self), note)
 
 ## Writes a PNG of the current frame beside the log, named after the moment that asked for it.
 ##
@@ -308,7 +303,7 @@ var _burst_token := 0
 func snapshot(kind: String) -> void:
 	if not _log or _log.path == "" or not _shots.allows(_clock):
 		return
-	if DisplayServer.get_name() == "headless":
+	if not _screen.can_draw():
 		return
 	_shots.take(_clock)
 	_capture("%s/%s" % [_type_dir("auto"), _shots.next_name(kind, _attempt_suffix())])
@@ -334,168 +329,19 @@ func snapshot_now(context: String) -> void:
 	if not _log:
 		return
 	note("shot", context)
-	if _log.path == "" or DisplayServer.get_name() == "headless":
+	if _log.path == "" or not _screen.can_draw():
 		return
 	_shots.take_asked()
 	_capture("%s/%s" % [_type_dir("asked"), _shots.next_name("asked", _attempt_suffix())])
 
-## Starts one bounded animation sequence in the current run's `asked/` folder. The sequence is
-## serialized one frame at a time so a slow PNG write cannot create an unbounded backlog, and the
-## timestamps record what the capture actually achieved rather than claiming the target rate.
+## Starts one bounded animation sequence in the current run's `asked/` folder (`BurstRecorder`),
+## refused with a line in the log while another is active or when there is no screen to read or no
+## run folder to write in.
 func start_burst(context: String) -> bool:
-	if _burst.size() > 0:
-		note("shot", "burst refused: another burst is active")
-		return false
-	if not _log or _log.path == "" or DisplayServer.get_name() == "headless":
-		if _log:
-			note("shot", "burst refused: no drawable viewport")
-		print("[Telemetry] burst refused: no drawable viewport")
-		return false
-	var asked_dir := _type_dir("asked")
-	var burst_path := _next_burst_path(asked_dir)
-	if DirAccess.make_dir_recursive_absolute(burst_path) != OK:
-		note("shot", "burst refused: could not create %s" % burst_path)
-		push_warning("telemetry: could not create burst directory %s" % burst_path)
-		return false
-	var started_usec := Time.get_ticks_usec()
-	_burst_token += 1
-	_burst = {
-		"dir": burst_path,
-		"context": context,
-		"started_usec": started_usec,
-		"frames": [],
-		"status": "active",
-		"reason": "",
-		"token": _burst_token,
-	}
-	if not _write_burst_metadata():
-		_burst.clear()
-		note("shot", "burst refused: could not write metadata")
-		push_warning("telemetry: burst metadata could not be written")
-		return false
-	note("shot", "burst started: %s | asked/%s" % [context, burst_path.get_file()])
-	print("[Telemetry] burst started: %s" % ProjectSettings.globalize_path(burst_path))
-	var deadline := get_tree().create_timer(BURST_DURATION_SECONDS, true)
-	deadline.timeout.connect(_on_burst_deadline.bind(_burst_token), CONNECT_ONE_SHOT)
-	_capture_burst(_burst_token)
-	return true
-
-func _next_burst_path(asked_dir: String) -> String:
-	_burst_serial += 1
-	var stamp := Time.get_ticks_usec()
-	var candidate := "%s/burst-%d-%03d" % [asked_dir, stamp, _burst_serial]
-	while DirAccess.dir_exists_absolute(candidate) or FileAccess.file_exists(candidate):
-		_burst_serial += 1
-		candidate = "%s/burst-%d-%03d" % [asked_dir, stamp, _burst_serial]
-	return candidate
-
-func _on_burst_deadline(token: int) -> void:
-	_finish_burst(token, "duration")
-
-func _burst_is_current(token: int) -> bool:
-	return _burst.size() > 0 and int(_burst.get("token", -1)) == token
-
-## Chooses the terminal condition before a render wait, so a stalled renderer cannot add a frame
-## beyond either bound. Duration wins at the shared boundary because it describes the elapsed run.
-static func _burst_finish_reason(elapsed: float, frame_count: int) -> String:
-	if elapsed >= BURST_DURATION_SECONDS:
-		return "duration"
-	if frame_count >= BURST_MAX_FRAMES:
-		return "frame_cap"
-	return ""
-
-func _capture_burst(token: int) -> void:
-	if not _burst_is_current(token):
-		return
-	var burst_dir := str(_burst.get("dir", ""))
-	var started_usec := int(_burst.get("started_usec", 0))
-	while _burst_is_current(token):
-		var elapsed := float(Time.get_ticks_usec() - started_usec) / 1000000.0
-		var frames: Array = _burst["frames"]
-		var finish_reason := _burst_finish_reason(elapsed, frames.size())
-		if finish_reason != "":
-			_finish_burst(token, finish_reason)
-			return
-		await DrawnFrame.wait(get_tree())
-		if not _burst_is_current(token):
-			return
-		elapsed = float(Time.get_ticks_usec() - started_usec) / 1000000.0
-		if elapsed >= BURST_DURATION_SECONDS:
-			_finish_burst(token, "duration")
-			return
-		var viewport := get_viewport()
-		if not viewport:
-			_finish_burst(token, "write_failed", "viewport disappeared")
-			return
-		var image := viewport.get_texture().get_image()
-		var captured_usec := Time.get_ticks_usec()
-		elapsed = float(captured_usec - started_usec) / 1000000.0
-		frames = _burst["frames"]
-		var frame_number: int = frames.size() + 1
-		var file_name := "frame-%04d.png" % frame_number
-		var result := image.save_png("%s/%s" % [burst_dir, file_name])
-		if result != OK:
-			_finish_burst(token, "write_failed", "could not write %s" % file_name)
-			return
-		frames.append({"file": file_name, "elapsed_seconds": elapsed})
-		if not _write_burst_metadata():
-			_finish_burst(token, "write_failed", "could not update burst metadata")
-			return
-		if not _burst_is_current(token):
-			return
-		var wait_seconds := (float(frames.size()) / float(BURST_TARGET_FPS)) - elapsed
-		if wait_seconds > 0.0:
-			await get_tree().create_timer(wait_seconds, true).timeout
-	if _burst_is_current(token):
-		_finish_burst(token, "duration")
-
-func _finish_burst(token: int, reason: String, detail := "") -> void:
-	if not _burst_is_current(token):
-		return
-	var path := str(_burst["dir"])
-	var count: int = (_burst["frames"] as Array).size()
-	var finished_with_frames := (reason == "duration" or reason == "frame_cap") and count > 0
-	var ending := detail if detail != "" else reason
-	if not finished_with_frames and count == 0 and reason == "duration":
-		ending = "no frames captured before deadline"
-	_burst["status"] = "complete" if finished_with_frames else "cancelled"
-	_burst["reason"] = ending
-	var outcome := str(_burst["status"])
-	var wrote_metadata := _write_burst_metadata()
-	_burst.clear()
-	if not wrote_metadata:
-		note("shot", "burst abandoned: metadata write failed")
-		push_warning("telemetry: burst metadata could not be finalized")
-		return
-	note("shot", "burst %s: %d frames | %s" % [outcome, count, ending])
-	print("[Telemetry] burst %s: %s (%d frames)"
-			% [outcome, ProjectSettings.globalize_path(path), count])
-
-func _write_burst_metadata() -> bool:
-	if _burst.size() == 0:
-		return false
-	var elapsed := float(Time.get_ticks_usec() - int(_burst["started_usec"])) / 1000000.0
-	var metadata := {
-		"schema_version": BURST_VERSION,
-		"frames": _burst["frames"],
-		"duration_seconds": elapsed,
-		"target_fps": BURST_TARGET_FPS,
-		"context": _burst["context"],
-		"status": _burst["status"],
-		"reason": _burst["reason"],
-	}
-	var file := FileAccess.open("%s/burst.json" % _burst["dir"], FileAccess.WRITE)
-	if not file:
-		push_warning("telemetry: could not write burst metadata")
-		return false
-	file.store_string(JSON.stringify(metadata, "\t"))
-	file.flush()
-	var write_error := file.get_error()
-	file.close()
-	if write_error != OK:
-		push_warning("telemetry: could not flush burst metadata")
-		return false
-	return true
+	var asked_dir := ""
+	if _log and _log.path != "" and _screen.can_draw():
+		asked_dir = _type_dir("asked")
+	return _bursts.start(asked_dir, context)
 
 # --------------------------------------------------------------- the city grid ---
 
@@ -556,11 +402,10 @@ func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 ## consumers — which is the shape of a rule ("telemetry never touches gameplay") quietly becoming
 ## untrue.
 func _capture(path: String) -> void:
-	await DrawnFrame.wait(get_tree())
-	var viewport := get_viewport()
-	if not viewport:
+	await _screen.drawn()
+	var image := _screen.picture()
+	if image == null:
 		return
-	var image := viewport.get_texture().get_image()
 	if image.save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
 
@@ -590,3 +435,24 @@ func _type_dir(name: String) -> String:
 	if DirAccess.make_dir_recursive_absolute(dir) != OK:
 		push_warning("telemetry: cannot create %s" % dir)
 	return dir
+
+# ------------------------------------------------------------------- the screen ---
+
+## The game's own viewport as the screen the run log photographs: nothing to draw headless, where
+## the null display server draws no frame; otherwise the wait for a drawn frame every capture shares
+## (`DrawnFrame.wait()`) and the viewport's texture once it is drawn.
+class _ViewportScreen extends TelemetryScreen:
+	var _node: Node
+
+	func _init(node: Node) -> void:
+		_node = node
+
+	func can_draw() -> bool:
+		return DisplayServer.get_name() != "headless"
+
+	func drawn() -> void:
+		await DrawnFrame.wait(_node.get_tree())
+
+	func picture() -> Image:
+		var viewport := _node.get_viewport()
+		return viewport.get_texture().get_image() if viewport else null
