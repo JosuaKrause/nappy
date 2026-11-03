@@ -48,10 +48,13 @@ func run(t) -> void:
 	_test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t)
 
 
+## A bare instance of `def` at `at`, in the tree, its frames stepped by the test (`_advance()`), on
+## `map` with a navigator of its own when one is given, as `EventInstance.setup()` is handed them,
+## and on open ground otherwise.
 func _instance(t, def: EventDef, at := Vector2.ZERO,
-		path := PackedVector2Array()) -> EventInstance:
+		path := PackedVector2Array(), map: CityMap = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path)
+	instance.setup(def, at, path, Vector2.RIGHT, map, Navigator.new(map) if map else null)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
@@ -877,11 +880,11 @@ func _test_a_paced_event_walks_a_beat(t) -> void:
 	var out := 256.0 / def.speed
 	_advance(instance, out - 0.2)
 	t.close_to(instance.position.x, 256.0, "it walks to the far end of its beat", 8.0)
-	t.check(instance._heading.x > 0.0, "facing the way it is going")
+	t.check(instance.facing_now().x > 0.0, "facing the way it is going")
 
 	_advance(instance, out)
 	t.close_to(instance.position.x, 0.0, "and back again", 8.0)
-	t.check(instance._heading.x < 0.0, "facing the other way on the way back")
+	t.check(instance.facing_now().x < 0.0, "facing the other way on the way back")
 	t.check(not instance.is_finished and not instance.is_leaving,
 			"a fixture that moves neither finishes nor leaves at the end of its path")
 
@@ -1248,11 +1251,10 @@ func _test_a_pursuer_stops_at_walls(t) -> void:
 
 	var def := EventCatalogue.by_id("charging_dog")
 	var instance := EventInstance.new()
-	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0))
+	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0), PackedVector2Array(),
+			Vector2.RIGHT, map, Navigator.new(map))
 	t.add_child(instance)
 	instance.set_process(false)
-	instance._map = map
-	instance._navigator = Navigator.new(map)
 
 	# Clear the telegraph with her held far off, so what follows is about the wall and not about
 	# the stand-off.
@@ -1354,10 +1356,7 @@ func _a_waiting_robber(t, map: CityMap, mouth: Dictionary, back: float) -> Event
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
 	var at := corner + d1 * 16.0 - d2 * back
-	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), at)
-	instance._map = map
-	instance._navigator = Navigator.new(map)
-	return instance
+	return _instance(t, EventCatalogue.by_id("alley_robbery"), at, PackedVector2Array(), map)
 
 ## **He notices her only along a clear line.** *(leafy-puffin, inbox #648, asked whether noticing
 ## her should need a clear line: "yes noticing needs a clear line".)* He waits in the alley 40px
@@ -1502,9 +1501,8 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var charged := 0
 	for back in [20.0, 40.0, 60.0, 90.0]:
-		var instance := _instance(t, def, corner + d1 * 16.0 - d2 * back)
-		instance._map = map
-		instance._navigator = Navigator.new(map)
+		var instance := _instance(t, def, corner + d1 * 16.0 - d2 * back, PackedVector2Array(),
+				map)
 		var her := corner - d1 * 300.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 		var elapsed := 0.0
 		var noticed_at := INF
@@ -1625,9 +1623,8 @@ func _test_a_clear_line_is_every_tile_the_line_crosses(t) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 544
 	var buildings := map.tiles_of_type(GameEnums.TileType.BUILDING)
-	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), Vector2.ZERO)
-	instance._map = map
-	instance._navigator = Navigator.new(map)
+	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), Vector2.ZERO,
+			PackedVector2Array(), map)
 	var asked := 0
 	var blocked := 0
 	var disagreed := 0
@@ -1658,9 +1655,8 @@ func _a_small_map(buildings: Array[Vector2i]) -> CityMap:
 	return map
 
 func _clear_on(t, map: CityMap, from: Vector2, to: Vector2) -> bool:
-	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), from)
-	instance._map = map
-	instance._navigator = Navigator.new(map)
+	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), from,
+			PackedVector2Array(), map)
 	var clear := instance.clear_line_to(to)
 	instance.free()
 	return clear

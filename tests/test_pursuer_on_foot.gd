@@ -225,11 +225,11 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t) -> void:
 	rng.seed = hash("%d:%d" % [SEED, 6])
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(6), rng, consumed, her.global_position)
-	var director := city.events.ahead._director
+	var director := city.events.ahead.director()
 	var owed := director.owed()
 	var next_in: float = director._next_in
 	var state := rng.state
-	var bag: MarbleBag = director._route
+	var bag: MarbleBag = director.route_bag()
 	var drawn := bag.drawn if bag else -1
 	var in_front: Array = bag.bag_in_front().duplicate() if bag else []
 	var bag_state := bag._rng.state if bag else 0
