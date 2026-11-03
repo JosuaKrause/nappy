@@ -222,7 +222,7 @@ func _process(delta: float) -> void:
 
 ## The ring this rim is traced at: `HALO_OFFSETS` translations `HALO_MARGIN` out, all riding
 ## whatever lift the owner's body currently has. A pure function of the bob, so a test can hold the
-## ring without a draw pass — headless never calls `_draw()`.
+## ring without a draw pass.
 static func trace_offsets(bob: float) -> Array[Vector2]:
 	var ring: Array[Vector2] = []
 	for i in HALO_OFFSETS:
